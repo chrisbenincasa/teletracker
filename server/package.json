@@ -1,0 +1,25 @@
+{
+  "name": "teletracker",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/chrisbenincasa/teletracker.git",
+  "author": "Christian Benincasa <chrisbenincasa@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "nodemon --watch 'src/**/*' -e ts,tsx --exec 'ts-node' ./src/Server.ts"
+  },
+  "dependencies": {
+    "koa": "^2.5.0",
+    "koa-body-parser": "^1.1.2",
+    "koa-router": "^7.4.0"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.0.45",
+    "@types/koa-bodyparser": "^4.2.0",
+    "@types/koa-router": "^7.0.27",
+    "nodemon": "^1.17.3",
+    "ts-node": "^5.0.1",
+    "typescript": "^2.8.1"
+  }
+}
