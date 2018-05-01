@@ -6,6 +6,7 @@ import { Db } from './db/Connection';
 import { UsersController } from './api/UsersController';
 import { Connection } from 'typeorm';
 import { MoviesController } from './api/MoviesController';
+import { TvShowController } from './api/TvShowController';
 
 export default class Server {
     port: number
@@ -35,7 +36,8 @@ export default class Server {
     configure(router: Router, db: Connection): void {
         const controllers = [
             new UsersController(router, db),
-            new MoviesController(router, db)
+            new MoviesController(router, db),
+            new TvShowController(router, db)
         ];
 
         controllers.forEach(controller => controller.setupRoutes());

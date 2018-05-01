@@ -4,7 +4,7 @@ import { Connection } from 'typeorm';
 import { Controller } from './Controller';
 import { MovieDbClient, SearchMoviesRequest } from 'themoviedb-client-typed';
 
-export class MoviesController extends Controller {
+export class TvShowController extends Controller {
     private dbConnection: Connection;
     private movieDbClient: MovieDbClient;
 
@@ -16,15 +16,15 @@ export class MoviesController extends Controller {
     }
 
     setupRoutes(): void {
-        this.router.get('/movies/search', async (ctx) => {
+        this.router.get('/tv/search', async (ctx) => {
             let query = ctx.query.query;
-            let ret = await this.movieDbClient.search.searchMovies({ query: query });
+            let ret = await this.movieDbClient.search.searchTvShows({ query: query });
 
             ctx.body = ret;
         });
 
-        this.router.get('/movies/:id', async (ctx) => {
-            let ret = await this.movieDbClient.movies.getMovie(ctx.params.id as number);
+        this.router.get('/tv/:id', async (ctx) => {
+            let ret = await this.movieDbClient.tv.getTvShow(ctx.params.id as number);
 
             ctx.body = ret;
         });
