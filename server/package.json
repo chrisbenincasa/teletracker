@@ -8,7 +8,7 @@
   "private": true,
   "scripts": {
     "start": "nodemon --watch 'src/**/*' -e ts,tsx --exec 'ts-node' ./src/index.ts",
-    "test": "NODE_ENV=test API_KEY=f702b0991c1191d6dbd370b688ff780c mocha -r ts-node/register src/**/*.spec.ts"
+    "test": "NODE_ENV=test mocha -r ts-node/register src/**/*.spec.ts"
   },
   "dependencies": {
     "@types/chai": "^4.1.3",
