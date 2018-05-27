@@ -15,7 +15,7 @@ export default class Server {
         this.port = port;
     }
 
-    async main(): Promise<any> {
+    async main(): Promise<void> {
         const app = new Koa();
         const router = new Router().prefix('/api/v1');
 
