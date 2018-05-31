@@ -2,7 +2,7 @@ import * as Router from 'koa-router';
 import { Connection } from 'typeorm';
 
 import { Controller } from './Controller';
-import { User } from '../db/entity/User';
+import * as Entity from '../db/entity'
 
 export class UsersController extends Controller {
     private dbConnection: Connection;
@@ -14,13 +14,13 @@ export class UsersController extends Controller {
 
     setupRoutes(): void {
         this.router.get('/users', async (ctx) => {
-            let users = await this.dbConnection.getRepository(User).find();
+            let users = await this.dbConnection.getRepository(Entity.User).find();
 
             ctx.body = { data: users };
         });
 
         this.router.get('/users/:id', async (ctx) => {
-            let user = await this.dbConnection.getRepository(User).findOneById(ctx.params.id);
+            let user = await this.dbConnection.getRepository(Entity.User).findOne(ctx.params.id);
 
             if (user) {
                 ctx.status = 200;
@@ -28,6 +28,18 @@ export class UsersController extends Controller {
             } else {
                 ctx.status = 404;
             }
-        })
+        });
+
+        this.router.put('/users/:id/tracked', async (ctx) => {
+            let user = await this.dbConnection.getRepository(Entity.User).findOne(ctx.params.id);
+
+            if (user) {
+                // await this.dbConnection.getRepository(Entity.Show).insert()
+
+                ctx.status = 200;
+            } else {
+                ctx.status = 404;
+            }
+        });
     }
 }

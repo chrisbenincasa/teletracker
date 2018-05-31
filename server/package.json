@@ -22,7 +22,7 @@
     "pg": "^7.4.1",
     "reflect-metadata": "^0.1.12",
     "themoviedb-client-typed": "0.0.2",
-    "typeorm": "^0.1.20"
+    "typeorm": "0.2.6"
   },
   "devDependencies": {
     "@types/koa": "^2.0.45",
