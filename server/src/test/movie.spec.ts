@@ -20,10 +20,10 @@ describe('GET /api/v1/movies/:id', () => {
       res.type.should.equal('application/json');
       // the JSON response body should have a
       // key-value pair of {"status": "success"}
-      
+
       // commenting out as status is not currently provided via the controllers
       // res.body.status.should.eql('success');
-      
+
       // the JSON response body should have a
       // key-value pair of {"data": 1 movie object}
       res.body.should.include.keys(

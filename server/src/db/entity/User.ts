@@ -1,10 +1,16 @@
 import 'reflect-metadata';
 
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Show } from './TrackedList';
+import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Show } from './Show';
+import { MovieList } from './MovieList';
+import { ShowList } from './ShowList';
 
 @Entity('users')
 export class User {
+    constructor(name: string) {
+        this.name = name;
+    }
+
     @PrimaryGeneratedColumn()
     id: number;
 
@@ -13,7 +19,9 @@ export class User {
 
     // Going to need a fields (or a new table) that has information about credentials / login
 
-    @ManyToMany(type => Show, show => show.usersWhoTrack)
-    @JoinTable()
-    shows: Show[]
+    @OneToMany(type => MovieList, list => list.user)
+    movieLists: MovieList[]
+
+    @OneToMany(type => ShowList, list => list.user)
+    showLists: ShowList[]
 }
