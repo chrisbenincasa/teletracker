@@ -1,14 +1,19 @@
-import * as chai from "chai";
 import 'mocha';
-import { QueryBuilder, Connection, Repository, AdvancedConsoleLogger } from "typeorm";
-import { User, Show } from "../db/entity";
-import { Db } from "../db/Connection";
-import { MovieList } from "../db/entity/MovieList";
-import { ShowList } from "../db/entity/ShowList";
+
+import * as chai from 'chai';
+import * as random from 'random-js';
+import { Connection, QueryBuilder, Repository } from 'typeorm';
+
+import { Show, User } from '../db/entity';
+import { MovieList } from '../db/entity/MovieList';
+import { ShowList } from '../db/entity/ShowList';
+import { InMemoryDb } from './fixtures/database';
 
 const should = chai.should();
 
 describe('The DB', () => {
+    const r = new random();
+
     let connection: Connection;
 
     let queryBuilder: QueryBuilder<User>;
@@ -17,7 +22,7 @@ describe('The DB', () => {
 
     before(function() {
         this.timeout(10000);
-        return new Db().connect().then(c => {
+        return new InMemoryDb('db.spec').connect().then(c => {
             connection = c;
         });
     });
@@ -42,7 +47,7 @@ describe('The DB', () => {
 
         let show = new Show();
         show.name = 'Halt and Catch Fire';
-        show.externalId = '123';
+        show.externalId = r.string(12);
         let showRet = await connection.getRepository(Show).save(show);
 
         let list = new MovieList();
@@ -73,6 +78,6 @@ describe('The DB', () => {
         chai.assert.lengthOf(userWithTrackedShows.showLists, 1, 'user has 1 show list');
         chai.assert.lengthOf(userWithTrackedShows.showLists[0].shows, 1, 'user show list has 1 tracked show');
 
-        chai.assert.ownInclude(userWithTrackedShows.showLists[0].shows[0], { name: 'Halt and Catch Fire', externalId: '123' }, 'user tracked show has the correct props');
+        chai.assert.ownInclude(userWithTrackedShows.showLists[0].shows[0], { name: show.name, externalId: show.externalId }, 'user tracked show has the correct props');
     });
 });

@@ -1,10 +1,11 @@
 import 'reflect-metadata';
 
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, Index } from 'typeorm';
 import { User } from './User';
 import { ShowList } from './ShowList';
 
 @Entity('shows')
+@Index(['externalSource', 'externalId'], { unique: true })
 export class Show {
     @PrimaryGeneratedColumn()
     id: number;

@@ -1,10 +1,11 @@
 import * as Koa from 'koa';
-let bodyParser = require('koa-body-parser');
+const convert = require('koa-convert');
+const bodyParser = require('koa-body-parser');
 
 export class Middleware {
     static setupMiddleware(app: Koa): void {
         app.use(new ErrorHandlingMiddleware().onRequest).
-            use(bodyParser()).
+            use(convert(bodyParser())).
             use(new LoggingMiddleware().onRequest).
             use(new TimingMiddleware().onRequest);
     }
