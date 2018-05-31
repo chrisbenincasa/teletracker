@@ -29,8 +29,10 @@ export default class Server {
 
         app.listen(this.port);
 
-        console.log(`Starting server with environment ${process.env.NODE_ENV}`);
-        console.log(`Server running on port ${this.port}`);
+        if (process.env.NODE_ENV.toLowerCase() !== 'test') {
+          console.log(`Starting server with environment ${process.env.NODE_ENV}`);
+          console.log(`Server running on port ${this.port}`);
+        }
     }
 
     configure(router: Router, db: Connection): void {
@@ -43,7 +45,9 @@ export default class Server {
         controllers.forEach(controller => controller.setupRoutes());
 
         router.stack.forEach(layer => {
+          if (process.env.NODE_ENV.toLowerCase() !== 'test') {  
             console.log(`Added route ${layer.path}`);
+          }
         });
     }
 }
