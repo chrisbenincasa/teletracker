@@ -31,15 +31,21 @@ class ErrorHandlingMiddleware extends BaseMiddleware {
 
 class LoggingMiddleware extends BaseMiddleware {
     async onRequest(ctx: Koa.Context, next: () => Promise<any>): Promise<void> {
+      if (process.env.NODE_ENV.toLowerCase() !== 'test') {    
         console.log(`requesting url = ${ctx.url}`);
-        await next();
+      }
+      await next();
     }
 }
 
 class TimingMiddleware extends BaseMiddleware {
     async onRequest(ctx: Koa.Context, next: () => Promise<any>): Promise<void> {
+      if (process.env.NODE_ENV.toLowerCase() !== 'test') {   
         console.time('request');
-        await next();
+      }
+      await next();
+      if (process.env.NODE_ENV.toLowerCase() !== 'test') {   
         console.timeEnd('request');
+      }
     }
 }

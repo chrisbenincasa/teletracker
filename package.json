@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "chai-http": "3.0.0"
+  }
+}
