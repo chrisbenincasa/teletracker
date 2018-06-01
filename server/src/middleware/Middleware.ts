@@ -1,6 +1,8 @@
 import * as Koa from 'koa';
+import logger from '../Logger';
 const convert = require('koa-convert');
 const bodyParser = require('koa-body-parser');
+import { performance } from 'perf_hooks';
 
 export class Middleware {
     static setupMiddleware(app: Koa): void {
@@ -32,21 +34,16 @@ class ErrorHandlingMiddleware extends BaseMiddleware {
 
 class LoggingMiddleware extends BaseMiddleware {
     async onRequest(ctx: Koa.Context, next: () => Promise<any>): Promise<void> {
-      if (process.env.NODE_ENV.toLowerCase() !== 'test') {    
-        console.log(`requesting url = ${ctx.url}`);
-      }
-      await next();
+        logger.debug(`Requesting url = ${ctx.url}`);
+        await next();
     }
 }
 
 class TimingMiddleware extends BaseMiddleware {
     async onRequest(ctx: Koa.Context, next: () => Promise<any>): Promise<void> {
-      if (process.env.NODE_ENV.toLowerCase() !== 'test') {   
-        console.time('request');
-      }
-      await next();
-      if (process.env.NODE_ENV.toLowerCase() !== 'test') {   
-        console.timeEnd('request');
-      }
+        const start = performance.now();
+        await next();
+        const end = performance.now();
+        logger.debug(`Request took ${end - start} ms`);
     }
 }

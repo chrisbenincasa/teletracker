@@ -8,14 +8,18 @@ import { Connection } from 'typeorm';
 import { MoviesController } from './api/MoviesController';
 import { TvShowController } from './api/TvShowController';
 import { Server as ServerInstance } from 'net';
+import { Config } from './Config';
+import logger from './Logger';
 
 export default class Server {
+    config: Config
     port: number
     instance: ServerInstance
     db: Database
 
-    constructor(port: number, database: Database = new Db()) {
-        this.port = port;
+    constructor(config: Config, database: Database = new Db(config)) {
+        this.config = config;
+        this.port = config.server.port;
         this.db = database;
     }
 
@@ -33,10 +37,8 @@ export default class Server {
 
         this.instance = app.listen(this.port);
 
-        if (process.env.NODE_ENV.toLowerCase() !== 'test') {
-          console.log(`Starting server with environment ${process.env.NODE_ENV}`);
-          console.log(`Server running on port ${this.port}`);
-        }
+        logger.info(`Starting server with environment ${process.env.NODE_ENV}`);
+        logger.info(`Server running on port ${this.port}`);
     }
 
     configure(router: Router, db: Connection): void {
@@ -49,9 +51,7 @@ export default class Server {
         controllers.forEach(controller => controller.setupRoutes());
 
         router.stack.forEach(layer => {
-          if (process.env.NODE_ENV.toLowerCase() !== 'test') {  
-            console.log(`Added route ${layer.path}`);
-          }
+            logger.debug(`Added route ${layer.path}`);
         });
     }
 }
