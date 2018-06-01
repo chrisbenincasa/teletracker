@@ -73,6 +73,50 @@ describe('Users API', () => {
         res2.body.data.should.include.keys('name', 'id', 'showLists');
     });
 
+    it('should respond with 404 when a user\'s specific list cannot be found', async () => {
+        let user = new User('Gordon');
+        let userRet = await connection.getRepository(User).save(user);
+
+        let response = await chai.request(baseUrl).get(`/api/v1/users/${userRet.id}/lists/shows/1000000`);
+
+        chai.expect(response).to.have.status(404);
+    });
+
+    it('should add a show to a user\'s show list', async () => {
+        let user = new User('Gordon');
+        user = await connection.getRepository(User).save(user);
+
+        // Create a show
+        let show = new Show();
+        show.name = 'Halt and Catch Fire';
+        show.externalId = r.string(12);
+        show = await connection.getRepository(Show).save(show);
+
+        // Create a list
+        let showList = new ShowList();
+        showList.user = user;
+        showList = await connection.getRepository(ShowList).save(showList);
+
+        let response = await chai.
+            request(baseUrl).
+            put(`/api/v1/users/${user.id}/lists/shows/${showList.id}/tracked`).
+            send({ showId: show.id });
+
+        chai.expect(response).to.have.status(200);
+
+        // Now get the lists
+        let userAndList = await chai.request(baseUrl).get(`/api/v1/users/${user.id}/lists/shows/${showList.id}`);
+
+        chai.expect(userAndList.body.data.showLists[0].shows).to.deep.equal([
+            {
+                id: show.id,
+                externalId: show.externalId,
+                name: show.name,
+                externalSource: show.externalSource
+            }
+        ]);
+    });
+
     it('should create a show list for a user', async () => {
         let user = new User('Whatever');
         user = await connection.getRepository(User).save(user);
@@ -95,7 +139,7 @@ describe('Users API', () => {
                 name: user.name,
                 id: user.id,
                 showLists: [
-                    { id: response.body.data.id }
+                    { id: response.body.data.id, shows: [] }
                 ]
             }
         });
