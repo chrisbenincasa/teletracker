@@ -2,12 +2,13 @@ import 'mocha';
 
 import * as chai from 'chai';
 import chaiHttp = require('chai-http');
-import { Connection, getConnection, createConnection } from 'typeorm';
+import * as random from 'random-js';
+import { Connection } from 'typeorm';
 
-import { Show, ShowList, User, MovieList } from '../db/entity';
+import { GlobalConfig } from '../Config';
+import { MovieList, Show, ShowList, User } from '../db/entity';
 import Server from '../Server';
 import { InMemoryDb } from './fixtures/database';
-import * as random from 'random-js';
 
 chai.use(chaiHttp);
 const should = chai.should();
@@ -21,7 +22,7 @@ describe('Users API', () => {
     before(async function () {
         this.timeout(10000);
         let db = new InMemoryDb('users_api');
-        server = new Server(3000, db);
+        server = new Server(GlobalConfig, db);
         await server.main();
         connection = await db.connect();
     });

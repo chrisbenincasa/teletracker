@@ -4,7 +4,7 @@ import * as chai from 'chai';
 import chaiHttp = require('chai-http');
 import { Connection, getConnection } from 'typeorm';
 
-import { Show, ShowList, User, MovieList } from '../db/entity';
+import { GlobalConfig } from '../Config';
 import Server from '../Server';
 import { InMemoryDb } from './fixtures/database';
 
@@ -18,7 +18,7 @@ describe('Movies API', () => {
 
     before(async function() {
         this.timeout(10000);
-        server = new Server(3000, new InMemoryDb('movies.spec'));
+        server = new Server(GlobalConfig, new InMemoryDb('movies.spec'));
         await server.main();
         connection = getConnection();
     });
