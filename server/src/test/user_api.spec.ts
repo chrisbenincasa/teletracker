@@ -72,4 +72,32 @@ describe('Users API', () => {
         res2.body.should.include.keys('data');
         res2.body.data.should.include.keys('name', 'id', 'showLists');
     });
+
+    it('should create a show list for a user', async () => {
+        let user = new User('Whatever');
+        user = await connection.getRepository(User).save(user);
+
+        let response = await chai.
+            request(baseUrl).
+            post(`/api/v1/users/${user.id}/lists`).
+            send({ type: 'show' });
+        
+        chai.expect(response).to.be.json;
+        chai.expect(response.body).to.have.key('data');
+        chai.expect(response.body.data).to.have.key('id');
+
+        // Retrieve the list for the user to assert the association
+        let userList = await chai.request(baseUrl).get(`/api/v1/users/${user.id}/lists/shows/${response.body.data.id}`);
+
+        chai.expect(userList).to.be.json;
+        chai.expect(userList.body).to.deep.equal({
+            data: {
+                name: user.name,
+                id: user.id,
+                showLists: [
+                    { id: response.body.data.id }
+                ]
+            }
+        });
+    });
 });
