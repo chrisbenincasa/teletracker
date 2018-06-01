@@ -3,13 +3,17 @@ import { Connection, Repository } from 'typeorm';
 
 import * as Entity from '../db/entity';
 import { Controller } from './Controller';
+import DbAccess from '../db/DbAccess';
 
 export class UsersController extends Controller {
     private dbConnection: Connection;
     private userRepository: Repository<Entity.User>;
 
+    private dbAccess: DbAccess;
+
     constructor(router: Router, connection: Connection) {
         super(router);
+        this.dbAccess = new DbAccess(connection);
         this.dbConnection = connection; // Hang onto a connection to the DB
         this.userRepository = connection.manager.getRepository(Entity.User);
     }
@@ -24,7 +28,7 @@ export class UsersController extends Controller {
 
         // Retrieve a user
         this.router.get('/users/:id', async (ctx) => {
-            let user = await this.userRepository.findOne(ctx.params.id);
+            let user = await this.dbAccess.getUserById(ctx.params.id);
 
             if (user) {
                 ctx.status = 200;
@@ -36,18 +40,7 @@ export class UsersController extends Controller {
 
         // Retrieve all lists for a user
         this.router.get('/users/:id/lists', async (ctx) => {
-            let userWithTrackedShows = await this.userRepository.findOne({
-                where: {
-                    id: ctx.params.id
-                },
-                join: {
-                    alias: 'user',
-                    leftJoinAndSelect: {
-                        'movieLists': 'user.movieLists',
-                        'showLists': 'user.showLists'
-                    }
-                }
-            });
+            let userWithTrackedShows = await this.dbAccess.getUserById(ctx.params.id, true);
 
             if (userWithTrackedShows) {
                 ctx.status = 200;
@@ -59,7 +52,7 @@ export class UsersController extends Controller {
 
         // Create a list for a user
         this.router.post('/users/:id/lists', async (ctx) => {
-            let user = await this.userRepository.findOne(ctx.params.id);
+            let user = await this.dbAccess.getUserById(ctx.params.id);
 
             if (!user) {
                 ctx.status = 400;
@@ -94,26 +87,26 @@ export class UsersController extends Controller {
 
         // Retrieve a specific show-based list for a user
         this.router.get('/users/:id/lists/shows/:listId', async (ctx) => {
-            let userWithTrackedShowsQuery = this.userRepository.createQueryBuilder('user').
-                leftJoinAndSelect('user.showLists', 'showLists').
-                where('user.id = :userId', { userId: ctx.params.id }).
-                andWhere('showLists.id = :listId', { listId: ctx.params.listId });
+            let userWithTrackedShows = await this.dbAccess.getShowListForUser(ctx.params.id, ctx.params.listId);
 
-            let userWithTrackedShows = await userWithTrackedShowsQuery.getOne();
-            ctx.status = 200;
-            ctx.body = { data: userWithTrackedShows };
+            if (!userWithTrackedShows) {
+                ctx.status = 404;
+            } else {
+                ctx.status = 200;
+                ctx.body = { data: userWithTrackedShows };
+            }
         });
 
         // Retrieve a specific movie-based list for a user
         this.router.get('/users/:id/lists/movies/:listId', async (ctx) => {
-            let userWithTrackedMoviesQuery = this.userRepository.createQueryBuilder('user').
-                leftJoinAndSelect('user.movieLIsts', 'movieLists').
-                where('user.id = :userId', { userId: ctx.params.id }).
-                andWhere('movieLIsts.id = :listId', { listId: ctx.params.listId });
+            let userWithTrackedMovies = await this.dbAccess.getMovieListForUser(ctx.params.id, ctx.params.listId);
 
-            let userWithTrackedMovies = await userWithTrackedMoviesQuery.getOne();
-            ctx.status = 200;
-            ctx.body = { data: userWithTrackedMovies };
+            if (!userWithTrackedMovies) {
+                ctx.status = 404;
+            } else {
+                ctx.status = 200;
+                ctx.body = { data: userWithTrackedMovies };
+            }
         });
 
         this.router.put('/users/:id/tracked/shows', async (ctx) => {
