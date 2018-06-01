@@ -7,21 +7,18 @@ import DbAccess from '../db/DbAccess';
 
 export class UsersController extends Controller {
     private dbConnection: Connection;
-    private userRepository: Repository<Entity.User>;
-
     private dbAccess: DbAccess;
 
     constructor(router: Router, connection: Connection) {
         super(router);
         this.dbAccess = new DbAccess(connection);
         this.dbConnection = connection; // Hang onto a connection to the DB
-        this.userRepository = connection.manager.getRepository(Entity.User);
     }
 
     setupRoutes(): void {
         // Retrieve all users
         this.router.get('/users', async (ctx) => {
-            let users = await this.userRepository.find();
+            let users = await this.dbAccess.getAllUsers();
 
             ctx.body = { data: users };
         });
@@ -109,15 +106,20 @@ export class UsersController extends Controller {
             }
         });
 
-        this.router.put('/users/:id/tracked/shows', async (ctx) => {
-            let user = await this.userRepository.findOne(ctx.params.id);
-
+        // Tracks a show on the given list
+        this.router.put('/users/:id/lists/shows/:listId/tracked', async (ctx) => {
+            let user = await this.dbAccess.getShowListForUser(ctx.params.id, ctx.params.listId);
             if (user) {
-                // await this.dbConnection.getRepository(Entity.Show).insert()
-
-                ctx.status = 200;
+                let req = ctx.request.body;
+                let show = await this.dbAccess.getShowById(req.showId);
+                if (!show) {
+                    ctx.status = 400;
+                } else {
+                    await this.dbAccess.addShowToList(show, user.showLists[0]);
+                    ctx.status = 200;
+                }
             } else {
-                ctx.status = 404;
+                ctx.status = 400;
             }
         });
     }
