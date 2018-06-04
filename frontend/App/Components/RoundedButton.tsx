@@ -10,14 +10,14 @@ import ExamplesRegistry from '../Services/ExamplesRegistry'
 
 // Ignore in coverage report
 /* istanbul ignore next */
-ExamplesRegistry.addComponentExample('Rounded Button', () =>
-  <RoundedButton
-    text='real buttons have curves'
-    onPress={() => window.alert('Rounded Button Pressed!')}
-  />
-)
+// ExamplesRegistry.addComponentExample('Rounded Button', () =>
+//   <RoundedButton
+//     text='real buttons have curves'
+//     onPress={() => window.alert('Rounded Button Pressed!')}
+//   />
+// )
 
-export default class RoundedButton extends Component {
+export default class RoundedButton extends Component<RoundedButtonProps> {
   static propTypes = {
     onPress: PropTypes.func,
     text: PropTypes.string,
@@ -37,4 +37,11 @@ export default class RoundedButton extends Component {
       </TouchableOpacity>
     )
   }
+}
+
+interface RoundedButtonProps {
+  onPress: () => void;
+  text: string;
+  children: string;
+  navigator: any;
 }
