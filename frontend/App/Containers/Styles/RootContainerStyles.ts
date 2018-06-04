@@ -1,7 +1,14 @@
-import {StyleSheet} from 'react-native'
+import {StyleSheet, ViewStyle, ImageStyle, TextStyle} from 'react-native'
 import {Fonts, Metrics, Colors} from '../../Themes/'
 
-export default StyleSheet.create({
+export interface RootContainerStyle {
+  applicationView: ViewStyle,
+  container: ViewStyle,
+  welcome: TextStyle,
+  myImage: ImageStyle
+}
+
+export default StyleSheet.create<RootContainerStyle>({
   applicationView: {
     flex: 1
   },
