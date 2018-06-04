@@ -1,7 +1,12 @@
-import { StyleSheet } from 'react-native'
+import { StyleSheet, ViewStyle, TextStyle } from 'react-native'
 import { Fonts, Colors } from '../../Themes/'
 
-export default StyleSheet.create({
+export interface FullButtonStyle {
+  button: ViewStyle,
+  buttonText: TextStyle
+}
+
+export const FullButtonStyleSheet = StyleSheet.create<FullButtonStyle>({
   button: {
     marginVertical: 5,
     borderTopColor: Colors.fire,
@@ -17,4 +22,4 @@ export default StyleSheet.create({
     fontSize: Fonts.size.medium,
     fontFamily: Fonts.type.bold
   }
-})
+});

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { View, Text } from 'react-native'
 import styles from './Styles/AlertMessageStyles'
 
-export default class AlertMessage extends Component {
+export default class AlertMessage extends Component<AlertMessageProps> {
   static defaultProps = { show: true }
 
   static propTypes = {
@@ -30,4 +30,11 @@ export default class AlertMessage extends Component {
 
     return messageComponent
   }
+}
+
+interface AlertMessageProps {
+  title: string;
+  icon: string;
+  style: any;
+  show: boolean;
 }

@@ -1,13 +1,10 @@
 import { ConnectionOptions } from 'typeorm';
+import * as dotenv from 'dotenv';
+dotenv.config();
+const config = require('config');
 
 export class ConfigLoader {
     static load(): Config {
-        const dotenv = require('dotenv');
-        dotenv.config();
-        const config = require('config');
-
-        console.log(config.util.toObject());
-
         return {
             server: {
                 port: config.get('server.port')  

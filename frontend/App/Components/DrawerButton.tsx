@@ -17,7 +17,7 @@ ExamplesRegistry.addComponentExample('Drawer Button', () =>
   />
 )
 
-class DrawerButton extends Component {
+class DrawerButton extends Component<DrawerButtonProps> {
   static propTypes = {
     text: PropTypes.string,
     onPress: PropTypes.func
@@ -30,6 +30,11 @@ class DrawerButton extends Component {
       </TouchableOpacity>
     )
   }
+}
+
+interface DrawerButtonProps {
+  text: string;
+  onPress: () => void
 }
 
 export default DrawerButton
