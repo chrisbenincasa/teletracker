@@ -3,6 +3,7 @@ import React from 'react'
 import FullButton from '../../App/Components/FullButton'
 import { shallow } from 'enzyme'
 import renderer from 'react-test-renderer'
+import { FullButtonStyleSheet } from '../../App/Components/Styles/FullButtonStyles';
 
 test('FullButton component renders correctly', () => {
   const tree = renderer.create(<FullButton onPress={() => {}} 
