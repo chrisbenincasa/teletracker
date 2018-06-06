@@ -111,7 +111,7 @@ class ItemList extends React.PureComponent {
 
   // Show this when data is empty
   renderEmpty = () =>
-    <Text style={styles.label}> You haven't added anything to your list yet! </Text>;
+    <Text style={styles.label}> You haven\'t added anything to your list yet! </Text>;
 
 
   // The default function if no Key is provided is index
