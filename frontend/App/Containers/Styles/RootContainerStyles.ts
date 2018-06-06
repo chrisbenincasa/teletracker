@@ -1,12 +1,12 @@
-import {StyleSheet, ViewStyle, ImageStyle, TextStyle} from 'react-native'
-import {Fonts, Metrics, Colors} from '../../Themes/'
+import {StyleSheet, ViewStyle, ImageStyle, TextStyle} from 'react-native';
+import {Fonts, Metrics, Colors} from '../../Themes/';
 
 export interface RootContainerStyle {
   applicationView: ViewStyle,
   container: ViewStyle,
   welcome: TextStyle,
   myImage: ImageStyle
-}
+};
 
 export default StyleSheet.create<RootContainerStyle>({
   applicationView: {
@@ -28,4 +28,4 @@ export default StyleSheet.create<RootContainerStyle>({
     height: 200,
     alignSelf: 'center'
   }
-})
+});
