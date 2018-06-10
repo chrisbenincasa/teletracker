@@ -8,6 +8,9 @@ import { Show, User } from '../db/entity';
 import { MovieList } from '../db/entity/MovieList';
 import { ShowList } from '../db/entity/ShowList';
 import { InMemoryDb } from './fixtures/database';
+import * as uuid from 'uuid/v4';
+import DbAccess from '../db/DbAccess';
+
 
 const should = chai.should();
 
@@ -20,10 +23,13 @@ describe('The DB', () => {
     let userRepository: Repository<User>;
     let movieListRepository: Repository<MovieList>;
 
+    let dbAccess: DbAccess;
+
     before(function() {
         this.timeout(10000);
         return new InMemoryDb('db.spec').connect().then(c => {
             connection = c;
+            dbAccess = new DbAccess(connection);
         });
     });
 
@@ -34,16 +40,14 @@ describe('The DB', () => {
     });
 
     it('should insert and retrieve a user', async () => {
-        let user = new User('Christian');
-        await userRepository.save(user);
+        let user = await generateUser();
 
-        let foundUser = await queryBuilder.select().where('user.name = :name', { name: 'Christian' }).getOne();
+        let foundUser = await queryBuilder.select().where('user.name = :name', { name: 'Gordon' }).getOne();
         chai.assert.exists(foundUser, 'foundUser exists');
     });
 
     it('should create a movie list for a user', async () => {
-        let user = new User('TestList');
-        let userRet = await userRepository.save(user);
+        let user = await generateUser();
 
         let show = new Show();
         show.name = 'Halt and Catch Fire';
@@ -61,7 +65,7 @@ describe('The DB', () => {
 
         let userWithTrackedShows = await userRepository.findOne({
             where: {
-                id: userRet.id
+                id: user.id
             },
             join: {
                 alias: 'user',
@@ -80,4 +84,13 @@ describe('The DB', () => {
 
         chai.assert.ownInclude(userWithTrackedShows.showLists[0].shows[0], { name: show.name, externalId: show.externalId }, 'user tracked show has the correct props');
     });
+
+    async function generateUser(): Promise<User> {
+        let user = new User('Gordon');
+        user.username = uuid();
+        user.email = uuid();
+        user.password = '12345';
+
+        return dbAccess.addUser(user);
+    }
 });

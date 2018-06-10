@@ -24,6 +24,14 @@ export class ConfigLoader {
                 entities: config.get('db.entities'),
                 migrations: config.get('db.migrations'),
                 subscribers: config.get('db.subscribers')
+            },
+            auth: {
+                jwt: {
+                    issuer: config.get('auth.jwt.issuer'),
+                    audience: config.get('auth.jwt.audience'),
+                    expiration: config.has('auth.jwt.expiration') ? config.get('auth.jwt.expiration') : null,
+                    secret: config.get('auth.jwt.secret')
+                }
             }
         };
     }
@@ -35,6 +43,7 @@ export interface Config {
     server: ServerConfig;
     logging: LoggingConfig;
     db: ConnectionOptions;
+    auth: AuthConfig;
 }
 
 export interface LoggingConfig {
@@ -43,4 +52,15 @@ export interface LoggingConfig {
 
 export interface ServerConfig {
     port: number
+}
+
+export interface JwtConfig {
+    issuer: string,
+    audience: string,
+    expiration?: string | number,
+    secret: string
+}
+
+export interface AuthConfig {
+    jwt: JwtConfig
 }

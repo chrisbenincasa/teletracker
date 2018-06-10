@@ -1,4 +1,4 @@
-import { GlobalConfig as Config } from './ConfigLoader';
+import { GlobalConfig as Config } from './Config';
 import Server from "./Server";
 
 const port = parseInt(process.env.PORT) || 3000;
