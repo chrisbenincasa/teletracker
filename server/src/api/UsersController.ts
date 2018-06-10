@@ -1,9 +1,12 @@
 import * as Router from 'koa-router';
-import { Connection, Repository } from 'typeorm';
+import * as R from 'ramda';
+import { Connection } from 'typeorm';
 
-import * as Entity from '../db/entity';
-import { Controller } from './Controller';
 import DbAccess from '../db/DbAccess';
+import * as Entity from '../db/entity';
+import AuthMiddleware from '../middleware/AuthMiddleware';
+import JwtVendor from '../util/JwtVendor';
+import { Controller } from './Controller';
 
 export class UsersController extends Controller {
     private dbConnection: Connection;
@@ -23,20 +26,29 @@ export class UsersController extends Controller {
             ctx.body = { data: users };
         });
 
+        this.router.post('/users', async ctx => {
+            return this.dbAccess.addUser(ctx.request.body).then(async user => {
+                await ctx.login(user);
+                let token = JwtVendor.vend(user.email);
+                ctx.status = 201;
+                ctx.body = { data: { token } };
+            });
+        });
+
         // Retrieve a user
-        this.router.get('/users/:id', async (ctx) => {
+        this.router.get('/users/:id', AuthMiddleware.protectRouteForId(), async (ctx) => {
             let user = await this.dbAccess.getUserById(ctx.params.id);
 
             if (user) {
                 ctx.status = 200;
-                ctx.body = { data: user };
+                ctx.body = { data: R.omit(['password'], user) };
             } else {
                 ctx.status = 404;
             }
         });
 
         // Retrieve all lists for a user
-        this.router.get('/users/:id/lists', async (ctx) => {
+        this.router.get('/users/:id/lists', AuthMiddleware.protectRouteForId(), async (ctx) => {
             let userWithTrackedShows = await this.dbAccess.getUserById(ctx.params.id, true);
 
             if (userWithTrackedShows) {
@@ -48,7 +60,7 @@ export class UsersController extends Controller {
         });
 
         // Create a list for a user
-        this.router.post('/users/:id/lists', async (ctx) => {
+        this.router.post('/users/:id/lists', AuthMiddleware.protectRouteForId(), async (ctx) => {
             let user = await this.dbAccess.getUserById(ctx.params.id);
 
             if (!user) {
@@ -83,7 +95,7 @@ export class UsersController extends Controller {
         });
 
         // Retrieve a specific show-based list for a user
-        this.router.get('/users/:id/lists/shows/:listId', async (ctx) => {
+        this.router.get('/users/:id/lists/shows/:listId', AuthMiddleware.protectRouteForId(), async (ctx) => {
             let userWithTrackedShows = await this.dbAccess.getShowListForUser(ctx.params.id, ctx.params.listId);
 
             if (!userWithTrackedShows) {
@@ -95,7 +107,7 @@ export class UsersController extends Controller {
         });
 
         // Retrieve a specific movie-based list for a user
-        this.router.get('/users/:id/lists/movies/:listId', async (ctx) => {
+        this.router.get('/users/:id/lists/movies/:listId', AuthMiddleware.protectRouteForId(), async (ctx) => {
             let userWithTrackedMovies = await this.dbAccess.getMovieListForUser(ctx.params.id, ctx.params.listId);
 
             if (!userWithTrackedMovies) {
@@ -107,7 +119,7 @@ export class UsersController extends Controller {
         });
 
         // Tracks a show on the given list
-        this.router.put('/users/:id/lists/shows/:listId/tracked', async (ctx) => {
+        this.router.put('/users/:id/lists/shows/:listId/tracked', AuthMiddleware.protectRouteForId(), async (ctx) => {
             let user = await this.dbAccess.getShowListForUser(ctx.params.id, ctx.params.listId);
             if (user) {
                 let req = ctx.request.body;
