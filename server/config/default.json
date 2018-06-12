@@ -19,5 +19,12 @@
         "subscribers": [
             "src/db/subscriber/**/*.ts"
         ]
+    },
+    "auth": {
+        "jwt": {
+            "issuer": "teletracker.app",
+            "audience": "teletracker.app",
+            "expiration": "2w"
+        }
     }
 }
