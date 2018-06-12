@@ -10,6 +10,7 @@ import { TvShowController } from './api/TvShowController';
 import { Server as ServerInstance } from 'net';
 import { Config } from './Config';
 import logger from './Logger';
+import { AuthController } from './api/AuthController';
 
 export default class Server {
     config: Config
@@ -29,7 +30,7 @@ export default class Server {
 
         const db = await this.db.connect();
 
-        Middleware.setupMiddleware(app);
+        Middleware.setupMiddleware(app, db);
 
         this.configure(router, db);
 
@@ -44,6 +45,7 @@ export default class Server {
     configure(router: Router, db: Connection): void {
         const controllers = [
             new UsersController(router, db),
+            new AuthController(router),
             new MoviesController(router, db),
             new TvShowController(router, db)
         ];
@@ -51,7 +53,7 @@ export default class Server {
         controllers.forEach(controller => controller.setupRoutes());
 
         router.stack.forEach(layer => {
-            logger.debug(`Added route ${layer.path}`);
+            logger.debug(`Added route ${layer.methods} ${layer.path}`);
         });
     }
 }
