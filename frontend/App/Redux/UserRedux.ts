@@ -1,0 +1,63 @@
+import { AnyAction } from 'redux';
+import { createActions, createReducer } from 'reduxsauce';
+import Immutable from 'seamless-immutable';
+
+import { User } from '../Model';
+
+/* ------------- Types and Action Creators ------------- */
+
+const { Types, Creators } = createActions({
+    userRequest: ['userId'],
+    userSuccess: ['user'],
+    userFailure: null
+})
+
+export const UserTypes = Types
+export default Creators
+
+/* ------------- Initial State ------------- */
+
+export interface UserState extends Partial<User> {
+    fetching: boolean,
+    userId: string | number,
+    error: boolean
+}
+
+export const INITIAL_STATE = Immutable<UserState>({
+    fetching: null,
+    userId: null,
+    error: null
+})
+
+type State = Immutable.ImmutableObject<UserState>
+
+export const reducers = {
+    request: (state: State, { userId }: AnyAction) => 
+        state.merge({ fetching: true, userId }),
+
+    success: (state: State, action: AnyAction) =>
+        state.merge({ fetching: false, error: null, ...action.user.data }),
+
+    failure: (state: State) =>
+        state.merge({ fetching: false, error: true })
+}
+
+// export const request = (state: State, { userId }: AnyAction) => state.merge({ fetching: true, userId })
+
+// // export const login = (state: State, { userEmail, password }: AnyAction) =>
+
+// export const success = (state: State, action: AnyAction) => 
+//     state.merge({ fetching: false, error: null, ...action.user.data });
+
+
+// // failed to get the avatar
+// export const failure = (state: State) =>
+//     state.merge({ fetching: false, error: true })
+
+/* ------------- Hookup Reducers To Types ------------- */
+
+export const reducer = createReducer<State>(INITIAL_STATE, {
+    [Types.USER_REQUEST]: reducers.request,
+    [Types.USER_SUCCESS]: reducers.success,
+    [Types.USER_FAILURE]: reducers.failure
+})
