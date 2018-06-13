@@ -23,7 +23,7 @@ class ItemList extends React.PureComponent  {
         key: 'Movies',
         data: [
           {title: 'The Fate of the Furious', platform: 'iTunes'},
-          {title: 'Patti Cake$', platform: 'HBO'}
+          {title: 'Patti Cake$$$$$', platform: 'HBO'}
         ]
       }, {
         key: 'TV',
@@ -152,6 +152,7 @@ class ItemList extends React.PureComponent  {
           * https://github.com/agiletechvn/react-native-search-box
           */
         />
+        <Text style={{color: 'white'}}>{this.props.user && this.props.user.name ? this.props.user.name : 'Fetching...'}</Text>
         <SectionList
           renderSectionHeader={this.renderSectionHeader}
           sections={this.state.data}
@@ -170,7 +171,7 @@ class ItemList extends React.PureComponent  {
 
 const mapStateToProps = (state) => {
   return {
-    // ...redux state to props here
+    user: state.user
   }
 };
 
