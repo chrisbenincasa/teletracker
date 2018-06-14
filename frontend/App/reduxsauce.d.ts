@@ -1,5 +1,5 @@
 declare module 'reduxsauce' {
-    import { AnyAction, ReducersMapObject } from 'redux';
+    import { AnyAction, Reducer } from 'redux';
 
     export interface Actions {
         [action: string]: string[] | null;
@@ -13,8 +13,8 @@ declare module 'reduxsauce' {
         [action: string]: (...args: any[]) => AnyAction;
     }
 
-    export interface Handlers {
-        [action: string]: (state: object, action: object) => object;
+    export interface Handlers<S> {
+        [type: string]: (state: S, action: AnyAction) => S;
     }
 
     /**
@@ -26,12 +26,13 @@ declare module 'reduxsauce' {
         prefix: string;
     }
 
-    interface CreatedActions {
-        Types: ActionTypes;
-        Creators: ActionCreators;
+    interface CreatedActions<T, U> {
+        Types: U;
+        Creators: T;
     }
 
-    export function createReducer(initialState: object, handlers: Handlers): ReducersMapObject;
+    export function createReducer<S>(initialState: S, handlers: Handlers<S>): Reducer<S>;
     export function createTypes(types: string, options?: Options): ActionTypes;
-    export function createActions(actions: Actions, options?: Options): CreatedActions;
+    export function createActions<T, U>(actions: Actions, options?: Options): CreatedActions<T, U>;
+    export function createActions(actions: Actions, options?: Options): CreatedActions<ActionCreators, ActionTypes>;
 }
