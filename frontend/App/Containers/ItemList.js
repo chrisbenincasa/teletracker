@@ -157,7 +157,7 @@ class ItemList extends React.PureComponent  {
           sections={this.state.data}
           contentContainerStyle={styles.listContent}
           data={this.state.dataObjects}
-          renderItem={this.renderItem}
+          renderItem={this.renderItem.bind(this)}
           keyExtractor={this.keyExtractor}
           initialNumToRender={this.oneScreensWorth}
           ListHeaderComponent={this.renderHeader}
