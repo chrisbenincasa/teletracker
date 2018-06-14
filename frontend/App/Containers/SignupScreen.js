@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { ScrollView, Text, TextInput, View, KeyboardAvoidingView } from 'react-native';
 import { connect } from 'react-redux';
-import FullButton from '../Components/FullButton';
+import { Card, Button, FormLabel, FormInput } from "react-native-elements";
 
 // Styles
 import styles from './Styles/SignupScreenStyle';
@@ -10,48 +10,28 @@ class SignupScreen extends Component {
   render () {
     return (
       <ScrollView style={styles.container}>
-        <Text 
-            style={{fontSize: 27, textAlign: 'center'}}>
-            Sign Up
-        </Text>
-        <TextInput placeholder='Username' style={{
-            fontSize: 27, 
-            flex: 1,
-            borderColor: '#000', 
-            borderStyle: 'solid', 
-            borderWidth: 1, 
-            padding: 10, 
-            margin: 5
-        }}/>
-        <TextInput placeholder='Password' style={{
-            fontSize: 27, 
-            flex: 1,
-            borderColor: '#000', 
-            borderStyle: 'solid', 
-            borderWidth: 1, 
-            padding: 10, 
-            margin: 5
-        }}/>
-        <TextInput placeholder='Email' style={{
-            fontSize: 27, 
-            flex: 1,
-            borderColor: '#000', 
-            borderStyle: 'solid', 
-            borderWidth: 1, 
-            padding: 10, 
-            margin: 5
-        }}/>
-        <View style={{margin:7}} />
-        <FullButton 
-            text='Sign Up' 
-            style={{backgroundColor: 'red'}} 
+        <Card>
+          <FormLabel>Email</FormLabel>
+          <FormInput placeholder="Email address..." />
+          <FormLabel>Password</FormLabel>
+          <FormInput secureTextEntry placeholder="Password..." />
+          <FormLabel>Confirm Password</FormLabel>
+          <FormInput secureTextEntry placeholder="Confirm Password..." />
+
+          <Button
+            buttonStyle={{ marginTop: 20 }}
+            backgroundColor="#03A9F4"
+            title="Sign Up"
             onPress={() => this.props.navigation.navigate('ItemList')} 
-        />
-        <FullButton 
-            onPress={this.props.onLoginPress}
-            text="Login"
+          />
+          <Button
+            buttonStyle={{ marginTop: 20 }}
+            backgroundColor="transparent"
+            textStyle={{ color: "#bcbec1" }}
+            title="Login"
             onPress={() => this.props.navigation.navigate('LoginScreen')} 
-        />
+          />
+        </Card>
       </ScrollView>
     )
   }

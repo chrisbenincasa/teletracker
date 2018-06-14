@@ -22,7 +22,10 @@ const PrimaryNav = StackNavigator({
   headerMode: 'none',
   initialRouteName: 'LoginScreen',
   navigationOptions: {
-    headerStyle: styles.header
+    headerStyle: styles.header,
+    gestureResponseDistance: {
+      horizontal: 100 //default 25
+    }
   }
 });
 
