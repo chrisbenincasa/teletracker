@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, SectionList, Text, TouchableHightLight } from 'react-native';
+import { View, SectionList, Text, TouchableHighlight } from 'react-native';
 import { connect } from 'react-redux';
 import Swipeout from 'react-native-swipeout';
 import Icon from 'react-native-vector-icons/dist/FontAwesome';
@@ -10,7 +10,8 @@ import Search from 'react-native-search-box';
 // Styles
 import styles from './Styles/ItemListStyle';
 
-class ItemList extends React.PureComponent {
+class ItemList extends React.PureComponent  {
+
   /* ***********************************************************
   * STEP 1
   * This is an array of objects with the properties you desire
@@ -33,6 +34,7 @@ class ItemList extends React.PureComponent {
       }
     ]
   };
+
 
   /* ***********************************************************
   * STEP 3
@@ -59,10 +61,14 @@ class ItemList extends React.PureComponent {
     return (
       <Swipeout right={swipeoutBtns} 
         autoClose={true} backgroundColor= 'transparent'>
-      <View style={styles.row}>
-        <Text style={styles.boldLabel}>{item.title}</Text>
-        <Text style={styles.label}>{item.platform}</Text>
-      </View>
+        <TouchableHighlight
+          onPress={() => this.props.navigation.navigate('ItemDetailScreen')} 
+        >
+        <View style={styles.row} >
+          <Text style={styles.boldLabel}>{item.title}</Text>
+          <Text style={styles.label}>{item.platform}</Text>
+        </View>
+      </TouchableHighlight>
       </Swipeout>
     )
   }
@@ -111,7 +117,7 @@ class ItemList extends React.PureComponent {
 
   // Show this when data is empty
   renderEmpty = () =>
-    <Text style={styles.label}> You haven\'t added anything to your list yet! </Text>;
+    <Text style={styles.label}> Empty list, yo! </Text>;
 
 
   // The default function if no Key is provided is index
@@ -160,17 +166,17 @@ class ItemList extends React.PureComponent {
       </View>
     )
   }
-}
+};
 
 const mapStateToProps = (state) => {
   return {
     // ...redux state to props here
   }
-}
+};
 
 const mapDispatchToProps = (dispatch) => {
   return {
   }
-}
+};
 
-export default connect(mapStateToProps, mapDispatchToProps)(ItemList)
+export default connect(mapStateToProps, mapDispatchToProps)(ItemList);

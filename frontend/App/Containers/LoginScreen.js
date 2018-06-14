@@ -6,11 +6,8 @@ import {
   View,
   Button
 } from 'react-native';
-import DevscreensButton from '../../ignite/DevScreens/DevscreensButton.js';
-
+import FullButton from '../Components/FullButton';
 import { connect } from 'react-redux';
-// Add Actions - replace 'Your' with whatever your reducer is called :)
-// import YourActions from '../Redux/YourRedux'
 
 // Styles
 import styles from './Styles/LoginScreenStyle';
@@ -19,19 +16,40 @@ class LoginScreen extends Component {
   render () {
     return (
       <ScrollView style={{padding: 20}}>
-          <Text 
-              style={{fontSize: 27}}>
-              Login
-          </Text>
-          <TextInput placeholder='Username' />
-          <TextInput placeholder='Password' />
-          <View style={{margin:7}} />
-          <Button 
-                  onPress={this.props.onLoginPress}
-                  title="Submit"
-              />
-              <DevscreensButton />
-          </ScrollView>
+        <Text 
+            style={{fontSize: 27, textAlign: 'center'}}>
+            Login
+        </Text>
+        <TextInput placeholder='Username' style={{
+            fontSize: 27, 
+            flex: 1,
+            borderColor: '#000', 
+            borderStyle: 'solid', 
+            borderWidth: 1, 
+            padding: 10, 
+            margin: 5
+        }}/>
+        <TextInput placeholder='Password' style={{
+            fontSize: 27, 
+            flex: 1,
+            borderColor: '#000', 
+            borderStyle: 'solid', 
+            borderWidth: 1, 
+            padding: 10, 
+            margin: 5
+        }}/>
+        <View style={{margin:7}} />
+        <FullButton 
+            onPress={this.props.onLoginPress}
+            text="Login"
+            onPress={() => this.props.navigation.navigate('ItemList')} 
+        />
+        <FullButton 
+            text='Sign Up' 
+            style={{backgroundColor: 'red'}} 
+            onPress={() => this.props.navigation.navigate('SignupScreen')} 
+          />
+      </ScrollView>
       )
   }
 }
