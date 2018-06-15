@@ -1,8 +1,8 @@
 import { StackNavigator } from 'react-navigation';
-import SettingsScreen from '../Containers/SettingsScreen'
-import ItemDetailScreen from '../Containers/ItemDetailScreen'
-import SignupScreen from '../Containers/SignupScreen'
-import LoginScreen from '../Containers/LoginScreen'
+import SettingsScreen from '../Containers/SettingsScreen';
+import ItemDetailScreen from '../Containers/ItemDetailScreen';
+import SignupScreen from '../Containers/SignupScreen';
+import LoginScreen from '../Containers/LoginScreen';
 import ItemList from '../Containers/ItemList';
 import LaunchScreen from '../Containers/LaunchScreen';
 
