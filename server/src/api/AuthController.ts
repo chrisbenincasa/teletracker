@@ -11,7 +11,7 @@ export class AuthController extends Controller {
     }
 
     setupRoutes(): void {
-        this.router.post('/auth/login', async ctx => {
+        this.router.post('/auth/login', async (ctx, next) => {
             return passport.authenticate('local', { session: false }, async (_, user) => {
                 if (user) {
                     await ctx.login(user);
@@ -22,7 +22,7 @@ export class AuthController extends Controller {
                     ctx.status = 400;
                     ctx.body = { error: 'Bad' };
                 }
-            })(ctx);
+            })(ctx, next);
         });
 
         // A route that can only be accessed while authenticated

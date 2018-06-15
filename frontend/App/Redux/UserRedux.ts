@@ -13,7 +13,10 @@ const { Types, Creators } = createActions({
     userSelfRequest: null,
     userRequest: ['userId'],
     userSuccess: ['user'],
-    userFailure: null
+    userFailure: null,
+    loginRequest: [ 'componentId', 'email', 'password'],
+    loginSuccess: ['token'],
+    loginFailure: null
 })
 
 export const UserTypes = Types
@@ -26,7 +29,13 @@ export interface UserState extends Partial<User> {
     userId: string | number,
     token?: string,
     error: boolean,
-    signup: SignupState
+    signup: SignupState,
+    login: LoginState
+}
+
+export interface LoginState {
+    fetching?: boolean,
+    error?: boolean
 }
 
 export interface SignupState {
@@ -42,7 +51,8 @@ export const INITIAL_STATE = Immutable<UserState>({
     signup: {
         fetching: null,
         error: null
-    }
+    },
+    login: {}
 })
 
 type State = Immutable.ImmutableObject<UserState>
@@ -67,22 +77,21 @@ export const reducers = {
         state.merge({ signup: { fetching: false, error: false, success: true }}, token),
 
     signupFailure: (state: State) =>
-        state.merge({ signup: { fetching: false, error: true, success: false }})
+        state.merge({ signup: { fetching: false, error: true, success: false }}),
+
+    login: (state: State) =>
+        state.merge({ login: { fetching: true } }),
+
+    loginSuccess: (state: State, { token }: AnyAction) => {
+        let s = state.merge({ login: { fetching: false, error: false }, token });
+        console.log(s);
+        return s;
+    },
+        
+    
+    loginFailure: (state: State) =>
+        state.merge({ login: { fetching: false, error: true } }),
 }
-
-// export const request = (state: State, { userId }: AnyAction) => state.merge({ fetching: true, userId })
-
-// // export const login = (state: State, { userEmail, password }: AnyAction) =>
-
-// export const success = (state: State, action: AnyAction) => 
-//     state.merge({ fetching: false, error: null, ...action.user.data });
-
-
-// // failed to get the avatar
-// export const failure = (state: State) =>
-//     state.merge({ fetching: false, error: true })
-
-/* ------------- Hookup Reducers To Types ------------- */
 
 export const reducer = createReducer<State>(INITIAL_STATE, {
     [Types.USER_REQUEST]: reducers.request,
@@ -91,5 +100,8 @@ export const reducer = createReducer<State>(INITIAL_STATE, {
     [Types.USER_FAILURE]: reducers.failure,
     [Types.USER_SIGNUP_REQUEST]: reducers.signupRequest,
     [Types.USER_SIGNUP_SUCCESS]: reducers.signupSuccess,
-    [Types.USER_SIGNUP_FAILURE]: reducers.signupFailure
+    [Types.USER_SIGNUP_FAILURE]: reducers.signupFailure,
+    [Types.LOGIN_REQUEST]: reducers.login,
+    [Types.LOGIN_SUCCESS]: reducers.loginSuccess,
+    [Types.LOGIN_FAILURE]: reducers.loginFailure
 })

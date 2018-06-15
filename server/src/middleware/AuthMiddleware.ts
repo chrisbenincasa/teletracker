@@ -58,7 +58,9 @@ export default class AuthMiddleware {
             }
         });
 
-        passport.use(new LocalStrategy({}, async (userEmail, password, done) => {
+        passport.use(new LocalStrategy({
+            usernameField: 'email'
+        }, async (userEmail, password, done) => {
             findUser(userEmail, done, password);
         }));
 

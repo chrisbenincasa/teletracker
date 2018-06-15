@@ -5,21 +5,29 @@ import ReduxPersist from '../Config/ReduxPersist';
 import rootSaga from '../Sagas/';
 import configureStore from './CreateStore';
 import { State } from './State';
+import Rehydration from '../Services/Rehydration';
 import { reducer as UserReducer } from './UserRedux';
 
 export const reducers = combineReducers<State>({
   user: UserReducer
 })
 
-export default (): Store<{}> => {
-  let finalReducers = reducers
+export default (): { store: Store<{}>, persistor: any } => {
+  let finalReducers = reducers;
+
   // If rehydration is on use persistReducer otherwise default combineReducers
   if (ReduxPersist.active) {
-    const persistConfig = ReduxPersist.storeConfig
-    finalReducers = persistReducer(persistConfig, reducers)
+    finalReducers = ReduxPersist.createPersistor(finalReducers)
   }
 
-  let { store, sagasManager, sagaMiddleware } = configureStore(finalReducers, rootSaga)
+  let { store, sagasManager, sagaMiddleware } = configureStore(finalReducers, rootSaga);
+
+  let persistor = ReduxPersist.persistStore(store);
+
+  // configure persistStore and check reducer version number
+  if (ReduxPersist.active) {
+    Rehydration.updateReducers(store)
+  }
 
   if (module.hot) {
     module.hot.accept(() => {
@@ -34,5 +42,5 @@ export default (): Store<{}> => {
     })
   }
 
-  return store
+  return { store, persistor };
 }

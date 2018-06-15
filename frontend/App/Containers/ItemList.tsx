@@ -24,7 +24,7 @@ class ItemList extends React.PureComponent  {
         key: 'Movies',
         data: [
           {title: 'The Fate of the Furious', platform: 'iTunes'},
-          {title: 'Patti Cake$$$$$', platform: 'HBO'}
+          {title: 'Patti Cake$', platform: 'HBO'}
         ]
       }, {
         key: 'TV',

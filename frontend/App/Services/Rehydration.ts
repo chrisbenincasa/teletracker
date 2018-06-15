@@ -5,11 +5,11 @@ import StartupActions from '../Redux/StartupRedux'
 import DebugConfig from '../Config/DebugConfig'
 
 const updateReducers = (store: any) => {
-  const reducerVersion = ReduxPersist.reducerVersion
+  const reducerVersion = '1.0'
   const startup = () => store.dispatch(StartupActions.startup())
 
   // Check to ensure latest reducer version
-  AsyncStorage.getItem('reducerVersion').then((localVersion) => {
+  return AsyncStorage.getItem('reducerVersion').then((localVersion) => {
     if (localVersion !== reducerVersion) {
       if (DebugConfig.useReactotron) {
         console.tron.display({
@@ -28,8 +28,8 @@ const updateReducers = (store: any) => {
     } else {
       persistStore(store, null, startup)
     }
-  }).catch(() => {
-    persistStore(store, null, startup)
+  }).catch(async () => {
+    persistStore(store, null, startup).persist()
     AsyncStorage.setItem('reducerVersion', reducerVersion)
   })
 }
