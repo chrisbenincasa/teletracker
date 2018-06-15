@@ -1,26 +1,33 @@
-// import { StackNavigator, SwitchNavigator } from 'react-navigation';
-// import { Navigation } from 'react-native-navigation/lib/dist';
 import * as React from 'react';
-import { Provider } from 'react-redux';
-import SettingsScreen from '../Containers/SettingsScreen'
-import ItemDetailScreen from '../Containers/ItemDetailScreen'
-import SignupScreen from '../Containers/SignupScreen'
-import LoginScreen from '../Containers/LoginScreen'
-import ItemList from '../Containers/ItemList';
-import LaunchScreen from '../Containers/LaunchScreen';
-
-import styles from './Styles/NavigationStyles';
-
 import { Navigation } from 'react-native-navigation';
-import App from '../Containers/App';
+import { Provider } from 'react-redux';
+import { Store } from 'redux';
 
-function sceneCreator(Scene, store) {
+import LoginScreen from '../Containers/LoginScreen';
+import SignupScreen from '../Containers/SignupScreen';
+import ItemList from '../Containers/ItemList';
+
+function sceneCreator(Scene: React.Component, store: Store<{}>) {
   return () => {
     return class Wrapper extends React.Component {
-      constructor(props) {
-        super(props)
-        console.log(props);
+      resendEvent(eventName: string, params?: any): void {
+        if (this.instance && this.instance[eventName]) {
+          this.instance[eventName](params);
+        }
       }
+
+      componentDidAppear(): void {
+        this.resendEvent('componentDidAppear');
+      }
+
+      componentDidDisappear(): void {
+        this.resendEvent('componentDidDisappear');
+      }
+
+      onNavigationButtonPressed(buttonId: any): void {
+        this.resendEvent('onNavigationButtonPressed', buttonId);
+      }
+
       render() {
         return (
             <Provider store={store}><Scene ref="child" {...this.props}/></Provider>
@@ -30,9 +37,11 @@ function sceneCreator(Scene, store) {
   }
 }
 
-export default function startNav(store) {
+export default function startNav(store: Store<{}>) {
   Navigation.registerComponent('navigation.main.LoginScreen', sceneCreator(LoginScreen, store));
   Navigation.registerComponent('navigation.main.SignupScreen', sceneCreator(SignupScreen, store));
+
+  Navigation.registerComponent('navigation.main.ListView', sceneCreator(ItemList, store));
   
   Navigation.events().registerAppLaunchedListener(() => {
     Navigation.setRoot({
@@ -56,37 +65,3 @@ export default function startNav(store) {
     })
   })
 }
-
-
-// // Manifest of possible screens
-// const AppStack = StackNavigator({
-//   SettingsScreen: { screen: SettingsScreen },
-//   ItemDetailScreen: { screen: ItemDetailScreen },
-//   ItemList: { screen: ItemList },
-// }, {
-//     navigationOptions: {
-//       headerStyle: styles.header
-//     }
-// });
-
-// const AuthStack = StackNavigator({
-//   SignupScreen: { screen: SignupScreen },
-//   LoginScreen: { screen: LoginScreen },
-// }, {
-//   headerMode: 'none',
-//   navigationOptions: {
-//     headerStyle: styles.header
-//   }
-// });
-
-// const Main = SwitchNavigator({
-//   LoginScreen: { screen: LoginScreen },
-//   App: AppStack,
-//   Auth: AuthStack
-// }, {
-//     // Default config for all screens
-//     initialRouteName: 'LoginScreen'
-//   });
-
-
-// export default Main;
