@@ -27,6 +27,14 @@ class SignupScreen extends Component<Props, State> {
     this.state = { username: 'Christian', password: 'password', email: 'test@test.com' };
   }
 
+  static get options() {
+    return {
+      topBar: {
+        visible: false
+      }
+    };
+  }
+
   render() {
     return (
       <ScrollView style={styles.container}>
