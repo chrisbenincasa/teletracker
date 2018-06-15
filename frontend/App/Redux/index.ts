@@ -26,7 +26,7 @@ export default (): { store: Store<{}>, persistor: any } => {
 
   // configure persistStore and check reducer version number
   if (ReduxPersist.active) {
-    Rehydration.updateReducers(store)
+    Rehydration.updateReducers(store, persistor)
   }
 
   if (module.hot) {

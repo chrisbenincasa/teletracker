@@ -54,7 +54,7 @@ export default function startNav(store: Store<State>, persistor: Persistor) {
 
   Navigation.events().registerAppLaunchedListener(() => {
     Navigation.setDefaultOptions({
-      _animations: {
+      animations: {
         startApp: {
           y: {
             from: 1000,
