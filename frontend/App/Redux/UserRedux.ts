@@ -7,9 +7,10 @@ import { User } from '../Model';
 /* ------------- Types and Action Creators ------------- */
 
 const { Types, Creators } = createActions({
-    userSignupRequest: ['username', 'userEmail', 'password'],
+    userSignupRequest: ['componentId', 'username', 'userEmail', 'password'],
     userSignupSuccess: null,
     userSignupFailure: null,
+    userSelfRequest: null,
     userRequest: ['userId'],
     userSuccess: ['user'],
     userFailure: null
@@ -30,6 +31,7 @@ export interface UserState extends Partial<User> {
 
 export interface SignupState {
     fetching: boolean,
+    success?: boolean,
     error: boolean
 }
 
@@ -49,6 +51,9 @@ export const reducers = {
     request: (state: State, { userId }: AnyAction) => 
         state.merge({ fetching: true, userId }),
 
+    selfRequest: (state: State) =>
+        state.merge({ fetching: true, userId: 'self' }),
+
     success: (state: State, action: AnyAction) =>
         state.merge({ fetching: false, error: null, ...action.user.data }),
 
@@ -59,10 +64,10 @@ export const reducers = {
         state.merge({ signup: { fetching: true } }),
 
     signupSuccess: (state: State, { token }: AnyAction) =>
-        state.merge({ signup: { fetching: false, error: false }}, token),
+        state.merge({ signup: { fetching: false, error: false, success: true }}, token),
 
     signupFailure: (state: State) =>
-        state.merge({ signup: { fetching: false, error: true }})
+        state.merge({ signup: { fetching: false, error: true, success: false }})
 }
 
 // export const request = (state: State, { userId }: AnyAction) => state.merge({ fetching: true, userId })
@@ -81,6 +86,7 @@ export const reducers = {
 
 export const reducer = createReducer<State>(INITIAL_STATE, {
     [Types.USER_REQUEST]: reducers.request,
+    [Types.USER_SELF_REQUEST]: reducers.request,
     [Types.USER_SUCCESS]: reducers.success,
     [Types.USER_FAILURE]: reducers.failure,
     [Types.USER_SIGNUP_REQUEST]: reducers.signupRequest,

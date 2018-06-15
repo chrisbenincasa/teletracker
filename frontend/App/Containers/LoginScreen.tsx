@@ -8,9 +8,6 @@ import {
 import { Card, Button, FormLabel, FormInput } from "react-native-elements";
 import { connect } from 'react-redux';
 import Header from '../Components/Header';
-
-
-// Styles
 import styles from './Styles/LoginScreenStyle';
 import { Navigation } from 'react-native-navigation';
 
