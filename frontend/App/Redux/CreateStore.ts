@@ -8,9 +8,7 @@ import { State } from './State';
 import { AllEffect } from 'redux-saga/effects';
 
 // creates the store
-export default (rootReducer: Reducer<State>, rootSaga: () => IterableIterator<AllEffect>): TeletrackerStore => {
-  console.log('configuring data store');
-  
+export default (rootReducer: Reducer<State>, rootSaga: () => IterableIterator<AllEffect>): TeletrackerStore => {  
   /* ------------- Redux Configuration ------------- */
 
   const middleware: Middleware[] = []

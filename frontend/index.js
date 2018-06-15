@@ -1,5 +1,7 @@
-import './App/Config/ReactotronConfig'
-import { AppRegistry } from 'react-native'
-import App from './App/Containers/App'
+import startNav from './App/Navigation/AppNavigation';
+import createStore from './App/Redux';
 
-AppRegistry.registerComponent('teletracker', () => App)
+require('./App/Config/ReactotronConfig');
+
+const store = createStore();
+startNav(store);

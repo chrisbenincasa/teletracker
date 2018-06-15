@@ -8,7 +8,6 @@ import { State } from './State';
 import { reducer as UserReducer } from './UserRedux';
 
 export const reducers = combineReducers<State>({
-  nav: require('./NavigationRedux').reducer,
   user: UserReducer
 })
 
