@@ -1,7 +1,18 @@
-import { put } from 'redux-saga/effects';
-
-import UserActions from '../Redux/UserRedux';
+import { Navigation } from 'react-native-navigation';
+import { call } from 'redux-saga/effects';
 
 export function * startup(): IterableIterator<any> {
-  yield put(UserActions.userRequest('1')) // TODO: Pull user ID from loaded state
+  yield call([Navigation, Navigation.setRoot], {
+    root: {
+      component: {
+        name: 'navigation.main.ListView',
+        options: {
+          animated: true,
+          topBar: {
+            visible: false
+          }
+        }
+      }
+    }
+  });
 }

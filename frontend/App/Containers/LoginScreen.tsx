@@ -6,8 +6,9 @@ import {
   View
 } from 'react-native';
 import { Card, Button, FormLabel, FormInput } from "react-native-elements";
-import { connect } from 'react-redux';
+import { connect, Dispatch } from 'react-redux';
 import Header from '../Components/Header';
+import UserActions, { SignupState } from '../Redux/UserRedux'
 import styles from './Styles/LoginScreenStyle';
 import { Navigation } from 'react-native-navigation';
 
@@ -41,15 +42,22 @@ class LoginScreen extends Component {
         <Header />
         <Card>
           <FormLabel>Email</FormLabel>
-          <FormInput placeholder="Email address..." />
+          <FormInput 
+            placeholder="Email address..."
+            autoCapitalize='none'
+            onChangeText={(email) => this.setState({ email })} />
           <FormLabel>Password</FormLabel>
-          <FormInput secureTextEntry placeholder="Password..." />
+          <FormInput 
+            secureTextEntry 
+            placeholder="Password..."
+            autoCapitalize='none'
+            onChangeText={(password) => this.setState({ password }) } />
           
           <Button
             buttonStyle={{ marginTop: 20 }}
             backgroundColor="#03A9F4"
             title="Login"
-            onPress={() => this.props.navigation.navigate('ItemList')} 
+            onPress={() => this.props.login(this.props.componentId, this.state.email, this.state.password)} 
           />
           <Button
             buttonStyle={{ marginTop: 20 }}
@@ -69,8 +77,11 @@ const mapStateToProps = (state) => {
   }
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch<any>) => {
   return {
+    login: (componentId, email, password) => {
+      dispatch(UserActions.loginRequest(componentId, email, password));
+    }
   }
 };
 
