@@ -16,6 +16,7 @@ import styles from './Styles/LoginScreenStyle';
 class LoginScreen extends Component {
   render () {
     return (
+<<<<<<< HEAD
       <ScrollView style={styles.container}>
         <Header />
         <Card>
@@ -35,6 +36,40 @@ class LoginScreen extends Component {
             backgroundColor="transparent"
             textStyle={{ color: "#bcbec1" }}
             title="Sign Up"
+=======
+      <ScrollView style={{padding: 20}}>
+        <Text 
+            style={{fontSize: 27, textAlign: 'center', marginTop: 20}}>
+            Login
+        </Text>
+        <TextInput placeholder='Username' style={{
+            fontSize: 27, 
+            flex: 1,
+            borderColor: '#000', 
+            borderStyle: 'solid', 
+            borderWidth: 1, 
+            padding: 10, 
+            margin: 5
+        }}/>
+        <TextInput placeholder='Password' style={{
+            fontSize: 27, 
+            flex: 1,
+            borderColor: '#000', 
+            borderStyle: 'solid', 
+            borderWidth: 1, 
+            padding: 10, 
+            margin: 5
+        }}/>
+        <View style={{margin:7}} />
+        <FullButton 
+            onPress={this.props.onLoginPress}
+            text="Login"
+            onPress={() => this.props.navigation.navigate('ItemList')} 
+        />
+        <FullButton 
+            text='Sign Up' 
+            styles={{backgroundColor: 'red'}} 
+>>>>>>> 52d1920... Stop point 1
             onPress={() => this.props.navigation.navigate('SignupScreen')} 
           />
         </Card>

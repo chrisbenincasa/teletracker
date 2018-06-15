@@ -6,12 +6,7 @@ import AppNavigation from './AppNavigation'
 // here is our redux-aware smart component
 function ReduxNavigation (props) {
   const { dispatch, nav } = props
-  const navigation = ReactNavigation.addNavigationHelpers({
-    dispatch,
-    state: nav
-  })
-
-  return <AppNavigation navigation={navigation} />
+  return <AppNavigation navigation={{ dispatch, state: nav }} />
 }
 
 const mapStateToProps = state => ({ nav: state.nav })

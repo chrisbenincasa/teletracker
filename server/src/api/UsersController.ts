@@ -32,7 +32,20 @@ export class UsersController extends Controller {
                 let token = JwtVendor.vend(user.email);
                 ctx.status = 201;
                 ctx.body = { data: { token } };
+            }).catch(reason => {
+                console.error(reason);
             });
+        });
+
+        this.router.get('/users/self', AuthMiddleware.protectRouteLoggedIn(), async ctx => {
+            let user = await this.dbAccess.getUserById(ctx.user.id);
+
+            if (user) {
+                ctx.status = 200;
+                ctx.body = { data: user };
+            } else {
+                ctx.status = 404;
+            }
         });
 
         // Retrieve a user

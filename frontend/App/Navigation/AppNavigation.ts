@@ -9,18 +9,21 @@ import LaunchScreen from '../Containers/LaunchScreen';
 import styles from './Styles/NavigationStyles';
 
 // Manifest of possible screens
-const PrimaryNav = StackNavigator({
+const AppStack = StackNavigator({
   SettingsScreen: { screen: SettingsScreen },
   ItemDetailScreen: { screen: ItemDetailScreen },
+  ItemList: { screen: ItemList },
+}, {
+    navigationOptions: {
+      headerStyle: styles.header
+    }
+});
+
+const AuthStack = StackNavigator({
   SignupScreen: { screen: SignupScreen },
   LoginScreen: { screen: LoginScreen },
-  ItemList: { screen: ItemList },
-  // This is ignite default, leaving for now for testing
-  // LaunchScreen: { screen: LaunchScreen }
 }, {
-  // Default config for all screens
   headerMode: 'none',
-  initialRouteName: 'LoginScreen',
   navigationOptions: {
     headerStyle: styles.header,
     gestureResponseDistance: {
@@ -29,4 +32,14 @@ const PrimaryNav = StackNavigator({
   }
 });
 
-export default PrimaryNav;
+const Main = SwitchNavigator({
+  LoginScreen: { screen: LoginScreen },
+  App: AppStack,
+  Auth: AuthStack
+}, {
+    // Default config for all screens
+    initialRouteName: 'LoginScreen'
+  });
+
+
+export default Main;

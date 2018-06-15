@@ -6,9 +6,11 @@ import { connect, Dispatch } from 'react-redux'
 import StartupActions from '../Redux/StartupRedux'
 import ReduxPersist from '../Config/ReduxPersist'
 import Config from 'react-native-config'
+import AppNavigation from '../Navigation/AppNavigation';
 
 // Styles
 import styles from './Styles/RootContainerStyles'
+import NavigationService from '../Services/NavigationService';
 
 class RootContainer extends Component<RootContainerProps> {
   componentDidMount () {
@@ -23,7 +25,7 @@ class RootContainer extends Component<RootContainerProps> {
     return (
       <View style={styles.applicationView}>
         <StatusBar barStyle='light-content' />
-        <ReduxNavigation />
+        <AppNavigation ref={navRef => NavigationService.setTopLevelNavigator(navRef)} />
       </View>
     )
   }

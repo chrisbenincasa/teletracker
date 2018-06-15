@@ -7,6 +7,9 @@ import { User } from '../Model';
 /* ------------- Types and Action Creators ------------- */
 
 const { Types, Creators } = createActions({
+    userSignupRequest: ['username', 'userEmail', 'password'],
+    userSignupSuccess: null,
+    userSignupFailure: null,
     userRequest: ['userId'],
     userSuccess: ['user'],
     userFailure: null
@@ -20,13 +23,24 @@ export default Creators
 export interface UserState extends Partial<User> {
     fetching: boolean,
     userId: string | number,
+    token?: string,
+    error: boolean,
+    signup: SignupState
+}
+
+export interface SignupState {
+    fetching: boolean,
     error: boolean
 }
 
 export const INITIAL_STATE = Immutable<UserState>({
     fetching: null,
     userId: null,
-    error: null
+    error: null,
+    signup: {
+        fetching: null,
+        error: null
+    }
 })
 
 type State = Immutable.ImmutableObject<UserState>
@@ -39,7 +53,16 @@ export const reducers = {
         state.merge({ fetching: false, error: null, ...action.user.data }),
 
     failure: (state: State) =>
-        state.merge({ fetching: false, error: true })
+        state.merge({ fetching: false, error: true }),
+
+    signupRequest: (state: State) =>
+        state.merge({ signup: { fetching: true } }),
+
+    signupSuccess: (state: State, { token }: AnyAction) =>
+        state.merge({ signup: { fetching: false, error: false }}, token),
+
+    signupFailure: (state: State) =>
+        state.merge({ signup: { fetching: false, error: true }})
 }
 
 // export const request = (state: State, { userId }: AnyAction) => state.merge({ fetching: true, userId })
@@ -59,5 +82,8 @@ export const reducers = {
 export const reducer = createReducer<State>(INITIAL_STATE, {
     [Types.USER_REQUEST]: reducers.request,
     [Types.USER_SUCCESS]: reducers.success,
-    [Types.USER_FAILURE]: reducers.failure
+    [Types.USER_FAILURE]: reducers.failure,
+    [Types.USER_SIGNUP_REQUEST]: reducers.signupRequest,
+    [Types.USER_SIGNUP_SUCCESS]: reducers.signupSuccess,
+    [Types.USER_SIGNUP_FAILURE]: reducers.signupFailure
 })

@@ -23,6 +23,7 @@ export class Middleware {
             // use(passport.session()).
             use(new LoggingMiddleware().onRequest).
             use(new TimingMiddleware().onRequest);
+            // use(new TimeoutMiddleware().onRequest);
     }
 }
 
@@ -60,3 +61,12 @@ class TimingMiddleware extends BaseMiddleware {
         logger.debug(`Request returning ${ctx.status} took ${end - start} ms`);
     }
 }
+
+// class TimeoutMiddleware extends BaseMiddleware {
+//     async onRequest(ctx: Koa.Context, next: () => Promise<any>): Promise<void> {
+//         let timeoutPromise = Promise.resolve(setTimeout.__promisify__(10000)).then(() => {
+//             ctx.status = 503;
+//         });
+//         await Promise.race<void>([next(), timeoutPromise]);
+//     }
+// }
