@@ -34,6 +34,7 @@ const persistanceLogger = rp.createTransform(
 const defaultPersistConfig: rp.PersistConfig = {
   key: 'root',
   storage: AsyncStorage,
+  debug: true,
   transforms: [ImmutablePersistenceTransform, persistanceLogger]
 }
 
