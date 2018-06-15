@@ -1,15 +1,16 @@
 import React from 'react';
-import { View, SectionList, Text, TouchableHighlight } from 'react-native';
-import { connect } from 'react-redux';
+import { SectionList, Text, TouchableHighlight, View } from 'react-native';
+import Search from 'react-native-search-box';
 import Swipeout from 'react-native-swipeout';
 import Icon from 'react-native-vector-icons/dist/FontAwesome';
-import Search from 'react-native-search-box';
+import { connect, Dispatch } from 'react-redux';
+
+import UserActions from '../Redux/UserRedux';
+import styles from './Styles/ItemListStyle';
 
 // More info here: https://facebook.github.io/react-native/docs/sectionlist.html
 
 // Styles
-import styles from './Styles/ItemListStyle';
-
 class ItemList extends React.PureComponent  {
 
   /* ***********************************************************
@@ -34,6 +35,10 @@ class ItemList extends React.PureComponent  {
       }
     ]
   };
+
+  componentWillMount() {
+    this.props.loadUserSelf();
+  }
 
 
   /* ***********************************************************
@@ -175,8 +180,11 @@ const mapStateToProps = (state) => {
   }
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch<any>) => {
   return {
+    loadUserSelf: () => {
+      dispatch(UserActions.userSelfRequest());
+    }
   }
 };
 

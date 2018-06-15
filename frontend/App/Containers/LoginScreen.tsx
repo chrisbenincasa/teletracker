@@ -8,12 +8,33 @@ import {
 import { Card, Button, FormLabel, FormInput } from "react-native-elements";
 import { connect } from 'react-redux';
 import Header from '../Components/Header';
-
-
-// Styles
 import styles from './Styles/LoginScreenStyle';
+import { Navigation } from 'react-native-navigation';
 
 class LoginScreen extends Component {
+  static get options() {
+    return {
+      _statusBar: {
+        backgroundColor: 'transparent',
+        style: 'dark',
+        drawBehind: true
+      }
+    }
+  }
+
+  goToSignup() {
+    Navigation.push(this.props.componentId, {
+      component: {
+        name: 'navigation.main.SignupScreen',
+        options: {
+          topBar: {
+            visible: false
+          }
+        }
+      }
+    })
+  }
+
   render () {
     return (
       <ScrollView style={styles.container}>
@@ -34,8 +55,8 @@ class LoginScreen extends Component {
             buttonStyle={{ marginTop: 20 }}
             backgroundColor="transparent"
             textStyle={{ color: "#bcbec1" }}
+            onPress={this.goToSignup.bind(this)} 
             title="Sign Up"
-            onPress={() => this.props.navigation.navigate('SignupScreen')} 
           />
         </Card>
       </ScrollView>
@@ -53,4 +74,4 @@ const mapDispatchToProps = (dispatch) => {
   }
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(LoginScreen);
+export default connect(mapStateToProps, mapDispatchToProps, null, { withRef: true })(LoginScreen);

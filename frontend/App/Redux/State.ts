@@ -1,5 +1,5 @@
-import { User } from "../Services/TeletrackerApi";
+import { UserState } from "./UserRedux";
 
 export interface State {
-    user: User
+    user: UserState
 };

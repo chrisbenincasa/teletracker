@@ -1,6 +1,6 @@
 import { AnyAction } from 'redux';
 import React, { Component } from 'react'
-import { View, StatusBar } from 'react-native'
+import { View, StatusBar, Text } from 'react-native'
 import ReduxNavigation from '../Navigation/ReduxNavigation'
 import { connect, Dispatch } from 'react-redux'
 import StartupActions from '../Redux/StartupRedux'
@@ -9,21 +9,21 @@ import Config from 'react-native-config'
 
 // Styles
 import styles from './Styles/RootContainerStyles'
+import NavigationService from '../Services/NavigationService';
 
 class RootContainer extends Component<RootContainerProps> {
   componentDidMount () {
-    console.log(ReduxPersist);
     // if redux persist is not active fire startup action
     if (!ReduxPersist.active) {
       this.props.startup()
     }
   }
 
+  // <AppNavigation ref={navRef => NavigationService.setTopLevelNavigator(navRef)} />
   render () {
     return (
       <View style={styles.applicationView}>
         <StatusBar barStyle='light-content' />
-        <ReduxNavigation />
       </View>
     )
   }
