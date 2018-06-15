@@ -7,6 +7,8 @@ import {
 } from 'react-native';
 import { Card, Button, FormLabel, FormInput } from "react-native-elements";
 import { connect } from 'react-redux';
+import Header from '../Components/Header';
+
 
 // Styles
 import styles from './Styles/LoginScreenStyle';
@@ -14,7 +16,8 @@ import styles from './Styles/LoginScreenStyle';
 class LoginScreen extends Component {
   render () {
     return (
-      <ScrollView style={{padding: 20}}>
+      <ScrollView style={styles.container}>
+        <Header />
         <Card>
           <FormLabel>Email</FormLabel>
           <FormInput placeholder="Email address..." />
