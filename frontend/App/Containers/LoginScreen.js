@@ -12,11 +12,34 @@ import Header from '../Components/Header';
 
 // Styles
 import styles from './Styles/LoginScreenStyle';
+import { Navigation } from 'react-native-navigation';
 
 class LoginScreen extends Component {
+  static get options() {
+    return {
+      _statusBar: {
+        backgroundColor: 'transparent',
+        style: 'dark',
+        drawBehind: true
+      }
+    }
+  }
+
+  goToSignup() {
+    Navigation.push(this.props.componentId, {
+      component: {
+        name: 'navigation.main.SignupScreen',
+        options: {
+          topBar: {
+            visible: false
+          }
+        }
+      }
+    })
+  }
+
   render () {
     return (
-<<<<<<< HEAD
       <ScrollView style={styles.container}>
         <Header />
         <Card>
@@ -35,42 +58,8 @@ class LoginScreen extends Component {
             buttonStyle={{ marginTop: 20 }}
             backgroundColor="transparent"
             textStyle={{ color: "#bcbec1" }}
+            onPress={this.goToSignup.bind(this)} 
             title="Sign Up"
-=======
-      <ScrollView style={{padding: 20}}>
-        <Text 
-            style={{fontSize: 27, textAlign: 'center', marginTop: 20}}>
-            Login
-        </Text>
-        <TextInput placeholder='Username' style={{
-            fontSize: 27, 
-            flex: 1,
-            borderColor: '#000', 
-            borderStyle: 'solid', 
-            borderWidth: 1, 
-            padding: 10, 
-            margin: 5
-        }}/>
-        <TextInput placeholder='Password' style={{
-            fontSize: 27, 
-            flex: 1,
-            borderColor: '#000', 
-            borderStyle: 'solid', 
-            borderWidth: 1, 
-            padding: 10, 
-            margin: 5
-        }}/>
-        <View style={{margin:7}} />
-        <FullButton 
-            onPress={this.props.onLoginPress}
-            text="Login"
-            onPress={() => this.props.navigation.navigate('ItemList')} 
-        />
-        <FullButton 
-            text='Sign Up' 
-            styles={{backgroundColor: 'red'}} 
->>>>>>> 52d1920... Stop point 1
-            onPress={() => this.props.navigation.navigate('SignupScreen')} 
           />
         </Card>
       </ScrollView>
@@ -88,4 +77,4 @@ const mapDispatchToProps = (dispatch) => {
   }
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(LoginScreen);
+export default connect(mapStateToProps, mapDispatchToProps, null, { withRef: true })(LoginScreen);
