@@ -44,6 +44,22 @@ export class TeletrackerApi {
         return this.api.get<User>(`/api/v1/users/${id}`, {}, { headers: this.authHeaders() });
     }
 
+    getUserSelf() {
+        if (!this.token) {
+            return Promise.reject(new Error('getUser requires a token to be set'));
+        }
+
+        return this.api.get<User>('/api/v1/users/self', {}, { headers: this.authHeaders() });
+    }
+
+    registerUser(username: string, email: string, password: string) {
+        const data = { username, email, password, name: username };
+        return this.api.post<any>('/api/v1/users', data).then(response => {
+            this.setToken(response.data.data.token);
+            return response;
+        });
+    }
+
     private authHeaders() {
         return {
             'Authorization': `Bearer ${this.token}`
