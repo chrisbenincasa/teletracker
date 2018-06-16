@@ -1,18 +1,13 @@
 import { Navigation } from 'react-native-navigation';
-import { call } from 'redux-saga/effects';
+import { call, select } from 'redux-saga/effects';
+import * as NavigationConfig from '../Navigation/NavigationConfig';
 
 export function * startup(): IterableIterator<any> {
-  yield call([Navigation, Navigation.setRoot], {
-    root: {
-      component: {
-        name: 'navigation.main.ListView',
-        options: {
-          animated: true,
-          topBar: {
-            visible: false
-          }
-        }
-      }
-    }
-  });
+  const state = yield select();
+
+  const isLoggedIn = !!state.user.token;
+
+  const view = isLoggedIn ? NavigationConfig.AppStack : NavigationConfig.AuthStack;
+
+  yield call([Navigation, Navigation.setRoot], view);
 }
