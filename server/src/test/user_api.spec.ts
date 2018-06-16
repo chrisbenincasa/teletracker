@@ -2,18 +2,21 @@ import 'mocha';
 
 import * as chai from 'chai';
 import chaiHttp = require('chai-http');
+import chaiSubset = require('chai-subset');
 import * as random from 'random-js';
 import { Connection } from 'typeorm';
+import { inspect } from 'util';
+import * as uuid from 'uuid/v4';
 
 import { GlobalConfig } from '../Config';
+import DbAccess from '../db/DbAccess';
 import { MovieList, Show, ShowList, User } from '../db/entity';
 import Server from '../Server';
-import { InMemoryDb } from './fixtures/database';
-import * as uuid from 'uuid/v4';
-import DbAccess from '../db/DbAccess';
 import JwtVendor from '../util/JwtVendor';
+import { InMemoryDb } from './fixtures/database';
 
 chai.use(chaiHttp);
+chai.use(chaiSubset);
 const should = chai.should();
 
 describe('Users API', () => {
@@ -36,16 +39,53 @@ describe('Users API', () => {
         server.instance.close(() => done());
     });
 
+    it('should create default lists for a new user', async () => {
+        let user = await generateUser();
+        let token = JwtVendor.vend(user.email);
+
+        let res = await chai.request(baseUrl).get(`/api/v1/users/${user.id}`).set('Authorization', 'Bearer ' + token);
+
+        res.body.data.showLists.should.have.lengthOf(1);
+        res.body.data.movieLists.should.have.lengthOf(1);
+
+        res.body.should.containSubset({
+            data: {
+                name: user.name,
+                email: user.email,
+                username: user.username,
+                id: user.id,
+                movieLists: [{
+                    id: user.movieLists[0].id,
+                    name: user.movieLists[0].name,
+                    createdAt: user.movieLists[0].createdAt.toISOString(),
+                    updatedAt: user.movieLists[0].updatedAt.toISOString(),
+                    isDefault: true,
+                    isDeleted: false
+                }],
+                showLists: [{
+                    id: user.showLists[0].id,
+                    name: user.showLists[0].name,
+                    createdAt: user.showLists[0].createdAt.toISOString(),
+                    updatedAt: user.showLists[0].updatedAt.toISOString(),
+                    isDefault: true,
+                    isDeleted: false
+                }]
+            }
+        });
+    });
+
     it('should retrieve all lists for a user', async () => {
         let user = await generateUser();
         let token = JwtVendor.vend(user.email);
 
         let showList = new ShowList();
-        showList.user = user;
+        showList.user = Promise.resolve(user);
+        showList.name = 'Test Show List';
         await connection.getRepository(ShowList).save(showList);
 
         let movieList = new MovieList();
-        movieList.user = user;
+        movieList.user = Promise.resolve(user);
+        movieList.name = 'Test Movie List';
         await connection.getRepository(MovieList).save(movieList);
 
         let res = await chai.request(baseUrl).
@@ -56,8 +96,8 @@ describe('Users API', () => {
         res.body.should.include.keys('data');
 
         chai.assert.ownInclude(res.body.data, { id: user.id, name: user.name });
-        chai.assert.lengthOf(res.body.data.showLists, 1);
-        chai.assert.lengthOf(res.body.data.movieLists, 1);
+        chai.assert.lengthOf(res.body.data.showLists, 2); // New users get a default list
+        chai.assert.lengthOf(res.body.data.movieLists, 2); // New users get a default list
     });
 
     it('should respond with a user\'s specific list', async () => {
@@ -70,7 +110,8 @@ describe('Users API', () => {
         let showRet = await connection.getRepository(Show).save(show);
 
         let showList = new ShowList();
-        showList.user = user;
+        showList.user = Promise.resolve(user);
+        showList.name = 'Test Show List';
         showList.shows = [showRet];
         await connection.getRepository(ShowList).save(showList);
 
@@ -107,7 +148,8 @@ describe('Users API', () => {
 
         // Create a list
         let showList = new ShowList();
-        showList.user = user;
+        showList.user = Promise.resolve(user);
+        showList.name = 'Test Show List';
         showList = await connection.getRepository(ShowList).save(showList);
 
         let response = await chai.
@@ -141,7 +183,7 @@ describe('Users API', () => {
             request(baseUrl).
             post(`/api/v1/users/${user.id}/lists`).
             set('Authorization', 'Bearer ' + token).
-            send({ type: 'show' });
+            send({ type: 'show', name: 'Test Show List' });
     
         chai.expect(response).to.be.json;
         chai.expect(response.body).to.have.key('data');
@@ -153,14 +195,20 @@ describe('Users API', () => {
             set('Authorization', 'Bearer ' + token);
 
         chai.expect(userList).to.be.json;
-        chai.expect(userList.body).to.deep.equal({
+        chai.expect(userList.body).to.containSubset({
             data: {
                 name: user.name,
                 email: user.email,
                 username: user.username,
                 id: user.id,
                 showLists: [
-                    { id: response.body.data.id, shows: [] }
+                    { 
+                        id: response.body.data.id, 
+                        shows: [],
+                        name: 'Test Show List',
+                        isDefault: false,
+                        isDeleted: false
+                    }
                 ]
             }
         });
