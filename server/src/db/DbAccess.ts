@@ -1,5 +1,5 @@
 import { Database } from "./Connection";
-import { Connection, Repository } from "typeorm";
+import { Connection, Repository, FindOneOptions } from "typeorm";
 import * as Entity from './entity';
 import { User } from "./entity";
 import * as bcrypt from 'bcrypt';
@@ -11,11 +11,13 @@ export default class DbAccess {
     private userRepository: Repository<Entity.User>;
     private showRepository: Repository<Entity.Show>;
     private showListRepository: Repository<Entity.ShowList>;
+    private movieListRepository: Repository<Entity.MovieList>;
 
     constructor(connection: Connection) {
         this.connection = connection;
         this.showRepository = this.connection.getRepository(Entity.Show);
         this.showListRepository = this.connection.getRepository(Entity.ShowList);
+        this.movieListRepository = this.connection.getRepository(Entity.MovieList);
         this.userRepository = this.connection.getRepository(Entity.User);
     }
 
@@ -36,7 +38,7 @@ export default class DbAccess {
     }
 
     async getUserById(id: string | number, includeLists: boolean = false): Promise<Entity.User | null> {
-        let baseRequest: any = {
+        let baseRequest: FindOneOptions<Entity.User> = {
             where: { id: id }
         };
 
@@ -45,7 +47,8 @@ export default class DbAccess {
                 alias: 'user',
                 leftJoinAndSelect: {
                     'movieLists': 'user.movieLists',
-                    'showLists': 'user.showLists'
+                    'showLists': 'user.showLists',
+                    'shows': 'showLists.shows'
                 }
             };
         }
@@ -64,7 +67,25 @@ export default class DbAccess {
         const salt = await bcrypt.genSalt();
         const hash = await bcrypt.hash(user.password, salt);
         user.password = hash;
-        return this.userRepository.save(user).then(this.removePassword);;
+        return this.userRepository.save(user).then(this.removePassword).then(async user => {
+            let showList = new Entity.ShowList;
+            showList.user = Promise.resolve(user);
+            showList.isDefault = true;
+            showList.name = 'Default Show List';
+
+            let movieList = new Entity.MovieList;
+            movieList.user = Promise.resolve(user);
+            movieList.isDefault = true;
+            movieList.name = 'Default Movie List';
+
+            showList = await this.showListRepository.save(showList);
+            movieList = await this.movieListRepository.save(movieList);
+
+            user.showLists = [showList];
+            user.movieLists = [movieList];
+
+            return user;
+        });
     }
 
     getShowListForUser(userId: string | number, listId: string | number): Promise<Entity.User | null> {
@@ -79,7 +100,7 @@ export default class DbAccess {
         let baseQuery = this.userRepository.createQueryBuilder('user').
             leftJoinAndSelect(`user.${listType}`, 'list').
             where('user.id = :userId', { userId: userId }).
-            andWhere('list.id = :listId', { listId: listId });
+            andWhere('list.id = :listId and list.isDeleted = 0', { listId: listId });
 
         if (entityType) {
             baseQuery = baseQuery.leftJoinAndSelect(`list.${entityType}`, entityType);

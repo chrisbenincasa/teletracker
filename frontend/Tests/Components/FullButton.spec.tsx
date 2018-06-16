@@ -6,8 +6,9 @@ import renderer from 'react-test-renderer'
 import { FullButtonStyleSheet } from '../../App/Components/Styles/FullButtonStyles';
 
 test('FullButton component renders correctly', () => {
-  const tree = renderer.create(<FullButton onPress={() => {}} 
-  text='hi' />).toJSON()
+  const tree = renderer.create(
+    <FullButton onPress={() => {}} text='hi' />
+  ).toJSON()
   expect(tree).toMatchSnapshot()
 })
 

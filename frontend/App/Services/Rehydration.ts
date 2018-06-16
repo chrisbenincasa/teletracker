@@ -1,15 +1,15 @@
-import ReduxPersist from '../Config/ReduxPersist'
-import { AsyncStorage } from 'react-native'
-import { persistStore } from 'redux-persist'
-import StartupActions from '../Redux/StartupRedux'
-import DebugConfig from '../Config/DebugConfig'
+import { AsyncStorage } from 'react-native';
+import { Persistor } from 'redux-persist';
 
-const updateReducers = (store: any) => {
-  const reducerVersion = ReduxPersist.reducerVersion
+import DebugConfig from '../Config/DebugConfig';
+import StartupActions from '../Redux/StartupRedux';
+
+const updateReducers = (store: any, persistor: Persistor) => {
+  const reducerVersion = '1.0'
   const startup = () => store.dispatch(StartupActions.startup())
 
   // Check to ensure latest reducer version
-  AsyncStorage.getItem('reducerVersion').then((localVersion) => {
+  return AsyncStorage.getItem('reducerVersion').then((localVersion) => {
     if (localVersion !== reducerVersion) {
       if (DebugConfig.useReactotron) {
         console.tron.display({
@@ -23,13 +23,14 @@ const updateReducers = (store: any) => {
         })
       }
       // Purge store
-      persistStore(store, null, startup).purge()
+      persistor.purge().then(startup);
       AsyncStorage.setItem('reducerVersion', reducerVersion)
     } else {
-      persistStore(store, null, startup)
+      startup();
     }
-  }).catch(() => {
-    persistStore(store, null, startup)
+  }).catch(async () => {
+    persistor.persist();
+    startup();
     AsyncStorage.setItem('reducerVersion', reducerVersion)
   })
 }
