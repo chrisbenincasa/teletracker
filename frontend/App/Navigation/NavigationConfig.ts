@@ -32,7 +32,7 @@ export let ListView = {
 
 export let DetailView = {
     component: {
-        name: 'navigation.main.DetailView',
+        name: 'navigation.main.ItemDetailScreen',
         options: {
             animated: true,
             topBar: {

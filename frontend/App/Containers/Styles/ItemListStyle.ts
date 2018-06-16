@@ -4,8 +4,7 @@ import { ApplicationStyles, Metrics, Colors } from '../../Themes';
 export default StyleSheet.create({
   ...ApplicationStyles.screen,
   container: {
-    flex: 1,
-    backgroundColor: Colors.background
+    flex: 1
   },
   row: {
     flex: 1,
@@ -13,18 +12,24 @@ export default StyleSheet.create({
     marginVertical: Metrics.smallMargin,
     justifyContent: 'center'
   },
+  search: {
+    backgroundColor: Colors.snow
+  },
   boldLabel: {
     fontWeight: 'bold',
     alignSelf: 'center',
-    color: Colors.snow,
+    color: Colors.charcoal,
     textAlign: 'center',
     marginBottom: Metrics.smallMargin
   },
   label: {
     textAlign: 'center',
-    color: Colors.snow
+    color: Colors.charcoal
   },
   listContent: {
     marginTop: Metrics.baseMargin
+  },
+  username: {
+    color: Colors.charcoal
   }
 });
