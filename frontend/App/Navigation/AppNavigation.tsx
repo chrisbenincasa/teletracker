@@ -6,6 +6,7 @@ import { Store } from 'redux';
 import LoginScreen from '../Containers/LoginScreen';
 import SignupScreen from '../Containers/SignupScreen';
 import ItemList from '../Containers/ItemList';
+import ItemDetailScreen from '../Containers/ItemDetailScreen';
 
 function sceneCreator(Scene: React.Component, store: Store<{}>) {
   return () => {
@@ -42,6 +43,7 @@ export default function startNav(store: Store<{}>) {
   Navigation.registerComponent('navigation.main.SignupScreen', sceneCreator(SignupScreen, store));
 
   Navigation.registerComponent('navigation.main.ListView', sceneCreator(ItemList, store));
+  Navigation.registerComponent('navigation.main.ItemDetailScreen', sceneCreator(ItemDetailScreen, store));
   
   Navigation.events().registerAppLaunchedListener(() => {
     Navigation.setRoot({
@@ -51,7 +53,7 @@ export default function startNav(store: Store<{}>) {
           children: [
             {
               component: {
-                name: 'navigation.main.LoginScreen',
+                name: 'navigation.main.ListView',
                 options: {
                   topBar: {
                     visible: false

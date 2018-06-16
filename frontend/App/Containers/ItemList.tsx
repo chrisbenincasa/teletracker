@@ -1,10 +1,9 @@
 import React from 'react';
 import { SectionList, Text, TouchableHighlight, View } from 'react-native';
 import Search from 'react-native-search-box';
-import Swipeout from 'react-native-swipeout';
-import Icon from 'react-native-vector-icons/dist/FontAwesome';
+import { Card, ListItem, Icon, Header } from 'react-native-elements';
 import { connect, Dispatch } from 'react-redux';
-
+import { Navigation } from 'react-native-navigation';
 import UserActions from '../Redux/UserRedux';
 import styles from './Styles/ItemListStyle';
 
@@ -23,14 +22,14 @@ class ItemList extends React.PureComponent  {
       {
         key: 'Movies',
         data: [
-          {title: 'The Fate of the Furious', platform: 'iTunes'},
-          {title: 'Patti Cake$$$$$', platform: 'HBO'}
+          {title: 'The Fate of the Furious', platform: 'iTunes', type: 'movie'},
+          {title: 'Patti Cake$$$$$', platform: 'HBO', type: 'movie'}
         ]
       }, {
         key: 'TV',
         data: [
-          {title: 'Halt & Catch Fire', platform: 'Netflix'},
-          {title: 'Hamilton\'s Pharmacopeia', platform: 'Vice'}
+          {title: 'Halt & Catch Fire', platform: 'Netflix', type: 'tv'},
+          {title: 'Hamilton\'s Pharmacopeia', platform: 'Vice', type: 'tv'}
         ]
       }
     ]
@@ -55,26 +54,28 @@ class ItemList extends React.PureComponent  {
   *
   * Note: You can remove section/separator functions and jam them in here
   *************************************************************/
-  renderItem ({section, item}) {
-    const deleteIcon = <Icon name="trash-o" size={20} color="#fff" />;
-    let swipeoutBtns = [
-      {
-        text: deleteIcon
+  goToItemDetail() {
+    Navigation.push(this.props.componentId, {
+      component: {
+        name: 'navigation.main.ItemDetailScreen',
+        options: {
+          topBar: {
+            visible: false
+          }
+        }
       }
-    ];
+    })
+  }
 
+  renderItem ({section, item}) {
     return (
-      <Swipeout right={swipeoutBtns} 
-        autoClose={true} backgroundColor= 'transparent'>
-        <TouchableHighlight
-          onPress={() => this.props.navigation.navigate('ItemDetailScreen')} 
-        >
-        <View style={styles.row} >
-          <Text style={styles.boldLabel}>{item.title}</Text>
-          <Text style={styles.label}>{item.platform}</Text>
-        </View>
-      </TouchableHighlight>
-      </Swipeout>
+        <ListItem 
+          key={this.keyExtractor}
+          title={item.title}
+          leftIcon={{name: item.type}}
+          subtitle={item.platform}
+          onPress={this.goToItemDetail.bind(this)} 
+        />
     )
   }
 
@@ -146,29 +147,38 @@ class ItemList extends React.PureComponent  {
   // e.g. itemLayout={(data, index) => (
   //   {length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index}
   // )}
-
+  
   render () {
     return (
       <View style={styles.container}>
+      <Header
+        leftComponent={{ icon: 'menu', color: '#fff' }}
+        centerComponent={{ text: 'My List', style: { color: '#fff' } }}
+        rightComponent={{ icon: 'home', color: '#fff' }}
+      />
        <Search
           ref="search_box"
+          backgroundColor='white'
+          style={{flex:1}}
           /**
           * There are many props options:
           * https://github.com/agiletechvn/react-native-search-box
           */
         />
-        <Text style={{color: 'white'}}>{this.props.user && this.props.user.name ? this.props.user.name : 'Fetching...'}</Text>
-        <SectionList
-          renderSectionHeader={this.renderSectionHeader}
-          sections={this.state.data}
-          contentContainerStyle={styles.listContent}
-          data={this.state.dataObjects}
-          renderItem={this.renderItem.bind(this)}
-          keyExtractor={this.keyExtractor}
-          initialNumToRender={this.oneScreensWorth}
-          ListHeaderComponent={this.renderHeader}
-          ListEmptyComponent={this.renderEmpty}
-        />
+        <Text style={styles.username}>{this.props.user && this.props.user.name ? this.props.user.name : 'Fetching...'}</Text>
+        <Card>
+          <SectionList
+            renderSectionHeader={this.renderSectionHeader}
+            sections={this.state.data}
+            contentContainerStyle={styles.listContent}
+            data={this.state.dataObjects}
+            renderItem={this.renderItem.bind(this)}
+            keyExtractor={this.keyExtractor}
+            initialNumToRender={this.oneScreensWorth}
+            ListHeaderComponent={this.renderHeader}
+            ListEmptyComponent={this.renderEmpty}
+          />
+        </Card>
       </View>
     )
   }
