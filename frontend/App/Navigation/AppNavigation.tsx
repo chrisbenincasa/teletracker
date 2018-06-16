@@ -52,7 +52,7 @@ export default function startNav(store: Store<State>, persistor: Persistor) {
   Navigation.registerComponent('navigation.main.LoginScreen', sceneCreator(LoginScreen, store, persistor));
   Navigation.registerComponent('navigation.main.SignupScreen', sceneCreator(SignupScreen, store, persistor));
   Navigation.registerComponent('navigation.main.ListView', sceneCreator(ItemList, store, persistor));
-  Navigation.registerComponent('navigation.main.DetailView', sceneCreator(ItemDetailScreen, store, persistor));
+  Navigation.registerComponent('navigation.main.ItemDetailScreen', sceneCreator(ItemDetailScreen, store, persistor));
 
   Navigation.events().registerAppLaunchedListener(() => {
     Navigation.setDefaultOptions({

@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
-import { ScrollView, Text, KeyboardAvoidingView } from 'react-native';
+import { View, Text, KeyboardAvoidingView } from 'react-native';
 import { connect } from 'react-redux';
+import { Header } from 'react-native-elements';
+
 // Add Actions - replace 'Your' with whatever your reducer is called :)
 // import YourActions from '../Redux/YourRedux'
 
@@ -10,11 +12,16 @@ import styles from './Styles/ItemDetailScreenStyle';
 class ItemDetailScreen extends Component {
   render () {
     return (
-      <ScrollView style={styles.container}>
+      <View style={styles.container}>
+        <Header
+          leftComponent={{ icon: 'menu', color: '#fff' }}
+          centerComponent={{ text: 'Item Details', style: { color: '#fff' } }}
+          rightComponent={{ icon: 'home', color: '#fff' }}
+        />
         <KeyboardAvoidingView behavior='position'>
           <Text>ItemDetailScreen</Text>
         </KeyboardAvoidingView>
-      </ScrollView>
+      </View>
     )
   }
 }
