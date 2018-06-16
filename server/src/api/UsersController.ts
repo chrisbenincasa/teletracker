@@ -50,7 +50,7 @@ export class UsersController extends Controller {
 
         // Retrieve a user
         this.router.get('/users/:id', AuthMiddleware.protectRouteForId(), async (ctx) => {
-            let user = await this.dbAccess.getUserById(ctx.params.id);
+            let user = await this.dbAccess.getUserById(ctx.params.id, true);
 
             if (user) {
                 ctx.status = 200;
@@ -84,25 +84,25 @@ export class UsersController extends Controller {
                 ctx.body = { error: 'Invalid request body or request body missing.' };
             } else {
                 let req = ctx.request.body;
+                let entityType: typeof Entity.ShowList | typeof Entity.MovieList | undefined;
+
                 if (req.type.toLowerCase() === 'show') {
-                    let listRepo = this.dbConnection.getRepository(Entity.ShowList)
-                    let list = listRepo.create();
-                    list.user = user;
-                    list = await listRepo.save(list);
-
-                    ctx.status = 201;
-                    ctx.body = { data: { id: list.id } };
+                    entityType = Entity.ShowList;
                 } else if (req.type.toLowerCase() === 'movie') {
-                    let movieRepo = this.dbConnection.getRepository(Entity.MovieList);
-                    let list = movieRepo.create();
-                    list.user = user;
-                    list = await movieRepo.save(list);
+                    entityType = Entity.MovieList;
+                }
 
-                    ctx.status = 201;
-                    ctx.body = { data: { id: list.id } };
-                } else {
+                if (!entityType) {
                     ctx.status = 400;
                     ctx.body = { error: 'Unrecognized list type = ' + req.type };
+                } else {
+                    let listRepo = this.dbConnection.getRepository(entityType);
+                    let list = listRepo.create();
+                    list.user = user;
+                    list.name = req.name;
+                    list = await listRepo.save(list);
+                    ctx.status = 201;
+                    ctx.body = { data: { id: list.id } };
                 }
             }
         });

@@ -1,17 +1,15 @@
-import { Entity, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 import { Show } from '.';
 import { User } from './User';
+import { List } from './List';
 
 @Entity('show_lists')
-export class ShowList {
-    @PrimaryGeneratedColumn()
-    id: number;
-
+export class ShowList extends List {
     @ManyToMany(type => Show, show => show.showLists)
     @JoinTable()
     shows: Show[];
 
     @ManyToOne(type => User, user => user.showLists)
-    user: User;
+    user: Promise<User>;
 }

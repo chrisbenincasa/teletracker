@@ -56,12 +56,12 @@ describe('The DB', () => {
 
         let list = new MovieList();
         list.user = user;
-        let listRet = await movieListRepository.save(list);
+        list = await movieListRepository.save(list);
 
         let showList = new ShowList();
         showList.user = user;
         showList.shows = [showRet];
-        let showListRet = await connection.getRepository(ShowList).save(showList);
+        showList = await connection.getRepository(ShowList).save(showList);
 
         let userWithTrackedShows = await userRepository.findOne({
             where: {
@@ -78,11 +78,11 @@ describe('The DB', () => {
         });
 
         chai.assert.exists(userWithTrackedShows, 'user exists')
-        chai.assert.lengthOf(userWithTrackedShows.movieLists, 1, 'user has 1 movie list');
-        chai.assert.lengthOf(userWithTrackedShows.showLists, 1, 'user has 1 show list');
-        chai.assert.lengthOf(userWithTrackedShows.showLists[0].shows, 1, 'user show list has 1 tracked show');
+        chai.assert.lengthOf(userWithTrackedShows.movieLists, 2);
+        chai.assert.lengthOf(userWithTrackedShows.showLists, 2,);
+        chai.assert.lengthOf(userWithTrackedShows.showLists[1].shows, 1, 'user show list has 1 tracked show');
 
-        chai.assert.ownInclude(userWithTrackedShows.showLists[0].shows[0], { name: show.name, externalId: show.externalId }, 'user tracked show has the correct props');
+        chai.assert.ownInclude(userWithTrackedShows.showLists[1].shows[0], { name: show.name, externalId: show.externalId }, 'user tracked show has the correct props');
     });
 
     async function generateUser(): Promise<User> {
