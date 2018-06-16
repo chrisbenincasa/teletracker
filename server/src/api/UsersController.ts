@@ -98,7 +98,7 @@ export class UsersController extends Controller {
                 } else {
                     let listRepo = this.dbConnection.getRepository(entityType);
                     let list = listRepo.create();
-                    list.user = user;
+                    list.user = Promise.resolve(user);
                     list.name = req.name;
                     list = await listRepo.save(list);
                     ctx.status = 201;

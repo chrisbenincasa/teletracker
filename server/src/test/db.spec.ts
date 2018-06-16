@@ -55,11 +55,13 @@ describe('The DB', () => {
         let showRet = await connection.getRepository(Show).save(show);
 
         let list = new MovieList();
-        list.user = user;
+        list.name = 'Test Movie List';
+        list.user = Promise.resolve(user);
         list = await movieListRepository.save(list);
 
         let showList = new ShowList();
-        showList.user = user;
+        showList.name = 'Test Show List';
+        showList.user = Promise.resolve(user);
         showList.shows = [showRet];
         showList = await connection.getRepository(ShowList).save(showList);
 
