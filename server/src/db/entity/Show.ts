@@ -1,28 +1,13 @@
 import 'reflect-metadata';
 
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, Index } from 'typeorm';
-import { User } from './User';
+import { Column, Entity, Index, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
+
 import { ShowList } from './ShowList';
+import { MediaItem } from './MediaItem';
 
 @Entity('shows')
 @Index(['externalSource', 'externalId'], { unique: true })
-export class Show {
-    @PrimaryGeneratedColumn()
-    id: number;
-
-    @Column()
-    name: string;
-
-    @Column()
-    externalSource: ExternalSource = ExternalSource.TheMovieDb
-
-    @Column()
-    externalId: string
-
+export class Show extends MediaItem {
     @ManyToMany(type => ShowList, list => list.shows)
     showLists: ShowList[]
-}
-
-export enum ExternalSource {
-    TheMovieDb = 1
 }

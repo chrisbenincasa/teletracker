@@ -1,14 +1,17 @@
 import 'reflect-metadata';
 
-import { ManyToOne, PrimaryGeneratedColumn, Entity } from 'typeorm';
+import { Entity, JoinTable, ManyToMany, ManyToOne } from 'typeorm';
 
+import { List } from './List';
+import { Movie } from './Movie';
 import { User } from './User';
 
 @Entity('movie_lists')
-export class MovieList {
-    @PrimaryGeneratedColumn()
-    id: number;
+export class MovieList extends List {
+    @ManyToMany(type => Movie, movie => movie.movieLists)
+    @JoinTable()
+    movies: Movie[];
 
     @ManyToOne(type => User, user => user.movieLists)
-    user: User;
+    user: Promise<User>;
 }

@@ -52,6 +52,17 @@ export class TeletrackerApi {
         return this.api.get<User>('/api/v1/users/self', {}, { headers: this.authHeaders() });
     }
 
+    loginUser(email: string, password: string) {
+        const data = { email, password };
+        return this.api.post<any>('/api/v1/auth/login', data).then(response => {
+            if (response.ok) {
+                this.setToken(response.data.data.token);
+            }
+
+            return response;
+        });
+    }
+
     registerUser(username: string, email: string, password: string) {
         const data = { username, email, password, name: username };
         return this.api.post<any>('/api/v1/users', data).then(response => {
