@@ -1,16 +1,17 @@
 import React from 'react';
 import { SectionList, Text, TouchableHighlight, View } from 'react-native';
+import { Navigation } from 'react-native-navigation';
 import Search from 'react-native-search-box';
 import Swipeout from 'react-native-swipeout';
 import Icon from 'react-native-vector-icons/dist/FontAwesome';
 import { connect, Dispatch } from 'react-redux';
 
+import * as NavigationConfig from '../Navigation/NavigationConfig';
 import UserActions from '../Redux/UserRedux';
 import styles from './Styles/ItemListStyle';
 
 // More info here: https://facebook.github.io/react-native/docs/sectionlist.html
 
-// Styles
 class ItemList extends React.PureComponent  {
 
   /* ***********************************************************
@@ -37,7 +38,9 @@ class ItemList extends React.PureComponent  {
   };
 
   componentWillMount() {
-    this.props.loadUserSelf();
+    if (!(this.props.user || this.props.user.name)) {
+      this.props.loadUserSelf();
+    }
   }
 
 
@@ -64,10 +67,12 @@ class ItemList extends React.PureComponent  {
     ];
 
     return (
-      <Swipeout right={swipeoutBtns} 
-        autoClose={true} backgroundColor= 'transparent'>
+      <Swipeout 
+        right={swipeoutBtns} 
+        autoClose={true} 
+        backgroundColor= 'transparent'>
         <TouchableHighlight
-          onPress={() => this.props.navigation.navigate('ItemDetailScreen')} 
+          onPress={() => Navigation.push(this.props.componentId, NavigationConfig.DetailView)} 
         >
         <View style={styles.row} >
           <Text style={styles.boldLabel}>{item.title}</Text>

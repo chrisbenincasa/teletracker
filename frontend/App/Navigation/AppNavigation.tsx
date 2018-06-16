@@ -11,6 +11,7 @@ import LoginScreen from '../Containers/LoginScreen';
 import SignupScreen from '../Containers/SignupScreen';
 import SplashScreen from '../Containers/SplashScreen';
 import { State } from '../Redux/State';
+import ItemDetailScreen from '../Containers/ItemDetailScreen';
 
 function sceneCreator(Scene: React.Component, store: Store<{}>, persistor: Persistor) {
   return () => {
@@ -51,12 +52,13 @@ export default function startNav(store: Store<State>, persistor: Persistor) {
   Navigation.registerComponent('navigation.main.LoginScreen', sceneCreator(LoginScreen, store, persistor));
   Navigation.registerComponent('navigation.main.SignupScreen', sceneCreator(SignupScreen, store, persistor));
   Navigation.registerComponent('navigation.main.ListView', sceneCreator(ItemList, store, persistor));
+  Navigation.registerComponent('navigation.main.DetailView', sceneCreator(ItemDetailScreen, store, persistor));
 
   Navigation.events().registerAppLaunchedListener(() => {
     Navigation.setDefaultOptions({
       animations: {
         startApp: {
-          y: {
+          x: {
             from: 1000,
             to: 0,
             duration: 500,

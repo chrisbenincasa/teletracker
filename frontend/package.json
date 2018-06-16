@@ -93,6 +93,7 @@
     "snazzy": "^7.1.1",
     "standard": "10.0.2",
     "ts-jest": "^22.4.6",
+    "tslint": "^5.10.0",
     "typescript": "^2.8.1"
   },
   "config": {},

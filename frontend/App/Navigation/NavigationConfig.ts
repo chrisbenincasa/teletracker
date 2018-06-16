@@ -1,0 +1,55 @@
+export const AuthStack = {
+    root: {
+        stack: {
+            id: 'Login',
+            children: [
+                {
+                    component: {
+                        name: 'navigation.main.LoginView',
+                        options: {
+                            topBar: {
+                                visible: false
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    }
+};
+
+export let ListView = {
+    component: {
+        name: 'navigation.main.ListView',
+        options: {
+            animated: true,
+            topBar: {
+                visible: false
+            }
+        }
+    }
+}
+
+export let DetailView = {
+    component: {
+        name: 'navigation.main.DetailView',
+        options: {
+            animated: true,
+            topBar: {
+                visible: false
+            }
+        }
+    }
+}
+
+// Initial State of the App stack
+export const AppStack = {
+    root: {
+        stack: {
+            id: 'App',
+            children: [
+                ListView
+            ]
+        }
+    }
+};
