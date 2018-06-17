@@ -55,43 +55,38 @@ export default function startNav(store: Store<State>, persistor: Persistor) {
   Navigation.registerComponent('navigation.main.ItemDetailScreen', sceneCreator(ItemDetailScreen, store, persistor));
 
   Navigation.events().registerAppLaunchedListener(() => {
-    Navigation.setDefaultOptions({
-      animations: {
-        startApp: {
-          x: {
-            from: 1000,
-            to: 0,
-            duration: 500,
-            interpolation: 'accelerate',
-          },
-          alpha: {
-            from: 0,
-            to: 1,
-            duration: 500,
-            interpolation: 'accelerate'
-          }
-        }
-      }
-    });
+    // Navigation.setDefaultOptions({
+    //   animations: {
+    //     startApp: {
+    //       x: {
+    //         from: 1000,
+    //         to: 0,
+    //         duration: 500,
+    //         interpolation: 'accelerate',
+    //       },
+    //       alpha: {
+    //         from: 0,
+    //         to: 1,
+    //         duration: 500,
+    //         interpolation: 'accelerate'
+    //       }
+    //     }
+    //   }
+    // });
 
-    Navigation.setRoot({
-      root: {
-        stack: {
-          id: 'Login',
-          children: [
-            {
-              component: {
-                name: 'navigation.main.Loading',
-                options: {
-                  topBar: {
-                    visible: false
-                  }
-                }
-              }
-            }
-          ]
-        }
-      }
-    })
+    // Navigation.setRoot({
+    //   root: {
+    //     component: {
+    //       name: 'navigation.main.Loading',
+    //       options: {
+    //         topBar: {
+    //           visible: false
+    //         }
+    //       }
+    //     }
+    //   }
+    // });
+
+    store.dispatch({ type: 'navigation/registerAppLaunchedListener' });
   })
 }

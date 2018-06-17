@@ -5,7 +5,7 @@ export const AuthStack = {
             children: [
                 {
                     component: {
-                        name: 'navigation.main.LoginView',
+                        name: 'navigation.main.LoginScreen',
                         options: {
                             topBar: {
                                 visible: false
