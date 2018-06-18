@@ -1,3 +1,5 @@
+env:
+  - JWT_SECRET=jwt_secret_for_testing_only
 branches:
     only: 
         - master
