@@ -60,7 +60,7 @@ export const AppStack = {
         stack: {
             id: 'App',
             children: [
-                ListView, MenuScreen
+                ListView
             ]
         }
     }
