@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { ScrollView, Text, TextInput, View, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
-import Header from '../Components/Header';
+import Logo from '../Components/Logo';
 import { ApplicationStyles } from '../Themes';
 
 class SplashScreen extends React.PureComponent {
     render() {
         return (
             <View style={ApplicationStyles.screen.container}>
-                <Header />
+                <Logo />
                 <ActivityIndicator animating />
             </View>
         )
