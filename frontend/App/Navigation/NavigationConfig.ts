@@ -1,17 +1,22 @@
+import Immutable from 'seamless-immutable';
+
+export const LoginScreenComponent = {
+    component: {
+        name: 'navigation.main.LoginScreen',
+        options: {
+            topBar: {
+                visible: false
+            }
+        }
+    }
+};
+
+
 export const AuthStack = {
     root: {
         stack: {
             id: 'Login',
-            children: [{
-                component: {
-                    name: 'navigation.main.LoginScreen',
-                    options: {
-                        topBar: {
-                            visible: false
-                        }
-                    }
-                }
-            }]
+            children: [LoginScreenComponent]
         }
     }
 };
@@ -93,13 +98,21 @@ export let MenuView = {
         options: {
             animated: true,
             topBar: {
+                title: { 
+                    text: 'My Lists',
+                    color: 'white'
+                },
+                // searchBar: true
+                background: {
+                    color: '#476DC5'
+                },
                 visible: false
             }
         }
     }
 }
 
-export let DetailView = {
+export let DetailView = Immutable({
     component: {
         name: 'navigation.main.ItemDetailScreen',
         options: {
@@ -109,7 +122,7 @@ export let DetailView = {
             },
         }
     }
-}
+})
 
 export let SearchView = {
     component: {
@@ -130,7 +143,7 @@ export let NotificationsView = {
             animated: true,
             topBar: {
                 visible: false
-            },
+            }
         }
     }
 }
@@ -144,3 +157,14 @@ export const AppStack = {
         }
     }
 };
+
+export const NavigationConfig = {
+    LoginScreenComponent,
+    AuthStack,
+    ListView,
+    MenuView,
+    DetailView,
+    SearchView,
+    NotificationsView,
+    AppStack
+}

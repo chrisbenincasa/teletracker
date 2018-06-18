@@ -31,6 +31,16 @@ export default class AuthMiddleware {
         return AuthMiddleware.protectRoute((user, ctx) => user.id == ctx.params.id);
     }
 
+    static protectForSelfOrId(): IMiddleware {
+        return async function(ctx: IRouterContext, next: () => Promise<any>) {
+            if (ctx.params.id === 'self') {
+                return AuthMiddleware.protectRouteLoggedIn()(ctx, next);
+            } else {
+                return AuthMiddleware.protectRouteForId()(ctx, next);
+            }
+        }
+    }
+
     static setup(dbAccess: DbAccess): void {
         const findUser: (email: string, cb: (error: any, user?: any) => void, password?: string) => Promise<void> = (email, cb, password) => {
             return dbAccess.getUserByEmail(email).then(async user => {

@@ -1,25 +1,44 @@
 import React, { Component } from 'react';
-import { View, Text, KeyboardAvoidingView } from 'react-native';
+import { KeyboardAvoidingView, Text, View, Image } from 'react-native';
 import { connect } from 'react-redux';
-import { Header } from 'react-native-elements';
+
+import styles from './Styles/ItemDetailScreenStyle';
+import headerStyles from '../Themes/ApplicationStyles';
+import * as Model from '../Model/external/themoviedb';
+import { Header, Icon } from 'react-native-elements';
+
 
 // Add Actions - replace 'Your' with whatever your reducer is called :)
 // import YourActions from '../Redux/YourRedux'
 
 // Styles
-import styles from './Styles/ItemDetailScreenStyle';
+interface Props {
+  item: Model.Movie | Model.TvShow | Model.Person
+}
 
-class ItemDetailScreen extends Component {
+class ItemDetailScreen extends Component<Props> {
+  titleString() {
+    if (Model.Guards.isMovie(this.props.item)) {
+      return this.props.item.title;
+    } else if (Model.Guards.isTvShow(this.props.item)) {
+      return this.props.item.name;
+    } else {
+      return this.props.item.name;
+    }
+  }
+
   render () {
     return (
       <View style={styles.container}>
         <Header
-          leftComponent={{ icon: 'menu', color: '#fff' }}
-          centerComponent={{ text: 'Item Details', style: { color: '#fff' } }}
-          rightComponent={{ icon: 'home', color: '#fff' }}
-        />
+          outerContainerStyles={headerStyles.header.outer}
+          innerContainerStyles={headerStyles.header.inner}
+          statusBarProps={headerStyles.header.statusBarProps}
+          leftComponent={{icon:  'chevron-left', style: { color: 'white' } }}
+          centerComponent={{text: this.titleString(),  style: { color: 'white' } }} />
         <KeyboardAvoidingView behavior='position'>
-          <Text>ItemDetailScreen</Text>
+          <Image source={{ uri: 'https://image.tmdb.org/t/p/w185_and_h278_bestv2' + this.props.item.poster_path }} style={{width:185,height:278}} />
+          <Text>{this.titleString()}</Text>
         </KeyboardAvoidingView>
       </View>
     )

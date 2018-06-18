@@ -10,7 +10,7 @@ const { Types, Creators } = createActions({
     userSignupRequest: ['componentId', 'username', 'userEmail', 'password'],
     userSignupSuccess: null,
     userSignupFailure: null,
-    userSelfRequest: null,
+    userSelfRequest: ['componentId'],
     userRequest: ['userId'],
     userSuccess: ['user'],
     userFailure: null,
@@ -26,11 +26,11 @@ export default Creators
 
 export interface UserState extends Partial<User> {
     fetching: boolean,
-    userId: string | number,
     token?: string,
     error: boolean,
     signup: SignupState,
-    login: LoginState
+    login: LoginState,
+    details: User
 }
 
 export interface LoginState {
@@ -46,26 +46,26 @@ export interface SignupState {
 
 export const INITIAL_STATE = Immutable<UserState>({
     fetching: null,
-    userId: null,
     error: null,
     signup: {
         fetching: null,
         error: null
     },
-    login: {}
+    login: {},
+    details: null
 })
 
 type State = Immutable.ImmutableObject<UserState>
 
 export const reducers = {
-    request: (state: State, { userId }: AnyAction) => 
-        state.merge({ fetching: true, userId }),
+    request: (state: State, action: AnyAction) => 
+        state.merge({ fetching: true }),
 
     selfRequest: (state: State) =>
-        state.merge({ fetching: true, userId: 'self' }),
+        state.merge({ fetching: true }),
 
     success: (state: State, action: AnyAction) =>
-        state.merge({ fetching: false, error: null, ...action.user.data }),
+        state.merge({ fetching: false, error: null, details: action.user.data }),
 
     failure: (state: State) =>
         state.merge({ fetching: false, error: true }),
@@ -74,7 +74,7 @@ export const reducers = {
         state.merge({ signup: { fetching: true } }),
 
     signupSuccess: (state: State, { token }: AnyAction) =>
-        state.merge({ signup: { fetching: false, error: false, success: true }}, token),
+        state.merge({ signup: { fetching: false, error: false, success: true }, token}),
 
     signupFailure: (state: State) =>
         state.merge({ signup: { fetching: false, error: true, success: false }}),
@@ -82,12 +82,8 @@ export const reducers = {
     login: (state: State) =>
         state.merge({ login: { fetching: true } }),
 
-    loginSuccess: (state: State, { token }: AnyAction) => {
-        let s = state.merge({ login: { fetching: false, error: false }, token });
-        console.log(s);
-        return s;
-    },
-        
+    loginSuccess: (state: State, { token }: AnyAction) =>
+        state.merge({ login: { fetching: false, error: false }, token }),
     
     loginFailure: (state: State) =>
         state.merge({ login: { fetching: false, error: true } }),
