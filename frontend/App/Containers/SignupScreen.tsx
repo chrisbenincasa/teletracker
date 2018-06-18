@@ -5,7 +5,7 @@ import FullButton from '../Components/FullButton';
 import UserActions, { SignupState } from '../Redux/UserRedux'
 import { State as AppState } from '../Redux/State';
 import { Card, Button, FormLabel, FormInput } from "react-native-elements";
-import Header from '../Components/Header';
+import Logo from '../Components/Logo';
 
 // Styles
 import styles from './Styles/SignupScreenStyle';
@@ -37,7 +37,7 @@ class SignupScreen extends Component<Props, State> {
   render() {
     return (
       <ScrollView style={styles.container}>
-        <Header />
+        <Logo />
         <Card>
           <FormLabel>Username</FormLabel>
           <FormInput 

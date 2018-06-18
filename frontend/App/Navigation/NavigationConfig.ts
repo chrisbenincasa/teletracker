@@ -30,6 +30,18 @@ export let ListView = {
     }
 }
 
+export let MenuScreen = {
+  component: {
+      name: 'navigation.main.MenuScreen',
+      options: {
+          animated: true,
+          topBar: {
+              visible: false
+          }
+      }
+  }
+}
+
 export let DetailView = {
     component: {
         name: 'navigation.main.ItemDetailScreen',
