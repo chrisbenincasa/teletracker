@@ -101,7 +101,7 @@ const mapStateToProps = (state: AppState) => {
 const mapDispatchToProps = (dispatch: Dispatch<any>) => {
   return {
     onSignUpAttempt: (componentId: string, {username, email, password}: State) => {
-      dispatch(UserActions.userSignupRequest(componentId, username, email, password ));
+      dispatch(UserActions.userSignupRequest(componentId, username, email, password));
     }
   }
 };

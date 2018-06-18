@@ -1,6 +1,8 @@
 import Fonts from './Fonts'
 import Metrics from './Metrics'
 import Colors from './Colors'
+import { Platform } from 'react-native';
+import { ifIphoneX, getStatusBarHeight } from '../Lib/react-native-iphone-x-helper';
 
 // This file is for a reusable grouping of Theme items.
 // Similar to an XML fragment layout in Android
@@ -20,8 +22,12 @@ const ApplicationStyles = {
     },
     container: {
       flex: 1,
-      // paddingTop: Metrics.baseMargin, 
-      backgroundColor: Colors.transparent
+      // backgroundColor: Colors.transparent,
+      // ...ifIphoneX({
+      //   paddingTop: Metrics.baseMargin + 30
+      // }, {
+      //   paddingTop: Metrics.baseMargin
+      // })
     },
     section: {
       margin: Metrics.section,
@@ -44,6 +50,18 @@ const ApplicationStyles = {
       ...Fonts.style.h2,
       fontSize: 14,
       color: Colors.text
+    }
+  },
+  header: {
+    outer: {
+      paddingTop: getStatusBarHeight(),
+      height: (Platform.OS === 'ios' ? 50 : 56) + getStatusBarHeight()
+    },
+    inner: {
+      paddingTop: 5
+    },
+    statusBarProps: {
+      barStyle: 'light-content'
     }
   },
   darkLabelContainer: {
