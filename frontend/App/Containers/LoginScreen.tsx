@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Card, Button, FormLabel, FormInput } from "react-native-elements";
 import { connect, Dispatch } from 'react-redux';
-import Header from '../Components/Header';
+import Logo from '../Components/Logo';
 import UserActions, { SignupState } from '../Redux/UserRedux'
 import styles from './Styles/LoginScreenStyle';
 import { Navigation } from 'react-native-navigation';
@@ -39,7 +39,7 @@ class LoginScreen extends Component {
   render () {
     return (
       <ScrollView style={styles.container}>
-        <Header />
+        <Logo />
         <Card>
           <FormLabel>Email</FormLabel>
           <FormInput 

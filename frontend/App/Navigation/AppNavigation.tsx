@@ -9,6 +9,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import ItemList from '../Containers/ItemList';
 import LoginScreen from '../Containers/LoginScreen';
 import SignupScreen from '../Containers/SignupScreen';
+import MenuScreen from '../Containers/MenuScreen';
 import SplashScreen from '../Containers/SplashScreen';
 import { State } from '../Redux/State';
 import ItemDetailScreen from '../Containers/ItemDetailScreen';
@@ -53,6 +54,7 @@ export default function startNav(store: Store<State>, persistor: Persistor) {
   Navigation.registerComponent('navigation.main.SignupScreen', sceneCreator(SignupScreen, store, persistor));
   Navigation.registerComponent('navigation.main.ListView', sceneCreator(ItemList, store, persistor));
   Navigation.registerComponent('navigation.main.ItemDetailScreen', sceneCreator(ItemDetailScreen, store, persistor));
+  Navigation.registerComponent('navigation.main.MenuScreen', sceneCreator(MenuScreen, store, persistor));
 
   Navigation.events().registerAppLaunchedListener(() => {
     // Navigation.setDefaultOptions({
@@ -77,7 +79,7 @@ export default function startNav(store: Store<State>, persistor: Persistor) {
     // Navigation.setRoot({
     //   root: {
     //     component: {
-    //       name: 'navigation.main.Loading',
+    //       name: 'navigation.main.ListView',
     //       options: {
     //         topBar: {
     //           visible: false

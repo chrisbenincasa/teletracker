@@ -3,9 +3,11 @@ import { SectionList, Text, TouchableHighlight, View } from 'react-native';
 import { Navigation } from 'react-native-navigation';
 import Search from 'react-native-search-box';
 import { Card, ListItem, Icon, Header } from 'react-native-elements';
+import HeaderLeft from '../Components/Header/HeaderLeft';
+import HeaderCenter from '../Components/Header/HeaderCenter';
+import HeaderRight from '../Components/Header/HeaderRight';
 import { connect, Dispatch } from 'react-redux';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
-import { Navigation } from 'react-native-navigation';
 import UserActions from '../Redux/UserRedux';
 import styles from './Styles/ItemListStyle';
 
@@ -145,11 +147,17 @@ class ItemList extends React.PureComponent  {
   render () {
     return (
       <View style={styles.container}>
-      <Header
+      {/* <Header
         leftComponent={{ icon: 'menu', color: '#fff' }}
         centerComponent={{ text: 'My List', style: { color: '#fff' } }}
         rightComponent={{ icon: 'home', color: '#fff' }}
-      />
+      /> */}
+
+      <Header>
+        <HeaderLeft {...this.props} />
+        <HeaderCenter />
+        <HeaderRight />
+      </Header> 
        <Search
           ref="search_box"
           backgroundColor='white'
