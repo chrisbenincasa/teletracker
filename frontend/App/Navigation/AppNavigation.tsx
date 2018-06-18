@@ -48,6 +48,12 @@ function sceneCreator(Scene: React.Component, store: Store<{}>, persistor: Persi
   }
 }
 
+let appLaunchedListenerFired = false;
+
+export function appLaunched() {
+  return appLaunchedListenerFired;
+}
+
 export default function startNav(store: Store<State>, persistor: Persistor) {
   Navigation.registerComponent('navigation.main.Loading', sceneCreator(SplashScreen, store, persistor))
   Navigation.registerComponent('navigation.main.LoginScreen', sceneCreator(LoginScreen, store, persistor));
@@ -89,6 +95,8 @@ export default function startNav(store: Store<State>, persistor: Persistor) {
     //   }
     // });
 
+    appLaunchedListenerFired = true;
+
     store.dispatch({ type: 'navigation/registerAppLaunchedListener' });
-  })
+  });
 }
