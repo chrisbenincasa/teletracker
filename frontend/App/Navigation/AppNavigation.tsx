@@ -11,6 +11,8 @@ import LoginScreen from '../Containers/LoginScreen';
 import SignupScreen from '../Containers/SignupScreen';
 import MenuScreen from '../Containers/MenuScreen';
 import SplashScreen from '../Containers/SplashScreen';
+import SearchScreen from '../Containers/SearchScreen';
+import NotificationsScreen from '../Containers/NotificationsScreen';
 import { State } from '../Redux/State';
 import ItemDetailScreen from '../Containers/ItemDetailScreen';
 
@@ -61,6 +63,8 @@ export default function startNav(store: Store<State>, persistor: Persistor) {
   Navigation.registerComponent('navigation.main.ListView', sceneCreator(ItemList, store, persistor));
   Navigation.registerComponent('navigation.main.ItemDetailScreen', sceneCreator(ItemDetailScreen, store, persistor));
   Navigation.registerComponent('navigation.main.MenuScreen', sceneCreator(MenuScreen, store, persistor));
+  Navigation.registerComponent('navigation.main.SearchScreen', sceneCreator(SearchScreen, store, persistor));
+  Navigation.registerComponent('navigation.main.NotificationsScreen', sceneCreator(NotificationsScreen, store, persistor));
 
   Navigation.events().registerAppLaunchedListener(() => {
     // Navigation.setDefaultOptions({
