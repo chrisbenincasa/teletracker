@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import { Store } from 'redux';
 import { Persistor } from 'redux-persist';
 import { PersistGate } from 'redux-persist/integration/react';
+import { State } from '../Redux/State';
 
 import ItemList from '../Containers/ItemList';
 import LoginScreen from '../Containers/LoginScreen';
@@ -13,7 +14,6 @@ import MenuScreen from '../Containers/MenuScreen';
 import SplashScreen from '../Containers/SplashScreen';
 import SearchScreen from '../Containers/SearchScreen';
 import NotificationsScreen from '../Containers/NotificationsScreen';
-import { State } from '../Redux/State';
 import ItemDetailScreen from '../Containers/ItemDetailScreen';
 
 function sceneCreator(Scene: React.Component, store: Store<{}>, persistor: Persistor) {

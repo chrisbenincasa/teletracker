@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { ScrollView, Text, KeyboardAvoidingView } from 'react-native';
+import { View, Text, KeyboardAvoidingView } from 'react-native';
 import { connect } from 'react-redux';
-import { Header } from 'react-native-elements';
+import { Card, ListItem, Icon, Header } from 'react-native-elements';
 import HeaderLeft from '../Components/Header/HeaderLeft';
 import HeaderCenter from '../Components/Header/HeaderCenter';
 import HeaderRight from '../Components/Header/HeaderRight';
@@ -14,16 +14,14 @@ import styles from './Styles/NotificationsScreenStyle';
 class NotificationsScreen extends Component {
   render () {
     return (
-      <ScrollView style={styles.container}>
+      <View style={styles.container}>
       <Header>
         <HeaderLeft {...this.props} />
         <HeaderCenter />
         <HeaderRight />
       </Header> 
-        <KeyboardAvoidingView behavior='position'>
-          <Text>Notifications Screen</Text>
-        </KeyboardAvoidingView>
-      </ScrollView>
+      <Text>Notifications Screen</Text>
+      </View>
     )
   }
 }
