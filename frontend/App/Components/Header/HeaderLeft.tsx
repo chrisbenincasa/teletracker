@@ -10,8 +10,7 @@ constructor(props) {
   this.openMenu = this.openMenu.bind(this);
 }
   openMenu() {
-    console.log(NavigationConfig.MenuScreen);
-    Navigation.push(this.props.componentId, NavigationConfig.MenuScreen);
+    Navigation.push(this.props.componentId, NavigationConfig.MenuView);
   };
  
   render () {
