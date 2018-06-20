@@ -1,5 +1,7 @@
 import { UserState } from "./UserRedux";
+import { SearchState } from "./SearchRedux";
 
-export interface State {
-    user: UserState
+export default interface State {
+    user: UserState,
+    search: SearchState
 };

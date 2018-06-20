@@ -7,10 +7,12 @@ import configureStore from './CreateStore';
 import { State } from './State';
 import Rehydration from '../Services/Rehydration';
 import { reducer as UserReducer } from './UserRedux';
+import { reducer as SearchReducer } from './SearchRedux';
 
 export const reducers = combineReducers<State>({
-  user: UserReducer
-})
+  user: UserReducer,
+  search: SearchReducer
+});
 
 export default (): { store: Store<{}>, persistor: any } => {
   let finalReducers = reducers;

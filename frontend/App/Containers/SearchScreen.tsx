@@ -1,53 +1,98 @@
+import * as R from 'ramda';
 import React, { Component } from 'react';
-import { View, Text, KeyboardAvoidingView, StyleSheet } from 'react-native';
-import { connect } from 'react-redux';
-import { Card, ListItem, Icon,  Header } from 'react-native-elements';
-import HeaderLeft from '../Components/Header/HeaderLeft';
-import HeaderCenter from '../Components/Header/HeaderCenter';
-import HeaderRight from '../Components/Header/HeaderRight';
+import { Platform, ScrollView, View } from 'react-native';
+import { ListItem } from 'react-native-elements';
+import { Navigation } from 'react-native-navigation';
 import Search from 'react-native-search-box';
+import { connect } from 'react-redux';
+import { Dispatch } from 'redux';
+
+import Header from '../Components/Header/Header';
+import { NavigationConfig } from '../Navigation/NavigationConfig';
+import SearchActions from '../Redux/SearchRedux';
+import ReduxState from '../Redux/State';
+import styles from './Styles/SearchScreenStyle';
 
 // Add Actions - replace 'Your' with whatever your reducer is called :)
 // import YourActions from '../Redux/YourRedux'
 
 // Styles
-import styles from './Styles/SearchScreenStyle';
+interface Props {
+  search: any,
+  doSearch: (search: String) => any
+}
 
-class SearchScreen extends Component {
+interface State {
+  searchText: string
+}
+
+class SearchScreen extends Component<Props, State> {
+  executeSearch() {
+    this.props.doSearch(this.state.searchText);
+  }
+  
+  searchTextChanged(text: string) {
+    return this.setState({ searchText: text })
+  }
+  
+  goToItemDetail(item: any) {
+    const view = R.mergeDeepLeft(NavigationConfig.DetailView, {
+      component: {
+        passProps: { item }
+      }
+    })
+    Navigation.push(this.props.componentId, view);
+  }
+  
+  private tvResultsLens = R.lensPath(['search', 'results']);
+  
   render () {
-    console.log(styles);
-    console.log(StyleSheet.flatten(styles.container));
-    console.log("test");
+    const tvResults = R.view(this.tvResultsLens, this.props);
+    
     return (
       <View style={styles.container}>
-      <Header>
-        <HeaderLeft {...this.props} />
-        <HeaderCenter />
-        <HeaderRight />
-      </Header> 
-      <Search
+        <Header title='Search' />
+        <Search
           ref="search_box"
           backgroundColor='white'
           style={{flex:1}}
-          /**
-          * There are many props options:
-          * https://github.com/agiletechvn/react-native-search-box
-          */
+          titleCancelColor='black'
+          blurOnSubmit={true}
+          onChangeText={this.searchTextChanged.bind(this)}
+          onSearch={this.executeSearch.bind(this)}
         />
-<Card> 
-  </Card>
+        {
+          (tvResults && tvResults.total_results > 0) ? (
+            <ScrollView>
+            {
+              tvResults.results.map((item, i) => (
+                <ListItem
+                key={i}
+                title={item.title || item.name}
+                subtitle={'Type: ' + item.media_type}
+                onPress={() => this.goToItemDetail(item)}
+                />
+              ))
+            }
+            </ScrollView>
+          ) : null
+        }
       </View>
     )
   }
 }
 
-const mapStateToProps = (state) => {
+const mapStateToProps = (state: ReduxState) => {
   return {
+    search: state.search
   }
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch<any>) => {
   return {
+    doSearch: (searchText: string) => {
+      dispatch(SearchActions.searchRequest(searchText));
+    }
   }
 };
 

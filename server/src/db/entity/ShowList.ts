@@ -10,6 +10,6 @@ export class ShowList extends List {
     @JoinTable()
     shows: Show[];
 
-    @ManyToOne(type => User, user => user.showLists)
+    @ManyToOne(type => User, user => user.showLists, { eager: false })
     user: Promise<User>;
 }
