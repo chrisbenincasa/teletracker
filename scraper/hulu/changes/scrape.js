@@ -45,7 +45,7 @@ request('https://www.hulu.com/press/new-this-month/', function (error, response,
       var status = $(this).children().eq(3).text();
       var metadata = {
         availableDate: availableDate,
-        show: show.trim(),
+        name: show.trim(),
         releaseYear: releaseYear,
         notes: notes,
         category: category,
@@ -59,7 +59,7 @@ request('https://www.hulu.com/press/new-this-month/', function (error, response,
 
     // Export data into JSON file
     var currentDate = moment().format('YYYY-MM-DD');
-    fs.writeFile(currentDate + '.json', JSON.stringify(parsedResults), 'utf8',function(err) {
+    fs.writeFile(currentDate + '-hulu-changes' + '.json', JSON.stringify(parsedResults), 'utf8',function(err) {
       if (err) {
         throw err;
       }
