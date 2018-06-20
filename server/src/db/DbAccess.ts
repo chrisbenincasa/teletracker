@@ -5,6 +5,8 @@ import { User } from "./entity";
 import * as bcrypt from 'bcrypt';
 import * as R from 'ramda';
 
+type Optional<T> = T | undefined;
+
 export default class DbAccess {
     private connection: Connection;
 
@@ -48,7 +50,8 @@ export default class DbAccess {
                 leftJoinAndSelect: {
                     'movieLists': 'user.movieLists',
                     'showLists': 'user.showLists',
-                    'shows': 'showLists.shows'
+                    'shows': 'showLists.shows',
+                    'movies': 'movieLists.movies'
                 }
             };
         }
@@ -88,19 +91,36 @@ export default class DbAccess {
         });
     }
 
-    getShowListForUser(userId: string | number, listId: string | number): Promise<Entity.User | null> {
-        return this.getListForUser(userId, listId, 'showLists', 'shows');
+    getShowListForUser(userId: string | number, listId: string | number): Promise<Optional<Entity.ShowList>> {
+        // return this.getListForUser(userId, listId, 'showLists', 'shows');
+        return this.showListRepository.findOne(listId, { 
+            join: { 
+                alias: 'showList',
+                leftJoinAndSelect: {
+                    shows: 'showList.shows'
+                }
+            } 
+        }).then(showList => {
+            
+            if (showList) {
+                return showList.user.then(user => {
+                    return user && user.id == userId ? showList : undefined;
+                });
+            } else {
+                return;
+            }
+        });
     }
 
     getMovieListForUser(userId: string | number, listId: string | number): Promise<Entity.User | null> {
         return this.getListForUser(userId, listId, 'movieLists');
     }
 
-    getListForUser(userId: string | number, listId: string | number, listType: string, entityType?: string): Promise<Entity.User | null> {
+    getListForUser(userId: string | number, listId: string | number, listType: string, entityType?: string): Promise<Entity.User | undefined> {
         let baseQuery = this.userRepository.createQueryBuilder('user').
             leftJoinAndSelect(`user.${listType}`, 'list').
             where('user.id = :userId', { userId: userId }).
-            andWhere('list.id = :listId and list.isDeleted = 0', { listId: listId });
+            andWhere('list.id = :listId and list.isDeleted = false', { listId: listId });
 
         if (entityType) {
             baseQuery = baseQuery.leftJoinAndSelect(`list.${entityType}`, entityType);
@@ -110,10 +130,27 @@ export default class DbAccess {
     }
 
     //
+    // Movies
+    //
+
+    async saveMovie(movie: Entity.Movie) {
+        const movieRepo = this.connection.getRepository(Entity.Movie);
+
+        return movieRepo.findOne({ where: { externalId: movie.externalId, externalSource: movie.externalSource }}).then(res => {
+            if (res) {
+                movie.id = res.id;
+                return movieRepo.update(res.id, movie);
+            } else {
+                return movieRepo.insert(movie);
+            }
+        })
+    }
+
+    //
     // Shows
     //
 
-    getShowById(showId: string | number): Promise<Entity.Show | null | undefined> {
+    getShowById(showId: string | number): Promise<Optional<Entity.Show>> {
         return this.showRepository.findOne(showId);
     }
 

@@ -113,7 +113,7 @@ describe('Users API', () => {
         showList.user = Promise.resolve(user);
         showList.name = 'Test Show List';
         showList.shows = [showRet];
-        await connection.getRepository(ShowList).save(showList);
+        showList = await connection.getRepository(ShowList).save(showList);
 
         let res2 = await chai.request(baseUrl).
             get(`/api/v1/users/${user.id}/lists/shows/${showList.id}`).
@@ -121,7 +121,14 @@ describe('Users API', () => {
 
         res2.type.should.equal('application/json');
         res2.body.should.include.keys('data');
-        res2.body.data.should.include.keys('name', 'id', 'showLists');
+        res2.body.should.containSubset({
+            data: {
+                id: showList.id,
+                name: showList.name,
+                isDefault: false,
+                shows: []
+            }
+        });
     });
 
     it('should respond with 404 when a user\'s specific list cannot be found', async () => {
@@ -165,12 +172,13 @@ describe('Users API', () => {
             get(`/api/v1/users/${user.id}/lists/shows/${showList.id}`).
             set('Authorization', 'Bearer ' + token);;
 
-        chai.expect(userAndList.body.data.showLists[0].shows).to.deep.equal([
+        chai.expect(userAndList.body.data.shows).to.deep.equal([
             {
                 id: show.id,
                 externalId: show.externalId,
                 name: show.name,
-                externalSource: show.externalSource
+                externalSource: show.externalSource,
+                type: 'show'
             }
         ]);
     });
@@ -197,19 +205,11 @@ describe('Users API', () => {
         chai.expect(userList).to.be.json;
         chai.expect(userList.body).to.containSubset({
             data: {
-                name: user.name,
-                email: user.email,
-                username: user.username,
-                id: user.id,
-                showLists: [
-                    { 
-                        id: response.body.data.id, 
-                        shows: [],
-                        name: 'Test Show List',
-                        isDefault: false,
-                        isDeleted: false
-                    }
-                ]
+                id: response.body.data.id,
+                shows: [],
+                name: 'Test Show List',
+                isDefault: false,
+                isDeleted: false
             }
         });
     });

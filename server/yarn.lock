@@ -2737,9 +2737,9 @@ text-hex@0.0.x:
   version "0.0.0"
   resolved "https://registry.yarnpkg.com/text-hex/-/text-hex-0.0.0.tgz#578fbc85a6a92636e42dd17b41d0218cce9eb2b3"
 
-themoviedb-client-typed@0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/themoviedb-client-typed/-/themoviedb-client-typed-0.0.2.tgz#470a7019ee847ffbe036e93cd787097b8660dcb2"
+themoviedb-client-typed@0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/themoviedb-client-typed/-/themoviedb-client-typed-0.0.4.tgz#453cbab5acf4aa5842dec1da77f9244ebdc51f84"
   dependencies:
     request "^2.85.0"
     request-promise-native "^1.0.5"

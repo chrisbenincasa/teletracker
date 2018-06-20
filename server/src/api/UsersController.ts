@@ -38,7 +38,7 @@ export class UsersController extends Controller {
         });
 
         this.router.get('/users/self', AuthMiddleware.protectRouteLoggedIn(), async ctx => {
-            let user = await this.dbAccess.getUserById(ctx.user.id);
+            let user = await this.dbAccess.getUserById(ctx.user.id, true);
 
             if (user) {
                 ctx.status = 200;
@@ -73,8 +73,8 @@ export class UsersController extends Controller {
         });
 
         // Create a list for a user
-        this.router.post('/users/:id/lists', AuthMiddleware.protectRouteForId(), async (ctx) => {
-            let user = await this.dbAccess.getUserById(ctx.params.id);
+        this.router.post('/users/:id/lists', AuthMiddleware.protectForSelfOrId(), async ctx => {
+            const user = ctx.user;
 
             if (!user) {
                 ctx.status = 400;
@@ -108,8 +108,8 @@ export class UsersController extends Controller {
         });
 
         // Retrieve a specific show-based list for a user
-        this.router.get('/users/:id/lists/shows/:listId', AuthMiddleware.protectRouteForId(), async (ctx) => {
-            let userWithTrackedShows = await this.dbAccess.getShowListForUser(ctx.params.id, ctx.params.listId);
+        this.router.get('/users/:id/lists/shows/:listId', AuthMiddleware.protectForSelfOrId(), async ctx => {
+            let userWithTrackedShows = await this.dbAccess.getShowListForUser(ctx.user.id, ctx.params.listId);
 
             if (!userWithTrackedShows) {
                 ctx.status = 404;
@@ -132,15 +132,15 @@ export class UsersController extends Controller {
         });
 
         // Tracks a show on the given list
-        this.router.put('/users/:id/lists/shows/:listId/tracked', AuthMiddleware.protectRouteForId(), async (ctx) => {
-            let user = await this.dbAccess.getShowListForUser(ctx.params.id, ctx.params.listId);
-            if (user) {
+        this.router.put('/users/:id/lists/shows/:listId/tracked', AuthMiddleware.protectForSelfOrId(), async (ctx) => {
+            let list = await this.dbAccess.getShowListForUser(ctx.user.id, ctx.params.listId);
+            if (list) {
                 let req = ctx.request.body;
                 let show = await this.dbAccess.getShowById(req.showId);
                 if (!show) {
                     ctx.status = 400;
                 } else {
-                    await this.dbAccess.addShowToList(show, user.showLists[0]);
+                    await this.dbAccess.addShowToList(show, list);
                     ctx.status = 200;
                 }
             } else {

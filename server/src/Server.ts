@@ -11,6 +11,7 @@ import { Server as ServerInstance } from 'net';
 import { Config } from './Config';
 import logger from './Logger';
 import { AuthController } from './api/AuthController';
+import { SearchController } from './api/SearchController';
 
 export default class Server {
     config: Config
@@ -47,7 +48,8 @@ export default class Server {
             new UsersController(router, db),
             new AuthController(router),
             new MoviesController(router, db),
-            new TvShowController(router, db)
+            new TvShowController(router, db),
+            new SearchController(router, db)
         ];
 
         controllers.forEach(controller => controller.setupRoutes());

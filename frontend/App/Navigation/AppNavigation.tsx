@@ -15,6 +15,8 @@ import SplashScreen from '../Containers/SplashScreen';
 import SearchScreen from '../Containers/SearchScreen';
 import NotificationsScreen from '../Containers/NotificationsScreen';
 import ItemDetailScreen from '../Containers/ItemDetailScreen';
+import { Card, ListItem, Icon, Header } from 'react-native-elements';
+
 
 function sceneCreator(Scene: React.Component, store: Store<{}>, persistor: Persistor) {
   return () => {

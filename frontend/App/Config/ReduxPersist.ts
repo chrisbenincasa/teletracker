@@ -22,11 +22,9 @@ import ImmutablePersistenceTransform from '../Services/ImmutablePersistenceTrans
 
 const persistanceLogger = rp.createTransform(
   (inboundState, key) => {
-    console.log('inbound', inboundState);
     return inboundState
   },
   (outboundState, key) => {
-    console.log('outbound', outboundState);
     return outboundState
   }
 );
@@ -35,6 +33,7 @@ const defaultPersistConfig: rp.PersistConfig = {
   key: 'root',
   storage: AsyncStorage,
   debug: true,
+  blacklist: ['search'],
   transforms: [ImmutablePersistenceTransform, persistanceLogger]
 }
 

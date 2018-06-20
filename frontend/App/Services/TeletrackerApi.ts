@@ -36,7 +36,7 @@ export class TeletrackerApi {
         this.token = token;
     }
 
-    getUser(id: string | number) {
+    async getUser(id: string | number) {
         if (!this.token) {
             return Promise.reject(new Error('getUser requires a token to be set'));
         }
@@ -44,7 +44,7 @@ export class TeletrackerApi {
         return this.api.get<User>(`/api/v1/users/${id}`, {}, { headers: this.authHeaders() });
     }
 
-    getUserSelf() {
+    async getUserSelf() {
         if (!this.token) {
             return Promise.reject(new Error('getUser requires a token to be set'));
         }
@@ -52,7 +52,7 @@ export class TeletrackerApi {
         return this.api.get<User>('/api/v1/users/self', {}, { headers: this.authHeaders() });
     }
 
-    loginUser(email: string, password: string) {
+    async loginUser(email: string, password: string) {
         const data = { email, password };
         return this.api.post<any>('/api/v1/auth/login', data).then(response => {
             if (response.ok) {
@@ -63,7 +63,7 @@ export class TeletrackerApi {
         });
     }
 
-    registerUser(username: string, email: string, password: string) {
+    async registerUser(username: string, email: string, password: string) {
         const data = { username, email, password, name: username };
         return this.api.post<any>('/api/v1/users', data).then(response => {
             if (response.ok) {
@@ -72,6 +72,10 @@ export class TeletrackerApi {
             
             return response;
         });
+    }
+
+    async search(searchText: string) {
+        return this.api.get<any>('/api/v1/search', { query: searchText });
     }
 
     private authHeaders() {
