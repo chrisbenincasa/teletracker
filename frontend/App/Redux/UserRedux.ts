@@ -8,7 +8,7 @@ import { User } from '../Model';
 
 const { Types, Creators } = createActions({
     userSignupRequest: ['componentId', 'username', 'userEmail', 'password'],
-    userSignupSuccess: null,
+    userSignupSuccess: ['token'],
     userSignupFailure: null,
     userSelfRequest: ['componentId'],
     userRequest: ['userId'],
@@ -73,7 +73,7 @@ export const reducers = {
     signupRequest: (state: State) =>
         state.merge({ signup: { fetching: true } }),
 
-    signupSuccess: (state: State, { token }: AnyAction) =>
+    signupSuccess: (state: State, { token }: AnyAction) => 
         state.merge({ signup: { fetching: false, error: false, success: true }, token}),
 
     signupFailure: (state: State) =>
