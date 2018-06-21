@@ -3,25 +3,30 @@ import { Icon } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { Colors } from '../../Themes/';
 
-import * as NavigationConfig from '../../Navigation/NavigationConfig';
-
 export default class HeaderLeft extends Component {
     constructor(props) {
         super(props);
-        this.openMenu = this.openMenu.bind(this);
+        this.showLeftMenu = this.showLeftMenu.bind(this);
     }
 
-    openMenu() {
-        Navigation.push(this.props.componentId, NavigationConfig.MenuView);
+    showLeftMenu() {
+        Navigation.mergeOptions(this.props.componentId, {
+            sideMenu: {
+                left: {
+                    visible: true
+                }
+            }
+        });
     }
 
-    render() {
+ render() {
         return (
             <Icon 
                 name="menu"
                 color="#fff"
                 underlayColor={Colors.headerBackground}
-                onPress={this.openMenu} />
+                onPress={this.showLeftMenu} 
+            />
         );
     }
 }

@@ -22,20 +22,74 @@ export const AuthStack = {
 };
 
 export let ListView = {
-    bottomTabs: {
-        children: [{
-            stack: {
+    sideMenu: {
+        left: {
+          component: {
+            name: 'navigation.main.MenuScreen',
+            passProps: {
+              side: 'left'
+            }
+          }
+        },
+        center: {
+            bottomTabs: {
                 children: [{
-                    component: {
-                        name: 'navigation.main.ListView',
+                    stack: {
+                        children: [{
+                            component: {
+                                name: 'navigation.main.ListView',
+                                    passProps: {
+                                        text: 'List View'
+                                    },
+                                    options: {
+                                        bottomTab: {
+                                            title: 'My List',
+                                            icon: require('../Images/Icons/list-icon.png'),
+                                            testID: 'FIRST_TAB_BAR_BUTTON'  
+                                        },
+                                        topBar: {
+                                            visible: false
+                                        }
+                                    }
+                                }
+                            }]
+                        }
+                    }, 
+                    {
+                    stack: {
+                        children: [{
+                            component: {
+                                name: 'navigation.main.SearchScreen',
+                                passProps: {
+                                    text: 'Search'
+                                },
+                                options: {
+                                    bottomTab: {
+                                        title: 'Search',
+                                        icon: require('../Images/Icons/search.png'),
+                                        testID: 'SECOND_TAB_BAR_BUTTON'
+                                    },
+                                    topBar: {
+                                        visible: false,
+                                    }
+                                }
+                            }
+                        }]
+                    }
+                },
+                {
+                stack: {
+                    children: [{
+                        component: {
+                            name: 'navigation.main.NotificationsScreen',
                             passProps: {
-                                text: 'List View'
+                                text: 'Notifications'
                             },
                             options: {
                                 bottomTab: {
-                                    title: 'My List',
-                                    icon: require('../Images/Icons/list-icon.png'),
-                                    testID: 'FIRST_TAB_BAR_BUTTON'  
+                                    title: 'Notifications',
+                                    icon: require('../Images/Icons/notification.png'),
+                                    testID: 'THIRD_TAB_BAR_BUTTON'
                                 },
                                 topBar: {
                                     visible: false
@@ -44,70 +98,25 @@ export let ListView = {
                         }
                     }]
                 }
-            }, 
-            {
-            stack: {
-                children: [{
-                    component: {
-                        name: 'navigation.main.SearchScreen',
-                        passProps: {
-                            text: 'Search'
-                        },
-                        options: {
-                            bottomTab: {
-                                title: 'Search',
-                                icon: require('../Images/Icons/search.png'),
-                                testID: 'SECOND_TAB_BAR_BUTTON'
-                            },
-                            topBar: {
-                                visible: false,
-                            }
-                        }
-                    }
                 }]
             }
         },
-        {
-        stack: {
-            children: [{
-                component: {
-                    name: 'navigation.main.NotificationsScreen',
-                    passProps: {
-                        text: 'Notifications'
-                    },
-                    options: {
-                        bottomTab: {
-                            title: 'Notifications',
-                            icon: require('../Images/Icons/notification.png'),
-                            testID: 'THIRD_TAB_BAR_BUTTON'
-                        },
-                        topBar: {
-                            visible: false
-                        }
-                    }
-                }
-            }]
+        right: {
+            component: {
+              name: 'navigation.main.NotificationsScreen',
+              passProps: {
+                side: 'right'
+              }
+            }
         }
-    }]
-  }
+    }
 }
 
 export let MenuView = {
     component: {
         name: 'navigation.main.MenuScreen',
         options: {
-            animated: true,
-            topBar: {
-                title: { 
-                    text: 'My Lists',
-                    color: 'white'
-                },
-                // searchBar: true
-                background: {
-                    color: '#476DC5'
-                },
-                visible: false
-            }
+            animated: true
         }
     }
 }
