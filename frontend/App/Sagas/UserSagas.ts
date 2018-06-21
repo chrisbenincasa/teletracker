@@ -9,7 +9,7 @@ import { AnyAction } from 'redux';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
 
 const getListViewNavEffect = (componentId: string) => {
-    return call([Navigation, Navigation.setStackRoot], componentId, NavigationConfig.ListView);
+    return call([Navigation, Navigation.setRoot], NavigationConfig.AppStack);
 }
 
 const getNavEffect = (componentId: string, view: any) => {

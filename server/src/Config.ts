@@ -23,7 +23,8 @@ export class ConfigLoader {
                 logging: config.get('db.logging'),
                 entities: config.get('db.entities'),
                 migrations: config.get('db.migrations'),
-                subscribers: config.get('db.subscribers')
+                subscribers: config.get('db.subscribers'),
+                name: 'default'
             },
             auth: {
                 jwt: {

@@ -1,16 +1,16 @@
 import 'mocha';
 
 import * as chai from 'chai';
+import * as R from 'ramda';
 import * as random from 'random-js';
 import { Connection, QueryBuilder, Repository } from 'typeorm';
-
-import { Show, User } from '../db/entity';
-import { MovieList } from '../db/entity/MovieList';
-import { ShowList } from '../db/entity/ShowList';
-import { InMemoryDb } from './fixtures/database';
 import * as uuid from 'uuid/v4';
-import DbAccess from '../db/DbAccess';
 
+import { GlobalConfig } from '../Config';
+import { Db } from '../db/Connection';
+import DbAccess from '../db/DbAccess';
+import { List, Thing, User, ThingType } from '../db/entity';
+import PostgresDocker from './fixtures/docker';
 
 const should = chai.should();
 
@@ -21,22 +21,43 @@ describe('The DB', () => {
 
     let queryBuilder: QueryBuilder<User>;
     let userRepository: Repository<User>;
-    let movieListRepository: Repository<MovieList>;
+    let docker: PostgresDocker;
+    
 
     let dbAccess: DbAccess;
 
-    before(function() {
+    before(async function() {
         this.timeout(10000);
-        return new InMemoryDb('db.spec').connect().then(c => {
-            connection = c;
-            dbAccess = new DbAccess(connection);
+        docker = new PostgresDocker();
+        await docker.client.ping();
+        try {
+            await docker.startDb();
+        } catch (e) {
+            console.error(e);
+        }
+
+        let config = R.mergeDeepRight(GlobalConfig, {
+            db: {
+                type: 'postgres',
+                host: 'localhost',
+                port: docker.boundPort,
+                password: 'teletracker',
+                name: 'db.spec.ts'
+            }
         });
+
+        connection = await new Db(config).connect('db.spec.ts').catch(e => { console.error(e); throw e });
+        dbAccess = new DbAccess(connection);
+    });
+
+    after(async function() {
+        this.timeout(20000);
+        await docker.stopDb();
     });
 
     beforeEach(() => {
         userRepository = connection.getRepository(User);
         queryBuilder = userRepository.createQueryBuilder('user');
-        movieListRepository = connection.getRepository(MovieList);
     });
 
     it('should insert and retrieve a user', async () => {
@@ -49,42 +70,25 @@ describe('The DB', () => {
     it('should create a movie list for a user', async () => {
         let user = await generateUser();
 
-        let show = new Show();
+        let show = new Thing();
         show.name = 'Halt and Catch Fire';
-        show.externalId = r.string(12);
-        let showRet = await connection.getRepository(Show).save(show);
+        show.normalizedName = 'halt-and-catch-fire';
+        show.type = ThingType.Show;
+        let showRet = await connection.getRepository(Thing).save(show);
 
-        let list = new MovieList();
-        list.name = 'Test Movie List';
-        list.user = Promise.resolve(user);
-        list = await movieListRepository.save(list);
-
-        let showList = new ShowList();
+        let showList = new List();
         showList.name = 'Test Show List';
         showList.user = Promise.resolve(user);
-        showList.shows = [showRet];
-        showList = await connection.getRepository(ShowList).save(showList);
+        showList.things = [showRet];
+        showList = await connection.getRepository(List).save(showList);
 
-        let userWithTrackedShows = await userRepository.findOne({
-            where: {
-                id: user.id
-            },
-            join: {
-                alias: 'user',
-                leftJoinAndSelect: {
-                    'movieLists': 'user.movieLists',
-                    'showLists': 'user.showLists',
-                    'shows': 'showLists.shows'
-                }
-            }
-        });
+        let userWithTrackedShows = await dbAccess.getUserById(user.id, true);
 
         chai.assert.exists(userWithTrackedShows, 'user exists')
-        chai.assert.lengthOf(userWithTrackedShows.movieLists, 2);
-        chai.assert.lengthOf(userWithTrackedShows.showLists, 2,);
-        chai.assert.lengthOf(userWithTrackedShows.showLists[1].shows, 1, 'user show list has 1 tracked show');
+        chai.assert.lengthOf(userWithTrackedShows.lists, 2);
+        chai.assert.lengthOf(userWithTrackedShows.lists[1].things, 1, 'user show list has 1 tracked show');
 
-        chai.assert.ownInclude(userWithTrackedShows.showLists[1].shows[0], { name: show.name, externalId: show.externalId }, 'user tracked show has the correct props');
+        chai.assert.ownInclude(userWithTrackedShows.lists[1].things[0], { name: show.name }, 'user tracked show has the correct props');
     });
 
     async function generateUser(): Promise<User> {

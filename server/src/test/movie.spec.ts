@@ -2,29 +2,59 @@ import 'mocha';
 
 import * as chai from 'chai';
 import chaiHttp = require('chai-http');
-import { Connection, getConnection } from 'typeorm';
+import * as R from 'ramda';
 
 import { GlobalConfig } from '../Config';
 import Server from '../Server';
-import { InMemoryDb } from './fixtures/database';
+import PostgresDocker from './fixtures/docker';
+import { getRandomPort } from './util';
 
 chai.use(chaiHttp);
 const should = chai.should();
 
 describe('Movies API', () => {
     let server: Server;
-    let connection: Connection;
-    const baseUrl = `http://localhost:3000`
+    let port = getRandomPort()
+    const baseUrl = `http://localhost:${port}`
+
+    let docker: PostgresDocker;
 
     before(async function() {
         this.timeout(10000);
-        server = new Server(GlobalConfig, new InMemoryDb('movies.spec'));
-        await server.main();
-        connection = getConnection();
+        docker = new PostgresDocker();
+        await docker.client.ping();
+        try {
+            await docker.startDb();
+        } catch (e) {
+            console.error(e);
+        }
+
+        let config = R.mergeDeepRight(GlobalConfig, {
+            server: {
+                port
+            },
+            db: {
+                type: 'postgres',
+                host: 'localhost',
+                port: docker.boundPort,
+                password: 'teletracker',
+                name: 'movie.spec.ts'
+            }
+        });
+
+        server = new Server(config);
+        await server.main().catch(console.error);
     });
 
-    after(function(done) {
-        server.instance.close(() => done());
+    after(async function() {
+        this.timeout(10000);
+        if (server.instance) {
+            await server.instance.close(async () => {
+                await docker.stopDb();
+            });
+        } else {
+            await docker.stopDb();
+        }
     });
 
     it('GET /api/v1/movies/:id should respond with a single movie with required fields', function(done) {

@@ -1,6 +1,10 @@
-import { Column, CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinTable, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn, ManyToMany } from 'typeorm';
 
-export abstract class List {
+import { Thing } from './Thing';
+import { User } from './User';
+
+@Entity('lists')
+export class List {
     @PrimaryGeneratedColumn()
     id: number;
 
@@ -18,4 +22,11 @@ export abstract class List {
 
     @Column({ default: false })
     isDeleted: boolean
+
+    @ManyToOne(type => User, user => user.lists, { eager: false })
+    user: Promise<User>;
+
+    @ManyToMany(type => Thing, thing => thing.lists)
+    @JoinTable()
+    things: Thing[]
 }

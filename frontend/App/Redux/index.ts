@@ -8,10 +8,12 @@ import { State } from './State';
 import Rehydration from '../Services/Rehydration';
 import { reducer as UserReducer } from './UserRedux';
 import { reducer as SearchReducer } from './SearchRedux';
+import { reducer as ListReducer } from './ListRedux';
 
 export const reducers = combineReducers<State>({
   user: UserReducer,
-  search: SearchReducer
+  search: SearchReducer,
+  lists: ListReducer
 });
 
 export default (): { store: Store<{}>, persistor: any } => {
