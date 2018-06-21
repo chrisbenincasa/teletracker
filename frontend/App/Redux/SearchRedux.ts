@@ -36,7 +36,8 @@ const searchFailure = (state: State) => {
 
 export const reducers = {
     searchRequest,
-    searchSuccess
+    searchSuccess,
+    searchFailure
 };
 
 export const reducer = createReducer<State>(INITIAL_STATE, {

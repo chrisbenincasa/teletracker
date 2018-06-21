@@ -18,6 +18,7 @@ export default class Server {
     port: number
     instance: ServerInstance
     db: Database
+    connection: Connection;
 
     constructor(config: Config, database: Database = new Db(config)) {
         this.config = config;
@@ -29,11 +30,11 @@ export default class Server {
         const app = new Koa();
         const router = new Router().prefix('/api/v1');
 
-        const db = await this.db.connect();
+        this.connection = await this.db.connect(this.config.db.name);
 
-        Middleware.setupMiddleware(app, db);
+        Middleware.setupMiddleware(app, this.connection);
 
-        this.configure(router, db);
+        this.configure(router);
 
         app.use(router.routes());
 
@@ -43,13 +44,13 @@ export default class Server {
         logger.info(`Server running on port ${this.port}`);
     }
 
-    configure(router: Router, db: Connection): void {
+    configure(router: Router): void {
         const controllers = [
-            new UsersController(router, db),
+            new UsersController(router, this.connection),
             new AuthController(router),
-            new MoviesController(router, db),
-            new TvShowController(router, db),
-            new SearchController(router, db)
+            new MoviesController(router, this.connection),
+            new TvShowController(router, this.connection),
+            new SearchController(router, this.connection)
         ];
 
         controllers.forEach(controller => controller.setupRoutes());

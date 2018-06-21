@@ -3,14 +3,15 @@ import 'reflect-metadata';
 import * as bcrypt from 'bcrypt';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
-import { MovieList } from './MovieList';
-import { ShowList } from './ShowList';
+import { List } from './List';
 import { Token } from './Token';
 
 @Entity('users')
 export class User {
     constructor(name: string, username?: string, email?: string) {
         this.name = name;
+        this.username = username;
+        this.email = email;
     }
 
     @PrimaryGeneratedColumn()
@@ -28,14 +29,11 @@ export class User {
     @Column()
     password?: string;
 
-    @OneToMany(type => Token, 'user')
-    tokens: Token[]
+    @OneToMany(type => Token, 'user', { eager: false })
+    tokens: Promise<Token[]>
 
-    @OneToMany(type => MovieList, list => list.user)
-    movieLists: MovieList[]
-
-    @OneToMany(type => ShowList, list => list.user)
-    showLists: ShowList[]
+    @OneToMany(type => List, list => list.user)
+    lists: List[]
 
     async passwordEquals(test: string) {
         return bcrypt.compare(test, this.password);

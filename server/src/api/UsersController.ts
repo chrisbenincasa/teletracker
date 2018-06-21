@@ -37,24 +37,13 @@ export class UsersController extends Controller {
             });
         });
 
-        this.router.get('/users/self', AuthMiddleware.protectRouteLoggedIn(), async ctx => {
+        // Retrieve a user
+        this.router.get('/users/:id', AuthMiddleware.protectForSelfOrId(), async (ctx) => {
             let user = await this.dbAccess.getUserById(ctx.user.id, true);
 
             if (user) {
                 ctx.status = 200;
                 ctx.body = { data: user };
-            } else {
-                ctx.status = 404;
-            }
-        });
-
-        // Retrieve a user
-        this.router.get('/users/:id', AuthMiddleware.protectRouteForId(), async (ctx) => {
-            let user = await this.dbAccess.getUserById(ctx.params.id, true);
-
-            if (user) {
-                ctx.status = 200;
-                ctx.body = { data: R.omit(['password'], user) };
             } else {
                 ctx.status = 404;
             }
@@ -84,19 +73,19 @@ export class UsersController extends Controller {
                 ctx.body = { error: 'Invalid request body or request body missing.' };
             } else {
                 let req = ctx.request.body;
-                let entityType: typeof Entity.ShowList | typeof Entity.MovieList | undefined;
+                let entityType: typeof Entity.List;
 
                 if (req.type.toLowerCase() === 'show') {
-                    entityType = Entity.ShowList;
+                    entityType = Entity.List;
                 } else if (req.type.toLowerCase() === 'movie') {
-                    entityType = Entity.MovieList;
+                    entityType = Entity.List;
                 }
 
                 if (!entityType) {
                     ctx.status = 400;
                     ctx.body = { error: 'Unrecognized list type = ' + req.type };
                 } else {
-                    let listRepo = this.dbConnection.getRepository(entityType);
+                    let listRepo = this.dbConnection.getRepository(Entity.List);
                     let list = listRepo.create();
                     list.user = Promise.resolve(user);
                     list.name = req.name;
@@ -108,39 +97,32 @@ export class UsersController extends Controller {
         });
 
         // Retrieve a specific show-based list for a user
-        this.router.get('/users/:id/lists/shows/:listId', AuthMiddleware.protectForSelfOrId(), async ctx => {
-            let userWithTrackedShows = await this.dbAccess.getShowListForUser(ctx.user.id, ctx.params.listId);
+        this.router.get('/users/:id/lists/:listId', AuthMiddleware.protectForSelfOrId(), async ctx => {
+            let listAndShows = await this.dbAccess.getListForUser(ctx.user.id, ctx.params.listId);
 
-            if (!userWithTrackedShows) {
+            if (!listAndShows) {
                 ctx.status = 404;
             } else {
                 ctx.status = 200;
-                ctx.body = { data: userWithTrackedShows };
-            }
-        });
-
-        // Retrieve a specific movie-based list for a user
-        this.router.get('/users/:id/lists/movies/:listId', AuthMiddleware.protectRouteForId(), async (ctx) => {
-            let userWithTrackedMovies = await this.dbAccess.getMovieListForUser(ctx.params.id, ctx.params.listId);
-
-            if (!userWithTrackedMovies) {
-                ctx.status = 404;
-            } else {
-                ctx.status = 200;
-                ctx.body = { data: userWithTrackedMovies };
+                ctx.body = { data: listAndShows };
             }
         });
 
         // Tracks a show on the given list
-        this.router.put('/users/:id/lists/shows/:listId/tracked', AuthMiddleware.protectForSelfOrId(), async (ctx) => {
-            let list = await this.dbAccess.getShowListForUser(ctx.user.id, ctx.params.listId);
+        this.router.put('/users/:id/lists/:listId/tracked', AuthMiddleware.protectForSelfOrId(), async (ctx, next) => {
+            if (!ctx.request.body.itemId) {
+                ctx.status = 400;
+                next();
+            }
+
+            let list = await this.dbAccess.getListForUser(ctx.user.id, ctx.params.listId);
             if (list) {
                 let req = ctx.request.body;
-                let show = await this.dbAccess.getShowById(req.showId);
-                if (!show) {
+                let object = await this.dbAccess.getObjectById(req.itemId);
+                if (!object) {
                     ctx.status = 400;
                 } else {
-                    await this.dbAccess.addShowToList(show, list);
+                    await this.dbAccess.addObjectToList(object, list);
                     ctx.status = 200;
                 }
             } else {

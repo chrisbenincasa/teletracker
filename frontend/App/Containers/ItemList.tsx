@@ -29,24 +29,15 @@ class ItemList extends React.PureComponent<Props> {
     
     getListSections() {
         if (this.props.user.details && !this.props.user.fetching) {
-            const { movieLists, showLists } = this.props.user.details;
-            const defaultMovieList = R.find(l => l.isDefault)(movieLists)
-            const defaultShowList = R.find(l => l.isDefault)(showLists)
-            return [
-                {
-                    key: defaultMovieList.name,
-                    data: [
-                        { title: 'The Fate of the Furious', platform: 'iTunes', type: 'movie' },
-                        { title: 'Patti Cake$$$$$', platform: 'HBO', type: 'movie' }
-                    ]
-                }, {
-                    key: defaultShowList.name,
-                    data: [
-                        { title: 'Halt & Catch Fire', platform: 'Netflix', type: 'tv' },
-                        { title: 'Hamilton\'s Pharmacopeia', platform: 'Vice', type: 'tv' }
-                    ]
-                }
-            ]
+            const { lists } = this.props.user.details;
+            return lists.map(list => {
+                return {
+                    key: list.name,
+                    data: list.things.map(thing => {
+                        return { title: thing.name, type: thing.type };
+                    })
+                };
+            })
         } else {
             return [];
         }

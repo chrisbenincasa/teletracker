@@ -31,6 +31,7 @@ interface State {
 }
 
 class SearchScreen extends Component<Props, State> {
+    private tvResultsLens = R.lensPath(['search', 'results', 'data']);
 
     componentWillMount() {
         this.props.loadUserSelf(this.props.componentId);
@@ -53,8 +54,6 @@ class SearchScreen extends Component<Props, State> {
         Navigation.push(this.props.componentId, view);
     }
 
-    private tvResultsLens = R.lensPath(['search', 'results']);
-
     render() {
         const tvResults = R.view(this.tvResultsLens, this.props);
 
@@ -73,13 +72,13 @@ class SearchScreen extends Component<Props, State> {
                     onChangeText={this.searchTextChanged.bind(this)}
                     onSearch={this.executeSearch.bind(this)}
                 />
-                {tvResults && tvResults.total_results > 0 ? (
+                {tvResults && tvResults.length > 0 ? (
                     <ScrollView>
-                        {tvResults.results.map((item, i) => (
+                        {tvResults.map((item, i) => (
                             <ListItem
                                 key={i}
-                                title={item.title || item.name}
-                                subtitle={'Type: ' + item.media_type}
+                                title={item.name}
+                                subtitle={'Type: ' + item.type}
                                 onPress={() => this.goToItemDetail(item)}
                             />
                         ))}
