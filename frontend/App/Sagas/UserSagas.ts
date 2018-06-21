@@ -47,7 +47,7 @@ export function * signupUser(api: TeletrackerApi, action: any) {
     const response: ApiResponse<any> = yield call([api, api.registerUser], username, userEmail, password);
 
     if (response.ok) {
-        yield put(UserActions.userSignupSuccess(response.data.data))
+        yield put(UserActions.userSignupSuccess(response.data.data.token));
         // Kick off a getUser call
         yield call(getUser, api, action);
         yield getListViewNavEffect(componentId)
