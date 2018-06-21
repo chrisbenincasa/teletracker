@@ -78,6 +78,14 @@ export class TeletrackerApi {
         return this.api.get<any>('/api/v1/search', { query: searchText });
     }
 
+    async addItemToList(listId: string, itemId: string) {
+        if (!this.token) {
+            return Promise.reject(new Error('getUser requires a token to be set'));
+        }
+
+        return this.api.put<any>(`/api/v1/users/self/lists/${listId}/tracked`, { itemId }, { headers: this.authHeaders() });
+    }
+
     private authHeaders() {
         return {
             'Authorization': `Bearer ${this.token}`

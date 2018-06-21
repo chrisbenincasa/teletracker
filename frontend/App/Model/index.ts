@@ -1,3 +1,8 @@
+export interface List {
+       
+}
+
 export interface User {
-    name: string
+    name: string,
+    lists: List[]
 }

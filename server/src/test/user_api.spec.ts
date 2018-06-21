@@ -3,17 +3,18 @@ import 'mocha';
 import * as chai from 'chai';
 import chaiHttp = require('chai-http');
 import chaiSubset = require('chai-subset');
+import * as R from 'ramda';
 import * as random from 'random-js';
 import { Connection } from 'typeorm';
-import { inspect } from 'util';
 import * as uuid from 'uuid/v4';
 
 import { GlobalConfig } from '../Config';
 import DbAccess from '../db/DbAccess';
-import { MovieList, Show, ShowList, User } from '../db/entity';
+import { List, Thing, User, ThingType } from '../db/entity';
 import Server from '../Server';
 import JwtVendor from '../util/JwtVendor';
-import { InMemoryDb } from './fixtures/database';
+import PostgresDocker from './fixtures/docker';
+import { getRandomPort } from './util';
 
 chai.use(chaiHttp);
 chai.use(chaiSubset);
@@ -23,20 +24,49 @@ describe('Users API', () => {
     const r = new random();
     let server: Server;
     let connection: Connection;
-    const baseUrl = `http://localhost:3000`;
+    let port = getRandomPort();
+    const baseUrl = `http://localhost:${port}`;
     let dbAccess: DbAccess;
+    let docker: PostgresDocker;
 
-    before(async function () {
+    before(async function() {
         this.timeout(10000);
-        let db = new InMemoryDb('users_api');
-        server = new Server(GlobalConfig, db);
-        await server.main();
-        connection = await db.connect();
+        docker = new PostgresDocker();
+        await docker.client.ping();
+        try {
+            await docker.startDb();
+        } catch (e) {
+            console.error(e);
+        }
+
+        let config = R.mergeDeepRight(GlobalConfig, {
+            server: {
+                port
+            },
+            db: {
+                type: 'postgres',
+                host: 'localhost',
+                port: docker.boundPort,
+                password: 'teletracker',
+                name: 'user_api.spec.ts'
+            }
+        });
+
+        server = new Server(config);
+        await server.main().catch(console.error);
+        connection = server.connection;
         dbAccess = new DbAccess(connection);
     });
 
-    after(function (done) {
-        server.instance.close(() => done());
+    after(async function() {
+        this.timeout(10000);
+        if (server.instance) {
+            await server.instance.close(async () => {
+                await docker.stopDb();
+            });
+        } else {
+            await docker.stopDb();
+        }
     });
 
     it('should create default lists for a new user', async () => {
@@ -45,8 +75,7 @@ describe('Users API', () => {
 
         let res = await chai.request(baseUrl).get(`/api/v1/users/${user.id}`).set('Authorization', 'Bearer ' + token);
 
-        res.body.data.showLists.should.have.lengthOf(1);
-        res.body.data.movieLists.should.have.lengthOf(1);
+        res.body.data.lists.should.have.lengthOf(1);
 
         res.body.should.containSubset({
             data: {
@@ -54,19 +83,11 @@ describe('Users API', () => {
                 email: user.email,
                 username: user.username,
                 id: user.id,
-                movieLists: [{
-                    id: user.movieLists[0].id,
-                    name: user.movieLists[0].name,
-                    createdAt: user.movieLists[0].createdAt.toISOString(),
-                    updatedAt: user.movieLists[0].updatedAt.toISOString(),
-                    isDefault: true,
-                    isDeleted: false
-                }],
-                showLists: [{
-                    id: user.showLists[0].id,
-                    name: user.showLists[0].name,
-                    createdAt: user.showLists[0].createdAt.toISOString(),
-                    updatedAt: user.showLists[0].updatedAt.toISOString(),
+                lists: [{
+                    id: user.lists[0].id,
+                    name: user.lists[0].name,
+                    createdAt: user.lists[0].createdAt.toISOString(),
+                    updatedAt: user.lists[0].updatedAt.toISOString(),
                     isDefault: true,
                     isDeleted: false
                 }]
@@ -78,15 +99,10 @@ describe('Users API', () => {
         let user = await generateUser();
         let token = JwtVendor.vend(user.email);
 
-        let showList = new ShowList();
+        let showList = new List();
         showList.user = Promise.resolve(user);
         showList.name = 'Test Show List';
-        await connection.getRepository(ShowList).save(showList);
-
-        let movieList = new MovieList();
-        movieList.user = Promise.resolve(user);
-        movieList.name = 'Test Movie List';
-        await connection.getRepository(MovieList).save(movieList);
+        await connection.getRepository(List).save(showList);
 
         let res = await chai.request(baseUrl).
             get(`/api/v1/users/${user.id}/lists`).
@@ -96,27 +112,28 @@ describe('Users API', () => {
         res.body.should.include.keys('data');
 
         chai.assert.ownInclude(res.body.data, { id: user.id, name: user.name });
-        chai.assert.lengthOf(res.body.data.showLists, 2); // New users get a default list
-        chai.assert.lengthOf(res.body.data.movieLists, 2); // New users get a default list
+        chai.assert.lengthOf(res.body.data.lists, 2); // New users get a default list
     });
 
     it('should respond with a user\'s specific list', async () => {
         let user = await generateUser();
         let token = JwtVendor.vend(user.email);
 
-        let show = new Show();
+        let show = new Thing();
         show.name = 'Halt and Catch Fire';
-        show.externalId = r.string(12);
-        let showRet = await connection.getRepository(Show).save(show);
+        show.normalizedName = 'halt-and-catch-fire';
+        show.type = ThingType.Show;
+        // show.externalId = r.string(12);
+        let showRet = await connection.getRepository(Thing).save(show);
 
-        let showList = new ShowList();
+        let showList = new List();
         showList.user = Promise.resolve(user);
         showList.name = 'Test Show List';
-        showList.shows = [showRet];
-        showList = await connection.getRepository(ShowList).save(showList);
+        showList.things = [showRet];
+        showList = await connection.getRepository(List).save(showList);
 
         let res2 = await chai.request(baseUrl).
-            get(`/api/v1/users/${user.id}/lists/shows/${showList.id}`).
+            get(`/api/v1/users/${user.id}/lists/${showList.id}`).
             set('Authorization', 'Bearer ' + token);
 
         res2.type.should.equal('application/json');
@@ -126,7 +143,7 @@ describe('Users API', () => {
                 id: showList.id,
                 name: showList.name,
                 isDefault: false,
-                shows: []
+                things: []
             }
         });
     });
@@ -136,7 +153,7 @@ describe('Users API', () => {
         let token = JwtVendor.vend(user.email);
 
         let response = await chai.request(baseUrl).
-            get(`/api/v1/users/${user.id}/lists/shows/1000000`).
+            get(`/api/v1/users/${user.id}/lists/1000000`).
             set('Authorization', 'Bearer ' + token).
             send();
 
@@ -148,36 +165,38 @@ describe('Users API', () => {
         let token = JwtVendor.vend(user.email);
 
         // Create a show
-        let show = new Show();
-        show.name = 'Halt and Catch Fire';
-        show.externalId = r.string(12);
-        show = await connection.getRepository(Show).save(show);
+        let show = new Thing();
+        show.name = 'Halt and Catch Fire 2';
+        show.normalizedName = 'halt-and-catch-fire-2';
+        show.type = ThingType.Show;
+        // show.externalId = r.string(12);
+        show = await connection.getRepository(Thing).save(show);
 
         // Create a list
-        let showList = new ShowList();
-        showList.user = Promise.resolve(user);
-        showList.name = 'Test Show List';
-        showList = await connection.getRepository(ShowList).save(showList);
+        let list = new List();
+        list.user = Promise.resolve(user);
+        list.name = 'Test Show ListXYZ';
+        list = await connection.getRepository(List).save(list);
 
         let response = await chai.
             request(baseUrl).
-            put(`/api/v1/users/${user.id}/lists/shows/${showList.id}/tracked`).
+            put(`/api/v1/users/${user.id}/lists/${list.id}/tracked`).
             set('Authorization', 'Bearer ' + token).
-            send({ showId: show.id });
+            send({ itemId: show.id });
 
         chai.expect(response).to.have.status(200);
 
         // Now get the lists
         let userAndList = await chai.request(baseUrl).
-            get(`/api/v1/users/${user.id}/lists/shows/${showList.id}`).
-            set('Authorization', 'Bearer ' + token);;
+            get(`/api/v1/users/${user.id}/lists/${list.id}`).
+            set('Authorization', 'Bearer ' + token);
 
-        chai.expect(userAndList.body.data.shows).to.deep.equal([
+        chai.expect(userAndList.body.data.things).to.containSubset([
             {
                 id: show.id,
-                externalId: show.externalId,
+                // externalId: show.externalId,
                 name: show.name,
-                externalSource: show.externalSource,
+                // externalSource: show.externalSource,
                 type: 'show'
             }
         ]);
@@ -199,14 +218,14 @@ describe('Users API', () => {
 
         // Retrieve the list for the user to assert the association
         let userList = await chai.request(baseUrl).
-            get(`/api/v1/users/${user.id}/lists/shows/${response.body.data.id}`).
+            get(`/api/v1/users/${user.id}/lists/${response.body.data.id}`).
             set('Authorization', 'Bearer ' + token);
 
         chai.expect(userList).to.be.json;
         chai.expect(userList.body).to.containSubset({
             data: {
                 id: response.body.data.id,
-                shows: [],
+                things: [],
                 name: 'Test Show List',
                 isDefault: false,
                 isDeleted: false
