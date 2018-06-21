@@ -1,39 +1,54 @@
 import React, { Component } from 'react';
 import { View, Text, KeyboardAvoidingView } from 'react-native';
-import { connect } from 'react-redux';
-import { Card, ListItem, Icon, Header } from 'react-native-elements';
-import HeaderLeft from '../Components/Header/HeaderLeft';
-import HeaderCenter from '../Components/Header/HeaderCenter';
-import HeaderRight from '../Components/Header/HeaderRight';
-// Add Actions - replace 'Your' with whatever your reducer is called :)
-// import YourActions from '../Redux/YourRedux'
+import { connect, Dispatch } from 'react-redux';
+import { Card, ListItem, Icon } from 'react-native-elements';
+import Header from '../Components/Header/Header';
+
+import UserActions, { UserState } from '../Redux/UserRedux';
 
 // Styles
 import styles from './Styles/NotificationsScreenStyle';
 
-class NotificationsScreen extends Component {
-  render () {
-    return (
-      <View style={styles.container}>
-      <Header>
-        <HeaderLeft {...this.props} />
-        <HeaderCenter />
-        <HeaderRight />
-      </Header> 
-      <Text>Notifications Screen</Text>
-      </View>
-    )
-  }
+interface Props {
+    componentId: string
+    user: UserState
+    loadUserSelf: (componentId: string) => any
 }
 
-const mapStateToProps = (state) => {
-  return {
-  }
+class NotificationsScreen extends Component<Props> {
+
+    state = {};
+
+    componentWillMount() {
+        this.props.loadUserSelf(this.props.componentId);
+    }
+
+    render() {
+        return (
+            <View style={styles.container}>
+                <Header 
+                    title="Search" 
+                    componentId={this.props.componentId} 
+                />
+                <Text>Notifications Screen</Text>
+            </View>
+        );
+    }
+}
+
+const mapStateToProps = state => {
+    return {};
 };
 
-const mapDispatchToProps = (dispatch) => {
-  return {
-  }
+const mapDispatchToProps = (dispatch: Dispatch<any>) => {
+    return {
+        loadUserSelf: (componentId: string) => {
+            dispatch(UserActions.userSelfRequest(componentId));
+        }
+    };
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(NotificationsScreen);
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(NotificationsScreen);

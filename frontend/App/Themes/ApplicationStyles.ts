@@ -62,7 +62,8 @@ const ApplicationStyles = {
     },
     statusBarProps: {
       barStyle: 'light-content'
-    }
+    },
+    backgroundColor: Colors.headerBackground
   },
   darkLabelContainer: {
     padding: Metrics.smallMargin,

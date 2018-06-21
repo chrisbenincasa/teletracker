@@ -18,7 +18,7 @@ export default class Header extends React.PureComponent<Props> {
                 innerContainerStyles={styles.header.inner}
                 statusBarProps={styles.header.statusBarProps}
             >
-                {
+                { 
                     this.props.children ? (
                         this.props.children
                     ) : (

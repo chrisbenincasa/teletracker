@@ -34,6 +34,7 @@ class ItemDetailScreen extends Component<Props> {
           outerContainerStyles={headerStyles.header.outer}
           innerContainerStyles={headerStyles.header.inner}
           statusBarProps={headerStyles.header.statusBarProps}
+          componentId={this.props.componentId}
           leftComponent={{icon:  'chevron-left', style: { color: 'white' } }}
           centerComponent={{text: this.titleString(),  style: { color: 'white' } }} />
         <KeyboardAvoidingView behavior='position'>
