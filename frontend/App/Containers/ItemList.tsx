@@ -20,9 +20,9 @@ interface Props {
 }
 
 class ItemList extends React.PureComponent<Props> {
-    
+
     state = {};
-    
+
     componentWillMount() {
         this.props.loadUserSelf(this.props.componentId);
     }
@@ -139,7 +139,7 @@ class ItemList extends React.PureComponent<Props> {
     render () {
         return (
             <View style={styles.container}>
-                <Header/>
+                <Header componentId={this.props.componentId} />
                 <Card>
                     <SectionList
                         renderSectionHeader={this.renderSectionHeader}
