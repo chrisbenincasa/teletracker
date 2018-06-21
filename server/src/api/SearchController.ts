@@ -1,5 +1,5 @@
 import * as Router from 'koa-router';
-import { MovieDbClient, PagedResult, Movie, TvShow, Person } from 'themoviedb-client-typed';
+import { MovieDbClient, Movie, TvShow, Person, MultiSearchResponse } from 'themoviedb-client-typed';
 import { Connection } from 'typeorm';
 
 import DbAccess from '../db/DbAccess';
@@ -22,25 +22,31 @@ export class SearchController extends Controller {
             const { query } = ctx.query;
             let response = await this.movieDbClient.search.searchMulti({ query });
 
-            this.handleSearchMultiResult(response);
-
-            ctx.body = response;
+            try {
+                let enriched = await this.handleSearchMultiResult(response);
+                ctx.status = 200;
+                ctx.body = { data: enriched };
+            } catch (e) {
+                ctx.status = 500;
+                ctx.body = { data: 'error' };
+            }
         });
     }
 
-    private async handleSearchMultiResult(result: PagedResult<Movie | TvShow | Person>) {
-        result.results.forEach(r => {
-            if ((<Movie>r).title) {
-                const entity = this.movieToEntity(r as Movie);
-                this.dbAccess.saveMovie(entity)
+    private async handleSearchMultiResult(result: MultiSearchResponse) {
+        let savePromises = result.results.map(r => {
+            let thing: Entity.Thing;
+            if (r.media_type === 'movie') {
+                thing = Entity.ThingFactory.movie(r as Movie);
+            } else if (r.media_type === 'tv') {
+                thing = Entity.ThingFactory.show(r as TvShow);
+            } else {
+                thing = Entity.ThingFactory.person(r as Person);
             }
-        })
-    }
 
-    private movieToEntity(movie: Movie): Entity.Movie {
-        let entity = new Entity.Movie;
-        entity.externalId = movie.id.toString();
-        entity.name = movie.title;
-        return entity;
+            return this.dbAccess.saveObject(thing);
+        });
+
+        return Promise.all(savePromises);
     }
 }

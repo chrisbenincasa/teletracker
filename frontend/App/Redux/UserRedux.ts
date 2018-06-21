@@ -3,6 +3,10 @@ import { createActions, createReducer } from 'reduxsauce';
 import Immutable from 'seamless-immutable';
 
 import { User } from '../Model';
+import { persistReducer } from 'redux-persist';
+import { AsyncStorage } from 'react-native';
+import ImmutablePersistenceTransform from '../Services/ImmutablePersistenceTransform';
+import R from 'ramda';
 
 /* ------------- Types and Action Creators ------------- */
 
@@ -70,8 +74,10 @@ export const reducers = {
     failure: (state: State) =>
         state.merge({ fetching: false, error: true }),
 
-    signupRequest: (state: State) =>
-        state.merge({ signup: { fetching: true } }),
+    signupRequest: (state: State) => {
+        console.tron.log(R.has('asMutable')(state));
+        return state.merge({ signup: { fetching: true } })
+    },
 
     signupSuccess: (state: State, { token }: AnyAction) => 
         state.merge({ signup: { fetching: false, error: false, success: true }, token}),
@@ -100,4 +106,11 @@ export const reducer = createReducer<State>(INITIAL_STATE, {
     [Types.LOGIN_REQUEST]: reducers.login,
     [Types.LOGIN_SUCCESS]: reducers.loginSuccess,
     [Types.LOGIN_FAILURE]: reducers.loginFailure
-})
+});
+
+// export const reducer = persistReducer({
+//     key: 'user',
+//     blacklist: ['signup'],
+//     storage: AsyncStorage,
+//     transforms: [ImmutablePersistenceTransform]
+// }, baseReducer);

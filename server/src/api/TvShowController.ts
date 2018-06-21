@@ -33,7 +33,7 @@ export class TvShowController extends Controller {
         });
 
         this.router.get('/shows/:id', async ctx => {
-            return this.dbAccess.getShowById(ctx.paramd.id).then(show => {
+            return this.dbAccess.getObjectById(ctx.paramd.id).then(show => {
                 if (show) {
                     ctx.status = 200;
                     ctx.body = { data: show };

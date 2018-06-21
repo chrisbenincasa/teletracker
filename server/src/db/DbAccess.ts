@@ -1,25 +1,21 @@
-import { Database } from "./Connection";
 import { Connection, Repository, FindOneOptions } from "typeorm";
 import * as Entity from './entity';
 import { User } from "./entity";
 import * as bcrypt from 'bcrypt';
 import * as R from 'ramda';
-
-type Optional<T> = T | undefined;
+import { Optional } from '../util/Types';
 
 export default class DbAccess {
     private connection: Connection;
 
     private userRepository: Repository<Entity.User>;
-    private showRepository: Repository<Entity.Show>;
-    private showListRepository: Repository<Entity.ShowList>;
-    private movieListRepository: Repository<Entity.MovieList>;
+    private objectRepository: Repository<Entity.Thing>;
+    private listRepository: Repository<Entity.List>;
 
     constructor(connection: Connection) {
         this.connection = connection;
-        this.showRepository = this.connection.getRepository(Entity.Show);
-        this.showListRepository = this.connection.getRepository(Entity.ShowList);
-        this.movieListRepository = this.connection.getRepository(Entity.MovieList);
+        this.objectRepository = this.connection.getRepository(Entity.Thing);
+        this.listRepository = this.connection.getRepository(Entity.List);
         this.userRepository = this.connection.getRepository(Entity.User);
     }
 
@@ -48,10 +44,8 @@ export default class DbAccess {
             baseRequest.join = {
                 alias: 'user',
                 leftJoinAndSelect: {
-                    'movieLists': 'user.movieLists',
-                    'showLists': 'user.showLists',
-                    'shows': 'showLists.shows',
-                    'movies': 'movieLists.movies'
+                    'lists': 'user.lists',
+                    'shows': 'lists.things'
                 }
             };
         }
@@ -71,40 +65,32 @@ export default class DbAccess {
         const hash = await bcrypt.hash(user.password, salt);
         user.password = hash;
         return this.userRepository.save(user).then(this.removePassword).then(async user => {
-            let showList = new Entity.ShowList;
-            showList.user = Promise.resolve(user);
-            showList.isDefault = true;
-            showList.name = 'Default Show List';
+            let list = new Entity.List;
+            list.user = Promise.resolve(user);
+            list.isDefault = true;
+            list.name = 'Default List';
 
-            let movieList = new Entity.MovieList;
-            movieList.user = Promise.resolve(user);
-            movieList.isDefault = true;
-            movieList.name = 'Default Movie List';
+            list = await this.listRepository.save(list);
 
-            showList = await this.showListRepository.save(showList);
-            movieList = await this.movieListRepository.save(movieList);
-
-            user.showLists = [showList];
-            user.movieLists = [movieList];
+            user.lists = [list];
 
             return user;
         });
     }
 
-    getShowListForUser(userId: string | number, listId: string | number): Promise<Optional<Entity.ShowList>> {
+    getListForUser(userId: string | number, listId: string | number): Promise<Optional<Entity.List>> {
         // return this.getListForUser(userId, listId, 'showLists', 'shows');
-        return this.showListRepository.findOne(listId, { 
+        return this.listRepository.findOne(listId, { 
             join: { 
-                alias: 'showList',
+                alias: 'list',
                 leftJoinAndSelect: {
-                    shows: 'showList.shows'
+                    shows: 'list.things',
                 }
             } 
-        }).then(showList => {
-            
-            if (showList) {
-                return showList.user.then(user => {
-                    return user && user.id == userId ? showList : undefined;
+        }).then(list => {
+            if (list) {
+                return list.user.then(user => {
+                    return user && user.id == userId ? list : undefined;
                 });
             } else {
                 return;
@@ -112,54 +98,30 @@ export default class DbAccess {
         });
     }
 
-    getMovieListForUser(userId: string | number, listId: string | number): Promise<Entity.User | null> {
-        return this.getListForUser(userId, listId, 'movieLists');
-    }
+    async saveObject(movie: Entity.Thing) {
+        const repo = this.objectRepository;
 
-    getListForUser(userId: string | number, listId: string | number, listType: string, entityType?: string): Promise<Entity.User | undefined> {
-        let baseQuery = this.userRepository.createQueryBuilder('user').
-            leftJoinAndSelect(`user.${listType}`, 'list').
-            where('user.id = :userId', { userId: userId }).
-            andWhere('list.id = :listId and list.isDeleted = false', { listId: listId });
-
-        if (entityType) {
-            baseQuery = baseQuery.leftJoinAndSelect(`list.${entityType}`, entityType);
-        }
-
-        return baseQuery.getOne().then(this.removePassword);
-    }
-
-    //
-    // Movies
-    //
-
-    async saveMovie(movie: Entity.Movie) {
-        const movieRepo = this.connection.getRepository(Entity.Movie);
-
-        return movieRepo.findOne({ where: { externalId: movie.externalId, externalSource: movie.externalSource }}).then(res => {
-            if (res) {
-                movie.id = res.id;
-                return movieRepo.update(res.id, movie);
+        return repo.findOne({ where: { normalizedName: movie.normalizedName }}).then(async foundMovie => {
+            if (foundMovie) {
+                let newMovie = R.mergeDeepRight(foundMovie, movie)
+                await repo.update(foundMovie.id, newMovie);
+                return newMovie;
             } else {
-                return movieRepo.insert(movie);
+                return repo.save(movie);
             }
-        })
+        });
     }
 
-    //
-    // Shows
-    //
-
-    getShowById(showId: string | number): Promise<Optional<Entity.Show>> {
-        return this.showRepository.findOne(showId);
+    getObjectById(showId: string | number): Promise<Optional<Entity.Thing>> {
+        return this.objectRepository.findOne(showId);
     }
 
     //
     // ShowLists
     //
 
-    addShowToList(show: Entity.Show, list: Entity.ShowList): Promise<Entity.ShowList> {
-        list.shows = (list.shows || []).concat([show]);
-        return this.showListRepository.save(list);
+    addObjectToList(show: Entity.Thing, list: Entity.List): Promise<Entity.List> {
+        list.things = (list.things || []).concat([show]);
+        return this.listRepository.save(list);
     }
 }

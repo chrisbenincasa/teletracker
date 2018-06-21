@@ -1,7 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, Index } from 'typeorm';
-import { ExternalSource } from './MediaItem';
-import { Show } from './Show';
-import { Movie } from './Movie';
+import { ExternalSource } from './Thing';
+import { Thing } from './Thing';
 
 @Entity('networks')
 @Index(['externalSource', 'externalId'], { unique: true })
@@ -18,11 +17,7 @@ export class Network {
     @Column()
     externalSource: ExternalSource = ExternalSource.TheMovieDb
 
-    @ManyToMany(type => Show)
+    @ManyToMany(type => Thing)
     @JoinTable()
-    shows: Show[]
-
-    @ManyToMany(type => Movie)
-    @JoinTable()
-    movies: Movie[]
+    things: Thing[]
 }
