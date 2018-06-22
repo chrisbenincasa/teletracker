@@ -1,8 +1,9 @@
-import { Column, PrimaryGeneratedColumn, Entity, ManyToMany, Index } from 'typeorm';
+import { Column, PrimaryGeneratedColumn, Entity, ManyToMany, Index, OneToMany } from 'typeorm';
 import { Movie, TvShow, Person } from 'themoviedb-client-typed'
 import { List } from './List';
 import { Network } from './Network';
 import { Optional } from '../../util/Types';
+import { Availability } from './Availability';
 
 export enum ExternalSource {
     TheMovieDb = 'themoviedb'
@@ -86,8 +87,11 @@ export class Thing {
     @ManyToMany(type => List, list => list.things)
     lists: List[]
 
-    @ManyToMany(type => Network, list => list.things)
+    @ManyToMany(type => Network, network => network.things)
     networks: Network[]
+
+    @OneToMany(type => Availability, a => a.thing)
+    availability: Availability[]
 
     @Column({ type: 'jsonb', nullable: true })
     metadata?: ObjectMetadata;

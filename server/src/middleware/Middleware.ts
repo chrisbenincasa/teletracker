@@ -36,7 +36,7 @@ class ErrorHandlingMiddleware extends BaseMiddleware {
         try {
             await next();
         } catch (err) {
-            ctx.status = err.status || err.code || 500;
+            ctx.status = 500;
             ctx.body = {
                 success: false,
                 message: err.message,
