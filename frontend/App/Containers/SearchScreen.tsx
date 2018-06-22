@@ -61,7 +61,8 @@ class SearchScreen extends Component<Props, State> {
             <View style={styles.container}>
                 <Header 
                     title="Search" 
-                    componentId={this.props.componentId} 
+                    componentId={this.props.componentId}
+                    centerComponent={{title: 'Search',  style: { color: 'white' } }} 
                 />
                 <Search
                     ref="search_box"

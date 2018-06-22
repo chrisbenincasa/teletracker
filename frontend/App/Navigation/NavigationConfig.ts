@@ -100,14 +100,6 @@ export let ListView = {
                 }
                 }]
             }
-        },
-        right: {
-            component: {
-              name: 'navigation.main.NotificationsScreen',
-              passProps: {
-                side: 'right'
-              }
-            }
         }
     }
 }
