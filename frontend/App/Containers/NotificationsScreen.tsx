@@ -29,6 +29,7 @@ class NotificationsScreen extends Component<Props> {
                 <Header 
                     title="Search" 
                     componentId={this.props.componentId} 
+                    centerComponent={{title: 'Notifications',  style: { color: 'white' } }} 
                 />
                 <Text>Notifications Screen</Text>
             </View>
