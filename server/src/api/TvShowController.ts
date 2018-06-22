@@ -2,16 +2,16 @@ import * as Router from 'koa-router';
 import { MovieDbClient } from 'themoviedb-client-typed';
 import { Connection } from 'typeorm';
 
-import DbAccess from '../db/DbAccess';
+import { ThingRepository } from '../db/ThingRepository';
 import { Controller } from './Controller';
 
 export class TvShowController extends Controller {
-    private dbAccess: DbAccess;
+    private thingRepository: ThingRepository;
     private movieDbClient: MovieDbClient;
 
     constructor(router: Router, connection: Connection) {
         super(router);
-        this.dbAccess = new DbAccess(connection);
+        this.thingRepository = connection.getCustomRepository(ThingRepository);
         // This will be loaded via config soon.
         this.movieDbClient = new MovieDbClient(process.env.API_KEY);
     }
@@ -33,7 +33,7 @@ export class TvShowController extends Controller {
         });
 
         this.router.get('/shows/:id', async ctx => {
-            return this.dbAccess.getObjectById(ctx.paramd.id).then(show => {
+            return this.thingRepository.getObjectById(ctx.params.id).then(show => {
                 if (show) {
                     ctx.status = 200;
                     ctx.body = { data: show };

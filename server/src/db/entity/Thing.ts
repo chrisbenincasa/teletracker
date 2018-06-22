@@ -4,6 +4,7 @@ import { List } from './List';
 import { Network } from './Network';
 import { Optional } from '../../util/Types';
 import { Availability } from './Availability';
+import { TvShowSeason } from './TvShowSeason';
 
 export enum ExternalSource {
     TheMovieDb = 'themoviedb'
@@ -85,13 +86,17 @@ export class Thing {
     type: ThingType;
 
     @ManyToMany(type => List, list => list.things)
-    lists: List[]
+    lists: List[];
+
+    // Only applicable to TV shows
+    @OneToMany(type => TvShowSeason, season => season.show)
+    seasons: TvShowSeason[]
 
     @ManyToMany(type => Network, network => network.things)
-    networks: Network[]
+    networks: Network[];
 
     @OneToMany(type => Availability, a => a.thing)
-    availability: Availability[]
+    availability: Availability[];
 
     @Column({ type: 'jsonb', nullable: true })
     metadata?: ObjectMetadata;

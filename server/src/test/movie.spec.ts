@@ -2,10 +2,9 @@ import 'mocha';
 
 import * as chai from 'chai';
 import chaiHttp = require('chai-http');
+import { basename } from 'path';
 
-import Server from '../Server';
 import TestBase from './base';
-import PostgresDocker from './fixtures/docker';
 
 chai.use(chaiHttp);
 const should = chai.should();
@@ -14,9 +13,6 @@ class MovieSpec extends TestBase {
     makeSpec(): Mocha.ISuite {
         let self = this;
         return describe('Movies API', () => {
-            let server: Server;
-            let docker: PostgresDocker;
-
             before(async function () {
                 this.timeout(self.timeout);
                 await self.defaultBefore(true, true);
@@ -60,7 +56,6 @@ class MovieSpec extends TestBase {
     }
 }
 
-import { basename } from 'path';
 const scriptName = basename(__filename);
 
 new MovieSpec(scriptName).makeSpec();
