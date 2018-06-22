@@ -1,10 +1,11 @@
 import 'reflect-metadata';
 
 import * as bcrypt from 'bcrypt';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 import { List } from './List';
 import { Token } from './Token';
+import { Event } from './Event';
 
 @Entity('users')
 export class User {
@@ -34,6 +35,15 @@ export class User {
 
     @OneToMany(type => List, list => list.user)
     lists: List[]
+
+    @OneToMany(type => Event, ev => ev.user)
+    events: Event[]
+
+    @CreateDateColumn()
+    createdAt: Date;
+
+    @UpdateDateColumn()
+    updatedAt: Date;
 
     async passwordEquals(test: string) {
         return bcrypt.compare(test, this.password);
