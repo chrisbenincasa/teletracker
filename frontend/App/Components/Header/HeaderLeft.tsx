@@ -7,10 +7,11 @@ export default class HeaderLeft extends Component {
     constructor(props) {
         super(props);
         this.showLeftMenu = this.showLeftMenu.bind(this);
+        this.goBack = this.goBack.bind(this);
     }
 
-    showLeftMenu() {
-        Navigation.mergeOptions(this.props.componentId, {
+    async showLeftMenu() {
+        await Navigation.mergeOptions(this.props.componentId, {
             sideMenu: {
                 left: {
                     visible: true
@@ -19,13 +20,18 @@ export default class HeaderLeft extends Component {
         });
     }
 
- render() {
+    async goBack() {
+        await Navigation.pop(this.props.componentId);
+    }
+
+    render() {
         return (
             <Icon 
-                name="menu"
+                name={ this.props.leftComponent && this.props.leftComponent.icon ? this.props.leftComponent.icon : 'menu' }
                 color="#fff"
                 underlayColor={Colors.headerBackground}
-                onPress={this.showLeftMenu} 
+                
+                onPress={this.props.leftComponent && this.props.leftComponent.back ? this.goBack : this.showLeftMenu}
             />
         );
     }

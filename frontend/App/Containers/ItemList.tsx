@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import React from 'react';
 import { SectionList, Text, View } from 'react-native';
-import { Card, ListItem } from 'react-native-elements';
+import { ListItem } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { connect, Dispatch } from 'react-redux';
 
@@ -62,36 +62,7 @@ class ItemList extends React.PureComponent<Props> {
             />
         )
     }
-    
-    // Important: You must return a Promise
-    beforeFocus = () => {
-        return new Promise((resolve, reject) => {
-            console.log('beforeFocus');
-            resolve();
-        });
-    }
-    
-    // Important: You must return a Promise
-    onFocus = (text) => {
-        return new Promise((resolve, reject) => {
-            console.log('onFocus', text);
-            resolve();
-        });
-    }
-    
-    // Important: You must return a Promise
-    afterFocus = () => {
-        return new Promise((resolve, reject) => {
-            console.log('afterFocus');
-            resolve();
-        });
-    }
-    
-    // Conditional branching for section headers, also see step 3
-    renderSectionHeader ({section}) {
-        return <View style={styles.sectionHeader}><Text style={styles.boldLabel}>{section.key}</Text></View>
-    }
-    
+
     /* ***********************************************************
     * STEP 2
     * Consider the configurations we've set below.  Customize them
@@ -130,20 +101,20 @@ class ItemList extends React.PureComponent<Props> {
     render () {
         return (
             <View style={styles.container}>
-                <Header componentId={this.props.componentId} />
-                <Card>
-                    <SectionList
-                        renderSectionHeader={this.renderSectionHeader}
-                        sections={this.getListSections.call(this)}
-                        contentContainerStyle={styles.listContent}
-                        data={this.state.dataObjects}
-                        renderItem={this.renderItem.bind(this)}
-                        keyExtractor={this.keyExtractor}
-                        initialNumToRender={this.oneScreensWorth}
-                        ListHeaderComponent={this.renderHeader}
-                        ListEmptyComponent={this.renderEmpty}
-                    />
-                </Card>
+                <Header 
+                    componentId={this.props.componentId} 
+                    centerComponent={{title: 'My List',  style: { color: 'white' } }}  />
+                <SectionList
+                    renderSectionHeader={this.renderSectionHeader}
+                    sections={this.getListSections.call(this)}
+                    contentContainerStyle={styles.listContent}
+                    data={this.state.dataObjects}
+                    renderItem={this.renderItem.bind(this)}
+                    keyExtractor={this.keyExtractor}
+                    initialNumToRender={this.oneScreensWorth}
+                    ListHeaderComponent={this.renderHeader}
+                    ListEmptyComponent={this.renderEmpty}
+                />
             </View>
         )
     }
