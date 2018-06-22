@@ -1,17 +1,14 @@
 import 'mocha';
 
 import * as chai from 'chai';
-import * as R from 'ramda';
-import * as random from 'random-js';
+import { basename } from 'path';
 import { Connection, QueryBuilder, Repository } from 'typeorm';
 import * as uuid from 'uuid/v4';
 
-import { GlobalConfig } from '../Config';
 import { Db } from '../db/Connection';
-import DbAccess from '../db/DbAccess';
-import { List, Thing, User, ThingType } from '../db/entity';
-import PostgresDocker from './fixtures/docker';
+import { List, Thing, ThingType, User } from '../db/entity';
 import TestBase from './base';
+import { UserRepository } from '../db/UserRepository';
 
 const should = chai.should();
 
@@ -23,14 +20,12 @@ class DbSpec extends TestBase {
             let connection: Connection;
             let queryBuilder: QueryBuilder<User>;
             let userRepository: Repository<User>;
-            let dbAccess: DbAccess;
 
             before(async function () {
                 this.timeout(self.timeout);
                 await self.defaultBefore(true, false);
                 
                 connection = await new Db(self.config).connect('db.spec.ts').catch(e => { console.error(e); throw e });
-                dbAccess = new DbAccess(connection);
             });
 
             after(async function () {
@@ -65,7 +60,7 @@ class DbSpec extends TestBase {
                 showList.things = [showRet];
                 showList = await connection.getRepository(List).save(showList);
 
-                let userWithTrackedShows = await dbAccess.getUserById(user.id, true);
+                let userWithTrackedShows = await connection.getCustomRepository(UserRepository).getUserById(user.id, true);
 
                 chai.assert.exists(userWithTrackedShows, 'user exists')
                 chai.assert.lengthOf(userWithTrackedShows.lists, 2);
@@ -80,13 +75,12 @@ class DbSpec extends TestBase {
                 user.email = uuid();
                 user.password = '12345';
 
-                return dbAccess.addUser(user);
+                return connection.getCustomRepository(UserRepository).addUser(user);
             }
         });
     }
 }
 
-import { basename } from 'path';
 const scriptName = basename(__filename);
 
 new DbSpec(scriptName).makeSpec();

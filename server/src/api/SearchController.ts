@@ -1,18 +1,18 @@
 import * as Router from 'koa-router';
-import { MovieDbClient, Movie, TvShow, Person, MultiSearchResponse } from 'themoviedb-client-typed';
+import { Movie, MovieDbClient, MultiSearchResponse, Person, TvShow } from 'themoviedb-client-typed';
 import { Connection } from 'typeorm';
 
-import DbAccess from '../db/DbAccess';
-import { Controller } from './Controller';
 import * as Entity from '../db/entity';
+import { ThingRepository } from '../db/ThingRepository';
+import { Controller } from './Controller';
 
 export class SearchController extends Controller {
-    private dbAccess: DbAccess;
+    private thingRepository: ThingRepository;
     private movieDbClient: MovieDbClient;
 
     constructor(router: Router, connection: Connection) {
         super(router);
-        this.dbAccess = new DbAccess(connection);
+        this.thingRepository = connection.getCustomRepository(ThingRepository);
         // This will be loaded via config soon.
         this.movieDbClient = new MovieDbClient(process.env.API_KEY);
     }
@@ -44,7 +44,7 @@ export class SearchController extends Controller {
                 thing = Entity.ThingFactory.person(r as Person);
             }
 
-            return this.dbAccess.saveObject(thing);
+            return this.thingRepository.saveObject(thing);
         });
 
         return Promise.all(savePromises);
