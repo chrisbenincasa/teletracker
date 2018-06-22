@@ -1,5 +1,8 @@
 import * as Dockerode from 'dockerode';
 import * as R from 'ramda';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 
 export default class PostgresDocker {
     client: Dockerode;

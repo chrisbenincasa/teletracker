@@ -1,4 +1,4 @@
-import { Connection, Repository, FindOneOptions } from "typeorm";
+import { Connection, Repository, FindOneOptions, getManager, EntityManager } from "typeorm";
 import * as Entity from './entity';
 import { User } from "./entity";
 import * as bcrypt from 'bcrypt';
@@ -8,12 +8,14 @@ import { Optional } from '../util/Types';
 export default class DbAccess {
     private connection: Connection;
 
+    private manager: EntityManager;
     private userRepository: Repository<Entity.User>;
     private objectRepository: Repository<Entity.Thing>;
     private listRepository: Repository<Entity.List>;
 
     constructor(connection: Connection) {
         this.connection = connection;
+        this.manager = getManager(connection.name);
         this.objectRepository = this.connection.getRepository(Entity.Thing);
         this.listRepository = this.connection.getRepository(Entity.List);
         this.userRepository = this.connection.getRepository(Entity.User);
@@ -78,7 +80,7 @@ export default class DbAccess {
         });
     }
 
-    getListForUser(userId: string | number, listId: string | number): Promise<Optional<Entity.List>> {
+    async getListForUser(userId: string | number, listId: string | number): Promise<Optional<Entity.List>> {
         // return this.getListForUser(userId, listId, 'showLists', 'shows');
         return this.listRepository.findOne(listId, { 
             join: { 
@@ -112,7 +114,7 @@ export default class DbAccess {
         });
     }
 
-    getObjectById(showId: string | number): Promise<Optional<Entity.Thing>> {
+    async getObjectById(showId: string | number): Promise<Optional<Entity.Thing>> {
         return this.objectRepository.findOne(showId);
     }
 
@@ -120,8 +122,22 @@ export default class DbAccess {
     // ShowLists
     //
 
-    addObjectToList(show: Entity.Thing, list: Entity.List): Promise<Entity.List> {
+    async addObjectToList(show: Entity.Thing, list: Entity.List): Promise<Entity.List> {
         list.things = (list.things || []).concat([show]);
         return this.listRepository.save(list);
+    }
+
+    //
+    // Events
+    //
+
+    async getEventsForUser(userId: string | number): Promise<Entity.Event[]> {
+        return this.connection.getRepository(Entity.Event).find({ where: { userId }, order: { timestamp: 'DESC' }});
+    }
+
+    async addEventForUser(user: Entity.User, event: Entity.Event): Promise<Entity.Event> {
+        const ev = this.manager.create(Entity.Event, event);
+        ev.user = user;
+        return this.manager.save(Entity.Event, ev);
     }
 }

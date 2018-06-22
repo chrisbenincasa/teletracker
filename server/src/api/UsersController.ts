@@ -129,5 +129,27 @@ export class UsersController extends Controller {
                 ctx.status = 400;
             }
         });
+
+        //
+        // Events
+        //
+
+        this.router.get('/users/:id/events', AuthMiddleware.protectForSelfOrId(), async ctx => {
+            return this.dbAccess.getEventsForUser(ctx.user.id).then(events => {
+                ctx.status = 200;
+                ctx.body = { data: events };
+            });
+        });
+
+        this.router.post('/users/:id/events', AuthMiddleware.protectForSelfOrId(), async ctx => {
+            if (!ctx.request.body.event) {
+                ctx.status = 400;
+            } else {
+                return this.dbAccess.addEventForUser(ctx.user, ctx.request.body.event).then(entity => {
+                    ctx.status = 201;
+                    ctx.body = { data: { id: entity.id } };
+                });
+            }
+        });
     }
 }
