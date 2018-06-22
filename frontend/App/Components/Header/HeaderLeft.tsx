@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { Icon } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { Colors } from '../../Themes/';
-const { BackHandler } = require('react-native');
 
 export default class HeaderLeft extends Component {
     constructor(props) {
@@ -12,7 +11,6 @@ export default class HeaderLeft extends Component {
     }
 
     async showLeftMenu() {
-        console.tron.log("FIRE!");
         await Navigation.mergeOptions(this.props.componentId, {
             sideMenu: {
                 left: {
@@ -23,23 +21,7 @@ export default class HeaderLeft extends Component {
     }
 
     async goBack() {
-        await Navigation.pop(this.props.componentId, {
-            animations: {
-                y: {
-                    from: 1000,
-                    to: 0,
-                    duration: 500,
-                    interpolation: 'accelerate',
-                  },
-                  alpha: {
-                    from: 0,
-                    to: 1,
-                    duration: 400,
-                    startDelay: 100,
-                    interpolation: 'accelerate'
-                  }
-            } 
-        });
+        await Navigation.pop(this.props.componentId);
     }
 
     render() {
@@ -50,8 +32,6 @@ export default class HeaderLeft extends Component {
                 underlayColor={Colors.headerBackground}
                 
                 onPress={this.props.leftComponent && this.props.leftComponent.back ? this.goBack : this.showLeftMenu}
-
-                // onPress={this.showLeftMenu} 
             />
         );
     }
