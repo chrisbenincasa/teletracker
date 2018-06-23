@@ -1,12 +1,14 @@
 import React, { Component } from 'react';
-import { ScrollView, Text, KeyboardAvoidingView } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
+import { Avatar, List, ListItem } from 'react-native-elements';
 import { connect } from 'react-redux';
-import Logo from '../Components/Logo';
-import { Button, Icon, List, ListItem } from 'react-native-elements';
 
-// Styles
+import Logo from '../Components/Logo';
+import State from '../Redux/State';
+import { UserState } from '../Redux/UserRedux';
 import styles from './Styles/MenuScreenStyle';
 
+// Styles
 const menuItems = [
     {
         title: 'Settings',
@@ -22,11 +24,25 @@ const menuItems = [
     }
 ];
 
-class MenuScreen extends Component {
+interface Props {
+    user: UserState
+}
+
+class MenuScreen extends Component<Props> {
     render () {
         return (
             <ScrollView style={styles.container}>
                 <Logo />
+                <View style={{ padding: 10 }}>
+                    <Avatar
+                        medium={true}
+                        rounded
+                        source={{ uri: "https://s3.amazonaws.com/uifaces/faces/twitter/ladylexy/128.jpg" }}
+                        onPress={() => console.log("Works!")}
+                        activeOpacity={0.7}
+                    />
+                    <Text>{this.props.user.details.name}</Text>
+                </View>
                 <KeyboardAvoidingView behavior='position'>
                     <List>
                     {
@@ -45,8 +61,9 @@ class MenuScreen extends Component {
     }
 }
 
-const mapStateToProps = (state) => {
+const mapStateToProps = (state: State) => {
   return {
+      user: state.user
   }
 };
 
