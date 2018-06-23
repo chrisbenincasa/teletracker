@@ -99,6 +99,9 @@ export let ListView = {
                     }]
                 }
                 }]
+            },
+            options: {
+                showsShadow: false
             }
         }
     }
@@ -120,7 +123,7 @@ export let DetailView = Immutable({
             animated: true,
             topBar: {
                 visible: false
-            },
+            }
         }
     }
 })
