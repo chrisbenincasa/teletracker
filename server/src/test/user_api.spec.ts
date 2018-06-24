@@ -4,11 +4,8 @@ import * as chai from 'chai';
 import chaiHttp = require('chai-http');
 import chaiSubset = require('chai-subset');
 import { basename } from 'path';
-import { Connection } from 'typeorm';
-import * as uuid from 'uuid/v4';
 
-import DbAccess from '../db/DbAccess';
-import { List, Thing, ThingType, User } from '../db/entity';
+import { List, Thing, ThingType } from '../db/entity';
 import JwtVendor from '../util/JwtVendor';
 import TestBase from './base';
 
@@ -17,17 +14,12 @@ chai.use(chaiSubset);
 const should = chai.should();
 
 class UserApiSpec extends TestBase {
-    connection: Connection
-    dbAccess: DbAccess
-
     makeSpec() {
         let self = this;
         return describe('Users API', () => {
             before(async function () {
                 this.timeout(self.timeout);
                 await self.defaultBefore(true, true);
-                self.connection = self.server.connection;
-                self.dbAccess = new DbAccess(self.connection);
             });
 
             after(async function () {

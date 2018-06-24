@@ -1,33 +1,40 @@
 import * as Router from 'koa-router';
-import * as R from 'ramda';
 import { Connection } from 'typeorm';
 
-import DbAccess from '../db/DbAccess';
 import * as Entity from '../db/entity';
+import { UserRepository } from '../db/UserRepository';
 import AuthMiddleware from '../middleware/AuthMiddleware';
 import JwtVendor from '../util/JwtVendor';
 import { Controller } from './Controller';
+import { ListRepository } from '../db/ListRepository';
+import { ThingRepository } from '../db/ThingRepository';
+import { Thing } from '../db/entity';
+import { EventsRepository } from '../db/EventsRepository';
 
 export class UsersController extends Controller {
-    private dbConnection: Connection;
-    private dbAccess: DbAccess;
+    private userRepository: UserRepository;
+    private listRepository: ListRepository;
+    private thingRepository: ThingRepository;
+    private eventsRepository: EventsRepository;
 
     constructor(router: Router, connection: Connection) {
         super(router);
-        this.dbAccess = new DbAccess(connection);
-        this.dbConnection = connection; // Hang onto a connection to the DB
+        this.userRepository = connection.getCustomRepository(UserRepository);
+        this.listRepository = connection.getCustomRepository(ListRepository);
+        this.thingRepository = connection.getCustomRepository(ThingRepository);
+        this.eventsRepository = connection.getCustomRepository(EventsRepository);
     }
 
     setupRoutes(): void {
         // Retrieve all users
         this.router.get('/users', async (ctx) => {
-            let users = await this.dbAccess.getAllUsers();
+            let users = await this.userRepository.getAllUsers();
 
             ctx.body = { data: users };
         });
 
         this.router.post('/users', async ctx => {
-            return this.dbAccess.addUser(ctx.request.body).then(async user => {
+            return this.userRepository.addUser(ctx.request.body).then(async user => {
                 await ctx.login(user);
                 let token = JwtVendor.vend(user.email);
                 ctx.status = 201;
@@ -39,7 +46,7 @@ export class UsersController extends Controller {
 
         // Retrieve a user
         this.router.get('/users/:id', AuthMiddleware.protectForSelfOrId(), async (ctx) => {
-            let user = await this.dbAccess.getUserById(ctx.user.id, true);
+            let user = await this.userRepository.getUserById(ctx.user.id, true);
 
             if (user) {
                 ctx.status = 200;
@@ -49,9 +56,13 @@ export class UsersController extends Controller {
             }
         });
 
+        //
+        // Lists
+        //
+
         // Retrieve all lists for a user
         this.router.get('/users/:id/lists', AuthMiddleware.protectRouteForId(), async (ctx) => {
-            let userWithTrackedShows = await this.dbAccess.getUserById(ctx.params.id, true);
+            let userWithTrackedShows = await this.userRepository.getUserById(ctx.params.id, true);
 
             if (userWithTrackedShows) {
                 ctx.status = 200;
@@ -85,11 +96,10 @@ export class UsersController extends Controller {
                     ctx.status = 400;
                     ctx.body = { error: 'Unrecognized list type = ' + req.type };
                 } else {
-                    let listRepo = this.dbConnection.getRepository(Entity.List);
-                    let list = listRepo.create();
+                    let list = this.listRepository.create();
                     list.user = Promise.resolve(user);
                     list.name = req.name;
-                    list = await listRepo.save(list);
+                    list = await this.listRepository.save(list);
                     ctx.status = 201;
                     ctx.body = { data: { id: list.id } };
                 }
@@ -98,7 +108,7 @@ export class UsersController extends Controller {
 
         // Retrieve a specific show-based list for a user
         this.router.get('/users/:id/lists/:listId', AuthMiddleware.protectForSelfOrId(), async ctx => {
-            let listAndShows = await this.dbAccess.getListForUser(ctx.user.id, ctx.params.listId);
+            let listAndShows = await this.userRepository.getListForUser(ctx.user.id, ctx.params.listId);
 
             if (!listAndShows) {
                 ctx.status = 404;
@@ -115,14 +125,14 @@ export class UsersController extends Controller {
                 next();
             }
 
-            let list = await this.dbAccess.getListForUser(ctx.user.id, ctx.params.listId);
+            let list = await this.userRepository.getListForUser(ctx.user.id, ctx.params.listId);
             if (list) {
                 let req = ctx.request.body;
-                let object = await this.dbAccess.getObjectById(req.itemId);
+                let object = await this.thingRepository.getObjectById(req.itemId);
                 if (!object) {
                     ctx.status = 400;
                 } else {
-                    await this.dbAccess.addObjectToList(object, list);
+                    await this.listRepository.addObjectToList(object, list);
                     ctx.status = 200;
                 }
             } else {
@@ -135,7 +145,7 @@ export class UsersController extends Controller {
         //
 
         this.router.get('/users/:id/events', AuthMiddleware.protectForSelfOrId(), async ctx => {
-            return this.dbAccess.getEventsForUser(ctx.user.id).then(events => {
+            return this.eventsRepository.getEventsForUser(ctx.user.id).then(events => {
                 ctx.status = 200;
                 ctx.body = { data: events };
             });
@@ -145,7 +155,7 @@ export class UsersController extends Controller {
             if (!ctx.request.body.event) {
                 ctx.status = 400;
             } else {
-                return this.dbAccess.addEventForUser(ctx.user, ctx.request.body.event).then(entity => {
+                return this.eventsRepository.addEventForUser(ctx.user, ctx.request.body.event).then(entity => {
                     ctx.status = 201;
                     ctx.body = { data: { id: entity.id } };
                 });

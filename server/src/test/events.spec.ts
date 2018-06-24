@@ -1,38 +1,30 @@
 import 'mocha';
 
-import * as R from 'ramda';
 import * as chai from 'chai';
 import chaiHttp = require('chai-http');
 import chaiSubset = require('chai-subset');
 import { basename } from 'path';
-import { Connection } from 'typeorm';
 
-import DbAccess from '../db/DbAccess';
+import { Event, EventType } from '../db/entity';
 import JwtVendor from '../util/JwtVendor';
 import TestBase from './base';
-import { Event, EventType } from '../db/entity';
 
 chai.use(chaiHttp);
 chai.use(chaiSubset);
 const should = chai.should();
 
 class EventsSpec extends TestBase {
-    connection: Connection
-    dbAccess: DbAccess
-
     makeSpec(): Mocha.ISuite {
         let self = this;
         return describe('Events API', () => {
             before(async function () {
                 this.timeout(self.timeout);
                 await self.defaultBefore(true, true);
-                self.connection = self.server.connection;
-                self.dbAccess = new DbAccess(self.connection);
             });
 
             after(async function () {
                 this.timeout(self.timeout);
-                self.defaultAfter();
+                return self.defaultAfter();
             });
 
             it('should create and read events for a user', async () => {
@@ -42,7 +34,7 @@ class EventsSpec extends TestBase {
                 let result = await chai.request(self.baseServerUrl).get('/api/v1/users/self/events')
                     .set('Authorization', 'Bearer ' + token);
 
-                result.body.data.should.have.lengthOf(0)
+                result.body.data.should.have.lengthOf(0);
 
                 let event = new Event();
                 event.type = EventType.MarkedAsWatched;

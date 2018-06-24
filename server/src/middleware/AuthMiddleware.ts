@@ -1,11 +1,12 @@
 import * as passport from 'koa-passport';
-import { IRouterContext, IMiddleware } from 'koa-router';
+import { IMiddleware, IRouterContext } from 'koa-router';
 import { ExtractJwt, Strategy as JwtStrategy, StrategyOptions } from 'passport-jwt';
 import { Strategy as LocalStrategy } from 'passport-local';
+import { Connection } from 'typeorm';
 
 import { GlobalConfig } from '../Config';
-import DbAccess from '../db/DbAccess';
 import { User } from '../db/entity';
+import { UserRepository } from '../db/UserRepository';
 
 
 export default class AuthMiddleware {
@@ -41,9 +42,10 @@ export default class AuthMiddleware {
         }
     }
 
-    static setup(dbAccess: DbAccess): void {
+    static setup(connection: Connection): void {
+        const userRepository = connection.getCustomRepository(UserRepository)
         const findUser: (email: string, cb: (error: any, user?: any) => void, password?: string) => Promise<void> = (email, cb, password) => {
-            return dbAccess.getUserByEmail(email).then(async user => {
+            return userRepository.getUserByEmail(email).then(async user => {
                 if (user && password) {
                     let passwordMatches = await user.passwordEquals(password);
                     cb(null, !passwordMatches ? null : user);
@@ -60,7 +62,7 @@ export default class AuthMiddleware {
         });
 
         passport.deserializeUser<User, string>(async (id, done) => {
-            let user = await dbAccess.getUserById(id);
+            let user = await userRepository.getUserById(id);
             if (user) {
                 done(null, user);
             } else {

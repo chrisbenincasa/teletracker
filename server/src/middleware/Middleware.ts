@@ -1,10 +1,8 @@
 import * as Koa from 'koa';
 import * as passport from 'koa-passport';
-import * as session from 'koa-session';
 import { performance } from 'perf_hooks';
 import { Connection } from 'typeorm';
 
-import DbAccess from '../db/DbAccess';
 import logger from '../Logger';
 import AuthMiddleware from './AuthMiddleware';
 
@@ -12,7 +10,7 @@ const convert = require('koa-convert');
 const bodyParser = require('koa-body-parser');
 export class Middleware {
     static setupMiddleware(app: Koa, db: Connection): void {
-        AuthMiddleware.setup(new DbAccess(db));
+        AuthMiddleware.setup(db);
 
         // Session are disabled currently because the main consumer is react-native
         // which doesn't have default support for Session Cookies like a browser.

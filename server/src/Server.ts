@@ -12,6 +12,7 @@ import { Config } from './Config';
 import logger from './Logger';
 import { AuthController } from './api/AuthController';
 import { SearchController } from './api/SearchController';
+import { NetworksController } from './api/NetworksController';
 
 export default class Server {
     config: Config
@@ -50,7 +51,8 @@ export default class Server {
             new AuthController(router),
             new MoviesController(router, this.connection),
             new TvShowController(router, this.connection),
-            new SearchController(router, this.connection)
+            new SearchController(router, this.connection),
+            new NetworksController(router, this.connection)
         ];
 
         controllers.forEach(controller => controller.setupRoutes());
