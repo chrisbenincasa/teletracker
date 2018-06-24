@@ -6,10 +6,13 @@ import { Database, Db } from '../db/Connection';
 import Server from '../Server';
 import PostgresDocker from './fixtures/docker';
 import { getRandomPort } from './util';
-import DbAccess from '../db/DbAccess';
 import { Connection } from 'typeorm';
 import * as uuid from 'uuid/v4';
 import { User } from '../db/entity';
+import { UserRepository } from '../db/UserRepository';
+import { ListRepository } from '../db/ListRepository';
+import { ThingRepository } from '../db/ThingRepository';
+import { EventsRepository } from '../db/EventsRepository';
 
 export default abstract class TestBase {
     port = getRandomPort();
@@ -22,7 +25,11 @@ export default abstract class TestBase {
         server: { port: this.port }
     });
     connection: Connection;
-    dbAccess: DbAccess;
+
+    protected userRepository: UserRepository;
+    protected listRepository: ListRepository;
+    protected thingRepository: ThingRepository;
+    protected eventsRepository: EventsRepository;
 
     constructor(name: string) {
         this.name = name;
@@ -45,7 +52,10 @@ export default abstract class TestBase {
         if (startServer) {
             await this.startServer(this.config);
             this.connection = this.server.connection;
-            this.dbAccess = new DbAccess(this.connection);
+            this.userRepository = this.connection.getCustomRepository(UserRepository);
+            this.listRepository = this.connection.getCustomRepository(ListRepository);
+            this.thingRepository = this.connection.getCustomRepository(ThingRepository);
+            this.eventsRepository = this.connection.getCustomRepository(EventsRepository);
         }
     }
 
@@ -91,7 +101,7 @@ export default abstract class TestBase {
         user.email = uuid();
         user.password = '12345';
 
-        return this.dbAccess.addUser(user);
+        return this.userRepository.addUser(user);
     }
 
     abstract makeSpec(): Mocha.ISuite

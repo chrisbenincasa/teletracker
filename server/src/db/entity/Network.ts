@@ -10,17 +10,23 @@ export class Network {
     id: number;
 
     @Column()
-    name: string
+    name: string;
 
     @Column()
-    externalId: string
+    homepage: string;
+
+    @Column()
+    origin: string;
+
+    @Column()
+    externalId: string;
     
     @Column()
-    externalSource: ExternalSource = ExternalSource.TheMovieDb
+    externalSource: ExternalSource = ExternalSource.TheMovieDb;
 
     @ManyToMany(type => Thing)
     @JoinTable()
-    things: Thing[]
+    things: Thing[];
 
     @OneToMany(type => Availability, a => a.network)
     @JoinTable()

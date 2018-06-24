@@ -1,21 +1,19 @@
-import R from 'ramda';
 import * as React from 'react';
 import { Navigation } from 'react-native-navigation';
 import { Provider } from 'react-redux';
 import { Store } from 'redux';
 import { Persistor } from 'redux-persist';
 import { PersistGate } from 'redux-persist/integration/react';
-import { State } from '../Redux/State';
 
+import ItemDetailScreen from '../Containers/ItemDetailScreen';
 import ItemList from '../Containers/ItemList';
 import LoginScreen from '../Containers/LoginScreen';
-import SignupScreen from '../Containers/SignupScreen';
 import MenuScreen from '../Containers/MenuScreen';
-import SplashScreen from '../Containers/SplashScreen';
-import SearchScreen from '../Containers/SearchScreen';
 import NotificationsScreen from '../Containers/NotificationsScreen';
-import ItemDetailScreen from '../Containers/ItemDetailScreen';
-import { Card, ListItem, Icon, Header } from 'react-native-elements';
+import SearchScreen from '../Containers/SearchScreen';
+import SignupScreen from '../Containers/SignupScreen';
+import SplashScreen from '../Containers/SplashScreen';
+import State from '../Redux/State';
 
 
 function sceneCreator(Scene: React.Component, store: Store<{}>, persistor: Persistor) {

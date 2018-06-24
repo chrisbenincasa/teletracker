@@ -9,11 +9,13 @@ import Rehydration from '../Services/Rehydration';
 import { reducer as UserReducer } from './UserRedux';
 import { reducer as SearchReducer } from './SearchRedux';
 import { reducer as ListReducer } from './ListRedux';
+import { reducer as NavReducer } from './NavRedux';
 
 export const reducers = combineReducers<State>({
   user: UserReducer,
   search: SearchReducer,
-  lists: ListReducer
+  lists: ListReducer,
+  nav: NavReducer
 });
 
 export default (): { store: Store<{}>, persistor: any } => {

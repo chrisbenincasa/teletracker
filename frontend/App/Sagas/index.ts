@@ -4,11 +4,13 @@ import { StartupTypes } from '../Redux/StartupRedux';
 import { UserTypes } from '../Redux/UserRedux';
 import { SearchTypes } from '../Redux/SearchRedux';
 import { ListTypes } from '../Redux/ListRedux';
+import { NavTypes } from '../Redux/NavRedux';
 import { TeletrackerApi } from '../Services/TeletrackerApi';
 import { startup } from './StartupSagas';
 import { getUser, signupUser, loginUser } from './UserSagas';
 import { search } from './SearchSagas';
 import { addToList } from './ListSagas';
+import { pushState } from './NavSagas';
 
 export const teletrackerApi = new TeletrackerApi();
 
@@ -20,6 +22,7 @@ export default function * root(): IterableIterator<AllEffect> {
     takeLatest(UserTypes.USER_SELF_REQUEST, getUser, teletrackerApi),
     takeLatest(UserTypes.USER_SIGNUP_REQUEST, signupUser, teletrackerApi),
     takeLatest(SearchTypes.SEARCH_REQUEST, search, teletrackerApi),
-    takeLatest(ListTypes.ADD_TO_LIST, addToList, teletrackerApi)
-  ])
+    takeLatest(ListTypes.ADD_TO_LIST, addToList, teletrackerApi),
+    takeLatest(NavTypes.PUSH_STATE, pushState)
+  ]);
 }

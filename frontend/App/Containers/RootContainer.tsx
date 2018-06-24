@@ -1,16 +1,13 @@
+import React, { Component } from 'react';
+import { StatusBar, View, YellowBox } from 'react-native';
+import { connect, Dispatch } from 'react-redux';
 import { AnyAction } from 'redux';
-import React, { Component } from 'react'
-import { View, StatusBar, Text } from 'react-native'
-import ReduxNavigation from '../Navigation/ReduxNavigation'
-import { connect, Dispatch } from 'react-redux'
-import StartupActions from '../Redux/StartupRedux'
-import ReduxPersist from '../Config/ReduxPersist'
-import Config from 'react-native-config'
+
+import ReduxPersist from '../Config/ReduxPersist';
+import StartupActions from '../Redux/StartupRedux';
+import styles from './Styles/RootContainerStyles';
 
 // Styles
-import styles from './Styles/RootContainerStyles'
-import NavigationService from '../Services/NavigationService';
-
 class RootContainer extends Component<RootContainerProps> {
   componentDidMount () {
     // if redux persist is not active fire startup action

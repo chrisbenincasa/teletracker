@@ -5,6 +5,6 @@ export default StyleSheet.create({
   ...ApplicationStyles.screen,
     container: {
         width: 280,
-        paddingTop: 25
+        paddingTop: 30
     }
 });
