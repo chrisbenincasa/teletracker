@@ -156,126 +156,97 @@ class ItemDetailScreen extends Component<Props> {
                     statusBarProps={headerStyles.header.statusBarProps}
                     componentId={this.props.componentId}
                     leftComponent={{icon:  'chevron-left', back: true, style: { color: 'white' } }}
-                    // title={this.props.item.name}
                     centerComponent={{title: this.props.item.name,  style: { color: 'white' } }} 
                 />
                 <KeyboardAvoidingView behavior='position'>
-                <View
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                    }}
-                >
-                    <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={{
-                        flex: 1, 
-                        width: '100%',
-                        height: '100%',
-                        resizeMode: 'cover'
-                    }} />
-                </View>
-                <View style={{
-                    position: 'relative',
-                    top: 60,
-                    left: 0,
-                    backgroundColor: 'transparent',
-                    flexDirection: 'row'
-                }}>
-                    <Image source={{ uri: 'https://image.tmdb.org/t/p/w92' + this.getImagePath()}} style={{
-                        width: 92,
-                        height: 138, 
-                        marginTop: 20,
-                        marginLeft: 12,
-                        borderWidth: 2,
-                        borderColor: '#fff'
-                    }} />
-                    <View style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end'}}>
-                    <Text style={{marginTop: 10,marginLeft: 10,fontSize: 20}}>
-                        {this.props.item.name} ({this.getReleaseYear()})
-                    </Text>
-                    <View style={{flexDirection: 'row'}}>
-                        <Rating
-                            type="star"
-                            fractions={1}
-                            startingValue={this.getRatingPath() / 2}
-                            readonly
-                            imageSize={15}
-                            style={{ 
-                                paddingBottom: 15,
-                                marginLeft: 10
-                            }}
-                        />
-                        <Text style={{fontSize: 10,marginLeft: 10,fontStyle: 'italic'}}>
-                            ({this.getVoteCount()})
-                        </Text>
+                    <View style={styles.coverContainer} >
+                        <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={styles.coverImage} />
                     </View>
-                </View>
-            </View>
-        </KeyboardAvoidingView>
-        <View style={{marginTop: 60}}>
-            <Card>
-                <Text>{this.getDescription()}</Text>
-            </Card>
-        </View>
+                    <View style={styles.subHeaderContainer}>
+                        <Image source={{ uri: 'https://image.tmdb.org/t/p/w92' + this.getImagePath()}} style={styles.posterImage} />
+                        <View style={styles.itemDetailsContainer}>
+                            <Text style={{marginTop: 10,marginLeft: 10,fontSize: 20}}>
+                                {this.props.item.name} ({this.getReleaseYear()})
+                            </Text>
+                            <View style={styles.ratingsContainer}>
+                                <Rating
+                                    type="star"
+                                    fractions={1}
+                                    startingValue={this.getRatingPath() / 2}
+                                    readonly
+                                    imageSize={15}
+                                    style={{paddingBottom: 15, marginLeft: 10}}
+                                />
+                                <Text style={styles.ratingCount}>({this.getVoteCount()})</Text>
+                            </View>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
 
-        <Button title='Add' onPress={this.addItem.bind(this)}></Button>
-        <Text style={{marginTop: 10, marginLeft: 12, fontSize: 16}}>Starring:</Text>
-        
-        <ScrollView horizontal={true} style={{flexDirection: 'row', marginTop: 5, marginLeft: 12}}>
-            <Avatar
-                large
-                rounded
-                source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                activeOpacity={0.7}
-                containerStyle={{paddingLeft: 5, paddingRight: 5}}
-            />
-            <Avatar
-                large
-                rounded
-                source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                activeOpacity={0.7}
-                containerStyle={{paddingLeft: 5, paddingRight: 5}}
-            />
-            <Avatar
-                large
-                rounded
-                source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                activeOpacity={0.7}
-                containerStyle={{paddingLeft: 5, paddingRight: 5}}
-            />
-            <Avatar
-                large
-                rounded
-                source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                activeOpacity={0.7}
-                containerStyle={{paddingLeft: 5, paddingRight: 5}}
-            />
-            <Avatar
-                large
-                rounded
-                source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                activeOpacity={0.7}
-                containerStyle={{paddingLeft: 5, paddingRight: 5}}
-            />
-            <Avatar
-                large
-                rounded
-                source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                activeOpacity={0.7}
-                containerStyle={{paddingLeft: 5, paddingRight: 5}}
-            />
-            <Avatar
-                large
-                rounded
-                source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                activeOpacity={0.7}
-                containerStyle={{paddingLeft: 5, paddingRight: 5}}
-            />
-        </ScrollView>
-        <MessageBarAlert ref="alert" />
-    </View>
+                <View style={{marginTop: 60}}>
+                    <Card>
+                        <Text>{this.getDescription()}</Text>
+                    </Card>
+                </View>
+
+                <Button title='Add' onPress={this.addItem.bind(this)}></Button>
+
+                <Text style={styles.starringHeader}>Starring:</Text>
+
+                {/* Static Content for now for testing */}
+                <ScrollView horizontal={true} style={styles.avatarContainer}>
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                </ScrollView>
+                <MessageBarAlert ref="alert" />
+            </View>
         )
     }
 }

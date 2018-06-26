@@ -1,12 +1,12 @@
+import * as R from 'ramda';
 import React from 'react';
-import { SectionList, Text, View, FlatList } from 'react-native';
+import { SectionList, Text, View } from 'react-native';
 import { ListItem } from 'react-native-elements';
+import { Navigation } from 'react-native-navigation';
 import { connect, Dispatch } from 'react-redux';
 
-import * as R from 'ramda'
 import Header from '../Components/Header/Header';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
-import NavActions from '../Redux/NavRedux';
 import ReduxState from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
 import styles from './Styles/ItemListStyle';
@@ -33,7 +33,9 @@ class ItemList extends React.PureComponent<Props> {
             return lists.map(list => {
                 return {
                     key: list.name,
-                    data: list.things
+                    data: list.things.map(thing => {
+                        return { title: thing.name, type: thing.type };
+                    })
                 };
             })
         } else {
@@ -41,14 +43,8 @@ class ItemList extends React.PureComponent<Props> {
         }
     }
     
-    goToItemDetail(item) {
-        let view = R.mergeDeepRight(NavigationConfig.DetailView, {
-            component: {
-                passProps: { item }
-            }
-        });
-
-        this.props.pushState(this.props.componentId, view);
+    goToItemDetail() {
+        Navigation.push(this.props.componentId, NavigationConfig.DetailView);
     }
 
     goToSearch() {
@@ -58,11 +54,11 @@ class ItemList extends React.PureComponent<Props> {
     renderItem ({section, item}) {
         return (
             <ListItem 
-                key={this.keyExtractor}
-                title={item.name}
-                leftIcon={{name: item.type}}
-                subtitle={item.platform}
-                onPress={() => this.goToItemDetail(item)} 
+            key={this.keyExtractor}
+            title={item.title}
+            leftIcon={{name: item.type}}
+            subtitle={item.platform}
+            onPress={this.goToItemDetail.bind(this)} 
             />
         )
     }
@@ -76,7 +72,8 @@ class ItemList extends React.PureComponent<Props> {
     *************************************************************/
     
     // Show this when data is empty
-    renderEmpty = () => <Text style={styles.label}> Empty list, yo! </Text>;
+    renderEmpty = () =>
+    <Text style={styles.label}> Empty list, yo! </Text>;
     
     
     // The default function if no Key is provided is index
@@ -107,11 +104,11 @@ class ItemList extends React.PureComponent<Props> {
                 <Header 
                     componentId={this.props.componentId} 
                     centerComponent={{title: 'My List',  style: { color: 'white' } }}  />
-                <FlatList
+                <SectionList
                     renderSectionHeader={this.renderSectionHeader}
                     sections={this.getListSections.call(this)}
                     contentContainerStyle={styles.listContent}
-                    data={this.props.user.details.lists[0].things}
+                    data={this.state.dataObjects}
                     renderItem={this.renderItem.bind(this)}
                     keyExtractor={this.keyExtractor}
                     initialNumToRender={this.oneScreensWorth}
@@ -133,9 +130,6 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
     return {
         loadUserSelf: (componentId: string) => {
             dispatch(UserActions.userSelfRequest(componentId));
-        },
-        pushState: (componentId: string, view: any) => {
-            dispatch(NavActions.pushState(componentId, view));
         }
     }
 };

@@ -79,7 +79,7 @@ class SearchScreen extends Component<Props, State> {
                             <ListItem
                                 key={i}
                                 title={item.name}
-                                subtitle={'Type: ' + item.metadata.themoviedb}
+                                subtitle={'Type: ' + item.type}
                                 onPress={() => this.goToItemDetail(item)}
                             />
                         ))}
