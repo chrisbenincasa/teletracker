@@ -12,7 +12,6 @@ import { Thing } from '../Model/external/themoviedb';
 import ListActions from '../Redux/ListRedux';
 import headerStyles from '../Themes/ApplicationStyles';
 import styles from './Styles/ItemDetailScreenStyle';
-import { END } from 'redux-saga';
 
 var MessageBarAlert = require('react-native-message-bar').MessageBar;
 var MessageBarManager = require('react-native-message-bar').MessageBarManager;
