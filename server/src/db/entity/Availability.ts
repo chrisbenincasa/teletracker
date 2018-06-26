@@ -32,9 +32,21 @@ export class Availability {
     @Index()
     endDate?: Date
 
+    @Column({ nullable: true })
+    offerType?: OfferType
+
     @Column({ type: 'decimal', precision: 15, scale: 9, nullable: true }) // Is decimal right for postgres? 
     cost?: number
 
     @Column({ nullable: true })
     currency?: string
+}
+
+export enum OfferType {
+    Buy = 'buy',
+    Rent = 'rent',
+    Theater = 'theater',
+    Subscription = 'subscription',
+    Free = 'free',
+    Ads = 'ads'
 }
