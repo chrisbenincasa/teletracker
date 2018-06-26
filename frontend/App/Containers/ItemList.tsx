@@ -4,7 +4,6 @@ import { SectionList, Text, View, FlatList } from 'react-native';
 import { ListItem } from 'react-native-elements';
 import { connect, Dispatch } from 'react-redux';
 
-import * as R from 'ramda'
 import Header from '../Components/Header/Header';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
 import NavActions from '../Redux/NavRedux';
@@ -43,17 +42,17 @@ class ItemList extends React.PureComponent<Props> {
     }
     
     goToItemDetail(item) {
-        let view = R.mergeDeepRight(NavigationConfig.DetailView,{
+        let view = R.mergeDeepRight(NavigationConfig.DetailView, {
             component: {
-            passProps: { item }
-        }
-    });
-
-    this.props.pushState(this.props.componentId, view);
-
-    goToSearch() {
-        
+                passProps: { item }
+            }
+        });
+        this.props.pushState(this.props.componentId, view);
     }
+
+    // goToSearch() {
+        
+    // }
     
     renderItem ({section, item}) {
         return (
