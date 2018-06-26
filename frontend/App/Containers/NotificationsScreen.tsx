@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { View, Text, KeyboardAvoidingView } from 'react-native';
 import { connect, Dispatch } from 'react-redux';
-import { Card, ListItem, Icon } from 'react-native-elements';
+import { Card, List, ListItem, Icon } from 'react-native-elements';
 import Header from '../Components/Header/Header';
 
 import UserActions, { UserState } from '../Redux/UserRedux';
@@ -14,6 +14,33 @@ interface Props {
     user: UserState
     loadUserSelf: (componentId: string) => any
 }
+
+const list = [
+    {
+        title: 'Ted 2',
+        subtitle: 'Leaving Netflix in 2 days!',
+        icon: 'flight-takeoff',
+        badge: {
+            value: '2 days', textStyle: { color: 'white' }
+        }
+    },
+    {
+        title: 'The Matrix',
+        subtitle: 'Leaving HBO in 1 day',
+        icon: 'flight-takeoff',
+        badge: {
+            value: '1 day', textStyle: { color: 'white' }
+        }
+    },
+    {
+        title: 'Patty Cake$',
+        subtitle: 'Available on Hulu in 15 days',
+        icon: 'av-timer',
+        badge: {
+            value: '15 days', textStyle: { color: 'white' }
+        }
+    },
+];
 
 class NotificationsScreen extends Component<Props> {
 
@@ -28,10 +55,25 @@ class NotificationsScreen extends Component<Props> {
             <View style={styles.container}>
                 <Header 
                     title="Search" 
-                    componentId={this.props.componentId} 
-                    centerComponent={{title: 'Notifications',  style: { color: 'white' } }} 
+                    componentId={this.props.componentId}
+                    centerComponent={{title: 'Notifications',style: { color: 'white' } }}
                 />
-                <Text>Notifications Screen</Text>
+                <List>
+                {
+                    list.map((item, i) => (
+                        <ListItem
+                            key={i}
+                            title={item.title}
+                            subtitle={item.subtitle}
+                            subtitleNumberOfLines={2}
+                            leftIcon={{name: item.icon}}
+                            hideChevron={true}
+                            badge={item.badge}
+                        />
+                      
+                    ))
+                }
+                </List>
             </View>
         );
     }

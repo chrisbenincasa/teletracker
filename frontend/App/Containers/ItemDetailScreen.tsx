@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import { Image, KeyboardAvoidingView, Text, View } from 'react-native';
-import { Button } from 'react-native-elements';
+import { Image, KeyboardAvoidingView, Text, View, ScrollView } from 'react-native';
+import { Button, Card, Rating, Avatar } from 'react-native-elements';
 import Header from '../Components/Header/Header';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
@@ -54,6 +54,61 @@ class ItemDetailScreen extends Component<Props> {
         }
     }
 
+    getBackdropImagePath() {
+        let meta = this.props.item.metadata.themoviedb;
+        if (this.hasTmdbMovie()) {
+            return R.view<Props, Movie>(this.tmdbMovieView, this.props).backdrop_path;
+        } else if (this.hasTmdbShow()) {
+            return meta.show.backdrop_path; 
+        } else if (this.hasTmdbPerson()) {
+            return meta.person.backdrop_path; //TO DO: Confirm if this exists
+        }
+    }
+
+    getRatingPath() {
+        let meta = this.props.item.metadata.themoviedb;
+        if (this.hasTmdbMovie()) {
+            return R.view<Props, Movie>(this.tmdbMovieView, this.props).vote_average;
+        } else if (this.hasTmdbShow()) {
+            return meta.show.vote_average;
+        } else if (this.hasTmdbPerson()) {
+            return meta.person.vote_average; //TO DO: Confirm if this exists
+        }
+    }
+
+    getVoteCount() {
+        let meta = this.props.item.metadata.themoviedb;
+        if (this.hasTmdbMovie()) {
+            return R.view<Props, Movie>(this.tmdbMovieView, this.props).vote_count;
+        } else if (this.hasTmdbShow()) {
+            return meta.show.vote_count;
+        } else if (this.hasTmdbPerson()) {
+            return meta.person.vote_count; //TO DO: Confirm if this exists
+        }
+    }
+
+    getReleaseYear() {
+        let meta = this.props.item.metadata.themoviedb;
+        if (this.hasTmdbMovie()) {
+            return R.view<Props, Movie>(this.tmdbMovieView, this.props).release_date.substring(0,4);
+        } else if (this.hasTmdbShow()) {
+            return meta.show.release_date.substring(0,4);
+        } else if (this.hasTmdbPerson()) {
+            return meta.person.release_date.substring(0,4); //TO DO: Confirm if this exists
+        }
+    }
+
+    getDescription() {
+        let meta = this.props.item.metadata.themoviedb;
+        if (this.hasTmdbMovie()) {
+            return R.view<Props, Movie>(this.tmdbMovieView, this.props).overview;
+        } else if (this.hasTmdbShow()) {
+            return meta.show.overview;
+        } else if (this.hasTmdbPerson()) {
+            return meta.person.overview; //TO DO: Confirm if this exists
+        }
+    }
+
     hasTmdbMetadata() {
         return this.props.item.metadata && this.props.item.metadata.themoviedb;
     }
@@ -99,14 +154,95 @@ class ItemDetailScreen extends Component<Props> {
                     statusBarProps={headerStyles.header.statusBarProps}
                     componentId={this.props.componentId}
                     leftComponent={{icon:  'chevron-left', back: true, style: { color: 'white' } }}
-                    // title={this.props.item.name}
                     centerComponent={{title: this.props.item.name,  style: { color: 'white' } }} 
                 />
                 <KeyboardAvoidingView behavior='position'>
-                    <Image source={{ uri: 'https://image.tmdb.org/t/p/w185_and_h278_bestv2' + this.getImagePath()}} style={{width:185,height:278}} />
-                    <Text>{this.props.item.name}</Text>
-                    <Button title='Add' onPress={this.addItem.bind(this)}></Button>
+                    <View style={styles.coverContainer} >
+                        <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={styles.coverImage} />
+                    </View>
+                    <View style={styles.subHeaderContainer}>
+                        <Image source={{ uri: 'https://image.tmdb.org/t/p/w92' + this.getImagePath()}} style={styles.posterImage} />
+                        <View style={styles.itemDetailsContainer}>
+                            <Text style={{marginTop: 10,marginLeft: 10,fontSize: 20}}>
+                                {this.props.item.name} ({this.getReleaseYear()})
+                            </Text>
+                            <View style={styles.ratingsContainer}>
+                                <Rating
+                                    type="star"
+                                    fractions={1}
+                                    startingValue={this.getRatingPath() / 2}
+                                    readonly
+                                    imageSize={15}
+                                    style={{paddingBottom: 15, marginLeft: 10}}
+                                />
+                                <Text style={styles.ratingCount}>({this.getVoteCount()})</Text>
+                            </View>
+                        </View>
+                    </View>
                 </KeyboardAvoidingView>
+
+                <View style={{marginTop: 60}}>
+                    <Card>
+                        <Text>{this.getDescription()}</Text>
+                    </Card>
+                </View>
+
+                <Button title='Add' onPress={this.addItem.bind(this)}></Button>
+
+                <Text style={styles.starringHeader}>Starring:</Text>
+
+                {/* Static Content for now for testing */}
+                <ScrollView horizontal={true} style={styles.avatarContainer}>
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                    <Avatar
+                        large
+                        rounded
+                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
+                        activeOpacity={0.7}
+                        containerStyle={styles.avatar}
+                    />
+                </ScrollView>
                 <MessageBarAlert ref="alert" />
             </View>
         )

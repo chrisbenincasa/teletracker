@@ -1,9 +1,9 @@
+import * as R from 'ramda';
 import React from 'react';
 import { SectionList, Text, View, FlatList } from 'react-native';
 import { ListItem } from 'react-native-elements';
 import { connect, Dispatch } from 'react-redux';
 
-import * as R from 'ramda'
 import Header from '../Components/Header/Header';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
 import NavActions from '../Redux/NavRedux';
@@ -47,13 +47,12 @@ class ItemList extends React.PureComponent<Props> {
                 passProps: { item }
             }
         });
-
         this.props.pushState(this.props.componentId, view);
     }
 
-    goToSearch() {
+    // goToSearch() {
         
-    }
+    // }
     
     renderItem ({section, item}) {
         return (
