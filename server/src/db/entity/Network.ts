@@ -1,10 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, Index, OneToMany } from 'typeorm';
-import { ExternalSource } from './Thing';
-import { Thing } from './Thing';
+import { Column, Entity, Index, JoinColumn, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+
 import { Availability } from './Availability';
+import { ExternalSource, Thing } from './Thing';
+import { NetworkReference } from './NetworkReference';
 
 @Entity('networks')
-@Index(['externalSource', 'externalId'], { unique: true })
 export class Network {
     @PrimaryGeneratedColumn()
     id: number;
@@ -13,16 +13,23 @@ export class Network {
     name: string;
 
     @Column()
-    homepage: string;
+    @Index({ unique: true })
+    slug: string;
 
     @Column()
-    origin: string;
+    shortname: string;
 
-    @Column()
-    externalId: string;
+    @Column({ nullable: true })
+    homepage?: string;
+
+    @Column({ nullable: true })
+    origin?: string;
+
+    // @Column()
+    // externalId: string;
     
-    @Column()
-    externalSource: ExternalSource = ExternalSource.TheMovieDb;
+    // @Column()
+    // externalSource: ExternalSource = ExternalSource.TheMovieDb;
 
     @ManyToMany(type => Thing)
     @JoinTable()
@@ -31,4 +38,7 @@ export class Network {
     @OneToMany(type => Availability, a => a.network)
     @JoinTable()
     availability: Availability[]
+
+    @OneToMany(type => NetworkReference, 'networkId')
+    references: NetworkReference[]
 }
