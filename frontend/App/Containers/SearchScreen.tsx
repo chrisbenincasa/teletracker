@@ -56,7 +56,7 @@ class SearchScreen extends Component<Props, State> {
 
     render() {
         const tvResults = R.view(this.tvResultsLens, this.props);
-
+        console.tron.log(tvResults);
         return (
             <View style={styles.container}>
                 <Header 
@@ -79,7 +79,7 @@ class SearchScreen extends Component<Props, State> {
                             <ListItem
                                 key={i}
                                 title={item.name}
-                                subtitle={'Type: ' + item.type}
+                                subtitle={'Type: ' + item.metadata.themoviedb}
                                 onPress={() => this.goToItemDetail(item)}
                             />
                         ))}
