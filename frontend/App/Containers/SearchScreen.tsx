@@ -56,7 +56,7 @@ class SearchScreen extends Component<Props, State> {
 
     render() {
         const tvResults = R.view(this.tvResultsLens, this.props);
-        console.tron.log(tvResults);
+
         return (
             <View style={styles.container}>
                 <Header 

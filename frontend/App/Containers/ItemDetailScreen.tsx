@@ -46,7 +46,6 @@ class ItemDetailScreen extends Component<Props> {
 
     getImagePath() {
         let meta = this.props.item.metadata.themoviedb;
-        console.tron.log(this.props.item.metadata.themoviedb);
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
         } else if (this.hasTmdbShow()) {
