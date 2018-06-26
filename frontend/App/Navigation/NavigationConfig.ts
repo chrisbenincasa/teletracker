@@ -28,9 +28,6 @@ export let ListView = {
             name: 'navigation.main.MenuScreen',
             passProps: {
               side: 'left'
-            },
-            styles: {
-                drawerShadow: 'no'
             }
           }
         },
