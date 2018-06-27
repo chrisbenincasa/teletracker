@@ -33,9 +33,6 @@ class ItemDetailScreen extends Component<Props> {
 
         // Disable menu swipe out on ItemDetailScreen
         Navigation.mergeOptions(this.props.componentId, {
-            topBar: {
-                transparent: true
-            },
             sideMenu: {
                 left: {
                     visible: false,
@@ -54,7 +51,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.poster_path;
         } else if (this.hasTmdbPerson()) {
-            return meta.person.profile_path;
+            return; // There are no photos for people
         }
     }
 
@@ -65,7 +62,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.backdrop_path; 
         } else if (this.hasTmdbPerson()) {
-            return meta.person.backdrop_path; //TO DO: Confirm if this exists
+            return; // There are no photos for people
         }
     }
 
@@ -76,7 +73,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.vote_average;
         } else if (this.hasTmdbPerson()) {
-            return meta.person.vote_average; //TO DO: Confirm if this exists
+            return; //// There is no ratings for people
         }
     }
 
@@ -87,7 +84,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.vote_count;
         } else if (this.hasTmdbPerson()) {
-            return meta.person.vote_count; //TO DO: Confirm if this exists
+            return; // There is no vote count for people
         }
     }
 
@@ -98,8 +95,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.first_air_date.substring(0,4);
         } else if (this.hasTmdbPerson()) {
-            console.tron.log(meta);
-            return meta.person.release_date.substring(0,4); //TO DO: Confirm if this exists
+            return; // There is no release year for people
         }
     }
 
@@ -110,7 +106,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.overview;
         } else if (this.hasTmdbPerson()) {
-            return meta.person.overview; //TO DO: Confirm if this exists
+            return; // There is no description for people
         }
     }
 
