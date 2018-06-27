@@ -43,7 +43,8 @@ export class SearchController extends Controller {
         // Find all of the objects we have already saved details for
         // TODO: Have to query for TV shows too. Probably easier to stick this in a join table
         // TODO: See if the object is "stale" and update if so
-        let existing: Entity.Thing[] = await this.thingRepository.getObjectsByExternalIds(ExternalSource.TheMovieDb, foundIds, ThingType.Movie);
+        let existingMovies: Entity.Thing[] = await this.thingRepository.getObjectsByExternalIds(ExternalSource.TheMovieDb, foundIds, ThingType.Movie);
+        let existingTvShows: Entity.Thing[] = await this.thingRepository.getObjectsByExternalIds(ExternalSource.TheMovieDb, foundIds, ThingType.Show);
 
         // Create a mapping of "externalId" to the found objects
         let existingByExternalId: Map<string, Entity.Thing> = R.pipe(
@@ -51,10 +52,17 @@ export class SearchController extends Controller {
             R.mapObjIndexed(([thing]) => thing),
             Object.entries,
             x => new Map(x)
-        )(existing);
+        )(existingMovies);
+
+        let existingShowsByExternalId: Map<string, Entity.Thing> = R.pipe(
+            R.groupBy<Entity.Thing>(x => x.metadata.themoviedb.show.id.toString()),
+            R.mapObjIndexed(([thing]) => thing),
+            Object.entries,
+            x => new Map(x)
+        )(existingTvShows);
 
         // Find objects from the search result that we're missing
-        let missing = R.filter(i => !existingByExternalId.has(i.id.toString()), result.results);
+        let missing = R.filter(i => !existingByExternalId.has(i.id.toString()) && !existingShowsByExternalId.has(i.id.toString()), result.results);
 
         // Take the top 5 saerch results and populate their rich data "synchronously"
         // TODO: Fire off Promise that saves the "async" ones
@@ -75,7 +83,11 @@ export class SearchController extends Controller {
             return R.reduce((acc, [key, value]) => acc.set(key, value), new Map<number, Entity.Thing>(), x);
         }).then(newlySaved => {
             let final = result.results.map(result => {
-                return existingByExternalId.get(result.id.toString()) || newlySaved.get(result.id);
+                if (result.media_type === 'movie') {
+                    return existingByExternalId.get(result.id.toString()) || newlySaved.get(result.id);
+                } else if (result.media_type === 'tv') {
+                    return existingShowsByExternalId.get(result.id.toString()) || newlySaved.get(result.id);
+                }
             });
 
             // This should be unnecessary once we're returning _all_ results.
@@ -89,7 +101,7 @@ export class SearchController extends Controller {
             promise = this.movieDbClient.movies.getMovie(item.id, null, ['release_dates', 'credits']).
                 then(movie => this.thingRepository.save(Entity.ThingFactory.movie(movie)));
         } else if (item.media_type === 'tv') {
-            promise = this.movieDbClient.tv.getTvShow(item.id, null, ['combined_credits']).
+            promise = this.movieDbClient.tv.getTvShow(item.id, null, ['credits']).
                 then(tv => this.thingRepository.save(Entity.ThingFactory.show(tv)));
         } else {
             promise = this.movieDbClient.people.getPerson(item.id).
