@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { View } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { Colors } from '../../Themes/';
@@ -18,11 +19,15 @@ export default class HeaderRight extends Component {
 
     render () {
         return (
+            <View>
+                {this.props.centerComponent ?
             <Icon 
                 name='search'
                 color='#fff'
                 underlayColor={Colors.headerBackground}
                 onPress={this.openSearch} />
+                : null}
+            </View>
         )
     }
 };
