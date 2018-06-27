@@ -12,6 +12,7 @@ import { Thing } from '../Model/external/themoviedb';
 import ListActions from '../Redux/ListRedux';
 import headerStyles from '../Themes/ApplicationStyles';
 import styles from './Styles/ItemDetailScreenStyle';
+import ViewMoreText from 'react-native-view-more-text';
 
 var MessageBarAlert = require('react-native-message-bar').MessageBar;
 var MessageBarManager = require('react-native-message-bar').MessageBarManager;
@@ -50,7 +51,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.poster_path;
         } else if (this.hasTmdbPerson()) {
-            return meta.person.profile_path;
+            return; // There are no photos for people
         }
     }
 
@@ -61,7 +62,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.backdrop_path; 
         } else if (this.hasTmdbPerson()) {
-            return meta.person.backdrop_path; //TO DO: Confirm if this exists
+            return; // There are no photos for people
         }
     }
 
@@ -72,7 +73,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.vote_average;
         } else if (this.hasTmdbPerson()) {
-            return meta.person.vote_average; //TO DO: Confirm if this exists
+            return; //// There is no ratings for people
         }
     }
 
@@ -83,7 +84,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.vote_count;
         } else if (this.hasTmdbPerson()) {
-            return meta.person.vote_count; //TO DO: Confirm if this exists
+            return; // There is no vote count for people
         }
     }
 
@@ -92,9 +93,9 @@ class ItemDetailScreen extends Component<Props> {
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).release_date.substring(0,4);
         } else if (this.hasTmdbShow()) {
-            return meta.show.release_date.substring(0,4);
+            return meta.show.first_air_date.substring(0,4);
         } else if (this.hasTmdbPerson()) {
-            return meta.person.release_date.substring(0,4); //TO DO: Confirm if this exists
+            return; // There is no release year for people
         }
     }
 
@@ -105,7 +106,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.overview;
         } else if (this.hasTmdbPerson()) {
-            return meta.person.overview; //TO DO: Confirm if this exists
+            return; // There is no description for people
         }
     }
 
@@ -137,6 +138,18 @@ class ItemDetailScreen extends Component<Props> {
         });
     }
 
+    renderViewMore(onPress) {
+        return (
+          <Text onPress={onPress} style={{textDecorationLine: 'underline', paddingTop: 5}}>View more</Text>
+        )
+      }
+
+    renderViewLess(onPress) {
+        return (
+          <Text onPress={onPress} style={{textDecorationLine: 'underline', paddingTop: 5}}>View less</Text>
+        )
+    }
+
     componentDidMount() {
         MessageBarManager.registerMessageBar(this.refs.alert);
     }
@@ -147,18 +160,22 @@ class ItemDetailScreen extends Component<Props> {
     
     render () {
         return (
-            <View style={styles.container}>
+            <ScrollView  style={styles.container}>
                 <Header
-                    outerContainerStyles={headerStyles.header.outer}
-                    innerContainerStyles={headerStyles.header.inner}
+                    outerContainerStyles={{backgroundColor: 'transparent', position: 'absolute', zIndex: 999999}}
                     statusBarProps={headerStyles.header.statusBarProps}
                     componentId={this.props.componentId}
                     leftComponent={{icon:  'chevron-left', back: true, style: { color: 'white' } }}
-                    centerComponent={{title: this.props.item.name,  style: { color: 'white' } }} 
+                    centerComponent={ null } 
+                    rightComponent={ null }
                 />
                 <KeyboardAvoidingView behavior='position'>
                     <View style={styles.coverContainer} >
-                        <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={styles.coverImage} />
+                        {   // Check if cover image exists, otherwise show blue
+                            this.getBackdropImagePath() === null ? 
+                            <View style={styles.emptyCoverImage}></View>
+                            : <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={styles.coverImage} />
+                         }
                     </View>
                     <View style={styles.subHeaderContainer}>
                         <Image source={{ uri: 'https://image.tmdb.org/t/p/w92' + this.getImagePath()}} style={styles.posterImage} />
@@ -183,13 +200,19 @@ class ItemDetailScreen extends Component<Props> {
 
                 <View style={{marginTop: 60}}>
                     <Card>
-                        <Text>{this.getDescription()}</Text>
+                        <ViewMoreText
+                            numberOfLines={6}
+                            renderViewMore={this.renderViewMore}
+                            renderViewLess={this.renderViewLess}
+                        >
+                            <Text>{this.getDescription()}</Text>
+                        </ViewMoreText>
                     </Card>
                 </View>
 
                 <Button title='Add' onPress={this.addItem.bind(this)}></Button>
 
-                <Text style={styles.starringHeader}>Starring:</Text>
+                <Text style={styles.castHeader}>Cast:</Text>
 
                 {/* Static Content for now for testing */}
                 <ScrollView horizontal={true} style={styles.avatarContainer}>
@@ -244,7 +267,7 @@ class ItemDetailScreen extends Component<Props> {
                     />
                 </ScrollView>
                 <MessageBarAlert ref="alert" />
-            </View>
+            </ScrollView>
         )
     }
 }
