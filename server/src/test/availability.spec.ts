@@ -1,11 +1,12 @@
 import 'mocha';
 
 import * as chai from 'chai';
-import TestBase from "./base";
-import { getManager } from "typeorm";
-import { Network, Thing, ThingType, ExternalSource, Availability } from "../db/entity";
 import chaiHttp = require('chai-http');
 import chaiSubset = require('chai-subset');
+import { getManager } from 'typeorm';
+
+import { Availability, Network, Thing, ThingType } from '../db/entity';
+import TestBase from './base';
 
 chai.use(chaiHttp);
 chai.use(chaiSubset);
@@ -39,8 +40,8 @@ class AvailabilitySpec extends TestBase {
                     homepage: "https://netflix.com",
                     name: 'Netflix',
                     origin: 'US',
-                    externalId: '123',
-                    externalSource: ExternalSource.TheMovieDb
+                    slug: 'netflix',
+                    shortname: 'netflix'
                 });
                 network = await manager.save(Network, network);
 
@@ -67,8 +68,7 @@ class AvailabilitySpec extends TestBase {
                             network: {
                                 id: network.id,
                                 name: network.name,
-                                homepage: network.homepage,
-                                externalSource: network.externalSource
+                                homepage: network.homepage
                             }
                         }]
                     }
