@@ -1,0 +1,23 @@
+{
+    "name": "justwatch-scraper",
+    "version": "1.0.0",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "prepublishOnly": "tsc",
+        "build": "tsc",
+        "main": "ts-node ./src/index.ts"
+    },
+    "author": "Christian Benincasa",
+    "license": "MIT",
+    "private": true,
+    "devDependencies": {
+        "@types/node": "^8.10.10",
+        "@types/request": "^2.47.1",
+        "@types/request-promise-native": "^1.0.15"
+    },
+    "dependencies": {
+        "request": "^2.87.0",
+        "request-promise-native": "^1.0.5"
+    }
+}
