@@ -34,6 +34,7 @@ class ErrorHandlingMiddleware extends BaseMiddleware {
         try {
             await next();
         } catch (err) {
+            console.error(err);
             ctx.status = 500;
             ctx.body = {
                 success: false,

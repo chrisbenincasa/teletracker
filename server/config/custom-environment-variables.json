@@ -6,5 +6,8 @@
         "jwt": {
             "secret": "JWT_SECRET"
         }
+    },
+    "themoviedb": {
+        "apiKey": "API_KEY"
     }
 }

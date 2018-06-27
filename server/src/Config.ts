@@ -33,18 +33,23 @@ export class ConfigLoader {
                     expiration: config.has('auth.jwt.expiration') ? config.get('auth.jwt.expiration') : null,
                     secret: config.get('auth.jwt.secret')
                 }
+            },
+            themoviedb: {
+                apiKey: config.has('themoviedb.apiKey') ? config.get('themoviedb.apiKey') : null
             }
         };
     }
 }
 
 export const GlobalConfig = ConfigLoader.load();
+export default GlobalConfig;
 
 export interface Config {
     server: ServerConfig;
     logging: LoggingConfig;
     db: ConnectionOptions;
     auth: AuthConfig;
+    themoviedb: TheMovieDbConfig;
 }
 
 export interface LoggingConfig {
@@ -64,4 +69,8 @@ export interface JwtConfig {
 
 export interface AuthConfig {
     jwt: JwtConfig
+}
+
+export interface TheMovieDbConfig {
+    apiKey: string
 }

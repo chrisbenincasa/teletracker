@@ -1,13 +1,16 @@
-import { Column, PrimaryGeneratedColumn, Entity, ManyToMany, Index, OneToMany } from 'typeorm';
+import { Column, PrimaryGeneratedColumn, Entity, ManyToMany, Index, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Movie, TvShow, Person } from 'themoviedb-client-typed'
 import { List } from './List';
 import { Network } from './Network';
 import { Optional } from '../../util/Types';
 import { Availability } from './Availability';
 import { TvShowSeason } from './TvShowSeason';
+import { slugify } from '../../util/Slug';
+import { Genre } from './Genre';
 
 export enum ExternalSource {
-    TheMovieDb = 'themoviedb'
+    TheMovieDb = 'themoviedb',
+    JustWatch = 'justwatch'
 }
 
 export class ObjectMetadata {
@@ -32,8 +35,8 @@ export class ThingFactory {
             let m = new Thing;
             m.type = ThingType.Movie;
             m.name = movie.title; // What happens if this is empty?
-            m.normalizedName = ThingFactory.slugify(movie.title); // What happens if this is empty? 
-            m.metadata = { 'themoviedb': { movie } };
+            m.normalizedName = slugify(movie.title); // What happens if this is empty? 
+            m.metadata = { [ExternalSource.TheMovieDb]: { movie } };
             return m;
         }
     }
@@ -43,8 +46,8 @@ export class ThingFactory {
             let m = new Thing;
             m.type = ThingType.Show;
             m.name = show.name;
-            m.normalizedName = ThingFactory.slugify(show.name);
-            m.metadata = { 'themoviedb': { show } };
+            m.normalizedName = slugify(show.name);
+            m.metadata = { [ExternalSource.TheMovieDb]: { show } };
             return m;
         }
     }
@@ -54,19 +57,10 @@ export class ThingFactory {
             let m = new Thing;
             m.type = ThingType.Person;
             m.name = person.name;
-            m.normalizedName = ThingFactory.slugify(person.name);
-            m.metadata = { 'themoviedb': { person }};
+            m.normalizedName = slugify(person.name);
+            m.metadata = { [ExternalSource.TheMovieDb]: { person }};
             return m;
         }
-    }
-
-    static slugify(text: string) {
-        return text.toString().toLowerCase().
-            replace(/\s+/g, '-').
-            replace(/[^\w\-]+/g, '').
-            replace(/\-\-+/g, '-').
-            replace(/^-+/, '').
-            replace(/-+$/, '');
     }
 }
 
@@ -85,6 +79,12 @@ export class Thing {
     @Column()
     type: ThingType;
 
+    @CreateDateColumn()
+    createdAt: Date;
+
+    @UpdateDateColumn()
+    lastUpdatedAt: Date;
+
     @ManyToMany(type => List, list => list.things)
     lists: List[];
 
@@ -97,6 +97,9 @@ export class Thing {
 
     @OneToMany(type => Availability, a => a.thing)
     availability: Availability[];
+
+    @OneToMany(type => Genre, g => g.id)
+    genres: Genre[]
 
     @Column({ type: 'jsonb', nullable: true })
     metadata?: ObjectMetadata;
