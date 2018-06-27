@@ -5,7 +5,7 @@ export default StyleSheet.create({
     ...ApplicationStyles.screen,
     coverContainer: {
         position: 'absolute',
-        top: 0,
+        top: -20,
         left: 0,
         width: '100%',
         height: '100%'
@@ -15,6 +15,12 @@ export default StyleSheet.create({
         width: '100%',
         height: '100%',
         resizeMode: 'cover'
+    },
+    emptyCoverImage: {
+        flex: 1, 
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#476DC5'
     },
     posterImage: {
         width: 92,
@@ -48,7 +54,7 @@ export default StyleSheet.create({
     itemDescriptionContainer: {
         marginTop: 60
     },
-    starringHeader: {
+    castHeader: {
         marginTop: 10,
         marginLeft: 12,
         fontSize: 16
