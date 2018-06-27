@@ -1,6 +1,8 @@
 import { GlobalConfig as Config } from './Config';
 import Server from "./Server";
 
-const port = parseInt(process.env.PORT) || 3000;
+process.on('unhandledRejection', error => {
+    console.error('unhandledRejection', error);
+});
 
 new Server(Config).main();

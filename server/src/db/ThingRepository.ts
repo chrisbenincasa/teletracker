@@ -3,6 +3,7 @@ import { EntityRepository, Repository } from 'typeorm';
 
 import { Optional } from '../util/Types';
 import * as Entity from './entity';
+import { ExternalSource, ThingType } from './entity';
 
 @EntityRepository(Entity.Thing)
 export class ThingRepository extends Repository<Entity.Thing> {
@@ -27,6 +28,17 @@ export class ThingRepository extends Repository<Entity.Thing> {
             where({ id: showId });
 
         return query.getOne();
+    }
+
+    async getObjectsByIds(ids: Set<string | number>): Promise<Entity.Thing[]> {
+        return this.findByIds(Array.from(ids))
+    }
+
+    async getObjectsByExternalIds(externalSource: ExternalSource, externalIds: Set<string>, type: ThingType): Promise<any> {
+        let query = this.createQueryBuilder('objects').
+            where(`metadata->'${externalSource}'->'${type}'->>'id' IN (:...ids)`, { ids: Array.from(externalIds) });
+
+        return query.getMany()
     }
 
     async getShowById(showId: string | number): Promise<Optional<Entity.Thing>> {

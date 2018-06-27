@@ -1,10 +1,12 @@
+import * as R from 'ramda';
 import * as Router from 'koa-router';
-import { Movie, MovieDbClient, MultiSearchResponse, Person, TvShow } from 'themoviedb-client-typed';
+import { Movie, MovieDbClient, MultiSearchResponse, Person, TvShow, MultiSearchResponseFields } from 'themoviedb-client-typed';
 import { Connection } from 'typeorm';
 
 import * as Entity from '../db/entity';
 import { ThingRepository } from '../db/ThingRepository';
 import { Controller } from './Controller';
+import { ExternalSource, ThingType } from '../db/entity';
 
 export class SearchController extends Controller {
     private thingRepository: ThingRepository;
@@ -27,26 +29,73 @@ export class SearchController extends Controller {
                 ctx.status = 200;
                 ctx.body = { data: enriched };
             } catch (e) {
+                console.error(e);
                 ctx.status = 500;
                 ctx.body = { data: 'error' };
             }
         });
     }
 
+    // TODO: Clean this whole thing up
     private async handleSearchMultiResult(result: MultiSearchResponse) {
-        let savePromises = result.results.map(r => {
-            let thing: Entity.Thing;
-            if (r.media_type === 'movie') {
-                thing = Entity.ThingFactory.movie(r as Movie);
-            } else if (r.media_type === 'tv') {
-                thing = Entity.ThingFactory.show(r as TvShow);
-            } else {
-                thing = Entity.ThingFactory.person(r as Person);
-            }
+        let foundIds = new Set(result.results.map(i => i.id.toString()));
 
-            return this.thingRepository.saveObject(thing);
+        // Find all of the objects we have already saved details for
+        // TODO: Have to query for TV shows too. Probably easier to stick this in a join table
+        // TODO: See if the object is "stale" and update if so
+        let existing: Entity.Thing[] = await this.thingRepository.getObjectsByExternalIds(ExternalSource.TheMovieDb, foundIds, ThingType.Movie);
+
+        // Create a mapping of "externalId" to the found objects
+        let existingByExternalId: Map<string, Entity.Thing> = R.pipe(
+            R.groupBy<Entity.Thing>(x => x.metadata.themoviedb.movie.id.toString()),
+            R.mapObjIndexed(([thing]) => thing),
+            Object.entries,
+            x => new Map(x)
+        )(existing);
+
+        // Find objects from the search result that we're missing
+        let missing = R.filter(i => !existingByExternalId.has(i.id.toString()), result.results);
+
+        // Take the top 5 saerch results and populate their rich data "synchronously"
+        // TODO: Fire off Promise that saves the "async" ones
+        let [missingSync, missingAsync] = R.splitAt(5)(missing);
+
+        // For each item we want to fully populate before the route returns, query TMDb API,
+        // save the object, and add it to a map (in parallel)
+        let missingSavePromises = missingSync.map(m => {
+            return this.processSingleSearchResult(m).then(p => [m.id, p] as [number, Entity.Thing]);
         });
 
-        return Promise.all(savePromises);
+        // Once all of our synchronous saves return, fold it all up
+        // and return everything in its original order.
+        return Promise.all(missingSavePromises).then(x => {
+            // Don't start async procsesing until after the other processing is done
+            missingAsync.forEach(this.processSingleSearchResult);
+
+            return R.reduce((acc, [key, value]) => acc.set(key, value), new Map<number, Entity.Thing>(), x);
+        }).then(newlySaved => {
+            let final = result.results.map(result => {
+                return existingByExternalId.get(result.id.toString()) || newlySaved.get(result.id);
+            });
+
+            // This should be unnecessary once we're returning _all_ results.
+            return R.reject(R.isNil, final);
+        });
+    }
+
+    private async processSingleSearchResult(item: (Movie | TvShow | Person) & MultiSearchResponseFields) {
+        let promise: Promise<Entity.Thing>;
+        if (item.media_type === 'movie') {
+            promise = this.movieDbClient.movies.getMovie(item.id, null, ['release_dates']).
+                then(movie => this.thingRepository.save(Entity.ThingFactory.movie(movie)));
+        } else if (item.media_type === 'tv') {
+            promise = this.movieDbClient.tv.getTvShow(item.id).
+                then(tv => this.thingRepository.save(Entity.ThingFactory.show(tv)));
+        } else {
+            promise = this.movieDbClient.people.getPerson(item.id).
+                then(p => this.thingRepository.save(Entity.ThingFactory.person(p)));
+        }
+
+        return promise;
     }
 }

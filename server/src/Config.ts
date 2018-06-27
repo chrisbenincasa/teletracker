@@ -35,7 +35,7 @@ export class ConfigLoader {
                 }
             },
             themoviedb: {
-                apiKey: config.get('themoviedb.apiKey')
+                apiKey: config.has('themoviedb.apiKey') ? config.get('themoviedb.apiKey') : null
             }
         };
     }
