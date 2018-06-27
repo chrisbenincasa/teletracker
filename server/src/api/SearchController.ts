@@ -86,10 +86,10 @@ export class SearchController extends Controller {
     private async processSingleSearchResult(item: (Movie | TvShow | Person) & MultiSearchResponseFields) {
         let promise: Promise<Entity.Thing>;
         if (item.media_type === 'movie') {
-            promise = this.movieDbClient.movies.getMovie(item.id, null, ['release_dates']).
+            promise = this.movieDbClient.movies.getMovie(item.id, null, ['release_dates', 'credits']).
                 then(movie => this.thingRepository.save(Entity.ThingFactory.movie(movie)));
         } else if (item.media_type === 'tv') {
-            promise = this.movieDbClient.tv.getTvShow(item.id).
+            promise = this.movieDbClient.tv.getTvShow(item.id, null, ['combined_credits']).
                 then(tv => this.thingRepository.save(Entity.ThingFactory.show(tv)));
         } else {
             promise = this.movieDbClient.people.getPerson(item.id).
