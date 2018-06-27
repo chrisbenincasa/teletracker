@@ -1,4 +1,4 @@
-import { Column, PrimaryGeneratedColumn, Entity, ManyToMany, Index, OneToMany } from 'typeorm';
+import { Column, PrimaryGeneratedColumn, Entity, ManyToMany, Index, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Movie, TvShow, Person } from 'themoviedb-client-typed'
 import { List } from './List';
 import { Network } from './Network';
@@ -78,6 +78,12 @@ export class Thing {
 
     @Column()
     type: ThingType;
+
+    @CreateDateColumn()
+    createdAt: Date;
+
+    @UpdateDateColumn()
+    lastUpdatedAt: Date;
 
     @ManyToMany(type => List, list => list.things)
     lists: List[];

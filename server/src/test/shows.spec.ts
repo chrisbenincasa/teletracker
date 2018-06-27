@@ -30,7 +30,7 @@ class TvShowSpec extends TestBase {
                 self.defaultAfter();
             });
 
-            it('should do soemthing', async () => {
+            it('should contain availability information', async () => {
                 let manager = getManager(self.connection.name);
 
                 let season = manager.create(TvShowSeason, {
@@ -57,8 +57,8 @@ class TvShowSpec extends TestBase {
                     homepage: "https://netflix.com",
                     name: 'Netflix',
                     origin: 'US',
-                    externalId: '123',
-                    externalSource: ExternalSource.TheMovieDb
+                    slug: 'netflix',
+                    shortname: 'netflix'
                 });
                 network = await manager.save(Network, network);
 
@@ -86,8 +86,7 @@ class TvShowSpec extends TestBase {
                                 id: availability.id,
                                 isAvailable: true,
                                 network: {
-                                    name: network.name,
-                                    externalSource: ExternalSource.TheMovieDb
+                                    name: network.name
                                 }
                             }]
                         }]

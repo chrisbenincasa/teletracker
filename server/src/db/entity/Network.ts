@@ -1,8 +1,8 @@
-import { Column, Entity, Index, JoinColumn, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Availability } from './Availability';
-import { ExternalSource, Thing } from './Thing';
 import { NetworkReference } from './NetworkReference';
+import { Thing } from './Thing';
 
 @Entity('networks')
 export class Network {
@@ -24,12 +24,6 @@ export class Network {
 
     @Column({ nullable: true })
     origin?: string;
-
-    // @Column()
-    // externalId: string;
-    
-    // @Column()
-    // externalSource: ExternalSource = ExternalSource.TheMovieDb;
 
     @ManyToMany(type => Thing)
     @JoinTable()
