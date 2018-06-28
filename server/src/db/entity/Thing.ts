@@ -1,4 +1,4 @@
-import { Column, PrimaryGeneratedColumn, Entity, ManyToMany, Index, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Column, PrimaryGeneratedColumn, Entity, ManyToMany, Index, OneToMany, CreateDateColumn, UpdateDateColumn, JoinTable } from 'typeorm';
 import { Movie, TvShow, Person } from 'themoviedb-client-typed'
 import { List } from './List';
 import { Network } from './Network';
@@ -92,13 +92,17 @@ export class Thing {
     @OneToMany(type => TvShowSeason, season => season.show)
     seasons: TvShowSeason[]
 
+    // Only applicable to TV shows. The _original_ networks this show was available on.
     @ManyToMany(type => Network, network => network.things)
+    @JoinTable()
     networks: Network[];
 
     @OneToMany(type => Availability, a => a.thing)
+    @JoinTable()
     availability: Availability[];
 
-    @OneToMany(type => Genre, g => g.id)
+    @ManyToMany(type => Genre, g => g.id)
+    @JoinTable()
     genres: Genre[]
 
     @Column({ type: 'jsonb', nullable: true })

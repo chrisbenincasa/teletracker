@@ -7,15 +7,19 @@ import { ExternalSource, ThingType } from './entity';
 
 @EntityRepository(Entity.Thing)
 export class ThingRepository extends Repository<Entity.Thing> {
-    async saveObject(movie: Entity.Thing) {
-        return this.findOne({ where: { normalizedName: movie.normalizedName } }).then(async foundMovie => {
-            if (foundMovie) {
-                let newMovie = R.mergeDeepRight(foundMovie, movie)
-                await this.update(foundMovie.id, newMovie);
-                return newMovie;
-            } else {
-                return this.save(movie);
+    private deepMergeWithConcat = R.mergeDeepWith<Entity.Thing, Entity.Thing>((l, r) => 
+        R.ifElse(R.all(R.is(Array)), R.uniqBy(R.prop('id')), ([_, r]) => r)([l, r])
+    );
+
+    async saveObject(thing: Entity.Thing): Promise<Entity.Thing> {
+        return this.findOne({ where: { normalizedName: thing.normalizedName } }).then(async foundThing => {
+            let thingToSave = thing;
+            
+            if (foundThing) {
+                thingToSave = this.deepMergeWithConcat(foundThing, thing);
             }
+
+            return this.save(thingToSave);
         });
     }
 
@@ -24,6 +28,7 @@ export class ThingRepository extends Repository<Entity.Thing> {
             leftJoinAndSelect('thing.availability', 'availability', 'availability.isAvailable = :isAvailable', { isAvailable: true }).
             leftJoinAndSelect('availability.network', 'network').
             leftJoinAndSelect('thing.seasons', 'season').
+            leftJoinAndSelect('thing.genres', 'genres').
             leftJoinAndSelect('season.episodes', 'episode').
             where({ id: showId });
 
@@ -43,12 +48,13 @@ export class ThingRepository extends Repository<Entity.Thing> {
 
     async getShowById(showId: string | number): Promise<Optional<Entity.Thing>> {
         let query = this.manager.createQueryBuilder(Entity.Thing, 'thing').
+            leftJoinAndSelect('thing.networks', 'originalNetwork').
             leftJoinAndSelect('thing.seasons', 'season').
             leftJoinAndSelect('season.episodes', 'episode').
             leftJoinAndSelect('episode.availability', 'availability', 'availability.isAvailable = :isAvailable', { isAvailable: true }).
-            leftJoinAndSelect('availability.network', 'network').
+            leftJoinAndSelect('availability.network', 'availableNetwork').
             where({ id: showId, type: Entity.ThingType.Show }).
-            select(['thing', 'season', 'episode', 'availability', 'network.name']);
+            select(['thing', 'season', 'originalNetwork', 'episode', 'availability', 'availableNetwork.name']);
 
         return query.getOne();
     }

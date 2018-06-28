@@ -10,11 +10,12 @@ export class Availability {
     @PrimaryGeneratedColumn()
     id: number
 
-    @ManyToOne(type => Thing, { nullable: true })
-    thing: Thing;
+    // Availability is either tied to a "thing" or a "tvShowEpisode"
+    @ManyToOne(type => Thing, t => t.availability, { nullable: true })
+    thing?: Thing;
 
-    @ManyToOne(type => TvShowEpisode, { nullable: true })
-    tvShowEpisode: TvShowEpisode
+    @ManyToOne(type => TvShowEpisode, t => t.availability, { nullable: true })
+    tvShowEpisode?: TvShowEpisode
 
     @ManyToOne(type => Network)
     network: Network;
