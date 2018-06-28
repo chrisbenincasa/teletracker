@@ -17,9 +17,10 @@ export class SeedNetworks1530023751000 implements MigrationInterface {
             network.shortname = provider.short_name;
 
             let { identifiers: [{id}]} = await queryRunner.manager.insert(Network, network);
+            network.id = id;
 
             let reference = new NetworkReference();
-            reference.networkId = id;
+            reference.network = network;
             reference.externalSource = ExternalSource.JustWatch;
             reference.externalId = provider.id.toString();
 
