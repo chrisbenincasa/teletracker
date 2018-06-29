@@ -63,9 +63,5 @@ export default StyleSheet.create({
         flexDirection: 'row', 
         marginTop: 5, 
         marginLeft: 12
-    },
-    avatar: {
-        paddingLeft: 5,
-        paddingRight: 5
     }
 });

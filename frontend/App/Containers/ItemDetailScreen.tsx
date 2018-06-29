@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { Image, KeyboardAvoidingView, Text, View, ScrollView } from 'react-native';
-import { Button, Card, Rating, Avatar } from 'react-native-elements';
+import { Button, Card, Rating, Avatar, Divider } from 'react-native-elements';
 import Header from '../Components/Header/Header';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
@@ -30,6 +30,7 @@ interface Props {
 class ItemDetailScreen extends Component<Props> {
     constructor(props) {
         super(props);
+        this.state = {inList: false};
 
         // Disable menu swipe out on ItemDetailScreen
         Navigation.mergeOptions(this.props.componentId, {
@@ -57,6 +58,7 @@ class ItemDetailScreen extends Component<Props> {
 
     getBackdropImagePath() {
         let meta = this.props.item.metadata.themoviedb;
+        console.tron.log(meta);
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).backdrop_path;
         } else if (this.hasTmdbShow()) {
@@ -110,6 +112,33 @@ class ItemDetailScreen extends Component<Props> {
         }
     }
 
+    getCast() {
+        let meta = this.props.item.metadata.themoviedb;
+        if (this.hasTmdbMovie()) {
+            return R.view<Props, Movie>(this.tmdbMovieView, this.props).credits.cast;
+        } else if (this.hasTmdbShow()) {
+            return meta.show.credits.cast; 
+        } else if (this.hasTmdbPerson()) {
+            return; // There is no cast for people
+        }
+    }
+
+    parseInitials(name) {
+        var matches = name.match(/\b(\w)/g);
+        return matches.join(''); 
+    }
+
+    getSeasons() {
+        let meta = this.props.item.metadata.themoviedb;
+        if (this.hasTmdbMovie()) {
+            return R.view<Props, Movie>(this.tmdbMovieView, this.props).seasons;
+        } else if (this.hasTmdbShow()) {
+            return meta.show.seasons; 
+        } else if (this.hasTmdbPerson()) {
+            return; // There is no cast for people
+        }
+    }
+
     hasTmdbMetadata() {
         return this.props.item.metadata && this.props.item.metadata.themoviedb;
     }
@@ -134,8 +163,9 @@ class ItemDetailScreen extends Component<Props> {
             title: `${this.props.item.name} has been added to your list`,
             alertType: 'success',
             position: 'bottom',
-            
         });
+
+        this.setState({ inList: true });
     }
 
     renderViewMore(onPress) {
@@ -198,8 +228,8 @@ class ItemDetailScreen extends Component<Props> {
                     </View>
                 </KeyboardAvoidingView>
 
-                <View style={{marginTop: 60}}>
-                    <Card>
+                <View style={{marginTop: 60, marginLeft: 15, marginRight: 15}}>
+
                         <ViewMoreText
                             numberOfLines={6}
                             renderViewMore={this.renderViewMore}
@@ -207,65 +237,63 @@ class ItemDetailScreen extends Component<Props> {
                         >
                             <Text>{this.getDescription()}</Text>
                         </ViewMoreText>
-                    </Card>
                 </View>
 
-                <Button title='Add' onPress={this.addItem.bind(this)}></Button>
+                <Button title='Add to List' onPress={this.addItem.bind(this)} style={this.state.inList ? { backgroundColor: 'black', marginBottom: 10, marginTop: 10} : { backgroundColor: 'red', marginBottom: 10, marginTop: 10}}></Button>
 
-                <Text style={styles.castHeader}>Cast:</Text>
+                <Divider style={{ backgroundColor: 'grey' }} />
 
-                {/* Static Content for now for testing */}
-                <ScrollView horizontal={true} style={styles.avatarContainer}>
-                    <Avatar
-                        large
-                        rounded
-                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                        activeOpacity={0.7}
-                        containerStyle={styles.avatar}
-                    />
-                    <Avatar
-                        large
-                        rounded
-                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                        activeOpacity={0.7}
-                        containerStyle={styles.avatar}
-                    />
-                    <Avatar
-                        large
-                        rounded
-                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                        activeOpacity={0.7}
-                        containerStyle={styles.avatar}
-                    />
-                    <Avatar
-                        large
-                        rounded
-                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                        activeOpacity={0.7}
-                        containerStyle={styles.avatar}
-                    />
-                    <Avatar
-                        large
-                        rounded
-                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                        activeOpacity={0.7}
-                        containerStyle={styles.avatar}
-                    />
-                    <Avatar
-                        large
-                        rounded
-                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                        activeOpacity={0.7}
-                        containerStyle={styles.avatar}
-                    />
-                    <Avatar
-                        large
-                        rounded
-                        source={{uri: "https://s3.amazonaws.com/uifaces/faces/twitter/kfriedson/128.jpg"}}
-                        activeOpacity={0.7}
-                        containerStyle={styles.avatar}
-                    />
-                </ScrollView>
+
+                {this.getSeasons().length > 0 &&
+                    <View>
+                        <Text style={styles.castHeader}>Season Guide:</Text>
+                        <ScrollView horizontal={true} style={styles.avatarContainer}>
+                        {
+                            this.getSeasons() ? this.getSeasons().map((i) => (
+                                <View>
+                                    <Avatar
+                                        large
+                                        rounded
+                                        source={i.poster_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.poster_path} : null}
+                                        activeOpacity={0.7}
+                                        title={i.poster_path ? null : this.parseInitials(i.name)}
+                                        titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
+                                    />
+                                    <Text style={{width:75, textAlign: 'center', fontWeight: 'bold'}}>{i.name}</Text>
+                                </View>
+                            ))
+                            : null
+                        }
+                        </ScrollView>
+                    </View>
+                }
+                <Divider style={{ backgroundColor: 'grey' }} />
+                
+                {this.getCast().length > 0 &&
+                    <View>
+                        <Text style={styles.castHeader}>Cast:</Text>
+
+                        <ScrollView horizontal={true} style={styles.avatarContainer}>
+                        {
+                            this.getCast().map((i) => (
+                                <View>
+                                    <Avatar
+                                        large
+                                        rounded
+                                        source={i.profile_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.profile_path} : null}
+                                        activeOpacity={0.7}
+                                        title={i.poster_path ? null : this.parseInitials(i.name)}
+                                        titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
+    
+                                    />
+                                    <Text style={{width:75, textAlign: 'center', fontWeight: 'bold'}}>{i.name}</Text>
+                                    <Text style={{width:75, textAlign: 'center', fontSize: 10, fontStyle: 'italic'}}>{i.character}</Text>
+                                </View>
+                            ))
+                        }
+                        </ScrollView>
+                    </View>
+                }
                 <MessageBarAlert ref="alert" />
             </ScrollView>
         )
