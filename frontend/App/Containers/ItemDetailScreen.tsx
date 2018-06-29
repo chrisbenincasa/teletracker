@@ -115,7 +115,8 @@ class ItemDetailScreen extends Component<Props> {
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).credits.cast;
         } else if (this.hasTmdbShow()) {
-            return meta.show.credits.cast; 
+            console.tron.log(meta.show.credits.cast);
+            return meta.show.credits.cast.length > 0 ? meta.show.credits.cast : null; 
         } else if (this.hasTmdbPerson()) {
             return; // There is no cast for people
         }
