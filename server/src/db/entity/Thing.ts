@@ -101,7 +101,7 @@ export class Thing {
     @JoinTable()
     availability: Availability[];
 
-    @ManyToMany(type => Genre, g => g.id)
+    @ManyToMany(type => Genre, g => g.id, { cascade: true })
     @JoinTable()
     genres: Genre[]
 

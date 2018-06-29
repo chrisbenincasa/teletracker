@@ -26,6 +26,10 @@ export class Availability {
     @Column()
     region: string;
 
+    // TEMP: Until we figure out per-season/per-episode availability
+    @Column()
+    numSeasons?: number
+
     @Column({ nullable: true })
     startDate?: Date
 
