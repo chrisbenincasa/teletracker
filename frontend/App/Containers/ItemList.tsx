@@ -50,17 +50,17 @@ class ItemList extends React.PureComponent<Props> {
         this.props.pushState(this.props.componentId, view);
     }
 
-    // goToSearch() {
-        
-    // }
-    
     renderItem ({section, item}) {
         return (
             <ListItem 
                 key={this.keyExtractor}
                 title={item.name}
-                leftIcon={{name: item.type}}
-                subtitle={item.platform}
+                leftIcon={{ name:
+                    item.type === 'movie' ? 'movie' 
+                        : item.type === 'show' ? 'tv' 
+                        : item.type === 'person' ? 'person' 
+                        : null
+                    }}
                 onPress={() => this.goToItemDetail(item)} 
             />
         )
