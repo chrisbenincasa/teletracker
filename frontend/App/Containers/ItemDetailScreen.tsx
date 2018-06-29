@@ -245,9 +245,10 @@ class ItemDetailScreen extends Component<Props> {
                         <Text style={styles.castHeader}>Season Guide:</Text>
                         <ScrollView horizontal={true} style={styles.avatarContainer}>
                         {
-                            this.getSeasons() ? this.getSeasons().map((i) => (
+                            this.getSeasons() ? this.getSeasons().map((i,k) => (
                                 <View>
                                     <Avatar
+                                        key={k}
                                         large
                                         rounded
                                         source={i.poster_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.poster_path} : null}
@@ -271,11 +272,12 @@ class ItemDetailScreen extends Component<Props> {
 
                         <ScrollView horizontal={true} style={styles.avatarContainer}>
                         {
-                            this.getCast().map((i) => (
+                            this.getCast().map((i,k) => (
                                 <View>
                                     <Avatar
                                         large
                                         rounded
+                                        key={k}
                                         source={i.profile_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.profile_path} : null}
                                         activeOpacity={0.7}
                                         title={i.poster_path ? null : this.parseInitials(i.name)}

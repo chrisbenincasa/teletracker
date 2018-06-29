@@ -75,11 +75,16 @@ class SearchScreen extends Component<Props, State> {
                 />
                 {tvResults && tvResults.length > 0 ? (
                     <ScrollView>
-                        {tvResults.map((item, i) => (
+                        {tvResults.map((item, k) => (
                             <ListItem
-                                key={i}
+                                key={k}
                                 title={item.name}
-                                subtitle={'Type: ' + item.type}
+                                leftIcon={{ name:
+                                    item.type === 'movie' ? 'movie' 
+                                        : item.type === 'show' ? 'tv' 
+                                        : item.type === 'person' ? 'person' 
+                                        : null
+                                    }}
                                 onPress={() => this.goToItemDetail(item)}
                             />
                         ))}
