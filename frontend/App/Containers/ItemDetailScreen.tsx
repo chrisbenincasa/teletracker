@@ -162,8 +162,6 @@ class ItemDetailScreen extends Component<Props> {
             alertType: 'success',
             position: 'bottom',
         });
-
-        this.setState({ inList: true });
     }
 
     renderViewMore(onPress) {
@@ -237,12 +235,12 @@ class ItemDetailScreen extends Component<Props> {
                         </ViewMoreText>
                 </View>
 
-                <Button title='Add to List' onPress={this.addItem.bind(this)} style={this.state.inList ? { backgroundColor: 'black', marginBottom: 10, marginTop: 10} : { backgroundColor: 'red', marginBottom: 10, marginTop: 10}}></Button>
+                <Button title='Add to List' onPress={this.addItem.bind(this)} style={{backgroundColor: 'black', marginBottom: 10, marginTop: 10}}></Button>
 
                 <Divider style={{ backgroundColor: 'grey' }} />
 
 
-                {this.getSeasons().length > 0 &&
+                {this.getSeasons() &&
                     <View>
                         <Text style={styles.castHeader}>Season Guide:</Text>
                         <ScrollView horizontal={true} style={styles.avatarContainer}>
@@ -267,7 +265,7 @@ class ItemDetailScreen extends Component<Props> {
                 }
                 <Divider style={{ backgroundColor: 'grey' }} />
                 
-                {this.getCast().length > 0 &&
+                {this.getCast() &&
                     <View>
                         <Text style={styles.castHeader}>Cast:</Text>
 
