@@ -30,7 +30,6 @@ interface Props {
 class ItemDetailScreen extends Component<Props> {
     constructor(props) {
         super(props);
-        this.state = {inList: false};
 
         // Disable menu swipe out on ItemDetailScreen
         Navigation.mergeOptions(this.props.componentId, {
@@ -58,7 +57,6 @@ class ItemDetailScreen extends Component<Props> {
 
     getBackdropImagePath() {
         let meta = this.props.item.metadata.themoviedb;
-        console.tron.log(meta);
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).backdrop_path;
         } else if (this.hasTmdbShow()) {
@@ -135,7 +133,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.seasons; 
         } else if (this.hasTmdbPerson()) {
-            return; // There is no cast for people
+            return; // There are no seasons for people
         }
     }
 
