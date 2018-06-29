@@ -49,6 +49,7 @@ export class ThingRepository extends Repository<Entity.Thing> {
     async getShowById(showId: string | number): Promise<Optional<Entity.Thing>> {
         let query = this.manager.createQueryBuilder(Entity.Thing, 'thing').
             leftJoinAndSelect('thing.networks', 'originalNetwork').
+            leftJoinAndSelect('thing.availability', 'availability').
             leftJoinAndSelect('thing.seasons', 'season').
             leftJoinAndSelect('season.episodes', 'episode').
             leftJoinAndSelect('episode.availability', 'availability', 'availability.isAvailable = :isAvailable', { isAvailable: true }).
