@@ -56,12 +56,10 @@ export default StyleSheet.create({
     },
     castHeader: {
         marginTop: 10,
-        marginLeft: 12,
         fontSize: 16
     },
     avatarContainer: {
         flexDirection: 'row', 
-        marginTop: 5, 
-        marginLeft: 12
+        marginTop: 5
     }
 });

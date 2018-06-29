@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { Image, KeyboardAvoidingView, Text, View, ScrollView } from 'react-native';
-import { Button, Card, Rating, Avatar, Divider } from 'react-native-elements';
+import { Badge, Button, Card, Rating, Avatar, Divider } from 'react-native-elements';
 import Header from '../Components/Header/Header';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
@@ -115,7 +115,6 @@ class ItemDetailScreen extends Component<Props> {
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).credits.cast;
         } else if (this.hasTmdbShow()) {
-            console.tron.log(meta.show.credits.cast);
             return meta.show.credits.cast.length > 0 ? meta.show.credits.cast : null; 
         } else if (this.hasTmdbPerson()) {
             return; // There is no cast for people
@@ -130,11 +129,23 @@ class ItemDetailScreen extends Component<Props> {
     getSeasons() {
         let meta = this.props.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
-            return R.view<Props, Movie>(this.tmdbMovieView, this.props).seasons;
+            return null; // There is no seasons parameter for movies
         } else if (this.hasTmdbShow()) {
+            console.tron.log(meta);
             return meta.show.seasons; 
         } else if (this.hasTmdbPerson()) {
             return; // There are no seasons for people
+        }
+    }
+
+    getGenre() {
+        let meta = this.props.item.metadata.themoviedb;
+        if (this.hasTmdbMovie()) {
+            return R.view<Props, Movie>(this.tmdbMovieView, this.props).genres;
+        } else if (this.hasTmdbShow()) {
+            return meta.show.genres; 
+        } else if (this.hasTmdbPerson()) {
+            return; // There are no genres for people
         }
     }
 
@@ -226,25 +237,38 @@ class ItemDetailScreen extends Component<Props> {
                 </KeyboardAvoidingView>
 
                 <View style={{marginTop: 60, marginLeft: 15, marginRight: 15}}>
-
-                        <ViewMoreText
-                            numberOfLines={6}
-                            renderViewMore={this.renderViewMore}
-                            renderViewLess={this.renderViewLess}
-                        >
-                            <Text>{this.getDescription()}</Text>
-                        </ViewMoreText>
+                    <ViewMoreText
+                        numberOfLines={6}
+                        renderViewMore={this.renderViewMore}
+                        renderViewLess={this.renderViewLess}
+                    >
+                        <Text>{this.getDescription()}</Text>
+                    </ViewMoreText>
                 </View>
 
                 <Button title='Add to List' onPress={this.addItem.bind(this)} style={{backgroundColor: 'black', marginBottom: 10, marginTop: 10}}></Button>
 
-                <Divider style={{ backgroundColor: 'grey' }} />
-
+                {this.getGenre() &&
+                    <View style={{flex: 1, flexDirection: 'row', flexWrap: 'wrap', marginLeft: 13, marginRight: 15}}>
+                        {this.getGenre() ? this.getGenre().map((i,k) => (
+                            <Badge
+                                key={k}
+                                value={i.name}
+                                textStyle={{ color: 'white' }}
+                                wrapperStyle={{marginHorizontal: 2, marginVertical: 5}}
+                                containerStyle={{}}
+                            />
+                        )) : null}
+                    </View>
+                }
 
                 {this.getSeasons() &&
-                    <View>
+                    <View style={{flex: 1, marginRight: 15, marginLeft: 15}}>
+
+                        <Divider style={{ backgroundColor: 'grey', height: 1, marginTop: 10}} />
+
                         <Text style={styles.castHeader}>Season Guide:</Text>
-                        <ScrollView horizontal={true} style={styles.avatarContainer}>
+                        <ScrollView horizontal={true}  showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
                         {
                             this.getSeasons() ? this.getSeasons().map((i,k) => (
                                 <View>
@@ -265,20 +289,20 @@ class ItemDetailScreen extends Component<Props> {
                         </ScrollView>
                     </View>
                 }
-                <Divider style={{ backgroundColor: 'grey' }} />
-                
+
                 {this.getCast() &&
-                    <View>
+                    <View style={{flex: 1, marginRight: 15, marginLeft: 15}}>
+                        <Divider style={{ backgroundColor: 'grey',height: 1, marginTop: 10}} />
                         <Text style={styles.castHeader}>Cast:</Text>
 
-                        <ScrollView horizontal={true} style={styles.avatarContainer}>
+                        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
                         {
                             this.getCast().map((i,k) => (
                                 <View>
                                     <Avatar
+                                        key={k}
                                         large
                                         rounded
-                                        key={k}
                                         source={i.profile_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.profile_path} : null}
                                         activeOpacity={0.7}
                                         title={i.poster_path ? null : this.parseInitials(i.name)}
