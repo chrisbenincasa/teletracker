@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { Image, KeyboardAvoidingView, Text, View, ScrollView } from 'react-native';
-import { Badge, Button, Card, Rating, Avatar, Divider } from 'react-native-elements';
+import { Badge, Button, Card, Rating, Avatar, Divider, Icon } from 'react-native-elements';
 import Header from '../Components/Header/Header';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
@@ -51,7 +51,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.poster_path;
         } else if (this.hasTmdbPerson()) {
-            return; // There are no photos for people
+            return; // There are no photos for people yet
         }
     }
 
@@ -62,7 +62,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.backdrop_path; 
         } else if (this.hasTmdbPerson()) {
-            return; // There are no photos for people
+            return; // There are no backdrop photos for people yet
         }
     }
 
@@ -73,7 +73,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.vote_average;
         } else if (this.hasTmdbPerson()) {
-            return; //// There is no ratings for people
+            return; // There is no ratings for people...yet?
         }
     }
 
@@ -95,7 +95,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.first_air_date.substring(0,4);
         } else if (this.hasTmdbPerson()) {
-            return; // There is no release year for people
+            return; // There is no release year for people, maybe birth year?
         }
     }
 
@@ -106,7 +106,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.overview;
         } else if (this.hasTmdbPerson()) {
-            return; // There is no description for people
+            return; // There is no description for people yet
         }
     }
 
@@ -116,8 +116,8 @@ class ItemDetailScreen extends Component<Props> {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).credits.cast;
         } else if (this.hasTmdbShow()) {
             return meta.show.credits.cast.length > 0 ? meta.show.credits.cast : null; 
-        } else if (this.hasTmdbPerson()) {
-            return; // There is no cast for people
+        } else {
+            return;
         }
     }
 
@@ -133,8 +133,8 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             console.tron.log(meta);
             return meta.show.seasons; 
-        } else if (this.hasTmdbPerson()) {
-            return; // There are no seasons for people
+        } else {
+            return;
         }
     }
 
@@ -144,8 +144,8 @@ class ItemDetailScreen extends Component<Props> {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).genres;
         } else if (this.hasTmdbShow()) {
             return meta.show.genres; 
-        } else if (this.hasTmdbPerson()) {
-            return; // There are no genres for people
+        } else {
+            return;
         }
     }
 
@@ -236,9 +236,9 @@ class ItemDetailScreen extends Component<Props> {
                     </View>
                 </KeyboardAvoidingView>
 
-                <View style={{marginTop: 60, marginLeft: 15, marginRight: 15}}>
+                <View style={styles.descriptionContainer}>
                     <ViewMoreText
-                        numberOfLines={6}
+                        numberOfLines={4}
                         renderViewMore={this.renderViewMore}
                         renderViewLess={this.renderViewLess}
                     >
@@ -246,28 +246,49 @@ class ItemDetailScreen extends Component<Props> {
                     </ViewMoreText>
                 </View>
 
-                <Button title='Add to List' onPress={this.addItem.bind(this)} style={{backgroundColor: 'black', marginBottom: 10, marginTop: 10}}></Button>
-
                 {this.getGenre() &&
-                    <View style={{flex: 1, flexDirection: 'row', flexWrap: 'wrap', marginLeft: 13, marginRight: 15}}>
+                    <View style={styles.genreContainer}>
                         {this.getGenre() ? this.getGenre().map((i,k) => (
                             <Badge
                                 key={k}
                                 value={i.name}
                                 textStyle={{ color: 'white' }}
-                                wrapperStyle={{marginHorizontal: 2, marginVertical: 5}}
+                                wrapperStyle={{
+                                    marginHorizontal: 2, marginVertical: 5
+                                }}
                                 containerStyle={{}}
                             />
                         )) : null}
                     </View>
                 }
 
+                <View style={styles.buttonsContainer}>
+                    <Button 
+                        title='Mark as Watched' 
+                        icon={{
+                            name: 'watch',
+                            size: 25,
+                            color: 'white'
+                        }}
+                        containerStyle={{marginHorizontal: 0}}>
+                    </Button>
+                    <Button 
+                        title='Add to List' 
+                        onPress={this.addItem.bind(this)} 
+                        icon={{
+                            name: 'list',
+                            size: 25,
+                            color: 'white'
+                        }}
+                        containerStyle={{marginHorizontal: 0}}>
+                    </Button>
+                    
+                </View>
+
                 {this.getSeasons() &&
-                    <View style={{flex: 1, marginRight: 15, marginLeft: 15}}>
-
-                        <Divider style={{ backgroundColor: 'grey', height: 1, marginTop: 10}} />
-
-                        <Text style={styles.castHeader}>Season Guide:</Text>
+                    <View style={styles.seasonsContainer}>
+                        <Divider style={styles.divider} />
+                        <Text style={styles.seasonsHeader}>Season Guide:</Text>
                         <ScrollView horizontal={true}  showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
                         {
                             this.getSeasons() ? this.getSeasons().map((i,k) => (
@@ -281,7 +302,7 @@ class ItemDetailScreen extends Component<Props> {
                                         title={i.poster_path ? null : this.parseInitials(i.name)}
                                         titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
                                     />
-                                    <Text style={{width:75, textAlign: 'center', fontWeight: 'bold'}}>{i.name}</Text>
+                                    <Text style={styles.seasonsName}>{i.name}</Text>
                                 </View>
                             ))
                             : null
@@ -291,8 +312,8 @@ class ItemDetailScreen extends Component<Props> {
                 }
 
                 {this.getCast() &&
-                    <View style={{flex: 1, marginRight: 15, marginLeft: 15}}>
-                        <Divider style={{ backgroundColor: 'grey',height: 1, marginTop: 10}} />
+                    <View style={styles.castContainer}>
+                        <Divider style={styles.divider} />
                         <Text style={styles.castHeader}>Cast:</Text>
 
                         <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
@@ -309,8 +330,8 @@ class ItemDetailScreen extends Component<Props> {
                                         titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
     
                                     />
-                                    <Text style={{width:75, textAlign: 'center', fontWeight: 'bold'}}>{i.name}</Text>
-                                    <Text style={{width:75, textAlign: 'center', fontSize: 10, fontStyle: 'italic'}}>{i.character}</Text>
+                                    <Text style={styles.castName}>{i.name}</Text>
+                                    <Text style={styles.castCharacter}>{i.character}</Text>
                                 </View>
                             ))
                         }
