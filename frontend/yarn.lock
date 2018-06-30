@@ -9152,12 +9152,21 @@ react-native-i18n@1.0.0:
   resolved "https://registry.yarnpkg.com/react-native-i18n/-/react-native-i18n-1.0.0.tgz#0c407d9ebb846aae1aa5e05de6503008553f02fd"
 
 react-native-iphone-x-helper@^1.0.2:
+<<<<<<< HEAD
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/react-native-iphone-x-helper/-/react-native-iphone-x-helper-1.0.3.tgz#7a2f1e0574e899a0f1d426e6167fd98990083214"
 
 react-native-navigation@2.0.2425:
   version "2.0.2425"
   resolved "https://registry.yarnpkg.com/react-native-navigation/-/react-native-navigation-2.0.2425.tgz#14a636e4a53b3e5662ac74db37e481a68cd80834"
+=======
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/react-native-iphone-x-helper/-/react-native-iphone-x-helper-1.0.2.tgz#7dbca530930f7c1ce8633cc8fd13ba94102992e1"
+
+react-native-navigation@alpha:
+  version "2.0.2373"
+  resolved "https://registry.yarnpkg.com/react-native-navigation/-/react-native-navigation-2.0.2373.tgz#cd4a8d53b9b6072e5e215950e77b6ca52e61b8d4"
+>>>>>>> 974017e... added simple state around button
   dependencies:
     "@types/jest" "22.x.x"
     "@types/lodash" "4.x.x"
