@@ -8,7 +8,7 @@ import JwtVendor from '../util/JwtVendor';
 import { Controller } from './Controller';
 import { ListRepository } from '../db/ListRepository';
 import { ThingRepository } from '../db/ThingRepository';
-import { Thing } from '../db/entity';
+import { Thing, List } from '../db/entity';
 import { EventsRepository } from '../db/EventsRepository';
 
 export class UsersController extends Controller {
@@ -125,7 +125,13 @@ export class UsersController extends Controller {
                 next();
             }
 
-            let list = await this.userRepository.getListForUser(ctx.user.id, ctx.params.listId);
+            let list: List;
+            if (ctx.params.listId === 'default') {
+                list = await this.userRepository.getDefaultListForUser(ctx.user.id);
+            } else {
+                list = await this.userRepository.getListForUser(ctx.user.id, ctx.params.listId);
+            }
+
             if (list) {
                 let req = ctx.request.body;
                 let object = await this.thingRepository.getObjectById(req.itemId);

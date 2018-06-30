@@ -1,4 +1,4 @@
-import { Column, Entity, Index, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn, JoinColumn } from 'typeorm';
 
 import { Availability } from './Availability';
 import { NetworkReference } from './NetworkReference';
@@ -25,14 +25,13 @@ export class Network {
     @Column({ nullable: true })
     origin?: string;
 
-    @ManyToMany(type => Thing)
-    @JoinTable()
+    @ManyToMany(type => Thing, thing => thing.networks)
     things: Thing[];
 
     @OneToMany(type => Availability, a => a.network)
     @JoinTable()
     availability: Availability[]
 
-    @OneToMany(type => NetworkReference, 'networkId')
+    @OneToMany(type => NetworkReference, nr => nr.network)
     references: NetworkReference[]
 }

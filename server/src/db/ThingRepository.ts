@@ -7,15 +7,20 @@ import { ExternalSource, ThingType } from './entity';
 
 @EntityRepository(Entity.Thing)
 export class ThingRepository extends Repository<Entity.Thing> {
-    async saveObject(movie: Entity.Thing) {
-        return this.findOne({ where: { normalizedName: movie.normalizedName } }).then(async foundMovie => {
-            if (foundMovie) {
-                let newMovie = R.mergeDeepRight(foundMovie, movie)
-                await this.update(foundMovie.id, newMovie);
-                return newMovie;
-            } else {
-                return this.save(movie);
+    private deepMergeWithConcat = R.mergeDeepWith<Entity.Thing, Entity.Thing>((l, r) => 
+        R.ifElse(R.all(R.is(Array)), R.uniqBy(R.prop('id')), ([_, r]) => r)([l, r])
+    );
+
+    async saveObject(thing: Entity.Thing): Promise<Entity.Thing> {
+        return this.findOne({ where: { normalizedName: thing.normalizedName } }).then(async foundThing => {
+            console.log('found ', foundThing)
+            let thingToSave = thing;
+            
+            if (foundThing) {
+                thingToSave = this.deepMergeWithConcat(foundThing, thing);
             }
+
+            return this.save(thingToSave);
         });
     }
 
@@ -24,6 +29,7 @@ export class ThingRepository extends Repository<Entity.Thing> {
             leftJoinAndSelect('thing.availability', 'availability', 'availability.isAvailable = :isAvailable', { isAvailable: true }).
             leftJoinAndSelect('availability.network', 'network').
             leftJoinAndSelect('thing.seasons', 'season').
+            leftJoinAndSelect('thing.genres', 'genres').
             leftJoinAndSelect('season.episodes', 'episode').
             where({ id: showId });
 
@@ -34,21 +40,37 @@ export class ThingRepository extends Repository<Entity.Thing> {
         return this.findByIds(Array.from(ids))
     }
 
-    async getObjectsByExternalIds(externalSource: ExternalSource, externalIds: Set<string>, type: ThingType): Promise<any> {
+    async getObjectsByExternalIds(externalSource: ExternalSource, externalIds: Set<string>, type: ThingType): Promise<Entity.Thing[]> {
+        if (externalIds.size == 0) {
+            return Promise.resolve([]);
+        }
+
         let query = this.createQueryBuilder('objects').
             where(`metadata->'${externalSource}'->'${type}'->>'id' IN (:...ids)`, { ids: Array.from(externalIds) });
 
-        return query.getMany()
+        return query.getMany();
     }
 
     async getShowById(showId: string | number): Promise<Optional<Entity.Thing>> {
         let query = this.manager.createQueryBuilder(Entity.Thing, 'thing').
+            leftJoinAndSelect('thing.networks', 'originalNetwork').
+            leftJoinAndSelect('thing.availability', 'showAvailability').
+            leftJoinAndSelect('showAvailability.network', 'showAvailabilityNetwork').
             leftJoinAndSelect('thing.seasons', 'season').
             leftJoinAndSelect('season.episodes', 'episode').
-            leftJoinAndSelect('episode.availability', 'availability', 'availability.isAvailable = :isAvailable', { isAvailable: true }).
-            leftJoinAndSelect('availability.network', 'network').
+            leftJoinAndSelect('episode.availability', 'episodeAvailability', 'episodeAvailability.isAvailable = :isAvailable', { isAvailable: true }).
+            leftJoinAndSelect('episodeAvailability.network', 'episodeAvailableNetwork').
             where({ id: showId, type: Entity.ThingType.Show }).
-            select(['thing', 'season', 'episode', 'availability', 'network.name']);
+            select([
+                'thing', 
+                'season', 
+                'originalNetwork', 
+                'episode', 
+                'showAvailability', 
+                'showAvailabilityNetwork.name',
+                'episodeAvailability',
+                'episodeAvailableNetwork.name'
+            ]);
 
         return query.getOne();
     }

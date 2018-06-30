@@ -1,5 +1,6 @@
-import { PrimaryGeneratedColumn, Entity, Column } from "typeorm";
-import { ExternalSource } from "./Thing";
+import { Column, Entity, JoinTable, OneToMany, PrimaryGeneratedColumn, ManyToMany, ManyToOne } from 'typeorm';
+import { GenreReference } from './GenreReference';
+import { Thing } from './Thing';
 
 @Entity()
 export class Genre {
@@ -15,22 +16,14 @@ export class Genre {
     @Column()
     slug: string;
 
+    @ManyToMany(type => Thing, t => t.genres, { eager: false })
+    things: Promise<Thing[]>
+
+    @OneToMany(type => GenreReference, g => g.genre)
+    references: GenreReference[]
+
     @Column({ type: 'jsonb' })
     externalIds: ExternalGenreIds
-}
-
-export class GenreMapping {
-    @PrimaryGeneratedColumn()
-    id: number;
-
-    @Column()
-    genreId: number;
-
-    @Column()
-    externalSource: ExternalSource;
-    
-    @Column()
-    externalId: string;
 }
 
 export enum GenreProvider {

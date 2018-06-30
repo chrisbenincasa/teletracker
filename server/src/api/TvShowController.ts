@@ -33,7 +33,7 @@ export class TvShowController extends Controller {
         });
 
         this.router.get('/shows/:id', async ctx => {
-            return this.thingRepository.getObjectById(ctx.params.id).then(show => {
+            return this.thingRepository.getShowById(ctx.params.id).then(show => {
                 if (show) {
                     ctx.status = 200;
                     ctx.body = { data: show };
@@ -41,10 +41,6 @@ export class TvShowController extends Controller {
                     ctx.status = 404;
                 }
             });
-        });
-
-        this.router.post('/shows', async ctx => {
-
         });
     }
 }

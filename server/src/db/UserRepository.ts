@@ -63,6 +63,14 @@ export class UserRepository extends Repository<Entity.User> {
         });
     }
 
+    async getDefaultListForUser(userId: string | number): Promise<Entity.List> {
+        return this.createQueryBuilder('user').
+            where({ id: userId }).
+            leftJoinAndSelect('user.lists', 'list', 'list."isDefault" = true').
+            getOne().
+            then(u => u.lists[0]);
+    }
+
     async getListForUser(userId: string | number, listId: string | number): Promise<Optional<Entity.List>> {
         // return this.getListForUser(userId, listId, 'showLists', 'shows');
         
