@@ -81,7 +81,7 @@ export class SearchController extends Controller {
         // and return everything in its original order.
         return Promise.all(missingSavePromises).then(x => {
             // Don't start async procsesing until after the other processing is done
-            missingAsync.forEach(this.processSingleSearchResult);
+            missingAsync.forEach(this.processSingleSearchResult.bind(this));
 
             return R.reduce((acc, [key, value]) => acc.set(key, value), new Map<number, Entity.Thing>(), x);
         }).then(newlySaved => {
@@ -102,7 +102,7 @@ export class SearchController extends Controller {
         let promise: Promise<Entity.Thing>;
         if (item.media_type === 'movie') {
             promise = this.movieDbClient.movies.getMovie(item.id, null, ['release_dates', 'credits']).
-                then(movie => this.thingRepository.save(Entity.ThingFactory.movie(movie)));
+                then(movie => this.thingManager.handleTMDbMovie(movie));
         } else if (item.media_type === 'tv') {
             promise = this.movieDbClient.tv.getTvShow(item.id, null, ['credits']).
                 then(tv => this.thingManager.handleTMDbTvShow(tv));

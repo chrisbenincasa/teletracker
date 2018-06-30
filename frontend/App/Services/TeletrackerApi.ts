@@ -36,6 +36,14 @@ export class TeletrackerApi {
         this.token = token;
     }
 
+    clearToken() {
+        this.token = null;
+    }
+
+    async getAuthStatus(): Promise<apisauce.ApiResponse<any>> {
+        return this.api.get('/api/v1/auth/status');
+    }
+
     async getUser(id: string | number) {
         if (!this.token) {
             return Promise.reject(new Error('getUser requires a token to be set'));

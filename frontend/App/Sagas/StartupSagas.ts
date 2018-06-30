@@ -1,18 +1,30 @@
+import { ApiResponse } from 'apisauce';
 import { Navigation } from 'react-native-navigation';
-import { call, select, take } from 'redux-saga/effects';
+import { call, select, take, put } from 'redux-saga/effects';
 
 import { appLaunched } from '../Navigation/AppNavigation';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
-import { teletrackerApi } from '../Sagas';
+import { TeletrackerApi } from '../Services/TeletrackerApi';
+import UserActions from '../Redux/UserRedux';
 
-export function * startup(): IterableIterator<any> {
+export function* startup(teletrackerApi: TeletrackerApi): IterableIterator<any> {
   const state = yield select();
 
   console.tron.log(state);
-  const isLoggedIn = !!state.user.token;
 
-  if (isLoggedIn) {
+  const hasSavedToken = !!state.user.token;
+
+  if (hasSavedToken) {
     teletrackerApi.setToken(state.user.token);
+  }
+
+  const authStatus: ApiResponse<any> = yield teletrackerApi.getAuthStatus();
+
+  const isLoggedIn = authStatus.status != 401 && authStatus.data.authenticted;
+
+  if (!isLoggedIn) {
+    teletrackerApi.clearToken();
+    yield put(UserActions.userLogout());
   }
 
   const view = isLoggedIn ? NavigationConfig.AppStack : NavigationConfig.AuthStack;

@@ -27,7 +27,7 @@ export class Availability {
     region: string;
 
     // TEMP: Until we figure out per-season/per-episode availability
-    @Column()
+    @Column({ nullable: true })
     numSeasons?: number
 
     @Column({ nullable: true })

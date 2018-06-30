@@ -23,7 +23,7 @@ class MovieSpec extends TestBase {
                 await self.defaultAfter();
             });
 
-            it('GET /api/v1/movies/:id should respond with a single movie with required fields', function (done) {
+            it.skip('GET /api/v1/movies/:id should respond with a single movie with required fields', function (done) {
                 if (!process.env.API_KEY) {
                     this.skip();
                 }

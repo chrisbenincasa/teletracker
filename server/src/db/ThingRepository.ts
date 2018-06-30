@@ -13,6 +13,7 @@ export class ThingRepository extends Repository<Entity.Thing> {
 
     async saveObject(thing: Entity.Thing): Promise<Entity.Thing> {
         return this.findOne({ where: { normalizedName: thing.normalizedName } }).then(async foundThing => {
+            console.log('found ', foundThing)
             let thingToSave = thing;
             
             if (foundThing) {
@@ -39,23 +40,37 @@ export class ThingRepository extends Repository<Entity.Thing> {
         return this.findByIds(Array.from(ids))
     }
 
-    async getObjectsByExternalIds(externalSource: ExternalSource, externalIds: Set<string>, type: ThingType): Promise<any> {
+    async getObjectsByExternalIds(externalSource: ExternalSource, externalIds: Set<string>, type: ThingType): Promise<Entity.Thing[]> {
+        if (externalIds.size == 0) {
+            return Promise.resolve([]);
+        }
+
         let query = this.createQueryBuilder('objects').
             where(`metadata->'${externalSource}'->'${type}'->>'id' IN (:...ids)`, { ids: Array.from(externalIds) });
 
-        return query.getMany()
+        return query.getMany();
     }
 
     async getShowById(showId: string | number): Promise<Optional<Entity.Thing>> {
         let query = this.manager.createQueryBuilder(Entity.Thing, 'thing').
             leftJoinAndSelect('thing.networks', 'originalNetwork').
-            leftJoinAndSelect('thing.availability', 'availability').
+            leftJoinAndSelect('thing.availability', 'showAvailability').
+            leftJoinAndSelect('showAvailability.network', 'showAvailabilityNetwork').
             leftJoinAndSelect('thing.seasons', 'season').
             leftJoinAndSelect('season.episodes', 'episode').
-            leftJoinAndSelect('episode.availability', 'availability', 'availability.isAvailable = :isAvailable', { isAvailable: true }).
-            leftJoinAndSelect('availability.network', 'availableNetwork').
+            leftJoinAndSelect('episode.availability', 'episodeAvailability', 'episodeAvailability.isAvailable = :isAvailable', { isAvailable: true }).
+            leftJoinAndSelect('episodeAvailability.network', 'episodeAvailableNetwork').
             where({ id: showId, type: Entity.ThingType.Show }).
-            select(['thing', 'season', 'originalNetwork', 'episode', 'availability', 'availableNetwork.name']);
+            select([
+                'thing', 
+                'season', 
+                'originalNetwork', 
+                'episode', 
+                'showAvailability', 
+                'showAvailabilityNetwork.name',
+                'episodeAvailability',
+                'episodeAvailableNetwork.name'
+            ]);
 
         return query.getOne();
     }

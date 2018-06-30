@@ -16,7 +16,7 @@ export const teletrackerApi = new TeletrackerApi();
 
 export default function * root(): IterableIterator<AllEffect> {
   yield all([
-    takeLatest(StartupTypes.STARTUP, startup),
+    takeLatest(StartupTypes.STARTUP, startup, teletrackerApi),
     takeLatest(UserTypes.USER_REQUEST, getUser, teletrackerApi),
     takeLatest(UserTypes.LOGIN_REQUEST, loginUser, teletrackerApi),
     takeLatest(UserTypes.USER_SELF_REQUEST, getUser, teletrackerApi),
