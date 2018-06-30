@@ -20,7 +20,6 @@ import { teletrackerApi } from '../Sagas';
 import Colors from '../Themes/Colors';
 import styles from './Styles/ItemDetailScreenStyle';
 
-
 interface Props {
     componentId: string,
     item?: Thing,
@@ -130,6 +129,9 @@ class ItemDetailScreen extends Component<Props, State> {
         } );
 
         this.props.markAsWatched(this.props.componentId, this.state.item.id, this.state.item.type);
+        this.setState({
+            inList: !this.state.inList
+          });
     }
 
     renderViewMore(onPress) {
@@ -261,7 +263,7 @@ class ItemDetailScreen extends Component<Props, State> {
                                 onPress={this.manageLists}
                                 icon={{
                                     name: this.state.userDetails.belongsToLists.length > 0 ? 'clipboard' : 'add',
-                                    type: this.state.userDetails.belongsToLists.length > 0 ? 'entypo' : null,
+                                    type: this.state.userDetails.belongsToLists.length > 0 ? 'entypwo' : null,
                                     size: 25,
                                     color: 'white'
                                 }}

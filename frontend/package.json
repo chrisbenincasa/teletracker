@@ -42,7 +42,11 @@
     "react-native-elements": "^0.19.1",
     "react-native-google-analytics-bridge": "^5.8.0",
     "react-native-i18n": "1.0.0",
+<<<<<<< HEAD
     "react-native-navigation": "2.0.2425",
+=======
+    "react-native-navigation": "alpha",
+>>>>>>> 974017e... added simple state around button
     "react-native-search-box": "^0.0.18",
     "react-native-side-menu": "^1.1.3",
     "react-native-swipeout": "^2.3.3",
