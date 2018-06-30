@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { ApplicationStyles } from '../../Themes/';
+import { ApplicationStyles, Colors } from '../../Themes/';
 
 export default StyleSheet.create({
     ...ApplicationStyles.screen,
@@ -20,7 +20,7 @@ export default StyleSheet.create({
         flex: 1, 
         width: '100%',
         height: '100%',
-        backgroundColor: '#476DC5'
+        backgroundColor: Colors.headerBackground
     },
     posterImage: {
         width: 92,
@@ -28,7 +28,7 @@ export default StyleSheet.create({
         marginTop: 20,
         marginLeft: 12,
         borderWidth: 2,
-        borderColor: '#fff'
+        borderColor: Colors.white
     },
     subHeaderContainer: {
         position: 'relative',
@@ -46,20 +46,66 @@ export default StyleSheet.create({
     ratingsContainer: {
         flexDirection: 'row'
     },
-    ratingCount: {
+    ratingsCount: {
         fontSize: 10,
         marginLeft: 10,
         fontStyle: 'italic'
-    },
-    itemDescriptionContainer: {
-        marginTop: 60
     },
     castHeader: {
         marginTop: 10,
         fontSize: 16
     },
+    castContainer: {
+        flex: 1, 
+        marginHorizontal: 15
+    },
+    castName: {
+        width: 75, 
+        textAlign: 'center', 
+        fontWeight: 'bold'
+    },
+    castCharacter: {
+        width: 75, 
+        textAlign: 'center', 
+        fontSize: 10, 
+        fontStyle: 'italic'
+    },
     avatarContainer: {
         flexDirection: 'row', 
         marginTop: 5
+    },
+    genreContainer: {
+        flex: 1, 
+        flexDirection: 'row', 
+        flexWrap: 'wrap', 
+        marginLeft: 13, 
+        marginRight: 15
+    },
+    seasonsContainer: {
+        flex: 1, 
+        marginHorizontal: 15
+    },
+    seasonsHeader: {
+        marginTop: 10,
+        fontSize: 16
+    },
+    seasonsName: {
+        width:75, 
+        textAlign: 'center', 
+        fontWeight: 'bold'
+    },
+    buttonsContainer: {
+        flex: 1, 
+        flexDirection: 'row', 
+        marginVertical: 10
+    },
+    divider: {
+        backgroundColor: Colors.divider, 
+        height: 1, 
+        marginTop: 10
+    },
+    descriptionContainer: {
+        marginTop: 60, 
+        marginHorizontal: 15
     }
 });
