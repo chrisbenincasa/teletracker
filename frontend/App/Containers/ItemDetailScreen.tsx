@@ -14,9 +14,6 @@ import headerStyles from '../Themes/ApplicationStyles';
 import styles from './Styles/ItemDetailScreenStyle';
 import ViewMoreText from 'react-native-view-more-text';
 
-var MessageBarAlert = require('react-native-message-bar').MessageBar;
-var MessageBarManager = require('react-native-message-bar').MessageBarManager;
-
 // Add Actions - replace 'Your' with whatever your reducer is called :)
 // import YourActions from '../Redux/YourRedux'
 
@@ -30,6 +27,10 @@ interface Props {
 class ItemDetailScreen extends Component<Props> {
     constructor(props) {
         super(props);
+
+        this.state = {
+            inList: false
+        };
 
         // Disable menu swipe out on ItemDetailScreen
         Navigation.mergeOptions(this.props.componentId, {
@@ -131,7 +132,6 @@ class ItemDetailScreen extends Component<Props> {
         if (this.hasTmdbMovie()) {
             return null; // There is no seasons parameter for movies
         } else if (this.hasTmdbShow()) {
-            console.tron.log(meta);
             return meta.show.seasons; 
         } else {
             return;
@@ -168,12 +168,9 @@ class ItemDetailScreen extends Component<Props> {
     addItem() {
         this.props.addItemToList(this.props.componentId, '???', this.props.item.id);
 
-        MessageBarManager.showAlert({
-            avatar: require('../Images/Icons/faq-icon.png'),
-            title: `${this.props.item.name} has been added to your list`,
-            alertType: 'success',
-            position: 'bottom',
-        });
+        this.setState({
+            inList: !this.state.inList
+          });
     }
 
     renderViewMore(onPress) {
@@ -188,14 +185,6 @@ class ItemDetailScreen extends Component<Props> {
         )
     }
 
-    componentDidMount() {
-        MessageBarManager.registerMessageBar(this.refs.alert);
-    }
-    
-    componentWillUnmount() {
-        MessageBarManager.unregisterMessageBar();
-    }
-    
     render () {
         return (
             <ScrollView  style={styles.container}>
@@ -273,13 +262,15 @@ class ItemDetailScreen extends Component<Props> {
                         containerStyle={{marginHorizontal: 0}}>
                     </Button>
                     <Button 
-                        title='Add to List' 
+                        title= {this.state.inList ? 'Remove'  : 'Track' }
                         onPress={this.addItem.bind(this)} 
                         icon={{
-                            name: 'list',
+                            name: this.state.inList ? 'clear' : 'add',
                             size: 25,
                             color: 'white'
                         }}
+                        buttonStyle={{
+                            backgroundColor: this.state.inList ? 'red' : 'green'}}
                         containerStyle={{marginHorizontal: 0}}>
                     </Button>
                     
@@ -338,7 +329,6 @@ class ItemDetailScreen extends Component<Props> {
                         </ScrollView>
                     </View>
                 }
-                <MessageBarAlert ref="alert" />
             </ScrollView>
         )
     }
