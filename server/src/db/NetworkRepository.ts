@@ -1,7 +1,8 @@
 import * as R from 'ramda';
-import { EntityRepository, Repository, FindManyOptions } from 'typeorm';
+import { EntityRepository, Repository, FindManyOptions, In } from 'typeorm';
 
 import * as Entity from './entity';
+import { Optional } from '../util/Types';
 
 @EntityRepository(Entity.Network)
 export class NetworkRepository extends Repository<Entity.Network> {
@@ -31,4 +32,25 @@ export class NetworkRepository extends Repository<Entity.Network> {
 
         return this.manager.find(Entity.Network, options);
     }
+
+    async findNetworkBySlug(slug: string): Promise<Optional<Entity.Network>> {
+        return this.findOne({ where: { slug }});
+    }
+
+    async findNetworksBySlugs(slugs: Set<string>): Promise<Map<string, Entity.Network>> {
+        if (slugs.size == 0) {
+            return Promise.resolve(new Map);
+        }
+
+        return this.find({ 
+            where: { 
+                slug: In(Array.from(slugs))
+            }
+        }).then(networks => {
+            let pairs: [string, Entity.Network][] = networks.map(n => [n.slug, n] as [string, Entity.Network]);
+            return new Map<string, Entity.Network>(pairs);
+        });
+    }
+
+    // async findNetworkByExternalSource()
 }

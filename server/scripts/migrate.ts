@@ -12,7 +12,12 @@ async function main() {
         console.log('Running all migrations that haven\'t been run!');
         await connection.runMigrations();
     } else if (args[0] === 'clear') {
+        console.log('Undo-ing previous migrations');
         await connection.undoLastMigration();
+    } else if (args[0] === 'rerun') {
+        console.log('Rerunning previous migration');
+        await connection.undoLastMigration();
+        await connection.runMigrations();
     }
 
     process.exit(0);

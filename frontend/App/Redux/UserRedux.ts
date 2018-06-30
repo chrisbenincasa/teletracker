@@ -3,10 +3,6 @@ import { createActions, createReducer } from 'reduxsauce';
 import Immutable from 'seamless-immutable';
 
 import { User } from '../Model';
-import { persistReducer } from 'redux-persist';
-import { AsyncStorage } from 'react-native';
-import ImmutablePersistenceTransform from '../Services/ImmutablePersistenceTransform';
-import R from 'ramda';
 
 /* ------------- Types and Action Creators ------------- */
 
@@ -18,6 +14,7 @@ const { Types, Creators } = createActions({
     userRequest: ['userId'],
     userSuccess: ['user'],
     userFailure: null,
+    userLogout: null,
     loginRequest: [ 'componentId', 'email', 'password'],
     loginSuccess: ['token'],
     loginFailure: null
@@ -62,11 +59,11 @@ export const INITIAL_STATE = Immutable<UserState>({
 type State = Immutable.ImmutableObject<UserState>
 
 export const reducers = {
-    request: (state: State, action: AnyAction) => 
-        state.merge({ fetching: true }),
+    request: (state: State) => 
+        state.merge({ fetching: true, error: null }),
 
     selfRequest: (state: State) =>
-        state.merge({ fetching: true }),
+        state.merge({ fetching: true, error: null }),
 
     success: (state: State, action: AnyAction) =>
         state.merge({ fetching: false, error: null, details: action.user.data }),
@@ -74,10 +71,8 @@ export const reducers = {
     failure: (state: State) =>
         state.merge({ fetching: false, error: true }),
 
-    signupRequest: (state: State) => {
-        console.tron.log(R.has('asMutable')(state));
-        return state.merge({ signup: { fetching: true } })
-    },
+    signupRequest: (state: State) => 
+        state.merge({ signup: { fetching: true, error: null } }),
 
     signupSuccess: (state: State, { token }: AnyAction) => 
         state.merge({ signup: { fetching: false, error: false, success: true }, token}),
@@ -86,7 +81,10 @@ export const reducers = {
         state.merge({ signup: { fetching: false, error: true, success: false }}),
 
     login: (state: State) =>
-        state.merge({ login: { fetching: true } }),
+        state.merge({ login: { fetching: true, error: null } }),
+
+    logout: (state: State) =>
+        state.merge({ token: null, details: null, error: null }),
 
     loginSuccess: (state: State, { token }: AnyAction) =>
         state.merge({ login: { fetching: false, error: false }, token }),
@@ -100,6 +98,7 @@ export const reducer = createReducer<State>(INITIAL_STATE, {
     [Types.USER_SELF_REQUEST]: reducers.request,
     [Types.USER_SUCCESS]: reducers.success,
     [Types.USER_FAILURE]: reducers.failure,
+    [Types.USER_LOGOUT]: reducers.logout,
     [Types.USER_SIGNUP_REQUEST]: reducers.signupRequest,
     [Types.USER_SIGNUP_SUCCESS]: reducers.signupSuccess,
     [Types.USER_SIGNUP_FAILURE]: reducers.signupFailure,

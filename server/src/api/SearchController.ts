@@ -7,13 +7,16 @@ import * as Entity from '../db/entity';
 import { ThingRepository } from '../db/ThingRepository';
 import { Controller } from './Controller';
 import { ExternalSource, ThingType } from '../db/entity';
+import { ThingManager } from '../db/ThingManager';
 
 export class SearchController extends Controller {
+    private thingManager: ThingManager;
     private thingRepository: ThingRepository;
     private movieDbClient: MovieDbClient;
 
     constructor(router: Router, connection: Connection) {
         super(router);
+        this.thingManager = new ThingManager(connection);
         this.thingRepository = connection.getCustomRepository(ThingRepository);
         // This will be loaded via config soon.
         this.movieDbClient = new MovieDbClient(process.env.API_KEY);
@@ -51,7 +54,7 @@ export class SearchController extends Controller {
             R.groupBy<Entity.Thing>(x => x.metadata.themoviedb.movie.id.toString()),
             R.mapObjIndexed(([thing]) => thing),
             Object.entries,
-            x => new Map(x)
+            (x: [string, Entity.Thing][]) => new Map<string, Entity.Thing>(x)
         )(existingMovies);
 
         let existingShowsByExternalId: Map<string, Entity.Thing> = R.pipe(
@@ -78,7 +81,7 @@ export class SearchController extends Controller {
         // and return everything in its original order.
         return Promise.all(missingSavePromises).then(x => {
             // Don't start async procsesing until after the other processing is done
-            missingAsync.forEach(this.processSingleSearchResult);
+            missingAsync.forEach(this.processSingleSearchResult.bind(this));
 
             return R.reduce((acc, [key, value]) => acc.set(key, value), new Map<number, Entity.Thing>(), x);
         }).then(newlySaved => {
@@ -99,10 +102,10 @@ export class SearchController extends Controller {
         let promise: Promise<Entity.Thing>;
         if (item.media_type === 'movie') {
             promise = this.movieDbClient.movies.getMovie(item.id, null, ['release_dates', 'credits']).
-                then(movie => this.thingRepository.save(Entity.ThingFactory.movie(movie)));
+                then(movie => this.thingManager.handleTMDbMovie(movie));
         } else if (item.media_type === 'tv') {
             promise = this.movieDbClient.tv.getTvShow(item.id, null, ['credits']).
-                then(tv => this.thingRepository.save(Entity.ThingFactory.show(tv)));
+                then(tv => this.thingManager.handleTMDbTvShow(tv));
         } else {
             promise = this.movieDbClient.people.getPerson(item.id).
                 then(p => this.thingRepository.save(Entity.ThingFactory.person(p)));
