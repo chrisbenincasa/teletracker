@@ -127,7 +127,7 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     addItem() {
-        this.props.addItemToList(this.props.componentId, '???', this.props.item.id);
+        this.props.addItemToList(this.props.componentId, 'default', this.props.item.id);
 
         MessageBarManager.showAlert({
             avatar: require('../Images/Icons/faq-icon.png'),

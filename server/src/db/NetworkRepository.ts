@@ -38,6 +38,10 @@ export class NetworkRepository extends Repository<Entity.Network> {
     }
 
     async findNetworksBySlugs(slugs: Set<string>): Promise<Map<string, Entity.Network>> {
+        if (slugs.size == 0) {
+            return Promise.resolve(new Map);
+        }
+
         return this.find({ 
             where: { 
                 slug: In(Array.from(slugs))

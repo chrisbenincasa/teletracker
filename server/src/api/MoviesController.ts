@@ -34,7 +34,6 @@ export class MoviesController extends Controller {
                     ctx.status = 200;
                     ctx.body = { data: show };
                 } else {
-                    console.error('show with id ' + ctx.params.id + ' not found');
                     ctx.status = 404;
                 }
             });

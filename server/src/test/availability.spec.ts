@@ -66,9 +66,9 @@ class AvailabilitySpec extends TestBase {
                             isAvailable: true,
                             region: 'US',
                             network: {
-                                id: network.id,
-                                name: network.name,
-                                homepage: network.homepage
+                                // id: network.id,
+                                name: network.name
+                                // homepage: network.homepage
                             }
                         }]
                     }
