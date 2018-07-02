@@ -1,5 +1,5 @@
 import * as R from 'ramda';
-import { MovieDbClient } from 'themoviedb-client-typed';
+import { MovieDbClient, PagedResult, TvShow } from 'themoviedb-client-typed';
 import { createConnection } from 'typeorm';
 
 import GlobalConfig from '../src/Config';
@@ -11,7 +11,7 @@ import { TvShowImporter } from '../src/util/ShowImporter';
 
 const makeMapKey = (externalSource: ExternalSource, externalId: string) => `${externalSource}_${externalId}`
 
-async function main() {
+async function main(args: string[]) {
     let connection = await createConnection(GlobalConfig.db);
 
     let movieDbClient = new MovieDbClient(GlobalConfig.themoviedb.apiKey);
@@ -25,9 +25,26 @@ async function main() {
         R.chain(n => n.references.map(r => [n, r] as [Network, NetworkReference]), allNetworks)
     )
 
-    for (let i = 1; i <= 5; i++) {
+    let provider: (page: number) => Promise<PagedResult<Partial<TvShow>>>;
+
+    let pages = args.length > 1 ? args[1] : 5;
+
+    if (args[0] === 'popular') {
+        provider = (page: number) => movieDbClient.tv.getPopular(null, page);
+    } else if (args[0] === 'airing_today') {
+        provider = (page: number) => movieDbClient.tv.getAiringToday(null, page);
+    } else if (args[0] === 'top_rated') {
+        provider = (page: number) => movieDbClient.tv.getTopRated(null, page);
+    } else if (args[0] === 'on_the_air') {
+        provider = (page: number) => movieDbClient.tv.getOnTheAir(null, page);
+    } else {
+        console.log('TV type ' + args[0] + ' not supported');
+        return;
+    }
+
+    for (let i = 1; i <= pages; i++) {
         // let popular = await movieDbClient.tv.getPopular(null, i);
-        let popular = await movieDbClient.tv.getTopRated(null, i);
+        let popular = await provider(i);
 
         await looper(popular.results.entries(), async item => {
             const tmdbShow = await movieDbClient.tv.getTvShow(item.id, null, ['credits', 'release_dates', 'external_ids']);
@@ -39,8 +56,10 @@ async function main() {
     process.exit(0);
 }
 
+const args = process.argv.slice(2);
+
 try {
-    main();
+    main(args);
 } catch (e) {
     console.error(e);
 }
