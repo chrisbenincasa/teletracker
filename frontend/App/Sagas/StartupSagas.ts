@@ -20,7 +20,7 @@ export function* startup(teletrackerApi: TeletrackerApi): IterableIterator<any> 
 
   const authStatus: ApiResponse<any> = yield teletrackerApi.getAuthStatus();
 
-  const isLoggedIn = authStatus.status != 401 && authStatus.data.authenticted;
+  const isLoggedIn = authStatus.status != 401 && authStatus.data.authenticated;
 
   if (!isLoggedIn) {
     teletrackerApi.clearToken();
