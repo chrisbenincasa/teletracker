@@ -1,14 +1,12 @@
-import { MovieDbClient, PagedResult, Movie } from 'themoviedb-client-typed';
+import { Movie, MovieDbClient, PagedResult } from 'themoviedb-client-typed';
 import { createConnection } from 'typeorm';
 
 import GlobalConfig from '../src/Config';
-import { MovieImporter } from './util/MovieImporter';
+import { MovieImporter } from '../src/util/MovieImporter';
 
 async function main(args: string[]) {
     let movieDbClient = new MovieDbClient(GlobalConfig.themoviedb.apiKey);
-
     let provider: (page: number) => Promise<PagedResult<Partial<Movie>>>;
-
     let pages = args.length > 1 ? args[1] : 5;
 
     if (args[0] === 'popular') {
@@ -25,7 +23,6 @@ async function main(args: string[]) {
     }
 
     let connection = await createConnection(GlobalConfig.db);
-    
     let importer = new MovieImporter(connection);
 
     for (let i = 1; i <= pages; i++) {

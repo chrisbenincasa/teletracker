@@ -40,7 +40,8 @@ export class MoviesController extends Controller {
         });
 
         this.router.get('/genres', async ctx => {
-            return this.connection.getCustomRepository(GenreRepository).getGenreByExternalIds().then(x => {
+            let type = ctx.query.type;
+            return this.connection.getCustomRepository(GenreRepository).getGenreByExternalIds(null, type).then(x => {
                 ctx.status = 200;
                 ctx.body = { data: x }
             })

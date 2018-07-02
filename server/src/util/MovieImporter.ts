@@ -4,11 +4,11 @@ import { Movie, MovieDbClient } from 'themoviedb-client-typed';
 import { Connection } from 'typeorm';
 
 import { getOfferType, JustWatchOffer, looper } from '.';
-import GlobalConfig from '../../src/Config';
-import { Availability, ExternalSource, Network } from '../../src/db/entity';
-import { NetworkReference } from '../../src/db/entity/NetworkReference';
-import { NetworkRepository } from '../../src/db/NetworkRepository';
-import { ThingManager } from '../../src/db/ThingManager';
+import GlobalConfig from '..//Config';
+import { Availability, ExternalSource, Network, Thing } from '../db/entity';
+import { NetworkReference } from '../db/entity/NetworkReference';
+import { NetworkRepository } from '../db/NetworkRepository';
+import { ThingManager } from '../db/ThingManager';
 
 export class MovieImporter {
     readonly movieDbClient = new MovieDbClient(GlobalConfig.themoviedb.apiKey);
@@ -22,11 +22,13 @@ export class MovieImporter {
         this.networkRepository = connection.getCustomRepository(NetworkRepository);
     }
 
-    async handleMovies(movies: IterableIterator<[number, Partial<Movie>]>) {
+    async handleMovies(movies: IterableIterator<[number, Partial<Movie>]>): Promise<Thing[]> {
         let allNetworks = await this.networkRepository.find({ relations: ['references'] });
         let allNetworksByExternal = R.groupBy((n: Network) => 
             R.find<NetworkReference>(R.propEq('externalSource', ExternalSource.JustWatch)
-        )(n.references).externalId)(allNetworks)
+        )(n.references).externalId)(allNetworks);
+
+        let things: Thing[] = [];
 
         await looper(movies, async item => {
             let justWatchResult = await request('https://apis.justwatch.com/content/titles/en_US/popular', {
@@ -44,7 +46,7 @@ export class MovieImporter {
                 return idsMatch || namesMatch || ogNamesMatch;
             }, justWatchResult.items);
 
-            const tmdbMovie = await this.movieDbClient.movies.getMovie(item.id, null, ['credits', 'release_dates']);
+            const tmdbMovie = await this.movieDbClient.movies.getMovie(item.id, null, ['credits', 'release_dates', 'external_ids']);
             let savedMovie = await this.thingManager.handleTMDbMovie(tmdbMovie);
 
             if (matchingJustWatch && matchingJustWatch.offers) {
@@ -70,10 +72,14 @@ export class MovieImporter {
 
                 savedMovie.availability = availabilityModels;
 
-                await this.thingManager.thingRepository.save(savedMovie);
+                savedMovie = await this.thingManager.thingRepository.save(savedMovie);
+
+                things.push(savedMovie);
             } else {
                 console.log(`no offers found for movie ${item.title} with justwatch id = ${matchingJustWatch}`)
             }
         });
+
+        return things;
     }
 }

@@ -3,17 +3,25 @@ import { EntityRepository, Repository } from 'typeorm';
 
 import { Optional } from '../util/Types';
 import * as Entity from './entity';
-import { ExternalSource, ThingType } from './entity';
+import { ExternalSource, ThingType, Network } from './entity';
 
 @EntityRepository(Entity.Thing)
 export class ThingRepository extends Repository<Entity.Thing> {
+    // Assumes nested objects are entities and that they have an 'id' property
+    // if both sides are an Array, merge them, take unique by 'id' field with right precendence
+    // otherwise, just take whatever is passed in on the right side 
     private deepMergeWithConcat = R.mergeDeepWith<Entity.Thing, Entity.Thing>((l, r) => 
-        R.ifElse(R.all(R.is(Array)), R.uniqBy(R.prop('id')), ([_, r]) => r)([l, r])
+        R.ifElse(R.all(R.is(Array)), ([l, r]) => R.uniqBy(R.prop('id'))(r.concat(l)), ([_, r]) => r)([l, r])
     );
 
     async saveObject(thing: Entity.Thing): Promise<Entity.Thing> {
-        return this.findOne({ where: { normalizedName: thing.normalizedName } }).then(async foundThing => {
-            console.log('found ', foundThing)
+        let query = this.createQueryBuilder('thing').
+            select().
+            addSelect('metadata').
+            where({normalizedName: thing.normalizedName}).
+            getOne();
+
+        return query.then(async foundThing => {
             let thingToSave = thing;
             
             if (foundThing) {
@@ -51,27 +59,41 @@ export class ThingRepository extends Repository<Entity.Thing> {
         return query.getMany();
     }
 
-    async getShowById(showId: string | number): Promise<Optional<Entity.Thing>> {
-        let query = this.manager.createQueryBuilder(Entity.Thing, 'thing').
-            leftJoinAndSelect('thing.networks', 'originalNetwork').
-            leftJoinAndSelect('thing.availability', 'showAvailability').
-            leftJoinAndSelect('showAvailability.network', 'showAvailabilityNetwork').
-            leftJoinAndSelect('thing.seasons', 'season').
-            leftJoinAndSelect('season.episodes', 'episode').
-            leftJoinAndSelect('episode.availability', 'episodeAvailability', 'episodeAvailability.isAvailable = :isAvailable', { isAvailable: true }).
-            leftJoinAndSelect('episodeAvailability.network', 'episodeAvailableNetwork').
-            where({ id: showId, type: Entity.ThingType.Show }).
-            select([
-                'thing', 
-                'season', 
-                'originalNetwork', 
-                'episode', 
-                'showAvailability', 
-                'showAvailabilityNetwork.name',
-                'episodeAvailability',
-                'episodeAvailableNetwork.name'
-            ]);
+    async getExternalIds(id: number): Promise<Optional<Entity.ThingExternalIds>> {
+        return this.manager.findOne(Entity.ThingExternalIds, {
+            where: {
+                'thingId': id
+            }
+        });
+    }
 
-        return query.getOne();
+    async getShowById(showId: string | number, includeMetadata?: boolean): Promise<Optional<Entity.Thing>> {
+        let query = this.createQueryBuilder('thing').
+            select().
+            where({ type: ThingType.Show, id: showId }).
+            leftJoinAndSelect('thing.networks', 'networks').
+            leftJoinAndSelect('thing.genres', 'genres');
+
+        if (includeMetadata) {
+            query = query.addSelect('metadata');
+        }
+
+        let seasonsAndEpisodes = this.manager.createQueryBuilder(Entity.TvShowSeason, 'season').
+            where({ 'show': showId }).
+            leftJoinAndSelect('season.episodes', 'episodes').
+            leftJoinAndSelect('episodes.availability', 'availability').
+            leftJoin('availability.network', 'network').
+            addOrderBy('season.number', 'ASC').
+            addOrderBy('episodes.number', 'ASC').
+            addSelect('network.id');
+
+        return Promise.all([query.getOne(), seasonsAndEpisodes.getMany()]).then(([thing, seasons]) => {
+            if (thing) {
+                thing.seasons = (seasons || []);
+                return thing;
+            } else {
+                return null;
+            }
+        });
     }
 }
