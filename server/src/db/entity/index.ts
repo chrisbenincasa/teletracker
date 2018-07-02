@@ -6,3 +6,6 @@ export * from './Availability';
 export * from './Network';
 export * from './Genre';
 export * from './GenreReference';
+export * from './ThingExternalIds';
+export * from './TvShowEpisode';
+export * from './TvShowSeason';

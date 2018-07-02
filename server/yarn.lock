@@ -98,6 +98,10 @@
   dependencies:
     "@types/node" "*"
 
+"@types/html-entities@^1.2.16":
+  version "1.2.16"
+  resolved "https://registry.yarnpkg.com/@types/html-entities/-/html-entities-1.2.16.tgz#4d1fe208c4c33727ac4657e6f5d92bfe52427023"
+
 "@types/http-assert@*":
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/@types/http-assert/-/http-assert-1.2.2.tgz#17dfe5a82184a8898935d96fe2eaedd37d22d9a4"
@@ -1313,6 +1317,10 @@ highlight.js@^9.6.0:
 hoek@4.x.x:
   version "4.2.1"
   resolved "https://registry.yarnpkg.com/hoek/-/hoek-4.2.1.tgz#9634502aa12c445dd5a7c5734b572bb8738aacbb"
+
+html-entities@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/html-entities/-/html-entities-1.2.1.tgz#0df29351f0721163515dfb9e5543e5f6eed5162f"
 
 http-assert@^1.1.0:
   version "1.3.0"
@@ -2939,9 +2947,9 @@ text-hex@0.0.x:
   version "0.0.0"
   resolved "https://registry.yarnpkg.com/text-hex/-/text-hex-0.0.0.tgz#578fbc85a6a92636e42dd17b41d0218cce9eb2b3"
 
-themoviedb-client-typed@0.0.13:
-  version "0.0.13"
-  resolved "https://registry.yarnpkg.com/themoviedb-client-typed/-/themoviedb-client-typed-0.0.13.tgz#8a7a49b930f5493ca5f6b9f103c8738d9d494342"
+themoviedb-client-typed@0.0.15:
+  version "0.0.15"
+  resolved "https://registry.yarnpkg.com/themoviedb-client-typed/-/themoviedb-client-typed-0.0.15.tgz#439bd189a0c5dcac4134b28e8c0b92d227f0fb6c"
   dependencies:
     request "^2.85.0"
     request-promise-native "^1.0.5"

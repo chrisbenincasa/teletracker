@@ -3,6 +3,7 @@ import { EntityRepository, Repository, FindManyOptions, In } from 'typeorm';
 
 import * as Entity from './entity';
 import { Optional } from '../util/Types';
+import { NetworkReference } from './entity/NetworkReference';
 
 @EntityRepository(Entity.Network)
 export class NetworkRepository extends Repository<Entity.Network> {
@@ -50,6 +51,22 @@ export class NetworkRepository extends Repository<Entity.Network> {
             let pairs: [string, Entity.Network][] = networks.map(n => [n.slug, n] as [string, Entity.Network]);
             return new Map<string, Entity.Network>(pairs);
         });
+    }
+
+    async saveNetworkReference(ref: NetworkReference) {
+        let q =  this.createQueryBuilder().
+            insert().
+            into(NetworkReference).
+            values(ref).
+            onConflict('("externalSource", "externalId", "networkId") DO NOTHING');
+        
+        return q.execute().
+            then(res => {
+                if (res.identifiers && res.identifiers.length > 0 && res.identifiers[0]) {
+                    ref.id = res.identifiers[0].id;
+                }
+                return ref;
+            });
     }
 
     // async findNetworkByExternalSource()
