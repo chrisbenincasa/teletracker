@@ -50,12 +50,15 @@ export class SearchController extends Controller {
         let existingTvShows: Entity.Thing[] = await this.thingRepository.getObjectsByExternalIds(ExternalSource.TheMovieDb, foundIds, ThingType.Show);
 
         // Create a mapping of "externalId" to the found objects
+        existingMovies = R.filter<Entity.Thing>((x) => !R.isNil(R.path(['metadata', 'themoviedb', 'movie', 'id'], x)))(existingMovies)
         let existingByExternalId: Map<string, Entity.Thing> = R.pipe(
             R.groupBy<Entity.Thing>(x => x.metadata.themoviedb.movie.id.toString()),
             R.mapObjIndexed(([thing]) => thing),
             Object.entries,
             (x: [string, Entity.Thing][]) => new Map<string, Entity.Thing>(x)
         )(existingMovies);
+
+        existingTvShows = R.filter<Entity.Thing>((x) => !R.isNil(R.path(['metadata', 'themoviedb', 'show', 'id'], x)))(existingTvShows)
 
         let existingShowsByExternalId: Map<string, Entity.Thing> = R.pipe(
             R.groupBy<Entity.Thing>(x => x.metadata.themoviedb.show.id.toString()),

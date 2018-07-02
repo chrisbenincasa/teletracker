@@ -1,5 +1,6 @@
 import * as R from 'ramda';
 import { Movie, TvShow, ExternalIds } from 'themoviedb-client-typed';
+import * as TmdbModel from 'themoviedb-client-typed';
 import { Connection, Repository } from 'typeorm';
 
 import { slugify } from '../util/Slug';
@@ -11,19 +12,20 @@ import { ThingRepository } from './ThingRepository';
 import { ThingExternalIds } from './entity/ThingExternalIds';
 import { TvShowEpisode } from './entity/TvShowEpisode';
 import { Entities } from 'html-entities';
+import { TvSeasonRepository } from './TvSeasonRepository';
 
 export class ThingManager {
     readonly thingRepository: ThingRepository;
 
     private connection: Connection;
-    private tvSeasonRepository: Repository<TvShowSeason>;
+    private tvSeasonRepository: TvSeasonRepository;
     private networkRespoitory: NetworkRepository;
     private genreRepository: GenreRepository;
 
     constructor(connection: Connection) {
         this.connection = connection;
         this.thingRepository = connection.getCustomRepository(ThingRepository);
-        this.tvSeasonRepository = connection.getRepository(TvShowSeason);
+        this.tvSeasonRepository = connection.getCustomRepository(TvSeasonRepository);
         this.networkRespoitory = connection.getCustomRepository(NetworkRepository);
         this.genreRepository = connection.getCustomRepository(GenreRepository);
     }
@@ -53,14 +55,24 @@ export class ThingManager {
         await this.handleExternalIds(thing, show.external_ids, show.id.toString());
 
         if (handleSeasons) {
-            let seasonModels = show.seasons.map(season => {
-                let seasonModel = new TvShowSeason();
-                seasonModel.show = thing;
-                seasonModel.number = season.season_number;
-                return seasonModel;
-            });
+            await this.tvSeasonRepository.getAllForShow(thing).then(seasons => {
+                let promises = R.pipe(
+                    R.propOr([], 'seasons'),
+                    R.map<TmdbModel.TvShowSeason, Promise<TvShowSeason>>(async season => {
+                        let existingSeason = ((await seasons) || []).find(R.propEq('number', season.season_number));
+                        if (existingSeason) {
+                            return Promise.resolve(existingSeason);
+                        } else {
+                            let seasonModel = this.tvSeasonRepository.create();
+                            seasonModel.number = season.season_number;
+                            seasonModel.show = thing;
+                            return this.tvSeasonRepository.save(seasonModel);
+                        }
+                    })
+                )(show.seasons);
 
-            await this.tvSeasonRepository.save(seasonModels);
+                return Promise.all(promises);
+            });
         }
 
         thing.genres = await genres;
@@ -70,34 +82,30 @@ export class ThingManager {
 
     private async handleExternalIds(entity: Thing | TvShowEpisode, externalIds?: ExternalIds, tmdbId?: string) {
         if (externalIds) {
-            let model = new ThingExternalIds();
+            return this.connection.createQueryBuilder(ThingExternalIds, 'externalIds').
+                where({ tmdbId: tmdbId || externalIds.id }).
+                getOne().
+                then(async existing => {
+                    if (!existing) {
+                        let model = new ThingExternalIds();
 
-            model.imdbId = externalIds.imdb_id;
+                        model.imdbId = externalIds.imdb_id;
 
-            if (externalIds.id) {
-                model.tmdbId = externalIds.id.toString();
-            } else if (tmdbId) {
-                model.tmdbId = tmdbId;
-            }
+                        if (tmdbId) {
+                            model.tmdbId = tmdbId;
+                        } else if (externalIds.id) {
+                            model.tmdbId = externalIds.id.toString();
+                        }
 
-            entity.externalIds = model;
+                        entity.externalIds = model;
 
-            let baseQuery = this.connection.createQueryBuilder().
-                insert().
-                into(ThingExternalIds).
-                values(model);
-
-            if (<Thing>entity) {
-                model.thing = (<Thing>entity);
-                baseQuery = baseQuery.onConflict(`("thingId") DO UPDATE SET "imdbId" = :imdbId, "lastUpdatedAt" = :lastUpdatedAt`);
-            } else {
-                model.tvEpisode = (<TvShowEpisode>entity);
-                baseQuery = baseQuery.onConflict(`("tvEpisodeId") DO UPDATE SET "imdbId" = :imdbId, "lastUpdatedAt" = :lastUpdatedAt`);
-            }
-            
-            return baseQuery.
-                setParameters({imdbId: model.imdbId, lastUpdatedAt: new Date()}).
-                execute();
+                        return this.connection.createQueryBuilder().
+                            insert().
+                            into(ThingExternalIds).
+                            values(model).
+                            execute();
+                    }
+                });
         }
     }
 
