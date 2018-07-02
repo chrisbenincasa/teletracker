@@ -86,7 +86,7 @@ class TvShowSpec extends TestBase {
                                 id: availability.id,
                                 isAvailable: true,
                                 network: {
-                                    name: network.name
+                                    id: network.id
                                 }
                             }]
                         }]

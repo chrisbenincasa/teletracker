@@ -1,4 +1,4 @@
-import { Column, PrimaryGeneratedColumn, Entity, ManyToMany, Index, OneToMany, CreateDateColumn, UpdateDateColumn, JoinTable } from 'typeorm';
+import { Column, PrimaryGeneratedColumn, Entity, ManyToMany, Index, OneToMany, CreateDateColumn, UpdateDateColumn, JoinTable, OneToOne, JoinColumn } from 'typeorm';
 import { Movie, TvShow, Person } from 'themoviedb-client-typed'
 import { List } from './List';
 import { Network } from './Network';
@@ -7,6 +7,9 @@ import { Availability } from './Availability';
 import { TvShowSeason } from './TvShowSeason';
 import { slugify } from '../../util/Slug';
 import { Genre } from './Genre';
+import { ThingExternalIds } from './ThingExternalIds';
+import R = require('ramda');
+import { TvShowEpisode } from './TvShowEpisode';
 
 export enum ExternalSource {
     TheMovieDb = 'themoviedb',
@@ -89,7 +92,7 @@ export class Thing {
     lists: List[];
 
     // Only applicable to TV shows
-    @OneToMany(type => TvShowSeason, season => season.show)
+    @OneToMany(type => TvShowSeason, season => season.show, { cascade: true })
     seasons: TvShowSeason[]
 
     // Only applicable to TV shows. The _original_ networks this show was available on.
@@ -105,6 +108,22 @@ export class Thing {
     @JoinTable()
     genres: Genre[]
 
-    @Column({ type: 'jsonb', nullable: true })
+    @Column({ type: 'jsonb', nullable: true, select: false })
     metadata?: ObjectMetadata;
+
+    @OneToOne(t => ThingExternalIds, ids => ids.thing, { cascade: true })
+    @JoinColumn()
+    externalIds: ThingExternalIds
+
+    static getSeason(thing: Thing, seasonNumber: number): Optional<TvShowSeason> {
+        return R.find(R.propEq('number', seasonNumber), thing.seasons || []);
+    }
+
+    static getEpisode(thing: Thing, seasonNumber: number, episodeNumber: number): Optional<TvShowEpisode> {
+        return R.ifElse(
+            (season: TvShowSeason) => !R.isNil(season),
+            (season: TvShowSeason) => R.find(R.propEq('number', episodeNumber), season.episodes || []),
+            () => null
+        )(Thing.getSeason(thing, seasonNumber));
+    }
 }
