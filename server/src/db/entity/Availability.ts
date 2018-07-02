@@ -20,11 +20,13 @@ export class Availability {
     @ManyToOne(type => Network)
     network: Network;
 
+    networkId: number;
+
     @Column()
     isAvailable: boolean;
 
-    @Column()
-    region: string;
+    @Column({ nullable: true })
+    region?: string;
 
     // TEMP: Until we figure out per-season/per-episode availability
     @Column({ nullable: true })

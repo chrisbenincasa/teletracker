@@ -5,7 +5,7 @@ import chaiHttp = require('chai-http');
 import chaiSubset = require('chai-subset');
 import { getManager } from 'typeorm';
 
-import { Availability, Network, Thing, ThingType } from '../db/entity';
+import { Availability, Network, Thing, ThingType, TvShowSeason, TvShowEpisode } from '../db/entity';
 import TestBase from './base';
 
 chai.use(chaiHttp);
@@ -45,11 +45,26 @@ class AvailabilitySpec extends TestBase {
                 });
                 network = await manager.save(Network, network);
 
+                let season = manager.create(TvShowSeason, {
+                    number: 1,
+                    show
+                });
+
+                await manager.save(TvShowSeason, season);
+
+                let episode = manager.create(TvShowEpisode, {
+                    season,
+                    number: 1
+                });
+
+                await manager.save(TvShowEpisode, episode);
+
                 let availability = manager.create(Availability, {
-                    thing: show,
                     network: network,
                     isAvailable: true,
-                    region: 'US'
+                    region: 'US',
+                    tvShowEpisode: episode,
+                    cost: 1.99
                 });
                 availability = await manager.save(Availability, availability);
 
@@ -61,15 +76,18 @@ class AvailabilitySpec extends TestBase {
                         name: show.name,
                         normalizedName: show.normalizedName,
                         type: show.type,
-                        availability: [{
-                            id: availability.id,
-                            isAvailable: true,
-                            region: 'US',
-                            network: {
-                                // id: network.id,
-                                name: network.name
-                                // homepage: network.homepage
-                            }
+                        seasons: [{
+                            episodes: [{
+                                availability: [{
+                                    id: availability.id,
+                                    isAvailable: true,
+                                    region: 'US',
+                                    cost: "1.990000000",
+                                    network: {
+                                        id: network.id
+                                    }
+                                }]
+                            }]
                         }]
                     }
                 });

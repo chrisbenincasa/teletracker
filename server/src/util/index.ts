@@ -5,14 +5,17 @@ export const timer = async (ms: number) => {
     return promisify(setTimeout)(ms);
 };
 
-export const looper = async function looper<T>(args: Iterator<[number, T]>, f: (x: T) => Promise<void>) {
+export const looper = async function looper<T, U>(args: Iterator<[number, T]>, f: (x: T) => Promise<U>) {
+    let accum: U[] = [];
     while (true) {
         let res = args.next();
         if (res.done) break;
         let [_, x] = res.value;
-        await f(x);
+        accum.push(await f(x));
         await timer(1000);
     }
+
+    return accum;
 }
 
 export function getOfferType(s: string): OfferType | undefined {
