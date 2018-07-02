@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { Image, KeyboardAvoidingView, Text, View, ScrollView } from 'react-native';
-import { Button, Card, Rating, Avatar, Divider } from 'react-native-elements';
+import { Badge, Button, Card, Rating, Avatar, Divider, Icon } from 'react-native-elements';
 import Header from '../Components/Header/Header';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
@@ -13,9 +13,6 @@ import ListActions from '../Redux/ListRedux';
 import headerStyles from '../Themes/ApplicationStyles';
 import styles from './Styles/ItemDetailScreenStyle';
 import ViewMoreText from 'react-native-view-more-text';
-
-var MessageBarAlert = require('react-native-message-bar').MessageBar;
-var MessageBarManager = require('react-native-message-bar').MessageBarManager;
 
 // Add Actions - replace 'Your' with whatever your reducer is called :)
 // import YourActions from '../Redux/YourRedux'
@@ -30,6 +27,10 @@ interface Props {
 class ItemDetailScreen extends Component<Props> {
     constructor(props) {
         super(props);
+
+        this.state = {
+            inList: false
+        };
 
         // Disable menu swipe out on ItemDetailScreen
         Navigation.mergeOptions(this.props.componentId, {
@@ -51,7 +52,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.poster_path;
         } else if (this.hasTmdbPerson()) {
-            return; // There are no photos for people
+            return; // There are no photos for people yet
         }
     }
 
@@ -62,7 +63,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.backdrop_path; 
         } else if (this.hasTmdbPerson()) {
-            return; // There are no photos for people
+            return; // There are no backdrop photos for people yet
         }
     }
 
@@ -73,7 +74,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.vote_average;
         } else if (this.hasTmdbPerson()) {
-            return; //// There is no ratings for people
+            return; // There is no ratings for people...yet?
         }
     }
 
@@ -95,7 +96,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.first_air_date.substring(0,4);
         } else if (this.hasTmdbPerson()) {
-            return; // There is no release year for people
+            return; // There is no release year for people, maybe birth year?
         }
     }
 
@@ -106,7 +107,7 @@ class ItemDetailScreen extends Component<Props> {
         } else if (this.hasTmdbShow()) {
             return meta.show.overview;
         } else if (this.hasTmdbPerson()) {
-            return; // There is no description for people
+            return; // There is no description for people yet
         }
     }
 
@@ -115,10 +116,9 @@ class ItemDetailScreen extends Component<Props> {
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).credits.cast;
         } else if (this.hasTmdbShow()) {
-            console.tron.log(meta.show.credits.cast);
             return meta.show.credits.cast.length > 0 ? meta.show.credits.cast : null; 
-        } else if (this.hasTmdbPerson()) {
-            return; // There is no cast for people
+        } else {
+            return;
         }
     }
 
@@ -130,11 +130,22 @@ class ItemDetailScreen extends Component<Props> {
     getSeasons() {
         let meta = this.props.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
-            return R.view<Props, Movie>(this.tmdbMovieView, this.props).seasons;
+            return null; // There is no seasons parameter for movies
         } else if (this.hasTmdbShow()) {
             return meta.show.seasons; 
-        } else if (this.hasTmdbPerson()) {
-            return; // There are no seasons for people
+        } else {
+            return;
+        }
+    }
+
+    getGenre() {
+        let meta = this.props.item.metadata.themoviedb;
+        if (this.hasTmdbMovie()) {
+            return R.view<Props, Movie>(this.tmdbMovieView, this.props).genres;
+        } else if (this.hasTmdbShow()) {
+            return meta.show.genres; 
+        } else {
+            return;
         }
     }
 
@@ -157,12 +168,9 @@ class ItemDetailScreen extends Component<Props> {
     addItem() {
         this.props.addItemToList(this.props.componentId, 'default', this.props.item.id);
 
-        MessageBarManager.showAlert({
-            avatar: require('../Images/Icons/faq-icon.png'),
-            title: `${this.props.item.name} has been added to your list`,
-            alertType: 'success',
-            position: 'bottom',
-        });
+        this.setState({
+            inList: !this.state.inList
+          });
     }
 
     renderViewMore(onPress) {
@@ -177,14 +185,6 @@ class ItemDetailScreen extends Component<Props> {
         )
     }
 
-    componentDidMount() {
-        MessageBarManager.registerMessageBar(this.refs.alert);
-    }
-    
-    componentWillUnmount() {
-        MessageBarManager.unregisterMessageBar();
-    }
-    
     render () {
         return (
             <ScrollView  style={styles.container}>
@@ -225,26 +225,62 @@ class ItemDetailScreen extends Component<Props> {
                     </View>
                 </KeyboardAvoidingView>
 
-                <View style={{marginTop: 60, marginLeft: 15, marginRight: 15}}>
-
-                        <ViewMoreText
-                            numberOfLines={6}
-                            renderViewMore={this.renderViewMore}
-                            renderViewLess={this.renderViewLess}
-                        >
-                            <Text>{this.getDescription()}</Text>
-                        </ViewMoreText>
+                <View style={styles.descriptionContainer}>
+                    <ViewMoreText
+                        numberOfLines={4}
+                        renderViewMore={this.renderViewMore}
+                        renderViewLess={this.renderViewLess}
+                    >
+                        <Text>{this.getDescription()}</Text>
+                    </ViewMoreText>
                 </View>
 
-                <Button title='Add to List' onPress={this.addItem.bind(this)} style={{backgroundColor: 'black', marginBottom: 10, marginTop: 10}}></Button>
+                {this.getGenre() &&
+                    <View style={styles.genreContainer}>
+                        {this.getGenre() ? this.getGenre().map((i,k) => (
+                            <Badge
+                                key={k}
+                                value={i.name}
+                                textStyle={{ color: 'white' }}
+                                wrapperStyle={{
+                                    marginHorizontal: 2, marginVertical: 5
+                                }}
+                                containerStyle={{}}
+                            />
+                        )) : null}
+                    </View>
+                }
 
-                <Divider style={{ backgroundColor: 'grey' }} />
-
+                <View style={styles.buttonsContainer}>
+                    <Button 
+                        title='Mark as Watched' 
+                        icon={{
+                            name: 'watch',
+                            size: 25,
+                            color: 'white'
+                        }}
+                        containerStyle={{marginHorizontal: 0}}>
+                    </Button>
+                    <Button 
+                        title= {this.state.inList ? 'Remove'  : 'Track' }
+                        onPress={this.addItem.bind(this)} 
+                        icon={{
+                            name: this.state.inList ? 'clear' : 'add',
+                            size: 25,
+                            color: 'white'
+                        }}
+                        buttonStyle={{
+                            backgroundColor: this.state.inList ? 'red' : 'green'}}
+                        containerStyle={{marginHorizontal: 0}}>
+                    </Button>
+                    
+                </View>
 
                 {this.getSeasons() &&
-                    <View>
-                        <Text style={styles.castHeader}>Season Guide:</Text>
-                        <ScrollView horizontal={true} style={styles.avatarContainer}>
+                    <View style={styles.seasonsContainer}>
+                        <Divider style={styles.divider} />
+                        <Text style={styles.seasonsHeader}>Season Guide:</Text>
+                        <ScrollView horizontal={true}  showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
                         {
                             this.getSeasons() ? this.getSeasons().map((i,k) => (
                                 <View>
@@ -257,7 +293,7 @@ class ItemDetailScreen extends Component<Props> {
                                         title={i.poster_path ? null : this.parseInitials(i.name)}
                                         titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
                                     />
-                                    <Text style={{width:75, textAlign: 'center', fontWeight: 'bold'}}>{i.name}</Text>
+                                    <Text style={styles.seasonsName}>{i.name}</Text>
                                 </View>
                             ))
                             : null
@@ -265,35 +301,34 @@ class ItemDetailScreen extends Component<Props> {
                         </ScrollView>
                     </View>
                 }
-                <Divider style={{ backgroundColor: 'grey' }} />
-                
+
                 {this.getCast() &&
-                    <View>
+                    <View style={styles.castContainer}>
+                        <Divider style={styles.divider} />
                         <Text style={styles.castHeader}>Cast:</Text>
 
-                        <ScrollView horizontal={true} style={styles.avatarContainer}>
+                        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
                         {
                             this.getCast().map((i,k) => (
                                 <View>
                                     <Avatar
+                                        key={k}
                                         large
                                         rounded
-                                        key={k}
                                         source={i.profile_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.profile_path} : null}
                                         activeOpacity={0.7}
                                         title={i.poster_path ? null : this.parseInitials(i.name)}
                                         titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
     
                                     />
-                                    <Text style={{width:75, textAlign: 'center', fontWeight: 'bold'}}>{i.name}</Text>
-                                    <Text style={{width:75, textAlign: 'center', fontSize: 10, fontStyle: 'italic'}}>{i.character}</Text>
+                                    <Text style={styles.castName}>{i.name}</Text>
+                                    <Text style={styles.castCharacter}>{i.character}</Text>
                                 </View>
                             ))
                         }
                         </ScrollView>
                     </View>
                 }
-                <MessageBarAlert ref="alert" />
             </ScrollView>
         )
     }

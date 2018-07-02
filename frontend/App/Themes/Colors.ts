@@ -22,7 +22,9 @@ const colors = {
   border: '#483F53',
   banner: '#5F3E63',
   text: '#E0D7E5',
-  headerBackground: '#496fc2'
+  headerBackground: '#476DC5',
+  divider: 'grey',
+  white: '#fff'
 };
 
 export default colors;
