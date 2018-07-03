@@ -211,7 +211,14 @@ class ItemDetailScreen extends Component<Props> {
                          }
                     </View>
                     <View style={styles.subHeaderContainer}>
-                        <Image source={{ uri: 'https://image.tmdb.org/t/p/w92' + this.getImagePath()}} style={styles.posterImage} />
+                        { this.getImagePath() ?
+                            <Image 
+                                source={{ uri: 'https://image.tmdb.org/t/p/w92' + this.getImagePath()}} 
+                                style={styles.posterImage} /> : 
+                            <View style={styles.posterImage}>
+                                <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
+                            </View>
+                        }
                         <View style={styles.itemDetailsContainer}>
                             <Text style={{marginTop: 10,marginLeft: 10,fontSize: 20}}>
                                 {this.props.item.name} ({this.getReleaseYear()})
