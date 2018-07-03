@@ -108,16 +108,15 @@ class SearchScreen extends Component<Props, State> {
             <View style={{margin: 5}}>
                 <TouchableHighlight 
                     activeOpacity={0.3}
-                    // style={{backgroundColor: 'grey'}}
                     onPress={() => this.goToItemDetail(item)
                 }>
                     <View>
                         { this.getImagePath(item) ?
                             <Image
-                                style={{flex: 1, width: 92, height: 135, backgroundColor: '#C9C9C9'}}
-                                source={{uri: "https://image.tmdb.org/t/p/w92" + this.getImagePath(item) }}
+                                style={{flex: 1, width: 110, height: 153, backgroundColor: '#C9C9C9'}}
+                                source={{uri: "https://image.tmdb.org/t/p/w154" + this.getImagePath(item) }}
                             /> : 
-                            <View style={{flex: 1, width: 92, height: 135, backgroundColor: '#C9C9C9', alignContent: 'center'}}>
+                            <View style={{flex: 1, width: 110, height: 153, backgroundColor: '#C9C9C9', alignContent: 'center'}}>
                                 <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
                             </View>
                         }
@@ -127,6 +126,7 @@ class SearchScreen extends Component<Props, State> {
                     style={{width: 92}}
                     numberOfLines={1}
                     ellipsizeMode='tail'
+                    onPress={() => this.goToItemDetail(item)}
                 >{item.name}</Text>
            </View>
         )
