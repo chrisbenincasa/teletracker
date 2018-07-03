@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View, FlatList, Text } from 'react-native';
 import { ListItem } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import Search from 'react-native-search-box';
@@ -45,6 +45,16 @@ class SearchScreen extends Component<Props, State> {
         return this.setState({ searchText: text });
     }
 
+    renderEmpty = () => <Text style={styles.label}> No results! </Text>;
+
+     // The default function if no Key is provided is index
+    // an identifiable key is important if you plan on
+    // item reordering.  Otherwise index is fine
+    keyExtractor: (item: any, index: any) => number = (_, index) => index;
+    
+    // How many items should be kept im memory as we scroll?
+    oneScreensWorth = 20;
+
     goToItemDetail(item: any) {
         const view = R.mergeDeepLeft(NavigationConfig.DetailView, {
             component: {
@@ -54,9 +64,32 @@ class SearchScreen extends Component<Props, State> {
         Navigation.push(this.props.componentId, view);
     }
 
-    render() {
+    getResults() {
         const tvResults = R.view(this.tvResultsLens, this.props);
+        if (tvResults && tvResults.length > 0 ) {
+            return tvResults;
+        } else {
+            return [];
+        }
+    }
 
+    renderItem ({item}) {
+        return (
+            <ListItem 
+                key={this.keyExtractor}
+                title={item.name}
+                leftIcon={{ name:
+                    item.type === 'movie' ? 'movie' 
+                        : item.type === 'show' ? 'tv' 
+                        : item.type === 'person' ? 'person' 
+                        : null
+                    }}
+                onPress={() => this.goToItemDetail(item)} 
+            />
+        )
+    }
+
+    render() {
         return (
             <View style={styles.container}>
                 <Header 
@@ -73,23 +106,14 @@ class SearchScreen extends Component<Props, State> {
                     onChangeText={this.searchTextChanged.bind(this)}
                     onSearch={this.executeSearch.bind(this)}
                 />
-                {tvResults && tvResults.length > 0 ? (
-                    <ScrollView>
-                        {tvResults.map((item, k) => (
-                            <ListItem
-                                key={k}
-                                title={item.name}
-                                leftIcon={{ name:
-                                    item.type === 'movie' ? 'movie' 
-                                        : item.type === 'show' ? 'tv' 
-                                        : item.type === 'person' ? 'person' 
-                                        : null
-                                    }}
-                                onPress={() => this.goToItemDetail(item)}
-                            />
-                        ))}
-                    </ScrollView>
-                ) : null}
+                <FlatList
+                    contentContainerStyle={styles.listContent}
+                    data={this.getResults.call(this)}
+                    renderItem={this.renderItem.bind(this)}
+                    keyExtractor={this.keyExtractor}
+                    initialNumToRender={this.oneScreensWorth}
+                    ListEmptyComponent={this.renderEmpty}
+                />
             </View>
         );
     }
