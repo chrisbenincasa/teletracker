@@ -54,6 +54,7 @@ export class ThingRepository extends Repository<Entity.Thing> {
         }
 
         let query = this.createQueryBuilder('objects').
+            addSelect('objects.metadata').
             where(`metadata->'${externalSource}'->'${type}'->>'id' IN (:...ids)`, { ids: Array.from(externalIds) });
 
         return query.getMany();

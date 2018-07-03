@@ -10,6 +10,7 @@ import { Navigation } from 'react-native-navigation';
 
 import { Thing } from '../Model/external/themoviedb';
 import ListActions from '../Redux/ListRedux';
+import UserActions from '../Redux/UserRedux';
 import headerStyles from '../Themes/ApplicationStyles';
 import styles from './Styles/ItemDetailScreenStyle';
 import ViewMoreText from 'react-native-view-more-text';
@@ -21,11 +22,12 @@ import ViewMoreText from 'react-native-view-more-text';
 interface Props {
     componentId: string,
     item: Thing,
-    addItemToList: (componentId: string, listId: string, itemId: string | number) => any
+    addItemToList: (componentId: string, listId: string, itemId: string | number) => any,
+    markAsWatched: (componentId: string, itemId: string | number) => void
 }
 
 class ItemDetailScreen extends Component<Props> {
-    constructor(props) {
+    constructor(props: Props) {
         super(props);
 
         this.state = {
@@ -173,6 +175,10 @@ class ItemDetailScreen extends Component<Props> {
           });
     }
 
+    markAsWatched() {
+        this.props.markAsWatched(this.props.componentId, this.props.item.id);
+    }
+
     renderViewMore(onPress) {
         return (
           <Text onPress={onPress} style={{textDecorationLine: 'underline', paddingTop: 5}}>View more</Text>
@@ -259,6 +265,7 @@ class ItemDetailScreen extends Component<Props> {
                             size: 25,
                             color: 'white'
                         }}
+                        onPress={this.markAsWatched.bind(this)}
                         containerStyle={{marginHorizontal: 0}}>
                     </Button>
                     <Button 
@@ -343,6 +350,9 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
     return {
         addItemToList(componentId: string, listId: string, itemId: string | number) {
             dispatch(ListActions.addToList(componentId, listId, itemId));
+        },
+        markAsWatched(componentId: string, itemId: string | number) {
+            dispatch(UserActions.postEvent(componentId, 'MarkedAsWatched', 'Show', itemId));
         }
     }
 };

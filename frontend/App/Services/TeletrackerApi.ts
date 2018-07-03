@@ -30,6 +30,12 @@ export class TeletrackerApi {
         });
 
         this.token = options.token;
+
+        this.api.addRequestTransform(req => {
+            if (this.token) {
+                Object.assign(req.headers, this.authHeaders());
+            }
+        })
     }
 
     setToken(token: string) {
@@ -92,6 +98,27 @@ export class TeletrackerApi {
         }
 
         return this.api.put<any>(`/api/v1/users/self/lists/${listId}/tracked`, { itemId }, { headers: this.authHeaders() });
+    }
+
+    async postEvent(eventType: string, targetType: string, targetId: string, details: string) {
+        this.withTokenCheck(async () => {
+            return this.api.post<any>('/api/v1/users/self/events', { 
+                event: {
+                    type: eventType,
+                    targetEntityType: targetType,
+                    targetEntityId: targetId,
+                    details
+                }
+            });
+        });
+    }
+
+    private withTokenCheck<T>(f: () => Promise<T>): Promise<T> {
+        if (!this.token) {
+            return Promise.reject(new Error('getUser requires a token to be set'));
+        } else {
+            return f();
+        }
     }
 
     private authHeaders() {
