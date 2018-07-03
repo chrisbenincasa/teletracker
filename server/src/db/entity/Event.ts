@@ -13,6 +13,12 @@ export class Event {
     @Column()
     type: EventType
 
+    @Column()
+    targetEntityType: TargetEntityType
+
+    @Column()
+    targetEntityId: number
+
     @Column({ type: 'text', nullable: true })
     details?: string
 
@@ -22,4 +28,8 @@ export class Event {
 
 export enum EventType {
     MarkedAsWatched = 'MarkedAsWatched'
+}
+
+export enum TargetEntityType {
+    Show = 'Show'
 }

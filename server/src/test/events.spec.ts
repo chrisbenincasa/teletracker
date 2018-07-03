@@ -5,7 +5,7 @@ import chaiHttp = require('chai-http');
 import chaiSubset = require('chai-subset');
 import { basename } from 'path';
 
-import { Event, EventType } from '../db/entity';
+import { Event, EventType, TargetEntityType } from '../db/entity';
 import JwtVendor from '../util/JwtVendor';
 import TestBase from './base';
 
@@ -38,6 +38,8 @@ class EventsSpec extends TestBase {
 
                 let event = new Event();
                 event.type = EventType.MarkedAsWatched;
+                event.targetEntityType = TargetEntityType.Show;
+                event.targetEntityId = 123;
                 event.details = 'User marked Halt and Catch Fire as watched';
                 
                 let saveResult = await chai.request(self.baseServerUrl).
@@ -45,8 +47,8 @@ class EventsSpec extends TestBase {
                     set('Authorization', 'Bearer ' + token).
                     send({ event });
 
-                let result2 = await chai.request(self.baseServerUrl).get('/api/v1/users/self/events')
-                    .set('Authorization', 'Bearer ' + token);
+                let result2 = await chai.request(self.baseServerUrl).get('/api/v1/users/self/events').
+                    set('Authorization', 'Bearer ' + token);
 
                 
                 result2.body.should.containSubset({

@@ -29,10 +29,12 @@ export function* getUser(api: TeletrackerApi, { componentId }: AnyAction) {
     }
 }
 
-export function * loginUser(api: TeletrackerApi, { componentId, email, password }: AnyAction) {
+export function * loginUser(api: TeletrackerApi, action: AnyAction) {
+    const { componentId, email, password } = action;
     const response: ApiResponse<any> = yield call([api, api.loginUser], email, password);
 
     if (response.ok) {
+        yield call(getUser, api, action);
         yield all([
             put(UserActions.loginSuccess(response.data.data.token)),
             getListViewNavEffect(componentId)
@@ -54,4 +56,9 @@ export function * signupUser(api: TeletrackerApi, action: any) {
     } else {
         yield put(UserActions.userSignupFailure());
     }
+}
+
+export function * postEvent(api: TeletrackerApi, {componentId, eventType, targetType, targetId}: AnyAction) {
+    const response: ApiResponse<any> = yield call([api, api.postEvent], eventType, targetType, targetId, '');
+    console.log(response);
 }
