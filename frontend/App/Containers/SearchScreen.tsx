@@ -34,9 +34,8 @@ class SearchScreen extends Component<Props, State> {
     private tvResultsLens = R.lensPath(['search', 'results', 'data']);
 
     getImagePath(item) {
-
-        console.tron.log(item);
         if (this.hasTmdbMovie(item)) {
+            // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
             // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
             return item.metadata.themoviedb.movie.poster_path;
         } else if (this.hasTmdbShow(item)) {
@@ -47,7 +46,6 @@ class SearchScreen extends Component<Props, State> {
     }
 
     hasTmdbMetadata(item) {
-        // console.tron.log(item.metadata && item.metadata.themoviedb);
         return item.metadata && item.metadata.themoviedb;
     }
 
@@ -75,9 +73,10 @@ class SearchScreen extends Component<Props, State> {
         return this.setState({ searchText: text });
     }
 
+    // This is currently always displayed, To Do: need to hide on initial load
     renderEmpty = () => <Text style={styles.label}> No results! </Text>;
 
-     // The default function if no Key is provided is index
+    // The default function if no Key is provided is index
     // an identifiable key is important if you plan on
     // item reordering.  Otherwise index is fine
     keyExtractor: (item: any, index: any) => number = (_, index) => index;
@@ -113,10 +112,10 @@ class SearchScreen extends Component<Props, State> {
                     <View>
                         { this.getImagePath(item) ?
                             <Image
-                                style={{flex: 1, width: 110, height: 153, backgroundColor: '#C9C9C9'}}
+                                style={styles.posterContainer}
                                 source={{uri: "https://image.tmdb.org/t/p/w154" + this.getImagePath(item) }}
                             /> : 
-                            <View style={{flex: 1, width: 110, height: 153, backgroundColor: '#C9C9C9', alignContent: 'center'}}>
+                            <View style={styles.posterContainer}>
                                 <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
                             </View>
                         }
@@ -157,7 +156,6 @@ class SearchScreen extends Component<Props, State> {
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
                     numColumns={3}
-                    // columnWrapperStyle={{ marginHorizontal: 10 }}
                 />
             </View>
         );
