@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import { Platform, ScrollView, View, FlatList, Text } from 'react-native';
-import { ListItem } from 'react-native-elements';
+import { Platform, ScrollView, View, FlatList, Text, Image, TouchableHighlight } from 'react-native';
+import { Icon } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import Search from 'react-native-search-box';
 import { connect } from 'react-redux';
@@ -32,6 +32,36 @@ interface State {
 
 class SearchScreen extends Component<Props, State> {
     private tvResultsLens = R.lensPath(['search', 'results', 'data']);
+
+    getImagePath(item) {
+
+        console.tron.log(item);
+        if (this.hasTmdbMovie(item)) {
+            // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
+            return item.metadata.themoviedb.movie.poster_path;
+        } else if (this.hasTmdbShow(item)) {
+            return item.metadata.themoviedb.show.poster_path;
+        } else if (this.hasTmdbPerson(item)) {
+            return; // There are no photos for people yet
+        }
+    }
+
+    hasTmdbMetadata(item) {
+        // console.tron.log(item.metadata && item.metadata.themoviedb);
+        return item.metadata && item.metadata.themoviedb;
+    }
+
+    hasTmdbMovie(item) {
+        return this.hasTmdbMetadata(item) && item.metadata.themoviedb.movie;
+    }
+
+    hasTmdbShow(item) {
+        return this.hasTmdbMetadata(item) && item.metadata.themoviedb.show;
+    }
+  
+    hasTmdbPerson(item) {
+        return this.hasTmdbMetadata(item) && item.metadata.themoviedb.person;
+    }
 
     componentWillMount() {
         this.props.loadUserSelf(this.props.componentId);
@@ -75,17 +105,30 @@ class SearchScreen extends Component<Props, State> {
 
     renderItem ({item}) {
         return (
-            <ListItem 
-                key={this.keyExtractor}
-                title={item.name}
-                leftIcon={{ name:
-                    item.type === 'movie' ? 'movie' 
-                        : item.type === 'show' ? 'tv' 
-                        : item.type === 'person' ? 'person' 
-                        : null
-                    }}
-                onPress={() => this.goToItemDetail(item)} 
-            />
+            <View style={{margin: 5}}>
+                <TouchableHighlight 
+                    activeOpacity={0.3}
+                    // style={{backgroundColor: 'grey'}}
+                    onPress={() => this.goToItemDetail(item)
+                }>
+                    <View>
+                        { this.getImagePath(item) ?
+                            <Image
+                                style={{flex: 1, width: 92, height: 135, backgroundColor: '#C9C9C9'}}
+                                source={{uri: "https://image.tmdb.org/t/p/w92" + this.getImagePath(item) }}
+                            /> : 
+                            <View style={{flex: 1, width: 92, height: 135, backgroundColor: '#C9C9C9', alignContent: 'center'}}>
+                                <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
+                            </View>
+                        }
+                    </View>
+                </TouchableHighlight>
+                <Text 
+                    style={{width: 92}}
+                    numberOfLines={1}
+                    ellipsizeMode='tail'
+                >{item.name}</Text>
+           </View>
         )
     }
 
@@ -113,6 +156,8 @@ class SearchScreen extends Component<Props, State> {
                     keyExtractor={this.keyExtractor}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
+                    numColumns={3}
+                    // columnWrapperStyle={{ marginHorizontal: 10 }}
                 />
             </View>
         );
