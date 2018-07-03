@@ -93,12 +93,14 @@ class ItemDetailScreen extends Component<Props> {
 
     getReleaseYear() {
         let meta = this.props.item.metadata.themoviedb;
-        if (this.hasTmdbMovie()) {
+        if (this.hasTmdbMovie() && meta.movie.release_date) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).release_date.substring(0,4);
-        } else if (this.hasTmdbShow()) {
+        } else if (this.hasTmdbShow() && meta.show.first_air_date) {
             return meta.show.first_air_date.substring(0,4);
         } else if (this.hasTmdbPerson()) {
             return; // There is no release year for people, maybe birth year?
+        } else {
+            return null;
         }
     }
 
@@ -221,7 +223,8 @@ class ItemDetailScreen extends Component<Props> {
                         }
                         <View style={styles.itemDetailsContainer}>
                             <Text style={{marginTop: 10,marginLeft: 10,fontSize: 20}}>
-                                {this.props.item.name} ({this.getReleaseYear()})
+                                {this.props.item.name} 
+                                {this.getReleaseYear() ? (<Text> ({this.getReleaseYear()})</Text>) : null }
                             </Text>
                             <View style={styles.ratingsContainer}>
                                 <Rating
