@@ -39,6 +39,8 @@ interface Props {
 
 interface State {
     searchText: string;
+    orientation: string;
+    devicetype: string;
 }
 
 class SearchScreen extends Component<Props, State> {
