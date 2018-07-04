@@ -8,11 +8,13 @@ import {
     Text, 
     Image, 
     TouchableHighlight, 
-    ActivityIndicator 
+    ActivityIndicator,
+    Dimensions 
 } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import Search from 'react-native-search-box';
+import checkDevice from '../Components/Helpers/checkOrientation';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 
@@ -41,9 +43,30 @@ interface State {
 
 class SearchScreen extends Component<Props, State> {
 
+    constructor() {
+        super();
+        this.searchTextChanged = this.searchTextChanged.bind(this);
+        this.executeSearch = this.executeSearch.bind(this);
+        this.renderItem = this.renderItem.bind(this);
+
+        this.state = {
+            orientation: checkDevice.isPortrait() ? 'portrait' : 'landscape',
+            devicetype: checkDevice.isTablet() ? 'tablet' : 'phone'
+        };
+     
+        // Event Listener for orientation changes
+        Dimensions.addEventListener('change', () => {
+            this.setState({
+                orientation: checkDevice.isPortrait() ? 'portrait' : 'landscape'
+            });
+        });
+    }
+
+
     private tvResultsLens = R.lensPath(['search', 'results', 'data']);
 
-    getImagePath(item) {
+    getImagePath(item: object) {
+        console.tron.log(item);
         if (this.hasTmdbMovie(item)) {
             // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
             // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
@@ -55,19 +78,19 @@ class SearchScreen extends Component<Props, State> {
         }
     }
 
-    hasTmdbMetadata(item) {
+    hasTmdbMetadata(item: object) {
         return item.metadata && item.metadata.themoviedb;
     }
 
-    hasTmdbMovie(item) {
+    hasTmdbMovie(item: object) {
         return this.hasTmdbMetadata(item) && item.metadata.themoviedb.movie;
     }
 
-    hasTmdbShow(item) {
+    hasTmdbShow(item: object) {
         return this.hasTmdbMetadata(item) && item.metadata.themoviedb.show;
     }
   
-    hasTmdbPerson(item) {
+    hasTmdbPerson(item: object) {
         return this.hasTmdbMetadata(item) && item.metadata.themoviedb.person;
     }
 
@@ -98,12 +121,14 @@ class SearchScreen extends Component<Props, State> {
     // The default function if no Key is provided is index
     // an identifiable key is important if you plan on
     // item reordering.  Otherwise index is fine
-    keyExtractor: (item: any, index: any) => number = (_, index) => index;
-    
+    // keyExtractor: (item: any, index: any) => number = (_, index) => index;
+    // keyExtractor: (item: any, index: any) => number = ({item}) => (item.id);
+    keyExtractor = (item: object) => item.id + (checkDevice.isLandscape() ? 'h' : 'v');
+
     // How many items should be kept im memory as we scroll?
     oneScreensWorth = 20;
 
-    goToItemDetail(item: any) {
+    goToItemDetail(item: object) {
         const view = R.mergeDeepLeft(NavigationConfig.DetailView, {
             component: {
                 passProps: { item }
@@ -121,7 +146,7 @@ class SearchScreen extends Component<Props, State> {
         }
     }
 
-    renderItem ({item}) {
+    renderItem ( { item }: object) {
         return (
             <View style={{margin: 5}}>
                 <TouchableHighlight 
@@ -132,7 +157,7 @@ class SearchScreen extends Component<Props, State> {
                         { this.getImagePath(item) ?
                             <Image
                                 style={styles.posterContainer}
-                                source={{uri: "https://image.tmdb.org/t/p/w154" + this.getImagePath(item) }}
+                                source={{uri: 'https://image.tmdb.org/t/p/w154' + this.getImagePath(item) }}
                             /> : 
                             <View style={styles.posterContainer}>
                                 <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
@@ -154,23 +179,23 @@ class SearchScreen extends Component<Props, State> {
         return (
             <View style={styles.container}>
                 <Header 
-                    title="Search" 
+                    title='Search' 
                     componentId={this.props.componentId}
                     centerComponent={{title: 'Search',  style: { color: 'white' } }} 
                 />
                 <Search
-                    ref="search_box"
-                    backgroundColor="white"
+                    ref='search_box'
+                    backgroundColor='white'
                     style={{ flex: 1 }}
-                    titleCancelColor="black"
+                    titleCancelColor='black'
                     blurOnSubmit={true}
-                    onChangeText={this.searchTextChanged.bind(this)}
-                    onSearch={this.executeSearch.bind(this)}
+                    onChangeText={this.searchTextChanged}
+                    onSearch={this.executeSearch}
                 />
 
                 {   this.props.search.fetching ?  
                         <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-                            <ActivityIndicator size="large" color="#476DC5" animating={this.props.search.fetching} /> 
+                            <ActivityIndicator size='large' color='#476DC5' animating={this.props.search.fetching} /> 
                         </View>
                     : null 
                 }
@@ -178,11 +203,11 @@ class SearchScreen extends Component<Props, State> {
                 <FlatList
                     contentContainerStyle={styles.listContent}
                     data={this.getResults.call(this)}
-                    renderItem={this.renderItem.bind(this)}
+                    renderItem={this.renderItem}
                     keyExtractor={this.keyExtractor}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
-                    numColumns={3}
+                    numColumns={checkDevice.isLandscape() ? 5 : 3}
                     columnWrapperStyle={{marginHorizontal: 8}}
                 />
             </View>
