@@ -1,6 +1,15 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import { Platform, ScrollView, View, FlatList, Text, Image, TouchableHighlight } from 'react-native';
+import { 
+    Platform, 
+    ScrollView, 
+    View, 
+    FlatList, 
+    Text, 
+    Image, 
+    TouchableHighlight, 
+    ActivityIndicator 
+} from 'react-native';
 import { Icon } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import Search from 'react-native-search-box';
@@ -31,6 +40,7 @@ interface State {
 }
 
 class SearchScreen extends Component<Props, State> {
+
     private tvResultsLens = R.lensPath(['search', 'results', 'data']);
 
     getImagePath(item) {
@@ -74,7 +84,16 @@ class SearchScreen extends Component<Props, State> {
     }
 
     // This is currently always displayed, To Do: need to hide on initial load
-    renderEmpty = () => <Text style={styles.label}> No results! </Text>;
+    renderEmpty = () => (
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+            <Icon
+                name='report'
+                color='#476DC5'
+                size={55}
+            />
+            <Text style={styles.label}> No results! </Text>
+        </View>
+    );
 
     // The default function if no Key is provided is index
     // an identifiable key is important if you plan on
@@ -148,6 +167,14 @@ class SearchScreen extends Component<Props, State> {
                     onChangeText={this.searchTextChanged.bind(this)}
                     onSearch={this.executeSearch.bind(this)}
                 />
+
+                {   this.props.search.fetching ?  
+                        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                            <ActivityIndicator size="large" color="#476DC5" animating={this.props.search.fetching} /> 
+                        </View>
+                    : null 
+                }
+                
                 <FlatList
                     contentContainerStyle={styles.listContent}
                     data={this.getResults.call(this)}
@@ -156,6 +183,7 @@ class SearchScreen extends Component<Props, State> {
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
                     numColumns={3}
+                    columnWrapperStyle={{marginHorizontal: 8}}
                 />
             </View>
         );

@@ -76,7 +76,7 @@ export class ThingRepository extends Repository<Entity.Thing> {
             leftJoinAndSelect('thing.genres', 'genres');
 
         if (includeMetadata) {
-            query = query.addSelect('metadata');
+            query = query.addSelect('thing.metadata');
         }
 
         let seasonsAndEpisodes = this.manager.createQueryBuilder(Entity.TvShowSeason, 'season').

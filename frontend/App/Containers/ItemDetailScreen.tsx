@@ -60,6 +60,7 @@ class ItemDetailScreen extends Component<Props> {
 
     getBackdropImagePath() {
         let meta = this.props.item.metadata.themoviedb;
+        console.tron.log(meta);
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).backdrop_path;
         } else if (this.hasTmdbShow()) {
@@ -207,7 +208,7 @@ class ItemDetailScreen extends Component<Props> {
                 <KeyboardAvoidingView behavior='position'>
                     <View style={styles.coverContainer} >
                         {   // Check if cover image exists, otherwise show blue
-                            this.getBackdropImagePath() === null ? 
+                            this.getBackdropImagePath() ? 
                             <View style={styles.emptyCoverImage}></View>
                             : <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={styles.coverImage} />
                          }

@@ -20,7 +20,7 @@ export default class HeaderRight extends Component {
     render () {
         return (
             <View>
-                {this.props.centerComponent ?
+                {this.props.rightComponent ?
             <Icon 
                 name='search'
                 color='#fff'
