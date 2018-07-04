@@ -75,7 +75,6 @@ export class Thing {
     @Column()
     name: string;
 
-    @Index('slug_uniq_idx', { unique: true })
     @Column()
     normalizedName: string;
 
@@ -92,7 +91,7 @@ export class Thing {
     lists: List[];
 
     // Only applicable to TV shows
-    @OneToMany(type => TvShowSeason, season => season.show, { cascade: true })
+    @OneToMany(type => TvShowSeason, season => season.show)
     seasons: TvShowSeason[]
 
     // Only applicable to TV shows. The _original_ networks this show was available on.

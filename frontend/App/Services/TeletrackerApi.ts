@@ -100,8 +100,22 @@ export class TeletrackerApi {
         return this.api.put<any>(`/api/v1/users/self/lists/${listId}/tracked`, { itemId }, { headers: this.authHeaders() });
     }
 
+    async getShow(id: string | number) {
+        return this.api.get<any>(`/api/v1/shows/${id}`);
+    }
+
+    async getMovie(id: string | number) {
+        return this.api.get<any>(`/api/v1/movies/${id}`);
+    }
+
+    async getEvents() {
+        return this.withTokenCheck(async () => {
+            return this.api.get<any>('/api/v1/users/self/events');
+        });
+    }
+
     async postEvent(eventType: string, targetType: string, targetId: string, details: string) {
-        this.withTokenCheck(async () => {
+        return this.withTokenCheck(async () => {
             return this.api.post<any>('/api/v1/users/self/events', { 
                 event: {
                     type: eventType,

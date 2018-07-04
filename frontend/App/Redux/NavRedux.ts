@@ -19,7 +19,6 @@ type State = Immutable.ImmutableObject<NavigationState>;
 export const INITIAL_STATE = Immutable<NavigationState>({});
 
 const pushState = (state: State, { componentId }: AnyAction) => {
-  console.tron.log('hey hey merge it')
   return state.merge({});
 }
 

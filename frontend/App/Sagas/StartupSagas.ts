@@ -10,8 +10,6 @@ import UserActions from '../Redux/UserRedux';
 export function* startup(teletrackerApi: TeletrackerApi): IterableIterator<any> {
   const state = yield select();
 
-  console.tron.log(state);
-
   const hasSavedToken = !!state.user.token;
 
   if (hasSavedToken) {
@@ -20,7 +18,7 @@ export function* startup(teletrackerApi: TeletrackerApi): IterableIterator<any> 
 
   const authStatus: ApiResponse<any> = yield teletrackerApi.getAuthStatus();
 
-  const isLoggedIn = authStatus.status != 401 && authStatus.data.authenticated;
+  const isLoggedIn = authStatus.status != 401 && authStatus.data.data.authenticated;
 
   if (!isLoggedIn) {
     teletrackerApi.clearToken();

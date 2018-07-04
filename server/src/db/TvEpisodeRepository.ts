@@ -20,9 +20,9 @@ export class TvEpisodeRepository extends Repository<TvShowEpisode> {
             });
     }
 
-    async findByExternalId(externalSource: ExternalSource, externalId: string): Promise<Optional<TvShowEpisode>> {
+    async findByTmdbId(tmdbId: string): Promise<Optional<TvShowEpisode>> {
         return this.manager.createQueryBuilder(ThingExternalIds, 'externalIds').
-            where({ externalSource, externalId }).
+            where({ tmdbId }).
             leftJoinAndSelect('externalIds.tvEpisode', 'tvEpisode').
             getOne().
             then(x => x ? x.tvEpisode : null);
