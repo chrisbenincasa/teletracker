@@ -68,7 +68,6 @@ class SearchScreen extends Component<Props, State> {
     private tvResultsLens = R.lensPath(['search', 'results', 'data']);
 
     getImagePath(item: object) {
-        console.tron.log(item);
         if (this.hasTmdbMovie(item)) {
             // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
             // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
@@ -108,27 +107,33 @@ class SearchScreen extends Component<Props, State> {
         return this.setState({ searchText: text });
     }
 
-    // This is currently always displayed, To Do: need to hide on initial load
-    renderEmpty = () => (
-        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-            <Icon
-                name='report'
-                color='#476DC5'
-                size={55}
-            />
-            <Text style={styles.label}> No results! </Text>
-        </View>
-    );
+    renderEmpty = () => { 
+        return (
+            !this.props.search.results ?
+                <View style={styles.defaultScreen}>
+                    <Icon
+                        name='search'
+                        color='#476DC5'
+                        size={55}
+                        containerStyle={{height: 44}}
+                    />
+                    <Text> Search for Movies, TV Shows, or People! </Text>
+                </View>
+            : null 
+        )
+    };
 
     // The default function if no Key is provided is index
     // an identifiable key is important if you plan on
     // item reordering.  Otherwise index is fine
     // keyExtractor: (item: any, index: any) => number = (_, index) => index;
     // keyExtractor: (item: any, index: any) => number = ({item}) => (item.id);
-    keyExtractor = (item: object) => item.id;
+    keyExtractor: (item: object) => (item.id);
 
     // How many items should be kept im memory as we scroll?
-    oneScreensWorth = 20;
+    // oneScreensWorth = { checkDevice.isLandscape() ? 5 : 3 };
+    oneScreensWorth = 18;
+
 
     goToItemDetail(item: object) {
         const view = R.mergeDeepLeft(NavigationConfig.DetailView, {
@@ -195,15 +200,28 @@ class SearchScreen extends Component<Props, State> {
                     onSearch={this.executeSearch}
                 />
 
-                {   this.props.search.fetching ?  
-                        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                {
+                    this.props.search.results && this.props.search.results.data && this.props.search.results.data.length === 0 ? 
+                        <View style={styles.noResults}>
+                            <Icon
+                                name='report'
+                                color='#476DC5'
+                                size={55}
+                            />
+                            <Text> No results! </Text>
+                        </View>
+                    : null
+                }
+
+                {
+                    this.props.search.fetching ?  
+                        <View style={styles.fetching}>
                             <ActivityIndicator size='large' color='#476DC5' animating={this.props.search.fetching} /> 
                         </View>
                     : null 
                 }
                 
                 <FlatList
-                    contentContainerStyle={styles.listContent}
                     data={this.getResults.call(this)}
                     renderItem={this.renderItem}
                     keyExtractor={this.keyExtractor}
@@ -211,7 +229,7 @@ class SearchScreen extends Component<Props, State> {
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
                     numColumns={checkDevice.isLandscape() ? 5 : 3}
-                    columnWrapperStyle={{marginHorizontal: 8, justifyContent: 'space-around'}}
+                    columnWrapperStyle={{justifyContent: 'center'}}
                 />
             </View>
         );
