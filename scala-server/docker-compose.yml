@@ -1,0 +1,37 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: teletracker
+      POSTGRES_PASSWORD: teletracker
+      POSTGRES_DB: teletracker
+    networks:
+      - db
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - db
+
+  server:
+    image: com.chrisbenincasa.services/teletracker-scala-2:latest
+    restart: always
+    ports:
+      - 3000:3000
+    environment:
+      - "DB_HOST=db"
+    env_file:
+      - .env
+    networks:
+      - db
+
+networks:
+  db:
