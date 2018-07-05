@@ -125,7 +125,7 @@ class SearchScreen extends Component<Props, State> {
     // item reordering.  Otherwise index is fine
     // keyExtractor: (item: any, index: any) => number = (_, index) => index;
     // keyExtractor: (item: any, index: any) => number = ({item}) => (item.id);
-    keyExtractor = (item: object) => item.id + (checkDevice.isLandscape() ? 'h' : 'v');
+    keyExtractor = (item: object) => item.id;
 
     // How many items should be kept im memory as we scroll?
     oneScreensWorth = 20;
@@ -207,10 +207,11 @@ class SearchScreen extends Component<Props, State> {
                     data={this.getResults.call(this)}
                     renderItem={this.renderItem}
                     keyExtractor={this.keyExtractor}
+                    key={this.keyExtractor + (checkDevice.isLandscape() ? 'h' : 'v')}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
                     numColumns={checkDevice.isLandscape() ? 5 : 3}
-                    columnWrapperStyle={{marginHorizontal: 8}}
+                    columnWrapperStyle={{marginHorizontal: 8, justifyContent: 'space-around'}}
                 />
             </View>
         );

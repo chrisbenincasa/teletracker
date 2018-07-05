@@ -5,7 +5,8 @@ export default StyleSheet.create({
     ...ApplicationStyles.screen,
     listContent: {
         justifyContent: 'space-around',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        alignContent: 'center'
     },
     posterContainer: {
         flex: 1,
