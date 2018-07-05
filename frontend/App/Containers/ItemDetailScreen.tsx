@@ -60,7 +60,6 @@ class ItemDetailScreen extends Component<Props> {
 
     getBackdropImagePath() {
         let meta = this.props.item.metadata.themoviedb;
-        console.tron.log(meta);
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).backdrop_path;
         } else if (this.hasTmdbShow()) {
