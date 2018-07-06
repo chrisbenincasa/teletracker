@@ -208,8 +208,8 @@ class ItemDetailScreen extends Component<Props> {
                     <View style={styles.coverContainer} >
                         {   // Check if cover image exists, otherwise show blue
                             this.getBackdropImagePath() ? 
-                            <View style={styles.emptyCoverImage}></View>
-                            : <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={styles.coverImage} />
+                                <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={styles.coverImage} />
+                            : <View style={styles.emptyCoverImage}></View> 
                          }
                     </View>
                     <View style={styles.subHeaderContainer}>
