@@ -1,17 +1,28 @@
-sudo: required
+matrix:
+  include:
+    - language: scala
+      jdk: oraclejdk8
+      scala: 2.12.4
+      services:
+        - docker
+      before_install:
+        - docker pull postgres
+      before_script: cd scala-server
+      script: travis_retry sbt ++$TRAVIS_SCALA_VERSION compile test
+      branches:
+        only: 
+          - master
 
-services:
-  - docker
-
-before_install:
-  - docker pull postgres
-
-env:
-  - JWT_SECRET=jwt_secret_for_testing_only
-branches:
-    only: 
-        - master
-language: node_js
-node_js:
-    - "8"
-script: ./travis.build.sh
+    - language: node_js
+      node_js: "8"
+      script: ./travis.build.sh
+      services:
+        - docker
+      before_install:
+        - docker pull postgres
+      sudo: required
+      env:
+        - JWT_SECRET=jwt_secret_for_testing_only
+      branches:
+        only: 
+            - master
