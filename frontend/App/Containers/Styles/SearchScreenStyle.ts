@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { ApplicationStyles } from '../../Themes/';
+import { ApplicationStyles, Colors } from '../../Themes/';
 
 export default StyleSheet.create({
     ...ApplicationStyles.screen,
@@ -25,5 +25,9 @@ export default StyleSheet.create({
         flex: 1, 
         justifyContent: 'center',
         alignItems: 'center'
+    },
+    listTypeIcon: {
+        backgroundColor: Colors.headerBackground,
+        color: '#fff'
     }
 });

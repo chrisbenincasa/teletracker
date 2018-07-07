@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import React from 'react';
 import { SectionList, Text, View, FlatList } from 'react-native';
-import { ListItem } from 'react-native-elements';
+import { ListItem, Icon } from 'react-native-elements';
 import { connect, Dispatch } from 'react-redux';
 
 import Header from '../Components/Header/Header';
@@ -66,6 +66,7 @@ class ItemList extends React.PureComponent<Props> {
         )
     }
 
+
     /* ***********************************************************
     * STEP 2
     * Consider the configurations we've set below.  Customize them
@@ -105,7 +106,8 @@ class ItemList extends React.PureComponent<Props> {
             <View style={styles.container}>
                 <Header 
                     componentId={this.props.componentId} 
-                    centerComponent={{title: 'My List',  style: { color: 'white' } }}  />
+                    centerComponent={{title: 'My List',  style: { color: 'white' } }}
+                />
                 <FlatList
                     renderSectionHeader={this.renderSectionHeader}
                     sections={this.getListSections.call(this)}

@@ -20,14 +20,18 @@ export default class HeaderRight extends Component {
     render () {
         return (
             <View>
-                {this.props.rightComponent ?
-            <Icon 
-                name='search'
-                color='#fff'
-                underlayColor={Colors.headerBackground}
-                onPress={this.openSearch} />
-                : null}
-            </View>
+                {
+                    this.props.rightComponent ?
+                    this.props.rightComponent
+                    :
+                        <Icon 
+                            name='search'
+                            color='#fff'
+                            underlayColor={Colors.headerBackground}
+                            onPress={this.openSearch}
+                        />
+                    }
+                </View>
         )
     }
 };
