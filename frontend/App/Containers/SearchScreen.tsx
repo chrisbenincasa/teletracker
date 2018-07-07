@@ -24,6 +24,8 @@ import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
 
+import { Colors } from './../Themes/'; //testing only, cleanup later
+
 import styles from './Styles/SearchScreenStyle';
 
 // Add Actions - replace 'Your' with whatever your reducer is called :)
@@ -34,6 +36,7 @@ interface Props {
     componentId: string;
     search: any;
     doSearch: (search: String) => any;
+    clearSearch: () => any;
     loadUserSelf: (componentId: string) => any;
 }
 
@@ -41,6 +44,8 @@ interface State {
     searchText: string;
     orientation: string;
     devicetype: string;
+    gridView: boolean;
+    recentSearches: any[];
 }
 
 class SearchScreen extends Component<Props, State> {
@@ -53,7 +58,9 @@ class SearchScreen extends Component<Props, State> {
 
         this.state = {
             orientation: checkDevice.isPortrait() ? 'portrait' : 'landscape',
-            devicetype: checkDevice.isTablet() ? 'tablet' : 'phone'
+            devicetype: checkDevice.isTablet() ? 'tablet' : 'phone',
+            gridView: true,
+            recentSearches: []
         };
      
         // Event Listener for orientation changes
@@ -64,8 +71,24 @@ class SearchScreen extends Component<Props, State> {
         });
     }
 
-
     private tvResultsLens = R.lensPath(['search', 'results', 'data']);
+
+    changeView = () => {
+        this.setState({ 
+            gridView: !this.state.gridView
+        });
+    }
+
+    listTypeIcon() {
+        return (
+            <Icon 
+                name={this.state.gridView ? 'list' : 'apps'}
+                color='#fff'
+                underlayColor={Colors.headerBackground}
+                onPress={this.changeView}
+            />
+        )
+    }
 
     getImagePath(item: object) {
         if (this.hasTmdbMovie(item)) {
@@ -103,6 +126,18 @@ class SearchScreen extends Component<Props, State> {
         this.props.doSearch(this.state.searchText);
     }
 
+    addToRecentSearch(item) {
+        this.setState({ recentSearches: [...this.state.recentSearches, ...item] });
+    }
+
+    // Important: You must return a Promise
+    onCancel = () => {
+        return new Promise((resolve, reject) => {
+            this.props.clearSearch(this.state.searchText);
+            resolve();
+        });
+    }
+
     searchTextChanged(text: string) {
         return this.setState({ searchText: text });
     }
@@ -128,7 +163,7 @@ class SearchScreen extends Component<Props, State> {
     // item reordering.  Otherwise index is fine
     // keyExtractor: (item: any, index: any) => number = (_, index) => index;
     // keyExtractor: (item: any, index: any) => number = ({item}) => (item.id);
-    keyExtractor: (item: object) => (item.id);
+    keyExtractor: (item: object) => item.id;
 
     // How many items should be kept im memory as we scroll?
     // oneScreensWorth = { checkDevice.isLandscape() ? 5 : 3 };
@@ -141,12 +176,13 @@ class SearchScreen extends Component<Props, State> {
                 passProps: { item }
             }
         });
+        this.addToRecentSearch(item);
         Navigation.push(this.props.componentId, view);
     }
 
-    getResults() {
+    getResults(action:string) {
         const tvResults = R.view(this.tvResultsLens, this.props);
-        if (tvResults && tvResults.length > 0 ) {
+        if (tvResults && tvResults.length > 0 && action !== 'empty' ) {
             return tvResults;
         } else {
             return [];
@@ -189,6 +225,7 @@ class SearchScreen extends Component<Props, State> {
                     title='Search' 
                     componentId={this.props.componentId}
                     centerComponent={{title: 'Search',  style: { color: 'white' } }} 
+                    rightComponent={this.listTypeIcon()}
                 />
                 <Search
                     ref='search_box'
@@ -198,7 +235,16 @@ class SearchScreen extends Component<Props, State> {
                     blurOnSubmit={true}
                     onChangeText={this.searchTextChanged}
                     onSearch={this.executeSearch}
+                    onCancel={this.onCancel}
                 />
+
+                <View>
+                    {
+                        this.state.recentSearches.map((text) => (
+                            <Text>{ text }</Text>
+                        ))
+                    }
+                </View>
 
                 {
                     this.props.search.results && this.props.search.results.data && this.props.search.results.data.length === 0 ? 
@@ -225,11 +271,15 @@ class SearchScreen extends Component<Props, State> {
                     data={this.getResults.call(this)}
                     renderItem={this.renderItem}
                     keyExtractor={this.keyExtractor}
-                    key={this.keyExtractor + (checkDevice.isLandscape() ? 'h' : 'v')}
+                    // g = grid, l = list
+                    // h = horizontal, v = vertical
+                    key={this.keyExtractor + (this.state.gridView ? 'g' : 'l') + (checkDevice.isLandscape() ? 'h' : 'v')}
+                    // key={this.keyExtractor + (checkDevice.isLandscape() ? 'h' : 'v')}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
-                    numColumns={checkDevice.isLandscape() ? 5 : 3}
-                    columnWrapperStyle={{justifyContent: 'center'}}
+                    numColumns={this.state.gridView ? (checkDevice.isLandscape() ? 5 : 3) : 1}
+                    // numColumns={checkDevice.isLandscape() ? 5 : 3}
+                    columnWrapperStyle={ this.state.gridView ? {justifyContent: 'center'} : null}
                 />
             </View>
         );
@@ -246,6 +296,9 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
     return {
         doSearch: (searchText: string) => {
             dispatch(SearchActions.searchRequest(searchText));
+        },
+        clearSearch: () => {
+            dispatch(SearchActions.searchClear());
         },
         loadUserSelf: (componentId: string) => {
             dispatch(UserActions.userSelfRequest(componentId));
