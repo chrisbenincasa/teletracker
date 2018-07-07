@@ -144,7 +144,7 @@ class SearchScreen extends Component<Props, State> {
 
     renderEmpty = () => { 
         return (
-            !this.props.search.results ?
+            !this.props.search.results && !this.props.search.fetching ?
                 <View style={styles.defaultScreen}>
                     <Icon
                         name='search'
@@ -182,7 +182,7 @@ class SearchScreen extends Component<Props, State> {
 
     getResults(action:string) {
         const tvResults = R.view(this.tvResultsLens, this.props);
-        if (tvResults && tvResults.length > 0 && action !== 'empty' ) {
+        if (tvResults && tvResults.length > 0) {
             return tvResults;
         } else {
             return [];

@@ -29,7 +29,7 @@ const searchRequest = (state: State, { searchText }: AnyAction) => {
 };
 
 const searchClear = (state: State) => {
-    return state.merge({ fetching: false, searchText: null, results: []});
+    return state.merge({ fetching: false, searchText: null, results: undefined});
 };
 
 const searchSuccess = (state: State, { response }: AnyAction) => {
