@@ -11,7 +11,7 @@ import {
     ActivityIndicator,
     Dimensions
 } from 'react-native';
-import { Icon, ListItem, Button } from 'react-native-elements';
+import { Icon, ListItem, Button, Divider } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import Search from 'react-native-search-box';
 import checkDevice from '../Components/Helpers/checkOrientation';
@@ -150,6 +150,31 @@ class SearchScreen extends Component<Props, State> {
                         containerStyle={{height: 44}}
                     />
                     <Text> Search for Movies, TV Shows, or People! </Text>
+                    {
+                        this.props.search.recentlyViewed && this.props.search.recentlyViewed.length > 0 ? 
+                        <View>
+                            <Divider style={{ backgroundColor: 'grey', marginVertical: 15 }} />
+                            <Text h3>Recently Viewed</Text>
+                            {this.props.search.recentlyViewed.map((i) => (
+                                <ListItem
+                                    roundAvatar
+                                    avatar={{uri: 'https://image.tmdb.org/t/p/w154' + this.getImagePath(i) }}
+                                    key={i.id}
+                                    title={i.name}
+                                    onPress={() => this.goToItemDetail(i)}
+                                    rightIcon={{name: 'close'}}
+                                    onPressRightIcon={() => this.props.removeRecentlyViewed(i)}
+                                />
+                            ))}
+                            <Button
+                                icon={{name: 'delete'}}
+                                title='Clear All Recent Searches'
+                                onPress={() => this.props.removeAllRecentlyViewed()}
+                                style={{margin: 10}}
+                            />
+                        </View>
+                        : null
+                    }
                 </View>
             : null 
         )
@@ -238,30 +263,7 @@ class SearchScreen extends Component<Props, State> {
                 />
 
                 
-                    {
-                        this.props.search.recentlyViewed && this.props.search.recentlyViewed.length > 0 ? 
-                        <View>
-                            <Text h3>Recently Viewed</Text>
-                            {this.props.search.recentlyViewed.map((i) => (
-                                <ListItem
-                                    roundAvatar
-                                    avatar={{uri: 'https://image.tmdb.org/t/p/w154' + this.getImagePath(i) }}
-                                    key={i.id}
-                                    title={i.name}
-                                    // onPress={() => this.goToItemDetail(i)}
-                                    rightIcon={{name: 'close'}}
-                                    onPressRightIcon={() => this.props.removeRecentlyViewed(i)}
-                                />
-                            ))}
-                            <Button
-                                raised
-                                icon={{name: 'delete'}}
-                                title='Clear All Recent Searches'
-                                onPress={() => this.props.removeAllRecentlyViewed()}
-                            />
-                        </View>
-                        : null
-                    }
+                
                 
 
                 {
