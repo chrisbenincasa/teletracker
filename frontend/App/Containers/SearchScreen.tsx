@@ -9,9 +9,9 @@ import {
     Image, 
     TouchableHighlight, 
     ActivityIndicator,
-    Dimensions 
+    Dimensions
 } from 'react-native';
-import { Icon } from 'react-native-elements';
+import { Icon, ListItem, Button } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import Search from 'react-native-search-box';
 import checkDevice from '../Components/Helpers/checkOrientation';
@@ -37,6 +37,9 @@ interface Props {
     search: any;
     doSearch: (search: String) => any;
     clearSearch: () => any;
+    addRecentlyViewed: (item: object) => any;
+    removeRecentlyViewed: (item: object) => any;
+    removeAllRecentlyViewed: () => any;
     loadUserSelf: (componentId: string) => any;
 }
 
@@ -45,7 +48,6 @@ interface State {
     orientation: string;
     devicetype: string;
     gridView: boolean;
-    recentSearches: any[];
 }
 
 class SearchScreen extends Component<Props, State> {
@@ -59,8 +61,7 @@ class SearchScreen extends Component<Props, State> {
         this.state = {
             orientation: checkDevice.isPortrait() ? 'portrait' : 'landscape',
             devicetype: checkDevice.isTablet() ? 'tablet' : 'phone',
-            gridView: true,
-            recentSearches: []
+            gridView: true
         };
      
         // Event Listener for orientation changes
@@ -126,10 +127,6 @@ class SearchScreen extends Component<Props, State> {
         this.props.doSearch(this.state.searchText);
     }
 
-    addToRecentSearch(item) {
-        this.setState({ recentSearches: [...this.state.recentSearches, ...item] });
-    }
-
     // Important: You must return a Promise
     onCancel = () => {
         return new Promise((resolve, reject) => {
@@ -176,7 +173,9 @@ class SearchScreen extends Component<Props, State> {
                 passProps: { item }
             }
         });
-        this.addToRecentSearch(item);
+
+        this.props.addRecentlyViewed(item);
+
         Navigation.push(this.props.componentId, view);
     }
 
@@ -238,13 +237,32 @@ class SearchScreen extends Component<Props, State> {
                     onCancel={this.onCancel}
                 />
 
-                <View>
+                
                     {
-                        this.state.recentSearches.map((text) => (
-                            <Text>{ text }</Text>
-                        ))
+                        this.props.search.recentlyViewed && this.props.search.recentlyViewed.length > 0 ? 
+                        <View>
+                            <Text h3>Recently Viewed</Text>
+                            {this.props.search.recentlyViewed.map((i) => (
+                                <ListItem
+                                    roundAvatar
+                                    avatar={{uri: 'https://image.tmdb.org/t/p/w154' + this.getImagePath(i) }}
+                                    key={i.id}
+                                    title={i.name}
+                                    // onPress={() => this.goToItemDetail(i)}
+                                    rightIcon={{name: 'close'}}
+                                    onPressRightIcon={() => this.props.removeRecentlyViewed(i)}
+                                />
+                            ))}
+                            <Button
+                                raised
+                                icon={{name: 'delete'}}
+                                title='Clear All Recent Searches'
+                                onPress={() => this.props.removeAllRecentlyViewed()}
+                            />
+                        </View>
+                        : null
                     }
-                </View>
+                
 
                 {
                     this.props.search.results && this.props.search.results.data && this.props.search.results.data.length === 0 ? 
@@ -299,6 +317,15 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
         },
         clearSearch: () => {
             dispatch(SearchActions.searchClear());
+        },
+        addRecentlyViewed: (item: object) => {
+            dispatch(SearchActions.searchAddRecent(item));
+        },
+        removeRecentlyViewed: (item: object) => {
+            dispatch(SearchActions.searchRemoveRecent(item));
+        },
+        removeAllRecentlyViewed: () => {
+            dispatch(SearchActions.searchRemoveAllRecent());
         },
         loadUserSelf: (componentId: string) => {
             dispatch(UserActions.userSelfRequest(componentId));
