@@ -49,6 +49,7 @@ class ItemDetailScreen extends Component<Props> {
 
     getImagePath() {
         let meta = this.props.item.metadata.themoviedb;
+        console.tron.log(meta);
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
         } else if (this.hasTmdbShow()) {
@@ -60,6 +61,7 @@ class ItemDetailScreen extends Component<Props> {
 
     getBackdropImagePath() {
         let meta = this.props.item.metadata.themoviedb;
+        console.tron.log(meta);
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).backdrop_path;
         } else if (this.hasTmdbShow()) {
@@ -81,11 +83,16 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     getVoteCount() {
+        // Format 11,453 as 11.4k
+        const formatVoteCount = (VoteCount) => {
+            return VoteCount > 9999 ? `${Math.round((VoteCount / 1000)*10)/10}k` : VoteCount;
+        }
+
         let meta = this.props.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
-            return R.view<Props, Movie>(this.tmdbMovieView, this.props).vote_count;
+            return formatVoteCount(R.view<Props, Movie>(this.tmdbMovieView, this.props).vote_count);
         } else if (this.hasTmdbShow()) {
-            return meta.show.vote_count;
+            return formatVoteCount(meta.show.vote_count);
         } else if (this.hasTmdbPerson()) {
             return; // There is no vote count for people
         }
@@ -195,7 +202,7 @@ class ItemDetailScreen extends Component<Props> {
 
     render () {
         return (
-            <ScrollView  style={styles.container}>
+            <View  style={styles.container}>
                 <Header
                     outerContainerStyles={{backgroundColor: 'transparent', position: 'absolute', zIndex: 999999}}
                     statusBarProps={headerStyles.header.statusBarProps}
@@ -204,149 +211,151 @@ class ItemDetailScreen extends Component<Props> {
                     centerComponent={ null } 
                     rightComponent={ null }
                 />
-                <KeyboardAvoidingView behavior='position'>
-                    <View style={styles.coverContainer} >
-                        {   // Check if cover image exists, otherwise show blue
-                            this.getBackdropImagePath() ? 
-                                <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={styles.coverImage} />
-                            : <View style={styles.emptyCoverImage}></View> 
-                         }
-                    </View>
-                    <View style={styles.subHeaderContainer}>
-                        { this.getImagePath() ?
-                            <Image 
-                                source={{ uri: 'https://image.tmdb.org/t/p/w92' + this.getImagePath()}} 
-                                style={styles.posterImage} /> : 
-                            <View style={styles.posterImage}>
-                                <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
-                            </View>
-                        }
-                        <View style={styles.itemDetailsContainer}>
-                            <Text style={{marginTop: 10,marginLeft: 10,fontSize: 20}}>
-                                {this.props.item.name} 
-                                {this.getReleaseYear() ? (<Text> ({this.getReleaseYear()})</Text>) : null }
-                            </Text>
-                            <View style={styles.ratingsContainer}>
-                                <Rating
-                                    type="star"
-                                    fractions={1}
-                                    startingValue={this.getRatingPath() / 2}
-                                    readonly
-                                    imageSize={15}
-                                    style={{paddingBottom: 15, marginLeft: 10}}
-                                />
-                                <Text style={styles.ratingCount}>({this.getVoteCount()})</Text>
+                <ScrollView>
+                    <KeyboardAvoidingView behavior='position'>
+                        <View style={styles.coverContainer} >
+                            {   // Check if cover image exists, otherwise show blue
+                                this.getBackdropImagePath() ? 
+                                    <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={styles.coverImage} />
+                                : <View style={styles.emptyCoverImage}></View> 
+                            }
+                        </View>
+                        <View style={styles.subHeaderContainer}>
+                            { this.getImagePath() ?
+                                <Image 
+                                    source={{ uri: 'https://image.tmdb.org/t/p/w92' + this.getImagePath()}} 
+                                    style={styles.posterImage} /> : 
+                                <View style={styles.posterImage}>
+                                    <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
+                                </View>
+                            }
+                            <View style={styles.itemDetailsContainer}>
+                                <Text style={{marginTop: 10,marginLeft: 10,fontSize: 20}}>
+                                    {this.props.item.name} 
+                                    {this.getReleaseYear() ? (<Text> ({this.getReleaseYear()})</Text>) : null }
+                                </Text>
+                                <View style={styles.ratingsContainer}>
+                                    <Rating
+                                        type="star"
+                                        fractions={1}
+                                        startingValue={this.getRatingPath() / 2}
+                                        readonly
+                                        imageSize={15}
+                                        style={{paddingBottom: 15, marginLeft: 10}}
+                                    />
+                                    <Text style={styles.ratingCount}>({this.getVoteCount()})</Text>
+                                </View>
                             </View>
                         </View>
+                    </KeyboardAvoidingView>
+
+                    <View style={styles.descriptionContainer}>
+                        <ViewMoreText
+                            numberOfLines={4}
+                            renderViewMore={this.renderViewMore}
+                            renderViewLess={this.renderViewLess}
+                        >
+                            <Text>{this.getDescription()}</Text>
+                        </ViewMoreText>
                     </View>
-                </KeyboardAvoidingView>
 
-                <View style={styles.descriptionContainer}>
-                    <ViewMoreText
-                        numberOfLines={4}
-                        renderViewMore={this.renderViewMore}
-                        renderViewLess={this.renderViewLess}
-                    >
-                        <Text>{this.getDescription()}</Text>
-                    </ViewMoreText>
-                </View>
+                    {this.getGenre() &&
+                        <View style={styles.genreContainer}>
+                            {this.getGenre() ? this.getGenre().map((i) => (
+                                <Badge
+                                    key={i.id}
+                                    value={i.name}
+                                    textStyle={{ color: 'white' }}
+                                    wrapperStyle={{
+                                        marginHorizontal: 2, marginVertical: 5
+                                    }}
+                                    containerStyle={{}}
+                                />
+                            )) : null}
+                        </View>
+                    }
 
-                {this.getGenre() &&
-                    <View style={styles.genreContainer}>
-                        {this.getGenre() ? this.getGenre().map((i,k) => (
-                            <Badge
-                                key={k}
-                                value={i.name}
-                                textStyle={{ color: 'white' }}
-                                wrapperStyle={{
-                                    marginHorizontal: 2, marginVertical: 5
-                                }}
-                                containerStyle={{}}
-                            />
-                        )) : null}
+                    <View style={styles.buttonsContainer}>
+                        <Button 
+                            title='Mark as Watched' 
+                            icon={{
+                                name: 'watch',
+                                size: 25,
+                                color: 'white'
+                            }}
+                            onPress={this.markAsWatched.bind(this)}
+                            containerStyle={{marginHorizontal: 0}}>
+                        </Button>
+                        <Button 
+                            title= {this.state.inList ? 'Remove'  : 'Track' }
+                            onPress={this.addItem.bind(this)} 
+                            icon={{
+                                name: this.state.inList ? 'clear' : 'add',
+                                size: 25,
+                                color: 'white'
+                            }}
+                            buttonStyle={{
+                                backgroundColor: this.state.inList ? 'red' : 'green'}}
+                            containerStyle={{marginHorizontal: 0}}>
+                        </Button>
+                        
                     </View>
-                }
 
-                <View style={styles.buttonsContainer}>
-                    <Button 
-                        title='Mark as Watched' 
-                        icon={{
-                            name: 'watch',
-                            size: 25,
-                            color: 'white'
-                        }}
-                        onPress={this.markAsWatched.bind(this)}
-                        containerStyle={{marginHorizontal: 0}}>
-                    </Button>
-                    <Button 
-                        title= {this.state.inList ? 'Remove'  : 'Track' }
-                        onPress={this.addItem.bind(this)} 
-                        icon={{
-                            name: this.state.inList ? 'clear' : 'add',
-                            size: 25,
-                            color: 'white'
-                        }}
-                        buttonStyle={{
-                            backgroundColor: this.state.inList ? 'red' : 'green'}}
-                        containerStyle={{marginHorizontal: 0}}>
-                    </Button>
-                    
-                </View>
+                    {this.getSeasons() &&
+                        <View style={styles.seasonsContainer}>
+                            <Divider style={styles.divider} />
+                            <Text style={styles.seasonsHeader}>Season Guide:</Text>
+                            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
+                            {
+                                this.getSeasons() ? this.getSeasons().map((i) => (
+                                    <View>
+                                        <Avatar
+                                            key={i.id}
+                                            large
+                                            rounded
+                                            source={i.poster_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.poster_path} : null}
+                                            activeOpacity={0.7}
+                                            title={i.poster_path ? null : this.parseInitials(i.name)}
+                                            titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
+                                        />
+                                        <Text style={styles.seasonsName}>{i.name}</Text>
+                                    </View>
+                                ))
+                                : null
+                            }
+                            </ScrollView>
+                        </View>
+                    }
 
-                {this.getSeasons() &&
-                    <View style={styles.seasonsContainer}>
-                        <Divider style={styles.divider} />
-                        <Text style={styles.seasonsHeader}>Season Guide:</Text>
-                        <ScrollView horizontal={true}  showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
-                        {
-                            this.getSeasons() ? this.getSeasons().map((i,k) => (
-                                <View>
-                                    <Avatar
-                                        key={k}
-                                        large
-                                        rounded
-                                        source={i.poster_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.poster_path} : null}
-                                        activeOpacity={0.7}
-                                        title={i.poster_path ? null : this.parseInitials(i.name)}
-                                        titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
-                                    />
-                                    <Text style={styles.seasonsName}>{i.name}</Text>
-                                </View>
-                            ))
-                            : null
-                        }
-                        </ScrollView>
-                    </View>
-                }
+                    {this.getCast() &&
+                        <View style={styles.castContainer}>
+                            <Divider style={styles.divider} />
+                            <Text style={styles.castHeader}>Cast:</Text>
 
-                {this.getCast() &&
-                    <View style={styles.castContainer}>
-                        <Divider style={styles.divider} />
-                        <Text style={styles.castHeader}>Cast:</Text>
-
-                        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
-                        {
-                            this.getCast().map((i,k) => (
-                                <View>
-                                    <Avatar
-                                        key={k}
-                                        large
-                                        rounded
-                                        source={i.profile_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.profile_path} : null}
-                                        activeOpacity={0.7}
-                                        title={i.poster_path ? null : this.parseInitials(i.name)}
-                                        titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
-    
-                                    />
-                                    <Text style={styles.castName}>{i.name}</Text>
-                                    <Text style={styles.castCharacter}>{i.character}</Text>
-                                </View>
-                            ))
-                        }
-                        </ScrollView>
-                    </View>
-                }
-            </ScrollView>
+                            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
+                            {
+                                this.getCast().map((i) => (
+                                    <View>
+                                        <Avatar
+                                            key={i.id}
+                                            large
+                                            rounded
+                                            source={i.profile_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.profile_path} : null}
+                                            activeOpacity={0.7}
+                                            title={i.poster_path ? null : this.parseInitials(i.name)}
+                                            titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
+        
+                                        />
+                                        <Text style={styles.castName}>{i.name}</Text>
+                                        <Text style={styles.castCharacter}>{i.character}</Text>
+                                    </View>
+                                ))
+                            }
+                            </ScrollView>
+                        </View>
+                    }
+                </ScrollView>
+            </View>
         )
     }
 }
