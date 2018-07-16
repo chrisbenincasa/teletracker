@@ -103,6 +103,35 @@ class SearchScreen extends Component<Props, State> {
         }
     }
 
+    getReleaseYear(item: object) {
+        if (this.hasTmdbMovie(item)) {
+            // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
+            // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
+            return item.metadata.themoviedb.movie.release_date.substring(0,4);
+        } else if (this.hasTmdbShow(item)) {
+            return item.metadata.themoviedb.show.first_air_date.substring(0,4); //We may want to consider making this last_air_date?
+        } else if (this.hasTmdbPerson(item)) {
+            return; // There are no photos for people yet
+        }
+    }
+
+    getRuntime(item: object) {
+        const formatRuntime = Runtime => {
+            let hours = Math.floor(Runtime / 60);
+            let minutes = Runtime % 60;
+            return `${hours}h ${minutes}m`
+        }
+        if (this.hasTmdbMovie(item)) {
+            // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
+            // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
+            return formatRuntime(item.metadata.themoviedb.movie.runtime);
+        } else if (this.hasTmdbShow(item)) {
+            return formatRuntime(item.metadata.themoviedb.show.episode_run_time[0]); // Need to identify what to do when run time is variable between episodes.  Maybe show ~x?
+        } else if (this.hasTmdbPerson(item)) {
+            return; // There are no photos for people yet
+        }
+    }
+
     hasTmdbMetadata(item: object) {
         return item.metadata && item.metadata.themoviedb;
     }
@@ -127,16 +156,16 @@ class SearchScreen extends Component<Props, State> {
         this.props.doSearch(this.state.searchText);
     }
 
+    searchTextChanged(text: string) {
+        return this.setState({ searchText: text });
+    }
+
     // Important: You must return a Promise
     onCancel = () => {
         return new Promise((resolve, reject) => {
             this.props.clearSearch(this.state.searchText);
             resolve();
         });
-    }
-
-    searchTextChanged(text: string) {
-        return this.setState({ searchText: text });
     }
 
     renderEmpty = () => { 
@@ -180,17 +209,17 @@ class SearchScreen extends Component<Props, State> {
         )
     };
 
+    renderLoading = () => { }
+
     // The default function if no Key is provided is index
     // an identifiable key is important if you plan on
     // item reordering.  Otherwise index is fine
-    // keyExtractor: (item: any, index: any) => number = (_, index) => index;
-    // keyExtractor: (item: any, index: any) => number = ({item}) => (item.id);
-    keyExtractor: (item: object) => item.id;
+    // g = grid, l = list, h = horizontal, v = vertical
+    keyExtractor = (item: any, index: any) => item.id + (this.state.gridView ? 'g' : 'l') + (checkDevice.isLandscape() ? 'h' : 'v');
 
     // How many items should be kept im memory as we scroll?
-    // oneScreensWorth = { checkDevice.isLandscape() ? 5 : 3 };
     oneScreensWorth = 18;
-
+    // oneScreensWorth = (this.state.gridView ? (checkDevice.isLandscape() ? 12 : 18) : (checkDevice.isLandscape() ? 4 : 8));
 
     goToItemDetail(item: object) {
         const view = R.mergeDeepLeft(NavigationConfig.DetailView, {
@@ -213,7 +242,7 @@ class SearchScreen extends Component<Props, State> {
         }
     }
 
-    renderItem ( { item }: object) {
+    renderItem ( { item }:object ) {
         return (
             <View style={{margin: 5}}>
                 <TouchableHighlight 
@@ -233,11 +262,17 @@ class SearchScreen extends Component<Props, State> {
                     </View>
                 </TouchableHighlight>
                 <Text 
-                    style={{width: 92}}
+                    style={{width: 175, textAlign: 'center'}}
                     numberOfLines={1}
                     ellipsizeMode='tail'
                     onPress={() => this.goToItemDetail(item)}
-                >{item.name}</Text>
+                >{ item.name }</Text>
+                <Text 
+                    style={{width: 175, textAlign: 'center'}}
+                    numberOfLines={1}
+                    ellipsizeMode='tail'
+                    onPress={() => this.goToItemDetail(item)}
+                >{ `${this.getRuntime(item)} | ${this.getReleaseYear(item)}`} </Text>
            </View>
         )
     }
@@ -262,12 +297,10 @@ class SearchScreen extends Component<Props, State> {
                     onCancel={this.onCancel}
                 />
 
-                
-                
-                
-
                 {
-                    this.props.search.results && this.props.search.results.data && this.props.search.results.data.length === 0 ? 
+                    this.props.search.results &&
+                    this.props.search.results.data &&
+                    this.props.search.results.data.length === 0 ? 
                         <View style={styles.noResults}>
                             <Icon
                                 name='report'
@@ -286,20 +319,17 @@ class SearchScreen extends Component<Props, State> {
                         </View>
                     : null 
                 }
-                
+
                 <FlatList
                     data={this.getResults.call(this)}
                     renderItem={this.renderItem}
                     keyExtractor={this.keyExtractor}
-                    // g = grid, l = list
-                    // h = horizontal, v = vertical
-                    key={this.keyExtractor + (this.state.gridView ? 'g' : 'l') + (checkDevice.isLandscape() ? 'h' : 'v')}
-                    // key={this.keyExtractor + (checkDevice.isLandscape() ? 'h' : 'v')}
+                    // g = grid, l = list, h = horizontal, v = vertical
+                    key={(this.state.gridView ? 'g' : 'l') + (checkDevice.isLandscape() ? 'h' : 'v')}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
-                    numColumns={this.state.gridView ? (checkDevice.isLandscape() ? 5 : 3) : 1}
-                    // numColumns={checkDevice.isLandscape() ? 5 : 3}
-                    columnWrapperStyle={ this.state.gridView ? {justifyContent: 'center'} : null}
+                    numColumns={this.state.gridView ? (checkDevice.isLandscape() ? 4 : 2) : 1}
+                    columnWrapperStyle={ this.state.gridView ? {justifyContent: 'flex-start'} : null}
                 />
             </View>
         );
