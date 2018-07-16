@@ -1,8 +1,6 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { 
-    Platform, 
-    ScrollView, 
     View, 
     FlatList, 
     Text, 
@@ -20,6 +18,7 @@ import { Dispatch } from 'redux';
 
 import Header from '../Components/Header/Header';
 import { NavigationConfig } from '../Navigation/NavigationConfig';
+import ListActions from '../Redux/ListRedux';
 import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
@@ -33,21 +32,22 @@ import styles from './Styles/SearchScreenStyle';
 
 // Styles
 interface Props {
-    componentId: string;
-    search: any;
-    doSearch: (search: String) => any;
-    clearSearch: () => any;
+    addItemToList: (componentId: string, listId: string, itemId: string | number) => any,
     addRecentlyViewed: (item: object) => any;
+    clearSearch: () => any;
+    componentId: string;
+    doSearch: (search: String) => any;
+    loadUserSelf: (componentId: string) => any;    
+    removeAllRecentlyViewed: () => any;    
     removeRecentlyViewed: (item: object) => any;
-    removeAllRecentlyViewed: () => any;
-    loadUserSelf: (componentId: string) => any;
+    search: any;
 }
 
 interface State {
-    searchText: string;
-    orientation: string;
     devicetype: string;
     gridView: boolean;
+    orientation: string;
+    searchText: string;
 }
 
 class SearchScreen extends Component<Props, State> {
@@ -119,8 +119,18 @@ class SearchScreen extends Component<Props, State> {
         const formatRuntime = Runtime => {
             let hours = Math.floor(Runtime / 60);
             let minutes = Runtime % 60;
-            return `${hours}h ${minutes}m`
+
+            if (hours > 0 && minutes > 0)  {
+                return hours + 'h ' + minutes + 'm | ';
+            } else if (hours > 0 && minutes === 0){
+                return hours + 'h | ';
+            } else if (hours === 0 && minutes > 0){
+                return minutes + 'm | ';
+            } else {
+                return '';
+            }
         }
+
         if (this.hasTmdbMovie(item)) {
             // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
             // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
@@ -166,6 +176,10 @@ class SearchScreen extends Component<Props, State> {
             this.props.clearSearch(this.state.searchText);
             resolve();
         });
+    }
+
+    addItem(itemId) {
+        this.props.addItemToList(this.props.componentId, 'default', itemId);
     }
 
     renderEmpty = () => { 
@@ -245,6 +259,15 @@ class SearchScreen extends Component<Props, State> {
     renderItem ( { item }:object ) {
         return (
             <View style={{margin: 5}}>
+                <View style={styles.addToList}>
+                    <Icon
+                        name='add'
+                        color='#fff'
+                        underlayColor='#000'
+                        size={36}
+                        onPress={() => this.addItem(item.id)}
+                    />
+                </View>
                 <TouchableHighlight 
                     activeOpacity={0.3}
                     onPress={() => this.goToItemDetail(item)
@@ -272,7 +295,7 @@ class SearchScreen extends Component<Props, State> {
                     numberOfLines={1}
                     ellipsizeMode='tail'
                     onPress={() => this.goToItemDetail(item)}
-                >{ `${this.getRuntime(item)} | ${this.getReleaseYear(item)}`} </Text>
+                >{ `${this.getRuntime(item)} ${this.getReleaseYear(item)}`} </Text>
            </View>
         )
     }
@@ -344,23 +367,26 @@ const mapStateToProps = (state: ReduxState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch<any>) => {
     return {
-        doSearch: (searchText: string) => {
-            dispatch(SearchActions.searchRequest(searchText));
+        addRecentlyViewed: (item: object) => {
+            dispatch(SearchActions.searchAddRecent(item));
+        },
+        addItemToList(componentId: string, listId: string, itemId: string | number) {
+            dispatch(ListActions.addToList(componentId, listId, itemId));
         },
         clearSearch: () => {
             dispatch(SearchActions.searchClear());
         },
-        addRecentlyViewed: (item: object) => {
-            dispatch(SearchActions.searchAddRecent(item));
+        doSearch: (searchText: string) => {
+            dispatch(SearchActions.searchRequest(searchText));
+        },
+        loadUserSelf: (componentId: string) => {
+            dispatch(UserActions.userSelfRequest(componentId));
         },
         removeRecentlyViewed: (item: object) => {
             dispatch(SearchActions.searchRemoveRecent(item));
         },
         removeAllRecentlyViewed: () => {
             dispatch(SearchActions.searchRemoveAllRecent());
-        },
-        loadUserSelf: (componentId: string) => {
-            dispatch(UserActions.userSelfRequest(componentId));
         }
     };
 };

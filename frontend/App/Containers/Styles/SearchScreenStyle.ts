@@ -3,6 +3,14 @@ import { ApplicationStyles, Colors } from '../../Themes/';
 
 export default StyleSheet.create({
     ...ApplicationStyles.screen,
+    addToList: {
+        position: 'absolute',
+        top: 0,
+        right: 10,
+        zIndex: 9999,
+        opacity: .60,
+        backgroundColor: '#000'
+    },
     posterContainer: {
         flex: 1,
         // width: 110,
