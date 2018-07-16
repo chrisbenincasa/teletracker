@@ -110,8 +110,36 @@ class SearchScreen extends Component<Props, State> {
             return item.metadata.themoviedb.movie.release_date.substring(0,4);
         } else if (this.hasTmdbShow(item)) {
             return item.metadata.themoviedb.show.first_air_date.substring(0,4); //We may want to consider making this last_air_date?
-        } else if (this.hasTmdbPerson(item)) {
-            return; // There are no photos for people yet
+        } else {
+            return null; // There are no photos for people yet
+        }
+    }
+
+    getSeasonCount(item: object) {
+        if (this.hasTmdbShow(item)) {
+            let numSeasons = item.metadata.themoviedb.show.number_of_seasons;
+
+            if (numSeasons === 1) {
+                return numSeasons + ' season | ';
+            } else {
+                return numSeasons + ' seasons | ';
+            }
+        } else {
+            return null;
+        }
+    }
+
+    getEpisodeCount(item: object) {
+        if (this.hasTmdbShow(item)) {
+            let numEpisodes = item.metadata.themoviedb.show.number_of_episodes;
+
+            if (numEpisodes === 1) {
+                return numEpisodes + ' episode';
+            } else {
+                return numEpisodes + ' episodes';
+            }
+        } else {
+            return null;
         }
     }
 
@@ -127,7 +155,7 @@ class SearchScreen extends Component<Props, State> {
             } else if (hours === 0 && minutes > 0){
                 return minutes + 'm | ';
             } else {
-                return '';
+                return null;
             }
         }
 
@@ -140,6 +168,14 @@ class SearchScreen extends Component<Props, State> {
         } else if (this.hasTmdbPerson(item)) {
             return; // There are no photos for people yet
         }
+    }
+
+    getItemContainerWidth(){
+        return this.state.gridView ? (checkDevice.isLandscape() ? 155 : 178) : 75;
+    }
+
+    getItemContainerHeight(){
+        return this.state.gridView ? (checkDevice.isLandscape() ? 216 : 246) : 104;
     }
 
     hasTmdbMetadata(item: object) {
@@ -259,43 +295,77 @@ class SearchScreen extends Component<Props, State> {
     renderItem ( { item }:object ) {
         return (
             <View style={{margin: 5}}>
-                <View style={styles.addToList}>
-                    <Icon
-                        name='add'
-                        color='#fff'
-                        underlayColor='#000'
-                        size={36}
-                        onPress={() => this.addItem(item.id)}
-                    />
-                </View>
+
                 <TouchableHighlight 
                     activeOpacity={0.3}
                     onPress={() => this.goToItemDetail(item)
                 }>
                     <View>
+                    <View style={styles.addToList}>
+                        <Icon
+                            name='add'
+                            color='#fff'
+                            underlayColor='#000'
+                            size={36}
+                            onPress={() => this.addItem(item.id)}
+                        />
+                    </View>
                         { this.getImagePath(item) ?
                             <Image
-                                style={styles.posterContainer}
+                                style={{ 
+                                        flex: 1,
+                                        width: this.getItemContainerWidth(),
+                                        height: this.getItemContainerHeight(),
+                                        backgroundColor: '#C9C9C9',
+                                        alignContent: 'center'}}
                                 source={{uri: 'https://image.tmdb.org/t/p/w154' + this.getImagePath(item) }}
                             /> : 
-                            <View style={styles.posterContainer}>
+                            <View style={{ 
+                                        flex: 1,
+                                        width: this.getItemContainerWidth(),
+                                        height: this.getItemContainerHeight(),
+                                        backgroundColor: '#C9C9C9',
+                                        alignContent: 'center'}}>
                                 <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
                             </View>
                         }
                     </View>
                 </TouchableHighlight>
                 <Text 
-                    style={{width: 175, textAlign: 'center'}}
+                    style={{
+                        width: this.getItemContainerWidth(),
+                        textAlign: 'center', 
+                        fontWeight: 'bold'}}
                     numberOfLines={1}
                     ellipsizeMode='tail'
                     onPress={() => this.goToItemDetail(item)}
                 >{ item.name }</Text>
-                <Text 
-                    style={{width: 175, textAlign: 'center'}}
-                    numberOfLines={1}
-                    ellipsizeMode='tail'
-                    onPress={() => this.goToItemDetail(item)}
-                >{ `${this.getRuntime(item)} ${this.getReleaseYear(item)}`} </Text>
+                
+                {
+                    this.getSeasonCount(item) || this.getEpisodeCount(item) ?
+                        <Text 
+                            style={{
+                                width: this.getItemContainerWidth(),
+                                textAlign: 'center'}}
+                            numberOfLines={1}
+                            ellipsizeMode='tail'
+                            onPress={() => this.goToItemDetail(item)}
+                        >{ `${this.getSeasonCount(item)} ${this.getEpisodeCount(item)}`}</Text>
+                    : null
+                }
+
+                { 
+                    this.getRuntime(item) || this.getReleaseYear(item) ?
+                        <Text 
+                            style={{
+                                width: this.getItemContainerWidth(),
+                                textAlign: 'center'}}
+                            numberOfLines={1}
+                            ellipsizeMode='tail'
+                            onPress={() => this.goToItemDetail(item)}
+                        >{ `${this.getRuntime(item)} ${this.getReleaseYear(item)}`} </Text>
+                    : null
+                }
            </View>
         )
     }
