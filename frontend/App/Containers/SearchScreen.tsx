@@ -13,11 +13,12 @@ import { Icon, ListItem, Button, Divider } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import Search from 'react-native-search-box';
 import checkDevice from '../Components/Helpers/checkOrientation';
-import { connect } from 'react-redux';
-import { Dispatch } from 'redux';
-
+import getMetadata from '../Components/Helpers/getMetadata';
 import Header from '../Components/Header/Header';
 import { NavigationConfig } from '../Navigation/NavigationConfig';
+
+import { connect } from 'react-redux';
+import { Dispatch } from 'redux';
 import ListActions from '../Redux/ListRedux';
 import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
@@ -63,7 +64,7 @@ class SearchScreen extends Component<Props, State> {
             devicetype: checkDevice.isTablet() ? 'tablet' : 'phone',
             gridView: true
         };
-     
+
         // Event Listener for orientation changes
         Dimensions.addEventListener('change', () => {
             this.setState({
@@ -91,107 +92,12 @@ class SearchScreen extends Component<Props, State> {
         )
     }
 
-    getImagePath(item: object) {
-        if (this.hasTmdbMovie(item)) {
-            // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
-            // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
-            return item.metadata.themoviedb.movie.poster_path;
-        } else if (this.hasTmdbShow(item)) {
-            return item.metadata.themoviedb.show.poster_path;
-        } else if (this.hasTmdbPerson(item)) {
-            return; // There are no photos for people yet
-        }
-    }
-
-    getReleaseYear(item: object) {
-        if (this.hasTmdbMovie(item)) {
-            // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
-            // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
-            return item.metadata.themoviedb.movie.release_date.substring(0,4);
-        } else if (this.hasTmdbShow(item)) {
-            return item.metadata.themoviedb.show.first_air_date.substring(0,4); //We may want to consider making this last_air_date?
-        } else {
-            return null; // There are no photos for people yet
-        }
-    }
-
-    getSeasonCount(item: object) {
-        if (this.hasTmdbShow(item)) {
-            let numSeasons = item.metadata.themoviedb.show.number_of_seasons;
-
-            if (numSeasons === 1) {
-                return numSeasons + ' season | ';
-            } else {
-                return numSeasons + ' seasons | ';
-            }
-        } else {
-            return null;
-        }
-    }
-
-    getEpisodeCount(item: object) {
-        if (this.hasTmdbShow(item)) {
-            let numEpisodes = item.metadata.themoviedb.show.number_of_episodes;
-
-            if (numEpisodes === 1) {
-                return numEpisodes + ' episode';
-            } else {
-                return numEpisodes + ' episodes';
-            }
-        } else {
-            return null;
-        }
-    }
-
-    getRuntime(item: object) {
-        const formatRuntime = Runtime => {
-            let hours = Math.floor(Runtime / 60);
-            let minutes = Runtime % 60;
-
-            if (hours > 0 && minutes > 0)  {
-                return hours + 'h ' + minutes + 'm | ';
-            } else if (hours > 0 && minutes === 0){
-                return hours + 'h | ';
-            } else if (hours === 0 && minutes > 0){
-                return minutes + 'm | ';
-            } else {
-                return null;
-            }
-        }
-
-        if (this.hasTmdbMovie(item)) {
-            // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
-            // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
-            return formatRuntime(item.metadata.themoviedb.movie.runtime);
-        } else if (this.hasTmdbShow(item)) {
-            return formatRuntime(item.metadata.themoviedb.show.episode_run_time[0]); // Need to identify what to do when run time is variable between episodes.  Maybe show ~x?
-        } else if (this.hasTmdbPerson(item)) {
-            return; // There are no photos for people yet
-        }
-    }
-
     getItemContainerWidth(){
         return this.state.gridView ? (checkDevice.isLandscape() ? 155 : 178) : 75;
     }
 
     getItemContainerHeight(){
         return this.state.gridView ? (checkDevice.isLandscape() ? 216 : 246) : 104;
-    }
-
-    hasTmdbMetadata(item: object) {
-        return item.metadata && item.metadata.themoviedb;
-    }
-
-    hasTmdbMovie(item: object) {
-        return this.hasTmdbMetadata(item) && item.metadata.themoviedb.movie;
-    }
-
-    hasTmdbShow(item: object) {
-        return this.hasTmdbMetadata(item) && item.metadata.themoviedb.show;
-    }
-  
-    hasTmdbPerson(item: object) {
-        return this.hasTmdbMetadata(item) && item.metadata.themoviedb.person;
     }
 
     componentWillMount() {
@@ -237,7 +143,7 @@ class SearchScreen extends Component<Props, State> {
                             {this.props.search.recentlyViewed.map((i) => (
                                 <ListItem
                                     roundAvatar
-                                    avatar={{uri: 'https://image.tmdb.org/t/p/w154' + this.getImagePath(i) }}
+                                    avatar={{uri: 'https://image.tmdb.org/t/p/w154' + getMetadata.getPosterPath(i) }}
                                     key={i.id}
                                     title={i.name}
                                     onPress={() => this.goToItemDetail(i)}
@@ -310,7 +216,7 @@ class SearchScreen extends Component<Props, State> {
                             onPress={() => this.addItem(item.id)}
                         />
                     </View>
-                        { this.getImagePath(item) ?
+                        { getMetadata.getPosterPath(item) ?
                             <Image
                                 style={{ 
                                         flex: 1,
@@ -318,7 +224,7 @@ class SearchScreen extends Component<Props, State> {
                                         height: this.getItemContainerHeight(),
                                         backgroundColor: '#C9C9C9',
                                         alignContent: 'center'}}
-                                source={{uri: 'https://image.tmdb.org/t/p/w154' + this.getImagePath(item) }}
+                                source={{uri: 'https://image.tmdb.org/t/p/w154' + getMetadata.getPosterPath(item) }}
                             /> : 
                             <View style={{ 
                                         flex: 1,
@@ -342,7 +248,7 @@ class SearchScreen extends Component<Props, State> {
                 >{ item.name }</Text>
                 
                 {
-                    this.getSeasonCount(item) || this.getEpisodeCount(item) ?
+                    getMetadata.getSeasonCount(item) || getMetadata.getEpisodeCount(item) ?
                         <Text 
                             style={{
                                 width: this.getItemContainerWidth(),
@@ -350,12 +256,12 @@ class SearchScreen extends Component<Props, State> {
                             numberOfLines={1}
                             ellipsizeMode='tail'
                             onPress={() => this.goToItemDetail(item)}
-                        >{ `${this.getSeasonCount(item)} ${this.getEpisodeCount(item)}`}</Text>
+                        >{ `${getMetadata.getSeasonCount(item)} ${getMetadata.getEpisodeCount(item)}`}</Text>
                     : null
                 }
 
                 { 
-                    this.getRuntime(item) || this.getReleaseYear(item) ?
+                    getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
                         <Text 
                             style={{
                                 width: this.getItemContainerWidth(),
@@ -363,7 +269,7 @@ class SearchScreen extends Component<Props, State> {
                             numberOfLines={1}
                             ellipsizeMode='tail'
                             onPress={() => this.goToItemDetail(item)}
-                        >{ `${this.getRuntime(item)} ${this.getReleaseYear(item)}`} </Text>
+                        >{ `${getMetadata.getRuntime(item)} ${getMetadata.getReleaseYear(item)}`} </Text>
                     : null
                 }
            </View>
