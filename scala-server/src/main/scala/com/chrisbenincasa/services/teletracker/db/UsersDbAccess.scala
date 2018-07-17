@@ -15,15 +15,6 @@ class UsersDbAccess @Inject()(
   val things: Things,
   val events: Events
 )(implicit executionContext: ExecutionContext) extends DbAccess {
-  private val Pbkdf2Algorithm = "PBKDF2WithHmacSHA1"
-  private val SALT_BYTES = 24
-  private val HASH_BYTES = 24
-  private val PBKDF2_ITERATIONS = 1000
-
-  private val ITERATION_INDEX = 0
-  private val SALT_INDEX = 1
-  private val PBKDF2_INDEX = 2
-
   import provider.driver.api._
 
   private implicit class UserExtensions[C[_]](q: Query[Users#UsersTable, UserRow, C]) {
@@ -53,25 +44,43 @@ class UsersDbAccess @Inject()(
     run {
       for {
         userId <- query
-        _ <- (trackedLists.query returning trackedLists.query.map(_.id)) += TrackedListRow(None, "Default List", isDefault = true, userId)
+        _ <- (trackedLists.query returning trackedLists.query.map(_.id)) += TrackedListRow(None, "Default List", isDefault = true, isPublic = false, userId)
       } yield userId
     }
   }
 
   def findUserAndLists(userId: Int) = {
-    trackedLists.query.filter(_.userId === userId).flatMap(list => {
-      list.userId_fk.map(user => user -> list)
-    })
+    run {
+      trackedLists.query.filter(_.userId === userId).flatMap(list => {
+        list.userId_fk.map(user => user -> list)
+      }).result
+    }
   }
 
   def findUserAndList(userId: Int, listId: Int) = {
-    trackedLists.query.filter(tl => tl.userId === userId && tl.id === listId).take(1).flatMap(list => {
-      list.userId_fk.map(user => user -> list)
-    })
+    run {
+
+      trackedLists.query.filter(tl => tl.userId === userId && tl.id === listId).take(1).flatMap(list => {
+        list.userId_fk.map(user => user -> list)
+      }).result
+    }
   }
 
   def findDefaultListForUser(userId: Int) = {
-    trackedLists.query.filter(tl => tl.userId === userId && tl.isDefault === true).take(1)
+    run {
+      trackedLists.query.filter(tl => tl.userId === userId && tl.isDefault === true).
+        take(1).
+        result.
+        headOption
+    }
+  }
+
+  def insertList(userId: Int, name: String) = {
+    run {
+      (trackedLists.query  returning
+        trackedLists.query.map(_.id) into
+        ((l, id) => l.copy(id = Some(id)))) += TrackedListRow(None, name, isDefault = false, isPublic = false, userId)
+    }
   }
 
   def findList(userId: Int, listId: Int) = {
@@ -81,21 +90,29 @@ class UsersDbAccess @Inject()(
       trackedListThings.query on (_.id === _.listId) joinLeft
       things.query on(_._2.map(_.thingId) === _.id)
 
-    fullQuery.map {
+    val q = fullQuery.map {
       case ((list, _), things) => list -> things
     }
+
+    run(q.result)
   }
 
   def addThingToList(listId: Int, thingId: Int) = {
-    trackedListThings.query.insertOrUpdate(TrackedListThing(listId, thingId))
+    run {
+      trackedListThings.query.insertOrUpdate(TrackedListThing(listId, thingId))
+    }
   }
 
   def getUserEvents(userId: Int) = {
-    events.query.filter(_.userId === userId).sortBy(_.timestamp.desc)
+    run {
+      events.query.filter(_.userId === userId).sortBy(_.timestamp.desc).result
+    }
   }
 
   def addUserEvent(event: Event) = {
-    (events.query returning events.query.map(_.id)) += event
+    run {
+      (events.query returning events.query.map(_.id)) += event
+    }
   }
 }
 

@@ -27,7 +27,7 @@ case class Availability(
 class Availabilities @Inject()(
   val driver: CustomPostgresProfile,
   val things: Things,
-  val seasons: TvShowSeasons,
+  val episodes: TvShowEpisodes,
   val networks: Networks,
   val implicits: DbImplicits
 ) {
@@ -52,7 +52,7 @@ class Availabilities @Inject()(
     def thingIdNetworkId = index("availability_thing_id_networkid", (thingId, networkId))
 
     def thingId_fk = foreignKey("availability_thing_id_fk", thingId, things.query)(_.id.?)
-    def tvShowEpisodeId_fk = foreignKey("availability_tv_show_episode_id_fk", tvShowEpisodeId, seasons.query)(_.id.?)
+    def tvShowEpisodeId_fk = foreignKey("availability_tv_show_episode_id_fk", tvShowEpisodeId, episodes.query)(_.id.?)
     def networkId_fk = foreignKey("availability_network_id_fk", networkId, networks.query)(_.id.?)
 
     override def * =

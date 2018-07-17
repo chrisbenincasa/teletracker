@@ -33,7 +33,8 @@ class GenerateDdls extends App {
       injector.instance[ExternalIds].query,
       injector.instance[GenreReferences].query,
       injector.instance[ThingGenres].query,
-      injector.instance[Certifications].query
+      injector.instance[Certifications].query,
+      injector.instance[PersonThings].query
     ).flatMap(_.schema.createStatements).
       groupBy(_.split(" ").take(2).toList)
 

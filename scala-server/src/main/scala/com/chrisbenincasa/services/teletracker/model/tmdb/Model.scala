@@ -2,6 +2,7 @@ package com.chrisbenincasa.services.teletracker.model.tmdb
 
 import io.circe.generic.JsonCodec
 import io.circe._
+import io.circe.shapes._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import com.chrisbenincasa.services.teletracker.util.json.circe._
@@ -106,11 +107,11 @@ case class Person(
   place_of_birth: Option[String],
   popularity: Option[Double],
   profile_path: Option[String],
-  known_for: List[Movie :+: TvShow :+: CNil],
+  known_for: Option[List[Movie :+: TvShow :+: CNil]],
 
   // Join fields
-//  credits: Option[PersonCredits],
-//  combined_credits: Option[PersonCredits],
+  credits: Option[PersonCredits],
+  combined_credits: Option[PersonCredits],
   movie_credits: Option[PersonMovieCredits],
   tv_credits: Option[PersonTvCredits]
 )
@@ -146,10 +147,10 @@ case class Person(
 )
 
 
-//case class PersonCredits(
-//  crew: (Movie | TvShow & MultiSearchResponseFields)[],
-//  cast: (Movie | TvShow & MultiSearchResponseFields)[]
-//)
+case class PersonCredits(
+  crew: List[Movie :+: TvShow :+: CNil],
+  cast: List[Movie :+: TvShow :+: CNil]
+)
 
 trait TvShowId
 
@@ -197,7 +198,7 @@ trait TvShowId
   episodes: Option[List[TvShowEpisode]],
   id: Int,
   poster_path: Option[String],
-  season_Int: Option[Int],
+  season_number: Option[Int],
   name: Option[String],
   overview: Option[String],
 
@@ -208,13 +209,13 @@ trait TvShowId
 @JsonCodec case class TvShowEpisode (
   air_date: Option[String],
 //  crew: Option[List[Map[String, Any]]],
-  episode_Int: Option[Int],
+  episode_number: Option[Int],
 //  guest_stars: Option[List[Map[String, Any]]],
   name: Option[String],
   overview: Option[String],
   id: Int,
   production_code: Option[String],
-  season_Int: Option[Int],
+  season_number: Option[Int],
   still_path: Option[String],
   vote_average: Option[Double],
   vote_count: Option[Int],
