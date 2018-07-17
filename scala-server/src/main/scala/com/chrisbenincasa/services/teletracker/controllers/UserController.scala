@@ -18,26 +18,22 @@ class UserController @Inject()(
   thingsDbAccess: ThingsDbAccess,
   jwtVendor: JwtVendor
 )(implicit executionContext: ExecutionContext) extends Controller {
-  import usersDbAccess.provider.driver.api._
-
-  prefix("/api/v1") {
+  prefix("/api/v1/users") {
     // Create a user
-    post("/users/?") { req: CreateUserRequest =>
-      usersDbAccess.newUser(req.name, req.username, req.email, req.password).map(_ => {
+    post("/?") { req: CreateUserRequest =>
+      usersDbAccess.newUser(req.name, req.username, req.email, req.password).map(userId => {
         // Insert into token field
         response.created(
           DataResponse(
-            TokenResponse(jwtVendor.vend(req.email))
+            CreateUserResponse(userId, jwtVendor.vend(req.email))
           )
         )
       })
     }
 
     filter[JwtAuthFilter].filter[UserSelfOnlyFilter].apply {
-      get("/users/:userId") { req: GetUserByIdRequest =>
-        usersDbAccess.run {
-          usersDbAccess.findUserAndLists(req.request.authContext.user.id).result
-        }.map(result => {
+      get("/:userId") { req: GetUserByIdRequest =>
+        usersDbAccess.findUserAndLists(req.request.authContext.user.id).map(result => {
           if (result.isEmpty) {
             response.status(404)
           } else {
@@ -51,62 +47,75 @@ class UserController @Inject()(
         })
       }
 
-      get("/users/:userId/lists") { req: GetUserByIdRequest =>
-        usersDbAccess.run {
-          usersDbAccess.findUserAndLists(req.request.authContext.user.id).result
-        }.map(result => {
+      get("/:userId/lists") { req: GetUserByIdRequest =>
+        usersDbAccess.findUserAndLists(req.request.authContext.user.id).map(result => {
           if (result.isEmpty) {
             response.status(404)
           } else {
             val user = result.head._1
             val lists = result.map(_._2)
 
-            user.toFull.withLists(lists.map(_.toFull).toList)
+            DataResponse(
+              user.toFull.withLists(lists.map(_.toFull).toList)
+            )
           }
         })
       }
 
-      get("/users/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
-        usersDbAccess.run {
-          usersDbAccess.findList(req.userId, req.listId).result
-        }.map(result => {
+      post("/:userId/lists") { req: CreateListRequest =>
+        usersDbAccess.insertList(req.request.authContext.user.id, req.name).map(newList => {
+          DataResponse(
+            CreateListResponse(newList.id.get)
+          )
+        })
+      }
+
+      get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
+        usersDbAccess.findList(req.request.authContext.user.id, req.listId).map(result => {
           if (result.isEmpty) {
             response.status(404)
           } else {
             val list = result.head._1
             val things = result.flatMap(_._2)
 
-            list.toFull.withThings(things.toList)
+            DataResponse(
+              list.toFull.withThings(things.toList)
+            )
           }
         })
       }
 
-      put("/users/:userId/lists/:listId") { req: AddThingToListRequest =>
+      put("/:userId/lists/:listId") { req: AddThingToListRequest =>
         val listFut = if (req.listId == "default") {
-          usersDbAccess.run(usersDbAccess.findDefaultListForUser(req.userId).result.headOption)
+          usersDbAccess.findDefaultListForUser(req.request.authContext.user.id)
         } else {
           Promise.fromTry(Try(req.listId.toInt)).future.flatMap(listId => {
-            usersDbAccess.run(usersDbAccess.findUserAndList(req.userId, listId).result).map(_.headOption.map(_._2))
+            usersDbAccess.findUserAndList(req.request.authContext.user.id, listId).map(_.headOption.map(_._2))
           })
         }
 
         listFut.flatMap {
           case None => Future.successful(response.status(404))
           case Some(list) =>
-            thingsDbAccess.run(thingsDbAccess.findThingById(req.itemId).result.headOption).flatMap {
+            thingsDbAccess.findThingById(req.itemId).flatMap {
               case None => Future.successful(response.status(404))
               case Some(thing) =>
-                usersDbAccess.run(usersDbAccess.addThingToList(list.id.get, thing.id.get)).map(_ => response.status(204))
+                usersDbAccess.addThingToList(list.id.get, thing.id.get).
+                  map(_ => response.status(204))
             }
         }
       }
 
-      get("/users/:userId/events") { req: GetUserByIdRequest =>
-        usersDbAccess.run(usersDbAccess.getUserEvents(req.userId.toInt).result).map(res => Map("data" -> res))
+      get("/:userId/events") { req: GetUserByIdRequest =>
+        usersDbAccess.getUserEvents(req.request.authContext.user.id).map(DataResponse(_))
       }
 
-      post("/users/:userId/events") { req: AddUserEventRequest =>
-        usersDbAccess.run(usersDbAccess.addUserEvent(req.event)).map(res => Map("data" -> res))
+      post("/:userId/events") { req: AddUserEventRequest =>
+        if (req.event.userId != req.request.authContext.user.id) {
+          response.status(401)
+        } else {
+          usersDbAccess.addUserEvent(req.event).map(DataResponse(_))
+        }
       }
     }
   }
@@ -118,19 +127,33 @@ case class GetUserByIdRequest(
 )
 
 case class GetUserAndListByIdRequest(
-  @RouteParam userId: Int,
-  @RouteParam listId: Int
+  @RouteParam userId: String,
+  @RouteParam listId: Int,
+  request: Request
 )
 
+case class CreateListRequest(
+  @RouteParam userId: String,
+  request: Request,
+  name: String
+)
+
+case class CreateListResponse(id: Int)
+
 case class AddThingToListRequest(
-  @RouteParam userId: Int,
+  @RouteParam userId: String,
   @RouteParam listId: String,
-  itemId: Int
+  itemId: Int,
+  request: Request,
 )
 
 case class AddUserEventRequest(
-  @RouteParam userId: Int,
-  event: Event // Don't use DAO here
+  @RouteParam userId: String,
+  event: Event, // Don't use DAO here
+  request: Request
 )
 
-case class TokenResponse(token: String)
+case class CreateUserResponse(
+  userId: Int,
+  token: String
+)

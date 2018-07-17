@@ -23,7 +23,7 @@ class AuthController @Inject()(
       // Retrieve existing token?
       response.ok(
         DataResponse(
-          TokenResponse(jwtVendor.vend(req.email))
+          CreateUserResponse(req.request.authContext.user.id, jwtVendor.vend(req.email))
         )
       )
     }
@@ -48,6 +48,7 @@ case class CreateUserRequest(
 )
 
 case class LoginRequest(
+  request: Request,
   email: String,
   password: String,
   redirect_url: Option[String]

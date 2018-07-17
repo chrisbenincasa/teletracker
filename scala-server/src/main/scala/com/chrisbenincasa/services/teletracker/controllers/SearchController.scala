@@ -2,6 +2,7 @@ package com.chrisbenincasa.services.teletracker.controllers
 
 import com.chrisbenincasa.services.teletracker.config.TeletrackerConfig
 import com.chrisbenincasa.services.teletracker.db.ThingsDbAccess
+import com.chrisbenincasa.services.teletracker.db.model.{ExternalSource, ThingType}
 import com.chrisbenincasa.services.teletracker.external.tmdb.TmdbClient
 import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.chrisbenincasa.services.teletracker.model.tmdb._
@@ -42,8 +43,8 @@ class SearchController @Inject()(
     val movies = result.results.flatMap(_.filter[Movie]).flatMap(_.head)
     val shows = result.results.flatMap(_.filter[TvShow]).flatMap(_.head)
 
-    val existingMovies = thingsDbAccess.findThingsByExternalIds("themoviedb", movies.map(_.id.toString).toSet, "movie")
-    val existingShows = thingsDbAccess.findThingsByExternalIds("themoviedb", shows.map(_.id.toString).toSet, "show")
+    val existingMovies = thingsDbAccess.findThingsByExternalIds(ExternalSource.TheMovieDb, movies.map(_.id.toString).toSet, ThingType.Movie)
+    val existingShows = thingsDbAccess.findThingsByExternalIds(ExternalSource.TheMovieDb, shows.map(_.id.toString).toSet, ThingType.Show)
 
     val existingMoviesByExternalId = existingMovies.map(e => {
       e.collect { case (eid, m) if eid.tmdbId.isDefined => eid.tmdbId.get -> m }.toMap

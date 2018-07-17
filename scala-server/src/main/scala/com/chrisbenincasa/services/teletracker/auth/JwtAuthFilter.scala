@@ -48,10 +48,12 @@ class JwtAuthFilter @Inject()(
 
             respPromise
           case Failure(_: SignatureException) =>
-            println("Invalid JWT token")
+            logger.error("Invalid JWT token")
             Future.value(Response(Status.Unauthorized))
 
-          case Failure(_) => Future.value(Response(Status.InternalServerError))
+          case Failure(e) =>
+            logger.error(e.getMessage, e)
+            Future.value(Response(Status.InternalServerError))
         }
     }
   }

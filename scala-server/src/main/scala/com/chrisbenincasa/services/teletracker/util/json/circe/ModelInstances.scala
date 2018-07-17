@@ -1,6 +1,6 @@
 package com.chrisbenincasa.services.teletracker.util.json.circe
 
-import com.chrisbenincasa.services.teletracker.db.model.{Availability, ObjectMetadata, Thing, ThingWithDetails}
+import com.chrisbenincasa.services.teletracker.db.model._
 import io.circe.shapes._
 import io.circe.generic.semiauto._
 import io.circe.generic.auto._
@@ -39,4 +39,6 @@ trait ModelInstances extends JodaInstances {
   implicit val thingWithDetailsEncoder = deriveEncoder[ThingWithDetails]
 
   implicit val thingWithDetailsDecoder = deriveDecoder[ThingWithDetails]
+
+  implicit val userDecoder = deriveDecoder[User]
 }

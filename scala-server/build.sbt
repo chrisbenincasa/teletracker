@@ -26,7 +26,7 @@ scalacOptions ++= Seq(
 
 //cancelable in Global := true
 
-fork in run := true
+//fork in run := true
 
 lazy val circeVersion = "0.9.3"
 
@@ -38,6 +38,16 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   // Service
   "com.twitter" %% "finatra-http" % "18.6.0",
+  "com.twitter" %% "finatra-http" % "18.6.0" % "test",
+  "com.twitter" %% "inject-server" % "18.6.0" % "test",
+  "com.twitter" %% "inject-app" % "18.6.0" % "test",
+  "com.twitter" %% "inject-core" % "18.6.0" % "test",
+  "com.twitter" %% "inject-modules" % "18.6.0" % "test",
+  "com.twitter" %% "finatra-http" % "18.6.0" % "test" classifier "tests",
+  "com.twitter" %% "inject-server" % "18.6.0" % "test" classifier "tests",
+  "com.twitter" %% "inject-app" % "18.6.0" % "test" classifier "tests",
+  "com.twitter" %% "inject-core" % "18.6.0" % "test" classifier "tests",
+  "com.twitter" %% "inject-modules" % "18.6.0" % "test" classifier "tests",
   // Db
   "com.typesafe.slick" %% "slick" % "3.2.3",
   "com.typesafe.slick" %% "slick-codegen" % "3.2.3",
@@ -48,7 +58,13 @@ libraryDependencies ++= Seq(
   "org.flywaydb" % "flyway-core" % "5.1.3",
   "com.h2database" % "h2" % "1.4.193",
   // Auth
-  "io.jsonwebtoken" % "jjwt" % "0.9.0"
+  "io.jsonwebtoken" % "jjwt" % "0.9.0",
+  // Misc
+  "org.typelevel" %% "cats-core" % "1.1.0",
+  "com.google.guava" % "guava" % "20.0",
+  // Testing
+  "com.spotify" % "docker-client" % "8.11.7" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 ) ++ Seq(
   "io.circe" %% "circe-core",
   "io.circe" %% "circe-generic",
@@ -66,7 +82,7 @@ envVars in reStart := Map(
   "JWT_SECRET" -> System.getenv("JWT_SECRET")
 )
 
-Revolver.enableDebugging(port = 5005, suspend = true)
+//Revolver.enableDebugging(port = 5005, suspend = true)
 
 //javaOptions in reStart := Seq("-Dlog.service.output=/dev/stdout", "-Dlog.access.output=/dev/stdout")
 
@@ -145,6 +161,15 @@ lazy val `generate-ddl` = taskKey[Unit]("generate ddl")
 
 lazy val `run-db-migrations` = inputKey[Unit]("generate ddl")
 `run-db-migrations` := runInputTask(Runtime, "com.chrisbenincasa.services.teletracker.tools.RunDatabaseMigration").evaluated
+
+lazy val `reset-db` = taskKey[Unit]("reset-db")
+
+`reset-db` := Def.sequential(
+  `generate-ddl`.toTask,
+  `run-db-migrations`.toTask(" clean"),
+  `run-db-migrations`.toTask(" migrate"),
+  (runMain in Runtime).toTask(" com.chrisbenincasa.services.teletracker.tools.RunAllSeeds")
+).value
 
 resourceGenerators in Compile += Def.task {
   ((resourceManaged in Compile).value / "db"  ** "*").get
