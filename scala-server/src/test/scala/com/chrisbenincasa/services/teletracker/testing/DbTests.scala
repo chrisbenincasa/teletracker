@@ -8,8 +8,6 @@ import scala.concurrent.duration._
 
 class DbTests extends BaseSpec {
   "DB" should "turn on" in {
-    db.createAllTables(injector)
-
     val access = injector.getInstance(classOf[UsersDbAccess])
     val userId = Await.result(access.newUser("Christian", "chrisbenincasa", "test@test.com", "password"), Duration.Inf)
 

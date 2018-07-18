@@ -38,8 +38,6 @@ trait BaseSpec extends FlatSpec with Assertions with Inside with BeforeAndAfterA
               withFallback(ConfigFactory.defaultApplication()).
               resolve()
 
-          println(loader.getConfig("teletracker"))
-
           val loaded = loader.as[TeletrackerConfig]("teletracker")
           binder.bind(classOf[TeletrackerConfig]).toInstance(loaded)
         }
