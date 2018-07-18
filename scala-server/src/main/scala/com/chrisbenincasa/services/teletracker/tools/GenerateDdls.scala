@@ -52,5 +52,7 @@ class GenerateDdls extends App {
     createStatements.getOrElse("create" :: "unique" :: Nil, Nil).map(_ + ";").foreach(writer.println)
     createStatements.getOrElse("alter" :: "table" :: Nil, Nil).map(_ + ";").foreach(writer.println)
     writer.flush()
+
+    logger.info("Complete!")
   }
 }
