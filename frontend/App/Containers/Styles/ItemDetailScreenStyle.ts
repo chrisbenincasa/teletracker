@@ -28,13 +28,14 @@ export default StyleSheet.create({
         marginTop: 20,
         marginLeft: 12,
         borderWidth: 2,
-        borderColor: Colors.white
+        borderColor: Colors.white,
+        backgroundColor: '#C9C9C9', 
+        alignContent: 'center'
     },
     subHeaderContainer: {
         position: 'relative',
         top: 60,
         left: 0,
-        backgroundColor: 'transparent',
         flexDirection: 'row'
     },
     itemDetailsContainer: {
