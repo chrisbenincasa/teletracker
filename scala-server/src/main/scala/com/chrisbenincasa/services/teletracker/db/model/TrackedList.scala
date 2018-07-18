@@ -7,6 +7,7 @@ case class TrackedListRow(
   id: Option[Int],
   name: String,
   isDefault: Boolean,
+  isPublic: Boolean,
   userId: Int
 ) {
   def toFull: TrackedList = TrackedList.fromRow(this)
@@ -15,7 +16,13 @@ case class TrackedListRow(
 object TrackedList {
   def fromRow(row: TrackedListRow): TrackedList = {
     require(row.id.isDefined)
-    TrackedList(row.id.get, row.name, row.isDefault, row.userId)
+    TrackedList(
+      row.id.get,
+      row.name,
+      row.isDefault,
+      row.isPublic,
+      row.userId
+    )
   }
 }
 
@@ -23,8 +30,8 @@ case class TrackedList(
   id: Int,
   name: String,
   isDefault: Boolean,
+  isPublic: Boolean,
   userId: Int,
-
   things: Option[List[Thing]] = None
 ) {
   def withThings(things: List[Thing]): TrackedList = {
@@ -42,6 +49,7 @@ class TrackedLists @Inject()(
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def name = column[String]("name")
     def isDefault = column[Boolean]("is_default", O.Default(false))
+    def isPublic = column[Boolean]("is_public", O.Default(true))
     def createdAt = column[java.sql.Timestamp]("created_at")
     def lastUpdatedAt = column[java.sql.Timestamp]("last_updated_at")
     def userId = column[Int]("user_id")
@@ -53,6 +61,7 @@ class TrackedLists @Inject()(
         id.?,
         name,
         isDefault,
+        isPublic,
         userId
       ) <> (TrackedListRow.tupled, TrackedListRow.unapply)
   }

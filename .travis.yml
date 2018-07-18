@@ -9,9 +9,6 @@ matrix:
         - docker pull postgres
       before_script: cd scala-server
       script: travis_retry sbt ++$TRAVIS_SCALA_VERSION compile test
-      branches:
-        only: 
-          - master
 
     - language: node_js
       node_js: "8"
@@ -23,6 +20,7 @@ matrix:
       sudo: required
       env:
         - JWT_SECRET=jwt_secret_for_testing_only
-      branches:
-        only: 
-            - master
+
+branches:
+  only: 
+    - master

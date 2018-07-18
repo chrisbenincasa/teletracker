@@ -5,12 +5,10 @@ import io.circe.syntax._
 
 object DataResponse {
   def complex[T](v: T)(implicit decoder: Encoder[T]): String = {
-    s"""{"data": ${v.asJson.spaces4} }"""
+    Map("data" -> v).asJson.spaces4
   }
 
-  def apply[T](v: T): StandardDataResponse[T] = StandardDataResponse(v)
-
-  def standard[T](v: T): StandardDataResponse[T] = StandardDataResponse(v)
+  def standard[T](v: T): DataResponse[T] = DataResponse(v)
 }
 
-case class StandardDataResponse[T](data: T)
+case class DataResponse[T](data: T)

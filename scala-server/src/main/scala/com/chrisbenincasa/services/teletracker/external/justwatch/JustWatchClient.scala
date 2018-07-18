@@ -10,7 +10,7 @@ import scala.concurrent.{Future, Promise}
 @Singleton
 class JustWatchClient {
   private val host = "apis.justwatch.com"
-  private lazy val client = {
+  private val client = {
     Http.client.
       withTls(host).
       withDecompression(true).

@@ -6,22 +6,19 @@ import com.chrisbenincasa.services.teletracker.util.json.circe._
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.RouteParam
 import javax.inject.Inject
+import io.circe.generic.auto._
 import scala.concurrent.ExecutionContext
 
-class TvShowController @Inject()(
+class PeopleController @Inject()(
   thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext) extends Controller {
   prefix("/api/v1") {
-    get("/show/:id") { req: GetShowRequest =>
-      thingsDbAccess.findShowById(req.id).map(result => {
-        if (result.isEmpty) {
-          response.status(404)
-        } else {
-          response.ok.contentTypeJson().body(DataResponse.complex(result.get))
-        }
-      })
+    get("/person/:personId") { req: GetPersonRequest =>
+      thingsDbAccess.findPersonById(req.personId).map(DataResponse.complex(_))
     }
   }
 }
 
-case class GetShowRequest(@RouteParam id: Int)
+case class GetPersonRequest(
+  @RouteParam personId: Int
+)

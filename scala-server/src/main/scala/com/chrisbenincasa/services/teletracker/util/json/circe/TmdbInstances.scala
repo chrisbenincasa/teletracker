@@ -1,6 +1,6 @@
 package com.chrisbenincasa.services.teletracker.util.json.circe
 
-import com.chrisbenincasa.services.teletracker.model.tmdb.{Movie, Person, TvShow}
+import com.chrisbenincasa.services.teletracker.model.tmdb.{Movie, Person, PersonCredits, TvShow}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, DecodingFailure, Encoder}
 import shapeless.{:+:, CNil, Inl, Inr}
@@ -28,6 +28,10 @@ trait TmdbInstances {
   }
 
   import io.circe.shapes._
+
+  implicit val personCreditsDecoder: Decoder[PersonCredits] = deriveDecoder
+
+  implicit val personCreditsEncoder: Encoder[PersonCredits] = deriveEncoder
 
   implicit def personDecoder(
     implicit

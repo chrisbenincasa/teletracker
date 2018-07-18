@@ -1,6 +1,7 @@
 package com.chrisbenincasa.services.teletracker
 
-import com.chrisbenincasa.services.teletracker.controllers.{AuthController, SearchController, TvShowController, UserController}
+import com.chrisbenincasa.services.teletracker.controllers._
+import com.chrisbenincasa.services.teletracker.exception_mappers.PassThroughExceptionMapper
 import com.chrisbenincasa.services.teletracker.inject.Modules
 import com.chrisbenincasa.services.teletracker.util.json.JsonModule
 import com.google.inject.Module
@@ -13,10 +14,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object TeletrackerServerMain extends TeletrackerServer
 
-class TeletrackerServer extends HttpServer with Logging  {
+class TeletrackerServer(override protected val modules: Seq[Module] = Modules()) extends HttpServer with Logging  {
   override protected def defaultFinatraHttpPort: String = ":3000"
-
-  override protected def modules: Seq[Module] = Modules()
 
   override protected def jacksonModule: Module = new JsonModule
 
@@ -24,9 +23,12 @@ class TeletrackerServer extends HttpServer with Logging  {
     router.
       filter[LoggingMDCFilter[Request, Response]].
       filter[TraceIdMDCFilter[Request, Response]].
+      exceptionMapper[PassThroughExceptionMapper].
       add[AuthController].
       add[UserController].
       add[SearchController].
-      add[TvShowController]
+      add[PeopleController].
+      add[TvShowController].
+      add[MetadataController]
   }
 }

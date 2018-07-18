@@ -1,6 +1,7 @@
 package com.chrisbenincasa.services.teletracker.db.model
 
 import com.chrisbenincasa.services.teletracker.db.CustomPostgresProfile
+import com.chrisbenincasa.services.teletracker.inject.DbImplicits
 import com.chrisbenincasa.services.teletracker.model.tmdb._
 import javax.inject.Inject
 import io.circe._
@@ -16,7 +17,7 @@ case class Thing(
   id: Option[Int],
   name: String,
   normalizedName: String,
-  `type`: String, // ThingType
+  `type`: ThingType,
   createdAt: DateTime,
   lastUpdatedAt: DateTime,
   metadata: Option[ObjectMetadata]
@@ -26,7 +27,7 @@ case class ThingWithDetails(
   id: Int,
   name: String,
   normalizedName: String,
-  `type`: String, // ThingType
+  `type`: ThingType,
   createdAt: DateTime,
   lastUpdatedAt: DateTime,
   networks: Option[List[Network]],
@@ -43,14 +44,19 @@ object ObjectMetadata {
 
   def withTmdbMovie(movie: Movie): ObjectMetadata = ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('movie ->> movie)))
   def withTmdbShow(show: TvShow): ObjectMetadata = ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('show ->> show)))
+  def withTmdbPerson(person: Person): ObjectMetadata = ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('person ->> person)))
 }
 
 case class ObjectMetadata(
   themoviedb: Option[ObjectMetadata.TmdbExternalEntity]
 )
 
-class Things @Inject()() {
-  import CustomPostgresProfile.api._
+class Things @Inject()(
+  val profile: CustomPostgresProfile,
+  dbImplicits: DbImplicits
+) {
+  import profile.api._
+  import dbImplicits._
 
   object Implicits {
     implicit val metaToJson = MappedColumnType.base[ObjectMetadata, Json](_.asJson, _.as[ObjectMetadata].right.get)
@@ -62,7 +68,7 @@ class Things @Inject()() {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def name = column[String]("name")
     def normalizedName = column[String]("normalized_name")
-    def `type` = column[String]("type")
+    def `type` = column[ThingType]("type")
     def createdAt = column[DateTime]("created_at", O.SqlType("timestamp with time zone"))
     def lastUpdatedAt = column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
     def metadata = column[Option[ObjectMetadata]]("metadata", O.SqlType("jsonb"))

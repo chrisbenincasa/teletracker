@@ -1,6 +1,6 @@
 package com.chrisbenincasa.services.teletracker.util
 
-import com.chrisbenincasa.services.teletracker.db.ThingsDbAccess
+import com.chrisbenincasa.services.teletracker.db.{NetworksDbAccess, ThingsDbAccess}
 import com.chrisbenincasa.services.teletracker.db.model._
 import com.chrisbenincasa.services.teletracker.external.justwatch.JustWatchClient
 import com.chrisbenincasa.services.teletracker.external.tmdb.TmdbClient
@@ -22,6 +22,7 @@ import scala.util.Try
 
 class TmdbMovieImporter @Inject()(
   thingsDbAccess: ThingsDbAccess,
+  networksDbAccess: NetworksDbAccess,
   tmdbClient: TmdbClient,
   justWatchClient: JustWatchClient,
   tmdbEntityProcessor: TmdbEntityProcessor,
@@ -33,7 +34,7 @@ class TmdbMovieImporter @Inject()(
   import io.circe.syntax._
 
   def handleMovies(movies: List[Movie]): Future[List[Thing]] = {
-    val allNetworks = thingsDbAccess.findAllNetworks().map(_.map {
+    val allNetworks = networksDbAccess.findAllNetworks().map(_.map {
       case (ref, net) => (ref.externalSource -> ref.externalId) -> net
     }.toMap)
 
@@ -89,8 +90,8 @@ class TmdbMovieImporter @Inject()(
   private def matchJustWatchMovie(movie: Movie, popularItems: List[PopularItem]): Option[PopularItem] = {
     popularItems.find(item => {
       val idMatch = item.scoring.getOrElse(Nil).exists(s => s.provider_type == "tmdb:id" && s.value.toInt.toString == movie.id.toString)
-      val nameMatch = item.title == movie.title.get
-      val originalMatch = movie.original_title.contains(item.original_title)
+      val nameMatch = item.title.exists(movie.title.contains)
+      val originalMatch = movie.original_title.exists(item.original_title.contains)
 
       idMatch || nameMatch || originalMatch
     })
