@@ -35,7 +35,7 @@ case class PopularItemsResponse(
 
 case class PopularItem(
   id: Int,
-  title: String,
+  title: Option[String],
   full_path: String,
   poster: Option[String],
   short_description: Option[String],
@@ -68,4 +68,61 @@ case class Offer(
 case class Scoring(
   provider_type: String,
   value: Double
+)
+
+case class JustWatchShow(
+  id: Int,
+  title: Option[String],
+  full_path: Option[String],
+  poster: Option[String],
+  backdrops: Option[List[JustWatchBackdrop]],
+  short_description: Option[String],
+  original_release_year: Option[Int],
+  tmdb_popularity: Option[Double],
+  object_type: Option[String],
+  original_title: Option[String],
+  all_titles: Option[List[String]],
+  offers: Option[List[Offer]],
+  scoring: Option[List[Scoring]],
+  genre_ids: Option[List[Int]],
+  seasons: Option[List[JustWatchSeason]],
+  age_certification: Option[String],
+  max_season_number: Option[Int]
+)
+
+case class JustWatchSeason(
+  id: Int,
+  title: Option[String],
+  full_path: Option[String],
+  poster: Option[String],
+  season_number: Option[Int],
+  short_description: Option[String],
+  original_release_year: Option[Int],
+  tmdb_popularity: Option[Double],
+  object_type: Option[String],
+  original_title: Option[String],
+  all_titles: Option[List[String]],
+  offers: Option[List[Offer]],
+  scoring: Option[List[Scoring]],
+  show_id: Option[Int],
+  show_title: Option[String],
+  max_episode_number: Option[Int],
+  episodes: Option[List[JustWatchEpisode]]
+)
+
+case class JustWatchEpisode(
+  id: Int,
+  title: Option[String],
+  poster: Option[String],
+  short_description: Option[String],
+  object_type: Option[String],
+  offers: Option[List[Offer]],
+  season_number: Option[Int],
+  episode_number: Option[Int],
+  runtime: Option[Int],
+  show_title: Option[String]
+)
+
+case class JustWatchBackdrop(
+  backdrop_url: String
 )
