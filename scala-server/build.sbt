@@ -92,7 +92,7 @@ envVars in reStart := Map(
 
 enablePlugins(FlywayPlugin, DockerPlugin)
 
-mainClass in assembly := Some("com.chrisbenincasa.services.teletracker.TeletrackerServerMain")
+mainClass in assembly := Some("com.chrisbenincasa.services.teletracker.Teletracker")
 
 test in assembly := {}
 
@@ -128,8 +128,9 @@ dockerfile in docker := {
   new Dockerfile {
     from("openjdk:8u141-jre-slim")
     add(baseDirectory.value / "src/docker/", "/app")
-    add(artifact, artifactTargetPath).
-      runRaw("chmod +x /app/main.sh")
+    add(baseDirectory.value / "data", "/data")
+    add(artifact, artifactTargetPath)
+    runRaw("chmod +x /app/main.sh")
     entryPoint("/app/main.sh")
   }
 }
@@ -170,8 +171,8 @@ lazy val `reset-db` = taskKey[Unit]("reset-db")
 
 `reset-db` := Def.sequential(
   `generate-ddl`.toTask,
-  `run-db-migrations`.toTask(" clean"),
-  `run-db-migrations`.toTask(" migrate"),
+  `run-db-migrations`.toTask(" -action=clean"),
+  `run-db-migrations`.toTask(" -action=migrate"),
   (runMain in Runtime).toTask(" com.chrisbenincasa.services.teletracker.tools.RunAllSeeds")
 ).value
 
