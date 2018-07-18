@@ -54,9 +54,9 @@ const ApplicationStyles = {
   },
   header: {
     outer: {
-      paddingTop: getStatusBarHeight(),
-      height: (Platform.OS === 'ios' ? 50 : 56) + getStatusBarHeight(),
-      borderBottomWidth: 0
+        paddingTop: getStatusBarHeight(),
+        height: (Platform.OS === 'ios' ? 50 : 56) + getStatusBarHeight(),
+        borderBottomWidth: 0
     },
     inner: {
       paddingTop: 5

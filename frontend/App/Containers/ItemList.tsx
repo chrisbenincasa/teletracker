@@ -1,15 +1,18 @@
 import * as R from 'ramda';
 import React from 'react';
 import { SectionList, Text, View, FlatList } from 'react-native';
-import { ListItem } from 'react-native-elements';
+import { ListItem, Icon } from 'react-native-elements';
 import { connect, Dispatch } from 'react-redux';
 
 import Header from '../Components/Header/Header';
+import { Navigation } from 'react-native-navigation';
+
 import * as NavigationConfig from '../Navigation/NavigationConfig';
 import NavActions from '../Redux/NavRedux';
 import ReduxState from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
 import styles from './Styles/ItemListStyle';
+import { Colors } from '../Themes/';
 
 // More info here: https://facebook.github.io/react-native/docs/sectionlist.html
 
@@ -20,6 +23,10 @@ interface Props {
 }
 
 class ItemList extends React.PureComponent<Props> {
+    constructor(props) {
+        super(props);
+        this.openSearch = this.openSearch.bind(this);
+    }
 
     state = {};
 
@@ -41,6 +48,10 @@ class ItemList extends React.PureComponent<Props> {
         }
     }
     
+    openSearch() {
+        Navigation.push(this.props.componentId, NavigationConfig.SearchView);
+    }
+
     goToItemDetail(item) {
         let view = R.mergeDeepRight(NavigationConfig.DetailView, {
             component: {
@@ -66,6 +77,7 @@ class ItemList extends React.PureComponent<Props> {
         )
     }
 
+
     /* ***********************************************************
     * STEP 2
     * Consider the configurations we've set below.  Customize them
@@ -85,7 +97,9 @@ class ItemList extends React.PureComponent<Props> {
     
     // How many items should be kept im memory as we scroll?
     oneScreensWorth = 20;
-    
+        openSearch() {
+        Navigation.push(this.props.componentId, NavigationConfig.SearchView);
+    }
     // extraData is for anything that is not indicated in data
     // for instance, if you kept "favorites" in `this.state.favs`
     // pass that in, so changes in favorites will cause a re-render
@@ -105,7 +119,16 @@ class ItemList extends React.PureComponent<Props> {
             <View style={styles.container}>
                 <Header 
                     componentId={this.props.componentId} 
-                    centerComponent={{title: 'My List',  style: { color: 'white' } }}  />
+                    centerComponent={{title: 'My List',  style: { color: 'white' } }}
+                    rightComponent={
+                        <Icon 
+                            name='search'
+                            color='#fff'
+                            underlayColor={Colors.headerBackground}
+                            onPress={this.openSearch}
+                        />
+                    }
+                />
                 <FlatList
                     renderSectionHeader={this.renderSectionHeader}
                     sections={this.getListSections.call(this)}
