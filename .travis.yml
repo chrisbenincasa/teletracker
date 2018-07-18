@@ -30,5 +30,4 @@ deploy:
   provider: script
   script: bash docker_push
   on:
-    jdk: oraclejdk8
     branch: master
