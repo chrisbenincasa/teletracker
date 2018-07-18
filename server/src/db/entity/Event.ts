@@ -22,8 +22,10 @@ export class Event {
     @Column({ type: 'text', nullable: true })
     details?: string
 
-    @CreateDateColumn()
+    @CreateDateColumn({ type: 'timestamp with time zone'})
     timestamp: Date
+
+    targetEntity?: any;
 }
 
 export enum EventType {

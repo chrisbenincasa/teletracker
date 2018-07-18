@@ -5,7 +5,7 @@ import { MovieDbClient, TvShow } from 'themoviedb-client-typed';
 import { Connection } from 'typeorm';
 
 import GlobalConfig from '../Config';
-import { Availability, ExternalSource, Network, Thing, ThingExternalIds } from '../db/entity';
+import { Availability, ExternalSource, Network, Thing, ThingExternalIds, TvShowSeason } from '../db/entity';
 import { NetworkReference } from '../db/entity/NetworkReference';
 import { TvShowEpisode } from '../db/entity/TvShowEpisode';
 import { ThingManager } from '../db/ThingManager';
@@ -73,6 +73,8 @@ export class TvShowImporter {
 
         let seasons = (show.seasons || []);
 
+        console.log(`saving ${seasons.length} seasons for show = ${showModel.name}`)
+
         return looper(seasons.entries(), async season => {
             let foundSeason = await this.tmdbClient.tv.getTvShowSeason(
                 show.id,
@@ -81,37 +83,59 @@ export class TvShowImporter {
                 ['images', 'videos']
             );
 
+            let existingSeason = ((await existingSeasons) || []).find(R.propEq('number', season.season_number));
+
+            let savedSeason: TvShowSeason;
+            if (existingSeason) {
+                savedSeason = existingSeason;
+            } else {
+                let seasonModel = this.seasonRepository.create();
+                seasonModel.number = season.season_number;
+                seasonModel.show = showModel;
+                // seasonModel.episodes = savedEpisodes;
+                await this.seasonRepository.save(seasonModel);
+                savedSeason = seasonModel;
+            }
+
+            console.log(`Saving ${foundSeason.episodes.length} episodes for season = ${season.season_number} ID = ${savedSeason.id}`)
+
             let savedEpisodes = await Promise.all(
                 foundSeason.episodes.map(async episode => {
-                    return this.episodeRepository.findByExternalId(ExternalSource.TheMovieDb, episode.id.toString()).then(async existingEpisode => {
+                    console.log(`Looking up episode = ${episode.id}`)
+                    return this.episodeRepository.findByTmdbId(episode.id.toString()).then(async existingEpisode => {
                         if (existingEpisode) {
                             existingEpisode.name = episode.name;
                             existingEpisode.productionCode = episode.production_code;
                             existingEpisode.number = episode.episode_number;
-                            return this.episodeRepository.
+                            existingEpisode.season = savedSeason;
+                            await this.episodeRepository.
                                 update(existingEpisode.id, R.omit(['id', 'number', 'lastUpdatedAt'], existingEpisode)).
                                 then(() => existingEpisode);
+                            return [existingEpisode, episode.id.toString()] as [TvShowEpisode, string];
                         } else {
-                            console.log('could not find episode with external id = ' + episode.id.toString());
                             let epModel = this.connection.manager.create(TvShowEpisode);
                             epModel.name = episode.name;
                             epModel.productionCode = episode.production_code;
                             epModel.number = episode.episode_number;
-                            return this.episodeRepository.save(epModel);
+                            epModel.season = savedSeason;
+                            await this.episodeRepository.save(epModel);
+                            return [epModel, episode.id.toString()] as [TvShowEpisode, string];
                         }
                     });
                 })
             );
 
-            let x = savedEpisodes.map(async episode => {
+            console.log('updating external ids for all episodes...')
+
+            let x = savedEpisodes.map(async ([episode, tmdbId]) => {
                 let external = externalIdsRepo.create();
-                external.tmdbId = episode.id.toString();
+                external.tmdbId = tmdbId;
                 external.tvEpisode = episode;
                 let q = externalIdsRepo.
                     createQueryBuilder().
                     insert().
                     into(ThingExternalIds).
-                    values({ tmdbId: episode.id.toString(), tvEpisode: episode }).
+                    values({ tmdbId: tmdbId, tvEpisode: episode }).
                     onConflict('DO NOTHING');
 
                 await q.execute().
@@ -125,19 +149,9 @@ export class TvShowImporter {
                 // await this.connection.manager.update(TvShowEpisode, episode.id, episode);
             });
 
-            await Promise.all(x);
+            await Promise.all(x).catch(console.error);
 
-            let existingSeason = ((await existingSeasons) || []).find(R.propEq('number', season.season_number));
-
-            if (existingSeason) {
-                return existingSeason;
-            } else {
-                let seasonModel = this.seasonRepository.create();
-                seasonModel.number = season.season_number;
-                seasonModel.show = showModel;
-                seasonModel.episodes = savedEpisodes;
-                return this.seasonRepository.save(seasonModel);
-            }
+            return savedSeason;
         });
     }
 

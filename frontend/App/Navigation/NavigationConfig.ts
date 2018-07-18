@@ -83,7 +83,7 @@ export let ListView = {
                         component: {
                             name: 'navigation.main.NotificationsScreen',
                             passProps: {
-                                text: 'Notifications'
+                                text: 'Feed'
                             },
                             options: {
                                 bottomTab: {

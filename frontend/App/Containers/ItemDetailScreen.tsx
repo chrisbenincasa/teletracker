@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import { Image, KeyboardAvoidingView, Text, View, ScrollView } from 'react-native';
+import { Image, KeyboardAvoidingView, Text, View, ScrollView, ActivityIndicator } from 'react-native';
 import { Badge, Button, Card, Rating, Avatar, Divider, Icon } from 'react-native-elements';
 import Header from '../Components/Header/Header';
 import { connect } from 'react-redux';
@@ -14,6 +14,7 @@ import UserActions from '../Redux/UserRedux';
 import headerStyles from '../Themes/ApplicationStyles';
 import styles from './Styles/ItemDetailScreenStyle';
 import ViewMoreText from 'react-native-view-more-text';
+import { teletrackerApi } from '../Sagas';
 
 // Add Actions - replace 'Your' with whatever your reducer is called :)
 // import YourActions from '../Redux/YourRedux'
@@ -21,17 +22,29 @@ import ViewMoreText from 'react-native-view-more-text';
 // Styles
 interface Props {
     componentId: string,
-    item: Thing,
+    item?: Thing,
+    itemType?: string,
+    itemId?: string | number,
     addItemToList: (componentId: string, listId: string, itemId: string | number) => any,
     markAsWatched: (componentId: string, itemId: string | number) => void
 }
 
-class ItemDetailScreen extends Component<Props> {
+type State = {
+    inList: boolean,
+    loading: boolean,
+    loadError: boolean,
+    item?: Thing
+}
+
+class ItemDetailScreen extends Component<Props, State> {
     constructor(props: Props) {
         super(props);
 
         this.state = {
-            inList: false
+            inList: false, 
+            loading: true,
+            loadError: false,
+            item: props.item
         };
 
         // Disable menu swipe out on ItemDetailScreen
@@ -45,12 +58,28 @@ class ItemDetailScreen extends Component<Props> {
         });
     }
 
+    componentDidMount() {
+        if (!this.props.item && this.props.itemType && this.props.itemId) {
+            if (this.props.itemType == 'show') {
+                teletrackerApi.getShow(this.props.itemId).then(response => {
+                    if (!response.ok) {
+                        this.setState({ loadError: true, loading: true });
+                    } else {
+                        this.setState({ loading: false , item: response.data.data});
+                    }
+                });
+            }
+        } else if (this.props.item) {
+            this.setState({ loading: false });
+        }
+    }
+
     private tmdbMovieView = R.lensPath(['item', 'metadata', 'themoviedb', 'movie']);
 
     getImagePath() {
-        let meta = this.props.item.metadata.themoviedb;
+        let meta = this.state.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
-            return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
+            return R.view<State, Movie>(this.tmdbMovieView, this.state).poster_path;
         } else if (this.hasTmdbShow()) {
             return meta.show.poster_path;
         } else if (this.hasTmdbPerson()) {
@@ -59,9 +88,9 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     getBackdropImagePath() {
-        let meta = this.props.item.metadata.themoviedb;
+        let meta = this.state.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
-            return R.view<Props, Movie>(this.tmdbMovieView, this.props).backdrop_path;
+            return R.view<State, Movie>(this.tmdbMovieView, this.state).backdrop_path;
         } else if (this.hasTmdbShow()) {
             return meta.show.backdrop_path; 
         } else if (this.hasTmdbPerson()) {
@@ -70,9 +99,9 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     getRatingPath() {
-        let meta = this.props.item.metadata.themoviedb;
+        let meta = this.state.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
-            return R.view<Props, Movie>(this.tmdbMovieView, this.props).vote_average;
+            return R.view<State, Movie>(this.tmdbMovieView, this.state).vote_average;
         } else if (this.hasTmdbShow()) {
             return meta.show.vote_average;
         } else if (this.hasTmdbPerson()) {
@@ -81,9 +110,9 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     getVoteCount() {
-        let meta = this.props.item.metadata.themoviedb;
+        let meta = this.state.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
-            return R.view<Props, Movie>(this.tmdbMovieView, this.props).vote_count;
+            return R.view<State, Movie>(this.tmdbMovieView, this.state).vote_count;
         } else if (this.hasTmdbShow()) {
             return meta.show.vote_count;
         } else if (this.hasTmdbPerson()) {
@@ -92,9 +121,9 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     getReleaseYear() {
-        let meta = this.props.item.metadata.themoviedb;
+        let meta = this.state.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
-            return R.view<Props, Movie>(this.tmdbMovieView, this.props).release_date.substring(0,4);
+            return R.view<State, Movie>(this.tmdbMovieView, this.state).release_date.substring(0,4);
         } else if (this.hasTmdbShow()) {
             return meta.show.first_air_date.substring(0,4);
         } else if (this.hasTmdbPerson()) {
@@ -103,9 +132,9 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     getDescription() {
-        let meta = this.props.item.metadata.themoviedb;
+        let meta = this.state.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
-            return R.view<Props, Movie>(this.tmdbMovieView, this.props).overview;
+            return R.view<State, Movie>(this.tmdbMovieView, this.state).overview;
         } else if (this.hasTmdbShow()) {
             return meta.show.overview;
         } else if (this.hasTmdbPerson()) {
@@ -114,9 +143,9 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     getCast() {
-        let meta = this.props.item.metadata.themoviedb;
+        let meta = this.state.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
-            return R.view<Props, Movie>(this.tmdbMovieView, this.props).credits.cast;
+            return R.view<State, Movie>(this.tmdbMovieView, this.state).credits.cast;
         } else if (this.hasTmdbShow()) {
             return meta.show.credits.cast.length > 0 ? meta.show.credits.cast : null; 
         } else {
@@ -130,7 +159,7 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     getSeasons() {
-        let meta = this.props.item.metadata.themoviedb;
+        let meta = this.state.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
             return null; // There is no seasons parameter for movies
         } else if (this.hasTmdbShow()) {
@@ -141,7 +170,7 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     getGenre() {
-        let meta = this.props.item.metadata.themoviedb;
+        let meta = this.state.item.metadata.themoviedb;
         if (this.hasTmdbMovie()) {
             return R.view<Props, Movie>(this.tmdbMovieView, this.props).genres;
         } else if (this.hasTmdbShow()) {
@@ -152,23 +181,23 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     hasTmdbMetadata() {
-        return this.props.item.metadata && this.props.item.metadata.themoviedb;
+        return this.state.item.metadata && this.state.item.metadata.themoviedb;
     }
 
     hasTmdbMovie() {
-        return this.hasTmdbMetadata() && this.props.item.metadata.themoviedb.movie;
+        return this.hasTmdbMetadata() && this.state.item.metadata.themoviedb.movie;
     }
 
     hasTmdbShow() {
-        return this.hasTmdbMetadata() && this.props.item.metadata.themoviedb.show;
+        return this.hasTmdbMetadata() && this.state.item.metadata.themoviedb.show;
     }
   
     hasTmdbPerson() {
-        return this.hasTmdbMetadata() && this.props.item.metadata.themoviedb.person;
+        return this.hasTmdbMetadata() && this.state.item.metadata.themoviedb.person;
     }
 
     addItem() {
-        this.props.addItemToList(this.props.componentId, 'default', this.props.item.id);
+        this.props.addItemToList(this.props.componentId, 'default', this.state.item.id);
 
         this.setState({
             inList: !this.state.inList
@@ -176,7 +205,7 @@ class ItemDetailScreen extends Component<Props> {
     }
 
     markAsWatched() {
-        this.props.markAsWatched(this.props.componentId, this.props.item.id);
+        this.props.markAsWatched(this.props.componentId, this.state.item.id);
     }
 
     renderViewMore(onPress) {
@@ -202,140 +231,149 @@ class ItemDetailScreen extends Component<Props> {
                     centerComponent={ null } 
                     rightComponent={ null }
                 />
-                <KeyboardAvoidingView behavior='position'>
-                    <View style={styles.coverContainer} >
-                        {   // Check if cover image exists, otherwise show blue
-                            this.getBackdropImagePath() === null ? 
-                            <View style={styles.emptyCoverImage}></View>
-                            : <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath()}} style={styles.coverImage} />
-                         }
-                    </View>
-                    <View style={styles.subHeaderContainer}>
-                        <Image source={{ uri: 'https://image.tmdb.org/t/p/w92' + this.getImagePath()}} style={styles.posterImage} />
-                        <View style={styles.itemDetailsContainer}>
-                            <Text style={{marginTop: 10,marginLeft: 10,fontSize: 20}}>
-                                {this.props.item.name} ({this.getReleaseYear()})
-                            </Text>
-                            <View style={styles.ratingsContainer}>
-                                <Rating
-                                    type="star"
-                                    fractions={1}
-                                    startingValue={this.getRatingPath() / 2}
-                                    readonly
-                                    imageSize={15}
-                                    style={{paddingBottom: 15, marginLeft: 10}}
-                                />
-                                <Text style={styles.ratingCount}>({this.getVoteCount()})</Text>
+                {this.state.loading ? (
+                    <ActivityIndicator />
+                ) : (
+                    <View>
+                        <KeyboardAvoidingView behavior='position'>
+                            <View style={styles.coverContainer} >
+                                {   // Check if cover image exists, otherwise show blue
+                                    this.getBackdropImagePath() === null ?
+                                        <View style={styles.emptyCoverImage}></View>
+                                        : <Image source={{ uri: 'https://image.tmdb.org/t/p/w500' + this.getBackdropImagePath() }} style={styles.coverImage} />
+                                }
                             </View>
+                            <View style={styles.subHeaderContainer}>
+                                <Image source={{ uri: 'https://image.tmdb.org/t/p/w92' + this.getImagePath() }} style={styles.posterImage} />
+                                <View style={styles.itemDetailsContainer}>
+                                    <Text style={{ marginTop: 10, marginLeft: 10, fontSize: 20 }}>
+                                        {this.state.item.name} ({this.getReleaseYear()})
+                            </Text>
+                                    <View style={styles.ratingsContainer}>
+                                        <Rating
+                                            type="star"
+                                            fractions={1}
+                                            startingValue={this.getRatingPath() / 2}
+                                            readonly
+                                            imageSize={15}
+                                            style={{ paddingBottom: 15, marginLeft: 10 }}
+                                        />
+                                        <Text style={styles.ratingCount}>({this.getVoteCount()})</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        </KeyboardAvoidingView>
+
+                        <View style={styles.descriptionContainer}>
+                            <ViewMoreText
+                                numberOfLines={4}
+                                renderViewMore={this.renderViewMore}
+                                renderViewLess={this.renderViewLess}
+                            >
+                                <Text>{this.getDescription()}</Text>
+                            </ViewMoreText>
                         </View>
-                    </View>
-                </KeyboardAvoidingView>
 
-                <View style={styles.descriptionContainer}>
-                    <ViewMoreText
-                        numberOfLines={4}
-                        renderViewMore={this.renderViewMore}
-                        renderViewLess={this.renderViewLess}
-                    >
-                        <Text>{this.getDescription()}</Text>
-                    </ViewMoreText>
-                </View>
+                        {this.getGenre() &&
+                            <View style={styles.genreContainer}>
+                                {this.getGenre() ? this.getGenre().map((i, k) => (
+                                    <Badge
+                                        key={k}
+                                        value={i.name}
+                                        textStyle={{ color: 'white' }}
+                                        wrapperStyle={{
+                                            marginHorizontal: 2, marginVertical: 5
+                                        }}
+                                        containerStyle={{}}
+                                    />
+                                )) : null}
+                            </View>
+                        }
 
-                {this.getGenre() &&
-                    <View style={styles.genreContainer}>
-                        {this.getGenre() ? this.getGenre().map((i,k) => (
-                            <Badge
-                                key={k}
-                                value={i.name}
-                                textStyle={{ color: 'white' }}
-                                wrapperStyle={{
-                                    marginHorizontal: 2, marginVertical: 5
+                        <View style={styles.buttonsContainer}>
+                            <Button
+                                title='Mark as Watched'
+                                icon={{
+                                    name: 'watch',
+                                    size: 25,
+                                    color: 'white'
                                 }}
-                                containerStyle={{}}
-                            />
-                        )) : null}
-                    </View>
-                }
+                                onPress={this.markAsWatched.bind(this)}
+                                containerStyle={{ marginHorizontal: 0 }}>
+                            </Button>
+                            <Button
+                                title={this.state.inList ? 'Remove' : 'Track'}
+                                onPress={this.addItem.bind(this)}
+                                icon={{
+                                    name: this.state.inList ? 'clear' : 'add',
+                                    size: 25,
+                                    color: 'white'
+                                }}
+                                buttonStyle={{
+                                    backgroundColor: this.state.inList ? 'red' : 'green'
+                                }}
+                                containerStyle={{ marginHorizontal: 0 }}>
+                            </Button>
 
-                <View style={styles.buttonsContainer}>
-                    <Button 
-                        title='Mark as Watched' 
-                        icon={{
-                            name: 'watch',
-                            size: 25,
-                            color: 'white'
-                        }}
-                        onPress={this.markAsWatched.bind(this)}
-                        containerStyle={{marginHorizontal: 0}}>
-                    </Button>
-                    <Button 
-                        title= {this.state.inList ? 'Remove'  : 'Track' }
-                        onPress={this.addItem.bind(this)} 
-                        icon={{
-                            name: this.state.inList ? 'clear' : 'add',
-                            size: 25,
-                            color: 'white'
-                        }}
-                        buttonStyle={{
-                            backgroundColor: this.state.inList ? 'red' : 'green'}}
-                        containerStyle={{marginHorizontal: 0}}>
-                    </Button>
+                        </View>
+
+
+                        {this.getSeasons() &&
+                            <View style={styles.seasonsContainer}>
+                                <Divider style={styles.divider} />
+                                <Text style={styles.seasonsHeader}>Season Guide:</Text>
+                                <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
+                                    {
+                                        this.getSeasons() ? this.getSeasons().map((i, k) => (
+                                            <View>
+                                                <Avatar
+                                                    key={k}
+                                                    large
+                                                    rounded
+                                                    source={i.poster_path ? { uri: "https://image.tmdb.org/t/p/w92" + i.poster_path } : null}
+                                                    activeOpacity={0.7}
+                                                    title={i.poster_path ? null : this.parseInitials(i.name)}
+                                                    titleStyle={this.parseInitials(i.name).length > 2 ? { fontSize: 26 } : null}
+                                                />
+                                                <Text style={styles.seasonsName}>{i.name}</Text>
+                                            </View>
+                                        ))
+                                            : null
+                                    }
+                                </ScrollView>
+                            </View>
+                        }
+
+                        {this.getCast() &&
+                            <View style={styles.castContainer}>
+                                <Divider style={styles.divider} />
+                                <Text style={styles.castHeader}>Cast:</Text>
+
+                                <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
+                                    {
+                                        this.getCast().map((i, k) => (
+                                            <View>
+                                                <Avatar
+                                                    key={k}
+                                                    large
+                                                    rounded
+                                                    source={i.profile_path ? { uri: "https://image.tmdb.org/t/p/w92" + i.profile_path } : null}
+                                                    activeOpacity={0.7}
+                                                    title={i.poster_path ? null : this.parseInitials(i.name)}
+                                                    titleStyle={this.parseInitials(i.name).length > 2 ? { fontSize: 26 } : null}
+
+                                                />
+                                                <Text style={styles.castName}>{i.name}</Text>
+                                                <Text style={styles.castCharacter}>{i.character}</Text>
+                                            </View>
+                                        ))
+                                    }
+                                </ScrollView>
+                            </View>
+                        }
+                    </View>
                     
-                </View>
-
-                {this.getSeasons() &&
-                    <View style={styles.seasonsContainer}>
-                        <Divider style={styles.divider} />
-                        <Text style={styles.seasonsHeader}>Season Guide:</Text>
-                        <ScrollView horizontal={true}  showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
-                        {
-                            this.getSeasons() ? this.getSeasons().map((i,k) => (
-                                <View>
-                                    <Avatar
-                                        key={k}
-                                        large
-                                        rounded
-                                        source={i.poster_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.poster_path} : null}
-                                        activeOpacity={0.7}
-                                        title={i.poster_path ? null : this.parseInitials(i.name)}
-                                        titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
-                                    />
-                                    <Text style={styles.seasonsName}>{i.name}</Text>
-                                </View>
-                            ))
-                            : null
-                        }
-                        </ScrollView>
-                    </View>
-                }
-
-                {this.getCast() &&
-                    <View style={styles.castContainer}>
-                        <Divider style={styles.divider} />
-                        <Text style={styles.castHeader}>Cast:</Text>
-
-                        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={styles.avatarContainer}>
-                        {
-                            this.getCast().map((i,k) => (
-                                <View>
-                                    <Avatar
-                                        key={k}
-                                        large
-                                        rounded
-                                        source={i.profile_path ? {uri: "https://image.tmdb.org/t/p/w92" + i.profile_path} : null}
-                                        activeOpacity={0.7}
-                                        title={i.poster_path ? null : this.parseInitials(i.name)}
-                                        titleStyle={this.parseInitials(i.name).length > 2 ? {fontSize: 26} : null }
-    
-                                    />
-                                    <Text style={styles.castName}>{i.name}</Text>
-                                    <Text style={styles.castCharacter}>{i.character}</Text>
-                                </View>
-                            ))
-                        }
-                        </ScrollView>
-                    </View>
-                }
+                )}
             </ScrollView>
         )
     }
