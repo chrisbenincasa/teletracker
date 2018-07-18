@@ -27,7 +27,8 @@ branches:
     - master
 
 deploy:
-  provider: script
-  script: "./docker_push.sh"
-  on:
-    branch: master
+  - provider: script
+    script: bash ./docker_push.sh
+    on:
+      jvm: oraclejdk8
+      branch: master
