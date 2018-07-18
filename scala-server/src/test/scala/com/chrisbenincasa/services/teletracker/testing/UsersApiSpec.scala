@@ -7,13 +7,11 @@ import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.chrisbenincasa.services.teletracker.testing.framework.BaseSpecWithServer
 import com.chrisbenincasa.services.teletracker.util.Slug
 import com.chrisbenincasa.services.teletracker.util.json.circe._
-import com.fasterxml.jackson.core.`type`.TypeReference
-import java.lang.reflect.{ParameterizedType, Type}
+import com.twitter.finagle.http.Status
 import io.circe.parser._
 import io.circe.generic.auto._
 import java.util.UUID
 import org.joda.time.DateTime
-import scala.reflect.Manifest
 
 class UsersApiSpec extends BaseSpecWithServer {
   "Users API" should "create a default list for a new user" in {
@@ -79,12 +77,11 @@ class UsersApiSpec extends BaseSpecWithServer {
   it should "respond with 404 is a user's list is not found" in {
     val (_, token) = createUser()
 
-    val noListResponse = server.httpGet(
+    server.httpGet(
       "/api/v1/users/self/lists/1000",
-      headers = Map("Authorization" -> s"Bearer $token")
+      headers = Map("Authorization" -> s"Bearer $token"),
+      andExpect = Status.NotFound
     )
-
-    assert(noListResponse.statusCode === 404)
   }
 
   it should "add a show to a user's list" in {
@@ -132,23 +129,5 @@ class UsersApiSpec extends BaseSpecWithServer {
       parse(response.contentString).flatMap(_.as[DataResponse[CreateUserResponse]]).right.get
 
     userId -> token
-  }
-
-  def typeRefFromManifest[A: Manifest]: TypeReference[A] = {
-    new TypeReference[A] {
-      override def getType: Type = {
-        if (manifest[A].typeArguments.isEmpty) {
-          manifest[A].runtimeClass
-        } else {
-          new ParameterizedType {
-            override def getActualTypeArguments: Array[Type] = manifest.typeArguments.map(_.runtimeClass).toArray
-
-            override def getRawType: Type = manifest.runtimeClass
-
-            override def getOwnerType: Type = manifest.runtimeClass
-          }
-        }
-      }
-    }
   }
 }

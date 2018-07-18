@@ -6,6 +6,9 @@ import com.chrisbenincasa.services.teletracker.db.UsersDbAccess
 import com.chrisbenincasa.services.teletracker.db.model.Event
 import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.chrisbenincasa.services.teletracker.testing.framework.BaseSpecWithServer
+import com.chrisbenincasa.services.teletracker.util.json.circe._
+import io.circe.parser._
+import io.circe.generic.auto._
 import java.sql.Timestamp
 
 class EventsSpec extends BaseSpecWithServer {
@@ -25,7 +28,7 @@ class EventsSpec extends BaseSpecWithServer {
       headers = Map("Authorization" -> s"Bearer $jwt")
     )
 
-    val parsedResponse = serializer.readValue(eventsResponse.contentString, classOf[DataResponse[List[Event]]])
+    val parsedResponse = parse(eventsResponse.contentString).flatMap(_.as[DataResponse[List[Event]]]).right.get
 
     assert(parsedResponse.data.length === 1)
   }

@@ -26,8 +26,10 @@ class PostgresContainer(
   var container: ContainerInfo = _
 
   def initialize() = {
+    val target = ephemeralPort
+
     val portBindings = Map(
-      "5432" -> List(PortBinding.of("0.0.0.0", ephemeralPort)).asJava
+      "5432" -> List(PortBinding.of("0.0.0.0", target)).asJava
     ).asJava
 
     val hostConfig = HostConfig.builder().
@@ -126,7 +128,7 @@ class PostgresContainer(
 
     val t = new Thread(new Runnable {
       override def run(): Unit = {
-        var matchTimes = 0
+        var matched = false
         var logs = ""
         val stream = try {
           client.attachContainer(containerId, LOGS, STDERR, STDOUT, STREAM)
@@ -144,12 +146,13 @@ class PostgresContainer(
             val buf = msg.content()
             val bytes = new Array[Byte](buf.remaining())
             buf.get(bytes)
-            logs += new String(bytes)
-            if (logs.contains("database system is ready to accept connections")) {
-              matchTimes += 1
+            val newLogs = new String(bytes)
+            logs += newLogs
+            if ("database system is ready to accept connections".r.findAllIn(logs).size == 2) {
+              matched = true
             }
           }
-        } while (matchTimes != 2)
+        } while (!matched)
 
         lock.countDown()
       }
@@ -160,7 +163,7 @@ class PostgresContainer(
     t.run()
 
     if (!lock.await(30, TimeUnit.SECONDS)) {
-
+      println("Timeout reached, attempting to connect to container anyway")
     }
   }
 }

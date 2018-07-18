@@ -72,6 +72,7 @@ class UserController @Inject()(
 
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
         usersDbAccess.findList(req.request.authContext.user.id, req.listId).map(result => {
+          println(s"found $result")
           if (result.isEmpty) {
             response.status(404)
           } else {

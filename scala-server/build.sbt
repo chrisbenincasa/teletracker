@@ -37,8 +37,9 @@ libraryDependencies ++= Seq(
   // Logging
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   // Service
+  "com.twitter" %% "finagle-core" % "18.6.0",
+  "com.twitter" %% "finagle-http" % "18.6.0",
   "com.twitter" %% "finatra-http" % "18.6.0",
-  "com.twitter" %% "finatra-http" % "18.6.0" % "test",
   "com.twitter" %% "inject-server" % "18.6.0" % "test",
   "com.twitter" %% "inject-app" % "18.6.0" % "test",
   "com.twitter" %% "inject-core" % "18.6.0" % "test",
@@ -63,7 +64,7 @@ libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % "1.1.0",
   "com.google.guava" % "guava" % "20.0",
   // Testing
-  "com.spotify" % "docker-client" % "8.11.7" % "test",
+  "com.spotify" % "docker-client" % "8.11.7" % "test" excludeAll("com.fasterxml.jackson.core"),
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 ) ++ Seq(
   "io.circe" %% "circe-core",
@@ -71,6 +72,9 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-parser",
   "io.circe" %% "circe-shapes"
 ).map(_ % circeVersion)
+
+Global / concurrentRestrictions := Seq(Tags.limit(Tags.Test, 1))
+fork in Test := true
 
 addCompilerPlugin(
   "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
