@@ -3,7 +3,7 @@
 # location the fat jar
 BIN_JAR=`ls /app/bin/*.jar | head`
 
-printenv
+echo $@
 
 JVM_OPTS="""
     -server \

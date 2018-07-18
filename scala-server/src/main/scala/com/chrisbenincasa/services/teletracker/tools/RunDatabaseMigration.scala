@@ -8,7 +8,12 @@ import javax.sql.DataSource
 import org.flywaydb.core.Flyway
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object RunDatabaseMigration extends App {
+object RunDatabaseMigrationMain extends App
+
+class RunDatabaseMigration extends App {
+  val action = flag[String]("action", "The migration action to perform")
+  val loc = flag("loc", Option(System.getProperty("java.io.tmpdir")).getOrElse("/tmp"), "The location to look for migration SQL")
+
   override protected def modules: Seq[Module] = Modules()
 
   override protected def run(): Unit = {
@@ -32,12 +37,14 @@ object RunDatabaseMigration extends App {
       case x => throw new IllegalArgumentException(s"Unsupported datasource class: ${x.getClass.getSimpleName}")
     }
 
-    flyway.setLocations(s"classpath:db/migration/$path")
+    println(s"Looking in location = ${loc()}")
+
+    flyway.setLocations(s"classpath:db/migration/$path", s"filesystem:${loc()}")
     flyway.setDataSource(dataSource)
 
-    println(withColor(Console.BLUE, s"About to run action: ${runConfig.action}"))
+    println(withColor(Console.BLUE, s"About to run action: ${action()}"))
 
-    runConfig.action match {
+    action() match {
       case "migrate" => flyway.migrate()
       case "info" => flyway.info()
       case "clean" => flyway.clean()
