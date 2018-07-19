@@ -9,7 +9,7 @@ cd scala-server
 TAG="${TRAVIS_TAG:-SNAPSHOT}"
 VERSION=$(sbt -Drevision=$TAG --error 'set showSuccess := false' "showVersion")
 
-echo "Pushing version v${VERSION}"
+echo "Pushing version v${VERSION}\n"
 
 SCALA_V=${TRAVIS_SCALA_VERSION:-2.12.6}
 
