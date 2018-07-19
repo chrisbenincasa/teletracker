@@ -11,7 +11,7 @@ jobs:
       before_install:
         - docker pull postgres
       before_script: cd scala-server
-      script: travis_retry sbt ++$TRAVIS_SCALA_VERSION compile test
+      script: test tag IS blank && travis_retry sbt ++$TRAVIS_SCALA_VERSION compile test
       after_success:
         - test $TRAVIS_BRANCH = "master" && cd .. && ./docker_push.sh
     - stage: frontend
@@ -26,10 +26,20 @@ jobs:
       script: ./travis.build.sh
       env:
         - JWT_SECRET=jwt_secret_for_testing_only
+    - stage: deploy
+      jdk: oraclejdk8
+      language: scala
+      scala: 2.12.6
+      sudo: required
+      services:
+        - docker
+      script: ./docker_push.sh
 
 stages:
   - backend
   - frontend
+  - name: deploy
+    if: tag IS present
 
 on:
   tags: true
