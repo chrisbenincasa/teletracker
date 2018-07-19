@@ -39,8 +39,9 @@ jobs:
         skip_cleanup: true
         script: ./docker_push.sh
         on:
+          repo: chrisbenincasa/teletracker
           all_branches: true
-          tags: false
+          tags: true
 
 stages:
   # - backend
