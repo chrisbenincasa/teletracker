@@ -197,3 +197,6 @@ lazy val `slick-codegen` = taskKey[Seq[File]]("gen-tables")
   val fname = outputDir + "/" + pkg.replaceAllLiterally(".", "/") + "/Tables.scala"
   Seq(file(fname))
 }.value
+
+lazy val showVersion = taskKey[Unit]("Prints version")
+showVersion := { println(version.value) }

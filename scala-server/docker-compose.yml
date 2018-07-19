@@ -22,7 +22,7 @@ services:
       - db
 
   server:
-    image: com.chrisbenincasa.services/teletracker-scala-2:latest
+    image: chrisbenincasa/teletracker:latest
     restart: always
     ports:
       - 3000:3000
