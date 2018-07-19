@@ -7,7 +7,9 @@ echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 cd scala-server
 
 TAG="${TRAVIS_TAG:-SNAPSHOT}"
-VERSION=$(sbt -Drevision=$TAG --error 'set showSuccess := false' "showVersion")
+VERSION=$(sbt -Drevision=$TAG --error 'set showSuccess := false' "showVersion" | tr -d '\n')
+
+echo $VERSION
 
 echo "Pushing version v${VERSION}\n"
 
