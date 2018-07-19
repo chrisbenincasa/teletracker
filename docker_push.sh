@@ -13,11 +13,11 @@ echo "Pushing version v${VERSION}"
 
 SCALA_V=${TRAVIS_SCALA_VERSION:-2.12.6}
 
-if [ -z "$SKIP_DOCKER_BUILD" ] then
+if [[ -z "$SKIP_DOCKER_BUILD" ]]; then
     sbt ++$SCALA_V -Drevision=${TAG} docker
 fi
 
-if [ "$TAG" = "SNAPSHOT" ]; then 
+if [[ "$TAG" = "SNAPSHOT" ]]; then
     docker push chrisbenincasa/teletracker:latest
 else 
     docker push chrisbenincasa/teletracker:v${VERSION}
