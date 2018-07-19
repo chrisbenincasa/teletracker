@@ -41,5 +41,10 @@ stages:
   - name: deploy
     if: tag IS present
 
-on:
-  tags: true
+deploy:
+  provider: script
+  skip_cleanup: true
+  script: ./docker_push.sh
+  on:
+    branch: master
+    tags: false
