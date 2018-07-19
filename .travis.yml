@@ -33,18 +33,17 @@ jobs:
       sudo: required
       services:
         - docker
-      script: ./docker_push.sh
+      script: skip
+      deploy:
+        provider: script
+        skip_cleanup: true
+        script: ./docker_push.sh
+        on:
+          branch: master
+          tags: true
 
 stages:
   - backend
   - frontend
   - name: deploy
-    if: tag IS present
-
-deploy:
-  provider: script
-  skip_cleanup: true
-  script: ./docker_push.sh
-  on:
-    branch: master
-    tags: true
+    if: (tag IS present OR branch = master) AND type != pull_request
