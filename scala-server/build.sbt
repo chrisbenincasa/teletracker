@@ -1,6 +1,6 @@
 import scala.util.{Failure, Success}
 
-name := "teletracker-scala-2"
+name := "teletracker"
 
 organization := "com.chrisbenincasa.services"
 
@@ -136,9 +136,9 @@ dockerfile in docker := {
 }
 
 imageNames in docker := Seq(
-  ImageName(s"${organization.value}/${name.value}:latest"),
+  ImageName(s"chrisbenincasa/${name.value}:latest"),
   ImageName(
-    namespace = Some(organization.value),
+    namespace = Some("chrisbenincasa"),
     repository = name.value,
     tag = Some("v" + version.value)
   )
