@@ -1,31 +1,31 @@
 jobs:
   include:
-    - stage: backend
-      name: "backend"
-      language: scala
-      jdk: oraclejdk8
-      scala: 2.12.6
-      sudo: required
-      services:
-        - docker
-      before_install:
-        - docker pull postgres
-      before_script: cd scala-server
-      script: test 'tag IS blank' && travis_retry sbt ++$TRAVIS_SCALA_VERSION compile test
-      after_success:
-        - test '$TRAVIS_BRANCH = "master"' && cd .. && ./docker_push.sh
-    - stage: frontend
-      name: "Frontend"
-      language: node_js
-      node_js: "8"
-      sudo: required
-      services:
-        - docker
-      before_install:
-        - docker pull postgres
-      script: ./travis.build.sh
-      env:
-        - JWT_SECRET=jwt_secret_for_testing_only
+    # - stage: backend
+    #   name: "backend"
+    #   language: scala
+    #   jdk: oraclejdk8
+    #   scala: 2.12.6
+    #   sudo: required
+    #   services:
+    #     - docker
+    #   before_install:
+    #     - docker pull postgres
+    #   before_script: cd scala-server
+    #   script: test 'tag IS blank' && travis_retry sbt ++$TRAVIS_SCALA_VERSION compile test
+    #   after_success:
+    #     - test '$TRAVIS_BRANCH = "master"' && cd .. && ./docker_push.sh
+    # - stage: frontend
+    #   name: "Frontend"
+    #   language: node_js
+    #   node_js: "8"
+    #   sudo: required
+    #   services:
+    #     - docker
+    #   before_install:
+    #     - docker pull postgres
+    #   script: ./travis.build.sh
+    #   env:
+    #     - JWT_SECRET=jwt_secret_for_testing_only
     - stage: deploy
       jdk: oraclejdk8
       language: scala
@@ -39,11 +39,11 @@ jobs:
         skip_cleanup: true
         script: ./docker_push.sh
         on:
-          branch: master
-          tags: true
+          all_branches: true
+          tags: false
 
 stages:
-  - backend
-  - frontend
+  # - backend
+  # - frontend
   - name: deploy
     if: (tag IS present OR branch = master) AND type != pull_request
