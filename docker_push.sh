@@ -6,6 +6,7 @@ echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
 cd scala-server
 
+# SBT Startup...
 sbt sbtVersion
 
 TAG="${TRAVIS_TAG:-SNAPSHOT}"
