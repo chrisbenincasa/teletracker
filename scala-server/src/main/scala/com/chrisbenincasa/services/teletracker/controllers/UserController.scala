@@ -3,7 +3,7 @@ package com.chrisbenincasa.services.teletracker.controllers
 import com.chrisbenincasa.services.teletracker.auth.RequestContext._
 import com.chrisbenincasa.services.teletracker.auth.jwt.JwtVendor
 import com.chrisbenincasa.services.teletracker.auth.{JwtAuthFilter, UserSelfOnlyFilter}
-import com.chrisbenincasa.services.teletracker.db.model.Event
+import com.chrisbenincasa.services.teletracker.db.model.{Event, PartialThing}
 import com.chrisbenincasa.services.teletracker.db.{ThingsDbAccess, UsersDbAccess}
 import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.twitter.finagle.http.Request
@@ -38,10 +38,18 @@ class UserController @Inject()(
             response.status(404)
           } else {
             val user = result.head._1
-            val lists = result.map(_._2)
+            val lists = result.collect {
+              case (_, Some(list), tid, tname, ttype) => (list, tid, tname, ttype)
+            }.groupBy(_._1).map {
+              case (list, matches) =>
+                val things = matches.map {
+                  case (_, tid, tname, ttype) => PartialThing(id = tid, name = tname, `type` = ttype)
+                }
+                list.toFull.withThings(things.toList)
+            }
 
             DataResponse(
-              user.toFull.withLists(lists.map(_.toFull).toList)
+              user.toFull.withLists(lists.toList)
             )
           }
         })
@@ -53,10 +61,18 @@ class UserController @Inject()(
             response.status(404)
           } else {
             val user = result.head._1
-            val lists = result.map(_._2)
+            val lists = result.collect {
+              case (_, Some(list), tid, tname, ttype) => (list, tid, tname, ttype)
+            }.groupBy(_._1).map {
+              case (list, matches) =>
+                val things = matches.map {
+                  case (_, tid, tname, ttype) => PartialThing(id = tid, name = tname, `type` = ttype)
+                }
+                list.toFull.withThings(things.toList)
+            }
 
             DataResponse(
-              user.toFull.withLists(lists.map(_.toFull).toList)
+              user.toFull.withLists(lists.toList)
             )
           }
         })
@@ -80,7 +96,7 @@ class UserController @Inject()(
             val things = result.flatMap(_._2)
 
             DataResponse(
-              list.toFull.withThings(things.toList)
+              list.toFull.withThings(things.map(_.asPartial).toList)
             )
           }
         })
@@ -112,11 +128,17 @@ class UserController @Inject()(
       }
 
       post("/:userId/events") { req: AddUserEventRequest =>
-        if (req.event.userId != req.request.authContext.user.id) {
-          response.status(401)
-        } else {
-          usersDbAccess.addUserEvent(req.event).map(DataResponse(_))
-        }
+        val dao = Event(
+          None,
+          req.event.`type`,
+          req.event.targetEntityType,
+          req.event.targetEntityId,
+          req.event.details,
+          req.request.authContext.user.id,
+          new java.sql.Timestamp(req.event.timestamp)
+        )
+
+        usersDbAccess.addUserEvent(dao).map(DataResponse(_))
       }
     }
   }
@@ -150,8 +172,16 @@ case class AddThingToListRequest(
 
 case class AddUserEventRequest(
   @RouteParam userId: String,
-  event: Event, // Don't use DAO here
+  event: EventCreate,
   request: Request
+)
+
+case class EventCreate(
+  `type`: String,
+  targetEntityType: String,
+  targetEntityId: String,
+  details: Option[String],
+  timestamp: Long
 )
 
 case class CreateUserResponse(

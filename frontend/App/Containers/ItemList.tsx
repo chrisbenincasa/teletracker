@@ -13,6 +13,7 @@ import ReduxState from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
 import styles from './Styles/ItemListStyle';
 import { Colors } from '../Themes/';
+import { Thing } from '../Model/external/themoviedb';
 
 // More info here: https://facebook.github.io/react-native/docs/sectionlist.html
 
@@ -52,10 +53,10 @@ class ItemList extends React.PureComponent<Props> {
         Navigation.push(this.props.componentId, NavigationConfig.SearchView);
     }
 
-    goToItemDetail(item) {
+    goToItemDetail(item: Thing) {
         let view = R.mergeDeepRight(NavigationConfig.DetailView, {
             component: {
-                passProps: { item }
+                passProps: { itemType: item.type, itemId: item.id }
             }
         });
         this.props.pushState(this.props.componentId, view);

@@ -21,6 +21,20 @@ case class Thing(
   createdAt: DateTime,
   lastUpdatedAt: DateTime,
   metadata: Option[ObjectMetadata]
+) {
+  def asPartial: PartialThing = {
+    PartialThing(id, Some(name), Some(normalizedName), Some(`type`), Some(createdAt), Some(lastUpdatedAt), metadata)
+  }
+}
+
+case class PartialThing(
+  id: Option[Int] = None,
+  name: Option[String] = None,
+  normalizedName: Option[String] = None,
+  `type`: Option[ThingType] = None,
+  createdAt: Option[DateTime] = None,
+  lastUpdatedAt: Option[DateTime] = None,
+  metadata: Option[ObjectMetadata] = None
 )
 
 case class ThingWithDetails(
