@@ -27,7 +27,7 @@ export default StyleSheet.create({
     color: Colors.charcoal
   },
   listContent: {
-    marginTop: Metrics.baseMargin
+    marginTop: 0//Metrics.baseMargin
   },
   username: {
     color: Colors.charcoal

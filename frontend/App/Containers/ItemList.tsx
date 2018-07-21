@@ -98,7 +98,8 @@ class ItemList extends React.PureComponent<Props> {
     
     // How many items should be kept im memory as we scroll?
     oneScreensWorth = 20;
-        openSearch() {
+    
+    openSearch() {
         Navigation.push(this.props.componentId, NavigationConfig.SearchView);
     }
     // extraData is for anything that is not indicated in data
