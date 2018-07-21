@@ -14,7 +14,6 @@ export function* addToList(api: TeletrackerApi, { componentId, listId, itemId }:
             put(UserActions.userRequest(componentId)),
             put(ListActions.addToListSuccess(response.data))
         ]);
-        yield put(ListActions.addToListSuccess(response.data));
     } else {
         yield put(ListActions.addToListFailure());
     }

@@ -32,9 +32,9 @@ case class TrackedList(
   isDefault: Boolean,
   isPublic: Boolean,
   userId: Int,
-  things: Option[List[Thing]] = None
+  things: Option[List[PartialThing]] = None
 ) {
-  def withThings(things: List[Thing]): TrackedList = {
+  def withThings(things: List[PartialThing]): TrackedList = {
     this.copy(things = Some(things))
   }
 }

@@ -1,25 +1,27 @@
+import { Thing } from "../../Model/external/themoviedb";
+
 // Returns true if the item has metadata
-const hasTmdbMetadata = (item: object) => {
+const hasTmdbMetadata = (item: Thing) => {
     return item.metadata && item.metadata.themoviedb;
 };
 
 // Returns true if the item is a movie
-const hasTmdbMovie = (item: object) => {
+const hasTmdbMovie = (item: Thing) => {
     return hasTmdbMetadata(item) && item.metadata.themoviedb.movie;
 };
 
 // Returns true if the item is a show
-const hasTmdbShow = (item: object) => {
+const hasTmdbShow = (item: Thing) => {
     return hasTmdbMetadata(item) && item.metadata.themoviedb.show;
 };
 
 // Returns true if the item is a person
-const hasTmdbPerson = (item: object) => {
+const hasTmdbPerson = (item: Thing) => {
     return hasTmdbMetadata(item) && item.metadata.themoviedb.person;
 };
 
 // Provides the path of the poster image
-const getPosterPath = (item: object) => {
+const getPosterPath = (item: Thing) => {
     if (hasTmdbMovie(item)) {
         // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
         // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
@@ -32,7 +34,7 @@ const getPosterPath = (item: object) => {
 };
 
 // Provides the release year of the item
-const getReleaseYear = (item: object) => {
+const getReleaseYear = (item: Thing) => {
     if (hasTmdbMovie(item)) {
         // This throws a lens error pretty consistantly, requires further investigation.  Workaround in place for now.
         // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
@@ -45,7 +47,7 @@ const getReleaseYear = (item: object) => {
 };
 
 // Provides the season count, if applicable, of the item
-const getSeasonCount = (item: object) => {
+const getSeasonCount = (item: Thing) => {
     if (hasTmdbShow(item)) {
         let numSeasons = item.metadata.themoviedb.show.number_of_seasons;
 
@@ -59,7 +61,7 @@ const getSeasonCount = (item: object) => {
     }
 };
 
-const getSeasons = (item: object) => {
+const getSeasons = (item: Thing) => {
     let meta = item.metadata.themoviedb;
     if (hasTmdbMovie(item)) {
         return null; // There is no seasons parameter for movies
@@ -71,7 +73,7 @@ const getSeasons = (item: object) => {
 }
 
 // Provides the episode count, if applicable, of the item
-const getEpisodeCount = (item: object) => {
+const getEpisodeCount = (item: Thing) => {
     if (hasTmdbShow(item)) {
         let numEpisodes = item.metadata.themoviedb.show.number_of_episodes;
 
@@ -86,8 +88,8 @@ const getEpisodeCount = (item: object) => {
 };
 
 // Provides the runtime of the item
-const getRuntime = (item: object) => {
-    const formatRuntime = Runtime => {
+const getRuntime = (item: Thing) => {
+    const formatRuntime = (Runtime: number) => {
         let hours = Math.floor(Runtime / 60);
         let minutes = Runtime % 60;
 
@@ -113,9 +115,9 @@ const getRuntime = (item: object) => {
     }
 };
 
-const getVoteCount = (item: object) => {
+const getVoteCount = (item: Thing) => {
     // Format 11,453 as 11.4k
-    const formatVoteCount = (VoteCount) => {
+    const formatVoteCount = (VoteCount: number) => {
         return VoteCount > 9999 ? `${Math.round((VoteCount / 1000)*10)/10}k` : VoteCount;
     }
 
@@ -130,7 +132,7 @@ const getVoteCount = (item: object) => {
     }
 }
 
-const getDescription = (item: object) => {
+const getDescription = (item: Thing) => {
     let meta = item.metadata.themoviedb;
     if (hasTmdbMovie(item)) {
         // return R.view<Props, Movie>(this.tmdbMovieView, this.props).overview;
@@ -142,7 +144,7 @@ const getDescription = (item: object) => {
     }
 }
 
-const getCast = (item: object) => {
+const getCast = (item: Thing) => {
     let meta = item.metadata.themoviedb;
     if (hasTmdbMovie(item)) {
         // return R.view<Props, Movie>(this.tmdbMovieView, this.props).credits.cast;
@@ -154,7 +156,7 @@ const getCast = (item: object) => {
     }
 }
 
-const getGenre = (item: object) => {
+const getGenre = (item: Thing) => {
     let meta = item.metadata.themoviedb;
     if (hasTmdbMovie(item)) {
         // return R.view<Props, Movie>(this.tmdbMovieView, this.props).genres;
@@ -166,7 +168,7 @@ const getGenre = (item: object) => {
     }
 }
 
-const getBackdropImagePath = (item: object) => {
+const getBackdropImagePath = (item: Thing) => {
     let meta = item.metadata.themoviedb;
     if (hasTmdbMovie(item)) {
         // return R.view<Props, Movie>(this.tmdbMovieView, this.props).backdrop_path;
@@ -178,7 +180,7 @@ const getBackdropImagePath = (item: object) => {
     }
 }
 
-const getRatingPath = (item: object) => {
+const getRatingPath = (item: Thing) => {
     let meta = item.metadata.themoviedb;
     if (hasTmdbMovie(item)) {
         // return R.view<Props, Movie>(this.tmdbMovieView, this.props).vote_average;

@@ -95,6 +95,14 @@ class ThingsDbAccess @Inject()(
     }
   }
 
+  def findMovieById(id: Int) = {
+    val showQuery = things.query.filter(t => t.id === id && t.`type` === ThingType.Movie).take(1)
+
+    run {
+      showQuery.result.headOption
+    }
+  }
+
   def findPersonById(id: Int) = {
     val person = things.query.filter(p => p.id === id && p.`type` === ThingType.Person)
 

@@ -8,12 +8,12 @@ import com.twitter.finatra.request.RouteParam
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 
-class TvShowController @Inject()(
+class MovieController @Inject()(
   thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext) extends Controller {
-  prefix("/api/v1/shows") {
-    get("/:id") { req: GetShowRequest =>
-      thingsDbAccess.findShowById(req.id).map(result => {
+  prefix("/api/v1/movies") {
+    get("/:id") { req: GetMovieRequest =>
+      thingsDbAccess.findMovieById(req.id).map(result => {
         if (result.isEmpty) {
           response.status(404)
         } else {
@@ -24,4 +24,4 @@ class TvShowController @Inject()(
   }
 }
 
-case class GetShowRequest(@RouteParam id: Int)
+case class GetMovieRequest(@RouteParam id: Int)

@@ -10,8 +10,6 @@ import UserActions from '../Redux/UserRedux';
 export function* startup(teletrackerApi: TeletrackerApi): IterableIterator<any> {
   const state = yield select();
 
-  console.tron.log(state);
-
   const hasSavedToken = !!state.user.token;
 
   if (hasSavedToken) {
