@@ -1,7 +1,7 @@
 import moment from 'moment';
 import R from 'ramda';
 import React, { Component } from 'react';
-import { View } from 'react-native';
+import { View, FlatList } from 'react-native';
 import { List, ListItem } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { connect, Dispatch } from 'react-redux';
@@ -77,6 +77,23 @@ class NotificationsScreen extends Component<Props> {
         Navigation.push(this.props.componentId, view);
     }
 
+    keyExtractor: (item: any, index: any) => string = ({event}, index) => {
+        return event.id
+    }
+
+    renderItem({item: { event, target }}) {
+        return (
+            <ListItem
+                key={this.keyExtractor}
+                title={target.name}
+                subtitle={this.getSubtitle(event)}
+                leftIcon={{ type: 'material-community', name: 'sunglasses' }}
+                subtitleNumberOfLines={2}
+                hideChevron={true}
+            />
+        )
+    }
+
     render() {
         return (
             <View style={styles.container}>
@@ -85,21 +102,12 @@ class NotificationsScreen extends Component<Props> {
                     componentId={this.props.componentId}
                     centerComponent={{ title: 'Feed', style: { color: 'white' } }}
                 />
-                <List>
-                    {
-                        this.props.events.loadedEvents.map(({ event, target }, i) => (
-                            <ListItem
-                                key={event.id}
-                                title={target.name}
-                                subtitle={this.getSubtitle(event)}
-                                subtitleNumberOfLines={2}
-                                leftIcon={{ type: 'material-community', name: 'sunglasses' }}
-                                hideChevron={true}
-                                onPress={() => this.goToDetailView(event)}
-                            />
-                        ))
-                    }
-                </List>
+                <FlatList
+                    keyExtractor={this.keyExtractor}
+                    contentContainerStyle={styles.listContent}
+                    renderItem={this.renderItem.bind(this)}
+                    data={this.props.events.loadedEvents}
+                />
             </View>
         );
     }

@@ -277,7 +277,7 @@ class ItemDetailScreen extends Component<Props, State> {
                                     style={styles.avatarContainer}>
                                     {
                                         getMetadata.getSeasons(this.state.item) ? getMetadata.getSeasons(this.state.item).map((i) => (
-                                            <View>
+                                            <View key={i.id}>
                                                 <Avatar
                                                     key={i.id}
                                                     large
@@ -312,7 +312,7 @@ class ItemDetailScreen extends Component<Props, State> {
                                     style={styles.avatarContainer}>
                                     {
                                         getMetadata.getCast(this.state.item).map((i) => (
-                                            <View>
+                                            <View key={i.id}>
                                                 <Avatar
                                                     key={i.id}
                                                     large
