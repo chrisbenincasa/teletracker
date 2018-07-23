@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import org.joda.time.DateTime
 import shapeless.{Coproduct, tag}
-import scala.collection.generic.CanBuildFrom
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 

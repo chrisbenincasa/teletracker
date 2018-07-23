@@ -89,6 +89,7 @@ class NotificationsScreen extends Component<Props> {
                 subtitle={this.getSubtitle(event)}
                 leftIcon={{ type: 'material-community', name: 'sunglasses' }}
                 subtitleNumberOfLines={2}
+                onPress={() => this.goToDetailView(event)}
                 hideChevron={true}
             />
         )
@@ -98,9 +99,8 @@ class NotificationsScreen extends Component<Props> {
         return (
             <View style={styles.container}>
                 <Header
-                    title="Search"
+                    title="Feed"
                     componentId={this.props.componentId}
-                    centerComponent={{ title: 'Feed', style: { color: 'white' } }}
                 />
                 <FlatList
                     keyExtractor={this.keyExtractor}

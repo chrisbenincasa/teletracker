@@ -192,6 +192,10 @@ const getRatingPath = (item: Thing) => {
     }
 }
 
+const getAvailabilityInfo = (item: Thing) => {
+    return item.availability;
+}
+
 export default {
     getPosterPath,
     getReleaseYear,
@@ -204,5 +208,6 @@ export default {
     getCast,
     getGenre,
     getBackdropImagePath,
-    getRatingPath
+    getRatingPath,
+    getAvailabilityInfo
 };

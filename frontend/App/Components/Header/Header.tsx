@@ -9,6 +9,7 @@ import HeaderRight from './HeaderRight';
 
 interface Props {
     title?: string
+    componentId: string
 }
 
 export default class Header extends React.PureComponent<Props> {

@@ -1,22 +1,25 @@
 package com.chrisbenincasa.services.teletracker.process.tmdb
 
-import com.chrisbenincasa.services.teletracker.db.{NetworksDbAccess, ThingsDbAccess, TvShowDbAccess, model}
 import com.chrisbenincasa.services.teletracker.db.model._
+import com.chrisbenincasa.services.teletracker.db.{NetworksDbAccess, ThingsDbAccess, TvShowDbAccess, model}
+import com.chrisbenincasa.services.teletracker.external.justwatch.JustWatchClient
 import com.chrisbenincasa.services.teletracker.external.tmdb.TmdbClient
+import com.chrisbenincasa.services.teletracker.model.justwatch.{PopularItem, PopularItemsResponse, PopularSearchRequest}
 import com.chrisbenincasa.services.teletracker.model.tmdb
 import com.chrisbenincasa.services.teletracker.model.tmdb._
 import com.chrisbenincasa.services.teletracker.process.tmdb.TmdbEntity.{Entities, EntityIds}
-import com.chrisbenincasa.services.teletracker.util.Slug
 import com.chrisbenincasa.services.teletracker.util.execution.SequentialFutures
+import com.chrisbenincasa.services.teletracker.util.{NetworkCache, Slug, TmdbMovieImporter}
 import com.chrisbenincasa.services.teletracker.util.json.circe._
 import java.sql.Timestamp
 import javax.inject.Inject
 import org.joda.time.{DateTime, LocalDate}
-import shapeless.ops.coproduct.{FilterNot, Folder, Mapper, Remove}
+import shapeless.ops.coproduct.{Folder, Mapper}
 import shapeless.tag.@@
 import shapeless.{:+:, CNil, Coproduct}
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class ItemExpander @Inject()(tmdbClient: TmdbClient) {
   def expandMovie(id: String): Future[Movie] = {
@@ -65,9 +68,11 @@ class TmdbEntityProcessor @Inject()(
   thingsDbAccess: ThingsDbAccess,
   networksDbAccess: NetworksDbAccess,
   expander: ItemExpander,
-  tvShowDbAccess: TvShowDbAccess
+  tvShowDbAccess: TvShowDbAccess,
+  networkCache: NetworkCache,
+  justWatchClient: JustWatchClient
 )(implicit executionContext: ExecutionContext) {
-  def processSearchResults(results: List[Movie :+: TvShow :+: CNil]): List[Future[(String, Thing)]] = {
+  def processSearchResults(results: List[Movie :+: TvShow :+: Person :+: CNil]): List[Future[(String, Thing)]] = {
     results.map(_.map(expander.ExpandItem)).map(_.fold(ResultProcessor))
   }
 
@@ -119,6 +124,8 @@ class TmdbEntityProcessor @Inject()(
 
     val saveThingFut = thingsDbAccess.saveThing(t)
 
+    val availability = handleMovieAvailability(movie, saveThingFut)
+
     val saveExternalIds = for {
       savedThing <- saveThingFut
       _ <- movie.external_ids.map(eids => {
@@ -140,7 +147,58 @@ class TmdbEntityProcessor @Inject()(
       savedThing <- saveThingFut
       _ <- saveExternalIds
       _ <- saveGenres
+      _ <- availability
     } yield movie.id.toString -> savedThing
+  }
+
+  private def handleMovieAvailability(movie: Movie, processedMovieFut: Future[Thing]) = {
+    import io.circe.generic.auto._
+    import io.circe.syntax._
+
+    val query = PopularSearchRequest(1, 10, movie.title.get, List("movie"))
+    val justWatchResFut = justWatchClient.makeRequest[PopularItemsResponse]("/content/titles/en_US/popular", Seq("body" -> query.asJson.noSpaces))
+
+    (for {
+      justWatchRes <- justWatchResFut
+      networksBySource <- networkCache.get()
+      thing <- processedMovieFut
+    } yield {
+      val availabilities = matchJustWatchMovie(movie, justWatchRes.items).collect {
+        case matchedItem if matchedItem.offers.exists(_.nonEmpty) =>
+          for {
+            offer <- matchedItem.offers.get
+            provider <- networksBySource.get(ExternalSource.JustWatch -> offer.provider_id.toString).toList
+          } yield {
+            val offerType = Try(offer.monetization_type.map(OfferType.fromJustWatchType)).toOption.flatten
+            Availability(
+              None,
+              true,
+              offer.country,
+              None,
+              offer.date_created.map(new DateTime(_)),
+              None,
+              offerType,
+              offer.retail_price.map(BigDecimal.decimal),
+              offer.currency,
+              thing.id,
+              None,
+              provider.id
+            )
+          }
+      }.getOrElse(Nil)
+
+      thingsDbAccess.saveAvailabilities(availabilities).map(_ => thing)
+    }).flatMap(identity)
+  }
+
+  private def matchJustWatchMovie(movie: Movie, popularItems: List[PopularItem]): Option[PopularItem] = {
+    popularItems.find(item => {
+      val idMatch = item.scoring.getOrElse(Nil).exists(s => s.provider_type == "tmdb:id" && s.value.toInt.toString == movie.id.toString)
+      val nameMatch = item.title.exists(movie.title.contains)
+      val originalMatch = movie.original_title.exists(item.original_title.contains)
+
+      idMatch || nameMatch || originalMatch
+    })
   }
 
   def handleShow(show: TvShow, handleSeasons: Boolean): Future[(String, Thing)] = {

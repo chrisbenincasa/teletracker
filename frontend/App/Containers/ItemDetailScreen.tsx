@@ -118,6 +118,18 @@ class ItemDetailScreen extends Component<Props, State> {
         )
     }
 
+    renderAvailability(availability: any) {
+        return (
+            <View key={availability.id}>
+                <Text>{availability.offerType} on {availability.network.name}</Text>
+            </View>
+        );
+    }
+
+    renderAvailabilities(availabilities: any[]) {
+        return availabilities.map(this.renderAvailability);
+    }
+
     render () {
         return (
             <View style={styles.container}>
@@ -328,6 +340,19 @@ class ItemDetailScreen extends Component<Props, State> {
                                             </View>
                                         ))
                                     }
+                                </ScrollView>
+                            </View>
+                        }
+
+                        {getMetadata.getAvailabilityInfo(this.state.item) && 
+                            <View style={styles.castContainer}>
+                                <Divider style={styles.divider} />
+                                <Text style={styles.castHeader}>Where to Watch:</Text>
+                                <ScrollView
+                                    horizontal={true}
+                                    showsHorizontalScrollIndicator={false}
+                                    style={styles.avatarContainer}>
+                                    {this.renderAvailabilities(this.state.item.availability)}
                                 </ScrollView>
                             </View>
                         }

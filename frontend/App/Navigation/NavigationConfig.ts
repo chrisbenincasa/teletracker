@@ -33,6 +33,7 @@ export let ListView = {
         },
         center: {
             bottomTabs: {
+                id: 'BottomTabs',
                 children: [{
                     stack: {
                         children: [{
