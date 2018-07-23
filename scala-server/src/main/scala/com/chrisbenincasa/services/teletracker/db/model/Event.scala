@@ -12,6 +12,14 @@ case class Event(
   details: Option[String],
   userId: Int,
   timestamp: java.sql.Timestamp
+) {
+  def withTarget(thing: Thing): EventWithTarget = EventWithTarget(this, Some(thing.asPartial))
+  def withTarget(thing: PartialThing): EventWithTarget = EventWithTarget(this, Some(thing))
+}
+
+case class EventWithTarget(
+  event: Event,
+  target: Option[PartialThing]
 )
 
 class Events @Inject()(

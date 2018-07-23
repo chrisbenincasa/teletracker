@@ -13,6 +13,7 @@ import ReduxState from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
 import styles from './Styles/ItemListStyle';
 import { Colors } from '../Themes/';
+import { Thing } from '../Model/external/themoviedb';
 
 // More info here: https://facebook.github.io/react-native/docs/sectionlist.html
 
@@ -49,13 +50,17 @@ class ItemList extends React.PureComponent<Props> {
     }
     
     openSearch() {
-        Navigation.push(this.props.componentId, NavigationConfig.SearchView);
+        Navigation.mergeOptions(this.props.componentId, {
+            bottomTabs: {
+                currentTabIndex: 1
+            }
+        });
     }
 
-    goToItemDetail(item) {
+    goToItemDetail(item: Thing) {
         let view = R.mergeDeepRight(NavigationConfig.DetailView, {
             component: {
-                passProps: { item }
+                passProps: { itemType: item.type, itemId: item.id }
             }
         });
         this.props.pushState(this.props.componentId, view);
@@ -97,9 +102,7 @@ class ItemList extends React.PureComponent<Props> {
     
     // How many items should be kept im memory as we scroll?
     oneScreensWorth = 20;
-        openSearch() {
-        Navigation.push(this.props.componentId, NavigationConfig.SearchView);
-    }
+    
     // extraData is for anything that is not indicated in data
     // for instance, if you kept "favorites" in `this.state.favs`
     // pass that in, so changes in favorites will cause a re-render

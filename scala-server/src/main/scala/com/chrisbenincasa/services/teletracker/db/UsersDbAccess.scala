@@ -2,7 +2,7 @@ package com.chrisbenincasa.services.teletracker.db
 
 import com.chrisbenincasa.services.teletracker.auth.PasswordHash
 import com.chrisbenincasa.services.teletracker.db.model._
-import com.chrisbenincasa.services.teletracker.inject.DbProvider
+import com.chrisbenincasa.services.teletracker.inject.{DbImplicits, DbProvider}
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 
@@ -13,9 +13,11 @@ class UsersDbAccess @Inject()(
   val trackedLists: TrackedLists,
   val trackedListThings: TrackedListThings,
   val things: Things,
-  val events: Events
+  val events: Events,
+  dbImplicits: DbImplicits
 )(implicit executionContext: ExecutionContext) extends DbAccess {
   import provider.driver.api._
+  import dbImplicits._
 
   private implicit class UserExtensions[C[_]](q: Query[Users#UsersTable, UserRow, C]) {
     def withCredentials = q.join(userCredentials.query).on(_.id === _.userId)
@@ -51,8 +53,14 @@ class UsersDbAccess @Inject()(
 
   def findUserAndLists(userId: Int) = {
     run {
-      trackedLists.query.filter(_.userId === userId).flatMap(list => {
-        list.userId_fk.map(user => user -> list)
+      (for {
+        (((user, list), _), thing) <- (
+          users.query.filter(_.id === userId) joinLeft trackedLists.query on(_.id === _.userId)
+            joinLeft trackedListThings.query on(_._2.map(_.id) === _.listId)
+            joinLeft things.query on(_._2.map(_.thingId) === _.id)
+        )
+      } yield {
+        (user, list, thing.map(_.id), thing.map(_.name), thing.map(_.`type`))
       }).result
     }
   }
@@ -105,7 +113,17 @@ class UsersDbAccess @Inject()(
 
   def getUserEvents(userId: Int) = {
     run {
-      events.query.filter(_.userId === userId).sortBy(_.timestamp.desc).result
+      (for {
+        (ev, thing) <- events.query.filter(_.userId === userId).sortBy(_.timestamp.desc) joinLeft
+          things.query on((ev, t) => ev.targetEntityId === t.id.asColumnOf[String])
+      } yield {
+        (ev, thing.map(_.id), thing.map(_.name))
+      }).result.map(_.map {
+        case (event, tid @ Some(_), tname @ Some(_)) =>
+          event.withTarget(PartialThing(tid, tname))
+        case (event, _, _) =>
+          EventWithTarget(event, None)
+      })
     }
   }
 

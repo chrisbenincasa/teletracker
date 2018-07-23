@@ -2,6 +2,7 @@ import { all, AllEffect, takeLatest } from 'redux-saga/effects';
 
 import { StartupTypes } from '../Redux/StartupRedux';
 import { UserTypes } from '../Redux/UserRedux';
+import { EventTypes } from '../Redux/EventsRedux';
 import { SearchTypes } from '../Redux/SearchRedux';
 import { ListTypes } from '../Redux/ListRedux';
 import { NavTypes } from '../Redux/NavRedux';
@@ -11,6 +12,7 @@ import { getUser, signupUser, loginUser, postEvent } from './UserSagas';
 import { search } from './SearchSagas';
 import { addToList } from './ListSagas';
 import { pushState } from './NavSagas';
+import { retrieveEvents } from './EventsSagas';
 
 export const teletrackerApi = new TeletrackerApi();
 
@@ -24,6 +26,7 @@ export default function * root(): IterableIterator<AllEffect> {
     takeLatest(SearchTypes.SEARCH_REQUEST, search, teletrackerApi),
     takeLatest(ListTypes.ADD_TO_LIST, addToList, teletrackerApi),
     takeLatest(NavTypes.PUSH_STATE, pushState),
-    takeLatest(UserTypes.POST_EVENT, postEvent, teletrackerApi)
+    takeLatest(UserTypes.POST_EVENT, postEvent, teletrackerApi),
+    takeLatest(EventTypes.RETRIEVE_EVENTS, retrieveEvents, teletrackerApi)
   ]);
 }
