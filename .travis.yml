@@ -1,7 +1,19 @@
+before_cache:
+  # Cleanup the cached directories to avoid unnecessary cache updates
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt        -name "*.lock"               -print -delete
+
+cache:
+  yarn: true
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+    - node_modules
+
 jobs:
   include:
-    - stage: backend
-      name: "backend"
+    - stage: build
+      name: "Backend"
       language: scala
       jdk: oraclejdk8
       scala: 2.12.6
@@ -12,8 +24,7 @@ jobs:
         - docker pull postgres
       before_script: cd scala-server
       script: test 'tag IS blank' && travis_retry sbt ++$TRAVIS_SCALA_VERSION compile test
-    - stage: frontend
-      name: "Frontend"
+    - name: "Frontend"
       language: node_js
       node_js: "8"
       sudo: required
@@ -42,7 +53,6 @@ jobs:
           tags: true
 
 stages:
-  - backend
-  - frontend
+  - build
   - name: deploy
     if: (tag IS present OR branch = master) AND type != pull_request
