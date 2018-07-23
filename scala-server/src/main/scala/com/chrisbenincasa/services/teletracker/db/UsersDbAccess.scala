@@ -114,13 +114,15 @@ class UsersDbAccess @Inject()(
   def getUserEvents(userId: Int) = {
     run {
       (for {
-        (ev, thing) <- events.query.filter(_.userId === userId).sortBy(_.timestamp.desc) join
+        (ev, thing) <- events.query.filter(_.userId === userId).sortBy(_.timestamp.desc) joinLeft
           things.query on((ev, t) => ev.targetEntityId === t.id.asColumnOf[String])
       } yield {
-        (ev, thing.id, thing.name)
+        (ev, thing.map(_.id), thing.map(_.name))
       }).result.map(_.map {
-        case (event, thingId, thingName) =>
-          event.withTarget(PartialThing(Some(thingId), Some(thingName)))
+        case (event, tid @ Some(_), tname @ Some(_)) =>
+          event.withTarget(PartialThing(tid, tname))
+        case (event, _, _) =>
+          EventWithTarget(event, None)
       })
     }
   }
