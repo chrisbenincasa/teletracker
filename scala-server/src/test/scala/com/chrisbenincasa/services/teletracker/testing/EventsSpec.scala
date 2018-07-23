@@ -3,7 +3,7 @@ package com.chrisbenincasa.services.teletracker.testing
 import com.chrisbenincasa.services.teletracker.auth.jwt.JwtVendor
 import com.chrisbenincasa.services.teletracker.controllers.EventCreate
 import com.chrisbenincasa.services.teletracker.db.UsersDbAccess
-import com.chrisbenincasa.services.teletracker.db.model.Event
+import com.chrisbenincasa.services.teletracker.db.model.{Event, EventWithTarget}
 import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.chrisbenincasa.services.teletracker.testing.framework.BaseSpecWithServer
 import com.chrisbenincasa.services.teletracker.util.json.circe._
@@ -18,7 +18,7 @@ class EventsSpec extends BaseSpecWithServer {
 
     server.httpPost(
       "/api/v1/users/self/events",
-      serializer.writeValueAsString(EventCreate("Watched", "show", "123", None, System.currentTimeMillis())),
+      serializer.writeValueAsString(Map("event" -> EventCreate("Watched", "show", "123", None, System.currentTimeMillis()))),
       headers = Map("Authorization" -> s"Bearer $jwt")
     )
 
@@ -27,7 +27,7 @@ class EventsSpec extends BaseSpecWithServer {
       headers = Map("Authorization" -> s"Bearer $jwt")
     )
 
-    val parsedResponse = parse(eventsResponse.contentString).flatMap(_.as[DataResponse[List[Event]]]).right.get
+    val parsedResponse = parse(eventsResponse.contentString).flatMap(_.as[DataResponse[List[EventWithTarget]]]).right.get
 
     assert(parsedResponse.data.length === 1)
   }

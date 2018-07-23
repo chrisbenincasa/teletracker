@@ -138,7 +138,7 @@ class UserController @Inject()(
           new java.sql.Timestamp(req.event.timestamp)
         )
 
-        usersDbAccess.addUserEvent(dao).map(DataResponse(_))
+        usersDbAccess.addUserEvent(dao).map(DataResponse(_)).map(response.created(_))
       }
     }
   }
