@@ -21,7 +21,26 @@ case class Thing(
   createdAt: DateTime,
   lastUpdatedAt: DateTime,
   metadata: Option[ObjectMetadata]
-)
+) {
+  def asPartial: PartialThing = {
+    PartialThing(id, Some(name), Some(normalizedName), Some(`type`), Some(createdAt), Some(lastUpdatedAt), metadata)
+  }
+}
+
+case class PartialThing(
+  id: Option[Int] = None,
+  name: Option[String] = None,
+  normalizedName: Option[String] = None,
+  `type`: Option[ThingType] = None,
+  createdAt: Option[DateTime] = None,
+  lastUpdatedAt: Option[DateTime] = None,
+  metadata: Option[ObjectMetadata] = None,
+  networks: Option[List[Network]] = None,
+  seasons: Option[List[TvShowSeasonWithEpisodes]] = None,
+  availability: Option[List[AvailabilityWithDetails]] = None
+) {
+  def withAvailability(av: List[AvailabilityWithDetails]) = this.copy(availability = Some(av))
+}
 
 case class ThingWithDetails(
   id: Int,

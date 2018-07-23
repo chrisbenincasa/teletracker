@@ -34,6 +34,7 @@ class TeletrackerServer(
       add[SearchController].
       add[PeopleController].
       add[TvShowController].
+      add[MovieController].
       add[MetadataController]
   }
 }

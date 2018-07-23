@@ -25,7 +25,8 @@ export interface Thing {
     name: string
     normalizedName: string
     type: 'movie' | 'show' | 'person',
-    metadata?: ObjectMetadata
+    metadata?: ObjectMetadata,
+    availability: any
 }
 
 export interface MovieExternalIds {

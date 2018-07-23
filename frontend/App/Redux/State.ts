@@ -1,7 +1,13 @@
 import { UserState } from "./UserRedux";
 import { SearchState } from "./SearchRedux";
+import { ListState } from "./ListRedux";
+import { NavigationState } from "./NavRedux";
+import { EventsState } from "./EventsRedux";
 
-export default interface State {
+export interface State {
     user: UserState,
-    search: SearchState
+    search: SearchState,
+    lists: ListState,
+    nav: NavigationState,
+    events: EventsState
 };

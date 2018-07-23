@@ -25,20 +25,25 @@ trait ModelInstances extends JodaInstances {
   }
 
   implicit val availabilityEncoder = deriveEncoder[Availability]
-
   implicit val availabilityDecoder = deriveDecoder[Availability]
 
-  implicit val objectMetadataEncoder = deriveEncoder[ObjectMetadata]
+  implicit val networkEncoder = deriveEncoder[Network]
+  implicit val networkDecoder = deriveDecoder[Network]
 
+  implicit val availabilityWithDetailsEncoder = deriveEncoder[AvailabilityWithDetails]
+  implicit val availabilityWithDetailsDecoder = deriveDecoder[AvailabilityWithDetails]
+
+  implicit val objectMetadataEncoder = deriveEncoder[ObjectMetadata]
   implicit val objectMetadataDecoder = deriveDecoder[ObjectMetadata]
 
   implicit val thingEncoder = deriveEncoder[Thing]
-
   implicit val thingDecoder = deriveDecoder[Thing]
 
   implicit val thingWithDetailsEncoder = deriveEncoder[ThingWithDetails]
-
   implicit val thingWithDetailsDecoder = deriveDecoder[ThingWithDetails]
+
+  implicit val partialThingEncoder = deriveEncoder[PartialThing]
+  implicit val partialThingDecoder = deriveDecoder[PartialThing]
 
   implicit val userDecoder = deriveDecoder[User]
 }

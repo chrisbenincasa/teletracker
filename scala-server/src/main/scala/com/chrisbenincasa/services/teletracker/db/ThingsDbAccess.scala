@@ -95,6 +95,25 @@ class ThingsDbAccess @Inject()(
     }
   }
 
+  def findMovieById(id: Int) = {
+    val showQuery = things.query.filter(t => t.id === id && t.`type` === ThingType.Movie).take(1)
+
+    val availabilityQuery = availabilities.query.filter(a => a.thingId === id).flatMap(av => {
+      av.networkId_fk.map(_ -> av)
+    })
+
+    val movieFut = run(showQuery.result.headOption)
+    val avFut = run(availabilityQuery.result)
+
+    for {
+      movie <- movieFut
+      avs <- avFut
+    } yield {
+      val avWithDetails = avs.map { case (network, av) => av.withNetwork(network) }
+      movie.map(m => m.asPartial.withAvailability(avWithDetails.toList))
+    }
+  }
+
   def findPersonById(id: Int) = {
     val person = things.query.filter(p => p.id === id && p.`type` === ThingType.Person)
 
