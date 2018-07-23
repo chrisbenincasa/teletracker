@@ -18,10 +18,45 @@ case class Availability(
   offerType: Option[OfferType],
   cost: Option[BigDecimal],
   currency: Option[String],
-
   thingId: Option[Int],
   tvShowEpisodeId: Option[Int],
   networkId: Option[Int]
+) {
+  def withNetwork(network: Network): AvailabilityWithDetails = {
+    AvailabilityWithDetails(
+      id,
+      isAvailable,
+      region,
+      numSeasons,
+      startDate,
+      endDate,
+      offerType,
+      cost,
+      currency,
+      thingId,
+      tvShowEpisodeId,
+      networkId,
+      Some(network)
+    )
+  }
+}
+
+case class AvailabilityWithDetails(
+  id: Option[Int],
+  isAvailable: Boolean,
+  region: Option[String],
+  numSeasons: Option[Int],
+  startDate: Option[DateTime],
+  endDate: Option[DateTime],
+  offerType: Option[OfferType],
+  cost: Option[BigDecimal],
+  currency: Option[String],
+
+  thingId: Option[Int],
+  tvShowEpisodeId: Option[Int],
+  networkId: Option[Int],
+
+  network: Option[Network]
 )
 
 class Availabilities @Inject()(

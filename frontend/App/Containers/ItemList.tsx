@@ -50,7 +50,11 @@ class ItemList extends React.PureComponent<Props> {
     }
     
     openSearch() {
-        Navigation.push(this.props.componentId, NavigationConfig.SearchView);
+        Navigation.mergeOptions(this.props.componentId, {
+            bottomTabs: {
+                currentTabIndex: 1
+            }
+        });
     }
 
     goToItemDetail(item: Thing) {
@@ -99,9 +103,6 @@ class ItemList extends React.PureComponent<Props> {
     // How many items should be kept im memory as we scroll?
     oneScreensWorth = 20;
     
-    openSearch() {
-        Navigation.push(this.props.componentId, NavigationConfig.SearchView);
-    }
     // extraData is for anything that is not indicated in data
     // for instance, if you kept "favorites" in `this.state.favs`
     // pass that in, so changes in favorites will cause a re-render
