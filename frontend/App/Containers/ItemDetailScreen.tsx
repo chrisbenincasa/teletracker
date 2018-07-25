@@ -156,8 +156,8 @@ class ItemDetailScreen extends Component<Props, State> {
 
         const sortedAvailibility = availabilities.sort((a, b) => {
             // If an unknown offer type comes though, add it to end of list
-            let offerTypeA = offerTypeSort[a.offerType] ? offerTypeSort[a.offerType] : offerTypeSort.keys(obj).length + 1;
-            let offerTypeB = offerTypeSort[b.offerType] ? offerTypeSort[b.offerType] : offerTypeSort.keys(obj).length + 1;
+            let offerTypeA = offerTypeSort[a.offerType] ? offerTypeSort[a.offerType] : Object.keys(offerTypeSort).length + 1;
+            let offerTypeB = offerTypeSort[b.offerType] ? offerTypeSort[b.offerType] : Object.keys(offerTypeSort).length + 1;
             return offerTypeA - offerTypeB || networks[a.network.slug].sort  - networks[b.network.slug].sort;
         });
 
