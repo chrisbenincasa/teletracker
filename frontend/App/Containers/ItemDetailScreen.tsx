@@ -141,27 +141,25 @@ class ItemDetailScreen extends Component<Props, State> {
     }
 
     renderAvailabilities(availabilities: any[]) {
-        // Sort by offer type
-        // default sort: subscription, rent, ads, buy
+        // Sort by offer type & our network preference
+        // To do: factor in users current settings (e.g. what they are subscribed to)
+        // default sort: free, subscription, rent, ads, buy, theater, aggregate
         const offerTypeSort = {
+            'free': 0,
             'subscription': 1,
             'rent': 2,
             'ads': 3,
-            'buy': 4
+            'buy': 4,
+            'theater': 5,
+            'aggregate': 6
         };
 
-        // Sort by our network preference
-        // To do: factor in users current settings (e.g. what they are subscribed to)
         const sortedAvailibility = availabilities.sort((a, b) => {
-            return offerTypeSort[a.offerType]  - offerTypeSort[b.offerType]  || networks[a.network.slug].sort  - networks[b.network.slug].sort ;
+            // If an unknown offer type comes though, add it to end of list
+            let offerTypeA = offerTypeSort[a.offerType] ? offerTypeSort[a.offerType] : offerTypeSort.keys(obj).length + 1;
+            let offerTypeB = offerTypeSort[b.offerType] ? offerTypeSort[b.offerType] : offerTypeSort.keys(obj).length + 1;
+            return offerTypeA - offerTypeB || networks[a.network.slug].sort  - networks[b.network.slug].sort;
         });
-
-        // Combine Rent and Buy for same Network
-        // To do
-
-
-        const totalOptions = sortedAvailibility.length;
-
 
         return sortedAvailibility.map(this.renderAvailability);
     }
