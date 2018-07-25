@@ -6,6 +6,7 @@ import ViewMoreText from 'react-native-view-more-text';
 import { Navigation } from 'react-native-navigation';
 import getMetadata from '../Components/Helpers/getMetadata';
 import { parseInitials } from '../Components/Helpers/textHelper';
+import { networks } from '../Components/Helpers/networks';
 
 import { Thing } from '../Model/external/themoviedb';
 import ListActions from '../Redux/ListRedux';
@@ -121,13 +122,48 @@ class ItemDetailScreen extends Component<Props, State> {
     renderAvailability(availability: any) {
         return (
             <View key={availability.id}>
-                <Text>{availability.offerType} on {availability.network.name}</Text>
+
+                <Button
+                    title={availability.network.name} />
+                <Image
+                    source={networks[availability.network.slug].preferredLogo}
+                />
+                <Badge
+                    value={`${availability.offerType} for ${availability.cost}`}
+                    textStyle={{ color: 'white' }}
+                    wrapperStyle={{
+                        marginHorizontal: 2,
+                        marginVertical: 5
+                    }}
+                />
             </View>
         );
     }
 
     renderAvailabilities(availabilities: any[]) {
-        return availabilities.map(this.renderAvailability);
+        // Sort by offer type
+        // default sort: subscription, rent, ads, buy
+        const offerTypeSort = {
+            'subscription': 1,
+            'rent': 2,
+            'ads': 3,
+            'buy': 4
+        };
+
+        // Sort by our network preference
+        // To do: factor in users current settings (e.g. what they are subscribed to)
+        const sortedAvailibility = availabilities.sort((a, b) => {
+            return offerTypeSort[a.offerType]  - offerTypeSort[b.offerType]  || networks[a.network.slug].sort  - networks[b.network.slug].sort ;
+        });
+
+        // Combine Rent and Buy for same Network
+        // To do
+
+
+        const totalOptions = sortedAvailibility.length;
+
+
+        return sortedAvailibility.map(this.renderAvailability);
     }
 
     render () {
@@ -312,49 +348,49 @@ class ItemDetailScreen extends Component<Props, State> {
                                 </ScrollView>
                             </View>
                         }
-
-                        {getMetadata.getCast(this.state.item) &&
-                            <View style={styles.castContainer}>
-                                <Divider style={styles.divider} />
-                                <Text style={styles.castHeader}>Cast:</Text>
-
-                                <ScrollView
-                                    horizontal={true}
-                                    showsHorizontalScrollIndicator={false}
-                                    style={styles.avatarContainer}>
-                                    {
-                                        getMetadata.getCast(this.state.item).map((i) => (
-                                            <View key={i.id}>
-                                                <Avatar
-                                                    key={i.id}
-                                                    large
-                                                    rounded
-                                                    source={i.profile_path ? { uri: "https://image.tmdb.org/t/p/w92" + i.profile_path } : null}
-                                                    activeOpacity={0.7}
-                                                    title={i.poster_path ? null : parseInitials(i.name)}
-                                                    titleStyle={parseInitials(i.name).length > 2 ? { fontSize: 26 } : null}
-
-                                                />
-                                                <Text style={styles.castName}>{i.name}</Text>
-                                                <Text style={styles.castCharacter}>{i.character}</Text>
-                                            </View>
-                                        ))
-                                    }
-                                </ScrollView>
-                            </View>
+                        {
+                            getMetadata.getAvailabilityInfo(this.state.item) && 
+                                <View style={styles.castContainer}>
+                                    <Divider style={styles.divider} />
+                                    <Text style={styles.castHeader}>Where to Watch:</Text>
+                                    <ScrollView
+                                        horizontal={true}
+                                        showsHorizontalScrollIndicator={false}
+                                        style={styles.avatarContainer}>
+                                        {this.renderAvailabilities(this.state.item.availability)}
+                                    </ScrollView>
+                                </View>
                         }
+                        {
+                            getMetadata.getCast(this.state.item) &&
+                                <View style={styles.castContainer}>
+                                    <Divider style={styles.divider} />
+                                    <Text style={styles.castHeader}>Cast:</Text>
 
-                        {getMetadata.getAvailabilityInfo(this.state.item) && 
-                            <View style={styles.castContainer}>
-                                <Divider style={styles.divider} />
-                                <Text style={styles.castHeader}>Where to Watch:</Text>
-                                <ScrollView
-                                    horizontal={true}
-                                    showsHorizontalScrollIndicator={false}
-                                    style={styles.avatarContainer}>
-                                    {this.renderAvailabilities(this.state.item.availability)}
-                                </ScrollView>
-                            </View>
+                                    <ScrollView
+                                        horizontal={true}
+                                        showsHorizontalScrollIndicator={false}
+                                        style={styles.avatarContainer}>
+                                        {
+                                            getMetadata.getCast(this.state.item).map((i) => (
+                                                <View key={i.id}>
+                                                    <Avatar
+                                                        key={i.id}
+                                                        large
+                                                        rounded
+                                                        source={i.profile_path ? { uri: "https://image.tmdb.org/t/p/w92" + i.profile_path } : null}
+                                                        activeOpacity={0.7}
+                                                        title={i.poster_path ? null : parseInitials(i.name)}
+                                                        titleStyle={parseInitials(i.name).length > 2 ? { fontSize: 26 } : null}
+
+                                                    />
+                                                    <Text style={styles.castName}>{i.name}</Text>
+                                                    <Text style={styles.castCharacter}>{i.character}</Text>
+                                                </View>
+                                            ))
+                                        }
+                                    </ScrollView>
+                                </View>
                         }
                     </ScrollView>
                 ) }
