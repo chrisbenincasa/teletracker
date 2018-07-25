@@ -8,7 +8,7 @@ import { ListTypes } from '../Redux/ListRedux';
 import { NavTypes } from '../Redux/NavRedux';
 import { TeletrackerApi } from '../Services/TeletrackerApi';
 import { startup } from './StartupSagas';
-import { getUser, signupUser, loginUser, postEvent } from './UserSagas';
+import { getUser, signupUser, loginUser, postEvent, logoutUser } from './UserSagas';
 import { search } from './SearchSagas';
 import { addToList } from './ListSagas';
 import { pushState } from './NavSagas';
@@ -21,6 +21,7 @@ export default function * root(): IterableIterator<AllEffect> {
     takeLatest(StartupTypes.STARTUP, startup, teletrackerApi),
     takeLatest(UserTypes.USER_REQUEST, getUser, teletrackerApi),
     takeLatest(UserTypes.LOGIN_REQUEST, loginUser, teletrackerApi),
+    takeLatest(UserTypes.LOGOUT_REQUEST, logoutUser, teletrackerApi),
     takeLatest(UserTypes.USER_SELF_REQUEST, getUser, teletrackerApi),
     takeLatest(UserTypes.USER_SIGNUP_REQUEST, signupUser, teletrackerApi),
     takeLatest(SearchTypes.SEARCH_REQUEST, search, teletrackerApi),

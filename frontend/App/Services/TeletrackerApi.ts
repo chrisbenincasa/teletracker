@@ -14,7 +14,7 @@ type Required<T> = {
 }
 
 const DefaultTeletrackerApiOptions: Required<TeletrackerApiOptions> = {
-    url: Config.TELETRACKER_API_URL,
+    url: "http://localhost:3000", //Config.TELETRACKER_API_URL,
     token: null
 }
 
@@ -25,6 +25,7 @@ export class TeletrackerApi {
     constructor(opts?: TeletrackerApiOptions) {
         let options = merge(DefaultTeletrackerApiOptions, opts || {});
 
+        console.log(options)
         this.api = apisauce.create({
             baseURL: options.url
         });
@@ -74,6 +75,12 @@ export class TeletrackerApi {
             }
 
             return response;
+        });
+    }
+
+    async logoutUser() {
+        return this.withTokenCheck(async () => {
+            return this.api.post<any>('/api/v1/auth/logout')
         });
     }
 

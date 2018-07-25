@@ -101,6 +101,7 @@ class NotificationsScreen extends Component<Props> {
                 <Header
                     title="Feed"
                     componentId={this.props.componentId}
+                    centerComponent={{ title: 'Feed', style: { color: 'white' } }}
                 />
                 <FlatList
                     keyExtractor={this.keyExtractor}

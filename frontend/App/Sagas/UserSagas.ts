@@ -9,7 +9,7 @@ import { AnyAction } from 'redux';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
 
 const getListViewNavEffect = (componentId: string) => {
-    return call([Navigation, Navigation.setRoot], NavigationConfig.AppStack);
+    return call([Navigation, Navigation.setStackRoot], componentId, NavigationConfig.ListBottomTabs);
 }
 
 const getNavEffect = (componentId: string, view: any) => {
@@ -41,6 +41,19 @@ export function * loginUser(api: TeletrackerApi, action: AnyAction) {
         ]);
     } else {
         yield put(UserActions.loginFailure());
+    }
+}
+
+export function * logoutUser(api: TeletrackerApi, {componentId}: AnyAction) {
+    const response: ApiResponse<any> = yield call([api, api.logoutUser]);
+
+    if (response.ok) {
+        yield all([
+            put(UserActions.logoutSuccess()),
+            call([Navigation, Navigation.setRoot], NavigationConfig.AuthStack2)
+        ]);
+    } else {
+        console.tron.log('uh oh');
     }
 }
 

@@ -20,12 +20,13 @@ class AuthController @Inject()(
   prefix("/api/v1/auth") {
     // Log in user based on creds
     filter[PasswordAuthFilter].post("/login") { req: LoginRequest =>
-      // Retrieve existing token?
-      response.ok(
-        DataResponse(
-          CreateUserResponse(req.request.authContext.user.id, jwtVendor.vend(req.email))
+      usersDbAccess.vendToken(req.email).map(token => {
+        response.ok(
+          DataResponse(
+            CreateUserResponse(req.request.authContext.user.id, token)
+          )
         )
-      )
+      })
     }
 
     filter[JwtAuthFilter].get("/status") { req: Request =>
@@ -33,9 +34,11 @@ class AuthController @Inject()(
     }
 
     // Log current user out
-    filter[JwtAuthFilter].post("/logout") { _: Request =>
+    filter[JwtAuthFilter].post("/logout") { req: Request =>
       // Revoke token?
-      response.ok
+      usersDbAccess.revokeToken(req.authContext.user.id, req.authToken.token).map(_ => {
+        response.ok
+      })
     }
   }
 }
