@@ -2,7 +2,7 @@ export const networks = {
     'netflix': {
         sort: 1,
         folder: 'netflix',
-        preferredLogo: require('../../Images/Logos/../../Images/Logos/netflix/icon.jpg')
+        preferredLogo: require('../../Images/Logos/netflix/icon.jpg')
     },
     'netflix-kids': {
         sort: 2,
