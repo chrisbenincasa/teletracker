@@ -287,6 +287,30 @@ trait TvShowId
   id: Option[Int]
 )
 
+@JsonCodec case class Network(
+  id: Int,
+  headquarters: Option[String],
+  homepage: Option[String],
+  name: Option[String],
+  origin_country: Option[String],
+  images: Option[NetworkLogos]
+)
+
+@JsonCodec case class NetworkLogos(
+  logos: Option[List[NetworkLogo]]
+)
+
+@JsonCodec case class NetworkLogo(
+  id: Option[String],
+  aspect_ratio: Option[Double],
+  file_path: Option[String],
+  height: Option[Int],
+  file_type: Option[String],
+  vote_average: Option[Double],
+  vote_count: Option[Int],
+  width: Option[Int]
+)
+
 @JsonCodec case class Certification(
   certification: String,
   meaning: String,

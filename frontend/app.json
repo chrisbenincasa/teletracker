@@ -1,4 +1,16 @@
 {
   "name": "teletracker",
-  "displayName": "teletracker"
+  "displayName": "teletracker",
+  "expo": {
+    "sdkVersion": "27.0.0",
+    "packagerOpts": {
+      "sourceExts": [
+        "ts",
+        "tsx",
+        "js",
+        "jsx"
+      ],
+      "transformer": "node_modules/react-native-typescript-transformer/index.js"
+    }
+  }
 }

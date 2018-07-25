@@ -39,6 +39,14 @@ case class Availability(
       Some(network)
     )
   }
+
+  def matches(other: Availability): Boolean = {
+    val idsEqual = (for (tid <- thingId; tid2 <- other.thingId) yield tid == tid2).getOrElse(false)
+    val episodeIdsEqual = (for (tid <- tvShowEpisodeId; tid2 <- other.tvShowEpisodeId) yield tid == tid2).getOrElse(false)
+    val networkIdEqual = (for (tid <- networkId; tid2 <- other.networkId) yield tid == tid2).getOrElse(false)
+    val offerTypeEqual = (for (tid <- offerType; tid2 <- other.offerType) yield tid == tid2).getOrElse(false)
+    (idsEqual || episodeIdsEqual) && networkIdEqual && offerTypeEqual
+  }
 }
 
 case class AvailabilityWithDetails(

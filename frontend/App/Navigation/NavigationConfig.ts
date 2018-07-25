@@ -21,6 +21,106 @@ export const AuthStack = {
     }
 };
 
+export const AuthStack2 = {
+    root: {
+        sideMenu: {
+            left: {
+                component: {
+                    name: 'navigation.main.MenuScreen',
+                    passProps: {
+                        side: 'left'
+                    }
+                }
+            },
+            center: {
+                stack: {
+                    children: [
+                        LoginScreenComponent
+                    ]
+                }
+            }
+        },
+
+    },
+    options: {
+        topBar: {
+            visible: false
+        }
+    }
+};
+
+export let ListBottomTabs = {
+    bottomTabs: {
+        id: 'BottomTabs',
+        children: [{
+            stack: {
+                children: [{
+                    component: {
+                        name: 'navigation.main.ListView',
+                        passProps: {
+                            text: 'List View'
+                        },
+                        options: {
+                            bottomTab: {
+                                title: 'My List',
+                                icon: require('../Images/Icons/list-icon.png'),
+                                testID: 'FIRST_TAB_BAR_BUTTON'
+                            },
+                            topBar: {
+                                visible: false
+                            }
+                        }
+                    }
+                }]
+            }
+        },
+        {
+            stack: {
+                children: [{
+                    component: {
+                        name: 'navigation.main.SearchScreen',
+                        passProps: {
+                            text: 'Search'
+                        },
+                        options: {
+                            bottomTab: {
+                                title: 'Search',
+                                icon: require('../Images/Icons/search.png'),
+                                testID: 'SECOND_TAB_BAR_BUTTON'
+                            },
+                            topBar: {
+                                visible: false,
+                            }
+                        }
+                    }
+                }]
+            }
+        },
+        {
+            stack: {
+                children: [{
+                    component: {
+                        name: 'navigation.main.NotificationsScreen',
+                        passProps: {
+                            text: 'Notifications'
+                        },
+                        options: {
+                            bottomTab: {
+                                title: 'Notifications',
+                                icon: require('../Images/Icons/notification.png'),
+                                testID: 'THIRD_TAB_BAR_BUTTON'
+                            },
+                            topBar: {
+                                visible: false
+                            }
+                        }
+                    }
+                }]
+            }
+        }]
+    }
+}
+
 export let ListView = {
     sideMenu: {
         left: {
@@ -32,75 +132,7 @@ export let ListView = {
           }
         },
         center: {
-            bottomTabs: {
-                id: 'BottomTabs',
-                children: [{
-                    stack: {
-                        children: [{
-                            component: {
-                                name: 'navigation.main.ListView',
-                                    passProps: {
-                                        text: 'List View'
-                                    },
-                                    options: {
-                                        bottomTab: {
-                                            title: 'My List',
-                                            icon: require('../Images/Icons/list-icon.png'),
-                                            testID: 'FIRST_TAB_BAR_BUTTON'  
-                                        },
-                                        topBar: {
-                                            visible: false
-                                        }
-                                    }
-                                }
-                            }]
-                        }
-                    }, 
-                    {
-                    stack: {
-                        children: [{
-                            component: {
-                                name: 'navigation.main.SearchScreen',
-                                passProps: {
-                                    text: 'Search'
-                                },
-                                options: {
-                                    bottomTab: {
-                                        title: 'Search',
-                                        icon: require('../Images/Icons/search.png'),
-                                        testID: 'SECOND_TAB_BAR_BUTTON'
-                                    },
-                                    topBar: {
-                                        visible: false,
-                                    }
-                                }
-                            }
-                        }]
-                    }
-                },
-                {
-                stack: {
-                    children: [{
-                        component: {
-                            name: 'navigation.main.NotificationsScreen',
-                            passProps: {
-                                text: 'Notifications'
-                            },
-                            options: {
-                                bottomTab: {
-                                    title: 'Notifications',
-                                    icon: require('../Images/Icons/notification.png'),
-                                    testID: 'THIRD_TAB_BAR_BUTTON'
-                                },
-                                topBar: {
-                                    visible: false
-                                }
-                            }
-                        }
-                    }]
-                }
-                }]
-            },
+            ...ListBottomTabs,
             options: {
                 showsShadow: false
             }
@@ -163,13 +195,22 @@ export const AppStack = {
     }
 };
 
+export const AppStack2 = {
+    children: [
+        LoginScreenComponent
+    ]
+}
+
 export const NavigationConfig = {
     LoginScreenComponent,
     AuthStack,
+    AuthStack2,
     ListView,
+    ListBottomTabs,
     MenuView,
     DetailView,
     SearchView,
     NotificationsView,
-    AppStack
+    AppStack,
+    AppStack2
 }

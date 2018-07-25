@@ -39,7 +39,7 @@ class DbModule extends TwitterModule {
 class DbProvider @Inject()(
   val dataSource: javax.sql.DataSource
 )(implicit executionContext: ExecutionContext) {
-  val driver: JdbcProfile = CustomPostgresProfile
+  val driver: CustomPostgresProfile = CustomPostgresProfile
 
   import driver.api._
 

@@ -3,6 +3,7 @@ package com.chrisbenincasa.services.teletracker.db
 import com.chrisbenincasa.services.teletracker.db.model._
 import com.chrisbenincasa.services.teletracker.inject.{DbImplicits, DbProvider}
 import javax.inject.Inject
+import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 class ThingsDbAccess @Inject()(
@@ -241,9 +242,89 @@ class ThingsDbAccess @Inject()(
     if (avs.isEmpty) {
       Future.successful(None)
     } else {
-      run {
-        availabilities.query ++= avs
+      val thingAvailabilities = avs.filter(_.thingId.isDefined).groupBy(_.thingId.get)
+      val tvEpisodeAvailabilities = avs.filter(_.tvShowEpisodeId.isDefined).groupBy(_.tvShowEpisodeId.get)
+
+      def findInsertsAndUpdates(incoming: List[Availability], existing: Set[Availability]) = {
+        @tailrec def findInsertsAndUpdates0(
+          in: List[Availability],
+          remaining: Set[Availability] = existing,
+          updates: Set[Availability] = Set.empty,
+          inserts: Set[Availability] = Set.empty
+        ): (Set[Availability], Set[Availability]) = {
+          in match {
+            case Nil => inserts -> updates
+            case x :: xs =>
+              remaining.find(_.matches(x)) match {
+                case Some(y) => findInsertsAndUpdates0(xs, remaining - y, updates + x.copy(id = y.id), inserts)
+                case None => findInsertsAndUpdates0(xs, remaining, updates, inserts + x)
+              }
+          }
+        }
+
+        findInsertsAndUpdates0(incoming)
       }
+
+      val thingAvailabilitySave = if (thingAvailabilities.nonEmpty) {
+        run {
+          availabilities.query.filter(_.thingId inSetBind thingAvailabilities.keySet).result
+        }.flatMap(existing => {
+          val existingByThingId = existing.filter(_.thingId.isDefined).groupBy(_.thingId.get)
+          val (updates, inserts) = thingAvailabilities.foldLeft((Set.empty[Availability], Set.empty[Availability])) {
+            case ((u, i), (thingId, toSave)) =>
+              val existingForId = existingByThingId.getOrElse(thingId, Seq.empty)
+              val (i2, u2) = findInsertsAndUpdates(toSave.toList, existingForId.toSet)
+              (u ++ u2, i ++ i2)
+          }
+
+          val updateQueries = updates.toSeq.map(up => {
+            availabilities.query.
+              filter(a => a.id === up.id && a.thingId === up.thingId && a.offerType === up.offerType && a.networkId === up.networkId).
+              update(up)
+          })
+
+          val insertQueries = availabilities.query ++= inserts
+
+          run {
+            DBIO.sequence(updateQueries).andThen(DBIO.seq(insertQueries))
+          }
+        })
+      } else {
+        Future.unit
+      }
+
+      val tvEpisodeAvailabilitySave = if (tvEpisodeAvailabilities.nonEmpty) {
+        run {
+          availabilities.query.filter(_.thingId inSetBind tvEpisodeAvailabilities.keySet).result
+        }.flatMap(existing => {
+          val existingByThingId = existing.filter(_.thingId.isDefined).groupBy(_.thingId.get)
+          val (updates, inserts) = tvEpisodeAvailabilities.foldLeft((Set.empty[Availability], Set.empty[Availability])) {
+            case ((u, i), (thingId, toSave)) =>
+              val existingForId = existingByThingId.getOrElse(thingId, Seq.empty)
+              val (i2, u2) = findInsertsAndUpdates(toSave.toList, existingForId.toSet)
+              (u ++ u2, i ++ i2)
+          }
+
+          val updateQueries = updates.toSeq.map(up => {
+            availabilities.query.
+              filter(a => a.tvShowEpisodeId === up.tvShowEpisodeId && a.offerType === up.offerType && a.networkId === up.networkId).
+              update(up)
+          })
+
+          val insertQueries = availabilities.query ++= inserts
+
+          run {
+            DBIO.sequence(updateQueries).andThen(DBIO.seq(insertQueries))
+          }
+        })
+      } else {
+        Future.unit
+      }
+
+      for {
+        _ <- thingAvailabilitySave
+        _ <- tvEpisodeAvailabilitySave
+      } yield {}
     }
   }
 }

@@ -1,9 +1,11 @@
 package com.chrisbenincasa.services.teletracker.db
 
 import com.chrisbenincasa.services.teletracker.auth.PasswordHash
+import com.chrisbenincasa.services.teletracker.auth.jwt.JwtVendor
 import com.chrisbenincasa.services.teletracker.db.model._
 import com.chrisbenincasa.services.teletracker.inject.{DbImplicits, DbProvider}
 import javax.inject.Inject
+import org.joda.time.DateTime
 import scala.concurrent.ExecutionContext
 
 class UsersDbAccess @Inject()(
@@ -14,6 +16,8 @@ class UsersDbAccess @Inject()(
   val trackedListThings: TrackedListThings,
   val things: Things,
   val events: Events,
+  val tokens: Tokens,
+  jwtVendor: JwtVendor,
   dbImplicits: DbImplicits
 )(implicit executionContext: ExecutionContext) extends DbAccess {
   import provider.driver.api._
@@ -48,6 +52,37 @@ class UsersDbAccess @Inject()(
         userId <- query
         _ <- (trackedLists.query returning trackedLists.query.map(_.id)) += TrackedListRow(None, "Default List", isDefault = true, isPublic = false, userId)
       } yield userId
+    }
+  }
+
+  def vendToken(email: String) = {
+    findByEmail(email).flatMap {
+      case None => throw new IllegalArgumentException
+      case Some(user) =>
+        revokeAllTokens(user.id.get).flatMap(_ => {
+          val token = jwtVendor.vend(email)
+          val now = DateTime.now()
+          val insert = tokens.query += TokenRow(None, user.id.get, token, now, now, None)
+          run(insert).map(_ => token)
+        })
+    }
+  }
+
+  def revokeAllTokens(userId: Int) = {
+    run {
+      tokens.query.
+        filter(t => t.userId === userId && t.revokedAt.isEmpty).
+        map(_.revokedAt).
+        update(Some(DateTime.now()))
+    }
+  }
+
+  def revokeToken(userId: Int, token: String) = {
+    run {
+      tokens.query.
+        filter(t => t.userId === userId && t.token === token).
+        map(_.revokedAt).
+        update(Some(DateTime.now()))
     }
   }
 
