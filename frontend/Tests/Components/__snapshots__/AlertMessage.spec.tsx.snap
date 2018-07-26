@@ -25,9 +25,7 @@ exports[`AlertMessage component renders correctly if backgroundColor prop is set
     }
   >
     <Text
-      accessible={true}
       allowFontScaling={false}
-      ellipsizeMode="tail"
       style={
         Object {
           "color": "#CCCCCC",
@@ -67,9 +65,7 @@ exports[`AlertMessage component renders correctly if show is true 1`] = `
     }
   >
     <Text
-      accessible={true}
       allowFontScaling={false}
-      ellipsizeMode="tail"
       style={
         Object {
           "color": "#CCCCCC",
