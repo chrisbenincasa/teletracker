@@ -1,11 +1,11 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import { 
-    View, 
-    FlatList, 
-    Text, 
-    Image, 
-    TouchableHighlight, 
+import {
+    View,
+    FlatList,
+    Text,
+    Image,
+    TouchableHighlight,
     ActivityIndicator,
     Dimensions
 } from 'react-native';
