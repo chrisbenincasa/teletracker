@@ -1,11 +1,16 @@
 import React, { Component } from 'react';
 import { Image, KeyboardAvoidingView, Text, View, ScrollView, ActivityIndicator } from 'react-native';
-import { Badge, Button, Rating, Avatar, Divider, Icon } from 'react-native-elements';
+import { Button, Rating, Icon } from 'react-native-elements';
 import Header from '../Components/Header/Header';
 import ViewMoreText from 'react-native-view-more-text';
 import { Navigation } from 'react-native-navigation';
+
+import GetCast from '../Components/GetCast';
+import GetSeasons from '../Components/GetSeasons';
+import GetAvailability from '../Components/GetAvailability';
+import GetGenres from '../Components/GetGenres';
+
 import getMetadata from '../Components/Helpers/getMetadata';
-import { parseInitials } from '../Components/Helpers/textHelper';
 
 import { Thing } from '../Model/external/themoviedb';
 import ListActions from '../Redux/ListRedux';
@@ -17,7 +22,6 @@ import { teletrackerApi } from '../Sagas';
 import headerStyles from '../Themes/ApplicationStyles';
 import styles from './Styles/ItemDetailScreenStyle';
 
-// Styles
 interface Props {
     componentId: string,
     item?: Thing,
@@ -37,6 +41,8 @@ type State = {
 class ItemDetailScreen extends Component<Props, State> {
     constructor(props: Props) {
         super(props);
+        this.markAsWatched = this.markAsWatched.bind(this);
+        this.addItem = this.addItem.bind(this);
 
         this.state = {
             inList: false,
@@ -58,7 +64,7 @@ class ItemDetailScreen extends Component<Props, State> {
 
     componentDidMount() {
         if (!this.props.item && this.props.itemType && this.props.itemId) {
-            if (this.props.itemType == 'show') {
+            if (this.props.itemType === 'show') {
                 teletrackerApi.getShow(this.props.itemId).then(response => {
                     if (!response.ok) {
                         this.setState({ loadError: true, loading: true });
@@ -118,18 +124,6 @@ class ItemDetailScreen extends Component<Props, State> {
         )
     }
 
-    renderAvailability(availability: any) {
-        return (
-            <View key={availability.id}>
-                <Text>{availability.offerType} on {availability.network.name}</Text>
-            </View>
-        );
-    }
-
-    renderAvailabilities(availabilities: any[]) {
-        return availabilities.map(this.renderAvailability);
-    }
-
     render () {
         return (
             <View style={styles.container}>
@@ -149,7 +143,7 @@ class ItemDetailScreen extends Component<Props, State> {
                         }
                     }}
                     centerComponent={null} 
-                    rightComponent={ null }
+                    rightComponent={null}
                 />
                 { this.state.loading ? (
                     <ActivityIndicator />
@@ -233,24 +227,7 @@ class ItemDetailScreen extends Component<Props, State> {
                             </ViewMoreText>
                         </View>
 
-                        {getMetadata.getGenre(this.state.item) &&
-                            <View style={styles.genreContainer}>
-                                {
-                                    getMetadata.getGenre(this.state.item)
-                                        ? getMetadata.getGenre(this.state.item).map((i) => (
-                                            <Badge
-                                                key={i.id}
-                                                value={i.name}
-                                                textStyle={{ color: 'white' }}
-                                                wrapperStyle={{
-                                                    marginHorizontal: 2,
-                                                    marginVertical: 5
-                                                }}
-                                            />
-                                        ))
-                                        : null}
-                            </View>
-                        }
+                        <GetGenres item={ this.state.item } />
 
                         <View style={styles.buttonsContainer}>
                             <Button
@@ -260,12 +237,12 @@ class ItemDetailScreen extends Component<Props, State> {
                                     size: 25,
                                     color: 'white'
                                 }}
-                                onPress={this.markAsWatched.bind(this)}
+                                onPress={this.markAsWatched}
                                 containerStyle={{ marginHorizontal: 0 }}>
                             </Button>
                             <Button
                                 title={this.state.inList ? 'Remove' : 'Track'}
-                                onPress={this.addItem.bind(this)}
+                                onPress={this.addItem}
                                 icon={{
                                     name: this.state.inList ? 'clear' : 'add',
                                     size: 25,
@@ -279,83 +256,9 @@ class ItemDetailScreen extends Component<Props, State> {
 
                         </View>
 
-                        {getMetadata.getSeasons(this.state.item) &&
-                            <View style={styles.seasonsContainer}>
-                                <Divider style={styles.divider} />
-                                <Text style={styles.seasonsHeader}>Season Guide:</Text>
-                                <ScrollView
-                                    horizontal={true}
-                                    showsHorizontalScrollIndicator={false}
-                                    style={styles.avatarContainer}>
-                                    {
-                                        getMetadata.getSeasons(this.state.item) ? getMetadata.getSeasons(this.state.item).map((i) => (
-                                            <View key={i.id}>
-                                                <Avatar
-                                                    key={i.id}
-                                                    large
-                                                    rounded
-                                                    source={
-                                                        i.poster_path
-                                                            ? {
-                                                                uri: "https://image.tmdb.org/t/p/w92" + i.poster_path
-                                                            }
-                                                            : null}
-                                                    activeOpacity={0.7}
-                                                    title={i.poster_path ? null : parseInitials(i.name)}
-                                                    titleStyle={parseInitials(i.name).length > 2 ? { fontSize: 26 } : null}
-                                                />
-                                                <Text style={styles.seasonsName}>{i.name}</Text>
-                                            </View>
-                                        ))
-                                            : null
-                                    }
-                                </ScrollView>
-                            </View>
-                        }
-
-                        {getMetadata.getCast(this.state.item) &&
-                            <View style={styles.castContainer}>
-                                <Divider style={styles.divider} />
-                                <Text style={styles.castHeader}>Cast:</Text>
-
-                                <ScrollView
-                                    horizontal={true}
-                                    showsHorizontalScrollIndicator={false}
-                                    style={styles.avatarContainer}>
-                                    {
-                                        getMetadata.getCast(this.state.item).map((i) => (
-                                            <View key={i.id}>
-                                                <Avatar
-                                                    key={i.id}
-                                                    large
-                                                    rounded
-                                                    source={i.profile_path ? { uri: "https://image.tmdb.org/t/p/w92" + i.profile_path } : null}
-                                                    activeOpacity={0.7}
-                                                    title={i.poster_path ? null : parseInitials(i.name)}
-                                                    titleStyle={parseInitials(i.name).length > 2 ? { fontSize: 26 } : null}
-
-                                                />
-                                                <Text style={styles.castName}>{i.name}</Text>
-                                                <Text style={styles.castCharacter}>{i.character}</Text>
-                                            </View>
-                                        ))
-                                    }
-                                </ScrollView>
-                            </View>
-                        }
-
-                        {getMetadata.getAvailabilityInfo(this.state.item) && 
-                            <View style={styles.castContainer}>
-                                <Divider style={styles.divider} />
-                                <Text style={styles.castHeader}>Where to Watch:</Text>
-                                <ScrollView
-                                    horizontal={true}
-                                    showsHorizontalScrollIndicator={false}
-                                    style={styles.avatarContainer}>
-                                    {this.renderAvailabilities(this.state.item.availability)}
-                                </ScrollView>
-                            </View>
-                        }
+                        <GetSeasons item={ this.state.item }/>
+                        <GetAvailability item={ this.state.item } />
+                        <GetCast item={ this.state.item }/>
                     </ScrollView>
                 ) }
             </View>
