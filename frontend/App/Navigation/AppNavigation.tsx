@@ -69,30 +69,28 @@ export default function startNav(store: Store<State>, persistor: Persistor) {
   Navigation.events().registerAppLaunchedListener(() => {
     // Navigation.setDefaultOptions({
     //   animations: {
-    //     startApp: {
-    //       x: {
-    //         from: 1000,
-    //         to: 0,
-    //         duration: 500,
-    //         interpolation: 'accelerate',
+    //     push: {
+    //       topBar: {
+    //         id: 'TEST',
+    //         alpha: {
+    //           from: 0,
+    //           to: 1,
+    //           duration: 500,
+    //           interpolation: 'accelerate'
+    //         }
     //       },
-    //       alpha: {
-    //         from: 0,
-    //         to: 1,
-    //         duration: 500,
-    //         interpolation: 'accelerate'
-    //       }
-    //     }
-    //   }
-    // });
-
-    // Navigation.setRoot({
-    //   root: {
-    //     component: {
-    //       name: 'navigation.main.ListView',
-    //       options: {
-    //         topBar: {
-    //           visible: false
+    //       bottomTabs: {
+    //         y: {
+    //           from: 1000,
+    //           to: 0,
+    //           duration: 500,
+    //           interpolation: 'decelerate',
+    //         },
+    //         alpha: {
+    //           from: 0,
+    //           to: 1,
+    //           duration: 500,
+    //           interpolation: 'decelerate'
     //         }
     //       }
     //     }

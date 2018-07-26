@@ -4,6 +4,7 @@ import com.chrisbenincasa.services.teletracker.config.TeletrackerConfig
 import com.twitter.finagle.Http
 import com.twitter.finagle.http.Request
 import io.circe._
+import io.circe.generic.JsonCodec
 import io.circe.parser._
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{Future, Promise}
@@ -24,14 +25,19 @@ class TmdbClient @Inject()(config: TeletrackerConfig) {
     val req = Request(s"/3/${path.stripPrefix("/")}", query: _*)
     val f = client(req)
     f.onSuccess(x => {
-      decode[T](x.contentString) match {
-        case Left(e) =>
-          println(x.contentString)
-          p.tryFailure(e)
-        case Right(json) => p.trySuccess(json)
+      val parsed = parse(x.contentString)
+      parsed match {
+        case Left(e) => p.tryFailure(e)
+        case Right(s) =>
+          s.as[T] match {
+            case Left(_) =>  s.as[TmdbError].fold(p.tryFailure, p.tryFailure)
+            case Right(json) => p.trySuccess(json)
+          }
       }
     })
     f.onFailure(p.tryFailure)
     p.future
   }
 }
+
+@JsonCodec case class TmdbError(status_code: Int, status_message: String) extends Exception(status_message)

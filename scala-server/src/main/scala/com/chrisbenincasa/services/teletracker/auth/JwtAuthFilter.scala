@@ -36,7 +36,7 @@ class JwtAuthFilter @Inject()(
 
             foundUserFut.onComplete {
               case Success(Some(u)) =>
-                RequestContext.set(request, u)
+                RequestContext.set(request, u, t)
                 respPromise.become(service(request))
               case Success(None) =>
                 println(s"could not find user = ${parsed.getBody.getSubject}")

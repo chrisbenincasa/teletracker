@@ -110,7 +110,8 @@ class PostgresContainer(
       injector.instance[GenreReferences].query,
       injector.instance[ThingGenres].query,
       injector.instance[Certifications].query,
-      injector.instance[PersonThings].query
+      injector.instance[PersonThings].query,
+      injector.instance[Tokens].query
     ).map(_.schema.create)
 
     Await.result(

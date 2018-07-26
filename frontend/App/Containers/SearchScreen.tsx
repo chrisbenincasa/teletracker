@@ -284,7 +284,8 @@ class SearchScreen extends Component<Props, State> {
                     componentId={this.props.componentId}
                     centerComponent={{title: 'Search',  style: { color: 'white' } }} 
                     rightComponent={this.listTypeIcon()}
-                />
+                >
+                </Header>
                 <Search
                     ref='search_box'
                     backgroundColor='white'

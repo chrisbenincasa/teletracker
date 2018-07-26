@@ -18,6 +18,8 @@ const { Types, Creators } = createActions({
     loginRequest: [ 'componentId', 'email', 'password'],
     loginSuccess: ['token'],
     loginFailure: null,
+    logoutRequest: ['componentId'],
+    logoutSuccess: null,
     postEvent: ['componentId', 'eventType', 'targetType', 'targetId']
 })
 
@@ -92,6 +94,9 @@ export const reducers = {
     
     loginFailure: (state: State) =>
         state.merge({ login: { fetching: false, error: true } }),
+
+    logoutSuccess: (state: State) =>
+        state.merge({ login: { fetching: false, error: false }, token: null, details: null }),
 
     postEvent: (state: State) => 
         state,

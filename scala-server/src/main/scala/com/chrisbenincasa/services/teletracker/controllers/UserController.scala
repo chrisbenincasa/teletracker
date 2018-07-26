@@ -21,14 +21,14 @@ class UserController @Inject()(
   prefix("/api/v1/users") {
     // Create a user
     post("/?") { req: CreateUserRequest =>
-      usersDbAccess.newUser(req.name, req.username, req.email, req.password).map(userId => {
-        // Insert into token field
-        response.created(
-          DataResponse(
-            CreateUserResponse(userId, jwtVendor.vend(req.email))
-          )
+      for {
+        userId <- usersDbAccess.newUser(req.name, req.username, req.email, req.password)
+        token <- usersDbAccess.vendToken(req.email)
+      } yield {
+        DataResponse(
+          CreateUserResponse(userId, token)
         )
-      })
+      }
     }
 
     filter[JwtAuthFilter].filter[UserSelfOnlyFilter].apply {
@@ -42,8 +42,8 @@ class UserController @Inject()(
               case (_, Some(list), tid, tname, ttype) => (list, tid, tname, ttype)
             }.groupBy(_._1).map {
               case (list, matches) =>
-                val things = matches.map {
-                  case (_, tid, tname, ttype) => PartialThing(id = tid, name = tname, `type` = ttype)
+                val things = matches.collect {
+                  case (_, tid, tname @ Some(_), ttype @ Some(_)) => PartialThing(id = tid, name = tname, `type` = ttype)
                 }
                 list.toFull.withThings(things.toList)
             }
