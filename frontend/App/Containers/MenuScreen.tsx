@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 
 import Logo from '../Components/Logo';
 import State from '../Redux/State';
-import { UserState } from '../Redux/UserRedux';
+import UserActions, { UserState } from '../Redux/UserRedux';
 import styles from './Styles/MenuScreenStyle';
 
 // Styles
@@ -25,7 +25,8 @@ const menuItems = [
 ];
 
 interface Props {
-    user: UserState
+    user: UserState,
+    logout: () => any
 }
 
 class MenuScreen extends Component<Props> {
@@ -45,15 +46,19 @@ class MenuScreen extends Component<Props> {
                 </View>
                 <KeyboardAvoidingView behavior='position'>
                     <List>
-                    {
-                        menuItems.map((item, i) => (
-                            <ListItem
-                                key={i}
-                                title={item.title}
-                                leftIcon={{name: item.icon}}
-                            />
-                        ))
-                    }
+                        <ListItem
+                            title="Settings"
+                            leftIcon={{ name: "settings" }}
+                        />
+                        <ListItem
+                            title="Report A Bug"
+                            leftIcon={{ name: "report" }}
+                        />
+                        <ListItem
+                            title="Logout"
+                            leftIcon={{ name: "unarchive" }}
+                            onPress={() => this.props.logout()}
+                        />
                     </List>
                 </KeyboardAvoidingView>
             </ScrollView>
@@ -69,6 +74,7 @@ const mapStateToProps = (state: State) => {
 
 const mapDispatchToProps = (dispatch) => {
   return {
+      logout: () => dispatch(UserActions.logoutRequest())
   }
 };
 

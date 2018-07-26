@@ -22,6 +22,7 @@ trait CustomPostgresProfile extends ExPostgresProfile
   override val api = CustomAPI
 
   object CustomAPI extends API with ArrayImplicits
+    with JodaDateTimePlainImplicits
     with DateTimeImplicits
     with NetImplicits
     with LTreeImplicits

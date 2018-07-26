@@ -30,7 +30,6 @@ export default class HeaderLeft extends Component {
                 name={ this.props.leftComponent && this.props.leftComponent.icon ? this.props.leftComponent.icon : 'menu' }
                 color="#fff"
                 underlayColor={Colors.transparent}
-                
                 onPress={this.props.leftComponent && this.props.leftComponent.back ? this.goBack : this.showLeftMenu}
             />
         );

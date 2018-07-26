@@ -25,7 +25,7 @@ export function* startup(teletrackerApi: TeletrackerApi): IterableIterator<any> 
     yield put(UserActions.userLogout());
   }
 
-  const view = isLoggedIn ? NavigationConfig.AppStack : NavigationConfig.AuthStack;
+  const view = isLoggedIn ? NavigationConfig.AppStack : NavigationConfig.AuthStack2;
 
   if (!appLaunched()) {
     // Waits until Navigation fires "registerAppLaunchedListener"
