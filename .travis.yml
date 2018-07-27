@@ -1,3 +1,6 @@
+before_install:
+  - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.7.0
+
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
