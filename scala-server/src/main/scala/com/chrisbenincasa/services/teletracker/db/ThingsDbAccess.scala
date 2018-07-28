@@ -36,29 +36,42 @@ class ThingsDbAccess @Inject()(
     things.query.filter(_.id inSetBind ids)
   }
 
-  def findShowById(id: Int) = {
+  def findShowById(id: Int, withAvailability: Boolean = false) = {
     val showQuery = things.query.filter(t => t.id === id && t.`type` === ThingType.Show)
 
-    val seasonsEpisodes = tvShowSeasons.query.filter(_.showId === id) joinLeft
-      tvShowEpisodes.query on (_.id === _.seasonId) joinLeft
-      availability.query on (_._2.map(_.id) === _.tvShowEpisodeId)
+    val baseEpisodesQuery = tvShowSeasons.query.filter(_.showId === id) joinLeft
+      tvShowEpisodes.query on (_.id === _.seasonId)
 
-    val showAndNetworks = showQuery joinLeft
-      thingNetworks.query on (_.id === _.thingId) joinLeft
-      networks.query on (_._2.map(_.networkId) === _.id)
-
-    run {
-      for {
-        x <- showAndNetworks.result
-        y <- seasonsEpisodes.result
-      } yield {
-        x.map { case ((foundShow, _), showNetworks) =>
-          val (seasonsAndEpisodes, availabilities) = y.unzip
-          val (seasons, episodes) = seasonsAndEpisodes.unzip
-          (foundShow, showNetworks, seasons, episodes, availabilities)
-        }
+    val seasonsEpisodesFut = if (withAvailability) {
+      run {
+        baseEpisodesQuery.
+          joinLeft(availability.query).
+          on(_._2.map(_.id) === _.tvShowEpisodeId).
+          result
       }
-    }.map {
+    } else {
+      run(baseEpisodesQuery.result).map(seasonsAndEpisodes => {
+        seasonsAndEpisodes.map { case (season, episode) => ((season, episode), Option.empty[Availability]) }
+      })
+    }
+
+    val showAndNetworksFut = run {
+      showQuery.
+        joinLeft(thingNetworks.query).on(_.id === _.thingId).
+        joinLeft(networks.query).on(_._2.map(_.networkId) === _.id).
+        result
+    }
+
+    (for {
+      showAndNetworks <- showAndNetworksFut
+      seasonsEpisodes <- seasonsEpisodesFut
+    } yield {
+      showAndNetworks.map { case ((foundShow, _), showNetworks) =>
+        val (seasonsAndEpisodes, availabilities) = seasonsEpisodes.unzip
+        val (seasons, episodes) = seasonsAndEpisodes.unzip
+        (foundShow, showNetworks, seasons, episodes, availabilities)
+      }
+    }).map {
       case results if results.isEmpty => None
       case results =>
         val show = results.map(_._1).head

@@ -36,7 +36,6 @@ class PasswordAuthFilter @Inject()(
   }
 
   private def extractUserDetails(request: Request): Try[UserDetails] = {
-    println(request.contentString)
     Try(mapper.readValue(request.contentString, classOf[UserDetails]))
   }
 }
