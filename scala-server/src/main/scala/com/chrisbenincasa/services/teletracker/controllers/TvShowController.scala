@@ -21,6 +21,16 @@ class TvShowController @Inject()(
         }
       })
     }
+
+    get("/:id/availability") { req: GetShowRequest =>
+      thingsDbAccess.findShowById(req.id, withAvailability = true).map(result => {
+        if (result.isEmpty) {
+          response.status(404)
+        } else {
+          response.ok.contentTypeJson().body(DataResponse.complex(result.get))
+        }
+      })
+    }
   }
 }
 
