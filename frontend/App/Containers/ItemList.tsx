@@ -98,31 +98,16 @@ class ItemList extends React.PureComponent<Props> {
     // The default function if no Key is provided is index
     // an identifiable key is important if you plan on
     // item reordering.  Otherwise index is fine
-    keyExtractor: (item: any, index: any) => number = (item, _) => item.id.toString();
+    keyExtractor: (item: any, index: any) => string = (item, _) => item.id.toString();
     
-    // How many items should be kept im memory as we scroll?
     oneScreensWorth = 20;
-    
-    // extraData is for anything that is not indicated in data
-    // for instance, if you kept "favorites" in `this.state.favs`
-    // pass that in, so changes in favorites will cause a re-render
-    // and your renderItem will have access to change depending on state
-    // e.g. `extraData`={this.state.favs}
-    
-    // Optimize your list if the height of each item can be calculated
-    // by supplying a constant height, there is no need to measure each
-    // item after it renders.  This can save significant time for lists
-    // of a size 100+
-    // e.g. itemLayout={(data, index) => (
-    //   {length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index}
-    // )}
     
     render () {
         return (
             <View style={styles.container}>
                 <Header 
                     componentId={this.props.componentId} 
-                    centerComponent={{title: 'My List',  style: { color: 'white' } }}
+                    centerComponent={{ title: 'My List' }}
                     rightComponent={
                         <Icon 
                             name='search'
@@ -133,14 +118,11 @@ class ItemList extends React.PureComponent<Props> {
                     }
                 />
                 <FlatList
-                    renderSectionHeader={this.renderSectionHeader}
-                    sections={this.getListSections.call(this)}
                     contentContainerStyle={styles.listContent}
                     data={this.props.user.details.lists[0].things}
                     renderItem={this.renderItem.bind(this)}
                     keyExtractor={this.keyExtractor}
                     initialNumToRender={this.oneScreensWorth}
-                    ListHeaderComponent={this.renderHeader}
                     ListEmptyComponent={this.renderEmpty}
                 />
             </View>

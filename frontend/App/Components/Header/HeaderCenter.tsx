@@ -2,7 +2,11 @@ import React, { Component } from 'react';
 import { Text, View } from 'react-native';
 import Search from 'react-native-search-box';
 
-export default class HeaderCenter extends Component {
+interface Props {
+  centerComponent?: { title: string }
+}
+
+export default class HeaderCenter extends Component<Props> {
   render() {
     return (
       <View>
