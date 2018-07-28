@@ -1,30 +1,28 @@
-import * as R from 'ramda';
+import R from 'ramda';
 import React from 'react';
-import { SectionList, Text, View, FlatList } from 'react-native';
-import { ListItem, Icon } from 'react-native-elements';
+import { FlatList, ListRenderItemInfo, Text, View } from 'react-native';
+import { Icon, ListItem } from 'react-native-elements';
+import { Navigation } from 'react-native-navigation';
 import { connect, Dispatch } from 'react-redux';
 
 import Header from '../Components/Header/Header';
-import { Navigation } from 'react-native-navigation';
-
+import { Thing } from '../Model/external/themoviedb';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
 import NavActions from '../Redux/NavRedux';
-import ReduxState from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
-import styles from './Styles/ItemListStyle';
 import { Colors } from '../Themes/';
-import { Thing } from '../Model/external/themoviedb';
-
-// More info here: https://facebook.github.io/react-native/docs/sectionlist.html
+import styles from './Styles/ItemListStyle';
+import { State } from '../Redux/State';
 
 interface Props {
     componentId: string
     user: UserState
     loadUserSelf: (componentId: string) => any
+    pushState: (componentId: string, view: object) => any
 }
 
 class ItemList extends React.PureComponent<Props> {
-    constructor(props) {
+    constructor(props: Props) {
         super(props);
         this.openSearch = this.openSearch.bind(this);
     }
@@ -63,13 +61,14 @@ class ItemList extends React.PureComponent<Props> {
                 passProps: { itemType: item.type, itemId: item.id }
             }
         });
+
         this.props.pushState(this.props.componentId, view);
     }
 
-    renderItem ({section, item}) {
+    renderItem({ item }: ListRenderItemInfo<Thing>) {
         return (
             <ListItem 
-                key={this.keyExtractor}
+                key={item.id}
                 title={item.name}
                 leftIcon={{ name:
                     item.type === 'movie' ? 'movie' 
@@ -82,22 +81,8 @@ class ItemList extends React.PureComponent<Props> {
         )
     }
 
-
-    /* ***********************************************************
-    * STEP 2
-    * Consider the configurations we've set below.  Customize them
-    * to your liking!  Each with some friendly advice.
-    *
-    * Removing a function here will make SectionList use default
-    *************************************************************/
-    
-    // Show this when data is empty
     renderEmpty = () => <Text style={styles.label}> Empty list, yo! </Text>;
     
-    
-    // The default function if no Key is provided is index
-    // an identifiable key is important if you plan on
-    // item reordering.  Otherwise index is fine
     keyExtractor: (item: any, index: any) => string = (item, _) => item.id.toString();
     
     oneScreensWorth = 20;
@@ -130,7 +115,7 @@ class ItemList extends React.PureComponent<Props> {
     }
 };
 
-const mapStateToProps = (state: ReduxState) => {
+const mapStateToProps = (state: State) => {
     return {
         user: state.user
     }
