@@ -1,18 +1,19 @@
 module.exports = {
   preset: "react-native",
   transform: {
-    "^.+\\.tsx?$": "ts-jest",
-    "^.+\\.jsx$": "babel-jest",
-    "^.+\\.js$": "babel-jest"
+    "^.+\\.ts$": "ts-jest",
+    "^.+\\.tsx$": "ts-jest",
+    "^.+\\.jsx$": "<rootDir>/node_modules/react-native/jest/preprocessor.js",
+    "^.+\\.js$": "<rootDir>/node_modules/react-native/jest/preprocessor.js"
   },
-  "setupFiles": [
+  setupFiles: [
     "<rootDir>/Tests/Setup"
   ],
-  "testPathIgnorePatterns": [
+  testPathIgnorePatterns: [
     "/node_modules/",
     "<rootDir>/Tests/Setup.js"
   ],
-  "moduleNameMapper": {
+  moduleNameMapper: {
     "^.+\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "identity-obj-proxy"
   },
   testRegex: "(<rootDir>/Tests/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
