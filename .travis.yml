@@ -1,8 +1,3 @@
-before_cache:
-  # Cleanup the cached directories to avoid unnecessary cache updates
-  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
-  - find $HOME/.sbt        -name "*.lock"               -print -delete
-
 jobs:
   include:
     - stage: build
@@ -17,6 +12,14 @@ jobs:
         - docker pull postgres
       before_script: cd scala-server
       script: test 'tag IS blank' && travis_retry sbt ++$TRAVIS_SCALA_VERSION compile test
+      cache:
+        directories:
+          - $HOME/.ivy2/cache
+          - $HOME/.sbt
+      before_cache:
+        # Cleanup the cached directories to avoid unnecessary cache updates
+        - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+        - find $HOME/.sbt        -name "*.lock"               -print -delete
     - name: "Frontend"
       language: node_js
       node_js: "8.11.1"
