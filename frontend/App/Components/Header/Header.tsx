@@ -9,7 +9,9 @@ import HeaderRight from './HeaderRight';
 
 interface Props {
     title?: string
-    componentId: string
+    componentId: string,
+    centerComponent?: { title: string }
+    rightComponent?: object | React.Component
 }
 
 export default class Header extends React.PureComponent<Props> {

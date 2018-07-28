@@ -1,4 +1,5 @@
 import { Thing } from "../../Model/external/themoviedb";
+import * as _ from 'lodash';
 
 // Returns true if the item has metadata
 const hasTmdbMetadata = (item: Thing) => {
@@ -40,7 +41,12 @@ const getReleaseYear = (item: Thing) => {
         // return R.view<Props, Movie>(this.tmdbMovieView, this.props).poster_path;
         return item.metadata.themoviedb.movie.release_date.substring(0,4);
     } else if (hasTmdbShow(item)) {
-        return item.metadata.themoviedb.show.first_air_date.substring(0,4); //We may want to consider making this last_air_date?
+        let firstAirDate = _.property<Thing, string>('metadata.themoviedb.show.first_air_date')(item);
+        if (firstAirDate) {
+            return firstAirDate.substring(0, 4); //We may want to consider making this last_air_date?
+        } else {
+            return null;
+        }
     } else {
         return null; // There are no photos for people yet
     }
