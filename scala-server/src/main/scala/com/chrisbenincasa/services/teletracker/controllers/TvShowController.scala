@@ -13,7 +13,17 @@ class TvShowController @Inject()(
 )(implicit executionContext: ExecutionContext) extends Controller {
   prefix("/api/v1/shows") {
     get("/:id") { req: GetShowRequest =>
-      thingsDbAccess.findShowById(req.id).map(result => {
+      thingsDbAccess.findShowById(req.id, withAvailability = true).map(result => {
+        if (result.isEmpty) {
+          response.status(404)
+        } else {
+          response.ok.contentTypeJson().body(DataResponse.complex(result.get))
+        }
+      })
+    }
+
+    get("/:id/availability") { req: GetShowRequest =>
+      thingsDbAccess.findShowById(req.id, withAvailability = true).map(result => {
         if (result.isEmpty) {
           response.status(404)
         } else {

@@ -62,7 +62,7 @@ export let ListBottomTabs = {
                         },
                         options: {
                             bottomTab: {
-                                title: 'My List',
+                                text: 'My List',
                                 icon: require('../Images/Icons/list-icon.png'),
                                 testID: 'FIRST_TAB_BAR_BUTTON'
                             },
@@ -84,7 +84,7 @@ export let ListBottomTabs = {
                         },
                         options: {
                             bottomTab: {
-                                title: 'Search',
+                                text: 'Search',
                                 icon: require('../Images/Icons/search.png'),
                                 testID: 'SECOND_TAB_BAR_BUTTON'
                             },
@@ -106,7 +106,7 @@ export let ListBottomTabs = {
                         },
                         options: {
                             bottomTab: {
-                                title: 'Notifications',
+                                text: 'Notifications',
                                 icon: require('../Images/Icons/notification.png'),
                                 testID: 'THIRD_TAB_BAR_BUTTON'
                             },
