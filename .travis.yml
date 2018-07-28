@@ -3,13 +3,6 @@ before_cache:
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt        -name "*.lock"               -print -delete
 
-cache:
-  yarn: true
-  directories:
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt
-    - node_modules
-
 jobs:
   include:
     - stage: build
@@ -26,12 +19,13 @@ jobs:
       script: test 'tag IS blank' && travis_retry sbt ++$TRAVIS_SCALA_VERSION compile test
     - name: "Frontend"
       language: node_js
-      node_js: "8"
+      node_js: "8.11.1"
       sudo: required
       services:
         - docker
       before_install:
         - docker pull postgres
+        - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.7.0
       script: ./travis.build.sh
       env:
         - JWT_SECRET=jwt_secret_for_testing_only
