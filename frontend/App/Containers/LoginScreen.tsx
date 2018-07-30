@@ -48,28 +48,28 @@ class LoginScreen extends Component {
             <Card>
             <FormLabel>Email</FormLabel>
             <FormInput 
-                placeholder="Email address..."
+                placeholder='Email address...'
                 autoCapitalize='none'
                 onChangeText={(email) => this.setState({ email })} />
             <FormLabel>Password</FormLabel>
             <FormInput 
                 secureTextEntry 
-                placeholder="Password..."
+                placeholder='Password...'
                 autoCapitalize='none'
                 onChangeText={(password) => this.setState({ password }) } />
             
             <Button
                 buttonStyle={{ marginTop: 20 }}
-                backgroundColor="#03A9F4"
-                title="Login"
+                backgroundColor='#03A9F4'
+                title='Login'
                 onPress={() => this.props.login(this.props.componentId, this.state.email, this.state.password)} 
             />
             <Button
                 buttonStyle={{ marginTop: 20 }}
-                backgroundColor="transparent"
-                textStyle={{ color: "#bcbec1" }}
+                backgroundColor='transparent'
+                textStyle={{ color: '#bcbec1' }}
                 onPress={this.goToSignup.bind(this)} 
-                title="Sign Up"
+                title='Sign Up'
             />
             </Card>
         </ScrollView>
