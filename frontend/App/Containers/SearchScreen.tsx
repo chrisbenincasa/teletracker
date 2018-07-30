@@ -23,9 +23,9 @@ import ListActions from '../Redux/ListRedux';
 import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
+import { tracker } from '../Components/Analytics';
 
 import { Colors } from './../Themes/'; //testing only, cleanup later
-
 import styles from './Styles/SearchScreenStyle';
 
 // Add Actions - replace 'Your' with whatever your reducer is called :)
@@ -104,7 +104,14 @@ class SearchScreen extends Component<Props, State> {
         this.props.loadUserSelf(this.props.componentId);
     }
 
+    componentDidMount() {
+        tracker.trackScreenView('Search');
+    }
+
     executeSearch() {
+        // Track when users add items from search screen
+        tracker.trackEvent('search-action', 'search');
+
         this.props.doSearch(this.state.searchText);
     }
 
@@ -115,12 +122,18 @@ class SearchScreen extends Component<Props, State> {
     // Important: You must return a Promise
     onCancel = () => {
         return new Promise((resolve, reject) => {
+            // Track when users cancel search
+            tracker.trackEvent('search-action', 'cancel');
+
             this.props.clearSearch(this.state.searchText);
             resolve();
         });
     }
 
     addItem(itemId) {
+        // Track when users add items from search screen
+        tracker.trackEvent('search-action', 'add-item');
+
         this.props.addItemToList(this.props.componentId, 'default', itemId);
     }
 
@@ -178,6 +191,9 @@ class SearchScreen extends Component<Props, State> {
     // oneScreensWorth = (this.state.gridView ? (checkDevice.isLandscape() ? 12 : 18) : (checkDevice.isLandscape() ? 4 : 8));
 
     goToItemDetail(item: object) {
+        // Track when users navigate to an item from search screen
+        tracker.trackEvent('search-action', 'view-item-details');
+
         const view = R.mergeDeepLeft(NavigationConfig.DetailView, {
             component: {
                 passProps: { item }

@@ -40,6 +40,7 @@
     "react-native-config": "^0.11.5",
     "react-native-device-info": "0.11.0",
     "react-native-elements": "^0.19.1",
+    "react-native-google-analytics-bridge": "^5.8.0",
     "react-native-i18n": "1.0.0",
     "react-native-navigation": "2.0.2425",
     "react-native-search-box": "^0.0.18",
