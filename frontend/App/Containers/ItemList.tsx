@@ -1,6 +1,6 @@
 import R from 'ramda';
 import React from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, ListRenderItemInfo, Text, View } from 'react-native';
 import { Icon, ListItem } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { connect, Dispatch } from 'react-redux';
