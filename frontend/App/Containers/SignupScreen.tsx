@@ -46,14 +46,14 @@ class SignupScreen extends Component<Props, State> {
             <Card>
             <FormLabel>Username</FormLabel>
             <FormInput 
-                placeholder="Username..." 
+                placeholder='Username...' 
                 onChangeText={(username) => this.setState({ username })} 
                 value={this.state.username}
                 editable={!this.props.signup.fetching}
                 autoCapitalize='none' />
             <FormLabel>Email</FormLabel>
             <FormInput 
-                placeholder="Email address..."
+                placeholder='Email address...'
                 onChangeText={(email) => this.setState({ email })}
                 value={this.state.email}
                 editable={!this.props.signup.fetching}
@@ -61,7 +61,7 @@ class SignupScreen extends Component<Props, State> {
             <FormLabel>Password</FormLabel>
             <FormInput 
                 secureTextEntry 
-                placeholder="Password..." 
+                placeholder='Password...'
                 editable={!this.props.signup.fetching}
                 autoCapitalize='none'
                 onChangeText={(password) => this.setState({ password })}
@@ -69,7 +69,7 @@ class SignupScreen extends Component<Props, State> {
             <FormLabel>Confirm Password</FormLabel>
             <FormInput 
                 secureTextEntry 
-                placeholder="Confirm Password..."
+                placeholder='Confirm Password...'
                 editable={!this.props.signup.fetching}
                 autoCapitalize='none'
                 onChangeText={(password) => this.setState({ password })}
@@ -77,15 +77,15 @@ class SignupScreen extends Component<Props, State> {
 
             <Button
                 buttonStyle={{ marginTop: 20 }}
-                backgroundColor="#03A9F4"
-                title="Sign Up"
+                backgroundColor='#03A9F4'
+                title='Sign Up'
                 onPress={() => this.props.onSignUpAttempt(this.props.componentId, this.state)} 
             />
             <Button
                 buttonStyle={{ marginTop: 20 }}
-                backgroundColor="transparent"
-                textStyle={{ color: "#bcbec1" }}
-                title="Login"
+                backgroundColor='transparent'
+                textStyle={{ color: '#bcbec1' }}
+                title='Login'
                 onPress={() => this.goToLogin()}
             />
             <ActivityIndicator animating={this.props.signup.fetching} />
