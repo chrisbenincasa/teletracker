@@ -7,7 +7,7 @@ import UserActions from '../Redux/UserRedux';
 import { TeletrackerApi } from '../Services/TeletrackerApi';
 import { AnyAction } from 'redux';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
-import { tracker } from '../Components/Analytics';
+import { tracker, appVersion } from '../Components/Analytics';
 
 const getListViewNavEffect = (componentId: string) => {
     return call([Navigation, Navigation.setStackRoot], componentId, NavigationConfig.ListBottomTabs);
@@ -22,7 +22,10 @@ export function* getUser(api: TeletrackerApi, { componentId }: AnyAction) {
 
     if (response.ok) {
         // Track API response duration
-        tracker.trackTiming('api', response.duration, { name: 'getUser' });
+        tracker.trackTiming('api', response.duration, { 
+            name: 'getUser',
+            label: appVersion
+        });
         yield put(UserActions.userSuccess(response.data));
     } else {
         tracker.trackException(response.problem, false);
@@ -39,7 +42,10 @@ export function * loginUser(api: TeletrackerApi, action: AnyAction) {
 
     if (response.ok) {
         // Track successful logins in GA
-        tracker.trackTiming('api', response.duration, { name: 'loginUser' });
+        tracker.trackTiming('api', response.duration, {
+            name: 'loginUser',
+            label: appVersion
+        });
         tracker.setUser(response.data.data.userId.toString());
         tracker.trackEvent('user', 'login');
 
@@ -61,7 +67,10 @@ export function * logoutUser(api: TeletrackerApi, {componentId}: AnyAction) {
 
     if (response.ok) {
         // Track logout success in GA
-        tracker.trackTiming('api', response.duration, { name: 'logoutUser' });
+        tracker.trackTiming('api', response.duration, {
+            name: 'logoutUser',
+            label: appVersion
+        });
         tracker.trackEvent('user', 'logout');
 
         yield all([
@@ -82,7 +91,10 @@ export function * signupUser(api: TeletrackerApi, action: any) {
 
     if (response.ok) {
         // Track successful signups in GA
-        tracker.trackTiming('api', response.duration, { name: 'signupUser' });
+        tracker.trackTiming('api', response.duration, {
+            name: 'signupUser',
+            label: appVersion
+        });
         tracker.setUser(response.data.data.userId.toString());
         tracker.trackEvent('user', 'signup');
 

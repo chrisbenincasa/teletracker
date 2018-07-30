@@ -15,7 +15,7 @@ import UserActions from '../Redux/UserRedux';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import { teletrackerApi } from '../Sagas';
-import { tracker } from '../Components/Analytics';
+import { tracker, appVersion } from '../Components/Analytics';
 
 import headerStyles from '../Themes/ApplicationStyles';
 import styles from './Styles/ItemDetailScreenStyle';
@@ -87,7 +87,9 @@ class ItemDetailScreen extends Component<Props, State> {
 
     addItem() {
         // Track when users add an item on the item details screen
-        tracker.trackEvent('item-detail-action', 'add-item');
+        tracker.trackEvent('item-detail-action', 'add-item', {
+            label: appVersion
+        });
 
         this.props.addItemToList(this.props.componentId, 'default', this.state.item.id);
 
@@ -98,7 +100,9 @@ class ItemDetailScreen extends Component<Props, State> {
 
     markAsWatched() {
         // Track when users mark item watched on the item details screen
-        tracker.trackEvent('item-detail-action', 'mark-as-watched');
+        tracker.trackEvent('item-detail-action', 'mark-as-watched', {
+            label: appVersion
+        } );
 
         this.props.markAsWatched(this.props.componentId, this.state.item.id, this.state.item.type);
     }
