@@ -4,6 +4,7 @@ import { call, put } from 'redux-saga/effects';
 
 import SearchActions from '../Redux/SearchRedux';
 import { TeletrackerApi } from '../Services/TeletrackerApi';
+import { tracker } from '../Components/Analytics';
 
 export function * search(api: TeletrackerApi, { searchText }: AnyAction) {
     const response: ApiResponse<any> = yield call([api, api.search], searchText);
@@ -11,6 +12,9 @@ export function * search(api: TeletrackerApi, { searchText }: AnyAction) {
     if (response.ok) {
         yield put(SearchActions.searchSuccess(response.data));
     } else {
+        // Track failed search in GA
+        tracker.trackException(response.problem, false);
+
         yield put(SearchActions.searchFailure());
     }
 }

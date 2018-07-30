@@ -13,6 +13,7 @@ import UserActions, { UserState } from '../Redux/UserRedux';
 import { Colors } from '../Themes/';
 import styles from './Styles/ItemListStyle';
 import { State } from '../Redux/State';
+import { tracker } from '../Components/Analytics';
 
 interface Props {
     componentId: string
@@ -32,7 +33,11 @@ class ItemList extends React.PureComponent<Props> {
     componentWillMount() {
         this.props.loadUserSelf(this.props.componentId);
     }
-    
+
+    componentDidMount() {
+        tracker.trackScreenView('Item List');
+    }
+
     getListSections() {
         if (this.props.user.details && !this.props.user.fetching) {
             const { lists } = this.props.user.details;
