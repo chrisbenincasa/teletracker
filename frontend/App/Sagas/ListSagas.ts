@@ -5,14 +5,17 @@ import { all, call, put } from 'redux-saga/effects';
 import ListActions from '../Redux/ListRedux';
 import UserActions from '../Redux/UserRedux';
 import { TeletrackerApi } from '../Services/TeletrackerApi';
-import { tracker } from '../Components/Analytics';
+import { tracker, appVersion } from '../Components/Analytics';
 
 export function* addToList(api: TeletrackerApi, { componentId, listId, itemId }: AnyAction) {
     const response: ApiResponse<any> = yield call([api, api.addItemToList], listId, itemId);
 
     if (response.ok) {
         // Track API response duration
-        tracker.trackTiming('api', response.duration, { name: 'addToList' });
+        tracker.trackTiming('api', response.duration, {
+            name: 'addToList',
+            label: appVersion
+        });
         yield all([
             put(UserActions.userRequest(componentId)),
             put(ListActions.addToListSuccess(response.data))
