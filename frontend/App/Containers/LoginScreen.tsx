@@ -11,7 +11,7 @@ import Logo from '../Components/Logo';
 import UserActions, { SignupState } from '../Redux/UserRedux'
 import styles from './Styles/LoginScreenStyle';
 import { Navigation } from 'react-native-navigation';
-import { tracker } from '../Components/Analytics';
+import { tracker, appVersion } from '../Components/Analytics';
 
 class LoginScreen extends Component {
     static get options() {
@@ -29,6 +29,9 @@ class LoginScreen extends Component {
     }
 
     goToSignup() {
+        tracker.trackEvent('login-action', 'signup', {
+            label: appVersion
+        });
         Navigation.push(this.props.componentId, {
         component: {
             name: 'navigation.main.SignupScreen',
