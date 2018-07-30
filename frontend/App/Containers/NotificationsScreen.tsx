@@ -11,9 +11,11 @@ import { NavigationConfig } from '../Navigation/NavigationConfig';
 import EventActions, { EventsState } from '../Redux/EventsRedux';
 import { State } from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
-import styles from './Styles/NotificationsScreenStyle';
+import { tracker } from '../Components/Analytics';
 
 // Styles
+import styles from './Styles/NotificationsScreenStyle';
+
 interface Props {
     componentId: string
     user: UserState
@@ -53,6 +55,10 @@ const list = [
 
 class NotificationsScreen extends Component<Props> {
     // static defaultProps = defaultProps;
+
+    componentDidMount() {
+        tracker.trackScreenView('Notifications');
+    }
 
     componentWillMount() {
         this.props.loadUserSelf(this.props.componentId);

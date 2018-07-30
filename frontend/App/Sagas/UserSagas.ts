@@ -7,6 +7,7 @@ import UserActions from '../Redux/UserRedux';
 import { TeletrackerApi } from '../Services/TeletrackerApi';
 import { AnyAction } from 'redux';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
+import { tracker } from '../Components/Analytics';
 
 const getListViewNavEffect = (componentId: string) => {
     return call([Navigation, Navigation.setStackRoot], componentId, NavigationConfig.ListBottomTabs);
@@ -22,6 +23,7 @@ export function* getUser(api: TeletrackerApi, { componentId }: AnyAction) {
     if (response.ok) {
         yield put(UserActions.userSuccess(response.data));
     } else {
+        tracker.trackException(response.problem, false);
         yield all([
             getNavEffect(componentId, NavigationConfig.LoginScreenComponent),
             put(UserActions.userFailure())
@@ -34,12 +36,18 @@ export function * loginUser(api: TeletrackerApi, action: AnyAction) {
     const response: ApiResponse<any> = yield call([api, api.loginUser], email, password);
 
     if (response.ok) {
+        // Track succesful logins in GA
+        tracker.trackEvent('user', 'login');
+
         yield call(getUser, api, action);
         yield all([
             put(UserActions.loginSuccess(response.data.data.token)),
             getListViewNavEffect(componentId)
         ]);
     } else {
+        // Track login failures in GA
+        tracker.trackException(response.problem, false);
+
         yield put(UserActions.loginFailure());
     }
 }
@@ -48,11 +56,17 @@ export function * logoutUser(api: TeletrackerApi, {componentId}: AnyAction) {
     const response: ApiResponse<any> = yield call([api, api.logoutUser]);
 
     if (response.ok) {
+        // Track logout success in GA
+        tracker.trackEvent('user', 'logout');
+
         yield all([
             put(UserActions.logoutSuccess()),
             call([Navigation, Navigation.setRoot], NavigationConfig.AuthStack2)
         ]);
     } else {
+        // Track logout failures in GA
+        tracker.trackException(response.problem, false);
+
         console.tron.log('uh oh');
     }
 }
@@ -62,11 +76,17 @@ export function * signupUser(api: TeletrackerApi, action: any) {
     const response: ApiResponse<any> = yield call([api, api.registerUser], username, userEmail, password);
 
     if (response.ok) {
+        // Track succesful signups in GA
+        tracker.trackEvent('user', 'signup');
+
         yield put(UserActions.userSignupSuccess(response.data.data.token));
         // Kick off a getUser call
         yield call(getUser, api, action);
         yield getListViewNavEffect(componentId)
     } else {
+        // Track signup failures in GA
+        tracker.trackException(response.problem, false);
+
         yield put(UserActions.userSignupFailure());
     }
 }

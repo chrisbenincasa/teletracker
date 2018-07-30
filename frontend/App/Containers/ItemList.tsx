@@ -1,6 +1,6 @@
 import R from 'ramda';
 import React from 'react';
-import { FlatList, ListRenderItemInfo, Text, View } from 'react-native';
+import { FlatList, Text, View } from 'react-native';
 import { Icon, ListItem } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { connect, Dispatch } from 'react-redux';
@@ -13,6 +13,7 @@ import UserActions, { UserState } from '../Redux/UserRedux';
 import { Colors } from '../Themes/';
 import styles from './Styles/ItemListStyle';
 import { State } from '../Redux/State';
+import { tracker } from '../Components/Analytics';
 
 interface Props {
     componentId: string
@@ -32,7 +33,11 @@ class ItemList extends React.PureComponent<Props> {
     componentWillMount() {
         this.props.loadUserSelf(this.props.componentId);
     }
-    
+
+    componentDidMount() {
+        tracker.trackScreenView('Item List');
+    }
+
     getListSections() {
         if (this.props.user.details && !this.props.user.fetching) {
             const { lists } = this.props.user.details;
