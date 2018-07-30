@@ -9,6 +9,8 @@ export function * retrieveEvents(api: TeletrackerApi) {
     let response: ApiResponse<any> = yield call([api, api.getEvents]);
 
     if (response.ok) {
+        // Track API response duration
+        tracker.trackTiming('api', response.duration, { name: 'retrieveEvents' });
         yield put(EventsActions.retrieveEventsSuccess(response.data));
     } else {
         // Track failed search in GA
