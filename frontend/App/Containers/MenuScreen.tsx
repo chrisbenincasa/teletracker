@@ -2,13 +2,14 @@ import React, { Component } from 'react';
 import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 import { Avatar, List, ListItem } from 'react-native-elements';
 import { connect } from 'react-redux';
-
 import Logo from '../Components/Logo';
 import State from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
-import styles from './Styles/MenuScreenStyle';
+import { tracker } from '../Components/Analytics';
 
 // Styles
+import styles from './Styles/MenuScreenStyle';
+
 const menuItems = [
     {
         title: 'Settings',
@@ -30,6 +31,11 @@ interface Props {
 }
 
 class MenuScreen extends Component<Props> {
+
+    componentDidMount() {
+        tracker.trackScreenView('Menu');
+    }
+
     render () {
         return (
             <ScrollView style={styles.container}>
@@ -67,15 +73,15 @@ class MenuScreen extends Component<Props> {
 }
 
 const mapStateToProps = (state: State) => {
-  return {
-      user: state.user
-  }
+    return {
+        user: state.user
+    }
 };
 
 const mapDispatchToProps = (dispatch) => {
-  return {
-      logout: () => dispatch(UserActions.logoutRequest())
-  }
+    return {
+        logout: () => dispatch(UserActions.logoutRequest())
+    }
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(MenuScreen);

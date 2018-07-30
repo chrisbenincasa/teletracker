@@ -4,20 +4,18 @@ import { Button, Rating, Icon } from 'react-native-elements';
 import Header from '../Components/Header/Header';
 import ViewMoreText from 'react-native-view-more-text';
 import { Navigation } from 'react-native-navigation';
-
 import GetCast from '../Components/GetCast';
 import GetSeasons from '../Components/GetSeasons';
 import GetAvailability from '../Components/GetAvailability';
 import GetGenres from '../Components/GetGenres';
-
 import getMetadata from '../Components/Helpers/getMetadata';
-
 import { Thing } from '../Model/external/themoviedb';
 import ListActions from '../Redux/ListRedux';
 import UserActions from '../Redux/UserRedux';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import { teletrackerApi } from '../Sagas';
+import { tracker } from '../Components/Analytics';
 
 import headerStyles from '../Themes/ApplicationStyles';
 import styles from './Styles/ItemDetailScreenStyle';
@@ -63,6 +61,7 @@ class ItemDetailScreen extends Component<Props, State> {
     }
 
     componentDidMount() {
+        tracker.trackScreenView('Item Detail');
         if (!this.props.item && this.props.itemType && this.props.itemId) {
             if (this.props.itemType === 'show') {
                 teletrackerApi.getShow(this.props.itemId).then(response => {
@@ -87,6 +86,9 @@ class ItemDetailScreen extends Component<Props, State> {
     }
 
     addItem() {
+        // Track when users add an item on the item details screen
+        tracker.trackEvent('item-detail-action', 'add-item');
+
         this.props.addItemToList(this.props.componentId, 'default', this.state.item.id);
 
         this.setState({
@@ -95,6 +97,9 @@ class ItemDetailScreen extends Component<Props, State> {
     }
 
     markAsWatched() {
+        // Track when users mark item watched on the item details screen
+        tracker.trackEvent('item-detail-action', 'mark-as-watched');
+
         this.props.markAsWatched(this.props.componentId, this.state.item.id, this.state.item.type);
     }
 
