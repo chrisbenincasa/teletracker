@@ -37,6 +37,7 @@ export function * loginUser(api: TeletrackerApi, action: AnyAction) {
 
     if (response.ok) {
         // Track successful logins in GA
+        tracker.setUser(response.data.data.userId.toString());
         tracker.trackEvent('user', 'login');
 
         yield call(getUser, api, action);
@@ -77,6 +78,7 @@ export function * signupUser(api: TeletrackerApi, action: any) {
 
     if (response.ok) {
         // Track successful signups in GA
+        tracker.setUser(response.data.data.userId.toString());
         tracker.trackEvent('user', 'signup');
 
         yield put(UserActions.userSignupSuccess(response.data.data.token));
