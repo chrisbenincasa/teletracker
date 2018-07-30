@@ -11,6 +11,8 @@ export function* addToList(api: TeletrackerApi, { componentId, listId, itemId }:
     const response: ApiResponse<any> = yield call([api, api.addItemToList], listId, itemId);
 
     if (response.ok) {
+        // Track API response duration
+        tracker.trackTiming('api', response.duration, { name: 'addToList' });
         yield all([
             put(UserActions.userRequest(componentId)),
             put(ListActions.addToListSuccess(response.data))

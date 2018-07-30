@@ -21,6 +21,8 @@ export function* getUser(api: TeletrackerApi, { componentId }: AnyAction) {
     const response: ApiResponse<User> = yield call([api, api.getUserSelf]);
 
     if (response.ok) {
+        // Track API response duration
+        tracker.trackTiming('api', response.duration, { name: 'getUser' });
         yield put(UserActions.userSuccess(response.data));
     } else {
         tracker.trackException(response.problem, false);
@@ -37,6 +39,7 @@ export function * loginUser(api: TeletrackerApi, action: AnyAction) {
 
     if (response.ok) {
         // Track successful logins in GA
+        tracker.trackTiming('api', response.duration, { name: 'loginUser' });
         tracker.setUser(response.data.data.userId.toString());
         tracker.trackEvent('user', 'login');
 
@@ -58,6 +61,7 @@ export function * logoutUser(api: TeletrackerApi, {componentId}: AnyAction) {
 
     if (response.ok) {
         // Track logout success in GA
+        tracker.trackTiming('api', response.duration, { name: 'logoutUser' });
         tracker.trackEvent('user', 'logout');
 
         yield all([
@@ -78,6 +82,7 @@ export function * signupUser(api: TeletrackerApi, action: any) {
 
     if (response.ok) {
         // Track successful signups in GA
+        tracker.trackTiming('api', response.duration, { name: 'signupUser' });
         tracker.setUser(response.data.data.userId.toString());
         tracker.trackEvent('user', 'signup');
 
