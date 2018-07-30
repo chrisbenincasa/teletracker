@@ -6,7 +6,7 @@ import UserActions, { SignupState } from '../Redux/UserRedux'
 import { State as AppState } from '../Redux/State';
 import { Card, Button, FormLabel, FormInput } from "react-native-elements";
 import Logo from '../Components/Logo';
-import { tracker } from '../Components/Analytics';
+import { tracker, appVersion } from '../Components/Analytics';
 
 // Styles
 import styles from './Styles/SignupScreenStyle';
@@ -36,6 +36,9 @@ class SignupScreen extends Component<Props, State> {
     }
 
     goToLogin() {
+        tracker.trackEvent('signup-action', 'login', {
+            label: appVersion
+        });
         Navigation.pop(this.props.componentId, {});
     }
 

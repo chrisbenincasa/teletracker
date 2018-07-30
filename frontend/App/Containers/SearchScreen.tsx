@@ -23,7 +23,7 @@ import ListActions from '../Redux/ListRedux';
 import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
-import { tracker } from '../Components/Analytics';
+import { tracker, appVersion } from '../Components/Analytics';
 
 import { Colors } from './../Themes/'; //testing only, cleanup later
 import styles from './Styles/SearchScreenStyle';
@@ -110,7 +110,9 @@ class SearchScreen extends Component<Props, State> {
 
     executeSearch() {
         // Track when users add items from search screen
-        tracker.trackEvent('search-action', 'search');
+        tracker.trackEvent('search-action', 'search', {
+            label: appVersion
+        });
 
         this.props.doSearch(this.state.searchText);
     }
@@ -123,7 +125,9 @@ class SearchScreen extends Component<Props, State> {
     onCancel = () => {
         return new Promise((resolve, reject) => {
             // Track when users cancel search
-            tracker.trackEvent('search-action', 'cancel');
+            tracker.trackEvent('search-action', 'cancel', {
+                label: appVersion
+            });
 
             this.props.clearSearch(this.state.searchText);
             resolve();
@@ -132,7 +136,9 @@ class SearchScreen extends Component<Props, State> {
 
     addItem(itemId) {
         // Track when users add items from search screen
-        tracker.trackEvent('search-action', 'add-item');
+        tracker.trackEvent('search-action', 'add-item', {
+            label: appVersion
+        });
 
         this.props.addItemToList(this.props.componentId, 'default', itemId);
     }
@@ -192,7 +198,9 @@ class SearchScreen extends Component<Props, State> {
 
     goToItemDetail(item: object) {
         // Track when users navigate to an item from search screen
-        tracker.trackEvent('search-action', 'view-item-details');
+        tracker.trackEvent('search-action', 'view-item-details', {
+            label: appVersion
+        });
 
         const view = R.mergeDeepLeft(NavigationConfig.DetailView, {
             component: {
