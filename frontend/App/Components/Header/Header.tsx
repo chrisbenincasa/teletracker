@@ -20,7 +20,7 @@ export default class Header extends React.PureComponent<Props> {
             <ElementsHeader
                 outerContainerStyles={{...styles.header.outer, ...this.props.outerContainerStyles}}
                 innerContainerStyles={{...styles.header.inner, ...this.props.innerContainerStyles}}
-                statusBarProps={{...styles.header.statusBarProps, ...this.props.statusBarProps}}
+                // statusBarProps={{...styles.header.statusBarProps, ...this.props.statusBarProps}}
             >
                 <HeaderLeft {...this.props} />
                 <HeaderCenter {...this.props} />

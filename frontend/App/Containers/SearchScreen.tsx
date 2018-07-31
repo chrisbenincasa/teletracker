@@ -303,13 +303,13 @@ class SearchScreen extends Component<Props, State> {
     render() {
         return (
             <View style={styles.container}>
-                <Header 
+                {/* <Header 
                     title='Search' 
                     componentId={this.props.componentId}
                     centerComponent={{title: 'Search',  style: { color: 'white' } }} 
                     rightComponent={this.listTypeIcon()}
                 >
-                </Header>
+                </Header> */}
                 <Search
                     ref='search_box'
                     backgroundColor='white'

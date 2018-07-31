@@ -1,8 +1,11 @@
 package com.chrisbenincasa.services.teletracker.controllers
 
+import com.chrisbenincasa.services.teletracker.auth.RequestContext._
+import com.chrisbenincasa.services.teletracker.auth.JwtAuthFilter
 import com.chrisbenincasa.services.teletracker.db.ThingsDbAccess
 import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.chrisbenincasa.services.teletracker.util.json.circe._
+import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.RouteParam
 import javax.inject.Inject
@@ -31,7 +34,18 @@ class TvShowController @Inject()(
         }
       })
     }
+
+    filter[JwtAuthFilter].apply {
+      get("/:id/user-details") { req: GetShowRequest =>
+        thingsDbAccess.getShowUserDetails(req.request.authContext.user.id, req.id).map(details => {
+          response.ok.contentTypeJson().body(DataResponse(details))
+        })
+      }
+    }
   }
 }
 
-case class GetShowRequest(@RouteParam id: Int)
+case class GetShowRequest(
+  @RouteParam id: Int,
+  request: Request
+)

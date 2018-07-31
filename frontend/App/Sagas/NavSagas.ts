@@ -3,6 +3,7 @@ import { AnyAction } from 'redux';
 import { call } from 'redux-saga/effects';
 
 export function * pushState({ componentId, view }: AnyAction) {
+  console.tron.log('pushing view: ', view);
   yield call([Navigation, Navigation.push], componentId, view);
 }
 

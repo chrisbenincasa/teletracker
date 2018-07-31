@@ -8,7 +8,8 @@ import com.twitter.util.logging.Logger
 import com.twitter.util.{Future, Promise}
 import io.jsonwebtoken.{Jwts, SignatureException}
 import javax.inject.Inject
-import scala.concurrent.ExecutionContext
+import org.joda.time.DateTime
+import scala.concurrent.{ExecutionContext, Future => SFuture}
 import scala.util.{Failure, Success, Try}
 
 class JwtAuthFilter @Inject()(
@@ -32,14 +33,21 @@ class JwtAuthFilter @Inject()(
         } match {
           case Success(parsed) =>
             val respPromise = Promise[Response]()
-            val foundUserFut = usersDbAccess.findByEmail(parsed.getBody.getSubject)
+            val foundUserFut = usersDbAccess.getToken(t).flatMap {
+              case None =>
+                SFuture.successful(None)
+              case Some(tok) if tok.revokedAt.exists(_.isBefore(DateTime.now())) =>
+                SFuture.successful(None)
+              case Some(_) =>
+                usersDbAccess.findByEmail(parsed.getBody.getSubject)
+            }
 
             foundUserFut.onComplete {
               case Success(Some(u)) =>
                 RequestContext.set(request, u, t)
                 respPromise.become(service(request))
               case Success(None) =>
-                println(s"could not find user = ${parsed.getBody.getSubject}")
+                logger.debug(s"could not find user = ${parsed.getBody.getSubject}")
                 respPromise.setValue(Response(Status.Unauthorized))
               case Failure(e) =>
                 logger.error(e.getMessage, e)
