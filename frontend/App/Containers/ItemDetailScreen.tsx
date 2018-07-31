@@ -18,7 +18,7 @@ import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
 import { tracker, appVersion } from '../Components/Analytics';
-import { Snackbar, Button } from 'react-native-paper';
+import { Snackbar, FABGroup } from 'react-native-paper';
 
 import Colors from '../Themes/Colors';
 import styles from './Styles/ItemDetailScreenStyle';
@@ -29,9 +29,9 @@ interface Props {
     itemType?: string,
     itemId?: string | number,
     markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
-    fetchShow: (id: string | number) => any
-    navigation: NavigationScreenProp<any>
-    visible: boolean
+    fetchShow: (id: string | number) => any,
+    visible: boolean,
+    open: boolean
 }
 
 type State = {
@@ -40,7 +40,8 @@ type State = {
     loadError: boolean,
     item?: Thing,
     userDetails?: any,
-    visible: false
+    visible: false,
+    open: false
 }
 
 class ItemDetailScreen extends Component<Props, State> {
@@ -290,23 +291,36 @@ class ItemDetailScreen extends Component<Props, State> {
                     </ScrollView>
                 ) }
                 <View style={styles.container}>
-                    <Button
-                        onPress={() => this.setState(state => ({ visible: !state.visible }))}
-                    >
-                    {this.state.visible ? 'Hide' : 'Show'}
-                    </Button>
                     <Snackbar
-                    visible={this.state.visible}
-                    onDismiss={() => this.setState({ visible: false })}
-                    action={{
-                        label: 'Undo',
-                        onPress: () => {
-                            this.setState(state => ({ inList: !state.inList }))
-                        },
-                    }}
+                        visible={this.state.visible}
+                        onDismiss={() => this.setState({ visible: false })}
+                        action={{
+                            label: 'Undo',
+                            onPress: () => {
+                                this.setState(state => ({ inList: !state.inList }))
+                            },
+                        }}
                     >
-                    {`Item has been ${this.state.inList ? 'added' : 'removed'}!`}
+                        {`Item has been ${this.state.inList ? 'added' : 'removed'}!`}
                     </Snackbar>
+                    <FABGroup
+                        open={this.state.open}
+                        icon='add'
+                        color='#fff'
+                        actions={[
+                            { icon: 'add', label: 'Add to List', onPress: () => {this.addItem()} },
+                            { icon: 'done', label: 'Mark as Watched', onPress: () => {this.markAsWatched()} },
+                            { icon: 'mood', label: 'Recommend', onPress: () => {} },
+                            { icon: 'mood-bad', label: 'Do not recommend', onPress: () => {} },
+                        ]}
+                        onStateChange={({ open }) => this.setState({ open })}
+                        onPress={() => {
+                            if (this.state.open) {
+                                // do something if the speed dial is open
+                            }
+                        }}
+                        style={{paddingBottom: this.state.visible ? 35 : 0 }}
+                    />
                 </View>
             </View>
         )
