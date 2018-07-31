@@ -1,31 +1,21 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import {
-    View,
-    FlatList,
-    Text,
-    Image,
-    TouchableHighlight,
-    ActivityIndicator,
-    Dimensions
-} from 'react-native';
-import { Icon, ListItem, Button, Divider } from 'react-native-elements';
-import { Navigation } from 'react-native-navigation';
+import { ActivityIndicator, Dimensions, FlatList, Image, Text, TouchableHighlight, View } from 'react-native';
+import { Button, Divider, Icon, ListItem } from 'react-native-elements';
 import Search from 'react-native-search-box';
-import checkDevice from '../Components/Helpers/checkOrientation';
-import getMetadata from '../Components/Helpers/getMetadata';
-import Header from '../Components/Header/Header';
-import { NavigationConfig } from '../Navigation/NavigationConfig';
-
+import { NavigationScreenProp } from 'react-navigation';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
+
+import { appVersion, tracker } from '../Components/Analytics';
+import checkDevice from '../Components/Helpers/checkOrientation';
+import getMetadata from '../Components/Helpers/getMetadata';
+import { NavigationConfig } from '../Navigation/NavigationConfig';
 import ListActions from '../Redux/ListRedux';
 import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
-import UserActions, { UserState } from '../Redux/UserRedux';
-import { tracker, appVersion } from '../Components/Analytics';
-
-import { Colors } from './../Themes/'; //testing only, cleanup later
+import UserActions from '../Redux/UserRedux';
+import { Colors } from './../Themes/';
 import styles from './Styles/SearchScreenStyle';
 
 // Add Actions - replace 'Your' with whatever your reducer is called :)
@@ -42,6 +32,7 @@ interface Props {
     removeAllRecentlyViewed: () => any;    
     removeRecentlyViewed: (item: object) => any;
     search: any;
+    navigation: NavigationScreenProp<any>
 }
 
 interface State {
@@ -53,8 +44,16 @@ interface State {
 
 class SearchScreen extends Component<Props, State> {
 
-    constructor() {
-        super();
+    static navigationOptions = {
+        drawer: {
+            enabled: true
+        },
+        title: 'Search',
+    };
+
+    constructor(props: Props) {
+        super(props);
+
         this.searchTextChanged = this.searchTextChanged.bind(this);
         this.executeSearch = this.executeSearch.bind(this);
         this.renderItem = this.renderItem.bind(this);
@@ -62,7 +61,8 @@ class SearchScreen extends Component<Props, State> {
         this.state = {
             orientation: checkDevice.isPortrait() ? 'portrait' : 'landscape',
             devicetype: checkDevice.isTablet() ? 'tablet' : 'phone',
-            gridView: true
+            gridView: true,
+            searchText: null
         };
 
         // Event Listener for orientation changes
@@ -210,7 +210,8 @@ class SearchScreen extends Component<Props, State> {
 
         this.props.addRecentlyViewed(item);
 
-        Navigation.push(this.props.componentId, view);
+        this.props.navigation.navigate('DetailScreen', { item });
+        // Navigation.push(this.props.componentId, view);
     }
 
     getResults(action:string) {

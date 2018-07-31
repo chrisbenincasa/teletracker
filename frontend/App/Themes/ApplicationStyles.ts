@@ -22,7 +22,7 @@ const ApplicationStyles = {
     },
     container: {
       flex: 1,
-      // backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       // ...ifIphoneX({
       //   paddingTop: Metrics.baseMargin + 30
       // }, {
