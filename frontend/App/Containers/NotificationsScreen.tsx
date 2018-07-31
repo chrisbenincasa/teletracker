@@ -84,7 +84,7 @@ class NotificationsScreen extends Component<Props> {
     }
 
     keyExtractor: (item: any, index: any) => string = ({event}, index) => {
-        return event.id
+        return event.id.toString()
     }
 
     renderItem({item: { event, target }}) {
@@ -104,11 +104,11 @@ class NotificationsScreen extends Component<Props> {
     render() {
         return (
             <View style={styles.container}>
-                <Header
+                {/* <Header
                     title="Feed"
                     componentId={this.props.componentId}
                     centerComponent={{ title: 'Feed', style: { color: 'white' } }}
-                />
+                /> */}
                 <FlatList
                     keyExtractor={this.keyExtractor}
                     contentContainerStyle={styles.listContent}

@@ -1,4 +1,7 @@
 import Immutable from 'seamless-immutable';
+import Colors from '../Themes/Colors';
+import { Navigation } from 'react-native-navigation';
+import { ListDetailNavOptions } from '../Containers/ListDetailScreen';
 
 export const LoginScreenComponent = {
     component: {
@@ -30,7 +33,11 @@ export const AuthStack2 = {
                     passProps: {
                         side: 'left'
                     }
-                }
+                },
+                options: {
+                    enabled: false
+                },
+                enabled: false
             },
             center: {
                 stack: {
@@ -38,13 +45,20 @@ export const AuthStack2 = {
                         LoginScreenComponent
                     ]
                 }
+            },
+            options: {
+                topBar: {
+                    visible: false
+                },
+                statusBar: {
+                    style: 'dark'
+                },
+                sideMenu: {
+                    left: {
+                        enabled: false
+                    }
+                }
             }
-        },
-
-    },
-    options: {
-        topBar: {
-            visible: false
         }
     }
 };
@@ -60,16 +74,7 @@ export let ListBottomTabs = {
                         passProps: {
                             text: 'List View'
                         },
-                        options: {
-                            bottomTab: {
-                                text: 'My List',
-                                icon: require('../Images/Icons/list-icon.png'),
-                                testID: 'FIRST_TAB_BAR_BUTTON'
-                            },
-                            topBar: {
-                                visible: false
-                            }
-                        }
+                        options: ListDetailNavOptions
                     }
                 }]
             }
@@ -89,7 +94,14 @@ export let ListBottomTabs = {
                                 testID: 'SECOND_TAB_BAR_BUTTON'
                             },
                             topBar: {
-                                visible: false,
+                                title: {
+                                    text: 'Search'
+                                },
+                                // searchBar: true,
+                                background: {
+                                    color: Colors.headerBackground
+                                },
+                                visible: true
                             }
                         }
                     }
@@ -111,13 +123,23 @@ export let ListBottomTabs = {
                                 testID: 'THIRD_TAB_BAR_BUTTON'
                             },
                             topBar: {
-                                visible: false
+                                title: {
+                                    text: 'Notifications'
+                                },
+                                visible: true
                             }
                         }
                     }
                 }]
             }
-        }]
+        }],
+        options: {
+            sideMenu: {
+                left: {
+                    enabled: true
+                }
+            }
+        }
     }
 }
 
@@ -136,6 +158,18 @@ export let ListView = {
             options: {
                 showsShadow: false
             }
+        },
+        options: {
+            sideMenu: {
+                left: {
+                    enabled: true
+                }
+            }
+        }
+    },
+    options: {
+        statusBar: {
+            style: 'light'
         }
     }
 }
@@ -187,10 +221,19 @@ export let NotificationsView = {
 
 // Initial State of the App stack
 export const AppStack = {
+    // root: {
+    //     ...ListBottomTabs,
+    //     options: {
+    //         showsShadow: false
+    //     }
+    // },
     root: ListView,
     options: {
         topBar: {
-            visible: false
+            visible: true
+        },
+        statusBar: {
+            style: 'light'
         }
     }
 };
