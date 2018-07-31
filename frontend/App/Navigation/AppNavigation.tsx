@@ -1,125 +1,209 @@
 import * as React from 'react';
-import { Navigation } from 'react-native-navigation';
-import { Provider } from 'react-redux';
-import { Store } from 'redux';
-import { Persistor } from 'redux-persist';
-import { PersistGate } from 'redux-persist/integration/react';
+import { Icon } from 'react-native-elements';
+import {
+    createBottomTabNavigator,
+    createDrawerNavigator,
+    createStackNavigator,
+    createSwitchNavigator,
+    NavigationScreenConfig,
+    NavigationScreenOptions,
+} from 'react-navigation';
+import { createFluidNavigator } from 'react-navigation-fluid-transitions';
 
+import AddToListModal from '../Containers/AddToListModal';
+import CreateNewListModal from '../Containers/CreateNewListModal';
 import ItemDetailScreen from '../Containers/ItemDetailScreen';
 import ItemList from '../Containers/ItemList';
 import ListDetailScreen from '../Containers/ListDetailScreen';
+import LoadingScreen from '../Containers/LoadingScreen';
 import LoginScreen from '../Containers/LoginScreen';
 import MenuScreen from '../Containers/MenuScreen';
 import NotificationsScreen from '../Containers/NotificationsScreen';
 import SearchScreen from '../Containers/SearchScreen';
 import SignupScreen from '../Containers/SignupScreen';
-import SplashScreen from '../Containers/SplashScreen';
-import { State } from '../Redux/State';
+import Drawer from 'react-native-drawer'
 import Colors from '../Themes/Colors';
-import AddToListModal from '../Containers/AddToListModal';
-import CreateNewListModal from '../Containers/CreateNewListModal';
-import { Icon } from 'react-native-elements';
-import ModalHeaderButton from '../Components/ModalHeaderButton';
 
-
-function sceneCreator(Scene: React.Component, store: Store<{}>, persistor: Persistor) {
-    return () => {
-        return class Wrapper extends React.Component {
-            resendEvent(eventName: string, params?: any): void {
-                if (this.instance && this.instance[eventName]) {
-                    this.instance[eventName](params);
-                }
-            }
-
-            componentDidAppear(): void {
-                this.resendEvent('componentDidAppear');
-            }
-
-            componentDidDisappear(): void {
-                this.resendEvent('componentDidDisappear');
-            }
-
-            onNavigationButtonPressed(buttonId: any): void {
-                this.resendEvent('onNavigationButtonPressed', buttonId);
-            }
-
-            render() {
-                return (
-                    <Provider store={store}>
-                        <PersistGate loading={null} persistor={persistor}>
-                            <Scene ref="child" {...this.props} />
-                        </PersistGate>
-                    </Provider>
-                )
-            }
+const paramsToProps = (SomeComponent) => {
+    // turns this.props.navigation.state.params into this.params.<x>
+    return class extends React.Component {
+        static navigationOptions = SomeComponent.navigationOptions;
+        // everything else, call as SomeComponent
+        render() {
+            const { navigation, ...otherProps } = this.props
+            const { state: { params } } = navigation
+            return <SomeComponent {...this.props} {...params} />
         }
     }
 }
 
-let appLaunchedListenerFired = false;
+export const AuthStack = createStackNavigator({
+    Login: {
+        screen: paramsToProps(LoginScreen)
+    },
+    Signup: {
+        screen: paramsToProps(SignupScreen)
+    }
+}, {
+    headerMode: 'none',
+    mode: 'card'
+});
 
-export function appLaunched() {
-    return appLaunchedListenerFired;
+export const CommonStackStyles: Partial<NavigationScreenConfig<NavigationScreenOptions>> = {
+    headerStyle: {
+        backgroundColor: Colors.headerBackground,
+    },
+    headerTintColor: 'white',
+    headerBackTitleStyle: {
+        color: 'white'
+    },
+    headerTitleStyle: {
+        color: 'white',
+        fontWeight: 'normal'
+    }
 }
 
-class IconWrapper extends React.PureComponent {
-    handlePress() {
-        Navigation.dismissModal(this.props.getModalRef());
+const ItemDetailStack = createStackNavigator({
+    DetailScreen: {
+        screen: paramsToProps(ItemDetailScreen)
+    },
+    ListManage: {
+        screen: paramsToProps(AddToListModal),
+    }
+}, {
+    mode: 'modal',
+    navigationOptions: ({navigation}) => {
+        let tabBarVisible = true;
+        if (navigation.state.index > 0) {
+            tabBarVisible = false;
+        }
+
+        return {
+            ...CommonStackStyles,
+            tabBarVisible,
+        };
+    }
+});
+
+export const ListStack = createStackNavigator({
+    ListOfLists: {
+        screen: paramsToProps(ListDetailScreen)
+    },
+    SpecificList: {
+        screen: paramsToProps(ItemList)
+    },
+    DetailScreen: {
+        screen: ItemDetailStack,
+        navigationOptions: {
+            header: null,
+        }
+    }
+}, {
+        navigationOptions: {
+            ...CommonStackStyles
+        }
+    }
+);
+
+ItemDetailStack.navigationOptions = ({navigation}) => {
+    let tabBarVisible = true;
+    if (navigation.state.index > 0) {
+        tabBarVisible = false;
     }
 
-    render() {
-        return <Icon name='rowing' color={this.props.color || 'black'} onPress={() => this.handlePress()}/>
+    return {
+        tabBarVisible,
     }
 }
 
-export default function startNav(store: Store<State>, persistor: Persistor) {
-    Navigation.registerComponent('navigation.main.Loading', sceneCreator(SplashScreen, store, persistor))
-    Navigation.registerComponent('navigation.main.LoginScreen', sceneCreator(LoginScreen, store, persistor));
-    Navigation.registerComponent('navigation.main.SignupScreen', sceneCreator(SignupScreen, store, persistor));
-    Navigation.registerComponent('navigation.main.ListView', sceneCreator(ListDetailScreen, store, persistor));
-    Navigation.registerComponent('navigation.main.ItemList', sceneCreator(ItemList, store, persistor));
-    Navigation.registerComponent('navigation.main.ItemDetailScreen', sceneCreator(ItemDetailScreen, store, persistor));
-    Navigation.registerComponent('navigation.main.MenuScreen', sceneCreator(MenuScreen, store, persistor));
-    Navigation.registerComponent('navigation.main.SearchScreen', sceneCreator(SearchScreen, store, persistor));
-    Navigation.registerComponent('navigation.main.NotificationsScreen', sceneCreator(NotificationsScreen, store, persistor));
-    Navigation.registerComponent('navigation.main.AddToListModal', sceneCreator(AddToListModal, store, persistor));
-    Navigation.registerComponent('navigation.main.CreateNewListModal', sceneCreator(CreateNewListModal, store, persistor));
-    Navigation.registerComponent('navigation.topBar.Button', () => ModalHeaderButton);
+const SearchStack = createStackNavigator({
+    Search: {
+        screen: paramsToProps(SearchScreen)
+    },
+    DetailScreen: {
+        screen: ItemDetailStack,
+        navigationOptions: {
+            header: null,
+        }
+    }
+}, {
+    initialRouteName: 'Search',
+    navigationOptions: {
+        ...CommonStackStyles
+    }
+});
 
-    Navigation.events().registerCommandCompletedListener((event) => {
-        console.log('Got Nav event: ', event);
-    });
+const NotificationsStack = createStackNavigator({
+    Notifications: {
+        screen: paramsToProps(NotificationsScreen)
+    }
+}, {
+    navigationOptions: {
+        ...CommonStackStyles,
+    }
+});
 
-    Navigation.events().registerAppLaunchedListener(() => {
-        Navigation.setDefaultOptions({
-            statusBar: {
-                style: 'light'
-            },
-            bottomTab: {
-                selectedTextColor: Colors.headerBackground,
-                selectedIconColor: Colors.headerBackground
-            },
-            topBar: {
-                background: {
-                    color: Colors.headerBackground
-                },
-                buttonColor: "rgba(255, 255, 255, 1.0)", // iOS
-                title: {
-                    color: 'white',
-                },
-                backButton: {
-                    color: "rgba(255, 255, 255, 1.0)"
-                }
-            },
-            sideMenu: {
-                left: {
-                    // enabled: false
-                }
+// export const ListOfListsNav = createDrawerNavigator({
+//     Main: ListStack,
+//     SettingsDrawer: {
+//         screen: MenuScreen
+//     }
+// });
+
+// ListOfListsNav.navigationOptions = {
+//     headerStyle: {
+//         backgroundColor: Colors.headerBackground,
+//     }
+// }
+
+export const AppStack = createBottomTabNavigator({
+    'My Lists': ListStack,
+    Search: SearchStack,
+    Notifications: NotificationsStack
+}, {
+    initialRouteName: 'My Lists',
+    navigationOptions: ({ navigation }) => ({
+        tabBarIcon: ({ focused, tintColor }) => {
+            const { routeName } = navigation.state;
+            let iconName, iconType;
+            if (routeName === 'My Lists') {
+                iconName = 'list';
+                iconType = 'entypo';
+            } else if (routeName === 'Search') {
+                iconName = 'search';
+            } else if (routeName === 'Notifications') {
+                iconName = 'notifications';
+                iconType = 'material-icons'
             }
-        });
 
-        appLaunchedListenerFired = true;
+            return <Icon name={iconName} type={iconType} iconStyle={{ color: tintColor }} />
+        },
+        headerStyle: {
+            backgroundColor: Colors.headerBackground,
+        },
+    })
+});
 
-        store.dispatch({ type: 'navigation/registerAppLaunchedListener' });
-    });
-}
+export const AppModalStack = createStackNavigator({
+    MainBottomTabs: {
+        screen: AppStack,
+        navigationOptions: {
+            header: null
+        }
+    },
+    CreateListModal: {
+        screen: paramsToProps(CreateNewListModal)
+    }
+}, {
+    mode: 'modal'
+})
+
+export const Nav = createSwitchNavigator({
+    AuthLoading: {
+        screen: paramsToProps(LoadingScreen)
+    },
+    Auth: AuthStack,
+    App: AppModalStack
+}, {
+    initialRouteName: 'AuthLoading'
+});

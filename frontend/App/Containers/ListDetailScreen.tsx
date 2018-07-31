@@ -1,24 +1,25 @@
 import React from 'react';
-import { FlatList, ListRenderItemInfo, Text, View } from 'react-native';
+import { FlatList, ListRenderItemInfo, Text, View, StatusBar, TouchableOpacity } from 'react-native';
+import { ListItem, Icon, colors } from 'react-native-elements';
+import { Navigation } from 'react-native-navigation';
+import { NavigationScreenProp } from 'react-navigation';
+import { Transition } from 'react-navigation-fluid-transitions';
 import { connect, Dispatch } from 'react-redux';
 
+import CreateNewListModal from '../Containers/CreateNewListModal';
 import { List } from '../Model';
 import NavActions from '../Redux/NavRedux';
 import { State as ReduxState } from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
 import { Colors } from '../Themes/';
 import styles from './Styles/ItemListStyle';
-import Header from '../Components/Header/Header';
-import { Icon, ListItem } from 'react-native-elements';
-import { Navigation } from 'react-native-navigation';
-import CreateNewListModal from '../Containers/CreateNewListModal';
-import { EventEmitter } from 'events';
 
 type Props = {
     componentId: string
     user: UserState
     loadUserSelf: (componentId: string) => any
-    pushState: (componentId: string, view: object) => any
+    pushState: (componentId: string, view: object) => any,
+    navigation: NavigationScreenProp<any>
 }
 
 type State = {
@@ -28,29 +29,28 @@ type State = {
 class ListDetailScreen extends React.PureComponent<Props, State> {
     state = {};
 
+    static navigationOptions = ({ navigation }: { navigation: NavigationScreenProp<any> }) => {
+        return {
+            drawer: {
+                enabled: true
+            },
+            title: 'My Lists',
+            headerRight: (
+                <TouchableOpacity style={{ marginHorizontal: 10 }}>
+                    <Icon
+                        name='add-to-list'
+                        type='entypo'
+                        color='white'
+                        underlayColor={Colors.headerBackground}
+                        onPress={() => navigation.navigate('CreateListModal')}
+                    />
+                </TouchableOpacity>
+            )
+        };
+    }
+
     goToList(list: List) {
-        this.props.pushState(this.props.componentId, {
-            component: {
-                name: 'navigation.main.ItemList',
-                passProps: {
-                    list
-                },
-                options: {
-                    topBar: {
-                        visible: true,
-                        title: {
-                            text: list.name
-                        }
-                    },
-                    animated: true,
-                    sideMenu: {
-                        left: {
-                            enabled: true
-                        }
-                    }
-                }
-            }
-        })
+        this.props.navigation.push('SpecificList', { list });
     }
 
     keyExtractor: (item: List) => string = (item) => item.id.toString();
@@ -84,28 +84,31 @@ class ListDetailScreen extends React.PureComponent<Props, State> {
 
     render() {
         return (
-            <View style={styles.container}>
-                {/* <Header
-                    componentId={this.props.componentId}
-                    centerComponent={{ title: 'My Lists' }}
-                    rightComponent={
-                        <Icon
-                            name='search'
-                            color='#fff'
-                            underlayColor={Colors.headerBackground}
-                            onPress={this.openSearch}
-                        />
-                    }
-                /> */}
-                <FlatList
-                    contentContainerStyle={styles.listContent}
-                    data={this.props.user.details.lists}
-                    renderItem={this.renderItem.bind(this)}
-                    keyExtractor={this.keyExtractor}
-                    initialNumToRender={this.oneScreensWorth}
-                    ListEmptyComponent={this.renderEmpty}
-                />
-            </View>
+            <Transition>
+                <View style={styles.container}>
+                    <StatusBar barStyle='light-content' />
+                    {/* <Header
+                        componentId={this.props.componentId}
+                        centerComponent={{ title: 'My Lists' }}
+                        rightComponent={
+                            <Icon
+                                name='search'
+                                color='#fff'
+                                underlayColor={Colors.headerBackground}
+                                onPress={this.openSearch}
+                            />
+                        }
+                    /> */}
+                    <FlatList
+                        contentContainerStyle={styles.listContent}
+                        data={this.props.user.details.lists}
+                        renderItem={this.renderItem.bind(this)}
+                        keyExtractor={this.keyExtractor}
+                        initialNumToRender={this.oneScreensWorth}
+                        ListEmptyComponent={this.renderEmpty}
+                    />
+                </View>
+            </Transition>
         );
     }
 }

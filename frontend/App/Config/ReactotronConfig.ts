@@ -7,7 +7,7 @@ import sagaPlugin from 'reactotron-redux-saga'
 if (Config.useReactotron) {
   // https://github.com/infinitered/reactotron for more options!
   Reactotron
-    .configure({ name: 'Teletracker', host: '10.0.0.75' })
+    .configure({ name: 'Teletracker' })
     .useReactNative()
     .use(reduxPlugin({ onRestore: Immutable }))
     .use(sagaPlugin())

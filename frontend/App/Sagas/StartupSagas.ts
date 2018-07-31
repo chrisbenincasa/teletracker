@@ -1,11 +1,9 @@
 import { ApiResponse } from 'apisauce';
-import { Navigation } from 'react-native-navigation';
-import { call, select, take, put } from 'redux-saga/effects';
+import { call, put, select } from 'redux-saga/effects';
 
-import { appLaunched } from '../Navigation/AppNavigation';
-import * as NavigationConfig from '../Navigation/NavigationConfig';
-import { TeletrackerApi } from '../Services/TeletrackerApi';
+import NavigationService from '../Navigation/NavigationService';
 import UserActions from '../Redux/UserRedux';
+import { TeletrackerApi } from '../Services/TeletrackerApi';
 
 export function* startup(teletrackerApi: TeletrackerApi): IterableIterator<any> {
   const state = yield select();
@@ -25,12 +23,7 @@ export function* startup(teletrackerApi: TeletrackerApi): IterableIterator<any> 
     yield put(UserActions.userLogout());
   }
 
-  const view = isLoggedIn ? NavigationConfig.AppStack : NavigationConfig.AuthStack2;
+  const view = isLoggedIn ? 'App' : 'Auth';
 
-  if (!appLaunched()) {
-    // Waits until Navigation fires "registerAppLaunchedListener"
-    yield take('navigation/registerAppLaunchedListener');
-  }
-
-  yield call([Navigation, Navigation.setRoot], view);
+  yield call([NavigationService, NavigationService.navigate], view);
 }
