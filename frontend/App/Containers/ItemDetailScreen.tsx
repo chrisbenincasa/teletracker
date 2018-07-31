@@ -28,6 +28,7 @@ interface Props {
     markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
     fetchShow: (id: string | number) => any
     navigation: NavigationScreenProp<any>
+    visible: boolean
 }
 
 type State = {
@@ -35,7 +36,8 @@ type State = {
     loading: boolean,
     loadError: boolean,
     item?: Thing,
-    userDetails?: any
+    userDetails?: any,
+    visible: false
 }
 
 class ItemDetailScreen extends Component<Props, State> {
@@ -120,6 +122,12 @@ class ItemDetailScreen extends Component<Props, State> {
             thing: this.state.item,
             userDetails: this.state.userDetails
         });
+        this.props.addItemToList(this.props.componentId, 'default', this.state.item.id);
+
+        this.setState({
+            inList: !this.state.inList,
+            visible: !this.state.visible
+          });
     }
 
     markAsWatched() {
@@ -280,6 +288,25 @@ class ItemDetailScreen extends Component<Props, State> {
                         <GetCast item={ this.state.item }/>
                     </ScrollView>
                 ) }
+                <View style={styles.container}>
+                    <PaperButton
+                        onPress={() => this.setState(state => ({ visible: !state.visible }))}
+                    >
+                    {this.state.visible ? 'Hide' : 'Show'}
+                    </PaperButton>
+                    <Snackbar
+                    visible={this.state.visible}
+                    onDismiss={() => this.setState({ visible: false })}
+                    action={{
+                        label: 'Undo',
+                        onPress: () => {
+                            this.setState(state => ({ inList: !state.inList }))
+                        },
+                    }}
+                    >
+                    {`Item has been ${this.state.inList ? 'added' : 'removed'}!`}
+                    </Snackbar>
+                </View>
             </View>
         )
     }
