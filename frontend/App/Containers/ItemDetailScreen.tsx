@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
-import { Button, Icon, Rating } from 'react-native-elements';
+import { Icon, Rating } from 'react-native-elements';
 import ViewMoreText from 'react-native-view-more-text';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
@@ -17,6 +17,9 @@ import { Thing } from '../Model/external/themoviedb';
 import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
+import { tracker, appVersion } from '../Components/Analytics';
+import { Snackbar, Button } from 'react-native-paper';
+
 import Colors from '../Themes/Colors';
 import styles from './Styles/ItemDetailScreenStyle';
 
@@ -257,14 +260,11 @@ class ItemDetailScreen extends Component<Props, State> {
 
                         <View style={styles.buttonsContainer}>
                             <Button
-                                title='Mark as Watched'
-                                icon={{
-                                    name: 'watch',
-                                    size: 25,
-                                    color: 'white'
-                                }}
+                                icon='watch'
                                 onPress={this.markAsWatched}
-                                containerStyle={{ marginHorizontal: 0 }}>
+                                style={{ marginHorizontal: 0 }}
+                            >
+                                Mark as Watched
                             </Button>
                             <Button
                                 title={this.state.userDetails.belongsToLists.length > 0 ? 'Manage Tracking' : 'Track'}
@@ -278,7 +278,8 @@ class ItemDetailScreen extends Component<Props, State> {
                                 buttonStyle={{
                                     backgroundColor: this.state.userDetails.belongsToLists.length > 0 ? Colors.headerBackground : 'green'
                                 }}
-                                containerStyle={{ marginHorizontal: 0 }}>
+                            >
+                                {this.state.inList ? 'Remove' : 'Track'}
                             </Button>
 
                         </View>
@@ -289,11 +290,11 @@ class ItemDetailScreen extends Component<Props, State> {
                     </ScrollView>
                 ) }
                 <View style={styles.container}>
-                    <PaperButton
+                    <Button
                         onPress={() => this.setState(state => ({ visible: !state.visible }))}
                     >
                     {this.state.visible ? 'Hide' : 'Show'}
-                    </PaperButton>
+                    </Button>
                     <Snackbar
                     visible={this.state.visible}
                     onDismiss={() => this.setState({ visible: false })}
