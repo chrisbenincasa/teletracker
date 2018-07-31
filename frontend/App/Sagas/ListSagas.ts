@@ -27,3 +27,29 @@ export function* addToList(api: TeletrackerApi, { componentId, listId, itemId }:
         yield put(ListActions.addToListFailure());
     }
 }
+
+export function* createList(api: TeletrackerApi, { name }: AnyAction) {
+    const response: ApiResponse<any> = yield call([api, api.createList], name);
+
+    if (response.ok) {
+        yield all([
+            put(ListActions.createListSuccess()),
+            put(UserActions.appendList({ id: response.data.data.id, name, things: [] }))
+        ])
+    } else {
+        console.tron.log('uh oh')
+    }
+}
+
+export function* updateListTracking(api: TeletrackerApi, { thing, adds, removes }: AnyAction) {
+    const response: ApiResponse<any> = yield call([api, api.updateListTracking], thing.id, adds, removes);
+
+    if (response.ok) {
+        yield all([
+            put(ListActions.updateListTrackingComplete()),
+            put(UserActions.updateLists(thing, adds, removes))
+        ])
+    } else {
+        console.tron.log('uh oh')
+    }
+}

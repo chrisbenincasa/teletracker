@@ -3,8 +3,12 @@ import { Icon } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { Colors } from '../../Themes/';
 
-export default class HeaderLeft extends Component {
-    constructor(props) {
+type Props = {
+    componentId: string
+}
+
+export default class HeaderLeft extends Component<Props> {
+    constructor(props: Props) {
         super(props);
         this.showLeftMenu = this.showLeftMenu.bind(this);
         this.goBack = this.goBack.bind(this);

@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 import { Avatar, List, ListItem } from 'react-native-elements';
-import { connect } from 'react-redux';
+import { connect, Dispatch } from 'react-redux';
 import Logo from '../Components/Logo';
 import State from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
@@ -26,8 +26,9 @@ const menuItems = [
 ];
 
 interface Props {
+    componentId: string,
     user: UserState,
-    logout: () => any
+    logout: (componentId: string) => any
 }
 
 class MenuScreen extends Component<Props> {
@@ -36,7 +37,7 @@ class MenuScreen extends Component<Props> {
         tracker.trackScreenView('Menu');
     }
 
-    render () {
+    render() {
         return (
             <ScrollView style={styles.container}>
                 <Logo />
@@ -48,24 +49,22 @@ class MenuScreen extends Component<Props> {
                         onPress={() => console.log("Works!")}
                         activeOpacity={0.7}
                     />
-                    <Text>{this.props.user.details.name}</Text>
+                    <Text>{this.props.user && this.props.user.details && this.props.user.details.name ? this.props.user.details.name : null}</Text>
                 </View>
                 <KeyboardAvoidingView behavior='position'>
-                    <List>
-                        <ListItem
-                            title="Settings"
-                            leftIcon={{ name: "settings" }}
-                        />
-                        <ListItem
-                            title="Report A Bug"
-                            leftIcon={{ name: "report" }}
-                        />
-                        <ListItem
-                            title="Logout"
-                            leftIcon={{ name: "unarchive" }}
-                            onPress={() => this.props.logout()}
-                        />
-                    </List>
+                    <ListItem
+                        title="Settings"
+                        leftIcon={{ name: "settings" }}
+                    />
+                    <ListItem
+                        title="Report A Bug"
+                        leftIcon={{ name: "report" }}
+                    />
+                    <ListItem
+                        title="Logout"
+                        leftIcon={{ name: "unarchive" }}
+                        onPress={() => this.props.logout(this.props.componentId)}
+                    />
                 </KeyboardAvoidingView>
             </ScrollView>
         )
@@ -78,9 +77,9 @@ const mapStateToProps = (state: State) => {
     }
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: Dispatch<any>) => {
     return {
-        logout: () => dispatch(UserActions.logoutRequest())
+        logout: (componentId: string) => dispatch(UserActions.logoutRequest(componentId))
     }
 };
 

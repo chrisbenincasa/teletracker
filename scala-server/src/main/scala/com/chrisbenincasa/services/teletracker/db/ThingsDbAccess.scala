@@ -21,6 +21,9 @@ class ThingsDbAccess @Inject()(
   val thingGenres: ThingGenres,
   val availabilities: Availabilities,
   val personThings: PersonThings,
+  val users: Users,
+  val trackedListThings: TrackedListThings,
+  val trackedLists: TrackedLists,
   dbImplicits: DbImplicits
 )(implicit executionContext: ExecutionContext) extends DbAccess {
   import provider.driver.api._
@@ -340,4 +343,21 @@ class ThingsDbAccess @Inject()(
       } yield {}
     }
   }
+
+  def getShowUserDetails(userId: Int, showId: Int) = {
+    // Do they track it?
+    val lists = trackedListThings.query.filter(_.thingId === showId).flatMap(l => {
+      l.list_fk.filter(_.userId === userId)
+    })
+
+    run {
+      lists.result
+    }.map(lists => {
+      UserShowDetails(lists.map(_.toFull))
+    })
+  }
 }
+
+case class UserShowDetails(
+  belongsToLists: Seq[TrackedList]
+)
