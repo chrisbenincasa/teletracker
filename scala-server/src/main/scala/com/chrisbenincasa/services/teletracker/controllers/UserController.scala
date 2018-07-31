@@ -3,7 +3,7 @@ package com.chrisbenincasa.services.teletracker.controllers
 import com.chrisbenincasa.services.teletracker.auth.RequestContext._
 import com.chrisbenincasa.services.teletracker.auth.jwt.JwtVendor
 import com.chrisbenincasa.services.teletracker.auth.{JwtAuthFilter, UserSelfOnlyFilter}
-import com.chrisbenincasa.services.teletracker.db.model.{Event, PartialThing}
+import com.chrisbenincasa.services.teletracker.db.model.Event
 import com.chrisbenincasa.services.teletracker.db.{ThingsDbAccess, UsersDbAccess}
 import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.twitter.finagle.http.Request
@@ -39,13 +39,9 @@ class UserController @Inject()(
           } else {
             val user = result.head._1
             val lists = result.collect {
-              case (_, Some(list), tid, tname, ttype) => (list, tid, tname, ttype)
+              case (_, Some(list), thingOpt) => (list, thingOpt)
             }.groupBy(_._1).map {
-              case (list, matches) =>
-                val things = matches.collect {
-                  case (_, tid, tname @ Some(_), ttype @ Some(_)) => PartialThing(id = tid, name = tname, `type` = ttype)
-                }
-                list.toFull.withThings(things.toList)
+              case (list, matches) => list.toFull.withThings(matches.flatMap(_._2).toList)
             }
 
             DataResponse(
@@ -62,13 +58,9 @@ class UserController @Inject()(
           } else {
             val user = result.head._1
             val lists = result.collect {
-              case (_, Some(list), tid, tname, ttype) => (list, tid, tname, ttype)
+              case (_, Some(list), thingOpt) => (list, thingOpt)
             }.groupBy(_._1).map {
-              case (list, matches) =>
-                val things = matches.map {
-                  case (_, tid, tname, ttype) => PartialThing(id = tid, name = tname, `type` = ttype)
-                }
-                list.toFull.withThings(things.toList)
+              case (list, matches) => list.toFull.withThings(matches.flatMap(_._2).toList)
             }
 
             DataResponse(
@@ -123,6 +115,51 @@ class UserController @Inject()(
         }
       }
 
+      put("/:userId/lists") { req: AddThingToListsRequest =>
+        usersDbAccess.findListsForUser(req.request.authContext.user.id).flatMap(lists => {
+          val listIds = lists.flatMap(_.id).toSet
+          val (validListIds, _) = req.listIds.partition(listIds(_))
+
+          if (validListIds.isEmpty) {
+            Future.successful(response.status(404))
+          } else {
+            thingsDbAccess.findThingById(req.itemId).flatMap {
+              case None => Future.successful(response.status(404))
+              case Some(thing) =>
+                val futs = validListIds.map(listId => {
+                  usersDbAccess.addThingToList(listId, thing.id.get)
+                })
+
+                Future.sequence(futs).map(_ => response.status(204))
+            }
+          }
+        })
+      }
+
+      put("/:userId/things/:thingId/lists") { req: ManageShowListsRequest =>
+        usersDbAccess.findListsForUser(req.request.authContext.user.id).flatMap(lists => {
+          val listIds = lists.flatMap(_.id).toSet
+          val validAdds = req.addToLists.filter(listIds(_))
+          val validRemoves = req.removeFromLists.filter(listIds(_))
+
+          if (validAdds.isEmpty && validRemoves.isEmpty) {
+            Future.successful(response.status(404))
+          } else {
+            thingsDbAccess.findThingById(req.thingId).flatMap {
+              case None => Future.successful(response.status(404))
+              case Some(thing) =>
+                val futs = validAdds.map(listId => {
+                  usersDbAccess.addThingToList(listId, thing.id.get)
+                })
+
+                val removeFuts = usersDbAccess.removeThingFromLists(validRemoves.toSet, thing.id.get)
+
+                Future.sequence(futs :+ removeFuts).map(_ => response.status(204))
+            }
+          }
+        })
+      }
+
       get("/:userId/events") { req: GetUserByIdRequest =>
         usersDbAccess.getUserEvents(req.request.authContext.user.id).map(DataResponse(_))
       }
@@ -170,9 +207,25 @@ case class AddThingToListRequest(
   request: Request,
 )
 
+case class AddThingToListsRequest(
+  @RouteParam userId: String,
+  itemId: Int,
+  listIds: List[Int],
+  request: Request,
+)
+
+
 case class AddUserEventRequest(
   @RouteParam userId: String,
   event: EventCreate,
+  request: Request
+)
+
+case class ManageShowListsRequest(
+  @RouteParam userId: String,
+  @RouteParam thingId: Int,
+  addToLists: List[Int],
+  removeFromLists: List[Int],
   request: Request
 )
 

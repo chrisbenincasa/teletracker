@@ -6,7 +6,7 @@ import com.chrisbenincasa.services.teletracker.db.model._
 import com.chrisbenincasa.services.teletracker.inject.{DbImplicits, DbProvider}
 import javax.inject.Inject
 import org.joda.time.DateTime
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 class UsersDbAccess @Inject()(
   val provider: DbProvider,
@@ -86,18 +86,35 @@ class UsersDbAccess @Inject()(
     }
   }
 
+  def getToken(token: String) = {
+    run {
+      tokens.query.filter(_.token === token).result.headOption
+    }
+  }
+
+  def findUserAndListsQuery(userId: Int) = {
+    users.query.filter(_.id === userId) joinLeft trackedLists.query on(_.id === _.userId) joinLeft
+      trackedListThings.query on(_._2.map(_.id) === _.listId) joinLeft
+      things.query on(_._2.map(_.thingId) === _.id)
+  }
+
+  def findListsForUser(userId: Int) = {
+    run {
+      trackedLists.query.filter(_.userId === userId).result
+    }
+  }
+
   def findUserAndLists(userId: Int) = {
     run {
       (for {
-        (((user, list), _), thing) <- (
-          users.query.filter(_.id === userId) joinLeft trackedLists.query on(_.id === _.userId)
-            joinLeft trackedListThings.query on(_._2.map(_.id) === _.listId)
-            joinLeft things.query on(_._2.map(_.thingId) === _.id)
-        )
+        (((user, list), _), thing) <- findUserAndListsQuery(userId)
       } yield {
         (user, list, thing.map(_.id), thing.map(_.name), thing.map(_.`type`))
       }).result
-    }
+    }.map(_.map {
+      case (user, optList, thingIdOpt, thingNameOpt, thingTypeOpt) =>
+        (user, optList, thingIdOpt.map(id => PartialThing(Some(id), thingNameOpt, `type` = thingTypeOpt)))
+    })
   }
 
   def findUserAndList(userId: Int, listId: Int) = {
@@ -143,6 +160,19 @@ class UsersDbAccess @Inject()(
   def addThingToList(listId: Int, thingId: Int) = {
     run {
       trackedListThings.query.insertOrUpdate(TrackedListThing(listId, thingId))
+    }
+  }
+
+  def removeThingFromLists(listIds: Set[Int], thingId: Int) = {
+    if (listIds.isEmpty) {
+      Future.successful(0)
+    } else {
+      run {
+        trackedListThings.query.
+          filter(_.listId inSetBind listIds).
+          filter(_.thingId === thingId).
+          delete
+      }
     }
   }
 

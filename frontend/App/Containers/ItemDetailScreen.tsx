@@ -1,46 +1,48 @@
 import React, { Component } from 'react';
 import { Image, KeyboardAvoidingView, Text, View, ScrollView, ActivityIndicator } from 'react-native';
 import { Button, Rating, Icon } from 'react-native-elements';
-import Header from '../Components/Header/Header';
 import ViewMoreText from 'react-native-view-more-text';
 import { Navigation } from 'react-native-navigation';
 import GetCast from '../Components/GetCast';
 import GetSeasons from '../Components/GetSeasons';
 import GetAvailability from '../Components/GetAvailability';
 import GetGenres from '../Components/GetGenres';
+import { AddToListModalOptions } from './AddToListModal';
 import getMetadata from '../Components/Helpers/getMetadata';
 import { Thing } from '../Model/external/themoviedb';
-import ListActions from '../Redux/ListRedux';
 import UserActions from '../Redux/UserRedux';
+import ItemActions from '../Redux/ItemRedux';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 import { teletrackerApi } from '../Sagas';
 import { tracker, appVersion } from '../Components/Analytics';
 
-import headerStyles from '../Themes/ApplicationStyles';
 import styles from './Styles/ItemDetailScreenStyle';
+import Colors from '../Themes/Colors';
+
 
 interface Props {
     componentId: string,
     item?: Thing,
     itemType?: string,
     itemId?: string | number,
-    addItemToList: (componentId: string, listId: string, itemId: string | number) => any,
-    markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void
+    markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
+    fetchShow: (id: string | number) => any
 }
 
 type State = {
     inList: boolean,
     loading: boolean,
     loadError: boolean,
-    item?: Thing
+    item?: Thing,
+    userDetails?: any
 }
 
 class ItemDetailScreen extends Component<Props, State> {
     constructor(props: Props) {
         super(props);
         this.markAsWatched = this.markAsWatched.bind(this);
-        this.addItem = this.addItem.bind(this);
+        this.manageLists = this.manageLists.bind(this);
 
         this.state = {
             inList: false,
@@ -64,11 +66,19 @@ class ItemDetailScreen extends Component<Props, State> {
         tracker.trackScreenView('Item Detail');
         if (!this.props.item && this.props.itemType && this.props.itemId) {
             if (this.props.itemType === 'show') {
-                teletrackerApi.getShow(this.props.itemId).then(response => {
-                    if (!response.ok) {
+                this.props.fetchShow(this.props.itemId);
+                Promise.all([
+                    teletrackerApi.getShow(this.props.itemId),
+                    teletrackerApi.getShowUserDetails(this.props.itemId)    
+                ]).then(([showResponse, userDetails]) => {
+                    if (!showResponse.ok || !userDetails.ok) {
                         this.setState({ loadError: true, loading: true });
                     } else {
-                        this.setState({ loading: false, item: response.data.data });
+                        this.setState({ 
+                            loading: false, 
+                            item: showResponse.data.data,
+                            userDetails: userDetails.data.data
+                        });
                     }
                 });
             } else if (this.props.itemType === 'movie') {
@@ -85,17 +95,26 @@ class ItemDetailScreen extends Component<Props, State> {
         }
     }
 
-    addItem() {
+    manageLists() {
         // Track when users add an item on the item details screen
         tracker.trackEvent('item-detail-action', 'add-item', {
             label: appVersion
         });
 
-        this.props.addItemToList(this.props.componentId, 'default', this.state.item.id);
-
-        this.setState({
-            inList: !this.state.inList
-          });
+        Navigation.showModal({
+            stack: {
+                children: [{
+                    component: {
+                        name: 'navigation.main.AddToListModal',
+                        passProps: {
+                            thing: this.state.item,
+                            userDetails: this.state.userDetails
+                        },
+                        options: AddToListModalOptions
+                    }
+                }]
+            }
+        });
     }
 
     markAsWatched() {
@@ -136,24 +155,6 @@ class ItemDetailScreen extends Component<Props, State> {
     render () {
         return (
             <View style={styles.container}>
-                <Header
-                    outerContainerStyles={{
-                        backgroundColor: 'transparent',
-                        position: 'absolute',
-                        zIndex: 999999
-                    }}
-                    statusBarProps={headerStyles.header.statusBarProps}
-                    componentId={this.props.componentId}
-                    leftComponent={{
-                        icon: 'chevron-left',
-                        back: true,
-                        style: {
-                            color: 'white'
-                        }
-                    }}
-                    centerComponent={null} 
-                    rightComponent={null}
-                />
                 { this.state.loading ? (
                     <ActivityIndicator />
                 ) : (
@@ -250,15 +251,16 @@ class ItemDetailScreen extends Component<Props, State> {
                                 containerStyle={{ marginHorizontal: 0 }}>
                             </Button>
                             <Button
-                                title={this.state.inList ? 'Remove' : 'Track'}
-                                onPress={this.addItem}
+                                title={this.state.userDetails.belongsToLists.length > 0 ? 'Manage Tracking' : 'Track'}
+                                onPress={this.manageLists}
                                 icon={{
-                                    name: this.state.inList ? 'clear' : 'add',
+                                    name: this.state.userDetails.belongsToLists.length > 0 ? 'clipboard' : 'add',
+                                    type: this.state.userDetails.belongsToLists.length > 0 ? 'entypo' : null,
                                     size: 25,
                                     color: 'white'
                                 }}
                                 buttonStyle={{
-                                    backgroundColor: this.state.inList ? 'red' : 'green'
+                                    backgroundColor: this.state.userDetails.belongsToLists.length > 0 ? Colors.headerBackground : 'green'
                                 }}
                                 containerStyle={{ marginHorizontal: 0 }}>
                             </Button>
@@ -282,11 +284,11 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch: Dispatch<any>) => {
     return {
-        addItemToList(componentId: string, listId: string, itemId: string | number) {
-            dispatch(ListActions.addToList(componentId, listId, itemId));
-        },
         markAsWatched(componentId: string, itemId: string | number, itemType: string) {
             dispatch(UserActions.postEvent(componentId, 'MarkedAsWatched', itemType, itemId));
+        },
+        fetchShow(id: string | number) {
+            dispatch(ItemActions.fetchShow(id))
         }
     }
 };

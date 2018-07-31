@@ -11,13 +11,15 @@ import { reducer as SearchReducer } from './SearchRedux';
 import { reducer as ListReducer } from './ListRedux';
 import { reducer as NavReducer } from './NavRedux';
 import { reducer as EventsReducer } from './EventsRedux';
+import { reducer as ItemsReducer } from './ItemRedux';
 
 export const reducers = combineReducers<State>({
   user: UserReducer,
   search: SearchReducer,
   lists: ListReducer,
   nav: NavReducer,
-  events: EventsReducer
+  events: EventsReducer,
+  items: ItemsReducer
 });
 
 export default (): { store: Store<{}>, persistor: any } => {

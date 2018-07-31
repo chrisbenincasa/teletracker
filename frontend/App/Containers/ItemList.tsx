@@ -14,10 +14,12 @@ import { Colors } from '../Themes/';
 import styles from './Styles/ItemListStyle';
 import { State } from '../Redux/State';
 import { tracker } from '../Components/Analytics';
+import { List } from '../Model';
 
 interface Props {
     componentId: string
     user: UserState
+    list: List
     loadUserSelf: (componentId: string) => any
     pushState: (componentId: string, view: object) => any
 }
@@ -26,6 +28,19 @@ class ItemList extends React.PureComponent<Props> {
     constructor(props: Props) {
         super(props);
         this.openSearch = this.openSearch.bind(this);
+    }
+
+    static get options() {
+        return {
+            sideMenu: {
+                left: {
+                    enabled: false
+                }
+            },
+            statusBar: {
+                style: 'light'
+            }
+        }
     }
 
     state = {};
@@ -63,7 +78,17 @@ class ItemList extends React.PureComponent<Props> {
     goToItemDetail(item: Thing) {
         let view = R.mergeDeepRight(NavigationConfig.DetailView, {
             component: {
-                passProps: { itemType: item.type, itemId: item.id }
+                passProps: { itemType: item.type, itemId: item.id },
+                options: {
+                    sideMenu: {
+                        left: {
+                            enabled: false
+                        }
+                    }
+                    // statusBar: {
+                    //     style: 'dark'
+                    // }
+                }
             }
         });
 
@@ -75,6 +100,8 @@ class ItemList extends React.PureComponent<Props> {
             <ListItem 
                 key={item.id}
                 title={item.name}
+                containerStyle={{ borderBottomWidth: 1, borderBottomColor: 'lightgray' }}
+                chevron={true}
                 leftIcon={{ name:
                     item.type === 'movie' ? 'movie' 
                         : item.type === 'show' ? 'tv' 
@@ -95,7 +122,7 @@ class ItemList extends React.PureComponent<Props> {
     render () {
         return (
             <View style={styles.container}>
-                <Header 
+                {/* <Header 
                     componentId={this.props.componentId} 
                     centerComponent={{ title: 'My List' }}
                     rightComponent={
@@ -106,10 +133,10 @@ class ItemList extends React.PureComponent<Props> {
                             onPress={this.openSearch}
                         />
                     }
-                />
+                /> */}
                 <FlatList
                     contentContainerStyle={styles.listContent}
-                    data={this.props.user.details.lists[0].things}
+                    data={this.props.list.things}
                     renderItem={this.renderItem.bind(this)}
                     keyExtractor={this.keyExtractor}
                     initialNumToRender={this.oneScreensWorth}

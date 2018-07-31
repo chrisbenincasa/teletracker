@@ -3,6 +3,8 @@ import { createActions, createReducer } from 'reduxsauce';
 import Immutable from 'seamless-immutable';
 
 import { User } from '../Model';
+import _ from 'lodash';
+import { Thing } from '../Model/external/themoviedb';
 
 /* ------------- Types and Action Creators ------------- */
 
@@ -20,7 +22,9 @@ const { Types, Creators } = createActions({
     loginFailure: null,
     logoutRequest: ['componentId'],
     logoutSuccess: null,
-    postEvent: ['componentId', 'eventType', 'targetType', 'targetId']
+    postEvent: ['componentId', 'eventType', 'targetType', 'targetId'],
+    appendList: ['list'],
+    updateLists: ['thing', 'listsToAdd', 'listsToRemove']
 })
 
 export const UserTypes = Types
@@ -98,6 +102,26 @@ export const reducers = {
     logoutSuccess: (state: State) =>
         state.merge({ login: { fetching: false, error: false }, token: null, details: null }),
 
+    appendList: (state: State, { list }: AnyAction) =>
+        state.merge({ details: { lists: state.details.lists.concat([list]) } }),
+
+    updateLists: (state: State, { thing, listsToAdd, listsToRemove }: AnyAction) => {
+        let lists = state.details.lists || [];
+
+        let newLists = lists.map(l => {
+            if (_.includes(listsToAdd, l.id.toString()) && !_.find(l.things, { id: thing.id })) {
+                return l.merge({ things: [thing] });
+            } else if (_.includes(listsToRemove, l.id.toString()) && _.find(l.things, { id: thing.id })) {
+                let newthings: Thing[] = _.reject(l.things, t => t.id === thing.id);
+                return l.merge({ things: newthings });
+            } else {
+                return l
+            }
+        });
+
+        return state.merge({ details: { lists: newLists }});
+    },
+
     postEvent: (state: State) => 
         state,
 }
@@ -114,7 +138,9 @@ export const reducer = createReducer<State>(INITIAL_STATE, {
     [Types.LOGIN_REQUEST]: reducers.login,
     [Types.LOGIN_SUCCESS]: reducers.loginSuccess,
     [Types.LOGIN_FAILURE]: reducers.loginFailure,
-    [Types.POST_EVENT]: reducers.postEvent
+    [Types.POST_EVENT]: reducers.postEvent,
+    [Types.APPEND_LIST]: reducers.appendList,
+    [Types.UPDATE_LISTS]: reducers.updateLists,
 });
 
 // export const reducer = persistReducer({
