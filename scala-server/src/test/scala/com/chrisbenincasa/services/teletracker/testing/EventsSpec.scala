@@ -13,8 +13,7 @@ import io.circe.generic.auto._
 class EventsSpec extends BaseSpecWithServer {
   "Events" should "should create and read events for a user" in {
     val access = injector.getInstance(classOf[UsersDbAccess])
-    val userId = access.newUser("Christian", "chrisbenincasa", "test@test.com", "password").await()
-    val jwt = injector.getInstance(classOf[JwtVendor]).vend("test@test.com")
+    val (userId, jwt) = access.createUserAndToken("Christian", "chrisbenincasa", "test@test.com", "password").await()
 
     server.httpPost(
       "/api/v1/users/self/events",
