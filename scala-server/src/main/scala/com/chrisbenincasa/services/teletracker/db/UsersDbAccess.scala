@@ -39,6 +39,15 @@ class UsersDbAccess @Inject()(
     }
   }
 
+  def createUserAndToken(name: String, username: String, email: String, password: String) = {
+    for {
+      userId <- newUser(name, username, email, password)
+      token <- vendToken(email)
+    } yield {
+      (userId, token)
+    }
+  }
+
   def newUser(name: String, username: String, email: String, password: String)(implicit executionContext: ExecutionContext) = {
     val now = System.currentTimeMillis()
     val timestamp = new java.sql.Timestamp(now)

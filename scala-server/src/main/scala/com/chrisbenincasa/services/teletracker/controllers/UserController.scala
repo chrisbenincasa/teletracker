@@ -22,8 +22,7 @@ class UserController @Inject()(
     // Create a user
     post("/?") { req: CreateUserRequest =>
       for {
-        userId <- usersDbAccess.newUser(req.name, req.username, req.email, req.password)
-        token <- usersDbAccess.vendToken(req.email)
+        (userId, token) <- usersDbAccess.createUserAndToken(req.name, req.username, req.email, req.password)
       } yield {
         DataResponse(
           CreateUserResponse(userId, token)
