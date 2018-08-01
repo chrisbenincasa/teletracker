@@ -19,6 +19,7 @@ import { tracker, appVersion } from '../Components/Analytics';
 
 import styles from './Styles/ItemDetailScreenStyle';
 import Colors from '../Themes/Colors';
+import { ApiResponse } from '../../node_modules/apisauce';
 
 
 interface Props {
@@ -64,35 +65,51 @@ class ItemDetailScreen extends Component<Props, State> {
 
     componentDidMount() {
         tracker.trackScreenView('Item Detail');
-        if (!this.props.item && this.props.itemType && this.props.itemId) {
-            if (this.props.itemType === 'show') {
-                this.props.fetchShow(this.props.itemId);
-                Promise.all([
-                    teletrackerApi.getShow(this.props.itemId),
-                    teletrackerApi.getShowUserDetails(this.props.itemId)    
-                ]).then(([showResponse, userDetails]) => {
-                    if (!showResponse.ok || !userDetails.ok) {
+
+        let thingPromise: Promise<any>;
+        let userDetailsPromise: Promise<any>;
+
+        userDetailsPromise = new Promise((resolve) => {
+            if (!this.state.userDetails) {
+                teletrackerApi.getThingUserDetails(this.props.itemId || this.props.item.id).then(userDetails => {
+                    if (!userDetails.ok) {
                         this.setState({ loadError: true, loading: true });
                     } else {
-                        this.setState({ 
-                            loading: false, 
-                            item: showResponse.data.data,
-                            userDetails: userDetails.data.data
-                        });
+                        resolve(userDetails.data.data);
                     }
                 });
-            } else if (this.props.itemType === 'movie') {
-                teletrackerApi.getMovie(this.props.itemId).then(response => {
+            } else {
+                resolve(this.state.userDetails);
+            }
+        })
+
+        // If we have no item, load it
+        thingPromise = new Promise((resolve) => {
+            if (!this.props.item && this.props.itemType && this.props.itemId) {
+                let func: (itemId: string | number) => Promise<ApiResponse<any>> = this.props.itemType === 'show' ? teletrackerApi.getShow : teletrackerApi.getMovie;
+
+                func(this.props.itemId).then(response => {
                     if (!response.ok) {
                         this.setState({ loadError: true, loading: true });
                     } else {
-                        this.setState({ loading: false, item: response.data.data });
+                        resolve(response.data.data);
                     }
                 });
+            } else if (this.props.item) {
+                resolve(this.props.item);
             }
-        } else if (this.props.item) {
-            this.setState({ loading: false });
-        }
+        });
+
+        Promise.all([
+            thingPromise,
+            userDetailsPromise
+        ]).then(([thing, userDetails]) => {
+            this.setState({
+                item: thing,
+                userDetails,
+                loading: false
+            })
+        })
     }
 
     manageLists() {
