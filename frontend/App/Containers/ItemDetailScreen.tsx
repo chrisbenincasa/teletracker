@@ -60,7 +60,7 @@ class ItemDetailScreen extends Component<Props, State> {
         };
     }
 
-    componentWillMount() {
+    componentDidMount() {
         tracker.trackScreenView('Item Detail');
 
         let thingPromise: Promise<any>;
