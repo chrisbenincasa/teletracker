@@ -14,7 +14,6 @@ interface Props {
 export default class GetSeasons extends Component {
     constructor(props: Props) {
         super(props);
-        console.log(getMetadata.getSeasons(this.props.item));
     }
 
     render () {
