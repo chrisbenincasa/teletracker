@@ -18,7 +18,7 @@ import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
 import { tracker, appVersion } from '../Components/Analytics';
-import { Snackbar, FABGroup, Button } from 'react-native-paper';
+import { Snackbar, FABGroup } from 'react-native-paper';
 
 import Colors from '../Themes/Colors';
 import styles from './Styles/ItemDetailScreenStyle';
@@ -35,7 +35,6 @@ interface Props {
 }
 
 type State = {
-    inList: boolean,
     loading: boolean,
     loadError: boolean,
     item?: Thing,
@@ -55,14 +54,13 @@ class ItemDetailScreen extends Component<Props, State> {
         this.manageLists = this.manageLists.bind(this);
 
         this.state = {
-            inList: false,
             loading: true,
             loadError: false,
             item: props.item
         };
     }
 
-    componentDidMount() {
+    componentWillMount() {
         tracker.trackScreenView('Item Detail');
 
         let thingPromise: Promise<any>;
@@ -73,13 +71,23 @@ class ItemDetailScreen extends Component<Props, State> {
                 teletrackerApi.getThingUserDetails(this.props.itemId || this.props.item.id).then(userDetails => {
                     if (!userDetails.ok) {
                         this.setState({ loadError: true, loading: true });
+                            console.log('AAAA');
+                            console.log(this.state);
                     } else {
                         resolve(userDetails.data.data);
+                            console.log('BBBB');
+                            console.log(this.state);
                     }
                 });
+                console.log('CCCC');
+                console.log(this.state);
             } else {
                 resolve(this.state.userDetails);
+                console.log('DDDDD');
+                console.log(this.state);
             }
+            console.log('EEEEE');
+            console.log(this.state);
         })
 
         // If we have no item, load it
@@ -90,8 +98,14 @@ class ItemDetailScreen extends Component<Props, State> {
                 getPromise.then(response => {
                     if (!response.ok) {
                         this.setState({ loadError: true, loading: true });
+                        console.log('FFFFFFFF');
+            console.log(this.state);
+
                     } else {
                         resolve(response.data.data);
+                        console.log('GGGGGGG');
+            console.log(this.state);
+
                     }
                 }).catch((e) => {
                     console.tron.log('bad', e);
@@ -99,6 +113,9 @@ class ItemDetailScreen extends Component<Props, State> {
                 });
             } else if (this.props.item) {
                 resolve(this.props.item);
+                console.log('HHHHHHH');
+            console.log(this.state);
+
             }
         });
 
@@ -106,6 +123,7 @@ class ItemDetailScreen extends Component<Props, State> {
             thingPromise,
             userDetailsPromise
         ]).then(([thing, userDetails]) => {
+            console.log('WAHOOOO');
             this.setState({
                 item: thing,
                 userDetails,
@@ -126,10 +144,8 @@ class ItemDetailScreen extends Component<Props, State> {
             thing: this.state.item,
             userDetails: this.state.userDetails
         });
-        this.props.addItemToList(this.props.componentId, 'default', this.state.item.id);
 
         this.setState({
-            inList: !this.state.inList,
             visible: !this.state.visible
           });
     }
@@ -141,9 +157,6 @@ class ItemDetailScreen extends Component<Props, State> {
         } );
 
         this.props.markAsWatched(this.props.componentId, this.state.item.id, this.state.item.type);
-        this.setState({
-            inList: !this.state.inList
-          });
     }
 
     renderViewMore(onPress) {
@@ -258,70 +271,53 @@ class ItemDetailScreen extends Component<Props, State> {
                         </View>
 
                         <GetGenres item={ this.state.item } />
-
-                        <View style={styles.buttonsContainer}>
-                            <Button
-                                icon='watch'
-                                onPress={this.markAsWatched}
-                                style={{ marginHorizontal: 0 }}
-                            >
-                                Mark as Watched
-                            </Button>
-                            <Button
-                                title={this.state.userDetails.belongsToLists.length > 0 ? 'Manage Tracking' : 'Track'}
-                                onPress={this.manageLists}
-                                icon={{
-                                    name: this.state.userDetails.belongsToLists.length > 0 ? 'clipboard' : 'add',
-                                    type: this.state.userDetails.belongsToLists.length > 0 ? 'entypwo' : null,
-                                    size: 25,
-                                    color: 'white'
-                                }}
-                                buttonStyle={{
-                                    backgroundColor: this.state.userDetails.belongsToLists.length > 0 ? Colors.headerBackground : 'green'
-                                }}
-                            >
-                                {this.state.inList ? 'Remove' : 'Track'}
-                            </Button>
-
-                        </View>
-
                         <GetSeasons item={ this.state.item }/>
                         <GetAvailability item={ this.state.item } />
                         <GetCast item={ this.state.item }/>
+
+                        <View style={styles.container}>
+                            <Snackbar
+                                visible={this.state.visible}
+                                onDismiss={() => this.setState({ visible: false })}
+                                action={{
+                                    label: 'Undo',
+                                    onPress: () => {
+
+                                    },
+                                }}
+                            >
+                                {`Item has been ${this.state.userDetails.belongsToLists.length > 0 ? 'added' : 'removed'}!`}
+                            </Snackbar>
+                            <FABGroup
+                                open={this.state.open}
+                                icon='add'
+                                color='#fff'
+                                actions={[
+                                    // Add to List
+                                    { 
+                                        icon: this.state.userDetails.belongsToLists.length > 0 ? 'list' : 'playlist-add', 
+                                        label: this.state.userDetails.belongsToLists.length > 0 ? 'Manage Tracking' : 'Add to List',
+                                        onPress: () => {this.manageLists()} 
+                                    },
+                                    // Mark as Watched
+                                    { 
+                                        icon: this.state.userDetails.belongsToLists.length > 0 ? 'visibility-off' : 'visibility', 
+                                        label: this.state.userDetails.belongsToLists.length > 0 ? 'Mark as Unwatched' : 'Mark as Watched',
+                                        onPress: () => {this.markAsWatched()}
+                                    }
+                                ]}
+                                onStateChange={({ open }) => this.setState({ open })}
+                                onPress={() => {
+                                    if (this.state.open) {
+                                        // do something if the speed dial is open
+                                    }
+                                }}
+                                style={{paddingBottom: this.state.visible ? 35 : 0 }}
+                            />
+                        </View>
                     </ScrollView>
                 ) }
-                <View style={styles.container}>
-                    <Snackbar
-                        visible={this.state.visible}
-                        onDismiss={() => this.setState({ visible: false })}
-                        action={{
-                            label: 'Undo',
-                            onPress: () => {
-                                this.setState(state => ({ inList: !state.inList }))
-                            },
-                        }}
-                    >
-                        {`Item has been ${this.state.inList ? 'added' : 'removed'}!`}
-                    </Snackbar>
-                    <FABGroup
-                        open={this.state.open}
-                        icon='add'
-                        color='#fff'
-                        actions={[
-                            { icon: 'add', label: 'Add to List', onPress: () => {this.addItem()} },
-                            { icon: 'done', label: 'Mark as Watched', onPress: () => {this.markAsWatched()} },
-                            { icon: 'mood', label: 'Recommend', onPress: () => {} },
-                            { icon: 'mood-bad', label: 'Do not recommend', onPress: () => {} },
-                        ]}
-                        onStateChange={({ open }) => this.setState({ open })}
-                        onPress={() => {
-                            if (this.state.open) {
-                                // do something if the speed dial is open
-                            }
-                        }}
-                        style={{paddingBottom: this.state.visible ? 35 : 0 }}
-                    />
-                </View>
+                
             </View>
         )
     }
