@@ -11,6 +11,8 @@ import ListActions from '../Redux/ListRedux';
 import { State as ReduxState } from '../Redux/State';
 import { UserState } from '../Redux/UserRedux';
 import styles from './Styles/ItemDetailScreenStyle';
+import { tracker } from '../Components/Analytics';
+
 
 type Props = {
     user: UserState
@@ -115,6 +117,7 @@ class AddToListModal extends React.PureComponent<Props, State> {
     }
 
     componentDidMount() {
+        tracker.trackScreenView('AddToListModal');
         this.props.navigation.setParams({ navigationButtonPressed: this.navigationButtonPressed.bind(this) });
     }
 

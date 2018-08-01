@@ -1,11 +1,9 @@
 
 import React, { Component } from 'react';
 import { Text, View } from 'react-native';
-import { Avatar } from 'react-native-elements';
 import { ListAccordion, ListItem, Divider } from 'react-native-paper';
 import { Thing } from '../Model/external/themoviedb';
 import getMetadata from './Helpers/getMetadata';
-import { parseInitials } from './Helpers/textHelper';
 
 import styles from './Styles/GetSeasons';
 
