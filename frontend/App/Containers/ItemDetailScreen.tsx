@@ -117,7 +117,7 @@ class ItemDetailScreen extends Component<Props, State> {
 
     manageLists() {
         // Track when users add an item on the item details screen
-        tracker.trackEvent('item-detail-action', 'add-item', {
+        tracker.trackEvent('item-detail-action', 'open-list-manager', {
             label: appVersion
         });
 
