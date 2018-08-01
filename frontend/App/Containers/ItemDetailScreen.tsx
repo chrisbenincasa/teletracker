@@ -71,23 +71,13 @@ class ItemDetailScreen extends Component<Props, State> {
                 teletrackerApi.getThingUserDetails(this.props.itemId || this.props.item.id).then(userDetails => {
                     if (!userDetails.ok) {
                         this.setState({ loadError: true, loading: true });
-                            console.log('AAAA');
-                            console.log(this.state);
                     } else {
                         resolve(userDetails.data.data);
-                            console.log('BBBB');
-                            console.log(this.state);
                     }
                 });
-                console.log('CCCC');
-                console.log(this.state);
             } else {
                 resolve(this.state.userDetails);
-                console.log('DDDDD');
-                console.log(this.state);
             }
-            console.log('EEEEE');
-            console.log(this.state);
         })
 
         // If we have no item, load it
@@ -98,14 +88,9 @@ class ItemDetailScreen extends Component<Props, State> {
                 getPromise.then(response => {
                     if (!response.ok) {
                         this.setState({ loadError: true, loading: true });
-                        console.log('FFFFFFFF');
-            console.log(this.state);
 
                     } else {
                         resolve(response.data.data);
-                        console.log('GGGGGGG');
-            console.log(this.state);
-
                     }
                 }).catch((e) => {
                     console.tron.log('bad', e);
@@ -113,9 +98,6 @@ class ItemDetailScreen extends Component<Props, State> {
                 });
             } else if (this.props.item) {
                 resolve(this.props.item);
-                console.log('HHHHHHH');
-            console.log(this.state);
-
             }
         });
 
@@ -123,7 +105,6 @@ class ItemDetailScreen extends Component<Props, State> {
             thingPromise,
             userDetailsPromise
         ]).then(([thing, userDetails]) => {
-            console.log('WAHOOOO');
             this.setState({
                 item: thing,
                 userDetails,

@@ -16,6 +16,7 @@ interface Props {
 export default class GetSeasons extends Component {
     constructor(props: Props) {
         super(props);
+        console.log(getMetadata.getSeasons(this.props.item));
     }
 
     render () {
@@ -24,42 +25,20 @@ export default class GetSeasons extends Component {
                 <View style={styles.seasonsContainer}>
                     <Divider style={styles.divider} />
                     <Text style={styles.seasonsHeader}>Season Guide:</Text>
-                    <View
-                        style={styles.avatarContainer}>
+                    <View>
                         {
                             getMetadata.getSeasons(this.props.item) ? getMetadata.getSeasons(this.props.item).map((i) => (
-                                
                                 <ListAccordion
-                                    title="Accordion"
-                                    icon={ 
+                                    key={i.id}    
+                                    title={`${i.name} (${i.episode_count})`}
+                                    icon={
                                         i.poster_path ? { 
-                                            uri: 'https://image.tmdb.org/t/p/w92' + i.poster_path 
+                                            uri: `https://image.tmdb.org/t/p/w92${i.poster_path}`
                                         } : 'broken-image' 
                                     }
-                                    key={i.id}
                                 >
-                                    <ListItem title="Episode 1" />
-                                    <ListItem title="Episode 2" />
+                                    <ListItem title='Episode 1' />
                                 </ListAccordion>
-                                
-                                // <View key={i.id}>
-                                //     <Avatar
-                                //         key={i.id}
-                                //         large
-                                //         rounded
-                                //         // {{ uri: 'https://avatars0.githubusercontent.com/u/17571969?v=3&s=400' }}
-                                //         source={
-                                //             i.poster_path
-                                //                 ? {
-                                //                     uri: "https://image.tmdb.org/t/p/w92" + i.poster_path
-                                //                 }
-                                //                 : null}
-                                //         activeOpacity={0.7}
-                                //         title={i.poster_path ? null : parseInitials(i.name)}
-                                //         titleStyle={parseInitials(i.name).length > 2 ? { fontSize: 26 } : null}
-                                //     />
-                                //     <Text style={styles.seasonsName}>{i.name}</Text>
-                                // </View>
                             ))
                                 : null
                         }
