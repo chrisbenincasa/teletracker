@@ -344,7 +344,7 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def getShowUserDetails(userId: Int, showId: Int) = {
+  def getThingUserDetails(userId: Int, showId: Int) = {
     // Do they track it?
     val lists = trackedListThings.query.filter(_.thingId === showId).flatMap(l => {
       l.list_fk.filter(_.userId === userId)
@@ -353,11 +353,11 @@ class ThingsDbAccess @Inject()(
     run {
       lists.result
     }.map(lists => {
-      UserShowDetails(lists.map(_.toFull))
+      UserThingDetails(lists.map(_.toFull))
     })
   }
 }
 
-case class UserShowDetails(
+case class UserThingDetails(
   belongsToLists: Seq[TrackedList]
 )

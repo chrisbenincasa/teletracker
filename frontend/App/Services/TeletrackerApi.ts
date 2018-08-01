@@ -153,9 +153,9 @@ export class TeletrackerApi {
         });
     }
 
-    async getShowUserDetails(showId: string | number) {
+    async getThingUserDetails(showId: string | number) {
         return this.withTokenCheck(async () => {
-            return this.api.get<any>(`/api/v1/shows/${showId}/user-details`);
+            return this.api.get<any>(`/api/v1/things/${showId}/user-details`);
         });
     }
 
