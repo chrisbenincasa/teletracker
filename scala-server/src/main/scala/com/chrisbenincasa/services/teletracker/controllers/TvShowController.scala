@@ -34,14 +34,6 @@ class TvShowController @Inject()(
         }
       })
     }
-
-    filter[JwtAuthFilter].apply {
-      get("/:id/user-details") { req: GetShowRequest =>
-        thingsDbAccess.getShowUserDetails(req.request.authContext.user.id, req.id).map(details => {
-          response.ok.contentTypeJson().body(DataResponse(details))
-        })
-      }
-    }
   }
 }
 
