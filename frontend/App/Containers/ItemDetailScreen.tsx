@@ -18,7 +18,7 @@ import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
 import { tracker, appVersion } from '../Components/Analytics';
-import { Snackbar, FABGroup } from 'react-native-paper';
+import { Snackbar, FABGroup, Button } from 'react-native-paper';
 
 import Colors from '../Themes/Colors';
 import styles from './Styles/ItemDetailScreenStyle';
