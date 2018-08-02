@@ -140,7 +140,7 @@ class AddToListModal extends React.PureComponent<Props, State> {
                             rightIcon={
                             <CheckBox
                                 containerStyle={{
-                                    backgroundColor: 'none',
+                                    backgroundColor: 'transparent',
                                     margin: 0,
                                     marginRight: 0,
                                     marginLeft: 0,
