@@ -25,22 +25,22 @@ import styles from './Styles/ItemDetailScreenStyle';
 
 interface Props {
     componentId: string,
-    item?: Thing,
-    itemType?: string,
-    itemId?: string | number,
-    markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
     fetchShow: (id: string | number) => any,
-    visible: boolean,
-    open: boolean
+    item?: Thing,
+    itemId?: string | number,
+    itemType?: string,
+    markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
+    open: boolean,
+    visible: boolean
 }
 
 type State = {
     loading: boolean,
     loadError: boolean,
     item?: Thing,
+    open: false,
     userDetails?: any,
-    visible: false,
-    open: false
+    visible: false
 }
 
 class ItemDetailScreen extends Component<Props, State> {

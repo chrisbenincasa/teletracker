@@ -20,12 +20,13 @@ import { Dispatch } from 'redux';
 import { appVersion, tracker } from '../Components/Analytics';
 import checkDevice from '../Components/Helpers/checkOrientation';
 import getMetadata from '../Components/Helpers/getMetadata';
+import { AddToListModalOptions } from './AddToListModal';
 import { NavigationConfig } from '../Navigation/NavigationConfig';
 import ListActions from '../Redux/ListRedux';
 import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
 import UserActions from '../Redux/UserRedux';
-
+import { teletrackerApi } from '../Sagas';
 import { tracker, appVersion } from '../Components/Analytics';
 import { truncateText } from '../Components/Helpers/textHelper';
 
@@ -38,22 +39,25 @@ import styles from './Styles/SearchScreenStyle';
 // Styles
 interface Props {
     addItemToList: (componentId: string, listId: string, itemId: string | number) => any,
-    addRecentlyViewed: (item: object) => any;
-    clearSearch: () => any;
-    componentId: string;
-    doSearch: (search: String) => any;
-    loadUserSelf: (componentId: string) => any;    
-    removeAllRecentlyViewed: () => any;    
-    removeRecentlyViewed: (item: object) => any;
-    search: any;
-    navigation: NavigationScreenProp<any>
+    addRecentlyViewed: (item: object) => any,
+    clearSearch: () => any,
+    componentId: string,
+    doSearch: (search: String) => any,
+    loadUserSelf: (componentId: string) => any,
+    markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
+    removeAllRecentlyViewed: () => any,
+    removeRecentlyViewed: (item: object) => any,
+    search: any
 }
 
 interface State {
-    devicetype: string;
-    gridView: boolean;
-    orientation: string;
-    searchText: string;
+    devicetype: string,
+    gridView: boolean,
+    loading: boolean,
+    loadError: boolean,
+    orientation: string,
+    searchText: string,
+    visible: false
 }
 
 class SearchScreen extends Component<Props, State> {
@@ -87,6 +91,8 @@ class SearchScreen extends Component<Props, State> {
         this.searchTextChanged = this.searchTextChanged.bind(this);
         this.executeSearch = this.executeSearch.bind(this);
         this.renderItem = this.renderItem.bind(this);
+        this.markAsWatched = this.markAsWatched.bind(this);
+        this.manageLists = this.manageLists.bind(this);
 
         this.state = {
             orientation: checkDevice.isPortrait() ? 'portrait' : 'landscape',
@@ -138,10 +144,6 @@ class SearchScreen extends Component<Props, State> {
         });
     }
 
-    componentDidMount() {
-        tracker.trackScreenView('Search');
-    }
-
     executeSearch() {
         // Track when users add items from search screen
         tracker.trackEvent('search-action', 'search', {
@@ -175,6 +177,92 @@ class SearchScreen extends Component<Props, State> {
         });
 
         this.props.addItemToList(this.props.componentId, 'default', itemId);
+    }    
+    
+    componentDidMount() {
+        tracker.trackScreenView('Search');
+    }
+
+    manageLists(item) {
+        // Track when users add an item on the item details screen
+        tracker.trackEvent('item-detail-action', 'open-list-manager', {
+            label: appVersion
+        });
+
+
+        let thingPromise: Promise<any>;
+        let userDetailsPromise: Promise<any>;
+
+        userDetailsPromise = new Promise((resolve) => {
+            if (!this.state.userDetails) {
+                teletrackerApi.getThingUserDetails(item.id).then(userDetails => {
+                    if (!userDetails.ok) {
+                        this.setState({ loadError: true, loading: true });
+                    } else {
+                        resolve(userDetails.data.data);
+                    }
+                });
+            } else {
+                resolve(this.state.userDetails);
+            }
+        })
+
+        // If we have no item, load it
+        thingPromise = new Promise((resolve) => {
+            
+            if (!item && item.type && item.id) {
+                let func: (item: object) => Promise<ApiResponse<any>> = item.type === 'show' ? teletrackerApi.getShow : teletrackerApi.getMovie;
+
+                func(item.id).then(response => {
+                    if (!response.ok) {
+                        this.setState({ loadError: true, loading: true });
+                    } else {
+                        resolve(response.data.data);
+                    }
+                });
+            } else if (item) {
+                resolve(item);
+            }
+        });
+
+        Promise.all([
+            thingPromise,
+            userDetailsPromise
+        ]).then(([thing, userDetails]) => {
+            this.setState({
+                item: thing,
+                userDetails,
+                loading: false
+            });
+
+            Navigation.showModal({
+                stack: {
+                    children: [{
+                        component: {
+                            name: 'navigation.main.AddToListModal',
+                            passProps: {
+                                thing: item,
+                                userDetails: this.state.userDetails
+                            },
+                            options: AddToListModalOptions
+                        }
+                    }]
+                }
+            });
+        })
+
+        this.setState({
+            visible: !this.state.visible
+          });
+    }
+
+    markAsWatched(item) {
+        // Track when users mark item watched on the item details screen
+        tracker.trackEvent('item-detail-action', 'mark-as-watched', {
+            label: appVersion
+        } );
+
+        this.props.markAsWatched(this.props.componentId, item.id, item.type);
     }
 
     renderEmpty = () => { 
@@ -322,9 +410,10 @@ class SearchScreen extends Component<Props, State> {
                             flex: 1,
                             textAlign: 'center'
                         }}
-                        icon='visibility'
+                        icon={this.state.userDetails && this.state.userDetails.belongsToLists.length > 0 ? 'visibility-off' : 'visibility'}
+                        onPress={() => this.markAsWatched(item)}
                     >
-                        Mark as Watched
+                        {this.state.userDetails && this.state.userDetails.belongsToLists.length > 0 ? 'Mark as Unwatched' : 'Mark as Watched'}
                     </Button>
                     <Button
                         raised
@@ -332,94 +421,16 @@ class SearchScreen extends Component<Props, State> {
                             flex: 1,
                             textAlign: 'center'
                         }}
-                        icon='playlist-add'
+                        icon={this.state.userDetails && this.state.userDetails.belongsToLists.length > 0 ? 'list' : 'playlist-add'}
+                        onPress={() => this.manageLists(item)}
+
                     >
-                        Add to List
+                        {this.state.userDetails && this.state.userDetails.belongsToLists.length > 0 ? 'Manage Tracking' : 'Add to List'}
                     </Button>
                 </CardActions>
             </Card>
         )
     }
-
-
-
-    // renderItem ( { item }:object ) {
-    //     return (
-    //         <View style={{margin: 5}}>
-
-    //             <TouchableHighlight 
-    //                 activeOpacity={0.3}
-    //                 onPress={() => this.goToItemDetail(item)
-    //             }>
-    //                 <View>
-    //                 <View style={styles.addToList}>
-    //                     <Icon
-    //                         name='add'
-    //                         color='#fff'
-    //                         underlayColor='#000'
-    //                         size={36}
-    //                         onPress={() => this.addItem(item.id)}
-    //                     />
-    //                 </View>
-    //                     { getMetadata.getPosterPath(item) ?
-    //                         <Image
-    //                             style={{ 
-    //                                     flex: 1,
-    //                                     width: this.getItemContainerWidth(),
-    //                                     height: this.getItemContainerHeight(),
-    //                                     backgroundColor: '#C9C9C9',
-    //                                     alignContent: 'center'}}
-    //                             source={{uri: 'https://image.tmdb.org/t/p/w154' + getMetadata.getPosterPath(item) }}
-    //                         /> : 
-    //                         <View style={{ 
-    //                                     flex: 1,
-    //                                     width: this.getItemContainerWidth(),
-    //                                     height: this.getItemContainerHeight(),
-    //                                     backgroundColor: '#C9C9C9',
-    //                                     alignContent: 'center'}}>
-    //                             <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
-    //                         </View>
-    //                     }
-    //                 </View>
-    //             </TouchableHighlight>
-    //             <Text 
-    //                 style={{
-    //                     width: this.getItemContainerWidth(),
-    //                     textAlign: 'center', 
-    //                     fontWeight: 'bold'}}
-    //                 numberOfLines={1}
-    //                 ellipsizeMode='tail'
-    //                 onPress={() => this.goToItemDetail(item)}
-    //             >{ item.name }</Text>
-                
-    //             {
-    //                 getMetadata.getSeasonCount(item) || getMetadata.getEpisodeCount(item) ?
-    //                     <Text 
-    //                         style={{
-    //                             width: this.getItemContainerWidth(),
-    //                             textAlign: 'center'}}
-    //                         numberOfLines={1}
-    //                         ellipsizeMode='tail'
-    //                         onPress={() => this.goToItemDetail(item)}
-    //                     >{ `${getMetadata.getSeasonCount(item)} ${getMetadata.getEpisodeCount(item)}`}</Text>
-    //                 : null
-    //             }
-
-    //             { 
-    //                 getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
-    //                     <Text 
-    //                         style={{
-    //                             width: this.getItemContainerWidth(),
-    //                             textAlign: 'center'}}
-    //                         numberOfLines={1}
-    //                         ellipsizeMode='tail'
-    //                         onPress={() => this.goToItemDetail(item)}
-    //                     >{ `${getMetadata.getRuntime(item)} ${getMetadata.getReleaseYear(item)}`} </Text>
-    //                 : null
-    //             }
-    //        </View>
-    //     )
-    // }
 
     render() {
         return (
@@ -496,6 +507,9 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
         },
         loadUserSelf: (componentId: string) => {
             dispatch(UserActions.userSelfRequest(componentId));
+        },
+        markAsWatched(componentId: string, itemId: string | number, itemType: string) {
+            dispatch(UserActions.postEvent(componentId, 'MarkedAsWatched', itemType, itemId));
         },
         removeRecentlyViewed: (item: object) => {
             dispatch(SearchActions.searchRemoveRecent(item));
