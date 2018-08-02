@@ -1,7 +1,17 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { ActivityIndicator, Dimensions, FlatList, Image, Text, TouchableHighlight, View, TouchableOpacity } from 'react-native';
-import { Button, Divider, Icon, ListItem } from 'react-native-elements';
+import { Icon, ListItem } from 'react-native-elements';
+import {
+    Button,
+    Card,
+    CardActions,
+    CardContent,
+    CardCover,
+    Divider,
+    Title,
+    Paragraph
+} from 'react-native-paper';
 import Search from 'react-native-search-box';
 import { NavigationScreenProp } from 'react-navigation';
 import { connect } from 'react-redux';
@@ -15,7 +25,11 @@ import ListActions from '../Redux/ListRedux';
 import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
 import UserActions from '../Redux/UserRedux';
-import { Colors } from './../Themes/';
+
+import { tracker, appVersion } from '../Components/Analytics';
+import { truncateText } from '../Components/Helpers/textHelper';
+
+import { Colors } from './../Themes/'; //testing only, cleanup later
 import styles from './Styles/SearchScreenStyle';
 
 // Add Actions - replace 'Your' with whatever your reducer is called :)
@@ -245,81 +259,167 @@ class SearchScreen extends Component<Props, State> {
 
     renderItem ( { item }:object ) {
         return (
-            <View style={{margin: 5}}>
-
-                <TouchableHighlight 
-                    activeOpacity={0.3}
-                    onPress={() => this.goToItemDetail(item)
-                }>
+            <Card style={{flex: 1, margin: 8}}>
+                <TouchableHighlight
+                    onPress={() => this.goToItemDetail(item)}
+                    activeOpacity={0.5}
+                    underlayColor='#fff'
+                >
                     <View>
-                    <View style={styles.addToList}>
-                        <Icon
-                            name='add'
-                            color='#fff'
-                            underlayColor='#000'
-                            size={36}
-                            onPress={() => this.addItem(item.id)}
+                        {/* <CardContent style={{paddingHorizontal: 5, paddingVertical: 5}}>
+                            <Title>{item.name}</Title>
+                        </CardContent> */}
+                        {/* //154 */}
+                        <CardCover 
+                            source={{uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getBackdropImagePath(item)}}
                         />
-                    </View>
-                        { getMetadata.getPosterPath(item) ?
-                            <Image
-                                style={{ 
-                                        flex: 1,
+                        <CardContent style={{flex: 1}}>
+                            <Title style={{flex: 1}}>{item.name}</Title>
+                                {
+                                getMetadata.getSeasonCount(item) || getMetadata.getEpisodeCount(item) ?
+                                <Paragraph 
+                                        style={{
+                                            width: this.getItemContainerWidth(),
+                                            textAlign: 'left', 
+                                            fontStyle: 'italic'
+                                        }}
+                                    >
+                                        {
+                                            `${getMetadata.getSeasonCount(item)} ${getMetadata.getEpisodeCount(item)}`
+                                        }
+                                    </Paragraph>
+                                : null
+                            }
+                            { 
+                            getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
+                                <Paragraph
+                                    style={{
                                         width: this.getItemContainerWidth(),
-                                        height: this.getItemContainerHeight(),
-                                        backgroundColor: '#C9C9C9',
-                                        alignContent: 'center'}}
-                                source={{uri: 'https://image.tmdb.org/t/p/w154' + getMetadata.getPosterPath(item) }}
-                            /> : 
-                            <View style={{ 
-                                        flex: 1,
-                                        width: this.getItemContainerWidth(),
-                                        height: this.getItemContainerHeight(),
-                                        backgroundColor: '#C9C9C9',
-                                        alignContent: 'center'}}>
-                                <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
-                            </View>
-                        }
+                                        textAlign: 'left',
+                                        fontStyle: 'italic'
+                                    }}
+                                >
+                                    { 
+                                        `${getMetadata.getRuntime(item)} ${getMetadata.getReleaseYear(item)}`
+                                    }
+                                </Paragraph>
+                            : null
+                            }
+                        </CardContent>
+                        <CardContent>   
+                            <Paragraph>
+                                {
+                                    truncateText(getMetadata.getDescription(item), 250)
+                                }
+                            </Paragraph>
+                        </CardContent>
                     </View>
                 </TouchableHighlight>
-                <Text 
-                    style={{
-                        width: this.getItemContainerWidth(),
-                        textAlign: 'center', 
-                        fontWeight: 'bold'}}
-                    numberOfLines={1}
-                    ellipsizeMode='tail'
-                    onPress={() => this.goToItemDetail(item)}
-                >{ item.name }</Text>
-                
-                {
-                    getMetadata.getSeasonCount(item) || getMetadata.getEpisodeCount(item) ?
-                        <Text 
-                            style={{
-                                width: this.getItemContainerWidth(),
-                                textAlign: 'center'}}
-                            numberOfLines={1}
-                            ellipsizeMode='tail'
-                            onPress={() => this.goToItemDetail(item)}
-                        >{ `${getMetadata.getSeasonCount(item)} ${getMetadata.getEpisodeCount(item)}`}</Text>
-                    : null
-                }
-
-                { 
-                    getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
-                        <Text 
-                            style={{
-                                width: this.getItemContainerWidth(),
-                                textAlign: 'center'}}
-                            numberOfLines={1}
-                            ellipsizeMode='tail'
-                            onPress={() => this.goToItemDetail(item)}
-                        >{ `${getMetadata.getRuntime(item)} ${getMetadata.getReleaseYear(item)}`} </Text>
-                    : null
-                }
-           </View>
+                <CardActions style={{flex: 2}}>
+                    <Button
+                        raised
+                        style={{
+                            flex: 1,
+                            textAlign: 'center'
+                        }}
+                        icon='visibility'
+                    >
+                        Mark as Watched
+                    </Button>
+                    <Button
+                        raised
+                        style={{
+                            flex: 1,
+                            textAlign: 'center'
+                        }}
+                        icon='playlist-add'
+                    >
+                        Add to List
+                    </Button>
+                </CardActions>
+            </Card>
         )
     }
+
+
+
+    // renderItem ( { item }:object ) {
+    //     return (
+    //         <View style={{margin: 5}}>
+
+    //             <TouchableHighlight 
+    //                 activeOpacity={0.3}
+    //                 onPress={() => this.goToItemDetail(item)
+    //             }>
+    //                 <View>
+    //                 <View style={styles.addToList}>
+    //                     <Icon
+    //                         name='add'
+    //                         color='#fff'
+    //                         underlayColor='#000'
+    //                         size={36}
+    //                         onPress={() => this.addItem(item.id)}
+    //                     />
+    //                 </View>
+    //                     { getMetadata.getPosterPath(item) ?
+    //                         <Image
+    //                             style={{ 
+    //                                     flex: 1,
+    //                                     width: this.getItemContainerWidth(),
+    //                                     height: this.getItemContainerHeight(),
+    //                                     backgroundColor: '#C9C9C9',
+    //                                     alignContent: 'center'}}
+    //                             source={{uri: 'https://image.tmdb.org/t/p/w154' + getMetadata.getPosterPath(item) }}
+    //                         /> : 
+    //                         <View style={{ 
+    //                                     flex: 1,
+    //                                     width: this.getItemContainerWidth(),
+    //                                     height: this.getItemContainerHeight(),
+    //                                     backgroundColor: '#C9C9C9',
+    //                                     alignContent: 'center'}}>
+    //                             <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
+    //                         </View>
+    //                     }
+    //                 </View>
+    //             </TouchableHighlight>
+    //             <Text 
+    //                 style={{
+    //                     width: this.getItemContainerWidth(),
+    //                     textAlign: 'center', 
+    //                     fontWeight: 'bold'}}
+    //                 numberOfLines={1}
+    //                 ellipsizeMode='tail'
+    //                 onPress={() => this.goToItemDetail(item)}
+    //             >{ item.name }</Text>
+                
+    //             {
+    //                 getMetadata.getSeasonCount(item) || getMetadata.getEpisodeCount(item) ?
+    //                     <Text 
+    //                         style={{
+    //                             width: this.getItemContainerWidth(),
+    //                             textAlign: 'center'}}
+    //                         numberOfLines={1}
+    //                         ellipsizeMode='tail'
+    //                         onPress={() => this.goToItemDetail(item)}
+    //                     >{ `${getMetadata.getSeasonCount(item)} ${getMetadata.getEpisodeCount(item)}`}</Text>
+    //                 : null
+    //             }
+
+    //             { 
+    //                 getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
+    //                     <Text 
+    //                         style={{
+    //                             width: this.getItemContainerWidth(),
+    //                             textAlign: 'center'}}
+    //                         numberOfLines={1}
+    //                         ellipsizeMode='tail'
+    //                         onPress={() => this.goToItemDetail(item)}
+    //                     >{ `${getMetadata.getRuntime(item)} ${getMetadata.getReleaseYear(item)}`} </Text>
+    //                 : null
+    //             }
+    //        </View>
+    //     )
+    // }
 
     render() {
         return (
@@ -366,8 +466,8 @@ class SearchScreen extends Component<Props, State> {
                     key={(this.state.gridView ? 'g' : 'l') + (checkDevice.isLandscape() ? 'h' : 'v')}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
-                    numColumns={this.state.gridView ? (checkDevice.isLandscape() ? 4 : 2) : 1}
-                    columnWrapperStyle={ this.state.gridView ? {justifyContent: 'flex-start'} : null}
+                    numColumns={this.state.gridView && checkDevice.isLandscape() ? 4 : 1}
+                    columnWrapperStyle={ this.state.gridView && checkDevice.isLandscape() ? {justifyContent: 'flex-start'} : null}
                 />
             </View>
         );
