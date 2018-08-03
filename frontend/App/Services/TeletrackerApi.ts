@@ -97,7 +97,9 @@ export class TeletrackerApi {
     }
 
     async search(searchText: string) {
-        return this.api.get<any>('/api/v1/search', { query: searchText });
+        return this.withTokenCheck(async () => {
+            return this.api.get<any>('/api/v1/search', { query: searchText });
+        });
     }
 
     async createList(name: string) {
@@ -140,11 +142,15 @@ export class TeletrackerApi {
     }
 
     async getShow(id: string | number) {
-        return this.api.get<any>(`/api/v1/shows/${id}`);
+        return this.withTokenCheck(async () => {
+            return this.api.get<any>(`/api/v1/shows/${id}`);
+        });
     }
 
     async getMovie(id: string | number) {
-        return this.api.get<any>(`/api/v1/movies/${id}`);
+        return this.withTokenCheck(async () => {
+            return this.api.get<any>(`/api/v1/movies/${id}`);
+        });
     }
 
     async getEvents() {
