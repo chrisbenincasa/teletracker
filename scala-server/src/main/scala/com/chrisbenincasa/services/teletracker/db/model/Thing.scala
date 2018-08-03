@@ -1,6 +1,6 @@
 package com.chrisbenincasa.services.teletracker.db.model
 
-import com.chrisbenincasa.services.teletracker.db.CustomPostgresProfile
+import com.chrisbenincasa.services.teletracker.db.{CustomPostgresProfile, UserThingDetails}
 import com.chrisbenincasa.services.teletracker.inject.DbImplicits
 import com.chrisbenincasa.services.teletracker.model.tmdb._
 import javax.inject.Inject
@@ -37,22 +37,12 @@ case class PartialThing(
   metadata: Option[ObjectMetadata] = None,
   networks: Option[List[Network]] = None,
   seasons: Option[List[TvShowSeasonWithEpisodes]] = None,
-  availability: Option[List[AvailabilityWithDetails]] = None
+  availability: Option[List[AvailabilityWithDetails]] = None,
+  userMetadata: Option[UserThingDetails] = None
 ) {
   def withAvailability(av: List[AvailabilityWithDetails]) = this.copy(availability = Some(av))
+  def withUserMetadata(userMeta: UserThingDetails) = this.copy(userMetadata = Some(userMeta))
 }
-
-case class ThingWithDetails(
-  id: Int,
-  name: String,
-  normalizedName: String,
-  `type`: ThingType,
-  createdAt: DateTime,
-  lastUpdatedAt: DateTime,
-  networks: Option[List[Network]],
-  seasons: Option[List[TvShowSeasonWithEpisodes]],
-  metadata: Option[ObjectMetadata]
-)
 
 object ObjectMetadata {
   import shapeless.union._

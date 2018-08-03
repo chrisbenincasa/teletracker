@@ -39,7 +39,7 @@ class TvShowSpec extends BaseSpecWithServer {
 
     val foundShow = thingDbAccess.findShowById(show.id.get, withAvailability = true).await()
     assert(foundShow.isDefined)
-    assert(foundShow.get.id === show.id.get)
+    assert(foundShow.get.id === show.id)
     assert(foundShow.get.seasons.getOrElse(Nil).length === 1)
 
     inside(foundShow.get.seasons) {

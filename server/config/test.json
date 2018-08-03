@@ -1,6 +1,0 @@
-{
-    "db": {
-        "type": "sqljs",
-        "synchronize": true
-    }
-}
