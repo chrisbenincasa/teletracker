@@ -86,7 +86,7 @@ envVars in reStart := Map(
   "JWT_SECRET" -> System.getenv("JWT_SECRET")
 )
 
-// Revolver.enableDebugging(port = 5005, suspend = true)
+//Revolver.enableDebugging(port = 5005, suspend = true)
 
 //javaOptions in reStart := Seq("-Dlog.service.output=/dev/stdout", "-Dlog.access.output=/dev/stdout")
 
