@@ -83,13 +83,13 @@ class ThingsDbAccess @Inject()(
         val episodesBySeason = results.flatMap(_._4).flatten.groupBy(_.seasonId)
         val availabilityByEpisode = results.flatMap(_._5).flatten.collect { case x if x.tvShowEpisodeId.isDefined => x.tvShowEpisodeId.get -> x }.toMap
 
-        val twd = ThingWithDetails(
-          id = show.id.get,
-          name = show.name,
-          normalizedName = show.normalizedName,
-          `type` = show.`type`,
-          createdAt = show.createdAt,
-          lastUpdatedAt = show.lastUpdatedAt,
+        val twd = PartialThing(
+          id = Some(show.id.get),
+          name = Some(show.name),
+          normalizedName = Some(show.normalizedName),
+          `type` = Some(show.`type`),
+          createdAt = Some(show.createdAt),
+          lastUpdatedAt = Some(show.lastUpdatedAt),
           networks = Option(networks.toList),
           seasons = Some(
             seasons.map(season => {
@@ -344,9 +344,9 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def getThingUserDetails(userId: Int, showId: Int) = {
+  def getThingUserDetails(userId: Int, thingId: Int) = {
     // Do they track it?
-    val lists = trackedListThings.query.filter(_.thingId === showId).flatMap(l => {
+    val lists = trackedListThings.query.filter(_.thingId === thingId).flatMap(l => {
       l.list_fk.filter(_.userId === userId)
     })
 
@@ -356,6 +356,10 @@ class ThingsDbAccess @Inject()(
       UserThingDetails(lists.map(_.toFull))
     })
   }
+}
+
+object UserThingDetails {
+  def empty: UserThingDetails = UserThingDetails(Seq())
 }
 
 case class UserThingDetails(
