@@ -250,18 +250,11 @@ class ItemDetailScreen extends Component<Props, State> {
                                 </Text>
                             </ViewMoreText>
                         </View>
-                        
-                            <GetGenres item={ this.state.item } />
-                        
-                        <Card>
-                            <GetSeasons item={ this.state.item }/>
-                        </Card>
-                        <Card>
-                            <GetAvailability item={ this.state.item } />
-                        </Card>
-                        <Card>
-                            <GetCast item={ this.state.item }/>
-                        </Card>
+
+                        <GetGenres item={ this.state.item } />
+                        <GetSeasons item={ this.state.item }/>
+                        <GetAvailability item={ this.state.item } />
+                        <GetCast item={ this.state.item }/>
 
                         <View style={styles.container}>
                             <Snackbar

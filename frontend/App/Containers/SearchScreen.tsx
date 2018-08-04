@@ -354,11 +354,8 @@ class SearchScreen extends Component<Props, State> {
                     underlayColor='#fff'
                 >
                     <View>
-                        {/* <CardContent style={{paddingHorizontal: 5, paddingVertical: 5}}>
-                            <Title>{item.name}</Title>
-                        </CardContent> */}
-                        {/* //154 */}
-                        {getMetadata.getBackdropImagePath(item) ? 
+                        {/* Showing a blank grey space for gridView helps maintain a better aesthetic*/}
+                        {getMetadata.getBackdropImagePath(item) || this.state.orientation === 'landscape' ? 
                             <CardCover 
                                 source={{uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getBackdropImagePath(item)}}
                             />
@@ -480,7 +477,7 @@ class SearchScreen extends Component<Props, State> {
                     key={(this.state.gridView ? 'g' : 'l') + (checkDevice.isLandscape() ? 'h' : 'v')}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
-                    numColumns={this.state.gridView && checkDevice.isLandscape() ? 4 : 1}
+                    numColumns={this.state.gridView && checkDevice.isLandscape() ? 2 : 1}
                     columnWrapperStyle={ this.state.gridView && checkDevice.isLandscape() ? {justifyContent: 'flex-start'} : null}
                 />
             </View>

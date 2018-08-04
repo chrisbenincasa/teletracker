@@ -130,7 +130,7 @@ const getVoteCount = (item: Thing) => {
     let meta = item.metadata.themoviedb;
     if (hasTmdbMovie(item)) {
         // return formatVoteCount(R.view<Props, Movie>(this.tmdbMovieView, this.props).vote_count);
-        return meta.movie.vote_count;
+        return formatVoteCount(meta.movie.vote_count);
     } else if (hasTmdbShow(item)) {
         return formatVoteCount(meta.show.vote_count);
     } else if (hasTmdbPerson(item)) {
