@@ -26,6 +26,7 @@ export interface Thing {
     normalizedName: string
     type: 'movie' | 'show' | 'person',
     metadata?: ObjectMetadata,
+    userMetadata?: ObjectMetadata,
     availability: any
 }
 
