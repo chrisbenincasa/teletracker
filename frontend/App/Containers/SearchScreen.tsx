@@ -10,7 +10,8 @@ import {
     CardCover,
     Divider,
     Title,
-    Paragraph
+    Paragraph,
+    TouchableRipple
 } from 'react-native-paper';
 import Search from 'react-native-search-box';
 import { NavigationScreenProp } from 'react-navigation';
@@ -180,8 +181,6 @@ class SearchScreen extends Component<Props, State> {
     
     componentDidMount() {
         tracker.trackScreenView('Search');
-
-        
     }
 
     manageLists(item) {
@@ -349,7 +348,7 @@ class SearchScreen extends Component<Props, State> {
     renderItem ( { item }:object ) {
         return (
             <Card style={{flex: 1, margin: 8}}>
-                <TouchableHighlight
+                <TouchableRipple
                     onPress={() => this.goToItemDetail(item)}
                     activeOpacity={0.5}
                     underlayColor='#fff'
@@ -359,9 +358,12 @@ class SearchScreen extends Component<Props, State> {
                             <Title>{item.name}</Title>
                         </CardContent> */}
                         {/* //154 */}
-                        <CardCover 
-                            source={{uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getBackdropImagePath(item)}}
-                        />
+                        {getMetadata.getBackdropImagePath(item) ? 
+                            <CardCover 
+                                source={{uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getBackdropImagePath(item)}}
+                            />
+                        : null }
+
                         <CardContent style={{flex: 1}}>
                             <Title style={{flex: 1}}>{item.name}</Title>
                                 {
@@ -403,7 +405,7 @@ class SearchScreen extends Component<Props, State> {
                             </Paragraph>
                         </CardContent>
                     </View>
-                </TouchableHighlight>
+                </TouchableRipple>
                 <CardActions style={{flex: 2}}>
                     <Button
                         raised
