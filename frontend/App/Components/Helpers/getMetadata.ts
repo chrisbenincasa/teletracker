@@ -202,9 +202,9 @@ const getAvailabilityInfo = (item: Thing) => {
     return item.availability;
 }
 
+// Does the item belong to any of the users lists?
 const belongsToLists = (item: Thing) => {
-    console.log(item);
-    return item;
+    return item.userMetadata.belongsToLists.length > 0 ? true : false;
 }
 
 export default {

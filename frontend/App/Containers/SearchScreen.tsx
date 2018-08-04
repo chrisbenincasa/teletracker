@@ -38,7 +38,6 @@ import styles from './Styles/SearchScreenStyle';
 
 // Styles
 interface Props {
-    addItemToList: (componentId: string, listId: string, itemId: string | number) => any,
     addRecentlyViewed: (item: object) => any,
     clearSearch: () => any,
     componentId: string,
@@ -181,6 +180,8 @@ class SearchScreen extends Component<Props, State> {
     
     componentDidMount() {
         tracker.trackScreenView('Search');
+
+        
     }
 
     manageLists(item) {
@@ -354,7 +355,6 @@ class SearchScreen extends Component<Props, State> {
                     underlayColor='#fff'
                 >
                     <View>
-                    {getMetadata.belongsToLists(item)}
                         {/* <CardContent style={{paddingHorizontal: 5, paddingVertical: 5}}>
                             <Title>{item.name}</Title>
                         </CardContent> */}
@@ -411,10 +411,10 @@ class SearchScreen extends Component<Props, State> {
                             flex: 1,
                             textAlign: 'center'
                         }}
-                        icon={this.state.userDetails && this.state.userDetails.belongsToLists.length > 0 ? 'visibility-off' : 'visibility'}
+                        icon={getMetadata.belongsToLists(item) ? 'visibility-off' : 'visibility'}
                         onPress={() => this.markAsWatched(item)}
                     >
-                        {this.state.userDetails && this.state.userDetails.belongsToLists.length > 0 ? 'Mark as Unwatched' : 'Mark as Watched'}
+                        {getMetadata.belongsToLists(item) ? 'Mark as Unwatched' : 'Mark as Watched'}
                     </Button>
                     <Button
                         raised
@@ -422,11 +422,11 @@ class SearchScreen extends Component<Props, State> {
                             flex: 1,
                             textAlign: 'center'
                         }}
-                        icon={this.state.userDetails && this.state.userDetails.belongsToLists.length > 0 ? 'list' : 'playlist-add'}
+                        icon={getMetadata.belongsToLists(item) ? 'list' : 'playlist-add'}
                         onPress={() => this.manageLists(item)}
 
                     >
-                        {this.state.userDetails && this.state.userDetails.belongsToLists.length > 0 ? 'Manage Tracking' : 'Add to List'}
+                        {getMetadata.belongsToLists(item) ? 'Manage Tracking' : 'Add to List'}
                     </Button>
                 </CardActions>
             </Card>
@@ -496,9 +496,6 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
     return {
         addRecentlyViewed: (item: object) => {
             dispatch(SearchActions.searchAddRecent(item));
-        },
-        addItemToList(componentId: string, listId: string, itemId: string | number) {
-            dispatch(ListActions.addToList(componentId, listId, itemId));
         },
         clearSearch: () => {
             dispatch(SearchActions.searchClear());
