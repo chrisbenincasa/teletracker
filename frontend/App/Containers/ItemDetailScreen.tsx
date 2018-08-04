@@ -18,7 +18,7 @@ import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
 import { tracker, appVersion } from '../Components/Analytics';
-import { Snackbar, FABGroup } from 'react-native-paper';
+import { Snackbar, FABGroup, Card } from 'react-native-paper';
 
 import Colors from '../Themes/Colors';
 import styles from './Styles/ItemDetailScreenStyle';
@@ -250,11 +250,18 @@ class ItemDetailScreen extends Component<Props, State> {
                                 </Text>
                             </ViewMoreText>
                         </View>
-
-                        <GetGenres item={ this.state.item } />
-                        <GetSeasons item={ this.state.item }/>
-                        <GetAvailability item={ this.state.item } />
-                        <GetCast item={ this.state.item }/>
+                        
+                            <GetGenres item={ this.state.item } />
+                        
+                        <Card>
+                            <GetSeasons item={ this.state.item }/>
+                        </Card>
+                        <Card>
+                            <GetAvailability item={ this.state.item } />
+                        </Card>
+                        <Card>
+                            <GetCast item={ this.state.item }/>
+                        </Card>
 
                         <View style={styles.container}>
                             <Snackbar

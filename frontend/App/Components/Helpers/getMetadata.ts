@@ -202,7 +202,13 @@ const getAvailabilityInfo = (item: Thing) => {
     return item.availability;
 }
 
+const belongsToLists = (item: Thing) => {
+    console.log(item);
+    return item;
+}
+
 export default {
+    belongsToLists,
     getPosterPath,
     getReleaseYear,
     getSeasonCount,

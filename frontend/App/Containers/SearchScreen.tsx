@@ -354,6 +354,7 @@ class SearchScreen extends Component<Props, State> {
                     underlayColor='#fff'
                 >
                     <View>
+                    {getMetadata.belongsToLists(item)}
                         {/* <CardContent style={{paddingHorizontal: 5, paddingVertical: 5}}>
                             <Title>{item.name}</Title>
                         </CardContent> */}
