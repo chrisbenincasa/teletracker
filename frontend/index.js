@@ -13,6 +13,8 @@ import { Nav } from './App/Navigation/AppNavigation';
 import NavigationService from './App/Navigation/NavigationService';
 import createStore from './App/Redux';
 
+import { Provider as PaperProvider } from 'react-native-paper';
+
 const { store, persistor } = createStore();
 
 class App extends React.Component {
@@ -43,6 +45,7 @@ class App extends React.Component {
     render() {
         return (
             <Provider store={store}>
+            <PaperProvider>
                 <PersistGate loading={null} persistor={persistor}>
                     <SideMenu 
                         menu={<MenuScreen />} 
@@ -53,6 +56,7 @@ class App extends React.Component {
                             onNavigationStateChange={(prevState, currentState) => this.handleNavigationStateChange(prevState, currentState)}/>
                     </SideMenu>
                 </PersistGate>
+                </PaperProvider>
             </Provider>
         );
     }
