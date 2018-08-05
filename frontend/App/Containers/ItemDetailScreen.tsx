@@ -17,7 +17,6 @@ import { Thing } from '../Model/external/themoviedb';
 import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
-import { tracker, appVersion } from '../Components/Analytics';
 import { Snackbar, FABGroup, Card } from 'react-native-paper';
 
 import Colors from '../Themes/Colors';
