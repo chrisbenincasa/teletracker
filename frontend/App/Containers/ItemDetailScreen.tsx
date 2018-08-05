@@ -17,8 +17,7 @@ import { Thing } from '../Model/external/themoviedb';
 import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
-import { Snackbar, FABGroup, Card } from 'react-native-paper';
-
+import { Snackbar, FABGroup } from 'react-native-paper'
 import Colors from '../Themes/Colors';
 import styles from './Styles/ItemDetailScreenStyle';
 
@@ -29,6 +28,7 @@ interface Props {
     itemId?: string | number,
     itemType?: string,
     markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
+    navigation: NavigationScreenProp<any>,
     open: boolean,
     visible: boolean
 }
