@@ -27,6 +27,7 @@ import Colors from '../Themes/Colors';
 const paramsToProps = (SomeComponent) => {
     // turns this.props.navigation.state.params into this.params.<x>
     return class extends React.Component {
+        static drawerOptions = SomeComponent.drawerOptions;
         static navigationOptions = SomeComponent.navigationOptions;
         // everything else, call as SomeComponent
         render() {

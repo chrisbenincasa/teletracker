@@ -1,12 +1,10 @@
 import React from 'react';
-import { FlatList, ListRenderItemInfo, Text, View, StatusBar, TouchableOpacity } from 'react-native';
-import { ListItem, Icon, colors } from 'react-native-elements';
+import { FlatList, ListRenderItemInfo, StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import { Icon, ListItem } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { NavigationScreenProp } from 'react-navigation';
-import { Transition } from 'react-navigation-fluid-transitions';
 import { connect, Dispatch } from 'react-redux';
 
-import CreateNewListModal from '../Containers/CreateNewListModal';
 import { List } from '../Model';
 import NavActions from '../Redux/NavRedux';
 import { State as ReduxState } from '../Redux/State';
@@ -28,6 +26,10 @@ type State = {
 
 class ListDetailScreen extends React.PureComponent<Props, State> {
     state = {};
+
+    static drawerOptions = {
+        enabled: true
+    }
 
     static navigationOptions = ({ navigation }: { navigation: NavigationScreenProp<any> }) => {
         return {
@@ -65,7 +67,6 @@ class ListDetailScreen extends React.PureComponent<Props, State> {
                 subtitle={subtitle} 
                 onPress={() => this.goToList(item)} 
                 containerStyle={{borderBottomWidth: 1, borderBottomColor: 'lightgray'}}
-                chevron={true} 
             />
         );
     }
@@ -84,31 +85,17 @@ class ListDetailScreen extends React.PureComponent<Props, State> {
 
     render() {
         return (
-            <Transition>
-                <View style={styles.container}>
-                    <StatusBar barStyle='light-content' />
-                    {/* <Header
-                        componentId={this.props.componentId}
-                        centerComponent={{ title: 'My Lists' }}
-                        rightComponent={
-                            <Icon
-                                name='search'
-                                color='#fff'
-                                underlayColor={Colors.headerBackground}
-                                onPress={this.openSearch}
-                            />
-                        }
-                    /> */}
-                    <FlatList
-                        contentContainerStyle={styles.listContent}
-                        data={this.props.user.details.lists}
-                        renderItem={this.renderItem.bind(this)}
-                        keyExtractor={this.keyExtractor}
-                        initialNumToRender={this.oneScreensWorth}
-                        ListEmptyComponent={this.renderEmpty}
-                    />
-                </View>
-            </Transition>
+            <View style={styles.container}>
+                <StatusBar barStyle='light-content' />
+                <FlatList
+                    contentContainerStyle={styles.listContent}
+                    data={this.props.user.details.lists}
+                    renderItem={this.renderItem.bind(this)}
+                    keyExtractor={this.keyExtractor}
+                    initialNumToRender={this.oneScreensWorth}
+                    ListEmptyComponent={this.renderEmpty}
+                />
+            </View>
         );
     }
 }
@@ -129,44 +116,5 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
         }
     }
 };
-
-export const ListDetailNavOptions = {
-    bottomTab: {
-        text: 'My List',
-        icon: require('../Images/Icons/list-icon.png'),
-        testID: 'FIRST_TAB_BAR_BUTTON'
-    },
-    topBar: {
-        title: {
-            text: 'My Lists',
-            color: 'white'
-        },
-        background: {
-            color: Colors.headerBackground
-        },
-        rightButtons: [{
-            id: 'CreateListButton',
-            component: {
-                name: 'navigation.topBar.Button',
-                passProps: {
-                    iconName: 'add-to-list',
-                    iconType: 'entypo',
-                    color: 'white',
-                    onPress: () => Navigation.showModal({
-                        stack: {
-                            children: [{
-                                component: {
-                                    name: 'navigation.main.CreateNewListModal',
-                                    options: CreateNewListModal.options
-                                }
-                            }]
-                        }
-                    })
-                }
-            }
-        }],
-        visible: true
-    }
-}
 
 export default connect(mapStateToProps, mapDispatchToProps)(ListDetailScreen);

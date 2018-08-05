@@ -29,15 +29,10 @@ class App extends React.Component {
 
     handleNavigationStateChange(prevState, currentState) {
         let disabled = true;
-        if (Nav.router.getComponentForState(currentState).navigationOptions) {
-            let drawerOptions;
-            if (_.isFunction(Nav.router.getComponentForState(currentState).navigationOptions)) {
-                drawerOptions = (Nav.router.getComponentForState(currentState).navigationOptions(NavigationService.navigator()) || {}).drawer || {};
-            } else {
-                drawerOptions = Nav.router.getComponentForState(currentState).navigationOptions.drawer || {};
-            }    
 
-            disabled = drawerOptions.hasOwnProperty('enabled') ? !drawerOptions.enabled : true;
+        if (_.isObject(Nav.router.getComponentForState(currentState).drawerOptions)) {
+            let opts = Nav.router.getComponentForState(currentState).drawerOptions;
+            disabled = opts.hasOwnProperty('enabled') ? !opts.enabled : true;
         }
         
         this.setState({ drawerDisabled: disabled });

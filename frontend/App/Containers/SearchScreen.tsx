@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import { ActivityIndicator, Dimensions, FlatList, Image, Text, TouchableHighlight, View } from 'react-native';
+import { ActivityIndicator, Dimensions, FlatList, Image, Text, TouchableHighlight, View, TouchableOpacity } from 'react-native';
 import { Button, Divider, Icon, ListItem } from 'react-native-elements';
 import Search from 'react-native-search-box';
 import { NavigationScreenProp } from 'react-navigation';
@@ -44,11 +44,27 @@ interface State {
 
 class SearchScreen extends Component<Props, State> {
 
-    static navigationOptions = {
-        drawer: {
-            enabled: true
-        },
-        title: 'Search',
+    static drawerOptions = {
+        enabled: true
+    }
+
+    static navigationOptions = ({ navigation }: { navigation: NavigationScreenProp<any> }) => {
+        const gridView = navigation.getParam('gridView');
+        const changeView = navigation.getParam('changeView');
+
+        return {
+            title: 'Search',
+            headerRight: (
+                <TouchableOpacity style={{ marginHorizontal: 10 }}>    
+                    <Icon
+                        name={gridView ? 'list' : 'apps'}
+                        color={Colors.white}
+                        underlayColor={Colors.headerBackground}
+                        onPress={changeView}
+                    />
+                </TouchableOpacity>
+            )
+        };
     };
 
     constructor(props: Props) {
@@ -75,17 +91,17 @@ class SearchScreen extends Component<Props, State> {
 
     private tvResultsLens = R.lensPath(['search', 'results', 'data']);
 
-    changeView = () => {
-        this.setState({ 
-            gridView: !this.state.gridView
-        });
+    changeView() {
+        this.setState({  gridView: !this.state.gridView });
+
+        this.props.navigation.setParams({ gridView: !this.state.gridView });
     }
 
     listTypeIcon() {
         return (
             <Icon 
                 name={this.state.gridView ? 'list' : 'apps'}
-                color='#fff'
+                color={Colors.white}
                 underlayColor={Colors.headerBackground}
                 onPress={this.changeView}
             />
@@ -102,6 +118,10 @@ class SearchScreen extends Component<Props, State> {
 
     componentWillMount() {
         this.props.loadUserSelf(this.props.componentId);
+        this.props.navigation.setParams({ 
+            changeView: this.changeView.bind(this),
+            gridView: this.state.gridView
+        });
     }
 
     componentDidMount() {
@@ -304,13 +324,6 @@ class SearchScreen extends Component<Props, State> {
     render() {
         return (
             <View style={styles.container}>
-                {/* <Header 
-                    title='Search' 
-                    componentId={this.props.componentId}
-                    centerComponent={{title: 'Search',  style: { color: 'white' } }} 
-                    rightComponent={this.listTypeIcon()}
-                >
-                </Header> */}
                 <Search
                     ref='search_box'
                     backgroundColor='white'

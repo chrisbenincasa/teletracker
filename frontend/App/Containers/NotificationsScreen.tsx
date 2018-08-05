@@ -25,10 +25,11 @@ interface Props {
 }
 
 class NotificationsScreen extends Component<Props> {
+    static drawerOptions = {
+        enabled: true
+    }
+    
     static navigationOptions = {
-        drawer: {
-            enabled: true
-        },
         title: 'Notifications'
     };
 

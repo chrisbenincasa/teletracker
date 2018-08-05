@@ -3,7 +3,9 @@ import { NavigationActions, NavigationParams, NavigationNavigateAction, StackAct
 let _navigator;
 
 function setTopLevelNavigator(navigatorRef) {
-    _navigator = navigatorRef;
+    if (navigatorRef) {
+        _navigator = navigatorRef;
+    }
 }
 
 function navigate(routeName: string, params?: NavigationParams, action?: NavigationNavigateAction, key?: string) {
