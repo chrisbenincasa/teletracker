@@ -1,5 +1,8 @@
 import React from 'react';
-import { FlatList, ListRenderItemInfo, Text, View } from 'react-native';
+import { FlatList, ListRenderItemInfo, StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import { Icon, ListItem } from 'react-native-elements';
+import { Navigation } from 'react-native-navigation';
+import { NavigationScreenProp } from 'react-navigation';
 import { connect, Dispatch } from 'react-redux';
 
 import { List } from '../Model';
@@ -8,17 +11,13 @@ import { State as ReduxState } from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
 import { Colors } from '../Themes/';
 import styles from './Styles/ItemListStyle';
-import Header from '../Components/Header/Header';
-import { Icon, ListItem } from 'react-native-elements';
-import { Navigation } from 'react-native-navigation';
-import CreateNewListModal from '../Containers/CreateNewListModal';
-import { EventEmitter } from 'events';
 
 type Props = {
     componentId: string
     user: UserState
     loadUserSelf: (componentId: string) => any
-    pushState: (componentId: string, view: object) => any
+    pushState: (componentId: string, view: object) => any,
+    navigation: NavigationScreenProp<any>
 }
 
 type State = {
@@ -28,29 +27,32 @@ type State = {
 class ListDetailScreen extends React.PureComponent<Props, State> {
     state = {};
 
+    static drawerOptions = {
+        enabled: true
+    }
+
+    static navigationOptions = ({ navigation }: { navigation: NavigationScreenProp<any> }) => {
+        return {
+            drawer: {
+                enabled: true
+            },
+            title: 'My Lists',
+            headerRight: (
+                <TouchableOpacity style={{ marginHorizontal: 10 }}>
+                    <Icon
+                        name='add-to-list'
+                        type='entypo'
+                        color='white'
+                        underlayColor={Colors.headerBackground}
+                        onPress={() => navigation.navigate('CreateListModal')}
+                    />
+                </TouchableOpacity>
+            )
+        };
+    }
+
     goToList(list: List) {
-        this.props.pushState(this.props.componentId, {
-            component: {
-                name: 'navigation.main.ItemList',
-                passProps: {
-                    list
-                },
-                options: {
-                    topBar: {
-                        visible: true,
-                        title: {
-                            text: list.name
-                        }
-                    },
-                    animated: true,
-                    sideMenu: {
-                        left: {
-                            enabled: true
-                        }
-                    }
-                }
-            }
-        })
+        this.props.navigation.push('SpecificList', { list });
     }
 
     keyExtractor: (item: List) => string = (item) => item.id.toString();
@@ -65,7 +67,6 @@ class ListDetailScreen extends React.PureComponent<Props, State> {
                 subtitle={subtitle} 
                 onPress={() => this.goToList(item)} 
                 containerStyle={{borderBottomWidth: 1, borderBottomColor: 'lightgray'}}
-                chevron={true} 
             />
         );
     }
@@ -85,18 +86,7 @@ class ListDetailScreen extends React.PureComponent<Props, State> {
     render() {
         return (
             <View style={styles.container}>
-                {/* <Header
-                    componentId={this.props.componentId}
-                    centerComponent={{ title: 'My Lists' }}
-                    rightComponent={
-                        <Icon
-                            name='search'
-                            color='#fff'
-                            underlayColor={Colors.headerBackground}
-                            onPress={this.openSearch}
-                        />
-                    }
-                /> */}
+                <StatusBar barStyle='light-content' />
                 <FlatList
                     contentContainerStyle={styles.listContent}
                     data={this.props.user.details.lists}
@@ -126,44 +116,5 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
         }
     }
 };
-
-export const ListDetailNavOptions = {
-    bottomTab: {
-        text: 'My List',
-        icon: require('../Images/Icons/list-icon.png'),
-        testID: 'FIRST_TAB_BAR_BUTTON'
-    },
-    topBar: {
-        title: {
-            text: 'My Lists',
-            color: 'white'
-        },
-        background: {
-            color: Colors.headerBackground
-        },
-        rightButtons: [{
-            id: 'CreateListButton',
-            component: {
-                name: 'navigation.topBar.Button',
-                passProps: {
-                    iconName: 'add-to-list',
-                    iconType: 'entypo',
-                    color: 'white',
-                    onPress: () => Navigation.showModal({
-                        stack: {
-                            children: [{
-                                component: {
-                                    name: 'navigation.main.CreateNewListModal',
-                                    options: CreateNewListModal.options
-                                }
-                            }]
-                        }
-                    })
-                }
-            }
-        }],
-        visible: true
-    }
-}
 
 export default connect(mapStateToProps, mapDispatchToProps)(ListDetailScreen);

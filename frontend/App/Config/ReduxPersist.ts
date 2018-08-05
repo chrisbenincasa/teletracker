@@ -17,7 +17,7 @@ const defaultPersistConfig: rp.PersistConfig = {
   key: 'root',
   storage: AsyncStorage,
   debug: true,
-  blacklist: ['search'],
+  blacklist: ['search', 'nav'],
   transforms: [ImmutablePersistenceTransform, persistanceLogger]
 }
 

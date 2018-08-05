@@ -1,31 +1,21 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import {
-    View,
-    FlatList,
-    Text,
-    Image,
-    TouchableHighlight,
-    ActivityIndicator,
-    Dimensions
-} from 'react-native';
-import { Icon, ListItem, Button, Divider } from 'react-native-elements';
-import { Navigation } from 'react-native-navigation';
+import { ActivityIndicator, Dimensions, FlatList, Image, Text, TouchableHighlight, View, TouchableOpacity } from 'react-native';
+import { Button, Divider, Icon, ListItem } from 'react-native-elements';
 import Search from 'react-native-search-box';
-import checkDevice from '../Components/Helpers/checkOrientation';
-import getMetadata from '../Components/Helpers/getMetadata';
-import Header from '../Components/Header/Header';
-import { NavigationConfig } from '../Navigation/NavigationConfig';
-
+import { NavigationScreenProp } from 'react-navigation';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
+
+import { appVersion, tracker } from '../Components/Analytics';
+import checkDevice from '../Components/Helpers/checkOrientation';
+import getMetadata from '../Components/Helpers/getMetadata';
+import { NavigationConfig } from '../Navigation/NavigationConfig';
 import ListActions from '../Redux/ListRedux';
 import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
-import UserActions, { UserState } from '../Redux/UserRedux';
-import { tracker, appVersion } from '../Components/Analytics';
-
-import { Colors } from './../Themes/'; //testing only, cleanup later
+import UserActions from '../Redux/UserRedux';
+import { Colors } from './../Themes/';
 import styles from './Styles/SearchScreenStyle';
 
 // Add Actions - replace 'Your' with whatever your reducer is called :)
@@ -42,6 +32,7 @@ interface Props {
     removeAllRecentlyViewed: () => any;    
     removeRecentlyViewed: (item: object) => any;
     search: any;
+    navigation: NavigationScreenProp<any>
 }
 
 interface State {
@@ -53,8 +44,32 @@ interface State {
 
 class SearchScreen extends Component<Props, State> {
 
-    constructor() {
-        super();
+    static drawerOptions = {
+        enabled: true
+    }
+
+    static navigationOptions = ({ navigation }: { navigation: NavigationScreenProp<any> }) => {
+        const gridView = navigation.getParam('gridView');
+        const changeView = navigation.getParam('changeView');
+
+        return {
+            title: 'Search',
+            headerRight: (
+                <TouchableOpacity style={{ marginHorizontal: 10 }}>    
+                    <Icon
+                        name={gridView ? 'list' : 'apps'}
+                        color={Colors.white}
+                        underlayColor={Colors.headerBackground}
+                        onPress={changeView}
+                    />
+                </TouchableOpacity>
+            )
+        };
+    };
+
+    constructor(props: Props) {
+        super(props);
+
         this.searchTextChanged = this.searchTextChanged.bind(this);
         this.executeSearch = this.executeSearch.bind(this);
         this.renderItem = this.renderItem.bind(this);
@@ -62,7 +77,8 @@ class SearchScreen extends Component<Props, State> {
         this.state = {
             orientation: checkDevice.isPortrait() ? 'portrait' : 'landscape',
             devicetype: checkDevice.isTablet() ? 'tablet' : 'phone',
-            gridView: true
+            gridView: true,
+            searchText: null
         };
 
         // Event Listener for orientation changes
@@ -75,17 +91,17 @@ class SearchScreen extends Component<Props, State> {
 
     private tvResultsLens = R.lensPath(['search', 'results', 'data']);
 
-    changeView = () => {
-        this.setState({ 
-            gridView: !this.state.gridView
-        });
+    changeView() {
+        this.setState({  gridView: !this.state.gridView });
+
+        this.props.navigation.setParams({ gridView: !this.state.gridView });
     }
 
     listTypeIcon() {
         return (
             <Icon 
                 name={this.state.gridView ? 'list' : 'apps'}
-                color='#fff'
+                color={Colors.white}
                 underlayColor={Colors.headerBackground}
                 onPress={this.changeView}
             />
@@ -102,6 +118,10 @@ class SearchScreen extends Component<Props, State> {
 
     componentWillMount() {
         this.props.loadUserSelf(this.props.componentId);
+        this.props.navigation.setParams({ 
+            changeView: this.changeView.bind(this),
+            gridView: this.state.gridView
+        });
     }
 
     componentDidMount() {
@@ -210,7 +230,8 @@ class SearchScreen extends Component<Props, State> {
 
         this.props.addRecentlyViewed(item);
 
-        Navigation.push(this.props.componentId, view);
+        this.props.navigation.navigate('DetailScreen', { item });
+        // Navigation.push(this.props.componentId, view);
     }
 
     getResults(action:string) {
@@ -303,13 +324,6 @@ class SearchScreen extends Component<Props, State> {
     render() {
         return (
             <View style={styles.container}>
-                {/* <Header 
-                    title='Search' 
-                    componentId={this.props.componentId}
-                    centerComponent={{title: 'Search',  style: { color: 'white' } }} 
-                    rightComponent={this.listTypeIcon()}
-                >
-                </Header> */}
                 <Search
                     ref='search_box'
                     backgroundColor='white'

@@ -1,74 +1,111 @@
-import { View, Text } from 'react-native';
-import { State as ReduxState } from "../Redux/State";
-import { Dispatch, connect } from 'react-redux'
-import React from "react";
-import { Navigation } from 'react-native-navigation';
+import React, { isValidElement } from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { FormInput, FormLabel } from 'react-native-elements';
+import { NavigationScreenProp } from 'react-navigation';
+import { connect, Dispatch } from 'react-redux';
+
+import { CommonStackStyles } from '../Navigation/AppNavigation';
 import ListActions, { ListState } from '../Redux/ListRedux';
+import { State as ReduxState } from '../Redux/State';
+import styles from './Styles/ItemDetailScreenStyle';
 
 type Props = {
-    componentId: string,
     createList: (name: string) => any,
-    list: ListState
+    list: ListState,
+    navigation: NavigationScreenProp<any>
 }
 
 type State = {
     name?: string,
-    creating: boolean
+    creating: boolean,
+    valid: boolean
 }
 
 class CreateNewListModal extends React.PureComponent<Props, State> {
+    static navigationOptions = ({ navigation }: { navigation: NavigationScreenProp<any> }) => {
+        let doneEnabled: boolean = navigation.getParam('valid');
+        let color = doneEnabled ? 'white' : 'rgba(255, 255, 255, 0.5)';
+
+        return {
+            title: 'Create a new List?',
+            ...CommonStackStyles,
+            headerLeft: (
+                <TouchableOpacity style={{ marginHorizontal: 10 }}>
+                    <Text
+                        style={{ fontSize: 17, fontWeight: 'normal', marginHorizontal: 10, color: 'white', textAlign: 'right' }}
+                        onPress={() => navigation.goBack()}
+                    >Cancel
+                    </Text>
+                </TouchableOpacity>
+            ),
+            headerRight: (
+                <TouchableOpacity style={{ marginHorizontal: 10 }}>
+                    <Text 
+                        style={{ fontSize: 17, fontWeight: 'normal', marginHorizontal: 10, color, textAlign: 'right' }}
+                        onPress={() => doneEnabled ? navigation.getParam('navigationButtonPressed')('doneButton') : null}
+                    >Create
+                    </Text>
+                </TouchableOpacity>
+            )
+        };
+    }
+
     constructor(props: Props) {
         super(props);
         this.state = {
-            creating: false
+            creating: false,
+            valid: false
         }
-
-        Navigation.events().bindComponent(this);
     }
 
     navigationButtonPressed({ buttonId }: any) {
         if (buttonId == 'backButton') {
-            Navigation.dismissModal(this.props.componentId);
+            this.props.navigation.pop();
         } else if (buttonId == 'doneButton') {
             this.props.createList(this.state.name);
             this.setState(Object.assign(this.state, { creating: true }));
         }
     }
 
-    componentDidUpdate(prevProps: Props, previousState: State) {
-        this.updateTopButtons();
+    componentDidMount() {
+        this.props.navigation.setParams({ 
+            navigationButtonPressed: this.navigationButtonPressed.bind(this), 
+            doneButtonEnabled: this.doneButtonEnabled.bind(this) 
+        });
+    }
 
+    componentDidUpdate(prevProps: Props, previousState: State) {
         if (prevProps.list.actionInProgress && !this.props.list.actionInProgress && previousState.creating) {
-            Navigation.dismissModal(this.props.componentId);
+            this.props.navigation.goBack();
         }
     }
 
-    updateTopButtons() {
+    doneButtonEnabled() {
+        return this.state.valid;
+    }
+
+    updateFormState(name: string) {
         let isActive = false;
 
-        if (this.state.name && this.state.name.length > 0) {
+        if (name && name.length > 0) {
             isActive = true;
         }
 
-        Navigation.mergeOptions(this.props.componentId, {
-            topBar: {
-                rightButtons: [{
-                    id: 'doneButton',
-                    text: 'Done',
-                    enabled: isActive
-                }]
-            }
-        })
+        this.setState({
+            name,
+            valid: isActive
+        }, () => {
+            this.props.navigation.setParams({ valid: isActive })
+        });
     }
 
     render() {
         return (
-            <View>
+            <View style={styles.container}>
                 <FormLabel>Name</FormLabel>
                 <FormInput
                     placeholder="Enter a List name"
-                    onChangeText={(name) => this.setState({ name })} 
+                    onChangeText={(name) => this.updateFormState(name)} 
                 />
             </View>
         );
@@ -89,29 +126,7 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
     };
 };
 
-const component = connect(
+export default connect(
     mapStateToProps,
     mapDispatchToProps
 )(CreateNewListModal);
-
-const componentWithOptions = Object.assign(component, {
-    options: {
-        topBar: {
-            title: {
-                text: 'Create new List'
-            },
-            leftButtons: [{
-                id: 'backButton',
-                text: 'Cancel'
-            }],
-            rightButtons: [{
-                id: 'doneButton',
-                text: 'Done',
-                enabled: false
-            }],
-            visible: true
-        }
-    }
-});
-
-export default componentWithOptions;

@@ -1,25 +1,24 @@
 import React, { Component } from 'react';
-import { Image, KeyboardAvoidingView, Text, View, ScrollView, ActivityIndicator } from 'react-native';
-import { Button, Rating, Icon } from 'react-native-elements';
+import { ActivityIndicator, Image, KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
+import { Button, Icon, Rating } from 'react-native-elements';
 import ViewMoreText from 'react-native-view-more-text';
-import { Navigation } from 'react-native-navigation';
-import GetCast from '../Components/GetCast';
-import GetSeasons from '../Components/GetSeasons';
-import GetAvailability from '../Components/GetAvailability';
-import GetGenres from '../Components/GetGenres';
-import { AddToListModalOptions } from './AddToListModal';
-import getMetadata from '../Components/Helpers/getMetadata';
-import { Thing } from '../Model/external/themoviedb';
-import UserActions from '../Redux/UserRedux';
-import ItemActions from '../Redux/ItemRedux';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
-import { teletrackerApi } from '../Sagas';
-import { tracker, appVersion } from '../Components/Analytics';
 
-import styles from './Styles/ItemDetailScreenStyle';
-import Colors from '../Themes/Colors';
+import { NavigationScreenProp, NavigationScreenOptions } from 'react-navigation';
 import { ApiResponse } from '../../node_modules/apisauce';
+import { appVersion, tracker } from '../Components/Analytics';
+import GetAvailability from '../Components/GetAvailability';
+import GetCast from '../Components/GetCast';
+import GetGenres from '../Components/GetGenres';
+import GetSeasons from '../Components/GetSeasons';
+import getMetadata from '../Components/Helpers/getMetadata';
+import { Thing } from '../Model/external/themoviedb';
+import ItemActions from '../Redux/ItemRedux';
+import UserActions from '../Redux/UserRedux';
+import { teletrackerApi } from '../Sagas';
+import Colors from '../Themes/Colors';
+import styles from './Styles/ItemDetailScreenStyle';
 
 
 interface Props {
@@ -29,6 +28,7 @@ interface Props {
     itemId?: string | number,
     markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
     fetchShow: (id: string | number) => any
+    navigation: NavigationScreenProp<any>
 }
 
 type State = {
@@ -40,6 +40,10 @@ type State = {
 }
 
 class ItemDetailScreen extends Component<Props, State> {
+    static navigationOptions: NavigationScreenOptions = {
+        header: null
+    }
+
     constructor(props: Props) {
         super(props);
         this.markAsWatched = this.markAsWatched.bind(this);
@@ -51,16 +55,6 @@ class ItemDetailScreen extends Component<Props, State> {
             loadError: false,
             item: props.item
         };
-        
-        // Disable menu swipe out on ItemDetailScreen
-        Navigation.mergeOptions(this.props.componentId, {
-            sideMenu: {
-                left: {
-                    visible: false,
-                    enabled: false
-                }
-            }
-        });
     }
 
     componentDidMount() {
@@ -84,16 +78,19 @@ class ItemDetailScreen extends Component<Props, State> {
         })
 
         // If we have no item, load it
-        thingPromise = new Promise((resolve) => {
+        thingPromise = new Promise((resolve, reject) => {
             if (!this.props.item && this.props.itemType && this.props.itemId) {
-                let func: (itemId: string | number) => Promise<ApiResponse<any>> = this.props.itemType === 'show' ? teletrackerApi.getShow : teletrackerApi.getMovie;
+                let getPromise: Promise<ApiResponse<any>> = this.props.itemType === 'show' ? teletrackerApi.getShow(this.props.itemId) : teletrackerApi.getMovie(this.props.itemId);
 
-                func(this.props.itemId).then(response => {
+                getPromise.then(response => {
                     if (!response.ok) {
                         this.setState({ loadError: true, loading: true });
                     } else {
                         resolve(response.data.data);
                     }
+                }).catch((e) => {
+                    console.tron.log('bad', e);
+                    reject(e);
                 });
             } else if (this.props.item) {
                 resolve(this.props.item);
@@ -109,6 +106,8 @@ class ItemDetailScreen extends Component<Props, State> {
                 userDetails,
                 loading: false
             })
+        }).catch((e) => {
+            console.tron.log(e);
         })
     }
 
@@ -118,19 +117,9 @@ class ItemDetailScreen extends Component<Props, State> {
             label: appVersion
         });
 
-        Navigation.showModal({
-            stack: {
-                children: [{
-                    component: {
-                        name: 'navigation.main.AddToListModal',
-                        passProps: {
-                            thing: this.state.item,
-                            userDetails: this.state.userDetails
-                        },
-                        options: AddToListModalOptions
-                    }
-                }]
-            }
+        this.props.navigation.navigate('ListManage', {
+            thing: this.state.item,
+            userDetails: this.state.userDetails
         });
     }
 

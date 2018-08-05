@@ -1,20 +1,19 @@
 import R from 'ramda';
 import React from 'react';
 import { FlatList, ListRenderItemInfo, Text, View } from 'react-native';
-import { Icon, ListItem } from 'react-native-elements';
+import { ListItem } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
+import { NavigationScreenProp } from 'react-navigation';
 import { connect, Dispatch } from 'react-redux';
 
-import Header from '../Components/Header/Header';
+import { tracker } from '../Components/Analytics';
+import { List } from '../Model';
 import { Thing } from '../Model/external/themoviedb';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
 import NavActions from '../Redux/NavRedux';
-import UserActions, { UserState } from '../Redux/UserRedux';
-import { Colors } from '../Themes/';
-import styles from './Styles/ItemListStyle';
 import { State } from '../Redux/State';
-import { tracker } from '../Components/Analytics';
-import { List } from '../Model';
+import UserActions, { UserState } from '../Redux/UserRedux';
+import styles from './Styles/ItemListStyle';
 
 interface Props {
     componentId: string
@@ -22,6 +21,7 @@ interface Props {
     list: List
     loadUserSelf: (componentId: string) => any
     pushState: (componentId: string, view: object) => any
+    navigation: NavigationScreenProp<any>
 }
 
 class ItemList extends React.PureComponent<Props> {
@@ -92,7 +92,7 @@ class ItemList extends React.PureComponent<Props> {
             }
         });
 
-        this.props.pushState(this.props.componentId, view);
+        this.props.navigation.navigate('DetailScreen', { itemType: item.type, itemId: item.id });
     }
 
     renderItem({ item }: ListRenderItemInfo<Thing>) {
@@ -101,7 +101,6 @@ class ItemList extends React.PureComponent<Props> {
                 key={item.id}
                 title={item.name}
                 containerStyle={{ borderBottomWidth: 1, borderBottomColor: 'lightgray' }}
-                chevron={true}
                 leftIcon={{ name:
                     item.type === 'movie' ? 'movie' 
                         : item.type === 'show' ? 'tv' 
