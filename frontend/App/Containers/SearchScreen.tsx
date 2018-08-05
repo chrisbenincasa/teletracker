@@ -15,20 +15,18 @@ import {
 } from 'react-native-paper';
 import Search from 'react-native-search-box';
 import { NavigationScreenProp } from 'react-navigation';
+import { ApiResponse } from '../../node_modules/apisauce';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
-
 import { appVersion, tracker } from '../Components/Analytics';
 import checkDevice from '../Components/Helpers/checkOrientation';
 import getMetadata from '../Components/Helpers/getMetadata';
-import { AddToListModalOptions } from './AddToListModal';
 import { NavigationConfig } from '../Navigation/NavigationConfig';
 import ListActions from '../Redux/ListRedux';
 import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
-import { tracker, appVersion } from '../Components/Analytics';
 import { truncateText } from '../Components/Helpers/textHelper';
 
 import { Colors } from './../Themes/'; //testing only, cleanup later
@@ -45,6 +43,7 @@ interface Props {
     doSearch: (search: String) => any,
     loadUserSelf: (componentId: string) => any,
     markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
+    navigation: NavigationScreenProp<any>,
     removeAllRecentlyViewed: () => any,
     removeRecentlyViewed: (item: object) => any,
     search: any
@@ -189,7 +188,6 @@ class SearchScreen extends Component<Props, State> {
             label: appVersion
         });
 
-
         let thingPromise: Promise<any>;
         let userDetailsPromise: Promise<any>;
 
@@ -208,17 +206,20 @@ class SearchScreen extends Component<Props, State> {
         })
 
         // If we have no item, load it
-        thingPromise = new Promise((resolve) => {
-            
-            if (!item && item.type && item.id) {
-                let func: (item: object) => Promise<ApiResponse<any>> = item.type === 'show' ? teletrackerApi.getShow : teletrackerApi.getMovie;
+        thingPromise = new Promise((resolve, reject) => {
 
-                func(item.id).then(response => {
+            if (!item && item.type && item.id) {
+                let getPromise: Promise<ApiResponse<any>> = item.type === 'show' ? teletrackerApi.getShow(item.id) : teletrackerApi.getMovie(item.id);
+
+                getPromise.then(response => {
                     if (!response.ok) {
                         this.setState({ loadError: true, loading: true });
                     } else {
                         resolve(response.data.data);
                     }
+                }).catch((e) => {
+                    console.tron.log('bad', e);
+                    reject(e);
                 });
             } else if (item) {
                 resolve(item);
@@ -235,25 +236,19 @@ class SearchScreen extends Component<Props, State> {
                 loading: false
             });
 
-            Navigation.showModal({
-                stack: {
-                    children: [{
-                        component: {
-                            name: 'navigation.main.AddToListModal',
-                            passProps: {
-                                thing: item,
-                                userDetails: this.state.userDetails
-                            },
-                            options: AddToListModalOptions
-                        }
-                    }]
-                }
+            this.props.navigation.navigate('ListManage', {
+                thing: this.state.item,
+                userDetails: this.state.userDetails
             });
-        })
 
-        this.setState({
-            visible: !this.state.visible
-          });
+            // This should probably happen when the manage list modal closes
+            this.setState({
+                visible: !this.state.visible
+              });
+
+        }).catch((e) => {
+            console.tron.log(e);
+        });
     }
 
     markAsWatched(item) {
