@@ -32,9 +32,6 @@ type State = {
 
 class AddToListModal extends React.PureComponent<Props, State> {
     static navigationOptions = ({navigation}: { navigation: NavigationScreenProp<any> }) => {
-        let doneEnabled: boolean = navigation.getParam('doneButtonEnabled');
-        let color = doneEnabled ? 'white' : 'rgba(255, 255, 255, 0.5)';
-
         return {
             headerBackTitle: 'Cancel',
             headerLeft: (
@@ -61,8 +58,8 @@ class AddToListModal extends React.PureComponent<Props, State> {
             ),
             headerRight: (
                 <Text
-                    style={{ fontSize: 17, fontWeight: 'normal', marginHorizontal: 10, color, textAlign: 'right' }}
-                    onPress={() => doneEnabled ? navigation.getParam('navigationButtonPressed')('doneButton') : null}
+                    style={{ fontSize: 17, fontWeight: 'normal', marginHorizontal: 10, color: 'white', textAlign: 'right' }}
+                    onPress={() => navigation.getParam('navigationButtonPressed')('doneButton')}
                 >
                     Done
                     </Text>
