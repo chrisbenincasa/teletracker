@@ -121,21 +121,6 @@ class ItemDetailScreen extends Component<Props, State> {
             thing: this.state.item,
             userDetails: this.state.userDetails
         });
-
-        // Navigation.showModal({
-        //     stack: {
-        //         children: [{
-        //             component: {
-        //                 name: 'navigation.main.AddToListModal',
-        //                 passProps: {
-        //                     thing: this.state.item,
-        //                     userDetails: this.state.userDetails
-        //                 },
-        //                 options: AddToListModalOptions
-        //             }
-        //         }]
-        //     }
-        // });
     }
 
     markAsWatched() {

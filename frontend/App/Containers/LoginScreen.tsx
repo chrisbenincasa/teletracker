@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { ScrollView } from 'react-native';
 import { Button, Card, FormInput, FormLabel } from 'react-native-elements';
 import { NavigationScreenOptions, NavigationScreenProp } from 'react-navigation';
-import { Transition } from 'react-navigation-fluid-transitions';
 import { connect, Dispatch } from 'react-redux';
 
 import { appVersion, tracker } from '../Components/Analytics';
@@ -35,16 +34,6 @@ class LoginScreen extends Component<Props, State> {
         this.inputs = {};
     }
 
-    static get options() {
-        return {
-            _statusBar: {
-                backgroundColor: 'transparent',
-                style: 'dark',
-                drawBehind: true
-            }
-        }
-    }
-
     componentDidMount() {
         tracker.trackScreenView('Login');
     }
@@ -53,57 +42,46 @@ class LoginScreen extends Component<Props, State> {
         tracker.trackEvent('login-action', 'signup', {
             label: appVersion
         });
-        // Navigation.push(this.props.componentId, {
-        //     component: {
-        //         name: 'navigation.main.SignupScreen',
-        //         options: {
-        //             topBar: {
-        //                 visible: false
-        //             }
-        //         }
-        //     }
-        // })
-        this.props.navigation.navigate('Signup')
+
+        this.props.navigation.navigate('Signup');
     }
 
     render() {
         return (
-            <Transition shared='test'>
-                <ScrollView style={styles.container}>
-                    <Logo />
-                    <Card>
-                        <FormLabel>Email</FormLabel>
-                        <FormInput
-                            placeholder="Email address..."
-                            autoCapitalize='none'
-                            keyboardType='email-address'
-                            returnKeyType='next'
-                            onSubmitEditing={() => this.inputs.password.focus()}
-                            onChangeText={(email) => this.setState({ email })} />
-                        <FormLabel>Password</FormLabel>
-                        <FormInput
-                            secureTextEntry
-                            placeholder="Password..."
-                            autoCapitalize='none'
-                            ref={input => this.inputs.password = input}
-                            onChangeText={(password) => this.setState({ password })} />
+            <ScrollView style={styles.container}>
+                <Logo />
+                <Card>
+                    <FormLabel>Email</FormLabel>
+                    <FormInput
+                        placeholder="Email address..."
+                        autoCapitalize='none'
+                        keyboardType='email-address'
+                        returnKeyType='next'
+                        onSubmitEditing={() => this.inputs.password.focus()}
+                        onChangeText={(email) => this.setState({ email })} />
+                    <FormLabel>Password</FormLabel>
+                    <FormInput
+                        secureTextEntry
+                        placeholder="Password..."
+                        autoCapitalize='none'
+                        ref={input => this.inputs.password = input}
+                        onChangeText={(password) => this.setState({ password })} />
 
-                        <Button
-                            buttonStyle={{ marginTop: 20 }}
-                            backgroundColor="#03A9F4"
-                            title="Login"
-                            onPress={() => this.props.login(this.props.componentId, this.state.email, this.state.password)}
-                        />
-                        <Button
-                            buttonStyle={{ marginTop: 20 }}
-                            backgroundColor="transparent"
-                            textStyle={{ color: "#bcbec1" }}
-                            onPress={this.goToSignup.bind(this)}
-                            title="Sign Up"
-                        />
-                    </Card>
-                </ScrollView>
-            </Transition>
+                    <Button
+                        buttonStyle={{ marginTop: 20 }}
+                        backgroundColor="#03A9F4"
+                        title="Login"
+                        onPress={() => this.props.login(this.props.componentId, this.state.email, this.state.password)}
+                    />
+                    <Button
+                        buttonStyle={{ marginTop: 20 }}
+                        backgroundColor="transparent"
+                        textStyle={{ color: "#bcbec1" }}
+                        onPress={this.goToSignup.bind(this)}
+                        title="Sign Up"
+                    />
+                </Card>
+            </ScrollView>
         )
     }
 }
