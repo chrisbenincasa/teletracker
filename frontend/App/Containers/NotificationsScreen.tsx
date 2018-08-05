@@ -24,37 +24,14 @@ interface Props {
     retrieveEvents: () => any
 }
 
-const list = [
-    {
-        title: 'Ted 2',
-        subtitle: 'Leaving Netflix in 2 days!',
-        icon: 'flight-takeoff',
-        badge: {
-            value: '2 days', textStyle: { color: 'white' }
-        }
-    },
-    {
-        title: 'The Matrix',
-        subtitle: 'Leaving HBO in 1 day',
-        icon: 'flight-takeoff',
-        badge: {
-            value: '1 day', textStyle: { color: 'white' }
-        }
-    },
-    {
-        title: 'Patty Cake$',
-        subtitle: 'Available on Hulu in 15 days',
-        icon: 'av-timer',
-        badge: {
-            value: '15 days', textStyle: { color: 'white' }
-        }
-    },
-];
-
-// type DefaultProps = Readonly<Partial<Props>>
-
 class NotificationsScreen extends Component<Props> {
-    // static defaultProps = defaultProps;
+    static drawerOptions = {
+        enabled: true
+    }
+    
+    static navigationOptions = {
+        title: 'Notifications'
+    };
 
     componentDidMount() {
         tracker.trackScreenView('Notifications');

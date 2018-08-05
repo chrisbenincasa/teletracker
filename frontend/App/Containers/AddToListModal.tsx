@@ -1,14 +1,16 @@
-import {View, Text} from 'react-native';
-import { State as ReduxState } from "../Redux/State";
-import { Dispatch, connect } from 'react-redux'
-import React from "react";
-import { Navigation } from 'react-native-navigation';
-import { UserState } from '../Redux/UserRedux';
-import { ListItem, CheckBox } from 'react-native-elements';
 import _ from 'lodash';
-import ListActions from '../Redux/ListRedux';
+import React from 'react';
+import { Text, View } from 'react-native';
+import { CheckBox, ListItem } from 'react-native-elements';
+import { NavigationScreenProp } from 'react-navigation';
+import { connect, Dispatch } from 'react-redux';
+
+import TouchableItem from '../Components/TouchableIItem';
 import { Thing } from '../Model/external/themoviedb';
-import { access } from 'fs';
+import ListActions from '../Redux/ListRedux';
+import { State as ReduxState } from '../Redux/State';
+import { UserState } from '../Redux/UserRedux';
+import styles from './Styles/ItemDetailScreenStyle';
 
 type Props = {
     user: UserState
@@ -18,6 +20,7 @@ type Props = {
     listActionInProgress: boolean
     getRef: (r: any) => any,
     updateLists: (thing: Thing, listsToAdd: string[], listsToRemove: string[]) => any
+    navigation: NavigationScreenProp<any>
 }
 
 type ChosenMap = { [s: string]: boolean }
@@ -28,6 +31,46 @@ type State = {
 }
 
 class AddToListModal extends React.PureComponent<Props, State> {
+    static navigationOptions = ({navigation}: { navigation: NavigationScreenProp<any> }) => {
+        let doneEnabled: boolean = navigation.getParam('doneButtonEnabled');
+        let color = doneEnabled ? 'white' : 'rgba(255, 255, 255, 0.5)';
+
+        return {
+            headerBackTitle: 'Cancel',
+            headerLeft: (
+                <TouchableItem
+                    accessibilityComponentType="button"
+                    accessibilityLabel='Cancel'
+                    accessibilityTraits="button"
+                    testID="header-back"
+                    delayPressIn={0}
+                    onPress={() => navigation.goBack()}
+                    pressColor='rgba(0, 0, 0, .32)'
+                    style={{
+                        alignItems: 'center',
+                        flexDirection: 'row',
+                        backgroundColor: 'transparent'
+                    }}
+                    borderless
+                >
+                    <Text 
+                        style={{ fontSize: 17, fontWeight: 'normal', marginHorizontal: 10, color: 'white', textAlign: 'right' }}
+                        onPress={() => navigation.goBack()}
+                    >Cancel</Text>
+                </TouchableItem>
+            ),
+            headerRight: (
+                <Text
+                    style={{ fontSize: 17, fontWeight: 'normal', marginHorizontal: 10, color, textAlign: 'right' }}
+                    onPress={() => doneEnabled ? navigation.getParam('navigationButtonPressed')('doneButton') : null}
+                >
+                    Done
+                    </Text>
+            ),
+            title: 'Manage Tracking'
+        }
+    }
+
     constructor(props: Props) {
         super(props);
         let belongsToIds = _.map(this.props.userDetails.belongsToLists, 'id');
@@ -45,13 +88,11 @@ class AddToListModal extends React.PureComponent<Props, State> {
             initial,
             chosen: initial
         }
-
-        Navigation.events().bindComponent(this);
     }
 
-    navigationButtonPressed({buttonId}: any) {
+    navigationButtonPressed(buttonId: string) {
         if (buttonId == 'backButton') {
-            Navigation.dismissModal(this.props.componentId);
+            this.props.navigation.pop();
         } else if (buttonId == 'doneButton') {
             let keys = Object.keys(this.state.chosen);
             let removed: string[] = [], added: string[] = [];
@@ -72,26 +113,12 @@ class AddToListModal extends React.PureComponent<Props, State> {
 
     componentDidUpdate(prevProps: Props, prevState: State) {
         if (prevProps.listActionInProgress && !this.props.listActionInProgress) {
-            Navigation.dismissModal(this.props.componentId);
+            this.props.navigation.pop();
         }
     }
 
     componentDidMount() {
-        // this.updateTopButtons();
-    }
-
-    updateTopButtons() {
-        let anySelected = _.reduce(this.state.chosen, (acc, v) => acc || v, false);
-
-        Navigation.mergeOptions(this.props.componentId, {
-            topBar: {
-                rightButtons: [{
-                    id: 'doneButton',
-                    text: 'Done',
-                    enabled: anySelected
-                }]
-            }
-        })
+        this.props.navigation.setParams({ navigationButtonPressed: this.navigationButtonPressed.bind(this) });
     }
 
     handleCheckboxPress(listId: number) {
@@ -105,7 +132,7 @@ class AddToListModal extends React.PureComponent<Props, State> {
 
     render() {
         return (
-            <View>
+            <View style={styles.container}>
                 {this.props.user.details.lists.map((list, i) => (
                     <View key={i}>
                         <ListItem 
@@ -148,24 +175,6 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
             dispatch(ListActions.updateListTracking(thing, listsToAdd, listsToRemove));
         }
     };
-};
-
-export const AddToListModalOptions = {
-    topBar: {
-        title: {
-            text: 'Add to Lists'
-        },
-        leftButtons: [{
-            id: 'backButton',
-            text: 'Cancel'
-        }],
-        rightButtons: [{
-            id: 'doneButton',
-            text: 'Done',
-            enabled: true
-        }],
-        visible: true
-    }
 };
 
 export default connect(

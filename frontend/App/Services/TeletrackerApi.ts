@@ -26,7 +26,6 @@ export class TeletrackerApi {
     constructor(opts?: TeletrackerApiOptions) {
         let options = merge(DefaultTeletrackerApiOptions, opts || {});
 
-        console.log(options)
         this.api = apisauce.create({
             baseURL: options.url
         });

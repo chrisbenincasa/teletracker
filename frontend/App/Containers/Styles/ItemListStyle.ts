@@ -3,9 +3,10 @@ import { ApplicationStyles, Metrics, Colors } from '../../Themes';
 
 export default StyleSheet.create({
   ...ApplicationStyles.screen,
-  container: {
-    flex: 1
-  },
+  // container: {
+  //   flex: 1,
+  //   backgroundColor: Colors.white
+  // },
   row: {
     flex: 1,
     backgroundColor: Colors.fire,

@@ -1,30 +1,15 @@
 import React, { Component } from 'react';
 import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
-import { Avatar, List, ListItem } from 'react-native-elements';
+import { Avatar, ListItem } from 'react-native-elements';
 import { connect, Dispatch } from 'react-redux';
+
+import { tracker } from '../Components/Analytics';
 import Logo from '../Components/Logo';
 import State from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
-import { tracker } from '../Components/Analytics';
-
-// Styles
 import styles from './Styles/MenuScreenStyle';
 
-const menuItems = [
-    {
-        title: 'Settings',
-        icon: 'settings'
-    },
-    {
-        title: 'Report a Bug',
-        icon: 'report'
-    },
-    {
-        title: 'Logout',
-        icon: 'unarchive'
-    }
-];
-
+// Styles
 interface Props {
     componentId: string,
     user: UserState,

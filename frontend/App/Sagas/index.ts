@@ -1,20 +1,18 @@
 import { all, AllEffect, takeLatest } from 'redux-saga/effects';
 
+import { EventTypes } from '../Redux/EventsRedux';
+import { ItemTypes } from '../Redux/ItemRedux';
+import { ListTypes } from '../Redux/ListRedux';
+import { SearchTypes } from '../Redux/SearchRedux';
 import { StartupTypes } from '../Redux/StartupRedux';
 import { UserTypes } from '../Redux/UserRedux';
-import { EventTypes } from '../Redux/EventsRedux';
-import { SearchTypes } from '../Redux/SearchRedux';
-import { ListTypes } from '../Redux/ListRedux';
-import { NavTypes } from '../Redux/NavRedux';
-import { ItemTypes } from '../Redux/ItemRedux';
 import { TeletrackerApi } from '../Services/TeletrackerApi';
-import { startup } from './StartupSagas';
-import { getUser, signupUser, loginUser, postEvent, logoutUser } from './UserSagas';
-import { search } from './SearchSagas';
-import { addToList, createList, updateListTracking } from './ListSagas';
-import { pushState } from './NavSagas';
 import { retrieveEvents } from './EventsSagas';
 import { fetchShow } from './ItemSagas';
+import { addToList, createList, updateListTracking } from './ListSagas';
+import { search } from './SearchSagas';
+import { startup } from './StartupSagas';
+import { getUser, loginUser, logoutUser, postEvent, signupUser } from './UserSagas';
 
 export const teletrackerApi = new TeletrackerApi();
 
@@ -34,8 +32,6 @@ export default function * root(): IterableIterator<AllEffect> {
     takeLatest(ListTypes.ADD_TO_LIST, addToList, teletrackerApi),
     takeLatest(ListTypes.CREATE_LIST, createList, teletrackerApi),
     takeLatest(ListTypes.UPDATE_LIST_TRACKING, updateListTracking, teletrackerApi),
-
-    takeLatest(NavTypes.PUSH_STATE, pushState),
     
     takeLatest(EventTypes.RETRIEVE_EVENTS, retrieveEvents, teletrackerApi),
 
