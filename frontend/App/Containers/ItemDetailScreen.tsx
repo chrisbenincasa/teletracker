@@ -292,7 +292,7 @@ class ItemDetailScreen extends Component<Props, State> {
                                         // do something if the speed dial is open
                                     }
                                 }}
-                                style={{paddingBottom: this.state.visible ? 35 : 0 }}
+                                style={{marginBottom: this.state.visible ? 70 : 35 }}
                             />
                         </View>
                     </ScrollView>
