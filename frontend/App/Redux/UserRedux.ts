@@ -9,7 +9,7 @@ import { Thing } from '../Model/external/themoviedb';
 /* ------------- Types and Action Creators ------------- */
 
 const { Types, Creators } = createActions({
-    userSignupRequest: ['componentId', 'username', 'userEmail', 'password'],
+    userSignupRequest: ['username', 'userEmail', 'password'],
     userSignupSuccess: ['token'],
     userSignupFailure: null,
     userSelfRequest: ['componentId'],
