@@ -122,7 +122,7 @@ class TmdbEntityProcessor @Inject()(
     val now = DateTime.now()
     val t = Thing(None, movie.title.get, Slug(movie.title.get), ThingType.Movie, now, now, Some(ObjectMetadata.withTmdbMovie(movie)))
 
-    val saveThingFut = thingsDbAccess.saveThing(t)
+    val saveThingFut = thingsDbAccess.saveThing(t, Some(ExternalSource.TheMovieDb -> movie.id.toString))
 
     val availability = handleMovieAvailability(movie, saveThingFut)
 
@@ -210,7 +210,7 @@ class TmdbEntityProcessor @Inject()(
 
     val now = DateTime.now()
     val t = Thing(None, show.name, Slug(show.name), ThingType.Show, now, now, Some(ObjectMetadata.withTmdbShow(show)))
-    val saveThingFut = thingsDbAccess.saveThing(t)
+    val saveThingFut = thingsDbAccess.saveThing(t, Some(ExternalSource.TheMovieDb, show.id.toString))
 
     val externalIdsFut = saveThingFut.flatMap(t => handleExternalIds(Left(t), show.external_ids, Some(show.id.toString)))
 
@@ -259,7 +259,7 @@ class TmdbEntityProcessor @Inject()(
     val now = DateTime.now()
     val t = Thing(None, person.name.get, Slug(person.name.get), ThingType.Person, now, now, Some(ObjectMetadata.withTmdbPerson(person)))
 
-    val personSave = thingsDbAccess.saveThing(t).map(person.id.toString -> _)
+    val personSave = thingsDbAccess.saveThing(t, Some(ExternalSource.TheMovieDb -> person.id.toString)).map(person.id.toString -> _)
 
     val creditsSave = person.combined_credits.map(credits => {
       for {
