@@ -13,20 +13,10 @@ import { Nav } from './App/Navigation/AppNavigation';
 import NavigationService from './App/Navigation/NavigationService';
 import createStore from './App/Redux';
 
-import { DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
-import { Colors } from './App/Themes/';
+import { Provider as PaperProvider } from 'react-native-paper';
+import { PaperTheme } from './App/Themes/';
 
 const { store, persistor } = createStore();
-
-    // More information about theme options available here:
-    // https://callstack.github.io/react-native-paper/theming.html
-    const theme = {
-        ...DefaultTheme,
-        colors: {
-          ...DefaultTheme.colors,
-          accent: Colors.headerBackground,
-        }
-    };
 
 class App extends React.Component {
     constructor(props) {
@@ -56,7 +46,7 @@ class App extends React.Component {
     render() {
         return (
             <Provider store={store}>
-                <PaperProvider theme={theme}>
+                <PaperProvider theme={PaperTheme}>
                     <PersistGate loading={null} persistor={persistor}>
                         <SideMenu 
                             menu={<MenuScreen />} 
