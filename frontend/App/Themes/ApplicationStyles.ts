@@ -3,9 +3,20 @@ import Metrics from './Metrics'
 import Colors from './Colors'
 import { Platform } from 'react-native';
 import { ifIphoneX, getStatusBarHeight } from '../Lib/react-native-iphone-x-helper';
+import { DefaultTheme } from 'react-native-paper';
 
 // This file is for a reusable grouping of Theme items.
 // Similar to an XML fragment layout in Android
+
+// More information about theme options available here:
+// https://callstack.github.io/react-native-paper/theming.html
+const PaperTheme = {
+    ...DefaultTheme,
+    colors: {
+        ...DefaultTheme.colors,
+        accent: Colors.headerBackground,
+    }
+};
 
 const ApplicationStyles = {
   screen: {
@@ -95,6 +106,6 @@ const ApplicationStyles = {
     alignItems: 'center',
     textAlign: 'center'
   }
-}
+};
 
-export default ApplicationStyles
+export { ApplicationStyles, PaperTheme};
