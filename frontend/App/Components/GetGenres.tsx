@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { View } from 'react-native';
-import { Badge } from 'react-native-elements';
+import { Chip } from 'react-native-paper';
 import getMetadata from './Helpers/getMetadata';
 import { Thing } from '../Model/external/themoviedb';
 
@@ -22,17 +22,10 @@ export default class GetGenres extends Component<Props> {
                     {
                         getMetadata.getGenre(this.props.item)
                             ? getMetadata.getGenre(this.props.item).map((i) => (
-                                <Badge
-                                    key={i.id}
-                                    value={i.name}
-                                    textStyle={{ color: 'white' }}
-                                    wrapperStyle={{
-                                        marginHorizontal: 2,
-                                        marginVertical: 5
-                                    }}
-                                />
+                                <Chip key={i.id}>{i.name}</Chip>
                             ))
-                            : null}
+                            : null
+                    }
                 </View>
             : null
         )

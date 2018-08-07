@@ -13,6 +13,9 @@ import { Nav } from './App/Navigation/AppNavigation';
 import NavigationService from './App/Navigation/NavigationService';
 import createStore from './App/Redux';
 
+import { Provider as PaperProvider } from 'react-native-paper';
+import { PaperTheme } from './App/Themes/';
+
 const { store, persistor } = createStore();
 
 class App extends React.Component {
@@ -43,16 +46,18 @@ class App extends React.Component {
     render() {
         return (
             <Provider store={store}>
-                <PersistGate loading={null} persistor={persistor}>
-                    <SideMenu 
-                        menu={<MenuScreen />} 
-                        openMenuOffset={this.screenWidth.width * 0.75}
-                        disableGestures={this.state.drawerDisabled}>
-                        <Nav 
-                            ref={navRef => this.handleNavigationRef(navRef)} 
-                            onNavigationStateChange={(prevState, currentState) => this.handleNavigationStateChange(prevState, currentState)}/>
-                    </SideMenu>
-                </PersistGate>
+                <PaperProvider theme={PaperTheme}>
+                    <PersistGate loading={null} persistor={persistor}>
+                        <SideMenu 
+                            menu={<MenuScreen />} 
+                            openMenuOffset={this.screenWidth.width * 0.75}
+                            disableGestures={this.state.drawerDisabled}>
+                            <Nav 
+                                ref={navRef => this.handleNavigationRef(navRef)} 
+                                onNavigationStateChange={(prevState, currentState) => this.handleNavigationStateChange(prevState, currentState)}/>
+                        </SideMenu>
+                    </PersistGate>
+                </PaperProvider>
             </Provider>
         );
     }

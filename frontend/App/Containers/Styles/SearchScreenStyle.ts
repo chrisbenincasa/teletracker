@@ -3,6 +3,10 @@ import { ApplicationStyles, Colors } from '../../Themes/';
 
 export default StyleSheet.create({
     ...ApplicationStyles.screen,
+    container: {
+        flex: 1,
+        backgroundColor: '#fafafa'
+    },
     addToList: {
         position: 'absolute',
         top: 0,
