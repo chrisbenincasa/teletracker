@@ -9,7 +9,6 @@ import {
     NavigationScreenOptions,
 } from 'react-navigation';
 import { createFluidNavigator } from 'react-navigation-fluid-transitions';
-
 import AddToListModal from '../Containers/AddToListModal';
 import CreateNewListModal from '../Containers/CreateNewListModal';
 import ItemDetailScreen from '../Containers/ItemDetailScreen';

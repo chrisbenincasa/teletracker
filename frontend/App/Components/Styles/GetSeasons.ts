@@ -3,10 +3,6 @@ import { ApplicationStyles, Colors } from '../../Themes';
 
 export default StyleSheet.create({
     ...ApplicationStyles.screen,
-    avatarContainer: {
-        flexDirection: 'row', 
-        marginTop: 5
-    },
     seasonsContainer: {
         flex: 1, 
         marginHorizontal: 15

@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Text, View, ScrollView } from 'react-native';
-import { Avatar, Divider } from 'react-native-elements';
+import { Avatar } from 'react-native-elements';
+import { Divider } from 'react-native-paper';
 import { Thing } from '../Model/external/themoviedb';
 import getMetadata from './Helpers/getMetadata';
 import { parseInitials } from './Helpers/textHelper';

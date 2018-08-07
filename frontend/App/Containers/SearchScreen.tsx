@@ -1,12 +1,23 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { ActivityIndicator, Dimensions, FlatList, Image, Text, TouchableHighlight, View, TouchableOpacity } from 'react-native';
-import { Button, Divider, Icon, ListItem } from 'react-native-elements';
+import { Icon, ListItem } from 'react-native-elements';
+import {
+    Button,
+    Card,
+    CardActions,
+    CardContent,
+    CardCover,
+    Divider,
+    Title,
+    Paragraph,
+    TouchableRipple
+} from 'react-native-paper';
 import Search from 'react-native-search-box';
 import { NavigationScreenProp } from 'react-navigation';
+import { ApiResponse } from '../../node_modules/apisauce';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
-
 import { appVersion, tracker } from '../Components/Analytics';
 import checkDevice from '../Components/Helpers/checkOrientation';
 import getMetadata from '../Components/Helpers/getMetadata';
@@ -15,7 +26,10 @@ import ListActions from '../Redux/ListRedux';
 import SearchActions from '../Redux/SearchRedux';
 import ReduxState from '../Redux/State';
 import UserActions from '../Redux/UserRedux';
-import { Colors } from './../Themes/';
+import { teletrackerApi } from '../Sagas';
+import { truncateText } from '../Components/Helpers/textHelper';
+
+import { Colors } from './../Themes/'; //testing only, cleanup later
 import styles from './Styles/SearchScreenStyle';
 
 // Add Actions - replace 'Your' with whatever your reducer is called :)
@@ -23,23 +37,26 @@ import styles from './Styles/SearchScreenStyle';
 
 // Styles
 interface Props {
-    addItemToList: (componentId: string, listId: string, itemId: string | number) => any,
-    addRecentlyViewed: (item: object) => any;
-    clearSearch: () => any;
-    componentId: string;
-    doSearch: (search: String) => any;
-    loadUserSelf: (componentId: string) => any;    
-    removeAllRecentlyViewed: () => any;    
-    removeRecentlyViewed: (item: object) => any;
-    search: any;
-    navigation: NavigationScreenProp<any>
+    addRecentlyViewed: (item: object) => any,
+    clearSearch: () => any,
+    componentId: string,
+    doSearch: (search: String) => any,
+    loadUserSelf: (componentId: string) => any,
+    markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
+    navigation: NavigationScreenProp<any>,
+    removeAllRecentlyViewed: () => any,
+    removeRecentlyViewed: (item: object) => any,
+    search: any
 }
 
 interface State {
-    devicetype: string;
-    gridView: boolean;
-    orientation: string;
-    searchText: string;
+    devicetype: string,
+    gridView: boolean,
+    loading: boolean,
+    loadError: boolean,
+    orientation: string,
+    searchText: string,
+    visible: false
 }
 
 class SearchScreen extends Component<Props, State> {
@@ -73,6 +90,8 @@ class SearchScreen extends Component<Props, State> {
         this.searchTextChanged = this.searchTextChanged.bind(this);
         this.executeSearch = this.executeSearch.bind(this);
         this.renderItem = this.renderItem.bind(this);
+        this.markAsWatched = this.markAsWatched.bind(this);
+        this.manageLists = this.manageLists.bind(this);
 
         this.state = {
             orientation: checkDevice.isPortrait() ? 'portrait' : 'landscape',
@@ -124,10 +143,6 @@ class SearchScreen extends Component<Props, State> {
         });
     }
 
-    componentDidMount() {
-        tracker.trackScreenView('Search');
-    }
-
     executeSearch() {
         // Track when users add items from search screen
         tracker.trackEvent('search-action', 'search', {
@@ -161,6 +176,88 @@ class SearchScreen extends Component<Props, State> {
         });
 
         this.props.addItemToList(this.props.componentId, 'default', itemId);
+    }    
+    
+    componentDidMount() {
+        tracker.trackScreenView('Search');
+    }
+
+    manageLists(item) {
+        // Track when users add an item on the item details screen
+        tracker.trackEvent('item-detail-action', 'open-list-manager', {
+            label: appVersion
+        });
+
+        let thingPromise: Promise<any>;
+        let userDetailsPromise: Promise<any>;
+
+        userDetailsPromise = new Promise((resolve) => {
+            if (!this.state.userDetails) {
+                teletrackerApi.getThingUserDetails(item.id).then(userDetails => {
+                    if (!userDetails.ok) {
+                        this.setState({ loadError: true, loading: true });
+                    } else {
+                        resolve(userDetails.data.data);
+                    }
+                });
+            } else {
+                resolve(this.state.userDetails);
+            }
+        })
+
+        // If we have no item, load it
+        thingPromise = new Promise((resolve, reject) => {
+
+            if (!item && item.type && item.id) {
+                let getPromise: Promise<ApiResponse<any>> = item.type === 'show' ? teletrackerApi.getShow(item.id) : teletrackerApi.getMovie(item.id);
+
+                getPromise.then(response => {
+                    if (!response.ok) {
+                        this.setState({ loadError: true, loading: true });
+                    } else {
+                        resolve(response.data.data);
+                    }
+                }).catch((e) => {
+                    console.tron.log('bad', e);
+                    reject(e);
+                });
+            } else if (item) {
+                resolve(item);
+            }
+        });
+
+        Promise.all([
+            thingPromise,
+            userDetailsPromise
+        ]).then(([thing, userDetails]) => {
+            this.setState({
+                item: thing,
+                userDetails,
+                loading: false
+            });
+
+            this.props.navigation.navigate('ListManage', {
+                thing: this.state.item,
+                userDetails: this.state.userDetails
+            });
+
+            // This should probably happen when the manage list modal closes
+            this.setState({
+                visible: !this.state.visible
+              });
+
+        }).catch((e) => {
+            console.tron.log(e);
+        });
+    }
+
+    markAsWatched(item) {
+        // Track when users mark item watched on the item details screen
+        tracker.trackEvent('item-detail-action', 'mark-as-watched', {
+            label: appVersion
+        } );
+
+        this.props.markAsWatched(this.props.componentId, item.id, item.type);
     }
 
     renderEmpty = () => { 
@@ -245,79 +342,88 @@ class SearchScreen extends Component<Props, State> {
 
     renderItem ( { item }:object ) {
         return (
-            <View style={{margin: 5}}>
-
-                <TouchableHighlight 
-                    activeOpacity={0.3}
-                    onPress={() => this.goToItemDetail(item)
-                }>
-                    <View>
-                    <View style={styles.addToList}>
-                        <Icon
-                            name='add'
-                            color='#fff'
-                            underlayColor='#000'
-                            size={36}
-                            onPress={() => this.addItem(item.id)}
-                        />
-                    </View>
-                        { getMetadata.getPosterPath(item) ?
-                            <Image
-                                style={{ 
-                                        flex: 1,
-                                        width: this.getItemContainerWidth(),
-                                        height: this.getItemContainerHeight(),
-                                        backgroundColor: '#C9C9C9',
-                                        alignContent: 'center'}}
-                                source={{uri: 'https://image.tmdb.org/t/p/w154' + getMetadata.getPosterPath(item) }}
-                            /> : 
-                            <View style={{ 
-                                        flex: 1,
-                                        width: this.getItemContainerWidth(),
-                                        height: this.getItemContainerHeight(),
-                                        backgroundColor: '#C9C9C9',
-                                        alignContent: 'center'}}>
-                                <Icon name='image' color='#fff' size={50} containerStyle={{flex: 1}}/>
-                            </View>
-                        }
-                    </View>
-                </TouchableHighlight>
-                <Text 
-                    style={{
-                        width: this.getItemContainerWidth(),
-                        textAlign: 'center', 
-                        fontWeight: 'bold'}}
-                    numberOfLines={1}
-                    ellipsizeMode='tail'
+            <Card style={{flex: 1, margin: 8}}>
+                <TouchableRipple
                     onPress={() => this.goToItemDetail(item)}
-                >{ item.name }</Text>
-                
-                {
-                    getMetadata.getSeasonCount(item) || getMetadata.getEpisodeCount(item) ?
-                        <Text 
-                            style={{
-                                width: this.getItemContainerWidth(),
-                                textAlign: 'center'}}
-                            numberOfLines={1}
-                            ellipsizeMode='tail'
-                            onPress={() => this.goToItemDetail(item)}
-                        >{ `${getMetadata.getSeasonCount(item)} ${getMetadata.getEpisodeCount(item)}`}</Text>
-                    : null
-                }
+                    activeOpacity={0.5}
+                    underlayColor='#fff'
+                >
+                    <View>
+                        {/* Showing a blank grey space for gridView helps maintain a better aesthetic*/}
+                        {getMetadata.getBackdropImagePath(item) || this.state.orientation === 'landscape' ? 
+                            <CardCover 
+                                source={{uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getBackdropImagePath(item)}}
+                            />
+                        : null }
 
-                { 
-                    getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
-                        <Text 
-                            style={{
-                                width: this.getItemContainerWidth(),
-                                textAlign: 'center'}}
-                            numberOfLines={1}
-                            ellipsizeMode='tail'
-                            onPress={() => this.goToItemDetail(item)}
-                        >{ `${getMetadata.getRuntime(item)} ${getMetadata.getReleaseYear(item)}`} </Text>
-                    : null
-                }
-           </View>
+                        <CardContent style={{flex: 1}}>
+                            <Title style={{flex: 1}}>{item.name}</Title>
+                                {
+                                getMetadata.getSeasonCount(item) || getMetadata.getEpisodeCount(item) ?
+                                <Paragraph 
+                                        style={{
+                                            width: this.getItemContainerWidth(),
+                                            textAlign: 'left', 
+                                            fontStyle: 'italic'
+                                        }}
+                                    >
+                                        {
+                                            `${getMetadata.getSeasonCount(item)} ${getMetadata.getEpisodeCount(item)}`
+                                        }
+                                    </Paragraph>
+                                : null
+                            }
+                            { 
+                            getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
+                                <Paragraph
+                                    style={{
+                                        width: this.getItemContainerWidth(),
+                                        textAlign: 'left',
+                                        fontStyle: 'italic'
+                                    }}
+                                >
+                                    { 
+                                        `${getMetadata.getRuntime(item)} ${getMetadata.getReleaseYear(item)}`
+                                    }
+                                </Paragraph>
+                            : null
+                            }
+                        </CardContent>
+                        <CardContent>   
+                            <Paragraph>
+                                {
+                                    truncateText(getMetadata.getDescription(item), 250)
+                                }
+                            </Paragraph>
+                        </CardContent>
+                    </View>
+                </TouchableRipple>
+                <CardActions style={{flex: 2}}>
+                    <Button
+                        raised
+                        style={{
+                            flex: 1,
+                            textAlign: 'center'
+                        }}
+                        icon={getMetadata.belongsToLists(item) ? 'visibility-off' : 'visibility'}
+                        onPress={() => this.markAsWatched(item)}
+                    >
+                        {getMetadata.belongsToLists(item) ? 'Mark as Unwatched' : 'Mark as Watched'}
+                    </Button>
+                    <Button
+                        raised
+                        style={{
+                            flex: 1,
+                            textAlign: 'center'
+                        }}
+                        icon={getMetadata.belongsToLists(item) ? 'list' : 'playlist-add'}
+                        onPress={() => this.manageLists(item)}
+
+                    >
+                        {getMetadata.belongsToLists(item) ? 'Manage Tracking' : 'Add to List'}
+                    </Button>
+                </CardActions>
+            </Card>
         )
     }
 
@@ -366,8 +472,8 @@ class SearchScreen extends Component<Props, State> {
                     key={(this.state.gridView ? 'g' : 'l') + (checkDevice.isLandscape() ? 'h' : 'v')}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
-                    numColumns={this.state.gridView ? (checkDevice.isLandscape() ? 4 : 2) : 1}
-                    columnWrapperStyle={ this.state.gridView ? {justifyContent: 'flex-start'} : null}
+                    numColumns={this.state.gridView && checkDevice.isLandscape() ? 2 : 1}
+                    columnWrapperStyle={ this.state.gridView && checkDevice.isLandscape() ? {justifyContent: 'flex-start'} : null}
                 />
             </View>
         );
@@ -385,9 +491,6 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
         addRecentlyViewed: (item: object) => {
             dispatch(SearchActions.searchAddRecent(item));
         },
-        addItemToList(componentId: string, listId: string, itemId: string | number) {
-            dispatch(ListActions.addToList(componentId, listId, itemId));
-        },
         clearSearch: () => {
             dispatch(SearchActions.searchClear());
         },
@@ -396,6 +499,9 @@ const mapDispatchToProps = (dispatch: Dispatch<any>) => {
         },
         loadUserSelf: (componentId: string) => {
             dispatch(UserActions.userSelfRequest(componentId));
+        },
+        markAsWatched(componentId: string, itemId: string | number, itemType: string) {
+            dispatch(UserActions.postEvent(componentId, 'MarkedAsWatched', itemType, itemId));
         },
         removeRecentlyViewed: (item: object) => {
             dispatch(SearchActions.searchRemoveRecent(item));
