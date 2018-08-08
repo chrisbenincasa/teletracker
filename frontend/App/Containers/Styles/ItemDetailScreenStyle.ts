@@ -3,9 +3,13 @@ import { ApplicationStyles, Colors } from '../../Themes';
 
 export default StyleSheet.create({
     ...ApplicationStyles.screen,
+    container: {
+        flex: 1,
+        backgroundColor: '#fafafa'
+    },
     coverContainer: {
         position: 'absolute',
-        top: -20,
+        top: 0,
         left: 0,
         width: '100%',
         height: '100%'

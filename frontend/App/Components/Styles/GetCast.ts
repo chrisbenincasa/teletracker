@@ -4,7 +4,6 @@ import { ApplicationStyles, Colors } from '../../Themes';
 export default StyleSheet.create({
     ...ApplicationStyles.screen,
     castHeader: {
-        marginTop: 10,
         fontSize: 16
     },
     castContainer: {
@@ -21,11 +20,6 @@ export default StyleSheet.create({
         textAlign: 'center', 
         fontSize: 10, 
         fontStyle: 'italic'
-    },
-    divider: {
-        backgroundColor: Colors.divider, 
-        height: 1, 
-        marginTop: 10
     },
     avatarContainer: {
         flexDirection: 'row', 

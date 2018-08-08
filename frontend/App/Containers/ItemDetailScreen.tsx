@@ -17,7 +17,7 @@ import { Thing } from '../Model/external/themoviedb';
 import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
-import { Snackbar, FABGroup } from 'react-native-paper'
+import { Snackbar, FABGroup, Card, CardContent } from 'react-native-paper'
 import styles from './Styles/ItemDetailScreenStyle';
 
 interface Props {
@@ -29,7 +29,7 @@ interface Props {
     markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
     navigation: NavigationScreenProp<any>,
     open: boolean,
-    visible: boolean
+    // visible: boolean
 }
 
 type State = {
@@ -38,7 +38,7 @@ type State = {
     item?: Thing,
     open: false,
     userDetails?: any,
-    visible: false
+    // visible: false
 }
 
 class ItemDetailScreen extends Component<Props, State> {
@@ -123,10 +123,6 @@ class ItemDetailScreen extends Component<Props, State> {
             thing: this.state.item,
             userDetails: this.state.userDetails
         });
-
-        this.setState({
-            visible: !this.state.visible
-          });
     }
 
     markAsWatched() {
@@ -236,26 +232,28 @@ class ItemDetailScreen extends Component<Props, State> {
                             </View>
                         </KeyboardAvoidingView>
 
-                        <View style={styles.descriptionContainer}>
-                            <ViewMoreText
-                                numberOfLines={4}
-                                renderViewMore={this.renderViewMore}
-                                renderViewLess={this.renderViewLess}>
-                                <Text>
-                                    {
-                                        getMetadata.getDescription(this.state.item)
-                                    }
-                                </Text>
-                            </ViewMoreText>
-                        </View>
+                        <Card style={styles.descriptionContainer}>
+                            <CardContent>
+                                <ViewMoreText
+                                    numberOfLines={4}
+                                    renderViewMore={this.renderViewMore}
+                                    renderViewLess={this.renderViewLess}>
+                                    <Text>
+                                        {
+                                            getMetadata.getDescription(this.state.item)
+                                        }
+                                    </Text>
+                                </ViewMoreText>
+                                <GetGenres item={ this.state.item } />
+                            </CardContent>
+                        </Card>
 
-                        <GetGenres item={ this.state.item } />
                         <GetSeasons item={ this.state.item }/>
                         <GetAvailability item={ this.state.item } />
                         <GetCast item={ this.state.item }/>
 
                         <View style={styles.container}>
-                            <Snackbar
+                            {/* <Snackbar
                                 visible={this.state.visible}
                                 onDismiss={() => this.setState({ visible: false })}
                                 action={{
@@ -266,7 +264,7 @@ class ItemDetailScreen extends Component<Props, State> {
                                 }}
                             >
                                 {`Item has been ${this.state.userDetails.belongsToLists.length > 0 ? 'added' : 'removed'}!`}
-                            </Snackbar>
+                            </Snackbar> */}
                             <FABGroup
                                 open={this.state.open}
                                 icon='add'

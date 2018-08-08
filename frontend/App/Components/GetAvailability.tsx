@@ -1,9 +1,10 @@
 import React, { Component } from 'react';
 import { Text, View, ScrollView, Image } from 'react-native';
-import { Button, Badge, Divider } from 'react-native-elements';
+import { Button, Badge } from 'react-native-elements';
 import { Thing } from '../Model/external/themoviedb';
 import { networks } from '../Components/Helpers/networks';
 import getMetadata from './Helpers/getMetadata';
+import { Card } from 'react-native-paper'
 
 import styles from './Styles/GetAvailability';
 
@@ -63,8 +64,7 @@ export default class GetAvailability extends Component {
     render () {
         return (
             getMetadata.getAvailabilityInfo(this.props.item) ? 
-                <View style={styles.castContainer}>
-                    <Divider style={styles.divider} />
+                <Card style={styles.castContainer}>
                     <Text style={styles.castHeader}>Where to Watch:</Text>
                     <ScrollView
                         horizontal={true}
@@ -72,7 +72,7 @@ export default class GetAvailability extends Component {
                         style={styles.avatarContainer}>
                         {this.renderAvailabilities(this.props.item.availability)}
                     </ScrollView>
-                </View>
+                </Card>
             : null
         )
     }
