@@ -1,9 +1,8 @@
 import React, { isValidElement } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { FormInput, FormLabel } from 'react-native-elements';
 import { NavigationScreenProp } from 'react-navigation';
 import { connect, Dispatch } from 'react-redux';
-import { Snackbar } from 'react-native-paper'
+import { TextInput } from 'react-native-paper'
 
 import { CommonStackStyles } from '../Navigation/AppNavigation';
 import ListActions, { ListState } from '../Redux/ListRedux';
@@ -13,15 +12,13 @@ import styles from './Styles/ItemDetailScreenStyle';
 type Props = {
     createList: (name: string) => any,
     list: ListState,
-    navigation: NavigationScreenProp<any>,
-    visible: boolean
+    navigation: NavigationScreenProp<any>
 }
 
 type State = {
     name?: string,
     creating: boolean,
-    valid: boolean,
-    visible: false
+    valid: boolean
 }
 
 class CreateNewListModal extends React.PureComponent<Props, State> {
@@ -108,8 +105,7 @@ class CreateNewListModal extends React.PureComponent<Props, State> {
 
         this.setState({
             name,
-            valid: isActive,
-            visible: !this.state.visible
+            valid: isActive
         }, () => {
             this.props.navigation.setParams({ valid: isActive })
         });
@@ -118,23 +114,11 @@ class CreateNewListModal extends React.PureComponent<Props, State> {
     render() {
         return (
             <View style={styles.container}>
-                <FormLabel>Name</FormLabel>
-                <FormInput
-                    placeholder="Enter a List name"
-                    onChangeText={(name) => this.updateFormState(name)} 
+                <TextInput
+                    label="Enter a List name"
+                    onChangeText={(name) => this.updateFormState(name)}
+                    style={{margin: 5}}
                 />
-                <Snackbar
-                    visible={this.state.visible}
-                    onDismiss={() => this.setState({ visible: false })}
-                    action={{
-                        label: 'Undo',
-                        onPress: () => {
-
-                        },
-                    }}
-                >
-                    Item has been updated!
-                </Snackbar>
             </View>
         );
     }

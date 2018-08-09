@@ -1,10 +1,9 @@
 
 import React, { Component } from 'react';
-import { Text, View } from 'react-native';
-import { ListAccordion, ListItem } from 'react-native-paper';
+import { View } from 'react-native';
 import { Thing } from '../Model/external/themoviedb';
 import getMetadata from './Helpers/getMetadata';
-import { Card, CardContent, Title } from 'react-native-paper'
+import { Card, CardContent, Title, ListAccordion, ListItem  } from 'react-native-paper'
 
 import styles from './Styles/GetSeasons';
 
