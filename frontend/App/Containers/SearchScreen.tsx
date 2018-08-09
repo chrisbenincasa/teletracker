@@ -8,6 +8,7 @@ import {
     CardActions,
     CardContent,
     CardCover,
+    Chip,
     Divider,
     Title,
     Paragraph,
@@ -93,6 +94,7 @@ class SearchScreen extends Component<Props, State> {
         this.renderGrid = this.renderGrid.bind(this);
         this.markAsWatched = this.markAsWatched.bind(this);
         this.manageLists = this.manageLists.bind(this);
+        this.prefillSearch = this.prefillSearch.bind(this);
 
         this.state = {
             orientation: checkDevice.isPortrait() ? 'portrait' : 'landscape',
@@ -144,6 +146,11 @@ class SearchScreen extends Component<Props, State> {
 
     searchTextChanged(text: string) {
         return this.setState({ searchText: text });
+    }
+
+    prefillSearch(text: string) {
+        this.searchTextChanged(text);
+        this.executeSearch();
     }
 
     // Important: You must return a Promise
@@ -298,7 +305,16 @@ class SearchScreen extends Component<Props, State> {
                             size={75}
                             containerStyle={{height: 75, marginBottom: 20}}
                         />
-                        <Text> Search for Movies, TV Shows, or People! </Text>
+                        <Text> Search for Movies, TV Shows, or People! Try it out: </Text>
+                        
+                        <View style={{
+                            flexDirection: 'row', 
+                            flexWrap: 'wrap'
+                        }}>
+                            <Chip onPress={() => this.prefillSearch('The Matrix')}>The Matrix</Chip>
+                            <Chip onPress={() => this.prefillSearch('Halt & Catch Fire')}>Halt & Catch Fire</Chip>
+                            <Chip onPress={() => this.prefillSearch('Nic Cage')}>Nic Cage</Chip>
+                        </View>
                         {
                             this.props.search.recentlyViewed && this.props.search.recentlyViewed.length > 0 ? 
                             <View>
