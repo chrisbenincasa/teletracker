@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import { ActivityIndicator, Dimensions, FlatList, Image, Text, TouchableHighlight, View, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Dimensions, FlatList, Image, Text, View, TouchableOpacity } from 'react-native';
 import { Icon, ListItem } from 'react-native-elements';
 import {
     Button,
@@ -530,12 +530,17 @@ class SearchScreen extends Component<Props, State> {
 
                 {
                     this.props.search.fetching ?  
-                        <View style={styles.fetching}>
-                            <ActivityIndicator size='large' color='#476DC5' animating={this.props.search.fetching} /> 
-                        </View>
-                    : null 
-                }
-
+                    <Card style={{flex: 1, flexDirection: 'row', margin: 8}}>
+                            
+                            <View style={styles.defaultScreen}>
+                                <ActivityIndicator
+                                    size='large'
+                                    color='#476DC5'
+                                    animating={this.props.search.fetching}
+                                />
+                            </View> 
+                        </Card>
+                 :
                 <FlatList
                     data={this.getResults.call(this)}
                     renderItem={this.state.gridView ? this.renderGrid : this.renderList }
@@ -547,7 +552,11 @@ class SearchScreen extends Component<Props, State> {
                     numColumns={this.state.gridView ? 2 : 1}
                     // columnWrapperStyle={ this.state.gridView && checkDevice.isLandscape() ? {justifyContent: 'flex-start'} : null}
                     contentContainerStyle={{flexGrow: 1}}
+                    style={{flex: 0}}
                 />
+
+            }
+
             </View>
         );
     }

@@ -5,6 +5,8 @@ export default StyleSheet.create({
     ...ApplicationStyles.screen,
     container: {
         flex: 1,
+        flexDirection: 'column',
+        flexGrow: 1,
         backgroundColor: '#fafafa'
     },
     addToList: {
@@ -27,7 +29,8 @@ export default StyleSheet.create({
         alignItems: 'center'
     },
     fetching: {
-        flex: 1, 
+        flex: 1,
+        flexDirection: 'row', 
         justifyContent: 'center',
         alignItems: 'center'
     },
