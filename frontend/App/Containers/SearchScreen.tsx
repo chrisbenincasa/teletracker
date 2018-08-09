@@ -295,8 +295,8 @@ class SearchScreen extends Component<Props, State> {
                         <Icon
                             name='search'
                             color='#476DC5'
-                            size={55}
-                            containerStyle={{height: 44}}
+                            size={75}
+                            containerStyle={{height: 75, marginBottom: 20}}
                         />
                         <Text> Search for Movies, TV Shows, or People! </Text>
                         {
@@ -304,26 +304,28 @@ class SearchScreen extends Component<Props, State> {
                             <View>
                                 <Divider style={{ backgroundColor: 'grey', marginVertical: 15 }} />
                                 <Text h3>Recently Viewed</Text>
-                                {this.props.search.recentlyViewed.map((i) => (
-                                    <ListItem
-                                        roundAvatar
-                                        avatar={{uri: 'https://image.tmdb.org/t/p/w154' + getMetadata.getPosterPath(i) }}
-                                        key={i.id}
-                                        title={i.name}
-                                        onPress={() => this.goToItemDetail(i)}
-                                        rightIcon={{name: 'close'}}
-                                        onPressRightIcon={() => this.props.removeRecentlyViewed(i)}
-                                    />
-                                ))}
-                                {/* <Button
+                                {
+                                    this.props.search.recentlyViewed.map((i) => (
+                                        <ListItem
+                                            roundAvatar
+                                            avatar={{uri: 'https://image.tmdb.org/t/p/w154' + getMetadata.getPosterPath(i) }}
+                                            key={i.id}
+                                            title={i.name}
+                                            onPress={() => this.goToItemDetail(i)}
+                                            rightIcon={{name: 'close'}}
+                                            onPressRightIcon={() => this.props.removeRecentlyViewed(i)}
+                                        />
+                                    ))
+                                }
+                                <Button
                                     raised
                                     primary
                                     style={{margin: 10}}
-                                    icon={{name: 'delete'}}
+                                    icon='delete'
                                     onPress={() => this.props.removeAllRecentlyViewed()}
                                 >
                                     Clear All Recent Searches
-                                </Button> */}
+                                </Button>
                             </View>
                             : null
                         }
@@ -349,13 +351,17 @@ class SearchScreen extends Component<Props, State> {
                             />
                         : null }
 
-                        <CardContent>
-                            <Title>{item.name}</Title>
+                        <CardContent style={{
+                            flexGrow: 1
+                        }}>
+                            <Title style={{flex:1}}>
+                                {item.name}
+                            </Title>
                                 {
                                 getMetadata.getSeasonCount(item) || getMetadata.getEpisodeCount(item) ?
                                 <Paragraph 
                                         style={{
-                                            width: this.getItemContainerWidth(),
+                                            flex: 1,
                                             textAlign: 'left', 
                                             fontStyle: 'italic'
                                         }}
@@ -370,7 +376,7 @@ class SearchScreen extends Component<Props, State> {
                             getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
                                 <Paragraph
                                     style={{
-                                        width: this.getItemContainerWidth(),
+                                        flex: 1,
                                         textAlign: 'left',
                                         fontStyle: 'italic'
                                     }}
@@ -391,30 +397,33 @@ class SearchScreen extends Component<Props, State> {
                         </CardContent>
                     </View>
                 </TouchableRipple>
-                <CardActions >
+                <CardActions style={{
+                    flexDirection: 'row',
+                    flexGrow: 1
+                }}>
                     <Button
                         raised
                         style={{
-
+                            flex: 1,
                             textAlign: 'center'
                         }}
                         icon={getMetadata.belongsToLists(item) ? 'visibility-off' : 'visibility'}
                         onPress={() => this.markAsWatched(item)}
                     >
-                        {getMetadata.belongsToLists(item) ? 'Mark as Unwatched' : 'Mark as Watched'}
+                        {getMetadata.belongsToLists(item) ? 'Mark Unwatched' : 'Mark Watched'}
                     </Button>
                     <Button
                         raised
                         primary
                         style={{
-
+                            flex: 1,
                             textAlign: 'center'
                         }}
                         icon={getMetadata.belongsToLists(item) ? 'list' : 'playlist-add'}
                         onPress={() => this.manageLists(item)}
 
                     >
-                        {getMetadata.belongsToLists(item) ? 'Manage Tracking' : 'Add to List'}
+                        {getMetadata.belongsToLists(item) ? 'Manage List' : 'Add to List'}
                     </Button>
                 </CardActions>
             </Card>
@@ -431,14 +440,25 @@ class SearchScreen extends Component<Props, State> {
                     >
                         <View>
                             {/* Showing a blank grey space for gridView helps maintain a better aesthetic*/}
-                            {getMetadata.getPosterPath(item) || this.state.orientation === 'landscape' ? 
+                            {getMetadata.getPosterPath(item) ? 
                                 <CardCover 
-                                    source={{uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getPosterPath(item)}}
+                                    source={{
+                                        uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getPosterPath(item)
+                                    }}
                                 />
-                            : null }
+                            :
+                            <CardCover 
+                                style={{
+                                    flexGrow: 1,
+                                    resizeMode: 'contain',
+                                }}
+                                source={{
+                                    uri: 'data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=='
+                                }}
+                            /> }
 
                             <CardContent>
-                                <Title>{item.name}</Title>
+                                <Title>{truncateText(item.name, 30)}</Title>
                                 { 
                                 getMetadata.getSeasonCount(item) || getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
                                     <Paragraph
@@ -457,18 +477,22 @@ class SearchScreen extends Component<Props, State> {
                             </CardContent>
                         </View>
                     </TouchableRipple>
-                    <CardActions style={{flexDirection: 'column', flex: 1}}>
+                    <CardActions style={{
+                        flexDirection: 'row',
+                        flexGrow: 1
+                    }}>
                         <Button
                             raised
                             primary
                             style={{
                                 flex: 1,
-                                textAlign: 'center'
+                                textAlign: 'center',
+                                alignSelf: 'flex-end'
                             }}
                             icon={getMetadata.belongsToLists(item) ? 'list' : 'playlist-add'}
                             onPress={() => this.manageLists(item)}
                         >
-                            {getMetadata.belongsToLists(item) ? 'Manage Tracking' : 'Add to List'}
+                            {getMetadata.belongsToLists(item) ? 'Manage List' : 'Add to List'}
                         </Button>
                     </CardActions>
                 </Card>
