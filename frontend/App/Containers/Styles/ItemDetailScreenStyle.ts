@@ -57,7 +57,7 @@ export default StyleSheet.create({
         fontStyle: 'italic'
     },
     descriptionContainer: {
-        marginTop: 60, 
+        marginTop: 68, 
         marginHorizontal: 15
     }
 });
