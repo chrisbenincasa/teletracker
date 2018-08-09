@@ -3,10 +3,12 @@ import { ApplicationStyles, Metrics, Colors } from '../../Themes';
 
 export default StyleSheet.create({
   ...ApplicationStyles.screen,
-  // container: {
-  //   flex: 1,
-  //   backgroundColor: Colors.white
-  // },
+  container: {
+    flex: 1,
+    flexDirection: 'column',
+    flexGrow: 1,
+    backgroundColor: '#fafafa'
+  },
   row: {
     flex: 1,
     backgroundColor: Colors.fire,
@@ -28,8 +30,15 @@ export default StyleSheet.create({
     color: Colors.charcoal
   },
   listContent: {
-    marginTop: 0//Metrics.baseMargin
+    marginTop: 0,
+    flexGrow: 1
   },
+  defaultScreen: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center'
+},
   username: {
     color: Colors.charcoal
   }
