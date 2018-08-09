@@ -119,14 +119,6 @@ class SearchScreen extends Component<Props, State> {
         this.props.navigation.setParams({ gridView: !this.state.gridView });
     }
 
-    getItemContainerWidth(){
-        return this.state.gridView ? (checkDevice.isLandscape() ? 155 : 178) : 75;
-    }
-
-    getItemContainerHeight(){
-        return this.state.gridView ? (checkDevice.isLandscape() ? 216 : 246) : 104;
-    }
-
     componentWillMount() {
         this.props.loadUserSelf(this.props.componentId);
         this.props.navigation.setParams({ 
@@ -140,15 +132,18 @@ class SearchScreen extends Component<Props, State> {
         tracker.trackEvent('search-action', 'search', {
             label: appVersion
         });
-
         this.props.doSearch(this.state.searchText);
     }
 
     searchTextChanged(text: string) {
-        return this.setState({ searchText: text });
+
+        this.setState({ searchText: text });
+// console.log(this.state.searchText);
+
     }
 
     prefillSearch(text: string) {
+        console.log(text);
         this.searchTextChanged(text);
         this.executeSearch();
     }

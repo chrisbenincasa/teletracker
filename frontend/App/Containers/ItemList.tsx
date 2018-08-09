@@ -1,10 +1,11 @@
 import R from 'ramda';
 import React from 'react';
 import { FlatList, ListRenderItemInfo, Text, View } from 'react-native';
-import { ListItem } from 'react-native-elements';
+import { ListItem, Icon } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { NavigationScreenProp } from 'react-navigation';
 import { connect, Dispatch } from 'react-redux';
+import { Card } from 'react-native-paper';
 
 import { tracker } from '../Components/Analytics';
 import { List } from '../Model';
@@ -112,8 +113,29 @@ class ItemList extends React.PureComponent<Props> {
         )
     }
 
-    renderEmpty = () => <Text style={styles.label}> Empty list, yo! </Text>;
-    
+    renderEmpty = () => {
+        return (
+            <Card style={{
+                flex: 1,
+                flexDirection: 'row',
+                margin: 8
+            }}>
+                    <View style={styles.defaultScreen}>
+                        <Icon
+                            name='mood-bad'
+                            color='#476DC5'
+                            size={75}
+                            containerStyle={{
+                                height: 75,
+                                marginBottom: 20
+                            }}
+                        />
+                        <Text> Empty list, yo!  </Text>
+                    </View>
+                </Card>
+        )
+    }
+
     keyExtractor: (item: any, index: any) => string = (item, _) => item.id.toString();
     
     oneScreensWorth = 20;
@@ -140,6 +162,7 @@ class ItemList extends React.PureComponent<Props> {
                     keyExtractor={this.keyExtractor}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
+                    style={{flex: 0}}
                 />
             </View>
         )
