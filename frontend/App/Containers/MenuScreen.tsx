@@ -43,7 +43,7 @@ class MenuScreen extends Component<Props> {
                             label='Settings'
                             icon='settings'
                             active={false}
-                            onPress={() => this.props.settings(this.props.componentId)}
+                            // onPress={}
                         />
                         <DrawerItem
                             label='Logout'
