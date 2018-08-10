@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
-import { Text, View, ScrollView, Image } from 'react-native';
-import { Button, Badge, Divider } from 'react-native-elements';
+import { View, ScrollView, Image } from 'react-native';
 import { Thing } from '../Model/external/themoviedb';
 import { networks } from '../Components/Helpers/networks';
 import getMetadata from './Helpers/getMetadata';
+import { Card, CardContent, Button, Chip, Title } from 'react-native-paper'
 
 import styles from './Styles/GetAvailability';
 
@@ -19,19 +19,21 @@ export default class GetAvailability extends Component {
     renderAvailability(availability: any) {
         return (
             <View key={availability.id}>
-                <Button
-                    title={availability.network.name} />
+                <Button>
+                    {availability.network.name}
+                </Button>
                 <Image
                     source={networks[availability.network.slug].preferredLogo}
                 />
-                <Badge
-                    value={`${availability.offerType} for ${availability.cost}`}
-                    textStyle={{ color: 'white' }}
-                    wrapperStyle={{
+                <Chip
+                    style={{
+                        color: 'white',
                         marginHorizontal: 2,
                         marginVertical: 5
                     }}
-                />
+                >
+                {`${availability.offerType} for ${availability.cost}`}
+                </Chip>
             </View>
         );
     }
@@ -63,16 +65,17 @@ export default class GetAvailability extends Component {
     render () {
         return (
             getMetadata.getAvailabilityInfo(this.props.item) ? 
-                <View style={styles.castContainer}>
-                    <Divider style={styles.divider} />
-                    <Text style={styles.castHeader}>Where to Watch:</Text>
-                    <ScrollView
-                        horizontal={true}
-                        showsHorizontalScrollIndicator={false}
-                        style={styles.avatarContainer}>
-                        {this.renderAvailabilities(this.props.item.availability)}
-                    </ScrollView>
-                </View>
+                <Card style={styles.castContainer}>
+                    <CardContent>
+                        <Title style={styles.castHeader}>Where to Watch:</Title>
+                        <ScrollView
+                            horizontal={true}
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.avatarContainer}>
+                            {this.renderAvailabilities(this.props.item.availability)}
+                        </ScrollView>
+                    </CardContent>
+                </Card>
             : null
         )
     }

@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
-import { ScrollView } from 'react-native';
-import { Button, Card, FormInput, FormLabel } from 'react-native-elements';
+import { View } from 'react-native';
+import {
+    Button,
+    Card,
+    TextInput
+} from 'react-native-paper';
 import { NavigationScreenOptions, NavigationScreenProp } from 'react-navigation';
 import { connect, Dispatch } from 'react-redux';
 
@@ -31,6 +35,7 @@ class LoginScreen extends Component<Props, State> {
 
     constructor(props: Props) {
         super(props);
+        this.goToSignup = this.goToSignup.bind(this);
         this.inputs = {};
     }
 
@@ -48,40 +53,51 @@ class LoginScreen extends Component<Props, State> {
 
     render() {
         return (
-            <ScrollView style={styles.container}>
+            <View style={styles.container}>
                 <Logo />
-                <Card>
-                    <FormLabel>Email</FormLabel>
-                    <FormInput
-                        placeholder="Email address..."
-                        autoCapitalize='none'
+                <Card style={{
+                    margin: 15,
+                    marginBottom: 50,
+                    flexGrow: 0,
+                    flexDirection: 'row'
+                }}>
+                    <TextInput
+                        placeholder='Email address...'
+                        label='Email'
                         keyboardType='email-address'
                         returnKeyType='next'
                         onSubmitEditing={() => this.inputs.password.focus()}
-                        onChangeText={(email) => this.setState({ email })} />
-                    <FormLabel>Password</FormLabel>
-                    <FormInput
+                        onChangeText={(email) => this.setState({ email })} 
+                        style={{margin: 5}}
+                    />
+                    <TextInput
                         secureTextEntry
-                        placeholder="Password..."
+                        placeholder='Password...'
+                        label='Password'
                         autoCapitalize='none'
                         ref={input => this.inputs.password = input}
-                        onChangeText={(password) => this.setState({ password })} />
-
+                        onChangeText={(password) => this.setState({ password })}
+                        style={{margin: 5}}
+                    />
                     <Button
-                        buttonStyle={{ marginTop: 20 }}
-                        backgroundColor="#03A9F4"
-                        title="Login"
+                        primary
+                        raised
+                        style={{ margin: 5 }}
+                        backgroundColor='#03A9F4'
                         onPress={() => this.props.login(this.props.componentId, this.state.email, this.state.password)}
-                    />
+                    >
+                        Login
+                    </Button>
                     <Button
-                        buttonStyle={{ marginTop: 20 }}
-                        backgroundColor="transparent"
-                        textStyle={{ color: "#bcbec1" }}
-                        onPress={this.goToSignup.bind(this)}
-                        title="Sign Up"
-                    />
+                        style={{ margin: 5 }}
+                        backgroundColor='transparent'
+                        textStyle={{ color: '#bcbec1' }}
+                        onPress={this.goToSignup}
+                    >
+                        Sign Up
+                    </Button>
                 </Card>
-            </ScrollView>
+            </View>
         )
     }
 }

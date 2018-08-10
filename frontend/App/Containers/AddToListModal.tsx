@@ -1,7 +1,8 @@
 import _ from 'lodash';
 import React from 'react';
 import { Text, View } from 'react-native';
-import { CheckBox, ListItem } from 'react-native-elements';
+import { Checkbox, ListItem  } from 'react-native-paper'
+
 import { NavigationScreenProp } from 'react-navigation';
 import { connect, Dispatch } from 'react-redux';
 
@@ -137,24 +138,25 @@ class AddToListModal extends React.PureComponent<Props, State> {
                     <View key={i}>
                         <ListItem 
                             title={list.name} 
-                            rightIcon={
-                            <CheckBox
-                                containerStyle={{
-                                    backgroundColor: 'transparent',
-                                    margin: 0,
-                                    marginRight: 0,
-                                    marginLeft: 0,
-                                    padding: 0,
-                                    borderWidth: 0,
-                                    width: 24
-                                }}
-                                checked={this.state.chosen[list.id]}
-                                right={true}
-                                iconRight={true}
-                                onIconPress={() => this.handleCheckboxPress(list.id)}
-                            />
-                        }/>
-                        
+                            avatar={
+                                <View style={{
+                                    borderColor: '#000',
+                                    borderWidth: 1,
+                                    borderStyle: 'solid'
+                                }}>
+                                    <Checkbox
+                                        containerStyle={{
+                                            backgroundColor: 'transparent',
+                                            margin: 0,
+                                            padding: 0,
+                                            width: 24
+                                        }}
+                                        checked={this.state.chosen[list.id]}
+                                        onPress={() => this.handleCheckboxPress(list.id)}
+                                    />
+                                </View>
+                            }
+                        />
                     </View>
                 ))}
             </View>

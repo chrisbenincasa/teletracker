@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
 import { ActivityIndicator, ScrollView, Text } from 'react-native';
-import { Button, Card, FormInput, FormLabel } from 'react-native-elements';
+import {
+    Button,
+    Card,
+    TextInput
+} from 'react-native-paper';
 import { connect, Dispatch } from 'react-redux';
 
 import { appVersion, tracker } from '../Components/Analytics';
@@ -31,6 +35,7 @@ class SignupScreen extends Component<Props, State> {
 
     componentDidMount() {
         tracker.trackScreenView('Signup');
+        console.log(this.props);
     }
 
     goToLogin() {
@@ -43,57 +48,82 @@ class SignupScreen extends Component<Props, State> {
 
     render() {
         return (
-            <ScrollView style={styles.container}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={{
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}
+            >
                 <Logo />
-                <Card>
-                <FormLabel>Username</FormLabel>
-                <FormInput 
-                    placeholder='Username...' 
-                    onChangeText={(username) => this.setState({ username })} 
-                    value={this.state.username}
-                    editable={!this.props.signup.fetching}
-                    autoCapitalize='none' />
-                <FormLabel>Email</FormLabel>
-                <FormInput 
-                    placeholder='Email address...'
-                    onChangeText={(email) => this.setState({ email })}
-                    value={this.state.email}
-                    editable={!this.props.signup.fetching}
-                    autoCapitalize='none' />
-                <FormLabel>Password</FormLabel>
-                <FormInput 
-                    secureTextEntry 
-                    placeholder='Password...'
-                    editable={!this.props.signup.fetching}
-                    autoCapitalize='none'
-                    onChangeText={(password) => this.setState({ password })}
-                    value={this.state.password} />
-                <FormLabel>Confirm Password</FormLabel>
-                <FormInput 
-                    secureTextEntry 
-                    placeholder='Confirm Password...'
-                    editable={!this.props.signup.fetching}
-                    autoCapitalize='none'
-                    onChangeText={(password) => this.setState({ password })}
-                    value={this.state.password} />
-
-                <Button
-                    buttonStyle={{ marginTop: 20 }}
-                    backgroundColor='#03A9F4'
-                    title='Sign Up'
-                    onPress={() => this.props.onSignUpAttempt(this.state)} 
-                />
-                <Button
-                    buttonStyle={{ marginTop: 20 }}
-                    backgroundColor='transparent'
-                    textStyle={{ color: '#bcbec1' }}
-                    title='Login'
-                    onPress={() => this.goToLogin()}
-                />
-                <ActivityIndicator animating={this.props.signup.fetching} />
+                <Card style={{
+                    margin: 15,
+                    marginBottom: 100,
+                    flexGrow: 0,
+                    flexDirection: 'row'
+                }}>
+                    <TextInput
+                        label='Username'
+                        placeholder='Username...' 
+                        onChangeText={(username) => this.setState({ username })} 
+                        value={this.state.username}
+                        editable={!this.props.signup.fetching}
+                        autoCapitalize='none'
+                        style={{margin: 5}}
+                    />
+                    <TextInput
+                        label='Email'
+                        placeholder='Email address...'
+                        onChangeText={(email) => this.setState({ email })}
+                        value={this.state.email}
+                        editable={!this.props.signup.fetching}
+                        autoCapitalize='none'
+                        style={{margin: 5}}
+                    />
+                    <TextInput
+                        label='Password'
+                        secureTextEntry 
+                        placeholder='Password...'
+                        editable={!this.props.signup.fetching}
+                        autoCapitalize='none'
+                        onChangeText={(password) => this.setState({ password })}
+                        value={this.state.password}
+                        style={{margin: 5}}
+                    />
+                    <TextInput
+                        label='Confirm Password'
+                        secureTextEntry 
+                        placeholder='Confirm Password...'
+                        editable={!this.props.signup.fetching}
+                        autoCapitalize='none'
+                        onChangeText={(password) => this.setState({ password })}
+                        value={this.state.password}
+                        style={{margin: 5}}
+                    />
+                    <Text style={{textAlign: 'center', color: 'green' }}>
+                        {this.props.signup.success ? 'Done!' : null}
+                    </Text>
+                    <Text style={{ textAlign: 'center', color: 'red' }}>
+                        {this.props.signup.error ? 'Something went wrong!  Please try again.' : null}
+                    </Text>
+                    <Button
+                        primary
+                        raised
+                        style={{ margin: 5 }}
+                        onPress={() => this.props.onSignUpAttempt(this.state)} 
+                    >
+                        Sign Up
+                    </Button>
+                    <Button
+                        style={{ margin: 5, color: '#bcbec1' }}
+                        title='Login'
+                        onPress={() => this.goToLogin()}
+                    >
+                        Login
+                    </Button>
+                    <ActivityIndicator animating={this.props.signup.fetching} />
                 </Card>
-                <Text style={{textAlign: 'center', color: 'green' }}>{this.props.signup.success ? 'Done!' : ''}</Text>
-                <Text style={{ textAlign: 'center', color: 'red' }}>{this.props.signup.error ? 'Something went wrong!' : ''}</Text>
             </ScrollView>
         )
     }
