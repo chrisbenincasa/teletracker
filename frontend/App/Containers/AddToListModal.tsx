@@ -152,8 +152,6 @@ class AddToListModal extends React.PureComponent<Props, State> {
                                             width: 24
                                         }}
                                         checked={this.state.chosen[list.id]}
-                                        // right={true}
-                                        // iconRight={true}
                                         onPress={() => this.handleCheckboxPress(list.id)}
                                     />
                                 </View>

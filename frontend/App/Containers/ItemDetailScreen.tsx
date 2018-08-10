@@ -17,6 +17,9 @@ import { Thing } from '../Model/external/themoviedb';
 import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
+import { Provider as PaperProvider } from 'react-native-paper';
+import { PaperTheme } from '../Themes/';
+
 import { Snackbar, FABGroup, Card, CardContent } from 'react-native-paper'
 import styles from './Styles/ItemDetailScreenStyle';
 
@@ -162,6 +165,8 @@ class ItemDetailScreen extends Component<Props, State> {
 
     render () {
         return (
+            <PaperProvider theme={PaperTheme}>
+
             <View style={styles.container}>
                 { this.state.loading ? (
                     <Card style={{
@@ -312,6 +317,8 @@ class ItemDetailScreen extends Component<Props, State> {
                 ) }
                 
             </View>
+        </PaperProvider>
+        
         )
     }
 }
