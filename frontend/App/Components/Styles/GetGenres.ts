@@ -7,7 +7,6 @@ export default StyleSheet.create({
         flex: 1, 
         flexDirection: 'row', 
         flexWrap: 'wrap', 
-        marginLeft: 13, 
-        marginRight: 15
+        marginHorizontal: 15
     }
 });

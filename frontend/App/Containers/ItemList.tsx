@@ -1,12 +1,14 @@
 import R from 'ramda';
 import React from 'react';
-import { FlatList, ListRenderItemInfo, Text, View } from 'react-native';
-import { ListItem } from 'react-native-elements';
+import { Image, FlatList, ListRenderItemInfo, Text, View } from 'react-native';
+import { Icon } from 'react-native-elements';
 import { Navigation } from 'react-native-navigation';
 import { NavigationScreenProp } from 'react-navigation';
 import { connect, Dispatch } from 'react-redux';
+import { Card, ListItem } from 'react-native-paper';
+import getMetadata from '../Components/Helpers/getMetadata';
 
-import { tracker } from '../Components/Analytics';
+import { appVersion, tracker } from '../Components/Analytics';
 import { List } from '../Model';
 import { Thing } from '../Model/external/themoviedb';
 import * as NavigationConfig from '../Navigation/NavigationConfig';
@@ -27,6 +29,7 @@ interface Props {
 class ItemList extends React.PureComponent<Props> {
     constructor(props: Props) {
         super(props);
+        this.renderItem = this.renderItem.bind(this);
         this.openSearch = this.openSearch.bind(this);
     }
 
@@ -76,6 +79,11 @@ class ItemList extends React.PureComponent<Props> {
     }
 
     goToItemDetail(item: Thing) {
+        // Track when users navigate to an item from search screen
+        tracker.trackEvent('search-action', 'view-item-details', {
+            label: appVersion
+        });
+
         let view = R.mergeDeepRight(NavigationConfig.DetailView, {
             component: {
                 passProps: { itemType: item.type, itemId: item.id },
@@ -100,20 +108,49 @@ class ItemList extends React.PureComponent<Props> {
             <ListItem 
                 key={item.id}
                 title={item.name}
-                containerStyle={{ borderBottomWidth: 1, borderBottomColor: 'lightgray' }}
-                leftIcon={{ name:
-                    item.type === 'movie' ? 'movie' 
-                        : item.type === 'show' ? 'tv' 
-                        : item.type === 'person' ? 'person' 
-                        : null
-                    }}
+                description={item.type}
+                avatar={
+                    <Image
+                        source={{uri: 'https://image.tmdb.org/t/p/w92' + '/bvYjhsbxOBwpm8xLE5BhdA3a8CZ.jpg'}}
+                        // + getMetadata.getPosterPath(item)}}
+                        style={{
+                            width: 40,
+                            height: 60
+                        }}
+                    />
+                }
+                containerStyle={{
+                    borderBottomWidth: 1,
+                    borderBottomColor: 'lightgray'
+                }}
                 onPress={() => this.goToItemDetail(item)} 
             />
         )
     }
 
-    renderEmpty = () => <Text style={styles.label}> Empty list, yo! </Text>;
-    
+    renderEmpty = () => {
+        return (
+            <Card style={{
+                flex: 1,
+                flexDirection: 'row',
+                margin: 8
+            }}>
+                <View style={styles.defaultScreen}>
+                    <Icon
+                        name='mood-bad'
+                        color='#476DC5'
+                        size={75}
+                        containerStyle={{
+                            height: 75,
+                            marginBottom: 20
+                        }}
+                    />
+                    <Text> Empty list, yo!  </Text>
+                </View>
+            </Card>
+        )
+    }
+
     keyExtractor: (item: any, index: any) => string = (item, _) => item.id.toString();
     
     oneScreensWorth = 20;
@@ -121,25 +158,14 @@ class ItemList extends React.PureComponent<Props> {
     render () {
         return (
             <View style={styles.container}>
-                {/* <Header 
-                    componentId={this.props.componentId} 
-                    centerComponent={{ title: 'My List' }}
-                    rightComponent={
-                        <Icon 
-                            name='search'
-                            color='#fff'
-                            underlayColor={Colors.headerBackground}
-                            onPress={this.openSearch}
-                        />
-                    }
-                /> */}
                 <FlatList
                     contentContainerStyle={styles.listContent}
                     data={this.props.list.things}
-                    renderItem={this.renderItem.bind(this)}
+                    renderItem={this.renderItem}
                     keyExtractor={this.keyExtractor}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
+                    style={{flex: 0}}
                 />
             </View>
         )

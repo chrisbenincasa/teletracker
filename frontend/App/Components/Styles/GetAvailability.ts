@@ -4,7 +4,6 @@ import { ApplicationStyles, Colors } from '../../Themes';
 export default StyleSheet.create({
     ...ApplicationStyles.screen,
     castHeader: {
-        marginTop: 10,
         fontSize: 16
     },
     castContainer: {

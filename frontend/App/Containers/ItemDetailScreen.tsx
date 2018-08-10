@@ -17,7 +17,10 @@ import { Thing } from '../Model/external/themoviedb';
 import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
-import { Snackbar, FABGroup } from 'react-native-paper'
+import { Provider as PaperProvider } from 'react-native-paper';
+import { PaperTheme } from '../Themes/';
+
+import { Snackbar, FABGroup, Card, CardContent } from 'react-native-paper'
 import styles from './Styles/ItemDetailScreenStyle';
 
 interface Props {
@@ -29,7 +32,7 @@ interface Props {
     markAsWatched: (componentId: string, itemId: string | number, itemType: string) => void,
     navigation: NavigationScreenProp<any>,
     open: boolean,
-    visible: boolean
+    // visible: boolean
 }
 
 type State = {
@@ -38,7 +41,7 @@ type State = {
     item?: Thing,
     open: false,
     userDetails?: any,
-    visible: false
+    // visible: false
 }
 
 class ItemDetailScreen extends Component<Props, State> {
@@ -123,10 +126,6 @@ class ItemDetailScreen extends Component<Props, State> {
             thing: this.state.item,
             userDetails: this.state.userDetails
         });
-
-        this.setState({
-            visible: !this.state.visible
-          });
     }
 
     markAsWatched() {
@@ -166,96 +165,112 @@ class ItemDetailScreen extends Component<Props, State> {
 
     render () {
         return (
+            <PaperProvider theme={PaperTheme}>
+
             <View style={styles.container}>
                 { this.state.loading ? (
-                    <ActivityIndicator />
+                    <Card style={{
+                        margin: 15,
+                        flex: 1,
+                        flexDirection: 'row',
+                        alignItems: 'center'
+                    }}>
+                        <View style={{
+                            flex: 1,
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center'
+                        }}>
+                            <ActivityIndicator
+                                size='large'
+                            />
+                        </View>
+                    </Card>
                 ) : (
                     <ScrollView>
-                        <KeyboardAvoidingView behavior='position'>
-                            <View style={styles.coverContainer} >
-                                {   // Check if cover image exists, otherwise show blue
-                                    getMetadata.getBackdropImagePath(this.state.item) ?
-                                        <Image source={{
-                                            uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getBackdropImagePath(this.state.item)
-                                        }}
-                                            style={styles.coverImage}
-                                        />
-                                        : <View style={styles.emptyCoverImage}></View>
-                                }
-                            </View>
-                            <View style={styles.subHeaderContainer}>
-                                {getMetadata.getPosterPath(this.state.item)
-                                    ?
-                                    <Image
-                                        source={{
-                                            uri: 'https://image.tmdb.org/t/p/w92' + getMetadata.getPosterPath(this.state.item)
-                                        }}
-                                        style={styles.posterImage} />
-                                    :
-                                    <View style={styles.posterImage}>
-                                        <Icon
-                                            name='image'
-                                            color='#fff'
-                                            size={50}
-                                            containerStyle={{ flex: 1 }}
-                                        />
-                                    </View>
-                                }
-                                <View style={styles.itemDetailsContainer}>
-                                    <Text style={{
-                                        marginTop: 10,
-                                        marginLeft: 10,
-                                        fontSize: 20
-                                    }}>
-                                        {this.state.item.name}
-                                        {
-                                            getMetadata.getReleaseYear(this.state.item)
-                                                ? (
-                                                    <Text>({getMetadata.getReleaseYear(this.state.item)})</Text>
-                                                )
-                                                : null
-                                        }
-                                    </Text>
-                                    <View style={styles.ratingsContainer}>
-                                        <Rating
-                                            type="star"
-                                            fractions={1}
-                                            startingValue={getMetadata.getRatingPath(this.state.item) / 2}
-                                            readonly
-                                            imageSize={15}
-                                            style={{
-                                                paddingBottom: 15,
-                                                marginLeft: 10
-                                            }}
-                                        />
-                                        <Text style={styles.ratingCount}>
-                                            ({getMetadata.getVoteCount(this.state.item)})
-                                        </Text>
-                                    </View>
+                        {   // Check if cover image exists, otherwise don't show a cover image
+                            getMetadata.getBackdropImagePath(this.state.item) ?
+                                <View style={styles.coverContainer} >
+                                    <Image source={{
+                                        uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getBackdropImagePath(this.state.item)
+                                    }}
+                                        style={styles.coverImage}
+                                    />
                                 </View>
-                            </View>
-                        </KeyboardAvoidingView>
-
-                        <View style={styles.descriptionContainer}>
-                            <ViewMoreText
-                                numberOfLines={4}
-                                renderViewMore={this.renderViewMore}
-                                renderViewLess={this.renderViewLess}>
-                                <Text>
-                                    {
-                                        getMetadata.getDescription(this.state.item)
+                            : null
+                        }
+                        <View style={styles.itemDetailsContainer}>
+                            <Text style={{
+                                flex: 1, 
+                                fontSize: 20
+                            }}>
+                                {this.state.item.name}
+                                {
+                                    getMetadata.getReleaseYear(this.state.item)
+                                        ? (
+                                            <Text>({getMetadata.getReleaseYear(this.state.item)})</Text>
+                                        )
+                                        : null
+                                }
+                            </Text>
+                            <View style={styles.ratingsContainer}>
+                                <Rating
+                                    type='star'
+                                    ratingBackgroundColor='#fafafa'
+                                    fractions={1}
+                                    startingValue={
+                                        getMetadata.getRatingPath(this.state.item) / 2
                                     }
+                                    readonly
+                                    imageSize={15}
+                                />
+                                <Text style={styles.ratingCount}>
+                                    ({getMetadata.getVoteCount(this.state.item)})
                                 </Text>
-                            </ViewMoreText>
+                            </View>
                         </View>
 
-                        <GetGenres item={ this.state.item } />
+                        <Card style={styles.descriptionContainer}>
+                            <CardContent style={{flex: 1}}>
+                                <View style={{
+                                    flexDirection: 'row',
+                                    flex: 1
+                                }}>
+                                    {
+                                        getMetadata.getPosterPath(this.state.item) ?
+                                            <Image
+                                                source={{
+                                                    uri: 'https://image.tmdb.org/t/p/w92' + getMetadata.getPosterPath(this.state.item)
+                                                }}
+                                                style={{
+                                                    width: 92,
+                                                    height: 138, 
+                                                    backgroundColor: '#C9C9C9'
+                                                }}
+                                            />
+                                        : null
+                                    }
+                                    <ViewMoreText
+                                        numberOfLines={6}
+                                        renderViewMore={this.renderViewMore}
+                                        renderViewLess={this.renderViewLess}
+                                        style={{width: 150}}
+                                    >
+                                        {
+                                            getMetadata.getDescription(this.state.item)
+                                        }
+                                    </ViewMoreText>
+                                </View>
+                                <GetGenres item={ this.state.item } />
+                            </CardContent>
+                        </Card>
+
                         <GetSeasons item={ this.state.item }/>
                         <GetAvailability item={ this.state.item } />
                         <GetCast item={ this.state.item }/>
 
                         <View style={styles.container}>
-                            <Snackbar
+                            {/* <Snackbar
                                 visible={this.state.visible}
                                 onDismiss={() => this.setState({ visible: false })}
                                 action={{
@@ -266,7 +281,7 @@ class ItemDetailScreen extends Component<Props, State> {
                                 }}
                             >
                                 {`Item has been ${this.state.userDetails.belongsToLists.length > 0 ? 'added' : 'removed'}!`}
-                            </Snackbar>
+                            </Snackbar> */}
                             <FABGroup
                                 open={this.state.open}
                                 icon='add'
@@ -291,13 +306,15 @@ class ItemDetailScreen extends Component<Props, State> {
                                         // do something if the speed dial is open
                                     }
                                 }}
-                                style={{marginBottom: this.state.visible ? 70 : 35 }}
+                                style={{marginBottom: this.state.visible ? 35 : 0 }}
                             />
                         </View>
                     </ScrollView>
                 ) }
                 
             </View>
+        </PaperProvider>
+        
         )
     }
 }

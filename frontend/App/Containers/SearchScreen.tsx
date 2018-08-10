@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import { ActivityIndicator, Dimensions, FlatList, Image, Text, TouchableHighlight, View, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Dimensions, FlatList, Image, Text, View, TouchableOpacity } from 'react-native';
 import { Icon, ListItem } from 'react-native-elements';
 import {
     Button,
@@ -8,6 +8,7 @@ import {
     CardActions,
     CardContent,
     CardCover,
+    Chip,
     Divider,
     Title,
     Paragraph,
@@ -74,7 +75,7 @@ class SearchScreen extends Component<Props, State> {
             headerRight: (
                 <TouchableOpacity style={{ marginHorizontal: 10 }}>    
                     <Icon
-                        name={gridView ? 'list' : 'apps'}
+                        name={gridView ? 'view-headline' : 'apps'}
                         color={Colors.white}
                         underlayColor={Colors.headerBackground}
                         onPress={changeView}
@@ -89,14 +90,16 @@ class SearchScreen extends Component<Props, State> {
 
         this.searchTextChanged = this.searchTextChanged.bind(this);
         this.executeSearch = this.executeSearch.bind(this);
-        this.renderItem = this.renderItem.bind(this);
+        this.renderList = this.renderList.bind(this);
+        this.renderGrid = this.renderGrid.bind(this);
         this.markAsWatched = this.markAsWatched.bind(this);
         this.manageLists = this.manageLists.bind(this);
+        this.prefillSearch = this.prefillSearch.bind(this);
 
         this.state = {
             orientation: checkDevice.isPortrait() ? 'portrait' : 'landscape',
             devicetype: checkDevice.isTablet() ? 'tablet' : 'phone',
-            gridView: true,
+            gridView: false,
             searchText: null
         };
 
@@ -116,25 +119,6 @@ class SearchScreen extends Component<Props, State> {
         this.props.navigation.setParams({ gridView: !this.state.gridView });
     }
 
-    listTypeIcon() {
-        return (
-            <Icon 
-                name={this.state.gridView ? 'list' : 'apps'}
-                color={Colors.white}
-                underlayColor={Colors.headerBackground}
-                onPress={this.changeView}
-            />
-        )
-    }
-
-    getItemContainerWidth(){
-        return this.state.gridView ? (checkDevice.isLandscape() ? 155 : 178) : 75;
-    }
-
-    getItemContainerHeight(){
-        return this.state.gridView ? (checkDevice.isLandscape() ? 216 : 246) : 104;
-    }
-
     componentWillMount() {
         this.props.loadUserSelf(this.props.componentId);
         this.props.navigation.setParams({ 
@@ -148,12 +132,20 @@ class SearchScreen extends Component<Props, State> {
         tracker.trackEvent('search-action', 'search', {
             label: appVersion
         });
-
         this.props.doSearch(this.state.searchText);
     }
 
     searchTextChanged(text: string) {
-        return this.setState({ searchText: text });
+
+        this.setState({ searchText: text });
+// console.log(this.state.searchText);
+
+    }
+
+    prefillSearch(text: string) {
+        console.log(text);
+        this.searchTextChanged(text);
+        this.executeSearch();
     }
 
     // Important: You must return a Promise
@@ -260,49 +252,6 @@ class SearchScreen extends Component<Props, State> {
         this.props.markAsWatched(this.props.componentId, item.id, item.type);
     }
 
-    renderEmpty = () => { 
-        return (
-            !this.props.search.results && !this.props.search.fetching ?
-                <View style={styles.defaultScreen}>
-                    <Icon
-                        name='search'
-                        color='#476DC5'
-                        size={55}
-                        containerStyle={{height: 44}}
-                    />
-                    <Text> Search for Movies, TV Shows, or People! </Text>
-                    {
-                        this.props.search.recentlyViewed && this.props.search.recentlyViewed.length > 0 ? 
-                        <View>
-                            <Divider style={{ backgroundColor: 'grey', marginVertical: 15 }} />
-                            <Text h3>Recently Viewed</Text>
-                            {this.props.search.recentlyViewed.map((i) => (
-                                <ListItem
-                                    roundAvatar
-                                    avatar={{uri: 'https://image.tmdb.org/t/p/w154' + getMetadata.getPosterPath(i) }}
-                                    key={i.id}
-                                    title={i.name}
-                                    onPress={() => this.goToItemDetail(i)}
-                                    rightIcon={{name: 'close'}}
-                                    onPressRightIcon={() => this.props.removeRecentlyViewed(i)}
-                                />
-                            ))}
-                            <Button
-                                icon={{name: 'delete'}}
-                                title='Clear All Recent Searches'
-                                onPress={() => this.props.removeAllRecentlyViewed()}
-                                style={{margin: 10}}
-                            />
-                        </View>
-                        : null
-                    }
-                </View>
-            : null 
-        )
-    };
-
-    renderLoading = () => { }
-
     // The default function if no Key is provided is index
     // an identifiable key is important if you plan on
     // item reordering.  Otherwise index is fine
@@ -310,8 +259,8 @@ class SearchScreen extends Component<Props, State> {
     keyExtractor = (item: any, index: any) => item.id + (this.state.gridView ? 'g' : 'l') + (checkDevice.isLandscape() ? 'h' : 'v');
 
     // How many items should be kept im memory as we scroll?
-    oneScreensWorth = 18;
-    // oneScreensWorth = (this.state.gridView ? (checkDevice.isLandscape() ? 12 : 18) : (checkDevice.isLandscape() ? 4 : 8));
+    oneScreensWorth = 8;
+
 
     goToItemDetail(item: object) {
         // Track when users navigate to an item from search screen
@@ -340,9 +289,66 @@ class SearchScreen extends Component<Props, State> {
         }
     }
 
-    renderItem ( { item }:object ) {
+    renderEmpty = () => { 
         return (
-            <Card style={{flex: 1, margin: 8}}>
+            !this.props.search.results && !this.props.search.fetching ?
+                <Card style={{flex: 1, flexDirection: 'row', margin: 8}}>
+                    <View style={styles.defaultScreen}>
+                        <Icon
+                            name='search'
+                            color='#476DC5'
+                            size={75}
+                            containerStyle={{height: 75, marginBottom: 20}}
+                        />
+                        <Text> Search for Movies, TV Shows, or People! Try it out: </Text>
+                        
+                        <View style={{
+                            flexDirection: 'row', 
+                            flexWrap: 'wrap'
+                        }}>
+                            <Chip onPress={() => this.prefillSearch('The Matrix')}>The Matrix</Chip>
+                            <Chip onPress={() => this.prefillSearch('Halt & Catch Fire')}>Halt & Catch Fire</Chip>
+                            <Chip onPress={() => this.prefillSearch('Nic Cage')}>Nic Cage</Chip>
+                        </View>
+                        {
+                            this.props.search.recentlyViewed && this.props.search.recentlyViewed.length > 0 ? 
+                            <View>
+                                <Divider style={{ backgroundColor: 'grey', marginVertical: 15 }} />
+                                <Text h3>Recently Viewed</Text>
+                                {
+                                    this.props.search.recentlyViewed.map((i) => (
+                                        <ListItem
+                                            roundAvatar
+                                            avatar={{uri: 'https://image.tmdb.org/t/p/w154' + getMetadata.getPosterPath(i) }}
+                                            key={i.id}
+                                            title={i.name}
+                                            onPress={() => this.goToItemDetail(i)}
+                                            rightIcon={{name: 'close'}}
+                                            onPressRightIcon={() => this.props.removeRecentlyViewed(i)}
+                                        />
+                                    ))
+                                }
+                                <Button
+                                    raised
+                                    primary
+                                    style={{margin: 10}}
+                                    icon='delete'
+                                    onPress={() => this.props.removeAllRecentlyViewed()}
+                                >
+                                    Clear All Recent Searches
+                                </Button>
+                            </View>
+                            : null
+                        }
+                    </View>
+                </Card>
+            : null 
+        )
+    };
+
+    renderList ( { item }:object ) {
+        return (
+            <Card style={{flexDirection: 'row', margin: 8}}>
                 <TouchableRipple
                     onPress={() => this.goToItemDetail(item)}
                     activeOpacity={0.5}
@@ -356,13 +362,17 @@ class SearchScreen extends Component<Props, State> {
                             />
                         : null }
 
-                        <CardContent style={{flex: 1}}>
-                            <Title style={{flex: 1}}>{item.name}</Title>
+                        <CardContent style={{
+                            flexGrow: 1
+                        }}>
+                            <Title style={{flex:1}}>
+                                {item.name}
+                            </Title>
                                 {
                                 getMetadata.getSeasonCount(item) || getMetadata.getEpisodeCount(item) ?
                                 <Paragraph 
                                         style={{
-                                            width: this.getItemContainerWidth(),
+                                            flex: 1,
                                             textAlign: 'left', 
                                             fontStyle: 'italic'
                                         }}
@@ -377,7 +387,7 @@ class SearchScreen extends Component<Props, State> {
                             getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
                                 <Paragraph
                                     style={{
-                                        width: this.getItemContainerWidth(),
+                                        flex: 1,
                                         textAlign: 'left',
                                         fontStyle: 'italic'
                                     }}
@@ -398,7 +408,10 @@ class SearchScreen extends Component<Props, State> {
                         </CardContent>
                     </View>
                 </TouchableRipple>
-                <CardActions style={{flex: 2}}>
+                <CardActions style={{
+                    flexDirection: 'row',
+                    flexGrow: 1
+                }}>
                     <Button
                         raised
                         style={{
@@ -408,10 +421,11 @@ class SearchScreen extends Component<Props, State> {
                         icon={getMetadata.belongsToLists(item) ? 'visibility-off' : 'visibility'}
                         onPress={() => this.markAsWatched(item)}
                     >
-                        {getMetadata.belongsToLists(item) ? 'Mark as Unwatched' : 'Mark as Watched'}
+                        {getMetadata.belongsToLists(item) ? 'Mark Unwatched' : 'Mark Watched'}
                     </Button>
                     <Button
                         raised
+                        primary
                         style={{
                             flex: 1,
                             textAlign: 'center'
@@ -420,10 +434,78 @@ class SearchScreen extends Component<Props, State> {
                         onPress={() => this.manageLists(item)}
 
                     >
-                        {getMetadata.belongsToLists(item) ? 'Manage Tracking' : 'Add to List'}
+                        {getMetadata.belongsToLists(item) ? 'Manage List' : 'Add to List'}
                     </Button>
                 </CardActions>
             </Card>
+        )
+    }
+
+    renderGrid ( { item }:object ) {
+        return (
+                <Card style={{flex: 1, margin: 8}}>
+                    <TouchableRipple
+                        onPress={() => this.goToItemDetail(item)}
+                        activeOpacity={0.5}
+                        underlayColor='#fff'
+                    >
+                        <View>
+                            {/* Showing a blank grey space for gridView helps maintain a better aesthetic*/}
+                            {getMetadata.getPosterPath(item) ? 
+                                <CardCover 
+                                    source={{
+                                        uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getPosterPath(item)
+                                    }}
+                                />
+                            :
+                            <CardCover 
+                                style={{
+                                    flexGrow: 1,
+                                    resizeMode: 'contain',
+                                }}
+                                source={{
+                                    uri: 'data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=='
+                                }}
+                            /> }
+
+                            <CardContent>
+                                <Title>{truncateText(item.name, 30)}</Title>
+                                { 
+                                getMetadata.getSeasonCount(item) || getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
+                                    <Paragraph
+                                        style={{
+                                            textAlign: 'left',
+                                            fontStyle: 'italic'
+                                        }}
+                                    >
+                                        { 
+                                            `${getMetadata.getSeasonCount(item) ? getMetadata.getSeasonCount(item) : getMetadata.getRuntime(item)} ${getMetadata.getReleaseYear(item)}`
+                                        }
+                                    </Paragraph>
+                                : null
+                                }
+                            </CardContent>
+                        </View>
+                    </TouchableRipple>
+                    <CardActions style={{
+                        flexDirection: 'row',
+                        flexGrow: 1
+                    }}>
+                        <Button
+                            raised
+                            primary
+                            style={{
+                                flex: 1,
+                                textAlign: 'center',
+                                alignSelf: 'flex-end'
+                            }}
+                            icon={getMetadata.belongsToLists(item) ? 'list' : 'playlist-add'}
+                            onPress={() => this.manageLists(item)}
+                        >
+                            {getMetadata.belongsToLists(item) ? 'Manage List' : 'Add to List'}
+                        </Button>
+                    </CardActions>
+                </Card>
         )
     }
 
@@ -458,23 +540,33 @@ class SearchScreen extends Component<Props, State> {
 
                 {
                     this.props.search.fetching ?  
-                        <View style={styles.fetching}>
-                            <ActivityIndicator size='large' color='#476DC5' animating={this.props.search.fetching} /> 
-                        </View>
-                    : null 
-                }
-
+                    <Card style={{flex: 1, flexDirection: 'row', margin: 8}}>
+                            
+                            <View style={styles.defaultScreen}>
+                                <ActivityIndicator
+                                    size='large'
+                                    color='#476DC5'
+                                    animating={this.props.search.fetching}
+                                />
+                            </View> 
+                        </Card>
+                 :
                 <FlatList
                     data={this.getResults.call(this)}
-                    renderItem={this.renderItem}
+                    renderItem={this.state.gridView ? this.renderGrid : this.renderList }
                     keyExtractor={this.keyExtractor}
                     // g = grid, l = list, h = horizontal, v = vertical
                     key={(this.state.gridView ? 'g' : 'l') + (checkDevice.isLandscape() ? 'h' : 'v')}
                     initialNumToRender={this.oneScreensWorth}
                     ListEmptyComponent={this.renderEmpty}
-                    numColumns={this.state.gridView && checkDevice.isLandscape() ? 2 : 1}
-                    columnWrapperStyle={ this.state.gridView && checkDevice.isLandscape() ? {justifyContent: 'flex-start'} : null}
+                    numColumns={this.state.gridView ? 2 : 1}
+                    // columnWrapperStyle={ this.state.gridView && checkDevice.isLandscape() ? {justifyContent: 'flex-start'} : null}
+                    contentContainerStyle={{flexGrow: 1}}
+                    style={{flex: 0}}
                 />
+
+            }
+
             </View>
         );
     }

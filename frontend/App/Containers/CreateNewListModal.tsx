@@ -1,8 +1,8 @@
 import React, { isValidElement } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { FormInput, FormLabel } from 'react-native-elements';
 import { NavigationScreenProp } from 'react-navigation';
 import { connect, Dispatch } from 'react-redux';
+import { TextInput } from 'react-native-paper'
 
 import { CommonStackStyles } from '../Navigation/AppNavigation';
 import ListActions, { ListState } from '../Redux/ListRedux';
@@ -32,7 +32,13 @@ class CreateNewListModal extends React.PureComponent<Props, State> {
             headerLeft: (
                 <TouchableOpacity style={{ marginHorizontal: 10 }}>
                     <Text
-                        style={{ fontSize: 17, fontWeight: 'normal', marginHorizontal: 10, color: 'white', textAlign: 'right' }}
+                        style={{
+                            fontSize: 17,
+                            fontWeight: 'normal',
+                            marginHorizontal: 10,
+                            color: 'white',
+                            textAlign: 'right'
+                        }}
                         onPress={() => navigation.goBack()}
                     >Cancel
                     </Text>
@@ -41,7 +47,13 @@ class CreateNewListModal extends React.PureComponent<Props, State> {
             headerRight: (
                 <TouchableOpacity style={{ marginHorizontal: 10 }}>
                     <Text 
-                        style={{ fontSize: 17, fontWeight: 'normal', marginHorizontal: 10, color, textAlign: 'right' }}
+                        style={{
+                            fontSize: 17,
+                            fontWeight: 'normal',
+                            marginHorizontal: 10,
+                            color,
+                            textAlign: 'right'
+                        }}
                         onPress={() => doneEnabled ? navigation.getParam('navigationButtonPressed')('doneButton') : null}
                     >Create
                     </Text>
@@ -102,10 +114,10 @@ class CreateNewListModal extends React.PureComponent<Props, State> {
     render() {
         return (
             <View style={styles.container}>
-                <FormLabel>Name</FormLabel>
-                <FormInput
-                    placeholder="Enter a List name"
-                    onChangeText={(name) => this.updateFormState(name)} 
+                <TextInput
+                    label="Enter a List name"
+                    onChangeText={(name) => this.updateFormState(name)}
+                    style={{margin: 5}}
                 />
             </View>
         );
