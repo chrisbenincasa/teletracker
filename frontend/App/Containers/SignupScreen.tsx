@@ -35,6 +35,7 @@ class SignupScreen extends Component<Props, State> {
 
     componentDidMount() {
         tracker.trackScreenView('Signup');
+        console.log(this.props);
     }
 
     goToLogin() {
@@ -101,10 +102,10 @@ class SignupScreen extends Component<Props, State> {
                         style={{margin: 5}}
                     />
                     <Text style={{textAlign: 'center', color: 'green' }}>
-                        {this.props.signup.success ? 'Done!' : ''}
+                        {this.props.signup.success ? 'Done!' : null}
                     </Text>
                     <Text style={{ textAlign: 'center', color: 'red' }}>
-                        {this.props.signup.error ? 'Something went wrong!' : ''}
+                        {this.props.signup.error ? 'Something went wrong!  Please try again.' : null}
                     </Text>
                     <Button
                         primary

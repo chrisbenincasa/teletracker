@@ -164,7 +164,23 @@ class ItemDetailScreen extends Component<Props, State> {
         return (
             <View style={styles.container}>
                 { this.state.loading ? (
-                    <ActivityIndicator />
+                    <Card style={{
+                        margin: 15,
+                        flex: 1,
+                        flexDirection: 'row',
+                        alignItems: 'center'
+                    }}>
+                        <View style={{
+                            flex: 1,
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center'
+                        }}>
+                            <ActivityIndicator
+                                size='large'
+                            />
+                        </View>
+                    </Card>
                 ) : (
                     <ScrollView>
                         <KeyboardAvoidingView behavior='position'>

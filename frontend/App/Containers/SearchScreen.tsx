@@ -474,7 +474,6 @@ class SearchScreen extends Component<Props, State> {
                                 getMetadata.getSeasonCount(item) || getMetadata.getRuntime(item) || getMetadata.getReleaseYear(item) ?
                                     <Paragraph
                                         style={{
-                                            width: this.getItemContainerWidth(),
                                             textAlign: 'left',
                                             fontStyle: 'italic'
                                         }}
