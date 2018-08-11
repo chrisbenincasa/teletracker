@@ -18,7 +18,7 @@ import { Thing } from '../Model/external/themoviedb';
 import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
-import { PaperTheme, PaperTheme } from '../Themes/';
+import { PaperTheme, PaperTheme, Colors } from '../Themes/';
 import styles from './Styles/ItemDetailScreenStyle';
 
 interface Props {
@@ -215,7 +215,7 @@ class ItemDetailScreen extends Component<Props, State> {
                                 <View style={styles.ratingsContainer}>
                                     <Rating
                                         type='star'
-                                        ratingBackgroundColor='#fafafa'
+                                        ratingBackgroundColor={Colors.transparent}
                                         fractions={1}
                                         startingValue={
                                             getMetadata.getRatingPath(this.state.item) / 2
