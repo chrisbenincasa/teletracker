@@ -10,14 +10,6 @@ import NavigationService from '../Navigation/NavigationService';
 import UserActions from '../Redux/UserRedux';
 import { TeletrackerApi } from '../Services/TeletrackerApi';
 
-const getListViewNavEffect = (componentId: string) => {
-    return call([Navigation, Navigation.setStackRoot], componentId, NavigationConfig.ListBottomTabs);
-}
-
-const getNavEffect = (componentId: string, view: any) => {
-    return call([Navigation, Navigation.setStackRoot], componentId, view);
-}
-
 export function* getUser(api: TeletrackerApi, { componentId }: AnyAction) {
     const response: ApiResponse<User> = yield call([api, api.getUserSelf]);
 
@@ -31,7 +23,7 @@ export function* getUser(api: TeletrackerApi, { componentId }: AnyAction) {
     } else {
         tracker.trackException(response.problem, false);
         yield all([
-            getNavEffect(componentId, NavigationConfig.LoginScreenComponent),
+            call([NavigationService, NavigationService.navigate], 'Auth'),
             put(UserActions.userFailure())
         ]);
     }
@@ -77,7 +69,7 @@ export function * logoutUser(api: TeletrackerApi) {
 
         yield all([
             put(UserActions.logoutSuccess()),
-            call([Navigation, Navigation.setRoot], NavigationConfig.AuthStack2)
+            call([NavigationService, NavigationService.navigate], 'Auth')
         ]);
     } else {
         // Track logout failures in GA
@@ -104,7 +96,6 @@ export function * signupUser(api: TeletrackerApi, action: any) {
         // Kick off a getUser call
         yield call(getUser, api, action);
         yield call([NavigationService, NavigationService.navigate], 'ListOfLists');
-        // yield getListViewNavEffect(componentId)
     } else {
         // Track signup failures in GA
         tracker.trackException(response.problem, false);

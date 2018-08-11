@@ -70,7 +70,7 @@ class CreateNewListModal extends React.PureComponent<Props, State> {
         }
     }
 
-    navigationButtonPressed({ buttonId }: any) {
+    navigationButtonPressed(buttonId: string) {
         if (buttonId == 'backButton') {
             this.props.navigation.pop();
         } else if (buttonId == 'doneButton') {

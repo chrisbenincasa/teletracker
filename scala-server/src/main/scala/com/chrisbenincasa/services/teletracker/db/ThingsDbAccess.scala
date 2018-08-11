@@ -2,6 +2,7 @@ package com.chrisbenincasa.services.teletracker.db
 
 import com.chrisbenincasa.services.teletracker.db.model._
 import com.chrisbenincasa.services.teletracker.inject.{DbImplicits, DbProvider}
+import com.chrisbenincasa.services.teletracker.util.ObjectMetadataUtils
 import javax.inject.Inject
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -169,7 +170,22 @@ class ThingsDbAccess @Inject()(
   def saveThing(thing: Thing, externalPair: Option[(ExternalSource, String)] = None) = {
     val existing = externalPair match {
       case Some((source, id)) if source == ExternalSource.TheMovieDb =>
-        externalIds.query.filter(_.tmdbId === id).flatMap(_.thing).result.headOption
+        externalIds.query.filter(_.tmdbId === id).flatMap(_.thing).result.flatMap {
+          case s if s.isEmpty =>
+            things.query.
+              filter(_.normalizedName === thing.normalizedName).
+              filter(_.`type` === thing.`type`).
+              result
+          case s => DBIO.successful(s)
+        }.flatMap {
+          case s if s.length <= 1 => DBIO.successful(s.headOption)
+          case s =>
+            DBIO.successful {
+              s.find(t => {
+                t.metadata.exists(ObjectMetadataUtils.metadataMatchesId(_, source, thing.`type`, id))
+              })
+            }
+        }
 
       case _ =>
         things.query.

@@ -97,11 +97,13 @@ class SearchController @Inject()(
       existingS <- existingShowsByExternalId
       newlySaved <- newlySavedByExternalId
     } yield {
-      result.results.flatMap(_.filterNot[Person]).collect {
+      val res = result.results.flatMap(_.filterNot[Person]).collect {
         case Inl(movie) => existingM.get(movie.id.toString).orElse(newlySaved.get(movie.id.toString))
         case Inr(Inl(show)) => existingS.get(show.id.toString).orElse(newlySaved.get(show.id.toString))
         case Inr(Inr(_)) => sys.error("Impossible")
       }.flatten
+
+      res
     }
 
     for {

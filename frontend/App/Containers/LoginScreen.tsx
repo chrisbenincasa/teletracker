@@ -66,6 +66,8 @@ class LoginScreen extends Component<Props, State> {
                         label='Email'
                         keyboardType='email-address'
                         returnKeyType='next'
+                        autoCapitalize='none'
+                        textContentType='username'
                         onSubmitEditing={() => this.inputs.password.focus()}
                         onChangeText={(email) => this.setState({ email })} 
                         style={{margin: 5}}
@@ -75,6 +77,7 @@ class LoginScreen extends Component<Props, State> {
                         placeholder='Password...'
                         label='Password'
                         autoCapitalize='none'
+                        textContentType='password'
                         ref={input => this.inputs.password = input}
                         onChangeText={(password) => this.setState({ password })}
                         style={{margin: 5}}

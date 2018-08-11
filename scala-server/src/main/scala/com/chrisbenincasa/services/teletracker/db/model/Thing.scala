@@ -82,7 +82,7 @@ class Things @Inject()(
     def lastUpdatedAt = column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
     def metadata = column[Option[ObjectMetadata]]("metadata", O.SqlType("jsonb"))
 
-    def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`), true)
+    def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
     override def * =
       (

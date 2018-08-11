@@ -110,7 +110,8 @@ export const reducers = {
 
         let newLists = lists.map(l => {
             if (_.includes(listsToAdd, l.id.toString()) && !_.find(l.things, { id: thing.id })) {
-                return l.merge({ things: [thing] });
+                l.things = l.things.concat([thing]);
+                return l;
             } else if (_.includes(listsToRemove, l.id.toString()) && _.find(l.things, { id: thing.id })) {
                 let newthings: Thing[] = _.reject(l.things, t => t.id === thing.id);
                 return l.merge({ things: newthings });
