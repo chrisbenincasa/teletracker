@@ -12,7 +12,7 @@ export const networks = {
     'hulu': {
         sort: 3,
         folder: 'hulu',
-        preferredLogo: require('../../Images/Logos/netflix-kids/icon.jpg')
+        preferredLogo: require('../../Images/Logos/hulu/icon.jpg')
     },
     'amazon-prime-video': {
         sort: 4,
