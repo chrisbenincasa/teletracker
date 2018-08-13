@@ -163,10 +163,12 @@ class TmdbEntityProcessor @Inject()(
       networksBySource <- networkCache.get()
       thing <- processedMovieFut
     } yield {
-      val availabilities = matchJustWatchMovie(movie, justWatchRes.items).collect {
+      val matchingMovie = matchJustWatchMovie(movie, justWatchRes.items)
+
+      val availabilities = matchingMovie.collect {
         case matchedItem if matchedItem.offers.exists(_.nonEmpty) =>
           for {
-            offer <- matchedItem.offers.get
+            offer <- matchedItem.offers.get.map(_.copy(presentation_type = None)).distinct // Ignore presentation type for now so we dont get dupes.
             provider <- networksBySource.get(ExternalSource.JustWatch -> offer.provider_id.toString).toList
           } yield {
             val offerType = Try(offer.monetization_type.map(OfferType.fromJustWatchType)).toOption.flatten
