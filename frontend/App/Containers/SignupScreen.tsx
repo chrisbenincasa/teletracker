@@ -68,7 +68,7 @@ class SignupScreen extends Component<Props, State> {
                         placeholder='Username...' 
                         onChangeText={(username) => this.setState({ username })} 
                         value={this.state.username}
-                        editable={!this.props.signup.fetching}
+                        editable={!this.props.signup || (this.props.signup && !this.props.signup.fetching)}
                         autoCapitalize='none'
                         style={{margin: 5}}
                     />
@@ -77,7 +77,7 @@ class SignupScreen extends Component<Props, State> {
                         placeholder='Email address...'
                         onChangeText={(email) => this.setState({ email })}
                         value={this.state.email}
-                        editable={!this.props.signup.fetching}
+                        editable={!this.props.signup || (this.props.signup && !this.props.signup.fetching)}
                         autoCapitalize='none'
                         style={{margin: 5}}
                     />
@@ -85,7 +85,7 @@ class SignupScreen extends Component<Props, State> {
                         label='Password'
                         secureTextEntry 
                         placeholder='Password...'
-                        editable={!this.props.signup.fetching}
+                        editable={!this.props.signup || (this.props.signup && !this.props.signup.fetching)}
                         autoCapitalize='none'
                         onChangeText={(password) => this.setState({ password })}
                         value={this.state.password}
@@ -95,17 +95,17 @@ class SignupScreen extends Component<Props, State> {
                         label='Confirm Password'
                         secureTextEntry 
                         placeholder='Confirm Password...'
-                        editable={!this.props.signup.fetching}
+                        editable={!this.props.signup || (this.props.signup && !this.props.signup.fetching)}
                         autoCapitalize='none'
                         onChangeText={(password) => this.setState({ password })}
                         value={this.state.password}
                         style={{margin: 5}}
                     />
                     <Text style={{textAlign: 'center', color: 'green' }}>
-                        {this.props.signup.success ? 'Done!' : null}
+                        {this.props.signup && this.props.signup.success ? 'Done!' : null}
                     </Text>
                     <Text style={{ textAlign: 'center', color: 'red' }}>
-                        {this.props.signup.error ? 'Something went wrong!  Please try again.' : null}
+                        {this.props.signup && this.props.signup.error ? 'Something went wrong!  Please try again.' : null}
                     </Text>
                     <Button
                         primary
@@ -122,7 +122,7 @@ class SignupScreen extends Component<Props, State> {
                     >
                         Login
                     </Button>
-                    <ActivityIndicator animating={this.props.signup.fetching} />
+                    <ActivityIndicator animating={!!(this.props.signup && this.props.signup.fetching)} />
                 </Card>
             </ScrollView>
         )

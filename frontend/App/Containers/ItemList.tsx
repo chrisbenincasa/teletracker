@@ -33,17 +33,10 @@ class ItemList extends React.PureComponent<Props> {
         this.openSearch = this.openSearch.bind(this);
     }
 
-    static get options() {
+    static navigationOptions = ({ navigation }: { navigation: NavigationScreenProp<any> }) => {
         return {
-            sideMenu: {
-                left: {
-                    enabled: false
-                }
-            },
-            statusBar: {
-                style: 'light'
-            }
-        }
+            title: navigation.getParam('list').name
+        };
     }
 
     state = {};
@@ -82,22 +75,6 @@ class ItemList extends React.PureComponent<Props> {
         // Track when users navigate to an item from search screen
         tracker.trackEvent('search-action', 'view-item-details', {
             label: appVersion
-        });
-
-        let view = R.mergeDeepRight(NavigationConfig.DetailView, {
-            component: {
-                passProps: { itemType: item.type, itemId: item.id },
-                options: {
-                    sideMenu: {
-                        left: {
-                            enabled: false
-                        }
-                    }
-                    // statusBar: {
-                    //     style: 'dark'
-                    // }
-                }
-            }
         });
 
         this.props.navigation.navigate('DetailScreen', { itemType: item.type, itemId: item.id });

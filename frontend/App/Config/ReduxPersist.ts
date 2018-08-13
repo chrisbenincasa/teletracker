@@ -23,7 +23,7 @@ const defaultPersistConfig: rp.PersistConfig = {
   key: 'root',
   storage: AsyncStorage,
   debug: true,
-  blacklist: ['search', 'nav', 'user'],
+  blacklist: ['search', 'nav'],
   transforms: [ImmutablePersistenceTransform, saveSubsetBlacklistFilter]
 }
 
