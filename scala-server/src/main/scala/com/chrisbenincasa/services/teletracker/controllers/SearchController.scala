@@ -46,8 +46,9 @@ class SearchController @Inject()(
   }
 
   private def handleSearchMultiResult(userId: Int, result: SearchResult) = {
-    val movies = result.results.flatMap(_.filter[Movie]).flatMap(_.head)
-    val shows = result.results.flatMap(_.filter[TvShow]).flatMap(_.head)
+    val results = result.results
+    val movies = results.flatMap(_.filter[Movie]).flatMap(_.head)
+    val shows = results.flatMap(_.filter[TvShow]).flatMap(_.head)
 
     val existingMovies = thingsDbAccess.findThingsByExternalIds(ExternalSource.TheMovieDb, movies.map(_.id.toString).toSet, ThingType.Movie)
     val existingShows = thingsDbAccess.findThingsByExternalIds(ExternalSource.TheMovieDb, shows.map(_.id.toString).toSet, ThingType.Show)
@@ -76,7 +77,7 @@ class SearchController @Inject()(
       existingS <- existingShowsByExternalId
       existingP <- existingPeopleByExternalId
     } yield {
-      result.results.partition(result => {
+      results.partition(result => {
         val id = result.fold(extractId)
         !existingM.isDefinedAt(id) && !existingS.isDefinedAt(id) && !existingP.isDefinedAt(id)
       })
@@ -97,13 +98,11 @@ class SearchController @Inject()(
       existingS <- existingShowsByExternalId
       newlySaved <- newlySavedByExternalId
     } yield {
-      val res = result.results.flatMap(_.filterNot[Person]).collect {
+      results.flatMap(_.filterNot[Person]).collect {
         case Inl(movie) => existingM.get(movie.id.toString).orElse(newlySaved.get(movie.id.toString))
         case Inr(Inl(show)) => existingS.get(show.id.toString).orElse(newlySaved.get(show.id.toString))
         case Inr(Inr(_)) => sys.error("Impossible")
       }.flatten
-
-      res
     }
 
     for {
