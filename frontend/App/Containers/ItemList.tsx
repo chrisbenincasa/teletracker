@@ -158,6 +158,10 @@ class ItemList extends React.PureComponent<Props> {
     render () {
         return (
             <View style={styles.container}>
+                <View style={{height: 40, padding: 8, alignContent: 'center', flexDirection: 'row'}}>
+                    <Text style={{ fontSize: 12 }}>Hey</Text>
+                    <Icon iconStyle={{fontSize: 12 }} name='sort' />
+                </View>
                 <FlatList
                     contentContainerStyle={styles.listContent}
                     data={this.props.list.things}

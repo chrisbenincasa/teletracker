@@ -1,16 +1,15 @@
 import { combineReducers, Store } from 'redux';
-import { persistReducer } from 'redux-persist';
 
 import ReduxPersist from '../Config/ReduxPersist';
 import rootSaga from '../Sagas/';
-import configureStore from './CreateStore';
-import { State } from './State';
 import Rehydration from '../Services/Rehydration';
-import { reducer as UserReducer } from './UserRedux';
-import { reducer as SearchReducer } from './SearchRedux';
-import { reducer as ListReducer } from './ListRedux';
+import configureStore from './CreateStore';
 import { reducer as EventsReducer } from './EventsRedux';
 import { reducer as ItemsReducer } from './ItemRedux';
+import { reducer as ListReducer } from './ListRedux';
+import { reducer as SearchReducer } from './SearchRedux';
+import { State } from './State';
+import { reducer as UserReducer } from './UserRedux';
 
 export const reducers = combineReducers<State>({
   user: UserReducer,

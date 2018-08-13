@@ -1,4 +1,4 @@
-// import immutablePersistenceTransform from '../Services/ImmutablePersistenceTransform'
+import { createFilter, createBlacklistFilter } from 'redux-persist-transform-filter';
 import { AsyncStorage } from 'react-native';
 import * as rp from 'redux-persist';
 
@@ -13,12 +13,18 @@ export const persistanceLogger = rp.createTransform(
   }
 );
 
+// you want to remove some keys before you save
+const saveSubsetBlacklistFilter = createBlacklistFilter(
+    'user',
+    ['signup']
+);
+
 const defaultPersistConfig: rp.PersistConfig = {
   key: 'root',
   storage: AsyncStorage,
   debug: true,
-  blacklist: ['search', 'nav'],
-  transforms: [ImmutablePersistenceTransform, persistanceLogger]
+  blacklist: ['search', 'nav', 'user'],
+  transforms: [ImmutablePersistenceTransform, saveSubsetBlacklistFilter]
 }
 
 export function createPersistor(reducers) {
