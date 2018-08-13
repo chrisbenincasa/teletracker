@@ -15,11 +15,11 @@ const toImmutable = (raw) => Immutable(raw)
 
 // the transform interface that redux-persist is expecting
 export default {
-  out: (state) => {
+  out: (state, key) => {
     return toImmutable(state)
   },
-  in: (raw) => {
-    if (raw == null) return {};
+  in: (raw, key) => {
+    // if (raw == null) return {};
     return fromImmutable(raw)
   }
 }
