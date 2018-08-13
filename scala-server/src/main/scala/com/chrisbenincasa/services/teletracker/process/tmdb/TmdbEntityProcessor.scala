@@ -196,8 +196,9 @@ class TmdbEntityProcessor @Inject()(
       val idMatch = item.scoring.getOrElse(Nil).exists(s => s.provider_type == "tmdb:id" && s.value.toInt.toString == movie.id.toString)
       val nameMatch = item.title.exists(movie.title.contains)
       val originalMatch = movie.original_title.exists(item.original_title.contains)
+      val yearMatch = item.original_release_year.exists(year => movie.release_date.map(new LocalDate(_).getYear).contains(year))
 
-      idMatch || nameMatch || originalMatch
+      idMatch || (nameMatch && yearMatch) || (originalMatch && yearMatch)
     })
   }
 

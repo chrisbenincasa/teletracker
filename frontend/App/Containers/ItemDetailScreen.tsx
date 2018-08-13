@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
-import { Icon, Rating } from 'react-native-elements';
+import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
+import { Rating } from 'react-native-elements';
+import { Card, CardContent, FABGroup, Provider as PaperProvider, Provider as PaperProvider } from 'react-native-paper';
 import ViewMoreText from 'react-native-view-more-text';
+import { NavigationScreenOptions, NavigationScreenProp } from 'react-navigation';
 import { connect } from 'react-redux';
 import { Dispatch } from 'redux';
 
-import { NavigationScreenProp, NavigationScreenOptions } from 'react-navigation';
 import { ApiResponse } from '../../node_modules/apisauce';
 import { appVersion, tracker } from '../Components/Analytics';
 import GetAvailability from '../Components/GetAvailability';
@@ -17,10 +18,7 @@ import { Thing } from '../Model/external/themoviedb';
 import ItemActions from '../Redux/ItemRedux';
 import UserActions from '../Redux/UserRedux';
 import { teletrackerApi } from '../Sagas';
-import { Provider as PaperProvider } from 'react-native-paper';
-import { PaperTheme } from '../Themes/';
-
-import { Snackbar, FABGroup, Card, CardContent } from 'react-native-paper'
+import { PaperTheme, PaperTheme, Colors } from '../Themes/';
 import styles from './Styles/ItemDetailScreenStyle';
 
 interface Props {
@@ -39,9 +37,9 @@ type State = {
     loading: boolean,
     loadError: boolean,
     item?: Thing,
-    open: false,
+    open: boolean,
     userDetails?: any,
-    // visible: false
+    visible: boolean
 }
 
 class ItemDetailScreen extends Component<Props, State> {
@@ -57,7 +55,9 @@ class ItemDetailScreen extends Component<Props, State> {
         this.state = {
             loading: true,
             loadError: false,
-            item: props.item
+            item: props.item,
+            open: false,
+            visible: false
         };
     }
 
@@ -166,155 +166,153 @@ class ItemDetailScreen extends Component<Props, State> {
     render () {
         return (
             <PaperProvider theme={PaperTheme}>
-
-            <View style={styles.container}>
-                { this.state.loading ? (
-                    <Card style={{
-                        margin: 15,
-                        flex: 1,
-                        flexDirection: 'row',
-                        alignItems: 'center'
-                    }}>
-                        <View style={{
+                <View style={styles.container}>
+                    { this.state.loading ? (
+                        <Card style={{
+                            margin: 15,
                             flex: 1,
-                            flexDirection: 'column',
-                            justifyContent: 'center',
+                            flexDirection: 'row',
                             alignItems: 'center'
                         }}>
-                            <ActivityIndicator
-                                size='large'
-                            />
-                        </View>
-                    </Card>
-                ) : (
-                    <ScrollView>
-                        {   // Check if cover image exists, otherwise don't show a cover image
-                            getMetadata.getBackdropImagePath(this.state.item) ?
-                                <View style={styles.coverContainer} >
-                                    <Image source={{
-                                        uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getBackdropImagePath(this.state.item)
-                                    }}
-                                        style={styles.coverImage}
-                                    />
-                                </View>
-                            : null
-                        }
-                        <View style={styles.itemDetailsContainer}>
-                            <Text style={{
-                                flex: 1, 
-                                fontSize: 20
+                            <View style={{
+                                flex: 1,
+                                flexDirection: 'column',
+                                justifyContent: 'center',
+                                alignItems: 'center'
                             }}>
-                                {this.state.item.name}
-                                {
-                                    getMetadata.getReleaseYear(this.state.item)
-                                        ? (
-                                            <Text>({getMetadata.getReleaseYear(this.state.item)})</Text>
-                                        )
-                                        : null
-                                }
-                            </Text>
-                            <View style={styles.ratingsContainer}>
-                                <Rating
-                                    type='star'
-                                    ratingBackgroundColor='#fafafa'
-                                    fractions={1}
-                                    startingValue={
-                                        getMetadata.getRatingPath(this.state.item) / 2
-                                    }
-                                    readonly
-                                    imageSize={15}
+                                <ActivityIndicator
+                                    size='large'
                                 />
-                                <Text style={styles.ratingCount}>
-                                    ({getMetadata.getVoteCount(this.state.item)})
-                                </Text>
                             </View>
-                        </View>
-
-                        <Card style={styles.descriptionContainer}>
-                            <CardContent style={{flex: 1}}>
-                                <View style={{
-                                    flexDirection: 'row',
-                                    flex: 1
-                                }}>
-                                    {
-                                        getMetadata.getPosterPath(this.state.item) ?
-                                            <Image
-                                                source={{
-                                                    uri: 'https://image.tmdb.org/t/p/w92' + getMetadata.getPosterPath(this.state.item)
-                                                }}
-                                                style={{
-                                                    width: 92,
-                                                    height: 138, 
-                                                    backgroundColor: '#C9C9C9'
-                                                }}
-                                            />
-                                        : null
-                                    }
-                                    <ViewMoreText
-                                        numberOfLines={6}
-                                        renderViewMore={this.renderViewMore}
-                                        renderViewLess={this.renderViewLess}
-                                        style={{width: 150}}
-                                    >
-                                        {
-                                            getMetadata.getDescription(this.state.item)
-                                        }
-                                    </ViewMoreText>
-                                </View>
-                                <GetGenres item={ this.state.item } />
-                            </CardContent>
                         </Card>
-
-                        <GetSeasons item={ this.state.item }/>
-                        <GetAvailability item={ this.state.item } />
-                        <GetCast item={ this.state.item }/>
-
-                        <View style={styles.container}>
-                            {/* <Snackbar
-                                visible={this.state.visible}
-                                onDismiss={() => this.setState({ visible: false })}
-                                action={{
-                                    label: 'Undo',
-                                    onPress: () => {
-
-                                    },
-                                }}
-                            >
-                                {`Item has been ${this.state.userDetails.belongsToLists.length > 0 ? 'added' : 'removed'}!`}
-                            </Snackbar> */}
-                            <FABGroup
-                                open={this.state.open}
-                                icon='add'
-                                color='#fff'
-                                actions={[
-                                    // Add to List
-                                    { 
-                                        icon: this.state.userDetails.belongsToLists.length > 0 ? 'list' : 'playlist-add', 
-                                        label: this.state.userDetails.belongsToLists.length > 0 ? 'Manage Tracking' : 'Add to List',
-                                        onPress: () => {this.manageLists()} 
-                                    },
-                                    // Mark as Watched
-                                    { 
-                                        icon: this.state.userDetails.belongsToLists.length > 0 ? 'visibility-off' : 'visibility', 
-                                        label: this.state.userDetails.belongsToLists.length > 0 ? 'Mark as Unwatched' : 'Mark as Watched',
-                                        onPress: () => {this.markAsWatched()}
+                    ) : (
+                        <ScrollView>
+                            {   // Check if cover image exists, otherwise don't show a cover image
+                                getMetadata.getBackdropImagePath(this.state.item) ?
+                                    <View style={styles.coverContainer} >
+                                        <Image source={{
+                                            uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getBackdropImagePath(this.state.item)
+                                        }}
+                                            style={styles.coverImage}
+                                        />
+                                    </View>
+                                : null
+                            }
+                            <View style={styles.itemDetailsContainer}>
+                                <Text style={{
+                                    flex: 1, 
+                                    fontSize: 20
+                                }}>
+                                    {this.state.item.name}
+                                    {
+                                        getMetadata.getReleaseYear(this.state.item)
+                                            ? (
+                                                <Text>({getMetadata.getReleaseYear(this.state.item)})</Text>
+                                            )
+                                            : null
                                     }
-                                ]}
-                                onStateChange={({ open }) => this.setState({ open })}
-                                onPress={() => {
-                                    if (this.state.open) {
-                                        // do something if the speed dial is open
-                                    }
-                                }}
-                                style={{marginBottom: this.state.visible ? 35 : 0 }}
-                            />
-                        </View>
-                    </ScrollView>
-                ) }
-                
-            </View>
-        </PaperProvider>
-        
+                                </Text>
+                                <View style={styles.ratingsContainer}>
+                                    <Rating
+                                        type='star'
+                                        ratingBackgroundColor={Colors.transparent}
+                                        fractions={1}
+                                        startingValue={
+                                            getMetadata.getRatingPath(this.state.item) / 2
+                                        }
+                                        readonly
+                                        imageSize={15}
+                                    />
+                                    <Text style={styles.ratingCount}>
+                                        ({getMetadata.getVoteCount(this.state.item)})
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <Card style={styles.descriptionContainer}>
+                                <CardContent style={{flex: 1}}>
+                                    <View style={{
+                                        flexDirection: 'row',
+                                        flex: 1
+                                    }}>
+                                        {
+                                            getMetadata.getPosterPath(this.state.item) ?
+                                                <Image
+                                                    source={{
+                                                        uri: 'https://image.tmdb.org/t/p/w92' + getMetadata.getPosterPath(this.state.item)
+                                                    }}
+                                                    style={{
+                                                        width: 92,
+                                                        height: 138, 
+                                                        backgroundColor: '#C9C9C9'
+                                                    }}
+                                                />
+                                            : null
+                                        }
+                                        <ViewMoreText
+                                            numberOfLines={6}
+                                            renderViewMore={this.renderViewMore}
+                                            renderViewLess={this.renderViewLess}
+                                            style={{width: 150}}
+                                        >
+                                            {
+                                                getMetadata.getDescription(this.state.item)
+                                            }
+                                        </ViewMoreText>
+                                    </View>
+                                    <GetGenres item={ this.state.item } />
+                                </CardContent>
+                            </Card>
+
+                            <GetSeasons item={ this.state.item }/>
+                            <GetAvailability item={ this.state.item } />
+                            <GetCast item={ this.state.item }/>
+
+                            <View style={styles.container}>
+                                {/* <Snackbar
+                                    visible={this.state.visible}
+                                    onDismiss={() => this.setState({ visible: false })}
+                                    action={{
+                                        label: 'Undo',
+                                        onPress: () => {
+
+                                        },
+                                    }}
+                                >
+                                    {`Item has been ${this.state.userDetails.belongsToLists.length > 0 ? 'added' : 'removed'}!`}
+                                </Snackbar> */}
+                                <FABGroup
+                                    open={this.state.open}
+                                    icon='add'
+                                    color='#fff'
+                                    actions={[
+                                        // Add to List
+                                        { 
+                                            icon: this.state.userDetails.belongsToLists.length > 0 ? 'list' : 'playlist-add', 
+                                            label: this.state.userDetails.belongsToLists.length > 0 ? 'Manage Tracking' : 'Add to List',
+                                            onPress: () => {this.manageLists()} 
+                                        },
+                                        // Mark as Watched
+                                        { 
+                                            icon: this.state.userDetails.belongsToLists.length > 0 ? 'visibility-off' : 'visibility', 
+                                            label: this.state.userDetails.belongsToLists.length > 0 ? 'Mark as Unwatched' : 'Mark as Watched',
+                                            onPress: () => {this.markAsWatched()}
+                                        }
+                                    ]}
+                                    onStateChange={({ open }) => this.setState({ open })}
+                                    onPress={() => {
+                                        if (this.state.open) {
+                                            // do something if the speed dial is open
+                                        }
+                                    }}
+                                    style={{marginBottom: this.state.visible ? 35 : 0 }}
+                                />
+                            </View>
+                        </ScrollView>
+                    ) }
+                    
+                </View>
+            </PaperProvider>
         )
     }
 }

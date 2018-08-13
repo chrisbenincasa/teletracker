@@ -32,7 +32,7 @@ export default class GetAvailability extends Component {
                         marginVertical: 5
                     }}
                 >
-                {`${availability.offerType} for ${availability.cost}`}
+                {'' + availability.offerType + (availability.cost ? `for ${availability.cost}` : '')}
                 </Chip>
             </View>
         );
