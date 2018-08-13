@@ -5,6 +5,7 @@ import Immutable from 'seamless-immutable';
 import { User } from '../Model';
 import _ from 'lodash';
 import { Thing } from '../Model/external/themoviedb';
+import R from 'ramda';
 
 /* ------------- Types and Action Creators ------------- */
 
@@ -60,6 +61,7 @@ export const INITIAL_STATE = Immutable<UserState>({
         error: null
     },
     login: {},
+    token: null,
     details: null
 })
 
@@ -143,10 +145,3 @@ export const reducer = createReducer<State>(INITIAL_STATE, {
     [Types.APPEND_LIST]: reducers.appendList,
     [Types.UPDATE_LISTS]: reducers.updateLists,
 });
-
-// export const reducer = persistReducer({
-//     key: 'user',
-//     blacklist: ['signup'],
-//     storage: AsyncStorage,
-//     transforms: [ImmutablePersistenceTransform]
-// }, baseReducer);
