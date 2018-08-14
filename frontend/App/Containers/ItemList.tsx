@@ -85,7 +85,6 @@ class ItemList extends React.PureComponent<Props> {
             <ListItem 
                 key={item.id}
                 title={item.name}
-                numberOfLines={2}
                 description={item.type}
                 avatar={
                     <Image
