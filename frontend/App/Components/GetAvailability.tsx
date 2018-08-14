@@ -17,7 +17,6 @@ export default class GetAvailability extends Component {
     }
 
     renderOfferTypes(offerTypes: any) {
-        console.log(offerTypes);
         return (
             <ListItem title={`${offerTypes.offerType} for ${offerTypes.cost ? offerTypes.cost : 'FREE'}`} />
         )
@@ -27,9 +26,11 @@ export default class GetAvailability extends Component {
         const costs = availability.costs;
         let offerTypes = [];
 
-        availability.map(
-            offerTypes.push(this.renderOfferTypes)
-        );
+        for(let key in costs) {
+            if (costs.hasOwnProperty(key)) {
+                offerTypes.push(this.renderOfferTypes(costs[key]));
+            }
+        }
 
         return (
             <View
@@ -61,6 +62,7 @@ export default class GetAvailability extends Component {
     renderAvailabilities(availabilities: any) {
         const consolidation = availabilities.reduce(function(obj, item) {
             if (!obj[item.network.name]) {
+
                 obj[item.network.name] = {
                     name: item.network.name,
                     costs: [{
@@ -81,7 +83,7 @@ export default class GetAvailability extends Component {
 
         let whereToWatch = [];
         for(let key in consolidation) {
-            if(consolidation.hasOwnProperty(key)) {
+            if (consolidation.hasOwnProperty(key)) {
                 whereToWatch.push(this.renderAvailability(consolidation[key]));
             }
         }
