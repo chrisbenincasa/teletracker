@@ -16,7 +16,7 @@ export default StyleSheet.create({
         marginTop: 10
     },
     avatarContainer: {
-        flexDirection: 'row', 
+        flexDirection: 'column', 
         marginTop: 5
     }
 });

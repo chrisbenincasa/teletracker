@@ -24,20 +24,37 @@ export default class GetCast extends Component {
                     <CardContent>
                         <Title style={styles.castHeader}>Cast:</Title>
                         <ScrollView
+                            pagingEnabled
                             horizontal={true}
                             showsHorizontalScrollIndicator={true}
-                            style={styles.avatarContainer}>
+                            style={styles.avatarContainer}
+                        >
                             {
                                 getMetadata.getCast(this.props.item).map((i) => (
-                                    <View key={i.id}>
+                                    <View
+                                        key={i.id}
+                                        style={{
+                                            flex:1,
+                                            marginRight: 3
+                                        }}
+                                        onStartShouldSetResponder={() => true}
+                                    >
                                         <Avatar
                                             key={i.id}
                                             large
                                             rounded
-                                            source={i.profile_path ? { uri: "https://image.tmdb.org/t/p/w92" + i.profile_path } : null}
+                                            source={
+                                                i.profile_path ? { 
+                                                    uri: "https://image.tmdb.org/t/p/w92" + i.profile_path
+                                                } : null
+                                            }
                                             activeOpacity={0.7}
-                                            title={i.poster_path ? null : parseInitials(i.name)}
-                                            titleStyle={parseInitials(i.name).length > 2 ? { fontSize: 26 } : null}
+                                            title={
+                                                i.poster_path ? null : parseInitials(i.name)
+                                            }
+                                            titleStyle={
+                                                parseInitials(i.name).length > 2 ? { fontSize: 26 } : null
+                                            }
 
                                         />
                                         <Text style={styles.castName}>{i.name}</Text>
