@@ -22,7 +22,7 @@ export default StyleSheet.create({
         fontStyle: 'italic'
     },
     avatarContainer: {
-        flexDirection: 'row', 
-        marginTop: 5
+        flexDirection: 'row',
+        marginRight: 1
     }
 });
