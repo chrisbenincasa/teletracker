@@ -185,29 +185,6 @@ class ItemDetailScreen extends Component<Props, State> {
                             />
                         </View>
                     </View>
-                ) : (
-                    <ScrollView>
-                        {   // Check if cover image exists, otherwise don't show a cover image
-                            getMetadata.getBackdropImagePath(this.state.item) ?
-                                <View style={styles.coverContainer} >
-                                    <Image source={{
-                                        uri: 'https://image.tmdb.org/t/p/w500' + getMetadata.getBackdropImagePath(this.state.item)
-                                    }}
-                                        style={styles.coverImage}
-                                    />
-                                </View>
-                            : null
-                        }
-                        <View style={styles.itemDetailsContainer}>
-                            <Text style={{
-                                flex: 1, 
-                                fontSize: 20
-                            }}>
-                                <ActivityIndicator
-                                    size='large'
-                                />
-                            </View>
-                        </Card>
                     ) : (
                         <ScrollView>
                             {   // Check if cover image exists, otherwise don't show a cover image

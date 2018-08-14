@@ -3,10 +3,9 @@ import { View, ScrollView, Image } from 'react-native';
 import { Thing } from '../Model/external/themoviedb';
 import { networks } from '../Components/Helpers/networks';
 import getMetadata from './Helpers/getMetadata';
-import { Card, CardContent, Button, Chip, Title, ListAccordion, ListItem } from 'react-native-paper'
+import { Card, CardContent, Title, ListAccordion, ListItem } from 'react-native-paper'
 
 import styles from './Styles/GetAvailability';
-import { listenerCount } from 'cluster';
 
 interface Props {
     item?: Thing
@@ -18,8 +17,9 @@ export default class GetAvailability extends Component {
     }
 
     renderOfferTypes(offerTypes: any) {
+        console.log(offerTypes);
         return (
-            <ListItem title={`${offerTypes.offerType} for ${offerTypes.cost}`} />
+            <ListItem title={`${offerTypes.offerType} for ${offerTypes.cost ? offerTypes.cost : 'FREE'}`} />
         )
     }
 
@@ -27,11 +27,9 @@ export default class GetAvailability extends Component {
         const costs = availability.costs;
         let offerTypes = [];
 
-        for(var key in costs) {
-            if(costs.hasOwnProperty(key)) {
-                offerTypes.push(this.renderOfferTypes(costs[key]));
-            }
-        }
+        availability.map(
+            offerTypes.push(this.renderOfferTypes)
+        );
 
         return (
             <View
@@ -67,7 +65,7 @@ export default class GetAvailability extends Component {
                     name: item.network.name,
                     costs: [{
                         offerType: item.offerType,
-                        cost: item.cost
+                        cost:  item.cost
                     }],
                     networkId: item.networkId,
                     slug: item.network.slug
@@ -75,18 +73,18 @@ export default class GetAvailability extends Component {
             } else {
                 obj[item.network.name].costs.push({ 
                     offerType: item.offerType,
-                    cost: item.cost
+                    cost:  item.cost
                 });
             }
             return obj;
         }, {});
 
         let whereToWatch = [];
-            for(var key in consolidation) {
-                if(consolidation.hasOwnProperty(key)) {
-                    whereToWatch.push(this.renderAvailability(consolidation[key]));
-                }
+        for(let key in consolidation) {
+            if(consolidation.hasOwnProperty(key)) {
+                whereToWatch.push(this.renderAvailability(consolidation[key]));
             }
+        }
         return whereToWatch;
     }
 
