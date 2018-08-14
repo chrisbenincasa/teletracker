@@ -527,14 +527,20 @@ class SearchScreen extends Component<Props, State> {
                     this.props.search.results &&
                     this.props.search.results.data &&
                     this.props.search.results.data.length === 0 ? 
-                        <View style={styles.noResults}>
-                            <Icon
-                                name='report'
-                                color='#476DC5'
-                                size={55}
-                            />
-                            <Text> No results! </Text>
-                        </View>
+                        <Card style={{flex: 1, flexDirection: 'row', margin: 8}}>
+                            <View style={styles.defaultScreen}>
+                                <Icon
+                                    name='mood-bad'
+                                    color='#476DC5'
+                                    size={75}
+                                    containerStyle={{
+                                        height: 75,
+                                        marginBottom: 20
+                                    }}
+                                />
+                                <Text>No results found!</Text>
+                            </View>
+                        </Card>
                     : null
                 }
 
