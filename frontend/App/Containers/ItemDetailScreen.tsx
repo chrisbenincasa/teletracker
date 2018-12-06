@@ -166,25 +166,25 @@ class ItemDetailScreen extends Component<Props, State> {
     render () {
         return (
             <PaperProvider theme={PaperTheme}>
-
-            <View style={styles.container}>
-                { this.state.loading ? (
-                    <View style={{
-                        margin: 15,
-                        flex: 1,
-                        flexDirection: 'row',
-                        alignItems: 'center'
-                    }}>
+                <View style={styles.container}>
+                    { this.state.loading ? (
                         <View style={{
+                            margin: 15,
                             flex: 1,
                             flexDirection: 'row',
                             alignItems: 'center'
                         }}>
-                            <ActivityIndicator
-                                size='large'
-                            />
+                            <View style={{
+                                flex: 1,
+                                flexDirection: 'row',
+                                justifyContent: 'center',
+                                alignItems: 'center'
+                            }}>
+                                <ActivityIndicator
+                                    size='large'
+                                />
+                            </View>
                         </View>
-                    </View>
                     ) : (
                         <ScrollView>
                             {   // Check if cover image exists, otherwise don't show a cover image
@@ -309,8 +309,7 @@ class ItemDetailScreen extends Component<Props, State> {
                                 />
                             </View>
                         </ScrollView>
-                    ) }
-                    
+                    )}
                 </View>
             </PaperProvider>
         )
