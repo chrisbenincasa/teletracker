@@ -165,7 +165,7 @@ lazy val `generate-ddl` = taskKey[Unit]("generate ddl")
 }.value
 
 lazy val `run-db-migrations` = inputKey[Unit]("generate ddl")
-`run-db-migrations` := runInputTask(Runtime, "com.chrisbenincasa.services.teletracker.tools.RunDatabaseMigration").evaluated
+`run-db-migrations` := runInputTask(Runtime, "com.chrisbenincasa.services.teletracker.tools.RunDatabaseMigrationMain").evaluated
 
 lazy val `reset-db` = taskKey[Unit]("reset-db")
 
@@ -173,7 +173,7 @@ lazy val `reset-db` = taskKey[Unit]("reset-db")
   `generate-ddl`.toTask,
   `run-db-migrations`.toTask(" -action=clean"),
   `run-db-migrations`.toTask(" -action=migrate"),
-  (runMain in Runtime).toTask(" com.chrisbenincasa.services.teletracker.tools.RunAllSeeds")
+  (runMain in Runtime).toTask(" com.chrisbenincasa.services.teletracker.tools.RunAllSeedsMain")
 ).value
 
 resourceGenerators in Compile += Def.task {

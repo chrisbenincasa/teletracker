@@ -8,7 +8,7 @@ import javax.sql.DataSource
 import org.flywaydb.core.Flyway
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object RunDatabaseMigrationMain extends App
+object RunDatabaseMigrationMain extends RunDatabaseMigration
 
 class RunDatabaseMigration extends App {
   val action = flag[String]("action", "The migration action to perform")
