@@ -141,15 +141,19 @@ class ThingsDbAccess @Inject()(
   }
 
   def findThingsByExternalIds(source: ExternalSource, ids: Set[String], typ: ThingType) = {
-    run {
-      val baseQuery = source match {
-        case ExternalSource.TheMovieDb => externalIds.query.filter(_.tmdbId inSetBind ids)
-        case _ => throw new IllegalArgumentException(s"Cannot get things by external source = $source")
-      }
+    if (ids.isEmpty) {
+      Future.successful(Seq.empty)
+    } else {
+      run {
+        val baseQuery = source match {
+          case ExternalSource.TheMovieDb => externalIds.query.filter(_.tmdbId inSetBind ids)
+          case _ => throw new IllegalArgumentException(s"Cannot get things by external source = $source")
+        }
 
-      baseQuery.flatMap(eid => {
-        eid.thing.filter(_.`type` === typ).map(eid -> _)
-      }).result
+        baseQuery.flatMap(eid => {
+          eid.thing.filter(_.`type` === typ).map(eid -> _)
+        }).result
+      }
     }
   }
 

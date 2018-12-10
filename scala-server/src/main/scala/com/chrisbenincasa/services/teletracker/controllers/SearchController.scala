@@ -3,7 +3,7 @@ package com.chrisbenincasa.services.teletracker.controllers
 import com.chrisbenincasa.services.teletracker.auth.JwtAuthFilter
 import com.chrisbenincasa.services.teletracker.auth.RequestContext._
 import com.chrisbenincasa.services.teletracker.config.TeletrackerConfig
-import com.chrisbenincasa.services.teletracker.db.model.{ExternalId, ExternalSource, ThingType}
+import com.chrisbenincasa.services.teletracker.db.model.{ExternalId, ExternalSource, PartialThing, ThingType}
 import com.chrisbenincasa.services.teletracker.db.{ThingsDbAccess, UserThingDetails}
 import com.chrisbenincasa.services.teletracker.external.tmdb.TmdbClient
 import com.chrisbenincasa.services.teletracker.model.DataResponse
@@ -15,7 +15,7 @@ import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import io.circe.generic.auto._
 import javax.inject.Inject
-import shapeless.{Inl, Inr}
+import shapeless.{Coproduct, Inl, Inr}
 import scala.concurrent.{ExecutionContext, Future}
 
 class SearchController @Inject()(
@@ -27,11 +27,20 @@ class SearchController @Inject()(
 )(implicit executionContext: ExecutionContext) extends Controller {
   prefix("/api/v1") {
     filter[JwtAuthFilter].apply {
+//      get("/search") { req: Request =>
+//        val query = req.params("query")
+//
+//        tmdbClient.makeRequest[SearchResult]("search/multi", Seq("query" -> query)).
+//          flatMap(handleSearchMultiResult(req.authContext.user.id, _)).
+//          map(result => {
+//            response.ok.contentTypeJson().body(DataResponse.complex(result))
+//          })
+//      }
+
       get("/search") { req: Request =>
         val query = req.params("query")
-
-        tmdbClient.makeRequest[SearchResult]("search/multi", Seq("query" -> query)).
-          flatMap(handleSearchMultiResult(req.authContext.user.id, _)).
+        tmdbClient.makeRequest[MovieSearchResult]("search/movie", Seq("query" -> query)).
+          flatMap(handleSearchMovieResult(req.authContext.user.id, _)).
           map(result => {
             response.ok.contentTypeJson().body(DataResponse.complex(result))
           })
@@ -45,8 +54,16 @@ class SearchController @Inject()(
     implicit val atPerson: Case.Aux[Person, String] = at { _.id.toString }
   }
 
-  private def handleSearchMultiResult(userId: Int, result: SearchResult) = {
-    val results = result.results
+  private def handleSearchMovieResult(userId: Int, result: MovieSearchResult): Future[List[PartialThing]] = {
+    val movies = result.results.map(Coproduct[MultiTypeXor](_))
+    handleSearchMultiResult(userId, movies)
+  }
+
+  private def handleSearchMultiResult(userId: Int, result: SearchResult): Future[List[PartialThing]] = {
+    handleSearchMultiResult(userId, result.results)
+  }
+
+  private def handleSearchMultiResult(userId: Int, results: List[MultiTypeXor]): Future[List[PartialThing]] = {
     val movies = results.flatMap(_.filter[Movie]).flatMap(_.head)
     val shows = results.flatMap(_.filter[TvShow]).flatMap(_.head)
 
@@ -54,13 +71,9 @@ class SearchController @Inject()(
     val existingShows = thingsDbAccess.findThingsByExternalIds(ExternalSource.TheMovieDb, shows.map(_.id.toString).toSet, ThingType.Show)
     val existingPeople = thingsDbAccess.findThingsByExternalIds(ExternalSource.TheMovieDb, shows.map(_.id.toString).toSet, ThingType.Person)
 
-    def byExternalId[T](seq: Seq[(ExternalId, T)]): Map[String, T] = {
-      seq.collect { case (eid, m) if eid.tmdbId.isDefined => eid.tmdbId.get -> m }.toMap
-    }
-
-    val existingMoviesByExternalId = existingMovies.map(byExternalId)
-    val existingShowsByExternalId = existingShows.map(byExternalId)
-    val existingPeopleByExternalId = existingPeople.map(byExternalId)
+    val existingMoviesByExternalId = existingMovies.map(groupByExternalId)
+    val existingShowsByExternalId = existingShows.map(groupByExternalId)
+    val existingPeopleByExternalId = existingPeople.map(groupByExternalId)
 
     val thingDetailsByThingIdFut = (for {
       existingM <- existingMoviesByExternalId
@@ -113,6 +126,10 @@ class SearchController @Inject()(
         thing.withUserMetadata(thingDetailsByThingId.getOrElse(thing.id.get, UserThingDetails.empty))
       })
     }
+  }
+
+  private def groupByExternalId[T](seq: Seq[(ExternalId, T)]): Map[String, T] = {
+    seq.collect { case (eid, m) if eid.tmdbId.isDefined => eid.tmdbId.get -> m }.toMap
   }
 }
 
