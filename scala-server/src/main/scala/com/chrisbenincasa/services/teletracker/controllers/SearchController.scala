@@ -17,6 +17,7 @@ import io.circe.generic.auto._
 import javax.inject.Inject
 import shapeless.{Coproduct, Inl, Inr}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class SearchController @Inject()(
   config: TeletrackerConfig,
@@ -96,15 +97,23 @@ class SearchController @Inject()(
       })
     }
 
-    val newlySavedByExternalId = partitionedResults.flatMap { case (missing, existing) => {
+    val newlySavedByExternalId = partitionedResults.flatMap { case (missing, existing) =>
       val (missingSync, missingAsync) = missing.splitAt(5)
 
-      val res = Future.sequence(resultProcessor.processSearchResults(missingSync ++ existing)).map(_.toMap)
+      val recoveredFuts = resultProcessor.processSearchResults(missingSync ++ existing).map(fut => {
+        fut.map(Some(_)).recover {
+          case NonFatal(ex) =>
+            logger.error("Error while saving item", ex)
+            None
+        }
+      })
+
+      val res = Future.sequence(recoveredFuts).map(_.flatten.toMap)
 
       res.onComplete(_ => resultProcessor.processSearchResults(missingAsync))
 
       res
-    } }
+    }
 
     val thingsFut = for {
       existingM <- existingMoviesByExternalId

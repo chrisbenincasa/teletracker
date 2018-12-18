@@ -125,6 +125,9 @@ const SearchStack = createStackNavigator({
         navigationOptions: {
             header: null,
         }
+    },
+    ListManage: {
+        screen: paramsToProps(AddToListModal),
     }
 }, {
     initialRouteName: 'Search',

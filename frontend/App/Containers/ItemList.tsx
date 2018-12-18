@@ -16,6 +16,7 @@ import NavActions from '../Redux/NavRedux';
 import { State } from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
 import styles from './Styles/ItemListStyle';
+import console = require('console');
 
 interface Props {
     componentId: string
@@ -135,10 +136,10 @@ class ItemList extends React.PureComponent<Props> {
     render () {
         return (
             <View style={styles.container}>
-                <View style={{height: 40, padding: 8, alignContent: 'center', flexDirection: 'row'}}>
+                {/* <View style={{height: 40, padding: 8, alignContent: 'center', flexDirection: 'row'}}>
                     <Text style={{ fontSize: 12 }}>Hey</Text>
                     <Icon iconStyle={{fontSize: 12 }} name='sort' />
-                </View>
+                </View> */}
                 <FlatList
                     contentContainerStyle={styles.listContent}
                     data={this.props.list.things}

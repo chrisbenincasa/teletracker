@@ -1,4 +1,5 @@
 import { NavigationActions, NavigationParams, NavigationNavigateAction, StackActions } from 'react-navigation';
+import console = require('console');
 
 let _navigator;
 
@@ -28,11 +29,19 @@ function reset(actions: NavigationNavigateAction[]) {
     _navigator.dispatch(action);
 }
 
+function pop() {
+    console.log(_navigator.state);
+    _navigator.dispatch(
+        NavigationActions.BACK
+    )
+}
+
 // add other navigation functions that you need and export them
 
 export default {
     navigator: () => _navigator,
     navigate,
     reset,
+    pop,
     setTopLevelNavigator,
 };

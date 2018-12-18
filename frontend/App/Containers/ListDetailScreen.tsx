@@ -11,6 +11,7 @@ import { State as ReduxState } from '../Redux/State';
 import UserActions, { UserState } from '../Redux/UserRedux';
 import { Colors } from '../Themes/';
 import styles from './Styles/ItemListStyle';
+import console = require('console');
 
 type Props = {
     componentId: string
@@ -49,6 +50,12 @@ class ListDetailScreen extends React.PureComponent<Props, State> {
                 </TouchableOpacity>
             )
         };
+    }
+
+    componentWillMount() {
+        this.props.navigation.addListener('willFocus', () => {
+            console.log(this.props);
+        });
     }
 
     goToList(list: List) {

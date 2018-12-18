@@ -171,32 +171,20 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def saveThing(thing: Thing, externalPair: Option[(ExternalSource, String)] = None) = {
+  def saveThing(thing: Thing, externalPair: (ExternalSource, String)) = {
     val existing = externalPair match {
-      case Some((source, id)) if source == ExternalSource.TheMovieDb =>
+      case (source, id) if source == ExternalSource.TheMovieDb =>
         externalIds.query.filter(_.tmdbId === id).flatMap(_.thing).result.flatMap {
-          case s if s.isEmpty =>
-            things.query.
-              filter(_.normalizedName === thing.normalizedName).
-              filter(_.`type` === thing.`type`).
-              result
-          case s => DBIO.successful(s)
-        }.flatMap {
-          case s if s.length <= 1 => DBIO.successful(s.headOption)
+          case s if s.length <= 1 =>
+            DBIO.successful(s.headOption)
+
           case s =>
             DBIO.successful {
-              s.find(t => {
-                t.metadata.exists(ObjectMetadataUtils.metadataMatchesId(_, source, thing.`type`, id))
-              })
+              s.find(t => t.metadata.exists(ObjectMetadataUtils.metadataMatchesId(_, source, thing.`type`, id)))
             }
         }
 
-      case _ =>
-        things.query.
-          filter(_.normalizedName === thing.normalizedName).
-          filter(_.`type` === thing.`type`).
-          result.
-          headOption
+      case _ => DBIO.failed(new IllegalArgumentException("No external pair passed to saveThing"))
     }
 
     val insertOrUpdate = existing.flatMap {

@@ -6,6 +6,7 @@ import { User } from '../Model';
 import _ from 'lodash';
 import { Thing } from '../Model/external/themoviedb';
 import R from 'ramda';
+import console = require('console');
 
 /* ------------- Types and Action Creators ------------- */
 
@@ -112,13 +113,12 @@ export const reducers = {
 
         let newLists = lists.map(l => {
             if (_.includes(listsToAdd, l.id.toString()) && !_.find(l.things, { id: thing.id })) {
-                l.things = l.things.concat([thing]);
-                return l;
+                return l.merge({ things: l.things.concat([thing]) });
             } else if (_.includes(listsToRemove, l.id.toString()) && _.find(l.things, { id: thing.id })) {
                 let newthings: Thing[] = _.reject(l.things, t => t.id === thing.id);
                 return l.merge({ things: newthings });
             } else {
-                return l
+                return l;
             }
         });
 

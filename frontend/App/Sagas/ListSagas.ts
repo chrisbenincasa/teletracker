@@ -2,10 +2,11 @@ import { ApiResponse } from 'apisauce';
 import { AnyAction } from 'redux';
 import { all, call, put } from 'redux-saga/effects';
 
+import { appVersion, tracker } from '../Components/Analytics';
+import NavigationService from '../Navigation/NavigationService';
 import ListActions from '../Redux/ListRedux';
 import UserActions from '../Redux/UserRedux';
 import { TeletrackerApi } from '../Services/TeletrackerApi';
-import { tracker, appVersion } from '../Components/Analytics';
 
 export function* addToList(api: TeletrackerApi, { componentId, listId, itemId }: AnyAction) {
     const response: ApiResponse<any> = yield call([api, api.addItemToList], listId, itemId);
@@ -47,7 +48,8 @@ export function* updateListTracking(api: TeletrackerApi, { thing, adds, removes 
     if (response.ok) {
         yield all([
             put(ListActions.updateListTrackingComplete()),
-            put(UserActions.updateLists(thing, adds, removes))
+            put(UserActions.updateLists(thing, adds, removes)),
+            call([NavigationService, NavigationService.pop])
         ])
     } else {
         console.tron.log('uh oh')

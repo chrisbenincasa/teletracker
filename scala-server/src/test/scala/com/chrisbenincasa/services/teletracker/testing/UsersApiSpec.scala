@@ -2,7 +2,7 @@ package com.chrisbenincasa.services.teletracker.testing
 
 import com.chrisbenincasa.services.teletracker.controllers.{CreateListResponse, CreateUserRequest, CreateUserResponse}
 import com.chrisbenincasa.services.teletracker.db.ThingsDbAccess
-import com.chrisbenincasa.services.teletracker.db.model.{Thing, ThingType, TrackedList, User}
+import com.chrisbenincasa.services.teletracker.db.model._
 import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.chrisbenincasa.services.teletracker.testing.framework.BaseSpecWithServer
 import com.chrisbenincasa.services.teletracker.util.Slug
@@ -96,7 +96,8 @@ class UsersApiSpec extends BaseSpecWithServer {
     val DataResponse(CreateListResponse(listId)) = parse(createListResponse.contentString).flatMap(_.as[DataResponse[CreateListResponse]]).right.get
 
     val thing = server.injector.instance[ThingsDbAccess].saveThing(
-      Thing(None, "Halt and Catch Fire", Slug("Halt and Catch Fire"), ThingType.Show, DateTime.now(), DateTime.now(), None)
+      Thing(None, "Halt and Catch Fire", Slug("Halt and Catch Fire"), ThingType.Show, DateTime.now(), DateTime.now(), None),
+      ExternalSource.TheMovieDb -> "1"
     ).await()
 
     server.httpPut(

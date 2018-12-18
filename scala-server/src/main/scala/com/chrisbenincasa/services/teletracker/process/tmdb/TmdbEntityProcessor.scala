@@ -73,7 +73,7 @@ class TmdbEntityProcessor @Inject()(
   justWatchClient: JustWatchClient
 )(implicit executionContext: ExecutionContext) {
   def processSearchResults(results: List[Movie :+: TvShow :+: Person :+: CNil]): List[Future[(String, Thing)]] = {
-    results.map(_.map(expander.ExpandItem)).map(_.fold(ResultProcessor))
+    results.map(item => item.map(expander.ExpandItem)).map(_.fold(ResultProcessor))
   }
 
   def expandAndProcessEntity(e: Entities): Future[(String, Thing)] = {
@@ -198,7 +198,7 @@ class TmdbEntityProcessor @Inject()(
       val idMatch = item.scoring.getOrElse(Nil).exists(s => s.provider_type == "tmdb:id" && s.value.toInt.toString == movie.id.toString)
       val nameMatch = item.title.exists(movie.title.contains)
       val originalMatch = movie.original_title.exists(item.original_title.contains)
-      val yearMatch = item.original_release_year.exists(year => movie.release_date.map(new LocalDate(_).getYear).contains(year))
+      val yearMatch = item.original_release_year.exists(year => movie.release_date.filterNot(_.isEmpty).map(new LocalDate(_).getYear).contains(year))
 
       idMatch || (nameMatch && yearMatch) || (originalMatch && yearMatch)
     })

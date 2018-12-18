@@ -3,7 +3,7 @@ import './App/Config/ReactotronConfig';
 
 import _ from 'lodash';
 import * as React from 'react';
-import { AppRegistry, Dimensions } from 'react-native';
+import { AppRegistry, Dimensions, AsyncStorage } from 'react-native';
 import SideMenu from 'react-native-side-menu';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -12,6 +12,8 @@ import MenuScreen from './App/Containers/MenuScreen';
 import { Nav } from './App/Navigation/AppNavigation';
 import NavigationService from './App/Navigation/NavigationService';
 import createStore from './App/Redux';
+
+// AsyncStorage.clear();
 
 const { store, persistor } = createStore();
 

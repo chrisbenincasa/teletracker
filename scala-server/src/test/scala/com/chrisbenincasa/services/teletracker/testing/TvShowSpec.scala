@@ -14,7 +14,8 @@ class TvShowSpec extends BaseSpecWithServer {
 
     val show =
       thingDbAccess.saveThing(
-        Thing(None, "Not Friends", Slug("Not Friends"), ThingType.Show, DateTime.now(), DateTime.now(), None)
+        Thing(None, "Not Friends", Slug("Not Friends"), ThingType.Show, DateTime.now(), DateTime.now(), None),
+        ExternalSource.TheMovieDb -> "1"
       ).await()
 
     val season =
