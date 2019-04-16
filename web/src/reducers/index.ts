@@ -1,4 +1,11 @@
 import { combineReducers } from 'redux';
-import counter from './counter';
+import auth, { State as AuthState } from './auth';
 
-export default combineReducers({ counter });
+// A type that represents the entire app state
+export interface AppState {
+  auth: AuthState;
+}
+
+export default combineReducers({
+  auth,
+});
