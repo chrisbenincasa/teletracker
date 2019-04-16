@@ -29,6 +29,11 @@ class Home extends Component<Props, State> {
     ev.preventDefault();
 
     this.props.login(this.state.email, this.state.password);
+
+    this.setState({
+      email: '',
+      password: ''
+    });
   }
 
   render() {
@@ -76,9 +81,11 @@ class Home extends Component<Props, State> {
   }
 }
 
-const mapStateToProps = (appState: AppState) => ({
-  isAuthed: R.hasPath(['auth', 'token'], appState)
-});
+const mapStateToProps = (appState: AppState) => {
+  return {
+    isAuthed: !R.isNil(R.path(['auth', 'token'], appState))
+  }
+};
 
 const mapDispatchToProps = dispatch =>
   bindActionCreators(
