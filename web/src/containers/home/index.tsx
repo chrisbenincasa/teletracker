@@ -1,100 +1,50 @@
-import { push } from 'connected-react-router';
+import {
+  createStyles,
+  CssBaseline,
+  Theme,
+  Typography,
+  WithStyles,
+  withStyles,
+} from '@material-ui/core';
 import * as R from 'ramda';
-import React, { Component, FormEvent } from 'react';
+import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import { login } from '../../actions/auth';
 import { AppState } from '../../reducers';
 
-interface Props {
-  isAuthed: boolean,
-  login: (email: string, password: string) => void,
-  changePage: () => void
+const styles = (theme: Theme) => createStyles({});
+
+interface Props extends WithStyles<typeof styles> {
+  isAuthed: boolean;
 }
 
-interface State {
-  email: string,
-  password: string
-}
-
-class Home extends Component<Props, State> {
-  state: State = {
-    email: '',
-    password: ''
-  }
-
-  onSubmit(ev: FormEvent<HTMLFormElement>) {
-    ev.preventDefault();
-
-    this.props.login(this.state.email, this.state.password);
-
-    this.setState({
-      email: '',
-      password: ''
-    });
-  }
-
+class Home extends Component<Props> {
   render() {
-    let { email, password } = this.state;
-
-    return (
-      <div>
-        {this.props.isAuthed ? (
-          <h1>Welcome Back</h1>
-        ) : (
-          <div>
-            <h1>Log In!</h1>
-
-            <form onSubmit={ev => this.onSubmit(ev)}>
-              <div>
-                <label>
-                  Email:
-                  <input
-                    type="email"
-                    name="email"
-                    onChange={e => this.setState({ email: e.target.value })}
-                    value={email}
-                  />
-                </label>
-              </div>
-
-              <div>
-                <label>Password:</label>
-                <input
-                  type="password"
-                  name="password"
-                  onChange={e =>
-                    this.setState({ password: e.target.value })
-                  }
-                  value={password}
-                />
-              </div>
-
-              <input type="submit" value="Login" />
-            </form>
-          </div>
-        )}
-      </div>
+    return this.props.isAuthed ? (
+      <main>
+        <CssBaseline />
+        <Typography component="h1" variant="h2">
+          Welcome
+        </Typography>
+      </main>
+    ) : (
+      <Redirect to="/login" />
     );
   }
 }
 
 const mapStateToProps = (appState: AppState) => {
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState))
-  }
+    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
+  };
 };
 
-const mapDispatchToProps = dispatch =>
-  bindActionCreators(
-    {
-      login: (email: string, password: string) => login(email, password),
-      changePage: () => push('/about-us')
-    },
-    dispatch,
-  );
+const mapDispatchToProps = dispatch => bindActionCreators({}, dispatch);
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps,
-)(Home);
+export default withStyles(styles)(
+  connect(
+    mapStateToProps,
+    mapDispatchToProps,
+  )(Home),
+);
