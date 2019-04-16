@@ -1,5 +1,7 @@
 package com.chrisbenincasa.services.teletracker
 
+import java.io.File
+
 import com.chrisbenincasa.services.teletracker.controllers._
 import com.chrisbenincasa.services.teletracker.exception_mappers.PassThroughExceptionMapper
 import com.chrisbenincasa.services.teletracker.inject.Modules
@@ -12,7 +14,8 @@ import com.twitter.finatra.http.filters.{LoggingMDCFilter, TraceIdMDCFilter}
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.inject.Logging
 import com.twitter.util.Await
-import java.io.File
+import com.twitter.util.TimeConversions._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object TeletrackerServerMain extends TeletrackerServer
@@ -20,15 +23,24 @@ object TeletrackerServerMain extends TeletrackerServer
 class TeletrackerServer(
   override protected val modules: Seq[Module] = Modules()
 ) extends HttpServer with Logging  {
-  override protected def defaultFinatraHttpPort: String = ":3000"
+  override protected def defaultFinatraHttpPort: String = ":3001"
 
   override protected def jacksonModule: Module = new JsonModule
 
   override protected def configureHttp(router: HttpRouter): Unit = {
+    import com.twitter.finagle.http.filter.Cors
     router.
+      filter(new Cors.HttpFilter(Cors.Policy(
+        allowsOrigin = _ => Some("*"),
+        allowsMethods = _ => Some(Seq("HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS")),
+        allowsHeaders = _ => Some(Seq("Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization")),
+        supportsCredentials = true,
+        maxAge = Some(1.day)
+      ))).
       filter[LoggingMDCFilter[Request, Response]].
       filter[TraceIdMDCFilter[Request, Response]].
       exceptionMapper[PassThroughExceptionMapper].
+      add[PreflightController].
       add[AuthController].
       add[UserController].
       add[SearchController].

@@ -1,17 +1,16 @@
-import React, { Component } from 'react'
-import { Route, Link } from 'react-router-dom'
-import Home from '../home'
-import About from '../about'
-import { connect } from 'react-redux'
-import { Dispatch, bindActionCreators } from 'redux';
-import { checkAuth } from '../../modules/counter';
-
-// const App = () => (
-  
-// )
+import * as R from 'ramda';
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { Link, Route } from 'react-router-dom';
+import { bindActionCreators, Dispatch } from 'redux';
+import LogoutButton from '../../components/LogoutButton';
+import About from '../about';
+import Home from '../home';
+import { AppState } from '../../reducers';
+import { checkAuth } from '../../reducers/auth';
 
 interface OwnProps {
-  
+  isAuthed: boolean
 }
 
 interface DispatchProps {
@@ -31,15 +30,23 @@ class App extends Component<Props> {
         <header>
           <Link to="/">Home</Link>
           <Link to="/about-us">About</Link>
+          {(this.props.isAuthed) ? <LogoutButton /> : null}
         </header>
 
         <main>
           <Route exact path="/" component={Home} />
           <Route exact path="/about-us" component={About} />
+          <Route exact path="/logout" component={About} />
         </main>
       </div>
     );
   }
+}
+
+const mapStateToProps = (appState: AppState) => {
+  return {
+    isAuthed: R.hasPath(["auth", "token"], appState)
+  }; 
 }
 
 const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = (dispatch) => {
@@ -52,6 +59,6 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = (dispatch) => 
 }
 
 export default connect(
-  null,
+  mapStateToProps,
   mapDispatchToProps
 )(App);
