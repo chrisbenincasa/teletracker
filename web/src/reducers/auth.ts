@@ -141,18 +141,14 @@ export default function authReducer(
     case LOGIN_SUCCESSFUL:
       return {
         ...state,
-        token: (action as LoginSuccessfulAction).token,
+        token: action.token,
       };
 
     case LOGOUT_SUCCESSFUL:
-      console.log(state);
-      let s = {
+      return {
         ...state,
         token: undefined,
       };
-      console.log(s);
-
-      return s;
 
     default:
       return state;
