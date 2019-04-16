@@ -3,14 +3,12 @@ import * as R from 'ramda';
 import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+import { login } from '../../actions/auth';
 import { AppState } from '../../reducers';
-import { login } from '../../reducers/auth';
 
 interface Props {
   isAuthed: boolean,
-
   login: (email: string, password: string) => void,
-
   changePage: () => void
 }
 
