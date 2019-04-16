@@ -1,55 +1,90 @@
-import React from 'react';
 import { push } from 'connected-react-router';
-import { bindActionCreators } from 'redux';
+import * as R from 'ramda';
+import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
-import {
-  increment,
-  incrementAsync,
-  decrement,
-  decrementAsync,
-} from './../../actions/';
+import { bindActionCreators } from 'redux';
+import { AppState } from '../../reducers';
+import { login } from '../../reducers/auth';
 
-const Home = props => (
-  <div>
-    <h1>Home</h1>
-    <p>Count: {props.count}</p>
+interface Props {
+  isAuthed: boolean,
 
-    <p>
-      <button onClick={props.increment}>Increment</button>
-      <button onClick={props.incrementAsync} disabled={props.isIncrementing}>
-        Increment Async
-      </button>
-    </p>
+  login: (email: string, password: string) => void,
 
-    <p>
-      <button onClick={props.decrement}>Decrement</button>
-      <button onClick={props.decrementAsync} disabled={props.isDecrementing}>
-        Decrement Async
-      </button>
-    </p>
+  changePage: () => void
+}
 
-    <p>
-      <button onClick={() => props.changePage()}>
-        Go to about page via redux
-      </button>
-    </p>
-  </div>
-);
+interface State {
+  email: string,
+  password: string
+}
 
-const mapStateToProps = ({ counter }) => ({
-  count: counter.count,
-  isIncrementing: counter.isIncrementing,
-  isDecrementing: counter.isDecrementing,
+class Home extends Component<Props, State> {
+  state: State = {
+    email: '',
+    password: ''
+  }
+
+  onSubmit(ev: FormEvent<HTMLFormElement>) {
+    ev.preventDefault();
+
+    this.props.login(this.state.email, this.state.password);
+  }
+
+  render() {
+    let { email, password } = this.state;
+
+    return (
+      <div>
+        {this.props.isAuthed ? (
+          <h1>Welcome Back</h1>
+        ) : (
+          <div>
+            <h1>Log In!</h1>
+
+            <form onSubmit={ev => this.onSubmit(ev)}>
+              <div>
+                <label>
+                  Email:
+                  <input
+                    type="email"
+                    name="email"
+                    onChange={e => this.setState({ email: e.target.value })}
+                    value={email}
+                  />
+                </label>
+              </div>
+
+              <div>
+                <label>Password:</label>
+                <input
+                  type="password"
+                  name="password"
+                  onChange={e =>
+                    this.setState({ password: e.target.value })
+                  }
+                  value={password}
+                />
+              </div>
+
+              <input type="submit" value="Login" />
+            </form>
+          </div>
+        )}
+      </div>
+    );
+  }
+}
+
+const mapStateToProps = (appState: AppState) => ({
+  isAuthed: R.hasPath(['auth', 'token'], appState)
 });
 
 const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
-      increment,
-      incrementAsync,
-      decrement,
-      decrementAsync,
-      changePage: () => push('/about-us'),
+      login: (email: string, password: string) => login(email, password),
+      changePage: () => push('/about-us')
     },
     dispatch,
   );
