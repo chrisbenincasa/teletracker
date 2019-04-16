@@ -29,3 +29,5 @@ jd-gui.cfg
 **/*.db
 log.*
 .env
+.bloop/
+.metals/
