@@ -1,7 +1,7 @@
-import * as apisauce from "apisauce";
-import { merge } from "ramda";
+import * as apisauce from 'apisauce';
+import { merge } from 'ramda';
 
-import { User } from "../model";
+import { User } from '../types';
 
 export interface TeletrackerApiOptions {
   url?: string;
@@ -19,11 +19,13 @@ export class TeletrackerApi {
   private api: apisauce.ApisauceInstance;
   private token: string | undefined;
 
+  static instance = new TeletrackerApi();
+
   constructor(opts?: TeletrackerApiOptions) {
     let options = merge(DefaultTeletrackerApiOptions, opts || {});
 
     this.api = apisauce.create({
-      baseURL: options.url
+      baseURL: options.url,
     });
 
     this.token = options.token;
@@ -44,36 +46,36 @@ export class TeletrackerApi {
   }
 
   async getAuthStatus(): Promise<apisauce.ApiResponse<any>> {
-    return this.api.get("/api/v1/auth/status");
+    return this.api.get('/api/v1/auth/status');
   }
 
   async getUser(id: string | number) {
     if (!this.token) {
-      return Promise.reject(new Error("getUser requires a token to be set"));
+      return Promise.reject(new Error('getUser requires a token to be set'));
     }
 
     return this.api.get<User>(
       `/api/v1/users/${id}`,
       {},
-      { headers: this.authHeaders() }
+      { headers: this.authHeaders() },
     );
   }
 
   async getUserSelf() {
     if (!this.token) {
-      return Promise.reject(new Error("getUser requires a token to be set"));
+      return Promise.reject(new Error('getUser requires a token to be set'));
     }
 
     return this.api.get<User>(
-      "/api/v1/users/self",
+      '/api/v1/users/self',
       {},
-      { headers: this.authHeaders() }
+      { headers: this.authHeaders() },
     );
   }
 
   async loginUser(email: string, password: string) {
     const data = { email, password };
-    return this.api.post<any>("/api/v1/auth/login", data).then(response => {
+    return this.api.post<any>('/api/v1/auth/login', data).then(response => {
       if (response.ok) {
         this.setToken(response.data.data.token);
       }
@@ -84,13 +86,13 @@ export class TeletrackerApi {
 
   async logoutUser() {
     return this.withTokenCheck(async () => {
-      return this.api.post<any>("/api/v1/auth/logout");
+      return this.api.post<any>('/api/v1/auth/logout');
     });
   }
 
   async registerUser(username: string, email: string, password: string) {
     const data = { username, email, password, name: username };
-    return this.api.post<any>("/api/v1/users", data).then(response => {
+    return this.api.post<any>('/api/v1/users', data).then(response => {
       if (response.ok) {
         this.setToken(response.data.data.token);
       }
@@ -101,14 +103,14 @@ export class TeletrackerApi {
 
   async search(searchText: string) {
     return this.withTokenCheck(async () => {
-      return this.api.get<any>("/api/v1/search", { query: searchText });
+      return this.api.get<any>('/api/v1/search', { query: searchText });
     });
   }
 
   async createList(name: string) {
     return this.withTokenCheck(async () => {
-      return this.api.post<any>("/api/v1/users/self/lists", {
-        name
+      return this.api.post<any>('/api/v1/users/self/lists', {
+        name,
       });
     });
   }
@@ -116,25 +118,25 @@ export class TeletrackerApi {
   async updateListTracking(
     thingId: number,
     addToLists: string[],
-    removeFromLists: string[]
+    removeFromLists: string[],
   ) {
     return this.withTokenCheck(async () => {
       return this.api.put<any>(`/api/v1/users/self/things/${thingId}/lists`, {
         addToLists,
-        removeFromLists
+        removeFromLists,
       });
     });
   }
 
   async addItemToList(listId: string, itemId: string) {
     if (!this.token) {
-      return Promise.reject(new Error("getUser requires a token to be set"));
+      return Promise.reject(new Error('getUser requires a token to be set'));
     }
 
     return this.api.put<any>(
       `/api/v1/users/self/lists/${listId}`,
       { itemId },
-      { headers: this.authHeaders() }
+      { headers: this.authHeaders() },
     );
   }
 
@@ -142,17 +144,17 @@ export class TeletrackerApi {
     eventType: string,
     targetType: string,
     targetId: string,
-    details: string
+    details: string,
   ) {
     this.withTokenCheck(async () => {
-      return this.api.post<any>("/api/v1/users/self/events", {
+      return this.api.post<any>('/api/v1/users/self/events', {
         event: {
           type: eventType,
           targetEntityType: targetType,
           targetEntityId: targetId,
           timestamp: new Date().getTime(),
-          details
-        }
+          details,
+        },
       });
     });
   }
@@ -171,7 +173,7 @@ export class TeletrackerApi {
 
   async getEvents() {
     return this.withTokenCheck(async () => {
-      return this.api.get<any>("/api/v1/users/self/events");
+      return this.api.get<any>('/api/v1/users/self/events');
     });
   }
 
@@ -183,7 +185,7 @@ export class TeletrackerApi {
 
   private withTokenCheck<T>(f: () => Promise<T>): Promise<T> {
     if (!this.token) {
-      return Promise.reject(new Error("getUser requires a token to be set"));
+      return Promise.reject(new Error('getUser requires a token to be set'));
     } else {
       return f();
     }
@@ -191,7 +193,7 @@ export class TeletrackerApi {
 
   private authHeaders() {
     return {
-      Authorization: `Bearer ${this.token}`
+      Authorization: `Bearer ${this.token}`,
     };
   }
 }

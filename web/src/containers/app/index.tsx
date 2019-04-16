@@ -7,7 +7,7 @@ import LogoutButton from '../../components/LogoutButton';
 import About from '../about';
 import Home from '../home';
 import { AppState } from '../../reducers';
-import { checkAuth } from '../../reducers/auth';
+import { checkAuth } from '../../actions/auth';
 
 interface OwnProps {
   isAuthed: boolean

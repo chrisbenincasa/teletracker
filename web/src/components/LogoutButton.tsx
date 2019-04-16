@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { connect } from "react-redux";
 import { RouteComponentProps, withRouter } from "react-router";
 import { bindActionCreators, Dispatch } from "redux";
-import { logout } from "../reducers/auth";
+import { logout } from "../actions/auth";
 
 interface AuthButtonProps {
   logout: () => void;
