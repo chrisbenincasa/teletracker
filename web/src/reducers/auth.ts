@@ -1,23 +1,23 @@
-import { Dispatch, AnyAction } from "redux";
-import { TeletrackerApi } from "../utils/api-client";
-import { User } from "../Model";
-import { ThunkAction } from "redux-thunk";
-import { AppState } from ".";
+import { Dispatch, AnyAction } from 'redux';
+import { TeletrackerApi } from '../utils/api-client';
+import { User } from '../Model';
+import { ThunkAction } from 'redux-thunk';
+import { AppState } from '.';
 
 const client = new TeletrackerApi();
 
-export const AUTH_CHECK = "auth/CHECK";
-export const AUTH_CHECK_INITIATED = "auth/CHECK_INITIATED";
-export const AUTH_CHECK_AUTHORIZED = "auth/IS_AUTHED";
-export const AUTH_CHECK_UNAUTH = "auth/NOT_AUTHED";
-export const AUTH_CHECK_FAILED = "auth/CHECK_FAILED";
+export const AUTH_CHECK = 'auth/CHECK';
+export const AUTH_CHECK_INITIATED = 'auth/CHECK_INITIATED';
+export const AUTH_CHECK_AUTHORIZED = 'auth/IS_AUTHED';
+export const AUTH_CHECK_UNAUTH = 'auth/NOT_AUTHED';
+export const AUTH_CHECK_FAILED = 'auth/CHECK_FAILED';
 
-export const LOGIN_INITIATED = "login/INITIATED";
-export const LOGIN_SUCCESSFUL = "login/SUCCESSFUL";
+export const LOGIN_INITIATED = 'login/INITIATED';
+export const LOGIN_SUCCESSFUL = 'login/SUCCESSFUL';
 
-export const LOGOUT_INITIATED = "logout/INITIATED";
-export const LOGOUT_SUCCESSFUL = "logout/SUCCESSFUL";
-export const LOGOUT_FAILED = "logout/FAILED";
+export const LOGOUT_INITIATED = 'logout/INITIATED';
+export const LOGOUT_SUCCESSFUL = 'logout/SUCCESSFUL';
+export const LOGOUT_FAILED = 'logout/FAILED';
 
 interface AuthCheckInitiatedAction {
   type: typeof AUTH_CHECK_INITIATED;
@@ -41,16 +41,16 @@ interface LogoutSuccessfulAction {
 }
 
 const authCheckInitiated: () => AuthCheckInitiatedAction = () => ({
-  type: AUTH_CHECK_INITIATED
+  type: AUTH_CHECK_INITIATED,
 });
 
 const authCheckAuthorized: () => AuthCheckAuthorizedAction = () => ({
-  type: AUTH_CHECK_AUTHORIZED
+  type: AUTH_CHECK_AUTHORIZED,
 });
 
 const loginSuccessful: (token: string) => LoginSuccessfulAction = token => ({
   type: LOGIN_SUCCESSFUL,
-  token
+  token,
 });
 
 export interface UserState extends Partial<User> {
@@ -69,7 +69,7 @@ export interface State {
 }
 
 const initialState: State = {
-  isLoggedIn: false
+  isLoggedIn: false,
 };
 
 type AuthActionTypes =
@@ -96,13 +96,13 @@ export const checkAuth = () => {
             dispatch(authCheckAuthorized());
           } else {
             dispatch({
-              type: AUTH_CHECK_UNAUTH
+              type: AUTH_CHECK_UNAUTH,
             });
           }
         })
         .catch(() => {
           dispatch({
-            type: AUTH_CHECK_FAILED
+            type: AUTH_CHECK_FAILED,
           });
         });
     }
@@ -126,7 +126,7 @@ export const logout = () => {
       .logoutUser()
       .then(() => {
         dispatch({
-          type: LOGOUT_SUCCESSFUL
+          type: LOGOUT_SUCCESSFUL,
         });
       })
       .catch(() => {});
@@ -135,20 +135,24 @@ export const logout = () => {
 
 export default function authReducer(
   state = initialState,
-  action: AuthActionTypes
+  action: AuthActionTypes,
 ): State {
   switch (action.type) {
     case LOGIN_SUCCESSFUL:
       return {
         ...state,
-        token: (action as LoginSuccessfulAction).token
+        token: (action as LoginSuccessfulAction).token,
       };
 
     case LOGOUT_SUCCESSFUL:
-      return {
+      console.log(state);
+      let s = {
         ...state,
-        token: undefined
+        token: undefined,
       };
+      console.log(s);
+
+      return s;
 
     default:
       return state;
