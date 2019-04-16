@@ -1,45 +1,46 @@
-import React, { Component } from "react";
-import { connect } from "react-redux";
-import { RouteComponentProps, withRouter } from "react-router";
-import { bindActionCreators, Dispatch } from "redux";
-import { logout } from "../actions/auth";
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { RouteComponentProps, withRouter } from 'react-router';
+import { bindActionCreators, Dispatch } from 'redux';
+import { logout } from '../actions/auth';
+import { push } from 'connected-react-router';
+import { Button } from '@material-ui/core';
 
 interface AuthButtonProps {
   logout: () => void;
 }
 
-class AuthButton extends Component<
-  RouteComponentProps<any> & AuthButtonProps
-> {
+class AuthButton extends Component<RouteComponentProps<any> & AuthButtonProps> {
   render() {
     return (
-      <a
-        href="#"
+      <Button
+        color="inherit"
         onClick={e => {
-          e.preventDefault();
           this.props.logout();
+          // TODO: Use state or react-router directly to do Redirect?
+          push('/login');
         }}
       >
         Sign out
-      </a>
+      </Button>
     );
   }
 }
 
 const mapDispatchToProps: (
-  dispatch: Dispatch
+  dispatch: Dispatch,
 ) => AuthButtonProps = dispatch => {
   return bindActionCreators(
     {
-      logout
+      logout,
     },
-    dispatch
+    dispatch,
   );
 };
 
 export default withRouter(
   connect(
     null,
-    mapDispatchToProps
-  )(AuthButton)
+    mapDispatchToProps,
+  )(AuthButton),
 );
