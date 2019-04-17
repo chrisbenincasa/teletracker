@@ -21,6 +21,14 @@ interface AuthCheckAuthorizedAction {
   type: typeof AUTH_CHECK_AUTHORIZED;
 }
 
+interface AuthCheckUnauthorizedAction {
+  type: typeof AUTH_CHECK_UNAUTH;
+}
+
+interface AuthCheckFailedAction {
+  type: typeof AUTH_CHECK_FAILED;
+}
+
 interface LoginInitiatedAction {
   type: typeof LOGIN_INITIATED;
 }
@@ -42,6 +50,14 @@ export const authCheckAuthorized: () => AuthCheckAuthorizedAction = () => ({
   type: AUTH_CHECK_AUTHORIZED,
 });
 
+export const authCheckUnauthorized: () => AuthCheckUnauthorizedAction = () => ({
+  type: AUTH_CHECK_UNAUTH,
+});
+
+export const authCheckFailed: () => AuthCheckFailedAction = () => ({
+  type: AUTH_CHECK_FAILED,
+});
+
 export const loginSuccessful: (
   token: string,
 ) => LoginSuccessfulAction = token => ({
@@ -52,6 +68,8 @@ export const loginSuccessful: (
 export type AuthActionTypes =
   | AuthCheckInitiatedAction
   | AuthCheckAuthorizedAction
+  | AuthCheckUnauthorizedAction
+  | AuthCheckFailedAction
   | LoginInitiatedAction
   | LoginSuccessfulAction
   | LogoutSuccessfulAction;
@@ -72,15 +90,11 @@ export const checkAuth = () => {
           if (response.status == 200) {
             dispatch(authCheckAuthorized());
           } else {
-            dispatch({
-              type: AUTH_CHECK_UNAUTH,
-            });
+            dispatch(authCheckUnauthorized());
           }
         })
         .catch(() => {
-          dispatch({
-            type: AUTH_CHECK_FAILED,
-          });
+          dispatch(authCheckFailed());
         });
     }
   };
