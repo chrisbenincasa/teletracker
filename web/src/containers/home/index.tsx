@@ -9,6 +9,7 @@ import {
   CardMedia,
   Card,
   CardContent,
+  LinearProgress,
 } from '@material-ui/core';
 import classNames from 'classnames';
 import * as R from 'ramda';
@@ -50,10 +51,21 @@ const styles = (theme: Theme) =>
 
 interface Props extends WithStyles<typeof styles> {
   isAuthed: boolean;
+  isSearching: boolean;
   searchResults?: Thing[];
 }
 
 class Home extends Component<Props> {
+  renderLoading = () => {
+    let { classes } = this.props;
+
+    return (
+      <div style={{ flexGrow: 1 }}>
+        <LinearProgress />
+      </div>
+    );
+  };
+
   renderPoster = (thing: Thing) => {
     let poster = getPosterPath(thing);
     if (poster) {
@@ -69,11 +81,13 @@ class Home extends Component<Props> {
     }
   };
 
-  render() {
+  renderSearchResults = () => {
     let { searchResults, classes } = this.props;
     searchResults = searchResults || [];
 
-    return this.props.isAuthed ? (
+    return this.props.isSearching ? (
+      this.renderLoading()
+    ) : (
       <main>
         <CssBaseline />
         {searchResults.length ? (
@@ -107,6 +121,12 @@ class Home extends Component<Props> {
           </div>
         ) : null}
       </main>
+    );
+  };
+
+  render() {
+    return this.props.isAuthed ? (
+      this.renderSearchResults()
     ) : (
       <Redirect to="/login" />
     );
@@ -116,6 +136,7 @@ class Home extends Component<Props> {
 const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
+    isSearching: appState.search.searching,
     searchResults: R.path<Thing[]>(['search', 'results', 'data'], appState),
   };
 };
