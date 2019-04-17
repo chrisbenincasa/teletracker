@@ -31,11 +31,11 @@ export const retrieveUserSelfSuccess = (payload: User) => ({
 
 const client = TeletrackerApi.instance;
 
-export const retrieveUser = () => {
+export const retrieveUser = (force: boolean = false) => {
   return async (dispatch: Dispatch, stateFn: () => AppState) => {
     let currState = stateFn();
 
-    if (currState.userSelf.self) {
+    if (currState.userSelf.self && !force) {
       dispatch(retrieveUserSelfSuccess(currState.userSelf.self));
     } else {
       dispatch(retrieveUserSelfInitiated);

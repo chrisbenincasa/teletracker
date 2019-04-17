@@ -23,7 +23,7 @@ import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Link, Route } from 'react-router-dom';
+import { Link, Route, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { checkAuth, logout } from '../../actions/auth';
 import { search } from '../../actions/search';
@@ -103,7 +103,7 @@ interface DispatchProps {
   search: (text: string) => void;
 }
 
-type Props = DispatchProps & OwnProps;
+type Props = DispatchProps & OwnProps & RouteComponentProps;
 
 interface State {
   anchorEl: any;
@@ -123,19 +123,19 @@ class App extends Component<Props, State> {
   handleSearchChange = event => {
     let searchText = event.currentTarget.value;
 
-    if (
-      this.props.currentSearchText &&
-      this.props.currentSearchText.trim() !== searchText
-    ) {
-      console.log('saerching');
-    }
     this.setState({ searchText });
 
     this.execSearch(searchText);
   };
 
   execSearch = _.debounce((text: string) => {
-    this.props.search(text);
+    if (this.props.location.pathname !== '/') {
+      this.props.history.push('/');
+    }
+
+    if (text.length >= 1 && this.props.currentSearchText !== text) {
+      this.props.search(text);
+    }
   }, 250);
 
   handleMenu = event => {
@@ -285,9 +285,11 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
   );
 };
 
-export default withStyles(styles)(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(App),
+export default withRouter(
+  withStyles(styles)(
+    connect(
+      mapStateToProps,
+      mapDispatchToProps,
+    )(App),
+  ),
 );

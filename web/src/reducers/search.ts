@@ -23,6 +23,7 @@ export default function searchReducer(
         ...state,
         searching: true,
         currentSearchText: action.text.trim(),
+        results: undefined,
       };
 
     case SEARCH_SUCCESSFUL:
