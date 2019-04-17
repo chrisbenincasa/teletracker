@@ -182,12 +182,16 @@ class ThingsDbAccess @Inject()(
               result
           case s => DBIO.successful(s)
         }.flatMap {
-          case s if s.length <= 1 => DBIO.successful(s.headOption)
+//          case s if s.length <= 1 =>
+//            DBIO.successful(s.headOption)
           case s =>
+            val l = s.toList
             DBIO.successful {
-              s.find(t => {
+              val r = s.find(t => {
                 t.metadata.exists(ObjectMetadataUtils.metadataMatchesId(_, source, thing.`type`, id))
               })
+
+              r
             }
         }
 
@@ -207,6 +211,13 @@ class ThingsDbAccess @Inject()(
 
       case Some(e) =>
         val updated = thing.copy(id = e.id)
+
+        if (thing.metadata.contains(e.metadata.get)) {
+          println(s"Thing id = ${e.id} has identical metadata to incoming movie")
+        } else {
+          println(s"Thing id = ${e.id} has different metadata to incoming movie")
+        }
+
         things.query.filter(t => {
           t.id === e.id &&
             t.normalizedName === e.normalizedName &&
