@@ -44,8 +44,6 @@ export default function authReducer(
     case AUTH_CHECK_AUTHORIZED:
     case AUTH_CHECK_FAILED:
     case AUTH_CHECK_UNAUTH:
-      console.log('authorized');
-
       return {
         ...state,
         checkingAuth: false,

@@ -1,27 +1,28 @@
-import React, { Component } from 'react';
 import {
-  Typography,
-  Theme,
-  withStyles,
-  createStyles,
-  CssBaseline,
-  WithStyles,
-  Grid,
+  Button,
   Card,
   CardContent,
+  createStyles,
+  CssBaseline,
+  Fab,
+  Grid,
+  Icon,
   LinearProgress,
+  Theme,
+  Typography,
+  withStyles,
+  WithStyles,
 } from '@material-ui/core';
-import { AddCircleOutline } from '@material-ui/icons';
-import { layoutStyles } from '../../styles';
-import classNames from 'classnames';
-import { AppState } from '../../reducers';
+import _ from 'lodash';
+import * as R from 'ramda';
+import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import { retrieveUser } from '../../actions/user';
+import { AppState } from '../../reducers';
+import { layoutStyles } from '../../styles';
 import { User } from '../../types';
-import * as R from 'ramda';
-import { Redirect } from 'react-router-dom';
-import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -42,6 +43,9 @@ const styles = (theme: Theme) =>
       flexWrap: 'wrap',
       justifyContent: 'center',
     },
+    fab: {
+      margin: theme.spacing.unit,
+    },
   });
 
 interface Props extends WithStyles<typeof styles> {
@@ -49,7 +53,7 @@ interface Props extends WithStyles<typeof styles> {
   isCheckingAuth: boolean;
   retrievingUser: boolean;
   userSelf?: User;
-  retrieveUser: () => void;
+  retrieveUser: (force: boolean) => void;
 }
 
 class Lists extends Component<Props> {
@@ -73,9 +77,13 @@ class Lists extends Component<Props> {
       !this.props.userSelf &&
       !this.props.retrievingUser
     ) {
-      this.props.retrieveUser();
+      this.props.retrieveUser(false);
     }
   }, 100);
+
+  refreshUser = () => {
+    this.props.retrieveUser(true);
+  };
 
   renderLoading() {
     let { classes } = this.props;
@@ -88,60 +96,41 @@ class Lists extends Component<Props> {
   }
 
   renderLists() {
-    let { classes } = this.props;
-
     if (this.props.retrievingUser || !this.props.userSelf) {
       return this.renderLoading();
     } else {
+      let { classes, userSelf } = this.props;
       return (
         <div>
           <CssBaseline />
           <div className={classes.layout}>
-            <Typography component="h3" variant="h3">
-              Lists for {this.props.userSelf!.name}
+            <Typography component="h4" variant="h4">
+              Lists for {userSelf.name}
             </Typography>
 
             <div className={classes.cardGrid}>
+              <Button onClick={this.refreshUser}>Refresh</Button>
               <Grid container spacing={16}>
-                <Grid key="create-new" sm={6} md={4} lg={4} item>
-                  <Card className={this.props.classes.card}>
-                    <CardContent
-                      className={classNames(
-                        classes.cardContent,
-                        classes.addNewCard,
-                      )}
-                    >
-                      <div style={{ width: '100%', paddingBottom: '20px' }}>
-                        <AddCircleOutline
-                          style={{
-                            fontSize: 50,
-                            margin: '0 auto',
-                            display: 'block',
-                          }}
-                        />
-                      </div>
-                      <Typography component="h3" variant="h5">
-                        Create new list
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid sm={6} md={4} lg={4} item>
-                  <Card>
-                    <CardContent />
-                  </Card>
-                </Grid>
-                <Grid sm={6} md={4} lg={4} item>
-                  <Card>
-                    <CardContent />
-                  </Card>
-                </Grid>
-                <Grid sm={6} md={4} lg={4} item>
-                  <Card>
-                    <CardContent />
-                  </Card>
-                </Grid>
+                {userSelf.lists.map(list => {
+                  return (
+                    <Grid key={list.id} sm={6} md={4} lg={4} item>
+                      <Card>
+                        <CardContent>
+                          <Typography component="h3" variant="h5">
+                            {list.name}
+                          </Typography>
+                          {list.things.length == 0 || list.things.length > 1
+                            ? list.things.length + ' items'
+                            : list.things.length + 'item'}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  );
+                })}
               </Grid>
+              <Fab color="primary" aria-label="Add" className={classes.fab}>
+                <Icon>add</Icon>
+              </Fab>
             </div>
           </div>
         </div>
