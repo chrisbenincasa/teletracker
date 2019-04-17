@@ -7,10 +7,14 @@ import io.circe._
 import io.circe.generic.JsonCodec
 import io.circe.parser._
 import javax.inject.{Inject, Singleton}
+import org.slf4j.LoggerFactory
+
 import scala.concurrent.{Future, Promise}
 
 @Singleton
 class TmdbClient @Inject()(config: TeletrackerConfig) {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   private val host = "api.themoviedb.org"
 
   private lazy val client = {
@@ -27,7 +31,9 @@ class TmdbClient @Inject()(config: TeletrackerConfig) {
     f.onSuccess(x => {
       val parsed = parse(x.contentString)
       parsed match {
-        case Left(e) => p.tryFailure(e)
+        case Left(e) =>
+          logger.error(s"Could not parse. Result string:\n${x.contentString}", e)
+          p.tryFailure(e)
         case Right(s) =>
           s.as[T] match {
             case Left(_) =>  s.as[TmdbError].fold(p.tryFailure, p.tryFailure)
