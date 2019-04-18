@@ -1,20 +1,10 @@
 import {
-  Button,
-  Card,
-  CardContent,
   CardMedia,
   createStyles,
   CssBaseline,
-  Dialog,
-  DialogTitle,
   Grid,
-  Icon,
   LinearProgress,
-  List,
-  ListItem,
-  ListItemText,
   Theme,
-  Typography,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
@@ -23,13 +13,13 @@ import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
-import Truncate from 'react-truncate';
 import { bindActionCreators } from 'redux';
+import SearchResultItem from '../../components/SearchResultItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { Thing } from '../../types/external/themoviedb/Movie';
-import { getDescription, getPosterPath } from '../../utils/metadata-access';
+import { getPosterPath } from '../../utils/metadata-access';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -55,14 +45,6 @@ const styles = (theme: Theme) =>
     cardContent: {
       flexGrow: 1,
     },
-    paper: {
-      position: 'absolute',
-      width: theme.spacing.unit * 50,
-      backgroundColor: theme.palette.background.paper,
-      boxShadow: theme.shadows[5],
-      padding: theme.spacing.unit * 4,
-      outline: 'none',
-    },
   });
 
 interface Props extends WithStyles<typeof styles> {
@@ -71,18 +53,8 @@ interface Props extends WithStyles<typeof styles> {
   searchResults?: Thing[];
 }
 
-interface State {
-  modalOpen: boolean;
-}
-
-class Home extends Component<Props & WithUserProps, State> {
-  state = {
-    modalOpen: false,
-  };
-
+class Home extends Component<Props & WithUserProps> {
   renderLoading = () => {
-    let { classes } = this.props;
-
     return (
       <div style={{ flexGrow: 1 }}>
         <LinearProgress />
@@ -105,14 +77,6 @@ class Home extends Component<Props & WithUserProps, State> {
     }
   };
 
-  handleModalOpen = () => {
-    this.setState({ modalOpen: true });
-  };
-
-  handleModalClose = () => {
-    this.setState({ modalOpen: false });
-  };
-
   renderSearchResults = () => {
     let { searchResults, classes } = this.props;
     searchResults = searchResults || [];
@@ -127,57 +91,13 @@ class Home extends Component<Props & WithUserProps, State> {
             <Grid container spacing={16}>
               {searchResults.map(result => {
                 return (
-                  <Grid key={result.id} sm={6} md={4} lg={3} item>
-                    <Card className={this.props.classes.card}>
-                      {this.renderPoster(result)}
-                      <CardContent className={classes.cardContent}>
-                        <Typography
-                          className={classes.title}
-                          gutterBottom
-                          variant="h5"
-                          component="h2"
-                        >
-                          {result.name}
-                        </Typography>
-                        <Typography>
-                          <Truncate lines={3} ellipsis={<span>...</span>}>
-                            {getDescription(result)}
-                          </Truncate>
-                        </Typography>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={this.handleModalOpen}
-                        >
-                          <Icon>playlist_add</Icon>
-                          <Typography color="inherit">Add to List</Typography>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </Grid>
+                  <SearchResultItem
+                    userSelf={this.props.userSelf}
+                    item={result}
+                  />
                 );
               })}
             </Grid>
-            <Dialog
-              aria-labelledby="simple-modal-title"
-              aria-describedby="simple-modal-description"
-              open={this.state.modalOpen}
-              onClose={this.handleModalClose}
-              fullWidth
-              maxWidth="xs"
-            >
-              <DialogTitle id="simple-dialog-title">Choose a list</DialogTitle>
-
-              <div>
-                <List>
-                  {this.props.userSelf!.lists.map(list => (
-                    <ListItem button key={list.id}>
-                      <ListItemText primary={list.name} />
-                    </ListItem>
-                  ))}
-                </List>
-              </div>
-            </Dialog>
           </div>
         ) : null}
       </main>
