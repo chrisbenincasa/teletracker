@@ -32,6 +32,7 @@ import About from '../about';
 import Home from '../home';
 import Login from '../login';
 import Lists from '../lists';
+import ListDetail from '../list-detail';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -256,6 +257,7 @@ class App extends Component<Props, State> {
             <Route exact path="/about-us" component={About} />
             <Route exact path="/login" component={Login} />
             <Route exact path="/lists" component={Lists} />
+            <Route exact path="/lists/:id" component={ListDetail} />
             <Route exact path="/logout" component={About} />
           </main>
         </div>

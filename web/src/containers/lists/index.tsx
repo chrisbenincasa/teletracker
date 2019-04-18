@@ -17,7 +17,7 @@ import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Redirect } from 'react-router-dom';
+import { Redirect, Link } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import { retrieveUser } from '../../actions/user';
 import { AppState } from '../../reducers';
@@ -61,8 +61,10 @@ class Lists extends Component<Props> {
     this.loadUser(this.props);
   }
 
-  componentWillReceiveProps(newProps: Props) {
-    this.loadUser(newProps);
+  componentDidUpdate(oldProps: Props) {
+    if (oldProps.isCheckingAuth && this.props.isCheckingAuth) {
+      this.loadUser(this.props);
+    }
   }
 
   // This is stupid gnarly. We make a debounced check here for the following edge case:
@@ -116,7 +118,12 @@ class Lists extends Component<Props> {
                     <Grid key={list.id} sm={6} md={4} lg={4} item>
                       <Card>
                         <CardContent>
-                          <Typography component="h3" variant="h5">
+                          <Typography
+                            component={props => (
+                              <Link {...props} to={'/lists/' + list.id} />
+                            )}
+                            variant="h5"
+                          >
                             {list.name}
                           </Typography>
                           {list.things.length == 0 || list.things.length > 1
