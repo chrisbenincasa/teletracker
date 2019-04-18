@@ -2,10 +2,15 @@ import * as apisauce from 'apisauce';
 import { merge } from 'ramda';
 
 import { User } from '../types';
+import { Thing } from '../types/external/themoviedb/Movie';
 
 export interface TeletrackerApiOptions {
   url?: string;
   token?: string;
+}
+
+export interface DataResponse<T> {
+  data: T;
 }
 
 type Required<T> = { [K in keyof T]: T[K] };
@@ -66,7 +71,7 @@ export class TeletrackerApi {
       return Promise.reject(new Error('getUser requires a token to be set'));
     }
 
-    return this.api.get<User>(
+    return this.api.get<DataResponse<User>>(
       '/api/v1/users/self',
       {},
       { headers: this.authHeaders() },
@@ -103,7 +108,7 @@ export class TeletrackerApi {
 
   async search(searchText: string) {
     return this.withTokenCheck(async () => {
-      return this.api.get<any>('/api/v1/search', { query: searchText });
+      return this.api.get<Thing[]>('/api/v1/search', { query: searchText });
     });
   }
 
