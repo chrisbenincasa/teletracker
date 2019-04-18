@@ -27,8 +27,8 @@ case class ProviderData(
 
 case class PopularItemsResponse(
   page: Int,
-  page_size: Int,
-  total_pages: Int,
+  page_size: Option[Int],
+  total_pages: Option[Int],
   total_results: Int,
   items: List[PopularItem]
 )

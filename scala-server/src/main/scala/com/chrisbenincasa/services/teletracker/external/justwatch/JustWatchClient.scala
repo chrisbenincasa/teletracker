@@ -5,10 +5,14 @@ import com.twitter.finagle.http.Request
 import io.circe.Decoder
 import io.circe.parser.decode
 import javax.inject.Singleton
+import org.slf4j.LoggerFactory
+
 import scala.concurrent.{Future, Promise}
 
 @Singleton
 class JustWatchClient {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   private val host = "apis.justwatch.com"
   private val client = {
     Http.client.
@@ -24,7 +28,7 @@ class JustWatchClient {
     f.onSuccess(x => {
       decode[T](x.contentString) match {
         case Left(e) =>
-          println(x.contentString)
+          logger.error(s"Could not parse. Result string:\n${x.contentString}", e)
           p.tryFailure(e)
         case Right(json) => p.trySuccess(json)
       }
