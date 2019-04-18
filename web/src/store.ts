@@ -5,6 +5,7 @@ import { persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunk from 'redux-thunk';
 import rootReducer from './reducers/';
+import * as rp from 'redux-persist';
 
 export const history = createBrowserHistory();
 
@@ -12,12 +13,23 @@ const initialState = {};
 const enhancers: any[] = [];
 const middleware = [thunk, routerMiddleware(history)];
 
-const persistConfig = {
-  key: 'root',
-  storage,
+let env = process.env.NODE_ENV;
+
+const getBlacklists = () => {
+  if (env === 'development') {
+    return [];
+  } else {
+    return ['search'];
+  }
 };
 
-if (process.env.NODE_ENV === 'development') {
+const persistConfig: rp.PersistConfig = {
+  key: 'root',
+  storage,
+  blacklist: getBlacklists(),
+};
+
+if (env === 'development') {
   const devToolsExtension = (window as any).__REDUX_DEVTOOLS_EXTENSION__;
 
   if (typeof devToolsExtension === 'function') {
