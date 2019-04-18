@@ -1,27 +1,35 @@
 import {
+  Button,
+  Card,
+  CardContent,
+  CardMedia,
   createStyles,
   CssBaseline,
+  Dialog,
+  DialogTitle,
+  Grid,
+  Icon,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemText,
   Theme,
   Typography,
   WithStyles,
   withStyles,
-  Grid,
-  CardMedia,
-  Card,
-  CardContent,
-  LinearProgress,
 } from '@material-ui/core';
 import classNames from 'classnames';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
-import { bindActionCreators } from 'redux';
-import { AppState } from '../../reducers';
-import { Thing } from '../../types/external/themoviedb/Movie';
-import { getPosterPath, getDescription } from '../../utils/metadata-access';
 import Truncate from 'react-truncate';
+import { bindActionCreators } from 'redux';
+import withUser, { WithUserProps } from '../../components/withUser';
+import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
+import { Thing } from '../../types/external/themoviedb/Movie';
+import { getDescription, getPosterPath } from '../../utils/metadata-access';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -47,6 +55,14 @@ const styles = (theme: Theme) =>
     cardContent: {
       flexGrow: 1,
     },
+    paper: {
+      position: 'absolute',
+      width: theme.spacing.unit * 50,
+      backgroundColor: theme.palette.background.paper,
+      boxShadow: theme.shadows[5],
+      padding: theme.spacing.unit * 4,
+      outline: 'none',
+    },
   });
 
 interface Props extends WithStyles<typeof styles> {
@@ -55,7 +71,15 @@ interface Props extends WithStyles<typeof styles> {
   searchResults?: Thing[];
 }
 
-class Home extends Component<Props> {
+interface State {
+  modalOpen: boolean;
+}
+
+class Home extends Component<Props & WithUserProps, State> {
+  state = {
+    modalOpen: false,
+  };
+
   renderLoading = () => {
     let { classes } = this.props;
 
@@ -79,6 +103,14 @@ class Home extends Component<Props> {
     } else {
       return null;
     }
+  };
+
+  handleModalOpen = () => {
+    this.setState({ modalOpen: true });
+  };
+
+  handleModalClose = () => {
+    this.setState({ modalOpen: false });
   };
 
   renderSearchResults = () => {
@@ -112,12 +144,40 @@ class Home extends Component<Props> {
                             {getDescription(result)}
                           </Truncate>
                         </Typography>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={this.handleModalOpen}
+                        >
+                          <Icon>playlist_add</Icon>
+                          <Typography color="inherit">Add to List</Typography>
+                        </Button>
                       </CardContent>
                     </Card>
                   </Grid>
                 );
               })}
             </Grid>
+            <Dialog
+              aria-labelledby="simple-modal-title"
+              aria-describedby="simple-modal-description"
+              open={this.state.modalOpen}
+              onClose={this.handleModalClose}
+              fullWidth
+              maxWidth="xs"
+            >
+              <DialogTitle id="simple-dialog-title">Choose a list</DialogTitle>
+
+              <div>
+                <List>
+                  {this.props.userSelf!.lists.map(list => (
+                    <ListItem button key={list.id}>
+                      <ListItemText primary={list.name} />
+                    </ListItem>
+                  ))}
+                </List>
+              </div>
+            </Dialog>
           </div>
         ) : null}
       </main>
@@ -143,9 +203,11 @@ const mapStateToProps = (appState: AppState) => {
 
 const mapDispatchToProps = dispatch => bindActionCreators({}, dispatch);
 
-export default withStyles(styles)(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(Home),
+export default withUser(
+  withStyles(styles)(
+    connect(
+      mapStateToProps,
+      mapDispatchToProps,
+    )(Home),
+  ),
 );
