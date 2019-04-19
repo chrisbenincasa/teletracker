@@ -1,4 +1,3 @@
-import React, { Component } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -6,38 +5,79 @@ import {
   ListItem,
   ListItemText,
 } from '@material-ui/core';
+import React, { Component } from 'react';
 import { User } from '../types';
 import { Thing } from '../types/external/themoviedb/Movie';
+import { AppState } from '../reducers';
+import { bindActionCreators } from 'redux';
+import { addToList } from '../actions/lists';
+import { ListOperationState } from '../reducers/lists';
+import { connect } from 'react-redux';
 
 interface AddToListDialogProps {
   open: boolean;
   userSelf: User;
   item: Thing;
+  listOperations: ListOperationState;
+}
+
+interface AddToListDialogDispatchProps {
+  addToList: (listId: string, itemId: string) => void;
 }
 
 interface AddToListDialogState {
-  open: boolean;
+  exited: boolean;
+  actionPending: boolean;
 }
 
-export default class AddToListDialog extends Component<
-  AddToListDialogProps,
+class AddToListDialog extends Component<
+  AddToListDialogProps & AddToListDialogDispatchProps,
   AddToListDialogState
 > {
-  state = {
-    open: false,
-  };
+  constructor(props: AddToListDialogProps & AddToListDialogDispatchProps) {
+    super(props);
+    this.state = {
+      exited: false,
+      actionPending: props.listOperations.inProgress,
+    };
+  }
 
-  componentWillUpdate(oldProps: AddToListDialogProps) {
-    if (
-      this.props.open !== oldProps.open ||
-      this.props.open != this.state.open
-    ) {
-      this.setState({ open: this.props.open });
+  componentDidUpdate(prevProps: AddToListDialogProps) {
+    if (prevProps.open && !this.props.open) {
+      this.handleModalClose();
     }
+
+    if (
+      !prevProps.listOperations.inProgress &&
+      this.props.listOperations.inProgress
+    ) {
+      this.setState({ actionPending: true });
+    } else if (
+      prevProps.listOperations.inProgress &&
+      !this.props.listOperations.inProgress
+    ) {
+      this.setState({ actionPending: false, exited: true });
+    }
+
+    // if (
+    //   !this.props.listOperations.inProgress &&
+    //   oldProps.listOperations.inProgress
+    // ) {
+    //   console.log(
+    //     this.props.listOperations.inProgress,
+    //     oldProps.listOperations.inProgress,
+    //     this.props.open,
+    //   );
+    //   this.handleModalClose();
+    // }
   }
 
   handleModalClose = () => {
-    this.setState({ open: false });
+    this.setState({ exited: true });
+  };
+
+  handleAddToList = (id: number) => {
+    this.props.addToList(id.toString(), this.props.item.id.toString());
   };
 
   render() {
@@ -45,7 +85,7 @@ export default class AddToListDialog extends Component<
       <Dialog
         aria-labelledby="simple-modal-title"
         aria-describedby="simple-modal-description"
-        open={this.state.open}
+        open={this.props.open && !this.state.exited}
         onClose={this.handleModalClose}
         fullWidth
         maxWidth="xs"
@@ -57,7 +97,12 @@ export default class AddToListDialog extends Component<
         <div>
           <List>
             {this.props.userSelf.lists.map(list => (
-              <ListItem button key={list.id}>
+              <ListItem
+                button
+                disabled={this.props.listOperations.inProgress}
+                key={list.id}
+                onClick={() => this.handleAddToList(list.id)}
+              >
                 <ListItemText primary={list.name} />
               </ListItem>
             ))}
@@ -67,3 +112,22 @@ export default class AddToListDialog extends Component<
     );
   }
 }
+
+const mapStateToProps = (appState: AppState) => {
+  return {
+    listOperations: appState.lists.operation,
+  };
+};
+
+const mapDispatchToProps = dispatch =>
+  bindActionCreators(
+    {
+      addToList,
+    },
+    dispatch,
+  );
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps,
+)(AddToListDialog);

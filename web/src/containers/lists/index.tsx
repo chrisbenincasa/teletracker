@@ -128,7 +128,7 @@ class Lists extends Component<Props> {
                           </Typography>
                           {list.things.length == 0 || list.things.length > 1
                             ? list.things.length + ' items'
-                            : list.things.length + 'item'}
+                            : list.things.length + ' item'}
                         </CardContent>
                       </Card>
                     </Grid>

@@ -42,5 +42,8 @@ trait ModelInstances extends JodaInstances {
   implicit val partialThingEncoder = deriveEncoder[PartialThing]
   implicit val partialThingDecoder = deriveDecoder[PartialThing]
 
+  implicit val trackedListEncoder = deriveEncoder[TrackedList]
+  implicit val trackedListDecoder = deriveDecoder[TrackedList]
+
   implicit val userDecoder = deriveDecoder[User]
 }

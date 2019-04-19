@@ -1,7 +1,7 @@
 import * as apisauce from 'apisauce';
 import { merge } from 'ramda';
 
-import { User } from '../types';
+import { User, List } from '../types';
 import { Thing } from '../types/external/themoviedb/Movie';
 
 export interface TeletrackerApiOptions {
@@ -117,6 +117,12 @@ export class TeletrackerApi {
       return this.api.post<any>('/api/v1/users/self/lists', {
         name,
       });
+    });
+  }
+
+  async getList(id: string | number) {
+    return this.withTokenCheck(async () => {
+      return this.api.get<DataResponse<List>>(`/api/v1/users/self/lists/${id}`);
     });
   }
 
