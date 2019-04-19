@@ -5,6 +5,7 @@ import com.chrisbenincasa.services.teletracker.auth.jwt.JwtVendor
 import com.chrisbenincasa.services.teletracker.auth.{JwtAuthFilter, UserSelfOnlyFilter}
 import com.chrisbenincasa.services.teletracker.db.model.Event
 import com.chrisbenincasa.services.teletracker.db.{ThingsDbAccess, UsersDbAccess}
+import com.chrisbenincasa.services.teletracker.util.json.circe._
 import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -79,16 +80,16 @@ class UserController @Inject()(
 
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
         usersDbAccess.findList(req.request.authContext.user.id, req.listId).map(result => {
-          println(s"found $result")
           if (result.isEmpty) {
             response.status(404)
           } else {
             val list = result.head._1
             val things = result.flatMap(_._2)
 
-            DataResponse(
-              list.toFull.withThings(things.map(_.asPartial).toList)
-            )
+            response.ok.contentTypeJson().body(
+              DataResponse.complex(
+                list.toFull.withThings(things.map(_.asPartial).toList)
+              ))
           }
         })
       }
