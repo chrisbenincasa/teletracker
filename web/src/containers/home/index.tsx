@@ -14,7 +14,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import SearchResultItem from '../../components/SearchResultItemCard';
+import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
@@ -91,9 +91,11 @@ class Home extends Component<Props & WithUserProps> {
             <Grid container spacing={16}>
               {searchResults.map(result => {
                 return (
-                  <SearchResultItem
+                  <ItemCard
+                    key={result.id}
                     userSelf={this.props.userSelf}
                     item={result}
+                    addButton
                   />
                 );
               })}

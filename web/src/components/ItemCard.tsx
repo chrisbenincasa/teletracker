@@ -13,7 +13,7 @@ import {
 } from '@material-ui/core';
 import React, { Component } from 'react';
 import Truncate from 'react-truncate';
-import AddToListDialog from '../components/AddToListDialog';
+import AddToListDialog from './AddToListDialog';
 import { User } from '../types';
 import { Thing } from '../types/external/themoviedb/Movie';
 import { getDescription, getPosterPath } from '../utils/metadata-access';
@@ -40,25 +40,27 @@ const styles = (theme: Theme) =>
     },
   });
 
-interface SearchResultItemProps extends WithStyles<typeof styles> {
+interface ItemCardProps extends WithStyles<typeof styles> {
+  key: string | number;
   item: Thing;
   userSelf?: User;
+
+  // display props
+  addButton?: boolean;
 }
 
-interface SearchResultItemState {
+interface ItemCardState {
   modalOpen: boolean;
 }
 
-class SearchResultItemComponent extends Component<
-  SearchResultItemProps,
-  SearchResultItemState
-> {
-  state: SearchResultItemState = {
+class ItemCard extends Component<ItemCardProps, ItemCardState> {
+  state: ItemCardState = {
     modalOpen: false,
   };
 
   renderPoster = (thing: Thing) => {
     let poster = getPosterPath(thing);
+
     if (poster) {
       return (
         <CardMedia
@@ -81,7 +83,8 @@ class SearchResultItemComponent extends Component<
   };
 
   render() {
-    let { item, classes } = this.props;
+    let { item, classes, addButton } = this.props;
+
     return (
       <React.Fragment>
         <Grid key={item.id} sm={6} md={4} lg={3} item>
@@ -101,25 +104,29 @@ class SearchResultItemComponent extends Component<
                   {getDescription(item)}
                 </Truncate>
               </Typography>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => this.handleModalOpen(item)}
-              >
-                <Icon>playlist_add</Icon>
-                <Typography color="inherit">Add to List</Typography>
-              </Button>
+              {addButton ? (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => this.handleModalOpen(item)}
+                >
+                  <Icon>playlist_add</Icon>
+                  <Typography color="inherit">Add to List</Typography>
+                </Button>
+              ) : null}
             </CardContent>
           </Card>
         </Grid>
-        <AddToListDialog
-          open={this.state.modalOpen}
-          userSelf={this.props.userSelf!}
-          item={item}
-        />
+        {addButton ? (
+          <AddToListDialog
+            open={this.state.modalOpen}
+            userSelf={this.props.userSelf!}
+            item={item}
+          />
+        ) : null}
       </React.Fragment>
     );
   }
 }
 
-export default withStyles(styles)(SearchResultItemComponent);
+export default withStyles(styles)(ItemCard);

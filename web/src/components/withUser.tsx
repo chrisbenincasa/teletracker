@@ -5,6 +5,7 @@ import { bindActionCreators } from 'redux';
 import { retrieveUser } from '../actions/user';
 import { AppState } from '../reducers';
 import { User } from '../types';
+import { LinearProgress } from '@material-ui/core';
 
 export interface WithUserStateProps {
   isCheckingAuth: boolean;
@@ -37,7 +38,14 @@ const withUser = <P extends object>(
     }, 100);
 
     render() {
-      return <Component {...this.props as P & WithUserProps} />;
+      return (this.props.isCheckingAuth || this.props.retrievingUser) &&
+        this.props.userSelf ? (
+        <div style={{ flexGrow: 1 }}>
+          <LinearProgress />
+        </div>
+      ) : (
+        <Component {...this.props as P & WithUserProps} />
+      );
     }
   }
 
