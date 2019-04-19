@@ -10,6 +10,7 @@ import {
   Typography,
   WithStyles,
   withStyles,
+  Button,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
@@ -33,6 +34,7 @@ import Home from '../home';
 import Login from '../login';
 import Lists from '../lists';
 import ListDetail from '../list-detail';
+import startup from '../../actions';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -102,6 +104,7 @@ interface DispatchProps {
   checkAuth: () => void;
   logout: () => void;
   search: (text: string) => void;
+  startup: () => void;
 }
 
 type Props = DispatchProps & OwnProps & RouteComponentProps;
@@ -116,6 +119,10 @@ class App extends Component<Props, State> {
     anchorEl: null,
     searchText: '',
   };
+
+  componentWillMount() {
+    this.props.startup();
+  }
 
   componentDidMount() {
     this.props.checkAuth();
@@ -233,12 +240,12 @@ class App extends Component<Props, State> {
               <HomeOutlined />
             </IconButton>
             {!this.props.isAuthed ? (
-              <IconButton
+              <Button
                 component={props => <Link {...props} to="/login" />}
                 color="inherit"
               >
                 Login
-              </IconButton>
+              </Button>
             ) : null}
             {this.props.isAuthed ? (
               <IconButton
@@ -282,6 +289,7 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
       checkAuth,
       logout,
       search,
+      startup,
     },
     dispatch,
   );
