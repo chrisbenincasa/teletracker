@@ -58,18 +58,6 @@ class AddToListDialog extends Component<
     ) {
       this.setState({ actionPending: false, exited: true });
     }
-
-    // if (
-    //   !this.props.listOperations.inProgress &&
-    //   oldProps.listOperations.inProgress
-    // ) {
-    //   console.log(
-    //     this.props.listOperations.inProgress,
-    //     oldProps.listOperations.inProgress,
-    //     this.props.open,
-    //   );
-    //   this.handleModalClose();
-    // }
   }
 
   handleModalClose = () => {

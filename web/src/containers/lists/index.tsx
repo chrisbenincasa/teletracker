@@ -12,17 +12,21 @@ import {
   Typography,
   withStyles,
   WithStyles,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  TextField,
+  DialogActions,
 } from '@material-ui/core';
-import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Redirect, Link } from 'react-router-dom';
+import { Link, Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import { retrieveUser } from '../../actions/user';
+import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { User } from '../../types';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -48,54 +52,41 @@ const styles = (theme: Theme) =>
     },
   });
 
-interface Props extends WithStyles<typeof styles> {
+interface OwnProps {
   isAuthed?: boolean;
   isCheckingAuth: boolean;
-  retrievingUser: boolean;
-  userSelf?: User;
-  retrieveUser: (force: boolean) => void;
 }
 
-class Lists extends Component<Props> {
-  componentDidMount() {
-    this.loadUser(this.props);
-  }
+type Props = OwnProps & WithStyles<typeof styles> & WithUserProps;
 
-  componentDidUpdate(oldProps: Props) {
-    if (oldProps.isCheckingAuth && this.props.isCheckingAuth) {
-      this.loadUser(this.props);
-    }
-  }
+interface State {
+  createDialogOpen: boolean;
+}
 
-  // This is stupid gnarly. We make a debounced check here for the following edge case:
-  // After logging in, componentDidMount and componentWillReceiveProps fire in very quick succession
-  // This means it's possible to fire off 2 API calls to retrieve the current user.
-  // However, we need both componentDidMount and componentWillReceiveProps to call this because:
-  // 1. with just componentWillReceiveProps, switching from "Home" to "Lists" will not initiate a request for the user
-  // 2. with just componentDidMount, loading directly to /lists will not update the page once isCheckingAuth is true
-  loadUser = _.debounce((props: Props) => {
-    if (
-      !props.isCheckingAuth &&
-      !this.props.userSelf &&
-      !this.props.retrievingUser
-    ) {
-      this.props.retrieveUser(false);
-    }
-  }, 100);
+class Lists extends Component<Props, State> {
+  state: State = {
+    createDialogOpen: false,
+  };
 
   refreshUser = () => {
     this.props.retrieveUser(true);
   };
 
   renderLoading() {
-    let { classes } = this.props;
-
     return (
       <div style={{ flexGrow: 1 }}>
         <LinearProgress />
       </div>
     );
   }
+
+  handleClickOpen = () => {
+    this.setState({ createDialogOpen: true });
+  };
+
+  handleClose = () => {
+    this.setState({ createDialogOpen: false });
+  };
 
   renderLists() {
     if (this.props.retrievingUser || !this.props.userSelf) {
@@ -135,9 +126,43 @@ class Lists extends Component<Props> {
                   );
                 })}
               </Grid>
-              <Fab color="primary" aria-label="Add" className={classes.fab}>
+              <Fab
+                color="primary"
+                aria-label="Add"
+                className={classes.fab}
+                onClick={this.handleClickOpen}
+              >
                 <Icon>add</Icon>
               </Fab>
+              <Dialog
+                fullWidth
+                maxWidth="xs"
+                open={this.state.createDialogOpen}
+              >
+                <DialogTitle>Create a List</DialogTitle>
+                <DialogContent>
+                  {/* <DialogContentText>
+                    To subscribe to this website, please enter your email
+                    address here. We will send updates occasionally.
+                  </DialogContentText> */}
+                  <TextField
+                    autoFocus
+                    margin="dense"
+                    id="name"
+                    label="Name"
+                    type="email"
+                    fullWidth
+                  />
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={this.handleClose} color="primary">
+                    Cancel
+                  </Button>
+                  <Button onClick={this.handleClose} color="primary">
+                    Create
+                  </Button>
+                </DialogActions>
+              </Dialog>
             </div>
           </div>
         </div>
@@ -153,23 +178,16 @@ class Lists extends Component<Props> {
 const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    isCheckingAuth: appState.auth.checkingAuth,
-    retrievingUser: appState.userSelf.retrievingSelf,
-    userSelf: appState.userSelf.self,
   };
 };
 
-const mapDispatchToProps = dispatch =>
-  bindActionCreators(
-    {
-      retrieveUser,
-    },
-    dispatch,
-  );
+const mapDispatchToProps = dispatch => bindActionCreators({}, dispatch);
 
-export default withStyles(styles)(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(Lists),
+export default withUser(
+  withStyles(styles)(
+    connect(
+      mapStateToProps,
+      mapDispatchToProps,
+    )(Lists),
+  ),
 );
