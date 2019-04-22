@@ -1,66 +1,56 @@
-import { Dispatch } from 'redux';
+import { put, takeEvery } from '@redux-saga/core/effects';
+import { ApiResponse } from 'apisauce';
+import { FSA } from 'flux-standard-action';
 import {
   LIST_ADD_ITEM_FAILED,
   LIST_ADD_ITEM_INITIATED,
   LIST_ADD_ITEM_SUCCESS,
+  LIST_RETRIEVE_FAILED,
   LIST_RETRIEVE_INITIATED,
   LIST_RETRIEVE_SUCCESS,
-  LIST_RETRIEVE_FAILED,
 } from '../constants/lists';
-import { TeletrackerApi } from '../utils/api-client';
-import { retrieveUser } from './user';
-import { AppState } from '../reducers';
-import { createAction } from 'redux-actions';
 import { List } from '../types';
+import { DataResponse } from '../utils/api-client';
+import { clientEffect2, createAction } from './utils';
 
-interface ListAddInitiatedAction {
-  type: typeof LIST_ADD_ITEM_INITIATED;
+interface ListAddInitiatedPayload {
   listId: string;
   itemId: string;
 }
 
-const listAdd = (listId: string, itemId: string) => {
-  return {
-    type: LIST_ADD_ITEM_INITIATED,
-    listId,
-    itemId,
-  };
-};
+export type ListAddInitiatedAction = FSA<
+  typeof LIST_ADD_ITEM_INITIATED,
+  ListAddInitiatedPayload
+>;
 
-interface ListAddSuccessAction {
-  type: typeof LIST_ADD_ITEM_SUCCESS;
-}
+export type ListAddSuccessAction = FSA<typeof LIST_ADD_ITEM_SUCCESS>;
 
-interface ListAddFailedAction {
-  type: typeof LIST_ADD_ITEM_FAILED;
-}
+export type ListAddFailedAction = FSA<typeof LIST_ADD_ITEM_FAILED>;
 
-interface ListRetrieveInitiatedAction {
-  type: typeof LIST_RETRIEVE_INITIATED;
-  payload: string | number;
-}
+export type ListRetrieveInitiatedAction = FSA<
+  typeof LIST_RETRIEVE_INITIATED,
+  string | number
+>;
 
-const ListRetrieveInitiated = createAction(
-  LIST_RETRIEVE_INITIATED,
-  (listId: string | number): ListRetrieveInitiatedAction => ({
-    type: LIST_RETRIEVE_INITIATED,
-    payload: listId,
-  }),
+export type ListRetrieveSuccessAction = FSA<typeof LIST_RETRIEVE_SUCCESS, List>;
+
+export type ListRetrieveFailedAction = FSA<typeof LIST_RETRIEVE_FAILED, Error>;
+
+const ListAddInitiated = createAction<ListAddInitiatedAction>(
+  LIST_ADD_ITEM_INITIATED,
 );
 
-interface ListRetrieveSuccessAction {
-  type: typeof LIST_RETRIEVE_SUCCESS;
-  payload: List;
-}
+const ListRetrieveInitiated = createAction<ListRetrieveInitiatedAction>(
+  LIST_RETRIEVE_INITIATED,
+);
 
-export const ListRetrieveSuccess = createAction(LIST_RETRIEVE_SUCCESS);
+const ListRetrieveSuccess = createAction<ListRetrieveSuccessAction>(
+  LIST_RETRIEVE_SUCCESS,
+);
 
-interface ListRetrieveFailedAction {
-  type: typeof LIST_RETRIEVE_SUCCESS;
-  payload: Error;
-}
-
-const ListRetrieveFailed = createAction(LIST_RETRIEVE_FAILED);
+const ListRetrieveFailed = createAction<ListRetrieveFailedAction>(
+  LIST_RETRIEVE_FAILED,
+);
 
 type ListAddActions =
   | ListAddInitiatedAction
@@ -72,55 +62,62 @@ type ListAddActions =
 
 export type ListActions = ListAddActions;
 
-const client = TeletrackerApi.instance;
+export const addToListSaga = function*() {
+  yield takeEvery(LIST_ADD_ITEM_INITIATED, function*({
+    payload,
+  }: ListAddInitiatedAction) {
+    if (payload) {
+      try {
+        let response = yield clientEffect2(
+          client => client.addItemToList,
+          payload.listId,
+          payload.itemId,
+        );
+        if (response.ok) {
+          yield put({ type: LIST_ADD_ITEM_SUCCESS });
+          // TODO: put a retrieve user action here
+        } else {
+          yield put({ type: LIST_ADD_ITEM_FAILED });
+        }
+      } catch (e) {
+        yield put({ type: LIST_ADD_ITEM_FAILED });
+      }
+    } else {
+      // TODO: Error
+    }
+  });
+};
 
 export const addToList = (listId: string, itemId: string) => {
-  return (dispatch: Dispatch, stateFn: () => AppState) => {
-    dispatch(listAdd(listId, itemId));
+  return ListAddInitiated({ listId, itemId });
+};
 
-    return client
-      .addItemToList(listId, itemId)
-      .then(response => {
-        if (response.ok) {
-          dispatch(listAddSuccess());
-          retrieveUser(true)(dispatch, stateFn);
+export const retrieveListSaga = function*() {
+  yield takeEvery(LIST_RETRIEVE_INITIATED, function*({
+    payload,
+  }: ListRetrieveInitiatedAction) {
+    if (payload) {
+      try {
+        // TODO: Type alias to make this cleaner
+        let response: ApiResponse<DataResponse<List>> = yield clientEffect2(
+          client => client.getList,
+          payload,
+        );
+
+        if (response.ok && response.data) {
+          yield put(ListRetrieveSuccess(response.data.data));
         } else {
-          dispatch(listAddFailure());
+          yield put(ListRetrieveFailed(new Error('bad response')));
         }
-      })
-      .catch(err => {
-        dispatch(listAddFailure());
-      });
-  };
-
-  function listAddSuccess() {
-    return { type: LIST_ADD_ITEM_SUCCESS };
-  }
-
-  function listAddFailure() {
-    return { type: LIST_ADD_ITEM_FAILED };
-  }
+      } catch (e) {
+        yield put(ListRetrieveFailed(e));
+      }
+    } else {
+      // TODO: ERROR
+    }
+  });
 };
 
 export const retrieveList = (listId: string, force: boolean = false) => {
-  return (dispatch: Dispatch, stateFn: () => AppState) => {
-    dispatch(ListRetrieveInitiated(listId));
-
-    let state = stateFn();
-
-    return client
-      .getList(listId)
-      .then(response => {
-        if (response.ok && response.data) {
-          dispatch(ListRetrieveSuccess(response.data.data));
-        } else {
-          dispatch(ListRetrieveFailed());
-        }
-      })
-      .catch(e => {
-        console.error(e);
-
-        dispatch(ListRetrieveFailed(e));
-      });
-  };
+  return ListRetrieveInitiated(listId);
 };

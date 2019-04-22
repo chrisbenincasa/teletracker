@@ -13,9 +13,7 @@ export interface DataResponse<T> {
   data: T;
 }
 
-type Required<T> = { [K in keyof T]: T[K] };
-
-const DefaultTeletrackerApiOptions: Required<TeletrackerApiOptions> = {
+const DefaultTeletrackerApiOptions: TeletrackerApiOptions = {
   // url: "http://10.0.0.75:3000", //Config.TELETRACKER_API_URL,
   url: 'http://localhost:3001',
 };
@@ -40,6 +38,10 @@ export class TeletrackerApi {
         Object.assign(req.headers, this.authHeaders());
       }
     });
+  }
+
+  isTokenSet(): boolean {
+    return !!this.token;
   }
 
   setToken(token: string) {
@@ -208,3 +210,5 @@ export class TeletrackerApi {
     };
   }
 }
+
+export default TeletrackerApi.instance;
