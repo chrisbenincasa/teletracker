@@ -11,7 +11,7 @@ import {
 } from '../constants/lists';
 import { List } from '../types';
 import { DataResponse } from '../utils/api-client';
-import { clientEffect2, createAction } from './utils';
+import { clientEffect, createAction } from './utils';
 
 interface ListAddInitiatedPayload {
   listId: string;
@@ -68,7 +68,7 @@ export const addToListSaga = function*() {
   }: ListAddInitiatedAction) {
     if (payload) {
       try {
-        let response = yield clientEffect2(
+        let response = yield clientEffect(
           client => client.addItemToList,
           payload.listId,
           payload.itemId,
@@ -99,7 +99,7 @@ export const retrieveListSaga = function*() {
     if (payload) {
       try {
         // TODO: Type alias to make this cleaner
-        let response: ApiResponse<DataResponse<List>> = yield clientEffect2(
+        let response: ApiResponse<DataResponse<List>> = yield clientEffect(
           client => client.getList,
           payload,
         );

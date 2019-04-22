@@ -3,6 +3,12 @@ import { call, put, take, race, delay } from '@redux-saga/core/effects';
 import client from '../utils/api-client';
 import { FSA } from 'flux-standard-action';
 
+/**
+ * Alternative to "createAction" where the generation action creator function takes
+ * exactly 0 arguments. This exists because I couldn't figure out a sane way to generalize
+ * this as a part of the createAction method
+ * @param actiontype
+ */
 export function createBasicAction<T extends FSA<any>>(actiontype: T['type']) {
   return () => {
     return {
@@ -11,6 +17,11 @@ export function createBasicAction<T extends FSA<any>>(actiontype: T['type']) {
   };
 }
 
+/**
+ * Generates a action creator method for the given Action type. The Action type
+ * must be a Flux Standard Action type.
+ * @param actionType
+ */
 export function createAction<T extends FSA<any, any>>(actionType: T['type']) {
   return (payload: T['payload']) => {
     return {
@@ -26,18 +37,6 @@ export function createAction<T extends FSA<any, any>>(actionType: T['type']) {
  * value on the call so the clalsite doesn't have to worry abou tit
  */
 export function clientEffect<
-  Fn extends (this: TeletrackerApi, ...args: any[]) => any
->(fn: Fn, ...args: Parameters<Fn>) {
-  return call(
-    {
-      context: client,
-      fn: fn,
-    },
-    ...args,
-  );
-}
-
-export function clientEffect2<
   Fn extends (this: TeletrackerApi, ...args: any[]) => any
 >(fn: (clnt: TeletrackerApi) => Fn, ...args: Parameters<Fn>) {
   return call(
