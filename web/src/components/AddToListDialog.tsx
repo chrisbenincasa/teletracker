@@ -45,6 +45,8 @@ class AddToListDialog extends Component<
   componentDidUpdate(prevProps: AddToListDialogProps) {
     if (prevProps.open && !this.props.open) {
       this.handleModalClose();
+    } else if (!prevProps.open && this.props.open) {
+      this.setState({ exited: false });
     }
 
     if (
