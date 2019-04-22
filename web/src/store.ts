@@ -1,33 +1,29 @@
 import { connectRouter, routerMiddleware } from 'connected-react-router';
 import { createBrowserHistory } from 'history';
-import {
-  applyMiddleware,
-  compose,
-  createStore,
-  AnyAction,
-  bindActionCreators,
-} from 'redux';
+import { applyMiddleware, compose, createStore } from 'redux';
+import * as rp from 'redux-persist';
 import { persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import thunk, { ThunkAction } from 'redux-thunk';
+import thunk from 'redux-thunk';
 import rootReducer from './reducers/';
-import * as rp from 'redux-persist';
-import startup from './actions';
+import createSagaMiddleware from 'redux-saga';
+import { root } from './actions';
 
 export const history = createBrowserHistory();
 
 const initialState = {};
 const enhancers: any[] = [];
-const middleware = [thunk, routerMiddleware(history)];
+const sagaMiddleware = createSagaMiddleware();
+const middleware = [thunk, routerMiddleware(history), sagaMiddleware];
 
 let env = process.env.NODE_ENV;
 
 const getBlacklists = () => {
-  if (env === 'development') {
-    return [];
-  } else {
-    return ['search'];
-  }
+  // if (env === 'development') {
+  //   return [];
+  // } else {
+  // }
+  return ['search'];
 };
 
 const persistConfig: rp.PersistConfig = {
@@ -55,6 +51,7 @@ const persistedReducer = persistReducer(persistConfig, reducerWithHistory);
 
 export default () => {
   let store = createStore(persistedReducer, initialState, composedEnhancers);
+  sagaMiddleware.run(root);
   let persistor = persistStore(store);
   return { store, persistor };
 };

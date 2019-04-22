@@ -29,7 +29,7 @@ case class PopularItemsResponse(
   page: Int,
   page_size: Option[Int],
   total_pages: Option[Int],
-  total_results: Int,
+  total_results: Option[Int],
   items: List[PopularItem]
 )
 

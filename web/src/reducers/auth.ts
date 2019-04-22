@@ -1,13 +1,19 @@
-import { AuthActionTypes } from '../actions/auth';
+import { FSA } from 'flux-standard-action';
 import {
-  LOGIN_SUCCESSFUL,
-  LOGOUT_SUCCESSFUL,
-  AUTH_CHECK_INITIATED,
+  AuthCheckInitiatedAction,
+  LoginSuccessfulAction,
+  LogoutSuccessfulAction,
+} from '../actions/auth';
+import {
   AUTH_CHECK_AUTHORIZED,
   AUTH_CHECK_FAILED,
+  AUTH_CHECK_INITIATED,
   AUTH_CHECK_UNAUTH,
+  LOGIN_SUCCESSFUL,
+  LOGOUT_SUCCESSFUL,
 } from '../constants/auth';
 import { User } from '../types';
+import { flattenActions, handleAction } from './utils';
 
 export interface UserState extends Partial<User> {
   fetching: boolean;
@@ -30,38 +36,54 @@ const initialState: State = {
   isLoggedIn: false,
 };
 
-export default function authReducer(
-  state = initialState,
-  action: AuthActionTypes,
-): State {
-  switch (action.type) {
-    case AUTH_CHECK_INITIATED:
-      return {
-        ...state,
-        checkingAuth: true,
-      };
+const authInitiated = handleAction<AuthCheckInitiatedAction, State>(
+  AUTH_CHECK_INITIATED,
+  state => {
+    return {
+      ...state,
+      checkingAuth: true,
+    };
+  },
+);
 
-    case AUTH_CHECK_AUTHORIZED:
-    case AUTH_CHECK_FAILED:
-    case AUTH_CHECK_UNAUTH:
-      return {
-        ...state,
-        checkingAuth: false,
-      };
+const unsetCheckingAuth = (state: State) => {
+  return {
+    ...state,
+    checkingAuth: false,
+  };
+};
 
-    case LOGIN_SUCCESSFUL:
-      return {
-        ...state,
-        token: action.token,
-      };
+const unsetCheckingAuthReducers = [
+  AUTH_CHECK_AUTHORIZED,
+  AUTH_CHECK_FAILED,
+  AUTH_CHECK_UNAUTH,
+].map(actionType => {
+  return handleAction<FSA<typeof actionType>, State>(actionType, state => {
+    return unsetCheckingAuth(state);
+  });
+});
 
-    case LOGOUT_SUCCESSFUL:
-      return {
-        ...state,
-        token: undefined,
-      };
+const loginSuccess = handleAction<LoginSuccessfulAction, State>(
+  LOGIN_SUCCESSFUL,
+  (state, action) => {
+    return {
+      ...state,
+      token: action.payload,
+    };
+  },
+);
 
-    default:
-      return state;
-  }
-}
+const logoutSuccess = handleAction<LogoutSuccessfulAction, State>(
+  LOGOUT_SUCCESSFUL,
+  state => {
+    return {
+      ...state,
+      token: undefined,
+    };
+  },
+);
+
+export default flattenActions(
+  initialState,
+  ...[authInitiated, ...unsetCheckingAuthReducers, loginSuccess, logoutSuccess],
+);

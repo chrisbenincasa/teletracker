@@ -136,6 +136,15 @@ class App extends Component<Props, State> {
     this.execSearch(searchText);
   };
 
+  handleSearchForEnter = _.debounce(
+    (ev: React.KeyboardEvent<HTMLInputElement>) => {
+      if (ev.keyCode === 13) {
+        this.execSearch(this.state.searchText);
+      }
+    },
+    250,
+  );
+
   execSearch = _.debounce((text: string) => {
     if (this.props.location.pathname !== '/') {
       this.props.history.push('/');
@@ -179,6 +188,7 @@ class App extends Component<Props, State> {
               input: classes.inputInput,
             }}
             onChange={this.handleSearchChange}
+            onKeyDown={ev => this.handleSearchForEnter}
           />
         </div>
         <div className={classes.grow} />
