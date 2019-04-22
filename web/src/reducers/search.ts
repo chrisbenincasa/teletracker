@@ -1,6 +1,10 @@
+import {
+  SearchInitiatedAction,
+  SearchSuccessfulAction,
+} from '../actions/search';
 import { SEARCH_INITIATED, SEARCH_SUCCESSFUL } from '../constants/search';
-import { SearchActionTypes } from '../actions/search';
 import { Thing } from '../types/external/themoviedb/Movie';
+import { flattenActions, handleAction } from './utils';
 
 export interface State {
   searching: boolean;
@@ -13,26 +17,26 @@ const initialState: State = {
   currentSearchText: '',
 };
 
-export default function searchReducer(
-  state: State = initialState,
-  action: SearchActionTypes,
-): State {
-  switch (action.type) {
-    case SEARCH_INITIATED:
-      return {
-        ...state,
-        searching: true,
-        currentSearchText: action.text.trim(),
-        results: undefined,
-      };
+const searchInitiated = handleAction<SearchInitiatedAction, State>(
+  SEARCH_INITIATED,
+  (state, action) => {
+    return {
+      ...state,
+      searching: true,
+      currentSearchText: action.payload!.trim(),
+    };
+  },
+);
 
-    case SEARCH_SUCCESSFUL:
-      return {
-        ...state,
-        searching: false,
-        results: action.results,
-      };
-    default:
-      return state;
-  }
-}
+const searchSuccess = handleAction<SearchSuccessfulAction, State>(
+  SEARCH_SUCCESSFUL,
+  (state, { payload }) => {
+    return {
+      ...state,
+      searching: false,
+      results: payload,
+    };
+  },
+);
+
+export default flattenActions(initialState, searchInitiated, searchSuccess);
