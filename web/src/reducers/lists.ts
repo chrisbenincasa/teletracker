@@ -94,8 +94,8 @@ const handleListRetrieveSuccess = handleAction<
     ...state,
     operation: {
       ...state.operation,
-      operationType: LIST_RETRIEVE_INITIATED,
-      inProgress: true,
+      operationType: undefined,
+      inProgress: false,
     },
   };
 });
