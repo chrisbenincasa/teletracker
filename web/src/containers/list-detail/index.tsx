@@ -1,12 +1,12 @@
 import {
   createStyles,
   Grid,
+  LinearProgress,
   Link,
   Theme,
   Typography,
   withStyles,
   WithStyles,
-  LinearProgress,
 } from '@material-ui/core';
 import Breadcrumbs from '@material-ui/lab/Breadcrumbs';
 import * as R from 'ramda';
@@ -19,14 +19,13 @@ import {
   RouteComponentProps,
   withRouter,
 } from 'react-router-dom';
+import { bindActionCreators, Dispatch } from 'redux';
+import { retrieveList } from '../../actions/lists';
 import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
-import { layoutStyles } from '../../styles';
-import { List } from '../../types';
-import { Dispatch, bindActionCreators } from 'redux';
-import { retrieveList } from '../../actions/lists';
 import { ListsByIdMap } from '../../reducers/lists';
+import { layoutStyles } from '../../styles';
 
 const styles = (theme: Theme) =>
   createStyles({
