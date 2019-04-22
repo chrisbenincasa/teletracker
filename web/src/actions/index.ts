@@ -9,6 +9,7 @@ import { checkAuthSaga, loginSaga, logoutSaga } from './auth';
 import { retrieveListSaga, addToListSaga } from './lists';
 import { searchSaga } from './search';
 import { retrieveUserSaga } from './user';
+import { SET_TOKEN, TOKEN_SET } from '../constants/auth';
 
 interface StartupAction {
   type: typeof STARTUP;
@@ -35,19 +36,22 @@ const startup: () => ThunkAction<
 };
 
 export function* setToken() {
-  yield takeLeading('SET_TOKEN', function*() {
+  // We use takeLeading here to ensure that if this action is in progress
+  // and another SET_TOKEN action is dispatched, the new incoming action is
+  // discarded and the original one continues to execute
+  yield takeLeading(SET_TOKEN, function*() {
     let state: AppState = yield select();
 
     if (state.auth.token && !TeletrackerApi.instance.isTokenSet()) {
       TeletrackerApi.instance.setToken(state.auth.token);
     }
-    yield put({ type: 'TOKEN_SET' });
+    yield put({ type: TOKEN_SET });
   });
 }
 
 function* startupSaga() {
   yield put(startupAction());
-  yield put({ type: 'SET_TOKEN' });
+  yield put({ type: SET_TOKEN });
 }
 
 export function* root() {

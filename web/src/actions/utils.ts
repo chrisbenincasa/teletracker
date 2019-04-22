@@ -2,6 +2,7 @@ import { TeletrackerApi } from '../utils/api-client';
 import { call, put, take, race, delay } from '@redux-saga/core/effects';
 import client from '../utils/api-client';
 import { FSA } from 'flux-standard-action';
+import { SET_TOKEN, TOKEN_SET } from '../constants/auth';
 
 /**
  * Alternative to "createAction" where the generation action creator function takes
@@ -59,11 +60,11 @@ export function checkOrSetToken(timeoutMs: number = 15000) {
     // Attempt to set the token
     // The saga for set token requests will either accept this and attempt to set
     // or do nothing (in the case that the token is already set OR a set request is IN PROGRESS)
-    yield put({ type: 'SET_TOKEN' });
+    yield put({ type: SET_TOKEN });
 
     // After putting in the request to set the token, we wait on that saga to alert that the work
     // is done, since this all happens asynchronously
-    yield take('TOKEN_SET');
+    yield take(TOKEN_SET);
 
     // Lastly, we just return true so callers can easily check that we hit
     // this case and not the timeout path.
