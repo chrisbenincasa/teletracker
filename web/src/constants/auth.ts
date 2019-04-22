@@ -10,3 +10,6 @@ export const LOGIN_SUCCESSFUL = 'login/SUCCESSFUL';
 export const LOGOUT_INITIATED = 'logout/INITIATED';
 export const LOGOUT_SUCCESSFUL = 'logout/SUCCESSFUL';
 export const LOGOUT_FAILED = 'logout/FAILED';
+
+export const SET_TOKEN = 'auth/SET_TOKEN';
+export const TOKEN_SET = 'auth/TOKEN_SET';
