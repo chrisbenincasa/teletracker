@@ -5,7 +5,7 @@ import {
   SEARCH_INITIATED,
   SEARCH_SUCCESSFUL,
 } from '../constants/search';
-import { clientEffect2, createAction } from './utils';
+import { clientEffect, createAction } from './utils';
 
 export type SearchInitiatedAction = FSA<typeof SEARCH_INITIATED, string>;
 export type SearchSuccessfulAction = FSA<typeof SEARCH_SUCCESSFUL, any>;
@@ -24,7 +24,7 @@ export const searchSaga = function*() {
     payload,
   }: SearchInitiatedAction) {
     try {
-      let response = yield clientEffect2(client => client.search, payload!);
+      let response = yield clientEffect(client => client.search, payload!);
 
       if (response.ok) {
         yield put(SearchSuccess(response.data));
