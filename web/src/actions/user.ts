@@ -8,7 +8,7 @@ import {
 import { AppState } from '../reducers';
 import { User } from '../types';
 import { DataResponse, TeletrackerApi } from '../utils/api-client';
-import { clientEffect2, createAction } from './utils';
+import { clientEffect, createAction } from './utils';
 
 interface UserSelfRetrieveInitiatedPayload {
   force: boolean;
@@ -46,7 +46,7 @@ export const retrieveUserSaga = function*() {
       yield put(RetrieveUserSelfSuccess(currState.userSelf.self));
     } else {
       try {
-        let response: ApiResponse<DataResponse<User>> = yield clientEffect2(
+        let response: ApiResponse<DataResponse<User>> = yield clientEffect(
           client => client.getUserSelf,
         );
         if (response.ok && response.data) {

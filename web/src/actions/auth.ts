@@ -15,9 +15,9 @@ import { AppState } from '../reducers';
 import { TeletrackerApi } from '../utils/api-client';
 import {
   checkOrSetToken,
-  clientEffect2,
   createAction,
   createBasicAction,
+  clientEffect,
 } from './utils';
 
 const client = TeletrackerApi.instance;
@@ -77,30 +77,44 @@ export type AuthActionTypes =
   | LoginSuccessfulAction
   | LogoutSuccessfulAction;
 
+/**
+ * A saga that checks the authorization state of the current token in
+ * state.
+ */
 export const checkAuthSaga = function*() {
   yield takeLatest(AUTH_CHECK_INITIATED, function*() {
-    let r = yield checkOrSetToken();
+    let result = yield checkOrSetToken();
 
-    if (r.token) {
+    if (result.token) {
       let currState: AppState = yield select();
+
+      // If the current state already has a token available, set it here
       if (currState.auth && currState.auth.token) {
         client.setToken(currState.auth.token);
-        yield put(AuthCheckAuthorized());
-      } else {
-        try {
-          let response: ApiResponse<any> = yield call({
-            context: client,
-            fn: client.getAuthStatus,
-          });
+      }
 
-          if (response.status == 200) {
-            yield put(AuthCheckAuthorized());
-          } else {
-            yield put(AuthCheckUnauthorized());
-          }
-        } catch (e) {
-          yield put(AuthCheckFailed(e));
+      // Check the current token's auth status
+      try {
+        let response: ApiResponse<any> = yield call({
+          context: client,
+          fn: client.getAuthStatus,
+        });
+
+        if (response.status == 200) {
+          yield put(AuthCheckAuthorized());
+        } else if (response.status === 401) {
+          yield put(AuthCheckUnauthorized());
+        } else {
+          yield put(
+            AuthCheckFailed(
+              new Error(
+                `Got error code ${response.status} while checking auth status`,
+              ),
+            ),
+          );
         }
+      } catch (e) {
+        yield put(AuthCheckFailed(e));
       }
     } else {
       // timeout scenario... what do!?
@@ -108,24 +122,36 @@ export const checkAuthSaga = function*() {
   });
 };
 
+/**
+ * Function that returns a new AuthCheckInitiated action, which, when dispatched,
+ * runs the checkAuthSaga
+ */
 export const checkAuth = () => {
   return AuthCheckInitiated();
 };
 
+/**
+ * Saga responsible for handling the login flow
+ */
 export const loginSaga = function*() {
   yield takeLatest(LOGIN_INITIATED, function*({
     payload,
   }: LoginInitiatedAction) {
     if (payload) {
       try {
-        let response: ApiResponse<any> = yield clientEffect2(
+        // Call out to the Teletracker API to attempt to login the user
+        let response: ApiResponse<any> = yield clientEffect(
           client => client.loginUser,
           payload.email,
           payload.password,
         );
+
         if (response.ok) {
           let token = response.data.data.token;
+          // Sets the token on the "global" TeletrackerApi instance. This is required
+          // when doing auth-gated calls
           client.setToken(token);
+
           yield put(LoginSuccessful(token));
         }
       } catch (e) {}
@@ -134,14 +160,18 @@ export const loginSaga = function*() {
   });
 };
 
+/**
+ * Saga that handles the logout flow.
+ */
 export const logoutSaga = function*() {
   yield takeLatest(LOGOUT_INITIATED, function*() {
     try {
-      let response: ApiResponse<any> = yield clientEffect2(
+      let response: ApiResponse<any> = yield clientEffect(
         client => client.logoutUser,
       );
 
       if (response.ok) {
+        // Clear the token from the global client. Auth-gated calls will fail now
         client.clearToken();
         yield put(LogoutSuccessful());
       }
@@ -149,10 +179,20 @@ export const logoutSaga = function*() {
   });
 };
 
+/**
+ * Create a new LoginInitiated action, which when dispatched starts the
+ * loginSaga
+ * @param email
+ * @param password
+ */
 export const login = (email: string, password: string) => {
   return LoginInitiated({ email, password });
 };
 
+/**
+ * Create a new LogoutInitiated, which when dispatched starts the
+ * logoutSaga
+ */
 export const logout = () => {
   return LogoutInitiated();
 };
