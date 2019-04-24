@@ -1,5 +1,6 @@
 import {
   AppBar,
+  Button,
   createStyles,
   IconButton,
   InputBase,
@@ -10,7 +11,6 @@ import {
   Typography,
   WithStyles,
   withStyles,
-  Button,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
@@ -26,15 +26,15 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Link, Route, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
+// import startup from '../../actions';
 import { checkAuth, logout } from '../../actions/auth';
 import { search } from '../../actions/search';
 import { AppState } from '../../reducers';
 import About from '../about';
 import Home from '../home';
-import Login from '../login';
-import Lists from '../lists';
 import ListDetail from '../list-detail';
-import startup from '../../actions';
+import Lists from '../lists';
+import Login from '../login';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -104,7 +104,6 @@ interface DispatchProps {
   checkAuth: () => void;
   logout: () => void;
   search: (text: string) => void;
-  startup: () => void;
 }
 
 type Props = DispatchProps & OwnProps & RouteComponentProps;
@@ -119,14 +118,6 @@ class App extends Component<Props, State> {
     anchorEl: null,
     searchText: '',
   };
-
-  componentWillMount() {
-    this.props.startup();
-  }
-
-  componentDidMount() {
-    this.props.checkAuth();
-  }
 
   handleSearchChange = event => {
     let searchText = event.currentTarget.value;
@@ -299,7 +290,6 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
       checkAuth,
       logout,
       search,
-      startup,
     },
     dispatch,
   );

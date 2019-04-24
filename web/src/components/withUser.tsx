@@ -38,8 +38,7 @@ const withUser = <P extends object>(
     }, 100);
 
     render() {
-      return (this.props.isCheckingAuth || this.props.retrievingUser) &&
-        this.props.userSelf ? (
+      return this.props.isCheckingAuth || this.props.retrievingUser ? (
         <div style={{ flexGrow: 1 }}>
           <LinearProgress />
         </div>

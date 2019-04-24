@@ -30,6 +30,26 @@ export const getPosterPath = (item: Thing) => {
   return fallbacks<Thing, string>(posterExtractors)(item);
 };
 
+type PosterUrlSize = '92' | '154' | '185' | '342' | '500' | '780' | 'original';
+
+const TmdbPosterUrl = (size: string, path: string) =>
+  `https://image.tmdb.org/t/p/${size}${path}`;
+
+export const getPosterUrl = (item: Thing, size: PosterUrlSize) => {
+  let path = getPosterPath(item);
+
+  if (path) {
+    let sizeStr: string;
+    if (size === 'original') {
+      sizeStr = 'original';
+    } else {
+      sizeStr = 'w' + size;
+    }
+
+    return TmdbPosterUrl(sizeStr, path);
+  }
+};
+
 const descriptionExtractors = ['movie', 'show']
   .map(t => makePath(t, 'overview'))
   .map(p => _.property<Thing, string>(p));
