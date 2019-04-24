@@ -4,6 +4,8 @@ import com.chrisbenincasa.services.teletracker.auth.PasswordHash
 import com.chrisbenincasa.services.teletracker.auth.jwt.JwtVendor
 import com.chrisbenincasa.services.teletracker.db.model._
 import com.chrisbenincasa.services.teletracker.inject.{DbImplicits, DbProvider}
+import com.chrisbenincasa.services.teletracker.util.{Field, FieldSelector}
+import io.circe.Json
 import javax.inject.Inject
 import org.joda.time.DateTime
 import scala.concurrent.{ExecutionContext, Future}
@@ -104,7 +106,7 @@ class UsersDbAccess @Inject()(
   def findUserAndListsQuery(userId: Int) = {
     users.query.filter(_.id === userId) joinLeft trackedLists.query on(_.id === _.userId) joinLeft
       trackedListThings.query on(_._2.map(_.id) === _.listId) joinLeft
-      things.query on(_._2.map(_.thingId) === _.id)
+      things.rawQuery on(_._2.map(_.thingId) === _.id)
   }
 
   def findListsForUser(userId: Int) = {
@@ -113,16 +115,29 @@ class UsersDbAccess @Inject()(
     }
   }
 
-  def findUserAndLists(userId: Int) = {
+  def findUserAndLists(userId: Int, selectFields: Option[List[Field]] = None) = {
     run {
       (for {
         (((user, list), _), thing) <- findUserAndListsQuery(userId)
       } yield {
-        (user, list, thing.map(_.id), thing.map(_.name), thing.map(_.`type`))
+        val meta = if (selectFields.isDefined) thing.flatMap(_.metadata) else Rep.None[Json]
+        (user, list, thing.map(_.id), thing.map(_.name), thing.map(_.`type`), meta)
       }).result
     }.map(_.map {
-      case (user, optList, thingIdOpt, thingNameOpt, thingTypeOpt) =>
-        (user, optList, thingIdOpt.map(id => PartialThing(Some(id), thingNameOpt, `type` = thingTypeOpt)))
+      case (user, optList, thingIdOpt, thingNameOpt, thingTypeOpt, thingMetadata) =>
+        val newMeta = (for {
+          metadata <- thingMetadata
+          fields <- selectFields
+        } yield {
+          FieldSelector.filter(metadata, fields ::: defaultFields)
+        }).orElse(thingMetadata)
+
+        val thing = thingIdOpt.map(id => {
+          val partialThing = PartialThing(Some(id), thingNameOpt, `type` = thingTypeOpt)
+          newMeta.map(partialThing.withRawMetadata).getOrElse(partialThing)
+        })
+
+        (user, optList, thing)
     })
   }
 
@@ -152,18 +167,32 @@ class UsersDbAccess @Inject()(
     }
   }
 
-  def findList(userId: Int, listId: Int) = {
+  private val defaultFields = List(Field("id"))
+
+  def findList(userId: Int, listId: Int, selectFields: Option[List[Field]]) = {
     val listQuery = trackedLists.query.filter(tl => tl.userId === userId && tl.id === listId)
 
     val fullQuery = listQuery joinLeft
       trackedListThings.query on (_.id === _.listId) joinLeft
-      things.query on(_._2.map(_.thingId) === _.id)
+      things.rawQuery on(_._2.map(_.thingId) === _.id)
 
     val q = fullQuery.map {
       case ((list, _), things) => list -> things
     }
 
-    run(q.result)
+    run(q.result).map(_.map {
+      case (list, Some(thing)) if selectFields.isDefined =>
+        val newThing = thing.metadata match {
+          case Some(metadata) =>
+            thing.copy(metadata = Some(FieldSelector.filter(metadata, selectFields.get ::: defaultFields)))
+
+          case None => thing
+        }
+
+        list -> Some(newThing)
+
+      case x => x
+    })
   }
 
   def addThingToList(listId: Int, thingId: Int) = {

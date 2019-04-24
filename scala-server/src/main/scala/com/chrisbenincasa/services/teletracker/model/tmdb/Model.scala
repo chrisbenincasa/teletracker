@@ -87,8 +87,8 @@ trait MovieId
 )
 
 @JsonCodec case class MovieCredits (
-  cast: List[CastMember],
-  crew: List[CrewMember]
+  cast: Option[List[CastMember]],
+  crew: Option[List[CrewMember]]
 )
 
 trait PersonId

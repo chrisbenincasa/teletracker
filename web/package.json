@@ -46,6 +46,7 @@
     "redux": "4.0.1",
     "redux-actions": "^2.6.5",
     "redux-persist": "^5.10.0",
+    "redux-persist-transform-filter": "^0.0.18",
     "redux-saga": "^1.0.2",
     "redux-thunk": "2.3.0",
     "sanitize.css": "7.0.3",

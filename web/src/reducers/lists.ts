@@ -14,6 +14,9 @@ import {
 } from '../constants/lists';
 import { List } from '../types';
 import { flattenActions, handleAction } from './utils';
+import * as R from 'ramda';
+import { USER_SELF_RETRIEVE_SUCCESS } from '../constants/user';
+import { UserSelfRetrieveSuccessAction } from '../actions/user';
 
 export interface ListOperationState {
   inProgress: boolean;
@@ -84,10 +87,31 @@ const handleListRetrieveInitiated = handleAction<
   };
 });
 
+function setOrMergeList(
+  listsById: ListsByIdMap,
+  listId: number,
+  newList: List | undefined,
+) {
+  let existing = listsById[listId];
+  if (existing) {
+    listsById[listId] = R.mergeDeepRight(existing, newList);
+  } else if (newList) {
+    listsById[listId] = newList;
+  }
+}
+
 const handleListRetrieveSuccess = handleAction<
   ListRetrieveSuccessAction,
   State
 >(LIST_RETRIEVE_SUCCESS, (state, action) => {
+  let listId = action.payload!!.id;
+  let existing = state.listsById[listId];
+  if (existing) {
+    state.listsById[listId] = R.mergeDeepRight(existing, action.payload);
+  } else {
+    state.listsById[listId] = action.payload!;
+  }
+
   state.listsById[action.payload!!.id] = action.payload!;
 
   return {
@@ -100,6 +124,19 @@ const handleListRetrieveSuccess = handleAction<
   };
 });
 
+const handleUserRetrieve = handleAction<UserSelfRetrieveSuccessAction, State>(
+  USER_SELF_RETRIEVE_SUCCESS,
+  (state, action) => {
+    if (action.payload && action.payload.lists) {
+      action.payload.lists.forEach(list => {
+        setOrMergeList(state.listsById, list.id, list);
+      });
+    }
+
+    return state;
+  },
+);
+
 export default flattenActions<State>(
   initialState,
   handleListAddInitiated,
@@ -107,4 +144,5 @@ export default flattenActions<State>(
   handleListAddFailed,
   handleListRetrieveInitiated,
   handleListRetrieveSuccess,
+  handleUserRetrieve,
 );

@@ -4,29 +4,33 @@ import {
   CardContent,
   createStyles,
   CssBaseline,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Fab,
   Grid,
   Icon,
   LinearProgress,
+  TextField,
   Theme,
   Typography,
   withStyles,
   WithStyles,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  TextField,
-  DialogActions,
+  CardMedia,
 } from '@material-ui/core';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Link, Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
+import { ListRetrieveAllInitiated } from '../../actions/lists';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
+import { Thing } from '../../types/external/themoviedb/Movie';
+import { List } from '../../types';
+import { getPosterPath, getPosterUrl } from '../../utils/metadata-access';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -41,6 +45,11 @@ const styles = (theme: Theme) =>
     },
     cardContent: {
       flexGrow: 1,
+    },
+    cardMedia: {
+      height: 0,
+      width: '33.333%',
+      paddingTop: '50%',
     },
     addNewCard: {
       display: 'flex',
@@ -57,16 +66,30 @@ interface OwnProps {
   isCheckingAuth: boolean;
 }
 
-type Props = OwnProps & WithStyles<typeof styles> & WithUserProps;
+interface DispatchProps {
+  ListRetrieveAllInitiated: () => void;
+}
+
+type Props = OwnProps &
+  DispatchProps &
+  WithStyles<typeof styles> &
+  WithUserProps;
 
 interface State {
   createDialogOpen: boolean;
 }
 
+type PlaceholderItem = { placeholder: true };
+const makePlaceholder: () => PlaceholderItem = () => ({ placeholder: true });
+
 class Lists extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
   };
+
+  componentWillMount() {
+    this.props.ListRetrieveAllInitiated();
+  }
 
   refreshUser = () => {
     this.props.retrieveUser(true);
@@ -79,6 +102,46 @@ class Lists extends Component<Props, State> {
       </div>
     );
   }
+
+  renderPoster = (thing: Thing | PlaceholderItem, key: string | number) => {
+    if ((thing as PlaceholderItem).placeholder) {
+      return <div key={key} className={this.props.classes.cardMedia} />;
+    } else {
+      thing = thing as Thing;
+      let posterUrl = getPosterUrl(thing, '154');
+
+      if (posterUrl) {
+        return (
+          <CardMedia
+            key={key}
+            className={this.props.classes.cardMedia}
+            image={posterUrl}
+            title={thing.name}
+          />
+        );
+      } else {
+        return null;
+      }
+    }
+  };
+
+  renderItemPreviews = (list: List) => {
+    let things: (Thing | PlaceholderItem)[] = list.things.slice(0, 6);
+
+    if (things.length < 6) {
+      let placeholdersNeeded = 6 - things.length;
+      let placeholders: PlaceholderItem[] = Array(placeholdersNeeded).fill(
+        makePlaceholder(),
+      );
+      things = things.concat(placeholders);
+    }
+
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+        {things.map((thing, idx) => this.renderPoster(thing, idx))}
+      </div>
+    );
+  };
 
   handleClickOpen = () => {
     this.setState({ createDialogOpen: true });
@@ -108,6 +171,7 @@ class Lists extends Component<Props, State> {
                   return (
                     <Grid key={list.id} sm={6} md={4} lg={4} item>
                       <Card>
+                        {this.renderItemPreviews(list)}
                         <CardContent>
                           <Typography
                             component={props => (
@@ -181,7 +245,13 @@ const mapStateToProps = (appState: AppState) => {
   };
 };
 
-const mapDispatchToProps = dispatch => bindActionCreators({}, dispatch);
+const mapDispatchToProps = dispatch =>
+  bindActionCreators(
+    {
+      ListRetrieveAllInitiated,
+    },
+    dispatch,
+  );
 
 export default withUser(
   withStyles(styles)(

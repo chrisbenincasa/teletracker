@@ -4,16 +4,18 @@ import com.chrisbenincasa.services.teletracker.auth.JwtAuthFilter
 import com.chrisbenincasa.services.teletracker.db.ThingsDbAccess
 import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.chrisbenincasa.services.teletracker.auth.RequestContext._
+import com.chrisbenincasa.services.teletracker.controllers.utils.CanParseFieldFilter
+import com.chrisbenincasa.services.teletracker.util.HasFieldsFilter
 import com.chrisbenincasa.services.teletracker.util.json.circe._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
-import com.twitter.finatra.request.RouteParam
+import com.twitter.finatra.request.{QueryParam, RouteParam}
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 
 class MovieController @Inject()(
   thingsDbAccess: ThingsDbAccess
-)(implicit executionContext: ExecutionContext) extends Controller {
+)(implicit executionContext: ExecutionContext) extends Controller with CanParseFieldFilter {
   prefix("/api/v1/movies") {
     filter[JwtAuthFilter].apply {
       get("/:id") { req: GetMovieRequest =>
@@ -40,5 +42,6 @@ class MovieController @Inject()(
 
 case class GetMovieRequest(
   @RouteParam id: Int,
+  @QueryParam fields: Option[String],
   request: Request
-)
+) extends HasFieldsFilter

@@ -63,6 +63,7 @@ libraryDependencies ++= Seq(
   // Misc
   "org.typelevel" %% "cats-core" % "1.1.0",
   "com.google.guava" % "guava" % "20.0",
+  "com.lihaoyi" %% "fastparse" % "2.1.0",
   // Testing
   "com.spotify" % "docker-client" % "8.11.7" % "test" excludeAll("com.fasterxml.jackson.core"),
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
@@ -86,7 +87,7 @@ envVars in reStart := Map(
   "JWT_SECRET" -> System.getenv("JWT_SECRET")
 )
 
-// Revolver.enableDebugging(port = 5005, suspend = true)
+Revolver.enableDebugging(port = 5005, suspend = true)
 
 //javaOptions in reStart := Seq("-Dlog.service.output=/dev/stdout", "-Dlog.access.output=/dev/stdout")
 

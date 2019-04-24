@@ -1,8 +1,12 @@
 import * as apisauce from 'apisauce';
 import { merge } from 'ramda';
-
-import { User, List } from '../types';
-import { Thing } from '../types/external/themoviedb/Movie';
+import { List, User } from '../types';
+import {
+  KeyMap,
+  ObjectMetadata,
+  Thing,
+} from '../types/external/themoviedb/Movie';
+import _ from 'lodash';
 
 export interface TeletrackerApiOptions {
   url?: string;
@@ -110,7 +114,9 @@ export class TeletrackerApi {
 
   async search(searchText: string) {
     return this.withTokenCheck(async () => {
-      return this.api.get<Thing[]>('/api/v1/search', { query: searchText });
+      return this.api.get<Thing[]>('/api/v1/search', {
+        query: searchText,
+      });
     });
   }
 
@@ -120,6 +126,38 @@ export class TeletrackerApi {
         name,
       });
     });
+  }
+
+  async getLists(fields?: KeyMap<ObjectMetadata>) {
+    let filterString = fields ? this.createFilter(fields) : '';
+    let params = {};
+
+    if (filterString) {
+      params['fields'] = filterString;
+    }
+
+    return this.withTokenCheck(async () => {
+      return this.api.get<DataResponse<User>>(
+        '/api/v1/users/self/lists',
+        params,
+      );
+    });
+  }
+
+  private createFilter<T>(fields: KeyMap<T>): string {
+    return Object.keys(fields)
+      .map(key => {
+        let value = fields[key];
+        if (_.isObject(value)) {
+          let subfilter = this.createFilter(value);
+          return `${key}{${subfilter}}`;
+        } else if (_.isBoolean(value) && Boolean(value)) {
+          return key;
+        } else {
+          return '';
+        }
+      })
+      .join(',');
   }
 
   async getList(id: string | number) {
@@ -198,7 +236,7 @@ export class TeletrackerApi {
 
   private withTokenCheck<T>(f: () => Promise<T>): Promise<T> {
     if (!this.token) {
-      return Promise.reject(new Error('getUser requires a token to be set'));
+      return Promise.reject(new Error('function requires a token to be set'));
     } else {
       return f();
     }
