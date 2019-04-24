@@ -46,4 +46,5 @@ trait ModelInstances extends JodaInstances {
   implicit val trackedListDecoder = deriveDecoder[TrackedList]
 
   implicit val userDecoder = deriveDecoder[User]
+  implicit val userEncoder = deriveEncoder[User]
 }

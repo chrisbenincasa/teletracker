@@ -8,6 +8,7 @@ import thunk from 'redux-thunk';
 import rootReducer from './reducers/';
 import createSagaMiddleware from 'redux-saga';
 import { root } from './actions';
+import { createBlacklistFilter } from 'redux-persist-transform-filter';
 
 export const history = createBrowserHistory();
 
@@ -17,6 +18,12 @@ const sagaMiddleware = createSagaMiddleware();
 const middleware = [thunk, routerMiddleware(history), sagaMiddleware];
 
 let env = process.env.NODE_ENV;
+
+const authBlacklistFilter = createBlacklistFilter(
+  'auth',
+  ['checkingAuth'],
+  ['checkingAuth'],
+);
 
 const getBlacklists = () => {
   // if (env === 'development') {
@@ -30,6 +37,7 @@ const persistConfig: rp.PersistConfig = {
   key: 'root',
   storage,
   blacklist: getBlacklists(),
+  transforms: [authBlacklistFilter],
 };
 
 if (env === 'development') {

@@ -3,13 +3,15 @@ package com.chrisbenincasa.services.teletracker.controllers
 import com.chrisbenincasa.services.teletracker.auth.RequestContext._
 import com.chrisbenincasa.services.teletracker.auth.jwt.JwtVendor
 import com.chrisbenincasa.services.teletracker.auth.{JwtAuthFilter, UserSelfOnlyFilter}
+import com.chrisbenincasa.services.teletracker.controllers.utils.CanParseFieldFilter
 import com.chrisbenincasa.services.teletracker.db.model.Event
 import com.chrisbenincasa.services.teletracker.db.{ThingsDbAccess, UsersDbAccess}
-import com.chrisbenincasa.services.teletracker.util.json.circe._
 import com.chrisbenincasa.services.teletracker.model.DataResponse
+import com.chrisbenincasa.services.teletracker.util.HasFieldsFilter
+import com.chrisbenincasa.services.teletracker.util.json.circe._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
-import com.twitter.finatra.request.RouteParam
+import com.twitter.finatra.request.{QueryParam, RouteParam}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
@@ -18,7 +20,7 @@ class UserController @Inject()(
   usersDbAccess: UsersDbAccess,
   thingsDbAccess: ThingsDbAccess,
   jwtVendor: JwtVendor
-)(implicit executionContext: ExecutionContext) extends Controller {
+)(implicit executionContext: ExecutionContext) extends Controller with CanParseFieldFilter {
   prefix("/api/v1/users") {
     // Create a user
     post("/?") { req: CreateUserRequest =>
@@ -51,8 +53,9 @@ class UserController @Inject()(
         })
       }
 
-      get("/:userId/lists") { req: GetUserByIdRequest =>
-        usersDbAccess.findUserAndLists(req.request.authContext.user.id).map(result => {
+      get("/:userId/lists") { req: GetUserListsRequest =>
+        val selectFields = parseFieldsOrNone(req.fields)
+        usersDbAccess.findUserAndLists(req.request.authContext.user.id, selectFields).map(result => {
           if (result.isEmpty) {
             response.status(404)
           } else {
@@ -63,8 +66,10 @@ class UserController @Inject()(
               case (list, matches) => list.toFull.withThings(matches.flatMap(_._2).toList)
             }
 
-            DataResponse(
-              user.toFull.withLists(lists.toList)
+            response.ok.contentTypeJson().body(
+              DataResponse.complex(
+                user.toFull.withLists(lists.toList)
+              )
             )
           }
         })
@@ -79,7 +84,9 @@ class UserController @Inject()(
       }
 
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
-        usersDbAccess.findList(req.request.authContext.user.id, req.listId).map(result => {
+        val selectFields = parseFieldsOrNone(req.fields)
+
+        usersDbAccess.findList(req.request.authContext.user.id, req.listId, selectFields).map(result => {
           if (result.isEmpty) {
             response.status(404)
           } else {
@@ -186,11 +193,18 @@ case class GetUserByIdRequest(
   request: Request
 )
 
+case class GetUserListsRequest(
+  @RouteParam userId: String,
+  @QueryParam fields: Option[String],
+  request: Request
+) extends HasFieldsFilter
+
 case class GetUserAndListByIdRequest(
   @RouteParam userId: String,
   @RouteParam listId: Int,
+  @QueryParam fields: Option[String],
   request: Request
-)
+) extends HasFieldsFilter
 
 case class CreateListRequest(
   @RouteParam userId: String,

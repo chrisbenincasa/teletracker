@@ -1,4 +1,10 @@
-import { call, put, select, takeLatest } from '@redux-saga/core/effects';
+import {
+  call,
+  put,
+  select,
+  takeLatest,
+  takeLeading,
+} from '@redux-saga/core/effects';
 import { ApiResponse } from 'apisauce';
 import { FSA } from 'flux-standard-action';
 import {
@@ -82,7 +88,7 @@ export type AuthActionTypes =
  * state.
  */
 export const checkAuthSaga = function*() {
-  yield takeLatest(AUTH_CHECK_INITIATED, function*() {
+  yield takeLeading(AUTH_CHECK_INITIATED, function*() {
     let result = yield checkOrSetToken();
 
     if (result.token) {

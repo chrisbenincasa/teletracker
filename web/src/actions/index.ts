@@ -5,35 +5,22 @@ import { ThunkAction } from 'redux-thunk';
 import { STARTUP } from '../constants';
 import { AppState } from '../reducers';
 import { TeletrackerApi } from '../utils/api-client';
-import { checkAuthSaga, loginSaga, logoutSaga } from './auth';
-import { retrieveListSaga, addToListSaga } from './lists';
+import {
+  checkAuthSaga,
+  loginSaga,
+  logoutSaga,
+  AuthCheckInitiated,
+} from './auth';
+import { retrieveListSaga, addToListSaga, retrieveListsSaga } from './lists';
 import { searchSaga } from './search';
 import { retrieveUserSaga } from './user';
 import { SET_TOKEN, TOKEN_SET } from '../constants/auth';
+import { FSA } from 'flux-standard-action';
+import { createBasicAction } from './utils';
 
-interface StartupAction {
-  type: typeof STARTUP;
-}
+type StartupAction = FSA<typeof STARTUP>;
 
-const startupAction: () => StartupAction = () => ({
-  type: STARTUP,
-});
-
-const startup: () => ThunkAction<
-  void,
-  AppState,
-  null,
-  Action<StartupAction>
-> = () => {
-  return (dispatch: Dispatch, stateFn: () => AppState) => {
-    dispatch(startupAction());
-    let state = stateFn();
-
-    if (state.auth.token) {
-      TeletrackerApi.instance.setToken(state.auth.token);
-    }
-  };
-};
+const StartupAction = createBasicAction<StartupAction>(STARTUP);
 
 export function* setToken() {
   // We use takeLeading here to ensure that if this action is in progress
@@ -50,7 +37,8 @@ export function* setToken() {
 }
 
 function* startupSaga() {
-  yield put(startupAction());
+  yield put(StartupAction());
+  yield put(AuthCheckInitiated());
   yield put({ type: SET_TOKEN });
 }
 
@@ -64,6 +52,7 @@ export function* root() {
     setToken(),
     checkAuthSaga(),
     retrieveListSaga(),
+    retrieveListsSaga(),
     addToListSaga(),
     searchSaga(),
     loginSaga(),
@@ -71,5 +60,3 @@ export function* root() {
     retrieveUserSaga(),
   ]);
 }
-
-export default startup;

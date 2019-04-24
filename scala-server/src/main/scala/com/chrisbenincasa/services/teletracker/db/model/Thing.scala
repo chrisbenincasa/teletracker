@@ -27,6 +27,30 @@ case class Thing(
   }
 }
 
+case class ThingRaw(
+  id: Option[Int],
+  name: String,
+  normalizedName: String,
+  `type`: ThingType,
+  createdAt: DateTime,
+  lastUpdatedAt: DateTime,
+  metadata: Option[Json]
+) {
+  def asPartial: PartialThing = {
+    val typedMeta = metadata.flatMap(rawMeta => {
+     rawMeta.as[ObjectMetadata] match {
+       case Left(err) =>
+         err.printStackTrace()
+         println(err.getMessage())
+         None
+       case Right(value) =>
+         Some(value)
+     }
+    })
+    PartialThing(id, Some(name), Some(normalizedName), Some(`type`), Some(createdAt), Some(lastUpdatedAt), typedMeta)
+  }
+}
+
 case class PartialThing(
   id: Option[Int] = None,
   name: Option[String] = None,
@@ -42,6 +66,19 @@ case class PartialThing(
 ) {
   def withAvailability(av: List[AvailabilityWithDetails]) = this.copy(availability = Some(av))
   def withUserMetadata(userMeta: UserThingDetails) = this.copy(userMetadata = Some(userMeta))
+
+  def withRawMetadata(metadata: Json): PartialThing = {
+    val typedMeta = metadata.as[ObjectMetadata] match {
+      case Left(err) =>
+        err.printStackTrace()
+        println(err.getMessage())
+        None
+      case Right(value) =>
+        Some(value)
+    }
+
+    this.copy(metadata = typedMeta)
+  }
 }
 
 object ObjectMetadata {
@@ -96,5 +133,29 @@ class Things @Inject()(
       ) <> (Thing.tupled, Thing.unapply)
   }
 
+  class ThingsTableRaw(tag: Tag) extends Table[ThingRaw](tag, "things") {
+    def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
+    def name = column[String]("name")
+    def normalizedName = column[String]("normalized_name")
+    def `type` = column[ThingType]("type")
+    def createdAt = column[DateTime]("created_at", O.SqlType("timestamp with time zone"))
+    def lastUpdatedAt = column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
+    def metadata = column[Option[Json]]("metadata", O.SqlType("jsonb"))
+
+    def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
+
+    override def * =
+      (
+        id.?,
+        name,
+        normalizedName,
+        `type`,
+        createdAt,
+        lastUpdatedAt,
+        metadata
+      ) <> (ThingRaw.tupled, ThingRaw.unapply)
+  }
+
   val query = TableQuery[ThingsTable]
+  val rawQuery = TableQuery[ThingsTableRaw]
 }
