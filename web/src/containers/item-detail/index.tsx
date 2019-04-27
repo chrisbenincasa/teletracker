@@ -11,48 +11,57 @@ import {
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Redirect } from 'react-router-dom';
-import { bindActionCreators } from 'redux';
+import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
+import { Dispatch, bindActionCreators } from 'redux';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { Thing } from '../../types/external/themoviedb/Movie';
 import { getPosterPath } from '../../utils/metadata-access';
 import { TeletrackerApi } from '../../utils/api-client';
+import { fetchItemDetails } from '../../actions/item-detail';
 
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
-    cardGrid: {
-      padding: `${theme.spacing.unit * 8}px 0`,
-    },
-    title: {
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    },
-    card: {
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    cardMedia: {
-      height: 0,
-      width: '100%',
-      paddingTop: '150%',
-    },
-    cardContent: {
-      flexGrow: 1,
-    },
   });
 
-interface Props extends WithStyles<typeof styles> {
+interface OwnProps {
   isAuthed: boolean;
   isFetching: boolean;
   itemDetail?: Thing;
+  match: any; //?
 }
 
-class ItemDetail extends Component<Props & WithUserProps> {
+interface DispatchProps {
+  fetchItemDetails: (id: number) => void;
+}
+
+interface RouteParams {
+  id: string;
+}
+
+type Props = DispatchProps &
+OwnProps &
+RouteComponentProps<RouteParams> &
+WithStyles<typeof styles> &
+WithUserProps;
+
+interface State {
+  currentId: number;
+}
+class ItemDetail extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      currentId: 70,
+    };
+  }
+
+  componentDidMount() {
+    // this.props.renderItemDetails(this.props.match.params.id);
+  }
+
   renderLoading = () => {
     return (
       <div style={{ flexGrow: 1 }}>
@@ -77,19 +86,22 @@ class ItemDetail extends Component<Props & WithUserProps> {
   };
 
   renderItemDetails = () => {
-    let { itemDetail } = this.props;
-    // itemDetail = itemDetail || {};
+    let { itemDetail, match } = this.props;
+    let itemId = Number(this.props.match.params.id);
+    let itemType = String(this.props.match.params.type);
+
 
     console.log(this.props);
+
+    console.log(itemId);
+    console.log(itemType);
+
+    this.setState({currentId: match.params.id});
 
     return this.props.isFetching ? (
       this.renderLoading()
     ) : (
-      <div>
-        test
-        {/* {this.props.match.params.type}
-        {this.props.match.params.id} */}
-      </div>
+      this.props.fetchItemDetails(match.params.id)
     )
   }
 
@@ -103,7 +115,7 @@ class ItemDetail extends Component<Props & WithUserProps> {
   }
 }
 
-const mapStateToProps = (appState: AppState) => {
+const mapStateToProps: (appState: AppState) => OwnProps = appState => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
@@ -111,13 +123,21 @@ const mapStateToProps = (appState: AppState) => {
   };
 };
 
-const mapDispatchToProps = dispatch => bindActionCreators({}, dispatch);
+const mapDispatchToProps = (dispatch: Dispatch) =>
+  bindActionCreators(
+    {
+      fetchItemDetails
+    },
+    dispatch
+  );
 
 export default withUser(
   withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(ItemDetail),
+    withRouter(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(ItemDetail),
+    ),
   ),
 );
