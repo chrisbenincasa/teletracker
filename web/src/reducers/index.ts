@@ -1,12 +1,14 @@
 import { Action, combineReducers } from 'redux';
 import auth, { State as AuthState } from './auth';
 import lists, { State as ListsState } from './lists';
+import itemDetail, { State as ItemDetailState } from './item-detail';
 import search, { State as SearchState } from './search';
 import userSelf, { State as UserSelfState } from './user';
 
 // A type that represents the entire app state
 export interface AppState {
   auth: AuthState;
+  itemDetail: ItemDetailState;
   search: SearchState;
   userSelf: UserSelfState;
   lists: ListsState;
@@ -22,6 +24,7 @@ function startupReducer(state: any | undefined, action: Action): any {
 
 export default combineReducers({
   auth,
+  itemDetail,
   search,
   userSelf,
   lists,
