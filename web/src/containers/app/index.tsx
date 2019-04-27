@@ -33,6 +33,7 @@ import { AppState } from '../../reducers';
 import About from '../about';
 import Home from '../home';
 import ListDetail from '../list-detail';
+import ItemDetail from '../item-detail';
 import Lists from '../lists';
 import Login from '../login';
 
@@ -266,6 +267,7 @@ class App extends Component<Props, State> {
             <Route exact path="/login" component={Login} />
             <Route exact path="/lists" component={Lists} />
             <Route exact path="/lists/:id" component={ListDetail} />
+            <Route exact path="/item/:type/:id" component={ItemDetail} />
             <Route exact path="/logout" component={About} />
           </main>
         </div>
