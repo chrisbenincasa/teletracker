@@ -5,7 +5,7 @@ export type FSAReducer<S, Action extends FSA<any, any, any>> = (
   action: Action,
 ) => S | undefined;
 
-type AnyFSAReducer<S> = FSAReducer<S, FSA<any, any, any>>;
+export type AnyFSAReducer<S> = FSAReducer<S, FSA<any, any, any>>;
 
 export function handleAction<Action extends FSA<any, any, any>, S>(
   actionType: Action['type'],

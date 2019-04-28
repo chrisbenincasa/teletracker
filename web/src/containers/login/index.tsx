@@ -122,7 +122,6 @@ class Login extends Component<Props, State> {
                 name="password"
                 autoComplete="password"
                 type="password"
-                autoFocus
                 onChange={e => this.setState({ password: e.target.value })}
                 value={password}
               />

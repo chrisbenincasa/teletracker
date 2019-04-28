@@ -11,7 +11,12 @@ import {
   logoutSaga,
   AuthCheckInitiated,
 } from './auth';
-import { retrieveListSaga, addToListSaga, retrieveListsSaga } from './lists';
+import {
+  retrieveListSaga,
+  addToListSaga,
+  retrieveListsSaga,
+  updateListSaga,
+} from './lists';
 import { searchSaga } from './search';
 import { retrieveUserSaga } from './user';
 import { SET_TOKEN, TOKEN_SET } from '../constants/auth';
@@ -58,5 +63,6 @@ export function* root() {
     loginSaga(),
     logoutSaga(),
     retrieveUserSaga(),
+    updateListSaga(),
   ]);
 }

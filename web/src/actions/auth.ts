@@ -21,9 +21,9 @@ import { AppState } from '../reducers';
 import { TeletrackerApi } from '../utils/api-client';
 import {
   checkOrSetToken,
+  clientEffect,
   createAction,
   createBasicAction,
-  clientEffect,
 } from './utils';
 
 const client = TeletrackerApi.instance;
@@ -179,6 +179,7 @@ export const logoutSaga = function*() {
       if (response.ok) {
         // Clear the token from the global client. Auth-gated calls will fail now
         client.clearToken();
+
         yield put(LogoutSuccessful());
       }
     } catch (e) {}
