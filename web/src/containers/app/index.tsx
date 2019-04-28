@@ -212,6 +212,7 @@ class App extends Component<Props, State> {
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           open={!!this.state.anchorEl}
           onClose={this.handleClose}
+          disableAutoFocusItem
         >
           <MenuItem onClick={this.handleClose}>Profile</MenuItem>
           <MenuItem onClick={this.handleClose}>My account</MenuItem>

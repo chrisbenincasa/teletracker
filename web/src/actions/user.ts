@@ -49,6 +49,7 @@ export const retrieveUserSaga = function*() {
         let response: ApiResponse<DataResponse<User>> = yield clientEffect(
           client => client.getUserSelf,
         );
+
         if (response.ok && response.data) {
           yield put(RetrieveUserSelfSuccess(response.data!.data));
         } else {

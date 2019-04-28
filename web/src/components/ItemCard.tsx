@@ -10,17 +10,24 @@ import {
   Typography,
   WithStyles,
   withStyles,
+  IconButton,
+  Menu,
+  MenuItem,
 } from '@material-ui/core';
-import React, { Component } from 'react';
+import React, { Component, Props } from 'react';
 import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
-import { User } from '../types';
+import { User, List } from '../types';
 import { Thing } from '../types/external/themoviedb/Movie';
 import { getDescription, getPosterPath } from '../utils/metadata-access';
+import { Dispatch, bindActionCreators } from 'redux';
+import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
+import { connect } from 'react-redux';
 
 const styles = (theme: Theme) =>
   createStyles({
     title: {
+      flex: 1,
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
@@ -47,16 +54,45 @@ interface ItemCardProps extends WithStyles<typeof styles> {
 
   // display props
   addButton?: boolean;
+
+  // If defined, we're viewing this item within the context of _this_ list
+  // This is probably not scalable, but it'll work for now.
+  listContext?: List;
+
+  withActionButton: boolean;
+}
+
+interface DispatchProps {
+  ListUpdate: (payload: ListUpdatedInitiatedPayload) => void;
 }
 
 interface ItemCardState {
   modalOpen: boolean;
+
+  // åction button menu
+  anchorEl: any;
 }
 
-class ItemCard extends Component<ItemCardProps, ItemCardState> {
+class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
+  static defaultProps = {
+    withActionButton: false,
+  };
+
   state: ItemCardState = {
     modalOpen: false,
+    anchorEl: null,
   };
+
+  constructor(props: ItemCardProps & DispatchProps) {
+    super(props);
+    if (
+      !props.listContext &&
+      props.withActionButton &&
+      process.env.NODE_ENV !== 'production'
+    ) {
+      console.warn('withActionButton=true without listContext will not work.');
+    }
+  }
 
   renderPoster = (thing: Thing) => {
     let poster = getPosterPath(thing);
@@ -82,6 +118,42 @@ class ItemCard extends Component<ItemCardProps, ItemCardState> {
     this.setState({ modalOpen: false });
   };
 
+  handleActionMenuOpen = ev => {
+    this.setState({ anchorEl: ev.currentTarget });
+  };
+
+  handleActionMenuClose = () => {
+    this.setState({ anchorEl: null });
+  };
+
+  handleRemoveFromList = () => {
+    this.props.ListUpdate({
+      thingId: parseInt(this.props.item.id.toString()),
+      addToLists: [],
+      removeFromLists: [this.props.listContext!.id.toString()],
+    });
+  };
+
+  renderActionMenu() {
+    let { anchorEl } = this.state;
+
+    return this.props.withActionButton && this.props.listContext ? (
+      <React.Fragment>
+        <IconButton onClick={this.handleActionMenuOpen}>
+          <Icon>more_vert</Icon>
+        </IconButton>
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={this.handleActionMenuClose}
+          disableAutoFocusItem
+        >
+          <MenuItem onClick={this.handleRemoveFromList}>Remove</MenuItem>
+        </Menu>
+      </React.Fragment>
+    ) : null;
+  }
+
   render() {
     let { item, classes, addButton } = this.props;
 
@@ -91,14 +163,22 @@ class ItemCard extends Component<ItemCardProps, ItemCardState> {
           <Card className={classes.card}>
             {this.renderPoster(item)}
             <CardContent className={classes.cardContent}>
-              <Typography
-                className={classes.title}
-                gutterBottom
-                variant="h5"
-                component="h2"
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  margin: '-8px -8px 0 0',
+                }}
               >
-                {item.name}
-              </Typography>
+                <Typography
+                  className={classes.title}
+                  variant="h5"
+                  component="h2"
+                >
+                  {item.name}
+                </Typography>
+                {this.renderActionMenu()}
+              </div>
               <Typography>
                 <Truncate lines={3} ellipsis={<span>...</span>}>
                   {getDescription(item)}
@@ -129,4 +209,17 @@ class ItemCard extends Component<ItemCardProps, ItemCardState> {
   }
 }
 
-export default withStyles(styles)(ItemCard);
+const mapDispatchToProps = (dispatch: Dispatch) =>
+  bindActionCreators(
+    {
+      ListUpdate,
+    },
+    dispatch,
+  );
+
+export default withStyles(styles)(
+  connect(
+    null,
+    mapDispatchToProps,
+  )(ItemCard),
+);

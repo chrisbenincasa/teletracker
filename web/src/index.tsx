@@ -1,17 +1,16 @@
-import React from 'react'
-import { render } from 'react-dom'
-import { Provider } from 'react-redux'
-import { PersistGate } from "redux-persist/integration/react";
-import { ConnectedRouter } from 'connected-react-router'
-import createStore, { history } from './store'
-import App from './containers/app'
+import { ConnectedRouter } from 'connected-react-router';
+import React from 'react';
+import { render } from 'react-dom';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import 'sanitize.css/sanitize.css';
+import App from './containers/app';
+import './index.css';
+import createStore, { history } from './store';
 
-import 'sanitize.css/sanitize.css'
-import './index.css'
+const target = document.querySelector('#root');
 
-const target = document.querySelector('#root')
-
-const { store, persistor } = createStore();
+export const { store, persistor } = createStore();
 
 render(
   <Provider store={store}>
@@ -23,5 +22,5 @@ render(
       </ConnectedRouter>
     </PersistGate>
   </Provider>,
-  target
+  target,
 );

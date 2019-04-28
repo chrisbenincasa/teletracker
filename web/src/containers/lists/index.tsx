@@ -24,13 +24,17 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Link, Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import { ListRetrieveAllInitiated } from '../../actions/lists';
+import {
+  ListRetrieveAllInitiated,
+  ListRetrieveAllPayload,
+} from '../../actions/lists';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { Thing } from '../../types/external/themoviedb/Movie';
 import { List } from '../../types';
 import { getPosterPath, getPosterUrl } from '../../utils/metadata-access';
+import { ListsByIdMap } from '../../reducers/lists';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -64,10 +68,12 @@ const styles = (theme: Theme) =>
 interface OwnProps {
   isAuthed?: boolean;
   isCheckingAuth: boolean;
+  listsById: ListsByIdMap;
+  loadingLists: boolean;
 }
 
 interface DispatchProps {
-  ListRetrieveAllInitiated: () => void;
+  ListRetrieveAllInitiated: (payload?: ListRetrieveAllPayload) => void;
 }
 
 type Props = OwnProps &
@@ -151,8 +157,37 @@ class Lists extends Component<Props, State> {
     this.setState({ createDialogOpen: false });
   };
 
+  renderList = (userList: List) => {
+    let listWithDetails = this.props.listsById[userList.id];
+
+    let list = listWithDetails || userList;
+
+    return (
+      <Grid key={list.id} sm={6} md={4} lg={4} item>
+        <Card>
+          {this.renderItemPreviews(list)}
+          <CardContent>
+            <Typography
+              component={props => <Link {...props} to={'/lists/' + list.id} />}
+              variant="h5"
+            >
+              {list.name}
+            </Typography>
+            {list.things.length == 0 || list.things.length > 1
+              ? list.things.length + ' items'
+              : list.things.length + ' item'}
+          </CardContent>
+        </Card>
+      </Grid>
+    );
+  };
+
   renderLists() {
-    if (this.props.retrievingUser || !this.props.userSelf) {
+    if (
+      this.props.retrievingUser ||
+      !this.props.userSelf ||
+      this.props.loadingLists
+    ) {
       return this.renderLoading();
     } else {
       let { classes, userSelf } = this.props;
@@ -167,28 +202,7 @@ class Lists extends Component<Props, State> {
             <div className={classes.cardGrid}>
               <Button onClick={this.refreshUser}>Refresh</Button>
               <Grid container spacing={16}>
-                {userSelf.lists.map(list => {
-                  return (
-                    <Grid key={list.id} sm={6} md={4} lg={4} item>
-                      <Card>
-                        {this.renderItemPreviews(list)}
-                        <CardContent>
-                          <Typography
-                            component={props => (
-                              <Link {...props} to={'/lists/' + list.id} />
-                            )}
-                            variant="h5"
-                          >
-                            {list.name}
-                          </Typography>
-                          {list.things.length == 0 || list.things.length > 1
-                            ? list.things.length + ' items'
-                            : list.things.length + ' item'}
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  );
-                })}
+                {userSelf.lists.map(this.renderList)}
               </Grid>
               <Fab
                 color="primary"
@@ -242,6 +256,8 @@ class Lists extends Component<Props, State> {
 const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
+    loadingLists: appState.lists.operation.inProgress,
+    listsById: appState.lists.listsById,
   };
 };
 

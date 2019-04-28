@@ -20,12 +20,16 @@ import {
   withRouter,
 } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
-import { retrieveList } from '../../actions/lists';
+import {
+  ListRetrieveInitiatedPayload,
+  ListRetrieveInitiated,
+} from '../../actions/lists';
 import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { ListsByIdMap } from '../../reducers/lists';
 import { layoutStyles } from '../../styles';
+import { List } from '../../types';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -39,7 +43,7 @@ interface OwnProps {
 }
 
 interface DispatchProps {
-  retrieveList: (listId: string, force: boolean) => void;
+  retrieveList: (payload: ListRetrieveInitiatedPayload) => void;
 }
 
 interface RouteParams {
@@ -121,7 +125,10 @@ class ListDetail extends Component<Props, State> {
   }
 
   componentDidMount() {
-    this.props.retrieveList(this.props.match.params.id, false);
+    this.props.retrieveList({
+      listId: this.props.match.params.id,
+      force: false,
+    });
   }
 
   componentDidUpdate(oldProps: Props) {
@@ -138,14 +145,10 @@ class ListDetail extends Component<Props, State> {
     );
   }
 
-  renderListDetail() {
-    let { classes, userSelf } = this.props;
-    let { loadingList } = this.state;
-    let listId = Number(this.props.match.params.id);
+  renderListDetail(list: List) {
+    let { classes, userSelf, listLoading } = this.props;
 
-    let list = this.props.listsById[listId];
-
-    if (!loadingList && !list) {
+    if (!listLoading && !list) {
       return <Redirect to="/lists" />;
     } else {
       return (
@@ -159,7 +162,13 @@ class ListDetail extends Component<Props, State> {
           </Typography>
           <Grid container spacing={16}>
             {list!.things.map(item => (
-              <ItemCard key={item.id} userSelf={userSelf} item={item} />
+              <ItemCard
+                key={item.id}
+                userSelf={userSelf}
+                item={item}
+                listContext={list}
+                withActionButton
+              />
             ))}
           </Grid>
         </div>
@@ -169,10 +178,11 @@ class ListDetail extends Component<Props, State> {
 
   render() {
     let { userSelf } = this.props;
+    let list = this.props.listsById[Number(this.props.match.params.id)];
 
-    return this.state.loadingList || !userSelf
+    return !list || !userSelf
       ? this.renderLoading()
-      : this.renderListDetail();
+      : this.renderListDetail(list);
   }
 }
 
@@ -187,7 +197,7 @@ const mapStateToProps: (appState: AppState) => OwnProps = appState => {
 const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
-      retrieveList,
+      retrieveList: ListRetrieveInitiated,
     },
     dispatch,
   );
