@@ -13,7 +13,8 @@ import {
   LOGOUT_SUCCESSFUL,
 } from '../constants/auth';
 import { User } from '../types';
-import { flattenActions, handleAction } from './utils';
+import { flattenActions, handleAction, AnyFSAReducer } from './utils';
+import { PURGE } from 'redux-persist';
 
 export interface UserState extends Partial<User> {
   fetching: boolean;
@@ -59,7 +60,12 @@ const unsetCheckingAuthReducers = [
   AUTH_CHECK_UNAUTH,
 ].map(actionType => {
   return handleAction<FSA<typeof actionType>, State>(actionType, state => {
-    return unsetCheckingAuth(state);
+    let isAuthed = actionType == AUTH_CHECK_AUTHORIZED;
+    return {
+      ...state,
+      ...unsetCheckingAuth(state),
+      isLoggedIn: isAuthed,
+    };
   });
 });
 
@@ -69,6 +75,7 @@ const loginSuccess = handleAction<LoginSuccessfulAction, State>(
     return {
       ...state,
       token: action.payload,
+      isLoggedIn: true,
     };
   },
 );
@@ -83,7 +90,23 @@ const logoutSuccess = handleAction<LogoutSuccessfulAction, State>(
   },
 );
 
+const purge: (initialState: State) => AnyFSAReducer<any> = initialState => {
+  return (state: State = initialState, action: FSA<any>) => {
+    if (action.type === PURGE) {
+      return initialState;
+    } else {
+      return state;
+    }
+  };
+};
+
 export default flattenActions(
   initialState,
-  ...[authInitiated, ...unsetCheckingAuthReducers, loginSuccess, logoutSuccess],
+  ...[
+    authInitiated,
+    ...unsetCheckingAuthReducers,
+    loginSuccess,
+    logoutSuccess,
+    purge,
+  ],
 );

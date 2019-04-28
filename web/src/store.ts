@@ -1,14 +1,14 @@
 import { connectRouter, routerMiddleware } from 'connected-react-router';
 import { createBrowserHistory } from 'history';
+import * as localforage from 'localforage';
 import { applyMiddleware, compose, createStore } from 'redux';
 import * as rp from 'redux-persist';
 import { persistReducer, persistStore } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
-import thunk from 'redux-thunk';
-import rootReducer from './reducers/';
-import createSagaMiddleware from 'redux-saga';
-import { root } from './actions';
 import { createBlacklistFilter } from 'redux-persist-transform-filter';
+import createSagaMiddleware from 'redux-saga';
+import thunk from 'redux-thunk';
+import { root } from './actions';
+import rootReducer from './reducers/';
 
 export const history = createBrowserHistory();
 
@@ -30,12 +30,12 @@ const getBlacklists = () => {
   //   return [];
   // } else {
   // }
-  return ['search'];
+  return ['search', 'userSelf', 'lists'];
 };
 
-const persistConfig: rp.PersistConfig = {
+export const persistConfig: rp.PersistConfig = {
   key: 'root',
-  storage,
+  storage: localforage,
   blacklist: getBlacklists(),
   transforms: [authBlacklistFilter],
 };

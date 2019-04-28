@@ -4,6 +4,8 @@ import {
   ListAddSuccessAction,
   ListRetrieveInitiatedAction,
   ListRetrieveSuccessAction,
+  ListRetrieveAllSuccessAction,
+  ListRetrieveAllInitiatedAction,
 } from '../actions/lists';
 import {
   LIST_ADD_ITEM_FAILED,
@@ -11,12 +13,15 @@ import {
   LIST_ADD_ITEM_SUCCESS,
   LIST_RETRIEVE_INITIATED,
   LIST_RETRIEVE_SUCCESS,
+  LIST_RETRIEVE_ALL_SUCCESS,
+  LIST_RETRIEVE_ALL_INITIATED,
 } from '../constants/lists';
 import { List } from '../types';
 import { flattenActions, handleAction } from './utils';
 import * as R from 'ramda';
 import { USER_SELF_RETRIEVE_SUCCESS } from '../constants/user';
 import { UserSelfRetrieveSuccessAction } from '../actions/user';
+import { Thing } from '../types/external/themoviedb/Movie';
 
 export interface ListOperationState {
   inProgress: boolean;
@@ -87,16 +92,71 @@ const handleListRetrieveInitiated = handleAction<
   };
 });
 
-function setOrMergeList(
-  listsById: ListsByIdMap,
-  listId: number,
-  newList: List | undefined,
-) {
-  let existing = listsById[listId];
+const handleListRetrieveAllInitiated = handleAction<
+  ListRetrieveAllInitiatedAction,
+  State
+>(LIST_RETRIEVE_ALL_INITIATED, state => {
+  return {
+    ...state,
+    operation: {
+      ...state.operation,
+      operationType: LIST_RETRIEVE_ALL_INITIATED,
+      inProgress: true,
+    },
+  };
+});
+
+const groupById = (things: Thing[]) =>
+  R.groupBy(
+    R.pipe(
+      R.prop('id'),
+      R.toString,
+    ),
+    things,
+  );
+
+const mergeThingLists = (key: string, left: any, right: any) => {
+  if (key === 'things') {
+    // if (!(left as List).things && !(right as List).things) {
+    //   debugger;
+    //   console.log(left, right);
+
+    //   return right;
+    // }
+
+    let leftList: Thing[] = left;
+    let rightList: Thing[] = right;
+
+    let leftThingsById = groupById(leftList);
+    let rightThingsById = groupById(rightList);
+
+    let res = R.union(R.keys(leftThingsById), R.keys(rightThingsById)).map(
+      id => {
+        let leftThing = R.head(leftThingsById[id.toString()]);
+        let rightThing = R.head(rightThingsById[id.toString()]);
+
+        if (leftThing && rightThing) {
+          // Perform the merge.
+          debugger;
+          return R.mergeDeepRight(leftThing, rightThing);
+        } else {
+          return rightThing || leftThing;
+        }
+      },
+    );
+
+    console.log(res);
+    return res;
+  } else {
+    return right;
+  }
+};
+
+function setOrMergeList(existing: List | undefined, newList: List | undefined) {
   if (existing) {
-    listsById[listId] = R.mergeDeepRight(existing, newList);
+    return R.mergeDeepWithKey(mergeThingLists, existing, newList);
   } else if (newList) {
-    listsById[listId] = newList;
+    return newList;
   }
 }
 
@@ -105,17 +165,14 @@ const handleListRetrieveSuccess = handleAction<
   State
 >(LIST_RETRIEVE_SUCCESS, (state, action) => {
   let listId = action.payload!!.id;
-  let existing = state.listsById[listId];
-  if (existing) {
-    state.listsById[listId] = R.mergeDeepRight(existing, action.payload);
-  } else {
-    state.listsById[listId] = action.payload!;
-  }
-
-  state.listsById[action.payload!!.id] = action.payload!;
+  let newList = setOrMergeList(state.listsById[listId], action.payload);
 
   return {
     ...state,
+    listsById: {
+      ...state.listsById,
+      [listId]: newList,
+    },
     operation: {
       ...state.operation,
       operationType: undefined,
@@ -124,16 +181,39 @@ const handleListRetrieveSuccess = handleAction<
   };
 });
 
-const handleUserRetrieve = handleAction<UserSelfRetrieveSuccessAction, State>(
-  USER_SELF_RETRIEVE_SUCCESS,
+const handleUserRetrieve = handleAction<ListRetrieveAllSuccessAction, State>(
+  LIST_RETRIEVE_ALL_SUCCESS,
   (state, action) => {
+    let newListsById: ListsByIdMap = {};
     if (action.payload && action.payload.lists) {
-      action.payload.lists.forEach(list => {
-        setOrMergeList(state.listsById, list.id, list);
-      });
+      try {
+        newListsById = R.reduce(
+          (newListsById, list) => {
+            return {
+              ...newListsById,
+              [list.id]: setOrMergeList(state.listsById[list.id], list),
+            };
+          },
+          {} as ListsByIdMap,
+          action.payload.lists,
+        );
+      } catch (e) {
+        console.error(e);
+      }
     }
 
-    return state;
+    return {
+      ...state,
+      listsById: {
+        ...state.listsById,
+        ...newListsById,
+      },
+      operation: {
+        ...state.operation,
+        operationType: undefined,
+        inProgress: false,
+      },
+    };
   },
 );
 
@@ -145,4 +225,5 @@ export default flattenActions<State>(
   handleListRetrieveInitiated,
   handleListRetrieveSuccess,
   handleUserRetrieve,
+  handleListRetrieveAllInitiated,
 );

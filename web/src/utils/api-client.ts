@@ -17,6 +17,8 @@ export interface DataResponse<T> {
   data: T;
 }
 
+export type TeletrackerResponse<T> = apisauce.ApiResponse<DataResponse<T>>;
+
 const DefaultTeletrackerApiOptions: TeletrackerApiOptions = {
   // url: "http://10.0.0.75:3000", //Config.TELETRACKER_API_URL,
   url: 'http://localhost:3001',
