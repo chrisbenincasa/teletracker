@@ -1,18 +1,38 @@
 import {
+  Checkbox,
+  createStyles,
   Dialog,
   DialogTitle,
-  List,
-  ListItem,
-  ListItemText,
+  FormControl,
+  FormControlLabel,
+  FormGroup,
+  Theme,
+  WithStyles,
+  withStyles,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@material-ui/core';
 import React, { Component } from 'react';
-import { User } from '../types';
-import { Thing } from '../types/external/themoviedb/Movie';
-import { AppState } from '../reducers';
-import { bindActionCreators } from 'redux';
-import { addToList } from '../actions/lists';
-import { ListOperationState } from '../reducers/lists';
 import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import {
+  addToList,
+  ListUpdate,
+  ListUpdatedInitiatedPayload,
+} from '../actions/lists';
+import { AppState } from '../reducers';
+import { ListOperationState } from '../reducers/lists';
+import { User, List } from '../types';
+import * as R from 'ramda';
+import { Thing } from '../types/external/themoviedb/Movie';
+
+const styles = (theme: Theme) =>
+  createStyles({
+    formControl: {
+      margin: theme.spacing.unit * 3,
+    },
+  });
 
 interface AddToListDialogProps {
   open: boolean;
@@ -23,22 +43,38 @@ interface AddToListDialogProps {
 
 interface AddToListDialogDispatchProps {
   addToList: (listId: string, itemId: string) => void;
+  updateLists: (payload: ListUpdatedInitiatedPayload) => void;
 }
 
 interface AddToListDialogState {
   exited: boolean;
   actionPending: boolean;
+  listChanges: { [listId: number]: boolean };
 }
 
-class AddToListDialog extends Component<
-  AddToListDialogProps & AddToListDialogDispatchProps,
-  AddToListDialogState
-> {
-  constructor(props: AddToListDialogProps & AddToListDialogDispatchProps) {
+type Props = AddToListDialogProps &
+  AddToListDialogDispatchProps &
+  WithStyles<typeof styles>;
+
+class AddToListDialog extends Component<Props, AddToListDialogState> {
+  constructor(props: Props) {
     super(props);
+
+    let listChanges = R.reduce(
+      (acc, elem) => {
+        return {
+          ...acc,
+          [elem.id]: this.listContainsItem(elem, props.item),
+        };
+      },
+      {},
+      props.userSelf.lists,
+    );
+
     this.state = {
       exited: false,
       actionPending: props.listOperations.inProgress,
+      listChanges,
     };
   }
 
@@ -70,6 +106,48 @@ class AddToListDialog extends Component<
     this.props.addToList(id.toString(), this.props.item.id.toString());
   };
 
+  handleCheckboxChange = (list: List, checked: boolean) => {
+    this.setState({
+      listChanges: {
+        ...this.state.listChanges,
+        [list.id]: checked,
+      },
+    });
+  };
+
+  listContainsItem = (list: List, item: Thing) => {
+    return R.any(R.propEq('id', item.id), list.things);
+  };
+
+  handleSubmit = () => {
+    let addedToLists = R.filter(list => {
+      return (
+        this.state.listChanges[list.id] &&
+        !this.listContainsItem(list, this.props.item)
+      );
+    }, this.props.userSelf.lists);
+
+    let removedFromLists = R.filter(list => {
+      return (
+        !this.state.listChanges[list.id] &&
+        this.listContainsItem(list, this.props.item)
+      );
+    }, this.props.userSelf.lists);
+
+    const extractIds = R.map<List, string>(
+      R.compose(
+        R.toString,
+        R.prop('id'),
+      ),
+    );
+
+    this.props.updateLists({
+      thingId: Number(this.props.item.id),
+      addToLists: extractIds(addedToLists),
+      removeFromLists: extractIds(removedFromLists),
+    });
+  };
+
   render() {
     return (
       <Dialog
@@ -78,26 +156,46 @@ class AddToListDialog extends Component<
         open={this.props.open && !this.state.exited}
         onClose={this.handleModalClose}
         fullWidth
-        maxWidth="xs"
+        maxWidth="sm"
       >
         <DialogTitle id="simple-dialog-title">
-          Add "{this.props.item.name}" to a list
+          Add or Remove "{this.props.item.name}" from your lists
         </DialogTitle>
 
-        <div>
-          <List>
+        <DialogContent style={{ display: 'flex' }}>
+          <FormGroup>
             {this.props.userSelf.lists.map(list => (
-              <ListItem
-                button
-                disabled={this.props.listOperations.inProgress}
+              // <ListItem
+              //   button
+              //   disabled={this.props.listOperations.inProgress}
+              //   key={list.id}
+              //   onClick={() => this.handleAddToList(list.id)}
+              // >
+              //   <ListItemText primary={list.name} />
+              // </ListItem>
+              <FormControlLabel
                 key={list.id}
-                onClick={() => this.handleAddToList(list.id)}
-              >
-                <ListItemText primary={list.name} />
-              </ListItem>
+                control={
+                  <Checkbox
+                    onChange={(_, checked) =>
+                      this.handleCheckboxChange(list, checked)
+                    }
+                    checked={this.state.listChanges[list.id]}
+                  />
+                }
+                label={list.name}
+              />
             ))}
-          </List>
-        </div>
+          </FormGroup>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={this.handleModalClose} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={this.handleSubmit} color="primary">
+            Save
+          </Button>
+        </DialogActions>
       </Dialog>
     );
   }
@@ -113,11 +211,14 @@ const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
       addToList,
+      updateLists: ListUpdate,
     },
     dispatch,
   );
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps,
-)(AddToListDialog);
+export default withStyles(styles)(
+  connect(
+    mapStateToProps,
+    mapDispatchToProps,
+  )(AddToListDialog),
+);

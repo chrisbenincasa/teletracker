@@ -163,24 +163,18 @@ export const retrieveListSaga = function*() {
       try {
         let currState: AppState = yield select();
 
-        console.log('166');
-
         if (currState.lists.listsById[payload.listId] && !payload.force) {
-          console.log('169');
           yield put(
             ListRetrieveSuccess(currState.lists.listsById[payload.listId]),
           );
         } else {
-          console.log('174');
           // TODO: Type alias to make this cleaner
           let response: TeletrackerResponse<List> = yield clientEffect(
             client => client.getList,
             payload.listId,
           );
-          console.log('180');
 
           if (response.ok && response.data) {
-            console.log('183');
             yield put(ListRetrieveSuccess(response.data.data));
           } else {
             yield put(ListRetrieveFailed(new Error('bad response')));
@@ -190,8 +184,6 @@ export const retrieveListSaga = function*() {
         yield put(ListRetrieveFailed(e));
       }
     } else {
-      console.log('no payload');
-
       yield put(ListRetrieveFailed(new Error('No payload defined.')));
     }
   });
