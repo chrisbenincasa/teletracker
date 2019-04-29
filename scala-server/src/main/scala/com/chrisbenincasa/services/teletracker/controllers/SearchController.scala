@@ -101,14 +101,6 @@ class SearchController @Inject()(
 
       val res = Future.sequence(resultProcessor.processSearchResults(missingSync ++ existing)).map(_.toMap)
 
-      res.foreach(r => {
-        r.toList.sortBy(_._1.toInt).foreach {
-          case (externalId, thing) => {
-            println(s"${externalId} -> ${thing.id.get}")
-          }
-        }
-      })
-
       res.onComplete(_ => resultProcessor.processSearchResults(missingAsync))
 
       res

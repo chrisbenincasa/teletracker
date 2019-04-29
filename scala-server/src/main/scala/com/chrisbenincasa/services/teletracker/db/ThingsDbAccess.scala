@@ -175,25 +175,21 @@ class ThingsDbAccess @Inject()(
     val existing = externalPair match {
       case Some((source, id)) if source == ExternalSource.TheMovieDb =>
         externalIds.query.filter(_.tmdbId === id).flatMap(_.thing).result.flatMap {
-          case s if s.isEmpty =>
+          case foundThings if foundThings.isEmpty =>
             things.query.
               filter(_.normalizedName === thing.normalizedName).
               filter(_.`type` === thing.`type`).
               result
-          case s => DBIO.successful(s)
-        }.flatMap {
-//          case s if s.length <= 1 =>
-//            DBIO.successful(s.headOption)
-          case s =>
-            val l = s.toList
-            DBIO.successful {
-              val r = s.find(t => {
-                t.metadata.exists(ObjectMetadataUtils.metadataMatchesId(_, source, thing.`type`, id))
-              })
 
-              r
-            }
-        }
+          case foundThings => DBIO.successful(foundThings)
+
+        }.flatMap(foundThings => {
+          DBIO.successful {
+            foundThings.find(thing => {
+              thing.metadata.exists(ObjectMetadataUtils.metadataMatchesId(_, source, thing.`type`, id))
+            })
+          }
+        })
 
       case _ =>
         things.query.
@@ -211,12 +207,6 @@ class ThingsDbAccess @Inject()(
 
       case Some(e) =>
         val updated = thing.copy(id = e.id)
-
-        if (thing.metadata.contains(e.metadata.get)) {
-          println(s"Thing id = ${e.id} has identical metadata to incoming movie")
-        } else {
-          println(s"Thing id = ${e.id} has different metadata to incoming movie")
-        }
 
         things.query.filter(t => {
           t.id === e.id &&

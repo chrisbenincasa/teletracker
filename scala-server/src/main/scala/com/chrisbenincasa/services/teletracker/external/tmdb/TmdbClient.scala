@@ -27,6 +27,7 @@ class TmdbClient @Inject()(config: TeletrackerConfig) {
     val p = Promise[T]
     val query = Seq("api_key" -> config.tmdb.api_key) ++ params
     val req = Request(s"/3/${path.stripPrefix("/")}", query: _*)
+    // TODO: Push to a different thread pool
     val f = client(req)
     f.onSuccess(x => {
       val parsed = parse(x.contentString)
