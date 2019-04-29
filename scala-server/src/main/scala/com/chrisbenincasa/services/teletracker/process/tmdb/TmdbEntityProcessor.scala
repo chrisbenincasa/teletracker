@@ -1,5 +1,6 @@
 package com.chrisbenincasa.services.teletracker.process.tmdb
 
+import com.chrisbenincasa.services.teletracker.cache.TmdbLocalCache
 import com.chrisbenincasa.services.teletracker.db.model._
 import com.chrisbenincasa.services.teletracker.db.{NetworksDbAccess, ThingsDbAccess, TvShowDbAccess, model}
 import com.chrisbenincasa.services.teletracker.external.justwatch.JustWatchClient
@@ -21,12 +22,17 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-class ItemExpander @Inject()(tmdbClient: TmdbClient) {
+class ItemExpander @Inject()(
+  tmdbClient: TmdbClient,
+  cache: TmdbLocalCache
+)(implicit executionContext: ExecutionContext) {
   def expandMovie(id: String): Future[Movie] = {
-    tmdbClient.makeRequest[Movie](
-      s"movie/$id",
-      Seq("append_to_response" -> List("release_dates", "credits", "external_ids").mkString(","))
-    )
+    cache.getOrSetEntity(ThingType.Movie, id, {
+      tmdbClient.makeRequest[Movie](
+        s"movie/$id",
+        Seq("append_to_response" -> List("release_dates", "credits", "external_ids").mkString(","))
+      )
+    })
   }
 
   def expandTvShow(id: String): Future[TvShow] = {
@@ -70,7 +76,8 @@ class TmdbEntityProcessor @Inject()(
   expander: ItemExpander,
   tvShowDbAccess: TvShowDbAccess,
   networkCache: NetworkCache,
-  justWatchClient: JustWatchClient
+  justWatchClient: JustWatchClient,
+  cache: TmdbLocalCache
 )(implicit executionContext: ExecutionContext) {
   def processSearchResults(results: List[Movie :+: TvShow :+: Person :+: CNil]): List[Future[(String, Thing)]] = {
     results.map(_.map(expander.ExpandItem)).map(_.fold(ResultProcessor))
@@ -198,7 +205,9 @@ class TmdbEntityProcessor @Inject()(
       val idMatch = item.scoring.getOrElse(Nil).exists(s => s.provider_type == "tmdb:id" && s.value.toInt.toString == movie.id.toString)
       val nameMatch = item.title.exists(movie.title.contains)
       val originalMatch = movie.original_title.exists(item.original_title.contains)
-      val yearMatch = item.original_release_year.exists(year => movie.release_date.map(new LocalDate(_).getYear).contains(year))
+      val yearMatch = item.original_release_year.exists(year => {
+        movie.release_date.filter(_.nonEmpty).map(new LocalDate(_).getYear).contains(year)
+      })
 
       idMatch || (nameMatch && yearMatch) || (originalMatch && yearMatch)
     })

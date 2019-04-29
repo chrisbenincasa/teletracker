@@ -117,36 +117,23 @@ const groupById = (things: Thing[]) =>
 
 const mergeThingLists = (key: string, left: any, right: any) => {
   if (key === 'things') {
-    // if (!(left as List).things && !(right as List).things) {
-    //   debugger;
-    //   console.log(left, right);
-
-    //   return right;
-    // }
-
     let leftList: Thing[] = left;
     let rightList: Thing[] = right;
 
-    let leftThingsById = groupById(leftList);
-    let rightThingsById = groupById(rightList);
+    let leftThingsById = leftList ? groupById(leftList) : [];
+    let rightThingsById = rightList ? groupById(rightList) : [];
 
-    let res = R.union(R.keys(leftThingsById), R.keys(rightThingsById)).map(
-      id => {
-        let leftThing = R.head(leftThingsById[id.toString()]);
-        let rightThing = R.head(rightThingsById[id.toString()]);
+    return R.union(R.keys(leftThingsById), R.keys(rightThingsById)).map(id => {
+      let leftThing = R.head(leftThingsById[id.toString()]);
+      let rightThing = R.head(rightThingsById[id.toString()]);
 
-        if (leftThing && rightThing) {
-          // Perform the merge.
-          debugger;
-          return R.mergeDeepRight(leftThing, rightThing);
-        } else {
-          return rightThing || leftThing;
-        }
-      },
-    );
-
-    console.log(res);
-    return res;
+      if (leftThing && rightThing) {
+        // Perform the merge.
+        return R.mergeDeepRight(leftThing, rightThing);
+      } else {
+        return rightThing || leftThing;
+      }
+    });
   } else {
     return right;
   }
