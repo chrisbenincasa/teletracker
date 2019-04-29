@@ -1,6 +1,6 @@
 package com.chrisbenincasa.services.teletracker.process.tmdb
 
-import com.chrisbenincasa.services.teletracker.cache.TmdbLocalCache
+import com.chrisbenincasa.services.teletracker.cache.{JustWatchLocalCache, TmdbLocalCache}
 import com.chrisbenincasa.services.teletracker.db.model._
 import com.chrisbenincasa.services.teletracker.db.{NetworksDbAccess, ThingsDbAccess, TvShowDbAccess, model}
 import com.chrisbenincasa.services.teletracker.external.justwatch.JustWatchClient
@@ -77,7 +77,8 @@ class TmdbEntityProcessor @Inject()(
   tvShowDbAccess: TvShowDbAccess,
   networkCache: NetworkCache,
   justWatchClient: JustWatchClient,
-  cache: TmdbLocalCache
+  cache: TmdbLocalCache,
+  justWatchLocalCache: JustWatchLocalCache
 )(implicit executionContext: ExecutionContext) {
   def processSearchResults(results: List[Movie :+: TvShow :+: Person :+: CNil]): List[Future[(String, Thing)]] = {
     results.map(_.map(expander.ExpandItem)).map(_.fold(ResultProcessor))
@@ -163,7 +164,9 @@ class TmdbEntityProcessor @Inject()(
     import io.circe.syntax._
 
     val query = PopularSearchRequest(1, 10, movie.title.get, List("movie"))
-    val justWatchResFut = justWatchClient.makeRequest[PopularItemsResponse]("/content/titles/en_US/popular", Seq("body" -> query.asJson.noSpaces))
+    val justWatchResFut = justWatchLocalCache.getOrSet(query, {
+      justWatchClient.makeRequest[PopularItemsResponse]("/content/titles/en_US/popular", Seq("body" -> query.asJson.noSpaces))
+    })
 
     (for {
       justWatchRes <- justWatchResFut

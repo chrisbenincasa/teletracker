@@ -35,6 +35,12 @@ class TmdbLocalCache @JInject()(implicit executionContext: ExecutionContext) {
     }
   }
 
+  def clear(): Future[Unit] = {
+    Future {
+      cache.invalidateAll()
+    }
+  }
+
   private def keyForType(thingType: ThingType, id: String): String = {
     s"$thingType.$id"
   }
