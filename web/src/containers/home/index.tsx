@@ -62,21 +62,6 @@ class Home extends Component<Props & WithUserProps> {
     );
   };
 
-  renderPoster = (thing: Thing) => {
-    let poster = getPosterPath(thing);
-    if (poster) {
-      return (
-        <CardMedia
-          className={this.props.classes.cardMedia}
-          image={'https://image.tmdb.org/t/p/w300' + poster}
-          title={thing.name}
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
   renderSearchResults = () => {
     let { searchResults, classes } = this.props;
     searchResults = searchResults || [];

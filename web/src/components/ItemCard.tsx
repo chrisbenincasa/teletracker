@@ -45,6 +45,18 @@ const styles = (theme: Theme) =>
     cardContent: {
       flexGrow: 1,
     },
+    missingMedia: {
+      height: '150%',
+      color: theme.palette.grey[500],
+      display: 'flex',
+      backgroundColor: theme.palette.grey[300],
+      fontSize: '10em',
+    },
+    missingMediaIcon: {
+      alignSelf: 'center',
+      margin: '0 auto',
+      display: 'inline-block',
+    },
   });
 
 interface ItemCardProps extends WithStyles<typeof styles> {
@@ -94,22 +106,6 @@ class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
     }
   }
 
-  renderPoster = (thing: Thing) => {
-    let poster = getPosterPath(thing);
-
-    if (poster) {
-      return (
-        <CardMedia
-          className={this.props.classes.cardMedia}
-          image={'https://image.tmdb.org/t/p/w300' + poster}
-          title={thing.name}
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
   handleModalOpen = (item: Thing) => {
     this.setState({ modalOpen: true });
   };
@@ -132,6 +128,31 @@ class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
       addToLists: [],
       removeFromLists: [this.props.listContext!.id.toString()],
     });
+  };
+
+  renderPoster = (thing: Thing) => {
+    let poster = getPosterPath(thing);
+
+    if (poster) {
+      return (
+        <CardMedia
+          className={this.props.classes.cardMedia}
+          image={'https://image.tmdb.org/t/p/w300' + poster}
+          title={thing.name}
+        />
+      );
+    } else {
+      return (
+        <div className={this.props.classes.missingMedia}>
+          <Icon
+            className={this.props.classes.missingMediaIcon}
+            fontSize="inherit"
+          >
+            broken_image
+          </Icon>
+        </div>
+      );
+    }
   };
 
   renderActionMenu() {
@@ -179,7 +200,7 @@ class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
                 </Typography>
                 {this.renderActionMenu()}
               </div>
-              <Typography>
+              <Typography style={{ height: '60px' }}>
                 <Truncate lines={3} ellipsis={<span>...</span>}>
                   {getDescription(item)}
                 </Truncate>
