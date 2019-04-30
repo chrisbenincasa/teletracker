@@ -140,7 +140,7 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def findThingsByExternalIds(source: ExternalSource, ids: Set[String], typ: ThingType) = {
+  def findThingsByExternalIds(source: ExternalSource, ids: Set[String], typ: Option[ThingType]): Future[Seq[(ExternalId, Thing)]] = {
     if (ids.isEmpty) {
       Future.successful(Seq.empty)
     } else {
@@ -151,7 +151,30 @@ class ThingsDbAccess @Inject()(
         }
 
         baseQuery.flatMap(eid => {
-          eid.thing.filter(_.`type` === typ).map(eid -> _)
+          (typ match {
+            case Some(t) => eid.thing.filter(_.`type` === t)
+            case None => eid.thing
+          }).map(eid -> _)
+        }).result
+      }
+    }
+  }
+
+  def findRawThingsByExternalIds(source: ExternalSource, ids: Set[String], typ: Option[ThingType]): Future[Seq[(ExternalId, ThingRaw)]] = {
+    if (ids.isEmpty) {
+      Future.successful(Seq.empty)
+    } else {
+      run {
+        val baseQuery = source match {
+          case ExternalSource.TheMovieDb => externalIds.query.filter(_.tmdbId inSetBind ids)
+          case _ => throw new IllegalArgumentException(s"Cannot get things by external source = $source")
+        }
+
+        baseQuery.flatMap(eid => {
+          (typ match {
+            case Some(t) => eid.thingRaw.filter(_.`type` === t)
+            case None => eid.thingRaw
+          }).map(eid -> _)
         }).result
       }
     }
@@ -375,6 +398,20 @@ class ThingsDbAccess @Inject()(
       lists.result
     }.map(lists => {
       UserThingDetails(lists.map(_.toFull))
+    })
+  }
+
+  def getThingsUserDetails(userId: Int, thingIds: Set[Int]): Future[Map[Int, UserThingDetails]] = {
+    val lists = trackedListThings.query.filter(_.thingId inSetBind thingIds).flatMap(l => {
+      l.list_fk.filter(_.userId === userId).map(l.thingId -> _)
+    })
+
+    run {
+      lists.result
+    }.map(results => {
+      results.groupBy(_._1).map {
+        case (thingId, seq) => thingId -> UserThingDetails(seq.map(_._2.toFull))
+      }
     })
   }
 }

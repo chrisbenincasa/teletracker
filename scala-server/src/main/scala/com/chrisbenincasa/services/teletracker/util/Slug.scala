@@ -9,10 +9,14 @@ object Slug {
   private val NonLatin = Pattern.compile("[^\\w-]")
   private val Whitespace = Pattern.compile("[\\s]")
 
-  def apply(input: String): String = {
+  def apply(input: String): Slug = {
     val nowhitespace = Whitespace.matcher(input).replaceAll("-")
     val normalized = Normalizer.normalize(nowhitespace, Form.NFD)
     val slug = NonLatin.matcher(normalized).replaceAll("")
-    slug.toLowerCase(Locale.ENGLISH)
+    new Slug(slug.toLowerCase(Locale.ENGLISH))
   }
+
+  def raw(input: String): Slug = new Slug(input)
 }
+
+case class Slug private (value: String) extends AnyVal

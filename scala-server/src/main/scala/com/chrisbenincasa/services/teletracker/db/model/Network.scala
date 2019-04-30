@@ -1,26 +1,30 @@
 package com.chrisbenincasa.services.teletracker.db.model
 
+import com.chrisbenincasa.services.teletracker.inject.DbImplicits
+import com.chrisbenincasa.services.teletracker.util.Slug
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
 
 case class Network(
   id: Option[Int],
   name: String,
-  slug: String,
+  slug: Slug,
   shortname: String,
   homepage: Option[String],
   origin: Option[String]
 )
 
 class Networks @Inject()(
-  val driver: JdbcProfile
+  val driver: JdbcProfile,
+  dbImplicits: DbImplicits
 ) {
   import driver.api._
+  import dbImplicits._
 
   class NetworksTable(tag: Tag) extends Table[Network](tag, "networks") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def name = column[String]("name")
-    def slug = column[String]("slug", O.Unique)
+    def slug = column[Slug]("slug", O.Unique)
     def shortname = column[String]("shortname")
     def homepage = column[Option[String]]("homepage")
     def origin = column[Option[String]]("origin")

@@ -3,8 +3,8 @@ package com.chrisbenincasa.services.teletracker.controllers
 import com.chrisbenincasa.services.teletracker.auth.JwtAuthFilter
 import com.chrisbenincasa.services.teletracker.auth.RequestContext._
 import com.chrisbenincasa.services.teletracker.config.TeletrackerConfig
-import com.chrisbenincasa.services.teletracker.db.model.{ExternalId, ExternalSource, PartialThing, ThingType}
-import com.chrisbenincasa.services.teletracker.db.{ThingsDbAccess, UserThingDetails}
+import com.chrisbenincasa.services.teletracker.db.model.{ExternalId, ExternalSource, PartialThing}
+import com.chrisbenincasa.services.teletracker.db.{ThingFactory, ThingsDbAccess, UserThingDetails}
 import com.chrisbenincasa.services.teletracker.external.tmdb.TmdbClient
 import com.chrisbenincasa.services.teletracker.model.DataResponse
 import com.chrisbenincasa.services.teletracker.model.tmdb._
@@ -15,8 +15,10 @@ import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import io.circe.generic.auto._
 import javax.inject.Inject
-import shapeless.{Coproduct, Inl, Inr}
+import shapeless.Coproduct
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Failure
+import scala.util.control.NonFatal
 
 class SearchController @Inject()(
   config: TeletrackerConfig,
@@ -64,68 +66,58 @@ class SearchController @Inject()(
   }
 
   private def handleSearchMultiResult(userId: Int, results: List[MultiTypeXor]): Future[List[PartialThing]] = {
-    val movies = results.flatMap(_.filter[Movie]).flatMap(_.head)
-    val shows = results.flatMap(_.filter[TvShow]).flatMap(_.head)
+    val resultIds = results.map(_.fold(extractId)).toSet
+    val existingFut = thingsDbAccess.findThingsByExternalIds(ExternalSource.TheMovieDb, resultIds, None).map(groupByExternalId)
 
-    val existingMovies = thingsDbAccess.findThingsByExternalIds(ExternalSource.TheMovieDb, movies.map(_.id.toString).toSet, ThingType.Movie)
-    val existingShows = thingsDbAccess.findThingsByExternalIds(ExternalSource.TheMovieDb, shows.map(_.id.toString).toSet, ThingType.Show)
-    val existingPeople = thingsDbAccess.findThingsByExternalIds(ExternalSource.TheMovieDb, shows.map(_.id.toString).toSet, ThingType.Person)
+    // Find any details on existing things
+    val thingDetailsByThingIdFut = existingFut.flatMap(existing => {
+      thingsDbAccess.getThingsUserDetails(userId, existing.values.flatMap(_.id).toSet)
+    })
 
-    val existingMoviesByExternalId = existingMovies.map(groupByExternalId)
-    val existingShowsByExternalId = existingShows.map(groupByExternalId)
-    val existingPeopleByExternalId = existingPeople.map(groupByExternalId)
-
-    val thingDetailsByThingIdFut = (for {
-      existingM <- existingMoviesByExternalId
-      existingS <- existingShowsByExternalId
-    } yield {
-      val userDetailsQueries = (existingM.values ++ existingS.values).map(_.id.get).map(id => {
-        thingsDbAccess.getThingUserDetails(userId, id).map(id -> _)
-      })
-      Future.sequence(userDetailsQueries).map(_.toMap)
-    }).flatMap(identity)
-
+    // Partition results by things we've already seen and saved
     val partitionedResults = for {
-      existingM <- existingMoviesByExternalId
-      existingS <- existingShowsByExternalId
-      existingP <- existingPeopleByExternalId
+      existing <- existingFut
     } yield {
       results.partition(result => {
         val id = result.fold(extractId)
-        !existingM.isDefinedAt(id) && !existingS.isDefinedAt(id) && !existingP.isDefinedAt(id)
+        !existing.isDefinedAt(id)
       })
     }
 
-    val newlySavedByExternalId = partitionedResults.flatMap { case (missing, existing) => {
-      val (missingSync, missingAsync) = missing.splitAt(5)
+    // Kick off background tasks for updating the full metadata for all results
+    partitionedResults.foreach {
+      case (missing, existing) =>
+        Future {
+          resultProcessor.processSearchResults(missing ++ existing)
+        }.andThen {
+          case Failure(NonFatal(ex)) =>
+            logger.error("Unexpected exception while processing search results", ex)
+        }
+      }
 
-      val res = Future.sequence(resultProcessor.processSearchResults(missingSync ++ existing)).map(_.toMap)
-
-      res.onComplete(_ => resultProcessor.processSearchResults(missingAsync))
-
-      res
-    } }
-
-    val thingsFut = for {
-      existingM <- existingMoviesByExternalId
-      existingS <- existingShowsByExternalId
-      newlySaved <- newlySavedByExternalId
-    } yield {
-      results.flatMap(_.filterNot[Person]).collect {
-        case Inl(movie) => existingM.get(movie.id.toString).orElse(newlySaved.get(movie.id.toString))
-        case Inr(Inl(show)) => existingS.get(show.id.toString).orElse(newlySaved.get(show.id.toString))
-        case Inr(Inr(_)) => sys.error("Impossible")
-      }.flatten
-    }
-
-    for {
-      things <- thingsFut
+    (for {
+      existingThings <- existingFut
       thingDetailsByThingId <- thingDetailsByThingIdFut
     } yield {
-      things.map(_.asPartial).map(thing => {
-        thing.withUserMetadata(thingDetailsByThingId.getOrElse(thing.id.get, UserThingDetails.empty))
+      val thingFuts = results.map(result => {
+        val id = result.fold(extractId)
+        val newOrExistingThing = existingThings.get(id) match {
+          case Some(existing) =>
+            Future.successful(existing)
+
+          case None =>
+            val thing = ThingFactory.makeThing(result)
+            thingsDbAccess.saveThing(thing, Some(ExternalSource.TheMovieDb -> id))
+        }
+
+        newOrExistingThing.map(thing => {
+          val meta = thing.id.flatMap(thingDetailsByThingId.get).getOrElse(UserThingDetails.empty)
+          thing.asPartial.withUserMetadata(meta)
+        })
       })
-    }
+
+      Future.sequence(thingFuts)
+    }).flatMap(identity)
   }
 
   private def groupByExternalId[T](seq: Seq[(ExternalId, T)]): Map[String, T] = {

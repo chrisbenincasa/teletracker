@@ -1,6 +1,7 @@
 package com.chrisbenincasa.services.teletracker.util.json.circe
 
 import com.chrisbenincasa.services.teletracker.db.model._
+import com.chrisbenincasa.services.teletracker.util.Slug
 import io.circe.shapes._
 import io.circe.generic.semiauto._
 import io.circe.generic.auto._
@@ -23,6 +24,9 @@ trait ModelInstances extends JodaInstances {
   implicit def javaEnumEncoder[A <: Enum[A]]: Encoder[A] = Encoder.instance { a =>
     Json.fromString(a.toString)
   }
+
+  implicit val slugEncoder: Encoder[Slug] = Encoder.encodeString.contramap(slug => slug.value)
+  implicit val slugDecoder: Decoder[Slug] = Decoder.decodeString.map(Slug.raw)
 
   implicit val availabilityEncoder = deriveEncoder[Availability]
   implicit val availabilityDecoder = deriveDecoder[Availability]
