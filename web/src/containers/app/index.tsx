@@ -124,27 +124,26 @@ class App extends Component<Props, State> {
 
     this.setState({ searchText });
 
-    this.execSearch(searchText);
+    this.debouncedExecSearch(searchText);
   };
 
-  handleSearchForEnter = _.debounce(
-    (ev: React.KeyboardEvent<HTMLInputElement>) => {
-      if (ev.keyCode === 13) {
-        this.execSearch(this.state.searchText);
-      }
-    },
-    250,
-  );
+  handleSearchForEnter = (ev: React.KeyboardEvent<HTMLInputElement>) => {
+    if (ev.keyCode === 13) {
+      this.execSearch(ev.currentTarget.value, true);
+    }
+  };
 
-  execSearch = _.debounce((text: string) => {
+  execSearch = (text: string, force: boolean = false) => {
     if (this.props.location.pathname !== '/') {
       this.props.history.push('/');
     }
 
-    if (text.length >= 1 && this.props.currentSearchText !== text) {
+    if (text.length >= 1 && (force || this.props.currentSearchText !== text)) {
       this.props.search(text);
     }
-  }, 250);
+  };
+
+  debouncedExecSearch = _.debounce(this.execSearch, 250);
 
   handleMenu = event => {
     this.setState({ anchorEl: event.currentTarget });
@@ -179,7 +178,7 @@ class App extends Component<Props, State> {
               input: classes.inputInput,
             }}
             onChange={this.handleSearchChange}
-            onKeyDown={ev => this.handleSearchForEnter}
+            onKeyDown={this.handleSearchForEnter}
           />
         </div>
         <div className={classes.grow} />
