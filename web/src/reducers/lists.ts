@@ -115,17 +115,19 @@ const groupById = (things: Thing[]) =>
     things,
   );
 
+const headOption = R.ifElse(R.isNil, R.always(undefined), R.head);
+
 const mergeThingLists = (key: string, left: any, right: any) => {
   if (key === 'things') {
     let leftList: Thing[] = left;
     let rightList: Thing[] = right;
 
-    let leftThingsById = leftList ? groupById(leftList) : [];
-    let rightThingsById = rightList ? groupById(rightList) : [];
+    let leftThingsById = leftList ? groupById(leftList) : {};
+    let rightThingsById = rightList ? groupById(rightList) : {};
 
     return R.union(R.keys(leftThingsById), R.keys(rightThingsById)).map(id => {
-      let leftThing = R.head(leftThingsById[id.toString()]);
-      let rightThing = R.head(rightThingsById[id.toString()]);
+      let leftThing = headOption(leftThingsById[id.toString()]);
+      let rightThing = headOption(rightThingsById[id.toString()]);
 
       if (leftThing && rightThing) {
         // Perform the merge.
