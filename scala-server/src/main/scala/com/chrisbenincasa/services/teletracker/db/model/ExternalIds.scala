@@ -30,6 +30,7 @@ class ExternalIds @Inject()(
     def lastUpdatedAt = column[java.sql.Timestamp]("last_updated_at", O.SqlType("timestamp with time zone default now()"))
 
     def thing = foreignKey("external_ids_thing_fk", thingId, things.query)(_.id.?)
+    def thingRaw = foreignKey("external_ids_thing_raw_fk", thingId, things.rawQuery)(_.id.?)
     def episode = foreignKey("external_ids_episodes_fk", tvEpisodeId, tvShowEpisodes.query)(_.id.?)
 
     override def * =

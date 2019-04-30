@@ -1,6 +1,7 @@
 package com.chrisbenincasa.services.teletracker.db.model
 
 import com.chrisbenincasa.services.teletracker.inject.DbImplicits
+import com.chrisbenincasa.services.teletracker.util.Slug
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
 
@@ -8,7 +9,7 @@ case class Genre(
   id: Option[Int],
   name: String,
   `type`: GenreType,
-  slug: String
+  slug: Slug
 )
 
 class Genres @Inject()(
@@ -23,7 +24,7 @@ class Genres @Inject()(
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def name = column[String]("name")
     def `type` = column[GenreType]("type")
-    def slug = column[String]("slug")
+    def slug = column[Slug]("slug")
 
     override def * =
       (

@@ -2,7 +2,7 @@ package com.chrisbenincasa.services.teletracker.process.tmdb
 
 import com.chrisbenincasa.services.teletracker.cache.{JustWatchLocalCache, TmdbLocalCache}
 import com.chrisbenincasa.services.teletracker.db.model._
-import com.chrisbenincasa.services.teletracker.db.{NetworksDbAccess, ThingsDbAccess, TvShowDbAccess, model}
+import com.chrisbenincasa.services.teletracker.db.{NetworksDbAccess, ThingFactory, ThingsDbAccess, TvShowDbAccess, model}
 import com.chrisbenincasa.services.teletracker.external.justwatch.JustWatchClient
 import com.chrisbenincasa.services.teletracker.external.tmdb.TmdbClient
 import com.chrisbenincasa.services.teletracker.model.justwatch.{PopularItem, PopularItemsResponse, PopularSearchRequest}
@@ -128,7 +128,7 @@ class TmdbEntityProcessor @Inject()(
     val genresFut = thingsDbAccess.findTmdbGenres(genreIds)
 
     val now = DateTime.now()
-    val t = Thing(None, movie.title.get, Slug(movie.title.get), ThingType.Movie, now, now, Some(ObjectMetadata.withTmdbMovie(movie)))
+    val t = ThingFactory.makeThing(movie)
 
     val saveThingFut = thingsDbAccess.saveThing(t, Some(ExternalSource.TheMovieDb -> movie.id.toString))
 
@@ -294,7 +294,11 @@ class TmdbEntityProcessor @Inject()(
     } yield p
   }
 
-  def handleExternalIds(entity: Either[Thing, model.TvShowEpisode], externalIds: Option[tmdb.ExternalIds], tmdbId: Option[String]) = {
+  def handleExternalIds(
+    entity: Either[Thing, model.TvShowEpisode],
+    externalIds: Option[tmdb.ExternalIds],
+    tmdbId: Option[String]
+  ): Future[Option[ExternalId]] = {
     if (externalIds.isDefined || tmdbId.isDefined) {
       val id = tmdbId.orElse(externalIds.map(_.id.toString)).get
       thingsDbAccess.findExternalIdsByTmdbId(id).flatMap {
@@ -314,4 +318,6 @@ class TmdbEntityProcessor @Inject()(
       Future.successful(None)
     }
   }
+
+
 }

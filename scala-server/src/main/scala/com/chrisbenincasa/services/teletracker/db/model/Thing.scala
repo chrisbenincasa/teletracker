@@ -3,6 +3,7 @@ package com.chrisbenincasa.services.teletracker.db.model
 import com.chrisbenincasa.services.teletracker.db.{CustomPostgresProfile, UserThingDetails}
 import com.chrisbenincasa.services.teletracker.inject.DbImplicits
 import com.chrisbenincasa.services.teletracker.model.tmdb._
+import com.chrisbenincasa.services.teletracker.util.Slug
 import javax.inject.Inject
 import io.circe._
 import io.circe.shapes._
@@ -16,7 +17,7 @@ import org.joda.time.DateTime
 case class Thing(
   id: Option[Int],
   name: String,
-  normalizedName: String,
+  normalizedName: Slug,
   `type`: ThingType,
   createdAt: DateTime,
   lastUpdatedAt: DateTime,
@@ -30,7 +31,7 @@ case class Thing(
 case class ThingRaw(
   id: Option[Int],
   name: String,
-  normalizedName: String,
+  normalizedName: Slug,
   `type`: ThingType,
   createdAt: DateTime,
   lastUpdatedAt: DateTime,
@@ -54,7 +55,7 @@ case class ThingRaw(
 case class PartialThing(
   id: Option[Int] = None,
   name: Option[String] = None,
-  normalizedName: Option[String] = None,
+  normalizedName: Option[Slug] = None,
   `type`: Option[ThingType] = None,
   createdAt: Option[DateTime] = None,
   lastUpdatedAt: Option[DateTime] = None,
@@ -113,7 +114,7 @@ class Things @Inject()(
   class ThingsTable(tag: Tag) extends Table[Thing](tag, "things") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def name = column[String]("name")
-    def normalizedName = column[String]("normalized_name")
+    def normalizedName = column[Slug]("normalized_name")
     def `type` = column[ThingType]("type")
     def createdAt = column[DateTime]("created_at", O.SqlType("timestamp with time zone"))
     def lastUpdatedAt = column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
@@ -136,7 +137,7 @@ class Things @Inject()(
   class ThingsTableRaw(tag: Tag) extends Table[ThingRaw](tag, "things") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def name = column[String]("name")
-    def normalizedName = column[String]("normalized_name")
+    def normalizedName = column[Slug]("normalized_name")
     def `type` = column[ThingType]("type")
     def createdAt = column[DateTime]("created_at", O.SqlType("timestamp with time zone"))
     def lastUpdatedAt = column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
