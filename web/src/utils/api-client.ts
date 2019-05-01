@@ -212,6 +212,12 @@ export class TeletrackerApi {
     });
   }
 
+  async getItem(id: string | number, type: string) {
+    return this.withTokenCheck(async () => {
+      return this.api.get<any>(`/api/v1/${type}s/${id}`);
+    });
+  }
+
   async getShow(id: string | number) {
     return this.withTokenCheck(async () => {
       return this.api.get<any>(`/api/v1/shows/${id}`);

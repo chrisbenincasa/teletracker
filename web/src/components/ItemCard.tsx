@@ -6,6 +6,7 @@ import {
   createStyles,
   Grid,
   Icon,
+  Link,
   Theme,
   Typography,
   WithStyles,
@@ -14,7 +15,10 @@ import {
   Menu,
   MenuItem,
 } from '@material-ui/core';
-import React, { Component, Props } from 'react';
+import {
+  Link as RouterLink
+} from 'react-router-dom';
+import React, { Component } from 'react';
 import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
 import { User, List } from '../types';
@@ -26,6 +30,13 @@ import { connect } from 'react-redux';
 
 const styles = (theme: Theme) =>
   createStyles({
+    button: {
+      width: '100%',
+      marginTop: '0.35em',
+    },
+    description: {
+      marginBottom: '0.35em',
+    },
     title: {
       flex: 1,
       whiteSpace: 'nowrap',
@@ -182,7 +193,9 @@ class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
       <React.Fragment>
         <Grid key={item.id} sm={6} md={4} lg={3} item>
           <Card className={classes.card}>
+          <Link component={props => <RouterLink {...props} to={'/item/' + item.type + '/' + item.id} />}>
             {this.renderPoster(item)}
+          </Link>
             <CardContent className={classes.cardContent}>
               <div
                 style={{
@@ -209,6 +222,7 @@ class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
                 <Button
                   variant="contained"
                   color="primary"
+                  className= {classes.button}
                   onClick={() => this.handleModalOpen(item)}
                 >
                   <Icon>playlist_add</Icon>
