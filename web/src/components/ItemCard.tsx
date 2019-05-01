@@ -208,6 +208,7 @@ class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
                   className={classes.title}
                   variant="h5"
                   component="h2"
+                  title={item.name}
                 >
                   {item.name}
                 </Typography>
