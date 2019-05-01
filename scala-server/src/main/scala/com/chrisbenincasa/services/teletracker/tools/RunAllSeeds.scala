@@ -5,7 +5,7 @@ import com.google.inject.Module
 import com.twitter.inject.app.App
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object RunAllSeedsMain extends App
+object RunAllSeedsMain extends RunAllSeeds
 
 class RunAllSeeds extends App {
   override protected def modules: Seq[Module] = Modules()
