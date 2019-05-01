@@ -1,4 +1,5 @@
 import { Movie, Person, TvShow } from 'themoviedb-client-typed';
+import { Availability } from '../..';
 
 export interface SearchMoviesRequest {
   query: string;
@@ -21,16 +22,6 @@ export interface TheMovieDbMetadata {
 }
 
 export type KeyMap<T> = { [K in keyof T]?: true | KeyMap<Partial<T[K]>> };
-
-export interface Thing {
-  id: string | number;
-  name: string;
-  normalizedName: string;
-  type: 'movie' | 'show' | 'person';
-  metadata?: ObjectMetadata;
-  userMetadata?: ObjectMetadata;
-  availability: any;
-}
 
 export interface MovieExternalIds {
   imdb_id?: string;

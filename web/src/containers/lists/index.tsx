@@ -31,7 +31,7 @@ import {
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { Thing } from '../../types/external/themoviedb/Movie';
+import { Thing } from "../../types";
 import { List } from '../../types';
 import { getPosterPath, getPosterUrl } from '../../utils/metadata-access';
 import { ListsByIdMap } from '../../reducers/lists';

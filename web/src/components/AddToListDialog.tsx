@@ -1,18 +1,18 @@
 import {
+  Button,
   Checkbox,
   createStyles,
   Dialog,
+  DialogActions,
+  DialogContent,
   DialogTitle,
-  FormControl,
   FormControlLabel,
   FormGroup,
   Theme,
   WithStyles,
   withStyles,
-  DialogContent,
-  DialogActions,
-  Button,
 } from '@material-ui/core';
+import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -23,9 +23,7 @@ import {
 } from '../actions/lists';
 import { AppState } from '../reducers';
 import { ListOperationState } from '../reducers/lists';
-import { User, List } from '../types';
-import * as R from 'ramda';
-import { Thing } from '../types/external/themoviedb/Movie';
+import { List, Thing, User } from '../types';
 
 const styles = (theme: Theme) =>
   createStyles({
