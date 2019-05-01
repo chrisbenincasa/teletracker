@@ -1,4 +1,9 @@
-import { ITEM_FETCH_INITIATED, ITEM_FETCH_SUCCESSFUL, ITEM_FETCH_FAILED } from '../constants/item-detail';
+import {
+  ITEM_FETCH_INITIATED,
+  ITEM_FETCH_SUCCESSFUL,
+  ITEM_FETCH_FAILED
+} from '../constants/item-detail';
+import { FSA } from 'flux-standard-action';
 import { Dispatch } from 'redux';
 import { TeletrackerApi } from '../utils/api-client';
 import { Thing } from '../types/external/themoviedb/Movie';
@@ -42,14 +47,14 @@ export type ItemDetailActionTypes =
 
 const client = TeletrackerApi.instance;
 
-export const fetchItemDetails = (id: number) => {
+export const fetchItemDetails = (id: number, type: string) => {
   return async (dispatch: Dispatch) => {
     dispatch(itemFetchInitiated(id));
 
     // To do fix for shows and such
     // just testing for now
     return client
-      .getMovie(id)
+      .getItem(id, type)
       .then(response => {
         if (response.ok) {
           console.log(response.data);
