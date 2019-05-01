@@ -1,4 +1,8 @@
-import { ITEM_FETCH_INITIATED, ITEM_FETCH_SUCCESSFUL } from '../constants/item-detail';
+import {
+  ITEM_FETCH_INITIATED,
+  ITEM_FETCH_SUCCESSFUL,
+  ITEM_FETCH_FAILED
+} from '../constants/item-detail';
 import { ItemDetailActionTypes } from '../actions/item-detail';
 import { Thing } from '../types/external/themoviedb/Movie';
 
