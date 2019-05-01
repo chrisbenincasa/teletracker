@@ -15,10 +15,8 @@ import {
   Menu,
   MenuItem,
 } from '@material-ui/core';
-import {
-  Link as RouterLink
-} from 'react-router-dom';
-import React, { Component } from 'react';
+import { Link as RouterLink, withRouter } from 'react-router-dom';
+import React, { Component, ReactNode } from 'react';
 import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
 import { User, List } from '../types';
@@ -96,7 +94,9 @@ interface ItemCardState {
   anchorEl: any;
 }
 
-class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
+type Props = ItemCardProps & DispatchProps;
+
+class ItemCard extends Component<Props, ItemCardState> {
   static defaultProps = {
     withActionButton: false,
   };
@@ -106,7 +106,7 @@ class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
     anchorEl: null,
   };
 
-  constructor(props: ItemCardProps & DispatchProps) {
+  constructor(props: Props) {
     super(props);
     if (
       !props.listContext &&
@@ -141,27 +141,43 @@ class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
     });
   };
 
+  navigateToDetail = (thing: Thing) => {
+    // this.props.
+  };
+
   renderPoster = (thing: Thing) => {
     let poster = getPosterPath(thing);
 
+    const makeLink = (children: ReactNode, className?: string) => (
+      <Link
+        className={className}
+        component={props => (
+          <RouterLink {...props} to={'/item/' + thing.type + '/' + thing.id} />
+        )}
+      >
+        {children}
+      </Link>
+    );
+
     if (poster) {
-      return (
+      return makeLink(
         <CardMedia
           className={this.props.classes.cardMedia}
           image={'https://image.tmdb.org/t/p/w300' + poster}
           title={thing.name}
-        />
+        />,
       );
     } else {
-      return (
-        <div className={this.props.classes.missingMedia}>
+      return makeLink(
+        <div style={{ display: 'flex', width: '100%' }}>
           <Icon
             className={this.props.classes.missingMediaIcon}
             fontSize="inherit"
           >
             broken_image
           </Icon>
-        </div>
+        </div>,
+        this.props.classes.missingMedia,
       );
     }
   };
@@ -193,9 +209,7 @@ class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
       <React.Fragment>
         <Grid key={item.id} sm={6} md={4} lg={3} item>
           <Card className={classes.card}>
-          <Link component={props => <RouterLink {...props} to={'/item/' + item.type + '/' + item.id} />}>
             {this.renderPoster(item)}
-          </Link>
             <CardContent className={classes.cardContent}>
               <div
                 style={{
@@ -223,7 +237,7 @@ class ItemCard extends Component<ItemCardProps & DispatchProps, ItemCardState> {
                 <Button
                   variant="contained"
                   color="primary"
-                  className= {classes.button}
+                  className={classes.button}
                   onClick={() => this.handleModalOpen(item)}
                 >
                   <Icon>playlist_add</Icon>
