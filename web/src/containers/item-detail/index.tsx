@@ -4,6 +4,7 @@ import {
   CssBaseline,
   Grid,
   LinearProgress,
+  Paper,
   Theme,
   WithStyles,
   withStyles,
@@ -17,49 +18,56 @@ import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { Thing } from '../../types/external/themoviedb/Movie';
-import { getPosterPath } from '../../utils/metadata-access';
+import { getPosterPath, getDescription } from '../../utils/metadata-access';
 import { TeletrackerApi } from '../../utils/api-client';
 import { fetchItemDetails } from '../../actions/item-detail';
 
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
+    cardMedia: {
+      height: 0,
+      width: '100%',
+      paddingTop: '150%',
+    },
+    paper: {
+      width: '250px',
+      margin: '25px',
+    }
   });
 
 interface OwnProps {
   isAuthed: boolean;
   isFetching: boolean;
   itemDetail?: Thing;
-  match: any; //?
 }
 
 interface DispatchProps {
-  fetchItemDetails: (id: number) => void;
+  fetchItemDetails: (id: number, type: string) => void;
 }
 
 interface RouteParams {
   id: string;
+  type: string;
 }
 
-type Props = DispatchProps &
-OwnProps &
-RouteComponentProps<RouteParams> &
-WithStyles<typeof styles> &
-WithUserProps;
+type Props = OwnProps &
+  RouteComponentProps<RouteParams> &
+  DispatchProps &
+  WithStyles<typeof styles> &
+  WithUserProps;
 
 interface State {
   currentId: number;
 }
-class ItemDetail extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      currentId: 70,
-    };
-  }
+class ItemDetails extends Component<Props, State> {
 
   componentDidMount() {
-    // this.props.renderItemDetails(this.props.match.params.id);
+    let { match } = this.props;
+    let itemId = Number(match.params.id);
+    let itemType = match.params.type;
+
+    this.props.fetchItemDetails(itemId, itemType);
   }
 
   renderLoading = () => {
@@ -87,26 +95,31 @@ class ItemDetail extends Component<Props, State> {
 
   renderItemDetails = () => {
     let { itemDetail, match } = this.props;
-    let itemId = Number(this.props.match.params.id);
-    let itemType = String(this.props.match.params.type);
-
+    let itemId = Number(match.params.id);
+    let itemType = String(match.params.type);
 
     console.log(this.props);
 
-    console.log(itemId);
-    console.log(itemType);
+    // this.setState({currentId: match.params.id});
 
-    this.setState({currentId: match.params.id});
-
-    return this.props.isFetching ? (
+    return this.props.isFetching || !itemDetail ? (
       this.renderLoading()
     ) : (
-      this.props.fetchItemDetails(match.params.id)
+      <React.Fragment>
+        <Paper
+          className={this.props.classes.paper}
+        >
+        {
+          this.renderPoster(itemDetail)
+        }{
+          getDescription(itemDetail)
+        }
+        </Paper>
+      </React.Fragment>
     )
   }
 
   render() {
-
     return this.props.isAuthed ? (
       this.renderItemDetails()
     ) : (
@@ -119,7 +132,7 @@ const mapStateToProps: (appState: AppState) => OwnProps = appState => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
-    itemDetail: R.path<Thing>(['itemDetail', 'data'], appState),
+    itemDetail: R.path<Thing>(['itemDetail', 'itemDetail', 'data'], appState),
   };
 };
 
@@ -137,7 +150,7 @@ export default withUser(
       connect(
         mapStateToProps,
         mapDispatchToProps,
-      )(ItemDetail),
+      )(ItemDetails),
     ),
   ),
 );
