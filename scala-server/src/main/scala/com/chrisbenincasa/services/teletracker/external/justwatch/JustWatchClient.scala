@@ -30,7 +30,8 @@ class JustWatchClient {
         case Left(e) =>
           logger.error(s"Could not parse. Result string:\n${x.contentString}", e)
           p.tryFailure(e)
-        case Right(json) => p.trySuccess(json)
+        case Right(json) =>
+          p.trySuccess(json)
       }
     })
     f.onFailure(p.tryFailure)

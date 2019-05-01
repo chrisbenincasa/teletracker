@@ -1,27 +1,24 @@
+import * as R from 'ramda';
 import {
   ListAddFailedAction,
   ListAddInitiatedAction,
   ListAddSuccessAction,
+  ListRetrieveAllInitiatedAction,
+  ListRetrieveAllSuccessAction,
   ListRetrieveInitiatedAction,
   ListRetrieveSuccessAction,
-  ListRetrieveAllSuccessAction,
-  ListRetrieveAllInitiatedAction,
 } from '../actions/lists';
 import {
   LIST_ADD_ITEM_FAILED,
   LIST_ADD_ITEM_INITIATED,
   LIST_ADD_ITEM_SUCCESS,
+  LIST_RETRIEVE_ALL_INITIATED,
+  LIST_RETRIEVE_ALL_SUCCESS,
   LIST_RETRIEVE_INITIATED,
   LIST_RETRIEVE_SUCCESS,
-  LIST_RETRIEVE_ALL_SUCCESS,
-  LIST_RETRIEVE_ALL_INITIATED,
 } from '../constants/lists';
-import { List } from '../types';
+import { List, Thing } from '../types';
 import { flattenActions, handleAction } from './utils';
-import * as R from 'ramda';
-import { USER_SELF_RETRIEVE_SUCCESS } from '../constants/user';
-import { UserSelfRetrieveSuccessAction } from '../actions/user';
-import { Thing } from '../types/external/themoviedb/Movie';
 
 export interface ListOperationState {
   inProgress: boolean;

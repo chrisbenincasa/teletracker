@@ -13,10 +13,9 @@ import {
 } from '../constants/lists';
 import { AppState } from '../reducers';
 import { List, User } from '../types';
-import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
+import { ObjectMetadata, KeyMap } from '../types/external/themoviedb/Movie';
 import { TeletrackerResponse } from '../utils/api-client';
 import { clientEffect, createAction } from './utils';
-import { RetrieveUserSelfSuccess } from './user';
 
 interface ListAddInitiatedPayload {
   listId: string;

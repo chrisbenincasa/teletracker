@@ -18,7 +18,7 @@ import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { Thing } from '../../types/external/themoviedb/Movie';
+import { Thing } from "../../types";
 import { getPosterPath } from '../../utils/metadata-access';
 
 const styles = (theme: Theme) =>

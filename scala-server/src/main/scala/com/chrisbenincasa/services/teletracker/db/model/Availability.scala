@@ -20,7 +20,8 @@ case class Availability(
   currency: Option[String],
   thingId: Option[Int],
   tvShowEpisodeId: Option[Int],
-  networkId: Option[Int]
+  networkId: Option[Int],
+  presentationType: Option[PresentationType]
 ) {
   def withNetwork(network: Network): AvailabilityWithDetails = {
     AvailabilityWithDetails(
@@ -33,6 +34,7 @@ case class Availability(
       offerType,
       cost,
       currency,
+      presentationType,
       thingId,
       tvShowEpisodeId,
       networkId,
@@ -59,6 +61,7 @@ case class AvailabilityWithDetails(
   offerType: Option[OfferType],
   cost: Option[BigDecimal],
   currency: Option[String],
+  presentationType: Option[PresentationType],
 
   thingId: Option[Int],
   tvShowEpisodeId: Option[Int],
@@ -90,6 +93,7 @@ class Availabilities @Inject()(
     def thingId = column[Option[Int]]("thing_id")
     def tvShowEpisodeId = column[Option[Int]]("tv_show_episode_id")
     def networkId = column[Option[Int]]("network_id")
+    def presentationType = column[Option[PresentationType]]("presentation_type")
 
     def endDate_idx = index("availability_end_date_idx", endDate)
     def thingIdNetworkId = index("availability_thing_id_networkid", (thingId, networkId))
@@ -111,7 +115,8 @@ class Availabilities @Inject()(
         currency,
         thingId,
         tvShowEpisodeId,
-        networkId
+        networkId,
+        presentationType
       ) <> (Availability.tupled, Availability.unapply)
   }
 

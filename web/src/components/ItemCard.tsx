@@ -20,7 +20,7 @@ import React, { Component, ReactNode } from 'react';
 import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
 import { User, List } from '../types';
-import { Thing } from '../types/external/themoviedb/Movie';
+import { Thing } from "../types";
 import { getDescription, getPosterPath } from '../utils/metadata-access';
 import { Dispatch, bindActionCreators } from 'redux';
 import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';

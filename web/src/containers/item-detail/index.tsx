@@ -2,29 +2,42 @@ import {
   CardMedia,
   createStyles,
   CssBaseline,
-  Grid,
   LinearProgress,
   Paper,
   Theme,
   WithStyles,
   withStyles,
+  Typography,
 } from '@material-ui/core';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
-import { Dispatch, bindActionCreators } from 'redux';
+import { bindActionCreators, Dispatch } from 'redux';
+import { fetchItemDetails } from '../../actions/item-detail';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { Thing } from '../../types/external/themoviedb/Movie';
-import { getPosterPath, getDescription } from '../../utils/metadata-access';
-import { TeletrackerApi } from '../../utils/api-client';
-import { fetchItemDetails } from '../../actions/item-detail';
+import { Thing, Availability } from '../../types';
+import { getBackdropUrl, getPosterPath } from '../../utils/metadata-access';
 
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
+    backdrop: {
+      backgroundSize: 'cover',
+      width: '100%',
+    },
+    backdropImage: {
+      backgroundSize: 'cover',
+      backgroundPosition: '50% 50%',
+      padding: '3em 0',
+    },
+    heroContent: {
+      maxWidth: 600,
+      margin: '0 auto',
+      padding: `${theme.spacing.unit * 8}px 0 ${theme.spacing.unit * 6}px`,
+    },
     cardMedia: {
       height: 0,
       width: '100%',
@@ -32,8 +45,7 @@ const styles = (theme: Theme) =>
     },
     paper: {
       width: '250px',
-      margin: '25px',
-    }
+    },
   });
 
 interface OwnProps {
@@ -60,8 +72,11 @@ type Props = OwnProps &
 interface State {
   currentId: number;
 }
-class ItemDetails extends Component<Props, State> {
 
+const gradient =
+  'radial-gradient(circle at 20% 50%, rgba(11.76%, 15.29%, 17.25%, 0.98) 0%, rgba(11.76%, 15.29%, 17.25%, 0.88) 100%)';
+
+class ItemDetails extends Component<Props, State> {
   componentDidMount() {
     let { match } = this.props;
     let itemId = Number(match.params.id);
@@ -84,7 +99,7 @@ class ItemDetails extends Component<Props, State> {
       return (
         <CardMedia
           className={this.props.classes.cardMedia}
-          image={'https://image.tmdb.org/t/p/w300' + poster}
+          image={'https://image.tmdb.org/t/p/w342' + poster}
           title={thing.name}
         />
       );
@@ -93,31 +108,98 @@ class ItemDetails extends Component<Props, State> {
     }
   };
 
+  backdropStyle = (item: Thing) => {
+    let backdrop = getBackdropUrl(item, '780');
+
+    return {
+      backgroundImage: `${gradient}, url(${backdrop})`,
+    };
+  };
+
+  renderOfferDetails = (availabilities: Availability[]) => {
+    let groupedByNetwork = availabilities
+      ? R.groupBy(
+          (av: Availability) => av.network!.slug,
+          R.filter(av => !R.isNil(av.network), availabilities),
+        )
+      : {};
+
+    return R.values(
+      R.mapObjIndexed(avs => {
+        let lowestCostAv = R.head(R.sortBy(R.prop('cost'))(avs))!;
+        let hasHd = R.find(R.propEq('presentationType', 'hd'), avs);
+        let has4k = R.find(R.propEq('presentationType', '4k'), avs);
+
+        let logoUri =
+          '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
+
+        return (
+          <span style={{ color: 'white' }}>
+            <Typography inline color="inherit">
+              <img
+                key={lowestCostAv.id}
+                src={logoUri}
+                style={{ width: 50, borderRadius: 10 }}
+              />
+              {lowestCostAv.cost}
+            </Typography>
+          </span>
+        );
+      }, groupedByNetwork),
+    );
+  };
+
   renderItemDetails = () => {
     let { itemDetail, match } = this.props;
     let itemId = Number(match.params.id);
     let itemType = String(match.params.type);
 
-    console.log(this.props);
+    if (!itemDetail) {
+      return this.renderLoading();
+    }
 
-    // this.setState({currentId: match.params.id});
+    let backdropStyle = this.backdropStyle(itemDetail);
+
+    let availabilities = R.mapObjIndexed(
+      R.pipe(
+        R.filter<Availability, 'array'>(R.propEq('isAvailable', true)),
+        R.sortBy(R.prop('cost')),
+      ),
+      R.groupBy(R.prop('offerType'), itemDetail.availability),
+    );
 
     return this.props.isFetching || !itemDetail ? (
       this.renderLoading()
     ) : (
       <React.Fragment>
-        <Paper
-          className={this.props.classes.paper}
-        >
-        {
-          this.renderPoster(itemDetail)
-        }{
-          getDescription(itemDetail)
-        }
-        </Paper>
+        <CssBaseline />
+        <div className={this.props.classes.backdrop}>
+          <div
+            className={this.props.classes.backdropImage}
+            style={backdropStyle}
+          >
+            <Paper className={this.props.classes.paper}>
+              {this.renderPoster(itemDetail)}
+            </Paper>
+            <span style={{ color: 'white' }}>
+              <Typography color="inherit">
+                Rent:
+                {availabilities.rent ? (
+                  <div>{this.renderOfferDetails(availabilities.rent)}</div>
+                ) : null}
+              </Typography>
+              <Typography color="inherit">
+                Buy:
+                {availabilities.buy ? (
+                  <div>{this.renderOfferDetails(availabilities.buy)}</div>
+                ) : null}
+              </Typography>
+            </span>
+          </div>
+        </div>
       </React.Fragment>
-    )
-  }
+    );
+  };
 
   render() {
     return this.props.isAuthed ? (
@@ -139,9 +221,9 @@ const mapStateToProps: (appState: AppState) => OwnProps = appState => {
 const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
-      fetchItemDetails
+      fetchItemDetails,
     },
-    dispatch
+    dispatch,
   );
 
 export default withUser(

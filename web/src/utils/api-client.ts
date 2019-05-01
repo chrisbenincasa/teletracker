@@ -1,11 +1,8 @@
 import * as apisauce from 'apisauce';
 import { merge } from 'ramda';
 import { List, User } from '../types';
-import {
-  KeyMap,
-  ObjectMetadata,
-  Thing,
-} from '../types/external/themoviedb/Movie';
+import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
+import { Thing } from '../types';
 import _ from 'lodash';
 
 export interface TeletrackerApiOptions {

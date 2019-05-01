@@ -3,7 +3,7 @@ import {
   SearchSuccessfulAction,
 } from '../actions/search';
 import { SEARCH_INITIATED, SEARCH_SUCCESSFUL } from '../constants/search';
-import { Thing } from '../types/external/themoviedb/Movie';
+import { Thing } from "../types";
 import { flattenActions, handleAction } from './utils';
 
 export interface State {

@@ -4,10 +4,10 @@ import io.circe.{Encoder, Printer}
 import io.circe.syntax._
 
 object DataResponse {
-  private val indentedPrinter = Printer.spaces4.copy(dropNullValues = true)
+  private val indentedPrinter = Printer.spaces4
   private val compactPriner = Printer.noSpaces.copy(dropNullValues = true)
 
-  def complex[T](v: T, compact: Boolean = false)(implicit decoder: Encoder[T]): String = {
+  def complex[T](v: T, compact: Boolean = false)(implicit encoder: Encoder[T]): String = {
     val printer = if (compact) compactPriner else indentedPrinter
     printer.pretty(Map("data" -> v).asJson)
   }
