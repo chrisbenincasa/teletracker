@@ -54,10 +54,12 @@ class TmdbMovieImporter @Inject()(
         val availabilities = matchJustWatchMovie(movie, justWatchRes.items).collect {
           case matchedItem if matchedItem.offers.exists(_.nonEmpty) =>
             for {
-              offer <- matchedItem.offers.get
+              offer <- matchedItem.offers.get.distinct
               provider <- networksBySource.get(ExternalSource.JustWatch -> offer.provider_id.toString).toList
             } yield {
               val offerType = Try(offer.monetization_type.map(OfferType.fromJustWatchType)).toOption.flatten
+              val presentationType = Try(offer.presentation_type.map(PresentationType.fromJustWatchType)).toOption.flatten
+
               Availability(
                 None,
                 true,
@@ -70,7 +72,8 @@ class TmdbMovieImporter @Inject()(
                 offer.currency,
                 thing.id,
                 None,
-                provider.id
+                provider.id,
+                presentationType
               )
             }
         }.getOrElse(Nil)

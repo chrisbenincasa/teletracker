@@ -10,7 +10,7 @@ class AdminController @Inject()(
   tmdbLocalCache: TmdbLocalCache,
   justWatchLocalCache: JustWatchLocalCache
 )(implicit executionContext: ExecutionContext) extends Controller {
-  delete("/cache/clear", admin = true) { _: Request =>
+  post("/cache/clear", admin = true) { _: Request =>
     Future.sequence(
       List(
         tmdbLocalCache.clear(),

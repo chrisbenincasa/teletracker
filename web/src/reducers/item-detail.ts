@@ -4,7 +4,7 @@ import {
   ITEM_FETCH_FAILED
 } from '../constants/item-detail';
 import { ItemDetailActionTypes } from '../actions/item-detail';
-import { Thing } from '../types/external/themoviedb/Movie';
+import { Thing } from "../types";
 
 export interface State {
   fetching: boolean;

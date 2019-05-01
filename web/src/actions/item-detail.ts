@@ -1,12 +1,12 @@
 import {
   ITEM_FETCH_INITIATED,
   ITEM_FETCH_SUCCESSFUL,
-  ITEM_FETCH_FAILED
+  ITEM_FETCH_FAILED,
 } from '../constants/item-detail';
 import { FSA } from 'flux-standard-action';
 import { Dispatch } from 'redux';
 import { TeletrackerApi } from '../utils/api-client';
-import { Thing } from '../types/external/themoviedb/Movie';
+import { Thing } from '../types';
 import { createAction } from 'redux-actions';
 
 interface ItemFetchInitiatedAction {
@@ -41,9 +41,9 @@ export const itemFetchSuccess: (
 const ItemFetchFailed = createAction(ITEM_FETCH_FAILED);
 
 export type ItemDetailActionTypes =
-| ItemFetchInitiatedAction
-| ItemFetchSuccessfulAction
-| ItemFetchFailedAction;
+  | ItemFetchInitiatedAction
+  | ItemFetchSuccessfulAction
+  | ItemFetchFailedAction;
 
 const client = TeletrackerApi.instance;
 

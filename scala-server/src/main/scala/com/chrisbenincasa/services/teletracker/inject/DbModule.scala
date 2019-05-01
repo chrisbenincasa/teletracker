@@ -2,7 +2,7 @@ package com.chrisbenincasa.services.teletracker.inject
 
 import com.chrisbenincasa.services.teletracker.config.TeletrackerConfig
 import com.chrisbenincasa.services.teletracker.db.CustomPostgresProfile
-import com.chrisbenincasa.services.teletracker.db.model.{ExternalSource, GenreType, OfferType, ThingType}
+import com.chrisbenincasa.services.teletracker.db.model.{ExternalSource, GenreType, OfferType, PresentationType, ThingType}
 import com.chrisbenincasa.services.teletracker.util.Slug
 import com.chrisbenincasa.services.teletracker.util.execution.ExecutionContextProvider
 import com.google.inject.{Provides, Singleton}
@@ -58,6 +58,7 @@ class DbImplicits @Inject()(val profile: JdbcProfile) {
 
   implicit val externalSourceMapper = MappedColumnType.base[ExternalSource, String](_.getName, ExternalSource.fromString)
   implicit val offerTypeMapper = MappedColumnType.base[OfferType, String](_.getName, OfferType.fromString)
+  implicit val presentationTypeMapper = MappedColumnType.base[PresentationType, String](_.getName, PresentationType.fromString)
   implicit val genreTypeMapper = MappedColumnType.base[GenreType, String](_.getName, GenreType.fromString)
   implicit val thingTypeMapper = MappedColumnType.base[ThingType, String](_.getName, ThingType.fromString)
   implicit val slugTypeMapper = MappedColumnType.base[Slug, String](_.value, Slug.raw)

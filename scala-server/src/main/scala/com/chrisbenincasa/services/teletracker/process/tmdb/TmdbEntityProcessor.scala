@@ -178,23 +178,26 @@ class TmdbEntityProcessor @Inject()(
       val availabilities = matchingMovie.collect {
         case matchedItem if matchedItem.offers.exists(_.nonEmpty) =>
           for {
-            offer <- matchedItem.offers.get.map(_.copy(presentation_type = None)).distinct // Ignore presentation type for now so we dont get dupes.
+            offer <- matchedItem.offers.get.distinct
             provider <- networksBySource.get(ExternalSource.JustWatch -> offer.provider_id.toString).toList
           } yield {
             val offerType = Try(offer.monetization_type.map(OfferType.fromJustWatchType)).toOption.flatten
+            val presentationType = Try(offer.presentation_type.map(PresentationType.fromJustWatchType)).toOption.flatten
+
             Availability(
-              None,
-              true,
-              offer.country,
-              None,
-              offer.date_created.map(new DateTime(_)),
-              None,
-              offerType,
-              offer.retail_price.map(BigDecimal.decimal),
-              offer.currency,
-              thing.id,
-              None,
-              provider.id
+              id = None,
+              isAvailable = true,
+              region = offer.country,
+              numSeasons = None,
+              startDate = offer.date_created.map(new DateTime(_)),
+              endDate = None,
+              offerType = offerType,
+              cost = offer.retail_price.map(BigDecimal.decimal),
+              currency = offer.currency,
+              thingId = thing.id,
+              tvShowEpisodeId = None,
+              networkId = provider.id,
+              presentationType = presentationType
             )
           }
       }.getOrElse(Nil)

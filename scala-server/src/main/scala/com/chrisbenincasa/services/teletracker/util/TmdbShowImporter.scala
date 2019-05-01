@@ -137,6 +137,8 @@ class TmdbShowImporter @Inject()(
             } yield {
               val episodeId = episodesByNumber.get(jwSeason.season_number.get -> jwEpisode.episode_number.get).flatMap(_.id)
               val offerType = Try(jwOffer.monetization_type.map(OfferType.fromJustWatchType)).toOption.flatten
+              val presentationType = Try(jwOffer.presentation_type.map(PresentationType.fromJustWatchType)).toOption.flatten
+
               Availability(
                 None,
                 true,
@@ -149,7 +151,8 @@ class TmdbShowImporter @Inject()(
                 jwOffer.currency,
                 None,
                 episodeId,
-                provider.id
+                provider.id,
+                presentationType
               )
             }
           }
