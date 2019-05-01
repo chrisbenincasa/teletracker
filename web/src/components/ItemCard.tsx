@@ -15,14 +15,10 @@ import {
   Menu,
   MenuItem,
 } from '@material-ui/core';
-<<<<<<< HEAD
-import React, { Component, Props } from 'react';
-=======
 import {
   Link as RouterLink
 } from 'react-router-dom';
 import React, { Component } from 'react';
->>>>>>> 7137576... initial scaffolding
 import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
 import { User, List } from '../types';
