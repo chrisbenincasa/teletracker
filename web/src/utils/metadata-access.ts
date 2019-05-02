@@ -21,22 +21,33 @@ const fallbacks = function<T, U>(x: ((x: T) => U | undefined)[]) {
   };
 };
 
-const posterExtractors = ['movie', 'show']
-  .map(t => makePath(t, 'poster_path'))
-  .map(p => _.property<Thing, string>(p));
+const extractor = <T = string>(field: string) => (
+  ['movie', 'show']
+    .map(t => makePath(t, field))
+    .map(p => _.property<Thing, T>(p))
+);
 
-// Provides the path of the poster image
+// Provides the path of metadata
 export const getPosterPath = (item: Thing) => {
-  return fallbacks<Thing, string>(posterExtractors)(item);
+  return fallbacks<Thing, string>(extractor('poster_path'))(item);
 };
-
-const backdropExtractors = ['movie', 'show']
-  .map(t => makePath(t, 'backdrop_path'))
-  .map(p => _.property<Thing, string>(p));
 
 export const getBackdropPath = (item: Thing) => {
-  return fallbacks<Thing, string>(backdropExtractors)(item);
+  return fallbacks<Thing, string>(extractor('backdrop_path'))(item);
 };
+
+export const getTitlePath = (item: Thing) => {
+  return fallbacks<Thing, string>(extractor('title'))(item);
+};
+
+export const getOverviewPath = (item: Thing) => {
+  return fallbacks<Thing, string>(extractor('overview'))(item);
+};
+
+export const getVoteAveragePath = (item: Thing) => {
+  return fallbacks<Thing, string>(extractor('vote_average'))(item);
+};
+
 
 type BackdropUrlSize = '300' | '780' | '1280' | 'original';
 
