@@ -38,7 +38,9 @@ export class TeletrackerApi {
 
     this.api.addRequestTransform(req => {
       if (this.token) {
-        Object.assign(req.headers, this.authHeaders());
+        Object.assign(req.params, {
+          token: this.token,
+        });
       }
     });
   }
