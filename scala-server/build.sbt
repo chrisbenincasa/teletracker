@@ -11,7 +11,7 @@ lazy val `teletracker-repo` = Project("teletracker-repo", file(".")).
 
 lazy val server = project.in(file("server")).
   settings(
-    organization := "com.chrisbenincasa.services",
+    organization := "com.teletracker",
     name := "teletracker",
     version := s"0.1-${BuildConfig.Revision.revision}",
 
@@ -62,14 +62,14 @@ lazy val server = project.in(file("server")).
     Test / fork := true,
 
     // Local running / testing
-    mainClass in reStart := Some("com.chrisbenincasa.services.teletracker.TeletrackerServerMain"),
+    mainClass in reStart := Some("com.teletracker.service.TeletrackerServerMain"),
     envVars in reStart := Map(
       "API_KEY" -> System.getenv("API_KEY"),
       "JWT_SECRET" -> System.getenv("JWT_SECRET")
     ),
 
     // Assmebly JAR
-    mainClass in assembly := Some("com.chrisbenincasa.services.teletracker.Teletracker"),
+    mainClass in assembly := Some("com.teletracker.service.Teletracker"),
     test in assembly := {},
     assemblyMergeStrategy in assembly := {
       case PathList("META-INF", xs @ _*) =>
@@ -116,7 +116,7 @@ lazy val server = project.in(file("server")).
     imageNames in docker := Seq(
       ImageName(s"chrisbenincasa/${name.value}:latest"),
       ImageName(
-        namespace = Some("chrisbenincasa"),
+          namespace = Some("chrisbenincasa"),
         repository = name.value,
         tag = Some("v" + version.value)
       )
@@ -128,14 +128,14 @@ lazy val server = project.in(file("server")).
   enablePlugins(FlywayPlugin, DockerPlugin)
 
 lazy val `run-db-migrations` = inputKey[Unit]("generate ddl")
-`run-db-migrations` := runInputTask(Runtime, "com.chrisbenincasa.services.teletracker.tools.RunDatabaseMigrationMain").evaluated
+`run-db-migrations` := runInputTask(Runtime, "com.teletracker.service.tools.RunDatabaseMigrationMain").evaluated
 
 lazy val `reset-db` = taskKey[Unit]("reset-db")
 
 `reset-db` := Def.sequential(
   `run-db-migrations`.toTask(" -action=clean"),
   `run-db-migrations`.toTask(" -action=migrate"),
-  (runMain in Runtime).toTask(" com.chrisbenincasa.services.teletracker.tools.RunAllSeedsMain")
+  (runMain in Runtime).toTask(" com.teletracker.service.tools.RunAllSeedsMain")
 ).value
 
 resourceGenerators in Compile += Def.task {
