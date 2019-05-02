@@ -15,6 +15,12 @@ case class UserRow(
   def toFull: User = User.fromRow(this)
 }
 
+case class UserNetworkPreference(
+  id: Int,
+  userId: Int,
+  networkId: Int
+)
+
 object User {
   def fromRow(userRow: UserRow): User = {
     require(userRow.id.isDefined)
