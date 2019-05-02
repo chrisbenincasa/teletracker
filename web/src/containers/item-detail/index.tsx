@@ -1,5 +1,6 @@
 import {
   CardMedia,
+  CircularProgress,
   createStyles,
   CssBaseline,
   LinearProgress,
@@ -19,7 +20,13 @@ import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { Thing, Availability } from '../../types';
-import { getBackdropUrl, getPosterPath } from '../../utils/metadata-access';
+import {
+  getBackdropUrl,
+  getPosterPath,
+  getTitlePath,
+  getOverviewPath,
+  getVoteAveragePath
+} from '../../utils/metadata-access';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -32,6 +39,7 @@ const styles = (theme: Theme) =>
       backgroundSize: 'cover',
       backgroundPosition: '50% 50%',
       padding: '3em 0',
+      display: 'flex',
     },
     heroContent: {
       maxWidth: 600,
@@ -43,8 +51,25 @@ const styles = (theme: Theme) =>
       width: '100%',
       paddingTop: '150%',
     },
-    paper: {
-      width: '250px',
+    imageContainer: {
+      width: 250,
+      display: 'flex',
+      flex: '0 1 auto',
+      marginLeft: 20,
+    },
+    itemInformationContainer: {
+      width: 250,
+      display: 'flex',
+      flex: '1 1 auto',
+      backgroundColor: 'transparent',
+      color: theme.palette.grey[50],
+      flexDirection: 'column',
+      marginLeft: 20,
+    },
+    descriptionContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      flex: '1 0 auto',
     },
   });
 
@@ -106,6 +131,23 @@ class ItemDetails extends Component<Props, State> {
     } else {
       return null;
     }
+  };
+
+  renderDescriptiveDetails = (thing: Thing) => {
+    let title = getTitlePath(thing) || '';
+    let overview = getOverviewPath(thing) || '';
+    let voteAverage =Number(getVoteAveragePath(thing)) || 0;
+
+      return (
+        <div className={this.props.classes.descriptionContainer}>
+          <Typography color="inherit" variant='h4'>
+            {`${title} (${voteAverage * 10})`} <CircularProgress variant="static" value={voteAverage * 10} />
+          </Typography>
+          <Typography color="inherit">
+            {overview}
+          </Typography>
+        </div>
+      );
   };
 
   backdropStyle = (item: Thing) => {
@@ -178,23 +220,27 @@ class ItemDetails extends Component<Props, State> {
             className={this.props.classes.backdropImage}
             style={backdropStyle}
           >
-            <Paper className={this.props.classes.paper}>
+            <Paper className={this.props.classes.imageContainer}>
               {this.renderPoster(itemDetail)}
             </Paper>
-            <span style={{ color: 'white' }}>
-              <Typography color="inherit">
-                Rent:
-                {availabilities.rent ? (
-                  <div>{this.renderOfferDetails(availabilities.rent)}</div>
-                ) : null}
-              </Typography>
-              <Typography color="inherit">
-                Buy:
-                {availabilities.buy ? (
-                  <div>{this.renderOfferDetails(availabilities.buy)}</div>
-                ) : null}
-              </Typography>
-            </span>
+            <Paper className={this.props.classes.itemInformationContainer}>
+              {this.renderDescriptiveDetails(itemDetail)}
+              <div style={{ color: 'white' }}>
+                <Typography color="inherit">
+                  Rent:
+                  {availabilities.rent ? (
+                    <div>{this.renderOfferDetails(availabilities.rent)}</div>
+                  ) : null}
+                </Typography>
+                <Typography color="inherit">
+                  Buy:
+                  {availabilities.buy ? (
+                    <div>{this.renderOfferDetails(availabilities.buy)}</div>
+                  ) : null}
+                </Typography>
+              </div>
+            </Paper>
+
           </div>
         </div>
       </React.Fragment>
