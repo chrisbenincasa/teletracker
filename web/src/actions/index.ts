@@ -1,26 +1,31 @@
 import { all, put, select, take, takeLeading } from '@redux-saga/core/effects';
-import { Action, Dispatch } from 'redux';
+import { FSA } from 'flux-standard-action';
 import { REHYDRATE } from 'redux-persist';
-import { ThunkAction } from 'redux-thunk';
 import { STARTUP } from '../constants';
+import { SET_TOKEN, TOKEN_SET } from '../constants/auth';
 import { AppState } from '../reducers';
 import { TeletrackerApi } from '../utils/api-client';
 import {
+  AuthCheckInitiated,
   checkAuthSaga,
   loginSaga,
   logoutSaga,
-  AuthCheckInitiated,
 } from './auth';
 import {
-  retrieveListSaga,
   addToListSaga,
+  retrieveListSaga,
   retrieveListsSaga,
   updateListSaga,
 } from './lists';
+import { loadNetworksSaga } from './metadata';
 import { searchSaga } from './search';
-import { retrieveUserSaga } from './user';
-import { SET_TOKEN, TOKEN_SET } from '../constants/auth';
-import { FSA } from 'flux-standard-action';
+import {
+  addNetworkToUserSaga,
+  retrieveUserSaga,
+  updateUserPreferencesSaga,
+  updateUserSaga,
+  createNewListSaga,
+} from './user';
 import { createBasicAction } from './utils';
 
 type StartupAction = FSA<typeof STARTUP>;
@@ -64,5 +69,10 @@ export function* root() {
     logoutSaga(),
     retrieveUserSaga(),
     updateListSaga(),
+    loadNetworksSaga(),
+    addNetworkToUserSaga(),
+    updateUserPreferencesSaga(),
+    updateUserSaga(),
+    createNewListSaga(),
   ]);
 }

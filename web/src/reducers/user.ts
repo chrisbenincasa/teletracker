@@ -1,19 +1,32 @@
-import { UserSelfRetrieveSuccessAction } from '../actions/user';
+import {
+  UserSelfRetrieveSuccessAction,
+  UserAddNetworkAction,
+  UserActionTypes,
+} from '../actions/user';
 import {
   USER_SELF_RETRIEVE_INITIATED,
   USER_SELF_RETRIEVE_SUCCESS,
+  USER_SELF_ADD_NETWORK,
+  USER_SELF_CREATE_LIST,
+  USER_SELF_CREATE_LIST_SUCCESS,
 } from '../constants/user';
 import { User } from '../types';
 import { flattenActions, handleAction } from './utils';
 
+export type Loading = { [X in UserActionTypes['type']]: boolean };
+
 export interface State {
   retrievingSelf: boolean;
   self: User | undefined;
+  updatingSelf: boolean;
+  loading: Partial<Loading>;
 }
 
 const initialState: State = {
   retrievingSelf: false,
   self: undefined,
+  updatingSelf: false,
+  loading: {},
 };
 
 const selfRetrieveInitiated = handleAction(
@@ -37,8 +50,41 @@ const selfRetrieveSuccess = handleAction(
   },
 );
 
+const userAddNetwork = handleAction(USER_SELF_ADD_NETWORK, (state: State) => {
+  return {
+    ...state,
+    updatingSelf: true,
+  } as State;
+});
+
+const userCreateList = handleAction(USER_SELF_CREATE_LIST, (state: State) => {
+  return {
+    ...state,
+    loading: {
+      ...state.loading,
+      [USER_SELF_CREATE_LIST]: true,
+    },
+  } as State;
+});
+
+const userCreateListSuccess = handleAction(
+  USER_SELF_CREATE_LIST_SUCCESS,
+  (state: State) => {
+    return {
+      ...state,
+      loading: {
+        ...state.loading,
+        [USER_SELF_CREATE_LIST]: false,
+      },
+    } as State;
+  },
+);
+
 export default flattenActions(
   initialState,
   selfRetrieveInitiated,
   selfRetrieveSuccess,
+  userAddNetwork,
+  userCreateList,
+  userCreateListSuccess,
 );
