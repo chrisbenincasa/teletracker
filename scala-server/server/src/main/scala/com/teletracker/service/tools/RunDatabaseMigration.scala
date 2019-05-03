@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object RunDatabaseMigrationMain extends RunDatabaseMigration
 
 class RunDatabaseMigration extends App {
-  val action = flag[String]("action", "The migration action to perform")
+  val action = flag[String]("action", "migrate", "The migration action to perform")
   val loc = flag("loc", Option(System.getProperty("java.io.tmpdir")).getOrElse("/tmp"), "The location to look for migration SQL")
 
   override protected def modules: Seq[Module] = Modules()

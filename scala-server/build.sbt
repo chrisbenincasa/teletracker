@@ -123,20 +123,20 @@ lazy val server = project.in(file("server")).
     ),
     buildOptions in docker := BuildOptions(
       pullBaseImage = BuildOptions.Pull.Always
-    )
+    ),
+
+    `run-db-migrations` := runInputTask(Runtime, "com.teletracker.service.tools.RunDatabaseMigrationMain").evaluated,
+
+    `reset-db` := Def.sequential(
+      `run-db-migrations`.toTask(" -action=clean"),
+      `run-db-migrations`.toTask(" -action=migrate"),
+      (runMain in Runtime).toTask(" com.teletracker.service.tools.RunAllSeedsMain")
+    ).value
   ).
   enablePlugins(FlywayPlugin, DockerPlugin)
 
 lazy val `run-db-migrations` = inputKey[Unit]("generate ddl")
-`run-db-migrations` := runInputTask(Runtime, "com.teletracker.service.tools.RunDatabaseMigrationMain").evaluated
-
 lazy val `reset-db` = taskKey[Unit]("reset-db")
-
-`reset-db` := Def.sequential(
-  `run-db-migrations`.toTask(" -action=clean"),
-  `run-db-migrations`.toTask(" -action=migrate"),
-  (runMain in Runtime).toTask(" com.teletracker.service.tools.RunAllSeedsMain")
-).value
 
 resourceGenerators in Compile += Def.task {
   ((resourceManaged in Compile).value / "db"  ** "*").get

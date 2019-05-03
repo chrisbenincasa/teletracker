@@ -1,4 +1,4 @@
-import { ObjectMetadata } from "./external/themoviedb/Movie";
+import { ObjectMetadata } from './external/themoviedb/Movie';
 
 export interface List {
   id: number;
@@ -10,6 +10,13 @@ export interface User {
   id: number;
   name: string;
   lists: List[];
+  networkSubscriptions: Network[];
+  userPreferences: UserPreferences;
+}
+
+export interface UserPreferences {
+  presentationTypes: ('sd' | 'hd' | '4k')[];
+  showOnlyNetworkSubscriptions: boolean;
 }
 
 export interface Thing {
@@ -47,4 +54,6 @@ export interface Network {
   name: string;
   slug: string;
   shortname?: string;
+  homepage?: string;
+  origin?: string;
 }

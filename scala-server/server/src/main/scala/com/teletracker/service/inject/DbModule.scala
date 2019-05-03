@@ -2,11 +2,12 @@ package com.teletracker.service.inject
 
 import com.teletracker.service.config.TeletrackerConfig
 import com.teletracker.service.db.CustomPostgresProfile
-import com.teletracker.service.db.model.{ExternalSource, GenreType, OfferType, PresentationType, ThingType}
+import com.teletracker.service.db.model.{ExternalSource, GenreType, OfferType, PresentationType, ThingType, UserPreferences}
 import com.teletracker.service.util.Slug
 import com.teletracker.service.util.execution.ExecutionContextProvider
 import com.google.inject.{Provides, Singleton}
 import com.twitter.inject.TwitterModule
+import io.circe.Json
 import javax.inject.Inject
 import slick.jdbc.{DriverDataSource, JdbcProfile}
 import slick.util.AsyncExecutor
@@ -53,7 +54,9 @@ class DbProvider @Inject()(
   def getDB: Database = db
 }
 
-class DbImplicits @Inject()(val profile: JdbcProfile) {
+class DbImplicits @Inject()(val profile: CustomPostgresProfile) {
+  import com.teletracker.service.util.json.circe._
+  import io.circe.syntax._
   import profile.api._
 
   implicit val externalSourceMapper = MappedColumnType.base[ExternalSource, String](_.getName, ExternalSource.fromString)
@@ -62,6 +65,8 @@ class DbImplicits @Inject()(val profile: JdbcProfile) {
   implicit val genreTypeMapper = MappedColumnType.base[GenreType, String](_.getName, GenreType.fromString)
   implicit val thingTypeMapper = MappedColumnType.base[ThingType, String](_.getName, ThingType.fromString)
   implicit val slugTypeMapper = MappedColumnType.base[Slug, String](_.value, Slug.raw)
+
+  implicit val userPrefsToJson = MappedColumnType.base[UserPreferences, Json](_.asJson, _.as[UserPreferences].right.get)
 }
 
 object CustomAsyncExecutor {

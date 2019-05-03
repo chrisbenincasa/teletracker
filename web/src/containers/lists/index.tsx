@@ -2,6 +2,7 @@ import {
   Button,
   Card,
   CardContent,
+  CardMedia,
   createStyles,
   CssBaseline,
   Dialog,
@@ -17,7 +18,6 @@ import {
   Typography,
   withStyles,
   WithStyles,
-  CardMedia,
 } from '@material-ui/core';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -28,13 +28,15 @@ import {
   ListRetrieveAllInitiated,
   ListRetrieveAllPayload,
 } from '../../actions/lists';
+import { createList, UserCreateListPayload } from '../../actions/user';
 import withUser, { WithUserProps } from '../../components/withUser';
+import { USER_SELF_CREATE_LIST } from '../../constants/user';
 import { AppState } from '../../reducers';
-import { layoutStyles } from '../../styles';
-import { Thing } from "../../types";
-import { List } from '../../types';
-import { getPosterPath, getPosterUrl } from '../../utils/metadata-access';
 import { ListsByIdMap } from '../../reducers/lists';
+import { Loading } from '../../reducers/user';
+import { layoutStyles } from '../../styles';
+import { List, Thing } from '../../types';
+import { getPosterUrl } from '../../utils/metadata-access';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -70,10 +72,12 @@ interface OwnProps {
   isCheckingAuth: boolean;
   listsById: ListsByIdMap;
   loadingLists: boolean;
+  loading: Partial<Loading>;
 }
 
 interface DispatchProps {
   ListRetrieveAllInitiated: (payload?: ListRetrieveAllPayload) => void;
+  createList: (payload?: UserCreateListPayload) => void;
 }
 
 type Props = OwnProps &
@@ -83,6 +87,7 @@ type Props = OwnProps &
 
 interface State {
   createDialogOpen: boolean;
+  listName: string;
 }
 
 type PlaceholderItem = { placeholder: true };
@@ -91,10 +96,20 @@ const makePlaceholder: () => PlaceholderItem = () => ({ placeholder: true });
 class Lists extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
+    listName: '',
   };
 
-  componentWillMount() {
+  componentDidMount() {
     this.props.ListRetrieveAllInitiated();
+  }
+
+  componentDidUpdate(oldProps: Props) {
+    if (
+      Boolean(oldProps.loading[USER_SELF_CREATE_LIST]) &&
+      !Boolean(this.props.loading[USER_SELF_CREATE_LIST])
+    ) {
+      this.handleClose();
+    }
   }
 
   refreshUser = () => {
@@ -157,6 +172,12 @@ class Lists extends Component<Props, State> {
     this.setState({ createDialogOpen: false });
   };
 
+  handleCreateListSubmit = () => {
+    if (this.state.listName.length > 0) {
+      this.props.createList({ name: this.state.listName });
+    }
+  };
+
   renderList = (userList: List) => {
     let listWithDetails = this.props.listsById[userList.id];
 
@@ -191,6 +212,8 @@ class Lists extends Component<Props, State> {
       return this.renderLoading();
     } else {
       let { classes, userSelf } = this.props;
+      let isLoading = Boolean(this.props.loading[USER_SELF_CREATE_LIST]);
+
       return (
         <div>
           <CssBaseline />
@@ -219,10 +242,6 @@ class Lists extends Component<Props, State> {
               >
                 <DialogTitle>Create a List</DialogTitle>
                 <DialogContent>
-                  {/* <DialogContentText>
-                    To subscribe to this website, please enter your email
-                    address here. We will send updates occasionally.
-                  </DialogContentText> */}
                   <TextField
                     autoFocus
                     margin="dense"
@@ -230,13 +249,23 @@ class Lists extends Component<Props, State> {
                     label="Name"
                     type="email"
                     fullWidth
+                    value={this.state.listName}
+                    onChange={e => this.setState({ listName: e.target.value })}
                   />
                 </DialogContent>
                 <DialogActions>
-                  <Button onClick={this.handleClose} color="primary">
+                  <Button
+                    disabled={isLoading}
+                    onClick={this.handleClose}
+                    color="primary"
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={this.handleClose} color="primary">
+                  <Button
+                    disabled={isLoading}
+                    onClick={this.handleCreateListSubmit}
+                    color="primary"
+                  >
                     Create
                   </Button>
                 </DialogActions>
@@ -258,6 +287,7 @@ const mapStateToProps = (appState: AppState) => {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     loadingLists: appState.lists.operation.inProgress,
     listsById: appState.lists.listsById,
+    loading: appState.userSelf.loading,
   };
 };
 
@@ -265,6 +295,7 @@ const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
       ListRetrieveAllInitiated,
+      createList,
     },
     dispatch,
   );

@@ -1,6 +1,6 @@
 import * as apisauce from 'apisauce';
 import { merge } from 'ramda';
-import { List, User } from '../types';
+import { List, User, Network } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import { Thing } from '../types';
 import _ from 'lodash';
@@ -38,9 +38,15 @@ export class TeletrackerApi {
 
     this.api.addRequestTransform(req => {
       if (this.token) {
-        Object.assign(req.params, {
-          token: this.token,
-        });
+        if (req.params) {
+          Object.assign(req.params, {
+            token: this.token,
+          });
+        } else {
+          req.params = {
+            token: this.token,
+          };
+        }
       }
     });
   }
@@ -85,6 +91,12 @@ export class TeletrackerApi {
     );
   }
 
+  async updateUserSelf(user: User) {
+    return this.withTokenCheck(async () => {
+      return this.api.put('/api/v1/users/self', { user });
+    });
+  }
+
   async loginUser(email: string, password: string) {
     const data = { email, password };
     return this.api.post<any>('/api/v1/auth/login', data).then(response => {
@@ -123,9 +135,12 @@ export class TeletrackerApi {
 
   async createList(name: string) {
     return this.withTokenCheck(async () => {
-      return this.api.post<any>('/api/v1/users/self/lists', {
-        name,
-      });
+      return this.api.post<DataResponse<{ id: number }>>(
+        '/api/v1/users/self/lists',
+        {
+          name,
+        },
+      );
     });
   }
 
@@ -239,6 +254,10 @@ export class TeletrackerApi {
     return this.withTokenCheck(async () => {
       return this.api.get<any>(`/api/v1/things/${showId}/user-details`);
     });
+  }
+
+  async getNetworks(): Promise<TeletrackerResponse<Network[]>> {
+    return this.api.get<DataResponse<Network[]>>('/api/v1/networks');
   }
 
   private withTokenCheck<T>(f: () => Promise<T>): Promise<T> {

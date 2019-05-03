@@ -12,7 +12,7 @@ trait ModelInstances extends JodaInstances {
   implicit def javaEnumDecoder[A <: Enum[A] : ClassTag]: Decoder[A] = Decoder.instance { a =>
     a.focus match {
       case Some(v) if v.isString =>
-        classTag[A].runtimeClass.asInstanceOf[Class[A]].getEnumConstants.find(_.name().equalsIgnoreCase(v.asString.get)) match {
+        classTag[A].runtimeClass.asInstanceOf[Class[A]].getEnumConstants.find(_.toString().equalsIgnoreCase(v.asString.get)) match {
           case Some(v2) => Right(v2)
           case None => Left(DecodingFailure(s"Could not find value ${v} in enum", a.history))
         }
@@ -48,6 +48,9 @@ trait ModelInstances extends JodaInstances {
 
   implicit val trackedListEncoder = deriveEncoder[TrackedList]
   implicit val trackedListDecoder = deriveDecoder[TrackedList]
+
+  implicit val userPrefsEncoder = deriveEncoder[UserPreferences]
+  implicit val userPrefsDencoder = deriveDecoder[UserPreferences]
 
   implicit val userDecoder = deriveDecoder[User]
   implicit val userEncoder = deriveEncoder[User]

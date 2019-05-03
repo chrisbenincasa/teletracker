@@ -4,7 +4,7 @@ import com.teletracker.service.auth.RequestContext._
 import com.teletracker.service.auth.jwt.JwtVendor
 import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
 import com.teletracker.service.controllers.utils.CanParseFieldFilter
-import com.teletracker.service.db.model.Event
+import com.teletracker.service.db.model.{Event, User}
 import com.teletracker.service.db.{ThingsDbAccess, UsersDbAccess}
 import com.teletracker.service.model.DataResponse
 import com.teletracker.service.util.HasFieldsFilter
@@ -12,9 +12,12 @@ import com.teletracker.service.util.json.circe._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.{QueryParam, RouteParam}
+import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
+import io.circe.syntax._
+import io.circe.parser._
 
 class UserController @Inject()(
   usersDbAccess: UsersDbAccess,
@@ -39,18 +42,26 @@ class UserController @Inject()(
           if (result.isEmpty) {
             response.status(404)
           } else {
-            val user = result.head._1
-            val lists = result.collect {
-              case (_, Some(list), thingOpt) => (list, thingOpt)
-            }.groupBy(_._1).map {
-              case (list, matches) => list.toFull.withThings(matches.flatMap(_._2).toList)
-            }
-
-            DataResponse(
-              user.toFull.withLists(lists.toList)
-            )
+            DataResponse.complex(result.get)
           }
         })
+      }
+
+      put("/:userId") { request: Request =>
+        decode[UpdateUserRequest](request.contentString) match {
+          case Right(UpdateUserRequest(updatedUser)) =>
+            usersDbAccess.updateUser(updatedUser).flatMap(_ => {
+              usersDbAccess.findUserAndLists(request.authContext.user.id).map(result => {
+                if (result.isEmpty) {
+                  response.status(404)
+                } else {
+                  DataResponse.complex(result.get)
+                }
+              })
+            })
+
+          case Left(err) => throw err
+        }
       }
 
       get("/:userId/lists") { req: GetUserListsRequest =>
@@ -59,16 +70,9 @@ class UserController @Inject()(
           if (result.isEmpty) {
             response.status(404)
           } else {
-            val user = result.head._1
-            val lists = result.collect {
-              case (_, Some(list), thingOpt) => (list, thingOpt)
-            }.groupBy(_._1).map {
-              case (list, matches) => list.toFull.withThings(matches.flatMap(_._2).toList)
-            }
-
             response.ok.contentTypeJson().body(
               DataResponse.complex(
-                user.toFull.withLists(lists.toList)
+                result.get
               )
             )
           }
@@ -254,4 +258,9 @@ case class EventCreate(
 case class CreateUserResponse(
   userId: Int,
   token: String
+)
+
+@JsonCodec
+case class UpdateUserRequest(
+  user: User
 )

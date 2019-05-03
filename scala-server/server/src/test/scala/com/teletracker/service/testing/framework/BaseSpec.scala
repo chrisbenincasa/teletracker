@@ -1,12 +1,12 @@
 package com.teletracker.service.testing.framework
 
-import com.chrisbenincasa.services.teletracker.TeletrackerServer
-import com.chrisbenincasa.services.teletracker.config.TeletrackerConfig
-import com.chrisbenincasa.services.teletracker.inject.{DbProvider, Modules}
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.google.inject.util.{Modules => GuiceModules}
 import com.google.inject.{Binder, Guice, Module}
+import com.teletracker.service.TeletrackerServer
+import com.teletracker.service.config.TeletrackerConfig
+import com.teletracker.service.inject.{DbProvider, Modules}
 import com.twitter.finatra.http.EmbeddedHttpServer
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Assertions, BeforeAndAfterAll, FlatSpec, Inside}
@@ -29,7 +29,7 @@ trait BaseSpec extends FlatSpec with Assertions with Inside with BeforeAndAfterA
       new Module {
         import net.ceedubs.ficus.Ficus._
         import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-        import com.chrisbenincasa.services.teletracker.config.CustomReaders._
+        import com.teletracker.service.config.CustomReaders._
 
         override def configure(binder: Binder): Unit = {
           val loader =

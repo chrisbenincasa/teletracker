@@ -1,9 +1,9 @@
 package com.teletracker.service.testing
 
-import com.chrisbenincasa.services.teletracker.db.{NetworksDbAccess, ThingsDbAccess, TvShowDbAccess}
-import com.chrisbenincasa.services.teletracker.db.model._
-import com.chrisbenincasa.services.teletracker.testing.framework.BaseSpecWithServer
-import com.chrisbenincasa.services.teletracker.util.Slug
+import com.teletracker.service.db._
+import com.teletracker.service.db.model._
+import com.teletracker.service.testing.framework.BaseSpecWithServer
+import com.teletracker.service.util.Slug
 import org.joda.time.DateTime
 
 class TvShowSpec extends BaseSpecWithServer {
@@ -34,7 +34,7 @@ class TvShowSpec extends BaseSpecWithServer {
 
     val availability =
       thingDbAccess.saveAvailability(
-        Availability(None, true, Some("US"), None, None, None, Some(OfferType.Subscription), None, None, None, Some(episode.id.get), Some(network.id.get))
+        Availability(None, true, Some("US"), None, None, None, Some(OfferType.Subscription), None, None, None, Some(episode.id.get), Some(network.id.get), None)
       ).await()
 
     val foundShow = thingDbAccess.findShowById(show.id.get, withAvailability = true).await()

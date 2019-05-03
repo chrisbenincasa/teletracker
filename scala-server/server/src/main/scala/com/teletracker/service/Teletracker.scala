@@ -14,7 +14,7 @@ import com.twitter.finatra.http.filters.{LoggingMDCFilter, TraceIdMDCFilter}
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.inject.Logging
 import com.twitter.util.Await
-import com.twitter.util.TimeConversions._
+import com.twitter.conversions.DurationOps._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -23,7 +23,8 @@ object TeletrackerServerMain extends TeletrackerServer
 class TeletrackerServer(
   override protected val modules: Seq[Module] = Modules()
 ) extends HttpServer with Logging  {
-  override protected def defaultFinatraHttpPort: String = ":3001"
+
+  override protected def defaultHttpPort: String = ":3001"
 
   override protected def jacksonModule: Module = new JsonModule
 
