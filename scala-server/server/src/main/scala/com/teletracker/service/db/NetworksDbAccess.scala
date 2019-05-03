@@ -26,7 +26,7 @@ class NetworksDbAccess @Inject()(
     }
   }
 
-  def findAllNetworks() = {
+  def findAllNetworks(): Future[Seq[(NetworkReference, Network)]] = {
     run {
       networkReferences.query.flatMap(ref => ref.networkId_fk.map(ref -> _)).result
     }

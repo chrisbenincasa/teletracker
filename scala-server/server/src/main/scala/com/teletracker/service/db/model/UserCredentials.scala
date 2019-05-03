@@ -9,7 +9,11 @@ case class UserCredential(
   salt: Array[Byte]
 )
 
-class UserCredentials @Inject()(val driver: JdbcProfile) {
+class UserCredentials @Inject()(
+  val driver: JdbcProfile,
+  val users: Users
+) {
+
   import driver.api._
 
   type TableType = UserCredentialsTable
@@ -20,7 +24,7 @@ class UserCredentials @Inject()(val driver: JdbcProfile) {
     def salt = column[Array[Byte]]("salt")
     def * = (userId, password, salt) <> (UserCredential.tupled, UserCredential.unapply)
 
-    def user = foreignKey("user_credentials_user_id", userId, new Users(driver).query)(_.id, onUpdate = ForeignKeyAction.Restrict, onDelete = ForeignKeyAction.Cascade)
+    def user = foreignKey("user_credentials_user_id", userId, users.query)(_.id, onUpdate = ForeignKeyAction.Restrict, onDelete = ForeignKeyAction.Cascade)
   }
 
   val query = TableQuery[UserCredentialsTable]

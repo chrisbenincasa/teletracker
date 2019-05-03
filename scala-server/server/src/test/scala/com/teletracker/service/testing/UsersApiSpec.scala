@@ -1,17 +1,17 @@
 package com.teletracker.service.testing
 
-import com.chrisbenincasa.services.teletracker.controllers.{CreateListResponse, CreateUserRequest, CreateUserResponse}
-import com.chrisbenincasa.services.teletracker.db.ThingsDbAccess
-import com.chrisbenincasa.services.teletracker.db.model.{Thing, ThingType, TrackedList, User}
-import com.chrisbenincasa.services.teletracker.model.DataResponse
-import com.chrisbenincasa.services.teletracker.testing.framework.BaseSpecWithServer
-import com.chrisbenincasa.services.teletracker.util.Slug
-import com.chrisbenincasa.services.teletracker.util.json.circe._
+import com.teletracker.service.controllers.{CreateListResponse, CreateUserRequest, CreateUserResponse}
+import com.teletracker.service.db.ThingsDbAccess
+import com.teletracker.service.db.model.{Thing, ThingType, TrackedList, User}
+import com.teletracker.service.model.DataResponse
+import com.teletracker.service.testing.framework.BaseSpecWithServer
+import com.teletracker.service.util.Slug
+import com.teletracker.service.util.json.circe._
 import com.twitter.finagle.http.Status
-import io.circe.parser._
 import io.circe.generic.auto._
-import java.util.UUID
+import io.circe.parser._
 import org.joda.time.DateTime
+import java.util.UUID
 
 class UsersApiSpec extends BaseSpecWithServer {
   "Users API" should "create a default list for a new user" in {
@@ -48,9 +48,12 @@ class UsersApiSpec extends BaseSpecWithServer {
       headers = Map("Authorization" -> s"Bearer $token")
     )
 
-    val deser = parse(userListsResponse.contentString).flatMap(_.as[DataResponse[User]]).right.get
-
-    println(deser)
+    parse(userListsResponse.contentString).flatMap(_.as[DataResponse[User]]) match {
+      case Left(err) =>
+        fail(err)
+      case Right(value) =>
+        println(value)
+    }
   }
 
   it should "respond with a user's specific list" in {

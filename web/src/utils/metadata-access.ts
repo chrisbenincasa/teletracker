@@ -1,8 +1,7 @@
 import _ from 'lodash';
-import { Thing } from "../types";
+import { Thing } from '../types';
 
 const tmdbMetadataPath = ['metadata', 'themoviedb'];
-const tmdbMoviePath = tmdbMetadataPath.concat(['themoviedb.movie']);
 
 const makePath = (typ: string, field: string) => {
   return ['metadata', 'themoviedb', typ, field];
@@ -21,11 +20,10 @@ const fallbacks = function<T, U>(x: ((x: T) => U | undefined)[]) {
   };
 };
 
-const extractor = <T = string>(field: string) => (
+const extractor = <T = string>(field: string) =>
   ['movie', 'show']
     .map(t => makePath(t, field))
-    .map(p => _.property<Thing, T>(p))
-);
+    .map(p => _.property<Thing, T>(p));
 
 // Provides the path of metadata
 export const getPosterPath = (item: Thing) => {
@@ -47,7 +45,6 @@ export const getOverviewPath = (item: Thing) => {
 export const getVoteAveragePath = (item: Thing) => {
   return fallbacks<Thing, string>(extractor('vote_average'))(item);
 };
-
 
 type BackdropUrlSize = '300' | '780' | '1280' | 'original';
 
@@ -81,10 +78,6 @@ export const getBackdropUrl = (item: Thing, size: BackdropUrlSize) => {
   if (path) return makeUrl(path, size);
 };
 
-const descriptionExtractors = ['movie', 'show']
-  .map(t => makePath(t, 'overview'))
-  .map(p => _.property<Thing, string>(p));
-
 export const getDescription = (item: Thing) => {
-  return fallbacks<Thing, string>(descriptionExtractors)(item);
+  return fallbacks<Thing, string>(extractor('overview'))(item);
 };

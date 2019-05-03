@@ -43,7 +43,7 @@ object BuildConfig {
   }
   
   object versions {
-    lazy val twitter = "18.6.0"
+    lazy val twitter = "19.4.0"
 
     lazy val circe = "0.9.3"
   }

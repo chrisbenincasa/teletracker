@@ -25,7 +25,7 @@ public enum PresentationType {
             }
         }
 
-        throw new IllegalArgumentException("Could not find OfferType with name " + s);
+        throw new IllegalArgumentException("Could not find PresentationType with name " + s);
     }
 
     public static PresentationType fromJustWatchType(final String s) {

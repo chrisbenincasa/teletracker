@@ -1,14 +1,13 @@
 package com.teletracker.service.testing
 
-import com.chrisbenincasa.services.teletracker.auth.jwt.JwtVendor
-import com.chrisbenincasa.services.teletracker.controllers.EventCreate
-import com.chrisbenincasa.services.teletracker.db.UsersDbAccess
-import com.chrisbenincasa.services.teletracker.db.model.{Event, EventWithTarget}
-import com.chrisbenincasa.services.teletracker.model.DataResponse
-import com.chrisbenincasa.services.teletracker.testing.framework.BaseSpecWithServer
-import com.chrisbenincasa.services.teletracker.util.json.circe._
-import io.circe.parser._
+import com.teletracker.service.controllers.EventCreate
+import com.teletracker.service.db.UsersDbAccess
+import com.teletracker.service.db.model.EventWithTarget
+import com.teletracker.service.model.DataResponse
+import com.teletracker.service.testing.framework.BaseSpecWithServer
+import com.teletracker.service.util.json.circe._
 import io.circe.generic.auto._
+import io.circe.parser._
 
 class EventsSpec extends BaseSpecWithServer {
   "Events" should "should create and read events for a user" in {

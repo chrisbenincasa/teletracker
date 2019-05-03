@@ -26,11 +26,11 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Link, Route, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
-// import startup from '../../actions';
 import { checkAuth, logout } from '../../actions/auth';
 import { search } from '../../actions/search';
 import { AppState } from '../../reducers';
 import About from '../about';
+import Account from '../account';
 import Home from '../home';
 import ListDetail from '../list-detail';
 import ItemDetail from '../item-detail';
@@ -215,7 +215,12 @@ class App extends Component<Props, State> {
           disableAutoFocusItem
         >
           <MenuItem onClick={this.handleClose}>Profile</MenuItem>
-          <MenuItem onClick={this.handleClose}>My account</MenuItem>
+          <MenuItem
+            component={props => <Link {...props} to="/account" />}
+            onClick={this.handleClose}
+          >
+            My account
+          </MenuItem>
           <MenuItem onClick={this.handleLogout}>Logout</MenuItem>
         </Menu>
       </div>
@@ -263,7 +268,7 @@ class App extends Component<Props, State> {
         <div>
           <main>
             <Route exact path="/" component={Home} />
-            <Route exact path="/about-us" component={About} />
+            <Route exact path="/account" component={Account} />
             <Route exact path="/login" component={Login} />
             <Route exact path="/lists" component={Lists} />
             <Route exact path="/lists/:id" component={ListDetail} />

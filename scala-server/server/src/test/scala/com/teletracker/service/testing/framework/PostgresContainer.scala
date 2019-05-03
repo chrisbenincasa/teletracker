@@ -1,17 +1,17 @@
 package com.teletracker.service.testing.framework
 
-import com.chrisbenincasa.services.teletracker.db.model._
-import com.chrisbenincasa.services.teletracker.inject.DbProvider
 import com.google.inject.Injector
 import com.spotify.docker.client.DockerClient.AttachParameter.{LOGS, STDERR, STDOUT, STREAM}
 import com.spotify.docker.client.messages._
 import com.spotify.docker.client.{DefaultDockerClient, DockerClient}
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import com.teletracker.service.db.model._
+import com.teletracker.service.inject.DbProvider
 import net.codingwell.scalaguice.InjectorExtensions._
 import slick.jdbc.DriverDataSource
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.collection.JavaConverters._
-import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Random
 
 object PostgresContainer {
@@ -45,11 +45,12 @@ class PostgresContainer(
     val containerConfig = ContainerConfig.builder().
       hostConfig(hostConfig).
       env("POSTGRES_USER=teletracker", "POSTGRES_PASSWORD=teletracker", "POSTGRES_DB=teletracker").
-      image("postgres").
+      image("postgres:10.4").
       exposedPorts("5432").
       build()
 
     try {
+      client.pull("postgres:10.4")
       client.inspectImage("postgres:10.4")
     } catch {
       case _: Exception =>
@@ -99,6 +100,7 @@ class PostgresContainer(
       injector.instance[Genres].query,
       injector.instance[Networks].query,
       injector.instance[NetworkReferences].query,
+      injector.instance[UserNetworkPreferences].query,
       injector.instance[Things].query,
       injector.instance[ThingNetworks].query,
       injector.instance[TrackedLists].query,
