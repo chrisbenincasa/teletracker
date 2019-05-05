@@ -31,3 +31,5 @@ log.*
 .env
 .bloop/
 .metals/
+
+data/logos/

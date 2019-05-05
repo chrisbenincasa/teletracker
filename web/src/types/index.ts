@@ -9,13 +9,17 @@ export interface List {
 export interface User {
   id: number;
   name: string;
+  email: string;
+  username: string;
   lists: List[];
   networkSubscriptions: Network[];
   userPreferences: UserPreferences;
 }
 
+export type PresentationType = 'sd' | 'hd' | '4k';
+
 export interface UserPreferences {
-  presentationTypes: ('sd' | 'hd' | '4k')[];
+  presentationTypes: PresentationType[];
   showOnlyNetworkSubscriptions: boolean;
 }
 
@@ -47,6 +51,7 @@ export interface Availability {
   thingId: number;
   networkId: number;
   network?: Network;
+  presentationType?: PresentationType;
 }
 
 export interface Network {

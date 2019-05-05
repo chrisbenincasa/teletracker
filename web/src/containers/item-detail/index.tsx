@@ -19,13 +19,13 @@ import { fetchItemDetails } from '../../actions/item-detail';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { Thing, Availability } from '../../types';
+import { Thing, Availability, Network } from '../../types';
 import {
   getBackdropUrl,
   getPosterPath,
   getTitlePath,
   getOverviewPath,
-  getVoteAveragePath
+  getVoteAveragePath,
 } from '../../utils/metadata-access';
 
 const styles = (theme: Theme) =>
@@ -136,18 +136,17 @@ class ItemDetails extends Component<Props, State> {
   renderDescriptiveDetails = (thing: Thing) => {
     let title = getTitlePath(thing) || '';
     let overview = getOverviewPath(thing) || '';
-    let voteAverage =Number(getVoteAveragePath(thing)) || 0;
+    let voteAverage = Number(getVoteAveragePath(thing)) || 0;
 
-      return (
-        <div className={this.props.classes.descriptionContainer}>
-          <Typography color="inherit" variant='h4'>
-            {`${title} (${voteAverage * 10})`} <CircularProgress variant="static" value={voteAverage * 10} />
-          </Typography>
-          <Typography color="inherit">
-            {overview}
-          </Typography>
-        </div>
-      );
+    return (
+      <div className={this.props.classes.descriptionContainer}>
+        <Typography color="inherit" variant="h4">
+          {`${title} (${voteAverage * 10})`}{' '}
+          <CircularProgress variant="static" value={voteAverage * 10} />
+        </Typography>
+        <Typography color="inherit">{overview}</Typography>
+      </div>
+    );
   };
 
   backdropStyle = (item: Thing) => {
@@ -159,10 +158,30 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderOfferDetails = (availabilities: Availability[]) => {
+    let preferences = this.props.userSelf!.userPreferences;
+    let networkSubscriptions = this.props.userSelf!.networkSubscriptions;
+    let onlyShowsSubs = preferences.showOnlyNetworkSubscriptions;
+
+    const includeFromPrefs = (av: Availability, network: Network) => {
+      let showFromSubscriptions = onlyShowsSubs
+        ? R.any(R.propEq('slug', network.slug), networkSubscriptions)
+        : true;
+
+      let hasPresentation = av.presentationType
+        ? R.contains(av.presentationType, preferences.presentationTypes)
+        : true;
+
+      return showFromSubscriptions && hasPresentation;
+    };
+
+    const availabilityFilter = (av: Availability) => {
+      return !R.isNil(av.network) && includeFromPrefs(av, av.network!);
+    };
+
     let groupedByNetwork = availabilities
       ? R.groupBy(
           (av: Availability) => av.network!.slug,
-          R.filter(av => !R.isNil(av.network), availabilities),
+          R.filter(availabilityFilter, availabilities),
         )
       : {};
 
@@ -176,7 +195,7 @@ class ItemDetails extends Component<Props, State> {
           '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
 
         return (
-          <span style={{ color: 'white' }}>
+          <span key={lowestCostAv.id} style={{ color: 'white' }}>
             <Typography inline color="inherit">
               <img
                 key={lowestCostAv.id}
@@ -223,24 +242,33 @@ class ItemDetails extends Component<Props, State> {
             <Paper className={this.props.classes.imageContainer}>
               {this.renderPoster(itemDetail)}
             </Paper>
-            <Paper className={this.props.classes.itemInformationContainer}>
+            <div className={this.props.classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(itemDetail)}
               <div style={{ color: 'white' }}>
-                <Typography color="inherit">
-                  Rent:
-                  {availabilities.rent ? (
-                    <div>{this.renderOfferDetails(availabilities.rent)}</div>
-                  ) : null}
-                </Typography>
-                <Typography color="inherit">
-                  Buy:
-                  {availabilities.buy ? (
-                    <div>{this.renderOfferDetails(availabilities.buy)}</div>
-                  ) : null}
-                </Typography>
-              </div>
-            </Paper>
+                {availabilities.subscription ? (
+                  <Typography component="div" color="inherit">
+                    Stream:
+                    <div>
+                      {this.renderOfferDetails(availabilities.subscription)}
+                    </div>
+                  </Typography>
+                ) : null}
 
+                {availabilities.rent ? (
+                  <Typography component="div" color="inherit">
+                    Rent:
+                    <div>{this.renderOfferDetails(availabilities.rent)}</div>
+                  </Typography>
+                ) : null}
+
+                {availabilities.buy ? (
+                  <Typography component="div" color="inherit">
+                    Buy:
+                    <div>{this.renderOfferDetails(availabilities.buy)}</div>
+                  </Typography>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
       </React.Fragment>

@@ -20,7 +20,7 @@ class MetadataController @Inject()(
   }
 
   get("/api/v1/networks/?") { _: Request =>
-    networksDbAccess.findAllNetworks().map(_.map(_._2)).map(DataResponse(_))
+    networksDbAccess.findAllNetworks().map(_.map(_._2).sortBy(_.name)).map(DataResponse(_))
   }
 }
 
