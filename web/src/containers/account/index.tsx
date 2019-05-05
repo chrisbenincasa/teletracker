@@ -16,9 +16,15 @@ import {
   Typography,
   WithStyles,
   withStyles,
+  TextField,
+  Tooltip,
+  ListItemSecondaryAction,
+  Icon,
 } from '@material-ui/core';
 import BeachAccessIcon from '@material-ui/icons/BeachAccess';
 import DeleteIcon from '@material-ui/icons/Delete';
+import AddIcon from '@material-ui/icons/Add';
+import CheckIcon from '@material-ui/icons/Check';
 import WorkIcon from '@material-ui/icons/Work';
 import Slider from '@material-ui/lab/Slider';
 import * as R from 'ramda';
@@ -80,13 +86,26 @@ const styles = (theme: Theme) =>
       flex: '1 0 auto',
     },
     cardMedia: {
-      width: 50,
-      height: 50,
+      width: 45,
+      height: 45,
+      margin: 2.5,
+      borderRadius: theme.spacing.unit / 2,
     },
     paper: {
-      padding: theme.spacing.unit * 2,
-      // textAlign: 'center',
       color: theme.palette.text.secondary,
+      '&:hover': {
+        backgroundColor: theme.palette.grey[100],
+        cursor: 'pointer',
+      },
+    },
+
+    paperSelected: {
+      backgroundColor: theme.palette.primary.main,
+      color: theme.palette.getContrastText(theme.palette.primary.main),
+      '&:hover': {
+        backgroundColor: theme.palette.primary.light,
+        cursor: 'pointer',
+      },
     },
   });
 
@@ -111,20 +130,24 @@ type Props = OwnProps &
   WithStyles<typeof styles, true> &
   WithUserProps;
 
-type Switches = {
-  [key: string]: boolean;
-};
+type SwitchNames = 'showOnlyNetworks';
+
+type Switches = { [key in SwitchNames]: boolean };
 
 type State = {
   single?: any;
   switches: Switches;
   formatSlider: number;
+  networkFilter: string;
 };
 
 class Account extends Component<Props, State> {
   state: State = {
-    switches: {},
+    switches: {
+      showOnlyNetworks: false,
+    },
     formatSlider: 3,
+    networkFilter: '',
   };
 
   constructor(props: Props) {
@@ -133,6 +156,9 @@ class Account extends Component<Props, State> {
     if (props.userSelf) {
       this.state.formatSlider =
         props.userSelf.userPreferences.presentationTypes.length;
+
+      this.state.switches.showOnlyNetworks =
+        props.userSelf.userPreferences.showOnlyNetworkSubscriptions;
     }
   }
 
@@ -145,27 +171,46 @@ class Account extends Component<Props, State> {
       this.setState({
         formatSlider: this.props.userSelf.userPreferences.presentationTypes
           .length,
+        switches: {
+          ...this.state.switches,
+          showOnlyNetworks: this.props.userSelf.userPreferences
+            .showOnlyNetworkSubscriptions,
+        },
       });
     }
   }
 
   handleChange = (value: ValueType<AutocompleteOption<Network>>) => {
     if (!R.isNil(value) && !R.is(Array, value)) {
-      console.log(value);
-
       this.props.addNetworkForUser({
         network: (value as AutocompleteOption<Network>).value,
       });
     }
   };
 
-  handleSwitchChange = (switchName: string) => event => {
-    this.setState({
-      switches: {
-        ...this.state.switches,
-        [switchName]: event.target.checked,
-      },
+  handleClickItem = (network: Network) => {
+    this.props.addNetworkForUser({
+      network,
     });
+  };
+
+  handleSwitchChange = (switchName: string) => event => {
+    let newPrefs: UserPreferences = {
+      ...this.props.userSelf!.userPreferences,
+      showOnlyNetworkSubscriptions: event.target.checked,
+    };
+
+    this.setState(
+      {
+        switches: {
+          ...this.state.switches,
+          [switchName]: event.target.checked,
+        },
+      },
+      () => {
+        this.updateUserPreferences(newPrefs);
+      },
+    );
   };
 
   handleSliderChange = (event, value) => {
@@ -210,24 +255,82 @@ class Account extends Component<Props, State> {
     }
   };
 
+  isSubscribedToNetwork = (network: Network) => {
+    return R.any(
+      R.propEq('slug', network.slug),
+      this.props.userSelf!.networkSubscriptions,
+    );
+  };
+
+  renderNetworkGridItem = (network: Network) => {
+    let { classes, theme } = this.props;
+    let isSubscribed = this.isSubscribedToNetwork(network);
+
+    return (
+      <Grid
+        item
+        xs={12}
+        sm={6}
+        md={3}
+        key={network.id}
+        onClick={() => this.handleClickItem(network)}
+      >
+        <Paper
+          elevation={2}
+          className={isSubscribed ? classes.paperSelected : classes.paper}
+        >
+          <div style={{ display: 'flex' }}>
+            <div style={{ flex: '0.25 0 auto' }}>
+              <img
+                className={classes.cardMedia}
+                src={`/images/logos/${network.slug}/icon.jpg`}
+              />
+            </div>
+            <Typography
+              style={{ alignSelf: 'center', flex: '1 0 auto' }}
+              color="inherit"
+            >
+              {network.name}
+            </Typography>
+            <div
+              style={{
+                display: 'flex',
+                width: 50,
+                height: 50,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {isSubscribed ? (
+                <CheckIcon fontSize="small" color="inherit" />
+              ) : (
+                <AddIcon fontSize="small" color="inherit" />
+              )}
+            </div>
+          </div>
+        </Paper>
+      </Grid>
+    );
+  };
+
   renderSettings() {
-    let { classes } = this.props;
+    let { classes, theme } = this.props;
 
     let usersNetworks = R.map(
       R.prop('id'),
       this.props.userSelf!.networkSubscriptions,
     );
 
-    const networkOptions: AutocompleteOption<Network>[] = R.map(
-      network => ({
-        value: network,
-        label: network.name,
-      }),
-      R.sortBy(
-        R.prop('name'),
-        R.reject(n => R.contains(n.id, usersNetworks), this.props.networks!),
-      ),
-    );
+    let networks: Network[];
+    if (this.state.networkFilter && this.state.networkFilter.length > 0) {
+      let filter = this.state.networkFilter!.toLowerCase();
+      networks = R.filter(
+        (n: Network) => R.startsWith(filter, n.name.toLowerCase()),
+        this.props.networks!,
+      );
+    } else {
+      networks = this.props.networks!;
+    }
 
     return (
       <div className={classes.layout}>
@@ -239,24 +342,30 @@ class Account extends Component<Props, State> {
             </Typography>
           </div>
           <Card>
-            <List className={classes.list}>
-              <ListItem>
+            <List disablePadding className={classes.list}>
+              <ListItem divider>
                 <ListItemText
                   primary="Username"
-                  secondary={this.props.userSelf!.name}
+                  secondary={this.props.userSelf!.username}
                 />
+                <ListItemSecondaryAction>
+                  <Icon style={{ verticalAlign: 'middle' }}>arrow_right</Icon>
+                </ListItemSecondaryAction>
+              </ListItem>
+              <ListItem divider>
+                <ListItemText
+                  primary="Email"
+                  secondary={this.props.userSelf!.email}
+                />
+                <ListItemSecondaryAction>
+                  <Icon style={{ verticalAlign: 'middle' }}>arrow_right</Icon>
+                </ListItemSecondaryAction>
               </ListItem>
               <ListItem>
-                <Avatar>
-                  <WorkIcon />
-                </Avatar>
-                <ListItemText primary="Email" secondary={'What it is'} />
-              </ListItem>
-              <ListItem>
-                <Avatar>
-                  <BeachAccessIcon />
-                </Avatar>
-                <ListItemText primary="Vacation" secondary="July 20, 2014" />
+                <ListItemText primary="Password" />
+                <ListItemSecondaryAction>
+                  <Icon style={{ verticalAlign: 'middle' }}>arrow_right</Icon>
+                </ListItemSecondaryAction>
               </ListItem>
             </List>
           </Card>
@@ -275,56 +384,49 @@ class Account extends Component<Props, State> {
               show up first when viewing availability for a given item.
             </Typography>
           </div>
-          <Card style={{ overflow: 'visible' }}>
+          <Card style={{ overflow: 'visible', padding: '0 16px' }}>
             <div
               style={{
                 width: '100%',
                 display: 'flex',
-                padding: 10,
+                flexWrap: 'wrap',
                 alignItems: 'center',
               }}
             >
               <Typography style={{ flex: 1 }} variant="body1">
-                Show only selected networks
+                Show only selected networks&nbsp;
+                <Tooltip
+                  title="When on, item pages will only show availability for your selected networks."
+                  placement="top"
+                >
+                  <span
+                    style={{
+                      fontSize: '0.75em',
+                      position: 'relative',
+                      bottom: 6,
+                      color: theme.palette.primary.main,
+                    }}
+                  >
+                    [?]
+                  </span>
+                </Tooltip>
               </Typography>
               <Switch
-                checked={this.state.switches.showOnlyNetworks}
+                color="primary"
+                checked={this.state.switches['showOnlyNetworks']}
                 onChange={this.handleSwitchChange('showOnlyNetworks')}
               />
             </div>
             <Divider />
-            <AutoComplete
-              options={networkOptions}
-              handleChange={this.handleChange}
-              placeholder="Add a new network"
-              styles={{
-                container: {
-                  padding: 10,
-                },
-              }}
+            <TextField
+              fullWidth
+              placeholder="Filter networks"
+              style={{ padding: '8px 0', margin: '0 0 8px' }}
+              value={this.state.networkFilter}
+              onChange={ev => this.setState({ networkFilter: ev.target.value })}
             />
-
-            <Grid container style={{ padding: 10 }} spacing={8}>
-              {this.props.userSelf!.networkSubscriptions.map(network => (
-                <Grid item xs={12} sm={6} md={3} key={network.id}>
-                  <Paper square elevation={2} className={classes.paper}>
-                    <div style={{ display: 'flex' }}>
-                      <div style={{ flex: '0.75 0 auto' }}>
-                        <img
-                          className={classes.cardMedia}
-                          src={`/images/logos/${network.slug}/icon.jpg`}
-                        />
-                      </div>
-                      <Typography style={{ alignSelf: 'center' }}>
-                        {network.name}
-                      </Typography>
-                      <IconButton aria-label="Delete" disableRipple>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </div>
-                  </Paper>
-                </Grid>
-              ))}
+            <Grid container style={{ paddingBottom: 16 }} spacing={8}>
+              {networks.map(this.renderNetworkGridItem)}
             </Grid>
           </Card>
         </section>
