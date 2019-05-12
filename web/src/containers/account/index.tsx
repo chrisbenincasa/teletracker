@@ -98,7 +98,6 @@ const styles = (theme: Theme) =>
         cursor: 'pointer',
       },
     },
-
     paperSelected: {
       backgroundColor: theme.palette.primary.main,
       color: theme.palette.getContrastText(theme.palette.primary.main),
@@ -106,6 +105,10 @@ const styles = (theme: Theme) =>
         backgroundColor: theme.palette.primary.light,
         cursor: 'pointer',
       },
+    },
+    filterSearchField: {
+      padding: `${theme.spacing.unit / 2}px 0`,
+      margin: `0 0 ${theme.spacing.unit / 2}px`,
     },
   });
 
@@ -384,7 +387,7 @@ class Account extends Component<Props, State> {
               show up first when viewing availability for a given item.
             </Typography>
           </div>
-          <Card style={{ overflow: 'visible', padding: '0 16px' }}>
+          <Card style={{ padding: '0 16px' }}>
             <div
               style={{
                 width: '100%',
@@ -421,7 +424,7 @@ class Account extends Component<Props, State> {
             <TextField
               fullWidth
               placeholder="Filter networks"
-              style={{ padding: '8px 0', margin: '0 0 8px' }}
+              className={classes.filterSearchField}
               value={this.state.networkFilter}
               onChange={ev => this.setState({ networkFilter: ev.target.value })}
             />
