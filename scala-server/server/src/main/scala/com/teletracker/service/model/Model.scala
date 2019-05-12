@@ -8,8 +8,12 @@ object DataResponse {
   private val compactPriner = Printer.noSpaces.copy(dropNullValues = true)
 
   def complex[T](v: T, compact: Boolean = false)(implicit encoder: Encoder[T]): String = {
+    pure(Map("data" -> v), compact)
+  }
+
+  def pure[T](v: T, compact: Boolean = false)(implicit encoder: Encoder[T]): String = {
     val printer = if (compact) compactPriner else indentedPrinter
-    printer.pretty(Map("data" -> v).asJson)
+    printer.pretty(v.asJson)
   }
 
   def standard[T](v: T): DataResponse[T] = DataResponse(v)

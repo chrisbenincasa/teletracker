@@ -20,7 +20,7 @@ class TvShowController @Inject()(
         val userId = req.request.authContext.user.id
         val thingDetailsFut = thingsDbAccess.getThingUserDetails(userId, req.id)
 
-        val showByIdFut = thingsDbAccess.findShowById(req.id, withAvailability = true)
+        val showByIdFut = thingsDbAccess.findShowByIdBasic(req.id)
 
         for {
           thingDetails <- thingDetailsFut

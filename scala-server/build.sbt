@@ -63,6 +63,7 @@ lazy val server = project.in(file("server")).
 
     // Local running / testing
     mainClass in reStart := Some("com.teletracker.service.TeletrackerServerMain"),
+    Revolver.enableDebugging(port = 5005, suspend = false),
     envVars in reStart := Map(
       "API_KEY" -> System.getenv("API_KEY"),
       "JWT_SECRET" -> System.getenv("JWT_SECRET")

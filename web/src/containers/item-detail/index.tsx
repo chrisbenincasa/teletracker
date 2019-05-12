@@ -107,6 +107,8 @@ class ItemDetails extends Component<Props, State> {
     let itemId = Number(match.params.id);
     let itemType = match.params.type;
 
+    console.log(itemId);
+
     this.props.fetchItemDetails(itemId, itemType);
   }
 
@@ -221,13 +223,19 @@ class ItemDetails extends Component<Props, State> {
 
     let backdropStyle = this.backdropStyle(itemDetail);
 
-    let availabilities = R.mapObjIndexed(
-      R.pipe(
-        R.filter<Availability, 'array'>(R.propEq('isAvailable', true)),
-        R.sortBy(R.prop('cost')),
-      ),
-      R.groupBy(R.prop('offerType'), itemDetail.availability),
-    );
+    let availabilities: { [key: string]: Availability[] };
+
+    if (itemDetail.availability) {
+      availabilities = R.mapObjIndexed(
+        R.pipe(
+          R.filter<Availability, 'array'>(R.propEq('isAvailable', true)),
+          R.sortBy(R.prop('cost')),
+        ),
+        R.groupBy(R.prop('offerType'), itemDetail.availability),
+      );
+    } else {
+      availabilities = {};
+    }
 
     return this.props.isFetching || !itemDetail ? (
       this.renderLoading()

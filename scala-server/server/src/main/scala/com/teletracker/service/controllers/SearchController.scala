@@ -29,20 +29,11 @@ class SearchController @Inject()(
 )(implicit executionContext: ExecutionContext) extends Controller {
   prefix("/api/v1") {
     filter[JwtAuthFilter].apply {
-//      get("/search") { req: Request =>
-//        val query = req.params("query")
-//
-//        tmdbClient.makeRequest[SearchResult]("search/multi", Seq("query" -> query)).
-//          flatMap(handleSearchMultiResult(req.authContext.user.id, _)).
-//          map(result => {
-//            response.ok.contentTypeJson().body(DataResponse.complex(result))
-//          })
-//      }
-
       get("/search") { req: Request =>
         val query = req.params("query")
-        tmdbClient.makeRequest[MovieSearchResult]("search/movie", Seq("query" -> query)).
-          flatMap(handleSearchMovieResult(req.authContext.user.id, _)).
+
+        tmdbClient.makeRequest[SearchResult]("search/multi", Seq("query" -> query)).
+          flatMap(handleSearchMultiResult(req.authContext.user.id, _)).
           map(result => {
             response.ok.contentTypeJson().body(DataResponse.complex(result))
           })

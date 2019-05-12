@@ -5,6 +5,7 @@ import com.google.common.cache.{Cache, CacheBuilder}
 import javax.inject.{Inject, Singleton}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.JavaConverters._
 import scala.util.Success
 
 @Singleton
@@ -21,6 +22,10 @@ class JustWatchLocalCache @Inject()(implicit executionContext: ExecutionContext)
         case Success(value) => cache.put(request, value)
       }
     }
+  }
+
+  def getAll(): Map[String, PopularItemsResponse] = {
+    cache.asMap().asScala.toMap.map { case (k, v) => k.toString -> v }
   }
 
   def clear(): Future[Unit] = {
