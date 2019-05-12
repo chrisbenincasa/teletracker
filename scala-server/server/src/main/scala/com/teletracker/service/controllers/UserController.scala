@@ -214,7 +214,7 @@ case class GetUserAndListByIdRequest(
   @RouteParam userId: String,
   @RouteParam listId: Int,
   @QueryParam fields: Option[String],
-  @QueryParam(commaSeparatedList = true) itemTypes: Seq[String],
+  @QueryParam(commaSeparatedList = true) itemTypes: Seq[String] = Seq(),
   request: Request
 ) extends HasFieldsFilter
 
