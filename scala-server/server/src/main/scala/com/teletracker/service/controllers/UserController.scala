@@ -4,7 +4,7 @@ import com.teletracker.service.auth.RequestContext._
 import com.teletracker.service.auth.jwt.JwtVendor
 import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
 import com.teletracker.service.controllers.utils.CanParseFieldFilter
-import com.teletracker.service.db.model.{Event, User}
+import com.teletracker.service.db.model.{Event, ThingType, User}
 import com.teletracker.service.db.{ThingsDbAccess, UsersDbAccess}
 import com.teletracker.service.model.DataResponse
 import com.teletracker.service.util.HasFieldsFilter
@@ -89,8 +89,11 @@ class UserController @Inject()(
 
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
         val selectFields = parseFieldsOrNone(req.fields)
+        val filters = ListFilters(
+          if (req.itemTypes.nonEmpty) Some(req.itemTypes.flatMap(typ => Try(ThingType.fromString(typ)).toOption).toSet) else None
+        )
 
-        usersDbAccess.findList(req.request.authContext.user.id, req.listId, selectFields).map(result => {
+        usersDbAccess.findList(req.request.authContext.user.id, req.listId, selectFields, Some(filters)).map(result => {
           if (result.isEmpty) {
             response.status(404)
           } else {
@@ -192,6 +195,10 @@ class UserController @Inject()(
   }
 }
 
+case class ListFilters(
+  itemTypes: Option[Set[ThingType]]
+)
+
 case class GetUserByIdRequest(
   @RouteParam userId: String,
   request: Request
@@ -207,6 +214,7 @@ case class GetUserAndListByIdRequest(
   @RouteParam userId: String,
   @RouteParam listId: Int,
   @QueryParam fields: Option[String],
+  @QueryParam(commaSeparatedList = true) itemTypes: Seq[String],
   request: Request
 ) extends HasFieldsFilter
 
