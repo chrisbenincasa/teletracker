@@ -28,7 +28,7 @@
     "fsevents": "^2.0.6",
     "prettier": "1.17.0",
     "react-scripts": "2.1.8",
-    "typescript": "^3.4.3"
+    "typescript": "3.5.0-dev.20190504"
   },
   "dependencies": {
     "@material-ui/core": "^3.9.3",

@@ -40,6 +40,25 @@ class ThingsDbAccess @Inject()(
     things.query.filter(_.id inSetBind ids)
   }
 
+  def findShowByIdBasic(id: Int, withAvailability: Boolean = true): Future[Option[PartialThing]] = {
+    val showQuery = things.query.filter(t => t.id === id && t.`type` === ThingType.Show)
+
+    val availabilityQuery = availabilities.query.filter(a => a.thingId === id).flatMap(av => {
+      av.networkId_fk.map(_ -> av)
+    })
+
+    val movieFut = run(showQuery.result.headOption)
+    val avFut = run(availabilityQuery.result)
+
+    for {
+      movie <- movieFut
+      avs <- avFut
+    } yield {
+      val avWithDetails = avs.map { case (network, av) => av.withNetwork(network) }
+      movie.map(m => m.asPartial.withAvailability(avWithDetails.toList))
+    }
+  }
+
   def findShowById(id: Int, withAvailability: Boolean = false) = {
     val showQuery = things.query.filter(t => t.id === id && t.`type` === ThingType.Show)
 

@@ -36,10 +36,12 @@ class ItemExpander @Inject()(
   }
 
   def expandTvShow(id: String): Future[TvShow] = {
-    tmdbClient.makeRequest[TvShow](
-      s"tv/$id",
-      Seq("append_to_response" -> List("release_dates", "credits", "external_ids").mkString(","))
-    )
+    cache.getOrSetEntity(ThingType.Show, id, {
+      tmdbClient.makeRequest[TvShow](
+        s"tv/$id",
+        Seq("append_to_response" -> List("release_dates", "credits", "external_ids").mkString(","))
+      )
+    })
   }
 
   def expandPerson(id: String): Future[Person] = {
@@ -114,7 +116,7 @@ class TmdbEntityProcessor @Inject()(
   object ResultProcessor extends shapeless.Poly1 {
     implicit val atMovie: Case.Aux[Movie, Future[(String, Thing)]] = at(handleMovie)
 
-    implicit val atShow: Case.Aux[TvShow, Future[(String, Thing)]] = at(handleShow(_, false))
+    implicit val atShow: Case.Aux[TvShow, Future[(String, Thing)]] = at(handleShow(_, handleSeasons = false))
 
     implicit val atPerson: Case.Aux[Person, Future[(String, Thing)]] = at(handlePerson)
 
@@ -241,6 +243,8 @@ class TmdbEntityProcessor @Inject()(
       }))
     } yield {}
 
+    val availability = handleShowAvailability(show, saveThingFut)
+
     val seasonFut = if (handleSeasons) {
       saveThingFut.flatMap(t => {
         tvShowDbAccess.findAllSeasonsForShow(t.id.get).flatMap(dbSeasons => {
@@ -266,7 +270,68 @@ class TmdbEntityProcessor @Inject()(
       _ <- genresFut
       _ <- seasonFut
       _ <- externalIdsFut
+      _ <- availability
     } yield show.id.toString -> savedThing
+  }
+
+  private def handleShowAvailability(show: TvShow, processedShowFut: Future[Thing]): Future[Thing] = {
+    import io.circe.generic.auto._
+    import io.circe.syntax._
+
+    val query = PopularSearchRequest(1, 10, show.name, List("show"))
+    val justWatchResFut = justWatchLocalCache.getOrSet(query, {
+      justWatchClient.makeRequest[PopularItemsResponse]("/content/titles/en_US/popular", Seq("body" -> query.asJson.noSpaces))
+    })
+
+    (for {
+      justWatchRes <- justWatchResFut
+      networksBySource <- networkCache.get()
+      thing <- processedShowFut
+    } yield {
+      val matchingShow = matchJustWatchShow(show, justWatchRes.items)
+
+      val availabilities = matchingShow.collect {
+        case matchedItem if matchedItem.offers.exists(_.nonEmpty) =>
+          for {
+            offer <- matchedItem.offers.get.distinct
+            provider <- networksBySource.get(ExternalSource.JustWatch -> offer.provider_id.toString).toList
+          } yield {
+            val offerType = Try(offer.monetization_type.map(OfferType.fromJustWatchType)).toOption.flatten
+            val presentationType = Try(offer.presentation_type.map(PresentationType.fromJustWatchType)).toOption.flatten
+
+            Availability(
+              id = None,
+              isAvailable = true,
+              region = offer.country,
+              numSeasons = None,
+              startDate = offer.date_created.map(new DateTime(_)),
+              endDate = None,
+              offerType = offerType,
+              cost = offer.retail_price.map(BigDecimal.decimal),
+              currency = offer.currency,
+              thingId = thing.id,
+              tvShowEpisodeId = None,
+              networkId = provider.id,
+              presentationType = presentationType
+            )
+          }
+      }.getOrElse(Nil)
+
+      thingsDbAccess.saveAvailabilities(availabilities).map(_ => thing)
+    }).flatMap(identity)
+  }
+
+  private def matchJustWatchShow(show: TvShow, popularItems: List[PopularItem]): Option[PopularItem] = {
+    popularItems.find(item => {
+      val idMatch = item.scoring.getOrElse(Nil).exists(s => s.provider_type == "tmdb:id" && s.value.toInt.toString == show.id.toString)
+      val nameMatch = item.title.exists(show.name.equalsIgnoreCase)
+      val originalMatch = show.original_name.exists(item.original_title.contains)
+      val yearMatch = item.original_release_year.exists(year => {
+        show.first_air_date.filter(_.nonEmpty).map(new LocalDate(_).getYear).contains(year)
+      })
+
+      idMatch || (nameMatch && yearMatch) || (originalMatch && yearMatch)
+    })
   }
 
   def handlePerson(person: Person): Future[(String, Thing)] = {

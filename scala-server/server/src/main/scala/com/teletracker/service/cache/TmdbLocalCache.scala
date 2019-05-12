@@ -1,14 +1,15 @@
 package com.teletracker.service.cache
 
+import com.google.common.cache.{Cache, CacheBuilder}
 import com.teletracker.service.db.model.ThingType
 import com.teletracker.service.process.tmdb.TmdbEntity
 import com.teletracker.service.process.tmdb.TmdbEntity.Entities
-import com.google.common.cache.{Cache, CacheBuilder}
 import javax.inject.{Singleton, Inject => JInject}
 import shapeless.ops.coproduct.{Inject, Selector}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
+import scala.collection.JavaConverters._
 
 @Singleton
 class TmdbLocalCache @JInject()(implicit executionContext: ExecutionContext) {
@@ -33,6 +34,10 @@ class TmdbLocalCache @JInject()(implicit executionContext: ExecutionContext) {
           case Success(value) => cache.put(key, inj(value))
         }
     }
+  }
+
+  def getAll(): Map[String, Entities] = {
+    cache.asMap().asScala.toMap
   }
 
   def clear(): Future[Unit] = {
