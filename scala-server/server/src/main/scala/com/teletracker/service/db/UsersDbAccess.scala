@@ -6,6 +6,7 @@ import com.teletracker.service.db.model._
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import com.teletracker.service.util.{Field, FieldSelector}
 import com.teletracker.service.auth.jwt.JwtVendor
+import com.teletracker.service.controllers.ListFilters
 import com.teletracker.service.db.model.{Events, Things, Tokens, TrackedListThings, TrackedLists, UserCredentials, Users}
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import io.circe.Json
@@ -240,12 +241,22 @@ class UsersDbAccess @Inject()(
 
   private val defaultFields = List(Field("id"))
 
-  def findList(userId: Int, listId: Int, selectFields: Option[List[Field]]): Future[Seq[(TrackedListRow, Option[ThingRaw])]] = {
+  def findList(
+    userId: Int,
+    listId: Int,
+    selectFields: Option[List[Field]],
+    filters: Option[ListFilters] = None
+  ): Future[Seq[(TrackedListRow, Option[ThingRaw])]] = {
     val listQuery = trackedLists.query.filter(tl => tl.userId === userId && tl.id === listId)
+
+    val thingsQuery = filters.flatMap(_.itemTypes) match {
+      case Some(types) => things.rawQuery.filter(_.`type` inSetBind types)
+      case None => things.rawQuery
+    }
 
     val fullQuery = listQuery joinLeft
       trackedListThings.query on (_.id === _.listId) joinLeft
-      things.rawQuery on(_._2.map(_.thingId) === _.id)
+      thingsQuery on(_._2.map(_.thingId) === _.id)
 
     val q = fullQuery.map {
       case ((list, _), things) => list -> things
