@@ -1,19 +1,5 @@
 import {
-  Button,
-  Card,
-  CardContent,
-  CardMedia,
-  createStyles,
-  Grid,
-  Icon,
-  Link,
-  Theme,
-  Typography,
-  WithStyles,
-  withStyles,
-  IconButton,
-  Menu,
-  MenuItem,
+  Drawer,
 } from '@material-ui/core';
 import { Link as RouterLink, withRouter } from 'react-router-dom';
 import React, { Component, ReactNode } from 'react';
@@ -28,83 +14,96 @@ import { connect } from 'react-redux';
 
 const styles = (theme: Theme) =>
   createStyles({
-    button: {
-      width: '100%',
-      marginTop: '0.35em',
+    drawer: {
+      width: 240,
+      flexShrink: 0,
     },
-    description: {
-      marginBottom: '0.35em',
-    },
-    title: {
-      flex: 1,
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    },
-    card: {
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    cardMedia: {
-      height: 0,
-      width: '100%',
-      paddingTop: '150%',
-    },
-    cardContent: {
-      flexGrow: 1,
-    },
-    missingMedia: {
-      height: '150%',
-      color: theme.palette.grey[500],
-      display: 'flex',
-      backgroundColor: theme.palette.grey[300],
-      fontSize: '10em',
-    },
-    missingMediaIcon: {
-      alignSelf: 'center',
-      margin: '0 auto',
-      display: 'inline-block',
+    drawerPaper: {
+      width: 240,
     },
   });
 
-interface ItemCardProps extends WithStyles<typeof styles> {
-  key: string | number;
-  item: Thing;
-  userSelf?: User;
+/* This is just an array of colors I grabbed from a famous picasso painting.  Testing how the lists could look with a random color identifier. */
+const colorArray = [
+  '#90bab0',
+  '#5b3648',
+  '#2b5875',
+  '#ab6c5d',
+  '#b16f7b',
+  '#764b45',
+  '#53536d',
+  '#7adbd0',
+  '#32cad7',
+  '#17bfe3',
+  '#c2e9e6',
+  '#978fb6',
+  '#04256a',
+  '#3eb1b6',
+  '#7266b8',
+  '#1172d0',
+  '#ed0000',
+  '#abae77',
+  '#73b06d',
+  '#d7799b',
+  '#5b7e7a',
+  '#6fc16d',
+  '#8c8c58',
+  '#d8070d',
+  '#ca8866',
+  '#d9e4e0',
+  '#c17b9f',
+  '#7eb691',
+  '#71dee1',
+  '#50bc45',
+  '#904317',
+  '#292234',
+  '#a64e38',
+  '#c5c3d1',
+  '#825e6a',
+  '#234282',
+  '#30705f',
+  '#be2d00',
+  '#8cac23',
+  '#9b708b',
+  '#6c703d',
+  '#c09f12',
+  '#265e97',
+  '#d21b39',
+  '#948c5b',
+  '#6d6536',
+  '#778588',
+  '#c2350a',
+  '#5ea6b4',
+];
 
-  // display props
-  addButton?: boolean;
-  itemCardVisible?: boolean;
-  // If defined, we're viewing this item within the context of _this_ list
-  // This is probably not scalable, but it'll work for now.
-  listContext?: List;
-
-  withActionButton: boolean;
+interface OwnProps {
+  listsById: ListsByIdMap;
+  loadingLists: boolean;
 }
 
 interface DispatchProps {
-  ListUpdate: (payload: ListUpdatedInitiatedPayload) => void;
+  ListRetrieveAllInitiated: (payload?: ListRetrieveAllPayload) => void;
 }
 
-interface ItemCardState {
-  modalOpen: boolean;
 
-  // åction button menu
-  anchorEl: any;
+interface State {
+  createDialogOpen: boolean;
 }
 
-type Props = ItemCardProps & DispatchProps;
+type Props = OwnProps &
+  DispatchProps &
+  WithStyles<typeof styles> &
+  WithUserProps;
 
-class ItemCard extends Component<Props, ItemCardState> {
+
+class Drawer extends Component<Props, ItemCardState> {
   static defaultProps = {
     withActionButton: false,
     itemCardVisible: true,
   };
 
-  state: ItemCardState = {
-    modalOpen: false,
-    anchorEl: null,
+  state: State = {
+    createDialogOpen: false,
   };
 
   constructor(props: Props) {
