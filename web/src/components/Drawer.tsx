@@ -1,25 +1,75 @@
 import {
+  Avatar,
+  Badge,
+  Button,
+  createStyles,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  DialogTitle,
+  Divider,
   Drawer,
+  Icon,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  LinearProgress,
+  TextField,
+  Typography,
+  Theme,
+  withStyles,
+  WithStyles,
 } from '@material-ui/core';
-import { Link as RouterLink, withRouter } from 'react-router-dom';
-import React, { Component, ReactNode } from 'react';
-import Truncate from 'react-truncate';
-import AddToListDialog from './AddToListDialog';
-import { User, List } from '../types';
-import { Thing } from "../types";
-import { getDescription, getPosterPath } from '../utils/metadata-access';
+import * as R from 'ramda';
+import { Link as RouterLink } from 'react-router-dom';
+import React, { Component } from 'react';
+import { List as ListType, Thing } from '../types';
 import { Dispatch, bindActionCreators } from 'redux';
-import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
+import {
+  ListRetrieveAllInitiated,
+  ListRetrieveAllPayload,
+} from '../actions/lists';
+import { USER_SELF_CREATE_LIST } from '../constants/user';
+import { createList, UserCreateListPayload } from '../actions/user';
 import { connect } from 'react-redux';
+import { ListsByIdMap } from '../reducers/lists';
+import { AppState } from '../reducers';
+import withUser, { WithUserProps } from '../components/withUser';
+import { Loading } from '../reducers/user';
+import { layoutStyles } from '../styles';
+
 
 const styles = (theme: Theme) =>
   createStyles({
+    layout: layoutStyles(theme),
+    avatar: {
+      width: 25,
+      height: 25,
+      fontSize: '1em',
+    },
     drawer: {
       width: 240,
       flexShrink: 0,
     },
     drawerPaper: {
       width: 240,
+    },
+    toolbar: theme.mixins.toolbar,
+    listName: {
+      textDecoration: 'none',
+      marginBottom: 10
+    },
+    listsContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      flex: '1 0 auto',
+      margin: '20px 0',
+      width: '100%'
+    },
+    margin: {
+      margin: theme.spacing.unit * 2,
+      marginRight: theme.spacing.unit * 3,
     },
   });
 
@@ -76,18 +126,20 @@ const colorArray = [
   '#5ea6b4',
 ];
 
-interface OwnProps {
+interface OwnProps extends WithStyles<typeof styles>{
   listsById: ListsByIdMap;
   loadingLists: boolean;
+  loading: Partial<Loading>;
 }
 
 interface DispatchProps {
   ListRetrieveAllInitiated: (payload?: ListRetrieveAllPayload) => void;
+  createList: (payload?: UserCreateListPayload) => void;
 }
-
 
 interface State {
   createDialogOpen: boolean;
+  listName: string;
 }
 
 type Props = OwnProps &
@@ -95,183 +147,195 @@ type Props = OwnProps &
   WithStyles<typeof styles> &
   WithUserProps;
 
-
-class Drawer extends Component<Props, ItemCardState> {
-  static defaultProps = {
-    withActionButton: false,
-    itemCardVisible: true,
-  };
-
+class DrawerUI extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
+    listName: '',
   };
 
-  constructor(props: Props) {
-    super(props);
+  componentDidMount() {
+    this.props.ListRetrieveAllInitiated();
+  }
+
+  componentDidUpdate(oldProps: Props) {
     if (
-      !props.listContext &&
-      props.withActionButton &&
-      process.env.NODE_ENV !== 'production'
+      Boolean(oldProps.loading[USER_SELF_CREATE_LIST]) &&
+      !Boolean(this.props.loading[USER_SELF_CREATE_LIST])
     ) {
-      console.warn('withActionButton=true without listContext will not work.');
+      this.handleModalClose();
     }
   }
 
-  handleModalOpen = (item: Thing) => {
-    this.setState({ modalOpen: true });
+  refreshUser = () => {
+    this.props.retrieveUser(true);
+  };
+
+  handleModalOpen = () => {
+    this.setState({ createDialogOpen: true });
   };
 
   handleModalClose = () => {
-    this.setState({ modalOpen: false });
+    this.setState({ createDialogOpen: false });
   };
 
-  handleActionMenuOpen = ev => {
-    this.setState({ anchorEl: ev.currentTarget });
-  };
-
-  handleActionMenuClose = () => {
-    this.setState({ anchorEl: null });
-  };
-
-  handleRemoveFromList = () => {
-    this.props.ListUpdate({
-      thingId: parseInt(this.props.item.id.toString()),
-      addToLists: [],
-      removeFromLists: [this.props.listContext!.id.toString()],
-    });
-  };
-
-  navigateToDetail = (thing: Thing) => {
-    // this.props.
-  };
-
-  renderPoster = (thing: Thing) => {
-    let poster = getPosterPath(thing);
-
-    const makeLink = (children: ReactNode, className?: string) => (
-      <Link
-        className={className}
-        component={props => (
-          <RouterLink {...props} to={'/item/' + thing.type + '/' + thing.id} />
-        )}
-      >
-        {children}
-      </Link>
-    );
-
-    if (poster) {
-      return makeLink(
-        <CardMedia
-          className={this.props.classes.cardMedia}
-          image={'https://image.tmdb.org/t/p/w300' + poster}
-          title={thing.name}
-        />,
-      );
-    } else {
-      return makeLink(
-        <div style={{ display: 'flex', width: '100%' }}>
-          <Icon
-            className={this.props.classes.missingMediaIcon}
-            fontSize="inherit"
-          >
-            broken_image
-          </Icon>
-        </div>,
-        this.props.classes.missingMedia,
-      );
+  handleCreateListSubmit = () => {
+    if (this.state.listName.length > 0) {
+      this.props.createList({ name: this.state.listName });
     }
   };
 
-  renderActionMenu() {
-    let { anchorEl } = this.state;
+  renderListItems = (userList: ListType, index: number) => {
+    let { listsById, classes } = this.props;
+    let listWithDetails = listsById[userList.id];
+    let list = listWithDetails || userList;
+    let randomItem = colorArray[Math.floor(Math.random()*colorArray.length)]
 
-    return this.props.withActionButton && this.props.listContext ? (
-      <React.Fragment>
-        <IconButton onClick={this.handleActionMenuOpen}>
-          <Icon>more_vert</Icon>
-        </IconButton>
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={this.handleActionMenuClose}
-          disableAutoFocusItem
-        >
-          <MenuItem onClick={this.handleRemoveFromList}>Remove</MenuItem>
-        </Menu>
-      </React.Fragment>
-    ) : null;
+    return (
+      <ListItem button key={userList.id}
+      component={props => <RouterLink {...props} to={'/lists/' + list.id} />}>
+        <ListItemAvatar>
+          <Avatar
+            className={classes.avatar}
+            style={{backgroundColor: randomItem}}
+          >
+            {userList.things.length}
+          </Avatar>
+          </ListItemAvatar>
+        <ListItemText
+          primary={list.name} />
+      </ListItem>
+    )
+  }
+
+  renderLoading() {
+    return (
+      <div style={{ flexGrow: 1 }}>
+        <LinearProgress />
+      </div>
+    );
   }
 
   render() {
-    let { item, classes, addButton, itemCardVisible } = this.props;
-
-    return (
-      <React.Fragment>
-        <Grid key={item.id} sm={6} md={4} lg={3} item>
-          <Card className={classes.card}>
-            {this.renderPoster(item)}
-           { itemCardVisible &&
-            <CardContent className={classes.cardContent}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  margin: '-8px -8px 0 0',
-                }}
+    if (
+      this.props.retrievingUser ||
+      !this.props.userSelf ||
+      this.props.loadingLists
+    ) {
+      return this.renderLoading();
+    } else {
+      let { classes, userSelf } = this.props;
+      let isLoading = Boolean(this.props.loading[USER_SELF_CREATE_LIST]);
+      return (
+        <React.Fragment>
+          <Drawer
+            className={classes.drawer}
+            variant="permanent"
+            classes={{
+              paper: classes.drawerPaper,
+            }}
+          >
+            <div className={classes.toolbar} />
+            <Typography
+              component="h4"
+              variant="h4"
+              style={{margin: 16}}
+            >
+              My Lists
+              <Button onClick={this.refreshUser}>
+                <Icon color="action">refresh</Icon>
+              </Button>
+            </Typography>
+            <Divider />
+            <List>
+              <ListItem
+                button
+                key='create'
+                onClick={this.handleModalOpen}
               >
-                <Typography
-                  className={classes.title}
-                  variant="h5"
-                  component="h2"
-                  title={item.name}
-                >
-                  {item.name}
-                </Typography>
-                {this.renderActionMenu()}
-              </div>
-              <Typography style={{ height: '60px' }}>
-                <Truncate lines={3} ellipsis={<span>...</span>}>
-                  {getDescription(item)}
-                </Truncate>
-              </Typography>
-              {addButton ? (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  className={classes.button}
-                  onClick={() => this.handleModalOpen(item)}
-                >
-                  <Icon>playlist_add</Icon>
-                  <Typography color="inherit">Add to List</Typography>
-                </Button>
-              ) : null}
-            </CardContent>
-           }
-          </Card>
-        </Grid>
-        {addButton ? (
-          <AddToListDialog
-            open={this.state.modalOpen}
-            userSelf={this.props.userSelf!}
-            item={item}
-          />
-        ) : null}
-      </React.Fragment>
-    );
+                <ListItemAvatar>
+                  <Icon color="action">create</Icon>
+                </ListItemAvatar>
+                <ListItemText
+                  primary='Create New List'/>
+              </ListItem>
+              <ListItem button key='all' selected={true}>
+                <ListItemAvatar>
+                  <Avatar className={classes.avatar}>{userSelf.lists.length}</Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary='All Lists'/>
+              </ListItem>
+              {userSelf.lists.map(this.renderListItems)}
+            </List>
+          </Drawer>
+          <div className={classes.layout}>
+            <div>
+              <Dialog
+                fullWidth
+                maxWidth="xs"
+                open={this.state.createDialogOpen}
+              >
+                <DialogTitle>Create a List</DialogTitle>
+                <DialogContent>
+                  <TextField
+                    autoFocus
+                    margin="dense"
+                    id="name"
+                    label="Name"
+                    type="text"
+                    fullWidth
+                    value={this.state.listName}
+                    onChange={e => this.setState({ listName: e.target.value })}
+                  />
+                </DialogContent>
+                <DialogActions>
+                  <Button
+                    disabled={isLoading}
+                    onClick={this.handleModalClose}
+                    color="primary"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={isLoading}
+                    onClick={this.handleCreateListSubmit}
+                    color="primary"
+                  >
+                    Create
+                  </Button>
+                </DialogActions>
+              </Dialog>
+            </div>
+          </div>
+        </React.Fragment>
+      );
+    }
   }
 }
+
+const mapStateToProps = (appState: AppState) => {
+  return {
+    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
+    loadingLists: appState.lists.operation.inProgress,
+    listsById: appState.lists.listsById,
+    loading: appState.userSelf.loading,
+  };
+};
 
 const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
-      ListUpdate,
+      ListRetrieveAllInitiated,
+      createList,
     },
     dispatch,
   );
 
-export default withStyles(styles)(
-  connect(
-    null,
-    mapDispatchToProps,
-  )(ItemCard),
+export default withUser(
+  withStyles(styles)(
+    connect(
+      mapStateToProps,
+      mapDispatchToProps,
+    )(DrawerUI),
+  ),
 );
