@@ -1,15 +1,9 @@
 import {
   Badge,
-  Button,
   createStyles,
   CssBaseline,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Grid,
   LinearProgress,
-  TextField,
   Theme,
   Typography,
   withStyles,
@@ -26,8 +20,7 @@ import {
 } from '../../actions/lists';
 import { createList, UserCreateListPayload } from '../../actions/user';
 import withUser, { WithUserProps } from '../../components/withUser';
-import DrawerUI from '../../components/Drawer';
-import { USER_SELF_CREATE_LIST } from '../../constants/user';
+import Drawer from '../../components/Drawer';
 import { AppState } from '../../reducers';
 import { List as ListType, Thing } from '../../types';
 import { ListsByIdMap } from '../../reducers/lists';
@@ -55,72 +48,11 @@ const styles = (theme: Theme) =>
       margin: '20px 0',
       width: '100%'
     },
-    drawer: {
-      width: 240,
-      flexShrink: 0,
-    },
-    drawerPaper: {
-      width: 240,
-    },
-    toolbar: theme.mixins.toolbar,
     margin: {
       margin: theme.spacing.unit * 2,
       marginRight: theme.spacing.unit * 3,
     },
   });
-
-  /* This is just an array of colors I grabbed from a famous picasso painting.  Testing how the lists could look with a random color identifier. */
-const colorArray = [
-'#90bab0',
-'#5b3648',
-'#2b5875',
-'#ab6c5d',
-'#b16f7b',
-'#764b45',
-'#53536d',
-'#7adbd0',
-'#32cad7',
-'#17bfe3',
-'#c2e9e6',
-'#978fb6',
-'#04256a',
-'#3eb1b6',
-'#7266b8',
-'#1172d0',
-'#ed0000',
-'#abae77',
-'#73b06d',
-'#d7799b',
-'#5b7e7a',
-'#6fc16d',
-'#8c8c58',
-'#d8070d',
-'#ca8866',
-'#d9e4e0',
-'#c17b9f',
-'#7eb691',
-'#71dee1',
-'#50bc45',
-'#904317',
-'#292234',
-'#a64e38',
-'#c5c3d1',
-'#825e6a',
-'#234282',
-'#30705f',
-'#be2d00',
-'#8cac23',
-'#9b708b',
-'#6c703d',
-'#c09f12',
-'#265e97',
-'#d21b39',
-'#948c5b',
-'#6d6536',
-'#778588',
-'#c2350a',
-'#5ea6b4',
-];
 
 interface OwnProps {
   isAuthed?: boolean;
@@ -191,46 +123,42 @@ class Lists extends Component<Props, State> {
     let list = listWithDetails || userList;
 
     return (
-      <React.Fragment>
-        <div className={classes.listsContainer}>
-
-          <Typography
-            component={props => <RouterLink {...props} to={'/lists/' + list.id} />}
-            variant="h5"
-            className={classes.listName}
-            >
-            <Badge
-              className={classes.margin}
-              badgeContent={list.things.length}
-              color="primary"
-              style={{marginLeft: 0, paddingRight: 15}}
-            >
-              {list.name}
-            </Badge>
-          </Typography>
-          {this.renderItemPreviews(list)}
-        </div>
-      </React.Fragment>
+      <div className={classes.listsContainer}>
+        <Typography
+          component={props => <RouterLink {...props} to={'/lists/' + list.id} />}
+          variant="h5"
+          className={classes.listName}
+          >
+          <Badge
+            className={classes.margin}
+            badgeContent={list.things.length}
+            color="primary"
+            style={{marginLeft: 0, paddingRight: 15}}
+          >
+            {list.name}
+          </Badge>
+        </Typography>
+        {this.renderItemPreviews(list)}
+      </div>
     );
   };
 
-
-
   renderLists() {
+    let { userSelf } = this.props;
     if (
       this.props.retrievingUser ||
-      !this.props.userSelf ||
+      !userSelf ||
       this.props.loadingLists
     ) {
       return this.renderLoading();
     } else {
-      let { classes, userSelf } = this.props;
-      let isLoading = Boolean(this.props.loading[USER_SELF_CREATE_LIST]);
-
       return (
-        <div style={{display: 'flex', flexGrow: 1, paddingLeft: 20}}>
-          <CssBaseline />
-          <DrawerUI/>
+        <div style={{display: 'flex'}}>
+          <Drawer />
+          <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, paddingLeft: 20}}>
+            <CssBaseline />
+            {userSelf.lists.map(this.renderList)}
+          </div>
         </div>
       );
     }

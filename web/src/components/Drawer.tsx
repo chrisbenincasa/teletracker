@@ -1,6 +1,5 @@
 import {
   Avatar,
-  Badge,
   Button,
   createStyles,
   Dialog,
@@ -8,7 +7,7 @@ import {
   DialogActions,
   DialogTitle,
   Divider,
-  Drawer,
+  Drawer as DrawerUI,
   Icon,
   List,
   ListItem,
@@ -22,23 +21,22 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import * as R from 'ramda';
-import { Link as RouterLink } from 'react-router-dom';
+import { RouteComponentProps, withRouter, Link as RouterLink } from 'react-router-dom';
 import React, { Component } from 'react';
-import { List as ListType, Thing } from '../types';
+import { connect } from 'react-redux';
 import { Dispatch, bindActionCreators } from 'redux';
+import withUser, { WithUserProps } from '../components/withUser';
 import {
   ListRetrieveAllInitiated,
   ListRetrieveAllPayload,
 } from '../actions/lists';
 import { USER_SELF_CREATE_LIST } from '../constants/user';
 import { createList, UserCreateListPayload } from '../actions/user';
-import { connect } from 'react-redux';
+import { List as ListType, User } from '../types';
 import { ListsByIdMap } from '../reducers/lists';
-import { AppState } from '../reducers';
-import withUser, { WithUserProps } from '../components/withUser';
 import { Loading } from '../reducers/user';
+import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -130,6 +128,7 @@ interface OwnProps extends WithStyles<typeof styles>{
   listsById: ListsByIdMap;
   loadingLists: boolean;
   loading: Partial<Loading>;
+  userSelf?: User;
 }
 
 interface DispatchProps {
@@ -141,20 +140,27 @@ interface State {
   createDialogOpen: boolean;
   listName: string;
 }
+interface RouteParams {
+  id: string;
+  type: string;
+}
 
 type Props = OwnProps &
+  RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
   WithUserProps;
 
-class DrawerUI extends Component<Props, State> {
+class Drawer extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
     listName: '',
   };
 
   componentDidMount() {
-    this.props.ListRetrieveAllInitiated();
+    if (!Boolean(this.props.loading)) {
+      this.props.ListRetrieveAllInitiated();
+    }
   }
 
   componentDidUpdate(oldProps: Props) {
@@ -184,15 +190,24 @@ class DrawerUI extends Component<Props, State> {
     }
   };
 
-  renderListItems = (userList: ListType, index: number) => {
-    let { listsById, classes } = this.props;
+  renderListItems = (userList: ListType) => {
+    let { listsById, classes, match } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
-    let randomItem = colorArray[Math.floor(Math.random()*colorArray.length)]
+
+    // Todo: If we decide to keep this, improve this so colors persist and aren't constantly changing on each re-render
+    let randomItem = colorArray[Math.floor(Math.random() * colorArray.length)]
 
     return (
-      <ListItem button key={userList.id}
-      component={props => <RouterLink {...props} to={'/lists/' + list.id} />}>
+      <ListItem
+        button
+        key={userList.id}
+        component={props =>
+          <RouterLink {...props} to={'/lists/' + list.id} />
+        }
+        // This is a little hacky and can be improved
+        selected={!!(!match.params.type && Number(match.params.id) === Number(list.id))}
+      >
         <ListItemAvatar>
           <Avatar
             className={classes.avatar}
@@ -216,18 +231,22 @@ class DrawerUI extends Component<Props, State> {
   }
 
   render() {
+    let { match } = this.props;
+
     if (
       this.props.retrievingUser ||
       !this.props.userSelf ||
       this.props.loadingLists
     ) {
+      console.log(this.props.loadingLists);
       return this.renderLoading();
     } else {
       let { classes, userSelf } = this.props;
       let isLoading = Boolean(this.props.loading[USER_SELF_CREATE_LIST]);
+      console.log(isLoading);
       return (
         <React.Fragment>
-          <Drawer
+          <DrawerUI
             className={classes.drawer}
             variant="permanent"
             classes={{
@@ -251,6 +270,7 @@ class DrawerUI extends Component<Props, State> {
                 button
                 key='create'
                 onClick={this.handleModalOpen}
+                selected={this.state.createDialogOpen}
               >
                 <ListItemAvatar>
                   <Icon color="action">create</Icon>
@@ -258,7 +278,14 @@ class DrawerUI extends Component<Props, State> {
                 <ListItemText
                   primary='Create New List'/>
               </ListItem>
-              <ListItem button key='all' selected={true}>
+              <ListItem
+                button
+                key='all'
+                selected={!!(!match.params.type && !match.params.id)}
+                component={props =>
+                  <RouterLink {...props} to={'/lists'} />
+                }
+              >
                 <ListItemAvatar>
                   <Avatar className={classes.avatar}>{userSelf.lists.length}</Avatar>
                 </ListItemAvatar>
@@ -267,45 +294,43 @@ class DrawerUI extends Component<Props, State> {
               </ListItem>
               {userSelf.lists.map(this.renderListItems)}
             </List>
-          </Drawer>
-          <div className={classes.layout}>
-            <div>
-              <Dialog
-                fullWidth
-                maxWidth="xs"
-                open={this.state.createDialogOpen}
-              >
-                <DialogTitle>Create a List</DialogTitle>
-                <DialogContent>
-                  <TextField
-                    autoFocus
-                    margin="dense"
-                    id="name"
-                    label="Name"
-                    type="text"
-                    fullWidth
-                    value={this.state.listName}
-                    onChange={e => this.setState({ listName: e.target.value })}
-                  />
-                </DialogContent>
-                <DialogActions>
-                  <Button
-                    disabled={isLoading}
-                    onClick={this.handleModalClose}
-                    color="primary"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    disabled={isLoading}
-                    onClick={this.handleCreateListSubmit}
-                    color="primary"
-                  >
-                    Create
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            </div>
+          </DrawerUI>
+          <div>
+            <Dialog
+              fullWidth
+              maxWidth="xs"
+              open={this.state.createDialogOpen}
+            >
+              <DialogTitle>Create New List</DialogTitle>
+              <DialogContent>
+                <TextField
+                  autoFocus
+                  margin="dense"
+                  id="name"
+                  label="Name"
+                  type="text"
+                  fullWidth
+                  value={this.state.listName}
+                  onChange={e => this.setState({ listName: e.target.value })}
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  disabled={isLoading}
+                  onClick={this.handleModalClose}
+                  color="primary"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={isLoading}
+                  onClick={this.handleCreateListSubmit}
+                  color="primary"
+                >
+                  Create
+                </Button>
+              </DialogActions>
+            </Dialog>
           </div>
         </React.Fragment>
       );
@@ -333,9 +358,11 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 
 export default withUser(
   withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(DrawerUI),
+    withRouter(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(Drawer),
+    ),
   ),
 );
