@@ -26,6 +26,7 @@ import {
 } from '../../actions/lists';
 import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
+import Drawer from '../../components/Drawer';
 import { AppState } from '../../reducers';
 import { ListsByIdMap } from '../../reducers/lists';
 import { layoutStyles } from '../../styles';
@@ -146,31 +147,34 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderListDetail(list: List) {
-    let { classes, userSelf, listLoading } = this.props;
+    let { userSelf, listLoading } = this.props;
 
     if (!listLoading && !list) {
       return <Redirect to="/lists" />;
     } else {
       return (
-        <div className={classes.layout}>
-          <CustomBreadcrumbs
-            lookup={breadcrumbNameMap}
-            onNotFound={() => list!.name}
-          />
-          <Typography component="h1" variant="h4" align="left">
-            {list!.name}
-          </Typography>
-          <Grid container spacing={16}>
-            {list!.things.map(item => (
-              <ItemCard
-                key={item.id}
-                userSelf={userSelf}
-                item={item}
-                listContext={list}
-                withActionButton
-              />
-            ))}
-          </Grid>
+        <div style={{display: 'flex'}}>
+          <Drawer />
+          <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, padding: 20}}>
+            <CustomBreadcrumbs
+              lookup={breadcrumbNameMap}
+              onNotFound={() => list!.name}
+            />
+            <Typography component="h1" variant="h4" align="left">
+              {list!.name}
+            </Typography>
+            <Grid container spacing={16}>
+              {list!.things.map(item => (
+                <ItemCard
+                  key={item.id}
+                  userSelf={userSelf}
+                  item={item}
+                  listContext={list}
+                  withActionButton
+                />
+              ))}
+            </Grid>
+          </div>
         </div>
       );
     }
