@@ -1,5 +1,4 @@
 import {
-  Avatar,
   Badge,
   Button,
   createStyles,
@@ -8,15 +7,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Drawer,
   Grid,
-  Icon,
   LinearProgress,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Divider,
   TextField,
   Theme,
   Typography,
@@ -34,16 +26,14 @@ import {
 } from '../../actions/lists';
 import { createList, UserCreateListPayload } from '../../actions/user';
 import withUser, { WithUserProps } from '../../components/withUser';
+import DrawerUI from '../../components/Drawer';
 import { USER_SELF_CREATE_LIST } from '../../constants/user';
 import { AppState } from '../../reducers';
-import { layoutStyles } from '../../styles';
-import { Thing } from "../../types";
-import { List as ListType } from '../../types';
+import { List as ListType, Thing } from '../../types';
 import { ListsByIdMap } from '../../reducers/lists';
 import { Loading } from '../../reducers/user';
 import { layoutStyles } from '../../styles';
-import { List, Thing } from '../../types';
-import { getPosterUrl } from '../../utils/metadata-access';
+import ItemCard from '../../components/ItemCard';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -73,11 +63,6 @@ const styles = (theme: Theme) =>
       width: 240,
     },
     toolbar: theme.mixins.toolbar,
-    avatar: {
-      width: 25,
-      height: 25,
-      fontSize: '1em',
-    },
     margin: {
       margin: theme.spacing.unit * 2,
       marginRight: theme.spacing.unit * 3,
@@ -170,19 +155,6 @@ class Lists extends Component<Props, State> {
     this.props.ListRetrieveAllInitiated();
   }
 
-  componentDidUpdate(oldProps: Props) {
-    if (
-      Boolean(oldProps.loading[USER_SELF_CREATE_LIST]) &&
-      !Boolean(this.props.loading[USER_SELF_CREATE_LIST])
-    ) {
-      this.handleClose();
-    }
-  }
-
-  refreshUser = () => {
-    this.props.retrieveUser(true);
-  };
-
   renderLoading() {
     return (
       <div style={{ flexGrow: 1 }}>
@@ -242,28 +214,7 @@ class Lists extends Component<Props, State> {
     );
   };
 
-  renderListItems = (userList: ListType, index: number) => {
-    let { listsById, classes } = this.props;
-    let listWithDetails = listsById[userList.id];
-    let list = listWithDetails || userList;
-    let randomItem = colorArray[Math.floor(Math.random()*colorArray.length)]
 
-    return (
-      <ListItem button key={userList.id}
-      component={props => <RouterLink {...props} to={'/lists/' + list.id} />}>
-        <ListItemAvatar>
-          <Avatar
-            className={classes.avatar}
-            style={{backgroundColor: randomItem}}
-          >
-            {userList.things.length}
-          </Avatar>
-          </ListItemAvatar>
-        <ListItemText
-          primary={list.name} />
-      </ListItem>
-    )
-  }
 
   renderLists() {
     if (
@@ -279,94 +230,7 @@ class Lists extends Component<Props, State> {
       return (
         <div style={{display: 'flex', flexGrow: 1, paddingLeft: 20}}>
           <CssBaseline />
-          <Drawer
-            className={classes.drawer}
-            variant="permanent"
-            classes={{
-              paper: classes.drawerPaper,
-            }}
-          >
-            <div className={classes.toolbar} />
-            <Typography
-              component="h4"
-              variant="h4"
-              style={{margin: 16}}
-            >
-              My Lists
-              <Button onClick={this.refreshUser}>
-                <Icon color="action">refresh</Icon>
-              </Button>
-            </Typography>
-            <Divider />
-            <List>
-              <ListItem
-                button
-                key='create'
-                onClick={this.handleClickOpen}
-              >
-                <ListItemAvatar>
-                  <Icon color="action">create</Icon>
-                </ListItemAvatar>
-                <ListItemText
-                  primary='Create New List'/>
-              </ListItem>
-              <ListItem button key='all' selected={true}>
-                <ListItemAvatar>
-                  <Avatar className={classes.avatar}>{userSelf.lists.length}</Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary='All Lists'/>
-              </ListItem>
-              {userSelf.lists.map(this.renderListItems)}
-            </List>
-          </Drawer>
-          <div className={classes.layout}>
-            <div>
-              <Grid
-                container
-                spacing={16}
-                style={{display: 'flex', flexDirection: 'column'}}
-              >
-                {userSelf.lists.map(this.renderList)}
-              </Grid>
-
-              <Dialog
-                fullWidth
-                maxWidth="xs"
-                open={this.state.createDialogOpen}
-              >
-                <DialogTitle>Create a List</DialogTitle>
-                <DialogContent>
-                  <TextField
-                    autoFocus
-                    margin="dense"
-                    id="name"
-                    label="Name"
-                    type="text"
-                    fullWidth
-                    value={this.state.listName}
-                    onChange={e => this.setState({ listName: e.target.value })}
-                  />
-                </DialogContent>
-                <DialogActions>
-                  <Button
-                    disabled={isLoading}
-                    onClick={this.handleClose}
-                    color="primary"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    disabled={isLoading}
-                    onClick={this.handleCreateListSubmit}
-                    color="primary"
-                  >
-                    Create
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            </div>
-          </div>
+          <DrawerUI/>
         </div>
       );
     }
