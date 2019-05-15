@@ -75,7 +75,7 @@ interface ItemCardProps extends WithStyles<typeof styles> {
 
   // display props
   addButton?: boolean;
-
+  itemCardVisible?: boolean;
   // If defined, we're viewing this item within the context of _this_ list
   // This is probably not scalable, but it'll work for now.
   listContext?: List;
@@ -99,6 +99,7 @@ type Props = ItemCardProps & DispatchProps;
 class ItemCard extends Component<Props, ItemCardState> {
   static defaultProps = {
     withActionButton: false,
+    itemCardVisible: true,
   };
 
   state: ItemCardState = {
@@ -203,13 +204,14 @@ class ItemCard extends Component<Props, ItemCardState> {
   }
 
   render() {
-    let { item, classes, addButton } = this.props;
+    let { item, classes, addButton, itemCardVisible } = this.props;
 
     return (
       <React.Fragment>
         <Grid key={item.id} sm={6} md={4} lg={3} item>
           <Card className={classes.card}>
             {this.renderPoster(item)}
+           { itemCardVisible &&
             <CardContent className={classes.cardContent}>
               <div
                 style={{
@@ -245,6 +247,7 @@ class ItemCard extends Component<Props, ItemCardState> {
                 </Button>
               ) : null}
             </CardContent>
+           }
           </Card>
         </Grid>
         {addButton ? (
