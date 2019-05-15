@@ -158,13 +158,13 @@ class ListDetail extends Component<Props, State> {
           <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, padding: 20}}>
             <CustomBreadcrumbs
               lookup={breadcrumbNameMap}
-              onNotFound={() => list!.name}
+              onNotFound={() => list.name}
             />
             <Typography component="h1" variant="h4" align="left">
-              {list!.name}
+              {list.name}
             </Typography>
             <Grid container spacing={16}>
-              {list!.things.map(item => (
+              {list.things.map(item => (
                 <ItemCard
                   key={item.id}
                   userSelf={userSelf}

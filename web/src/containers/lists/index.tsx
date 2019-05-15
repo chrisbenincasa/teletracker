@@ -39,19 +39,30 @@ const styles = (theme: Theme) =>
     },
     listName: {
       textDecoration: 'none',
-      marginBottom: 10
+      marginBottom: theme.spacing.unit * 2,
     },
     listsContainer: {
       display: 'flex',
       flexDirection: 'column',
       flex: '1 0 auto',
-      margin: '20px 0',
-      width: '100%'
+      margin: `${theme.spacing.unit * 2}px 0`,
+      width: '100%',
     },
     margin: {
       margin: theme.spacing.unit * 2,
       marginRight: theme.spacing.unit * 3,
     },
+    listItemCount: {
+      margin: theme.spacing.unit * 2,
+      marginLeft: 0,
+      paddingRight: theme.spacing.unit * 2,
+    },
+    listContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      flexGrow: 1,
+      paddingLeft: theme.spacing.unit * 2,
+    }
   });
 
 interface OwnProps {
@@ -101,7 +112,7 @@ class Lists extends Component<Props, State> {
 
     return (
       <div className={classes.root}>
-        <Grid container spacing={16} direction='row' lg={8} wrap='nowrap'>
+        <Grid container spacing={16} direction='row' lg={8} md={4} sm={2} wrap='nowrap' item={true}>
           {things.map(item => (
             <ItemCard
               key={item.id}
@@ -130,10 +141,9 @@ class Lists extends Component<Props, State> {
           className={classes.listName}
           >
           <Badge
-            className={classes.margin}
+            className={classes.listItemCount}
             badgeContent={list.things.length}
             color="primary"
-            style={{marginLeft: 0, paddingRight: 15}}
           >
             {list.name}
           </Badge>
@@ -144,7 +154,7 @@ class Lists extends Component<Props, State> {
   };
 
   renderLists() {
-    let { userSelf } = this.props;
+    let { userSelf, classes } = this.props;
     if (
       this.props.retrievingUser ||
       !userSelf ||
@@ -155,7 +165,7 @@ class Lists extends Component<Props, State> {
       return (
         <div style={{display: 'flex'}}>
           <Drawer />
-          <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, paddingLeft: 20}}>
+          <div className={classes.listContainer}>
             <CssBaseline />
             {userSelf.lists.map(this.renderList)}
           </div>
