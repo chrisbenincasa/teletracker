@@ -1,6 +1,7 @@
 import {
   Avatar,
   Button,
+  colors,
   createStyles,
   Dialog,
   DialogContent,
@@ -70,59 +71,6 @@ const styles = (theme: Theme) =>
       marginRight: theme.spacing.unit * 3,
     },
   });
-
-/* This is just an array of colors I grabbed from a famous picasso painting.  Testing how the lists could look with a random color identifier. */
-const colorArray = [
-  '#90bab0',
-  '#5b3648',
-  '#2b5875',
-  '#ab6c5d',
-  '#b16f7b',
-  '#764b45',
-  '#53536d',
-  '#7adbd0',
-  '#32cad7',
-  '#17bfe3',
-  '#c2e9e6',
-  '#978fb6',
-  '#04256a',
-  '#3eb1b6',
-  '#7266b8',
-  '#1172d0',
-  '#ed0000',
-  '#abae77',
-  '#73b06d',
-  '#d7799b',
-  '#5b7e7a',
-  '#6fc16d',
-  '#8c8c58',
-  '#d8070d',
-  '#ca8866',
-  '#d9e4e0',
-  '#c17b9f',
-  '#7eb691',
-  '#71dee1',
-  '#50bc45',
-  '#904317',
-  '#292234',
-  '#a64e38',
-  '#c5c3d1',
-  '#825e6a',
-  '#234282',
-  '#30705f',
-  '#be2d00',
-  '#8cac23',
-  '#9b708b',
-  '#6c703d',
-  '#c09f12',
-  '#265e97',
-  '#d21b39',
-  '#948c5b',
-  '#6d6536',
-  '#778588',
-  '#c2350a',
-  '#5ea6b4',
-];
 
 interface OwnProps extends WithStyles<typeof styles>{
   listsById: ListsByIdMap;
@@ -194,9 +142,7 @@ class Drawer extends Component<Props, State> {
     let { listsById, classes, match } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
-
-    // Todo: If we decide to keep this, improve this so colors persist and aren't constantly changing on each re-render
-    let randomItem = colorArray[Math.floor(Math.random() * colorArray.length)]
+    const hue = 'blue';
 
     return (
       <ListItem
@@ -206,12 +152,12 @@ class Drawer extends Component<Props, State> {
           <RouterLink {...props} to={'/lists/' + list.id} />
         }
         // This is a little hacky and can be improved
-        selected={!!(!match.params.type && Number(match.params.id) === Number(list.id))}
+        selected={Boolean(!match.params.type && Number(match.params.id) === Number(list.id))}
       >
         <ListItemAvatar>
           <Avatar
             className={classes.avatar}
-            style={{backgroundColor: randomItem}}
+            style={{backgroundColor: colors[hue][userList.things.length < 9 ? `${userList.things.length}00` : 900]}}
           >
             {userList.things.length}
           </Avatar>
@@ -234,16 +180,13 @@ class Drawer extends Component<Props, State> {
     let { match } = this.props;
 
     if (
-      this.props.retrievingUser ||
       !this.props.userSelf ||
       this.props.loadingLists
     ) {
-      console.log(this.props.loadingLists);
       return this.renderLoading();
     } else {
       let { classes, userSelf } = this.props;
       let isLoading = Boolean(this.props.loading[USER_SELF_CREATE_LIST]);
-      console.log(isLoading);
       return (
         <React.Fragment>
           <DrawerUI
@@ -257,7 +200,7 @@ class Drawer extends Component<Props, State> {
             <Typography
               component="h4"
               variant="h4"
-              style={{margin: 16}}
+              className={classes.margin}
             >
               My Lists
               <Button onClick={this.refreshUser}>
@@ -281,7 +224,7 @@ class Drawer extends Component<Props, State> {
               <ListItem
                 button
                 key='all'
-                selected={!!(!match.params.type && !match.params.id)}
+                selected={Boolean(!match.params.type && !match.params.id)}
                 component={props =>
                   <RouterLink {...props} to={'/lists'} />
                 }
