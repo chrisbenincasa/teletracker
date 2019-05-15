@@ -1,19 +1,9 @@
 import {
-  Button,
-  Card,
-  CardContent,
-  CardMedia,
+  Badge,
   createStyles,
   CssBaseline,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Fab,
   Grid,
-  Icon,
   LinearProgress,
-  TextField,
   Theme,
   Typography,
   withStyles,
@@ -22,7 +12,7 @@ import {
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Link, Redirect } from 'react-router-dom';
+import { Link as RouterLink, Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import {
   ListRetrieveAllInitiated,
@@ -30,41 +20,49 @@ import {
 } from '../../actions/lists';
 import { createList, UserCreateListPayload } from '../../actions/user';
 import withUser, { WithUserProps } from '../../components/withUser';
-import { USER_SELF_CREATE_LIST } from '../../constants/user';
+import Drawer from '../../components/Drawer';
 import { AppState } from '../../reducers';
+import { List as ListType, Thing } from '../../types';
 import { ListsByIdMap } from '../../reducers/lists';
 import { Loading } from '../../reducers/user';
 import { layoutStyles } from '../../styles';
-import { List, Thing } from '../../types';
-import { getPosterUrl } from '../../utils/metadata-access';
+import ItemCard from '../../components/ItemCard';
 
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
-    cardGrid: {
-      padding: `${theme.spacing.unit * 8}px 0`,
-    },
-    card: {
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    cardContent: {
-      flexGrow: 1,
-    },
-    cardMedia: {
-      height: 0,
-      width: '33.333%',
-      paddingTop: '50%',
-    },
-    addNewCard: {
+    root: {
       display: 'flex',
       flexWrap: 'wrap',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
+      overflow: 'hidden',
     },
-    fab: {
-      margin: theme.spacing.unit,
+    listName: {
+      textDecoration: 'none',
+      marginBottom: theme.spacing.unit * 2,
     },
+    listsContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      flex: '1 0 auto',
+      margin: `${theme.spacing.unit * 2}px 0`,
+      width: '100%',
+    },
+    margin: {
+      margin: theme.spacing.unit * 2,
+      marginRight: theme.spacing.unit * 3,
+    },
+    listItemCount: {
+      margin: theme.spacing.unit * 2,
+      marginLeft: 0,
+      paddingRight: theme.spacing.unit * 2,
+    },
+    listContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      flexGrow: 1,
+      paddingLeft: theme.spacing.unit * 2,
+    }
   });
 
 interface OwnProps {
@@ -90,9 +88,6 @@ interface State {
   listName: string;
 }
 
-type PlaceholderItem = { placeholder: true };
-const makePlaceholder: () => PlaceholderItem = () => ({ placeholder: true });
-
 class Lists extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
@@ -103,19 +98,6 @@ class Lists extends Component<Props, State> {
     this.props.ListRetrieveAllInitiated();
   }
 
-  componentDidUpdate(oldProps: Props) {
-    if (
-      Boolean(oldProps.loading[USER_SELF_CREATE_LIST]) &&
-      !Boolean(this.props.loading[USER_SELF_CREATE_LIST])
-    ) {
-      this.handleClose();
-    }
-  }
-
-  refreshUser = () => {
-    this.props.retrieveUser(true);
-  };
-
   renderLoading() {
     return (
       <div style={{ flexGrow: 1 }}>
@@ -124,153 +106,68 @@ class Lists extends Component<Props, State> {
     );
   }
 
-  renderPoster = (thing: Thing | PlaceholderItem, key: string | number) => {
-    if ((thing as PlaceholderItem).placeholder) {
-      return <div key={key} className={this.props.classes.cardMedia} />;
-    } else {
-      thing = thing as Thing;
-      let posterUrl = getPosterUrl(thing, '154');
-
-      if (posterUrl) {
-        return (
-          <CardMedia
-            key={key}
-            className={this.props.classes.cardMedia}
-            image={posterUrl}
-            title={thing.name}
-          />
-        );
-      } else {
-        return null;
-      }
-    }
-  };
-
-  renderItemPreviews = (list: List) => {
-    let things: (Thing | PlaceholderItem)[] = list.things.slice(0, 6);
-
-    if (things.length < 6) {
-      let placeholdersNeeded = 6 - things.length;
-      let placeholders: PlaceholderItem[] = Array(placeholdersNeeded).fill(
-        makePlaceholder(),
-      );
-      things = things.concat(placeholders);
-    }
+  renderItemPreviews = (list: ListType) => {
+    let things: (Thing )[] = list.things.slice(0, 4);
+    let { classes, userSelf } = this.props;
 
     return (
-      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-        {things.map((thing, idx) => this.renderPoster(thing, idx))}
+      <div className={classes.root}>
+        <Grid container spacing={16} direction='row' lg={8} md={4} sm={2} wrap='nowrap' item={true}>
+          {things.map(item => (
+            <ItemCard
+              key={item.id}
+              userSelf={userSelf}
+              item={item}
+              itemCardVisible={false}
+              listContext={list}
+              withActionButton
+            />
+          ))}
+        </Grid>
       </div>
     );
   };
 
-  handleClickOpen = () => {
-    this.setState({ createDialogOpen: true });
-  };
-
-  handleClose = () => {
-    this.setState({ createDialogOpen: false });
-  };
-
-  handleCreateListSubmit = () => {
-    if (this.state.listName.length > 0) {
-      this.props.createList({ name: this.state.listName });
-    }
-  };
-
-  renderList = (userList: List) => {
-    let listWithDetails = this.props.listsById[userList.id];
-
+  renderList = (userList: ListType) => {
+    let { listsById, classes } = this.props;
+    let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
 
     return (
-      <Grid key={list.id} sm={6} md={4} lg={4} item>
-        <Card>
-          {this.renderItemPreviews(list)}
-          <CardContent>
-            <Typography
-              component={props => <Link {...props} to={'/lists/' + list.id} />}
-              variant="h5"
-            >
-              {list.name}
-            </Typography>
-            {list.things.length == 0 || list.things.length > 1
-              ? list.things.length + ' items'
-              : list.things.length + ' item'}
-          </CardContent>
-        </Card>
-      </Grid>
+      <div className={classes.listsContainer}>
+        <Typography
+          component={props => <RouterLink {...props} to={'/lists/' + list.id} />}
+          variant="h5"
+          className={classes.listName}
+          >
+          <Badge
+            className={classes.listItemCount}
+            badgeContent={list.things.length}
+            color="primary"
+          >
+            {list.name}
+          </Badge>
+        </Typography>
+        {this.renderItemPreviews(list)}
+      </div>
     );
   };
 
   renderLists() {
+    let { userSelf, classes } = this.props;
     if (
       this.props.retrievingUser ||
-      !this.props.userSelf ||
+      !userSelf ||
       this.props.loadingLists
     ) {
       return this.renderLoading();
     } else {
-      let { classes, userSelf } = this.props;
-      let isLoading = Boolean(this.props.loading[USER_SELF_CREATE_LIST]);
-
       return (
-        <div>
-          <CssBaseline />
-          <div className={classes.layout}>
-            <Typography component="h4" variant="h4">
-              Lists for {userSelf.name}
-            </Typography>
-
-            <div className={classes.cardGrid}>
-              <Button onClick={this.refreshUser}>Refresh</Button>
-              <Grid container spacing={16}>
-                {userSelf.lists.map(this.renderList)}
-              </Grid>
-              <Fab
-                color="primary"
-                aria-label="Add"
-                className={classes.fab}
-                onClick={this.handleClickOpen}
-              >
-                <Icon>add</Icon>
-              </Fab>
-              <Dialog
-                fullWidth
-                maxWidth="xs"
-                open={this.state.createDialogOpen}
-              >
-                <DialogTitle>Create a List</DialogTitle>
-                <DialogContent>
-                  <TextField
-                    autoFocus
-                    margin="dense"
-                    id="name"
-                    label="Name"
-                    type="email"
-                    fullWidth
-                    value={this.state.listName}
-                    onChange={e => this.setState({ listName: e.target.value })}
-                  />
-                </DialogContent>
-                <DialogActions>
-                  <Button
-                    disabled={isLoading}
-                    onClick={this.handleClose}
-                    color="primary"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    disabled={isLoading}
-                    onClick={this.handleCreateListSubmit}
-                    color="primary"
-                  >
-                    Create
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            </div>
+        <div style={{display: 'flex'}}>
+          <Drawer />
+          <div className={classes.listContainer}>
+            <CssBaseline />
+            {userSelf.lists.map(this.renderList)}
           </div>
         </div>
       );
