@@ -94,6 +94,9 @@ const styles = (theme: Theme) =>
         display: 'flex',
       },
     },
+    appbar: {
+      zIndex: 99999,
+    }
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
@@ -233,7 +236,7 @@ class App extends Component<Props, State> {
 
     return (
       <div className={classes.root}>
-        <AppBar position="static">
+        <AppBar position="sticky" className={classes.appbar}>
           <Toolbar>
             <Tv style={{ marginRight: '10px' }} />
             <Typography variant="h6" color="inherit" className={classes.grow}>
