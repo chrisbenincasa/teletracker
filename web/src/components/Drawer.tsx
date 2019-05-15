@@ -138,7 +138,7 @@ class Drawer extends Component<Props, State> {
     }
   };
 
-  renderListItems = (userList: ListType) => {
+  renderListItems = (userList: ListType, index: Number) => {
     let { listsById, classes, match } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
@@ -157,7 +157,7 @@ class Drawer extends Component<Props, State> {
         <ListItemAvatar>
           <Avatar
             className={classes.avatar}
-            style={{backgroundColor: colors[hue][userList.things.length < 9 ? `${userList.things.length}00` : 900]}}
+            style={{backgroundColor: colors[hue][index < 9 ? `${Number(9) - Number(index)}00` : 100]}}
           >
             {userList.things.length}
           </Avatar>
