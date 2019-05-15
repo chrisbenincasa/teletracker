@@ -238,17 +238,16 @@ class App extends Component<Props, State> {
       <div className={classes.root}>
         <AppBar position="sticky" className={classes.appbar}>
           <Toolbar>
-            <Tv style={{ marginRight: '10px' }} />
+          <IconButton
+              component={props => <Link {...props} to="/" />}
+              color="inherit"
+            >
+              <Tv style={{ marginRight: '10px' }} />
+            </IconButton>
             <Typography variant="h6" color="inherit" className={classes.grow}>
               Teletracker
             </Typography>
             {this.renderSearch()}
-            <IconButton
-              component={props => <Link {...props} to="/" />}
-              color="inherit"
-            >
-              <HomeOutlined />
-            </IconButton>
             {!this.props.isAuthed ? (
               <Button
                 component={props => <Link {...props} to="/login" />}
