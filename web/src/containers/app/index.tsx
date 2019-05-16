@@ -63,6 +63,9 @@ const styles = (theme: Theme) =>
         marginLeft: theme.spacing.unit * 3,
         width: 'auto',
       },
+      [theme.breakpoints.down('sm')]: {
+        display: 'none',
+      },
     },
     searchIcon: {
       width: theme.spacing.unit * 9,
