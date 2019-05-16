@@ -66,11 +66,15 @@ case class User(
   }
 
   def withLists(lists: List[TrackedList]): User = {
-    this.copy(lists = Some(lists))
+    withLists(Some(lists))
   }
 
   def withLists(lists: Option[List[TrackedList]]): User = {
     this.copy(lists = lists)
+  }
+
+  def appendLists(lists: List[TrackedList]): User = {
+    withLists(this.lists.getOrElse(Nil) ++ lists)
   }
 }
 

@@ -4,9 +4,9 @@ import com.teletracker.service.auth.RequestContext._
 import com.teletracker.service.auth.jwt.JwtVendor
 import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
 import com.teletracker.service.controllers.utils.CanParseFieldFilter
-import com.teletracker.service.db.model.{Event, ThingType, User}
+import com.teletracker.service.db.model.{Event, ThingType, User, UserThingTagType}
 import com.teletracker.service.db.{ThingsDbAccess, UsersDbAccess}
-import com.teletracker.service.model.DataResponse
+import com.teletracker.service.model.{DataResponse, IllegalActionTypeError}
 import com.teletracker.service.util.HasFieldsFilter
 import com.teletracker.service.util.json.circe._
 import com.twitter.finagle.http.Request
@@ -15,7 +15,7 @@ import com.twitter.finatra.request.{QueryParam, RouteParam}
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import io.circe.syntax._
 import io.circe.parser._
 
@@ -40,7 +40,7 @@ class UserController @Inject()(
       get("/:userId") { req: GetUserByIdRequest =>
         usersDbAccess.findUserAndLists(req.request.authContext.user.id).map(result => {
           if (result.isEmpty) {
-            response.status(404)
+            response.notFound
           } else {
             DataResponse.complex(result.get)
           }
@@ -53,7 +53,7 @@ class UserController @Inject()(
             usersDbAccess.updateUser(updatedUser).flatMap(_ => {
               usersDbAccess.findUserAndLists(request.authContext.user.id).map(result => {
                 if (result.isEmpty) {
-                  response.status(404)
+                  response.notFound
                 } else {
                   DataResponse.complex(result.get)
                 }
@@ -68,7 +68,7 @@ class UserController @Inject()(
         val selectFields = parseFieldsOrNone(req.fields)
         usersDbAccess.findUserAndLists(req.request.authContext.user.id, selectFields).map(result => {
           if (result.isEmpty) {
-            response.status(404)
+            response.notFound
           } else {
             response.ok.contentTypeJson().body(
               DataResponse.complex(
@@ -90,22 +90,28 @@ class UserController @Inject()(
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
         val selectFields = parseFieldsOrNone(req.fields)
         val filters = ListFilters(
-          if (req.itemTypes.nonEmpty) Some(req.itemTypes.flatMap(typ => Try(ThingType.fromString(typ)).toOption).toSet) else None
+          if (req.itemTypes.nonEmpty) {
+            Some(req.itemTypes.flatMap(typ => Try(ThingType.fromString(typ)).toOption).toSet)
+          } else {
+            None
+          }
         )
 
-        usersDbAccess.findList(req.request.authContext.user.id, req.listId, selectFields, Some(filters)).map(result => {
-          if (result.isEmpty) {
-            response.status(404)
-          } else {
-            val list = result.head._1
-            val things = result.flatMap(_._2)
+        usersDbAccess.findList(
+          req.request.authContext.user.id,
+          req.listId,
+          selectFields,
+          Some(filters),
+          req.isDynamic
+        ).map {
+          case None => response.notFound
 
+          case Some((list, things)) =>
             response.ok.contentTypeJson().body(
               DataResponse.complex(
                 list.toFull.withThings(things.map(_.asPartial).toList)
               ))
-          }
-        })
+        }
       }
 
       put("/:userId/lists/:listId") { req: AddThingToListRequest =>
@@ -118,13 +124,13 @@ class UserController @Inject()(
         }
 
         listFut.flatMap {
-          case None => Future.successful(response.status(404))
+          case None => Future.successful(response.notFound)
           case Some(list) =>
             thingsDbAccess.findThingById(req.itemId).flatMap {
-              case None => Future.successful(response.status(404))
+              case None => Future.successful(response.notFound)
               case Some(thing) =>
                 usersDbAccess.addThingToList(list.id.get, thing.id.get).
-                  map(_ => response.status(204))
+                  map(_ => response.noContent)
             }
         }
       }
@@ -135,16 +141,16 @@ class UserController @Inject()(
           val (validListIds, _) = req.listIds.partition(listIds(_))
 
           if (validListIds.isEmpty) {
-            Future.successful(response.status(404))
+            Future.successful(response.notFound)
           } else {
             thingsDbAccess.findThingById(req.itemId).flatMap {
-              case None => Future.successful(response.status(404))
+              case None => Future.successful(response.notFound)
               case Some(thing) =>
                 val futs = validListIds.map(listId => {
                   usersDbAccess.addThingToList(listId, thing.id.get)
                 })
 
-                Future.sequence(futs).map(_ => response.status(204))
+                Future.sequence(futs).map(_ => response.noContent)
             }
           }
         })
@@ -157,10 +163,10 @@ class UserController @Inject()(
           val validRemoves = req.removeFromLists.filter(listIds(_))
 
           if (validAdds.isEmpty && validRemoves.isEmpty) {
-            Future.successful(response.status(404))
+            Future.successful(response.notFound)
           } else {
             thingsDbAccess.findThingById(req.thingId).flatMap {
-              case None => Future.successful(response.status(404))
+              case None => Future.successful(response.notFound)
               case Some(thing) =>
                 val futs = validAdds.map(listId => {
                   usersDbAccess.addThingToList(listId, thing.id.get)
@@ -168,10 +174,38 @@ class UserController @Inject()(
 
                 val removeFuts = usersDbAccess.removeThingFromLists(validRemoves.toSet, thing.id.get)
 
-                Future.sequence(futs :+ removeFuts).map(_ => response.status(204))
+                Future.sequence(futs :+ removeFuts).map(_ => response.noContent)
             }
           }
         })
+      }
+
+      put("/:userId/things/:thingId/actions") { req: UpdateUserThingActionRequest =>
+        Try(UserThingTagType.fromString(req.action)) match {
+          case Success(action) =>
+            if (action.typeRequiresValue() && req.value.isEmpty) {
+              Future.successful(response.badRequest)
+            } else {
+              usersDbAccess.
+                insertOrUpdateAction(req.request.authContext.user.id, req.thingId, action, req.value).
+                map(_ => response.noContent)
+            }
+
+          case Failure(_) =>
+            Future.successful(response.badRequest(new IllegalActionTypeError(req.action)).contentTypeJson())
+        }
+      }
+
+      delete("/:userId/things/:thingId/actions/:actionType") { req: DeleteUserThingActionRequest =>
+        Try(UserThingTagType.fromString(req.actionType)) match {
+          case Success(action) =>
+            usersDbAccess.removeAction(req.request.authContext.user.id, req.thingId, action).map(_ => {
+              response.noContent
+            })
+
+          case Failure(_) =>
+            Future.successful(response.badRequest(new IllegalActionTypeError(req.actionType)).contentTypeJson())
+        }
       }
 
       get("/:userId/events") { req: GetUserByIdRequest =>
@@ -215,6 +249,7 @@ case class GetUserAndListByIdRequest(
   @RouteParam listId: Int,
   @QueryParam fields: Option[String],
   @QueryParam(commaSeparatedList = true) itemTypes: Seq[String] = Seq(),
+  @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
   request: Request
 ) extends HasFieldsFilter
 
@@ -271,4 +306,19 @@ case class CreateUserResponse(
 @JsonCodec
 case class UpdateUserRequest(
   user: User
+)
+
+case class UpdateUserThingActionRequest(
+  @RouteParam userId: String,
+  @RouteParam thingId: Int,
+  action: String,
+  value: Option[Double],
+  request: Request
+)
+
+case class DeleteUserThingActionRequest(
+  @RouteParam userId: String,
+  @RouteParam thingId: Int,
+  @RouteParam actionType: String,
+  request: Request
 )

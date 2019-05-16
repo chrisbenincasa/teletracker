@@ -2,7 +2,7 @@ package com.teletracker.service.inject
 
 import com.teletracker.service.config.TeletrackerConfig
 import com.teletracker.service.db.CustomPostgresProfile
-import com.teletracker.service.db.model.{ExternalSource, GenreType, OfferType, PresentationType, ThingType, UserPreferences}
+import com.teletracker.service.db.model.{DynamicListRules, ExternalSource, GenreType, OfferType, PresentationType, ThingType, UserPreferences, UserThingTagType}
 import com.teletracker.service.util.Slug
 import com.teletracker.service.util.execution.ExecutionContextProvider
 import com.google.inject.{Provides, Singleton}
@@ -64,9 +64,11 @@ class DbImplicits @Inject()(val profile: CustomPostgresProfile) {
   implicit val presentationTypeMapper = MappedColumnType.base[PresentationType, String](_.getName, PresentationType.fromString)
   implicit val genreTypeMapper = MappedColumnType.base[GenreType, String](_.getName, GenreType.fromString)
   implicit val thingTypeMapper = MappedColumnType.base[ThingType, String](_.getName, ThingType.fromString)
+  implicit val actionTypeMapper = MappedColumnType.base[UserThingTagType, String](_.getName, UserThingTagType.fromString)
   implicit val slugTypeMapper = MappedColumnType.base[Slug, String](_.value, Slug.raw)
 
   implicit val userPrefsToJson = MappedColumnType.base[UserPreferences, Json](_.asJson, _.as[UserPreferences].right.get)
+  implicit val tagRulesToJson = MappedColumnType.base[DynamicListRules, Json](_.asJson, _.as[DynamicListRules].right.get)
 }
 
 object CustomAsyncExecutor {

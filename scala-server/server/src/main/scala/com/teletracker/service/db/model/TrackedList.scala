@@ -1,5 +1,6 @@
 package com.teletracker.service.db.model
 
+import com.teletracker.service.inject.DbImplicits
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
 
@@ -8,7 +9,9 @@ case class TrackedListRow(
   name: String,
   isDefault: Boolean,
   isPublic: Boolean,
-  userId: Int
+  userId: Int,
+  isDynamic: Boolean = false,
+  rules: Option[DynamicListRules] = None
 ) {
   def toFull: TrackedList = TrackedList.fromRow(this)
 }
@@ -21,7 +24,10 @@ object TrackedList {
       row.name,
       row.isDefault,
       row.isPublic,
-      row.userId
+      row.userId,
+      things = None,
+      isDynamic = row.isDynamic,
+      rules = row.rules
     )
   }
 }
@@ -32,18 +38,43 @@ case class TrackedList(
   isDefault: Boolean,
   isPublic: Boolean,
   userId: Int,
-  things: Option[List[PartialThing]] = None
+  things: Option[List[PartialThing]] = None,
+  isDynamic: Boolean = false,
+  rules: Option[DynamicListRules] = None
 ) {
   def withThings(things: List[PartialThing]): TrackedList = {
     this.copy(things = Some(things))
   }
 }
 
+object DynamicListTagRule {
+  def ifPresent(tagType: UserThingTagType): DynamicListTagRule = DynamicListTagRule(tagType, None, Some(true))
+}
+
+case class DynamicListTagRule(
+  tagType: UserThingTagType,
+  value: Option[Double],
+  isPresent: Option[Boolean]
+) {
+  def withValue(value: Double): DynamicListTagRule = this.copy(value = Some(value))
+}
+
+object DynamicListRules {
+  def watched = DynamicListRules(DynamicListTagRule.ifPresent(UserThingTagType.Watched) :: Nil)
+}
+
+// TODO: Insanely simple ruleset where rules are OR'd together. Expand to be more flexible.
+case class DynamicListRules(
+  tagRules: List[DynamicListTagRule]
+)
+
 class TrackedLists @Inject()(
   val driver: JdbcProfile,
-  val users: Users
+  val users: Users,
+  dbImplicits: DbImplicits
 ) {
   import driver.api._
+  import dbImplicits._
 
   class TrackedListsTable(tag: Tag) extends Table[TrackedListRow](tag, "lists") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
@@ -53,6 +84,8 @@ class TrackedLists @Inject()(
     def createdAt = column[java.sql.Timestamp]("created_at")
     def lastUpdatedAt = column[java.sql.Timestamp]("last_updated_at")
     def userId = column[Int]("user_id")
+    def isDynamic = column[Boolean]("is_dynamic", O.Default(false))
+    def rules = column[Option[DynamicListRules]]("rules", O.SqlType("jsonb"))
 
     def userId_fk = foreignKey("lists_user_id_fk", userId, users.query)(_.id)
 
@@ -62,7 +95,9 @@ class TrackedLists @Inject()(
         name,
         isDefault,
         isPublic,
-        userId
+        userId,
+        isDynamic,
+        rules
       ) <> (TrackedListRow.tupled, TrackedListRow.unapply)
   }
 

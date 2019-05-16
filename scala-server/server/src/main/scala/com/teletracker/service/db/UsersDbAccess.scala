@@ -2,13 +2,10 @@ package com.teletracker.service.db
 
 import com.teletracker.service.auth.PasswordHash
 import com.teletracker.service.auth.jwt.JwtVendor
-import com.teletracker.service.db.model._
+import com.teletracker.service.controllers.ListFilters
+import com.teletracker.service.db.model.{Events, Things, Tokens, TrackedListThings, TrackedLists, UserCredentials, Users, _}
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import com.teletracker.service.util.{Field, FieldSelector}
-import com.teletracker.service.auth.jwt.JwtVendor
-import com.teletracker.service.controllers.ListFilters
-import com.teletracker.service.db.model.{Events, Things, Tokens, TrackedListThings, TrackedLists, UserCredentials, Users}
-import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import io.circe.Json
 import javax.inject.Inject
 import org.joda.time.DateTime
@@ -26,11 +23,13 @@ class UsersDbAccess @Inject()(
   val events: Events,
   val tokens: Tokens,
   val networks: Networks,
+  val userThingTags: UserThingTags,
+  dynamicListBuilder: DynamicListBuilder,
   jwtVendor: JwtVendor,
   dbImplicits: DbImplicits
 )(implicit executionContext: ExecutionContext) extends DbAccess {
-  import provider.driver.api._
   import dbImplicits._
+  import provider.driver.api._
 
   private implicit class UserExtensions[C[_]](q: Query[Users#UsersTable, UserRow, C]) {
     def withCredentials = q.join(userCredentials.query).on(_.id === _.userId)
@@ -68,7 +67,11 @@ class UsersDbAccess @Inject()(
     run {
       for {
         userId <- query
-        _ <- (trackedLists.query returning trackedLists.query.map(_.id)) += TrackedListRow(None, "Default List", isDefault = true, isPublic = false, userId)
+        _ <- (trackedLists.query returning trackedLists.query.map(_.id)) +=
+          TrackedListRow(None, "Default List", isDefault = true, isPublic = false, userId)
+
+        _ <- (trackedLists.query returning trackedLists.query.map(_.id)) +=
+          TrackedListRow(None, "Watched", isDefault = true, isPublic = false, userId, isDynamic = true, Some(DynamicListRules.watched))
       } yield userId
     }
   }
@@ -112,7 +115,7 @@ class UsersDbAccess @Inject()(
 
   private def findUserAndListsQuery(userId: Int): Query[(((users.UsersTable, Rep[Option[trackedLists.TrackedListsTable]]), Rep[Option[trackedListThings.TrackedListThingsTable]]), Rep[Option[things.ThingsTableRaw]]), (((UserRow, Option[TrackedListRow]), Option[TrackedListThing]), Option[ThingRaw]), Seq] = {
     users.query.filter(_.id === userId) joinLeft
-      trackedLists.query on(_.id === _.userId) joinLeft
+      trackedLists.query.filter(!_.isDynamic) on(_.id === _.userId) joinLeft
       trackedListThings.query on(_._2.map(_.id) === _.listId) joinLeft
       things.rawQuery on(_._2.map(_.thingId) === _.id)
   }
@@ -153,25 +156,52 @@ class UsersDbAccess @Inject()(
         (user, optList, thing)
     })
 
+    val dynamicListsFut = {
+      run {
+        trackedLists.query.filter(tl => tl.userId === userId && tl.isDynamic).result.flatMap(lists => {
+          val actionsByList = lists.map(list => dynamicListBuilder.buildList(userId, list).map(list -> _))
+
+          DBIO.sequence(actionsByList)
+        })
+      }.map(_.map {
+        case (list, things) =>
+          val thingsWithMeta = things.map {
+            case thing if selectFields.isEmpty => thing.copy(metadata = None)
+            case thing if thing.metadata.isDefined =>
+              val newMeta = FieldSelector.filter(thing.metadata.get, selectFields.get ::: defaultFields)
+              thing.copy(metadata = Some(newMeta))
+            case thing => thing
+          }.map(_.asPartial)
+
+          list.toFull.withThings(thingsWithMeta.toList)
+      })
+    }
+
     for {
       userAndLists <- userAndListsFut
       networkPrefs <- networkPrefsFut
+      dynamicLists <- dynamicListsFut
     } yield {
       userAndLists.headOption.map(_._1).map(user => {
         val lists = userAndLists.collect {
           case (_, Some(list), thingOpt) => (list, thingOpt)
         }.groupBy(_._1).map {
-          case (list, matches) => list.toFull.withThings(matches.flatMap(_._2).toList)
+          case (list, matches) =>
+            list
+              .toFull
+              .withThings(matches.flatMap(_._2).toList)
         }
 
-        user.toFull.withNetworks(networkPrefs.flatMap(_._2).toList).withLists(lists.toList.sortBy(_.id))
+        user
+          .toFull
+          .withNetworks(networkPrefs.flatMap(_._2).toList)
+          .withLists((lists ++ dynamicLists).toList.sortBy(_.id))
       })
     }
   }
 
   def findUserAndList(userId: Int, listId: Int): Future[Seq[(UserRow, TrackedListRow)]] = {
     run {
-
       trackedLists.query.filter(tl => tl.userId === userId && tl.id === listId).take(1).flatMap(list => {
         list.userId_fk.map(user => user -> list)
       }).result
@@ -245,36 +275,64 @@ class UsersDbAccess @Inject()(
     userId: Int,
     listId: Int,
     selectFields: Option[List[Field]],
-    filters: Option[ListFilters] = None
-  ): Future[Seq[(TrackedListRow, Option[ThingRaw])]] = {
-    val listQuery = trackedLists.query.filter(tl => tl.userId === userId && tl.id === listId)
-
+    filters: Option[ListFilters] = None,
+    isDynamicHint: Option[Boolean] = None
+  ): Future[Option[(TrackedListRow, Seq[ThingRaw])]] = {
     val thingsQuery = filters.flatMap(_.itemTypes) match {
       case Some(types) => things.rawQuery.filter(_.`type` inSetBind types)
       case None => things.rawQuery
     }
 
-    val fullQuery = listQuery joinLeft
-      trackedListThings.query on (_.id === _.listId) joinLeft
-      thingsQuery on(_._2.map(_.thingId) === _.id)
+    val listAndThingsFut = isDynamicHint match {
+      case Some(false) =>
+        val listQuery = trackedLists.query.filter(tl => tl.userId === userId && tl.id === listId)
 
-    val q = fullQuery.map {
-      case ((list, _), things) => list -> things
-    }
+        val fullQuery = listQuery joinLeft
+          trackedListThings.query on (_.id === _.listId) joinLeft
+          thingsQuery on(_._2.map(_.thingId) === _.id)
 
-    run(q.result).map(_.map {
-      case (list, Some(thing)) if selectFields.isDefined =>
-        val newThing = thing.metadata match {
-          case Some(metadata) =>
-            thing.copy(metadata = Some(FieldSelector.filter(metadata, selectFields.get ::: defaultFields)))
+        val listAndThingsQuery = fullQuery.map { case ((list, _), things) => list -> things }
 
-          case None => thing
+        run(listAndThingsQuery.result).map {
+          case listAndThings if listAndThings.isEmpty => None
+          case listAndThings =>
+            val (list, _) = listAndThings.head
+            Some(list -> listAndThings.flatMap(_._2))
         }
 
-        list -> Some(newThing)
+      case _ =>
+        run {
+          trackedLists.query.filter(tl => tl.userId === userId && tl.id === listId).result.headOption
+        }.flatMap {
+          case None =>
+            Future.successful(None)
 
-      case x => x
-    })
+          case Some(list) if list.isDynamic =>
+            run(dynamicListBuilder.buildList(userId, list).map(list -> _).map(Some(_)))
+
+          case Some(list) =>
+            val listThingsQuery = trackedListThings.query.filter(_.listId === list.id) joinLeft
+              thingsQuery on(_.thingId === _.id)
+
+            run(listThingsQuery.result.map(_.flatMap(_._2)).map(list -> _).map(Some(_)))
+        }
+    }
+
+    listAndThingsFut.map {
+      case Some((list, things)) if selectFields.isDefined =>
+        val newThings = things.map(thing => {
+          thing.metadata match {
+            case Some(metadata) =>
+              thing.copy(metadata = Some(FieldSelector.filter(metadata, selectFields.get ::: defaultFields)))
+
+            case None => thing
+          }
+        })
+
+        Some(list -> newThings)
+
+      case listAndThings => listAndThings
+    }
   }
 
   def addThingToList(listId: Int, thingId: Int): Future[Int] = {
@@ -315,6 +373,28 @@ class UsersDbAccess @Inject()(
   def addUserEvent(event: Event): Future[Int] = {
     run {
       (events.query returning events.query.map(_.id)) += event
+    }
+  }
+
+  def insertOrUpdateAction(userId: Int, thingId: Int, action: UserThingTagType, value: Option[Double]): Future[Int] = {
+    run {
+      userThingTags.query.filter(utt => {
+        utt.userId === userId && utt.thingId === thingId && utt.action === action
+      }).take(1).result.headOption.flatMap {
+        case Some(existing) =>
+          userThingTags.query.update(existing.copy(value = value))
+
+        case None =>
+          userThingTags.query += UserThingTag(-1, userId, thingId, action, value)
+      }
+    }
+  }
+
+  def removeAction(userId: Int, thingId: Int, action: UserThingTagType): Future[Int] = {
+    run {
+      userThingTags.query.filter(utt => {
+        utt.userId === userId && utt.thingId === thingId && utt.action === action
+      }).delete
     }
   }
 }

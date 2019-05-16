@@ -25,6 +25,7 @@ class ThingsDbAccess @Inject()(
   val users: Users,
   val trackedListThings: TrackedListThings,
   val trackedLists: TrackedLists,
+  val userThingTags: UserThingTags,
   dbImplicits: DbImplicits
 )(implicit executionContext: ExecutionContext) extends DbAccess {
   import provider.driver.api._
@@ -407,17 +408,27 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def getThingUserDetails(userId: Int, thingId: Int) = {
+  def getThingUserDetails(userId: Int, thingId: Int): Future[UserThingDetails] = {
     // Do they track it?
-    val lists = trackedListThings.query.filter(_.thingId === thingId).flatMap(l => {
+    val listsQuery = trackedListThings.query.filter(_.thingId === thingId).flatMap(l => {
       l.list_fk.filter(_.userId === userId)
     })
 
-    run {
-      lists.result
-    }.map(lists => {
-      UserThingDetails(lists.map(_.toFull))
-    })
+    // Actions taken on this item
+    val tagsQuery = userThingTags.query.filter(_.thingId === thingId).filter(_.userId === userId)
+
+    val foundLists = run(listsQuery.result)
+    val foundTags = run(tagsQuery.result)
+
+    for {
+      lists <- foundLists
+      tags <- foundTags
+    } yield {
+      UserThingDetails(
+        belongsToLists = lists.map(_.toFull),
+        tags = tags
+      )
+    }
   }
 
   def getThingsUserDetails(userId: Int, thingIds: Set[Int]): Future[Map[Int, UserThingDetails]] = {
@@ -440,5 +451,6 @@ object UserThingDetails {
 }
 
 case class UserThingDetails(
-  belongsToLists: Seq[TrackedList]
+  belongsToLists: Seq[TrackedList],
+  tags: Seq[UserThingTag] = Seq.empty
 )

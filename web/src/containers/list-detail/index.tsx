@@ -126,6 +126,8 @@ class ListDetail extends Component<Props, State> {
   }
 
   componentDidMount() {
+    console.log(this.props);
+
     this.props.retrieveList({
       listId: this.props.match.params.id,
       force: false,
@@ -135,6 +137,11 @@ class ListDetail extends Component<Props, State> {
   componentDidUpdate(oldProps: Props) {
     if (!this.props.listLoading && oldProps.listLoading) {
       this.setState({ loadingList: false });
+    } else if (this.props.match.params.id !== oldProps.match.params.id) {
+      this.props.retrieveList({
+        listId: this.props.match.params.id,
+        force: false,
+      });
     }
   }
 
@@ -153,9 +160,16 @@ class ListDetail extends Component<Props, State> {
       return <Redirect to="/lists" />;
     } else {
       return (
-        <div style={{display: 'flex'}}>
+        <div style={{ display: 'flex' }}>
           <Drawer />
-          <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, padding: 20}}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1,
+              padding: 20,
+            }}
+          >
             <CustomBreadcrumbs
               lookup={breadcrumbNameMap}
               onNotFound={() => list.name}
