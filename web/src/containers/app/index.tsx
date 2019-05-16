@@ -116,9 +116,6 @@ const styles = (theme: Theme) =>
         display: 'none',
       },
     },
-    appBar: {
-      zIndex: 99999,
-    }
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
@@ -303,7 +300,7 @@ class App extends Component<Props, State> {
 
     return (
       <div className={classes.root}>
-        <AppBar position="sticky" className={classes.appBar}>
+        <AppBar position="sticky">
           <Toolbar>
             <IconButton
                 component={props => <Link {...props} to="/" />}

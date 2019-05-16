@@ -484,7 +484,7 @@ class Account extends Component<Props, State> {
   render() {
     let { networksLoading } = this.props;
 
-    return networksLoading ? (
+    return networksLoading || !this.props.networks ? (
       <div style={{ flexGrow: 1 }}>
         <LinearProgress />
       </div>
