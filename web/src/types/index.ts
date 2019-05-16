@@ -16,6 +16,14 @@ export interface User {
   userPreferences: UserPreferences;
 }
 
+export interface UserThingTag {
+  id?: number;
+  userId?: number;
+  thingId?: number;
+  action: ActionType;
+  value?: number;
+}
+
 export type PresentationType = 'sd' | 'hd' | '4k';
 
 export interface UserPreferences {
@@ -29,8 +37,13 @@ export interface Thing {
   normalizedName: string;
   type: 'movie' | 'show' | 'person';
   metadata?: ObjectMetadata;
-  userMetadata?: ObjectMetadata;
+  userMetadata?: ThingUserMetadata;
   availability: Availability[];
+}
+
+export interface ThingUserMetadata {
+  belongsToLists: List[];
+  tags: UserThingTag[];
 }
 
 export interface Availability {
@@ -61,4 +74,8 @@ export interface Network {
   shortname?: string;
   homepage?: string;
   origin?: string;
+}
+
+export enum ActionType {
+  Watched = 'watched',
 }

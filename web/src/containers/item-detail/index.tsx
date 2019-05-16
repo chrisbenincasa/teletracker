@@ -3,13 +3,16 @@ import {
   CircularProgress,
   createStyles,
   CssBaseline,
+  Fab,
   LinearProgress,
   Paper,
   Theme,
+  Tooltip,
+  Typography,
   WithStyles,
   withStyles,
-  Typography,
 } from '@material-ui/core';
+import { Check } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -19,14 +22,19 @@ import { fetchItemDetails } from '../../actions/item-detail';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { Thing, Availability, Network } from '../../types';
+import { Availability, Network, Thing, ActionType } from '../../types';
 import {
   getBackdropUrl,
+  getOverviewPath,
   getPosterPath,
   getTitlePath,
-  getOverviewPath,
   getVoteAveragePath,
 } from '../../utils/metadata-access';
+import {
+  updateUserItemTags,
+  removeUserItemTags,
+  UserUpdateItemTagsPayload,
+} from '../../actions/user';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -81,6 +89,8 @@ interface OwnProps {
 
 interface DispatchProps {
   fetchItemDetails: (id: number, type: string) => void;
+  updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
+  removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
 }
 
 interface RouteParams {
@@ -96,6 +106,7 @@ type Props = OwnProps &
 
 interface State {
   currentId: number;
+  currentItemType: string;
 }
 
 const gradient =
@@ -107,10 +118,36 @@ class ItemDetails extends Component<Props, State> {
     let itemId = Number(match.params.id);
     let itemType = match.params.type;
 
-    console.log(itemId);
+    this.setState({
+      currentId: itemId,
+      currentItemType: itemType,
+    });
 
     this.props.fetchItemDetails(itemId, itemType);
   }
+
+  toggleItemWatched = () => {
+    let payload = {
+      thingId: this.state.currentId,
+      action: ActionType.Watched,
+    };
+
+    if (this.itemMarkedAsWatched()) {
+      this.props.removeUserItemTags(payload);
+    } else {
+      this.props.updateUserItemTags(payload);
+    }
+  };
+
+  itemMarkedAsWatched = () => {
+    if (this.props.itemDetail && this.props.itemDetail.userMetadata) {
+      return R.any(tag => {
+        return tag.action == ActionType.Watched;
+      }, this.props.itemDetail.userMetadata.tags);
+    }
+
+    return false;
+  };
 
   renderLoading = () => {
     return (
@@ -142,11 +179,16 @@ class ItemDetails extends Component<Props, State> {
 
     return (
       <div className={this.props.classes.descriptionContainer}>
-        <Typography color="inherit" variant="h4">
-          {`${title} (${voteAverage * 10})`}{' '}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+          <Typography color="inherit" variant="h4">
+            {`${title} (${voteAverage * 10})`}{' '}
+          </Typography>
           <CircularProgress variant="static" value={voteAverage * 10} />
-        </Typography>
-        <Typography color="inherit">{overview}</Typography>
+          {this.renderWatchedToggle()}
+        </div>
+        <div>
+          <Typography color="inherit">{overview}</Typography>
+        </div>
       </div>
     );
   };
@@ -209,6 +251,33 @@ class ItemDetails extends Component<Props, State> {
           </span>
         );
       }, groupedByNetwork),
+    );
+  };
+
+  renderWatchedToggle = () => {
+    return (
+      <div>
+        <Tooltip
+          title={
+            this.itemMarkedAsWatched()
+              ? 'Mark as not watched'
+              : 'Mark as watched'
+          }
+          placement="top"
+        >
+          <Fab
+            size="small"
+            variant="extended"
+            aria-label="Add"
+            onClick={this.toggleItemWatched}
+            style={{ margin: 8 }}
+            color={this.itemMarkedAsWatched() ? 'primary' : undefined}
+          >
+            <Check style={{ marginRight: 8 }} />
+            Watched
+          </Fab>
+        </Tooltip>
+      </div>
     );
   };
 
@@ -296,7 +365,7 @@ const mapStateToProps: (appState: AppState) => OwnProps = appState => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
-    itemDetail: R.path<Thing>(['itemDetail', 'itemDetail', 'data'], appState),
+    itemDetail: appState.itemDetail.itemDetail,
   };
 };
 
@@ -304,6 +373,8 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
       fetchItemDetails,
+      updateUserItemTags,
+      removeUserItemTags,
     },
     dispatch,
   );

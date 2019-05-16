@@ -1,29 +1,29 @@
 import {
+  actionChannel,
   put,
   select,
-  takeLatest,
-  takeEvery,
-  actionChannel,
   take,
+  takeEvery,
+  takeLatest,
 } from '@redux-saga/core/effects';
 import { ApiResponse } from 'apisauce';
 import { FSA } from 'flux-standard-action';
 import {
-  USER_SELF_RETRIEVE_INITIATED,
-  USER_SELF_RETRIEVE_SUCCESS,
   USER_SELF_ADD_NETWORK,
-  USER_SELF_UPDATE,
-  USER_SELF_UPDATE_PREFS,
   USER_SELF_CREATE_LIST,
   USER_SELF_CREATE_LIST_SUCCESS,
+  USER_SELF_RETRIEVE_INITIATED,
+  USER_SELF_RETRIEVE_SUCCESS,
+  USER_SELF_UPDATE,
+  USER_SELF_UPDATE_ITEM_TAGS,
+  USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
+  USER_SELF_UPDATE_PREFS,
+  USER_SELF_REMOVE_ITEM_TAGS,
+  USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
 } from '../constants/user';
 import { AppState } from '../reducers';
-import { User, Network, UserPreferences } from '../types';
-import {
-  DataResponse,
-  TeletrackerApi,
-  TeletrackerResponse,
-} from '../utils/api-client';
+import { ActionType, Network, User, UserPreferences } from '../types';
+import { DataResponse, TeletrackerResponse } from '../utils/api-client';
 import { clientEffect, createAction } from './utils';
 
 interface UserSelfRetrieveInitiatedPayload {
@@ -70,6 +70,33 @@ export type UserCreateListSuccessAction = FSA<
   { id: number }
 >;
 
+export interface UserUpdateItemTagsPayload {
+  thingId: number;
+  action: ActionType;
+  value?: number;
+  lazy?: boolean; // If true, requires the server call to complete before updating state.
+}
+
+export type UserUpdateItemTagsAction = FSA<
+  typeof USER_SELF_UPDATE_ITEM_TAGS,
+  UserUpdateItemTagsPayload
+>;
+
+export type UserUpdateItemTagsSuccessAction = FSA<
+  typeof USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
+  UserUpdateItemTagsPayload
+>;
+
+export type UserRemoveItemTagsAction = FSA<
+  typeof USER_SELF_REMOVE_ITEM_TAGS,
+  UserUpdateItemTagsPayload
+>;
+
+export type UserRemoveItemTagsSuccessAction = FSA<
+  typeof USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
+  UserUpdateItemTagsPayload
+>;
+
 export type UserActionTypes =
   | UserSelfRetrieveInitiatedAction
   | UserSelfRetrieveSuccessAction
@@ -77,7 +104,9 @@ export type UserActionTypes =
   | UserUpdateAction
   | UserUpdatePrefsAction
   | UserCreateListAction
-  | UserCreateListSuccessAction;
+  | UserCreateListSuccessAction
+  | UserUpdateItemTagsAction
+  | UserUpdateItemTagsSuccessAction;
 
 export const RetrieveUserSelfInitiated = createAction<
   UserSelfRetrieveInitiatedAction
@@ -102,6 +131,22 @@ export const createList = createAction<UserCreateListAction>(
 export const createListSuccess = createAction<UserCreateListSuccessAction>(
   USER_SELF_CREATE_LIST_SUCCESS,
 );
+
+export const updateUserItemTags = createAction<UserUpdateItemTagsAction>(
+  USER_SELF_UPDATE_ITEM_TAGS,
+);
+
+export const updateUserItemTagsSuccess = createAction<
+  UserUpdateItemTagsSuccessAction
+>(USER_SELF_UPDATE_ITEM_TAGS_SUCCESS);
+
+export const removeUserItemTags = createAction<UserRemoveItemTagsAction>(
+  USER_SELF_REMOVE_ITEM_TAGS,
+);
+
+export const removeUserItemTagsSuccess = createAction<
+  UserRemoveItemTagsSuccessAction
+>(USER_SELF_REMOVE_ITEM_TAGS_SUCCESS);
 
 export const retrieveUserSaga = function*() {
   yield takeLatest(USER_SELF_RETRIEVE_INITIATED, function*({
@@ -219,6 +264,59 @@ export const createNewListSaga = function*() {
       }
     } else {
       // TODO: Fail
+    }
+  });
+};
+
+export const updateUserActionSaga = function*() {
+  yield takeEvery(USER_SELF_UPDATE_ITEM_TAGS, function*({
+    payload,
+  }: UserUpdateItemTagsAction) {
+    if (payload) {
+      if (!payload.lazy) {
+        yield put(updateUserItemTagsSuccess(payload));
+      }
+
+      let response: TeletrackerResponse<any> = yield clientEffect(
+        client => client.updateActions,
+        payload.thingId,
+        payload.action,
+        payload.value,
+      );
+
+      if (response.ok && payload.lazy) {
+        yield put(updateUserItemTagsSuccess(payload));
+      } else {
+        // TODO: Error
+      }
+    } else {
+      // TODO: Error
+    }
+  });
+};
+
+export const removeUserActionSaga = function*() {
+  yield takeEvery(USER_SELF_REMOVE_ITEM_TAGS, function*({
+    payload,
+  }: UserRemoveItemTagsAction) {
+    if (payload) {
+      if (!payload.lazy) {
+        yield put(removeUserItemTagsSuccess(payload));
+      }
+
+      let response: TeletrackerResponse<any> = yield clientEffect(
+        client => client.removeActions,
+        payload.thingId,
+        payload.action,
+      );
+
+      if (response.ok && payload.lazy) {
+        yield put(removeUserItemTagsSuccess(payload));
+      } else {
+        // TODO: Error
+      }
+    } else {
+      // TODO: Error
     }
   });
 };
