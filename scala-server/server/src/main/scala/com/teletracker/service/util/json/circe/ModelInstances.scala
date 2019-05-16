@@ -54,4 +54,10 @@ trait ModelInstances extends JodaInstances {
 
   implicit val userDecoder = deriveDecoder[User]
   implicit val userEncoder = deriveEncoder[User]
+
+  implicit val dynamicListTagRuleDecoder = deriveDecoder[DynamicListTagRule]
+  implicit val dynamicListTagRuleEncoder = deriveEncoder[DynamicListTagRule]
+
+  implicit val dynamicListRulesDecoder = deriveDecoder[DynamicListRules]
+  implicit val dynamicListRulesEncoder = deriveEncoder[DynamicListRules]
 }

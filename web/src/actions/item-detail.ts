@@ -3,42 +3,33 @@ import {
   ITEM_FETCH_SUCCESSFUL,
   ITEM_FETCH_FAILED,
 } from '../constants/item-detail';
-import { FSA } from 'flux-standard-action';
+import { FSA, ErrorFluxStandardAction } from 'flux-standard-action';
 import { Dispatch } from 'redux';
 import { TeletrackerApi } from '../utils/api-client';
 import { Thing } from '../types';
-import { createAction } from 'redux-actions';
+import { createAction } from './utils';
 
-interface ItemFetchInitiatedAction {
-  type: typeof ITEM_FETCH_INITIATED;
-  id: number;
-}
+export type ItemFetchInitiatedAction = FSA<typeof ITEM_FETCH_INITIATED, number>;
 
-interface ItemFetchSuccessfulAction {
-  type: typeof ITEM_FETCH_SUCCESSFUL;
-  item: Thing;
-}
+export type ItemFetchSuccessfulAction = FSA<
+  typeof ITEM_FETCH_SUCCESSFUL,
+  Thing
+>;
 
-interface ItemFetchFailedAction {
-  type: typeof ITEM_FETCH_FAILED;
-  item: Thing;
-}
+export type ItemFetchFailedAction = ErrorFluxStandardAction<
+  typeof ITEM_FETCH_FAILED,
+  Error
+>;
 
-export const itemFetchInitiated: (
-  id: number,
-) => ItemFetchInitiatedAction = id => ({
-  type: ITEM_FETCH_INITIATED,
-  id,
-});
+export const itemFetchInitiated = createAction<ItemFetchInitiatedAction>(
+  ITEM_FETCH_INITIATED,
+);
 
-export const itemFetchSuccess: (
-  item: Thing,
-) => ItemFetchSuccessfulAction = item => ({
-  type: ITEM_FETCH_SUCCESSFUL,
-  item,
-});
+export const itemFetchSuccess = createAction<ItemFetchSuccessfulAction>(
+  ITEM_FETCH_SUCCESSFUL,
+);
 
-const ItemFetchFailed = createAction(ITEM_FETCH_FAILED);
+const ItemFetchFailed = createAction<ItemFetchFailedAction>(ITEM_FETCH_FAILED);
 
 export type ItemDetailActionTypes =
   | ItemFetchInitiatedAction
@@ -57,10 +48,9 @@ export const fetchItemDetails = (id: number, type: string) => {
       .getItem(id, type)
       .then(response => {
         if (response.ok) {
-          console.log(response.data);
-          dispatch(itemFetchSuccess(response.data));
+          dispatch(itemFetchSuccess(response.data.data));
         } else {
-          dispatch(ItemFetchFailed());
+          dispatch(ItemFetchFailed(new Error()));
         }
       })
       .catch(e => {

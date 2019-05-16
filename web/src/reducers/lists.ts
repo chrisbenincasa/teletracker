@@ -83,7 +83,7 @@ const handleListRetrieveInitiated = handleAction<
     ...state,
     operation: {
       ...state.operation,
-      operationType: LIST_ADD_ITEM_INITIATED,
+      operationType: LIST_RETRIEVE_INITIATED,
       inProgress: true,
     },
   };

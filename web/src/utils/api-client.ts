@@ -1,6 +1,6 @@
 import * as apisauce from 'apisauce';
 import { merge } from 'ramda';
-import { List, User, Network } from '../types';
+import { List, User, Network, ActionType } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import { Thing } from '../types';
 import _ from 'lodash';
@@ -258,6 +258,23 @@ export class TeletrackerApi {
 
   async getNetworks(): Promise<TeletrackerResponse<Network[]>> {
     return this.api.get<DataResponse<Network[]>>('/api/v1/networks');
+  }
+
+  async updateActions(thingId: number, action: ActionType, value?: number) {
+    return this.withTokenCheck(async () => {
+      return this.api.put(`/api/v1/users/self/things/${thingId}/actions`, {
+        action,
+        value,
+      });
+    });
+  }
+
+  async removeActions(thingId: number, action: ActionType) {
+    return this.withTokenCheck(async () => {
+      return this.api.delete(
+        `/api/v1/users/self/things/${thingId}/actions/${action}`,
+      );
+    });
   }
 
   private withTokenCheck<T>(f: () => Promise<T>): Promise<T> {
