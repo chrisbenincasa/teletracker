@@ -74,8 +74,6 @@ const styles = (theme: Theme) =>
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
       },
-      marginRight: theme.spacing.unit * 2,
-      marginLeft: 0,
       width: '100%',
     },
     searchIcon: {
@@ -203,7 +201,7 @@ class App extends Component<Props, State> {
               <SearchIcon />
             </div>
             <InputBase
-              placeholder="Search…"
+              placeholder="Search&hellip;"
               classes={{
                 root: classes.inputRoot,
                 input: classes.inputInput,
@@ -240,7 +238,7 @@ class App extends Component<Props, State> {
               <SearchIcon />
             </div>
             <InputBase
-              placeholder="Search…"
+              placeholder="Search&hellip;"
               classes={{
                 root: classes.inputRoot,
                 input: classes.inputInput,
