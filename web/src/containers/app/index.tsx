@@ -35,6 +35,8 @@ import ItemDetail from '../item-detail';
 import Lists from '../lists';
 import Login from '../login';
 import Drawer from '../../components/Drawer';
+import Signup from '../signup';
+
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -323,12 +325,20 @@ class App extends Component<Props, State> {
             </Typography>
             {this.renderSearch()}
             {!this.props.isAuthed ? (
-              <Button
-                component={props => <Link {...props} to="/login" />}
-                color="inherit"
-              >
-                Login
-              </Button>
+              <div>
+                <Button
+                  component={props => <Link {...props} to="/login" />}
+                  color="inherit"
+                >
+                  Login
+                </Button>
+                <Button
+                  component={props => <Link {...props} to="/signup" />}
+                  color="inherit"
+                >
+                  Signup
+                </Button>
+              </div>
             ) : null}
             {this.renderProfileMenu()}
           </Toolbar>
@@ -344,6 +354,7 @@ class App extends Component<Props, State> {
             <Route exact path="/" component={Home} />
             <Route exact path="/account" component={Account} />
             <Route exact path="/login" component={Login} />
+            <Route exact path="/signup" component={Signup} />
             <Route exact path="/lists" component={Lists} />
             <Route exact path="/lists/:id" component={ListDetail} />
             <Route exact path="/item/:type/:id" component={ItemDetail} />
