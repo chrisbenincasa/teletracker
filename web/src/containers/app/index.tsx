@@ -63,6 +63,18 @@ const styles = (theme: Theme) =>
         marginLeft: theme.spacing.unit * 3,
         width: 'auto',
       },
+      [theme.breakpoints.down('sm')]: {
+        display: 'none',
+      },
+    },
+    searchMobile: {
+      position: 'relative',
+      borderRadius: theme.shape.borderRadius,
+      backgroundColor: fade(theme.palette.common.white, 0.15),
+      '&:hover': {
+        backgroundColor: fade(theme.palette.common.white, 0.25),
+      },
+      width: '100%',
     },
     searchIcon: {
       width: theme.spacing.unit * 9,
@@ -94,9 +106,14 @@ const styles = (theme: Theme) =>
         display: 'flex',
       },
     },
-    appbar: {
-      zIndex: 99999,
-    }
+    sectionMobile: {
+      display: 'flex',
+      flex: '1 1 auto',
+      justifyContent: 'flex-end',
+      [theme.breakpoints.up('md')]: {
+        display: 'none',
+      },
+    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
@@ -115,12 +132,14 @@ type Props = DispatchProps & OwnProps & RouteComponentProps;
 interface State {
   anchorEl: any;
   searchText: string;
+  mobileSearchBarOpen: boolean;
 }
 
 class App extends Component<Props, State> {
   state = {
     anchorEl: null,
     searchText: '',
+    mobileSearchBarOpen: false,
   };
 
   handleSearchChange = event => {
@@ -149,6 +168,10 @@ class App extends Component<Props, State> {
 
   debouncedExecSearch = _.debounce(this.execSearch, 250);
 
+  handleMobileSearchDisplay = () => {
+    this.setState({ mobileSearchBarOpen: !this.state.mobileSearchBarOpen });
+  };
+
   handleMenu = event => {
     this.setState({ anchorEl: event.currentTarget });
   };
@@ -168,24 +191,63 @@ class App extends Component<Props, State> {
     }
 
     let { classes } = this.props;
+    let { mobileSearchBarOpen } = this.state;
 
     return (
       <React.Fragment>
-        <div className={classes.search}>
-          <div className={classes.searchIcon}>
-            <SearchIcon />
+        <div className={classes.sectionDesktop}>
+          <div className={classes.search}>
+            <div className={classes.searchIcon}>
+              <SearchIcon />
+            </div>
+            <InputBase
+              placeholder="Search&hellip;"
+              classes={{
+                root: classes.inputRoot,
+                input: classes.inputInput,
+              }}
+              onChange={this.handleSearchChange}
+              onKeyDown={this.handleSearchForEnter}
+            />
           </div>
-          <InputBase
-            placeholder="Search…"
-            classes={{
-              root: classes.inputRoot,
-              input: classes.inputInput,
-            }}
-            onChange={this.handleSearchChange}
-            onKeyDown={this.handleSearchForEnter}
-          />
+          <div className={classes.grow} />
         </div>
-        <div className={classes.grow} />
+        <div className={classes.sectionMobile}>
+          <IconButton
+            aria-owns={mobileSearchBarOpen ? 'material-appbar' : undefined}
+            aria-haspopup="true"
+            onClick={this.handleMobileSearchDisplay}
+            color="inherit"
+            style={mobileSearchBarOpen ? {backgroundColor: 'rgba(250,250,250, 0.15)'} : undefined}
+          >
+            <SearchIcon />
+          </IconButton>
+        </div>
+      </React.Fragment>
+    );
+  }
+
+  renderMobileSearchBar() {
+    let { classes } = this.props;
+
+    return (
+      <React.Fragment>
+        <div className={classes.sectionMobile}>
+          <div className={classes.searchMobile}>
+            <div className={classes.searchIcon}>
+              <SearchIcon />
+            </div>
+            <InputBase
+              placeholder="Search&hellip;"
+              classes={{
+                root: classes.inputRoot,
+                input: classes.inputInput,
+              }}
+              onChange={this.handleSearchChange}
+              onKeyDown={this.handleSearchForEnter}
+            />
+          </div>
+        </div>
       </React.Fragment>
     );
   }
@@ -236,19 +298,18 @@ class App extends Component<Props, State> {
 
     return (
       <div className={classes.root}>
-        <AppBar position="sticky" className={classes.appbar}>
+        <AppBar position="sticky">
           <Toolbar>
-            <Tv style={{ marginRight: '10px' }} />
+            <IconButton
+                component={props => <Link {...props} to="/" />}
+                color="inherit"
+              >
+                <Tv />
+            </IconButton>
             <Typography variant="h6" color="inherit" className={classes.grow}>
               Teletracker
             </Typography>
             {this.renderSearch()}
-            <IconButton
-              component={props => <Link {...props} to="/" />}
-              color="inherit"
-            >
-              <HomeOutlined />
-            </IconButton>
             {!this.props.isAuthed ? (
               <Button
                 component={props => <Link {...props} to="/login" />}
@@ -267,6 +328,11 @@ class App extends Component<Props, State> {
             ) : null}
             {this.renderProfileMenu()}
           </Toolbar>
+          {this.state.mobileSearchBarOpen ? (
+            <Toolbar>
+              {this.renderMobileSearchBar()}
+            </Toolbar>
+          ) : null }
         </AppBar>
         <div>
           <main>
