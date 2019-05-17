@@ -165,7 +165,7 @@ export const signupSaga = function*() {
   }: SignupInitiatedAction) {
     if (payload) {
       try {
-        // Call out to the Teletracker API to attempt to login the user
+        // Call out to the Teletracker API to attempt to signup the user
         let response: ApiResponse<any> = yield clientEffect(
           client => client.registerUser,
           payload.username,
@@ -179,14 +179,13 @@ export const signupSaga = function*() {
           // when doing auth-gated calls
           client.setToken(token);
 
-          yield put(LoginSuccessful(token));
+          yield put(SignupSuccessful(token));
         }
       } catch (e) {}
     } else {
     }
   });
 };
-
 
 /**
  * Saga responsible for handling the login flow
