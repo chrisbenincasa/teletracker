@@ -50,6 +50,7 @@ const styles = (theme: Theme) =>
     drawer: {
       width: 240,
       flexShrink: 0,
+      zIndex: 1000,
     },
     drawerPaper: {
       width: 240,
