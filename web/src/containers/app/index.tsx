@@ -15,9 +15,7 @@ import {
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
   AccountCircleOutlined,
-  HomeOutlined,
   List,
-  Tv,
 } from '@material-ui/icons';
 import SearchIcon from '@material-ui/icons/Search';
 import _ from 'lodash';
@@ -36,6 +34,7 @@ import ListDetail from '../list-detail';
 import ItemDetail from '../item-detail';
 import Lists from '../lists';
 import Login from '../login';
+import Drawer from '../../components/Drawer';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -133,6 +132,7 @@ interface State {
   anchorEl: any;
   searchText: string;
   mobileSearchBarOpen: boolean;
+  drawerOpen: boolean;
 }
 
 class App extends Component<Props, State> {
@@ -140,6 +140,7 @@ class App extends Component<Props, State> {
     anchorEl: null,
     searchText: '',
     mobileSearchBarOpen: false,
+    drawerOpen: false,
   };
 
   handleSearchChange = event => {
@@ -183,6 +184,10 @@ class App extends Component<Props, State> {
   handleLogout = () => {
     this.handleClose();
     this.props.logout();
+  };
+
+  toggleDrawer = () => {
+    this.setState({ drawerOpen: !this.state.drawerOpen });
   };
 
   renderSearch() {
@@ -293,19 +298,27 @@ class App extends Component<Props, State> {
   }
 
   render() {
-    let { anchorEl } = this.state;
+    let { anchorEl, drawerOpen } = this.state;
     let { classes } = this.props;
 
     return (
       <div className={classes.root}>
         <AppBar position="sticky">
           <Toolbar>
-            <IconButton
+            {/* <IconButton
                 component={props => <Link {...props} to="/" />}
                 color="inherit"
               >
                 <Tv />
-            </IconButton>
+            </IconButton> */}
+            {this.props.isAuthed ? (
+              <IconButton
+                onClick={this.toggleDrawer}
+                color="inherit"
+              >
+                <List />
+              </IconButton>
+            ) : null}
             <Typography variant="h6" color="inherit" className={classes.grow}>
               Teletracker
             </Typography>
@@ -334,6 +347,7 @@ class App extends Component<Props, State> {
             </Toolbar>
           ) : null }
         </AppBar>
+        <Drawer open={drawerOpen} />
         <div>
           <main>
             <Route exact path="/" component={Home} />
