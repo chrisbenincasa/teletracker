@@ -80,6 +80,10 @@ interface OwnProps extends WithStyles<typeof styles>{
   userSelf?: User;
 }
 
+interface DrawerProps {
+  open?: boolean;
+}
+
 interface DispatchProps {
   ListRetrieveAllInitiated: (payload?: ListRetrieveAllPayload) => void;
   createList: (payload?: UserCreateListPayload) => void;
@@ -98,7 +102,8 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps;
+  WithUserProps &
+  DrawerProps;
 
 class Drawer extends Component<Props, State> {
   state: State = {
@@ -178,7 +183,7 @@ class Drawer extends Component<Props, State> {
   }
 
   render() {
-    let { match } = this.props;
+    let { match, open } = this.props;
 
     if (
       !this.props.userSelf ||
@@ -191,7 +196,9 @@ class Drawer extends Component<Props, State> {
       return (
         <React.Fragment>
           <DrawerUI
+            open={open}
             className={classes.drawer}
+            {...this.props}
             variant="permanent"
             classes={{
               paper: classes.drawerPaper,
