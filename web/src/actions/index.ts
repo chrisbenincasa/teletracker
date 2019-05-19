@@ -10,6 +10,7 @@ import {
   checkAuthSaga,
   loginSaga,
   logoutSaga,
+  signupSaga,
 } from './auth';
 import {
   addToListSaga,
@@ -67,6 +68,7 @@ export function* root() {
     searchSaga(),
     loginSaga(),
     logoutSaga(),
+    signupSaga(),
     retrieveUserSaga(),
     updateListSaga(),
     loadNetworksSaga(),

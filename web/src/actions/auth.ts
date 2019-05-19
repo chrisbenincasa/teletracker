@@ -16,6 +16,8 @@ import {
   LOGIN_SUCCESSFUL,
   LOGOUT_INITIATED,
   LOGOUT_SUCCESSFUL,
+  SIGNUP_INITIATED,
+  SIGNUP_SUCCESSFUL,
 } from '../constants/auth';
 import { AppState } from '../reducers';
 import { TeletrackerApi } from '../utils/api-client';
@@ -33,6 +35,12 @@ interface LoginPayload {
   password: string;
 }
 
+interface SignupPayload {
+  email: string;
+  password: string;
+  username: string;
+}
+
 export type AuthCheckInitiatedAction = FSA<typeof AUTH_CHECK_INITIATED>;
 export type AuthCheckAuthorizedAction = FSA<typeof AUTH_CHECK_AUTHORIZED>;
 export type AuthCheckUnauthorizedAction = FSA<typeof AUTH_CHECK_UNAUTH>;
@@ -41,6 +49,8 @@ export type LoginInitiatedAction = FSA<typeof LOGIN_INITIATED, LoginPayload>;
 export type LoginSuccessfulAction = FSA<typeof LOGIN_SUCCESSFUL, string>;
 export type LogoutInitiatedAction = FSA<typeof LOGOUT_INITIATED>;
 export type LogoutSuccessfulAction = FSA<typeof LOGOUT_SUCCESSFUL>;
+export type SignupInitiatedAction = FSA<typeof SIGNUP_INITIATED, SignupPayload>;
+export type SignupSuccessfulAction = FSA<typeof SIGNUP_SUCCESSFUL, string>;
 
 export const AuthCheckInitiated = createBasicAction<AuthCheckInitiatedAction>(
   AUTH_CHECK_INITIATED,
@@ -74,6 +84,14 @@ export const LogoutSuccessful = createBasicAction<LogoutSuccessfulAction>(
   LOGOUT_SUCCESSFUL,
 );
 
+export const SignupInitiated = createAction<SignupInitiatedAction>(
+  SIGNUP_INITIATED,
+);
+
+export const SignupSuccessful = createAction<SignupSuccessfulAction>(
+  SIGNUP_SUCCESSFUL,
+);
+
 export type AuthActionTypes =
   | AuthCheckInitiatedAction
   | AuthCheckAuthorizedAction
@@ -81,7 +99,9 @@ export type AuthActionTypes =
   | AuthCheckFailedAction
   | LoginInitiatedAction
   | LoginSuccessfulAction
-  | LogoutSuccessfulAction;
+  | LogoutSuccessfulAction
+  | SignupInitiatedAction
+  | SignupSuccessfulAction;
 
 /**
  * A saga that checks the authorization state of the current token in
@@ -137,6 +157,38 @@ export const checkAuth = () => {
 };
 
 /**
+ * Saga responsible for handling the signup flow
+ */
+export const signupSaga = function*() {
+  yield takeLatest(SIGNUP_INITIATED, function*({
+    payload,
+  }: SignupInitiatedAction) {
+    if (payload) {
+      try {
+        // Call out to the Teletracker API to attempt to signup the user
+        let response: ApiResponse<any> = yield clientEffect(
+          client => client.registerUser,
+          payload.username,
+          payload.email,
+          payload.password,
+        );
+
+        if (response.ok) {
+          let token = response.data.data.token;
+          // Sets the token on the "global" TeletrackerApi instance. This is required
+          // when doing auth-gated calls
+          client.setToken(token);
+
+          yield put(SignupSuccessful(token));
+          yield put(LoginInitiated({ email: payload.email, password: payload.password }));
+        }
+      } catch (e) {}
+    } else {
+    }
+  });
+};
+
+/**
  * Saga responsible for handling the login flow
  */
 export const loginSaga = function*() {
@@ -184,6 +236,17 @@ export const logoutSaga = function*() {
       }
     } catch (e) {}
   });
+};
+
+/**
+ * Create a new SignupInitiated action, which when dispatched starts the
+ * signupSaga
+ * @param username
+ * @param email
+ * @param password
+ */
+export const signup = (username: string, email: string, password: string) => {
+  return SignupInitiated({ username, email, password });
 };
 
 /**
