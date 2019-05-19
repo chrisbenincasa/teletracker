@@ -80,7 +80,8 @@ const withUser = <P extends object>(
   return connect(
     mapStateToProps,
     mapDispatchToProps,
-  )(WithUser as any);
+  // @ts-ignore
+  )(WithUser);
 };
 
 export default withUser;
