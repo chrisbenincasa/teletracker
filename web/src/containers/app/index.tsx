@@ -349,7 +349,8 @@ class App extends Component<Props, State> {
           ) : null }
         </AppBar>
         <div>
-          <main style={{display: 'flex', flexDirection: 'column'}}>
+          {/* Todo: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
+          <main style={{display: 'flex', flexDirection: isAuthed ? 'row' : 'column'}}>
             <Drawer open={drawerOpen && isAuthed} style={{width: drawerOpen && isAuthed ? 240 : 0}}/>
             <Route exact path="/" component={Home} />
             <Route exact path="/account" component={Account} />
