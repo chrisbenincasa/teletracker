@@ -48,12 +48,11 @@ const styles = (theme: Theme) =>
       fontSize: '1em',
     },
     drawer: {
-      width: 240,
       flexShrink: 0,
       zIndex: 1000,
     },
     drawerPaper: {
-      width: 240,
+      zIndex: 1000,
     },
     toolbar: theme.mixins.toolbar,
     listName: {
@@ -80,6 +79,10 @@ interface OwnProps extends WithStyles<typeof styles>{
   userSelf?: User;
 }
 
+interface DrawerProps {
+  open?: boolean;
+}
+
 interface DispatchProps {
   ListRetrieveAllInitiated: (payload?: ListRetrieveAllPayload) => void;
   createList: (payload?: UserCreateListPayload) => void;
@@ -98,7 +101,8 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps;
+  WithUserProps &
+  DrawerProps;
 
 class Drawer extends Component<Props, State> {
   state: State = {
@@ -178,7 +182,7 @@ class Drawer extends Component<Props, State> {
   }
 
   render() {
-    let { match } = this.props;
+    let { match, open } = this.props;
 
     if (
       !this.props.userSelf ||
@@ -186,13 +190,15 @@ class Drawer extends Component<Props, State> {
     ) {
       return this.renderLoading();
     } else {
-      let { classes, userSelf } = this.props;
+      let { classes, userSelf, open } = this.props;
       let isLoading = Boolean(this.props.loading[USER_SELF_CREATE_LIST]);
       return (
         <React.Fragment>
           <DrawerUI
+            open={open}
             className={classes.drawer}
-            variant="permanent"
+            {...this.props}
+            variant="persistent"
             classes={{
               paper: classes.drawerPaper,
             }}
