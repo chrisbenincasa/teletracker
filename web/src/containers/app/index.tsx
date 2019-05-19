@@ -37,7 +37,6 @@ import Login from '../login';
 import Drawer from '../../components/Drawer';
 import Signup from '../signup';
 
-
 const styles = (theme: Theme) =>
   createStyles({
     root: {
