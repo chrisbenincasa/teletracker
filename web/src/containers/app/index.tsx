@@ -304,13 +304,13 @@ class App extends Component<Props, State> {
 
   render() {
     let { anchorEl, drawerOpen } = this.state;
-    let { classes } = this.props;
+    let { classes, isAuthed } = this.props;
 
     return (
       <div className={classes.root}>
         <AppBar position="sticky">
           <Toolbar>
-            {this.props.isAuthed ? (
+            {isAuthed ? (
               <IconButton
                 onClick={this.toggleDrawer}
                 color="inherit"
@@ -324,7 +324,7 @@ class App extends Component<Props, State> {
               Teletracker
             </Typography>
             {this.renderSearch()}
-            {!this.props.isAuthed ? (
+            {!isAuthed ? (
               <div>
                 <Button
                   component={props => <Link {...props} to="/login" />}
@@ -349,8 +349,8 @@ class App extends Component<Props, State> {
           ) : null }
         </AppBar>
         <div>
-          <main style={{display: 'flex'}}>
-            <Drawer open={drawerOpen} style={{width: drawerOpen ? 240 : 0}}/>
+          <main style={{display: 'flex', flexDirection: 'column'}}>
+            <Drawer open={drawerOpen && isAuthed} style={{width: drawerOpen && isAuthed ? 240 : 0}}/>
             <Route exact path="/" component={Home} />
             <Route exact path="/account" component={Account} />
             <Route exact path="/login" component={Login} />
