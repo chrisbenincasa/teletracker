@@ -15,9 +15,7 @@ import {
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
   AccountCircleOutlined,
-  HomeOutlined,
-  List,
-  Tv,
+  Menu as MenuIcon
 } from '@material-ui/icons';
 import SearchIcon from '@material-ui/icons/Search';
 import _ from 'lodash';
@@ -36,6 +34,7 @@ import ListDetail from '../list-detail';
 import ItemDetail from '../item-detail';
 import Lists from '../lists';
 import Login from '../login';
+import Drawer from '../../components/Drawer';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -97,7 +96,10 @@ const styles = (theme: Theme) =>
       transition: theme.transitions.create('width'),
       width: '100%',
       [theme.breakpoints.up('md')]: {
-        width: 400,
+        width: 200,
+        '&:focus': {
+          width: 400,
+        },
       },
     },
     sectionDesktop: {
@@ -133,6 +135,7 @@ interface State {
   anchorEl: any;
   searchText: string;
   mobileSearchBarOpen: boolean;
+  drawerOpen: boolean;
 }
 
 class App extends Component<Props, State> {
@@ -140,6 +143,7 @@ class App extends Component<Props, State> {
     anchorEl: null,
     searchText: '',
     mobileSearchBarOpen: false,
+    drawerOpen: false,
   };
 
   handleSearchChange = event => {
@@ -183,6 +187,10 @@ class App extends Component<Props, State> {
   handleLogout = () => {
     this.handleClose();
     this.props.logout();
+  };
+
+  toggleDrawer = () => {
+    this.setState({ drawerOpen: !this.state.drawerOpen });
   };
 
   renderSearch() {
@@ -293,20 +301,24 @@ class App extends Component<Props, State> {
   }
 
   render() {
-    let { anchorEl } = this.state;
+    let { anchorEl, drawerOpen } = this.state;
     let { classes } = this.props;
 
     return (
       <div className={classes.root}>
         <AppBar position="sticky">
           <Toolbar>
-            <IconButton
-                component={props => <Link {...props} to="/" />}
+            {this.props.isAuthed ? (
+              <IconButton
+                onClick={this.toggleDrawer}
                 color="inherit"
               >
-                <Tv />
-            </IconButton>
-            <Typography variant="h6" color="inherit" className={classes.grow}>
+                <MenuIcon />
+              </IconButton>
+            ) : null}
+            <Typography variant="h6" color="inherit" className={classes.grow} component={props => <Link {...props} to="/"
+            style={{textDecoration: 'none'}}/>}
+            >
               Teletracker
             </Typography>
             {this.renderSearch()}
@@ -318,14 +330,6 @@ class App extends Component<Props, State> {
                 Login
               </Button>
             ) : null}
-            {this.props.isAuthed ? (
-              <IconButton
-                component={props => <Link {...props} to="/lists" />}
-                color="inherit"
-              >
-                <List />
-              </IconButton>
-            ) : null}
             {this.renderProfileMenu()}
           </Toolbar>
           {this.state.mobileSearchBarOpen ? (
@@ -335,7 +339,8 @@ class App extends Component<Props, State> {
           ) : null }
         </AppBar>
         <div>
-          <main>
+          <main style={{display: 'flex'}}>
+            <Drawer open={drawerOpen} style={{width: drawerOpen ? 240 : 0}}/>
             <Route exact path="/" component={Home} />
             <Route exact path="/account" component={Account} />
             <Route exact path="/login" component={Login} />
