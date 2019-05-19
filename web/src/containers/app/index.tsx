@@ -35,6 +35,8 @@ import ItemDetail from '../item-detail';
 import Lists from '../lists';
 import Login from '../login';
 import Drawer from '../../components/Drawer';
+import Signup from '../signup';
+
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -302,13 +304,13 @@ class App extends Component<Props, State> {
 
   render() {
     let { anchorEl, drawerOpen } = this.state;
-    let { classes } = this.props;
+    let { classes, isAuthed } = this.props;
 
     return (
       <div className={classes.root}>
         <AppBar position="sticky">
           <Toolbar>
-            {this.props.isAuthed ? (
+            {isAuthed ? (
               <IconButton
                 onClick={this.toggleDrawer}
                 color="inherit"
@@ -322,13 +324,21 @@ class App extends Component<Props, State> {
               Teletracker
             </Typography>
             {this.renderSearch()}
-            {!this.props.isAuthed ? (
-              <Button
-                component={props => <Link {...props} to="/login" />}
-                color="inherit"
-              >
-                Login
-              </Button>
+            {!isAuthed ? (
+              <div>
+                <Button
+                  component={props => <Link {...props} to="/login" />}
+                  color="inherit"
+                >
+                  Login
+                </Button>
+                <Button
+                  component={props => <Link {...props} to="/signup" />}
+                  color="inherit"
+                >
+                  Signup
+                </Button>
+              </div>
             ) : null}
             {this.renderProfileMenu()}
           </Toolbar>
@@ -339,11 +349,13 @@ class App extends Component<Props, State> {
           ) : null }
         </AppBar>
         <div>
-          <main style={{display: 'flex'}}>
-            <Drawer open={drawerOpen} style={{width: drawerOpen ? 240 : 0}}/>
+          {/* Todo: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
+          <main style={{display: 'flex', flexDirection: isAuthed ? 'row' : 'column'}}>
+            <Drawer open={drawerOpen && isAuthed} style={{width: drawerOpen && isAuthed ? 240 : 0}}/>
             <Route exact path="/" component={Home} />
             <Route exact path="/account" component={Account} />
             <Route exact path="/login" component={Login} />
+            <Route exact path="/signup" component={Signup} />
             <Route exact path="/lists" component={Lists} />
             <Route exact path="/lists/:id" component={ListDetail} />
             <Route exact path="/item/:type/:id" component={ItemDetail} />
