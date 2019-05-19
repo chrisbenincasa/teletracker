@@ -16,6 +16,7 @@ import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
   AccountCircleOutlined,
   List,
+  Menu as MenuIcon
 } from '@material-ui/icons';
 import SearchIcon from '@material-ui/icons/Search';
 import _ from 'lodash';
@@ -96,7 +97,10 @@ const styles = (theme: Theme) =>
       transition: theme.transitions.create('width'),
       width: '100%',
       [theme.breakpoints.up('md')]: {
-        width: 400,
+        width: 200,
+        '&:focus': {
+          width: 400,
+        },
       },
     },
     sectionDesktop: {
@@ -316,10 +320,12 @@ class App extends Component<Props, State> {
                 onClick={this.toggleDrawer}
                 color="inherit"
               >
-                <List />
+                <MenuIcon />
               </IconButton>
             ) : null}
-            <Typography variant="h6" color="inherit" className={classes.grow}>
+            <Typography variant="h6" color="inherit" className={classes.grow} component={props => <Link {...props} to="/"
+            style={{textDecoration: 'none'}}/>}
+            >
               Teletracker
             </Typography>
             {this.renderSearch()}
@@ -331,14 +337,6 @@ class App extends Component<Props, State> {
                 Login
               </Button>
             ) : null}
-            {this.props.isAuthed ? (
-              <IconButton
-                component={props => <Link {...props} to="/lists" />}
-                color="inherit"
-              >
-                <List />
-              </IconButton>
-            ) : null}
             {this.renderProfileMenu()}
           </Toolbar>
           {this.state.mobileSearchBarOpen ? (
@@ -347,9 +345,9 @@ class App extends Component<Props, State> {
             </Toolbar>
           ) : null }
         </AppBar>
-        <Drawer open={drawerOpen} />
         <div>
-          <main>
+          <main style={{display: 'flex'}}>
+            <Drawer open={drawerOpen} style={{width: drawerOpen ? 240 : 0}}/>
             <Route exact path="/" component={Home} />
             <Route exact path="/account" component={Account} />
             <Route exact path="/login" component={Login} />

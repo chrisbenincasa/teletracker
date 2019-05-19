@@ -48,12 +48,11 @@ const styles = (theme: Theme) =>
       fontSize: '1em',
     },
     drawer: {
-      width: 240,
       flexShrink: 0,
       zIndex: 1000,
     },
     drawerPaper: {
-      width: 240,
+      zIndex: 1000,
     },
     toolbar: theme.mixins.toolbar,
     listName: {
@@ -191,7 +190,7 @@ class Drawer extends Component<Props, State> {
     ) {
       return this.renderLoading();
     } else {
-      let { classes, userSelf } = this.props;
+      let { classes, userSelf, open } = this.props;
       let isLoading = Boolean(this.props.loading[USER_SELF_CREATE_LIST]);
       return (
         <React.Fragment>
@@ -199,7 +198,7 @@ class Drawer extends Component<Props, State> {
             open={open}
             className={classes.drawer}
             {...this.props}
-            variant="permanent"
+            variant="persistent"
             classes={{
               paper: classes.drawerPaper,
             }}

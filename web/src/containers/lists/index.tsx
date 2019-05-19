@@ -163,13 +163,12 @@ class Lists extends Component<Props, State> {
       return this.renderLoading();
     } else {
       return (
-        <div style={{display: 'flex'}}>
-          <Drawer />
+
           <div className={classes.listContainer}>
             <CssBaseline />
             {userSelf.lists.map(this.renderList)}
           </div>
-        </div>
+
       );
     }
   }
