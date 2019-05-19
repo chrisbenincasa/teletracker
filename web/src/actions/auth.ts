@@ -180,6 +180,7 @@ export const signupSaga = function*() {
           client.setToken(token);
 
           yield put(SignupSuccessful(token));
+          yield put(LoginInitiated({ email: payload.email, password: payload.password }));
         }
       } catch (e) {}
     } else {
