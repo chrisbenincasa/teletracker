@@ -15,7 +15,6 @@ import {
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
   AccountCircleOutlined,
-  List,
   Menu as MenuIcon
 } from '@material-ui/icons';
 import SearchIcon from '@material-ui/icons/Search';
@@ -309,12 +308,6 @@ class App extends Component<Props, State> {
       <div className={classes.root}>
         <AppBar position="sticky">
           <Toolbar>
-            {/* <IconButton
-                component={props => <Link {...props} to="/" />}
-                color="inherit"
-              >
-                <Tv />
-            </IconButton> */}
             {this.props.isAuthed ? (
               <IconButton
                 onClick={this.toggleDrawer}
