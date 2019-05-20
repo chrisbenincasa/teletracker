@@ -2,13 +2,19 @@ package com.teletracker.service.model
 
 import io.circe.{Encoder, Printer}
 import io.circe.syntax._
+import io.circe.generic.auto._
+import java.util.UUID
 
 object DataResponse {
   private val indentedPrinter = Printer.spaces4
   private val compactPriner = Printer.noSpaces.copy(dropNullValues = true)
 
   def complex[T](v: T, compact: Boolean = false)(implicit encoder: Encoder[T]): String = {
-    pure(Map("data" -> v), compact)
+    pure(DataResponse(v))
+  }
+
+  def error[T <: BaseErrorResponse[_]](v: T, compact: Boolean = false): String = {
+    pure(v.toResponse)
   }
 
   def pure[T](v: T, compact: Boolean = false)(implicit encoder: Encoder[T]): String = {
@@ -20,3 +26,14 @@ object DataResponse {
 }
 
 case class DataResponse[T](data: T)
+
+case class ErrorResponse(error: StandardErrorDetails)
+case class StandardErrorDetails(message: String, `@type`: String, id: String)
+
+abstract class BaseErrorResponse[T <: Throwable](val error: T, val id: String = UUID.randomUUID().toString) {
+  def toResponse: ErrorResponse =
+    ErrorResponse(StandardErrorDetails(error.getMessage, error.getClass.getSimpleName, id))
+}
+
+class IllegalActionTypeError(actionType: String)
+  extends BaseErrorResponse(new IllegalArgumentException(s"Unrecognized action type for string $actionType"))
