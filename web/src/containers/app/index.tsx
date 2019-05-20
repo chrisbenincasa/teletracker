@@ -117,6 +117,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('md')]: {
         display: 'none',
       },
+    },
     appbar: {
       zIndex: 99999,
     },
