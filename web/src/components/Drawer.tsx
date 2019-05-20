@@ -20,9 +20,14 @@ import {
   Theme,
   withStyles,
   WithStyles,
+  ListItemIcon,
 } from '@material-ui/core';
 import * as R from 'ramda';
-import { RouteComponentProps, withRouter, Link as RouterLink } from 'react-router-dom';
+import {
+  RouteComponentProps,
+  withRouter,
+  Link as RouterLink,
+} from 'react-router-dom';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Dispatch, bindActionCreators } from 'redux';
@@ -57,14 +62,14 @@ const styles = (theme: Theme) =>
     toolbar: theme.mixins.toolbar,
     listName: {
       textDecoration: 'none',
-      marginBottom: 10
+      marginBottom: 10,
     },
     listsContainer: {
       display: 'flex',
       flexDirection: 'column',
       flex: '1 0 auto',
       margin: '20px 0',
-      width: '100%'
+      width: '100%',
     },
     margin: {
       margin: theme.spacing.unit * 2,
@@ -72,7 +77,7 @@ const styles = (theme: Theme) =>
     },
   });
 
-interface OwnProps extends WithStyles<typeof styles>{
+interface OwnProps extends WithStyles<typeof styles> {
   listsById: ListsByIdMap;
   loadingLists: boolean;
   loading: Partial<Loading>;
@@ -147,31 +152,33 @@ class Drawer extends Component<Props, State> {
     let { listsById, classes, match } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
+
     const hue = 'blue';
 
     return (
       <ListItem
         button
         key={userList.id}
-        component={props =>
-          <RouterLink {...props} to={'/lists/' + list.id} />
-        }
+        component={props => <RouterLink {...props} to={`/lists/${list.id}`} />}
         // This is a little hacky and can be improved
-        selected={Boolean(!match.params.type && Number(match.params.id) === Number(list.id))}
+        selected={Boolean(
+          !match.params.type && Number(match.params.id) === Number(list.id),
+        )}
       >
         <ListItemAvatar>
           <Avatar
             className={classes.avatar}
-            style={{backgroundColor: colors[hue][index < 9 ? `${9 - index}00` : 100]}}
+            style={{
+              backgroundColor: colors[hue][index < 9 ? `${9 - index}00` : 100],
+            }}
           >
             {userList.things.length}
           </Avatar>
-          </ListItemAvatar>
-        <ListItemText
-          primary={list.name} />
+        </ListItemAvatar>
+        <ListItemText primary={list.name} />
       </ListItem>
-    )
-  }
+    );
+  };
 
   renderLoading() {
     return (
@@ -184,10 +191,7 @@ class Drawer extends Component<Props, State> {
   render() {
     let { match, open } = this.props;
 
-    if (
-      !this.props.userSelf ||
-      this.props.loadingLists
-    ) {
+    if (!this.props.userSelf || this.props.loadingLists) {
       return this.renderLoading();
     } else {
       let { classes, userSelf, open } = this.props;
@@ -204,11 +208,7 @@ class Drawer extends Component<Props, State> {
             }}
           >
             <div className={classes.toolbar} />
-            <Typography
-              component="h4"
-              variant="h4"
-              className={classes.margin}
-            >
+            <Typography component="h4" variant="h4" className={classes.margin}>
               My Lists
               <Button onClick={this.refreshUser}>
                 <Icon color="action">refresh</Icon>
@@ -218,39 +218,33 @@ class Drawer extends Component<Props, State> {
             <List>
               <ListItem
                 button
-                key='create'
+                key="create"
                 onClick={this.handleModalOpen}
                 selected={this.state.createDialogOpen}
               >
-                <ListItemAvatar>
+                <ListItemIcon>
                   <Icon color="action">create</Icon>
-                </ListItemAvatar>
-                <ListItemText
-                  primary='Create New List'/>
+                </ListItemIcon>
+                <ListItemText primary="Create New List" />
               </ListItem>
               <ListItem
                 button
-                key='all'
+                key="all"
                 selected={Boolean(!match.params.type && !match.params.id)}
-                component={props =>
-                  <RouterLink {...props} to={'/lists'} />
-                }
+                component={props => <RouterLink {...props} to={'/lists'} />}
               >
                 <ListItemAvatar>
-                  <Avatar className={classes.avatar}>{userSelf.lists.length}</Avatar>
+                  <Avatar className={classes.avatar}>
+                    {userSelf.lists.length}
+                  </Avatar>
                 </ListItemAvatar>
-                <ListItemText
-                  primary='All Lists'/>
+                <ListItemText primary="All Lists" />
               </ListItem>
               {userSelf.lists.map(this.renderListItems)}
             </List>
           </DrawerUI>
           <div>
-            <Dialog
-              fullWidth
-              maxWidth="xs"
-              open={this.state.createDialogOpen}
-            >
+            <Dialog fullWidth maxWidth="xs" open={this.state.createDialogOpen}>
               <DialogTitle>Create New List</DialogTitle>
               <DialogContent>
                 <TextField
