@@ -62,7 +62,7 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       flexGrow: 1,
       paddingLeft: theme.spacing.unit * 2,
-    }
+    },
   });
 
 interface OwnProps {
@@ -107,12 +107,21 @@ class Lists extends Component<Props, State> {
   }
 
   renderItemPreviews = (list: ListType) => {
-    let things: (Thing )[] = list.things.slice(0, 4);
+    let things: (Thing)[] = list.things.slice(0, 4);
     let { classes, userSelf } = this.props;
 
     return (
       <div className={classes.root}>
-        <Grid container spacing={16} direction='row' lg={8} md={4} sm={2} wrap='nowrap' item={true}>
+        <Grid
+          container
+          spacing={16}
+          direction="row"
+          lg={8}
+          md={4}
+          sm={2}
+          wrap="nowrap"
+          item={true}
+        >
           {things.map(item => (
             <ItemCard
               key={item.id}
@@ -134,12 +143,14 @@ class Lists extends Component<Props, State> {
     let list = listWithDetails || userList;
 
     return (
-      <div className={classes.listsContainer}>
+      <div className={classes.listsContainer} key={userList.id}>
         <Typography
-          component={props => <RouterLink {...props} to={'/lists/' + list.id} />}
+          component={props => (
+            <RouterLink {...props} to={'/lists/' + list.id} />
+          )}
           variant="h5"
           className={classes.listName}
-          >
+        >
           <Badge
             className={classes.listItemCount}
             badgeContent={list.things.length}
@@ -155,15 +166,12 @@ class Lists extends Component<Props, State> {
 
   renderLists() {
     let { userSelf, classes } = this.props;
-    if (
-      this.props.retrievingUser ||
-      !userSelf ||
-      this.props.loadingLists
-    ) {
+    if (this.props.retrievingUser || !userSelf || this.props.loadingLists) {
       return this.renderLoading();
     } else {
       return (
-
+        <div style={{ display: 'flex' }}>
+          <Drawer />
           <div className={classes.listContainer}>
             <CssBaseline />
             {userSelf.lists.map(this.renderList)}
