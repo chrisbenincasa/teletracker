@@ -176,7 +176,7 @@ class Lists extends Component<Props, State> {
             <CssBaseline />
             {userSelf.lists.map(this.renderList)}
           </div>
-
+        </div>
       );
     }
   }
