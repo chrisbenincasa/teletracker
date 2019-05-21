@@ -23,13 +23,21 @@ object ImportPeople extends App {
     val endpoint = args.headOption.getOrElse("popular")
     val pages = args.drop(1).headOption.map(_.toInt).getOrElse(5)
 
-    val requests = (1 to pages).toList.
-      map(i => () => tmdbClient.makeRequest[PagedResult[Person]](s"/person/$endpoint", Seq("page" -> i.toString)))
+    val requests = (1 to pages).toList.map(
+      i =>
+        () =>
+          tmdbClient.makeRequest[PagedResult[Person]](
+            s"/person/$endpoint",
+            Seq("page" -> i.toString)
+          )
+    )
 
     val processed = SequentialFutures.serialize(requests)(r => {
       r().flatMap(res => {
         SequentialFutures.serialize(res.results, Some(250 millis))(person => {
-          expander.expandPerson(person.id.toString).flatMap(processor.handlePerson)
+          expander
+            .expandPerson(person.id.toString)
+            .flatMap(processor.handlePerson)
         })
       })
     })

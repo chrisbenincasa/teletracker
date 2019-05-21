@@ -11,21 +11,20 @@ case class Event(
   targetEntityId: String,
   details: Option[String],
   userId: Int,
-  timestamp: java.sql.Timestamp
-) {
-  def withTarget(thing: Thing): EventWithTarget = EventWithTarget(this, Some(thing.asPartial))
-  def withTarget(thing: PartialThing): EventWithTarget = EventWithTarget(this, Some(thing))
+  timestamp: java.sql.Timestamp) {
+  def withTarget(thing: Thing): EventWithTarget =
+    EventWithTarget(this, Some(thing.asPartial))
+  def withTarget(thing: PartialThing): EventWithTarget =
+    EventWithTarget(this, Some(thing))
 }
 
 case class EventWithTarget(
   event: Event,
-  target: Option[PartialThing]
-)
+  target: Option[PartialThing])
 
 class Events @Inject()(
   val driver: JdbcProfile,
-  val users: Provider[Users]
-) {
+  val users: Provider[Users]) {
   import driver.api._
 
   class EventsTable(tag: Tag) extends Table[Event](tag, "events") {

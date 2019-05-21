@@ -9,21 +9,20 @@ case class Certification(
   iso_3166_1: String,
   certification: String,
   description: String,
-  order: Int
-)
+  order: Int)
 
-class Certifications @Inject()(
-  val driver: JdbcProfile
-) {
+class Certifications @Inject()(val driver: JdbcProfile) {
   import driver.api._
 
   object Implicits {
-    implicit val certificationTypeMapping = MappedColumnType.base[CertificationType, String](_.getName, CertificationType.fromString)
+    implicit val certificationTypeMapping = MappedColumnType
+      .base[CertificationType, String](_.getName, CertificationType.fromString)
   }
 
   import Implicits._
 
-  class CertificationsTable(tag: Tag) extends Table[Certification](tag, "certifications") {
+  class CertificationsTable(tag: Tag)
+      extends Table[Certification](tag, "certifications") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def `type` = column[CertificationType]("type")
     def iso_3166_1 = column[String]("iso_3166_1")
@@ -31,7 +30,8 @@ class Certifications @Inject()(
     def description = column[String]("homepage")
     def order = column[Int]("order")
 
-    def uniqCert = index("uniq_cert_idx", (iso_3166_1, `type`, certification, order), true)
+    def uniqCert =
+      index("uniq_cert_idx", (iso_3166_1, `type`, certification, order), true)
 
     override def * =
       (

@@ -10,19 +10,18 @@ case class UserThingTag(
   userId: Int,
   thingId: Int,
   action: UserThingTagType,
-  value: Option[Double]
-)
+  value: Option[Double])
 
 class UserThingTags @Inject()(
   val profile: CustomPostgresProfile,
   dbImplicits: DbImplicits,
   val users: Provider[Users],
-  val things: Provider[Things]
-) {
+  val things: Provider[Things]) {
   import profile.api._
   import dbImplicits._
 
-  class UserThingTagsTable(tag: Tag) extends Table[UserThingTag](tag, "user_thing_tags") {
+  class UserThingTagsTable(tag: Tag)
+      extends Table[UserThingTag](tag, "user_thing_tags") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def userId = column[Int]("user_id")
     def thingId = column[Int]("thing_id")
@@ -30,7 +29,8 @@ class UserThingTags @Inject()(
     def value = column[Option[Double]]("value")
 
     def user = foreignKey("user_id_foreign", userId, users.get().query)(_.id)
-    def thing = foreignKey("thing_id_foreign", thingId, things.get().query)(_.id)
+    def thing =
+      foreignKey("thing_id_foreign", thingId, things.get().query)(_.id)
 
     override def * =
       (

@@ -9,14 +9,12 @@ case class Genre(
   id: Option[Int],
   name: String,
   `type`: GenreType,
-  slug: Slug
-)
+  slug: Slug)
 
 class Genres @Inject()(
   val driver: JdbcProfile,
   val users: Users,
-  val implicits: DbImplicits
-) {
+  val implicits: DbImplicits) {
   import driver.api._
   import implicits._
 

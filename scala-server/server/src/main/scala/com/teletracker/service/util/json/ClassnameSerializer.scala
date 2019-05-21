@@ -7,7 +7,11 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer
 class ClassNameJsonSerializer(t: Class[Any]) extends StdSerializer[Any](t) {
   def this() = this(null)
 
-  override def serialize(value: Any, gen: JsonGenerator, provider: SerializerProvider): Unit = {
+  override def serialize(
+    value: Any,
+    gen: JsonGenerator,
+    provider: SerializerProvider
+  ): Unit = {
     gen.writeString(value.getClass.getName)
   }
 }

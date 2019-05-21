@@ -25,17 +25,25 @@ class NetworkSeeder @Inject()(
   dbProvider: DbProvider,
   networks: Networks,
   networkReferences: NetworkReferences,
-  networksDbAccess: NetworksDbAccess
-) {
+  networksDbAccess: NetworksDbAccess) {
   def run(): Unit = {
     import io.circe.generic.auto._
     import io.circe.parser._
     import networks.driver.api._
 
-    Await.result(dbProvider.getDB.run(networkReferences.query.delete), Duration.Inf)
+    Await.result(
+      dbProvider.getDB.run(networkReferences.query.delete),
+      Duration.Inf
+    )
     Await.result(dbProvider.getDB.run(networks.query.delete), Duration.Inf)
 
-    val lines = scala.io.Source.fromFile(new File(System.getProperty("user.dir") + "/data/providers.json")).getLines().mkString("").trim
+    val lines = scala.io.Source
+      .fromFile(
+        new File(System.getProperty("user.dir") + "/data/providers.json")
+      )
+      .getLines()
+      .mkString("")
+      .trim
 
     parse(lines).flatMap(_.as[List[Provider]]) match {
       case Left(err) =>
@@ -43,11 +51,25 @@ class NetworkSeeder @Inject()(
         sys.exit(1)
       case Right(providers) =>
         val inserts = providers.map(provider => {
-          val network = Network(None, provider.clear_name, Slug(provider.clear_name), provider.short_name, None, None)
+          val network = Network(
+            None,
+            provider.clear_name,
+            Slug(provider.clear_name),
+            provider.short_name,
+            None,
+            None
+          )
 
           val networkInsert = networksDbAccess.saveNetwork(network)
           networkInsert.flatMap(n => {
-            networksDbAccess.saveNetworkReference(NetworkReference(None, ExternalSource.JustWatch, provider.id.toString, n.id.get))
+            networksDbAccess.saveNetworkReference(
+              NetworkReference(
+                None,
+                ExternalSource.JustWatch,
+                provider.id.toString,
+                n.id.get
+              )
+            )
           })
         })
 

@@ -15,7 +15,9 @@ import scala.concurrent.ExecutionContext
 
 class MovieController @Inject()(
   thingsDbAccess: ThingsDbAccess
-)(implicit executionContext: ExecutionContext) extends Controller with CanParseFieldFilter {
+)(implicit executionContext: ExecutionContext)
+    extends Controller
+    with CanParseFieldFilter {
   prefix("/api/v1/movies") {
     filter[JwtAuthFilter].apply {
       get("/:id") { req: GetMovieRequest =>
@@ -32,7 +34,9 @@ class MovieController @Inject()(
             response.status(404)
           } else {
             val finalResult = movieById.get.withUserMetadata(thingDetails)
-            response.ok.contentTypeJson().body(DataResponse.complex(finalResult))
+            response.ok
+              .contentTypeJson()
+              .body(DataResponse.complex(finalResult))
           }
         }
       }
@@ -43,5 +47,5 @@ class MovieController @Inject()(
 case class GetMovieRequest(
   @RouteParam id: Int,
   @QueryParam fields: Option[String],
-  request: Request
-) extends HasFieldsFilter
+  request: Request)
+    extends HasFieldsFilter

@@ -19,9 +19,17 @@ object DumpJustWatchLogos extends com.twitter.inject.app.App {
     import io.circe.generic.auto._
     import io.circe.parser._
 
-    lazy val imagesClient = Http.client.withTls("images.justwatch.com").newService("images.justwatch.com:443")
+    lazy val imagesClient = Http.client
+      .withTls("images.justwatch.com")
+      .newService("images.justwatch.com:443")
 
-    val lines = scala.io.Source.fromFile(new File(System.getProperty("user.dir") + "/data/providers.json")).getLines().mkString("").trim
+    val lines = scala.io.Source
+      .fromFile(
+        new File(System.getProperty("user.dir") + "/data/providers.json")
+      )
+      .getLines()
+      .mkString("")
+      .trim
 
     val outputDirBase = System.getProperty("user.dir") + "/data/logos"
     val outputDir = new File(outputDirBase)
@@ -35,9 +43,10 @@ object DumpJustWatchLogos extends com.twitter.inject.app.App {
         sys.exit(1)
       case Right(providers) =>
         val saves = providers.map(provider => {
-          val path = provider.icon_url.replaceAllLiterally("{profile}", "s100") + s"/${provider.slug}"
+          val path = provider.icon_url
+            .replaceAllLiterally("{profile}", "s100") + s"/${provider.slug}"
           val r = Request(path)
-          (imagesClient(r) : Future[Response]).map(response => {
+          (imagesClient(r): Future[Response]).map(response => {
             val f = new File(outputDirBase + s"/${provider.slug}/icon.jpg")
             f.getParentFile.mkdirs()
             val bb = new Array[Byte](response.content.length)

@@ -36,8 +36,7 @@ class GenerateDdls extends App {
       injector.instance[Certifications].query,
       injector.instance[PersonThings].query,
       injector.instance[Tokens].query
-    ).flatMap(_.schema.createStatements).
-      groupBy(_.split(" ").take(2).toList)
+    ).flatMap(_.schema.createStatements).groupBy(_.split(" ").take(2).toList)
 
     val outputFile = args.head
 
@@ -48,10 +47,22 @@ class GenerateDdls extends App {
 
     val writer = new PrintWriter(new FileWriter(outputFile))
 
-    createStatements.getOrElse("create" :: "table" :: Nil, Nil).map(_ + ";").foreach(writer.println)
-    createStatements.getOrElse("create" :: "index" :: Nil, Nil).map(_ + ";").foreach(writer.println)
-    createStatements.getOrElse("create" :: "unique" :: Nil, Nil).map(_ + ";").foreach(writer.println)
-    createStatements.getOrElse("alter" :: "table" :: Nil, Nil).map(_ + ";").foreach(writer.println)
+    createStatements
+      .getOrElse("create" :: "table" :: Nil, Nil)
+      .map(_ + ";")
+      .foreach(writer.println)
+    createStatements
+      .getOrElse("create" :: "index" :: Nil, Nil)
+      .map(_ + ";")
+      .foreach(writer.println)
+    createStatements
+      .getOrElse("create" :: "unique" :: Nil, Nil)
+      .map(_ + ";")
+      .foreach(writer.println)
+    createStatements
+      .getOrElse("alter" :: "table" :: Nil, Nil)
+      .map(_ + ";")
+      .foreach(writer.println)
     writer.flush()
 
     logger.info("Complete!")

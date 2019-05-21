@@ -10,28 +10,21 @@ case class TeletrackerConfig(
   mode: String = "multi user",
   db: DbConfig,
   auth: AuthConfig,
-  tmdb: TmdbConfig
-)
+  tmdb: TmdbConfig)
 
-case class AuthConfig(
-  jwt: JwtConfig
-)
+case class AuthConfig(jwt: JwtConfig)
 
 case class JwtConfig(
   issuer: String,
   audience: String,
   expiration: Option[FiniteDuration],
-  secret: String
-)
+  secret: String)
 
 case class DbConfig(
   @JsonSerialize(using = classOf[ClassNameJsonSerializer])
   driver: Driver,
   url: String,
   user: String,
-  password: String
-)
+  password: String)
 
-case class TmdbConfig(
-  api_key: String
-)
+case class TmdbConfig(api_key: String)

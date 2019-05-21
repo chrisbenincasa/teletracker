@@ -13,7 +13,11 @@ import org.scalatest.{Assertions, BeforeAndAfterAll, FlatSpec, Inside}
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-trait BaseSpec extends FlatSpec with Assertions with Inside with BeforeAndAfterAll {
+trait BaseSpec
+    extends FlatSpec
+    with Assertions
+    with Inside
+    with BeforeAndAfterAll {
   implicit val execCtx = scala.concurrent.ExecutionContext.Implicits.global
 
   implicit class RichFuture[T](f: Future[T]) {
@@ -33,25 +37,25 @@ trait BaseSpec extends FlatSpec with Assertions with Inside with BeforeAndAfterA
 
         override def configure(binder: Binder): Unit = {
           val loader =
-            ConfigFactory.defaultOverrides().
-              withFallback(ConfigFactory.parseResources("test.conf")).
-              withFallback(ConfigFactory.defaultApplication()).
-              resolve()
+            ConfigFactory
+              .defaultOverrides()
+              .withFallback(ConfigFactory.parseResources("test.conf"))
+              .withFallback(ConfigFactory.defaultApplication())
+              .resolve()
 
           val loaded = loader.as[TeletrackerConfig]("teletracker")
           binder.bind(classOf[TeletrackerConfig]).toInstance(loaded)
         }
       }
     ) ++ (if (startDb) {
-      Seq(
-        new Module {
-          override def configure(binder: Binder): Unit = {
-            binder.bind(classOf[DbProvider]).toInstance(db.dbProvider)
-          }
-        }
-      )
-    } else Seq.empty)
-
+            Seq(
+              new Module {
+                override def configure(binder: Binder): Unit = {
+                  binder.bind(classOf[DbProvider]).toInstance(db.dbProvider)
+                }
+              }
+            )
+          } else Seq.empty)
 
     Seq(GuiceModules.`override`(Modules(): _*).`with`(overrides: _*))
   }
@@ -72,7 +76,8 @@ trait BaseSpec extends FlatSpec with Assertions with Inside with BeforeAndAfterA
 
 trait BaseSpecWithServer extends BaseSpec {
   lazy val server = new EmbeddedHttpServer(new TeletrackerServer(modules))
-  lazy val serializer = server.injector.instance[ObjectMapper with ScalaObjectMapper]
+  lazy val serializer =
+    server.injector.instance[ObjectMapper with ScalaObjectMapper]
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()

@@ -9,15 +9,26 @@ object DataResponse {
   private val indentedPrinter = Printer.spaces4
   private val compactPriner = Printer.noSpaces.copy(dropNullValues = true)
 
-  def complex[T](v: T, compact: Boolean = false)(implicit encoder: Encoder[T]): String = {
+  def complex[T](
+    v: T,
+    compact: Boolean = false
+  )(implicit encoder: Encoder[T]
+  ): String = {
     pure(DataResponse(v))
   }
 
-  def error[T <: BaseErrorResponse[_]](v: T, compact: Boolean = false): String = {
+  def error[T <: BaseErrorResponse[_]](
+    v: T,
+    compact: Boolean = false
+  ): String = {
     pure(v.toResponse)
   }
 
-  def pure[T](v: T, compact: Boolean = false)(implicit encoder: Encoder[T]): String = {
+  def pure[T](
+    v: T,
+    compact: Boolean = false
+  )(implicit encoder: Encoder[T]
+  ): String = {
     val printer = if (compact) compactPriner else indentedPrinter
     printer.pretty(v.asJson)
   }
@@ -28,12 +39,23 @@ object DataResponse {
 case class DataResponse[T](data: T)
 
 case class ErrorResponse(error: StandardErrorDetails)
-case class StandardErrorDetails(message: String, `@type`: String, id: String)
+case class StandardErrorDetails(
+  message: String,
+  `@type`: String,
+  id: String)
 
-abstract class BaseErrorResponse[T <: Throwable](val error: T, val id: String = UUID.randomUUID().toString) {
+abstract class BaseErrorResponse[T <: Throwable](
+  val error: T,
+  val id: String = UUID.randomUUID().toString) {
   def toResponse: ErrorResponse =
-    ErrorResponse(StandardErrorDetails(error.getMessage, error.getClass.getSimpleName, id))
+    ErrorResponse(
+      StandardErrorDetails(error.getMessage, error.getClass.getSimpleName, id)
+    )
 }
 
 class IllegalActionTypeError(actionType: String)
-  extends BaseErrorResponse(new IllegalArgumentException(s"Unrecognized action type for string $actionType"))
+    extends BaseErrorResponse(
+      new IllegalArgumentException(
+        s"Unrecognized action type for string $actionType"
+      )
+    )

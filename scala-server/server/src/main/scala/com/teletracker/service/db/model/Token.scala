@@ -11,14 +11,12 @@ case class TokenRow(
   token: String,
   createdAt: DateTime,
   lastUpdatedAt: DateTime,
-  revokedAt: Option[DateTime]
-)
+  revokedAt: Option[DateTime])
 
 class Tokens @Inject()(
   val driver: CustomPostgresProfile,
   val users: Users,
-  dbImplicits: DbImplicits
-) {
+  dbImplicits: DbImplicits) {
   import driver.api._
 
   class TokensTable(tag: Tag) extends Table[TokenRow](tag, "tokens") {
@@ -45,4 +43,3 @@ class Tokens @Inject()(
 
   val query = TableQuery[TokensTable]
 }
-

@@ -9,9 +9,16 @@ abstract class DbAccess(implicit executionContext: ExecutionContext) {
 
   import provider.driver.api._
 
-  def run[R, S <: NoStream, E <: Effect](action: DBIOAction[R, S, E]): Future[R] = {
+  def run[R, S <: NoStream, E <: Effect](
+    action: DBIOAction[R, S, E]
+  ): Future[R] = {
     provider.getDB.run(action).recoverWith {
-      case _: RejectedExecutionException => Future.failed(SlickDBNoAvailableThreadsException("DB thread pool is busy and queue is full, try again"))
+      case _: RejectedExecutionException =>
+        Future.failed(
+          SlickDBNoAvailableThreadsException(
+            "DB thread pool is busy and queue is full, try again"
+          )
+        )
     }
   }
 }

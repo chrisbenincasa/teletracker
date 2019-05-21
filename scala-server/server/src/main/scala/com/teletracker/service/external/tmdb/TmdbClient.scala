@@ -18,12 +18,14 @@ class TmdbClient @Inject()(config: TeletrackerConfig) {
   private val host = "api.themoviedb.org"
 
   private lazy val client = {
-    Http.client.
-      withTls(host).
-      newService(s"$host:443")
+    Http.client.withTls(host).newService(s"$host:443")
   }
 
-  def makeRequest[T](path: String, params: Seq[(String, String)] = Seq.empty)(implicit decoder: Decoder[T]): Future[T] = {
+  def makeRequest[T](
+    path: String,
+    params: Seq[(String, String)] = Seq.empty
+  )(implicit decoder: Decoder[T]
+  ): Future[T] = {
     val p = Promise[T]
     val query = Seq("api_key" -> config.tmdb.api_key) ++ params
     val req = Request(s"/3/${path.stripPrefix("/")}", query: _*)
@@ -33,11 +35,12 @@ class TmdbClient @Inject()(config: TeletrackerConfig) {
       val parsed = parse(x.contentString)
       parsed match {
         case Left(e) =>
-          logger.error(s"Could not parse. Result string:\n${x.contentString}", e)
+          logger
+            .error(s"Could not parse. Result string:\n${x.contentString}", e)
           p.tryFailure(e)
         case Right(s) =>
           s.as[T] match {
-            case Left(_) =>  s.as[TmdbError].fold(p.tryFailure, p.tryFailure)
+            case Left(_)     => s.as[TmdbError].fold(p.tryFailure, p.tryFailure)
             case Right(json) => p.trySuccess(json)
           }
       }
@@ -47,4 +50,7 @@ class TmdbClient @Inject()(config: TeletrackerConfig) {
   }
 }
 
-@JsonCodec case class TmdbError(status_code: Int, status_message: String) extends Exception(status_message)
+@JsonCodec case class TmdbError(
+  status_code: Int,
+  status_message: String)
+    extends Exception(status_message)

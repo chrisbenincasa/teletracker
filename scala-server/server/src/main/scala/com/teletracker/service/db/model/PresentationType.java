@@ -30,10 +30,14 @@ public enum PresentationType {
 
     public static PresentationType fromJustWatchType(final String s) {
         switch (s.toLowerCase()) {
-            case "sd": return PresentationType.SD;
-            case "hd": return PresentationType.HD;
-            case "4k": return PresentationType.FourK;
-            default: throw new IllegalArgumentException("Could not find PresentationType with name " + s);
+            case "sd":
+                return PresentationType.SD;
+            case "hd":
+                return PresentationType.HD;
+            case "4k":
+                return PresentationType.FourK;
+            default:
+                throw new IllegalArgumentException("Could not find PresentationType with name " + s);
         }
     }
 

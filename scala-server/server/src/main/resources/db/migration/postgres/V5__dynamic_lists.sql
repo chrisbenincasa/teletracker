@@ -1,10 +1,11 @@
-CREATE TABLE "dynamic_lists" (
-    "id" SERIAL NOT NULL PRIMARY KEY,
-    "name" VARCHAR NOT NULL,
+CREATE TABLE "dynamic_lists"
+(
+    "id"         SERIAL                NOT NULL PRIMARY KEY,
+    "name"       VARCHAR               NOT NULL,
     "is_default" BOOLEAN DEFAULT FALSE NOT NULL,
-    "is_public" BOOLEAN DEFAULT TRUE NOT NULL,
-    "user_id" INTEGER NOT NULL,
-    "rules" JSONB NOT NULL
+    "is_public"  BOOLEAN DEFAULT TRUE  NOT NULL,
+    "user_id"    INTEGER               NOT NULL,
+    "rules"      JSONB                 NOT NULL
 );
 
 ALTER TABLE "dynamic_lists"

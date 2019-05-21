@@ -6,29 +6,33 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
 
 class TwitterExecutionContextProvider extends ExecutionContextProvider {
-  /**
-   * Safely wrap any execution context into one that properly passes context
-   *
-   * @param executionContext
-   * @return
-   */
-  override def of(executionContext: ExecutionContext) = new PropagatingExecutionContextWrapper(executionContext)
 
   /**
-   * Wrap an executor service
-   *
-   * @param executorService
-   * @return
-   */
-  override def of(executorService: ExecutorService) = new PropagatedExecutorService(executorService)
+    * Safely wrap any execution context into one that properly passes context
+    *
+    * @param executionContext
+    * @return
+    */
+  override def of(executionContext: ExecutionContext) =
+    new PropagatingExecutionContextWrapper(executionContext)
 
   /**
-   * Wrap a scheduled executor
-   *
-   * @param scheduledExecutorService
-   * @return
-   */
-  override def of(scheduledExecutorService: ScheduledExecutorService) = new PropagatedScheduledExecutor(scheduledExecutorService)
+    * Wrap an executor service
+    *
+    * @param executorService
+    * @return
+    */
+  override def of(executorService: ExecutorService) =
+    new PropagatedExecutorService(executorService)
+
+  /**
+    * Wrap a scheduled executor
+    *
+    * @param scheduledExecutorService
+    * @return
+    */
+  override def of(scheduledExecutorService: ScheduledExecutorService) =
+    new PropagatedScheduledExecutor(scheduledExecutorService)
 }
 
 trait TwitterLocalExecutionContext extends ProvidedExecutionContext {
@@ -38,13 +42,14 @@ trait TwitterLocalExecutionContext extends ProvidedExecutionContext {
     // Save the call-site state
     private val context = Local.save()
 
-    def execute(r: Runnable): Unit = self.execute(new Runnable {
-      def run(): Unit = {
-        Local.let(context) {
-          r.run()
+    def execute(r: Runnable): Unit =
+      self.execute(new Runnable {
+        def run(): Unit = {
+          Local.let(context) {
+            r.run()
+          }
         }
-      }
-    })
+      })
 
     def reportFailure(t: Throwable): Unit = self.reportFailure(t)
   }
@@ -57,7 +62,10 @@ trait TwitterLocalExecutionService extends ProvidedExecutorService {
     wrapped.submit(newCallable(task))
   }
 
-  override def submit[T](task: Runnable, result: T): Future[T] = {
+  override def submit[T](
+    task: Runnable,
+    result: T
+  ): Future[T] = {
     wrapped.submit(newRunnable(task), result)
   }
 
@@ -90,11 +98,12 @@ trait TwitterLocalExecutionService extends ProvidedExecutorService {
 }
 
 /**
- * Wrap an executor service
- *
- * @param wrapped
- */
-class PropagatedExecutorService(protected val wrapped: ExecutorService) extends TwitterLocalExecutionService {
+  * Wrap an executor service
+  *
+  * @param wrapped
+  */
+class PropagatedExecutorService(protected val wrapped: ExecutorService)
+    extends TwitterLocalExecutionService {
   override def shutdown(): Unit = {
     wrapped.shutdown()
   }
@@ -103,7 +112,10 @@ class PropagatedExecutorService(protected val wrapped: ExecutorService) extends 
     wrapped.isTerminated
   }
 
-  override def awaitTermination(timeout: Long, unit: TimeUnit): Boolean = {
+  override def awaitTermination(
+    timeout: Long,
+    unit: TimeUnit
+  ): Boolean = {
     wrapped.awaitTermination(timeout, unit)
   }
 
@@ -111,20 +123,40 @@ class PropagatedExecutorService(protected val wrapped: ExecutorService) extends 
     wrapped.shutdownNow()
   }
 
-  override def invokeAll[T](tasks: java.util.Collection[_ <: Callable[T]]): java.util.List[Future[T]] = {
+  override def invokeAll[T](
+    tasks: java.util.Collection[_ <: Callable[T]]
+  ): java.util.List[Future[T]] = {
     wrapped.invokeAll(tasks.asScala.map(newCallable).asJavaCollection)
   }
 
-  override def invokeAll[T](tasks: java.util.Collection[_ <: Callable[T]], timeout: Long, unit: TimeUnit): java.util.List[Future[T]] = {
-    wrapped.invokeAll(tasks.asScala.map(newCallable).asJavaCollection, timeout, unit)
+  override def invokeAll[T](
+    tasks: java.util.Collection[_ <: Callable[T]],
+    timeout: Long,
+    unit: TimeUnit
+  ): java.util.List[Future[T]] = {
+    wrapped.invokeAll(
+      tasks.asScala.map(newCallable).asJavaCollection,
+      timeout,
+      unit
+    )
   }
 
-  override def invokeAny[T](tasks: java.util.Collection[_ <: Callable[T]]): T = {
+  override def invokeAny[T](
+    tasks: java.util.Collection[_ <: Callable[T]]
+  ): T = {
     wrapped.invokeAny(tasks.asScala.map(newCallable).asJavaCollection)
   }
 
-  override def invokeAny[T](tasks: java.util.Collection[_ <: Callable[T]], timeout: Long, unit: TimeUnit): T = {
-    wrapped.invokeAny(tasks.asScala.map(newCallable).asJavaCollection, timeout, unit)
+  override def invokeAny[T](
+    tasks: java.util.Collection[_ <: Callable[T]],
+    timeout: Long,
+    unit: TimeUnit
+  ): T = {
+    wrapped.invokeAny(
+      tasks.asScala.map(newCallable).asJavaCollection,
+      timeout,
+      unit
+    )
   }
 
   override def isShutdown: Boolean = {
@@ -137,10 +169,11 @@ class PropagatedExecutorService(protected val wrapped: ExecutorService) extends 
 }
 
 /**
- * Wrapper around an existing ExecutionContext that makes it propagate MDC information.
- */
+  * Wrapper around an existing ExecutionContext that makes it propagate MDC information.
+  */
 class PropagatingExecutionContextWrapper(wrapped: ExecutionContext)
-  extends ExecutionContext with TwitterLocalExecutionContext {
+    extends ExecutionContext
+    with TwitterLocalExecutionContext {
 
   override def execute(r: Runnable): Unit = wrapped.execute(r)
 
@@ -148,28 +181,58 @@ class PropagatingExecutionContextWrapper(wrapped: ExecutionContext)
 }
 
 /**
- * Wrapper around scheduled executor
- *
- * @param wrapped
- */
-class PropagatedScheduledExecutor(wrapped: ScheduledExecutorService) extends PropagatedExecutorService(wrapped) with ProvidedSchedulerService {
-  override def scheduleAtFixedRate(command: Runnable, initialDelay: Long, period: Long, unit: TimeUnit): ScheduledFuture[_] = {
-    wrapped.scheduleAtFixedRate(newRunnable(command), initialDelay, period, unit)
+  * Wrapper around scheduled executor
+  *
+  * @param wrapped
+  */
+class PropagatedScheduledExecutor(wrapped: ScheduledExecutorService)
+    extends PropagatedExecutorService(wrapped)
+    with ProvidedSchedulerService {
+  override def scheduleAtFixedRate(
+    command: Runnable,
+    initialDelay: Long,
+    period: Long,
+    unit: TimeUnit
+  ): ScheduledFuture[_] = {
+    wrapped.scheduleAtFixedRate(
+      newRunnable(command),
+      initialDelay,
+      period,
+      unit
+    )
   }
 
   override def asExecutionContext: ExecutionContextExecutorService = {
     super.asExecutionContext
   }
 
-  override def schedule(command: Runnable, delay: Long, unit: TimeUnit): ScheduledFuture[_] = {
+  override def schedule(
+    command: Runnable,
+    delay: Long,
+    unit: TimeUnit
+  ): ScheduledFuture[_] = {
     wrapped.schedule(newRunnable(command), delay, unit)
   }
 
-  override def schedule[V](callable: Callable[V], delay: Long, unit: TimeUnit): ScheduledFuture[V] = {
+  override def schedule[V](
+    callable: Callable[V],
+    delay: Long,
+    unit: TimeUnit
+  ): ScheduledFuture[V] = {
     wrapped.schedule(newCallable(callable), delay, unit)
   }
 
-  override def scheduleWithFixedDelay(command: Runnable, initialDelay: Long, delay: Long, unit: TimeUnit): ScheduledFuture[_] = {
-    wrapped.scheduleWithFixedDelay(newRunnable(command), initialDelay, delay, unit)
+  override def scheduleWithFixedDelay(
+    command: Runnable,
+    initialDelay: Long,
+    delay: Long,
+    unit: TimeUnit
+  ): ScheduledFuture[_] = {
+    wrapped.scheduleWithFixedDelay(
+      newRunnable(command),
+      initialDelay,
+      delay,
+      unit
+    )
   }
 }

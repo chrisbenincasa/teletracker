@@ -6,8 +6,10 @@ import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 object FieldSelector {
-  private def objectWasEmpty(j: Json) = j.isObject && j.asObject.exists(_.isEmpty)
-  private def arrayOfObjectsWasEmpty(j: Json) = j.isArray && j.asArray.get.forall(objectWasEmpty)
+  private def objectWasEmpty(j: Json) =
+    j.isObject && j.asObject.exists(_.isEmpty)
+  private def arrayOfObjectsWasEmpty(j: Json) =
+    j.isArray && j.asArray.get.forall(objectWasEmpty)
 
   @tailrec
   private def _filter(
@@ -34,7 +36,11 @@ object FieldSelector {
   }
 
   @tailrec
-  private def handleArray(arr: List[Json], fieldMap: Map[String, Field], acc: List[Json] = Nil): List[Json] = {
+  private def handleArray(
+    arr: List[Json],
+    fieldMap: Map[String, Field],
+    acc: List[Json] = Nil
+  ): List[Json] = {
     arr match {
       case Nil => acc
 
@@ -44,7 +50,10 @@ object FieldSelector {
     }
   }
 
-  def filter(j: Json, fieldMap: Map[String, Field]): Json = {
+  def filter(
+    j: Json,
+    fieldMap: Map[String, Field]
+  ): Json = {
     if (j.isObject) {
       _filter(j.asObject.get.toList, fieldMap)
     } else if (j.isArray) {
@@ -55,7 +64,10 @@ object FieldSelector {
     }
   }
 
-  def filter(j: Json, fields: List[Field]): Json = {
+  def filter(
+    j: Json,
+    fields: List[Field]
+  ): Json = {
     filter(j, fields.map(f => f.name -> f).toMap)
   }
 }
@@ -68,7 +80,10 @@ object Field {
       P(CharsWhileIn(" \r\n", 0))
 
     private def strChars[_: P]: P[Field] =
-      P((CharsWhileIn("0-9a-zA-Z\\-_").! ~~ subfield.?).map(Function.tupled(Field.apply)))
+      P(
+        (CharsWhileIn("0-9a-zA-Z\\-_").! ~~ subfield.?)
+          .map(Function.tupled(Field.apply))
+      )
 
     private def subfield[_: P]: P[List[Field]] =
       P("{" ~ commaSep ~ space ~ "}")
@@ -91,8 +106,7 @@ object Field {
 
 case class Field(
   name: String,
-  subfields: Option[List[Field]] = None
-)
+  subfields: Option[List[Field]] = None)
 
 trait HasFieldsFilter {
   def fields: Option[String]

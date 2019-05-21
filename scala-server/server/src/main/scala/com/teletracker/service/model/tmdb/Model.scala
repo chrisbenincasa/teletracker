@@ -12,22 +12,18 @@ case class SearchMultiRequest(
   query: String,
   language: Option[String],
   page: Option[Int],
-  include_adult: Option[Boolean]
-)
+  include_adult: Option[Boolean])
 
-case class MultiSearchResponseFields(
-  media_type: String
-)
+case class MultiSearchResponseFields(media_type: String)
 
-case class SearchMoviesRequest (
+case class SearchMoviesRequest(
   query: String,
   language: Option[String],
   page: Option[Int],
   include_adult: Option[Boolean],
   region: Option[String],
   year: Option[Int],
-  primary_release_year: Option[Int],
-)
+  primary_release_year: Option[Int])
 
 // Marker for movie IDs
 trait MovieId
@@ -59,37 +55,30 @@ trait MovieId
   video: Option[Boolean],
   vote_average: Option[Double],
   vote_count: Option[Int],
-
   // Join fields
   release_dates: Option[MovieReleaseDates],
   credits: Option[MovieCredits],
-  external_ids: Option[ExternalIds]
-)
+  external_ids: Option[ExternalIds])
 
-@JsonCodec case class MovieExternalIds (
+@JsonCodec case class MovieExternalIds(
   imdb_id: Option[String],
-  id: Int
-)
+  id: Int)
 
-@JsonCodec case class MovieReleaseDates (
-  results: List[MovieReleaseDate]
-)
+@JsonCodec case class MovieReleaseDates(results: List[MovieReleaseDate])
 
-@JsonCodec case class MovieReleaseDate (
+@JsonCodec case class MovieReleaseDate(
   iso_3166_1: String,
-  release_dates: List[MovieCountryRelease]
-)
+  release_dates: List[MovieCountryRelease])
 
-@JsonCodec case class MovieCountryRelease (
+@JsonCodec case class MovieCountryRelease(
   certification: Option[String],
   release_date: Option[String],
   `type`: Int // Maps to MovieReleaseType
 )
 
-@JsonCodec case class MovieCredits (
+@JsonCodec case class MovieCredits(
   cast: Option[List[CastMember]],
-  crew: Option[List[CrewMember]]
-)
+  crew: Option[List[CrewMember]])
 
 trait PersonId
 
@@ -108,13 +97,11 @@ case class Person(
   popularity: Option[Double],
   profile_path: Option[String],
   known_for: Option[List[Movie :+: TvShow :+: CNil]],
-
   // Join fields
   credits: Option[PersonCredits],
   combined_credits: Option[PersonCredits],
   movie_credits: Option[PersonMovieCredits],
-  tv_credits: Option[PersonTvCredits]
-)
+  tv_credits: Option[PersonTvCredits])
 
 @JsonCodec case class CastMember(
   character: Option[String],
@@ -123,8 +110,7 @@ case class Person(
   id: Int,
   name: Option[String],
   order: Option[Int],
-  profile_path: Option[String]
-)
+  profile_path: Option[String])
 
 @JsonCodec case class CrewMember(
   credit_id: Option[String],
@@ -133,28 +119,23 @@ case class Person(
   id: Int,
   job: Option[String],
   name: Option[String],
-  profile_path: Option[String]
-)
+  profile_path: Option[String])
 
 @JsonCodec case class PersonMovieCredits(
   crew: List[Movie],
-  cast: List[Movie]
-)
+  cast: List[Movie])
 
 @JsonCodec case class PersonTvCredits(
   crew: List[TvShow],
-  cast: List[TvShow]
-)
-
+  cast: List[TvShow])
 
 case class PersonCredits(
   crew: List[Movie :+: TvShow :+: CNil],
-  cast: List[Movie :+: TvShow :+: CNil]
-)
+  cast: List[Movie :+: TvShow :+: CNil])
 
 trait TvShowId
 
-@JsonCodec case class TvShow (
+@JsonCodec case class TvShow(
   backdrop_path: Option[String],
   created_by: Option[List[TvShowCreatedBy]],
   episode_run_time: Option[List[Int]],
@@ -180,19 +161,16 @@ trait TvShowId
   `type`: Option[String],
   vote_average: Option[Double],
   vote_count: Option[Int],
-
   // Join fields
   content_ratings: Option[TvContentRatings],
   credits: Option[TvShowCredits],
-  external_ids: Option[ExternalIds],
-)
+  external_ids: Option[ExternalIds])
 
 @JsonCodec case class TvNetwork(
   id: Int,
-  name: String
-)
+  name: String)
 
-@JsonCodec case class TvShowSeason (
+@JsonCodec case class TvShowSeason(
   air_date: Option[String],
   episode_count: Option[Int],
   episodes: Option[List[TvShowEpisode]],
@@ -201,12 +179,10 @@ trait TvShowId
   season_number: Option[Int],
   name: Option[String],
   overview: Option[String],
-
   // Appended joins
-  credits: Option[TvShowCredits],
-)
+  credits: Option[TvShowCredits])
 
-@JsonCodec case class TvShowEpisode (
+@JsonCodec case class TvShowEpisode(
   air_date: Option[String],
 //  crew: Option[List[Map[String, Any]]],
   episode_number: Option[Int],
@@ -218,62 +194,49 @@ trait TvShowId
   season_number: Option[Int],
   still_path: Option[String],
   vote_average: Option[Double],
-  vote_count: Option[Int],
-)
+  vote_count: Option[Int])
 
-@JsonCodec case class TvShowCredits (
+@JsonCodec case class TvShowCredits(
   cast: Option[List[CastMember]],
-  crew: Option[List[CrewMember]]
-)
+  crew: Option[List[CrewMember]])
 
-@JsonCodec case class TvShowCreatedBy (
+@JsonCodec case class TvShowCreatedBy(
   id: Int,
   name: String,
   gender: Option[Int],
-  profile_path: Option[String]
-)
+  profile_path: Option[String])
 
-@JsonCodec case class SearchTvShowsRequest (
+@JsonCodec case class SearchTvShowsRequest(
   query: String,
   language: Option[String],
   page: Option[Int],
-  first_air_date_year: Option[Int]
-)
+  first_air_date_year: Option[Int])
 
-@JsonCodec case class TvExternalIds (
+@JsonCodec case class TvExternalIds(
   tvdb_id: Option[Int],
-  id: Int
-)
+  id: Int)
 
-@JsonCodec case class TvContentRatings (
-  results: List[TvContentRating]
-)
+@JsonCodec case class TvContentRatings(results: List[TvContentRating])
 
-@JsonCodec case class TvContentRating (
+@JsonCodec case class TvContentRating(
   iso_3166_1: String,
-  rating: String
-)
+  rating: String)
 
-@JsonCodec case class ErrorResponse (
+@JsonCodec case class ErrorResponse(
   status_message: Option[String],
-  status_code: Option[Int]
-)
+  status_code: Option[Int])
 
-@JsonCodec case class Genre (
+@JsonCodec case class Genre(
   id: Int,
-  name: String
-)
+  name: String)
 
-@JsonCodec case class GenreListResponse(
-  genres: List[Genre]
-)
+@JsonCodec case class GenreListResponse(genres: List[Genre])
 
-@JsonCodec case class ProductionCompany (
+@JsonCodec case class ProductionCompany(
   name: Option[String],
   id: Int,
   logo_path: Option[String],
-  origin_country: Option[String]
-)
+  origin_country: Option[String])
 
 @JsonCodec case class ExternalIds(
   imdb_id: Option[String],
@@ -284,8 +247,7 @@ trait TvShowId
   facebook_id: Option[String],
   instagram_id: Option[String],
   twitter_id: Option[String],
-  id: Option[Int]
-)
+  id: Option[Int])
 
 @JsonCodec case class Network(
   id: Int,
@@ -293,12 +255,9 @@ trait TvShowId
   homepage: Option[String],
   name: Option[String],
   origin_country: Option[String],
-  images: Option[NetworkLogos]
-)
+  images: Option[NetworkLogos])
 
-@JsonCodec case class NetworkLogos(
-  logos: Option[List[NetworkLogo]]
-)
+@JsonCodec case class NetworkLogos(logos: Option[List[NetworkLogo]])
 
 @JsonCodec case class NetworkLogo(
   id: Option[String],
@@ -308,28 +267,23 @@ trait TvShowId
   file_type: Option[String],
   vote_average: Option[Double],
   vote_count: Option[Int],
-  width: Option[Int]
-)
+  width: Option[Int])
 
 @JsonCodec case class Certification(
   certification: String,
   meaning: String,
-  order: Int
-)
+  order: Int)
 
 @JsonCodec case class CertificationListResponse(
-  certifications: Map[String, List[Certification]]
-)
+  certifications: Map[String, List[Certification]])
 
 @JsonCodec case class PagedResultDates(
   minimum: String,
-  maximum: String
-)
+  maximum: String)
 
 @JsonCodec case class PagedResult[T](
   page: Int,
   results: List[T],
   total_results: Int,
   total_pages: Int,
-  dates: Option[PagedResultDates]
-)
+  dates: Option[PagedResultDates])

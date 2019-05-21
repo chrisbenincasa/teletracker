@@ -21,8 +21,7 @@ case class Availability(
   thingId: Option[Int],
   tvShowEpisodeId: Option[Int],
   networkId: Option[Int],
-  presentationType: Option[PresentationType]
-) {
+  presentationType: Option[PresentationType]) {
   def withNetwork(network: Network): AvailabilityWithDetails = {
     AvailabilityWithDetails(
       id,
@@ -43,10 +42,15 @@ case class Availability(
   }
 
   def matches(other: Availability): Boolean = {
-    val idsEqual = (for (tid <- thingId; tid2 <- other.thingId) yield tid == tid2).getOrElse(false)
-    val episodeIdsEqual = (for (tid <- tvShowEpisodeId; tid2 <- other.tvShowEpisodeId) yield tid == tid2).getOrElse(false)
-    val networkIdEqual = (for (tid <- networkId; tid2 <- other.networkId) yield tid == tid2).getOrElse(false)
-    val offerTypeEqual = (for (tid <- offerType; tid2 <- other.offerType) yield tid == tid2).getOrElse(false)
+    val idsEqual = (for (tid <- thingId; tid2 <- other.thingId)
+      yield tid == tid2).getOrElse(false)
+    val episodeIdsEqual =
+      (for (tid <- tvShowEpisodeId; tid2 <- other.tvShowEpisodeId)
+        yield tid == tid2).getOrElse(false)
+    val networkIdEqual = (for (tid <- networkId; tid2 <- other.networkId)
+      yield tid == tid2).getOrElse(false)
+    val offerTypeEqual = (for (tid <- offerType; tid2 <- other.offerType)
+      yield tid == tid2).getOrElse(false)
     (idsEqual || episodeIdsEqual) && networkIdEqual && offerTypeEqual
   }
 }
@@ -62,25 +66,22 @@ case class AvailabilityWithDetails(
   cost: Option[BigDecimal],
   currency: Option[String],
   presentationType: Option[PresentationType],
-
   thingId: Option[Int],
   tvShowEpisodeId: Option[Int],
   networkId: Option[Int],
-
-  network: Option[Network]
-)
+  network: Option[Network])
 
 class Availabilities @Inject()(
   val driver: CustomPostgresProfile,
   val things: Things,
   val episodes: TvShowEpisodes,
   val networks: Networks,
-  val implicits: DbImplicits
-) {
+  val implicits: DbImplicits) {
   import driver.api._
   import implicits._
 
-  class AvailabilitiesTable(tag: Tag) extends Table[Availability](tag, "availability") {
+  class AvailabilitiesTable(tag: Tag)
+      extends Table[Availability](tag, "availability") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def isAvailable = column[Boolean]("is_available")
     def region = column[Option[String]]("region")
@@ -96,11 +97,21 @@ class Availabilities @Inject()(
     def presentationType = column[Option[PresentationType]]("presentation_type")
 
     def endDate_idx = index("availability_end_date_idx", endDate)
-    def thingIdNetworkId = index("availability_thing_id_networkid", (thingId, networkId))
+    def thingIdNetworkId =
+      index("availability_thing_id_networkid", (thingId, networkId))
 
-    def thingId_fk = foreignKey("availability_thing_id_fk", thingId, things.query)(_.id.?)
-    def tvShowEpisodeId_fk = foreignKey("availability_tv_show_episode_id_fk", tvShowEpisodeId, episodes.query)(_.id.?)
-    def networkId_fk = foreignKey("availability_network_id_fk", networkId, networks.query)(_.id.?)
+    def thingId_fk =
+      foreignKey("availability_thing_id_fk", thingId, things.query)(_.id.?)
+    def tvShowEpisodeId_fk =
+      foreignKey(
+        "availability_tv_show_episode_id_fk",
+        tvShowEpisodeId,
+        episodes.query
+      )(_.id.?)
+    def networkId_fk =
+      foreignKey("availability_network_id_fk", networkId, networks.query)(
+        _.id.?
+      )
 
     override def * =
       (

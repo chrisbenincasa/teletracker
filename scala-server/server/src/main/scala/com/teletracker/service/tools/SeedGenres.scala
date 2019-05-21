@@ -20,20 +20,37 @@ object SeedGenres extends App {
   }
 }
 
-class GenreSeeder @Inject()(tmdbClient: TmdbClient, provider: DbProvider, genres: Genres, genreReferences: GenreReferences) {
+class GenreSeeder @Inject()(
+  tmdbClient: TmdbClient,
+  provider: DbProvider,
+  genres: Genres,
+  genreReferences: GenreReferences) {
   import genres.driver.api._
 
   def run(): Unit = {
     Await.result(provider.getDB.run(genres.query.delete), Duration.Inf)
 
-    val movieGenres = Await.result(tmdbClient.makeRequest[GenreListResponse]("genre/movie/list"), Duration.Inf)
+    val movieGenres = Await.result(
+      tmdbClient.makeRequest[GenreListResponse]("genre/movie/list"),
+      Duration.Inf
+    )
 
     val inserts = movieGenres.genres.map {
       case g =>
         val gModel = Genre(None, g.name, GenreType.Movie, Slug(g.name))
-        val insert = (genres.query returning genres.query.map(_.id) into ((g, id) => g.copy(id = Some(id)))) += gModel
+        val insert = (genres.query returning genres.query.map(_.id) into (
+          (
+            g,
+            id
+          ) => g.copy(id = Some(id))
+        )) += gModel
         insert.flatMap(saved => {
-          genreReferences.query += GenreReference(None, ExternalSource.TheMovieDb, g.id.toString, saved.id.get)
+          genreReferences.query += GenreReference(
+            None,
+            ExternalSource.TheMovieDb,
+            g.id.toString,
+            saved.id.get
+          )
         })
     }
 
@@ -43,14 +60,27 @@ class GenreSeeder @Inject()(tmdbClient: TmdbClient, provider: DbProvider, genres
 
     Await.result(movieGenreInserts, Duration.Inf)
 
-    val tvGenres = Await.result(tmdbClient.makeRequest[GenreListResponse]("genre/tv/list"), Duration.Inf)
+    val tvGenres = Await.result(
+      tmdbClient.makeRequest[GenreListResponse]("genre/tv/list"),
+      Duration.Inf
+    )
 
     val tvInserts = tvGenres.genres.map {
       case g =>
         val gModel = Genre(None, g.name, GenreType.Tv, Slug(g.name))
-        val insert = (genres.query returning genres.query.map(_.id) into ((g, id) => g.copy(id = Some(id)))) += gModel
+        val insert = (genres.query returning genres.query.map(_.id) into (
+          (
+            g,
+            id
+          ) => g.copy(id = Some(id))
+        )) += gModel
         insert.flatMap(saved => {
-          genreReferences.query += GenreReference(None, ExternalSource.TheMovieDb, g.id.toString, saved.id.get)
+          genreReferences.query += GenreReference(
+            None,
+            ExternalSource.TheMovieDb,
+            g.id.toString,
+            saved.id.get
+          )
         })
     }
 

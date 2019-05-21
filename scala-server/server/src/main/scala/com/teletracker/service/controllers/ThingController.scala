@@ -12,13 +12,16 @@ import scala.concurrent.ExecutionContext
 
 class ThingController @Inject()(
   thingsDbAccess: ThingsDbAccess
-)(implicit executionContext: ExecutionContext) extends Controller {
+)(implicit executionContext: ExecutionContext)
+    extends Controller {
   prefix("/api/v1/things") {
     filter[JwtAuthFilter].apply {
       get("/:thingId/user-details") { req: GetThingRequest =>
-        thingsDbAccess.getThingUserDetails(req.request.authContext.user.id, req.thingId).map(details => {
-          response.ok.contentTypeJson().body(DataResponse(details))
-        })
+        thingsDbAccess
+          .getThingUserDetails(req.request.authContext.user.id, req.thingId)
+          .map(details => {
+            response.ok.contentTypeJson().body(DataResponse(details))
+          })
       }
     }
   }
@@ -26,5 +29,4 @@ class ThingController @Inject()(
 
 case class GetThingRequest(
   @RouteParam thingId: Int,
-  request: Request
-)
+  request: Request)

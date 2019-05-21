@@ -21,8 +21,14 @@ object ImportMovies extends App {
     val endpoint = args.headOption.getOrElse("popular")
     val pages = args.drop(1).headOption.map(_.toInt).getOrElse(5)
 
-    val requests = (1 to pages).toList.
-      map(i => () => tmdbClient.makeRequest[PagedResult[Movie]](s"/movie/$endpoint", Seq("page" -> i.toString)))
+    val requests = (1 to pages).toList.map(
+      i =>
+        () =>
+          tmdbClient.makeRequest[PagedResult[Movie]](
+            s"/movie/$endpoint",
+            Seq("page" -> i.toString)
+          )
+    )
 
     val processed = SequentialFutures.serialize(requests)(r => {
       r().flatMap(res => {

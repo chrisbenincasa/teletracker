@@ -11,27 +11,22 @@ case class Provider(
   data: ProviderData,
   monetization_types: List[String],
   icon_url: String,
-  slug: String
-)
+  slug: String)
 
 case class PopularSearchRequest(
   page: Int,
   pageSize: Int,
   query: String,
-  contentTypes: List[String]
-)
+  contentTypes: List[String])
 
-case class ProviderData(
-  public_info: Boolean
-)
+case class ProviderData(public_info: Boolean)
 
 case class PopularItemsResponse(
   page: Int,
   page_size: Option[Int],
   total_pages: Option[Int],
   total_results: Option[Int],
-  items: List[PopularItem]
-)
+  items: List[PopularItem])
 
 case class PopularItem(
   id: Int,
@@ -46,8 +41,7 @@ case class PopularItem(
   original_title: Option[String],
   scoring: Option[List[Scoring]],
   runtime: Option[Int],
-  age_certification: Option[String]
-)
+  age_certification: Option[String])
 
 case class Offer(
   monetization_type: Option[String],
@@ -62,13 +56,11 @@ case class Offer(
   last_change_difference: Option[Double],
   last_change_percent: Option[Double],
   last_change_date: Option[String],
-  last_change_date_provider_id: Option[String]
-)
+  last_change_date_provider_id: Option[String])
 
 case class Scoring(
   provider_type: String,
-  value: Double
-)
+  value: Double)
 
 case class JustWatchShow(
   id: Int,
@@ -87,8 +79,7 @@ case class JustWatchShow(
   genre_ids: Option[List[Int]],
   seasons: Option[List[JustWatchSeason]],
   age_certification: Option[String],
-  max_season_number: Option[Int]
-)
+  max_season_number: Option[Int])
 
 case class JustWatchSeason(
   id: Int,
@@ -107,8 +98,7 @@ case class JustWatchSeason(
   show_id: Option[Int],
   show_title: Option[String],
   max_episode_number: Option[Int],
-  episodes: Option[List[JustWatchEpisode]]
-)
+  episodes: Option[List[JustWatchEpisode]])
 
 case class JustWatchEpisode(
   id: Int,
@@ -120,9 +110,6 @@ case class JustWatchEpisode(
   season_number: Option[Int],
   episode_number: Option[Int],
   runtime: Option[Int],
-  show_title: Option[String]
-)
+  show_title: Option[String])
 
-case class JustWatchBackdrop(
-  backdrop_url: String
-)
+case class JustWatchBackdrop(backdrop_url: String)

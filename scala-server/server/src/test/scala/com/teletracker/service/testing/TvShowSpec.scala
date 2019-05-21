@@ -13,31 +13,71 @@ class TvShowSpec extends BaseSpecWithServer {
     val networkDbAccess = injector.getInstance(classOf[NetworksDbAccess])
 
     val show =
-      thingDbAccess.saveThing(
-        Thing(None, "Not Friends", Slug("Not Friends"), ThingType.Show, DateTime.now(), DateTime.now(), None)
-      ).await()
+      thingDbAccess
+        .saveThing(
+          Thing(
+            None,
+            "Not Friends",
+            Slug("Not Friends"),
+            ThingType.Show,
+            DateTime.now(),
+            DateTime.now(),
+            None
+          )
+        )
+        .await()
 
     val season =
-      tvShowDbAccess.insertSeason(
-        TvShowSeason(None, 1, show.id.get, None, None)
-      ).await()
+      tvShowDbAccess
+        .insertSeason(
+          TvShowSeason(None, 1, show.id.get, None, None)
+        )
+        .await()
 
     val episode =
-      tvShowDbAccess.insertEpisode(
-        TvShowEpisode(None, 1, show.id.get, season.id.get, "The One Where They Explode", None)
-      ).await()
+      tvShowDbAccess
+        .insertEpisode(
+          TvShowEpisode(
+            None,
+            1,
+            show.id.get,
+            season.id.get,
+            "The One Where They Explode",
+            None
+          )
+        )
+        .await()
 
     val network =
-      networkDbAccess.saveNetwork(
-        Network(None, "Netflix", Slug("Netflix"), "nflx", None, None)
-      ).await()
+      networkDbAccess
+        .saveNetwork(
+          Network(None, "Netflix", Slug("Netflix"), "nflx", None, None)
+        )
+        .await()
 
     val availability =
-      thingDbAccess.saveAvailability(
-        Availability(None, true, Some("US"), None, None, None, Some(OfferType.Subscription), None, None, None, Some(episode.id.get), Some(network.id.get), None)
-      ).await()
+      thingDbAccess
+        .saveAvailability(
+          Availability(
+            None,
+            true,
+            Some("US"),
+            None,
+            None,
+            None,
+            Some(OfferType.Subscription),
+            None,
+            None,
+            None,
+            Some(episode.id.get),
+            Some(network.id.get),
+            None
+          )
+        )
+        .await()
 
-    val foundShow = thingDbAccess.findShowById(show.id.get, withAvailability = true).await()
+    val foundShow =
+      thingDbAccess.findShowById(show.id.get, withAvailability = true).await()
     assert(foundShow.isDefined)
     assert(foundShow.get.id === show.id)
     assert(foundShow.get.seasons.getOrElse(Nil).length === 1)
@@ -53,7 +93,9 @@ class TvShowSpec extends BaseSpecWithServer {
             inside(foundEpisode.availability) {
               case Some(foundAvailability) =>
                 assert(foundAvailability.id.isDefined)
-                assert(foundAvailability.tvShowEpisodeId === availability.tvShowEpisodeId)
+                assert(
+                  foundAvailability.tvShowEpisodeId === availability.tvShowEpisodeId
+                )
             }
         }
     }

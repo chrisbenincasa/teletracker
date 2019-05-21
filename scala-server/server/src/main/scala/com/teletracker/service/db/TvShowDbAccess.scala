@@ -11,7 +11,8 @@ class TvShowDbAccess @Inject()(
   val tvShowSeasons: TvShowSeasons,
   val tvShowEpisodes: TvShowEpisodes,
   val externalIds: ExternalIds
-)(implicit executionContext: ExecutionContext) extends DbAccess {
+)(implicit executionContext: ExecutionContext)
+    extends DbAccess {
   import provider.driver.api._
 
   def findAllSeasonsForShow(showId: Int) = {
@@ -28,10 +29,17 @@ class TvShowDbAccess @Inject()(
     }
   }
 
-  def findEpisodeByExternalId(source: ExternalSource, id: String) = {
+  def findEpisodeByExternalId(
+    source: ExternalSource,
+    id: String
+  ) = {
     val query = source match {
       case ExternalSource.TheMovieDb =>
-        externalIds.query.filter(_.tmdbId === id).flatMap(_.episode).result.headOption
+        externalIds.query
+          .filter(_.tmdbId === id)
+          .flatMap(_.episode)
+          .result
+          .headOption
       case _ => DBIO.successful(None)
     }
 
@@ -55,24 +63,30 @@ class TvShowDbAccess @Inject()(
   }
 
   def upsertEpisode(episode: TvShowEpisode) = {
-    val c = episode.id.map(id => {
-      run {
-        tvShowEpisodes.query.filter(_.id === id).result.headOption
-      }.map {
-        case Some(found) => found
-        case None => episode.copy(id = None)
+    val c = episode.id
+      .map(id => {
+        run {
+          tvShowEpisodes.query.filter(_.id === id).result.headOption
+        }.map {
+          case Some(found) => found
+          case None        => episode.copy(id = None)
+        }
+      })
+      .getOrElse {
+        Future.successful(episode)
       }
-    }).getOrElse {
-      Future.successful(episode)
-    }
 
     c.map {
-      case model if model.id.isDefined =>
-        tvShowEpisodes.query.filter(_.id === model.id).update(model).map(_ => model)
-      case model =>
-        (tvShowEpisodes.query returning
-          tvShowEpisodes.query.map(_.id) into
-          ((ep, id) => ep.copy(id = Some(id)))) += model
-    }.flatMap(run)
+        case model if model.id.isDefined =>
+          tvShowEpisodes.query
+            .filter(_.id === model.id)
+            .update(model)
+            .map(_ => model)
+        case model =>
+          (tvShowEpisodes.query returning
+            tvShowEpisodes.query.map(_.id) into
+            ((ep, id) => ep.copy(id = Some(id)))) += model
+      }
+      .flatMap(run)
   }
 }
