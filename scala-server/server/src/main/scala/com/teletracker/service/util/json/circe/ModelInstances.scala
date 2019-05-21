@@ -6,26 +6,35 @@ import io.circe.shapes._
 import io.circe.generic.semiauto._
 import io.circe.generic.auto._
 import io.circe.{Decoder, DecodingFailure, Encoder, Json}
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{classTag, ClassTag}
 
 trait ModelInstances extends JodaInstances {
-  implicit def javaEnumDecoder[A <: Enum[A] : ClassTag]: Decoder[A] = Decoder.instance { a =>
-    a.focus match {
-      case Some(v) if v.isString =>
-        classTag[A].runtimeClass.asInstanceOf[Class[A]].getEnumConstants.find(_.toString().equalsIgnoreCase(v.asString.get)) match {
-          case Some(v2) => Right(v2)
-          case None => Left(DecodingFailure(s"Could not find value ${v} in enum", a.history))
-        }
-      case Some(_) => Left(DecodingFailure("???", a.history))
-      case None => Left(DecodingFailure("???", a.history))
+  implicit def javaEnumDecoder[A <: Enum[A]: ClassTag]: Decoder[A] =
+    Decoder.instance { a =>
+      a.focus match {
+        case Some(v) if v.isString =>
+          classTag[A].runtimeClass
+            .asInstanceOf[Class[A]]
+            .getEnumConstants
+            .find(_.toString().equalsIgnoreCase(v.asString.get)) match {
+            case Some(v2) => Right(v2)
+            case None =>
+              Left(
+                DecodingFailure(s"Could not find value ${v} in enum", a.history)
+              )
+          }
+        case Some(_) => Left(DecodingFailure("???", a.history))
+        case None    => Left(DecodingFailure("???", a.history))
+      }
     }
+
+  implicit def javaEnumEncoder[A <: Enum[A]]: Encoder[A] = Encoder.instance {
+    a =>
+      Json.fromString(a.toString)
   }
 
-  implicit def javaEnumEncoder[A <: Enum[A]]: Encoder[A] = Encoder.instance { a =>
-    Json.fromString(a.toString)
-  }
-
-  implicit val slugEncoder: Encoder[Slug] = Encoder.encodeString.contramap(slug => slug.value)
+  implicit val slugEncoder: Encoder[Slug] =
+    Encoder.encodeString.contramap(slug => slug.value)
   implicit val slugDecoder: Decoder[Slug] = Decoder.decodeString.map(Slug.raw)
 
   implicit val availabilityEncoder = deriveEncoder[Availability]
@@ -34,8 +43,10 @@ trait ModelInstances extends JodaInstances {
   implicit val networkEncoder = deriveEncoder[Network]
   implicit val networkDecoder = deriveDecoder[Network]
 
-  implicit val availabilityWithDetailsEncoder = deriveEncoder[AvailabilityWithDetails]
-  implicit val availabilityWithDetailsDecoder = deriveDecoder[AvailabilityWithDetails]
+  implicit val availabilityWithDetailsEncoder =
+    deriveEncoder[AvailabilityWithDetails]
+  implicit val availabilityWithDetailsDecoder =
+    deriveDecoder[AvailabilityWithDetails]
 
   implicit val objectMetadataEncoder = deriveEncoder[ObjectMetadata]
   implicit val objectMetadataDecoder = deriveDecoder[ObjectMetadata]

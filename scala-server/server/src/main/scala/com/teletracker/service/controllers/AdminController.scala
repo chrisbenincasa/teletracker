@@ -10,7 +10,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class AdminController @Inject()(
   tmdbLocalCache: TmdbLocalCache,
   justWatchLocalCache: JustWatchLocalCache
-)(implicit executionContext: ExecutionContext) extends Controller {
+)(implicit executionContext: ExecutionContext)
+    extends Controller {
   post("/cache/clear", admin = true) { _: Request =>
     Future.sequence(
       List(

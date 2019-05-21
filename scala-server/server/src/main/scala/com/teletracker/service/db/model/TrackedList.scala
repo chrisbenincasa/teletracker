@@ -11,8 +11,7 @@ case class TrackedListRow(
   isPublic: Boolean,
   userId: Int,
   isDynamic: Boolean = false,
-  rules: Option[DynamicListRules] = None
-) {
+  rules: Option[DynamicListRules] = None) {
   def toFull: TrackedList = TrackedList.fromRow(this)
 }
 
@@ -40,43 +39,44 @@ case class TrackedList(
   userId: Int,
   things: Option[List[PartialThing]] = None,
   isDynamic: Boolean = false,
-  rules: Option[DynamicListRules] = None
-) {
+  rules: Option[DynamicListRules] = None) {
   def withThings(things: List[PartialThing]): TrackedList = {
     this.copy(things = Some(things))
   }
 }
 
 object DynamicListTagRule {
-  def ifPresent(tagType: UserThingTagType): DynamicListTagRule = DynamicListTagRule(tagType, None, Some(true))
+  def ifPresent(tagType: UserThingTagType): DynamicListTagRule =
+    DynamicListTagRule(tagType, None, Some(true))
 }
 
 case class DynamicListTagRule(
   tagType: UserThingTagType,
   value: Option[Double],
-  isPresent: Option[Boolean]
-) {
-  def withValue(value: Double): DynamicListTagRule = this.copy(value = Some(value))
+  isPresent: Option[Boolean]) {
+  def withValue(value: Double): DynamicListTagRule =
+    this.copy(value = Some(value))
 }
 
 object DynamicListRules {
-  def watched = DynamicListRules(DynamicListTagRule.ifPresent(UserThingTagType.Watched) :: Nil)
+  def watched =
+    DynamicListRules(
+      DynamicListTagRule.ifPresent(UserThingTagType.Watched) :: Nil
+    )
 }
 
 // TODO: Insanely simple ruleset where rules are OR'd together. Expand to be more flexible.
-case class DynamicListRules(
-  tagRules: List[DynamicListTagRule]
-)
+case class DynamicListRules(tagRules: List[DynamicListTagRule])
 
 class TrackedLists @Inject()(
   val driver: JdbcProfile,
   val users: Users,
-  dbImplicits: DbImplicits
-) {
+  dbImplicits: DbImplicits) {
   import driver.api._
   import dbImplicits._
 
-  class TrackedListsTable(tag: Tag) extends Table[TrackedListRow](tag, "lists") {
+  class TrackedListsTable(tag: Tag)
+      extends Table[TrackedListRow](tag, "lists") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def name = column[String]("name")
     def isDefault = column[Boolean]("is_default", O.Default(false))

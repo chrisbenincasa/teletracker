@@ -11,13 +11,11 @@ case class Network(
   slug: Slug,
   shortname: String,
   homepage: Option[String],
-  origin: Option[String]
-)
+  origin: Option[String])
 
 class Networks @Inject()(
   val driver: JdbcProfile,
-  dbImplicits: DbImplicits
-) {
+  dbImplicits: DbImplicits) {
   import driver.api._
   import dbImplicits._
 

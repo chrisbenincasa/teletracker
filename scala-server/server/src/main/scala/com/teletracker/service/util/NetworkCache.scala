@@ -21,9 +21,11 @@ class NetworkCache @Inject()(
   def get(): Future[NetworkMap] = {
     cache.getOrElseUpdate("NETWORKS") {
       val p = com.twitter.util.Promise[NetworkMap]()
-      val sFut = networksDbAccess.findAllNetworks().map(_.map {
-        case (ref, net) => (ref.externalSource -> ref.externalId) -> net
-      }.toMap)
+      val sFut = networksDbAccess
+        .findAllNetworks()
+        .map(_.map {
+          case (ref, net) => (ref.externalSource -> ref.externalId) -> net
+        }.toMap)
 
       sFut.onComplete(p.update(_))
 

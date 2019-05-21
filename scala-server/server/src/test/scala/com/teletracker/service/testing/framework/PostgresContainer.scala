@@ -1,7 +1,12 @@
 package com.teletracker.service.testing.framework
 
 import com.google.inject.Injector
-import com.spotify.docker.client.DockerClient.AttachParameter.{LOGS, STDERR, STDOUT, STREAM}
+import com.spotify.docker.client.DockerClient.AttachParameter.{
+  LOGS,
+  STDERR,
+  STDOUT,
+  STREAM
+}
 import com.spotify.docker.client.messages._
 import com.spotify.docker.client.{DefaultDockerClient, DockerClient}
 import com.teletracker.service.db.model._
@@ -32,22 +37,29 @@ class PostgresContainer(
       "5432" -> List(PortBinding.of("0.0.0.0", target)).asJava
     ).asJava
 
-    val hostConfig = HostConfig.builder().
-      portBindings(portBindings).
-      lxcConf(
+    val hostConfig = HostConfig
+      .builder()
+      .portBindings(portBindings)
+      .lxcConf(
         new HostConfig.LxcConfParameter {
           override def key(): String = "icc"
 
           override def value(): String = "false"
         }
-      ).build()
+      )
+      .build()
 
-    val containerConfig = ContainerConfig.builder().
-      hostConfig(hostConfig).
-      env("POSTGRES_USER=teletracker", "POSTGRES_PASSWORD=teletracker", "POSTGRES_DB=teletracker").
-      image("postgres:10.4").
-      exposedPorts("5432").
-      build()
+    val containerConfig = ContainerConfig
+      .builder()
+      .hostConfig(hostConfig)
+      .env(
+        "POSTGRES_USER=teletracker",
+        "POSTGRES_PASSWORD=teletracker",
+        "POSTGRES_DB=teletracker"
+      )
+      .image("postgres:10.4")
+      .exposedPorts("5432")
+      .build()
 
     try {
       client.pull("postgres:10.4")
@@ -75,12 +87,19 @@ class PostgresContainer(
   }
 
   def getMappedPort(p: Int): Option[Int] = {
-    container.networkSettings().ports().asScala.get(s"$p/tcp").flatMap(_.asScala.headOption).map(_.hostPort().toInt)
+    container
+      .networkSettings()
+      .ports()
+      .asScala
+      .get(s"$p/tcp")
+      .flatMap(_.asScala.headOption)
+      .map(_.hostPort().toInt)
   }
 
   lazy val dataSource = {
     new DriverDataSource(
-      url = s"jdbc:postgresql://localhost:${getMappedPort(5432).get}/teletracker",
+      url =
+        s"jdbc:postgresql://localhost:${getMappedPort(5432).get}/teletracker",
       user = "teletracker",
       password = "teletracker",
       driverObject = new org.postgresql.Driver
@@ -143,7 +162,8 @@ class PostgresContainer(
 
         do {
           if (!stream.hasNext) {
-            try Thread.sleep(10) catch { case _: InterruptedException => }
+            try Thread.sleep(10)
+            catch { case _: InterruptedException => }
           } else {
             val msg = stream.next()
             val buf = msg.content()
@@ -151,7 +171,9 @@ class PostgresContainer(
             buf.get(bytes)
             val newLogs = new String(bytes)
             logs += newLogs
-            if ("database system is ready to accept connections".r.findAllIn(logs).size == 2) {
+            if ("database system is ready to accept connections".r
+                  .findAllIn(logs)
+                  .size == 2) {
               matched = true
             }
           }

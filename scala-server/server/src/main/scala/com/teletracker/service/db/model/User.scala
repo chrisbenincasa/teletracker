@@ -12,8 +12,7 @@ case class UserRow(
   password: String,
   createdAt: java.sql.Timestamp,
   lastUpdatedAt: java.sql.Timestamp,
-  preferences: Option[UserPreferences]
-) {
+  preferences: Option[UserPreferences]) {
   def toFull: User = User.fromRow(this)
 }
 
@@ -26,8 +25,7 @@ object UserPreferences {
 
 case class UserPreferences(
   presentationTypes: Set[PresentationType],
-  showOnlyNetworkSubscriptions: Option[Boolean] = None
-)
+  showOnlyNetworkSubscriptions: Option[Boolean] = None)
 
 object User {
   def fromRow(userRow: UserRow): User = {
@@ -55,10 +53,18 @@ case class User(
   lastUpdatedAt: java.sql.Timestamp,
   lists: Option[List[TrackedList]] = None,
   networkSubscriptions: List[Network] = Nil,
-  userPreferences: UserPreferences = UserPreferences.default
-) {
+  userPreferences: UserPreferences = UserPreferences.default) {
   def toRow: UserRow = {
-    UserRow(Some(id), name, username, email, "???", createdAt, lastUpdatedAt, Some(userPreferences))
+    UserRow(
+      Some(id),
+      name,
+      username,
+      email,
+      "???",
+      createdAt,
+      lastUpdatedAt,
+      Some(userPreferences)
+    )
   }
 
   def withNetworks(networks: List[Network]): User = {
@@ -80,8 +86,7 @@ case class User(
 
 class Users @Inject()(
   val driver: JdbcProfile,
-  dbImplicits: DbImplicits
-) {
+  dbImplicits: DbImplicits) {
   import driver.api._
   import dbImplicits._
 

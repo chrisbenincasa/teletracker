@@ -13,7 +13,8 @@ import scala.concurrent.ExecutionContext
 
 class TvShowController @Inject()(
   thingsDbAccess: ThingsDbAccess
-)(implicit executionContext: ExecutionContext) extends Controller {
+)(implicit executionContext: ExecutionContext)
+    extends Controller {
   prefix("/api/v1/shows") {
     filter[JwtAuthFilter].apply {
       get("/:id") { req: GetShowRequest =>
@@ -30,19 +31,25 @@ class TvShowController @Inject()(
             response.status(404)
           } else {
             val finalResult = showById.get.withUserMetadata(thingDetails)
-            response.ok.contentTypeJson().body(DataResponse.complex(finalResult))
+            response.ok
+              .contentTypeJson()
+              .body(DataResponse.complex(finalResult))
           }
         }
       }
 
       get("/:id/availability") { req: GetShowRequest =>
-        thingsDbAccess.findShowById(req.id, withAvailability = true).map(result => {
-          if (result.isEmpty) {
-            response.status(404)
-          } else {
-            response.ok.contentTypeJson().body(DataResponse.complex(result.get))
-          }
-        })
+        thingsDbAccess
+          .findShowById(req.id, withAvailability = true)
+          .map(result => {
+            if (result.isEmpty) {
+              response.status(404)
+            } else {
+              response.ok
+                .contentTypeJson()
+                .body(DataResponse.complex(result.get))
+            }
+          })
       }
     }
   }
@@ -50,5 +57,4 @@ class TvShowController @Inject()(
 
 case class GetShowRequest(
   @RouteParam id: Int,
-  request: Request
-)
+  request: Request)

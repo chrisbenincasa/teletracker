@@ -13,21 +13,30 @@ import scala.collection.JavaConverters._
 
 @Singleton
 class TmdbLocalCache @JInject()(implicit executionContext: ExecutionContext) {
-  private val cache: Cache[String, TmdbEntity.Entities] = CacheBuilder.newBuilder()
+  private val cache: Cache[String, TmdbEntity.Entities] = CacheBuilder
+    .newBuilder()
     .expireAfterWrite(30, TimeUnit.MINUTES)
     .maximumSize(1000)
     .build()
 
-  def getOrSetEntity[T](thingType: ThingType,
-    id: String, f: => Future[T]
-  )(implicit inj: Inject[Entities, T], select: Selector[Entities, T]): Future[T] = {
+  def getOrSetEntity[T](
+    thingType: ThingType,
+    id: String,
+    f: => Future[T]
+  )(implicit inj: Inject[Entities, T],
+    select: Selector[Entities, T]
+  ): Future[T] = {
     val key = keyForType(thingType, id)
 
     Option(cache.getIfPresent(key)) match {
       case Some(value) =>
         select(value)
           .map(Future.successful)
-          .getOrElse(Future.failed(new IllegalStateException(s"Found unexpected type for key: $key")))
+          .getOrElse(
+            Future.failed(
+              new IllegalStateException(s"Found unexpected type for key: $key")
+            )
+          )
 
       case None =>
         f.andThen {
@@ -46,7 +55,10 @@ class TmdbLocalCache @JInject()(implicit executionContext: ExecutionContext) {
     }
   }
 
-  private def keyForType(thingType: ThingType, id: String): String = {
+  private def keyForType(
+    thingType: ThingType,
+    id: String
+  ): String = {
     s"$thingType.$id"
   }
 }

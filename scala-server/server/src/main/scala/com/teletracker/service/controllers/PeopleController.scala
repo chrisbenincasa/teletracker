@@ -11,7 +11,8 @@ import scala.concurrent.ExecutionContext
 
 class PeopleController @Inject()(
   thingsDbAccess: ThingsDbAccess
-)(implicit executionContext: ExecutionContext) extends Controller {
+)(implicit executionContext: ExecutionContext)
+    extends Controller {
   prefix("/api/v1") {
     get("/person/:personId") { req: GetPersonRequest =>
       thingsDbAccess.findPersonById(req.personId).map(DataResponse.complex(_))
@@ -19,6 +20,4 @@ class PeopleController @Inject()(
   }
 }
 
-case class GetPersonRequest(
-  @RouteParam personId: Int
-)
+case class GetPersonRequest(@RouteParam personId: Int)

@@ -8,8 +8,12 @@ import javax.inject.Inject
 import scala.util.Try
 
 class UserSelfOnlyFilter @Inject()() extends SimpleFilter[Request, Response] {
-  override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
-    val userId = request.params.get("userId").orElse(request.params.get("user_id"))
+  override def apply(
+    request: Request,
+    service: Service[Request, Response]
+  ): Future[Response] = {
+    val userId =
+      request.params.get("userId").orElse(request.params.get("user_id"))
 
     userId match {
       case Some("self") => service(request)

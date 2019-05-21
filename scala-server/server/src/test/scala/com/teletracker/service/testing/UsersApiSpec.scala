@@ -1,6 +1,10 @@
 package com.teletracker.service.testing
 
-import com.teletracker.service.controllers.{CreateListResponse, CreateUserRequest, CreateUserResponse}
+import com.teletracker.service.controllers.{
+  CreateListResponse,
+  CreateUserRequest,
+  CreateUserResponse
+}
 import com.teletracker.service.db.ThingsDbAccess
 import com.teletracker.service.db.model.{Thing, ThingType, TrackedList, User}
 import com.teletracker.service.model.DataResponse
@@ -17,11 +21,16 @@ class UsersApiSpec extends BaseSpecWithServer {
   "Users API" should "create a default list for a new user" in {
     val createResponse = server.httpPost(
       "/api/v1/users",
-      serializer.writeValueAsString(CreateUserRequest("gordon@hacf.com", "gordo", "Gordon", "password"))
+      serializer.writeValueAsString(
+        CreateUserRequest("gordon@hacf.com", "gordo", "Gordon", "password")
+      )
     )
 
     val DataResponse(CreateUserResponse(_, token)) =
-      parse(createResponse.contentString).flatMap(_.as[DataResponse[CreateUserResponse]]).right.get
+      parse(createResponse.contentString)
+        .flatMap(_.as[DataResponse[CreateUserResponse]])
+        .right
+        .get
 
     val getResponse = server.httpGet(
       "/api/v1/users/self",
@@ -29,7 +38,10 @@ class UsersApiSpec extends BaseSpecWithServer {
     )
 
     val parsedResponse =
-      parse(getResponse.contentString).flatMap(_.as[DataResponse[User]]).right.get
+      parse(getResponse.contentString)
+        .flatMap(_.as[DataResponse[User]])
+        .right
+        .get
 
     println(parsedResponse)
   }
@@ -48,7 +60,8 @@ class UsersApiSpec extends BaseSpecWithServer {
       headers = Map("Authorization" -> s"Bearer $token")
     )
 
-    parse(userListsResponse.contentString).flatMap(_.as[DataResponse[User]]) match {
+    parse(userListsResponse.contentString)
+      .flatMap(_.as[DataResponse[User]]) match {
       case Left(err) =>
         fail(err)
       case Right(value) =>
@@ -65,14 +78,19 @@ class UsersApiSpec extends BaseSpecWithServer {
       headers = Map("Authorization" -> s"Bearer $token")
     )
 
-    val DataResponse(CreateListResponse(listId)) = parse(createListResponse.contentString).flatMap(_.as[DataResponse[CreateListResponse]]).right.get
+    val DataResponse(CreateListResponse(listId)) = parse(
+      createListResponse.contentString
+    ).flatMap(_.as[DataResponse[CreateListResponse]]).right.get
 
     val listResponse = server.httpGet(
       s"/api/v1/users/self/lists/$listId",
       headers = Map("Authorization" -> s"Bearer $token")
     )
 
-    val deser = parse(listResponse.contentString).flatMap(_.as[DataResponse[TrackedList]]).right.get
+    val deser = parse(listResponse.contentString)
+      .flatMap(_.as[DataResponse[TrackedList]])
+      .right
+      .get
 
     println(deser)
   }
@@ -96,11 +114,24 @@ class UsersApiSpec extends BaseSpecWithServer {
       headers = Map("Authorization" -> s"Bearer $token")
     )
 
-    val DataResponse(CreateListResponse(listId)) = parse(createListResponse.contentString).flatMap(_.as[DataResponse[CreateListResponse]]).right.get
+    val DataResponse(CreateListResponse(listId)) = parse(
+      createListResponse.contentString
+    ).flatMap(_.as[DataResponse[CreateListResponse]]).right.get
 
-    val thing = server.injector.instance[ThingsDbAccess].saveThing(
-      Thing(None, "Halt and Catch Fire", Slug("Halt and Catch Fire"), ThingType.Show, DateTime.now(), DateTime.now(), None)
-    ).await()
+    val thing = server.injector
+      .instance[ThingsDbAccess]
+      .saveThing(
+        Thing(
+          None,
+          "Halt and Catch Fire",
+          Slug("Halt and Catch Fire"),
+          ThingType.Show,
+          DateTime.now(),
+          DateTime.now(),
+          None
+        )
+      )
+      .await()
 
     server.httpPut(
       s"/api/v1/users/self/lists/$listId",
@@ -115,13 +146,21 @@ class UsersApiSpec extends BaseSpecWithServer {
       headers = Map("Authorization" -> s"Bearer $token")
     )
 
-    val deser = parse(listResponse.contentString).flatMap(_.as[DataResponse[TrackedList]]).right.get
+    val deser = parse(listResponse.contentString)
+      .flatMap(_.as[DataResponse[TrackedList]])
+      .right
+      .get
 
     println(deser)
   }
 
   private def createUser() = {
-    val createUserRequest = CreateUserRequest(UUID.randomUUID().toString, UUID.randomUUID().toString, "Gordon", "password")
+    val createUserRequest = CreateUserRequest(
+      UUID.randomUUID().toString,
+      UUID.randomUUID().toString,
+      "Gordon",
+      "password"
+    )
 
     val response = server.httpPost(
       "/api/v1/users",
@@ -129,7 +168,10 @@ class UsersApiSpec extends BaseSpecWithServer {
     )
 
     val DataResponse(CreateUserResponse(userId, token)) =
-      parse(response.contentString).flatMap(_.as[DataResponse[CreateUserResponse]]).right.get
+      parse(response.contentString)
+        .flatMap(_.as[DataResponse[CreateUserResponse]])
+        .right
+        .get
 
     userId -> token
   }

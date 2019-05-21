@@ -16,11 +16,11 @@ object PasswordHash {
   val PBKDF2_INDEX = 2
 
   /**
-   * Returns a salted PBKDF2 hash of the password.
-   *
-   * @param password the password to hash
-   * @return a salted PBKDF2 hash of the password
-   */
+    * Returns a salted PBKDF2 hash of the password.
+    *
+    * @param password the password to hash
+    * @return a salted PBKDF2 hash of the password
+    */
   def createHash(password: String): String = createHash(password.toCharArray)
 
   def createHash(password: Array[Char]): String = { // Generate a random salt
@@ -34,15 +34,21 @@ object PasswordHash {
   }
 
   /**
-   * Validates a password using a hash.
-   *
-   * @param password the password to check
-   * @param goodHash the hash of the valid password
-   * @return true if the password is correct, false if not
-   */
-  def validatePassword(password: String, goodHash: String): Boolean = validatePassword(password.toCharArray, goodHash)
+    * Validates a password using a hash.
+    *
+    * @param password the password to check
+    * @param goodHash the hash of the valid password
+    * @return true if the password is correct, false if not
+    */
+  def validatePassword(
+    password: String,
+    goodHash: String
+  ): Boolean = validatePassword(password.toCharArray, goodHash)
 
-  def validatePassword(password: Array[Char], goodHash: String): Boolean = { // Decode the hash into its parameters
+  def validatePassword(
+    password: Array[Char],
+    goodHash: String
+  ): Boolean = { // Decode the hash into its parameters
     val params = goodHash.split(":")
     val iterations = params(ITERATION_INDEX).toInt
     val salt = fromHex(params(SALT_INDEX))
@@ -56,15 +62,18 @@ object PasswordHash {
   }
 
   /**
-   * Compares two byte arrays in length-constant time. This comparison method
-   * is used so that password hashes cannot be extracted from an on-line
-   * system using a timing attack and then attacked off-line.
-   *
-   * @param a the first byte array
-   * @param b the second byte array
-   * @return true if both byte arrays are the same, false if not
-   */
-  private def slowEquals(a: Array[Byte], b: Array[Byte]) = {
+    * Compares two byte arrays in length-constant time. This comparison method
+    * is used so that password hashes cannot be extracted from an on-line
+    * system using a timing attack and then attacked off-line.
+    *
+    * @param a the first byte array
+    * @param b the second byte array
+    * @return true if both byte arrays are the same, false if not
+    */
+  private def slowEquals(
+    a: Array[Byte],
+    b: Array[Byte]
+  ) = {
     var diff = a.length ^ b.length
     var i = 0
     while (i < a.length && i < b.length) {
@@ -76,26 +85,31 @@ object PasswordHash {
   }
 
   /**
-   * Computes the PBKDF2 hash of a password.
-   *
-   * @param password   the password to hash.
-   * @param salt       the salt
-   * @param iterations the iteration count (slowness factor)
-   * @param bytes      the length of the hash to compute in bytes
-   * @return the PBDKF2 hash of the password
-   */
-  private def pbkdf2(password: Array[Char], salt: Array[Byte], iterations: Int, bytes: Int) = {
+    * Computes the PBKDF2 hash of a password.
+    *
+    * @param password   the password to hash.
+    * @param salt       the salt
+    * @param iterations the iteration count (slowness factor)
+    * @param bytes      the length of the hash to compute in bytes
+    * @return the PBDKF2 hash of the password
+    */
+  private def pbkdf2(
+    password: Array[Char],
+    salt: Array[Byte],
+    iterations: Int,
+    bytes: Int
+  ) = {
     val spec = new PBEKeySpec(password, salt, iterations, bytes * 8)
     val skf = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
     skf.generateSecret(spec).getEncoded
   }
 
   /**
-   * Converts a string of hexadecimal characters into a byte array.
-   *
-   * @param hex the hex string
-   * @return the hex string decoded into a byte array
-   */
+    * Converts a string of hexadecimal characters into a byte array.
+    *
+    * @param hex the hex string
+    * @return the hex string decoded into a byte array
+    */
   private def fromHex(hex: String) = {
     val binary = new Array[Byte](hex.length / 2)
     var i = 0
@@ -107,11 +121,11 @@ object PasswordHash {
   }
 
   /**
-   * Converts a byte array into a hexadecimal string.
-   *
-   * @param array the byte array to convert
-   * @return a length*2 character string encoding the byte array
-   */
+    * Converts a byte array into a hexadecimal string.
+    *
+    * @param array the byte array to convert
+    * @return a length*2 character string encoding the byte array
+    */
   private def toHex(array: Array[Byte]) = {
     val bi = new BigInteger(1, array)
     val hex = bi.toString(16)

@@ -34,16 +34,26 @@ public enum OfferType {
 
     public static OfferType fromJustWatchType(final String s) {
         switch (s.toLowerCase()) {
-            case "buy": return OfferType.Buy;
-            case "rent": return OfferType.Rent;
-            case "theater": return OfferType.Theater;
-            case "cinema": return OfferType.Theater;
-            case "subscription": return OfferType.Subscription;
-            case "flatrate": return OfferType.Subscription;
-            case "free": return OfferType.Free;
-            case "ads": return OfferType.Ads;
-            case "aggregate": return OfferType.Aggregate;
-            default: throw new IllegalArgumentException("Could not find OfferType with name " + s);
+            case "buy":
+                return OfferType.Buy;
+            case "rent":
+                return OfferType.Rent;
+            case "theater":
+                return OfferType.Theater;
+            case "cinema":
+                return OfferType.Theater;
+            case "subscription":
+                return OfferType.Subscription;
+            case "flatrate":
+                return OfferType.Subscription;
+            case "free":
+                return OfferType.Free;
+            case "ads":
+                return OfferType.Ads;
+            case "aggregate":
+                return OfferType.Aggregate;
+            default:
+                throw new IllegalArgumentException("Could not find OfferType with name " + s);
         }
     }
 

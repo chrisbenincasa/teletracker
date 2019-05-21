@@ -1,6 +1,10 @@
 package com.teletracker.service.util.json
 
-import com.fasterxml.jackson.databind.{Module, PropertyNamingStrategy, SerializationFeature}
+import com.fasterxml.jackson.databind.{
+  Module,
+  PropertyNamingStrategy,
+  SerializationFeature
+}
 import com.fasterxml.jackson.datatype.joda.JodaModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.twitter.finatra.json.modules.FinatraJacksonModule
@@ -9,7 +13,8 @@ class JsonModule extends FinatraJacksonModule {
   // add in our tiny type serializer
   override val additionalJacksonModules: Seq[Module] = baseModules
 
-  override protected val propertyNamingStrategy = PropertyNamingStrategy.LOWER_CAMEL_CASE
+  override protected val propertyNamingStrategy =
+    PropertyNamingStrategy.LOWER_CAMEL_CASE
 
   override protected val serializationConfig = {
     Map(

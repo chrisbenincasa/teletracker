@@ -20,9 +20,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object TeletrackerServerMain extends TeletrackerServer
 
-class TeletrackerServer(
-  override protected val modules: Seq[Module] = Modules()
-) extends HttpServer with Logging  {
+class TeletrackerServer(override protected val modules: Seq[Module] = Modules())
+    extends HttpServer
+    with Logging {
 
   override protected def defaultHttpPort: String = ":3001"
 
@@ -30,27 +30,41 @@ class TeletrackerServer(
 
   override protected def configureHttp(router: HttpRouter): Unit = {
     import com.twitter.finagle.http.filter.Cors
-    router.
-      filter(new Cors.HttpFilter(Cors.Policy(
-        allowsOrigin = _ => Some("*"),
-        allowsMethods = _ => Some(Seq("HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS")),
-        allowsHeaders = _ => Some(Seq("Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization")),
-        supportsCredentials = true,
-        maxAge = Some(1.day)
-      ))).
-      filter[LoggingMDCFilter[Request, Response]].
-      filter[TraceIdMDCFilter[Request, Response]].
-      exceptionMapper[PassThroughExceptionMapper].
-      add[PreflightController].
-      add[AuthController].
-      add[UserController].
-      add[SearchController].
-      add[PeopleController].
-      add[ThingController].
-      add[TvShowController].
-      add[MovieController].
-      add[MetadataController].
-      add[AdminController]
+    router
+      .filter(
+        new Cors.HttpFilter(
+          Cors.Policy(
+            allowsOrigin = _ => Some("*"),
+            allowsMethods =
+              _ => Some(Seq("HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS")),
+            allowsHeaders = _ =>
+              Some(
+                Seq(
+                  "Origin",
+                  "X-Requested-With",
+                  "Content-Type",
+                  "Accept",
+                  "Authorization"
+                )
+              ),
+            supportsCredentials = true,
+            maxAge = Some(1.day)
+          )
+        )
+      )
+      .filter[LoggingMDCFilter[Request, Response]]
+      .filter[TraceIdMDCFilter[Request, Response]]
+      .exceptionMapper[PassThroughExceptionMapper]
+      .add[PreflightController]
+      .add[AuthController]
+      .add[UserController]
+      .add[SearchController]
+      .add[PeopleController]
+      .add[ThingController]
+      .add[TvShowController]
+      .add[MovieController]
+      .add[MetadataController]
+      .add[AdminController]
   }
 }
 
@@ -64,10 +78,15 @@ object Teletracker extends com.twitter.inject.app.App {
     cmd match {
       case "server" => new TeletrackerServer(modules).main(rest)
       case "reset-db" =>
-
-        val location = new File(s"${System.getProperty("java.io.tmpdir")}/db/migrate/postgres")
+        val location = new File(
+          s"${System.getProperty("java.io.tmpdir")}/db/migrate/postgres"
+        )
         val gddl = new GenerateDdls()
-        gddl.main(Array(new File(s"${location.getAbsolutePath}/V1__create.sql").getAbsolutePath))
+        gddl.main(
+          Array(
+            new File(s"${location.getAbsolutePath}/V1__create.sql").getAbsolutePath
+          )
+        )
         Await.result(gddl)
 
         val clean = new RunDatabaseMigration()
@@ -83,15 +102,15 @@ object Teletracker extends com.twitter.inject.app.App {
         Await.result(runSeeds)
 
         close()
-      case "generate-ddl" => new GenerateDdls().main(rest)
-      case "db-migrate" => new RunDatabaseMigration().main(rest)
-      case "import-movies" => ImportMovies.main(rest)
-      case "import-tv" => ImportTv.main(rest)
-      case "import-people" => ImportPeople.main(rest)
-      case "run-all-seeds" => new RunAllSeeds().main(rest)
+      case "generate-ddl"        => new GenerateDdls().main(rest)
+      case "db-migrate"          => new RunDatabaseMigration().main(rest)
+      case "import-movies"       => ImportMovies.main(rest)
+      case "import-tv"           => ImportTv.main(rest)
+      case "import-people"       => ImportPeople.main(rest)
+      case "run-all-seeds"       => new RunAllSeeds().main(rest)
       case "seed-certifications" => SeedCertifications.main(rest)
-      case "seed-genres" => SeedGenres.main(rest)
-      case "seed-networks" => SeedNetworks.main(rest)
+      case "seed-genres"         => SeedGenres.main(rest)
+      case "seed-networks"       => SeedNetworks.main(rest)
       case x =>
         Console.err.println(s"Unrecognized program: $x")
         sys.exit(1)

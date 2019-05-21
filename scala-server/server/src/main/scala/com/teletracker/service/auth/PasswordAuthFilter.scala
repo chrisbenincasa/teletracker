@@ -13,24 +13,35 @@ import scala.util.Try
 class PasswordAuthFilter @Inject()(
   mapper: ObjectMapper with ScalaObjectMapper,
   usersDbAccess: UsersDbAccess
-)(implicit executionContext: ExecutionContext) extends SimpleFilter[Request, Response] {
-  override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
+)(implicit executionContext: ExecutionContext)
+    extends SimpleFilter[Request, Response] {
+  override def apply(
+    request: Request,
+    service: Service[Request, Response]
+  ): Future[Response] = {
     val responsePromise = com.twitter.util.Promise[Response]()
 
-    Promise.fromTry(extractUserDetails(request)).future.flatMap(userDetails => {
-      usersDbAccess.findByEmail(userDetails.email).map {
-        case Some(u) if PasswordHash.validatePassword(userDetails.password, u.password) =>
-          RequestContext.set(request, u)
-          responsePromise.become(service(request))
+    Promise
+      .fromTry(extractUserDetails(request))
+      .future
+      .flatMap(userDetails => {
+        usersDbAccess.findByEmail(userDetails.email).map {
+          case Some(u)
+              if PasswordHash
+                .validatePassword(userDetails.password, u.password) =>
+            RequestContext.set(request, u)
+            responsePromise.become(service(request))
 
-        case Some(_) | None => responsePromise.setValue(Response(Status.Unauthorized))
+          case Some(_) | None =>
+            responsePromise.setValue(Response(Status.Unauthorized))
+        }
+      })
+      .recover {
+        case e =>
+          // Log
+          e.printStackTrace()
+          responsePromise.setValue(Response(Status.BadRequest))
       }
-    }).recover {
-      case e =>
-        // Log
-        e.printStackTrace()
-        responsePromise.setValue(Response(Status.BadRequest))
-    }
 
     responsePromise
   }
@@ -40,4 +51,6 @@ class PasswordAuthFilter @Inject()(
   }
 }
 
-case class UserDetails(email: String, password: String)
+case class UserDetails(
+  email: String,
+  password: String)

@@ -21,10 +21,17 @@ case class Thing(
   `type`: ThingType,
   createdAt: DateTime,
   lastUpdatedAt: DateTime,
-  metadata: Option[ObjectMetadata]
-) {
+  metadata: Option[ObjectMetadata]) {
   def asPartial: PartialThing = {
-    PartialThing(id, Some(name), Some(normalizedName), Some(`type`), Some(createdAt), Some(lastUpdatedAt), metadata)
+    PartialThing(
+      id,
+      Some(name),
+      Some(normalizedName),
+      Some(`type`),
+      Some(createdAt),
+      Some(lastUpdatedAt),
+      metadata
+    )
   }
 }
 
@@ -35,20 +42,27 @@ case class ThingRaw(
   `type`: ThingType,
   createdAt: DateTime,
   lastUpdatedAt: DateTime,
-  metadata: Option[Json]
-) {
+  metadata: Option[Json]) {
   def asPartial: PartialThing = {
     val typedMeta = metadata.flatMap(rawMeta => {
-     rawMeta.as[ObjectMetadata] match {
-       case Left(err) =>
-         err.printStackTrace()
-         println(err.getMessage())
-         None
-       case Right(value) =>
-         Some(value)
-     }
+      rawMeta.as[ObjectMetadata] match {
+        case Left(err) =>
+          err.printStackTrace()
+          println(err.getMessage())
+          None
+        case Right(value) =>
+          Some(value)
+      }
     })
-    PartialThing(id, Some(name), Some(normalizedName), Some(`type`), Some(createdAt), Some(lastUpdatedAt), typedMeta)
+    PartialThing(
+      id,
+      Some(name),
+      Some(normalizedName),
+      Some(`type`),
+      Some(createdAt),
+      Some(lastUpdatedAt),
+      typedMeta
+    )
   }
 }
 
@@ -63,10 +77,11 @@ case class PartialThing(
   networks: Option[List[Network]] = None,
   seasons: Option[List[TvShowSeasonWithEpisodes]] = None,
   availability: Option[List[AvailabilityWithDetails]] = None,
-  userMetadata: Option[UserThingDetails] = None
-) {
-  def withAvailability(av: List[AvailabilityWithDetails]) = this.copy(availability = Some(av))
-  def withUserMetadata(userMeta: UserThingDetails) = this.copy(userMetadata = Some(userMeta))
+  userMetadata: Option[UserThingDetails] = None) {
+  def withAvailability(av: List[AvailabilityWithDetails]) =
+    this.copy(availability = Some(av))
+  def withUserMetadata(userMeta: UserThingDetails) =
+    this.copy(userMetadata = Some(userMeta))
 
   def withRawMetadata(metadata: Json): PartialThing = {
     val typedMeta = metadata.as[ObjectMetadata] match {
@@ -87,26 +102,28 @@ object ObjectMetadata {
   import shapeless._
   import shapeless.syntax.singleton._
 
-  type TmdbExternalEntity = Union.`'movie -> Movie, 'show -> TvShow, 'person -> Person`.T
+  type TmdbExternalEntity =
+    Union.`'movie -> Movie, 'show -> TvShow, 'person -> Person`.T
 
-  def withTmdbMovie(movie: Movie): ObjectMetadata = ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('movie ->> movie)))
-  def withTmdbShow(show: TvShow): ObjectMetadata = ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('show ->> show)))
-  def withTmdbPerson(person: Person): ObjectMetadata = ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('person ->> person)))
+  def withTmdbMovie(movie: Movie): ObjectMetadata =
+    ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('movie ->> movie)))
+  def withTmdbShow(show: TvShow): ObjectMetadata =
+    ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('show ->> show)))
+  def withTmdbPerson(person: Person): ObjectMetadata =
+    ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('person ->> person)))
 }
 
-case class ObjectMetadata(
-  themoviedb: Option[ObjectMetadata.TmdbExternalEntity]
-)
+case class ObjectMetadata(themoviedb: Option[ObjectMetadata.TmdbExternalEntity])
 
 class Things @Inject()(
   val profile: CustomPostgresProfile,
-  dbImplicits: DbImplicits
-) {
+  dbImplicits: DbImplicits) {
   import profile.api._
   import dbImplicits._
 
   object Implicits {
-    implicit val metaToJson = MappedColumnType.base[ObjectMetadata, Json](_.asJson, _.as[ObjectMetadata].right.get)
+    implicit val metaToJson = MappedColumnType
+      .base[ObjectMetadata, Json](_.asJson, _.as[ObjectMetadata].right.get)
   }
 
   import Implicits._
@@ -116,9 +133,12 @@ class Things @Inject()(
     def name = column[String]("name")
     def normalizedName = column[Slug]("normalized_name")
     def `type` = column[ThingType]("type")
-    def createdAt = column[DateTime]("created_at", O.SqlType("timestamp with time zone"))
-    def lastUpdatedAt = column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
-    def metadata = column[Option[ObjectMetadata]]("metadata", O.SqlType("jsonb"))
+    def createdAt =
+      column[DateTime]("created_at", O.SqlType("timestamp with time zone"))
+    def lastUpdatedAt =
+      column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
+    def metadata =
+      column[Option[ObjectMetadata]]("metadata", O.SqlType("jsonb"))
 
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
@@ -139,8 +159,10 @@ class Things @Inject()(
     def name = column[String]("name")
     def normalizedName = column[Slug]("normalized_name")
     def `type` = column[ThingType]("type")
-    def createdAt = column[DateTime]("created_at", O.SqlType("timestamp with time zone"))
-    def lastUpdatedAt = column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
+    def createdAt =
+      column[DateTime]("created_at", O.SqlType("timestamp with time zone"))
+    def lastUpdatedAt =
+      column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
     def metadata = column[Option[Json]]("metadata", O.SqlType("jsonb"))
 
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
