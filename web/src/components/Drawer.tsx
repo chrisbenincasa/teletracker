@@ -201,7 +201,7 @@ class Drawer extends Component<Props, State> {
           <DrawerUI
             open={open}
             className={classes.drawer}
-            {...this.props}
+            // {...this.props}
             variant="persistent"
             classes={{
               paper: classes.drawerPaper,
