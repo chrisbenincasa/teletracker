@@ -82,10 +82,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   loadingLists: boolean;
   loading: Partial<Loading>;
   userSelf?: User;
-}
-
-interface DrawerProps {
-  open?: boolean;
+  open: boolean;
 }
 
 interface DispatchProps {
@@ -106,8 +103,7 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps &
-  DrawerProps;
+  WithUserProps;
 
 class Drawer extends Component<Props, State> {
   state: State = {
@@ -152,7 +148,6 @@ class Drawer extends Component<Props, State> {
     let { listsById, classes, match } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
-
     const hue = 'blue';
 
     return (
@@ -189,23 +184,23 @@ class Drawer extends Component<Props, State> {
   }
 
   render() {
-    let { match, open } = this.props;
+    let { classes, loading, loadingLists, userSelf, match, open } = this.props;
+    let { createDialogOpen } = this.state;
+    let isLoading = Boolean(loading[USER_SELF_CREATE_LIST]);
 
-    if (!this.props.userSelf || this.props.loadingLists) {
+    if (!userSelf || loadingLists) {
       return this.renderLoading();
     } else {
-      let { classes, userSelf, open } = this.props;
-      let isLoading = Boolean(this.props.loading[USER_SELF_CREATE_LIST]);
       return (
         <React.Fragment>
           <DrawerUI
             open={open}
             className={classes.drawer}
-            // {...this.props}
             variant="persistent"
             classes={{
               paper: classes.drawerPaper,
             }}
+            style={{ width: open ? 240 : 0 }}
           >
             <div className={classes.toolbar} />
             <Typography component="h4" variant="h4" className={classes.margin}>
@@ -220,7 +215,7 @@ class Drawer extends Component<Props, State> {
                 button
                 key="create"
                 onClick={this.handleModalOpen}
-                selected={this.state.createDialogOpen}
+                selected={createDialogOpen}
               >
                 <ListItemIcon>
                   <Icon color="action">create</Icon>
@@ -230,7 +225,7 @@ class Drawer extends Component<Props, State> {
               <ListItem
                 button
                 key="all"
-                selected={Boolean(!match.params.type && !match.params.id)}
+                selected={Boolean(match.path === '/lists' && !match.params.id)}
                 component={props => <RouterLink {...props} to={'/lists'} />}
               >
                 <ListItemAvatar>
@@ -244,7 +239,7 @@ class Drawer extends Component<Props, State> {
             </List>
           </DrawerUI>
           <div>
-            <Dialog fullWidth maxWidth="xs" open={this.state.createDialogOpen}>
+            <Dialog fullWidth maxWidth="xs" open={createDialogOpen}>
               <DialogTitle>Create New List</DialogTitle>
               <DialogContent>
                 <TextField

@@ -71,6 +71,7 @@ interface OwnProps {
   listsById: ListsByIdMap;
   loadingLists: boolean;
   loading: Partial<Loading>;
+  drawerOpen: boolean;
 }
 
 interface DispatchProps {
@@ -96,6 +97,7 @@ class Lists extends Component<Props, State> {
 
   componentDidMount() {
     this.props.ListRetrieveAllInitiated();
+    console.log(this.state);
   }
 
   renderLoading() {
@@ -138,7 +140,7 @@ class Lists extends Component<Props, State> {
   };
 
   renderList = (userList: ListType) => {
-    let { listsById, classes } = this.props;
+    let { classes, listsById } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
 
@@ -165,13 +167,19 @@ class Lists extends Component<Props, State> {
   };
 
   renderLists() {
-    let { userSelf, classes } = this.props;
-    if (this.props.retrievingUser || !userSelf || this.props.loadingLists) {
+    let {
+      classes,
+      drawerOpen,
+      loadingLists,
+      retrievingUser,
+      userSelf,
+    } = this.props;
+    if (retrievingUser || !userSelf || loadingLists) {
       return this.renderLoading();
     } else {
       return (
         <div style={{ display: 'flex' }}>
-          <Drawer />
+          <Drawer userSelf={userSelf} open={drawerOpen} />
           <div className={classes.listContainer}>
             <CssBaseline />
             {userSelf.lists.map(this.renderList)}

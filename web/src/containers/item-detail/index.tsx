@@ -20,6 +20,7 @@ import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { fetchItemDetails } from '../../actions/item-detail';
 import withUser, { WithUserProps } from '../../components/withUser';
+import Drawer from '../../components/Drawer';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { Availability, Network, Thing, ActionType } from '../../types';
@@ -87,6 +88,10 @@ interface OwnProps {
   itemDetail?: Thing;
 }
 
+interface DrawerProps {
+  drawerOpen: boolean;
+}
+
 interface DispatchProps {
   fetchItemDetails: (id: number, type: string) => void;
   updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
@@ -102,7 +107,8 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps;
+  WithUserProps &
+  DrawerProps;
 
 interface State {
   currentId: number;
@@ -282,7 +288,7 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderItemDetails = () => {
-    let { itemDetail, match } = this.props;
+    let { drawerOpen, isFetching, itemDetail, match, userSelf } = this.props;
     let itemId = Number(match.params.id);
     let itemType = String(match.params.type);
 
@@ -306,11 +312,12 @@ class ItemDetails extends Component<Props, State> {
       availabilities = {};
     }
 
-    return this.props.isFetching || !itemDetail ? (
+    return isFetching || !itemDetail ? (
       this.renderLoading()
     ) : (
       <React.Fragment>
         <CssBaseline />
+        <Drawer userSelf={userSelf} open={drawerOpen} />
         <div className={this.props.classes.backdrop}>
           <div
             className={this.props.classes.backdropImage}
