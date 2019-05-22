@@ -148,6 +148,7 @@ class Drawer extends Component<Props, State> {
     let { listsById, classes, match } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
+    // TODO: Figure out what to do with the color styling for these icons
     const hue = 'blue';
 
     return (
@@ -155,7 +156,7 @@ class Drawer extends Component<Props, State> {
         button
         key={userList.id}
         component={props => <RouterLink {...props} to={`/lists/${list.id}`} />}
-        // This is a little hacky and can be improved
+        // TODO: Improve logic for selection
         selected={Boolean(
           !match.params.type && Number(match.params.id) === Number(list.id),
         )}
@@ -175,102 +176,107 @@ class Drawer extends Component<Props, State> {
     );
   };
 
-  renderLoading() {
+  renderDrawer() {
+    let { classes, userSelf, match, open } = this.props;
+    let { createDialogOpen } = this.state;
+
     return (
-      <div style={{ flexGrow: 1 }}>
-        <LinearProgress />
-      </div>
+      <DrawerUI
+        open={open}
+        className={classes.drawer}
+        variant="persistent"
+        classes={{
+          paper: classes.drawerPaper,
+        }}
+        style={{ width: open ? 240 : 0 }}
+      >
+        <div className={classes.toolbar} />
+        <Typography component="h4" variant="h4" className={classes.margin}>
+          My Lists
+          <Button onClick={this.refreshUser}>
+            <Icon color="action">refresh</Icon>
+          </Button>
+        </Typography>
+        <Divider />
+        <List>
+          <ListItem
+            button
+            key="create"
+            onClick={this.handleModalOpen}
+            selected={createDialogOpen}
+          >
+            <ListItemIcon>
+              <Icon color="action">create</Icon>
+            </ListItemIcon>
+            <ListItemText primary="Create New List" />
+          </ListItem>
+          <ListItem
+            button
+            key="all"
+            selected={Boolean(match.path === '/lists' && !match.params.id)}
+            component={props => <RouterLink {...props} to={'/lists'} />}
+          >
+            <ListItemAvatar>
+              <Avatar className={classes.avatar}>
+                {userSelf!.lists.length}
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText primary="All Lists" />
+          </ListItem>
+          {userSelf!.lists.map(this.renderListItems)}
+        </List>
+      </DrawerUI>
+    );
+  }
+
+  renderDialog() {
+    let { loading } = this.props;
+    let { createDialogOpen, listName } = this.state;
+    let isLoading = Boolean(loading[USER_SELF_CREATE_LIST]);
+
+    return (
+      <Dialog fullWidth maxWidth="xs" open={createDialogOpen}>
+        <DialogTitle>Create New List</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="name"
+            label="Name"
+            type="text"
+            fullWidth
+            value={listName}
+            onChange={e => this.setState({ listName: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            disabled={isLoading}
+            onClick={this.handleModalClose}
+            color="primary"
+          >
+            Cancel
+          </Button>
+          <Button
+            disabled={isLoading}
+            onClick={this.handleCreateListSubmit}
+            color="primary"
+          >
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
     );
   }
 
   render() {
-    let { classes, loading, loadingLists, userSelf, match, open } = this.props;
-    let { createDialogOpen } = this.state;
-    let isLoading = Boolean(loading[USER_SELF_CREATE_LIST]);
+    let { loadingLists, userSelf } = this.props;
 
-    if (!userSelf || loadingLists) {
-      return this.renderLoading();
-    } else {
+    if (userSelf || !loadingLists) {
       return (
         <React.Fragment>
-          <DrawerUI
-            open={open}
-            className={classes.drawer}
-            variant="persistent"
-            classes={{
-              paper: classes.drawerPaper,
-            }}
-            style={{ width: open ? 240 : 0 }}
-          >
-            <div className={classes.toolbar} />
-            <Typography component="h4" variant="h4" className={classes.margin}>
-              My Lists
-              <Button onClick={this.refreshUser}>
-                <Icon color="action">refresh</Icon>
-              </Button>
-            </Typography>
-            <Divider />
-            <List>
-              <ListItem
-                button
-                key="create"
-                onClick={this.handleModalOpen}
-                selected={createDialogOpen}
-              >
-                <ListItemIcon>
-                  <Icon color="action">create</Icon>
-                </ListItemIcon>
-                <ListItemText primary="Create New List" />
-              </ListItem>
-              <ListItem
-                button
-                key="all"
-                selected={Boolean(match.path === '/lists' && !match.params.id)}
-                component={props => <RouterLink {...props} to={'/lists'} />}
-              >
-                <ListItemAvatar>
-                  <Avatar className={classes.avatar}>
-                    {userSelf.lists.length}
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText primary="All Lists" />
-              </ListItem>
-              {userSelf.lists.map(this.renderListItems)}
-            </List>
-          </DrawerUI>
-          <div>
-            <Dialog fullWidth maxWidth="xs" open={createDialogOpen}>
-              <DialogTitle>Create New List</DialogTitle>
-              <DialogContent>
-                <TextField
-                  autoFocus
-                  margin="dense"
-                  id="name"
-                  label="Name"
-                  type="text"
-                  fullWidth
-                  value={this.state.listName}
-                  onChange={e => this.setState({ listName: e.target.value })}
-                />
-              </DialogContent>
-              <DialogActions>
-                <Button
-                  disabled={isLoading}
-                  onClick={this.handleModalClose}
-                  color="primary"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  disabled={isLoading}
-                  onClick={this.handleCreateListSubmit}
-                  color="primary"
-                >
-                  Create
-                </Button>
-              </DialogActions>
-            </Dialog>
-          </div>
+          {this.renderDrawer()}
+          {this.renderDialog()}
         </React.Fragment>
       );
     }
