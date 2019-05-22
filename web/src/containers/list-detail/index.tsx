@@ -43,6 +43,10 @@ interface OwnProps {
   listsById: ListsByIdMap;
 }
 
+interface DrawerProps {
+  drawerOpen: boolean;
+}
+
 interface DispatchProps {
   retrieveList: (payload: ListRetrieveInitiatedPayload) => void;
 }
@@ -55,7 +59,8 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps;
+  WithUserProps &
+  DrawerProps;
 
 interface State {
   loadingList: boolean;
@@ -154,14 +159,14 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderListDetail(list: List) {
-    let { userSelf, listLoading } = this.props;
+    let { drawerOpen, listLoading, userSelf } = this.props;
 
     if (!listLoading && !list) {
       return <Redirect to="/lists" />;
     } else {
       return (
         <div style={{ display: 'flex' }}>
-          <Drawer />
+          <Drawer userSelf={userSelf} open={drawerOpen} />
           <div
             style={{
               display: 'flex',
@@ -195,8 +200,8 @@ class ListDetail extends Component<Props, State> {
   }
 
   render() {
-    let { userSelf } = this.props;
-    let list = this.props.listsById[Number(this.props.match.params.id)];
+    let { listsById, match, userSelf } = this.props;
+    let list = listsById[Number(match.params.id)];
 
     return !list || !userSelf
       ? this.renderLoading()

@@ -13,10 +13,7 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import {
-  AccountCircleOutlined,
-  Menu as MenuIcon
-} from '@material-ui/icons';
+import { AccountCircleOutlined, Menu as MenuIcon } from '@material-ui/icons';
 import SearchIcon from '@material-ui/icons/Search';
 import _ from 'lodash';
 import * as R from 'ramda';
@@ -34,9 +31,8 @@ import ListDetail from '../list-detail';
 import ItemDetail from '../item-detail';
 import Lists from '../lists';
 import Login from '../login';
-import Drawer from '../../components/Drawer';
 import Signup from '../signup';
-
+import Drawer from '../../components/Drawer';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -231,7 +227,11 @@ class App extends Component<Props, State> {
             aria-haspopup="true"
             onClick={this.handleMobileSearchDisplay}
             color="inherit"
-            style={mobileSearchBarOpen ? {backgroundColor: 'rgba(250,250,250, 0.15)'} : undefined}
+            style={
+              mobileSearchBarOpen
+                ? { backgroundColor: 'rgba(250,250,250, 0.15)' }
+                : undefined
+            }
           >
             <SearchIcon />
           </IconButton>
@@ -306,7 +306,7 @@ class App extends Component<Props, State> {
   }
 
   render() {
-    let { anchorEl, drawerOpen } = this.state;
+    let { anchorEl } = this.state;
     let { classes, isAuthed } = this.props;
 
     return (
@@ -314,15 +314,17 @@ class App extends Component<Props, State> {
         <AppBar position="sticky">
           <Toolbar>
             {isAuthed ? (
-              <IconButton
-                onClick={this.toggleDrawer}
-                color="inherit"
-              >
+              <IconButton onClick={this.toggleDrawer} color="inherit">
                 <MenuIcon />
               </IconButton>
             ) : null}
-            <Typography variant="h6" color="inherit" className={classes.grow} component={props => <Link {...props} to="/"
-            style={{textDecoration: 'none'}}/>}
+            <Typography
+              variant="h6"
+              color="inherit"
+              className={classes.grow}
+              component={props => (
+                <Link {...props} to="/" style={{ textDecoration: 'none' }} />
+              )}
             >
               Teletracker
             </Typography>
@@ -346,22 +348,54 @@ class App extends Component<Props, State> {
             {this.renderProfileMenu()}
           </Toolbar>
           {this.state.mobileSearchBarOpen ? (
-            <Toolbar>
-              {this.renderMobileSearchBar()}
-            </Toolbar>
-          ) : null }
+            <Toolbar>{this.renderMobileSearchBar()}</Toolbar>
+          ) : null}
         </AppBar>
         <div>
           {/* Todo: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
-          <main style={{display: 'flex', flexDirection: isAuthed ? 'row' : 'column'}}>
-            <Drawer open={drawerOpen && isAuthed} style={{width: drawerOpen && isAuthed ? 240 : 0}}/>
-            <Route exact path="/" component={Home} />
-            <Route exact path="/account" component={Account} />
+          <main
+            style={{
+              display: 'flex',
+              flexDirection: isAuthed ? 'row' : 'column',
+            }}
+          >
+            <Route
+              exact
+              path="/"
+              render={props => (
+                <Home {...props} drawerOpen={this.state.drawerOpen} />
+              )}
+            />
+            <Route
+              exact
+              path="/account"
+              render={props => (
+                <Account {...props} drawerOpen={this.state.drawerOpen} />
+              )}
+            />
             <Route exact path="/login" component={Login} />
             <Route exact path="/signup" component={Signup} />
-            <Route exact path="/lists" component={Lists} />
-            <Route exact path="/lists/:id" component={ListDetail} />
-            <Route exact path="/item/:type/:id" component={ItemDetail} />
+            <Route
+              exact
+              path="/lists"
+              render={props => (
+                <Lists {...props} drawerOpen={this.state.drawerOpen} />
+              )}
+            />
+            <Route
+              exact
+              path="/lists/:id"
+              render={props => (
+                <ListDetail {...props} drawerOpen={this.state.drawerOpen} />
+              )}
+            />
+            <Route
+              exact
+              path="/item/:type/:id"
+              render={props => (
+                <ItemDetail {...props} drawerOpen={this.state.drawerOpen} />
+              )}
+            />
             <Route exact path="/logout" component={About} />
           </main>
         </div>
