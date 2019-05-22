@@ -97,7 +97,6 @@ class Lists extends Component<Props, State> {
 
   componentDidMount() {
     this.props.ListRetrieveAllInitiated();
-    console.log(this.state);
   }
 
   renderLoading() {
@@ -178,19 +177,24 @@ class Lists extends Component<Props, State> {
       return this.renderLoading();
     } else {
       return (
-        <div style={{ display: 'flex' }}>
-          <Drawer userSelf={userSelf} open={drawerOpen} />
-          <div className={classes.listContainer}>
-            <CssBaseline />
-            {userSelf.lists.map(this.renderList)}
-          </div>
+        <div className={classes.listContainer}>
+          <CssBaseline />
+          {userSelf.lists.map(this.renderList)}
         </div>
       );
     }
   }
 
   render() {
-    return this.props.isAuthed ? this.renderLists() : <Redirect to="/login" />;
+    let { isAuthed, userSelf, drawerOpen } = this.props;
+    return isAuthed ? (
+      <div style={{ display: 'flex' }}>
+        <Drawer userSelf={userSelf} open={drawerOpen} />
+        {this.renderLists()}
+      </div>
+    ) : (
+      <Redirect to="/login" />
+    );
   }
 }
 
