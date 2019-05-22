@@ -18,8 +18,8 @@ import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { Thing } from "../../types";
-import { getPosterPath } from '../../utils/metadata-access';
+import { Thing } from '../../types';
+import Drawer from '../../components/Drawer';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -51,6 +51,7 @@ interface Props extends WithStyles<typeof styles> {
   isAuthed: boolean;
   isSearching: boolean;
   searchResults?: Thing[];
+  drawerOpen: boolean;
 }
 
 class Home extends Component<Props & WithUserProps> {
@@ -63,7 +64,7 @@ class Home extends Component<Props & WithUserProps> {
   };
 
   renderSearchResults = () => {
-    let { searchResults, classes } = this.props;
+    let { classes, drawerOpen, searchResults, userSelf } = this.props;
     searchResults = searchResults || [];
 
     return this.props.isSearching ? (
@@ -71,6 +72,7 @@ class Home extends Component<Props & WithUserProps> {
     ) : (
       <main>
         <CssBaseline />
+        <Drawer userSelf={userSelf} open={drawerOpen} />
         {searchResults.length ? (
           <div className={classNames(classes.layout, classes.cardGrid)}>
             <Grid container spacing={16}>
