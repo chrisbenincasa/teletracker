@@ -151,9 +151,14 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderLoading() {
+    let { drawerOpen, userSelf } = this.props;
+
     return (
-      <div style={{ flexGrow: 1 }}>
-        <LinearProgress />
+      <div style={{ display: 'flex' }}>
+        <Drawer userSelf={userSelf} open={drawerOpen} />
+        <div style={{ flexGrow: 1 }}>
+          <LinearProgress />
+        </div>
       </div>
     );
   }
@@ -165,52 +170,47 @@ class ListDetail extends Component<Props, State> {
       return <Redirect to="/lists" />;
     } else {
       return (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            flexGrow: 1,
-            padding: 20,
-          }}
-        >
-          <CustomBreadcrumbs
-            lookup={breadcrumbNameMap}
-            onNotFound={() => list.name}
-          />
-          <Typography component="h1" variant="h4" align="left">
-            {list.name}
-          </Typography>
-          <Grid container spacing={16}>
-            {list.things.map(item => (
-              <ItemCard
-                key={item.id}
-                userSelf={userSelf}
-                item={item}
-                listContext={list}
-                withActionButton
-              />
-            ))}
-          </Grid>
+        <div style={{ display: 'flex' }}>
+          <Drawer userSelf={userSelf} open={drawerOpen} />
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1,
+              padding: 20,
+            }}
+          >
+            <CustomBreadcrumbs
+              lookup={breadcrumbNameMap}
+              onNotFound={() => list.name}
+            />
+            <Typography component="h1" variant="h4" align="left">
+              {list.name}
+            </Typography>
+            <Grid container spacing={16}>
+              {list.things.map(item => (
+                <ItemCard
+                  key={item.id}
+                  userSelf={userSelf}
+                  item={item}
+                  listContext={list}
+                  withActionButton
+                />
+              ))}
+            </Grid>
+          </div>
         </div>
       );
     }
   }
 
   render() {
-    let { drawerOpen, listsById, match, userSelf } = this.props;
+    let { listsById, match, userSelf } = this.props;
     let list = listsById[Number(match.params.id)];
 
-    return !list || !userSelf ? (
-      <div style={{ display: 'flex' }}>
-        <Drawer userSelf={userSelf} open={drawerOpen} />
-        {this.renderLoading()}
-      </div>
-    ) : (
-      <div style={{ display: 'flex' }}>
-        <Drawer userSelf={userSelf} open={drawerOpen} />
-        {this.renderListDetail(list)}
-      </div>
-    );
+    return !list || !userSelf
+      ? this.renderLoading()
+      : this.renderListDetail(list);
   }
 }
 
