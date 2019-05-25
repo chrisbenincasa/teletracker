@@ -70,9 +70,15 @@ class Home extends Component<Props & WithUserProps> {
     return this.props.isSearching ? (
       this.renderLoading()
     ) : (
-      <main>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flexGrow: 1,
+          padding: 20,
+        }}
+      >
         <CssBaseline />
-        <Drawer userSelf={userSelf} open={drawerOpen} />
         {searchResults.length ? (
           <div className={classNames(classes.layout, classes.cardGrid)}>
             <Grid container spacing={16}>
@@ -89,13 +95,18 @@ class Home extends Component<Props & WithUserProps> {
             </Grid>
           </div>
         ) : null}
-      </main>
+      </div>
     );
   };
 
   render() {
+    let { drawerOpen, userSelf } = this.props;
+
     return this.props.isAuthed ? (
-      this.renderSearchResults()
+      <div style={{ display: 'flex', flexGrow: 1 }}>
+        <Drawer userSelf={userSelf} open={drawerOpen} />
+        {this.renderSearchResults()}
+      </div>
     ) : (
       <Redirect to="/login" />
     );
