@@ -71,6 +71,7 @@ interface OwnProps {
   listsById: ListsByIdMap;
   loadingLists: boolean;
   loading: Partial<Loading>;
+  drawerOpen: boolean;
 }
 
 interface DispatchProps {
@@ -138,7 +139,7 @@ class Lists extends Component<Props, State> {
   };
 
   renderList = (userList: ListType) => {
-    let { listsById, classes } = this.props;
+    let { classes, listsById } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
 
@@ -165,24 +166,35 @@ class Lists extends Component<Props, State> {
   };
 
   renderLists() {
-    let { userSelf, classes } = this.props;
-    if (this.props.retrievingUser || !userSelf || this.props.loadingLists) {
+    let {
+      classes,
+      drawerOpen,
+      loadingLists,
+      retrievingUser,
+      userSelf,
+    } = this.props;
+    if (retrievingUser || !userSelf || loadingLists) {
       return this.renderLoading();
     } else {
       return (
-        <div style={{ display: 'flex' }}>
-          <Drawer />
-          <div className={classes.listContainer}>
-            <CssBaseline />
-            {userSelf.lists.map(this.renderList)}
-          </div>
+        <div className={classes.listContainer}>
+          <CssBaseline />
+          {userSelf.lists.map(this.renderList)}
         </div>
       );
     }
   }
 
   render() {
-    return this.props.isAuthed ? this.renderLists() : <Redirect to="/login" />;
+    let { isAuthed, userSelf, drawerOpen } = this.props;
+    return isAuthed ? (
+      <div style={{ display: 'flex', flexGrow: 1 }}>
+        <Drawer userSelf={userSelf} open={drawerOpen} />
+        {this.renderLists()}
+      </div>
+    ) : (
+      <Redirect to="/login" />
+    );
   }
 }
 

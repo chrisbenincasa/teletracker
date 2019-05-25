@@ -18,8 +18,8 @@ import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { Thing } from "../../types";
-import { getPosterPath } from '../../utils/metadata-access';
+import { Thing } from '../../types';
+import Drawer from '../../components/Drawer';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -51,6 +51,7 @@ interface Props extends WithStyles<typeof styles> {
   isAuthed: boolean;
   isSearching: boolean;
   searchResults?: Thing[];
+  drawerOpen: boolean;
 }
 
 class Home extends Component<Props & WithUserProps> {
@@ -63,13 +64,20 @@ class Home extends Component<Props & WithUserProps> {
   };
 
   renderSearchResults = () => {
-    let { searchResults, classes } = this.props;
+    let { classes, drawerOpen, searchResults, userSelf } = this.props;
     searchResults = searchResults || [];
 
     return this.props.isSearching ? (
       this.renderLoading()
     ) : (
-      <main>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flexGrow: 1,
+          padding: 20,
+        }}
+      >
         <CssBaseline />
         {searchResults.length ? (
           <div className={classNames(classes.layout, classes.cardGrid)}>
@@ -87,13 +95,18 @@ class Home extends Component<Props & WithUserProps> {
             </Grid>
           </div>
         ) : null}
-      </main>
+      </div>
     );
   };
 
   render() {
+    let { drawerOpen, userSelf } = this.props;
+
     return this.props.isAuthed ? (
-      this.renderSearchResults()
+      <div style={{ display: 'flex', flexGrow: 1 }}>
+        <Drawer userSelf={userSelf} open={drawerOpen} />
+        {this.renderSearchResults()}
+      </div>
     ) : (
       <Redirect to="/login" />
     );
