@@ -9,7 +9,11 @@ import {
   DialogTitle,
   Divider,
   Drawer as DrawerUI,
+  FormControl,
+  FormHelperText,
   Icon,
+  Input,
+  InputLabel,
   List,
   ListItem,
   ListItemAvatar,
@@ -43,6 +47,8 @@ import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
+import classNames from 'classnames';
+import { AddCircle } from '@material-ui/icons';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -51,6 +57,9 @@ const styles = (theme: Theme) =>
       width: 25,
       height: 25,
       fontSize: '1em',
+    },
+    button: {
+      margin: theme.spacing.unit,
     },
     drawer: {
       flexShrink: 0,
@@ -75,6 +84,12 @@ const styles = (theme: Theme) =>
       margin: theme.spacing.unit * 2,
       marginRight: theme.spacing.unit * 3,
     },
+    leftIcon: {
+      marginRight: theme.spacing.unit,
+    },
+    iconSmall: {
+      fontSize: 20,
+    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
@@ -82,10 +97,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   loadingLists: boolean;
   loading: Partial<Loading>;
   userSelf?: User;
-}
-
-interface DrawerProps {
-  open?: boolean;
+  open: boolean;
 }
 
 interface DispatchProps {
@@ -96,7 +108,10 @@ interface DispatchProps {
 interface State {
   createDialogOpen: boolean;
   listName: string;
+  nameLengthError: boolean;
+  nameDuplicateError: boolean;
 }
+
 interface RouteParams {
   id: string;
   type: string;
@@ -106,13 +121,14 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps &
-  DrawerProps;
+  WithUserProps;
 
 class Drawer extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
     listName: '',
+    nameLengthError: false,
+    nameDuplicateError: false,
   };
 
   componentDidMount() {
@@ -130,29 +146,54 @@ class Drawer extends Component<Props, State> {
     }
   }
 
-  refreshUser = () => {
-    this.props.retrieveUser(true);
-  };
-
   handleModalOpen = () => {
     this.setState({ createDialogOpen: true });
   };
 
   handleModalClose = () => {
-    this.setState({ createDialogOpen: false });
+    this.setState({
+      createDialogOpen: false,
+      nameLengthError: false,
+      nameDuplicateError: false,
+    });
+  };
+
+  validateListName = () => {
+    let { createList, userSelf } = this.props;
+    let { listName } = this.state;
+
+    // Reset error states before validation
+    this.setState({ nameLengthError: false, nameDuplicateError: false });
+
+    if (userSelf) {
+      let nameExists = function(element) {
+        return listName.toLowerCase() === element.name.toLowerCase();
+      };
+
+      if (listName.length === 0) {
+        this.setState({ nameLengthError: true });
+      } else if (userSelf.lists.some(nameExists)) {
+        this.setState({ nameDuplicateError: true });
+      } else {
+        this.setState({ nameLengthError: false, nameDuplicateError: false });
+        this.handleCreateListSubmit();
+      }
+    }
   };
 
   handleCreateListSubmit = () => {
-    if (this.state.listName.length > 0) {
-      this.props.createList({ name: this.state.listName });
-    }
+    let { createList } = this.props;
+    let { listName } = this.state;
+
+    createList({ name: listName });
+    this.handleModalClose();
   };
 
   renderListItems = (userList: ListType, index: number) => {
     let { listsById, classes, match } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
-
+    // TODO: Figure out what to do with the color styling for these icons
     const hue = 'blue';
 
     return (
@@ -160,7 +201,7 @@ class Drawer extends Component<Props, State> {
         button
         key={userList.id}
         component={props => <RouterLink {...props} to={`/lists/${list.id}`} />}
-        // This is a little hacky and can be improved
+        // TODO: Improve logic for selection
         selected={Boolean(
           !match.params.type && Number(match.params.id) === Number(list.id),
         )}
@@ -180,102 +221,125 @@ class Drawer extends Component<Props, State> {
     );
   };
 
-  renderLoading() {
+  renderDrawer() {
+    let { classes, userSelf, match, open } = this.props;
+    let { createDialogOpen } = this.state;
+
     return (
-      <div style={{ flexGrow: 1 }}>
-        <LinearProgress />
-      </div>
+      <DrawerUI
+        open={open}
+        className={classes.drawer}
+        variant="persistent"
+        classes={{
+          paper: classes.drawerPaper,
+        }}
+        style={{ width: open ? 216 : 0 }}
+      >
+        <div className={classes.toolbar} />
+        <Typography component="h6" variant="h6" className={classes.margin}>
+          My Lists
+        </Typography>
+        <Divider />
+        <Button
+          variant="contained"
+          color="primary"
+          size="small"
+          className={classes.button}
+          onClick={this.handleModalOpen}
+        >
+          <AddCircle
+            className={classNames(classes.leftIcon, classes.iconSmall)}
+          />
+          Create List
+        </Button>
+        <List>
+          <ListItem
+            button
+            key="all"
+            selected={Boolean(match.path === '/lists' && !match.params.id)}
+            component={props => <RouterLink {...props} to={'/lists'} />}
+          >
+            <ListItemAvatar>
+              <Avatar className={classes.avatar}>
+                {userSelf!.lists.length}
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText primary="All Lists" />
+          </ListItem>
+          {userSelf!.lists.map(this.renderListItems)}
+        </List>
+      </DrawerUI>
+    );
+  }
+
+  renderDialog() {
+    let { classes, loading } = this.props;
+    let {
+      createDialogOpen,
+      listName,
+      nameDuplicateError,
+      nameLengthError,
+    } = this.state;
+    let isLoading = Boolean(loading[USER_SELF_CREATE_LIST]);
+
+    return (
+      <Dialog fullWidth maxWidth="xs" open={createDialogOpen}>
+        <DialogTitle>Create New List</DialogTitle>
+        <DialogContent>
+          <FormControl style={{ width: '100%' }}>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="name"
+              label="Name"
+              type="text"
+              fullWidth
+              value={listName}
+              error={nameDuplicateError || nameLengthError}
+              onChange={e => this.setState({ listName: e.target.value })}
+            />
+            <FormHelperText
+              id="component-error-text"
+              style={{
+                display:
+                  nameDuplicateError || nameLengthError ? 'block' : 'none',
+              }}
+            >
+              {nameLengthError ? 'List name cannot be blank' : null}
+              {nameDuplicateError
+                ? 'You already have a list with this name'
+                : null}
+            </FormHelperText>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            disabled={isLoading}
+            onClick={this.handleModalClose}
+            color="primary"
+          >
+            Cancel
+          </Button>
+          <Button
+            disabled={isLoading}
+            onClick={this.validateListName}
+            color="primary"
+          >
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
     );
   }
 
   render() {
-    let { match, open } = this.props;
+    let { loadingLists, userSelf } = this.props;
 
-    if (!this.props.userSelf || this.props.loadingLists) {
-      return this.renderLoading();
-    } else {
-      let { classes, userSelf, open } = this.props;
-      let isLoading = Boolean(this.props.loading[USER_SELF_CREATE_LIST]);
+    if (userSelf || !loadingLists) {
       return (
         <React.Fragment>
-          <DrawerUI
-            open={open}
-            className={classes.drawer}
-            // {...this.props}
-            variant="persistent"
-            classes={{
-              paper: classes.drawerPaper,
-            }}
-          >
-            <div className={classes.toolbar} />
-            <Typography component="h4" variant="h4" className={classes.margin}>
-              My Lists
-              <Button onClick={this.refreshUser}>
-                <Icon color="action">refresh</Icon>
-              </Button>
-            </Typography>
-            <Divider />
-            <List>
-              <ListItem
-                button
-                key="create"
-                onClick={this.handleModalOpen}
-                selected={this.state.createDialogOpen}
-              >
-                <ListItemIcon>
-                  <Icon color="action">create</Icon>
-                </ListItemIcon>
-                <ListItemText primary="Create New List" />
-              </ListItem>
-              <ListItem
-                button
-                key="all"
-                selected={Boolean(!match.params.type && !match.params.id)}
-                component={props => <RouterLink {...props} to={'/lists'} />}
-              >
-                <ListItemAvatar>
-                  <Avatar className={classes.avatar}>
-                    {userSelf.lists.length}
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText primary="All Lists" />
-              </ListItem>
-              {userSelf.lists.map(this.renderListItems)}
-            </List>
-          </DrawerUI>
-          <div>
-            <Dialog fullWidth maxWidth="xs" open={this.state.createDialogOpen}>
-              <DialogTitle>Create New List</DialogTitle>
-              <DialogContent>
-                <TextField
-                  autoFocus
-                  margin="dense"
-                  id="name"
-                  label="Name"
-                  type="text"
-                  fullWidth
-                  value={this.state.listName}
-                  onChange={e => this.setState({ listName: e.target.value })}
-                />
-              </DialogContent>
-              <DialogActions>
-                <Button
-                  disabled={isLoading}
-                  onClick={this.handleModalClose}
-                  color="primary"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  disabled={isLoading}
-                  onClick={this.handleCreateListSubmit}
-                  color="primary"
-                >
-                  Create
-                </Button>
-              </DialogActions>
-            </Dialog>
-          </div>
+          {this.renderDrawer()}
+          {this.renderDialog()}
         </React.Fragment>
       );
     }
