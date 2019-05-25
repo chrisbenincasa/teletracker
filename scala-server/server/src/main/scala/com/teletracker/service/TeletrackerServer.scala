@@ -64,6 +64,7 @@ class TeletrackerServer(override protected val modules: Seq[Module] = Modules())
       .add[TvShowController]
       .add[MovieController]
       .add[MetadataController]
+      .add[AvailabilityController]
       .add[AdminController]
   }
 }
