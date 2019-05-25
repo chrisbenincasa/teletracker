@@ -9,7 +9,11 @@ import {
   DialogTitle,
   Divider,
   Drawer as DrawerUI,
+  FormControl,
+  FormHelperText,
   Icon,
+  Input,
+  InputLabel,
   List,
   ListItem,
   ListItemAvatar,
@@ -104,7 +108,10 @@ interface DispatchProps {
 interface State {
   createDialogOpen: boolean;
   listName: string;
+  nameLengthError: boolean;
+  nameDuplicateError: boolean;
 }
+
 interface RouteParams {
   id: string;
   type: string;
@@ -120,6 +127,8 @@ class Drawer extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
     listName: '',
+    nameLengthError: false,
+    nameDuplicateError: false,
   };
 
   componentDidMount() {
@@ -142,13 +151,42 @@ class Drawer extends Component<Props, State> {
   };
 
   handleModalClose = () => {
-    this.setState({ createDialogOpen: false });
+    this.setState({
+      createDialogOpen: false,
+      nameLengthError: false,
+      nameDuplicateError: false,
+    });
+  };
+
+  validateListName = () => {
+    let { createList, userSelf } = this.props;
+    let { listName } = this.state;
+
+    // Reset error states before validation
+    this.setState({ nameLengthError: false, nameDuplicateError: false });
+
+    if (userSelf) {
+      let nameExists = function(element) {
+        return listName.toLowerCase() === element.name.toLowerCase();
+      };
+
+      if (listName.length === 0) {
+        this.setState({ nameLengthError: true });
+      } else if (userSelf.lists.some(nameExists)) {
+        this.setState({ nameDuplicateError: true });
+      } else {
+        this.setState({ nameLengthError: false, nameDuplicateError: false });
+        this.handleCreateListSubmit();
+      }
+    }
   };
 
   handleCreateListSubmit = () => {
-    if (this.state.listName.length > 0) {
-      this.props.createList({ name: this.state.listName });
-    }
+    let { createList } = this.props;
+    let { listName } = this.state;
+
+    createList({ name: listName });
+    this.handleModalClose();
   };
 
   renderListItems = (userList: ListType, index: number) => {
@@ -215,17 +253,6 @@ class Drawer extends Component<Props, State> {
           Create List
         </Button>
         <List>
-          {/* <ListItem
-            button
-            key="create"
-            onClick={this.handleModalOpen}
-            selected={createDialogOpen}
-          >
-            <ListItemIcon>
-              <Icon color="action">create</Icon>
-            </ListItemIcon>
-            <ListItemText primary="Create New List" />
-          </ListItem> */}
           <ListItem
             button
             key="all"
@@ -246,24 +273,44 @@ class Drawer extends Component<Props, State> {
   }
 
   renderDialog() {
-    let { loading } = this.props;
-    let { createDialogOpen, listName } = this.state;
+    let { classes, loading } = this.props;
+    let {
+      createDialogOpen,
+      listName,
+      nameDuplicateError,
+      nameLengthError,
+    } = this.state;
     let isLoading = Boolean(loading[USER_SELF_CREATE_LIST]);
 
     return (
       <Dialog fullWidth maxWidth="xs" open={createDialogOpen}>
         <DialogTitle>Create New List</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="name"
-            label="Name"
-            type="text"
-            fullWidth
-            value={listName}
-            onChange={e => this.setState({ listName: e.target.value })}
-          />
+          <FormControl style={{ width: '100%' }}>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="name"
+              label="Name"
+              type="text"
+              fullWidth
+              value={listName}
+              error={nameDuplicateError || nameLengthError}
+              onChange={e => this.setState({ listName: e.target.value })}
+            />
+            <FormHelperText
+              id="component-error-text"
+              style={{
+                display:
+                  nameDuplicateError || nameLengthError ? 'block' : 'none',
+              }}
+            >
+              {nameLengthError ? 'List name cannot be blank' : null}
+              {nameDuplicateError
+                ? 'You already have a list with this name'
+                : null}
+            </FormHelperText>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button
@@ -275,7 +322,7 @@ class Drawer extends Component<Props, State> {
           </Button>
           <Button
             disabled={isLoading}
-            onClick={this.handleCreateListSubmit}
+            onClick={this.validateListName}
             color="primary"
           >
             Create
