@@ -188,7 +188,7 @@ class Lists extends Component<Props, State> {
   render() {
     let { isAuthed, userSelf, drawerOpen } = this.props;
     return isAuthed ? (
-      <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex', flexGrow: 1 }}>
         <Drawer userSelf={userSelf} open={drawerOpen} />
         {this.renderLists()}
       </div>
