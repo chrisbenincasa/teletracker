@@ -43,6 +43,8 @@ import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
+import classNames from 'classnames';
+import { AddCircle } from '@material-ui/icons';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -51,6 +53,9 @@ const styles = (theme: Theme) =>
       width: 25,
       height: 25,
       fontSize: '1em',
+    },
+    button: {
+      margin: theme.spacing.unit,
     },
     drawer: {
       flexShrink: 0,
@@ -74,6 +79,12 @@ const styles = (theme: Theme) =>
     margin: {
       margin: theme.spacing.unit * 2,
       marginRight: theme.spacing.unit * 3,
+    },
+    leftIcon: {
+      marginRight: theme.spacing.unit,
+    },
+    iconSmall: {
+      fontSize: 20,
     },
   });
 
@@ -125,10 +136,6 @@ class Drawer extends Component<Props, State> {
       this.handleModalClose();
     }
   }
-
-  refreshUser = () => {
-    this.props.retrieveUser(true);
-  };
 
   handleModalOpen = () => {
     this.setState({ createDialogOpen: true });
@@ -188,18 +195,27 @@ class Drawer extends Component<Props, State> {
         classes={{
           paper: classes.drawerPaper,
         }}
-        style={{ width: open ? 240 : 0 }}
+        style={{ width: open ? 216 : 0 }}
       >
         <div className={classes.toolbar} />
-        <Typography component="h4" variant="h4" className={classes.margin}>
+        <Typography component="h6" variant="h6" className={classes.margin}>
           My Lists
-          <Button onClick={this.refreshUser}>
-            <Icon color="action">refresh</Icon>
-          </Button>
         </Typography>
         <Divider />
+        <Button
+          variant="contained"
+          color="primary"
+          size="small"
+          className={classes.button}
+          onClick={this.handleModalOpen}
+        >
+          <AddCircle
+            className={classNames(classes.leftIcon, classes.iconSmall)}
+          />
+          Create List
+        </Button>
         <List>
-          <ListItem
+          {/* <ListItem
             button
             key="create"
             onClick={this.handleModalOpen}
@@ -209,7 +225,7 @@ class Drawer extends Component<Props, State> {
               <Icon color="action">create</Icon>
             </ListItemIcon>
             <ListItemText primary="Create New List" />
-          </ListItem>
+          </ListItem> */}
           <ListItem
             button
             key="all"

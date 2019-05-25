@@ -317,7 +317,6 @@ class ItemDetails extends Component<Props, State> {
     ) : (
       <React.Fragment>
         <CssBaseline />
-        <Drawer userSelf={userSelf} open={drawerOpen} />
         <div className={this.props.classes.backdrop}>
           <div
             className={this.props.classes.backdropImage}
@@ -360,8 +359,13 @@ class ItemDetails extends Component<Props, State> {
   };
 
   render() {
-    return this.props.isAuthed ? (
-      this.renderItemDetails()
+    let { drawerOpen, isAuthed, userSelf } = this.props;
+
+    return isAuthed ? (
+      <div style={{ display: 'flex', flexGrow: 1 }}>
+        <Drawer userSelf={userSelf} open={drawerOpen} />
+        {this.renderItemDetails()}
+      </div>
     ) : (
       <Redirect to="/login" />
     );
