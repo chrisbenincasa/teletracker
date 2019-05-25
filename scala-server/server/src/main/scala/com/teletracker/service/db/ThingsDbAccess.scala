@@ -4,6 +4,7 @@ import com.teletracker.service.db.model._
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import com.teletracker.service.util.ObjectMetadataUtils
 import javax.inject.Inject
+import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -399,11 +400,92 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def saveAvailability(av: Availability) = {
+  def findAvailability(
+    thingId: Int,
+    networkId: Int
+  ): Future[Option[Availability]] = {
+    run {
+      availabilities.query
+        .filter(_.thingId === thingId)
+        .filter(_.networkId === networkId)
+        .result
+        .headOption
+    }
+  }
+
+  def findFutureAvailability(
+    daysOut: Int,
+    networkId: Option[Int]
+  ): Future[FutureAvailability] = {
+    val upcomingFut = findUpcomingAvailability(daysOut, networkId)
+    val expiringFut = findExpiringAvailability(daysOut, networkId)
+
+    for {
+      upcoming <- upcomingFut
+      expiring <- expiringFut
+    } yield {
+      FutureAvailability(upcoming, expiring)
+    }
+  }
+
+  def findUpcomingAvailability(
+    daysOut: Int,
+    networkId: Option[Int]
+  ): Future[Seq[Availability]] = {
+    val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
+    val daysOutDate = today.plusDays(daysOut)
+
+    queryAvailabilities(today, Some(daysOutDate), None, networkId)
+  }
+
+  def findExpiringAvailability(
+    daysOut: Int,
+    networkId: Option[Int]
+  ): Future[Seq[Availability]] = {
+    val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
+    val daysOutDate = today.plusDays(daysOut)
+
+    queryAvailabilities(today, None, Some(daysOutDate), networkId)
+  }
+
+  private def queryAvailabilities(
+    today: OffsetDateTime,
+    futureStartDate: Option[OffsetDateTime],
+    futureEndDate: Option[OffsetDateTime],
+    networkId: Option[Int]
+  ): Future[Seq[Availability]] = {
+    val baseQuery = availabilities.query
+
+    val withStart = futureStartDate
+      .map(start => {
+        baseQuery.filter(av => {
+          av.startDate > today && av.startDate <= start
+        })
+      })
+      .getOrElse(baseQuery)
+
+    val withEnd = futureEndDate
+      .map(end => {
+        withStart.filter(av => {
+          av.endDate > today && av.endDate <= end
+        })
+      })
+      .getOrElse(withStart)
+
+    val withNetwork = networkId
+      .map(nid => {
+        withEnd.filter(_.networkId === nid)
+      })
+      .getOrElse(withEnd)
+
+    run(withNetwork.result)
+  }
+
+  def saveAvailability(av: Availability): Future[Option[Availability]] = {
     run {
       (availabilities.query returning
         availabilities.query.map(_.id) into
-        ((av, id) => av.copy(id = Some(id)))) += av
+        ((av, id) => av.copy(id = Some(id)))) insertOrUpdate av
     }
   }
 
@@ -586,3 +668,7 @@ object UserThingDetails {
 case class UserThingDetails(
   belongsToLists: Seq[TrackedList],
   tags: Seq[UserThingTag] = Seq.empty)
+
+case class FutureAvailability(
+  upcoming: Seq[Availability],
+  expiring: Seq[Availability])
