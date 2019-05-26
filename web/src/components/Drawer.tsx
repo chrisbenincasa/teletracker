@@ -133,9 +133,11 @@ interface LinkProps {
 }
 
 class ListItemLink extends React.Component<LinkProps, {}> {
-  renderLink = React.forwardRef((itemProps: any, ref: any) => (
-    <RouterLink to={this.props.to} {...itemProps} ref={ref} />
-  ));
+  renderLink = React.forwardRef(
+    (itemProps: any, ref: React.Ref<HTMLButtonElement>) => (
+      <RouterLink to={this.props.to} {...itemProps} ref={ref} />
+    ),
+  );
 
   render() {
     const { primary, selected, listLength } = this.props;
@@ -245,18 +247,7 @@ class Drawer extends Component<Props, State> {
         )}
         primary={list.name}
         listLength={userList.things.length}
-      >
-        {/* <ListItemAvatar>
-          <Avatar
-            className={classes.avatar}
-            style={{
-              backgroundColor: colors[hue][index < 9 ? `${9 - index}00` : 100],
-            }}
-          >
-            {userList.things.length}
-          </Avatar>
-        </ListItemAvatar> */}
-      </ListItemLink>
+      />
     );
   };
 
@@ -299,14 +290,7 @@ class Drawer extends Component<Props, State> {
             to={'/lists'}
             primary="All Lists"
             listLength={userSelf!.lists.length}
-            // component={props => <RouterLink {...props} to={'/lists'} />}
-          >
-            {/* <ListItemAvatar>
-              <Avatar className={classes.avatar}>
-                {userSelf!.lists.length}
-              </Avatar>
-            </ListItemAvatar> */}
-          </ListItemLink>
+          />
           {userSelf!.lists.map(this.renderListItems)}
         </List>
       </DrawerUI>

@@ -19,7 +19,13 @@ import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Link, Route, RouteComponentProps, withRouter } from 'react-router-dom';
+import {
+  Link as RouterLink,
+  Route,
+  BrowserRouter,
+  RouteComponentProps,
+  withRouter,
+} from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { checkAuth, logout } from '../../actions/auth';
 import { search } from '../../actions/search';
@@ -137,6 +143,16 @@ interface State {
   searchText: string;
   mobileSearchBarOpen: boolean;
   drawerOpen: boolean;
+}
+
+interface MenuItemProps {
+  to: any;
+  primary?: string;
+  button?: any;
+  key?: any;
+  selected?: any;
+  listLength?: Number;
+  onClick?: any;
 }
 
 class App extends Component<Props, State> {
@@ -274,6 +290,29 @@ class App extends Component<Props, State> {
     let { classes } = this.props;
     let isMenuOpen = !!anchorEl;
 
+    // polyfill required for react-router-dom < 5.0.0
+    const Link = React.forwardRef(
+      (props: any, ref: React.Ref<HTMLButtonElement>) => (
+        <RouterLink {...props} innerRef={ref} />
+      ),
+    );
+
+    function MenuItemLink(props: MenuItemProps) {
+      const { primary, to, selected, onClick } = props;
+
+      return (
+        <MenuItem
+          button
+          component={Link}
+          to={to}
+          selected={selected}
+          onClick={onClick}
+        >
+          {primary}
+        </MenuItem>
+      );
+    }
+
     return (
       <div className={classes.sectionDesktop}>
         <IconButton
@@ -293,12 +332,11 @@ class App extends Component<Props, State> {
           disableAutoFocusItem
         >
           <MenuItem onClick={this.handleClose}>Profile</MenuItem>
-          <MenuItem
-            component={props => <Link {...props} to="/account" />}
+          <MenuItemLink
+            to="/account"
             onClick={this.handleClose}
-          >
-            My account
-          </MenuItem>
+            primary="My account"
+          />
           <MenuItem onClick={this.handleLogout}>Logout</MenuItem>
         </Menu>
       </div>
@@ -308,6 +346,23 @@ class App extends Component<Props, State> {
   render() {
     let { anchorEl } = this.state;
     let { classes, isAuthed } = this.props;
+
+    // polyfill required for react-router-dom < 5.0.0
+    const Link = React.forwardRef(
+      (props: any, ref: React.Ref<HTMLButtonElement>) => (
+        <RouterLink {...props} innerRef={ref} />
+      ),
+    );
+
+    function ButtonLink(props) {
+      const { primary, to } = props;
+
+      return (
+        <Button component={Link} to={to} color="inherit">
+          {primary}
+        </Button>
+      );
+    }
 
     return (
       <div className={classes.root}>
@@ -323,7 +378,11 @@ class App extends Component<Props, State> {
               color="inherit"
               className={classes.grow}
               component={props => (
-                <Link {...props} to="/" style={{ textDecoration: 'none' }} />
+                <RouterLink
+                  {...props}
+                  to="/"
+                  style={{ textDecoration: 'none' }}
+                />
               )}
             >
               Teletracker
@@ -331,18 +390,8 @@ class App extends Component<Props, State> {
             {this.renderSearch()}
             {!isAuthed ? (
               <div>
-                <Button
-                  component={props => <Link {...props} to="/login" />}
-                  color="inherit"
-                >
-                  Login
-                </Button>
-                <Button
-                  component={props => <Link {...props} to="/signup" />}
-                  color="inherit"
-                >
-                  Signup
-                </Button>
+                <ButtonLink primary="Login" to="/login" />
+                <ButtonLink primary="Signup" to="/signup" />
               </div>
             ) : null}
             {this.renderProfileMenu()}
