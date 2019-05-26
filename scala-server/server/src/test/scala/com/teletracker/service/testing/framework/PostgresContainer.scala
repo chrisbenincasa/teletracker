@@ -11,7 +11,9 @@ import com.spotify.docker.client.messages._
 import com.spotify.docker.client.{DefaultDockerClient, DockerClient}
 import com.teletracker.service.db.model._
 import com.teletracker.service.inject.DbProvider
+import javax.sql.DataSource
 import net.codingwell.scalaguice.InjectorExtensions._
+import org.flywaydb.core.Flyway
 import slick.jdbc.DriverDataSource
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.collection.JavaConverters._
@@ -109,38 +111,10 @@ class PostgresContainer(
   lazy val dbProvider = new DbProvider(dataSource)
 
   def createAllTables(injector: Injector) = {
-    val provider = dbProvider
-    import provider.driver.api._
-
-    val createStatements = List(
-      injector.instance[Users].query,
-      injector.instance[UserCredentials].query,
-      injector.instance[Events].query,
-      injector.instance[Genres].query,
-      injector.instance[Networks].query,
-      injector.instance[NetworkReferences].query,
-      injector.instance[UserNetworkPreferences].query,
-      injector.instance[Things].query,
-      injector.instance[ThingNetworks].query,
-      injector.instance[TrackedLists].query,
-      injector.instance[TrackedListThings].query,
-      injector.instance[TvShowEpisodes].query,
-      injector.instance[TvShowSeasons].query,
-      injector.instance[Availabilities].query,
-      injector.instance[ExternalIds].query,
-      injector.instance[GenreReferences].query,
-      injector.instance[ThingGenres].query,
-      injector.instance[Certifications].query,
-      injector.instance[PersonThings].query,
-      injector.instance[Tokens].query
-    ).map(_.schema.create)
-
-    Await.result(
-      provider.getDB.run {
-        DBIO.sequence(createStatements)
-      },
-      30 seconds
-    )
+    val flyway = new Flyway()
+    flyway.setDataSource(dataSource)
+    flyway.setLocations("classpath:db/migration/postgres")
+    flyway.migrate()
   }
 
   private def ephemeralPort = r.nextInt(30000) + 15000

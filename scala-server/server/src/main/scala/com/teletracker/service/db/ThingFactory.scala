@@ -3,8 +3,8 @@ package com.teletracker.service.db
 import com.teletracker.service.db.model.{ObjectMetadata, Thing, ThingType}
 import com.teletracker.service.model.tmdb.{Movie, MultiTypeXor, Person, TvShow}
 import com.teletracker.service.util.Slug
-import org.joda.time.DateTime
 import shapeless.Poly1
+import java.time.OffsetDateTime
 
 object ThingFactory {
   // NOTE this only handles movies, currently.
@@ -55,5 +55,5 @@ object ThingFactory {
     }
   }
 
-  private def getNow(): DateTime = DateTime.now()
+  private def getNow(): OffsetDateTime = OffsetDateTime.now()
 }
