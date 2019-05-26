@@ -52,12 +52,12 @@ const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
     section: {
-      marginBottom: theme.spacing.unit * 2,
+      marginBottom: theme.spacing(16),
       display: 'flex',
       flexDirection: 'column',
     },
     sectionHeader: {
-      paddingLeft: theme.spacing.unit / 2,
+      paddingLeft: theme.spacing(4),
     },
     drawer: {
       width: 240,
@@ -92,7 +92,7 @@ const styles = (theme: Theme) =>
       width: 45,
       height: 45,
       margin: 2.5,
-      borderRadius: theme.spacing.unit / 2,
+      borderRadius: theme.spacing(4),
     },
     paper: {
       color: theme.palette.text.secondary,
@@ -110,8 +110,8 @@ const styles = (theme: Theme) =>
       },
     },
     filterSearchField: {
-      padding: `${theme.spacing.unit / 2}px 0`,
-      margin: `0 0 ${theme.spacing.unit / 2}px`,
+      padding: `${theme.spacing(4)}px 0`,
+      margin: `0 0 ${theme.spacing(4)}px`,
     },
   });
 

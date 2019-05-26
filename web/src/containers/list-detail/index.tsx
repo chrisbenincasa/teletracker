@@ -8,7 +8,7 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import Breadcrumbs from '@material-ui/lab/Breadcrumbs';
+// import Breadcrumbs from '@material-ui/lab/Breadcrumbs';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -66,61 +66,61 @@ interface State {
   loadingList: boolean;
 }
 
-const breadcrumbNameMap = {
-  '/lists': 'Lists',
-};
+// const breadcrumbNameMap = {
+//   '/lists': 'Lists',
+// };
 
-interface BreadcrumbsProps {
-  lookup: object;
-  onNotFound?: (path: string, isLast: boolean) => string;
-}
+// interface BreadcrumbsProps {
+//   lookup: object;
+//   onNotFound?: (path: string, isLast: boolean) => string;
+// }
 
-class CustomBreadcrumbs extends Component<BreadcrumbsProps> {
-  render() {
-    return (
-      <Route>
-        {({ location }) => {
-          const pathnames = location.pathname.split('/').filter(x => x);
+// class CustomBreadcrumbs extends Component<BreadcrumbsProps> {
+//   render() {
+//     return (
+//       <Route>
+//         {({ location }) => {
+//           const pathnames = location.pathname.split('/').filter(x => x);
 
-          return (
-            <Breadcrumbs arial-label="Breadcrumb">
-              <Link
-                component={props => <RouterLink {...props} to="/" />}
-                color="inherit"
-              >
-                Home
-              </Link>
-              {pathnames.map((_, index) => {
-                const last = index === pathnames.length - 1;
-                const to = `/${pathnames.slice(0, index + 1).join('/')}`;
+//           return (
+//             <Breadcrumbs arial-label="Breadcrumb">
+//               <Link
+//                 component={props => <RouterLink {...props} to="/" />}
+//                 color="inherit"
+//               >
+//                 Home
+//               </Link>
+//               {pathnames.map((_, index) => {
+//                 const last = index === pathnames.length - 1;
+//                 const to = `/${pathnames.slice(0, index + 1).join('/')}`;
 
-                let name: string | undefined = this.props.lookup[to];
+//                 let name: string | undefined = this.props.lookup[to];
 
-                if (!name && this.props.onNotFound) {
-                  name = this.props.onNotFound(to, last);
-                }
+//                 if (!name && this.props.onNotFound) {
+//                   name = this.props.onNotFound(to, last);
+//                 }
 
-                return last ? (
-                  <Typography color="textPrimary" key={to}>
-                    {name}
-                  </Typography>
-                ) : (
-                  <Link
-                    component={props => <RouterLink {...props} to={to} />}
-                    color="inherit"
-                    key={to}
-                  >
-                    {name}
-                  </Link>
-                );
-              })}
-            </Breadcrumbs>
-          );
-        }}
-      </Route>
-    );
-  }
-}
+//                 return last ? (
+//                   <Typography color="textPrimary" key={to}>
+//                     {name}
+//                   </Typography>
+//                 ) : (
+//                   <Link
+//                     component={props => <RouterLink {...props} to={to} />}
+//                     color="inherit"
+//                     key={to}
+//                   >
+//                     {name}
+//                   </Link>
+//                 );
+//               })}
+//             </Breadcrumbs>
+//           );
+//         }}
+//       </Route>
+//     );
+//   }
+// }
 
 class ListDetail extends Component<Props, State> {
   constructor(props: Props) {
@@ -180,14 +180,14 @@ class ListDetail extends Component<Props, State> {
               padding: 20,
             }}
           >
-            <CustomBreadcrumbs
+            {/* <CustomBreadcrumbs
               lookup={breadcrumbNameMap}
               onNotFound={() => list.name}
-            />
+            /> */}
             <Typography component="h1" variant="h4" align="left">
               {list.name}
             </Typography>
-            <Grid container spacing={16}>
+            <Grid container spacing={2}>
               {list.things.map(item => (
                 <ItemCard
                   key={item.id}
