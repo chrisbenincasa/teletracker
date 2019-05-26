@@ -240,7 +240,6 @@ class Drawer extends Component<Props, State> {
         button
         key={userList.id}
         to={`/lists/${list.id}`}
-        // component={props => <RouterLink {...props} to={`/lists/${list.id}`} />}
         // TODO: Improve logic for selection
         selected={Boolean(
           !match.params.type && Number(match.params.id) === Number(list.id),
