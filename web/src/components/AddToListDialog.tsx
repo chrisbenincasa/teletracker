@@ -28,7 +28,7 @@ import { List, Thing, User } from '../types';
 const styles = (theme: Theme) =>
   createStyles({
     formControl: {
-      margin: theme.spacing.unit * 3,
+      margin: theme.spacing(3),
     },
   });
 

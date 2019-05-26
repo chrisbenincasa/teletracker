@@ -25,7 +25,7 @@ const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
     cardGrid: {
-      padding: `${theme.spacing.unit * 8}px 0`,
+      padding: `${theme.spacing(8)}px 0`,
     },
     title: {
       whiteSpace: 'nowrap',
@@ -81,7 +81,7 @@ class Home extends Component<Props & WithUserProps> {
         <CssBaseline />
         {searchResults.length ? (
           <div className={classNames(classes.layout, classes.cardGrid)}>
-            <Grid container spacing={16}>
+            <Grid container spacing={1}>
               {searchResults.map(result => {
                 return (
                   <ItemCard

@@ -59,7 +59,7 @@ const styles = (theme: Theme) =>
       fontSize: '1em',
     },
     button: {
-      margin: theme.spacing.unit,
+      margin: theme.spacing(1),
     },
     drawer: {
       flexShrink: 0,
@@ -81,11 +81,11 @@ const styles = (theme: Theme) =>
       width: '100%',
     },
     margin: {
-      margin: theme.spacing.unit * 2,
-      marginRight: theme.spacing.unit * 3,
+      margin: theme.spacing(2),
+      marginRight: theme.spacing(3),
     },
     leftIcon: {
-      marginRight: theme.spacing.unit,
+      marginRight: theme.spacing(1),
     },
     iconSmall: {
       fontSize: 20,
@@ -122,6 +122,43 @@ type Props = OwnProps &
   DispatchProps &
   WithStyles<typeof styles> &
   WithUserProps;
+
+interface LinkProps {
+  to: any;
+  primary: string;
+  button: any;
+  key: any;
+  selected: any;
+  listLength: Number;
+}
+
+class ListItemLink extends React.Component<LinkProps, {}> {
+  renderLink = React.forwardRef((itemProps: any, ref: any) => (
+    <RouterLink to={this.props.to} {...itemProps} ref={ref} />
+  ));
+
+  render() {
+    const { primary, selected, listLength } = this.props;
+    const hue = 'blue';
+    return (
+      <ListItem button component={this.renderLink} selected={selected}>
+        <ListItemAvatar>
+          <Avatar
+            style={{
+              backgroundColor: colors[hue][900],
+              width: 25,
+              height: 25,
+              fontSize: '1em',
+            }}
+          >
+            {listLength}
+          </Avatar>
+        </ListItemAvatar>
+        <ListItemText primary={primary} />
+      </ListItem>
+    );
+  }
+}
 
 class Drawer extends Component<Props, State> {
   state: State = {
@@ -197,16 +234,19 @@ class Drawer extends Component<Props, State> {
     const hue = 'blue';
 
     return (
-      <ListItem
+      <ListItemLink
         button
         key={userList.id}
-        component={props => <RouterLink {...props} to={`/lists/${list.id}`} />}
+        to={`/lists/${list.id}`}
+        // component={props => <RouterLink {...props} to={`/lists/${list.id}`} />}
         // TODO: Improve logic for selection
         selected={Boolean(
           !match.params.type && Number(match.params.id) === Number(list.id),
         )}
+        primary={list.name}
+        listLength={userList.things.length}
       >
-        <ListItemAvatar>
+        {/* <ListItemAvatar>
           <Avatar
             className={classes.avatar}
             style={{
@@ -215,9 +255,8 @@ class Drawer extends Component<Props, State> {
           >
             {userList.things.length}
           </Avatar>
-        </ListItemAvatar>
-        <ListItemText primary={list.name} />
-      </ListItem>
+        </ListItemAvatar> */}
+      </ListItemLink>
     );
   };
 
@@ -253,19 +292,21 @@ class Drawer extends Component<Props, State> {
           Create List
         </Button>
         <List>
-          <ListItem
+          <ListItemLink
             button
             key="all"
             selected={Boolean(match.path === '/lists' && !match.params.id)}
-            component={props => <RouterLink {...props} to={'/lists'} />}
+            to={'/lists'}
+            primary="All Lists"
+            listLength={userSelf!.lists.length}
+            // component={props => <RouterLink {...props} to={'/lists'} />}
           >
-            <ListItemAvatar>
+            {/* <ListItemAvatar>
               <Avatar className={classes.avatar}>
                 {userSelf!.lists.length}
               </Avatar>
-            </ListItemAvatar>
-            <ListItemText primary="All Lists" />
-          </ListItem>
+            </ListItemAvatar> */}
+          </ListItemLink>
           {userSelf!.lists.map(this.renderListItems)}
         </List>
       </DrawerUI>

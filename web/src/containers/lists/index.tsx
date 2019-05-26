@@ -39,29 +39,29 @@ const styles = (theme: Theme) =>
     },
     listName: {
       textDecoration: 'none',
-      marginBottom: theme.spacing.unit * 2,
+      marginBottom: theme.spacing(2),
     },
     listsContainer: {
       display: 'flex',
       flexDirection: 'column',
       flex: '1 0 auto',
-      margin: `${theme.spacing.unit * 2}px 0`,
+      margin: `${theme.spacing(2)}px 0`,
       width: '100%',
     },
     margin: {
-      margin: theme.spacing.unit * 2,
-      marginRight: theme.spacing.unit * 3,
+      margin: theme.spacing(2),
+      marginRight: theme.spacing(3),
     },
     listItemCount: {
-      margin: theme.spacing.unit * 2,
+      margin: theme.spacing(2),
       marginLeft: 0,
-      paddingRight: theme.spacing.unit * 2,
+      paddingRight: theme.spacing(2),
     },
     listContainer: {
       display: 'flex',
       flexDirection: 'column',
       flexGrow: 1,
-      paddingLeft: theme.spacing.unit * 2,
+      paddingLeft: theme.spacing(2),
     },
   });
 
@@ -115,7 +115,7 @@ class Lists extends Component<Props, State> {
       <div className={classes.root}>
         <Grid
           container
-          spacing={16}
+          spacing={2}
           direction="row"
           lg={8}
           md={4}
