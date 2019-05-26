@@ -1,7 +1,7 @@
 package com.teletracker.service.util
 
-import com.teletracker.service.db.{NetworksDbAccess, ThingsDbAccess}
 import com.teletracker.service.db.model._
+import com.teletracker.service.db.{NetworksDbAccess, ThingsDbAccess}
 import com.teletracker.service.external.justwatch.JustWatchClient
 import com.teletracker.service.external.tmdb.TmdbClient
 import com.teletracker.service.model.justwatch.{
@@ -15,11 +15,12 @@ import com.teletracker.service.process.tmdb.TmdbEntityProcessor
 import com.teletracker.service.util.execution.SequentialFutures
 import com.twitter.finagle.param.HighResTimer
 import com.twitter.logging.Logger
-import com.twitter.util.{Duration, Timer}
-import java.util.concurrent.TimeUnit
+import com.twitter.util.Duration
 import javax.inject.Inject
-import org.joda.time.DateTime
 import shapeless.{tag, Coproduct}
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
@@ -83,7 +84,9 @@ class TmdbMovieImporter @Inject()(
                   true,
                   offer.country,
                   None,
-                  offer.date_created.map(new DateTime(_)),
+                  offer.date_created.map(
+                    OffsetDateTime.parse(_, DateTimeFormatter.ISO_LOCAL_DATE)
+                  ),
                   None,
                   offerType,
                   offer.retail_price.map(BigDecimal.decimal),

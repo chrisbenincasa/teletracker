@@ -23,11 +23,12 @@ import com.teletracker.service.util.execution.SequentialFutures
 import com.teletracker.service.util.{NetworkCache, Slug, TmdbMovieImporter}
 import com.teletracker.service.util.json.circe._
 import java.sql.Timestamp
+import java.time.{LocalDate, OffsetDateTime, OffsetTime, ZoneOffset}
 import javax.inject.Inject
-import org.joda.time.{DateTime, LocalDate}
 import shapeless.ops.coproduct.{Folder, Mapper}
 import shapeless.tag.@@
 import shapeless.{:+:, CNil, Coproduct}
+import java.time.format.DateTimeFormatter
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -187,7 +188,7 @@ class TmdbEntityProcessor @Inject()(
       movie.genre_ids.orElse(movie.genres.map(_.map(_.id))).getOrElse(Nil).toSet
     val genresFut = thingsDbAccess.findTmdbGenres(genreIds)
 
-    val now = DateTime.now()
+    val now = OffsetDateTime.now()
     val t = ThingFactory.makeThing(movie)
 
     val saveThingFut = thingsDbAccess.saveThing(
@@ -208,7 +209,7 @@ class TmdbEntityProcessor @Inject()(
             Some(movie.id.toString),
             eids.imdb_id,
             None,
-            new java.sql.Timestamp(now.getMillis)
+            new java.sql.Timestamp(now.toEpochSecond * 1000)
           )
           thingsDbAccess.upsertExternalIds(externalId).map(_ => savedThing)
         })
@@ -235,7 +236,7 @@ class TmdbEntityProcessor @Inject()(
   private def handleMovieAvailability(
     movie: Movie,
     processedMovieFut: Future[Thing]
-  ) = {
+  ): Future[Thing] = {
     import io.circe.generic.auto._
     import io.circe.syntax._
 
@@ -275,7 +276,12 @@ class TmdbEntityProcessor @Inject()(
                 isAvailable = true,
                 region = offer.country,
                 numSeasons = None,
-                startDate = offer.date_created.map(new DateTime(_)),
+                startDate = offer.date_created.map(
+                  LocalDate
+                    .parse(_, DateTimeFormatter.ISO_LOCAL_DATE)
+                    .atStartOfDay()
+                    .atOffset(ZoneOffset.UTC)
+                ),
                 endDate = None,
                 offerType = offerType,
                 cost = offer.retail_price.map(BigDecimal.decimal),
@@ -310,7 +316,7 @@ class TmdbEntityProcessor @Inject()(
       val yearMatch = item.original_release_year.exists(year => {
         movie.release_date
           .filter(_.nonEmpty)
-          .map(new LocalDate(_).getYear)
+          .map(LocalDate.parse(_).getYear)
           .contains(year)
       })
 
@@ -329,7 +335,7 @@ class TmdbEntityProcessor @Inject()(
       show.networks.toList.flatMap(_.map(_.name)).map(Slug(_)).toSet
     val networksFut = networksDbAccess.findNetworksBySlugs(networkSlugs)
 
-    val now = DateTime.now()
+    val now = OffsetDateTime.now()
     val t = Thing(
       None,
       show.name,
@@ -375,7 +381,7 @@ class TmdbEntityProcessor @Inject()(
                       apiSeason.season_number.get,
                       t.id.get,
                       apiSeason.overview,
-                      apiSeason.air_date.map(new LocalDate(_))
+                      apiSeason.air_date.map(LocalDate.parse(_))
                     )
                     tvShowDbAccess.saveSeason(m)
                 }
@@ -441,7 +447,12 @@ class TmdbEntityProcessor @Inject()(
                 isAvailable = true,
                 region = offer.country,
                 numSeasons = None,
-                startDate = offer.date_created.map(new DateTime(_)),
+                startDate = offer.date_created.map(
+                  LocalDate
+                    .parse(_, DateTimeFormatter.ISO_LOCAL_DATE)
+                    .atStartOfDay()
+                    .atOffset(ZoneOffset.UTC)
+                ),
                 endDate = None,
                 offerType = offerType,
                 cost = offer.retail_price.map(BigDecimal.decimal),
@@ -476,7 +487,7 @@ class TmdbEntityProcessor @Inject()(
       val yearMatch = item.original_release_year.exists(year => {
         show.first_air_date
           .filter(_.nonEmpty)
-          .map(new LocalDate(_).getYear)
+          .map(LocalDate.parse(_).getYear)
           .contains(year)
       })
 
@@ -493,7 +504,7 @@ class TmdbEntityProcessor @Inject()(
       thingsDbAccess.upsertPersonThing(PersonThing(personId, thingId, typ))
     }
 
-    val now = DateTime.now()
+    val now = OffsetDateTime.now()
     val t = Thing(
       None,
       person.name.get,

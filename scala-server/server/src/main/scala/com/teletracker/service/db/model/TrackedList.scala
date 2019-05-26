@@ -1,8 +1,9 @@
 package com.teletracker.service.db.model
 
+import com.teletracker.service.db.CustomPostgresProfile
 import com.teletracker.service.inject.DbImplicits
 import javax.inject.Inject
-import slick.jdbc.JdbcProfile
+import java.time.OffsetDateTime
 
 case class TrackedListRow(
   id: Option[Int],
@@ -11,7 +12,8 @@ case class TrackedListRow(
   isPublic: Boolean,
   userId: Int,
   isDynamic: Boolean = false,
-  rules: Option[DynamicListRules] = None) {
+  rules: Option[DynamicListRules] = None,
+  deletedAt: Option[OffsetDateTime] = None) {
   def toFull: TrackedList = TrackedList.fromRow(this)
 }
 
@@ -26,7 +28,8 @@ object TrackedList {
       row.userId,
       things = None,
       isDynamic = row.isDynamic,
-      rules = row.rules
+      rules = row.rules,
+      deletedAt = row.deletedAt
     )
   }
 }
@@ -39,7 +42,9 @@ case class TrackedList(
   userId: Int,
   things: Option[List[PartialThing]] = None,
   isDynamic: Boolean = false,
-  rules: Option[DynamicListRules] = None) {
+  rules: Option[DynamicListRules] = None,
+  isDeleted: Boolean = false,
+  deletedAt: Option[OffsetDateTime] = None) {
   def withThings(things: List[PartialThing]): TrackedList = {
     this.copy(things = Some(things))
   }
@@ -69,7 +74,7 @@ object DynamicListRules {
 case class DynamicListRules(tagRules: List[DynamicListTagRule])
 
 class TrackedLists @Inject()(
-  val driver: JdbcProfile,
+  val driver: CustomPostgresProfile,
   val users: Users,
   dbImplicits: DbImplicits) {
   import driver.api._
@@ -86,6 +91,11 @@ class TrackedLists @Inject()(
     def userId = column[Int]("user_id")
     def isDynamic = column[Boolean]("is_dynamic", O.Default(false))
     def rules = column[Option[DynamicListRules]]("rules", O.SqlType("jsonb"))
+    def deletedAt =
+      column[Option[OffsetDateTime]](
+        "deleted_at",
+        O.SqlType("timestamp with timezone")
+      )
 
     def userId_fk = foreignKey("lists_user_id_fk", userId, users.query)(_.id)
 
@@ -97,9 +107,18 @@ class TrackedLists @Inject()(
         isPublic,
         userId,
         isDynamic,
-        rules
+        rules,
+        deletedAt
       ) <> (TrackedListRow.tupled, TrackedListRow.unapply)
   }
 
   val query = TableQuery[TrackedListsTable]
+
+  val findSpecificListQuery = (userId: Rep[Int], listId: Rep[Int]) =>
+    Compiled(
+      query.filter(
+        list =>
+          list.id === listId && list.userId === userId && list.deletedAt.isEmpty
+      )
+    )
 }

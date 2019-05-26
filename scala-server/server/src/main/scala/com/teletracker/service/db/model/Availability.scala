@@ -2,10 +2,8 @@ package com.teletracker.service.db.model
 
 import com.teletracker.service.db.CustomPostgresProfile
 import com.teletracker.service.inject.DbImplicits
-import io.circe.generic.JsonCodec
 import javax.inject.Inject
-import org.joda.time.DateTime
-import slick.jdbc.JdbcProfile
+import java.time.OffsetDateTime
 import com.teletracker.service.util.json.circe._
 
 case class Availability(
@@ -13,8 +11,8 @@ case class Availability(
   isAvailable: Boolean,
   region: Option[String],
   numSeasons: Option[Int],
-  startDate: Option[DateTime],
-  endDate: Option[DateTime],
+  startDate: Option[OffsetDateTime],
+  endDate: Option[OffsetDateTime],
   offerType: Option[OfferType],
   cost: Option[BigDecimal],
   currency: Option[String],
@@ -60,8 +58,8 @@ case class AvailabilityWithDetails(
   isAvailable: Boolean,
   region: Option[String],
   numSeasons: Option[Int],
-  startDate: Option[DateTime],
-  endDate: Option[DateTime],
+  startDate: Option[OffsetDateTime],
+  endDate: Option[OffsetDateTime],
   offerType: Option[OfferType],
   cost: Option[BigDecimal],
   currency: Option[String],
@@ -86,8 +84,8 @@ class Availabilities @Inject()(
     def isAvailable = column[Boolean]("is_available")
     def region = column[Option[String]]("region")
     def numSeasons = column[Option[Int]]("num_seasons")
-    def startDate = column[Option[DateTime]]("start_date")
-    def endDate = column[Option[DateTime]]("end_date")
+    def startDate = column[Option[OffsetDateTime]]("start_date")
+    def endDate = column[Option[OffsetDateTime]]("end_date")
     def offerType = column[Option[OfferType]]("offer_type")
     def cost = column[Option[BigDecimal]]("cost")
     def currency = column[Option[String]]("currency")

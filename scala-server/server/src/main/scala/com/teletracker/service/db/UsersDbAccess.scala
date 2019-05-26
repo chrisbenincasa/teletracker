@@ -17,8 +17,8 @@ import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import com.teletracker.service.util.{Field, FieldSelector}
 import io.circe.Json
 import javax.inject.Inject
-import org.joda.time.DateTime
 import java.sql.Timestamp
+import java.time.OffsetDateTime
 import scala.concurrent.{ExecutionContext, Future}
 
 class UsersDbAccess @Inject()(
@@ -127,7 +127,7 @@ class UsersDbAccess @Inject()(
       case Some(user) =>
         revokeAllTokens(user.id.get).flatMap(_ => {
           val token = jwtVendor.vend(email)
-          val now = DateTime.now()
+          val now = OffsetDateTime.now()
           val insert = tokens.query += TokenRow(
             None,
             user.id.get,
@@ -146,7 +146,7 @@ class UsersDbAccess @Inject()(
       tokens.query
         .filter(t => t.userId === userId && t.revokedAt.isEmpty)
         .map(_.revokedAt)
-        .update(Some(DateTime.now()))
+        .update(Some(OffsetDateTime.now()))
     }
   }
 
@@ -158,7 +158,7 @@ class UsersDbAccess @Inject()(
       tokens.query
         .filter(t => t.userId === userId && t.token === token)
         .map(_.revokedAt)
-        .update(Some(DateTime.now()))
+        .update(Some(OffsetDateTime.now()))
     }
   }
 
@@ -183,7 +183,7 @@ class UsersDbAccess @Inject()(
     Seq
   ] = {
     users.query.filter(_.id === userId) joinLeft
-      trackedLists.query.filter(!_.isDynamic) on (_.id === _.userId) joinLeft
+      trackedLists.query.filter(l => !l.isDynamic && l.deletedAt.isEmpty) on (_.id === _.userId) joinLeft
       trackedListThings.query on (_._2.map(_.id) === _.listId) joinLeft
       things.rawQuery on (_._2.map(_.thingId) === _.id)
   }
@@ -402,12 +402,86 @@ class UsersDbAccess @Inject()(
     }
   }
 
+  def deleteList(
+    userId: Int,
+    listId: Int,
+    mergeWithList: Option[Int]
+  ): Future[Boolean] = {
+    run {
+      trackedLists
+        .findSpecificListQuery(userId, listId)
+        .map(_.map(_.deletedAt))
+        .update(Some(OffsetDateTime.now()))
+    }.flatMap {
+      case 0 => Future.successful(false)
+
+      case 1 if mergeWithList.isDefined =>
+        mergeLists(userId, listId, mergeWithList.get).map(_ => true)
+
+      case 1 => Future.successful(true)
+
+      case _ => throw new IllegalStateException("")
+    }
+  }
+
+  def mergeLists(
+    userId: Int,
+    sourceList: Int,
+    targetList: Int
+  ): Future[Unit] = {
+    val sourceItemsQuery = trackedLists.query.filter(
+      tl => tl.userId === userId && tl.id === sourceList
+    ) joinLeft
+      trackedListThings.query on (_.id === _.listId)
+
+    val targetItemsQuery = trackedLists.query.filter(
+      tl => tl.userId === userId && tl.id === targetList
+    ) joinLeft
+      trackedListThings.query on (_.id === _.listId)
+
+    val sourceItemsFut = run(sourceItemsQuery.result).map(_.flatMap(_._2))
+    val targetItemsFut = run(targetItemsQuery.result).map(_.flatMap(_._2))
+
+    for {
+      sourceItems <- sourceItemsFut
+      targetItems <- targetItemsFut
+      sourceIds = sourceItems.map(_.thingId)
+      targetIds = targetItems.map(_.thingId)
+      idsToInsert = sourceIds.toSet -- targetIds
+      _ <- run {
+        trackedListThings.query ++= idsToInsert.map(thingId => {
+          TrackedListThing(targetList, thingId)
+        })
+      }
+    } yield {}
+  }
+
   private val defaultFields = List(Field("id"))
+
+  implicit class Pipeliner[T](x: T) {
+    def |>[U](f: T => U): U = {
+      f(x)
+    }
+  }
+
+  def getList(
+    userId: Int,
+    listId: Int
+  ): Future[Option[TrackedListRow]] = {
+    run {
+      trackedLists.query
+        .filter(tl => tl.userId === userId && tl.id === listId)
+        .take(1)
+        .result
+        .headOption
+    }
+  }
 
   def findList(
     userId: Int,
     listId: Int,
-    selectFields: Option[List[Field]],
+    includeMetadata: Boolean = true,
+    selectFields: Option[List[Field]] = None,
     filters: Option[ListFilters] = None,
     isDynamicHint: Option[Boolean] = None
   ): Future[Option[(TrackedListRow, Seq[ThingRaw])]] = {
@@ -427,7 +501,8 @@ class UsersDbAccess @Inject()(
           thingsQuery on (_._2.map(_.thingId) === _.id)
 
         val listAndThingsQuery = fullQuery.map {
-          case ((list, _), things) => list -> things
+          case ((list, _), things) =>
+            list -> things.map(_.projWithMetadata(includeMetadata))
         }
 
         run(listAndThingsQuery.result).map {
