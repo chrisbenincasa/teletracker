@@ -1,9 +1,7 @@
 package com.teletracker.service.tools
 
-import com.google.inject.Module
 import com.teletracker.service.db.model._
-import com.teletracker.service.inject.Modules
-import com.teletracker.service.model.tmdb.{Movie, TvShow}
+import com.teletracker.service.model.tmdb.Movie
 import com.teletracker.service.util.Futures._
 import com.teletracker.service.util.Lists._
 import com.teletracker.service.util.execution.SequentialFutures
@@ -14,14 +12,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-object IngestHuluChanges extends IngestJob[HuluScrapeItem] {
-
-  override protected def modules: Seq[Module] = Modules()
-
-  override protected def networkNames: Set[String] = Set("hulu")
+object IngestHboChanges extends IngestJob[HboScrapeItem] {
+  override protected def networkNames: Set[String] = Set("hbo-now", "hbo-go")
 
   override protected def runInternal(
-    items: List[HuluScrapeItem],
+    items: List[HboScrapeItem],
     networks: Set[Network]
   ): Unit = {
     SequentialFutures
@@ -49,28 +44,6 @@ object IngestHuluChanges extends IngestJob[HuluScrapeItem] {
                     })
                     .getOrElse(Future.successful(None))
                 })
-
-            case _ =>
-              tmdbClient
-                .searchTv(item.title)
-                .flatMap(result => {
-                  result.results
-                    .find(findMatch(_, item))
-                    .map(tmdbProcessor.handleShow(_, handleSeasons = false))
-                    .map(_.map {
-                      case (_, thing) =>
-                        println(
-                          s"Saved ${item.title} with thing ID = ${thing.id.get}"
-                        )
-
-                        updateAvailability(
-                          networks,
-                          thing,
-                          item
-                        )
-                    })
-                    .getOrElse(Future.successful(None))
-                })
           }
         }
       )
@@ -79,7 +52,7 @@ object IngestHuluChanges extends IngestJob[HuluScrapeItem] {
 
   private def findMatch(
     movie: Movie,
-    item: HuluScrapeItem
+    item: HboScrapeItem
   ): Boolean = {
     val titlesEqual = movie.title
       .orElse(movie.original_title)
@@ -102,35 +75,12 @@ object IngestHuluChanges extends IngestJob[HuluScrapeItem] {
 
     titlesEqual && releaseYearEqual
   }
-
-  private def findMatch(
-    show: TvShow,
-    item: HuluScrapeItem
-  ): Boolean = {
-    val titlesEqual = {
-      val dist = LevenshteinDistance.getDefaultInstance
-        .apply(show.name.toLowerCase(), item.title.toLowerCase())
-      dist <= titleMatchThreshold()
-    }
-
-    val releaseYearEqual = show.first_air_date
-      .filter(_.nonEmpty)
-      .map(LocalDate.parse(_))
-      .exists(ld => {
-        item.releaseYear
-          .map(_.trim.toInt)
-          .exists(ry => (ld.getYear - 1 to ld.getYear + 1).contains(ry))
-      })
-
-    titlesEqual && releaseYearEqual
-  }
 }
 
-case class HuluScrapeItem(
+case class HboScrapeItem(
   availableDate: String,
   title: String,
   releaseYear: Option[String],
-  notes: String,
   category: String,
   network: String,
   status: String)

@@ -403,13 +403,12 @@ class ThingsDbAccess @Inject()(
   def findAvailability(
     thingId: Int,
     networkId: Int
-  ): Future[Option[Availability]] = {
+  ): Future[Seq[Availability]] = {
     run {
       availabilities.query
         .filter(_.thingId === thingId)
         .filter(_.networkId === networkId)
         .result
-        .headOption
     }
   }
 
@@ -481,27 +480,34 @@ class ThingsDbAccess @Inject()(
     run(withNetwork.result)
   }
 
-  def saveAvailability(av: Availability): Future[Option[Availability]] = {
+  def insertAvailability(av: Availability): Future[Option[Availability]] = {
+    insertAvailabilities(Seq(av)).map(_.headOption)
+  }
+
+  def insertAvailabilities(
+    avs: Seq[Availability]
+  ): Future[Seq[Availability]] = {
     run {
       (availabilities.query returning
         availabilities.query.map(_.id) into
-        ((av, id) => av.copy(id = Some(id)))) insertOrUpdate av
+        ((av, id) => av.copy(id = Some(id)))) ++= avs
     }
   }
 
-  def saveAvailabilities(avs: Seq[Availability]) = {
+  def saveAvailabilities(avs: Seq[Availability]): Future[Unit] = {
     if (avs.isEmpty) {
-      Future.successful(None)
+      Future.unit
     } else {
       val thingAvailabilities =
         avs.filter(_.thingId.isDefined).groupBy(_.thingId.get)
+
       val tvEpisodeAvailabilities =
         avs.filter(_.tvShowEpisodeId.isDefined).groupBy(_.tvShowEpisodeId.get)
 
       def findInsertsAndUpdates(
         incoming: List[Availability],
         existing: Set[Availability]
-      ) = {
+      ): (Set[Availability], Set[Availability]) = {
         @tailrec def findInsertsAndUpdates0(
           in: List[Availability],
           remaining: Set[Availability] = existing,

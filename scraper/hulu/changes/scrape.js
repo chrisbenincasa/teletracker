@@ -72,9 +72,10 @@ request("https://www.hulu.com/press/new-this-month/", function(
         .children()
         .eq(3)
         .text();
+
       var metadata = {
         availableDate: availableDate,
-        name: show.trim(),
+        title: show.trim(),
         releaseYear: releaseYear,
         notes: notes,
         category: category,
