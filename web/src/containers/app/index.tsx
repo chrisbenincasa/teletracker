@@ -2,6 +2,7 @@ import {
   AppBar,
   Button,
   createStyles,
+  CssBaseline,
   IconButton,
   InputBase,
   Menu,
@@ -19,7 +20,13 @@ import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Link, Route, RouteComponentProps, withRouter } from 'react-router-dom';
+import {
+  Link as RouterLink,
+  Route,
+  BrowserRouter,
+  RouteComponentProps,
+  withRouter,
+} from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { checkAuth, logout } from '../../actions/auth';
 import { search } from '../../actions/search';
@@ -53,11 +60,11 @@ const styles = (theme: Theme) =>
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
       },
-      marginRight: theme.spacing.unit * 2,
+      marginRight: theme.spacing(2),
       marginLeft: 0,
       width: '100%',
       [theme.breakpoints.up('sm')]: {
-        marginLeft: theme.spacing.unit * 3,
+        marginLeft: theme.spacing(3),
         width: 'auto',
       },
       [theme.breakpoints.down('sm')]: {
@@ -74,7 +81,7 @@ const styles = (theme: Theme) =>
       width: '100%',
     },
     searchIcon: {
-      width: theme.spacing.unit * 9,
+      width: theme.spacing(9),
       height: '100%',
       position: 'absolute',
       pointerEvents: 'none',
@@ -87,10 +94,10 @@ const styles = (theme: Theme) =>
       width: '100%',
     },
     inputInput: {
-      paddingTop: theme.spacing.unit,
-      paddingRight: theme.spacing.unit,
-      paddingBottom: theme.spacing.unit,
-      paddingLeft: theme.spacing.unit * 10,
+      paddingTop: theme.spacing(1),
+      paddingRight: theme.spacing(1),
+      paddingBottom: theme.spacing(1),
+      paddingLeft: theme.spacing(10),
       transition: theme.transitions.create('width'),
       width: '100%',
       [theme.breakpoints.up('md')]: {
@@ -137,6 +144,16 @@ interface State {
   searchText: string;
   mobileSearchBarOpen: boolean;
   drawerOpen: boolean;
+}
+
+interface MenuItemProps {
+  to: any;
+  primary?: string;
+  button?: any;
+  key?: any;
+  selected?: any;
+  listLength?: Number;
+  onClick?: any;
 }
 
 class App extends Component<Props, State> {
@@ -274,6 +291,30 @@ class App extends Component<Props, State> {
     let { classes } = this.props;
     let isMenuOpen = !!anchorEl;
 
+    // TODO: Get prop types working here
+    // polyfill required for react-router-dom < 5.0.0
+    const Link = React.forwardRef(
+      (props: any, ref: React.Ref<HTMLButtonElement>) => (
+        <RouterLink {...props} innerRef={ref} />
+      ),
+    );
+
+    function MenuItemLink(props: MenuItemProps) {
+      const { primary, to, selected, onClick } = props;
+
+      return (
+        <MenuItem
+          button
+          component={Link}
+          to={to}
+          selected={selected}
+          onClick={onClick}
+        >
+          {primary}
+        </MenuItem>
+      );
+    }
+
     return (
       <div className={classes.sectionDesktop}>
         <IconButton
@@ -293,12 +334,11 @@ class App extends Component<Props, State> {
           disableAutoFocusItem
         >
           <MenuItem onClick={this.handleClose}>Profile</MenuItem>
-          <MenuItem
-            component={props => <Link {...props} to="/account" />}
+          <MenuItemLink
+            to="/account"
             onClick={this.handleClose}
-          >
-            My account
-          </MenuItem>
+            primary="My account"
+          />
           <MenuItem onClick={this.handleLogout}>Logout</MenuItem>
         </Menu>
       </div>
@@ -309,8 +349,27 @@ class App extends Component<Props, State> {
     let { anchorEl } = this.state;
     let { classes, isAuthed } = this.props;
 
+    // TODO: Get prop types working here
+    // polyfill required for react-router-dom < 5.0.0
+    const Link = React.forwardRef(
+      (props: any, ref: React.Ref<HTMLButtonElement>) => (
+        <RouterLink {...props} innerRef={ref} />
+      ),
+    );
+
+    function ButtonLink(props) {
+      const { primary, to } = props;
+
+      return (
+        <Button component={Link} to={to} color="inherit">
+          {primary}
+        </Button>
+      );
+    }
+
     return (
       <div className={classes.root}>
+        <CssBaseline />
         <AppBar position="sticky">
           <Toolbar>
             {isAuthed ? (
@@ -323,7 +382,11 @@ class App extends Component<Props, State> {
               color="inherit"
               className={classes.grow}
               component={props => (
-                <Link {...props} to="/" style={{ textDecoration: 'none' }} />
+                <RouterLink
+                  {...props}
+                  to="/"
+                  style={{ textDecoration: 'none' }}
+                />
               )}
             >
               Teletracker
@@ -331,18 +394,8 @@ class App extends Component<Props, State> {
             {this.renderSearch()}
             {!isAuthed ? (
               <div>
-                <Button
-                  component={props => <Link {...props} to="/login" />}
-                  color="inherit"
-                >
-                  Login
-                </Button>
-                <Button
-                  component={props => <Link {...props} to="/signup" />}
-                  color="inherit"
-                >
-                  Signup
-                </Button>
+                <ButtonLink primary="Login" to="/login" />
+                <ButtonLink primary="Signup" to="/signup" />
               </div>
             ) : null}
             {this.renderProfileMenu()}
