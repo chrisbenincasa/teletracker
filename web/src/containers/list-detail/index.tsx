@@ -98,7 +98,6 @@ class ListDetail extends Component<Props, State> {
 
     return (
       <div style={{ display: 'flex' }}>
-        {/* <Drawer userSelf={userSelf} open={drawerOpen} /> */}
         <div style={{ flexGrow: 1 }}>
           <LinearProgress />
         </div>

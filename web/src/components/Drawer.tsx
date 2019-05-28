@@ -124,14 +124,15 @@ type Props = OwnProps &
   WithUserProps;
 
 interface LinkProps {
-  to: any;
+  index?: number;
+  key: number | string;
+  listLength: number;
   primary: string;
-  button: any;
-  key: any;
-  selected: any;
-  listLength: Number;
+  selected: boolean;
+  to: string;
 }
 
+// TODO: Get type definitions for props working
 class ListItemLink extends React.Component<LinkProps, {}> {
   renderLink = React.forwardRef(
     (itemProps: any, ref: React.Ref<HTMLButtonElement>) => (
@@ -140,14 +141,15 @@ class ListItemLink extends React.Component<LinkProps, {}> {
   );
 
   render() {
-    const { primary, selected, listLength } = this.props;
+    const { index, primary, selected, listLength } = this.props;
     const hue = 'blue';
     return (
       <ListItem button component={this.renderLink} selected={selected}>
         <ListItemAvatar>
           <Avatar
             style={{
-              backgroundColor: colors[hue][900],
+              backgroundColor:
+                colors[hue][index ? (index < 9 ? `${9 - index}00` : 100) : 900],
               width: 25,
               height: 25,
               fontSize: '1em',
@@ -237,7 +239,7 @@ class Drawer extends Component<Props, State> {
 
     return (
       <ListItemLink
-        button
+        index={index}
         key={userList.id}
         to={`/lists/${list.id}`}
         // TODO: Improve logic for selection
@@ -283,7 +285,6 @@ class Drawer extends Component<Props, State> {
         </Button>
         <List>
           <ListItemLink
-            button
             key="all"
             selected={Boolean(match.path === '/lists' && !match.params.id)}
             to={'/lists'}
