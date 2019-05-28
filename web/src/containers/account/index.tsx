@@ -2,7 +2,6 @@ import {
   Avatar,
   Card,
   createStyles,
-  CssBaseline,
   Divider,
   Grid,
   IconButton,
@@ -52,12 +51,12 @@ const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
     section: {
-      marginBottom: theme.spacing.unit * 2,
+      marginBottom: theme.spacing(2),
       display: 'flex',
       flexDirection: 'column',
     },
     sectionHeader: {
-      paddingLeft: theme.spacing.unit / 2,
+      paddingLeft: theme.spacing(0.5),
     },
     drawer: {
       width: 240,
@@ -92,7 +91,7 @@ const styles = (theme: Theme) =>
       width: 45,
       height: 45,
       margin: 2.5,
-      borderRadius: theme.spacing.unit / 2,
+      borderRadius: theme.spacing(0.5),
     },
     paper: {
       color: theme.palette.text.secondary,
@@ -110,8 +109,8 @@ const styles = (theme: Theme) =>
       },
     },
     filterSearchField: {
-      padding: `${theme.spacing.unit / 2}px 0`,
-      margin: `0 0 ${theme.spacing.unit / 2}px`,
+      padding: `${theme.spacing(0.5)}px 0`,
+      margin: `0 0 ${theme.spacing(0.6)}px`,
     },
   });
 
@@ -341,7 +340,6 @@ class Account extends Component<Props, State> {
 
     return (
       <div style={{ display: 'flex' }} className={classes.layout}>
-        <CssBaseline />
         <Drawer userSelf={userSelf} open={drawerOpen} />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <section className={classes.section}>

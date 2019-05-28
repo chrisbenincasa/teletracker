@@ -2,7 +2,6 @@ import {
   CardMedia,
   CircularProgress,
   createStyles,
-  CssBaseline,
   Fab,
   LinearProgress,
   Paper,
@@ -53,7 +52,7 @@ const styles = (theme: Theme) =>
     heroContent: {
       maxWidth: 600,
       margin: '0 auto',
-      padding: `${theme.spacing.unit * 8}px 0 ${theme.spacing.unit * 6}px`,
+      padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
     },
     cardMedia: {
       height: 0,
@@ -246,7 +245,7 @@ class ItemDetails extends Component<Props, State> {
 
         return (
           <span key={lowestCostAv.id} style={{ color: 'white' }}>
-            <Typography inline color="inherit">
+            <Typography display="inline" color="inherit">
               <img
                 key={lowestCostAv.id}
                 src={logoUri}
@@ -316,7 +315,6 @@ class ItemDetails extends Component<Props, State> {
       this.renderLoading()
     ) : (
       <React.Fragment>
-        <CssBaseline />
         <div className={this.props.classes.backdrop}>
           <div
             className={this.props.classes.backdropImage}
