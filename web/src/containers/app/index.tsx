@@ -291,6 +291,7 @@ class App extends Component<Props, State> {
     let { classes } = this.props;
     let isMenuOpen = !!anchorEl;
 
+    // TODO: Get prop types working here
     // polyfill required for react-router-dom < 5.0.0
     const Link = React.forwardRef(
       (props: any, ref: React.Ref<HTMLButtonElement>) => (
@@ -348,6 +349,7 @@ class App extends Component<Props, State> {
     let { anchorEl } = this.state;
     let { classes, isAuthed } = this.props;
 
+    // TODO: Get prop types working here
     // polyfill required for react-router-dom < 5.0.0
     const Link = React.forwardRef(
       (props: any, ref: React.Ref<HTMLButtonElement>) => (
