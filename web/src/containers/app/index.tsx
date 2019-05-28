@@ -2,6 +2,7 @@ import {
   AppBar,
   Button,
   createStyles,
+  CssBaseline,
   IconButton,
   InputBase,
   Menu,
@@ -366,6 +367,7 @@ class App extends Component<Props, State> {
 
     return (
       <div className={classes.root}>
+        <CssBaseline />
         <AppBar position="sticky">
           <Toolbar>
             {isAuthed ? (

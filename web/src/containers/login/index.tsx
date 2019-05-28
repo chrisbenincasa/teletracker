@@ -1,5 +1,4 @@
 import {
-  CssBaseline,
   Paper,
   Avatar,
   FormControl,
@@ -94,7 +93,6 @@ class Login extends Component<Props, State> {
 
     return !isAuthed ? (
       <main className={classes.main}>
-        <CssBaseline />
         <Paper className={classes.paper}>
           <Avatar className={classes.avatar}>
             <LockOutlinedIcon />
