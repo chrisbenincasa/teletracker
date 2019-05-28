@@ -1,7 +1,6 @@
 import {
   CardMedia,
   createStyles,
-  CssBaseline,
   Grid,
   LinearProgress,
   Theme,
@@ -78,7 +77,6 @@ class Home extends Component<Props & WithUserProps> {
           padding: 20,
         }}
       >
-        <CssBaseline />
         {searchResults.length ? (
           <div className={classNames(classes.layout, classes.cardGrid)}>
             <Grid container spacing={1}>

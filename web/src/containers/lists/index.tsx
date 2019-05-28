@@ -1,7 +1,6 @@
 import {
   Badge,
   createStyles,
-  CssBaseline,
   Grid,
   LinearProgress,
   Theme,
@@ -188,7 +187,6 @@ class Lists extends Component<Props, State> {
     let { isAuthed, userSelf, drawerOpen } = this.props;
     return isAuthed ? (
       <div style={{ display: 'flex', flexGrow: 1 }}>
-        <CssBaseline />
         <Drawer userSelf={userSelf} open={drawerOpen} />
         {this.renderLists()}
       </div>

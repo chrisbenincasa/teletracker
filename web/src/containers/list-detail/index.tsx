@@ -1,6 +1,5 @@
 import {
   createStyles,
-  CssBaseline,
   Grid,
   LinearProgress,
   Link,
@@ -115,7 +114,6 @@ class ListDetail extends Component<Props, State> {
     } else {
       return (
         <div style={{ display: 'flex' }}>
-          <CssBaseline />
           <Drawer userSelf={userSelf} open={drawerOpen} />
           <div
             style={{

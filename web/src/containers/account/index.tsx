@@ -2,7 +2,6 @@ import {
   Avatar,
   Card,
   createStyles,
-  CssBaseline,
   Divider,
   Grid,
   IconButton,
@@ -341,7 +340,6 @@ class Account extends Component<Props, State> {
 
     return (
       <div style={{ display: 'flex' }} className={classes.layout}>
-        <CssBaseline />
         <Drawer userSelf={userSelf} open={drawerOpen} />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <section className={classes.section}>
