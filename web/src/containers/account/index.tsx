@@ -434,7 +434,7 @@ class Account extends Component<Props, State> {
                   this.setState({ networkFilter: ev.target.value })
                 }
               />
-              <Grid container style={{ paddingBottom: 16 }} spacing={8}>
+              <Grid container style={{ paddingBottom: 16 }} spacing={1}>
                 {networks.map(this.renderNetworkGridItem)}
               </Grid>
             </Card>
