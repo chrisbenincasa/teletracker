@@ -4,6 +4,7 @@ import com.teletracker.service.db.model._
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import com.teletracker.service.util.ObjectMetadataUtils
 import javax.inject.Inject
+import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -399,27 +400,114 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def saveAvailability(av: Availability) = {
+  def findAvailability(
+    thingId: Int,
+    networkId: Int
+  ): Future[Seq[Availability]] = {
     run {
-      (availabilities.query returning
-        availabilities.query.map(_.id) into
-        ((av, id) => av.copy(id = Some(id)))) += av
+      availabilities.query
+        .filter(_.thingId === thingId)
+        .filter(_.networkId === networkId)
+        .result
     }
   }
 
-  def saveAvailabilities(avs: Seq[Availability]) = {
+  def findFutureAvailability(
+    daysOut: Int,
+    networkId: Option[Int]
+  ): Future[FutureAvailability] = {
+    val upcomingFut = findUpcomingAvailability(daysOut, networkId)
+    val expiringFut = findExpiringAvailability(daysOut, networkId)
+
+    for {
+      upcoming <- upcomingFut
+      expiring <- expiringFut
+    } yield {
+      FutureAvailability(upcoming, expiring)
+    }
+  }
+
+  def findUpcomingAvailability(
+    daysOut: Int,
+    networkId: Option[Int]
+  ): Future[Seq[Availability]] = {
+    val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
+    val daysOutDate = today.plusDays(daysOut)
+
+    queryAvailabilities(today, Some(daysOutDate), None, networkId)
+  }
+
+  def findExpiringAvailability(
+    daysOut: Int,
+    networkId: Option[Int]
+  ): Future[Seq[Availability]] = {
+    val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
+    val daysOutDate = today.plusDays(daysOut)
+
+    queryAvailabilities(today, None, Some(daysOutDate), networkId)
+  }
+
+  private def queryAvailabilities(
+    today: OffsetDateTime,
+    futureStartDate: Option[OffsetDateTime],
+    futureEndDate: Option[OffsetDateTime],
+    networkId: Option[Int]
+  ): Future[Seq[Availability]] = {
+    val baseQuery = availabilities.query
+
+    val withStart = futureStartDate
+      .map(start => {
+        baseQuery.filter(av => {
+          av.startDate > today && av.startDate <= start
+        })
+      })
+      .getOrElse(baseQuery)
+
+    val withEnd = futureEndDate
+      .map(end => {
+        withStart.filter(av => {
+          av.endDate > today && av.endDate <= end
+        })
+      })
+      .getOrElse(withStart)
+
+    val withNetwork = networkId
+      .map(nid => {
+        withEnd.filter(_.networkId === nid)
+      })
+      .getOrElse(withEnd)
+
+    run(withNetwork.result)
+  }
+
+  def insertAvailability(av: Availability): Future[Option[Availability]] = {
+    insertAvailabilities(Seq(av)).map(_.headOption)
+  }
+
+  def insertAvailabilities(
+    avs: Seq[Availability]
+  ): Future[Seq[Availability]] = {
+    run {
+      (availabilities.query returning
+        availabilities.query.map(_.id) into
+        ((av, id) => av.copy(id = Some(id)))) ++= avs
+    }
+  }
+
+  def saveAvailabilities(avs: Seq[Availability]): Future[Unit] = {
     if (avs.isEmpty) {
-      Future.successful(None)
+      Future.unit
     } else {
       val thingAvailabilities =
         avs.filter(_.thingId.isDefined).groupBy(_.thingId.get)
+
       val tvEpisodeAvailabilities =
         avs.filter(_.tvShowEpisodeId.isDefined).groupBy(_.tvShowEpisodeId.get)
 
       def findInsertsAndUpdates(
         incoming: List[Availability],
         existing: Set[Availability]
-      ) = {
+      ): (Set[Availability], Set[Availability]) = {
         @tailrec def findInsertsAndUpdates0(
           in: List[Availability],
           remaining: Set[Availability] = existing,
@@ -586,3 +674,7 @@ object UserThingDetails {
 case class UserThingDetails(
   belongsToLists: Seq[TrackedList],
   tags: Seq[UserThingTag] = Seq.empty)
+
+case class FutureAvailability(
+  upcoming: Seq[Availability],
+  expiring: Seq[Availability])

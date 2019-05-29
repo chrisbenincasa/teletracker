@@ -19,13 +19,15 @@ case class UserRow(
 object UserPreferences {
   val default = UserPreferences(
     presentationTypes = PresentationType.values().toSet,
-    showOnlyNetworkSubscriptions = Some(false)
+    showOnlyNetworkSubscriptions = Some(false),
+    hideAdultContent = Some(true)
   )
 }
 
 case class UserPreferences(
   presentationTypes: Set[PresentationType],
-  showOnlyNetworkSubscriptions: Option[Boolean] = None)
+  showOnlyNetworkSubscriptions: Option[Boolean] = None,
+  hideAdultContent: Option[Boolean] = None)
 
 object User {
   def fromRow(userRow: UserRow): User = {
