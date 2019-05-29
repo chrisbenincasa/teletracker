@@ -15,11 +15,16 @@ class AvailabilityController @Inject()(
     extends Controller {
   prefix("/api/v1/availability") {
     get("/new") { req: UpcomingAvailabilityRequest =>
+      thingsDbAccess
+        .findPastAvailability(req.days.getOrElse(30), req.networkId)
+        .map(avs => {
+          DataResponse.complex(avs)
+        })
     }
 
     get("/upcoming") { req: UpcomingAvailabilityRequest =>
       thingsDbAccess
-        .findFutureAvailability(30, req.networkId)
+        .findFutureAvailability(req.days.getOrElse(30), req.networkId)
         .map(avs => {
           DataResponse.complex(avs)
         })
@@ -27,4 +32,6 @@ class AvailabilityController @Inject()(
   }
 }
 
-case class UpcomingAvailabilityRequest(@QueryParam networkId: Option[Int])
+case class UpcomingAvailabilityRequest(
+  @QueryParam networkId: Option[Int],
+  @QueryParam days: Option[Int])
