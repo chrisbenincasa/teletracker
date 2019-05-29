@@ -1,54 +1,52 @@
 import {
   Avatar,
   Button,
+  CircularProgress,
   colors,
   createStyles,
   Dialog,
-  DialogContent,
   DialogActions,
+  DialogContent,
   DialogTitle,
   Divider,
   Drawer as DrawerUI,
   FormControl,
   FormHelperText,
-  Icon,
-  Input,
-  InputLabel,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
-  LinearProgress,
   TextField,
-  Typography,
   Theme,
+  Typography,
   withStyles,
   WithStyles,
-  ListItemIcon,
 } from '@material-ui/core';
+import { AddCircle } from '@material-ui/icons';
+import classNames from 'classnames';
 import * as R from 'ramda';
-import {
-  RouteComponentProps,
-  withRouter,
-  Link as RouterLink,
-} from 'react-router-dom';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Dispatch, bindActionCreators } from 'redux';
-import withUser, { WithUserProps } from '../components/withUser';
+import {
+  Link as RouterLink,
+  RouteComponentProps,
+  withRouter,
+} from 'react-router-dom';
+import { bindActionCreators, Dispatch } from 'redux';
 import {
   ListRetrieveAllInitiated,
   ListRetrieveAllPayload,
 } from '../actions/lists';
-import { USER_SELF_CREATE_LIST } from '../constants/user';
 import { createList, UserCreateListPayload } from '../actions/user';
-import { List as ListType, User } from '../types';
+import withUser, { WithUserProps } from '../components/withUser';
+import { USER_SELF_CREATE_LIST } from '../constants/user';
+import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
-import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import classNames from 'classnames';
-import { AddCircle } from '@material-ui/icons';
+import { List as ListType } from '../types';
+
+export const DrawerWidthPx = 220;
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -67,6 +65,7 @@ const styles = (theme: Theme) =>
     },
     drawerPaper: {
       zIndex: 1000,
+      width: DrawerWidthPx,
     },
     toolbar: theme.mixins.toolbar,
     listName: {
@@ -96,7 +95,6 @@ interface OwnProps extends WithStyles<typeof styles> {
   listsById: ListsByIdMap;
   loadingLists: boolean;
   loading: Partial<Loading>;
-  userSelf?: User;
   open: boolean;
 }
 
@@ -259,6 +257,7 @@ class Drawer extends Component<Props, State> {
     return (
       <DrawerUI
         open={open}
+        anchor="left"
         className={classes.drawer}
         variant="persistent"
         classes={{
@@ -398,4 +397,5 @@ export default withUser(
       )(Drawer),
     ),
   ),
+  props => (props.open ? <CircularProgress /> : null),
 );

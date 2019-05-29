@@ -1,5 +1,4 @@
 import {
-  CardMedia,
   createStyles,
   Grid,
   LinearProgress,
@@ -18,7 +17,6 @@ import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { Thing } from '../../types';
-import Drawer from '../../components/Drawer';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -50,7 +48,6 @@ interface Props extends WithStyles<typeof styles> {
   isAuthed: boolean;
   isSearching: boolean;
   searchResults?: Thing[];
-  drawerOpen: boolean;
 }
 
 class Home extends Component<Props & WithUserProps> {
@@ -63,7 +60,7 @@ class Home extends Component<Props & WithUserProps> {
   };
 
   renderSearchResults = () => {
-    let { classes, drawerOpen, searchResults, userSelf } = this.props;
+    let { classes, searchResults } = this.props;
     searchResults = searchResults || [];
 
     return this.props.isSearching ? (
@@ -84,6 +81,9 @@ class Home extends Component<Props & WithUserProps> {
                 return (
                   <ItemCard
                     key={result.id}
+                    gridProps={{
+                      xs: 12,
+                    }}
                     userSelf={this.props.userSelf}
                     item={result}
                     addButton
@@ -98,11 +98,8 @@ class Home extends Component<Props & WithUserProps> {
   };
 
   render() {
-    let { drawerOpen, userSelf } = this.props;
-
     return this.props.isAuthed ? (
       <div style={{ display: 'flex', flexGrow: 1 }}>
-        <Drawer userSelf={userSelf} open={drawerOpen} />
         {this.renderSearchResults()}
       </div>
     ) : (

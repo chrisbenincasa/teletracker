@@ -2,7 +2,6 @@ import {
   createStyles,
   Grid,
   LinearProgress,
-  Link,
   Theme,
   Typography,
   withStyles,
@@ -14,18 +13,16 @@ import { connect } from 'react-redux';
 import {
   Link as RouterLink,
   Redirect,
-  Route,
   RouteComponentProps,
   withRouter,
 } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
-  ListRetrieveInitiatedPayload,
   ListRetrieveInitiated,
+  ListRetrieveInitiatedPayload,
 } from '../../actions/lists';
 import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
-import Drawer from '../../components/Drawer';
 import { AppState } from '../../reducers';
 import { ListsByIdMap } from '../../reducers/lists';
 import { layoutStyles } from '../../styles';
@@ -59,10 +56,6 @@ interface OwnProps {
   listsById: ListsByIdMap;
 }
 
-interface DrawerProps {
-  drawerOpen: boolean;
-}
-
 interface DispatchProps {
   retrieveList: (payload: ListRetrieveInitiatedPayload) => void;
 }
@@ -75,8 +68,7 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps &
-  DrawerProps;
+  WithUserProps;
 
 interface State {
   loadingList: boolean;
@@ -111,8 +103,6 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderLoading() {
-    let { drawerOpen, userSelf } = this.props;
-
     return (
       <div style={{ display: 'flex' }}>
         <div style={{ flexGrow: 1 }}>
@@ -123,14 +113,13 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderListDetail(list: List) {
-    let { classes, drawerOpen, listLoading, userSelf } = this.props;
+    let { classes, listLoading, userSelf } = this.props;
 
     if (!listLoading && !list) {
       return <Redirect to="/lists" />;
     } else {
       return (
         <div className={classes.root}>
-          <Drawer userSelf={userSelf} open={drawerOpen} />
           <div className={classes.listContainer}>
             <Typography
               component={props => (
