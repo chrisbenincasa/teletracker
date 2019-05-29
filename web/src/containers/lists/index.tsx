@@ -17,14 +17,13 @@ import {
   ListRetrieveAllPayload,
 } from '../../actions/lists';
 import { createList, UserCreateListPayload } from '../../actions/user';
+import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
-import Drawer from '../../components/Drawer';
 import { AppState } from '../../reducers';
-import { List as ListType, Thing } from '../../types';
 import { ListsByIdMap } from '../../reducers/lists';
 import { Loading } from '../../reducers/user';
 import { layoutStyles } from '../../styles';
-import ItemCard from '../../components/ItemCard';
+import { List as ListType, Thing } from '../../types';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -61,7 +60,6 @@ interface OwnProps {
   listsById: ListsByIdMap;
   loadingLists: boolean;
   loading: Partial<Loading>;
-  drawerOpen: boolean;
 }
 
 interface DispatchProps {
@@ -142,13 +140,7 @@ class Lists extends Component<Props, State> {
   };
 
   renderLists() {
-    let {
-      classes,
-      drawerOpen,
-      loadingLists,
-      retrievingUser,
-      userSelf,
-    } = this.props;
+    let { classes, loadingLists, retrievingUser, userSelf } = this.props;
     if (retrievingUser || !userSelf || loadingLists) {
       return this.renderLoading();
     } else {
@@ -161,12 +153,9 @@ class Lists extends Component<Props, State> {
   }
 
   render() {
-    let { isAuthed, userSelf, drawerOpen } = this.props;
+    let { isAuthed } = this.props;
     return isAuthed ? (
-      <div style={{ display: 'flex', flexGrow: 1 }}>
-        <Drawer userSelf={userSelf} open={drawerOpen} />
-        {this.renderLists()}
-      </div>
+      <div style={{ display: 'flex', flexGrow: 1 }}>{this.renderLists()}</div>
     ) : (
       <Redirect to="/login" />
     );
