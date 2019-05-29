@@ -427,6 +427,25 @@ class ThingsDbAccess @Inject()(
     }
   }
 
+  def findPastAvailability(
+    daysBack: Int,
+    networkId: Option[Int]
+  ): Future[Seq[Availability]] = {
+    val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
+
+    val baseQuery = availabilities.query.filter(
+      av => av.startDate <= today && av.startDate > today.minusDays(daysBack)
+    )
+
+    val withNetwork = networkId
+      .map(nid => {
+        baseQuery.filter(_.networkId === nid)
+      })
+      .getOrElse(baseQuery)
+
+    run(withNetwork.result)
+  }
+
   def findUpcomingAvailability(
     daysOut: Int,
     networkId: Option[Int]
