@@ -20,7 +20,7 @@ import React, { Component, ReactNode } from 'react';
 import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
 import { User, List } from '../types';
-import { Thing } from "../types";
+import { Thing } from '../types';
 import { getDescription, getPosterPath } from '../utils/metadata-access';
 import { Dispatch, bindActionCreators } from 'redux';
 import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
@@ -208,46 +208,46 @@ class ItemCard extends Component<Props, ItemCardState> {
 
     return (
       <React.Fragment>
-        <Grid key={item.id} sm={6} md={4} lg={3} item>
+        <Grid key={item.id} sm={6} md={3} lg={2} item>
           <Card className={classes.card}>
             {this.renderPoster(item)}
-           { itemCardVisible &&
-            <CardContent className={classes.cardContent}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  margin: '-8px -8px 0 0',
-                }}
-              >
-                <Typography
-                  className={classes.title}
-                  variant="h5"
-                  component="h2"
-                  title={item.name}
+            {itemCardVisible && (
+              <CardContent className={classes.cardContent}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    margin: '-8px -8px 0 0',
+                  }}
                 >
-                  {item.name}
+                  <Typography
+                    className={classes.title}
+                    variant="h5"
+                    component="h2"
+                    title={item.name}
+                  >
+                    {item.name}
+                  </Typography>
+                  {this.renderActionMenu()}
+                </div>
+                <Typography style={{ height: '60px' }}>
+                  <Truncate lines={3} ellipsis={<span>...</span>}>
+                    {getDescription(item)}
+                  </Truncate>
                 </Typography>
-                {this.renderActionMenu()}
-              </div>
-              <Typography style={{ height: '60px' }}>
-                <Truncate lines={3} ellipsis={<span>...</span>}>
-                  {getDescription(item)}
-                </Truncate>
-              </Typography>
-              {addButton ? (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  className={classes.button}
-                  onClick={() => this.handleModalOpen(item)}
-                >
-                  <Icon>playlist_add</Icon>
-                  <Typography color="inherit">Add to List</Typography>
-                </Button>
-              ) : null}
-            </CardContent>
-           }
+                {addButton ? (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    className={classes.button}
+                    onClick={() => this.handleModalOpen(item)}
+                  >
+                    <Icon>playlist_add</Icon>
+                    <Typography color="inherit">Add to List</Typography>
+                  </Button>
+                ) : null}
+              </CardContent>
+            )}
           </Card>
         </Grid>
         {addButton ? (
