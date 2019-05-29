@@ -1,6 +1,7 @@
 package com.teletracker.service.external.tmdb
 
 import com.teletracker.service.config.TeletrackerConfig
+import com.teletracker.service.model.tmdb.{MovieSearchResult, TvSearchResult}
 import com.twitter.finagle.Http
 import com.twitter.finagle.http.Request
 import io.circe._
@@ -8,7 +9,6 @@ import io.circe.generic.JsonCodec
 import io.circe.parser._
 import javax.inject.{Inject, Singleton}
 import org.slf4j.LoggerFactory
-
 import scala.concurrent.{Future, Promise}
 
 @Singleton
@@ -19,6 +19,14 @@ class TmdbClient @Inject()(config: TeletrackerConfig) {
 
   private lazy val client = {
     Http.client.withTls(host).newService(s"$host:443")
+  }
+
+  def searchMovies(query: String): Future[MovieSearchResult] = {
+    makeRequest[MovieSearchResult]("search/movie", Seq("query" -> query))
+  }
+
+  def searchTv(query: String): Future[TvSearchResult] = {
+    makeRequest[TvSearchResult]("search/tv", Seq("query" -> query))
   }
 
   def makeRequest[T](

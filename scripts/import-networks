@@ -1,0 +1,24 @@
+#!/bin/bash
+
+echo "Scraping hulu"
+
+cd scraper/hulu/changes
+yarn && yarn run main
+
+cd ../../../
+
+echo "Scraping HBO"
+
+cd scraper/hbo/whats-new
+yarn && yarn run main
+
+cd ../../../
+
+TODAY=$(date "+%Y-%m-%d")
+
+echo "Ingesting scraped info..."
+
+cd scala-server
+sbt "server/runMain com.teletracker.service.tools.IngestHuluChanges -input=../scraper/hulu/changes/${TODAY}-hulu-changes.json"
+sbt "server/runMain com.teletracker.service.tools.IngestHboChanges -input=../scraper/hbo/whats-new/${TODAY}-hbo-changes.json"
+
