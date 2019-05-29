@@ -1,5 +1,4 @@
 import {
-  Badge,
   createStyles,
   Grid,
   LinearProgress,
@@ -38,29 +37,21 @@ const styles = (theme: Theme) =>
     },
     listName: {
       textDecoration: 'none',
-      marginBottom: theme.spacing(2),
+      margin: `${theme.spacing(2)}px 0`,
+      '&:focus, &:hover, &:visited, &:link &:active': {
+        color: '#000',
+      },
     },
     listsContainer: {
       display: 'flex',
       flexDirection: 'column',
       flex: '1 0 auto',
-      margin: `${theme.spacing(2)}px 0`,
-      width: '100%',
-    },
-    margin: {
-      margin: theme.spacing(2),
-      marginRight: theme.spacing(3),
-    },
-    listItemCount: {
-      margin: theme.spacing(2),
-      marginLeft: 0,
-      paddingRight: theme.spacing(2),
+      padding: `0 ${theme.spacing(2)}px`,
     },
     listContainer: {
       display: 'flex',
       flexDirection: 'column',
       flexGrow: 1,
-      paddingLeft: theme.spacing(2),
     },
   });
 
@@ -107,21 +98,12 @@ class Lists extends Component<Props, State> {
   }
 
   renderItemPreviews = (list: ListType) => {
-    let things: (Thing)[] = list.things.slice(0, 4);
+    let things: (Thing)[] = list.things.slice(0, 6);
     let { classes, userSelf } = this.props;
 
     return (
       <div className={classes.root}>
-        <Grid
-          container
-          spacing={2}
-          direction="row"
-          lg={8}
-          md={4}
-          sm={2}
-          wrap="nowrap"
-          item={true}
-        >
+        <Grid container spacing={2} direction="row" wrap="nowrap" item={true}>
           {things.map(item => (
             <ItemCard
               key={item.id}
@@ -143,21 +125,16 @@ class Lists extends Component<Props, State> {
     let list = listWithDetails || userList;
 
     return (
-      <div className={classes.listsContainer} key={userList.id}>
+      <div className={classes.listContainer} key={userList.id}>
         <Typography
           component={props => (
             <RouterLink {...props} to={'/lists/' + list.id} />
           )}
-          variant="h5"
+          variant="h4"
+          align="left"
           className={classes.listName}
         >
-          <Badge
-            className={classes.listItemCount}
-            badgeContent={list.things.length}
-            color="primary"
-          >
-            {list.name}
-          </Badge>
+          {list.name}
         </Typography>
         {this.renderItemPreviews(list)}
       </div>
@@ -176,7 +153,7 @@ class Lists extends Component<Props, State> {
       return this.renderLoading();
     } else {
       return (
-        <div className={classes.listContainer}>
+        <div className={classes.listsContainer}>
           {userSelf.lists.map(this.renderList)}
         </div>
       );
