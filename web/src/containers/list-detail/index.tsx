@@ -34,6 +34,23 @@ import { List } from '../../types';
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
+    root: {
+      display: 'flex',
+      flexGrow: 1,
+    },
+    listName: {
+      textDecoration: 'none',
+      margin: `${theme.spacing(2)}px 0`,
+      '&:focus, &:hover, &:visited, &:link &:active': {
+        color: '#000',
+      },
+    },
+    listContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      flex: '1 0 auto',
+      padding: `0 ${theme.spacing(2)}px`,
+    },
   });
 
 interface OwnProps {
@@ -106,23 +123,23 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderListDetail(list: List) {
-    let { drawerOpen, listLoading, userSelf } = this.props;
+    let { classes, drawerOpen, listLoading, userSelf } = this.props;
 
     if (!listLoading && !list) {
       return <Redirect to="/lists" />;
     } else {
       return (
-        <div style={{ display: 'flex' }}>
+        <div className={classes.root}>
           <Drawer userSelf={userSelf} open={drawerOpen} />
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              flexGrow: 1,
-              padding: 20,
-            }}
-          >
-            <Typography component="h1" variant="h4" align="left">
+          <div className={classes.listContainer}>
+            <Typography
+              component={props => (
+                <RouterLink {...props} to={'/lists/' + list.id} />
+              )}
+              variant="h4"
+              align="left"
+              className={classes.listName}
+            >
               {list.name}
             </Typography>
             <Grid container spacing={2}>
@@ -132,6 +149,7 @@ class ListDetail extends Component<Props, State> {
                   userSelf={userSelf}
                   item={item}
                   listContext={list}
+                  itemCardVisible={false}
                   withActionButton
                 />
               ))}
