@@ -5,6 +5,7 @@ import com.teletracker.service.util.Slug
 import io.circe.shapes._
 import io.circe.generic.semiauto._
 import io.circe.generic.auto._
+import io.circe.java8._
 import io.circe.{Decoder, DecodingFailure, Encoder, Json}
 import scala.reflect.{classTag, ClassTag}
 

@@ -4,7 +4,7 @@ import com.teletracker.service.db._
 import com.teletracker.service.db.model._
 import com.teletracker.service.testing.framework.BaseSpecWithServer
 import com.teletracker.service.util.Slug
-import org.joda.time.DateTime
+import java.time.OffsetDateTime
 
 class TvShowSpec extends BaseSpecWithServer {
   "TV Shows" should "contain availability information" in {
@@ -20,8 +20,8 @@ class TvShowSpec extends BaseSpecWithServer {
             "Not Friends",
             Slug("Not Friends"),
             ThingType.Show,
-            DateTime.now(),
-            DateTime.now(),
+            OffsetDateTime.now(),
+            OffsetDateTime.now(),
             None
           )
         )

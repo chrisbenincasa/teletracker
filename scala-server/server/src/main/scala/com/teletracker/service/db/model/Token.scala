@@ -4,14 +4,15 @@ import com.teletracker.service.db.CustomPostgresProfile
 import com.teletracker.service.inject.DbImplicits
 import javax.inject.Inject
 import org.joda.time.DateTime
+import java.time.OffsetDateTime
 
 case class TokenRow(
   id: Option[Int],
   userId: Int,
   token: String,
-  createdAt: DateTime,
-  lastUpdatedAt: DateTime,
-  revokedAt: Option[DateTime])
+  createdAt: OffsetDateTime,
+  lastUpdatedAt: OffsetDateTime,
+  revokedAt: Option[OffsetDateTime])
 
 class Tokens @Inject()(
   val driver: CustomPostgresProfile,
@@ -23,9 +24,18 @@ class Tokens @Inject()(
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def userId = column[Int]("user_id")
     def token = column[String]("token", O.SqlType("text"))
-    def createdAt = column[DateTime]("created_at")
-    def lastUpdatedAt = column[DateTime]("last_updated_at")
-    def revokedAt = column[Option[DateTime]]("revoked_at")
+    def createdAt =
+      column[OffsetDateTime]("created_at", O.SqlType("timestamp with timezone"))
+    def lastUpdatedAt =
+      column[OffsetDateTime](
+        "last_updated_at",
+        O.SqlType("timestamp with timezone")
+      )
+    def revokedAt =
+      column[Option[OffsetDateTime]](
+        "revoked_at",
+        O.SqlType("timestamp with timezone")
+      )
 
     def userIdx = index("user_id_idx", userId)
     def user = foreignKey("user_fk", userId, users.query)(_.id)

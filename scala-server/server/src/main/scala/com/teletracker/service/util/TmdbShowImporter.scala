@@ -22,8 +22,9 @@ import com.teletracker.service.model.tmdb.{
 import com.teletracker.service.process.tmdb.TmdbEntityProcessor
 import com.teletracker.service.util.execution.SequentialFutures
 import com.twitter.logging.Logger
+import java.time.{LocalDate, OffsetDateTime}
 import javax.inject.Inject
-import org.joda.time.{DateTime, LocalDate}
+import java.time.format.DateTimeFormatter
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -109,7 +110,7 @@ class TmdbShowImporter @Inject()(
                     foundSeason.season_number.get,
                     entity.id.get,
                     foundSeason.overview,
-                    foundSeason.air_date.map(new LocalDate(_))
+                    foundSeason.air_date.map(LocalDate.parse(_))
                   )
 
                   tvShowDbAccess.insertSeason(newSeason)
@@ -220,7 +221,9 @@ class TmdbShowImporter @Inject()(
                   true,
                   jwOffer.country,
                   None,
-                  jwOffer.date_created.map(new DateTime(_)),
+                  jwOffer.date_created.map(
+                    OffsetDateTime.parse(_, DateTimeFormatter.ISO_LOCAL_DATE)
+                  ),
                   None,
                   offerType,
                   jwOffer.retail_price.map(BigDecimal.decimal),

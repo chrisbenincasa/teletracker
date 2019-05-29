@@ -4,23 +4,22 @@ import com.teletracker.service.db.{CustomPostgresProfile, UserThingDetails}
 import com.teletracker.service.inject.DbImplicits
 import com.teletracker.service.model.tmdb._
 import com.teletracker.service.util.Slug
+import java.time.OffsetDateTime
 import javax.inject.Inject
 import io.circe._
 import io.circe.shapes._
 import io.circe.generic.auto._
 import io.circe.generic.semiauto._
-import io.circe._
-import io.circe.generic.JsonCodec
 import io.circe.syntax._
-import org.joda.time.DateTime
+import slick.lifted.ProvenShape
 
 case class Thing(
   id: Option[Int],
   name: String,
   normalizedName: Slug,
   `type`: ThingType,
-  createdAt: DateTime,
-  lastUpdatedAt: DateTime,
+  createdAt: OffsetDateTime,
+  lastUpdatedAt: OffsetDateTime,
   metadata: Option[ObjectMetadata]) {
   def asPartial: PartialThing = {
     PartialThing(
@@ -40,8 +39,8 @@ case class ThingRaw(
   name: String,
   normalizedName: Slug,
   `type`: ThingType,
-  createdAt: DateTime,
-  lastUpdatedAt: DateTime,
+  createdAt: OffsetDateTime,
+  lastUpdatedAt: OffsetDateTime,
   metadata: Option[Json]) {
   def asPartial: PartialThing = {
     val typedMeta = metadata.flatMap(rawMeta => {
@@ -71,8 +70,8 @@ case class PartialThing(
   name: Option[String] = None,
   normalizedName: Option[Slug] = None,
   `type`: Option[ThingType] = None,
-  createdAt: Option[DateTime] = None,
-  lastUpdatedAt: Option[DateTime] = None,
+  createdAt: Option[OffsetDateTime] = None,
+  lastUpdatedAt: Option[OffsetDateTime] = None,
   metadata: Option[ObjectMetadata] = None,
   networks: Option[List[Network]] = None,
   seasons: Option[List[TvShowSeasonWithEpisodes]] = None,
@@ -134,9 +133,15 @@ class Things @Inject()(
     def normalizedName = column[Slug]("normalized_name")
     def `type` = column[ThingType]("type")
     def createdAt =
-      column[DateTime]("created_at", O.SqlType("timestamp with time zone"))
+      column[OffsetDateTime](
+        "created_at",
+        O.SqlType("timestamp with time zone")
+      )
     def lastUpdatedAt =
-      column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
+      column[OffsetDateTime](
+        "last_updated_at",
+        O.SqlType("timestamp with time zone")
+      )
     def metadata =
       column[Option[ObjectMetadata]]("metadata", O.SqlType("jsonb"))
 
@@ -160,14 +165,20 @@ class Things @Inject()(
     def normalizedName = column[Slug]("normalized_name")
     def `type` = column[ThingType]("type")
     def createdAt =
-      column[DateTime]("created_at", O.SqlType("timestamp with time zone"))
+      column[OffsetDateTime](
+        "created_at",
+        O.SqlType("timestamp with time zone")
+      )
     def lastUpdatedAt =
-      column[DateTime]("last_updated_at", O.SqlType("timestamp with time zone"))
+      column[OffsetDateTime](
+        "last_updated_at",
+        O.SqlType("timestamp with time zone")
+      )
     def metadata = column[Option[Json]]("metadata", O.SqlType("jsonb"))
 
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
-    override def * =
+    def projWithMetadata(includeMetadata: Boolean) =
       (
         id.?,
         name,
@@ -175,8 +186,11 @@ class Things @Inject()(
         `type`,
         createdAt,
         lastUpdatedAt,
-        metadata
+        if (includeMetadata) metadata else Rep.None[Json]
       ) <> (ThingRaw.tupled, ThingRaw.unapply)
+
+    override def * =
+      projWithMetadata(true)
   }
 
   val query = TableQuery[ThingsTable]

@@ -129,6 +129,7 @@ class UserController @Inject()(
           .findList(
             req.request.authContext.user.id,
             req.listId,
+            includeMetadata = true,
             selectFields,
             Some(filters),
             req.isDynamic
@@ -144,6 +145,53 @@ class UserController @Inject()(
                     list.toFull.withThings(things.map(_.asPartial).toList)
                   )
                 )
+          }
+      }
+
+      delete("/:userId/lists/:listId") { req: DeleteListRequest =>
+        val actualListId = if (req.listId == "default") {
+          usersDbAccess
+            .findDefaultListForUser(req.request.authContext.user.id)
+            .map(
+              _.flatMap(_.id).getOrElse(
+                throw new IllegalArgumentException(
+                  "Could not find default list"
+                )
+              )
+            )
+        } else {
+          Future.successful(req.listId.toInt)
+        }
+
+        req.mergeWithList
+          .map(listId => {
+            usersDbAccess
+              .getList(
+                req.request.authContext.user.id,
+                listId.toInt
+              )
+          })
+          .getOrElse(Future.successful(None))
+          .flatMap {
+            case Some(list) if list.isDynamic =>
+              Future.successful(response.badRequest)
+
+            case None if req.mergeWithList.nonEmpty =>
+              Future.successful(response.notFound)
+
+            case _ =>
+              actualListId.flatMap(listId => {
+                usersDbAccess
+                  .deleteList(
+                    req.request.authContext.user.id,
+                    listId,
+                    req.mergeWithList.map(_.toInt)
+                  )
+                  .map {
+                    case true  => response.noContent
+                    case false => response.notFound
+                  }
+              })
           }
       }
 
@@ -333,6 +381,12 @@ case class AddThingToListRequest(
   @RouteParam userId: String,
   @RouteParam listId: String,
   itemId: Int,
+  request: Request)
+
+case class DeleteListRequest(
+  @RouteParam userId: String,
+  @RouteParam listId: String,
+  @RouteParam mergeWithList: Option[String],
   request: Request)
 
 case class AddThingToListsRequest(
