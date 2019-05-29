@@ -9,6 +9,7 @@ import com.twitter.util.{Future, Promise}
 import io.jsonwebtoken.{Jwts, SignatureException}
 import javax.inject.Inject
 import org.joda.time.DateTime
+import java.time.OffsetDateTime
 import scala.concurrent.{ExecutionContext, Future => SFuture}
 import scala.util.{Failure, Success, Try}
 
@@ -47,7 +48,7 @@ class JwtAuthFilter @Inject()(
               case None =>
                 SFuture.successful(None)
               case Some(tok)
-                  if tok.revokedAt.exists(_.isBefore(DateTime.now())) =>
+                  if tok.revokedAt.exists(_.isBefore(OffsetDateTime.now())) =>
                 SFuture.successful(None)
               case Some(_) =>
                 usersDbAccess.findByEmail(parsed.getBody.getSubject)

@@ -14,7 +14,7 @@ import com.teletracker.service.util.json.circe._
 import com.twitter.finagle.http.Status
 import io.circe.generic.auto._
 import io.circe.parser._
-import org.joda.time.DateTime
+import java.time.OffsetDateTime
 import java.util.UUID
 
 class UsersApiSpec extends BaseSpecWithServer {
@@ -126,8 +126,8 @@ class UsersApiSpec extends BaseSpecWithServer {
           "Halt and Catch Fire",
           Slug("Halt and Catch Fire"),
           ThingType.Show,
-          DateTime.now(),
-          DateTime.now(),
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
           None
         )
       )
@@ -154,6 +154,62 @@ class UsersApiSpec extends BaseSpecWithServer {
     println(deser)
   }
 
+  it should "delete a user's list" in {
+    val (_, token) = createUser()
+
+    val createListResponse = server.httpPost(
+      "/api/v1/users/self/lists",
+      serializer.writeValueAsString(Map("name" -> "My New List")),
+      headers = Map("Authorization" -> s"Bearer $token")
+    )
+
+    val DataResponse(CreateListResponse(listId)) = parse(
+      createListResponse.contentString
+    ).flatMap(_.as[DataResponse[CreateListResponse]]).right.get
+
+    val deleteListResponse = server.httpDelete(
+      s"/api/v1/users/self/lists/$listId",
+      headers = Map("Authorization" -> s"Bearer $token")
+    )
+
+    assert(deleteListResponse.status.code == 204)
+
+    val getListsResponse = server.httpGet(
+      "/api/v1/users/self/lists",
+      headers = Map("Authorization" -> s"Bearer $token")
+    )
+
+    val DataResponse(user) = parse(getListsResponse.contentString)
+      .flatMap(_.as[DataResponse[User]])
+      .right
+      .get
+
+    assert(!user.lists.getOrElse(Nil).exists(_.id == listId))
+  }
+
+  it should "merge a user's list upon deletion" in {
+    val (_, token) = createUser()
+
+    val list1 = createList(token, "My List 1")
+    val list2 = createList(token, "My List 2")
+
+    val thing1 = createThing(token, "Halt and Catch Fire", Set(list1, list2))
+    val thing2 = createThing(token, "Chernobyl", Set(list1))
+    val thing3 = createThing(token, "Veep", Set(list1))
+
+    deleteList(token, list1, mergeWith = Some(list2))
+
+    val mergedList2 = getList(token, list2)
+
+    assert(
+      mergedList2.things.getOrElse(Nil).flatMap(_.id).toSet === Set(
+        thing1.id.get,
+        thing2.id.get,
+        thing3.id.get
+      )
+    )
+  }
+
   private def createUser() = {
     val createUserRequest = CreateUserRequest(
       UUID.randomUUID().toString,
@@ -174,5 +230,86 @@ class UsersApiSpec extends BaseSpecWithServer {
         .get
 
     userId -> token
+  }
+
+  private def createList(
+    token: String,
+    name: String
+  ) = {
+    val createListResponse = server.httpPost(
+      "/api/v1/users/self/lists",
+      serializer.writeValueAsString(Map("name" -> name)),
+      headers = Map("Authorization" -> s"Bearer $token")
+    )
+
+    val DataResponse(CreateListResponse(listId)) = parse(
+      createListResponse.contentString
+    ).flatMap(_.as[DataResponse[CreateListResponse]]).right.get
+
+    listId
+  }
+
+  private def createThing(
+    token: String,
+    name: String,
+    insertToLists: Set[Int]
+  ) = {
+    val thing = server.injector
+      .instance[ThingsDbAccess]
+      .saveThing(
+        Thing(
+          None,
+          name,
+          Slug(name),
+          ThingType.Show,
+          OffsetDateTime.now(),
+          OffsetDateTime.now(),
+          None
+        )
+      )
+      .await()
+
+    insertToLists.foreach(listId => {
+      server.httpPut(
+        s"/api/v1/users/self/lists/$listId",
+        serializer.writeValueAsString(
+          Map("itemId" -> thing.id.get)
+        ),
+        headers = Map("Authorization" -> s"Bearer $token")
+      )
+    })
+
+    thing
+  }
+
+  private def deleteList(
+    token: String,
+    listId: Int,
+    mergeWith: Option[Int] = None
+  ) = {
+    val params = mergeWith.map(i => s"?mergeWithList=$i").getOrElse("")
+
+    val deleteListResponse = server.httpDelete(
+      s"/api/v1/users/self/lists/$listId$params",
+      headers = Map("Authorization" -> s"Bearer $token")
+    )
+
+    assert(deleteListResponse.status.code == 204)
+  }
+
+  private def getList(
+    token: String,
+    listId: Int
+  ) = {
+    val listResponse = server.httpGet(
+      s"/api/v1/users/self/lists/$listId",
+      headers = Map("Authorization" -> s"Bearer $token")
+    )
+
+    parse(listResponse.contentString)
+      .flatMap(_.as[DataResponse[TrackedList]])
+      .right
+      .get
+      .data
   }
 }

@@ -61,6 +61,7 @@ class RunDatabaseMigration extends App {
       case "migrate" => flyway.migrate()
       case "info"    => flyway.info()
       case "clean"   => flyway.clean()
+      case "repair"  => flyway.repair()
       case _ =>
         throw new IllegalArgumentException(
           s"Unsupported action ${runConfig.action}"

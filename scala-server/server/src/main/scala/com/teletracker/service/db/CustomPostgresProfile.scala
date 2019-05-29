@@ -12,7 +12,7 @@ trait CustomPostgresProfile
     with PgSearchSupport
     with PgNetSupport
     with PgCirceJsonSupport
-    with PgDateSupportJoda
+//    with PgDateSupportJoda
     with PgLTreeSupport {
   def pgjson =
     "jsonb" // jsonb support is in postgres 9.4.0 onward; for 9.3.x use "json"
@@ -26,7 +26,7 @@ trait CustomPostgresProfile
   object CustomAPI
       extends API
       with ArrayImplicits
-      with JodaDateTimePlainImplicits
+//      with JodaDateTimePlainImplicits
       with DateTimeImplicits
       with NetImplicits
       with LTreeImplicits

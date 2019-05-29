@@ -4,7 +4,7 @@ import com.teletracker.service.db.CustomPostgresProfile
 import com.google.inject.Provider
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import com.teletracker.service.util.json.circe._
 
 case class TvShowSeason(
