@@ -1,31 +1,27 @@
 import {
-  Avatar,
   Card,
   createStyles,
   Divider,
   Grid,
-  IconButton,
+  Icon,
   LinearProgress,
   List,
   ListItem,
+  ListItemSecondaryAction,
   ListItemText,
   Paper,
   Switch,
+  TextField,
   Theme,
+  Tooltip,
   Typography,
   WithStyles,
   withStyles,
-  TextField,
-  Tooltip,
-  ListItemSecondaryAction,
-  Icon,
 } from '@material-ui/core';
-import BeachAccessIcon from '@material-ui/icons/BeachAccess';
-import DeleteIcon from '@material-ui/icons/Delete';
 import AddIcon from '@material-ui/icons/Add';
 import CheckIcon from '@material-ui/icons/Check';
-import WorkIcon from '@material-ui/icons/Work';
 import Slider from '@material-ui/lab/Slider';
+import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -34,18 +30,14 @@ import { bindActionCreators } from 'redux';
 import { loadNetworks } from '../../actions/metadata';
 import {
   addNetworkForUser,
-  UserAddNetworkPayload,
   updateUserPreferences,
+  UserAddNetworkPayload,
 } from '../../actions/user';
-import AutoComplete, {
-  AutocompleteOption,
-} from '../../components/AutoComplete';
+import { AutocompleteOption } from '../../components/AutoComplete';
 import withUser, { WithUserProps } from '../../components/withUser';
-import Drawer from '../../components/Drawer';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { Network, UserPreferences } from '../../types';
-import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -340,7 +332,6 @@ class Account extends Component<Props, State> {
 
     return (
       <div style={{ display: 'flex' }} className={classes.layout}>
-        <Drawer userSelf={userSelf} open={drawerOpen} />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <section className={classes.section}>
             <div className={classes.sectionHeader}>
