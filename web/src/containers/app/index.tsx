@@ -16,6 +16,7 @@ import {
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import { AccountCircleOutlined, Menu as MenuIcon } from '@material-ui/icons';
 import SearchIcon from '@material-ui/icons/Search';
+import clsx from 'clsx';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -39,7 +40,7 @@ import ItemDetail from '../item-detail';
 import Lists from '../lists';
 import Login from '../login';
 import Signup from '../signup';
-import Drawer from '../../components/Drawer';
+import Drawer, { DrawerWidthPx } from '../../components/Drawer';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -123,6 +124,20 @@ const styles = (theme: Theme) =>
     },
     appbar: {
       zIndex: 99999,
+    },
+    mainContent: {
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+      }),
+      marginLeft: 0,
+    },
+    mainContentShift: {
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginLeft: DrawerWidthPx,
     },
   });
 
@@ -373,7 +388,11 @@ class App extends Component<Props, State> {
         <AppBar position="sticky">
           <Toolbar>
             {isAuthed ? (
-              <IconButton onClick={this.toggleDrawer} color="inherit">
+              <IconButton
+                focusRipple={false}
+                onClick={this.toggleDrawer}
+                color="inherit"
+              >
                 <MenuIcon />
               </IconButton>
             ) : null}
@@ -405,12 +424,16 @@ class App extends Component<Props, State> {
           ) : null}
         </AppBar>
         <div>
-          {/* Todo: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
+          {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
+          <Drawer open={this.state.drawerOpen} />
           <main
             style={{
               display: 'flex',
               flexDirection: isAuthed ? 'row' : 'column',
             }}
+            className={clsx(classes.mainContent, {
+              [classes.mainContentShift]: this.state.drawerOpen,
+            })}
           >
             <Route
               exact

@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import React from 'react';
+import React, { ReactElement } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { retrieveUser } from '../actions/user';
@@ -22,6 +22,7 @@ export type WithUserProps = WithUserStateProps & WithUserDispatchProps;
 
 const withUser = <P extends object>(
   Component: React.ComponentType<P & WithUserProps>,
+  loadingComponent?: (props: P & WithUserProps) => ReactElement | null,
 ) => {
   class WithUser extends React.Component<P & WithUserProps> {
     componentWillMount() {
@@ -52,7 +53,7 @@ const withUser = <P extends object>(
 
       return isLoading ? (
         <div style={{ flexGrow: 1 }}>
-          <LinearProgress />
+          {loadingComponent ? loadingComponent(this.props) : <LinearProgress />}
         </div>
       ) : (
         <Component {...this.props as P & WithUserProps} />
@@ -80,7 +81,7 @@ const withUser = <P extends object>(
   return connect(
     mapStateToProps,
     mapDispatchToProps,
-  // @ts-ignore
+    // @ts-ignore
   )(WithUser);
 };
 

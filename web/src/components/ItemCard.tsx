@@ -25,6 +25,7 @@ import { getDescription, getPosterPath } from '../utils/metadata-access';
 import { Dispatch, bindActionCreators } from 'redux';
 import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
 import { connect } from 'react-redux';
+import { GridProps } from '@material-ui/core/Grid';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -81,6 +82,8 @@ interface ItemCardProps extends WithStyles<typeof styles> {
   listContext?: List;
 
   withActionButton: boolean;
+
+  gridProps?: GridProps;
 }
 
 interface DispatchProps {
@@ -206,9 +209,17 @@ class ItemCard extends Component<Props, ItemCardState> {
   render() {
     let { item, classes, addButton, itemCardVisible } = this.props;
 
+    let gridProps: Partial<GridProps> = {
+      item: true,
+      sm: 6,
+      md: 4,
+      lg: 3,
+      ...this.props.gridProps,
+    };
+
     return (
       <React.Fragment>
-        <Grid key={item.id} sm={6} md={3} lg={2} item>
+        <Grid key={item.id} {...gridProps}>
           <Card className={classes.card}>
             {this.renderPoster(item)}
             {itemCardVisible && (
