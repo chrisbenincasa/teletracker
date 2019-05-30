@@ -18,11 +18,15 @@ import { connect } from 'react-redux';
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { fetchItemDetails } from '../../actions/item-detail';
+import {
+  removeUserItemTags,
+  updateUserItemTags,
+  UserUpdateItemTagsPayload,
+} from '../../actions/user';
 import withUser, { WithUserProps } from '../../components/withUser';
-import Drawer from '../../components/Drawer';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { Availability, Network, Thing, ActionType } from '../../types';
+import { ActionType, Availability, Network, Thing } from '../../types';
 import {
   getBackdropUrl,
   getOverviewPath,
@@ -30,11 +34,6 @@ import {
   getTitlePath,
   getVoteAveragePath,
 } from '../../utils/metadata-access';
-import {
-  updateUserItemTags,
-  removeUserItemTags,
-  UserUpdateItemTagsPayload,
-} from '../../actions/user';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -87,10 +86,6 @@ interface OwnProps {
   itemDetail?: Thing;
 }
 
-interface DrawerProps {
-  drawerOpen: boolean;
-}
-
 interface DispatchProps {
   fetchItemDetails: (id: number, type: string) => void;
   updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
@@ -106,8 +101,7 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps &
-  DrawerProps;
+  WithUserProps;
 
 interface State {
   currentId: number;
@@ -287,7 +281,7 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderItemDetails = () => {
-    let { drawerOpen, isFetching, itemDetail, match, userSelf } = this.props;
+    let { isFetching, itemDetail, match, userSelf } = this.props;
     let itemId = Number(match.params.id);
     let itemType = String(match.params.type);
 
@@ -357,11 +351,10 @@ class ItemDetails extends Component<Props, State> {
   };
 
   render() {
-    let { drawerOpen, isAuthed, userSelf } = this.props;
+    let { isAuthed } = this.props;
 
     return isAuthed ? (
       <div style={{ display: 'flex', flexGrow: 1 }}>
-        <Drawer userSelf={userSelf} open={drawerOpen} />
         {this.renderItemDetails()}
       </div>
     ) : (
