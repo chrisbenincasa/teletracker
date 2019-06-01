@@ -1,13 +1,17 @@
 package com.teletracker.service
 
 import java.io.File
-
 import com.teletracker.service.controllers._
 import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
 import com.teletracker.service.inject.Modules
 import com.teletracker.service.tools._
 import com.teletracker.service.util.json.JsonModule
 import com.google.inject.Module
+import com.teletracker.service.process.{
+  ProcessMessage,
+  ProcessQueue,
+  TmdbBackgroundProcessor
+}
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finatra.http.HttpServer
 import com.twitter.finatra.http.filters.{LoggingMDCFilter, TraceIdMDCFilter}
@@ -15,7 +19,6 @@ import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.inject.Logging
 import com.twitter.util.Await
 import com.twitter.conversions.DurationOps._
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object TeletrackerServerMain extends TeletrackerServer
@@ -66,6 +69,14 @@ class TeletrackerServer(override protected val modules: Seq[Module] = Modules())
       .add[MetadataController]
       .add[AvailabilityController]
       .add[AdminController]
+  }
+
+  override def postInjectorStartup(): Unit = {
+    super.postInjectorStartup()
+
+    injector.instance[TmdbBackgroundProcessor].run()
+    val q = injector.instance[ProcessQueue[ProcessMessage]]
+    List.fill(10)(ProcessMessage("xyz")).map(q.enqueue)
   }
 }
 

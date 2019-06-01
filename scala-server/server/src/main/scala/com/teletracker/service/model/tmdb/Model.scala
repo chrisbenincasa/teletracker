@@ -28,10 +28,16 @@ case class SearchMoviesRequest(
 // Marker for movie IDs
 trait MovieId
 
+@JsonCodec case class Collection(
+  id: Int,
+  name: String,
+  poster_path: Option[String],
+  backdrop_path: Option[String])
+
 @JsonCodec case class Movie(
   adult: Option[Boolean],
   backdrop_path: Option[String],
-//  belongs_to_collection: Option[Map[String, Any]],
+  belongs_to_collection: Option[Collection],
   budget: Option[Int],
   genres: Option[List[Genre]],
   genre_ids: Option[List[Int]],
