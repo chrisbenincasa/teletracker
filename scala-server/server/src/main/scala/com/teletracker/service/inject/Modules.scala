@@ -11,7 +11,8 @@ object Modules {
     Seq(
       new ConfigModule,
       new ExecutionContextModule,
-      new DbModule
+      new DbModule,
+      new BackgroundProcessorModule
     )
   }
 }
