@@ -1,5 +1,7 @@
 package com.teletracker.service.process
 
+import com.teletracker.service.process.tmdb.TmdbProcessMessage
+import com.twitter.concurrent.NamedPoolThreadFactory
 import javax.inject.Inject
 import java.util.concurrent.{
   ConcurrentHashMap,
@@ -7,9 +9,9 @@ import java.util.concurrent.{
   Executors,
   TimeUnit
 }
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 trait ProcessQueue[M <: Message] {
   def enqueue(message: M): Future[Unit]
@@ -31,18 +33,18 @@ final case class WrappedMessage[Contents <: Message](
   retries: Int = 5,
   contents: Contents)
 
-final case class ProcessMessage(id: String) extends Message
-
-final class InMemoryFifoProcessQueue @Inject()(
+final class InMemoryFifoProcessQueue[M <: Message] @Inject()(
 )(implicit executionContext: ExecutionContext)
-    extends ProcessQueue[ProcessMessage]
-    with ProcessQueueConsumer[ProcessMessage]
+    extends ProcessQueue[M]
+    with ProcessQueueConsumer[M]
     with AutoCloseable {
 
   final private val queue =
-    new ConcurrentLinkedQueue[WrappedMessage[ProcessMessage]]()
+    new ConcurrentLinkedQueue[WrappedMessage[M]]()
 
-  final private val reaperPool = Executors.newSingleThreadScheduledExecutor()
+  final private val reaperPool = Executors.newSingleThreadScheduledExecutor(
+    new NamedPoolThreadFactory("ProcessQueueReaper", makeDaemons = true)
+  )
 
   reaperPool.schedule(
     new Runnable {
@@ -70,11 +72,11 @@ final class InMemoryFifoProcessQueue @Inject()(
   )
 
   final private val inFlight =
-    new ConcurrentHashMap[WrappedMessage[ProcessMessage], Boolean]()
+    new ConcurrentHashMap[WrappedMessage[M], Boolean]()
 
   final private val acked = new ConcurrentHashMap[String, Boolean]()
 
-  override def enqueue(message: ProcessMessage): Future[Unit] = {
+  override def enqueue(message: M): Future[Unit] = {
     Future.successful {
       queue.offer(
         WrappedMessage(System.currentTimeMillis(), contents = message)
@@ -82,7 +84,7 @@ final class InMemoryFifoProcessQueue @Inject()(
     }
   }
 
-  override def dequeue(n: Int): Future[List[ProcessMessage]] = {
+  override def dequeue(n: Int): Future[List[M]] = {
     require(n >= 0)
     if (n == 0) {
       Future.successful(Nil)

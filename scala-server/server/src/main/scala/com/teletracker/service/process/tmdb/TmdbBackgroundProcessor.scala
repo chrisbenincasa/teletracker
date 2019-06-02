@@ -1,16 +1,16 @@
-package com.teletracker.service.process
+package com.teletracker.service.process.tmdb
 
 import com.google.inject.Provider
+import com.teletracker.service.process.ProcessQueue
+import com.teletracker.service.util.Futures._
 import com.twitter.concurrent.NamedPoolThreadFactory
 import javax.inject.Inject
-import com.teletracker.service.util.Futures._
 import java.util.concurrent.Executors
 import scala.annotation.tailrec
-import scala.concurrent.Future
 import scala.util.control.NonFatal
 
 final class TmdbBackgroundProcessor @Inject()(
-  queue: ProcessQueue[ProcessMessage],
+  queue: ProcessQueue[TmdbProcessMessage],
   handlerProvider: Provider[TmdbMessageHandler])
     extends AutoCloseable {
   final private val pool = Executors.newFixedThreadPool(
@@ -41,7 +41,7 @@ final class TmdbBackgroundProcessor @Inject()(
 
     try {
       queue
-        .dequeue(1)
+        .dequeue(3)
         .await()
         .foreach(message => {
           pool.submit(new Runnable {
@@ -56,7 +56,7 @@ final class TmdbBackgroundProcessor @Inject()(
         e.printStackTrace()
     }
 
-    Thread.sleep(5000)
+    Thread.sleep(500)
 
     runInternal()
   }
@@ -65,12 +65,5 @@ final class TmdbBackgroundProcessor @Inject()(
     _shutdownRequested = true
     pool.shutdown()
     looper.shutdown()
-  }
-}
-
-final class TmdbMessageHandler {
-  def handle(message: ProcessMessage): Future[Unit] = {
-    println(s"handle message id = ${message.id}")
-    Future.unit
   }
 }

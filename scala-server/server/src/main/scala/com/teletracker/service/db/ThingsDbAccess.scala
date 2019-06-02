@@ -27,6 +27,7 @@ class ThingsDbAccess @Inject()(
   val trackedListThings: TrackedListThings,
   val trackedLists: TrackedLists,
   val userThingTags: UserThingTags,
+  val collections: Collections,
   dbImplicits: DbImplicits
 )(implicit executionContext: ExecutionContext)
     extends DbAccess {
@@ -683,6 +684,45 @@ class ThingsDbAccess @Inject()(
         case (thingId, seq) => thingId -> UserThingDetails(seq.map(_._2.toFull))
       }
     })
+  }
+
+  def findCollectionByTmdbId(id: String): Future[Option[Collection]] = {
+    run {
+      collections.collectionsQuery
+        .filter(_.tmdbId === id)
+        .take(1)
+        .result
+        .headOption
+    }
+  }
+
+  def insertCollection(collection: Collection): Future[Collection] = {
+    run {
+      collections.collectionsQuery returning collections.collectionsQuery.map(
+        _.id
+      ) into ((collection, id) => collection.copy(id = id)) += collection
+    }
+  }
+
+  def updateCollection(collection: Collection): Future[Int] = {
+    run {
+      collections.collectionsQuery
+        .filter(_.id === collection.id)
+        .update(collection)
+    }
+  }
+
+  def addThingToCollection(
+    collectionId: Int,
+    thingId: Int
+  ) = {
+    run {
+      sql"""
+            INSERT INTO "collection_things" (collection_id, thing_id) VALUES ($collectionId, $thingId) 
+            ON CONFLICT ON CONSTRAINT collection_things_by_collection DO NOTHING
+            RETURNING id;
+      """.as[Int].headOption
+    }
   }
 }
 

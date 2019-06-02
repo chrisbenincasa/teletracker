@@ -16,7 +16,12 @@ import com.teletracker.service.db.{
 import com.teletracker.service.external.tmdb.TmdbClient
 import com.teletracker.service.model.DataResponse
 import com.teletracker.service.model.tmdb._
-import com.teletracker.service.process.tmdb.TmdbEntityProcessor
+import com.teletracker.service.process.ProcessQueue
+import com.teletracker.service.process.tmdb.{
+  TmdbEntityProcessor,
+  TmdbProcessMessage
+}
+import com.teletracker.service.process.tmdb.TmdbProcessMessage.ProcessSearchResults
 import com.teletracker.service.util.TmdbMovieImporter
 import com.teletracker.service.util.json.circe._
 import com.twitter.finagle.http.Request
@@ -25,15 +30,14 @@ import io.circe.generic.auto._
 import javax.inject.Inject
 import shapeless.Coproduct
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Failure
-import scala.util.control.NonFatal
 
 class SearchController @Inject()(
   config: TeletrackerConfig,
   thingsDbAccess: ThingsDbAccess,
   tmdbClient: TmdbClient,
   resultProcessor: TmdbEntityProcessor,
-  movieImporter: TmdbMovieImporter
+  movieImporter: TmdbMovieImporter,
+  processQueue: ProcessQueue[TmdbProcessMessage]
 )(implicit executionContext: ExecutionContext)
     extends Controller {
   prefix("/api/v1") {
@@ -100,15 +104,9 @@ class SearchController @Inject()(
     // Kick off background tasks for updating the full metadata for all results
     partitionedResults.foreach {
       case (missing, existing) =>
-        Future {
-          resultProcessor.processSearchResults(missing ++ existing)
-        }.andThen {
-          case Failure(NonFatal(ex)) =>
-            logger.error(
-              "Unexpected exception while processing search results",
-              ex
-            )
-        }
+        processQueue.enqueue(
+          TmdbProcessMessage.make(ProcessSearchResults(missing ++ existing))
+        )
     }
 
     (for {
