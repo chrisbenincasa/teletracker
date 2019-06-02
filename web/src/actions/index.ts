@@ -26,6 +26,7 @@ import {
   updateUserPreferencesSaga,
   updateUserSaga,
   createNewListSaga,
+  deleteListSaga,
   updateUserActionSaga,
   removeUserActionSaga,
 } from './user';
@@ -78,6 +79,7 @@ export function* root() {
     updateUserPreferencesSaga(),
     updateUserSaga(),
     createNewListSaga(),
+    deleteListSaga(),
     updateUserActionSaga(),
     removeUserActionSaga(),
   ]);
