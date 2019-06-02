@@ -9,6 +9,8 @@ import {
   USER_SELF_ADD_NETWORK,
   USER_SELF_CREATE_LIST,
   USER_SELF_CREATE_LIST_SUCCESS,
+  USER_SELF_DELETE_LIST,
+  USER_SELF_DELETE_LIST_SUCCESS,
 } from '../constants/user';
 import { User } from '../types';
 import { flattenActions, handleAction } from './utils';
@@ -80,6 +82,29 @@ const userCreateListSuccess = handleAction(
   },
 );
 
+const userDeleteList = handleAction(USER_SELF_DELETE_LIST, (state: State) => {
+  return {
+    ...state,
+    loading: {
+      ...state.loading,
+      [USER_SELF_DELETE_LIST]: true,
+    },
+  } as State;
+});
+
+const userDeleteListSuccess = handleAction(
+  USER_SELF_DELETE_LIST_SUCCESS,
+  (state: State) => {
+    return {
+      ...state,
+      loading: {
+        ...state.loading,
+        [USER_SELF_DELETE_LIST]: false,
+      },
+    } as State;
+  },
+);
+
 export default flattenActions(
   initialState,
   selfRetrieveInitiated,
@@ -87,4 +112,6 @@ export default flattenActions(
   userAddNetwork,
   userCreateList,
   userCreateListSuccess,
+  userDeleteList,
+  userDeleteListSuccess,
 );

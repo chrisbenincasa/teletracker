@@ -4,6 +4,11 @@ import {
   CardContent,
   CardMedia,
   createStyles,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Grid,
   Icon,
   Link,
@@ -14,18 +19,31 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Tooltip,
 } from '@material-ui/core';
+import classNames from 'classnames';
+import * as R from 'ramda';
 import { Link as RouterLink, withRouter } from 'react-router-dom';
 import React, { Component, ReactNode } from 'react';
 import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
-import { User, List } from '../types';
-import { Thing } from '../types';
+import { User, List, Thing, ActionType } from '../types';
 import { getDescription, getPosterPath } from '../utils/metadata-access';
 import { Dispatch, bindActionCreators } from 'redux';
 import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
 import { connect } from 'react-redux';
 import { GridProps } from '@material-ui/core/Grid';
+import DeleteIcon from '@material-ui/icons/Delete';
+import Check from '@material-ui/icons/Check';
+import { green, red } from '@material-ui/core/colors';
+import withUser, { WithUserProps } from '../components/withUser';
+import { AppState } from '../reducers';
+
+import {
+  updateUserItemTags,
+  removeUserItemTags,
+  UserUpdateItemTagsPayload,
+} from '../actions/user';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -46,6 +64,7 @@ const styles = (theme: Theme) =>
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
+      position: 'relative',
     },
     cardMedia: {
       height: 0,
@@ -54,6 +73,34 @@ const styles = (theme: Theme) =>
     },
     cardContent: {
       flexGrow: 1,
+    },
+    cardHover: {
+      transition: 'opacity 370ms cubic-bezier(0.4,0,0.2,1)',
+      backgroundColor: '#000',
+      overflow: 'hidden',
+      width: '100%',
+      opacity: 0.7,
+      display: 'block',
+      zIndex: 1,
+    },
+    cardHoverExit: {
+      opacity: 1,
+    },
+    hoverDelete: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      color: '#fff',
+      zIndex: 1,
+      '&:hover': {
+        color: red[900],
+      },
+    },
+    hoverWatch: {
+      color: '#fff',
+      '&:hover': {
+        color: green[900],
+      },
     },
     missingMedia: {
       height: '150%',
@@ -80,7 +127,8 @@ interface ItemCardProps extends WithStyles<typeof styles> {
   // If defined, we're viewing this item within the context of _this_ list
   // This is probably not scalable, but it'll work for now.
   listContext?: List;
-
+  hoverDelete?: boolean;
+  hoverWatch?: boolean;
   withActionButton: boolean;
 
   gridProps?: GridProps;
@@ -88,6 +136,8 @@ interface ItemCardProps extends WithStyles<typeof styles> {
 
 interface DispatchProps {
   ListUpdate: (payload: ListUpdatedInitiatedPayload) => void;
+  updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
+  removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
 }
 
 interface ItemCardState {
@@ -95,19 +145,31 @@ interface ItemCardState {
 
   // åction button menu
   anchorEl: any;
+  hover: boolean;
+  deleteConfirmationOpen: boolean;
+  deleted: boolean;
+  currentId: number;
+  currentType: string;
 }
 
-type Props = ItemCardProps & DispatchProps;
+type Props = ItemCardProps & DispatchProps & WithUserProps;
 
 class ItemCard extends Component<Props, ItemCardState> {
   static defaultProps = {
     withActionButton: false,
     itemCardVisible: true,
+    hoverDelete: false,
+    hoverWatch: true,
   };
 
   state: ItemCardState = {
     modalOpen: false,
     anchorEl: null,
+    hover: false,
+    deleteConfirmationOpen: false,
+    deleted: false,
+    currentId: 0,
+    currentType: '',
   };
 
   constructor(props: Props) {
@@ -119,6 +181,17 @@ class ItemCard extends Component<Props, ItemCardState> {
     ) {
       console.warn('withActionButton=true without listContext will not work.');
     }
+  }
+
+  componentDidMount() {
+    let { item } = this.props;
+    let itemId = Number(item.id);
+
+    this.setState({
+      currentId: itemId,
+    });
+
+    // this.props.fetchItemDetails(itemId, itemType);
   }
 
   handleModalOpen = (item: Thing) => {
@@ -137,30 +210,95 @@ class ItemCard extends Component<Props, ItemCardState> {
     this.setState({ anchorEl: null });
   };
 
+  handleHoverEnter = () => {
+    this.setState({ hover: true });
+  };
+
+  handleHoverExit = () => {
+    this.setState({ hover: false });
+  };
+
+  handleDeleteModalOpen = () => {
+    this.setState({ deleteConfirmationOpen: true });
+  };
+
+  handleDeleteModalClose = () => {
+    this.setState({ deleteConfirmationOpen: false });
+  };
+
   handleRemoveFromList = () => {
     this.props.ListUpdate({
       thingId: parseInt(this.props.item.id.toString()),
       addToLists: [],
       removeFromLists: [this.props.listContext!.id.toString()],
     });
+    this.setState({ deleted: true });
+    this.handleDeleteModalClose();
   };
 
-  navigateToDetail = (thing: Thing) => {
-    // this.props.
+  toggleItemWatched = () => {
+    let payload = {
+      thingId: this.state.currentId,
+      action: ActionType.Watched,
+    };
+
+    if (this.itemMarkedAsWatched()) {
+      this.props.removeUserItemTags(payload);
+    } else {
+      this.props.updateUserItemTags(payload);
+    }
+  };
+
+  itemMarkedAsWatched = () => {
+    console.log(this.props);
+    if (this.props.item && this.props.item.userMetadata) {
+      console.log('test');
+      return R.any(tag => {
+        return tag.action == ActionType.Watched;
+      }, this.props.item.userMetadata.tags);
+    }
+
+    return false;
   };
 
   renderPoster = (thing: Thing) => {
+    let { classes, hoverDelete, hoverWatch } = this.props;
+    let { deleted, hover } = this.state;
     let poster = getPosterPath(thing);
 
     const makeLink = (children: ReactNode, className?: string) => (
-      <Link
-        className={className}
-        component={props => (
-          <RouterLink {...props} to={'/item/' + thing.type + '/' + thing.id} />
-        )}
-      >
-        {children}
-      </Link>
+      <React.Fragment>
+        <div className={hover ? classes.cardHover : classes.cardHoverExit}>
+          {hoverDelete && hover && (
+            <Tooltip
+              title={'Remove from List'}
+              placement="top"
+              style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}
+            >
+              <IconButton
+                aria-label="Delete"
+                className={classes.hoverDelete}
+                onClick={this.handleDeleteModalOpen}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {hoverWatch && hover && this.renderWatchedToggle()}
+          <Link
+            className={className}
+            component={props => (
+              <RouterLink
+                {...props}
+                to={'/item/' + thing.type + '/' + thing.id}
+              />
+            )}
+            style={{ position: 'relative' }}
+          >
+            {children}
+          </Link>
+        </div>
+      </React.Fragment>
     );
 
     if (poster) {
@@ -186,6 +324,59 @@ class ItemCard extends Component<Props, ItemCardState> {
     }
   };
 
+  renderDialog() {
+    let { deleteConfirmationOpen } = this.state;
+
+    return (
+      <div>
+        <Dialog
+          open={deleteConfirmationOpen}
+          onClose={this.handleDeleteModalClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {'Remove from List'}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Are you sure you want to remove this from your list?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={this.handleDeleteModalClose} color="primary">
+              Cancel
+            </Button>
+            <Button
+              onClick={this.handleRemoveFromList}
+              color="primary"
+              autoFocus
+            >
+              Remove
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
+    );
+  }
+
+  renderWatchedToggle = () => {
+    let { classes } = this.props;
+    return (
+      <Tooltip
+        title={
+          this.itemMarkedAsWatched() ? 'Mark as not watched' : 'Mark as watched'
+        }
+        placement="top"
+        style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}
+      >
+        <IconButton aria-label="Delete" onClick={this.toggleItemWatched}>
+          <Check className={classes.hoverWatch} />
+        </IconButton>
+      </Tooltip>
+    );
+  };
+
   renderActionMenu() {
     let { anchorEl } = this.state;
 
@@ -208,6 +399,7 @@ class ItemCard extends Component<Props, ItemCardState> {
 
   render() {
     let { item, classes, addButton, itemCardVisible } = this.props;
+    let { deleted, hover } = this.state;
 
     let gridProps: Partial<GridProps> = {
       item: true,
@@ -219,8 +411,12 @@ class ItemCard extends Component<Props, ItemCardState> {
 
     return (
       <React.Fragment>
-        <Grid key={item.id} {...gridProps}>
-          <Card className={classes.card}>
+        <Grid key={!deleted ? item.id : 'deleted'} {...gridProps}>
+          <Card
+            className={classes.card}
+            onMouseEnter={this.handleHoverEnter}
+            onMouseLeave={this.handleHoverExit}
+          >
             {this.renderPoster(item)}
             {itemCardVisible && (
               <CardContent className={classes.cardContent}>
@@ -268,6 +464,7 @@ class ItemCard extends Component<Props, ItemCardState> {
             item={item}
           />
         ) : null}
+        {this.renderDialog()}
       </React.Fragment>
     );
   }
@@ -277,13 +474,17 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
       ListUpdate,
+      updateUserItemTags,
+      removeUserItemTags,
     },
     dispatch,
   );
 
-export default withStyles(styles)(
-  connect(
-    null,
-    mapDispatchToProps,
-  )(ItemCard),
+export default withUser(
+  withStyles(styles)(
+    connect(
+      null,
+      mapDispatchToProps,
+    )(ItemCard),
+  ),
 );
