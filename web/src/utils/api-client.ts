@@ -144,6 +144,12 @@ export class TeletrackerApi {
     });
   }
 
+  async deleteList(listId: number) {
+    return this.withTokenCheck(async () => {
+      return this.api.delete(`/api/v1/users/self/lists/${listId}`);
+    });
+  }
+
   async getLists(fields?: KeyMap<ObjectMetadata>) {
     let filterString = fields ? this.createFilter(fields) : '';
     let params = {};
