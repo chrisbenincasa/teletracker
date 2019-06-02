@@ -1,5 +1,6 @@
 package com.teletracker.service.process.tmdb
 
+import com.google.common.cache.CacheBuilder
 import com.teletracker.service.cache.{JustWatchLocalCache, TmdbLocalCache}
 import com.teletracker.service.db.model._
 import com.teletracker.service.db.{
@@ -18,105 +19,39 @@ import com.teletracker.service.model.justwatch.{
 }
 import com.teletracker.service.model.tmdb
 import com.teletracker.service.model.tmdb._
+import com.teletracker.service.process.ProcessQueue
 import com.teletracker.service.process.tmdb.TmdbEntity.{Entities, EntityIds}
+import com.teletracker.service.process.tmdb.TmdbProcessMessage.{
+  ProcessBelongsToCollections,
+  ProcessMovie
+}
 import com.teletracker.service.util.execution.SequentialFutures
-import com.teletracker.service.util.{NetworkCache, Slug, TmdbMovieImporter}
+import com.teletracker.service.util.{NetworkCache, Slug}
 import com.teletracker.service.util.json.circe._
 import java.sql.Timestamp
-import java.time.{LocalDate, OffsetDateTime, OffsetTime, ZoneOffset}
+import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 import javax.inject.Inject
 import shapeless.ops.coproduct.{Folder, Mapper}
 import shapeless.tag.@@
-import shapeless.{:+:, CNil, Coproduct}
+import shapeless.{:+:, tag, CNil, Coproduct}
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
-
-class ItemExpander @Inject()(
-  tmdbClient: TmdbClient,
-  cache: TmdbLocalCache
-)(implicit executionContext: ExecutionContext) {
-  def expandMovie(id: String): Future[Movie] = {
-    cache.getOrSetEntity(
-      ThingType.Movie,
-      id, {
-        tmdbClient.makeRequest[Movie](
-          s"movie/$id",
-          Seq(
-            "append_to_response" -> List(
-              "release_dates",
-              "credits",
-              "external_ids"
-            ).mkString(",")
-          )
-        )
-      }
-    )
-  }
-
-  def expandTvShow(id: String): Future[TvShow] = {
-    cache.getOrSetEntity(ThingType.Show, id, {
-      tmdbClient.makeRequest[TvShow](
-        s"tv/$id",
-        Seq(
-          "append_to_response" -> List(
-            "release_dates",
-            "credits",
-            "external_ids"
-          ).mkString(",")
-        )
-      )
-    })
-  }
-
-  def expandPerson(id: String): Future[Person] = {
-    tmdbClient.makeRequest[Person](
-      s"person/$id",
-      Seq(
-        "append_to_response" -> List(
-          "combined_credits",
-          "images",
-          "external_ids"
-        ).mkString(",")
-      )
-    )
-  }
-
-  object ExpandItem extends shapeless.Poly1 {
-    implicit val atMovieId: Case.Aux[String @@ MovieId, Future[Movie]] = at {
-      m =>
-        expandMovie(m)
-    }
-
-    implicit val atMovie: Case.Aux[Movie, Future[Movie]] = at { m =>
-      expandMovie(m.id.toString)
-    }
-
-    implicit val atShow: Case.Aux[TvShow, Future[TvShow]] = at { s =>
-      expandTvShow(s.id.toString)
-    }
-
-    implicit val atShowId: Case.Aux[String @@ TvShowId, Future[TvShow]] = at {
-      s =>
-        expandTvShow(s)
-    }
-
-    implicit val atPerson: Case.Aux[Person, Future[Person]] = at { p =>
-      expandPerson(p.id.toString)
-    }
-
-    implicit val atPersonId: Case.Aux[String @@ PersonId, Future[Person]] = at {
-      p =>
-        expandPerson(p)
-    }
-  }
-}
 
 object TmdbEntity {
   type Entities = Movie :+: TvShow :+: Person :+: CNil
   type EntityIds =
     (String @@ MovieId) :+: (String @@ TvShowId) :+: (String @@ PersonId) :+: CNil
+}
+
+object TmdbEntityProcessor {
+  final private val recentlyProcessedCollections =
+    CacheBuilder
+      .newBuilder()
+      .expireAfterWrite(1, TimeUnit.DAYS)
+      .build[java.lang.Integer, java.lang.Boolean]()
 }
 
 class TmdbEntityProcessor @Inject()(
@@ -128,8 +63,11 @@ class TmdbEntityProcessor @Inject()(
   networkCache: NetworkCache,
   justWatchClient: JustWatchClient,
   cache: TmdbLocalCache,
-  justWatchLocalCache: JustWatchLocalCache
+  justWatchLocalCache: JustWatchLocalCache,
+  processQueue: ProcessQueue[TmdbProcessMessage]
 )(implicit executionContext: ExecutionContext) {
+  import TmdbEntityProcessor._
+
   def processSearchResults(
     results: List[Movie :+: TvShow :+: Person :+: CNil]
   ): List[Future[(String, Thing)]] = {
@@ -198,6 +136,38 @@ class TmdbEntityProcessor @Inject()(
 
     val availability = handleMovieAvailability(movie, saveThingFut)
 
+    val saveCollectionFut =
+      saveThingFut.flatMap(
+        thing => {
+          movie.belongs_to_collection
+            .map(collection => {
+              recentlyProcessedCollections.synchronized {
+                if (Option(
+                      recentlyProcessedCollections.getIfPresent(collection.id)
+                    ).isEmpty) {
+                  processQueue.enqueue(
+                    TmdbProcessMessage
+                      .make(
+                        ProcessBelongsToCollections(thing.id.get, collection)
+                      )
+                  )
+                }
+              }
+
+              thingsDbAccess
+                .findCollectionByTmdbId(collection.id.toString)
+                .flatMap {
+                  case None => Future.unit
+                  case Some(coll) =>
+                    thingsDbAccess
+                      .addThingToCollection(coll.id, thing.id.get)
+                      .map(_ => {})
+                }
+            })
+            .getOrElse(Future.unit)
+        }
+      )
+
     val saveExternalIds = for {
       savedThing <- saveThingFut
       _ <- movie.external_ids
@@ -225,11 +195,21 @@ class TmdbEntityProcessor @Inject()(
       }))
     } yield {}
 
+    saveThingFut.foreach(thing => {
+      movie.belongs_to_collection.foreach(collection => {
+        processQueue.enqueue(
+          TmdbProcessMessage
+            .make(ProcessBelongsToCollections(thing.id.get, collection))
+        )
+      })
+    })
+
     for {
       savedThing <- saveThingFut
       _ <- saveExternalIds
       _ <- saveGenres
       _ <- availability
+      _ <- saveCollectionFut
     } yield movie.id.toString -> savedThing
   }
 
@@ -578,4 +558,67 @@ class TmdbEntityProcessor @Inject()(
     }
   }
 
+  def processCollection(
+    thingId: Int,
+    collection: BelongsToCollection
+  ): Future[Unit] = {
+    var notFound = false
+    recentlyProcessedCollections.synchronized {
+      recentlyProcessedCollections.get(collection.id, () => {
+        notFound = true
+        true
+      })
+    }
+
+    if (notFound) {
+      recentlyProcessedCollections.put(collection.id, true)
+
+      val dbCollectionFut =
+        thingsDbAccess.findCollectionByTmdbId(collection.id.toString)
+
+      val fullCollectionFut = tmdbClient
+        .getCollection(collection.id)
+
+      val completeFut = for {
+        dbCollection <- dbCollectionFut
+        fullCollection <- fullCollectionFut
+      } yield {
+        dbCollection match {
+          case Some(foundDbCollection) =>
+            val updatedCollection = foundDbCollection.copy(
+              name = fullCollection.name,
+              overview = fullCollection.overview
+            )
+            thingsDbAccess
+              .updateCollection(
+                updatedCollection
+              )
+              .map(_ => updatedCollection)
+
+          case None =>
+            thingsDbAccess.insertCollection(
+              model.Collection(
+                id = -1,
+                name = fullCollection.name,
+                fullCollection.overview,
+                Some(fullCollection.id.toString)
+              )
+            )
+        }
+
+        Future.sequence(
+          fullCollection.parts
+            .map(
+              part =>
+                TmdbProcessMessage.make(ProcessMovie(tag[MovieId](part.id)))
+            )
+            .map(processQueue.enqueue)
+        )
+      }
+
+      completeFut.flatMap(identity).map(_ => {})
+    } else {
+      Future.unit
+    }
+  }
 }

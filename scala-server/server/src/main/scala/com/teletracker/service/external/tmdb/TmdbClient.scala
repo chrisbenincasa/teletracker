@@ -1,7 +1,11 @@
 package com.teletracker.service.external.tmdb
 
 import com.teletracker.service.config.TeletrackerConfig
-import com.teletracker.service.model.tmdb.{MovieSearchResult, TvSearchResult}
+import com.teletracker.service.model.tmdb.{
+  Collection,
+  MovieSearchResult,
+  TvSearchResult
+}
 import com.twitter.finagle.Http
 import com.twitter.finagle.http.Request
 import io.circe._
@@ -27,6 +31,10 @@ class TmdbClient @Inject()(config: TeletrackerConfig) {
 
   def searchTv(query: String): Future[TvSearchResult] = {
     makeRequest[TvSearchResult]("search/tv", Seq("query" -> query))
+  }
+
+  def getCollection(collectionId: Int): Future[Collection] = {
+    makeRequest[Collection](s"collection/$collectionId")
   }
 
   def makeRequest[T](

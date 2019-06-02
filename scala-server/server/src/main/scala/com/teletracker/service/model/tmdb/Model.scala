@@ -28,7 +28,7 @@ case class SearchMoviesRequest(
 // Marker for movie IDs
 trait MovieId
 
-@JsonCodec case class Collection(
+@JsonCodec case class BelongsToCollection(
   id: Int,
   name: String,
   poster_path: Option[String],
@@ -37,7 +37,7 @@ trait MovieId
 @JsonCodec case class Movie(
   adult: Option[Boolean],
   backdrop_path: Option[String],
-  belongs_to_collection: Option[Collection],
+  belongs_to_collection: Option[BelongsToCollection],
   budget: Option[Int],
   genres: Option[List[Genre]],
   genre_ids: Option[List[Int]],
@@ -282,6 +282,29 @@ trait TvShowId
 
 @JsonCodec case class CertificationListResponse(
   certifications: Map[String, List[Certification]])
+
+@JsonCodec case class Collection(
+  id: Int,
+  name: String,
+  overview: Option[String],
+  backdrop_path: Option[String],
+  parts: List[CollectionItem])
+
+@JsonCodec case class CollectionItem(
+  adult: Option[Boolean],
+  backdrop_path: Option[String],
+  genre_ids: Option[List[Int]],
+  id: Int,
+  original_language: Option[String],
+  original_title: Option[String],
+  overview: Option[String],
+  release_date: Option[String],
+  poster_path: Option[String],
+  popularity: Option[Double],
+  title: Option[String],
+  video: Option[Boolean],
+  vote_average: Option[Double],
+  vote_count: Option[Double])
 
 @JsonCodec case class PagedResultDates(
   minimum: String,

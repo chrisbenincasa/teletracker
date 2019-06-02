@@ -11,6 +11,7 @@ import io.circe.shapes._
 import io.circe.generic.auto._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
+import shapeless.Witness
 import slick.lifted.ProvenShape
 
 case class Thing(
@@ -76,11 +77,14 @@ case class PartialThing(
   networks: Option[List[Network]] = None,
   seasons: Option[List[TvShowSeasonWithEpisodes]] = None,
   availability: Option[List[AvailabilityWithDetails]] = None,
-  userMetadata: Option[UserThingDetails] = None) {
+  userMetadata: Option[UserThingDetails] = None,
+  collections: Option[List[Collection]] = None) {
   def withAvailability(av: List[AvailabilityWithDetails]) =
     this.copy(availability = Some(av))
   def withUserMetadata(userMeta: UserThingDetails) =
     this.copy(userMetadata = Some(userMeta))
+  def withCollections(collections: List[Collection]) =
+    this.copy(collections = Some(collections))
 
   def withRawMetadata(metadata: Json): PartialThing = {
     val typedMeta = metadata.as[ObjectMetadata] match {
@@ -112,7 +116,14 @@ object ObjectMetadata {
     ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('person ->> person)))
 }
 
-case class ObjectMetadata(themoviedb: Option[ObjectMetadata.TmdbExternalEntity])
+case class ObjectMetadata(
+  themoviedb: Option[ObjectMetadata.TmdbExternalEntity]) {
+  import shapeless.union._
+
+  val movieWitness = Witness('movie)
+
+  def tmdbMovie: Option[Movie] = themoviedb.flatMap(_.get(movieWitness))
+}
 
 class Things @Inject()(
   val profile: CustomPostgresProfile,
