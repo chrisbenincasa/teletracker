@@ -4,6 +4,10 @@ export interface List {
   id: number;
   name: string;
   things: Thing[];
+  isDefault?: boolean;
+  isDeleted?: boolean;
+  isDynamic?: boolean;
+  isPublic?: boolean;
 }
 
 export interface User {

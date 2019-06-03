@@ -74,6 +74,7 @@ export type UserCreateListSuccessAction = FSA<
 
 export interface UserDeleteListPayload {
   listId: number;
+  mergeListId?: number;
 }
 
 export type UserDeleteListAction = FSA<
@@ -83,7 +84,7 @@ export type UserDeleteListAction = FSA<
 
 export type UserDeleteListSuccessAction = FSA<
   typeof USER_SELF_DELETE_LIST_SUCCESS,
-  { listId: number }
+  UserDeleteListPayload
 >;
 
 export interface UserUpdateItemTagsPayload {
@@ -300,10 +301,16 @@ export const deleteListSaga = function*() {
       let response: TeletrackerResponse<any> = yield clientEffect(
         client => client.deleteList,
         payload.listId,
+        Number(payload.mergeListId),
       );
       console.log(response);
       if (response.ok) {
-        yield put(deleteListSuccess({ listId: payload.listId }));
+        yield put(
+          deleteListSuccess({
+            listId: payload.listId,
+            mergeListId: payload.mergeListId,
+          }),
+        );
         yield put(RetrieveUserSelfInitiated({ force: true }));
       } else {
         // TODO: ERROR
