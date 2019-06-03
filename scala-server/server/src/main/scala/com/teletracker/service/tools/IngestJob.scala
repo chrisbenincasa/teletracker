@@ -11,17 +11,21 @@ import com.teletracker.service.db.model.{
 }
 import com.teletracker.service.external.tmdb.TmdbClient
 import com.teletracker.service.inject.Modules
+import com.teletracker.service.model.tmdb.{Movie, TvShow}
 import com.teletracker.service.process.tmdb.TmdbEntityProcessor
 import com.teletracker.service.util.NetworkCache
 import com.teletracker.service.util.Futures._
+import com.teletracker.service.util.Lists._
 import com.teletracker.service.util.execution.SequentialFutures
 import io.circe.parser._
 import io.circe.Decoder
+import org.apache.commons.text.similarity.LevenshteinDistance
 import java.io.File
 import java.time.{LocalDate, ZoneOffset}
 import java.time.format.DateTimeFormatter
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.io.Source
 import scala.util.control.NonFatal
 
@@ -45,11 +49,6 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
   protected def networkNames: Set[String]
 
-  protected def runInternal(
-    items: List[T],
-    network: Set[Network]
-  ): Unit
-
   override protected def run(): Unit = {
     val network = getNetworksOrExit()
     implicit val listDec = implicitly[Decoder[List[T]]]
@@ -66,13 +65,77 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
           exitOnError(value)
 
         case Right(items) =>
-          runInternal(items, network)
+          processAll(items, network)
       }
     } catch {
       case NonFatal(e) =>
         exitOnError(e)
     } finally {
       source.close()
+    }
+  }
+
+  protected def processAll(
+    items: List[T],
+    networks: Set[Network]
+  ): Unit = {
+    SequentialFutures
+      .serialize(items.drop(offset()).safeTake(limit()), Some(40 millis))(
+        processSingle(_, networks)
+      )
+      .await()
+  }
+
+  protected def processSingle(
+    item: T,
+    networks: Set[Network]
+  ): Future[Unit] = {
+    if (item.isMovie) {
+      tmdbClient
+        .searchMovies(item.title)
+        .flatMap(result => {
+          result.results
+            .find(findMatch(_, item))
+            .map(tmdbProcessor.handleMovie)
+            .map(_.map {
+              case (_, thing) =>
+                println(
+                  s"Saved ${item.title} with thing ID = ${thing.id.get}"
+                )
+
+                updateAvailability(
+                  networks,
+                  thing,
+                  item
+                )
+            })
+            .map(_.map(_ => {}))
+            .getOrElse(Future.successful(None))
+        })
+    } else if (item.isTvShow) {
+      tmdbClient
+        .searchTv(item.title)
+        .flatMap(result => {
+          result.results
+            .find(findMatch(_, item))
+            .map(tmdbProcessor.handleShow(_, handleSeasons = false))
+            .map(_.map {
+              case (_, thing) =>
+                println(
+                  s"Saved ${item.title} with thing ID = ${thing.id.get}"
+                )
+
+                updateAvailability(
+                  networks,
+                  thing,
+                  item
+                )
+            })
+            .map(_.map(_ => {}))
+            .getOrElse(Future.unit)
+        })
+    } else {
+      Future.successful(println(s"Unrecognized item type for: $item"))
     }
   }
 
@@ -161,6 +224,54 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
       )
       .map(_.flatten)
   }
+
+  protected def findMatch(
+    movie: Movie,
+    item: T
+  ): Boolean = {
+    val titlesEqual = movie.title
+      .orElse(movie.original_title)
+      .exists(foundTitle => {
+        val dist =
+          LevenshteinDistance.getDefaultInstance
+            .apply(foundTitle.toLowerCase(), item.title.toLowerCase())
+
+        dist <= titleMatchThreshold()
+      })
+
+    val releaseYearEqual = movie.release_date
+      .filter(_.nonEmpty)
+      .map(LocalDate.parse(_))
+      .exists(ld => {
+        item.releaseYear
+          .map(_.trim.toInt)
+          .exists(ry => (ld.getYear - 1 to ld.getYear + 1).contains(ry))
+      })
+
+    titlesEqual && releaseYearEqual
+  }
+
+  protected def findMatch(
+    show: TvShow,
+    item: T
+  ): Boolean = {
+    val titlesEqual = {
+      val dist = LevenshteinDistance.getDefaultInstance
+        .apply(show.name.toLowerCase(), item.title.toLowerCase())
+      dist <= titleMatchThreshold()
+    }
+
+    val releaseYearEqual = show.first_air_date
+      .filter(_.nonEmpty)
+      .map(LocalDate.parse(_))
+      .exists(ld => {
+        item.releaseYear
+          .map(_.trim.toInt)
+          .exists(ry => (ld.getYear - 1 to ld.getYear + 1).contains(ry))
+      })
+
+    titlesEqual && releaseYearEqual
+  }
 }
 
 trait ScrapedItem {
@@ -175,4 +286,7 @@ trait ScrapedItem {
     LocalDate.parse(availableDate, DateTimeFormatter.ISO_LOCAL_DATE)
 
   lazy val isExpiring: Boolean = status == "Expiring"
+
+  def isMovie: Boolean
+  def isTvShow: Boolean
 }
