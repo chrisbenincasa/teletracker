@@ -236,6 +236,7 @@ class ListDetail extends Component<Props, State> {
           className={classes.settings}
         >
           <SettingsIcon />
+          <Typography variant="srOnly">Settings</Typography>
         </IconButton>
         <Menu
           anchorEl={anchorEl}
