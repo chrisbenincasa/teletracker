@@ -3,6 +3,7 @@ import {
   Card,
   CardContent,
   CardMedia,
+  Collapse,
   createStyles,
   Dialog,
   DialogActions,
@@ -53,13 +54,6 @@ import {
 
 const styles = (theme: Theme) =>
   createStyles({
-    button: {
-      width: '100%',
-      marginTop: '0.35em',
-    },
-    description: {
-      marginBottom: '0.35em',
-    },
     title: {
       flex: 1,
       whiteSpace: 'nowrap',
@@ -80,19 +74,42 @@ const styles = (theme: Theme) =>
     cardContent: {
       flexGrow: 1,
     },
-    cardHover: {
-      transition: 'opacity 370ms cubic-bezier(0.4,0,0.2,1)',
-      backgroundColor: '#000',
+    cardHoverEnter: {
       overflow: 'hidden',
       width: '100%',
-      opacity: 0.9,
+      height: '100%',
+      background: 'rgba(0, 0, 0, 0.9)',
       display: 'block',
       zIndex: 1,
-      position: 'absolute',
-      top: 0,
     },
     cardHoverExit: {
+      display: 'block',
+      width: '100%',
+      height: '100%',
       opacity: 1,
+      overflow: 'hidden',
+      zIndex: 1,
+    },
+    hoverActions: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-end',
+      position: 'absolute',
+      top: 0,
+      zIndex: 1,
+      background: 'rgba(0, 0, 0, 0.5)',
+    },
+    hoverDelete: {
+      color: '#fff',
+      '&:hover': {
+        color: red[300],
+      },
+    },
+    hoverWatch: {
+      color: '#fff',
+      '&:hover': {
+        color: green[300],
+      },
     },
     ratingHover: {
       display: 'flex',
@@ -106,6 +123,7 @@ const styles = (theme: Theme) =>
       zIndex: 1,
       height: '100%',
       width: '100%',
+      background: 'rgba(0, 0, 0, 0.75)',
     },
     ratingTitle: {
       color: '#fff',
@@ -123,37 +141,17 @@ const styles = (theme: Theme) =>
     ratingVoteDown: {
       color: '#fff',
       '&:hover': {
-        color: red[900],
+        color: red[300],
       },
     },
     ratingVoteUp: {
       color: '#fff',
       '&:hover': {
-        color: green[900],
-      },
-    },
-    hoverActions: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-end',
-      position: 'absolute',
-      top: 0,
-      zIndex: 1,
-    },
-    hoverDelete: {
-      color: '#fff',
-      '&:hover': {
-        color: red[900],
-      },
-    },
-    hoverWatch: {
-      color: '#fff',
-      '&:hover': {
-        color: green[900],
+        color: green[300],
       },
     },
     missingMedia: {
-      height: '150%',
+      height: '100%',
       color: theme.palette.grey[500],
       display: 'flex',
       backgroundColor: theme.palette.grey[300],
@@ -191,10 +189,7 @@ interface DispatchProps {
 }
 
 interface ItemCardState {
-  modalOpen: boolean;
-
-  // åction button menu
-  // anchorEl: any;
+  listsModalOpen: boolean;
   hover: boolean;
   hoverRating: boolean;
   deleteConfirmationOpen: boolean;
@@ -216,8 +211,7 @@ class ItemCard extends Component<Props, ItemCardState> {
   };
 
   state: ItemCardState = {
-    modalOpen: false,
-    // anchorEl: null,
+    listsModalOpen: false,
     hover: false,
     hoverRating: false,
     deleteConfirmationOpen: false,
@@ -245,24 +239,14 @@ class ItemCard extends Component<Props, ItemCardState> {
     this.setState({
       currentId: itemId,
     });
-
-    // this.props.fetchItemDetails(itemId, itemType);
   }
 
-  handleModalOpen = (item: Thing) => {
-    this.setState({ modalOpen: true });
+  handleListsModalOpen = (item: Thing) => {
+    this.setState({ listsModalOpen: true });
   };
 
-  handleModalClose = () => {
-    this.setState({ modalOpen: false });
-  };
-
-  handleHoverEnter = () => {
-    this.setState({ hover: true });
-  };
-
-  handleHoverExit = () => {
-    this.setState({ hover: false });
+  handleListsModalClose = () => {
+    this.setState({ listsModalOpen: false });
   };
 
   handleDeleteModalOpen = () => {
@@ -271,6 +255,14 @@ class ItemCard extends Component<Props, ItemCardState> {
 
   handleDeleteModalClose = () => {
     this.setState({ deleteConfirmationOpen: false });
+  };
+
+  handleHoverEnter = () => {
+    this.setState({ hover: true });
+  };
+
+  handleHoverExit = () => {
+    this.setState({ hover: false });
   };
 
   handleRemoveFromList = () => {
@@ -319,7 +311,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     let poster = getPosterPath(thing);
 
     const makeLink = (children: ReactNode, className?: string) => (
-      <div className={hover ? classes.cardHover : classes.cardHoverExit}>
+      <div className={hover ? classes.cardHoverEnter : classes.cardHoverExit}>
         {hover && hoverRating && this.renderRatingHover()}
         {hover && !hoverRating && this.renderHoverActions()}
         <Link
@@ -343,8 +335,6 @@ class ItemCard extends Component<Props, ItemCardState> {
           className={this.props.classes.cardMedia}
           image={'https://image.tmdb.org/t/p/w300' + poster}
           title={thing.name}
-          // onLoad={this.handleImageLoaded}
-          // onError={this.handleImageErrored}
         />,
       );
     } else {
@@ -366,97 +356,105 @@ class ItemCard extends Component<Props, ItemCardState> {
     let { deleteConfirmationOpen } = this.state;
 
     return (
-      <div>
-        <Dialog
-          open={deleteConfirmationOpen}
-          onClose={this.handleDeleteModalClose}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">
-            {'Remove from List'}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              Are you sure you want to remove this from your list?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={this.handleDeleteModalClose} color="primary">
-              Cancel
-            </Button>
-            <Button
-              onClick={this.handleRemoveFromList}
-              color="primary"
-              autoFocus
-            >
-              Remove
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </div>
+      <Dialog
+        open={deleteConfirmationOpen}
+        onClose={this.handleDeleteModalClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{'Remove from List'}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to remove this from your list?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={this.handleDeleteModalClose} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={this.handleRemoveFromList} color="primary" autoFocus>
+            Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
     );
   }
 
   renderHoverActions = () => {
     let { classes, hoverAddToList, hoverDelete, hoverWatch, item } = this.props;
     let { hover } = this.state;
+    const tooltipPlacement = 'right';
 
     return (
-      <div className={classes.hoverActions}>
-        {hoverWatch && (
-          <Zoom in={hover}>
-            <Tooltip
-              title={
-                this.itemMarkedAsWatched()
-                  ? 'Mark as not watched'
-                  : 'Mark as watched'
-              }
-              placement="top"
+      <Collapse in={true}>
+        <div className={classes.hoverActions}>
+          {hoverWatch && (
+            <Zoom in={hover}>
+              <Tooltip
+                title={
+                  this.itemMarkedAsWatched()
+                    ? 'Mark as not watched'
+                    : 'Mark as watched'
+                }
+                placement={tooltipPlacement}
+              >
+                <IconButton
+                  aria-label="Delete"
+                  onClick={this.toggleItemWatched}
+                  disableRipple
+                >
+                  <Check className={classes.hoverWatch} />
+                  <Typography variant="srOnly">Mark as Watched</Typography>
+                </IconButton>
+              </Tooltip>
+            </Zoom>
+          )}
+
+          {hoverAddToList && (
+            <Zoom
+              in={hover}
+              style={{ transitionDelay: hover ? '100ms' : '0ms' }}
             >
-              <IconButton aria-label="Delete" onClick={this.toggleItemWatched}>
-                <Check className={classes.hoverWatch} />
-              </IconButton>
-            </Tooltip>
-          </Zoom>
-        )}
+              <Tooltip title="Manage Lists" placement={tooltipPlacement}>
+                <IconButton
+                  aria-label="Manage Lists"
+                  onClick={() => this.handleListsModalOpen(item)}
+                  disableRipple
+                >
+                  <PlaylistAdd className={classes.hoverWatch} />
+                  <Typography variant="srOnly">Manage Lists</Typography>
+                </IconButton>
+              </Tooltip>
+            </Zoom>
+          )}
 
-        {hoverAddToList && (
-          <Zoom in={hover} style={{ transitionDelay: hover ? '100ms' : '0ms' }}>
-            <Tooltip title="Manage Lists" placement="top">
-              <IconButton
-                aria-label="Manage Lists"
-                onClick={() => this.handleModalOpen(item)}
-              >
-                <PlaylistAdd className={classes.hoverWatch} />
-              </IconButton>
-            </Tooltip>
-          </Zoom>
-        )}
-
-        {hoverDelete && (
-          <Zoom
-            in={hover}
-            style={{ transitionDelay: hover ? '200ms' : '100ms' }}
-          >
-            <Tooltip title={'Remove from List'} placement="top">
-              <IconButton
-                aria-label="Delete"
-                className={classes.hoverDelete}
-                onClick={this.handleDeleteModalOpen}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
-          </Zoom>
-        )}
-      </div>
+          {hoverDelete && (
+            <Zoom
+              in={hover}
+              style={{ transitionDelay: hover ? '200ms' : '100ms' }}
+            >
+              <Tooltip title={'Remove from List'} placement={tooltipPlacement}>
+                <IconButton
+                  aria-label="Delete"
+                  className={classes.hoverDelete}
+                  onClick={this.handleDeleteModalOpen}
+                  disableRipple
+                >
+                  <DeleteIcon />
+                  <Typography variant="srOnly">Delete from List</Typography>
+                </IconButton>
+              </Tooltip>
+            </Zoom>
+          )}
+        </div>
+      </Collapse>
     );
   };
 
   renderRatingHover = () => {
     let { classes } = this.props;
     let { hoverRating } = this.state;
+    const tooltipPlacement = 'bottom';
 
     return (
       <div className={classes.ratingHover}>
@@ -466,22 +464,24 @@ class ItemCard extends Component<Props, ItemCardState> {
           </Typography>
           <div className={classes.ratingActions}>
             <Zoom in={hoverRating}>
-              <Tooltip title={'Meh'} placement="top">
+              <Tooltip title={'Meh'} placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Didn't Like It"
                   onClick={() => this.toggleItemRating(-1)}
                 >
                   <ThumbDown className={classes.ratingVoteDown} />
+                  <Typography variant="srOnly">Mark as diliked</Typography>
                 </IconButton>
               </Tooltip>
             </Zoom>
             <Zoom in={hoverRating}>
-              <Tooltip title={'Liked it!'} placement="top">
+              <Tooltip title={'Liked it!'} placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Liked It"
                   onClick={() => this.toggleItemRating(1)}
                 >
                   <ThumbUp className={classes.ratingVoteUp} />
+                  <Typography variant="srOnly">Mark as liked</Typography>
                 </IconButton>
               </Tooltip>
             </Zoom>
@@ -492,8 +492,14 @@ class ItemCard extends Component<Props, ItemCardState> {
   };
 
   render() {
-    let { classes, hoverAddToList, item, itemCardVisible } = this.props;
-    let { deleted, hover, imageLoaded } = this.state;
+    let {
+      classes,
+      hoverAddToList,
+      item,
+      itemCardVisible,
+      userSelf,
+    } = this.props;
+    let { deleted, hover, imageLoaded, listsModalOpen } = this.state;
 
     let gridProps: Partial<GridProps> = {
       item: true,
@@ -543,8 +549,8 @@ class ItemCard extends Component<Props, ItemCardState> {
         </Fade>
         {hoverAddToList ? (
           <AddToListDialog
-            open={this.state.modalOpen}
-            userSelf={this.props.userSelf!}
+            open={listsModalOpen}
+            userSelf={userSelf!}
             item={item}
           />
         ) : null}
