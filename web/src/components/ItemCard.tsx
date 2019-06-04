@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Fade,
   Grid,
   Icon,
   Link,
@@ -171,7 +172,6 @@ interface ItemCardProps extends WithStyles<typeof styles> {
   userSelf?: User;
 
   // display props
-  addButton?: boolean;
   itemCardVisible?: boolean;
   hoverAddToList: boolean;
   hoverDelete?: boolean;
@@ -201,6 +201,7 @@ interface ItemCardState {
   deleted: boolean;
   currentId: number;
   currentType: string;
+  imageLoaded: boolean;
 }
 
 type Props = ItemCardProps & DispatchProps & WithUserProps;
@@ -223,6 +224,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     deleted: false,
     currentId: 0,
     currentType: '',
+    imageLoaded: false,
   };
 
   constructor(props: Props) {
@@ -254,14 +256,6 @@ class ItemCard extends Component<Props, ItemCardState> {
   handleModalClose = () => {
     this.setState({ modalOpen: false });
   };
-
-  // handleActionMenuOpen = ev => {
-  //   this.setState({ anchorEl: ev.currentTarget });
-  // };
-
-  // handleActionMenuClose = () => {
-  //   this.setState({ anchorEl: null });
-  // };
 
   handleHoverEnter = () => {
     this.setState({ hover: true });
@@ -327,15 +321,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     const makeLink = (children: ReactNode, className?: string) => (
       <div className={hover ? classes.cardHover : classes.cardHoverExit}>
         {hover && hoverRating && this.renderRatingHover()}
-
-        <div className={classes.hoverActions}>
-          {hover && hoverWatch && !hoverRating && this.renderWatchedToggle()}
-          {hover &&
-            hoverAddToList &&
-            !hoverRating &&
-            this.renderHoverAddToList()}
-          {hover && hoverDelete && !hoverRating && this.renderDeleteToggle()}
-        </div>
+        {hover && !hoverRating && this.renderHoverActions()}
         <Link
           className={className}
           component={props => (
@@ -357,6 +343,8 @@ class ItemCard extends Component<Props, ItemCardState> {
           className={this.props.classes.cardMedia}
           image={'https://image.tmdb.org/t/p/w300' + poster}
           title={thing.name}
+          // onLoad={this.handleImageLoaded}
+          // onError={this.handleImageErrored}
         />,
       );
     } else {
@@ -410,71 +398,59 @@ class ItemCard extends Component<Props, ItemCardState> {
     );
   }
 
-  renderHoverAddToList = () => {
-    let { classes, item } = this.props;
+  renderHoverActions = () => {
+    let { classes, hoverAddToList, hoverDelete, hoverWatch, item } = this.props;
     let { hover } = this.state;
 
     return (
-      <Zoom in={hover} style={{ transitionDelay: hover ? '100ms' : '0ms' }}>
-        <Tooltip
-          title="Manage Lists"
-          placement="top"
-          // style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}
-        >
-          <IconButton
-            aria-label="Manage Lists"
-            onClick={() => this.handleModalOpen(item)}
+      <div className={classes.hoverActions}>
+        {hoverWatch && (
+          <Zoom in={hover}>
+            <Tooltip
+              title={
+                this.itemMarkedAsWatched()
+                  ? 'Mark as not watched'
+                  : 'Mark as watched'
+              }
+              placement="top"
+            >
+              <IconButton aria-label="Delete" onClick={this.toggleItemWatched}>
+                <Check className={classes.hoverWatch} />
+              </IconButton>
+            </Tooltip>
+          </Zoom>
+        )}
+
+        {hoverAddToList && (
+          <Zoom in={hover} style={{ transitionDelay: hover ? '100ms' : '0ms' }}>
+            <Tooltip title="Manage Lists" placement="top">
+              <IconButton
+                aria-label="Manage Lists"
+                onClick={() => this.handleModalOpen(item)}
+              >
+                <PlaylistAdd className={classes.hoverWatch} />
+              </IconButton>
+            </Tooltip>
+          </Zoom>
+        )}
+
+        {hoverDelete && (
+          <Zoom
+            in={hover}
+            style={{ transitionDelay: hover ? '200ms' : '100ms' }}
           >
-            <PlaylistAdd className={classes.hoverWatch} />
-          </IconButton>
-        </Tooltip>
-      </Zoom>
-    );
-  };
-
-  renderWatchedToggle = () => {
-    let { classes } = this.props;
-    let { hover } = this.state;
-
-    return (
-      <Zoom in={hover}>
-        <Tooltip
-          title={
-            this.itemMarkedAsWatched()
-              ? 'Mark as not watched'
-              : 'Mark as watched'
-          }
-          placement="top"
-          // style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}
-        >
-          <IconButton aria-label="Delete" onClick={this.toggleItemWatched}>
-            <Check className={classes.hoverWatch} />
-          </IconButton>
-        </Tooltip>
-      </Zoom>
-    );
-  };
-
-  renderDeleteToggle = () => {
-    let { classes } = this.props;
-    let { hover } = this.state;
-
-    return (
-      <Zoom in={hover} style={{ transitionDelay: hover ? '200ms' : '100ms' }}>
-        <Tooltip
-          title={'Remove from List'}
-          placement="top"
-          // style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}
-        >
-          <IconButton
-            aria-label="Delete"
-            className={classes.hoverDelete}
-            onClick={this.handleDeleteModalOpen}
-          >
-            <DeleteIcon />
-          </IconButton>
-        </Tooltip>
-      </Zoom>
+            <Tooltip title={'Remove from List'} placement="top">
+              <IconButton
+                aria-label="Delete"
+                className={classes.hoverDelete}
+                onClick={this.handleDeleteModalOpen}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          </Zoom>
+        )}
+      </div>
     );
   };
 
@@ -515,35 +491,9 @@ class ItemCard extends Component<Props, ItemCardState> {
     );
   };
 
-  // renderActionMenu() {
-  //   let { anchorEl } = this.state;
-
-  //   return this.props.withActionButton && this.props.listContext ? (
-  //     <React.Fragment>
-  //       <IconButton onClick={this.handleActionMenuOpen}>
-  //         <Icon>more_vert</Icon>
-  //       </IconButton>
-  //       <Menu
-  //         anchorEl={anchorEl}
-  //         open={Boolean(anchorEl)}
-  //         onClose={this.handleActionMenuClose}
-  //         disableAutoFocusItem
-  //       >
-  //         <MenuItem onClick={this.handleRemoveFromList}>Remove</MenuItem>
-  //       </Menu>
-  //     </React.Fragment>
-  //   ) : null;
-  // }
-
   render() {
-    let {
-      addButton,
-      classes,
-      hoverAddToList,
-      item,
-      itemCardVisible,
-    } = this.props;
-    let { deleted, hover } = this.state;
+    let { classes, hoverAddToList, item, itemCardVisible } = this.props;
+    let { deleted, hover, imageLoaded } = this.state;
 
     let gridProps: Partial<GridProps> = {
       item: true,
@@ -555,53 +505,43 @@ class ItemCard extends Component<Props, ItemCardState> {
 
     return (
       <React.Fragment>
-        <Grid key={!deleted ? item.id : 'deleted'} {...gridProps}>
-          <Card
-            className={classes.card}
-            onMouseEnter={this.handleHoverEnter}
-            onMouseLeave={this.handleHoverExit}
-          >
-            {this.renderPoster(item)}
-            {itemCardVisible && (
-              <CardContent className={classes.cardContent}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    margin: '-8px -8px 0 0',
-                  }}
-                >
-                  <Typography
-                    className={classes.title}
-                    variant="h5"
-                    component="h2"
-                    title={item.name}
+        <Fade in={true} timeout={1000}>
+          <Grid key={!deleted ? item.id : 'deleted'} {...gridProps}>
+            <Card
+              className={classes.card}
+              onMouseEnter={this.handleHoverEnter}
+              onMouseLeave={this.handleHoverExit}
+            >
+              {this.renderPoster(item)}
+              {itemCardVisible && (
+                <CardContent className={classes.cardContent}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      margin: '-8px -8px 0 0',
+                    }}
                   >
-                    {item.name}
+                    <Typography
+                      className={classes.title}
+                      variant="h5"
+                      component="h2"
+                      title={item.name}
+                    >
+                      {item.name}
+                    </Typography>
+                  </div>
+                  <Typography style={{ height: '60px' }}>
+                    <Truncate lines={3} ellipsis={<span>...</span>}>
+                      {getDescription(item)}
+                    </Truncate>
                   </Typography>
-                  {/* {this.renderActionMenu()} */}
-                </div>
-                <Typography style={{ height: '60px' }}>
-                  <Truncate lines={3} ellipsis={<span>...</span>}>
-                    {getDescription(item)}
-                  </Truncate>
-                </Typography>
-                {addButton ? (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    className={classes.button}
-                    onClick={() => this.handleModalOpen(item)}
-                  >
-                    <Icon>playlist_add</Icon>
-                    <Typography color="inherit">Add to List</Typography>
-                  </Button>
-                ) : null}
-              </CardContent>
-            )}
-          </Card>
-        </Grid>
-        {addButton || hoverAddToList ? (
+                </CardContent>
+              )}
+            </Card>
+          </Grid>
+        </Fade>
+        {hoverAddToList ? (
           <AddToListDialog
             open={this.state.modalOpen}
             userSelf={this.props.userSelf!}
