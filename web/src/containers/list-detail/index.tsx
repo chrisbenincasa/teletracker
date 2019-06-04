@@ -125,7 +125,7 @@ interface State {
   deleteConfirmationOpen: boolean;
   deleted: boolean;
   anchorEl: any;
-  migrateListId?: number;
+  migrateListId: number;
 }
 
 class ListDetail extends Component<Props, State> {
@@ -141,6 +141,8 @@ class ListDetail extends Component<Props, State> {
   }
 
   componentDidMount() {
+    console.log(this.props);
+
     this.props.retrieveList({
       listId: this.props.match.params.id,
       force: false,
@@ -172,12 +174,10 @@ class ListDetail extends Component<Props, State> {
 
   handleDeleteList = () => {
     let { deleteList, userSelf, match } = this.props;
-    let { migrateListId } = this.state;
 
     if (userSelf) {
       deleteList({
         listId: Number(match.params.id),
-        mergeListId: Number(migrateListId),
       });
       this.setState({ deleted: true });
     }
@@ -295,9 +295,7 @@ class ListDetail extends Component<Props, State> {
                 {userSelf &&
                   userSelf.lists.map(
                     item =>
-                      (item.id !== Number(match.params.id) ||
-                        item.isDeleted ||
-                        item.isDynamic) && (
+                      item.id !== Number(match.params.id) && (
                         <MenuItem key={item.id} value={item.id}>
                           {item.name}
                         </MenuItem>
@@ -330,7 +328,7 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderListDetail(list: List) {
-    let { classes, drawerOpen, listLoading, userSelf } = this.props;
+    let { classes, listLoading, userSelf } = this.props;
     let { deleted } = this.state;
 
     if ((!listLoading && !list) || deleted) {
@@ -372,6 +370,7 @@ class ListDetail extends Component<Props, State> {
           {this.renderDialog()}
         </div>
       );
+    }
   }
 
   render() {
