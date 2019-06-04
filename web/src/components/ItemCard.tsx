@@ -20,6 +20,7 @@ import {
   Menu,
   MenuItem,
   Tooltip,
+  Zoom,
 } from '@material-ui/core';
 import classNames from 'classnames';
 import * as R from 'ramda';
@@ -35,6 +36,10 @@ import { connect } from 'react-redux';
 import { GridProps } from '@material-ui/core/Grid';
 import DeleteIcon from '@material-ui/icons/Delete';
 import Check from '@material-ui/icons/Check';
+import ThumbDown from '@material-ui/icons/ThumbDown';
+import ThumbUp from '@material-ui/icons/ThumbUp';
+import PlaylistAdd from '@material-ui/icons/PlaylistAdd';
+
 import { green, red } from '@material-ui/core/colors';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
@@ -79,19 +84,63 @@ const styles = (theme: Theme) =>
       backgroundColor: '#000',
       overflow: 'hidden',
       width: '100%',
-      opacity: 0.7,
+      opacity: 0.9,
       display: 'block',
       zIndex: 1,
+      position: 'absolute',
+      top: 0,
     },
     cardHoverExit: {
       opacity: 1,
     },
-    hoverDelete: {
+    ratingHover: {
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      flex: '1 0 auto',
+      alignItems: 'center',
+      overflow: 'hidden',
       position: 'absolute',
       top: 0,
-      right: 0,
-      color: '#fff',
       zIndex: 1,
+      height: '100%',
+      width: '100%',
+    },
+    ratingTitle: {
+      color: '#fff',
+      fontWeight: 'bold',
+    },
+    ratingContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+    },
+    ratingActions: {
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    ratingVoteDown: {
+      color: '#fff',
+      '&:hover': {
+        color: red[900],
+      },
+    },
+    ratingVoteUp: {
+      color: '#fff',
+      '&:hover': {
+        color: green[900],
+      },
+    },
+    hoverActions: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-end',
+      position: 'absolute',
+      top: 0,
+      zIndex: 1,
+    },
+    hoverDelete: {
+      color: '#fff',
       '&:hover': {
         color: red[900],
       },
@@ -124,14 +173,15 @@ interface ItemCardProps extends WithStyles<typeof styles> {
   // display props
   addButton?: boolean;
   itemCardVisible?: boolean;
-  // If defined, we're viewing this item within the context of _this_ list
-  // This is probably not scalable, but it'll work for now.
-  listContext?: List;
+  hoverAddToList: boolean;
   hoverDelete?: boolean;
   hoverWatch?: boolean;
   withActionButton: boolean;
 
   gridProps?: GridProps;
+  // If defined, we're viewing this item within the context of _this_ list
+  // This is probably not scalable, but it'll work for now.
+  listContext?: List;
 }
 
 interface DispatchProps {
@@ -144,8 +194,9 @@ interface ItemCardState {
   modalOpen: boolean;
 
   // åction button menu
-  anchorEl: any;
+  // anchorEl: any;
   hover: boolean;
+  hoverRating: boolean;
   deleteConfirmationOpen: boolean;
   deleted: boolean;
   currentId: number;
@@ -160,12 +211,14 @@ class ItemCard extends Component<Props, ItemCardState> {
     itemCardVisible: true,
     hoverDelete: false,
     hoverWatch: true,
+    hoverAddToList: true,
   };
 
   state: ItemCardState = {
     modalOpen: false,
-    anchorEl: null,
+    // anchorEl: null,
     hover: false,
+    hoverRating: false,
     deleteConfirmationOpen: false,
     deleted: false,
     currentId: 0,
@@ -202,13 +255,13 @@ class ItemCard extends Component<Props, ItemCardState> {
     this.setState({ modalOpen: false });
   };
 
-  handleActionMenuOpen = ev => {
-    this.setState({ anchorEl: ev.currentTarget });
-  };
+  // handleActionMenuOpen = ev => {
+  //   this.setState({ anchorEl: ev.currentTarget });
+  // };
 
-  handleActionMenuClose = () => {
-    this.setState({ anchorEl: null });
-  };
+  // handleActionMenuClose = () => {
+  //   this.setState({ anchorEl: null });
+  // };
 
   handleHoverEnter = () => {
     this.setState({ hover: true });
@@ -247,12 +300,17 @@ class ItemCard extends Component<Props, ItemCardState> {
     } else {
       this.props.updateUserItemTags(payload);
     }
+
+    this.setState({ hoverRating: true });
+  };
+
+  toggleItemRating = (rating: number) => {
+    this.setState({ hover: false, hoverRating: false });
+    // TODO: Setup redux to send rating once that's an option
   };
 
   itemMarkedAsWatched = () => {
-    console.log(this.props);
     if (this.props.item && this.props.item.userMetadata) {
-      console.log('test');
       return R.any(tag => {
         return tag.action == ActionType.Watched;
       }, this.props.item.userMetadata.tags);
@@ -262,43 +320,35 @@ class ItemCard extends Component<Props, ItemCardState> {
   };
 
   renderPoster = (thing: Thing) => {
-    let { classes, hoverDelete, hoverWatch } = this.props;
-    let { deleted, hover } = this.state;
+    let { classes, hoverDelete, hoverWatch, hoverAddToList } = this.props;
+    let { deleted, hover, hoverRating } = this.state;
     let poster = getPosterPath(thing);
 
     const makeLink = (children: ReactNode, className?: string) => (
-      <React.Fragment>
-        <div className={hover ? classes.cardHover : classes.cardHoverExit}>
-          {hoverDelete && hover && (
-            <Tooltip
-              title={'Remove from List'}
-              placement="top"
-              style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}
-            >
-              <IconButton
-                aria-label="Delete"
-                className={classes.hoverDelete}
-                onClick={this.handleDeleteModalOpen}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-          {hoverWatch && hover && this.renderWatchedToggle()}
-          <Link
-            className={className}
-            component={props => (
-              <RouterLink
-                {...props}
-                to={'/item/' + thing.type + '/' + thing.id}
-              />
-            )}
-            style={{ position: 'relative' }}
-          >
-            {children}
-          </Link>
+      <div className={hover ? classes.cardHover : classes.cardHoverExit}>
+        {hover && hoverRating && this.renderRatingHover()}
+
+        <div className={classes.hoverActions}>
+          {hover && hoverWatch && !hoverRating && this.renderWatchedToggle()}
+          {hover &&
+            hoverAddToList &&
+            !hoverRating &&
+            this.renderHoverAddToList()}
+          {hover && hoverDelete && !hoverRating && this.renderDeleteToggle()}
         </div>
-      </React.Fragment>
+        <Link
+          className={className}
+          component={props => (
+            <RouterLink
+              {...props}
+              to={'/item/' + thing.type + '/' + thing.id}
+            />
+          )}
+          style={{ position: 'relative' }}
+        >
+          {children}
+        </Link>
+      </div>
     );
 
     if (poster) {
@@ -360,45 +410,139 @@ class ItemCard extends Component<Props, ItemCardState> {
     );
   }
 
-  renderWatchedToggle = () => {
-    let { classes } = this.props;
+  renderHoverAddToList = () => {
+    let { classes, item } = this.props;
+    let { hover } = this.state;
+
     return (
-      <Tooltip
-        title={
-          this.itemMarkedAsWatched() ? 'Mark as not watched' : 'Mark as watched'
-        }
-        placement="top"
-        style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}
-      >
-        <IconButton aria-label="Delete" onClick={this.toggleItemWatched}>
-          <Check className={classes.hoverWatch} />
-        </IconButton>
-      </Tooltip>
+      <Zoom in={hover} style={{ transitionDelay: hover ? '100ms' : '0ms' }}>
+        <Tooltip
+          title="Manage Lists"
+          placement="top"
+          // style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}
+        >
+          <IconButton
+            aria-label="Manage Lists"
+            onClick={() => this.handleModalOpen(item)}
+          >
+            <PlaylistAdd className={classes.hoverWatch} />
+          </IconButton>
+        </Tooltip>
+      </Zoom>
     );
   };
 
-  renderActionMenu() {
-    let { anchorEl } = this.state;
+  renderWatchedToggle = () => {
+    let { classes } = this.props;
+    let { hover } = this.state;
 
-    return this.props.withActionButton && this.props.listContext ? (
-      <React.Fragment>
-        <IconButton onClick={this.handleActionMenuOpen}>
-          <Icon>more_vert</Icon>
-        </IconButton>
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={this.handleActionMenuClose}
-          disableAutoFocusItem
+    return (
+      <Zoom in={hover}>
+        <Tooltip
+          title={
+            this.itemMarkedAsWatched()
+              ? 'Mark as not watched'
+              : 'Mark as watched'
+          }
+          placement="top"
+          // style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}
         >
-          <MenuItem onClick={this.handleRemoveFromList}>Remove</MenuItem>
-        </Menu>
-      </React.Fragment>
-    ) : null;
-  }
+          <IconButton aria-label="Delete" onClick={this.toggleItemWatched}>
+            <Check className={classes.hoverWatch} />
+          </IconButton>
+        </Tooltip>
+      </Zoom>
+    );
+  };
+
+  renderDeleteToggle = () => {
+    let { classes } = this.props;
+    let { hover } = this.state;
+
+    return (
+      <Zoom in={hover} style={{ transitionDelay: hover ? '200ms' : '100ms' }}>
+        <Tooltip
+          title={'Remove from List'}
+          placement="top"
+          // style={{ position: 'absolute', top: 0, right: 0, zIndex: 1 }}
+        >
+          <IconButton
+            aria-label="Delete"
+            className={classes.hoverDelete}
+            onClick={this.handleDeleteModalOpen}
+          >
+            <DeleteIcon />
+          </IconButton>
+        </Tooltip>
+      </Zoom>
+    );
+  };
+
+  renderRatingHover = () => {
+    let { classes } = this.props;
+    let { hoverRating } = this.state;
+
+    return (
+      <div className={classes.ratingHover}>
+        <div className={classes.ratingContainer}>
+          <Typography className={classes.ratingTitle}>
+            What'd ya think?
+          </Typography>
+          <div className={classes.ratingActions}>
+            <Zoom in={hoverRating}>
+              <Tooltip title={'Meh'} placement="top">
+                <IconButton
+                  aria-label="Didn't Like It"
+                  onClick={() => this.toggleItemRating(-1)}
+                >
+                  <ThumbDown className={classes.ratingVoteDown} />
+                </IconButton>
+              </Tooltip>
+            </Zoom>
+            <Zoom in={hoverRating}>
+              <Tooltip title={'Liked it!'} placement="top">
+                <IconButton
+                  aria-label="Liked It"
+                  onClick={() => this.toggleItemRating(1)}
+                >
+                  <ThumbUp className={classes.ratingVoteUp} />
+                </IconButton>
+              </Tooltip>
+            </Zoom>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // renderActionMenu() {
+  //   let { anchorEl } = this.state;
+
+  //   return this.props.withActionButton && this.props.listContext ? (
+  //     <React.Fragment>
+  //       <IconButton onClick={this.handleActionMenuOpen}>
+  //         <Icon>more_vert</Icon>
+  //       </IconButton>
+  //       <Menu
+  //         anchorEl={anchorEl}
+  //         open={Boolean(anchorEl)}
+  //         onClose={this.handleActionMenuClose}
+  //         disableAutoFocusItem
+  //       >
+  //         <MenuItem onClick={this.handleRemoveFromList}>Remove</MenuItem>
+  //       </Menu>
+  //     </React.Fragment>
+  //   ) : null;
+  // }
 
   render() {
-    let { item, classes, addButton, itemCardVisible } = this.props;
+    let {
+      addButton,
+      classes,
+      hoverAddToList,
+      item,
+      itemCardVisible,
+    } = this.props;
     let { deleted, hover } = this.state;
 
     let gridProps: Partial<GridProps> = {
@@ -435,7 +579,7 @@ class ItemCard extends Component<Props, ItemCardState> {
                   >
                     {item.name}
                   </Typography>
-                  {this.renderActionMenu()}
+                  {/* {this.renderActionMenu()} */}
                 </div>
                 <Typography style={{ height: '60px' }}>
                   <Truncate lines={3} ellipsis={<span>...</span>}>
@@ -457,7 +601,7 @@ class ItemCard extends Component<Props, ItemCardState> {
             )}
           </Card>
         </Grid>
-        {addButton ? (
+        {addButton || hoverAddToList ? (
           <AddToListDialog
             open={this.state.modalOpen}
             userSelf={this.props.userSelf!}
