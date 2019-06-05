@@ -5,6 +5,7 @@ import itemDetail, { State as ItemDetailState } from './item-detail';
 import search, { State as SearchState } from './search';
 import userSelf, { State as UserSelfState } from './user';
 import metadata, { State as MetadataState } from './metadata';
+import availability, { State as AvailabilityState } from './availability';
 
 // A type that represents the entire app state
 export interface AppState {
@@ -14,6 +15,7 @@ export interface AppState {
   userSelf: UserSelfState;
   lists: ListsState;
   metadata: MetadataState;
+  availability: AvailabilityState;
 }
 
 function startupReducer(state: any | undefined, action: Action): any {
@@ -32,4 +34,5 @@ export default combineReducers({
   lists,
   startup: startupReducer,
   metadata,
+  availability,
 });
