@@ -7,6 +7,7 @@ import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.RouteParam
 import javax.inject.Inject
 import io.circe.generic.auto._
+import java.util.UUID
 import scala.concurrent.ExecutionContext
 
 class PeopleController @Inject()(
@@ -20,4 +21,4 @@ class PeopleController @Inject()(
   }
 }
 
-case class GetPersonRequest(@RouteParam personId: Int)
+case class GetPersonRequest(@RouteParam personId: UUID)

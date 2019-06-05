@@ -4,11 +4,12 @@ import com.teletracker.service.db.CustomPostgresProfile
 import com.teletracker.service.inject.DbImplicits
 import com.google.inject.Provider
 import javax.inject.Inject
+import java.util.UUID
 
 case class UserThingTag(
   id: Int,
   userId: Int,
-  thingId: Int,
+  thingId: UUID,
   action: UserThingTagType,
   value: Option[Double])
 
@@ -24,7 +25,7 @@ class UserThingTags @Inject()(
       extends Table[UserThingTag](tag, "user_thing_tags") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def userId = column[Int]("user_id")
-    def thingId = column[Int]("thing_id")
+    def thingId = column[UUID]("thing_id")
     def action = column[UserThingTagType]("action")
     def value = column[Option[Double]]("value")
 

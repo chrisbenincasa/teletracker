@@ -3,9 +3,14 @@ steps:
     args: ["-J-Xss8m", "clean", "compile"]
     dir: "scala-server"
   - name: "gcr.io/$PROJECT_ID/scala-sbt"
-    args: ["server/assembly"]
+    args: ["server/assembly", "server/docker"]
     dir: "scala-server"
+images:
+  - "gcr.io/teletracker/server"
 artifacts:
   objects:
-    location: 'gs://teletracker-build-artifacts'
-    paths: ['scala-server/server/target/scala-2.12/teletracker-assembly-0.1-SNAPSHOT.jar']
+    location: "gs://teletracker-build-artifacts"
+    paths:
+      [
+        "scala-server/server/target/scala-2.12/teletracker-assembly-0.1-SNAPSHOT.jar",
+      ]

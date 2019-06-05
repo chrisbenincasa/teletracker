@@ -5,11 +5,12 @@ import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
 import com.teletracker.service.util.json.circe._
+import java.util.UUID
 
 case class TvShowEpisode(
   id: Option[Int],
   number: Int,
-  thingId: Int,
+  thingId: UUID,
   seasonId: Int,
   name: String,
   productionCode: Option[String]) {
@@ -43,13 +44,14 @@ class TvShowEpisodes @Inject()(
       extends Table[TvShowEpisode](tag, "tv_show_episodes") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def number = column[Int]("number")
-    def thingId = column[Int]("thing_id")
+    def thingId = column[UUID]("thing_id")
     def seasonId = column[Int]("season_id")
     def name = column[String]("name")
     def productionCode = column[Option[String]]("production_code")
 
     def season =
       query join tvShowSeasons.get().query on (_.seasonId === _.id) map (_._2)
+
     def show =
       foreignKey("tv_show_episodes_show_fk", thingId, things.get().query)(_.id)
 

@@ -9,6 +9,7 @@ import com.teletracker.service.process.tmdb.TmdbProcessMessage.{
 }
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 object TmdbMessageHandler {
@@ -33,7 +34,7 @@ final class TmdbMessageHandler @Inject()(
           .map(_ => {})
 
       case ProcessBelongsToCollections(
-          thingId: Int,
+          thingId: UUID,
           collection: BelongsToCollection
           ) =>
         tmdbEntityProcessor.processCollection(thingId, collection)

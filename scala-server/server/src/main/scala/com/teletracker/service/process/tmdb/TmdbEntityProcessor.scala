@@ -1,6 +1,6 @@
 package com.teletracker.service.process.tmdb
 
-import com.google.common.cache.CacheBuilder
+import com.google.common.cache.{Cache, CacheBuilder}
 import com.teletracker.service.cache.{JustWatchLocalCache, TmdbLocalCache}
 import com.teletracker.service.db.access.{
   NetworksDbAccess,
@@ -11,35 +11,31 @@ import com.teletracker.service.db.model
 import com.teletracker.service.db.model._
 import com.teletracker.service.external.justwatch.JustWatchClient
 import com.teletracker.service.external.tmdb.TmdbClient
-import com.teletracker.service.model.justwatch.{
-  PopularItem,
-  PopularItemsResponse,
-  PopularSearchRequest
-}
+import com.teletracker.service.inject.RecentlyProcessedCollections
+import com.teletracker.service.model.justwatch.PopularItem
 import com.teletracker.service.model.tmdb
 import com.teletracker.service.model.tmdb._
 import com.teletracker.service.process.ProcessQueue
 import com.teletracker.service.process.tmdb.TmdbEntity.{Entities, EntityIds}
-import com.teletracker.service.process.tmdb.TmdbProcessMessage.{
-  ProcessBelongsToCollections,
-  ProcessMovie
-}
+import com.teletracker.service.process.tmdb.TmdbProcessMessage.ProcessMovie
 import com.teletracker.service.util.execution.SequentialFutures
-import com.teletracker.service.util.{NetworkCache, Slug}
+import com.teletracker.service.util.{
+  NetworkCache,
+  TmdbMovieImporter,
+  TmdbPersonImporter,
+  TmdbShowImporter
+}
 import com.teletracker.service.util.json.circe._
-import java.sql.Timestamp
-import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 import javax.inject.Inject
 import shapeless.ops.coproduct.{Folder, Mapper}
 import shapeless.tag.@@
 import shapeless.{:+:, tag, CNil, Coproduct}
 import java.sql.Timestamp
-import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
-import java.util.concurrent.TimeUnit
+import java.time.{LocalDate, OffsetDateTime}
+import java.util.UUID
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.control.NonFatal
 
 object TmdbEntity {
   type Entities = Movie :+: TvShow :+: Person :+: CNil
@@ -48,11 +44,12 @@ object TmdbEntity {
 }
 
 object TmdbEntityProcessor {
-  final private val recentlyProcessedCollections =
-    CacheBuilder
-      .newBuilder()
-      .expireAfterWrite(1, TimeUnit.DAYS)
-      .build[java.lang.Integer, java.lang.Boolean]()
+  sealed trait ProcessResult
+  case class ProcessSuccess(
+    tmdbId: String,
+    savedThing: Thing)
+      extends ProcessResult
+  case class ProcessFailure(error: Throwable) extends ProcessResult
 }
 
 class TmdbEntityProcessor @Inject()(
@@ -65,21 +62,27 @@ class TmdbEntityProcessor @Inject()(
   justWatchClient: JustWatchClient,
   cache: TmdbLocalCache,
   justWatchLocalCache: JustWatchLocalCache,
-  processQueue: ProcessQueue[TmdbProcessMessage]
+  processQueue: ProcessQueue[TmdbProcessMessage],
+  movieImporter: TmdbMovieImporter,
+  showImporter: TmdbShowImporter,
+  @RecentlyProcessedCollections recentlyProcessedCollections: Cache[
+    Integer,
+    java.lang.Boolean
+  ]
 )(implicit executionContext: ExecutionContext) {
   import TmdbEntityProcessor._
 
   def processSearchResults(
     results: List[Movie :+: TvShow :+: Person :+: CNil]
-  ): List[Future[(String, Thing)]] = {
+  ): List[Future[ProcessResult]] = {
     results.map(_.map(expander.ExpandItem)).map(_.fold(ResultProcessor))
   }
 
-  def expandAndProcessEntity(e: Entities): Future[(String, Thing)] = {
+  def expandAndProcessEntity(e: Entities): Future[ProcessResult] = {
     e.map(expander.ExpandItem).fold(ResultProcessor)
   }
 
-  def expandAndProcessEntityId(e: EntityIds): Future[(String, Thing)] = {
+  def expandAndProcessEntityId(e: EntityIds): Future[ProcessResult] = {
     e.map(expander.ExpandItem).fold(ResultProcessor)
   }
 
@@ -103,181 +106,27 @@ class TmdbEntityProcessor @Inject()(
     * Polymorphic function that operates on model types from TMDb search results
     */
   object ResultProcessor extends shapeless.Poly1 {
-    implicit val atMovie: Case.Aux[Movie, Future[(String, Thing)]] = at(
-      handleMovie
+    implicit val atMovie: Case.Aux[Movie, Future[ProcessResult]] = at(
+      movieImporter.handleMovie
     )
 
-    implicit val atShow: Case.Aux[TvShow, Future[(String, Thing)]] = at(
+    implicit val atShow: Case.Aux[TvShow, Future[ProcessResult]] = at(
       handleShow(_, handleSeasons = false)
     )
 
-    implicit val atPerson: Case.Aux[Person, Future[(String, Thing)]] = at(
+    implicit val atPerson: Case.Aux[Person, Future[ProcessResult]] = at(
       handlePerson
     )
 
     implicit def atFutureN[N](
-      implicit c: Case.Aux[N, Future[(String, Thing)]]
-    ): Case.Aux[Future[N], Future[(String, Thing)]] = at {
+      implicit c: Case.Aux[N, Future[ProcessResult]]
+    ): Case.Aux[Future[N], Future[ProcessResult]] = at {
       _.flatMap(c.apply(_))
     }
   }
 
-  def handleMovie(movie: Movie): Future[(String, Thing)] = {
-    val genreIds =
-      movie.genre_ids.orElse(movie.genres.map(_.map(_.id))).getOrElse(Nil).toSet
-    val genresFut = thingsDbAccess.findTmdbGenres(genreIds)
-
-    val now = OffsetDateTime.now()
-    val t = ThingFactory.makeThing(movie)
-
-    val saveThingFut = thingsDbAccess.saveThing(
-      t,
-      Some(ExternalSource.TheMovieDb -> movie.id.toString)
-    )
-
-    val availability = handleMovieAvailability(movie, saveThingFut)
-
-    val saveCollectionFut =
-      saveThingFut.flatMap(
-        thing => {
-          movie.belongs_to_collection
-            .map(collection => {
-              recentlyProcessedCollections.synchronized {
-                if (Option(
-                      recentlyProcessedCollections.getIfPresent(collection.id)
-                    ).isEmpty) {
-                  processQueue.enqueue(
-                    TmdbProcessMessage
-                      .make(
-                        ProcessBelongsToCollections(thing.id.get, collection)
-                      )
-                  )
-                }
-              }
-
-              thingsDbAccess
-                .findCollectionByTmdbId(collection.id.toString)
-                .flatMap {
-                  case None => Future.unit
-                  case Some(coll) =>
-                    thingsDbAccess
-                      .addThingToCollection(coll.id, thing.id.get)
-                      .map(_ => {})
-                }
-            })
-            .getOrElse(Future.unit)
-        }
-      )
-
-    val saveExternalIds = for {
-      savedThing <- saveThingFut
-      _ <- movie.external_ids
-        .map(eids => {
-          val externalId = ExternalId(
-            None,
-            Some(savedThing.id.get),
-            None,
-            Some(movie.id.toString),
-            eids.imdb_id,
-            None,
-            new java.sql.Timestamp(now.toEpochSecond * 1000)
-          )
-          thingsDbAccess.upsertExternalIds(externalId).map(_ => savedThing)
-        })
-        .getOrElse(Future.successful(savedThing))
-    } yield savedThing
-
-    val saveGenres = for {
-      savedThing <- saveThingFut
-      genres <- genresFut
-      _ <- Future.sequence(genres.map(g => {
-        val ref = ThingGenre(savedThing.id.get, g.id.get)
-        thingsDbAccess.saveGenreAssociation(ref)
-      }))
-    } yield {}
-
-    saveThingFut.foreach(thing => {
-      movie.belongs_to_collection.foreach(collection => {
-        processQueue.enqueue(
-          TmdbProcessMessage
-            .make(ProcessBelongsToCollections(thing.id.get, collection))
-        )
-      })
-    })
-
-    for {
-      savedThing <- saveThingFut
-      _ <- saveExternalIds
-      _ <- saveGenres
-      _ <- availability
-      _ <- saveCollectionFut
-    } yield movie.id.toString -> savedThing
-  }
-
-  private def handleMovieAvailability(
-    movie: Movie,
-    processedMovieFut: Future[Thing]
-  ): Future[Thing] = {
-    import io.circe.generic.auto._
-    import io.circe.syntax._
-
-    val query = PopularSearchRequest(1, 10, movie.title.get, List("movie"))
-    val justWatchResFut = justWatchLocalCache.getOrSet(query, {
-      justWatchClient.makeRequest[PopularItemsResponse](
-        "/content/titles/en_US/popular",
-        Seq("body" -> query.asJson.noSpaces)
-      )
-    })
-
-    (for {
-      justWatchRes <- justWatchResFut
-      networksBySource <- networkCache.get()
-      thing <- processedMovieFut
-    } yield {
-      val matchingMovie = matchJustWatchMovie(movie, justWatchRes.items)
-
-      val availabilities = matchingMovie
-        .collect {
-          case matchedItem if matchedItem.offers.exists(_.nonEmpty) =>
-            for {
-              offer <- matchedItem.offers.get.distinct
-              provider <- networksBySource
-                .get(ExternalSource.JustWatch -> offer.provider_id.toString)
-                .toList
-            } yield {
-              val offerType = Try(
-                offer.monetization_type.map(OfferType.fromJustWatchType)
-              ).toOption.flatten
-              val presentationType = Try(
-                offer.presentation_type.map(PresentationType.fromJustWatchType)
-              ).toOption.flatten
-
-              Availability(
-                id = None,
-                isAvailable = true,
-                region = offer.country,
-                numSeasons = None,
-                startDate = offer.date_created.map(
-                  LocalDate
-                    .parse(_, DateTimeFormatter.ISO_LOCAL_DATE)
-                    .atStartOfDay()
-                    .atOffset(ZoneOffset.UTC)
-                ),
-                endDate = None,
-                offerType = offerType,
-                cost = offer.retail_price.map(BigDecimal.decimal),
-                currency = offer.currency,
-                thingId = thing.id,
-                tvShowEpisodeId = None,
-                networkId = provider.id,
-                presentationType = presentationType
-              )
-            }
-        }
-        .getOrElse(Nil)
-
-      thingsDbAccess.saveAvailabilities(availabilities).map(_ => thing)
-    }).flatMap(identity)
+  def handleMovie(movie: Movie): Future[ProcessResult] = {
+    movieImporter.handleMovie(movie)
   }
 
   private def matchJustWatchMovie(
@@ -308,214 +157,75 @@ class TmdbEntityProcessor @Inject()(
   def handleShow(
     show: TvShow,
     handleSeasons: Boolean
-  ): Future[(String, Thing)] = {
-    val genreIds = show.genres.getOrElse(Nil).map(_.id).toSet
-    val genresFut = thingsDbAccess.findTmdbGenres(genreIds)
-
-    val networkSlugs =
-      show.networks.toList.flatMap(_.map(_.name)).map(Slug(_)).toSet
-    val networksFut = networksDbAccess.findNetworksBySlugs(networkSlugs)
-
-    val now = OffsetDateTime.now()
-    val t = Thing(
-      None,
-      show.name,
-      Slug(show.name),
-      ThingType.Show,
-      now,
-      now,
-      Some(ObjectMetadata.withTmdbShow(show))
-    )
-    val saveThingFut = thingsDbAccess.saveThing(
-      t,
-      Some(ExternalSource.TheMovieDb, show.id.toString)
-    )
-
-    val externalIdsFut = saveThingFut.flatMap(
-      t => handleExternalIds(Left(t), show.external_ids, Some(show.id.toString))
-    )
-
-    val networkSaves = for {
-      savedThing <- saveThingFut
-      networks <- networksFut
-      _ <- Future.sequence(networks.map(n => {
-        val tn = ThingNetwork(savedThing.id.get, n.id.get)
-        networksDbAccess.saveNetworkAssociation(tn)
-      }))
-    } yield {}
-
-    val availability = handleShowAvailability(show, saveThingFut)
-
-    val seasonFut = if (handleSeasons) {
-      saveThingFut.flatMap(t => {
-        tvShowDbAccess
-          .findAllSeasonsForShow(t.id.get)
-          .flatMap(dbSeasons => {
-            val saveFuts = show.seasons
-              .getOrElse(Nil)
-              .map(apiSeason => {
-                dbSeasons.find(_.number == apiSeason.season_number.get) match {
-                  case Some(s) => Future.successful(s)
-                  case None =>
-                    val m = model.TvShowSeason(
-                      None,
-                      apiSeason.season_number.get,
-                      t.id.get,
-                      apiSeason.overview,
-                      apiSeason.air_date.map(LocalDate.parse(_))
-                    )
-                    tvShowDbAccess.saveSeason(m)
-                }
-              })
-
-            Future.sequence(saveFuts)
-          })
-      })
-    } else {
-      Future.successful(Nil)
-    }
-
-    for {
-      savedThing <- saveThingFut
-      _ <- networkSaves
-      _ <- genresFut
-      _ <- seasonFut
-      _ <- externalIdsFut
-      _ <- availability
-    } yield show.id.toString -> savedThing
+  ): Future[ProcessResult] = {
+    showImporter.handleShow(show, handleSeasons)
   }
 
-  private def handleShowAvailability(
-    show: TvShow,
-    processedShowFut: Future[Thing]
-  ): Future[Thing] = {
-    import io.circe.generic.auto._
-    import io.circe.syntax._
-
-    val query = PopularSearchRequest(1, 10, show.name, List("show"))
-    val justWatchResFut = justWatchLocalCache.getOrSet(query, {
-      justWatchClient.makeRequest[PopularItemsResponse](
-        "/content/titles/en_US/popular",
-        Seq("body" -> query.asJson.noSpaces)
-      )
-    })
-
-    (for {
-      justWatchRes <- justWatchResFut
-      networksBySource <- networkCache.get()
-      thing <- processedShowFut
-    } yield {
-      val matchingShow = matchJustWatchShow(show, justWatchRes.items)
-
-      val availabilities = matchingShow
-        .collect {
-          case matchedItem if matchedItem.offers.exists(_.nonEmpty) =>
-            for {
-              offer <- matchedItem.offers.get.distinct
-              provider <- networksBySource
-                .get(ExternalSource.JustWatch -> offer.provider_id.toString)
-                .toList
-            } yield {
-              val offerType = Try(
-                offer.monetization_type.map(OfferType.fromJustWatchType)
-              ).toOption.flatten
-              val presentationType = Try(
-                offer.presentation_type.map(PresentationType.fromJustWatchType)
-              ).toOption.flatten
-
-              Availability(
-                id = None,
-                isAvailable = true,
-                region = offer.country,
-                numSeasons = None,
-                startDate = offer.date_created.map(
-                  LocalDate
-                    .parse(_, DateTimeFormatter.ISO_LOCAL_DATE)
-                    .atStartOfDay()
-                    .atOffset(ZoneOffset.UTC)
-                ),
-                endDate = None,
-                offerType = offerType,
-                cost = offer.retail_price.map(BigDecimal.decimal),
-                currency = offer.currency,
-                thingId = thing.id,
-                tvShowEpisodeId = None,
-                networkId = provider.id,
-                presentationType = presentationType
-              )
-            }
-        }
-        .getOrElse(Nil)
-
-      thingsDbAccess.saveAvailabilities(availabilities).map(_ => thing)
-    }).flatMap(identity)
-  }
-
-  private def matchJustWatchShow(
-    show: TvShow,
-    popularItems: List[PopularItem]
-  ): Option[PopularItem] = {
-    popularItems.find(item => {
-      val idMatch = item.scoring
-        .getOrElse(Nil)
-        .exists(
-          s =>
-            s.provider_type == "tmdb:id" && s.value.toInt.toString == show.id.toString
-        )
-      val nameMatch = item.title.exists(show.name.equalsIgnoreCase)
-      val originalMatch =
-        show.original_name.exists(item.original_title.contains)
-      val yearMatch = item.original_release_year.exists(year => {
-        show.first_air_date
-          .filter(_.nonEmpty)
-          .map(LocalDate.parse(_).getYear)
-          .contains(year)
-      })
-
-      idMatch || (nameMatch && yearMatch) || (originalMatch && yearMatch)
-    })
-  }
-
-  def handlePerson(person: Person): Future[(String, Thing)] = {
+  def handlePerson(person: Person): Future[ProcessResult] = {
     def insertAssociations(
-      personId: Int,
-      thingId: Int,
+      personId: UUID,
+      thingId: UUID,
       typ: String
     ) = {
       thingsDbAccess.upsertPersonThing(PersonThing(personId, thingId, typ))
     }
 
     val now = OffsetDateTime.now()
-    val t = Thing(
-      None,
-      person.name.get,
-      Slug(person.name.get),
-      ThingType.Person,
-      now,
-      now,
-      Some(ObjectMetadata.withTmdbPerson(person))
-    )
 
-    val personSave = thingsDbAccess
-      .saveThing(t, Some(ExternalSource.TheMovieDb -> person.id.toString))
-      .map(person.id.toString -> _)
+    val personSave = Promise
+      .fromTry(ThingFactory.makePerson(person))
+      .future
+      .flatMap(thing => {
+        thingsDbAccess
+          .saveThing(
+            thing,
+            Some(ExternalSource.TheMovieDb -> person.id.toString)
+          )
+          .map(ProcessSuccess(person.id.toString, _))
+      })
+      .recover {
+        case NonFatal(e) => ProcessFailure(e)
+      }
 
     val creditsSave = person.combined_credits
       .map(credits => {
         for {
+          // TODO: Push to queue
           savedPerson <- personSave
-          cast <- SequentialFutures.serialize(credits.cast, Some(250 millis))(
-            processResult(_).flatMap {
-              case (_, thing) =>
-                insertAssociations(savedPerson._2.id.get, thing.id.get, "cast")
-            }
-          )
-          crew <- SequentialFutures.serialize(credits.crew, Some(250 millis))(
-            processResult(_).flatMap {
-              case (_, thing) =>
-                insertAssociations(savedPerson._2.id.get, thing.id.get, "cast")
-            }
-          )
+          _ <- SequentialFutures.serialize(credits.cast, Some(250 millis)) {
+            castMember =>
+              savedPerson match {
+                case ProcessSuccess(_, savedPerson) =>
+                  processResult(castMember).flatMap {
+                    case ProcessSuccess(_, savedCastMember) =>
+                      insertAssociations(
+                        savedPerson.id,
+                        savedCastMember.id,
+                        "cast"
+                      ).map(Some(_))
+                    case ProcessFailure(ex) => Future.successful(None)
+                  }
+                case ProcessFailure(ex) =>
+                  Future.successful(None)
+              }
+          }
+          _ <- SequentialFutures.serialize(credits.crew, Some(250 millis)) {
+            castMember =>
+              savedPerson match {
+                case ProcessSuccess(_, savedPerson) =>
+                  processResult(castMember).flatMap {
+                    case ProcessSuccess(_, savedCastMember) =>
+                      insertAssociations(
+                        savedPerson.id,
+                        savedCastMember.id,
+                        "crew"
+                      ).map(Some(_))
+                    case ProcessFailure(ex) => Future.successful(None)
+                  }
+                case ProcessFailure(ex) =>
+                  Future.successful(None)
+              }
+          }
         } yield {}
       })
       .getOrElse(Future.successful(Nil))
@@ -546,7 +256,7 @@ class TmdbEntityProcessor @Inject()(
           )
 
           val eid = entity match {
-            case Left(t)  => baseEid.copy(thingId = t.id)
+            case Left(t)  => baseEid.copy(thingId = Some(t.id))
             case Right(t) => baseEid.copy(tvEpisodeId = t.id)
           }
 
@@ -560,7 +270,7 @@ class TmdbEntityProcessor @Inject()(
   }
 
   def processCollection(
-    thingId: Int,
+    thingId: UUID,
     collection: BelongsToCollection
   ): Future[Unit] = {
     var notFound = false

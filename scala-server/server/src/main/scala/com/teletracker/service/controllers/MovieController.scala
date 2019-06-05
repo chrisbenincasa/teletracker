@@ -11,6 +11,7 @@ import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import javax.inject.Inject
+import java.util.UUID
 import scala.concurrent.ExecutionContext
 
 class MovieController @Inject()(
@@ -45,7 +46,7 @@ class MovieController @Inject()(
 }
 
 case class GetMovieRequest(
-  @RouteParam id: Int,
+  @RouteParam id: UUID,
   @QueryParam fields: Option[String],
   request: Request)
     extends HasFieldsFilter

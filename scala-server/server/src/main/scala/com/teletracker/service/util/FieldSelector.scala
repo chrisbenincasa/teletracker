@@ -20,12 +20,11 @@ object FieldSelector {
     j match {
       case (key, value) :: xs if fieldMap.contains(key) =>
         val subfields = fieldMap(key).subfields.getOrElse(Nil)
-        val ret = filter(value, subfields)
-
         // Include whole object if we specify it without fields
-        if (objectWasEmpty(ret) || arrayOfObjectsWasEmpty(ret)) {
+        if (subfields.isEmpty) {
           _filter(xs, fieldMap, (key, value) :: acc)
         } else {
+          val ret = filter(value, subfields)
           _filter(xs, fieldMap, (key, ret) :: acc)
         }
 

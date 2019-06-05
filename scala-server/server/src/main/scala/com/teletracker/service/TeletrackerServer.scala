@@ -105,9 +105,7 @@ object Teletracker extends com.twitter.inject.app.App {
         migrate.main(Array("-action=migrate", s"-loc=$location"))
         Await.result(migrate)
 
-        val runSeeds = new RunAllSeeds()
-        runSeeds.main(rest)
-        Await.result(runSeeds)
+        RunAllSeedsMain.main(rest)
 
         close()
       case "generate-ddl"        => new GenerateDdls().main(rest)
@@ -115,7 +113,7 @@ object Teletracker extends com.twitter.inject.app.App {
       case "import-movies"       => ImportMovies.main(rest)
       case "import-tv"           => ImportTv.main(rest)
       case "import-people"       => ImportPeople.main(rest)
-      case "run-all-seeds"       => new RunAllSeeds().main(rest)
+      case "run-all-seeds"       => RunAllSeedsMain.main(rest)
       case "seed-certifications" => SeedCertifications.main(rest)
       case "seed-genres"         => SeedGenres.main(rest)
       case "seed-networks"       => SeedNetworks.main(rest)

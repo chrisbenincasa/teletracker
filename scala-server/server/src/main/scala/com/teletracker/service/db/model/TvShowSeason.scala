@@ -6,11 +6,12 @@ import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import java.time.LocalDate
 import com.teletracker.service.util.json.circe._
+import java.util.UUID
 
 case class TvShowSeason(
   id: Option[Int],
   number: Int,
-  showId: Int,
+  showId: UUID,
   overview: Option[String],
   airDate: Option[LocalDate])
 
@@ -30,7 +31,7 @@ class TvShowSeasons @Inject()(
       extends Table[TvShowSeason](tag, "tv_show_seasons") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def number = column[Int]("number")
-    def showId = column[Int]("show_id")
+    def showId = column[UUID]("show_id")
     def overview = column[Option[String]]("overview")
     def airDate = column[Option[LocalDate]]("air_date")
 

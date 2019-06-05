@@ -63,12 +63,15 @@ class AuthController @Inject()(
       }
 
       jwtAuthExtractor.extractToken(request) match {
-        case None => Future.successful(response.badRequest)
+        case None =>
+          Future.successful(
+            response.badRequest("Could not get token from request")
+          )
         case Some(token) =>
           jwtAuthExtractor.parseToken(token) match {
             case Success(value) =>
               usersDbAccess.findByEmail(value.getBody.getSubject).flatMap {
-                case None       => Future.successful(response.badRequest)
+                case None       => Future.successful(response.ok)
                 case Some(user) => revoke(user.id.get, token)
               }
 

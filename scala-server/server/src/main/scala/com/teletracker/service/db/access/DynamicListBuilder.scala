@@ -52,7 +52,7 @@ class DynamicListBuilder @Inject()(
           val (things, actionOpts) = thingsAndActions.unzip
           val actions = actionOpts.flatten.groupBy(_.thingId)
           things.map(thing => {
-            thing -> actions.getOrElse(thing.id.get, Seq.empty)
+            thing -> actions.getOrElse(thing.id, Seq.empty)
           })
         })
     } else {

@@ -5,6 +5,7 @@ import com.teletracker.service.inject.DbImplicits
 import javax.inject.Inject
 import java.time.OffsetDateTime
 import com.teletracker.service.util.json.circe._
+import java.util.UUID
 
 case class Availability(
   id: Option[Int],
@@ -16,10 +17,29 @@ case class Availability(
   offerType: Option[OfferType],
   cost: Option[BigDecimal],
   currency: Option[String],
-  thingId: Option[Int],
+  thingId: Option[UUID],
   tvShowEpisodeId: Option[Int],
   networkId: Option[Int],
   presentationType: Option[PresentationType]) {
+  def toDetailed: AvailabilityWithDetails = {
+    AvailabilityWithDetails(
+      id,
+      isAvailable,
+      region,
+      numSeasons,
+      startDate,
+      endDate,
+      offerType,
+      cost,
+      currency,
+      presentationType,
+      thingId,
+      tvShowEpisodeId,
+      networkId,
+      None
+    )
+  }
+
   def withNetwork(network: Network): AvailabilityWithDetails = {
     AvailabilityWithDetails(
       id,
@@ -68,10 +88,18 @@ case class AvailabilityWithDetails(
   cost: Option[BigDecimal],
   currency: Option[String],
   presentationType: Option[PresentationType],
-  thingId: Option[Int],
+  thingId: Option[UUID],
   tvShowEpisodeId: Option[Int],
   networkId: Option[Int],
-  network: Option[Network])
+  network: Option[Network] = None,
+  thing: Option[PartialThing] = None) {
+
+  def withNetwork(network: Network): AvailabilityWithDetails =
+    this.copy(network = Some(network))
+
+  def withThing(thing: PartialThing): AvailabilityWithDetails =
+    this.copy(thing = Some(thing))
+}
 
 class Availabilities @Inject()(
   val driver: CustomPostgresProfile,
@@ -93,7 +121,7 @@ class Availabilities @Inject()(
     def offerType = column[Option[OfferType]]("offer_type")
     def cost = column[Option[BigDecimal]]("cost")
     def currency = column[Option[String]]("currency")
-    def thingId = column[Option[Int]]("thing_id")
+    def thingId = column[Option[UUID]]("thing_id")
     def tvShowEpisodeId = column[Option[Int]]("tv_show_episode_id")
     def networkId = column[Option[Int]]("network_id")
     def presentationType = column[Option[PresentationType]]("presentation_type")
