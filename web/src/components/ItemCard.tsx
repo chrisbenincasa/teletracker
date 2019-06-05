@@ -190,7 +190,7 @@ interface DispatchProps {
 
 interface ItemCardState {
   listsModalOpen: boolean;
-  hover: boolean;
+  isHovering: boolean;
   hoverRating: boolean;
   deleteConfirmationOpen: boolean;
   deleted: boolean;
@@ -212,7 +212,7 @@ class ItemCard extends Component<Props, ItemCardState> {
 
   state: ItemCardState = {
     listsModalOpen: false,
-    hover: false,
+    isHovering: false,
     hoverRating: false,
     deleteConfirmationOpen: false,
     deleted: false,
@@ -258,11 +258,11 @@ class ItemCard extends Component<Props, ItemCardState> {
   };
 
   handleHoverEnter = () => {
-    this.setState({ hover: true });
+    this.setState({ isHovering: true });
   };
 
   handleHoverExit = () => {
-    this.setState({ hover: false });
+    this.setState({ isHovering: false });
   };
 
   handleRemoveFromList = () => {
@@ -291,7 +291,7 @@ class ItemCard extends Component<Props, ItemCardState> {
   };
 
   toggleItemRating = (rating: number) => {
-    this.setState({ hover: false, hoverRating: false });
+    this.setState({ isHovering: false, hoverRating: false });
     // TODO: Setup redux to send rating once that's an option
   };
 
@@ -307,13 +307,15 @@ class ItemCard extends Component<Props, ItemCardState> {
 
   renderPoster = (thing: Thing) => {
     let { classes, hoverDelete, hoverWatch, hoverAddToList } = this.props;
-    let { deleted, hover, hoverRating } = this.state;
+    let { deleted, isHovering, hoverRating } = this.state;
     let poster = getPosterPath(thing);
 
     const makeLink = (children: ReactNode, className?: string) => (
-      <div className={hover ? classes.cardHoverEnter : classes.cardHoverExit}>
-        {hover && hoverRating && this.renderRatingHover()}
-        {hover && !hoverRating && this.renderHoverActions()}
+      <div
+        className={isHovering ? classes.cardHoverEnter : classes.cardHoverExit}
+      >
+        {isHovering && hoverRating && this.renderRatingHover()}
+        {isHovering && !hoverRating && this.renderHoverActions()}
         <Link
           className={className}
           component={props => (
@@ -382,14 +384,14 @@ class ItemCard extends Component<Props, ItemCardState> {
 
   renderHoverActions = () => {
     let { classes, hoverAddToList, hoverDelete, hoverWatch, item } = this.props;
-    let { hover } = this.state;
+    let { isHovering } = this.state;
     const tooltipPlacement = 'right';
 
     return (
       <Collapse in={true}>
         <div className={classes.hoverActions}>
           {hoverWatch && (
-            <Zoom in={hover}>
+            <Zoom in={isHovering}>
               <Tooltip
                 title={
                   this.itemMarkedAsWatched()
@@ -412,8 +414,8 @@ class ItemCard extends Component<Props, ItemCardState> {
 
           {hoverAddToList && (
             <Zoom
-              in={hover}
-              style={{ transitionDelay: hover ? '100ms' : '0ms' }}
+              in={isHovering}
+              style={{ transitionDelay: isHovering ? '100ms' : '0ms' }}
             >
               <Tooltip title="Manage Lists" placement={tooltipPlacement}>
                 <IconButton
@@ -430,8 +432,8 @@ class ItemCard extends Component<Props, ItemCardState> {
 
           {hoverDelete && (
             <Zoom
-              in={hover}
-              style={{ transitionDelay: hover ? '200ms' : '100ms' }}
+              in={isHovering}
+              style={{ transitionDelay: isHovering ? '200ms' : '100ms' }}
             >
               <Tooltip title={'Remove from List'} placement={tooltipPlacement}>
                 <IconButton
@@ -499,7 +501,7 @@ class ItemCard extends Component<Props, ItemCardState> {
       itemCardVisible,
       userSelf,
     } = this.props;
-    let { deleted, hover, imageLoaded, listsModalOpen } = this.state;
+    let { deleted, imageLoaded, listsModalOpen } = this.state;
 
     let gridProps: Partial<GridProps> = {
       item: true,
