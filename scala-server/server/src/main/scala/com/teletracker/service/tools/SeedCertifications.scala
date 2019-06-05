@@ -15,10 +15,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object SeedCertifications extends App {
-  override protected def modules: Seq[Module] = Modules()
-
-  override protected def run(): Unit = {
+object SeedCertifications extends TeletrackerJob {
+  override protected def runInternal(): Unit = {
     injector.instance[CertificationSeeder].run()
   }
 }
@@ -85,7 +83,6 @@ class CertificationSeeder @Inject()(
     )
 
     Await.result(tvCertInserts, Duration.Inf)
-    provider.shutdown()
   }
 
 }

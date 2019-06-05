@@ -16,7 +16,7 @@ object TmdbProcessMessage {
       extends MessageActionType
 
   case class ProcessBelongsToCollections(
-    thingId: Int,
+    thingId: UUID,
     collection: BelongsToCollection)
       extends MessageActionType
 

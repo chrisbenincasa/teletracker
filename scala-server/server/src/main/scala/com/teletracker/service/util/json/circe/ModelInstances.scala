@@ -1,11 +1,12 @@
 package com.teletracker.service.util.json.circe
 
 import com.teletracker.service.db.model._
+import com.teletracker.service.model.tmdb.Movie
 import com.teletracker.service.util.Slug
 import io.circe.shapes._
 import io.circe.generic.semiauto._
 import io.circe.generic.auto._
-import io.circe.java8._
+//import io.circe.java8._
 import io.circe.{Decoder, DecodingFailure, Encoder, Json}
 import scala.reflect.{classTag, ClassTag}
 
@@ -44,11 +45,6 @@ trait ModelInstances extends JodaInstances {
   implicit val networkEncoder = deriveEncoder[Network]
   implicit val networkDecoder = deriveDecoder[Network]
 
-  implicit val availabilityWithDetailsEncoder =
-    deriveEncoder[AvailabilityWithDetails]
-  implicit val availabilityWithDetailsDecoder =
-    deriveDecoder[AvailabilityWithDetails]
-
   implicit val objectMetadataEncoder = deriveEncoder[ObjectMetadata]
   implicit val objectMetadataDecoder = deriveDecoder[ObjectMetadata]
 
@@ -72,4 +68,9 @@ trait ModelInstances extends JodaInstances {
 
   implicit val dynamicListRulesDecoder = deriveDecoder[DynamicListRules]
   implicit val dynamicListRulesEncoder = deriveEncoder[DynamicListRules]
+
+  implicit val availabilityWithDetailsEncoder =
+    deriveEncoder[AvailabilityWithDetails]
+  implicit val availabilityWithDetailsDecoder =
+    deriveDecoder[AvailabilityWithDetails]
 }

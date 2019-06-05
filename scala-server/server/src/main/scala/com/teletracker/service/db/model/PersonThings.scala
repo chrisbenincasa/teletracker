@@ -4,10 +4,11 @@ import com.teletracker.service.db.CustomPostgresProfile
 import com.teletracker.service.inject.DbImplicits
 import com.google.inject.Provider
 import javax.inject.Inject
+import java.util.UUID
 
 case class PersonThing(
-  personId: Int,
-  thingId: Int,
+  personId: UUID,
+  thingId: UUID,
   relationType: String)
 
 class PersonThings @Inject()(
@@ -18,8 +19,8 @@ class PersonThings @Inject()(
 
   class PersonThingsTable(tag: Tag)
       extends Table[PersonThing](tag, "person_things") {
-    def personId = column[Int]("person_id")
-    def thingId = column[Int]("thing_id")
+    def personId = column[UUID]("person_id")
+    def thingId = column[UUID]("thing_id")
     def relationType = column[String]("relation_type")
 
     def personThingPrimary =

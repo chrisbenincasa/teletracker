@@ -55,7 +55,7 @@ CREATE TABLE "network_references"
 
 CREATE TABLE "things"
 (
-    "id"              SERIAL                   NOT NULL PRIMARY KEY,
+    "id"              UUID                     NOT NULL PRIMARY KEY,
     "name"            VARCHAR                  NOT NULL,
     "normalized_name" VARCHAR                  NOT NULL,
     "type"            VARCHAR                  NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE "things"
 
 CREATE TABLE "thing_networks"
 (
-    "objects_id"  INTEGER NOT NULL,
+    "objects_id"  UUID NOT NULL,
     "networks_id" INTEGER NOT NULL
 );
 
@@ -82,14 +82,14 @@ CREATE TABLE "lists"
 CREATE TABLE "list_things"
 (
     "lists_id"   INTEGER NOT NULL,
-    "objects_id" INTEGER NOT NULL
+    "objects_id" UUID NOT NULL
 );
 
 CREATE TABLE "tv_show_episodes"
 (
     "id"              SERIAL  NOT NULL PRIMARY KEY,
     "number"          INTEGER NOT NULL,
-    "thing_id"        INTEGER NOT NULL,
+    "thing_id"        UUID    NOT NULL,
     "season_id"       INTEGER NOT NULL,
     "name"            VARCHAR NOT NULL,
     "production_code" VARCHAR
@@ -99,7 +99,7 @@ CREATE TABLE "tv_show_seasons"
 (
     "id"       SERIAL  NOT NULL PRIMARY KEY,
     "number"   INTEGER NOT NULL,
-    "show_id"  INTEGER NOT NULL,
+    "show_id"  UUID NOT NULL,
     "overview" VARCHAR,
     "air_date" date
 );
@@ -115,7 +115,7 @@ CREATE TABLE "availability"
     "offer_type"         VARCHAR,
     "cost"               DECIMAL(21, 2),
     "currency"           VARCHAR,
-    "thing_id"           INTEGER,
+    "thing_id"           UUID,
     "tv_show_episode_id" INTEGER,
     "network_id"         INTEGER,
     "presentation_type"  VARCHAR
@@ -124,7 +124,7 @@ CREATE TABLE "availability"
 CREATE TABLE "external_ids"
 (
     "id"              SERIAL NOT NULL PRIMARY KEY,
-    "thing_id"        INTEGER,
+    "thing_id"        UUID,
     "tv_episode_id"   INTEGER,
     "tmdb_id"         VARCHAR,
     "imdb_id"         VARCHAR,
@@ -143,7 +143,7 @@ CREATE TABLE "genre_references"
 
 CREATE TABLE "thing_genres"
 (
-    "thing_id" INTEGER NOT NULL,
+    "thing_id" UUID NOT NULL,
     "genre_id" INTEGER NOT NULL
 );
 
@@ -159,8 +159,8 @@ CREATE TABLE "certifications"
 
 CREATE TABLE "person_things"
 (
-    "person_id"     INTEGER NOT NULL,
-    "thing_id"      INTEGER NOT NULL,
+    "person_id"     UUID NOT NULL,
+    "thing_id"      UUID NOT NULL,
     "relation_type" VARCHAR NOT NULL
 );
 

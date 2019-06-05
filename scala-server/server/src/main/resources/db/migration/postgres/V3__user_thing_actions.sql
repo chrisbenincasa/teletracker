@@ -2,7 +2,7 @@ CREATE TABLE user_thing_actions
 (
     "id"       SERIAL       NOT NULL PRIMARY KEY,
     "user_id"  INTEGER      NOT NULL REFERENCES "users" ON UPDATE NO ACTION ON DELETE NO ACTION,
-    "thing_id" INTEGER      NOT NULL REFERENCES "things" ON UPDATE NO ACTION ON DELETE NO ACTION,
+    "thing_id" UUID      NOT NULL REFERENCES "things" ON UPDATE NO ACTION ON DELETE NO ACTION,
     "action"   VARCHAR(255) NOT NULL,
     "value"    DECIMAL
 );

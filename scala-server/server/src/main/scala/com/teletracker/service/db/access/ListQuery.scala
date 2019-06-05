@@ -7,6 +7,7 @@ import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import com.teletracker.service.util.Field
 import com.teletracker.service.util.Functions._
 import javax.inject.Inject
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListQuery @Inject()(
@@ -140,7 +141,7 @@ class ListQuery @Inject()(
           }
           val tagsByThingId = thingTags.groupBy(_._1).mapValues(_.map(_._2))
           val thingAndActions = validThings.map(thing => {
-            thing -> tagsByThingId.getOrElse(thing.id.get, Seq.empty)
+            thing -> tagsByThingId.getOrElse(thing.id, Seq.empty)
           })
 
           list -> thingAndActions
@@ -234,7 +235,7 @@ class ListQuery @Inject()(
 
   private def makeUserThingTagQuery(
     userId: Int,
-    thingQuery: Query[Rep[Int], Int, Seq],
+    thingQuery: Query[Rep[UUID], UUID, Seq],
     includeTags: Boolean
   ) = {
     for {

@@ -1,10 +1,12 @@
 package com.teletracker.service.util
 
+import com.teletracker.service.cache.JustWatchLocalCache
 import com.teletracker.service.db.access.{
   NetworksDbAccess,
   ThingsDbAccess,
   TvShowDbAccess
 }
+import com.teletracker.service.db.model
 import com.teletracker.service.db.model._
 import com.teletracker.service.external.justwatch.JustWatchClient
 import com.teletracker.service.external.tmdb.TmdbClient
@@ -19,24 +21,34 @@ import com.teletracker.service.model.tmdb.{
   TvShow,
   TvShowSeason => TmdbTvShowSeason
 }
-import com.teletracker.service.process.tmdb.TmdbEntityProcessor
+import com.teletracker.service.process.ProcessQueue
+import com.teletracker.service.process.tmdb.TmdbEntityProcessor.{
+  ProcessFailure,
+  ProcessResult,
+  ProcessSuccess
+}
+import com.teletracker.service.process.tmdb.TmdbProcessMessage
 import com.teletracker.service.util.execution.SequentialFutures
 import com.twitter.logging.Logger
-import java.time.{LocalDate, OffsetDateTime}
 import javax.inject.Inject
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
+import scala.util.control.NonFatal
 
 class TmdbShowImporter @Inject()(
   tmdbClient: TmdbClient,
-  tmdbEntityProcessor: TmdbEntityProcessor,
   tvShowDbAccess: TvShowDbAccess,
   justWatchClient: JustWatchClient,
   networksDbAccess: NetworksDbAccess,
-  thingsDbAccess: ThingsDbAccess
-)(implicit executionContext: ExecutionContext) {
+  thingsDbAccess: ThingsDbAccess,
+  justWatchLocalCache: JustWatchLocalCache,
+  processQueue: ProcessQueue[TmdbProcessMessage],
+  networkCache: NetworkCache
+)(implicit executionContext: ExecutionContext)
+    extends TmdbImporter(thingsDbAccess) {
   private val logger = Logger(getClass)
 
   import io.circe.generic.auto._
@@ -46,37 +58,222 @@ class TmdbShowImporter @Inject()(
     shows: List[TvShow],
     pullSeasons: Boolean,
     pullAvailability: Boolean
-  ) = {
-    val allNetworks = networksDbAccess
-      .findAllNetworks()
-      .map(_.map {
-        case (ref, net) => (ref.externalSource -> ref.externalId) -> net
-      }.toMap)
+  ): Future[List[ProcessResult]] = {
+    SequentialFutures.serialize(shows, Some(250 millis))(handleShow(_, true))
+//    val allNetworks = networksDbAccess
+//      .findAllNetworks()
+//      .map(_.map {
+//        case (ref, net) => (ref.externalSource -> ref.externalId) -> net
+//      }.toMap)
+//
+//    SequentialFutures
+//      .serialize(shows, Some(250 millis))(show => {
+//        val saveShowFut = handleShow(show, true)
+//
+//        val seasonsFut = if (pullSeasons) {
+//          saveShowFut.flatMap {
+//            case ProcessSuccess(_, thing) =>
+//              for {
+//                networksBySource <- allNetworks
+//                seasonsAndEpisodes <- saveSeasons(
+//                  show,
+//                  thing,
+//                  networksBySource,
+//                  pullAvailability
+//                )
+//              } yield seasonsAndEpisodes
+//
+//            case ProcessFailure(error) =>
+//              Future.successful(Nil)
+//          }
+//        } else Future.unit.map(_ => Nil)
+//
+//        saveShowFut.flatMap {
+//          case ProcessSuccess(_, savedShow) =>
+//            for {
+//              seasonsAndEpisodes <- seasonsFut
+//              networksBySource <- allNetworks
+//              _ <- if (pullAvailability)
+//                saveAvailability(show, seasonsAndEpisodes, networksBySource)
+//              else Future.unit
+//            } yield Some(savedShow)
+//
+//          case ProcessFailure(ex) =>
+//            Future.successful(None)
+//        }
+//      })
+//      .map(_.flatten)
+  }
 
-    SequentialFutures.serialize(shows, Some(250 millis))(show => {
-      val saveShowFut = tmdbEntityProcessor.handleShow(show, true)
+  def handleShow(
+    show: TvShow,
+    handleSeasons: Boolean
+  ): Future[ProcessResult] = {
+    val genreIds = show.genres.getOrElse(Nil).map(_.id).toSet
+    val genresFut = thingsDbAccess.findTmdbGenres(genreIds)
 
-      val seasonsFut = if (pullSeasons) {
-        for {
-          (_, thing) <- saveShowFut
-          networksBySource <- allNetworks
-          seasonsAndEpisodes <- saveSeasons(
-            show,
-            thing,
-            networksBySource,
-            pullAvailability
-          )
-        } yield seasonsAndEpisodes
-      } else Future.unit.map(_ => Nil)
+    val networkSlugs =
+      show.networks.toList.flatMap(_.map(_.name)).map(Slug.forString).toSet
+    val networksFut = networksDbAccess.findNetworksBySlugs(networkSlugs)
 
-      for {
-        (_, savedShow) <- saveShowFut
-        seasonsAndEpisodes <- seasonsFut
-        networksBySource <- allNetworks
-        _ <- if (pullAvailability)
-          saveAvailability(show, seasonsAndEpisodes, networksBySource)
-        else Future.unit
-      } yield savedShow
+    val now = OffsetDateTime.now()
+
+    val saveThingFut = Promise
+      .fromTry(ThingFactory.makeThing(show))
+      .future
+      .flatMap(thing => {
+        thingsDbAccess.saveThing(
+          thing,
+          Some(ExternalSource.TheMovieDb, show.id.toString)
+        )
+      })
+
+    val externalIdsFut = saveThingFut.flatMap(
+      t => handleExternalIds(Left(t), show.external_ids, Some(show.id.toString))
+    )
+
+    val networkSaves = for {
+      savedThing <- saveThingFut
+      networks <- networksFut
+      _ <- Future.sequence(networks.map(n => {
+        val tn = ThingNetwork(savedThing.id, n.id.get)
+        networksDbAccess.saveNetworkAssociation(tn)
+      }))
+    } yield {}
+
+    val availability = handleShowAvailability(show, saveThingFut)
+
+    val seasonFut = if (handleSeasons) {
+      saveThingFut.flatMap(t => {
+        tvShowDbAccess
+          .findAllSeasonsForShow(t.id)
+          .flatMap(dbSeasons => {
+            val saveFuts = show.seasons
+              .getOrElse(Nil)
+              .map(apiSeason => {
+                dbSeasons.find(_.number == apiSeason.season_number.get) match {
+                  case Some(s) => Future.successful(s)
+                  case None =>
+                    val m = model.TvShowSeason(
+                      None,
+                      apiSeason.season_number.get,
+                      t.id,
+                      apiSeason.overview,
+                      apiSeason.air_date.map(LocalDate.parse(_))
+                    )
+                    tvShowDbAccess.saveSeason(m)
+                }
+              })
+
+            Future.sequence(saveFuts)
+          })
+      })
+    } else {
+      Future.successful(Nil)
+    }
+
+    val result = for {
+      savedThing <- saveThingFut
+      _ <- networkSaves
+      _ <- genresFut
+      _ <- seasonFut
+      _ <- externalIdsFut
+      _ <- availability
+    } yield ProcessSuccess(show.id.toString, savedThing)
+
+    result.recover {
+      case NonFatal(e) => ProcessFailure(e)
+    }
+  }
+
+  private def handleShowAvailability(
+    show: TvShow,
+    processedShowFut: Future[Thing]
+  ): Future[Thing] = {
+    import io.circe.generic.auto._
+    import io.circe.syntax._
+
+    val query = PopularSearchRequest(1, 10, show.name, List("show"))
+    val justWatchResFut = justWatchLocalCache.getOrSet(query, {
+      justWatchClient.makeRequest[PopularItemsResponse](
+        "/content/titles/en_US/popular",
+        Seq("body" -> query.asJson.noSpaces)
+      )
+    })
+
+    (for {
+      justWatchRes <- justWatchResFut
+      networksBySource <- networkCache.get()
+      thing <- processedShowFut
+    } yield {
+      val matchingShow = matchJustWatchShow(show, justWatchRes.items)
+
+      val availabilities = matchingShow
+        .collect {
+          case matchedItem if matchedItem.offers.exists(_.nonEmpty) =>
+            for {
+              offer <- matchedItem.offers.get.distinct
+              provider <- networksBySource
+                .get(ExternalSource.JustWatch -> offer.provider_id.toString)
+                .toList
+            } yield {
+              val offerType = Try(
+                offer.monetization_type.map(OfferType.fromJustWatchType)
+              ).toOption.flatten
+              val presentationType = Try(
+                offer.presentation_type.map(PresentationType.fromJustWatchType)
+              ).toOption.flatten
+
+              Availability(
+                id = None,
+                isAvailable = true,
+                region = offer.country,
+                numSeasons = None,
+                startDate = offer.date_created.map(
+                  LocalDate
+                    .parse(_, DateTimeFormatter.ISO_LOCAL_DATE)
+                    .atStartOfDay()
+                    .atOffset(ZoneOffset.UTC)
+                ),
+                endDate = None,
+                offerType = offerType,
+                cost = offer.retail_price.map(BigDecimal.decimal),
+                currency = offer.currency,
+                thingId = Some(thing.id),
+                tvShowEpisodeId = None,
+                networkId = provider.id,
+                presentationType = presentationType
+              )
+            }
+        }
+        .getOrElse(Nil)
+
+      thingsDbAccess.saveAvailabilities(availabilities).map(_ => thing)
+    }).flatMap(identity)
+  }
+
+  private def matchJustWatchShow(
+    show: TvShow,
+    popularItems: List[PopularItem]
+  ): Option[PopularItem] = {
+    popularItems.find(item => {
+      val idMatch = item.scoring
+        .getOrElse(Nil)
+        .exists(
+          s =>
+            s.provider_type == "tmdb:id" && s.value.toInt.toString == show.id.toString
+        )
+      val nameMatch = item.title.exists(show.name.equalsIgnoreCase)
+      val originalMatch =
+        show.original_name.exists(item.original_title.contains)
+      val yearMatch = item.original_release_year.exists(year => {
+        show.first_air_date
+          .filter(_.nonEmpty)
+          .map(LocalDate.parse(_).getYear)
+          .contains(year)
+      })
+
+      idMatch || (nameMatch && yearMatch) || (originalMatch && yearMatch)
     })
   }
 
@@ -85,9 +282,9 @@ class TmdbShowImporter @Inject()(
     entity: Thing,
     networksBySource: Map[(ExternalSource, String), Network],
     pullAvailability: Boolean
-  ) = {
+  ): Future[List[(TvShowSeason, List[TvShowEpisode])]] = {
     tvShowDbAccess
-      .findAllSeasonsForShow(entity.id.get)
+      .findAllSeasonsForShow(entity.id)
       .flatMap(existingSeasons => {
         SequentialFutures
           .serialize(show.seasons.getOrElse(Nil), Some(250 millis))(season => {
@@ -108,7 +305,7 @@ class TmdbShowImporter @Inject()(
                   val newSeason = TvShowSeason(
                     None,
                     foundSeason.season_number.get,
-                    entity.id.get,
+                    entity.id,
                     foundSeason.overview,
                     foundSeason.air_date.map(LocalDate.parse(_))
                   )
@@ -132,7 +329,7 @@ class TmdbShowImporter @Inject()(
                           val newEpisode = TvShowEpisode(
                             None,
                             episode.episode_number.get,
-                            entity.id.get,
+                            entity.id,
                             s.id.get,
                             episode.name.get,
                             episode.production_code
@@ -140,13 +337,11 @@ class TmdbShowImporter @Inject()(
                           tvShowDbAccess
                             .insertEpisode(newEpisode)
                             .flatMap(savedEpisode => {
-                              tmdbEntityProcessor
-                                .handleExternalIds(
-                                  Right(savedEpisode),
-                                  None,
-                                  Some(episode.id.toString)
-                                )
-                                .map(_ => savedEpisode)
+                              handleExternalIds(
+                                Right(savedEpisode),
+                                None,
+                                Some(episode.id.toString)
+                              ).map(_ => savedEpisode)
                             })
                         })
 
@@ -167,7 +362,7 @@ class TmdbShowImporter @Inject()(
     show: TvShow,
     tvShowSeasonsAndEpisodes: List[(TvShowSeason, List[TvShowEpisode])],
     networksBySource: Map[(ExternalSource, String), Network]
-  ) = {
+  ): Future[Unit] = {
     val query = PopularSearchRequest(1, 10, show.name, List("show"))
     val justWatchResFut = justWatchClient.makeRequest[PopularItemsResponse](
       "/content/titles/en_US/popular",
@@ -245,25 +440,6 @@ class TmdbShowImporter @Inject()(
           thingsDbAccess.saveAvailabilities(availabilities).map(_ => {})
         }
       })
-    })
-  }
-
-  private def matchJustWatchShow(
-    show: TvShow,
-    popularItems: List[PopularItem]
-  ): Option[PopularItem] = {
-    popularItems.find(item => {
-      val idMatch = item.scoring
-        .getOrElse(Nil)
-        .exists(
-          s =>
-            s.provider_type == "tmdb:id" && s.value.toInt.toString == show.id.toString
-        )
-      val nameMatch = item.title.contains(show.name)
-      val originalMatch =
-        show.original_name.exists(og => item.original_title.contains(og))
-
-      idMatch || nameMatch || originalMatch
     })
   }
 }

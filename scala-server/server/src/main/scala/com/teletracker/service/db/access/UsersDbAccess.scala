@@ -14,8 +14,11 @@ import com.teletracker.service.db.model.{
 }
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import com.teletracker.service.util.Field
+import com.teletracker.service.util.{Field, FieldSelector, NetworkCache}
+import io.circe.Json
 import javax.inject.{Inject, Provider}
 import java.time.{Instant, OffsetDateTime}
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class UsersDbAccess @Inject()(
@@ -33,7 +36,8 @@ class UsersDbAccess @Inject()(
   listQuery: Provider[ListQuery],
   dynamicListBuilder: DynamicListBuilder,
   jwtVendor: JwtVendor,
-  dbImplicits: DbImplicits
+  dbImplicits: DbImplicits,
+  networkCache: NetworkCache
 )(implicit executionContext: ExecutionContext)
     extends DbAccess {
   import dbImplicits._
@@ -361,7 +365,7 @@ class UsersDbAccess @Inject()(
 
   def addThingToList(
     listId: Int,
-    thingId: Int
+    thingId: UUID
   ): Future[Int] = {
     run {
       trackedListThings.query.insertOrUpdate(TrackedListThing(listId, thingId))
@@ -370,7 +374,7 @@ class UsersDbAccess @Inject()(
 
   def removeThingFromLists(
     listIds: Set[Int],
-    thingId: Int
+    thingId: UUID
   ): Future[Int] = {
     if (listIds.isEmpty) {
       Future.successful(0)
@@ -399,7 +403,7 @@ class UsersDbAccess @Inject()(
       } yield {
         (ev, thing.map(_.id), thing.map(_.name))
       }).result.map(_.map {
-        case (event, tid @ Some(_), tname @ Some(_)) =>
+        case (event, Some(tid), tname @ Some(_)) =>
           event.withTarget(PartialThing(tid, tname))
         case (event, _, _) =>
           EventWithTarget(event, None)
@@ -415,7 +419,7 @@ class UsersDbAccess @Inject()(
 
   def insertOrUpdateAction(
     userId: Int,
-    thingId: Int,
+    thingId: UUID,
     action: UserThingTagType,
     value: Option[Double]
   ): Future[Int] = {
@@ -448,7 +452,7 @@ class UsersDbAccess @Inject()(
 
   def removeAction(
     userId: Int,
-    thingId: Int,
+    thingId: UUID,
     action: UserThingTagType
   ): Future[Int] = {
     run {

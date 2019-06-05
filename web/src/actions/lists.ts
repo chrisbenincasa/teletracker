@@ -187,7 +187,7 @@ export const retrieveListSaga = function*() {
   });
 };
 
-const defaultMovieMeta: KeyMap<ObjectMetadata> = {
+export const defaultMovieMeta = {
   themoviedb: {
     movie: {
       title: true,
@@ -195,8 +195,9 @@ const defaultMovieMeta: KeyMap<ObjectMetadata> = {
       poster_path: true,
       overview: true,
     },
+    show: true,
   },
-};
+} as KeyMap<ObjectMetadata>;
 
 /**
  * Listens for `LIST_RETRIEVE_ALL_INITIATED` actions and retrieves a clients full list of lists.

@@ -2,11 +2,16 @@ package com.teletracker.service.db.access
 
 import com.teletracker.service.db.model._
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
-import com.teletracker.service.util.ObjectMetadataUtils
+import com.teletracker.service.util.{Field, Slug}
 import javax.inject.Inject
-import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
+import org.postgresql.util.PSQLException
+import slick.jdbc.{PositionedParameters, SetParameter}
+import java.sql.JDBCType
+import java.time.{Instant, LocalDate, OffsetDateTime, ZoneId, ZoneOffset}
+import java.util.UUID
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class ThingsDbAccess @Inject()(
   val provider: DbProvider,
@@ -34,18 +39,39 @@ class ThingsDbAccess @Inject()(
   import dbImplicits._
   import provider.driver.api._
 
-  def findThingById(id: Int) = {
+  def findThingById(id: UUID): Future[Option[Thing]] = {
     run {
       things.query.filter(_.id === id).take(1).result.headOption
     }
   }
 
-  def findThingByIds(ids: Set[Int]) = {
+  def findThingsByNormalizedName(name: String): Future[Seq[ThingRaw]] = {
+    run {
+      things.rawQuery.filter(_.normalizedName === Slug.raw(name)).result
+    }
+  }
+
+  private val defaultFields = List(Field("id"))
+
+  def findThingsByIds(
+    ids: Set[UUID],
+    selectFields: Option[List[Field]]
+  ): Future[Map[UUID, ThingRaw]] = {
+    run {
+      things.rawQuery.filter(_.id inSetBind ids).result
+    }.map(
+      _.map(_.selectFields(selectFields, defaultFields))
+        .map(thing => thing.id -> thing)
+        .toMap
+    )
+  }
+
+  def findThingByIds(ids: Set[UUID]): Query[things.ThingsTable, Thing, Seq] = {
     things.query.filter(_.id inSetBind ids)
   }
 
   def findShowByIdBasic(
-    id: Int,
+    id: UUID,
     withAvailability: Boolean = true
   ): Future[Option[PartialThing]] = {
     val showQuery =
@@ -72,9 +98,9 @@ class ThingsDbAccess @Inject()(
   }
 
   def findShowById(
-    id: Int,
+    id: UUID,
     withAvailability: Boolean = false
-  ) = {
+  ): Future[Option[PartialThing]] = {
     val showQuery =
       things.query.filter(t => t.id === id && t.`type` === ThingType.Show)
 
@@ -132,7 +158,7 @@ class ThingsDbAccess @Inject()(
           .toMap
 
         val twd = PartialThing(
-          id = Some(show.id.get),
+          id = show.id,
           name = Some(show.name),
           normalizedName = Some(show.normalizedName),
           `type` = Some(show.`type`),
@@ -171,7 +197,7 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def findMovieById(id: Int) = {
+  def findMovieById(id: UUID): Future[Option[PartialThing]] = {
     val showQuery = things.query
       .filter(t => t.id === id && t.`type` === ThingType.Movie)
       .take(1)
@@ -196,7 +222,7 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def findPersonById(id: Int) = {
+  def findPersonById(id: UUID): Future[Option[Thing]] = {
     val person =
       things.query.filter(p => p.id === id && p.`type` === ThingType.Person)
 
@@ -265,7 +291,7 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def findTmdbGenres(ids: Set[Int]) = {
+  def findTmdbGenres(ids: Set[Int]): Future[Seq[Genre]] = {
     if (ids.isEmpty) {
       Future.successful(Seq.empty)
     } else {
@@ -279,86 +305,115 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def saveThing(
-    thing: Thing,
-    externalPair: Option[(ExternalSource, String)] = None
-  ) = {
-    val existing = externalPair match {
-      case Some((source, id)) if source == ExternalSource.TheMovieDb =>
-        externalIds.query
-          .filter(_.tmdbId === id)
-          .flatMap(_.thing)
-          .result
-          .flatMap {
-            case foundThings if foundThings.isEmpty =>
-              things.query
-                .filter(_.normalizedName === thing.normalizedName)
-                .filter(_.`type` === thing.`type`)
-                .result
-
-            case foundThings => DBIO.successful(foundThings)
-
-          }
-          .flatMap(foundThings => {
-            DBIO.successful {
-              foundThings.find(thing => {
-                thing.metadata.exists(
-                  ObjectMetadataUtils
-                    .metadataMatchesId(_, source, thing.`type`, id)
-                )
-              })
-            }
-          })
-
-      case _ =>
-        things.query
-          .filter(_.normalizedName === thing.normalizedName)
-          .filter(_.`type` === thing.`type`)
-          .result
-          .headOption
-    }
-
-    val insertOrUpdate = existing.flatMap {
-      case None =>
-        (things.query returning
-          things.query.map(_.id) into
-          ((t, id) => t.copy(id = Some(id)))) += thing
-
-      case Some(e) =>
-        val updated = thing.copy(id = e.id)
-
-        things.query
-          .filter(t => {
-            t.id === e.id &&
-              t.normalizedName === e.normalizedName &&
-              t.`type` === e.`type`
-          })
-          .update(updated)
-          .map(_ => updated)
-    }
-
-    run {
-      insertOrUpdate
+  implicit object SetUUID extends SetParameter[UUID] {
+    def apply(
+      v: UUID,
+      pp: PositionedParameters
+    ): Unit = {
+      pp.setObject(v, JDBCType.BINARY.getVendorTypeNumber)
     }
   }
 
-  def findExternalIdsByTmdbId(tmdbId: String) = {
+  def upsertAndGetExternalIdPair(
+    source: ExternalSource,
+    thingId: UUID,
+    sourceId: String
+  ): Future[UUID] = {
+    run {
+      sql"""
+      INSERT INTO "external_ids" (thing_id, tmdb_id) VALUES ($thingId, $sourceId)
+        ON CONFLICT ON CONSTRAINT unique_external_ids_thing_tmdb DO UPDATE SET tmdb_id=EXCLUDED.tmdb_id
+        RETURNING (thing_id);
+    """.as[String]
+    }.map(_.head).map(UUID.fromString(_))
+  }
+
+  def saveThing(
+    thing: Thing,
+    externalPair: Option[(ExternalSource, String)] = None
+  ): Future[Thing] = {
+    val thingToInsert = externalPair match {
+      case Some((source, id))
+          if source == ExternalSource.TheMovieDb && thing.tmdbId.isEmpty =>
+        thing.copy(tmdbId = Some(id))
+
+      case _ => thing
+    }
+
+    def findByExternalId: Future[Option[Thing]] = {
+      externalPair match {
+        case _ if thing.tmdbId.isDefined =>
+          run {
+            things.query
+              .filter(_.tmdbId === thing.tmdbId.get)
+              .take(1)
+              .result
+              .headOption
+          }
+
+        case Some((source, id)) if source == ExternalSource.TheMovieDb =>
+          run {
+            things.query.filter(_.tmdbId === id).take(1).result.headOption
+          }
+
+        case _ =>
+          run {
+            things.query
+              .filter(_.normalizedName === thing.normalizedName)
+              .filter(_.`type` === thing.`type`)
+              .result
+              .headOption
+          }
+      }
+    }
+
+    def update(existingId: UUID): Future[Thing] = {
+      val updated = thingToInsert.copy(id = existingId)
+
+      run {
+        things.query
+          .filter(t => t.id === existingId)
+          .update(updated)
+          .map(_ => updated)
+      }
+    }
+
+    findByExternalId.flatMap {
+      case None =>
+        run(things.query += thingToInsert).map(_ => thing).recoverWith {
+          case NonFatal(_: PSQLException) =>
+            findByExternalId.flatMap {
+              case None =>
+                throw new IllegalStateException(
+                  "Received duplicate key exception, but could not find existing value"
+                )
+              case Some(existing) =>
+                update(existing.id)
+            }
+        }
+
+      case Some(e) =>
+        update(e.id)
+    }
+  }
+
+  def findExternalIdsByTmdbId(tmdbId: String): Future[Option[ExternalId]] = {
     run {
       externalIds.query.filter(_.tmdbId === tmdbId).result.headOption
     }
   }
 
-  def upsertPersonThing(personThing: PersonThing) = {
+  def upsertPersonThing(personThing: PersonThing): Future[PersonThing] = {
     run {
       personThings.query.insertOrUpdate(personThing).map(_ => personThing)
     }
   }
 
-  def upsertExternalIds(externalId: ExternalId) = {
+  def upsertExternalIds(externalId: ExternalId): Future[ExternalId] = {
     val q = if (externalId.thingId.isDefined) {
       Some(externalIds.query.filter(_.thingId === externalId.thingId))
     } else if (externalId.tvEpisodeId.isDefined) {
-      Some(externalIds.query.filter(_.thingId === externalId.tvEpisodeId))
+      Some(externalIds.query.filter(_.tvEpisodeId === externalId.tvEpisodeId))
     } else {
       None
     }
@@ -387,7 +442,7 @@ class ThingsDbAccess @Inject()(
       )
   }
 
-  def getAllGenres(typ: Option[GenreType]) = {
+  def getAllGenres(typ: Option[GenreType]): Future[Seq[Genre]] = {
     run {
       val q = genres.query
       val filtered = if (typ.isDefined) q.filter(_.`type` === typ.get) else q
@@ -395,14 +450,14 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def saveGenreAssociation(thingGenre: ThingGenre) = {
+  def saveGenreAssociation(thingGenre: ThingGenre): Future[Int] = {
     run {
       thingGenres.query.insertOrUpdate(thingGenre)
     }
   }
 
   def findAvailability(
-    thingId: Int,
+    thingId: UUID,
     networkId: Int
   ): Future[Seq[Availability]] = {
     run {
@@ -413,75 +468,163 @@ class ThingsDbAccess @Inject()(
     }
   }
 
+  def findRecentAvailability(
+    daysOut: Int,
+    networkIds: Option[Set[Int]],
+    selectFields: Option[List[Field]]
+  ): Future[RecentAvailability] = {
+    val recentAvailabilityFut = findPastAvailability(daysOut, networkIds)
+    val futureAvailabilityFut =
+      findFutureAvailability(daysOut, networkIds, selectFields)
+
+    for {
+      recentAvailability <- recentAvailabilityFut
+      futureAvailability <- futureAvailabilityFut
+    } yield {
+      val recent = recentAvailability.map {
+        case (av, thing) =>
+          av.toDetailed.withThing(
+            thing.selectFields(selectFields, defaultFields).toPartial
+          )
+      }
+
+      RecentAvailability(
+        recentlyAdded = recent,
+        future = futureAvailability
+      )
+    }
+  }
+
   def findFutureAvailability(
     daysOut: Int,
-    networkId: Option[Int]
+    networkIds: Option[Set[Int]],
+    selectFields: Option[List[Field]]
   ): Future[FutureAvailability] = {
-    val upcomingFut = findUpcomingAvailability(daysOut, networkId)
-    val expiringFut = findExpiringAvailability(daysOut, networkId)
+    val upcomingFut = findUpcomingAvailability(daysOut, networkIds)
+    val expiringFut = findExpiringAvailability(daysOut, networkIds)
 
     for {
       upcoming <- upcomingFut
       expiring <- expiringFut
     } yield {
-      FutureAvailability(upcoming, expiring)
+      FutureAvailability(
+        upcoming.map {
+          case (av, thing) =>
+            av.toDetailed.withThing(
+              thing.selectFields(selectFields, defaultFields).toPartial
+            )
+        },
+        expiring.map {
+          case (av, thing) =>
+            av.toDetailed.withThing(
+              thing.selectFields(selectFields, defaultFields).toPartial
+            )
+        }
+      )
     }
   }
 
   def findPastAvailability(
     daysBack: Int,
-    networkId: Option[Int]
-  ): Future[Seq[Availability]] = {
+    networkIds: Option[Set[Int]]
+  ): Future[Seq[(Availability, ThingRaw)]] = {
     val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
+    val daysAgoDate = today.minusDays(daysBack)
 
-    val baseQuery = availabilities.query.filter(
-      av => av.startDate <= today && av.startDate > today.minusDays(daysBack)
+    queryAvailabilities(
+      today,
+      pastStartDate = Some(daysAgoDate),
+      futureStartDate = None,
+      futureEndDate = None,
+      networkIds = networkIds
     )
-
-    val withNetwork = networkId
-      .map(nid => {
-        baseQuery.filter(_.networkId === nid)
-      })
-      .getOrElse(baseQuery)
-
-    run(withNetwork.result)
   }
 
   def findUpcomingAvailability(
     daysOut: Int,
-    networkId: Option[Int]
-  ): Future[Seq[Availability]] = {
+    networkIds: Option[Set[Int]]
+  ): Future[Seq[(Availability, ThingRaw)]] = {
     val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
     val daysOutDate = today.plusDays(daysOut)
 
-    queryAvailabilities(today, Some(daysOutDate), None, networkId)
+    queryAvailabilities(
+      today,
+      pastStartDate = None,
+      futureStartDate = Some(daysOutDate),
+      futureEndDate = None,
+      networkIds = networkIds
+    )
   }
 
   def findExpiringAvailability(
     daysOut: Int,
-    networkId: Option[Int]
-  ): Future[Seq[Availability]] = {
+    networkIds: Option[Set[Int]]
+  ): Future[Seq[(Availability, ThingRaw)]] = {
     val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
     val daysOutDate = today.plusDays(daysOut)
 
-    queryAvailabilities(today, None, Some(daysOutDate), networkId)
+    queryAvailabilities(
+      today,
+      pastStartDate = None,
+      futureStartDate = None,
+      futureEndDate = Some(daysOutDate),
+      networkIds = networkIds
+    )
+  }
+
+  def findExpiredAvailabilities(): Future[Seq[Availability]] = {
+    val pst = ZoneId.of(ZoneId.SHORT_IDS.get("PST"))
+    val today = LocalDate
+      .now(pst)
+      .atStartOfDay()
+      .atOffset(pst.getRules.getOffset(Instant.now))
+
+    run {
+      availabilities.query
+        .filter(_.endDate < today)
+        .filter(_.isAvailable)
+        .result
+    }
+  }
+
+  def markAvailabilities(
+    ids: Set[Int],
+    isAvailable: Boolean
+  ): Future[Int] = {
+    run {
+      availabilities.query
+        .filter(_.id inSetBind ids)
+        .map(_.isAvailable)
+        .update(isAvailable)
+    }
   }
 
   private def queryAvailabilities(
     today: OffsetDateTime,
+    pastStartDate: Option[OffsetDateTime],
     futureStartDate: Option[OffsetDateTime],
     futureEndDate: Option[OffsetDateTime],
-    networkId: Option[Int]
-  ): Future[Seq[Availability]] = {
+    networkIds: Option[Set[Int]]
+  ): Future[Seq[(Availability, ThingRaw)]] = {
+    if (futureEndDate.isEmpty) {
+      require(
+        pastStartDate.isDefined ^ futureStartDate.isDefined
+      )
+    }
+
     val baseQuery = availabilities.query
 
-    val withStart = futureStartDate
-      .map(start => {
-        baseQuery.filter(av => {
-          av.startDate > today && av.startDate <= start
-        })
+    val withStart = if (pastStartDate.isDefined) {
+      baseQuery.filter(av => {
+        av.startDate < today && av.startDate >= pastStartDate.get
       })
-      .getOrElse(baseQuery)
+    } else if (futureStartDate.isDefined) {
+      baseQuery.filter(av => {
+        av.startDate > today && av.startDate <= futureStartDate.get
+      })
+    } else {
+      baseQuery
+    }
 
     val withEnd = futureEndDate
       .map(end => {
@@ -491,13 +634,20 @@ class ThingsDbAccess @Inject()(
       })
       .getOrElse(withStart)
 
-    val withNetwork = networkId
-      .map(nid => {
-        withEnd.filter(_.networkId === nid)
+    val withNetwork = networkIds
+      .map(nids => {
+        withEnd.filter(_.networkId inSetBind nids)
       })
       .getOrElse(withEnd)
 
-    run(withNetwork.result)
+    run {
+      (for {
+        avs <- withNetwork
+        thing <- things.rawQuery if avs.thingId === thing.id
+      } yield {
+        avs -> thing
+      }).result
+    }
   }
 
   def insertAvailability(av: Availability): Future[Option[Availability]] = {
@@ -595,11 +745,13 @@ class ThingsDbAccess @Inject()(
       val tvEpisodeAvailabilitySave = if (tvEpisodeAvailabilities.nonEmpty) {
         run {
           availabilities.query
-            .filter(_.thingId inSetBind tvEpisodeAvailabilities.keySet)
+            .filter(_.tvShowEpisodeId inSetBind tvEpisodeAvailabilities.keySet)
             .result
         }.flatMap(existing => {
           val existingByThingId =
-            existing.filter(_.thingId.isDefined).groupBy(_.thingId.get)
+            existing
+              .filter(_.tvShowEpisodeId.isDefined)
+              .groupBy(_.tvShowEpisodeId.get)
           val (updates, inserts) = tvEpisodeAvailabilities.foldLeft(
             (Set.empty[Availability], Set.empty[Availability])
           ) {
@@ -639,7 +791,7 @@ class ThingsDbAccess @Inject()(
 
   def getThingUserDetails(
     userId: Int,
-    thingId: Int
+    thingId: UUID
   ): Future[UserThingDetails] = {
     // Do they track it?
     val listsQuery = trackedListThings.query
@@ -669,8 +821,8 @@ class ThingsDbAccess @Inject()(
 
   def getThingsUserDetails(
     userId: Int,
-    thingIds: Set[Int]
-  ): Future[Map[Int, UserThingDetails]] = {
+    thingIds: Set[UUID]
+  ): Future[Map[UUID, UserThingDetails]] = {
     val lists = trackedListThings.query
       .filter(_.thingId inSetBind thingIds)
       .flatMap(l => {
@@ -714,11 +866,11 @@ class ThingsDbAccess @Inject()(
 
   def addThingToCollection(
     collectionId: Int,
-    thingId: Int
-  ) = {
+    thingId: UUID
+  ): Future[Option[Int]] = {
     run {
       sql"""
-            INSERT INTO "collection_things" (collection_id, thing_id) VALUES ($collectionId, $thingId) 
+            INSERT INTO "collection_things" (collection_id, thing_id) VALUES ($collectionId, ${thingId.toString}) 
             ON CONFLICT ON CONSTRAINT collection_things_by_collection DO NOTHING
             RETURNING id;
       """.as[Int].headOption
@@ -734,6 +886,10 @@ case class UserThingDetails(
   belongsToLists: Seq[TrackedList],
   tags: Seq[UserThingTag] = Seq.empty)
 
+case class RecentAvailability(
+  recentlyAdded: Seq[AvailabilityWithDetails],
+  future: FutureAvailability)
+
 case class FutureAvailability(
-  upcoming: Seq[Availability],
-  expiring: Seq[Availability])
+  upcoming: Seq[AvailabilityWithDetails],
+  expiring: Seq[AvailabilityWithDetails])

@@ -23,6 +23,7 @@ import com.twitter.finatra.request.{QueryParam, RouteParam}
 import io.circe.generic.JsonCodec
 import io.circe.parser._
 import javax.inject.Inject
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -185,7 +186,7 @@ class UserController @Inject()(
             case None => Future.successful(response.notFound)
             case Some(thing) =>
               usersDbAccess
-                .addThingToList(list.id, thing.id.get)
+                .addThingToList(list.id, thing.id)
                 .map(_ => response.noContent)
           }
         }
@@ -208,7 +209,7 @@ class UserController @Inject()(
                 case None => Future.successful(response.notFound)
                 case Some(thing) =>
                   val futs = validListIds.map(listId => {
-                    usersDbAccess.addThingToList(listId, thing.id.get)
+                    usersDbAccess.addThingToList(listId, thing.id)
                   })
 
                   Future.sequence(futs).map(_ => response.noContent)
@@ -232,11 +233,11 @@ class UserController @Inject()(
                 case None => Future.successful(response.notFound)
                 case Some(thing) =>
                   val futs = validAdds.map(listId => {
-                    usersDbAccess.addThingToList(listId, thing.id.get)
+                    usersDbAccess.addThingToList(listId, thing.id)
                   })
 
                   val removeFuts = usersDbAccess
-                    .removeThingFromLists(validRemoves.toSet, thing.id.get)
+                    .removeThingFromLists(validRemoves.toSet, thing.id)
 
                   Future
                     .sequence(futs :+ removeFuts)
@@ -387,7 +388,7 @@ case class GetListThingsRequest(
 case class AddThingToListRequest(
   @RouteParam userId: String,
   @RouteParam listId: String,
-  itemId: Int,
+  itemId: UUID,
   request: Request)
     extends InjectedRequest
 
@@ -400,7 +401,7 @@ case class DeleteListRequest(
 
 case class AddThingToListsRequest(
   @RouteParam userId: String,
-  itemId: Int,
+  itemId: UUID,
   listIds: List[Int],
   request: Request)
     extends InjectedRequest
@@ -413,7 +414,7 @@ case class AddUserEventRequest(
 
 case class ManageShowListsRequest(
   @RouteParam userId: String,
-  @RouteParam thingId: Int,
+  @RouteParam thingId: UUID,
   addToLists: List[Int],
   removeFromLists: List[Int],
   request: Request)
@@ -435,13 +436,13 @@ case class UpdateUserRequest(user: User)
 
 case class UpdateUserThingActionRequest(
   @RouteParam userId: String,
-  @RouteParam thingId: Int,
+  @RouteParam thingId: UUID,
   action: String,
   value: Option[Double],
   request: Request)
 
 case class DeleteUserThingActionRequest(
   @RouteParam userId: String,
-  @RouteParam thingId: Int,
+  @RouteParam thingId: UUID,
   @RouteParam actionType: String,
   request: Request)
