@@ -12,6 +12,8 @@ import {
   USER_SELF_ADD_NETWORK,
   USER_SELF_CREATE_LIST,
   USER_SELF_CREATE_LIST_SUCCESS,
+  USER_SELF_DELETE_LIST,
+  USER_SELF_DELETE_LIST_SUCCESS,
   USER_SELF_RETRIEVE_INITIATED,
   USER_SELF_RETRIEVE_SUCCESS,
   USER_SELF_UPDATE,
@@ -68,6 +70,21 @@ export type UserCreateListAction = FSA<
 export type UserCreateListSuccessAction = FSA<
   typeof USER_SELF_CREATE_LIST_SUCCESS,
   { id: number }
+>;
+
+export interface UserDeleteListPayload {
+  listId: number;
+  mergeListId?: number;
+}
+
+export type UserDeleteListAction = FSA<
+  typeof USER_SELF_DELETE_LIST,
+  UserDeleteListPayload
+>;
+
+export type UserDeleteListSuccessAction = FSA<
+  typeof USER_SELF_DELETE_LIST_SUCCESS,
+  UserDeleteListPayload
 >;
 
 export interface UserUpdateItemTagsPayload {
@@ -130,6 +147,14 @@ export const createList = createAction<UserCreateListAction>(
 
 export const createListSuccess = createAction<UserCreateListSuccessAction>(
   USER_SELF_CREATE_LIST_SUCCESS,
+);
+
+export const deleteList = createAction<UserDeleteListAction>(
+  USER_SELF_DELETE_LIST,
+);
+
+export const deleteListSuccess = createAction<UserDeleteListSuccessAction>(
+  USER_SELF_DELETE_LIST_SUCCESS,
 );
 
 export const updateUserItemTags = createAction<UserUpdateItemTagsAction>(
@@ -258,6 +283,34 @@ export const createNewListSaga = function*() {
 
       if (response.ok) {
         yield put(createListSuccess(response.data!.data));
+        yield put(RetrieveUserSelfInitiated({ force: true }));
+      } else {
+        // TODO: ERROR
+      }
+    } else {
+      // TODO: Fail
+    }
+  });
+};
+
+export const deleteListSaga = function*() {
+  yield takeEvery(USER_SELF_DELETE_LIST, function*({
+    payload,
+  }: UserDeleteListAction) {
+    if (payload) {
+      let response: TeletrackerResponse<any> = yield clientEffect(
+        client => client.deleteList,
+        payload.listId,
+        Number(payload.mergeListId),
+      );
+      console.log(response);
+      if (response.ok) {
+        yield put(
+          deleteListSuccess({
+            listId: payload.listId,
+            mergeListId: payload.mergeListId,
+          }),
+        );
         yield put(RetrieveUserSelfInitiated({ force: true }));
       } else {
         // TODO: ERROR

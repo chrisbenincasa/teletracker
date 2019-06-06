@@ -144,6 +144,18 @@ export class TeletrackerApi {
     });
   }
 
+  async deleteList(listId: number, mergeListId: number) {
+    return this.withTokenCheck(async () => {
+      if (mergeListId === 0) {
+        return this.api.delete(`/api/v1/users/self/lists/${listId}`);
+      } else {
+        return this.api.delete(
+          `/api/v1/users/self/lists/${listId}?mergeWithList=${mergeListId}`,
+        );
+      }
+    });
+  }
+
   async getLists(fields?: KeyMap<ObjectMetadata>) {
     let filterString = fields ? this.createFilter(fields) : '';
     let params = {};
