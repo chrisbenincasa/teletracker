@@ -10,7 +10,11 @@ import com.teletracker.service.db.model.{
   User,
   UserThingTagType
 }
-import com.teletracker.service.db.{ThingsDbAccess, UsersDbAccess}
+import com.teletracker.service.db.{
+  ThingsDbAccess,
+  UserThingDetails,
+  UsersDbAccess
+}
 import com.teletracker.service.model.{DataResponse, IllegalActionTypeError}
 import com.teletracker.service.util.HasFieldsFilter
 import com.teletracker.service.util.json.circe._
@@ -29,7 +33,7 @@ class UserController @Inject()(
   thingsDbAccess: ThingsDbAccess,
   jwtVendor: JwtVendor
 )(implicit executionContext: ExecutionContext)
-    extends Controller
+    extends TeletrackerController(usersDbAccess)
     with CanParseFieldFilter {
   prefix("/api/v1/users") {
     // Create a user
@@ -106,7 +110,7 @@ class UserController @Inject()(
           .insertList(req.request.authContext.user.id, req.name)
           .map(newList => {
             DataResponse(
-              CreateListResponse(newList.id.get)
+              CreateListResponse(newList.id)
             )
           })
       }
@@ -137,88 +141,73 @@ class UserController @Inject()(
           .map {
             case None => response.notFound
 
-            case Some((list, things)) =>
+            case Some((list, thingsAndActions)) =>
+              val things = thingsAndActions.map {
+                case (thing, actions) =>
+                  thing.asPartial
+                    .withUserMetadata(UserThingDetails(Seq.empty, actions))
+              }
               response.ok
                 .contentTypeJson()
                 .body(
                   DataResponse.complex(
-                    list.toFull.withThings(things.map(_.asPartial).toList)
+                    list.toFull.withThings(things.toList)
                   )
                 )
           }
       }
 
       delete("/:userId/lists/:listId") { req: DeleteListRequest =>
-        val actualListId = if (req.listId == "default") {
-          usersDbAccess
-            .findDefaultListForUser(req.request.authContext.user.id)
-            .map(
-              _.flatMap(_.id).getOrElse(
-                throw new IllegalArgumentException(
-                  "Could not find default list"
+        withList(req.user.id, req.listId) { list =>
+          req.mergeWithList
+            .map(listId => {
+              usersDbAccess
+                .getList(
+                  req.request.authContext.user.id,
+                  listId.toInt
                 )
-              )
-            )
-        } else {
-          Future.successful(req.listId.toInt)
-        }
+            })
+            .getOrElse(Future.successful(None))
+            .flatMap {
+              case Some(list) if list.isDynamic =>
+                Future.successful(response.badRequest)
 
-        req.mergeWithList
-          .map(listId => {
-            usersDbAccess
-              .getList(
-                req.request.authContext.user.id,
-                listId.toInt
-              )
-          })
-          .getOrElse(Future.successful(None))
-          .flatMap {
-            case Some(list) if list.isDynamic =>
-              Future.successful(response.badRequest)
+              case None if req.mergeWithList.nonEmpty =>
+                Future.successful(response.notFound)
 
-            case None if req.mergeWithList.nonEmpty =>
-              Future.successful(response.notFound)
-
-            case _ =>
-              actualListId.flatMap(listId => {
+              case _ =>
                 usersDbAccess
                   .deleteList(
                     req.request.authContext.user.id,
-                    listId,
+                    list.id,
                     req.mergeWithList.map(_.toInt)
                   )
                   .map {
                     case true  => response.noContent
                     case false => response.notFound
                   }
-              })
-          }
+            }
+        }
       }
 
-      put("/:userId/lists/:listId") { req: AddThingToListRequest =>
-        val listFut = if (req.listId == "default") {
-          usersDbAccess.findDefaultListForUser(req.request.authContext.user.id)
-        } else {
-          Promise
-            .fromTry(Try(req.listId.toInt))
-            .future
-            .flatMap(listId => {
-              usersDbAccess
-                .findUserAndList(req.request.authContext.user.id, listId)
-                .map(_.headOption.map(_._2))
-            })
+      put("/:userId/lists/:listId") { req: UpdateListRequest =>
+        withList(req.user.id, req.listId) { list =>
+          usersDbAccess.updateList(req.user.id, list.id, req.name).map {
+            case 0 => response.notFound
+            case _ => response.noContent
+          }
         }
+      }
 
-        listFut.flatMap {
-          case None => Future.successful(response.notFound)
-          case Some(list) =>
-            thingsDbAccess.findThingById(req.itemId).flatMap {
-              case None => Future.successful(response.notFound)
-              case Some(thing) =>
-                usersDbAccess
-                  .addThingToList(list.id.get, thing.id.get)
-                  .map(_ => response.noContent)
-            }
+      put("/:userId/lists/:listId/things") { req: AddThingToListRequest =>
+        withList(req.user.id, req.listId) { list =>
+          thingsDbAccess.findThingById(req.itemId).flatMap {
+            case None => Future.successful(response.notFound)
+            case Some(thing) =>
+              usersDbAccess
+                .addThingToList(list.id, thing.id.get)
+                .map(_ => response.noContent)
+          }
         }
       }
 
@@ -226,7 +215,7 @@ class UserController @Inject()(
         usersDbAccess
           .findListsForUser(req.request.authContext.user.id)
           .flatMap(lists => {
-            val listIds = lists.flatMap(_.id).toSet
+            val listIds = lists.map(_.id).toSet
             val (validListIds, _) = req.listIds.partition(listIds(_))
 
             if (validListIds.isEmpty) {
@@ -247,9 +236,9 @@ class UserController @Inject()(
 
       put("/:userId/things/:thingId/lists") { req: ManageShowListsRequest =>
         usersDbAccess
-          .findListsForUser(req.request.authContext.user.id)
+          .findListsForUser(req.user.id)
           .flatMap(lists => {
-            val listIds = lists.flatMap(_.id).toSet
+            val listIds = lists.map(_.id).toSet
             val validAdds = req.addToLists.filter(listIds(_))
             val validRemoves = req.removeFromLists.filter(listIds(_))
 
@@ -349,17 +338,23 @@ class UserController @Inject()(
   }
 }
 
+trait InjectedRequest {
+  def request: Request
+}
+
 case class ListFilters(itemTypes: Option[Set[ThingType]])
 
 case class GetUserByIdRequest(
   @RouteParam userId: String,
   request: Request)
+    extends InjectedRequest
 
 case class GetUserListsRequest(
   @RouteParam userId: String,
   @QueryParam fields: Option[String],
   request: Request)
     extends HasFieldsFilter
+    with InjectedRequest
 
 case class GetUserAndListByIdRequest(
   @RouteParam userId: String,
@@ -369,36 +364,49 @@ case class GetUserAndListByIdRequest(
   @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
   request: Request)
     extends HasFieldsFilter
+    with InjectedRequest
 
 case class CreateListRequest(
   @RouteParam userId: String,
   request: Request,
   name: String)
+    extends InjectedRequest
 
 case class CreateListResponse(id: Int)
+
+case class UpdateListRequest(
+  @RouteParam userId: String,
+  @RouteParam listId: String,
+  name: String,
+  request: Request)
+    extends InjectedRequest
 
 case class AddThingToListRequest(
   @RouteParam userId: String,
   @RouteParam listId: String,
   itemId: Int,
   request: Request)
+    extends InjectedRequest
 
 case class DeleteListRequest(
   @RouteParam userId: String,
   @RouteParam listId: String,
   @RouteParam mergeWithList: Option[String],
   request: Request)
+    extends InjectedRequest
 
 case class AddThingToListsRequest(
   @RouteParam userId: String,
   itemId: Int,
   listIds: List[Int],
   request: Request)
+    extends InjectedRequest
 
 case class AddUserEventRequest(
   @RouteParam userId: String,
   event: EventCreate,
   request: Request)
+    extends InjectedRequest
 
 case class ManageShowListsRequest(
   @RouteParam userId: String,
@@ -406,6 +414,7 @@ case class ManageShowListsRequest(
   addToLists: List[Int],
   removeFromLists: List[Int],
   request: Request)
+    extends InjectedRequest
 
 case class EventCreate(
   `type`: String,

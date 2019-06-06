@@ -100,7 +100,7 @@ class UsersDbAccess @Inject()(
         userId <- query
         _ <- (trackedLists.query returning trackedLists.query.map(_.id)) +=
           TrackedListRow(
-            None,
+            -1,
             "Default List",
             isDefault = true,
             isPublic = false,
@@ -109,7 +109,7 @@ class UsersDbAccess @Inject()(
 
         _ <- (trackedLists.query returning trackedLists.query.map(_.id)) +=
           TrackedListRow(
-            None,
+            -1,
             "Watched",
             isDefault = true,
             isPublic = false,
@@ -257,8 +257,10 @@ class UsersDbAccess @Inject()(
             DBIO.sequence(actionsByList)
           })
       }.map(_.map {
-        case (list, things) =>
-          val thingsWithMeta = things
+        case (list, thingAndActions) =>
+          val (thingsWithMeta, _) = thingAndActions.unzip
+
+          val partialThings = thingsWithMeta
             .map {
               case thing if selectFields.isEmpty => thing.copy(metadata = None)
               case thing if thing.metadata.isDefined =>
@@ -271,7 +273,7 @@ class UsersDbAccess @Inject()(
             }
             .map(_.asPartial)
 
-          list.toFull.withThings(thingsWithMeta.toList)
+          list.toFull.withThings(partialThings.toList)
       })
     }
 
@@ -390,15 +392,30 @@ class UsersDbAccess @Inject()(
     name: String
   ): Future[TrackedListRow] = {
     run {
-      (trackedLists.query returning
-        trackedLists.query.map(_.id) into
-        ((l, id) => l.copy(id = Some(id)))) += TrackedListRow(
-        None,
+      val newList = TrackedListRow(
+        -1,
         name,
         isDefault = false,
         isPublic = false,
         userId
       )
+
+      (trackedLists.query returning
+        trackedLists.query.map(_.id) into
+        ((l, id) => l.copy(id = id))) += newList
+    }
+  }
+
+  def updateList(
+    userId: Int,
+    listId: Int,
+    name: String
+  ): Future[Int] = {
+    run {
+      trackedLists.query
+        .filter(l => l.userId === userId && l.id === listId)
+        .map(_.name)
+        .update(name)
     }
   }
 
@@ -484,7 +501,7 @@ class UsersDbAccess @Inject()(
     selectFields: Option[List[Field]] = None,
     filters: Option[ListFilters] = None,
     isDynamicHint: Option[Boolean] = None
-  ): Future[Option[(TrackedListRow, Seq[ThingRaw])]] = {
+  ) = {
     val thingsQuery = filters.flatMap(_.itemTypes) match {
       case Some(types) => things.rawQuery.filter(_.`type` inSetBind types)
       case None        => things.rawQuery
@@ -498,18 +515,30 @@ class UsersDbAccess @Inject()(
 
         val fullQuery = listQuery joinLeft
           trackedListThings.query on (_.id === _.listId) joinLeft
-          thingsQuery on (_._2.map(_.thingId) === _.id)
+          thingsQuery on (_._2.map(_.thingId) === _.id) joinLeft
+          userThingTags.query.filter(_.userId === userId) on (_._2.map(_.id) === _.thingId)
 
         val listAndThingsQuery = fullQuery.map {
-          case ((list, _), things) =>
-            list -> things.map(_.projWithMetadata(includeMetadata))
+          case (((list, _), things), thingActions) =>
+            (
+              list,
+              things.map(_.projWithMetadata(includeMetadata)),
+              thingActions
+            )
         }
 
         run(listAndThingsQuery.result).map {
           case listAndThings if listAndThings.isEmpty => None
           case listAndThings =>
-            val (list, _) = listAndThings.head
-            Some(list -> listAndThings.flatMap(_._2))
+            val (list, _, _) = listAndThings.head
+            val actionsByThing = listAndThings.flatMap(_._3).groupBy(_.thingId)
+            val thingsAndActions = listAndThings
+              .flatMap(_._2)
+              .map(thing => {
+                thing -> actionsByThing.getOrElse(thing.id.get, Seq.empty)
+              })
+
+            Some(list -> thingsAndActions)
         }
 
       case _ =>
@@ -527,39 +556,50 @@ class UsersDbAccess @Inject()(
               dynamicListBuilder
                 .buildList(userId, list)
                 .map(list -> _)
-                .map(Some(_))
+                .map(Option(_))
             )
 
           case Some(list) =>
             val listThingsQuery = trackedListThings.query.filter(
               _.listId === list.id
             ) joinLeft
-              thingsQuery on (_.thingId === _.id)
+              thingsQuery on (_.thingId === _.id) joinLeft
+              userThingTags.query.filter(_.userId === userId) on (_._2.map(
+              _.id
+            ) === _.thingId)
 
             run(
               listThingsQuery.result
-                .map(_.flatMap(_._2))
+                .map(results => {
+                  val tagsByThing = results.flatMap(_._2).groupBy(_.thingId)
+                  results
+                    .flatMap(_._1._2)
+                    .map(thing => {
+                      thing -> tagsByThing.getOrElse(thing.id.get, Seq.empty)
+                    })
+                })
                 .map(list -> _)
-                .map(Some(_))
+                .map(Option(_))
             )
         }
     }
 
     listAndThingsFut.map {
-      case Some((list, things)) if selectFields.isDefined =>
-        val newThings = things.map(thing => {
-          thing.metadata match {
-            case Some(metadata) =>
-              thing.copy(
-                metadata = Some(
-                  FieldSelector
-                    .filter(metadata, selectFields.get ::: defaultFields)
-                )
-              )
+      case Some((list, thingsAndActions)) if selectFields.isDefined =>
+        val newThings = thingsAndActions.map {
+          case (thing, actions) =>
+            thing.metadata match {
+              case Some(metadata) =>
+                thing.copy(
+                  metadata = Some(
+                    FieldSelector
+                      .filter(metadata, selectFields.get ::: defaultFields)
+                  )
+                ) -> actions
 
-            case None => thing
-          }
-        })
+              case None => thing -> actions
+            }
+        }
 
         Some(list -> newThings)
 

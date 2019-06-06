@@ -14,7 +14,7 @@ object RequestContext {
 
   implicit class RequestContextSyntax(request: Request) {
     def authContext: AuthenticatedUserContext = request.ctx(authUserField)
-    def authToken = request.ctx(authTokenField)
+    def authToken: AuthenticatedTokenContext = request.ctx(authTokenField)
   }
 
   private[teletracker] def set(

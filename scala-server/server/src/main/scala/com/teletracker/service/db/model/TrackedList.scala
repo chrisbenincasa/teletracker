@@ -6,7 +6,7 @@ import javax.inject.Inject
 import java.time.OffsetDateTime
 
 case class TrackedListRow(
-  id: Option[Int],
+  id: Int,
   name: String,
   isDefault: Boolean,
   isPublic: Boolean,
@@ -19,9 +19,8 @@ case class TrackedListRow(
 
 object TrackedList {
   def fromRow(row: TrackedListRow): TrackedList = {
-    require(row.id.isDefined)
     TrackedList(
-      row.id.get,
+      row.id,
       row.name,
       row.isDefault,
       row.isPublic,
@@ -101,7 +100,7 @@ class TrackedLists @Inject()(
 
     override def * =
       (
-        id.?,
+        id,
         name,
         isDefault,
         isPublic,

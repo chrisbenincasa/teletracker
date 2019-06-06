@@ -3,7 +3,8 @@ package com.teletracker.service.db.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum UserThingTagType {
-    Watched("watched", false);
+    Watched("watched", false),
+    Enjoyed("enjoyed", true);
 
     private final String name;
     private final boolean requiresValue;
