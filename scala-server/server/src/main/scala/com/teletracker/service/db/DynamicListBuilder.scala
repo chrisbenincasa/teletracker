@@ -1,8 +1,15 @@
 package com.teletracker.service.db
 
-import com.teletracker.service.db.model.{Things, TrackedListRow, UserThingTags}
+import com.teletracker.service.db.model.{
+  ThingRaw,
+  Things,
+  TrackedListRow,
+  UserThingTag,
+  UserThingTags
+}
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import javax.inject.Inject
+import scala.concurrent.ExecutionContext
 
 class DynamicListBuilder @Inject()(
   val provider: DbProvider,
@@ -14,7 +21,9 @@ class DynamicListBuilder @Inject()(
 
   def buildList(
     userId: Int,
-    dynamicList: TrackedListRow
+    dynamicList: TrackedListRow,
+    includeActions: Boolean = true
+  )(implicit executionContext: ExecutionContext
   ) = {
     require(dynamicList.isDynamic)
     require(dynamicList.rules.isDefined)
@@ -32,10 +41,26 @@ class DynamicListBuilder @Inject()(
         utt.userId === userId && clause
       })
 
-      (q.map(_.thingId)
-        .distinct join things.rawQuery on (_.value === _.id)).map {
-        case (_, thing) => thing
-      }.result
+      val thingsQuery = q
+        .map(_.thingId)
+        .distinct join things.rawQuery on (_.value === _.id)
+
+      val finalThingsQuery = thingsQuery joinLeft userThingTags.query.filter(
+        _.userId === userId
+      ) on (_._2.id === _.thingId)
+
+      finalThingsQuery
+        .map {
+          case ((_, thing), actions) => thing -> actions
+        }
+        .result
+        .map(thingsAndActions => {
+          val (things, actionOpts) = thingsAndActions.unzip
+          val actions = actionOpts.flatten.groupBy(_.thingId)
+          things.map(thing => {
+            thing -> actions.getOrElse(thing.id.get, Seq.empty)
+          })
+        })
     } else {
       DBIO.successful(Seq.empty)
     }

@@ -57,7 +57,7 @@ class TvShowSpec extends BaseSpecWithServer {
 
     val availability =
       thingDbAccess
-        .saveAvailability(
+        .insertAvailability(
           Availability(
             None,
             true,
@@ -94,7 +94,9 @@ class TvShowSpec extends BaseSpecWithServer {
               case Some(foundAvailability) =>
                 assert(foundAvailability.id.isDefined)
                 assert(
-                  foundAvailability.tvShowEpisodeId === availability.tvShowEpisodeId
+                  foundAvailability.tvShowEpisodeId === availability.flatMap(
+                    _.tvShowEpisodeId
+                  )
                 )
             }
         }

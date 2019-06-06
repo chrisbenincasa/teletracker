@@ -111,6 +111,12 @@ const styles = (theme: Theme) =>
         color: green[300],
       },
     },
+    hoverWatchInvert: {
+      color: green[300],
+      '&:hover': {
+        color: '#fff',
+      },
+    },
     ratingHover: {
       display: 'flex',
       flexDirection: 'row',
@@ -405,8 +411,18 @@ class ItemCard extends Component<Props, ItemCardState> {
                   onClick={this.toggleItemWatched}
                   disableRipple
                 >
-                  <Check className={classes.hoverWatch} />
-                  <Typography variant="srOnly">Mark as Watched</Typography>
+                  <Check
+                    className={
+                      this.itemMarkedAsWatched()
+                        ? classes.hoverWatchInvert
+                        : classes.hoverWatch
+                    }
+                  />
+                  <Typography variant="srOnly">
+                    {this.itemMarkedAsWatched()
+                      ? 'Mark as not watched'
+                      : 'Mark as watched'}
+                  </Typography>
                 </IconButton>
               </Tooltip>
             </Zoom>
