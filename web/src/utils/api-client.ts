@@ -213,7 +213,7 @@ export class TeletrackerApi {
     }
 
     return this.api.put<any>(
-      `/api/v1/users/self/lists/${listId}`,
+      `/api/v1/users/self/lists/${listId}/things`,
       { itemId },
       { headers: this.authHeaders() },
     );
