@@ -14,6 +14,8 @@ import {
   USER_SELF_CREATE_LIST_SUCCESS,
   USER_SELF_DELETE_LIST,
   USER_SELF_DELETE_LIST_SUCCESS,
+  USER_SELF_RENAME_LIST,
+  USER_SELF_RENAME_LIST_SUCCESS,
   USER_SELF_RETRIEVE_INITIATED,
   USER_SELF_RETRIEVE_SUCCESS,
   USER_SELF_UPDATE,
@@ -87,6 +89,21 @@ export type UserDeleteListSuccessAction = FSA<
   UserDeleteListPayload
 >;
 
+export interface UserRenameListPayload {
+  listId: number;
+  listName: string;
+}
+
+export type UserRenameListAction = FSA<
+  typeof USER_SELF_RENAME_LIST,
+  UserRenameListPayload
+>;
+
+export type UserRenameListSuccessAction = FSA<
+  typeof USER_SELF_RENAME_LIST_SUCCESS,
+  UserRenameListPayload
+>;
+
 export interface UserUpdateItemTagsPayload {
   thingId: number;
   action: ActionType;
@@ -155,6 +172,14 @@ export const deleteList = createAction<UserDeleteListAction>(
 
 export const deleteListSuccess = createAction<UserDeleteListSuccessAction>(
   USER_SELF_DELETE_LIST_SUCCESS,
+);
+
+export const renameList = createAction<UserRenameListAction>(
+  USER_SELF_RENAME_LIST,
+);
+
+export const renameListSuccess = createAction<UserRenameListSuccessAction>(
+  USER_SELF_RENAME_LIST_SUCCESS,
 );
 
 export const updateUserItemTags = createAction<UserUpdateItemTagsAction>(
@@ -303,12 +328,40 @@ export const deleteListSaga = function*() {
         payload.listId,
         Number(payload.mergeListId),
       );
-      console.log(response);
+
       if (response.ok) {
         yield put(
           deleteListSuccess({
             listId: payload.listId,
             mergeListId: payload.mergeListId,
+          }),
+        );
+        yield put(RetrieveUserSelfInitiated({ force: true }));
+      } else {
+        // TODO: ERROR
+      }
+    } else {
+      // TODO: Fail
+    }
+  });
+};
+
+export const renameListSaga = function*() {
+  yield takeEvery(USER_SELF_RENAME_LIST, function*({
+    payload,
+  }: UserRenameListAction) {
+    if (payload) {
+      let response: TeletrackerResponse<any> = yield clientEffect(
+        client => client.renameList,
+        payload.listId,
+        payload.listName,
+      );
+
+      if (response.ok) {
+        yield put(
+          renameListSuccess({
+            listId: payload.listId,
+            listName: payload.listName,
           }),
         );
         yield put(RetrieveUserSelfInitiated({ force: true }));

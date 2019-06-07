@@ -17,6 +17,9 @@ export const USER_SELF_CREATE_LIST_SUCCESS = 'user/self/create_list/SUCCESS';
 export const USER_SELF_DELETE_LIST = 'user/self/delete_list/INITIATED';
 export const USER_SELF_DELETE_LIST_SUCCESS = 'user/self/delete_list/SUCCESS';
 
+export const USER_SELF_RENAME_LIST = 'user/self/rename_list/INITIATED';
+export const USER_SELF_RENAME_LIST_SUCCESS = 'user/self/rename_list/SUCCESS';
+
 export const USER_SELF_UPDATE_ITEM_TAGS =
   'user/self/update_item_tags/INITIATED';
 export const USER_SELF_UPDATE_ITEM_TAGS_SUCCESS =
