@@ -11,6 +11,8 @@ import {
   USER_SELF_CREATE_LIST_SUCCESS,
   USER_SELF_DELETE_LIST,
   USER_SELF_DELETE_LIST_SUCCESS,
+  USER_SELF_RENAME_LIST,
+  USER_SELF_RENAME_LIST_SUCCESS,
 } from '../constants/user';
 import { User } from '../types';
 import { flattenActions, handleAction } from './utils';
@@ -105,6 +107,29 @@ const userDeleteListSuccess = handleAction(
   },
 );
 
+const userRenameList = handleAction(USER_SELF_RENAME_LIST, (state: State) => {
+  return {
+    ...state,
+    loading: {
+      ...state.loading,
+      [USER_SELF_RENAME_LIST]: true,
+    },
+  } as State;
+});
+
+const userRenameListSuccess = handleAction(
+  USER_SELF_RENAME_LIST_SUCCESS,
+  (state: State) => {
+    return {
+      ...state,
+      loading: {
+        ...state.loading,
+        [USER_SELF_RENAME_LIST]: false,
+      },
+    } as State;
+  },
+);
+
 export default flattenActions(
   initialState,
   selfRetrieveInitiated,
@@ -114,4 +139,6 @@ export default flattenActions(
   userCreateListSuccess,
   userDeleteList,
   userDeleteListSuccess,
+  userRenameList,
+  userRenameListSuccess,
 );
