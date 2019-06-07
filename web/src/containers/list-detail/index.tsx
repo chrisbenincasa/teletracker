@@ -16,6 +16,7 @@ import {
   Menu,
   MenuItem,
   Select,
+  TextField,
   Theme,
   Typography,
   withStyles,
@@ -35,7 +36,12 @@ import {
   ListRetrieveInitiated,
   ListRetrieveInitiatedPayload,
 } from '../../actions/lists';
-import { deleteList, UserDeleteListPayload } from '../../actions/user';
+import {
+  deleteList,
+  renameList,
+  UserDeleteListPayload,
+  UserRenameListPayload,
+} from '../../actions/user';
 import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
@@ -83,6 +89,11 @@ const styles = (theme: Theme) =>
       flex: '1 0 auto',
       padding: `0 ${theme.spacing(2)}px`,
     },
+    textField: {
+      marginLeft: theme.spacing(1),
+      marginRight: theme.spacing(1),
+      width: 200,
+    },
   });
 
 interface OwnProps {
@@ -108,6 +119,7 @@ interface MenuItemProps {
 interface DispatchProps {
   retrieveList: (payload: ListRetrieveInitiatedPayload) => void;
   deleteList: (payload: UserDeleteListPayload) => void;
+  renameList: (payload: UserRenameListPayload) => void;
 }
 
 interface RouteParams {
@@ -126,6 +138,8 @@ interface State {
   deleted: boolean;
   anchorEl: any;
   migrateListId: number;
+  renameDialogOpen: boolean;
+  newListName: string;
 }
 
 class ListDetail extends Component<Props, State> {
@@ -137,12 +151,12 @@ class ListDetail extends Component<Props, State> {
       deleted: false,
       anchorEl: null,
       migrateListId: 0,
+      renameDialogOpen: false,
+      newListName: '',
     };
   }
 
   componentDidMount() {
-    console.log(this.props);
-
     this.props.retrieveList({
       listId: this.props.match.params.id,
       force: false,
@@ -191,6 +205,32 @@ class ListDetail extends Component<Props, State> {
 
   handleDeleteModalClose = () => {
     this.setState({ deleteConfirmationOpen: false });
+  };
+
+  handleRenameList = event => {
+    let { renameList, userSelf, match } = this.props;
+    let { newListName } = this.state;
+
+    if (userSelf) {
+      renameList({
+        listId: Number(match.params.id),
+        listName: newListName,
+      });
+    }
+    this.handleRenameModalClose();
+  };
+
+  handleRenameModalOpen = () => {
+    this.handleClose();
+    this.setState({ renameDialogOpen: true });
+  };
+
+  handleRenameModalClose = () => {
+    this.setState({ renameDialogOpen: false });
+  };
+
+  handleRenameChange = event => {
+    this.setState({ newListName: event.target.value });
   };
 
   renderProfileMenu() {
@@ -247,7 +287,7 @@ class ListDetail extends Component<Props, State> {
           disableAutoFocusItem
         >
           {/* TODO: Add support for editing List name */}
-          <MenuItem onClick={this.handleClose}>
+          <MenuItem onClick={this.handleRenameModalOpen}>
             <ListItemIcon>
               <EditIcon />
             </ListItemIcon>
@@ -317,6 +357,52 @@ class ListDetail extends Component<Props, State> {
     );
   }
 
+  renderRenameDialog(list: List) {
+    let { classes, userSelf, match } = this.props;
+    let { renameDialogOpen } = this.state;
+
+    if (!list) {
+      return;
+    }
+
+    return (
+      <div>
+        <Dialog
+          open={renameDialogOpen}
+          onClose={this.handleRenameModalClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {'Update List Name'}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Naming is hard, update your list name:
+            </DialogContentText>
+            <FormControl className={classes.formControl}>
+              <TextField
+                label="List Name"
+                defaultValue={list.name}
+                className={classes.textField}
+                margin="normal"
+                onChange={this.handleRenameChange}
+              />
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={this.handleRenameModalClose} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={this.handleRenameList} color="primary" autoFocus>
+              Update
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
+    );
+  }
+
   renderLoading() {
     return (
       <div style={{ display: 'flex' }}>
@@ -368,6 +454,7 @@ class ListDetail extends Component<Props, State> {
             </Grid>
           </div>
           {this.renderDialog()}
+          {this.renderRenameDialog(list)}
         </div>
       );
     }
@@ -396,6 +483,7 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
     {
       retrieveList: ListRetrieveInitiated,
       deleteList: deleteList,
+      renameList: renameList,
     },
     dispatch,
   );
