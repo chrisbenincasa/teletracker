@@ -156,6 +156,14 @@ export class TeletrackerApi {
     });
   }
 
+  async renameList(listId: number, listName: string) {
+    return this.withTokenCheck(async () => {
+      return this.api.put(`/api/v1/users/self/lists/${listId}`, {
+        name: listName,
+      });
+    });
+  }
+
   async getLists(fields?: KeyMap<ObjectMetadata>) {
     let filterString = fields ? this.createFilter(fields) : '';
     let params = {};
