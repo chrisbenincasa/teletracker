@@ -47,6 +47,7 @@ export type ListRetrieveFailedAction = FSA<typeof LIST_RETRIEVE_FAILED, Error>;
 
 export interface ListRetrieveAllPayload {
   metadataFields?: KeyMap<ObjectMetadata>;
+  includeThings?: boolean;
 }
 
 export type ListRetrieveAllInitiatedAction = FSA<
@@ -56,7 +57,7 @@ export type ListRetrieveAllInitiatedAction = FSA<
 
 export type ListRetrieveAllSuccessAction = FSA<
   typeof LIST_RETRIEVE_ALL_SUCCESS,
-  User
+  List[]
 >;
 
 export interface ListUpdatedInitiatedPayload {
@@ -78,9 +79,9 @@ export const ListRetrieveInitiated = createAction<ListRetrieveInitiatedAction>(
   LIST_RETRIEVE_INITIATED,
 );
 
-export const ListRetrieveAllInitiated = createAction<
-  ListRetrieveAllInitiatedAction
->(LIST_RETRIEVE_ALL_INITIATED);
+export const retrieveAllLists = createAction<ListRetrieveAllInitiatedAction>(
+  LIST_RETRIEVE_ALL_INITIATED,
+);
 
 const ListRetrieveSuccess = createAction<ListRetrieveSuccessAction>(
   LIST_RETRIEVE_SUCCESS,
@@ -98,15 +99,13 @@ export const ListUpdate = createAction<ListUpdateInitiatedAction>(
   LIST_UPDATE_INITIATED,
 );
 
-type ListAddActions =
+export type ListActions =
   | ListAddInitiatedAction
   | ListAddSuccessAction
   | ListAddFailedAction
   | ListRetrieveInitiatedAction
   | ListRetrieveSuccessAction
   | ListRetrieveFailedAction;
-
-export type ListActions = ListAddActions;
 
 /**
  * Listens for `LIST_ADD_ITEM_INITIATED` actions and then
@@ -216,6 +215,7 @@ export const retrieveListsSaga = function*() {
     let response = yield clientEffect(
       client => client.getLists,
       metadataToFetch,
+      payload ? payload.includeThings : true,
     );
 
     if (response.ok && response.data) {
@@ -240,7 +240,7 @@ export const updateListSaga = function*() {
       );
 
       if (response.ok) {
-        yield put(ListRetrieveAllInitiated({}));
+        yield put(retrieveAllLists({}));
       }
     } else {
     }

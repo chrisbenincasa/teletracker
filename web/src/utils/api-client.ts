@@ -68,15 +68,9 @@ export class TeletrackerApi {
   }
 
   async getUser(id: string | number) {
-    if (!this.token) {
-      return Promise.reject(new Error('getUser requires a token to be set'));
-    }
-
-    return this.api.get<User>(
-      `/api/v1/users/${id}`,
-      {},
-      { headers: this.authHeaders() },
-    );
+    return this.withTokenCheck(async () => {
+      return this.api.get<User>(`/api/v1/users/${id}`, {});
+    });
   }
 
   async getUserSelf() {
@@ -164,9 +158,14 @@ export class TeletrackerApi {
     });
   }
 
-  async getLists(fields?: KeyMap<ObjectMetadata>) {
+  async getLists(
+    fields?: KeyMap<ObjectMetadata>,
+    includeThings: boolean = false,
+  ) {
     let filterString = fields ? this.createFilter(fields) : '';
-    let params = {};
+    let params = {
+      includeThings,
+    };
 
     if (filterString) {
       params['fields'] = filterString;

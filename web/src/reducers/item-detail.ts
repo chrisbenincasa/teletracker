@@ -87,6 +87,8 @@ const updateTagsState = (
 const itemUpdateTagsSuccess = handleAction(
   USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
   (state: State, { payload }: UserUpdateItemTagsSuccessAction) => {
+    console.log(payload);
+
     return updateTagsState(
       state,
       tags => {

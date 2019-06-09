@@ -44,7 +44,7 @@ if (env === 'development') {
   const devToolsExtension = (window as any).__REDUX_DEVTOOLS_EXTENSION__;
 
   if (typeof devToolsExtension === 'function') {
-    enhancers.push(devToolsExtension());
+    enhancers.push(devToolsExtension({ trace: true }));
   }
 }
 

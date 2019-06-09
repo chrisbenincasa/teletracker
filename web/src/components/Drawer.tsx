@@ -24,6 +24,7 @@ import {
 } from '@material-ui/core';
 import { AddCircle } from '@material-ui/icons';
 import classNames from 'classnames';
+import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -33,12 +34,10 @@ import {
   withRouter,
 } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
-import {
-  ListRetrieveAllInitiated,
-  ListRetrieveAllPayload,
-} from '../actions/lists';
+import { ListRetrieveAllPayload, retrieveAllLists } from '../actions/lists';
 import { createList, UserCreateListPayload } from '../actions/user';
 import withUser, { WithUserProps } from '../components/withUser';
+import { LIST_RETRIEVE_ALL_INITIATED } from '../constants/lists';
 import { USER_SELF_CREATE_LIST } from '../constants/user';
 import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
@@ -99,7 +98,7 @@ interface OwnProps extends WithStyles<typeof styles> {
 }
 
 interface DispatchProps {
-  ListRetrieveAllInitiated: (payload?: ListRetrieveAllPayload) => void;
+  retrieveAllLists: (payload?: ListRetrieveAllPayload) => void;
   createList: (payload?: UserCreateListPayload) => void;
 }
 
@@ -108,6 +107,7 @@ interface State {
   listName: string;
   nameLengthError: boolean;
   nameDuplicateError: boolean;
+  loadingLists: boolean;
 }
 
 interface RouteParams {
@@ -168,12 +168,13 @@ class Drawer extends Component<Props, State> {
     listName: '',
     nameLengthError: false,
     nameDuplicateError: false,
+    loadingLists: true,
   };
 
   componentDidMount() {
     if (!Boolean(this.props.loading)) {
-      this.props.ListRetrieveAllInitiated();
     }
+    this.props.retrieveAllLists({ includeThings: false });
   }
 
   componentDidUpdate(oldProps: Props) {
@@ -182,6 +183,10 @@ class Drawer extends Component<Props, State> {
       !Boolean(this.props.loading[USER_SELF_CREATE_LIST])
     ) {
       this.handleModalClose();
+    }
+
+    if (Boolean(oldProps.loadingLists) && !Boolean(this.props.loadingLists)) {
+      this.setState({ loadingLists: false });
     }
   }
 
@@ -245,13 +250,13 @@ class Drawer extends Component<Props, State> {
           !match.params.type && Number(match.params.id) === Number(list.id),
         )}
         primary={list.name}
-        listLength={userList.things.length}
+        listLength={userList.thingCount}
       />
     );
   };
 
   renderDrawer() {
-    let { classes, userSelf, match, open } = this.props;
+    let { classes, userSelf, match, open, listsById } = this.props;
     let { createDialogOpen } = this.state;
 
     return (
@@ -283,14 +288,14 @@ class Drawer extends Component<Props, State> {
           Create List
         </Button>
         <List>
-          <ListItemLink
+          {/* <ListItemLink
             key="all"
             selected={Boolean(match.path === '/lists' && !match.params.id)}
             to={'/lists'}
             primary="All Lists"
-            listLength={userSelf!.lists.length}
-          />
-          {userSelf!.lists.map(this.renderListItems)}
+            listLength={Object.keys(listsById).length}
+          /> */}
+          {_.map(listsById, this.renderListItems)}
         </List>
       </DrawerUI>
     );
@@ -359,13 +364,15 @@ class Drawer extends Component<Props, State> {
   render() {
     let { loadingLists, userSelf } = this.props;
 
-    if (userSelf || !loadingLists) {
+    if (!this.state.loadingLists && !loadingLists && userSelf) {
       return (
         <React.Fragment>
           {this.renderDrawer()}
           {this.renderDialog()}
         </React.Fragment>
       );
+    } else {
+      return <CircularProgress />;
     }
   }
 }
@@ -373,7 +380,9 @@ class Drawer extends Component<Props, State> {
 const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    loadingLists: appState.lists.operation.inProgress,
+    loadingLists:
+      appState.lists.operation.inProgress &&
+      appState.lists.operation.operationType == LIST_RETRIEVE_ALL_INITIATED,
     listsById: appState.lists.listsById,
     loading: appState.userSelf.loading,
   };
@@ -382,7 +391,7 @@ const mapStateToProps = (appState: AppState) => {
 const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
-      ListRetrieveAllInitiated,
+      retrieveAllLists,
       createList,
     },
     dispatch,

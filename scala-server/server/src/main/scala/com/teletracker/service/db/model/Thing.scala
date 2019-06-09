@@ -3,7 +3,7 @@ package com.teletracker.service.db.model
 import com.teletracker.service.db.{CustomPostgresProfile, UserThingDetails}
 import com.teletracker.service.inject.DbImplicits
 import com.teletracker.service.model.tmdb._
-import com.teletracker.service.util.Slug
+import com.teletracker.service.util.{Field, FieldSelector, Slug}
 import java.time.OffsetDateTime
 import javax.inject.Inject
 import io.circe._
@@ -12,7 +12,6 @@ import io.circe.generic.auto._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import shapeless.Witness
-import slick.lifted.ProvenShape
 
 case class Thing(
   id: Option[Int],
@@ -22,7 +21,7 @@ case class Thing(
   createdAt: OffsetDateTime,
   lastUpdatedAt: OffsetDateTime,
   metadata: Option[ObjectMetadata]) {
-  def asPartial: PartialThing = {
+  def toPartial: PartialThing = {
     PartialThing(
       id,
       Some(name),
@@ -43,7 +42,29 @@ case class ThingRaw(
   createdAt: OffsetDateTime,
   lastUpdatedAt: OffsetDateTime,
   metadata: Option[Json]) {
-  def asPartial: PartialThing = {
+
+  def selectFields(
+    fieldsOpt: Option[List[Field]],
+    defaultFields: List[Field]
+  ) = {
+    fieldsOpt
+      .map(fields => {
+        metadata match {
+          case Some(metadata) =>
+            copy(
+              metadata = Some(
+                FieldSelector
+                  .filter(metadata, fields ::: defaultFields)
+              )
+            )
+
+          case None => this
+        }
+      })
+      .getOrElse(this)
+  }
+
+  def toPartial: PartialThing = {
     val typedMeta = metadata.flatMap(rawMeta => {
       rawMeta.as[ObjectMetadata] match {
         case Left(err) =>
