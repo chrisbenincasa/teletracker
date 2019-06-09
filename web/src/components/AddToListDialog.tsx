@@ -22,8 +22,9 @@ import {
   ListUpdatedInitiatedPayload,
 } from '../actions/lists';
 import { AppState } from '../reducers';
-import { ListOperationState } from '../reducers/lists';
+import { ListOperationState, ListsByIdMap } from '../reducers/lists';
 import { List, Thing, User } from '../types';
+import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -37,6 +38,7 @@ interface AddToListDialogProps {
   userSelf: User;
   item: Thing;
   listOperations: ListOperationState;
+  listsById: ListsByIdMap;
 }
 
 interface AddToListDialogDispatchProps {
@@ -66,7 +68,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
         };
       },
       {},
-      props.userSelf.lists,
+      R.values(props.listsById),
     );
 
     this.state = {
@@ -114,7 +116,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   };
 
   listContainsItem = (list: List, item: Thing) => {
-    return R.any(R.propEq('id', item.id), list.things);
+    return list.things ? R.any(R.propEq('id', item.id), list.things) : false;
   };
 
   handleSubmit = () => {
@@ -162,7 +164,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
 
         <DialogContent style={{ display: 'flex' }}>
           <FormGroup>
-            {this.props.userSelf.lists.map(list => (
+            {_.map(this.props.listsById, list => (
               // <ListItem
               //   button
               //   disabled={this.props.listOperations.inProgress}
@@ -202,6 +204,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
 const mapStateToProps = (appState: AppState) => {
   return {
     listOperations: appState.lists.operation,
+    listsById: appState.lists.listsById,
   };
 };
 

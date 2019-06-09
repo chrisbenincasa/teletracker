@@ -13,6 +13,7 @@ import {
   USER_SELF_DELETE_LIST_SUCCESS,
   USER_SELF_RENAME_LIST,
   USER_SELF_RENAME_LIST_SUCCESS,
+  USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
 } from '../constants/user';
 import { User } from '../types';
 import { flattenActions, handleAction } from './utils';

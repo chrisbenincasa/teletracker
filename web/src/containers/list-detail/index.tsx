@@ -7,11 +7,10 @@ import {
   DialogContentText,
   DialogTitle,
   FormControl,
+  Grid,
   IconButton,
   InputLabel,
-  Grid,
   LinearProgress,
-  Link,
   ListItemIcon,
   Menu,
   MenuItem,
@@ -22,6 +21,9 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
+import DeleteIcon from '@material-ui/icons/Delete';
+import EditIcon from '@material-ui/icons/Edit';
+import SettingsIcon from '@material-ui/icons/Settings';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -48,9 +50,8 @@ import { AppState } from '../../reducers';
 import { ListsByIdMap } from '../../reducers/lists';
 import { layoutStyles } from '../../styles';
 import { List } from '../../types';
-import SettingsIcon from '@material-ui/icons/Settings';
-import DeleteIcon from '@material-ui/icons/Delete';
-import EditIcon from '@material-ui/icons/Edit';
+import { LIST_RETRIEVE_INITIATED } from '../../constants/lists';
+import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -140,11 +141,14 @@ interface State {
   migrateListId: number;
   renameDialogOpen: boolean;
   newListName: string;
+  prevListId: number;
+  existingList?: List;
 }
 
 class ListDetail extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
+    let listId = Number(this.props.match.params.id);
     this.state = {
       loadingList: true,
       deleteConfirmationOpen: false,
@@ -153,23 +157,47 @@ class ListDetail extends Component<Props, State> {
       migrateListId: 0,
       renameDialogOpen: false,
       newListName: '',
+      prevListId: listId,
+      existingList: this.props.listsById[listId],
     };
   }
 
+  static getDerivedStateFromProps(props: Props, state: State) {
+    let newId = Number(props.match.params.id);
+    if (newId !== state.prevListId) {
+      return {
+        ...state,
+        loadingList: true,
+        prevListId: newId,
+      };
+    } else {
+      return state;
+    }
+  }
+
   componentDidMount() {
+    let force = !this.state.existingList || !this.state.existingList!.things;
     this.props.retrieveList({
       listId: this.props.match.params.id,
-      force: false,
+      force,
     });
   }
 
   componentDidUpdate(oldProps: Props) {
-    if (!this.props.listLoading && oldProps.listLoading) {
-      this.setState({ loadingList: false });
+    if (
+      !this.props.listLoading &&
+      (oldProps.listLoading || this.state.loadingList)
+    ) {
+      this.setState({
+        loadingList: false,
+        existingList: this.props.listsById[Number(this.props.match.params.id)],
+      });
     } else if (this.props.match.params.id !== oldProps.match.params.id) {
+      this.setState({ loadingList: true });
+
       this.props.retrieveList({
         listId: this.props.match.params.id,
-        force: false,
+        force: true,
       });
     }
   }
@@ -333,7 +361,8 @@ class ListDetail extends Component<Props, State> {
                   <em>Delete all tracked items</em>
                 </MenuItem>
                 {userSelf &&
-                  userSelf.lists.map(
+                  _.map(
+                    this.props.listsById,
                     item =>
                       item.id !== Number(match.params.id) && (
                         <MenuItem key={item.id} value={item.id}>
@@ -462,18 +491,20 @@ class ListDetail extends Component<Props, State> {
 
   render() {
     let { listsById, match, userSelf } = this.props;
+    let { loadingList } = this.state;
+
     let list = listsById[Number(match.params.id)];
 
-    return !list || !userSelf
+    return loadingList || !list || !userSelf
       ? this.renderLoading()
-      : this.renderListDetail(list);
+      : this.renderListDetail(this.state.existingList!);
   }
 }
 
 const mapStateToProps: (appState: AppState) => OwnProps = appState => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    listLoading: appState.lists.operation.inProgress,
+    listLoading: Boolean(appState.lists.loading[LIST_RETRIEVE_INITIATED]),
     listsById: appState.lists.listsById,
   };
 };

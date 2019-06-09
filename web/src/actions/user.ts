@@ -5,6 +5,7 @@ import {
   take,
   takeEvery,
   takeLatest,
+  takeLeading,
 } from '@redux-saga/core/effects';
 import { ApiResponse } from 'apisauce';
 import { FSA } from 'flux-standard-action';
@@ -199,7 +200,7 @@ export const removeUserItemTagsSuccess = createAction<
 >(USER_SELF_REMOVE_ITEM_TAGS_SUCCESS);
 
 export const retrieveUserSaga = function*() {
-  yield takeLatest(USER_SELF_RETRIEVE_INITIATED, function*({
+  yield takeLeading(USER_SELF_RETRIEVE_INITIATED, function*({
     payload: { force } = { force: false },
   }: UserSelfRetrieveInitiatedAction) {
     let currState: AppState = yield select();
