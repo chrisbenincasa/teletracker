@@ -13,44 +13,38 @@ import {
   Fade,
   Grid,
   Icon,
+  IconButton,
   Link,
   Theme,
+  Tooltip,
   Typography,
   WithStyles,
   withStyles,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tooltip,
   Zoom,
 } from '@material-ui/core';
-import classNames from 'classnames';
-import * as R from 'ramda';
-import { Link as RouterLink, withRouter } from 'react-router-dom';
-import React, { Component, ReactNode } from 'react';
-import Truncate from 'react-truncate';
-import AddToListDialog from './AddToListDialog';
-import { User, List, Thing, ActionType } from '../types';
-import { getDescription, getPosterPath } from '../utils/metadata-access';
-import { Dispatch, bindActionCreators } from 'redux';
-import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
-import { connect } from 'react-redux';
+import { green, red } from '@material-ui/core/colors';
 import { GridProps } from '@material-ui/core/Grid';
-import DeleteIcon from '@material-ui/icons/Delete';
 import Check from '@material-ui/icons/Check';
+import DeleteIcon from '@material-ui/icons/Delete';
+import PlaylistAdd from '@material-ui/icons/PlaylistAdd';
 import ThumbDown from '@material-ui/icons/ThumbDown';
 import ThumbUp from '@material-ui/icons/ThumbUp';
-import PlaylistAdd from '@material-ui/icons/PlaylistAdd';
-
-import { green, red } from '@material-ui/core/colors';
-import withUser, { WithUserProps } from '../components/withUser';
-import { AppState } from '../reducers';
-
+import * as R from 'ramda';
+import React, { Component, ReactNode } from 'react';
+import { connect } from 'react-redux';
+import { Link as RouterLink } from 'react-router-dom';
+import Truncate from 'react-truncate';
+import { bindActionCreators, Dispatch } from 'redux';
+import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
 import {
-  updateUserItemTags,
   removeUserItemTags,
+  updateUserItemTags,
   UserUpdateItemTagsPayload,
 } from '../actions/user';
+import withUser, { WithUserProps } from '../components/withUser';
+import { ActionType, List, Thing, User } from '../types';
+import { getDescription, getPosterPath } from '../utils/metadata-access';
+import AddToListDialog from './AddToListDialog';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -291,9 +285,8 @@ class ItemCard extends Component<Props, ItemCardState> {
       this.props.removeUserItemTags(payload);
     } else {
       this.props.updateUserItemTags(payload);
+      this.setState({ hoverRating: true });
     }
-
-    this.setState({ hoverRating: true });
   };
 
   toggleItemRating = (rating: number) => {

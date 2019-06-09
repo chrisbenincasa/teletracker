@@ -7,6 +7,7 @@ import {
   ListRetrieveAllSuccessAction,
   ListRetrieveInitiatedAction,
   ListRetrieveSuccessAction,
+  ListActions,
 } from '../actions/lists';
 import {
   LIST_ADD_ITEM_FAILED,
@@ -20,6 +21,8 @@ import {
 import { List, Thing } from '../types';
 import { flattenActions, handleAction } from './utils';
 
+export type Loading = { [X in ListActions['type']]: boolean };
+
 export interface ListOperationState {
   inProgress: boolean;
   operationType?: string;
@@ -32,6 +35,7 @@ export interface ListsByIdMap {
 export interface State {
   operation: ListOperationState;
   listsById: ListsByIdMap;
+  loading: Partial<Loading>;
 }
 
 const initialState: State = {
@@ -39,6 +43,7 @@ const initialState: State = {
     inProgress: false,
   },
   listsById: {},
+  loading: {},
 };
 
 const handleListAddInitiated = handleAction<ListAddInitiatedAction, State>(
@@ -50,19 +55,27 @@ const handleListAddInitiated = handleAction<ListAddInitiatedAction, State>(
         operationType: LIST_ADD_ITEM_INITIATED,
         inProgress: true,
       },
+      loading: {
+        ...state.loading,
+        [LIST_ADD_ITEM_INITIATED]: true,
+      },
     };
   },
 );
 
-function listAddItemFinished(s: State): State {
+function listAddItemFinished(state: State): State {
   return {
-    ...s,
+    ...state,
     operation: {
-      ...s.operation,
+      ...state.operation,
       // operationType: undefined,
       inProgress: false,
     },
-  };
+    loading: {
+      ...state.loading,
+      [LIST_ADD_ITEM_INITIATED]: false,
+    },
+  } as State;
 }
 
 const handleListAddSuccess = handleAction<ListAddSuccessAction, State>(
@@ -86,6 +99,10 @@ const handleListRetrieveInitiated = handleAction<
       operationType: LIST_RETRIEVE_INITIATED,
       inProgress: true,
     },
+    loading: {
+      ...state.loading,
+      [LIST_RETRIEVE_INITIATED]: true,
+    },
   };
 });
 
@@ -99,6 +116,10 @@ const handleListRetrieveAllInitiated = handleAction<
       ...state.operation,
       operationType: LIST_RETRIEVE_ALL_INITIATED,
       inProgress: true,
+    },
+    loading: {
+      ...state.loading,
+      [LIST_RETRIEVE_ALL_INITIATED]: true,
     },
   };
 });
@@ -151,6 +172,7 @@ const handleListRetrieveSuccess = handleAction<
   State
 >(LIST_RETRIEVE_SUCCESS, (state, action) => {
   let listId = action.payload!!.id;
+
   let newList = setOrMergeList(state.listsById[listId], action.payload);
 
   return {
@@ -164,6 +186,10 @@ const handleListRetrieveSuccess = handleAction<
       operationType: undefined,
       inProgress: false,
     },
+    loading: {
+      ...state.loading,
+      [LIST_RETRIEVE_INITIATED]: false,
+    },
   };
 });
 
@@ -171,7 +197,7 @@ const handleUserRetrieve = handleAction<ListRetrieveAllSuccessAction, State>(
   LIST_RETRIEVE_ALL_SUCCESS,
   (state, action) => {
     let newListsById: ListsByIdMap = {};
-    if (action.payload && action.payload.lists) {
+    if (action.payload) {
       try {
         newListsById = R.reduce(
           (newListsById, list) => {
@@ -181,7 +207,7 @@ const handleUserRetrieve = handleAction<ListRetrieveAllSuccessAction, State>(
             };
           },
           {} as ListsByIdMap,
-          action.payload.lists,
+          action.payload,
         );
       } catch (e) {
         console.error(e);
@@ -198,6 +224,10 @@ const handleUserRetrieve = handleAction<ListRetrieveAllSuccessAction, State>(
         ...state.operation,
         operationType: undefined,
         inProgress: false,
+      },
+      loading: {
+        ...state.loading,
+        [LIST_RETRIEVE_ALL_INITIATED]: false,
       },
     };
   },

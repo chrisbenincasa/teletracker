@@ -53,6 +53,7 @@ case class User(
   email: String,
   createdAt: java.sql.Timestamp,
   lastUpdatedAt: java.sql.Timestamp,
+  // Joins
   lists: Option[List[TrackedList]] = None,
   networkSubscriptions: List[Network] = Nil,
   userPreferences: UserPreferences = UserPreferences.default) {
