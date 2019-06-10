@@ -3,30 +3,27 @@ package com.teletracker.service.controllers
 import com.teletracker.service.auth.RequestContext._
 import com.teletracker.service.auth.jwt.JwtVendor
 import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
-import com.teletracker.service.controllers.utils.CanParseFieldFilter
+import com.teletracker.service.controllers.utils.{
+  CanParseFieldFilter,
+  CanParseListFilters
+}
 import com.teletracker.service.db.model.{
   Event,
   ThingType,
   User,
   UserThingTagType
 }
-import com.teletracker.service.db.{
-  ThingsDbAccess,
-  UserThingDetails,
-  UsersDbAccess
-}
+import com.teletracker.service.db.{ThingsDbAccess, UsersDbAccess}
 import com.teletracker.service.model.{DataResponse, IllegalActionTypeError}
 import com.teletracker.service.util.HasFieldsFilter
 import com.teletracker.service.util.json.circe._
 import com.twitter.finagle.http.Request
-import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import io.circe.generic.JsonCodec
-import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success, Try}
-import io.circe.syntax._
 import io.circe.parser._
+import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 class UserController @Inject()(
   usersDbAccess: UsersDbAccess,
@@ -34,7 +31,8 @@ class UserController @Inject()(
   jwtVendor: JwtVendor
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerController(usersDbAccess)
-    with CanParseFieldFilter {
+    with CanParseFieldFilter
+    with CanParseListFilters {
   prefix("/api/v1/users") {
     // Create a user
     post("/?") { req: CreateUserRequest =>
@@ -55,12 +53,12 @@ class UserController @Inject()(
     filter[JwtAuthFilter].filter[UserSelfOnlyFilter].apply {
       get("/:userId") { req: GetUserByIdRequest =>
         usersDbAccess
-          .findUserAndLists(req.request.authContext.user.id)
+          .findById(req.user.id)
           .map(result => {
             if (result.isEmpty) {
               response.notFound
             } else {
-              DataResponse.complex(result.get)
+              DataResponse.complex(User.fromRow(result.get))
             }
           })
       }
@@ -72,12 +70,12 @@ class UserController @Inject()(
               .updateUser(updatedUser)
               .flatMap(_ => {
                 usersDbAccess
-                  .findUserAndLists(request.authContext.user.id)
+                  .findById(request.user.id)
                   .map(result => {
                     if (result.isEmpty) {
                       response.notFound
                     } else {
-                      DataResponse.complex(result.get)
+                      DataResponse.complex(User.fromRow(result.get))
                     }
                   })
               })
@@ -87,9 +85,8 @@ class UserController @Inject()(
       }
 
       get("/:userId/lists") { req: GetUserListsRequest =>
-        val selectFields = parseFieldsOrNone(req.fields)
         usersDbAccess
-          .findUserAndLists(req.request.authContext.user.id, selectFields)
+          .findListsForUser(req.user.id, req.includeThings)
           .map(result => {
             if (result.isEmpty) {
               response.notFound
@@ -98,7 +95,7 @@ class UserController @Inject()(
                 .contentTypeJson()
                 .body(
                   DataResponse.complex(
-                    result.get
+                    result
                   )
                 )
             }
@@ -117,21 +114,11 @@ class UserController @Inject()(
 
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
         val selectFields = parseFieldsOrNone(req.fields)
-        val filters = ListFilters(
-          if (req.itemTypes.nonEmpty) {
-            Some(
-              req.itemTypes
-                .flatMap(typ => Try(ThingType.fromString(typ)).toOption)
-                .toSet
-            )
-          } else {
-            None
-          }
-        )
+        val filters = parseListFilters(req.itemTypes)
 
         usersDbAccess
           .findList(
-            req.request.authContext.user.id,
+            req.user.id,
             req.listId,
             includeMetadata = true,
             selectFields,
@@ -141,17 +128,12 @@ class UserController @Inject()(
           .map {
             case None => response.notFound
 
-            case Some((list, thingsAndActions)) =>
-              val things = thingsAndActions.map {
-                case (thing, actions) =>
-                  thing.asPartial
-                    .withUserMetadata(UserThingDetails(Seq.empty, actions))
-              }
+            case Some(trackedList) =>
               response.ok
                 .contentTypeJson()
                 .body(
                   DataResponse.complex(
-                    list.toFull.withThings(things.toList)
+                    trackedList
                   )
                 )
           }
@@ -199,6 +181,33 @@ class UserController @Inject()(
         }
       }
 
+      get("/:userId/lists/:listId/things") { req: GetListThingsRequest =>
+        val selectFields = parseFieldsOrNone(req.fields)
+        val filters = parseListFilters(req.itemTypes)
+
+        usersDbAccess
+          .findList(
+            req.user.id,
+            req.listId,
+            includeMetadata = true,
+            selectFields,
+            Some(filters),
+            req.isDynamic
+          )
+          .map {
+            case None => response.notFound
+
+            case Some(trackedList) =>
+              response.ok
+                .contentTypeJson()
+                .body(
+                  DataResponse.complex(
+                    trackedList.things.getOrElse(Nil)
+                  )
+                )
+          }
+      }
+
       put("/:userId/lists/:listId/things") { req: AddThingToListRequest =>
         withList(req.user.id, req.listId) { list =>
           thingsDbAccess.findThingById(req.itemId).flatMap {
@@ -213,7 +222,10 @@ class UserController @Inject()(
 
       put("/:userId/lists") { req: AddThingToListsRequest =>
         usersDbAccess
-          .findListsForUser(req.request.authContext.user.id)
+          .findListsForUser(
+            req.request.authContext.user.id,
+            includeThings = false
+          )
           .flatMap(lists => {
             val listIds = lists.map(_.id).toSet
             val (validListIds, _) = req.listIds.partition(listIds(_))
@@ -236,7 +248,7 @@ class UserController @Inject()(
 
       put("/:userId/things/:thingId/lists") { req: ManageShowListsRequest =>
         usersDbAccess
-          .findListsForUser(req.user.id)
+          .findListsForUser(req.user.id, includeThings = false)
           .flatMap(lists => {
             val listIds = lists.map(_.id).toSet
             val validAdds = req.addToLists.filter(listIds(_))
@@ -352,6 +364,7 @@ case class GetUserByIdRequest(
 case class GetUserListsRequest(
   @RouteParam userId: String,
   @QueryParam fields: Option[String],
+  @QueryParam includeThings: Boolean = false,
   request: Request)
     extends HasFieldsFilter
     with InjectedRequest
@@ -378,6 +391,15 @@ case class UpdateListRequest(
   @RouteParam userId: String,
   @RouteParam listId: String,
   name: String,
+  request: Request)
+    extends InjectedRequest
+
+case class GetListThingsRequest(
+  @RouteParam userId: String,
+  @RouteParam listId: Int,
+  @QueryParam fields: Option[String],
+  @QueryParam(commaSeparatedList = true) itemTypes: Seq[String] = Seq(),
+  @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
   request: Request)
     extends InjectedRequest
 

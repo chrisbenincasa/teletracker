@@ -129,7 +129,7 @@ class SearchController @Inject()(
           val meta = thing.id
             .flatMap(thingDetailsByThingId.get)
             .getOrElse(UserThingDetails.empty)
-          thing.asPartial.withUserMetadata(meta)
+          thing.toPartial.withUserMetadata(meta)
         })
       })
 

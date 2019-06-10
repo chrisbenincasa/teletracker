@@ -12,10 +12,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Link as RouterLink, Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import {
-  ListRetrieveAllInitiated,
-  ListRetrieveAllPayload,
-} from '../../actions/lists';
+import { retrieveAllLists, ListRetrieveAllPayload } from '../../actions/lists';
 import { createList, UserCreateListPayload } from '../../actions/user';
 import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
@@ -24,6 +21,7 @@ import { ListsByIdMap } from '../../reducers/lists';
 import { Loading } from '../../reducers/user';
 import { layoutStyles } from '../../styles';
 import { List as ListType, Thing } from '../../types';
+import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -146,7 +144,7 @@ class Lists extends Component<Props, State> {
     } else {
       return (
         <div className={classes.listsContainer}>
-          {userSelf.lists.map(this.renderList)}
+          {_.map(this.props.listsById, this.renderList)}
         </div>
       );
     }
@@ -174,7 +172,7 @@ const mapStateToProps = (appState: AppState) => {
 const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
-      ListRetrieveAllInitiated,
+      ListRetrieveAllInitiated: retrieveAllLists,
       createList,
     },
     dispatch,
