@@ -8,6 +8,7 @@ export interface List {
   isDeleted?: boolean;
   isDynamic?: boolean;
   isPublic?: boolean;
+  thingCount: number;
 }
 
 export interface User {

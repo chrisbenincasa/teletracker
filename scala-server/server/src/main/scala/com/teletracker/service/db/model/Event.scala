@@ -13,7 +13,7 @@ case class Event(
   userId: Int,
   timestamp: java.sql.Timestamp) {
   def withTarget(thing: Thing): EventWithTarget =
-    EventWithTarget(this, Some(thing.asPartial))
+    EventWithTarget(this, Some(thing.toPartial))
   def withTarget(thing: PartialThing): EventWithTarget =
     EventWithTarget(this, Some(thing))
 }

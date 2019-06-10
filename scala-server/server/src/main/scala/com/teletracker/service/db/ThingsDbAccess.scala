@@ -67,7 +67,7 @@ class ThingsDbAccess @Inject()(
       val avWithDetails = avs.map {
         case (network, av) => av.withNetwork(network)
       }
-      movie.map(m => m.asPartial.withAvailability(avWithDetails.toList))
+      movie.map(m => m.toPartial.withAvailability(avWithDetails.toList))
     }
   }
 
@@ -192,7 +192,7 @@ class ThingsDbAccess @Inject()(
       val avWithDetails = avs.map {
         case (network, av) => av.withNetwork(network)
       }
-      movie.map(m => m.asPartial.withAvailability(avWithDetails.toList))
+      movie.map(m => m.toPartial.withAvailability(avWithDetails.toList))
     }
   }
 

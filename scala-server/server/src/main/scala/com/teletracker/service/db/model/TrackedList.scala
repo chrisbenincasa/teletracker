@@ -43,10 +43,13 @@ case class TrackedList(
   isDynamic: Boolean = false,
   rules: Option[DynamicListRules] = None,
   isDeleted: Boolean = false,
-  deletedAt: Option[OffsetDateTime] = None) {
+  deletedAt: Option[OffsetDateTime] = None,
+  thingCount: Option[Int] = None) {
   def withThings(things: List[PartialThing]): TrackedList = {
-    this.copy(things = Some(things))
+    this.copy(things = Some(things), thingCount = Some(things.size))
   }
+
+  def withCount(count: Int): TrackedList = this.copy(thingCount = Some(count))
 }
 
 object DynamicListTagRule {
