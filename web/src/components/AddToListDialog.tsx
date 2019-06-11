@@ -125,14 +125,14 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
         this.state.listChanges[list.id] &&
         !this.listContainsItem(list, this.props.item)
       );
-    }, this.props.userSelf.lists);
+    }, R.values(this.props.listsById));
 
     let removedFromLists = R.filter(list => {
       return (
         !this.state.listChanges[list.id] &&
         this.listContainsItem(list, this.props.item)
       );
-    }, this.props.userSelf.lists);
+    }, R.values(this.props.listsById));
 
     const extractIds = R.map<List, string>(
       R.compose(
