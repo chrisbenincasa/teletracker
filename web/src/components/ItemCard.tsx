@@ -23,10 +23,23 @@ import {
   Zoom,
 } from '@material-ui/core';
 import { green, red } from '@material-ui/core/colors';
+import classNames from 'classnames';
+import * as R from 'ramda';
+import { Link as RouterLink, withRouter } from 'react-router-dom';
+import React, { Component, ReactNode } from 'react';
+import Truncate from 'react-truncate';
+import AddToListDialog from './AddToListDialog';
+import { User, List, Thing, ActionType } from '../types';
+import { ACTION_WATCHED, ACTION_ENJOYED } from '../constants/item';
+import { getDescription, getPosterPath } from '../utils/metadata-access';
+import { Dispatch, bindActionCreators } from 'redux';
+import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
+import { connect } from 'react-redux';
 import { GridProps } from '@material-ui/core/Grid';
 import Check from '@material-ui/icons/Check';
 import DeleteIcon from '@material-ui/icons/Delete';
 import PlaylistAdd from '@material-ui/icons/PlaylistAdd';
+import Close from '@material-ui/icons/Close';
 import ThumbDown from '@material-ui/icons/ThumbDown';
 import ThumbUp from '@material-ui/icons/ThumbUp';
 import * as R from 'ramda';
@@ -87,9 +100,10 @@ const styles = (theme: Theme) =>
     hoverActions: {
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'flex-end',
+      alignItems: 'flex-start',
       position: 'absolute',
       top: 0,
+      left: 0,
       zIndex: 1,
       background: 'rgba(0, 0, 0, 0.5)',
     },
@@ -109,6 +123,18 @@ const styles = (theme: Theme) =>
       color: green[300],
       '&:hover': {
         color: '#fff',
+      },
+    },
+    hoverRatingThumbsDown: {
+      color: '#fff',
+      '&:hover': {
+        color: red[300],
+      },
+    },
+    hoverRatingThumbsUp: {
+      color: '#fff',
+      '&:hover': {
+        color: green[300],
       },
     },
     ratingHover: {
@@ -132,6 +158,12 @@ const styles = (theme: Theme) =>
     ratingContainer: {
       display: 'flex',
       flexDirection: 'column',
+    },
+    ratingContainerSmall: {
+      display: 'flex',
+      flexDirection: 'row',
+      zIndex: 1,
+      position: 'relative',
     },
     ratingActions: {
       display: 'flex',
@@ -265,6 +297,14 @@ class ItemCard extends Component<Props, ItemCardState> {
     this.setState({ isHovering: false });
   };
 
+  handleHoverRatingOpen = () => {
+    this.setState({ hoverRating: true });
+  };
+
+  handleHoverRatingClose = () => {
+    this.setState({ hoverRating: false });
+  };
+
   handleRemoveFromList = () => {
     this.props.ListUpdate({
       thingId: parseInt(this.props.item.id.toString()),
@@ -280,24 +320,38 @@ class ItemCard extends Component<Props, ItemCardState> {
       thingId: this.state.currentId,
       action: ActionType.Watched,
     };
+    console.log('watched:', payload);
 
-    if (this.itemMarkedAsWatched()) {
+    if (this.itemHasTag(ACTION_WATCHED)) {
       this.props.removeUserItemTags(payload);
     } else {
       this.props.updateUserItemTags(payload);
       this.setState({ hoverRating: true });
     }
+    this.handleHoverRatingOpen();
   };
 
   toggleItemRating = (rating: number) => {
+    let payload = {
+      thingId: this.state.currentId,
+      action: ActionType.Enjoyed,
+      value: rating,
+    };
+    console.log('ratingpayload:', payload);
+    console.log('itemHasTagEnjoyed:', this.itemHasTag(ACTION_ENJOYED));
+
+    // Currently no way to 'unrate' an item so no need to remove UserItemTags like we do for 'watched'
+    this.props.updateUserItemTags(payload);
+
     this.setState({ isHovering: false, hoverRating: false });
-    // TODO: Setup redux to send rating once that's an option
   };
 
-  itemMarkedAsWatched = () => {
+  itemHasTag = (tagName: string) => {
+    console.log('itemHasTag:', ActionType[tagName]);
+
     if (this.props.item && this.props.item.userMetadata) {
       return R.any(tag => {
-        return tag.action == ActionType.Watched;
+        return tag.action == ActionType[tagName];
       }, this.props.item.userMetadata.tags);
     }
 
@@ -393,26 +447,27 @@ class ItemCard extends Component<Props, ItemCardState> {
             <Zoom in={isHovering}>
               <Tooltip
                 title={
-                  this.itemMarkedAsWatched()
+                  this.itemHasTag(ACTION_WATCHED)
                     ? 'Mark as not watched'
                     : 'Mark as watched'
                 }
                 placement={tooltipPlacement}
               >
                 <IconButton
-                  aria-label="Delete"
+                  aria-label="Watched"
                   onClick={this.toggleItemWatched}
                   disableRipple
+                  style={{ position: 'relative' }}
                 >
                   <Check
                     className={
-                      this.itemMarkedAsWatched()
+                      this.itemHasTag(ACTION_WATCHED)
                         ? classes.hoverWatchInvert
                         : classes.hoverWatch
                     }
                   />
                   <Typography variant="srOnly">
-                    {this.itemMarkedAsWatched()
+                    {this.itemHasTag(ACTION_WATCHED)
                       ? 'Mark as not watched'
                       : 'Mark as watched'}
                   </Typography>
@@ -431,9 +486,24 @@ class ItemCard extends Component<Props, ItemCardState> {
                   aria-label="Manage Lists"
                   onClick={() => this.handleListsModalOpen(item)}
                   disableRipple
+                  style={{ position: 'relative' }}
                 >
                   <PlaylistAdd className={classes.hoverWatch} />
                   <Typography variant="srOnly">Manage Lists</Typography>
+                </IconButton>
+              </Tooltip>
+            </Zoom>
+          )}
+
+          {isHovering && this.itemHasTag(ACTION_ENJOYED) && (
+            <Zoom in={isHovering}>
+              <Tooltip title={'Rate it!'} placement={tooltipPlacement}>
+                <IconButton
+                  aria-label="Rate it!"
+                  onClick={this.handleHoverRatingOpen}
+                >
+                  <ThumbDown className={classes.hoverRatingThumbsDown} />
+                  <Typography variant="srOnly">Rate it!</Typography>
                 </IconButton>
               </Tooltip>
             </Zoom>
@@ -450,6 +520,7 @@ class ItemCard extends Component<Props, ItemCardState> {
                   className={classes.hoverDelete}
                   onClick={this.handleDeleteModalOpen}
                   disableRipple
+                  style={{ position: 'relative' }}
                 >
                   <DeleteIcon />
                   <Typography variant="srOnly">Delete from List</Typography>
@@ -462,6 +533,40 @@ class ItemCard extends Component<Props, ItemCardState> {
     );
   };
 
+  // renderRatingHoverSmall = () => {
+  //   let { classes } = this.props;
+  //   let { isHovering, hoverRating, displayRating } = this.state;
+  //   const tooltipPlacement = 'bottom';
+  //   console.log('test');
+
+  //   return (
+  //     <div className={classes.ratingContainerSmall}>
+  //       {/* <Zoom in={isHovering}>
+  //         <Tooltip title={'Meh'} placement={tooltipPlacement}>
+  //           <IconButton
+  //             aria-label="Didn't Like It"
+  //             onClick={() => this.toggleItemRating(0)}
+  //           >
+  //             <ThumbDown className={classes.hoverRatingThumbsDown} />
+  //             <Typography variant="srOnly">Mark as disliked</Typography>
+  //           </IconButton>
+  //         </Tooltip>
+  //       </Zoom>
+  //       <Zoom in={isHovering}>
+  //         <Tooltip title={'Liked it!'} placement={tooltipPlacement}>
+  //           <IconButton
+  //             aria-label="Liked It"
+  //             onClick={() => this.toggleItemRating(1)}
+  //           >
+  //             <ThumbUp className={classes.hoverRatingThumbsUp} />
+  //             <Typography variant="srOnly">Mark as liked</Typography>
+  //           </IconButton>
+  //         </Tooltip>
+  //       </Zoom> */}
+  //     </div>
+  //   );
+  // };
+
   renderRatingHover = () => {
     let { classes } = this.props;
     let { hoverRating } = this.state;
@@ -469,6 +574,21 @@ class ItemCard extends Component<Props, ItemCardState> {
 
     return (
       <div className={classes.ratingHover}>
+        <IconButton
+          onClick={() => this.setState({ hoverRating: false })}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            zIndex: 1,
+          }}
+        >
+          <Close
+            style={{
+              color: '#fff',
+            }}
+          />
+        </IconButton>
         <div className={classes.ratingContainer}>
           <Typography className={classes.ratingTitle}>
             What'd ya think?
@@ -478,10 +598,10 @@ class ItemCard extends Component<Props, ItemCardState> {
               <Tooltip title={'Meh'} placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Didn't Like It"
-                  onClick={() => this.toggleItemRating(-1)}
+                  onClick={() => this.toggleItemRating(0)}
                 >
                   <ThumbDown className={classes.ratingVoteDown} />
-                  <Typography variant="srOnly">Mark as diliked</Typography>
+                  <Typography variant="srOnly">Mark as disliked</Typography>
                 </IconButton>
               </Tooltip>
             </Zoom>
