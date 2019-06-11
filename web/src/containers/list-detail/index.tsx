@@ -164,6 +164,7 @@ class ListDetail extends Component<Props, State> {
 
   static getDerivedStateFromProps(props: Props, state: State) {
     let newId = Number(props.match.params.id);
+
     if (newId !== state.prevListId) {
       return {
         ...state,
@@ -179,25 +180,28 @@ class ListDetail extends Component<Props, State> {
     let force = !this.state.existingList || !this.state.existingList!.things;
     this.props.retrieveList({
       listId: this.props.match.params.id,
-      force,
+      force: true,
     });
   }
 
-  componentDidUpdate(oldProps: Props) {
+  componentDidUpdate(oldProps: Props, prevState: State) {
     if (
+      this.props.match.params.id !== oldProps.match.params.id ||
+      (!prevState.loadingList && this.state.loadingList)
+    ) {
+      this.setState({ loadingList: true });
+
+      this.props.retrieveList({
+        listId: this.props.match.params.id,
+        force: true,
+      });
+    } else if (
       !this.props.listLoading &&
       (oldProps.listLoading || this.state.loadingList)
     ) {
       this.setState({
         loadingList: false,
         existingList: this.props.listsById[Number(this.props.match.params.id)],
-      });
-    } else if (this.props.match.params.id !== oldProps.match.params.id) {
-      this.setState({ loadingList: true });
-
-      this.props.retrieveList({
-        listId: this.props.match.params.id,
-        force: true,
       });
     }
   }
@@ -494,6 +498,8 @@ class ListDetail extends Component<Props, State> {
     let { loadingList } = this.state;
 
     let list = listsById[Number(match.params.id)];
+
+    // console.log(loadingList, list, userSelf);
 
     return loadingList || !list || !userSelf
       ? this.renderLoading()
