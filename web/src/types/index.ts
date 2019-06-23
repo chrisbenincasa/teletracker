@@ -37,7 +37,7 @@ export interface UserPreferences {
 }
 
 export interface Thing {
-  id: string | number;
+  id: number;
   name: string;
   normalizedName: string;
   type: 'movie' | 'show' | 'person';
