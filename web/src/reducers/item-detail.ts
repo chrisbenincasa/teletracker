@@ -18,15 +18,19 @@ import {
 import { Thing, UserThingTag } from '../types';
 import { flattenActions, handleAction } from './utils';
 import * as R from 'ramda';
+import { LIST_RETRIEVE_SUCCESS } from '../constants/lists';
+import { ListRetrieveSuccessAction } from '../actions/lists';
 
 export interface State {
   fetching: boolean;
   currentId?: number;
   itemDetail?: Thing;
+  thingsById: { [key: number]: Thing };
 }
 
 const initialState: State = {
   fetching: false,
+  thingsById: {},
 };
 
 const itemFetchInitiated = handleAction(
@@ -43,13 +47,56 @@ const itemFetchInitiated = handleAction(
 const itemFetchSuccess = handleAction(
   ITEM_FETCH_SUCCESSFUL,
   (state: State, { payload }: ItemFetchSuccessfulAction) => {
+    let thingsById = state.thingsById || {};
+    let existingThing: Thing | undefined = thingsById[payload!.id];
+    let newThing: Thing = payload!;
+    if (existingThing) {
+      newThing = R.mergeDeepRight(existingThing, newThing) as Thing;
+    }
+
     return {
       ...state,
       fetching: false,
       itemDetail: payload!,
+      thingsById: {
+        ...state.thingsById,
+        [payload!.id]: newThing,
+      },
     } as State;
   },
 );
+
+const handleListRetrieveSuccess = handleAction<
+  ListRetrieveSuccessAction,
+  State
+>(LIST_RETRIEVE_SUCCESS, (state, action) => {
+  if (action.payload && action.payload.things) {
+    let thingsById = state.thingsById || {};
+    let things = action.payload.things;
+    let newThings = things.reduce((prev, curr) => {
+      let existingThing: Thing | undefined = thingsById[Number(curr.id)];
+      let newThing: Thing = curr;
+      if (existingThing) {
+        newThing = R.mergeDeepRight(existingThing, newThing) as Thing;
+      }
+
+      return {
+        ...prev,
+        [curr.id]: newThing,
+      };
+    }, {});
+
+    return {
+      ...state,
+      thingsById: {
+        ...state.thingsById,
+        ...newThings,
+      },
+    };
+  } else {
+    return state;
+  }
+});
 
 const filterNot = <T>(fn: (x: T) => boolean, arr: T[]) => {
   return R.filter(R.complement(fn), arr);
@@ -61,21 +108,22 @@ const updateTagsState = (
   fn: (tags: UserThingTag[]) => UserThingTag[],
   payload?: UserUpdateItemTagsPayload,
 ) => {
-  if (
-    payload &&
-    state.currentId === payload!.thingId &&
-    state.itemDetail &&
-    state.itemDetail.userMetadata
-  ) {
-    let newTagSet = fn(state.itemDetail.userMetadata.tags);
+  let thingsById = state.thingsById || {};
+  let thingId = Number(payload!.thingId);
+  if (payload && thingsById[thingId] && thingsById[thingId].userMetadata) {
+    let thing = thingsById[thingId]!;
+    let newTagSet = fn(thing.userMetadata!.tags);
 
     return {
       ...state,
-      itemDetail: {
-        ...state.itemDetail,
-        userMetadata: {
-          ...state.itemDetail.userMetadata,
-          tags: newTagSet,
+      thingsById: {
+        ...thingsById,
+        [thingId]: {
+          ...thing,
+          userMetadata: {
+            ...thing.userMetadata,
+            tags: newTagSet,
+          },
         },
       },
     } as State;
@@ -121,4 +169,5 @@ export default flattenActions(
   itemFetchSuccess,
   itemUpdateTagsSuccess,
   itemRemoveTagsSuccess,
+  handleListRetrieveSuccess,
 );

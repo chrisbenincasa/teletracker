@@ -103,6 +103,11 @@ type Props = OwnProps &
   WithStyles<typeof styles> &
   WithUserProps;
 
+type NotOwnProps = RouteComponentProps<RouteParams> &
+  DispatchProps &
+  WithStyles<typeof styles> &
+  WithUserProps;
+
 interface State {
   currentId: number;
   currentItemType: string;
@@ -363,11 +368,14 @@ class ItemDetails extends Component<Props, State> {
   }
 }
 
-const mapStateToProps: (appState: AppState) => OwnProps = appState => {
+const mapStateToProps: (
+  initialState: AppState,
+  props: NotOwnProps,
+) => (appState: AppState) => OwnProps = (initial, props) => appState => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
-    itemDetail: appState.itemDetail.itemDetail,
+    itemDetail: appState.itemDetail.thingsById[Number(props.match.params.id)],
   };
 };
 
