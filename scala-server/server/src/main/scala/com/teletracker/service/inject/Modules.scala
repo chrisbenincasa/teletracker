@@ -22,9 +22,21 @@ class ConfigModule extends TwitterModule {
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
   import com.teletracker.service.config.CustomReaders._
 
+  private def getResourceList(env: String) = Seq(
+    s"$env.application.conf",
+    "application.conf"
+  )
+
   @Provides
   @Singleton
   def config: TeletrackerConfig = {
-    ConfigFactory.load().as[TeletrackerConfig]("teletracker")
+    val env = System.getenv()
+    val resources = getResourceList(
+      Option(System.getenv("ENV")).getOrElse("local")
+    )
+    val conf = resources
+      .map(ConfigFactory.load)
+      .reduceRight(_.withFallback(_))
+    conf.as[TeletrackerConfig]("teletracker")
   }
 }

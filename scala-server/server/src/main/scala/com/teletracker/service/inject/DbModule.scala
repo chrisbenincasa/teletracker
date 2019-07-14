@@ -1,25 +1,18 @@
 package com.teletracker.service.inject
 
+import com.google.inject.{Provides, Singleton}
 import com.teletracker.service.config.TeletrackerConfig
 import com.teletracker.service.db.CustomPostgresProfile
-import com.teletracker.service.db.model.{
-  DynamicListRules,
-  ExternalSource,
-  GenreType,
-  OfferType,
-  PresentationType,
-  ThingType,
-  UserPreferences,
-  UserThingTagType
-}
+import com.teletracker.service.db.model._
 import com.teletracker.service.util.Slug
 import com.teletracker.service.util.execution.ExecutionContextProvider
-import com.google.inject.{Provides, Singleton}
 import com.twitter.inject.TwitterModule
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import io.circe.Json
 import javax.inject.Inject
 import slick.jdbc.{DriverDataSource, JdbcProfile}
 import slick.util.AsyncExecutor
+import java.util.Properties
 import scala.concurrent.ExecutionContext
 
 class DbModule extends TwitterModule {
@@ -29,12 +22,44 @@ class DbModule extends TwitterModule {
     config: TeletrackerConfig
   )(implicit executionContext: ExecutionContext
   ): javax.sql.DataSource = {
-    new DriverDataSource(
-      url = config.db.url,
-      user = config.db.user,
-      password = config.db.password,
-      driverObject = config.db.driver
+    val props = new Properties()
+    if (config.env != "local") {
+//      props.setProperty(
+//        "socketFactory",
+//        classOf[SocketFactory].getName
+//      )
+//
+//      props.setProperty(
+//        "cloudSqlInstance",
+//        config.db.cloudSqlInstance.get
+//      )
+
+      props.setProperty("ssl", "true")
+      props.setProperty("sslmode", "require")
+//      props.setProperty("tcpKeepAlive", "true")
+    }
+
+    props.setProperty("dataSourceClassName", config.db.driver.getClass.getName)
+    props.setProperty("username", config.db.user)
+    props.setProperty("password", config.db.password)
+
+    val conf = new HikariConfig()
+    conf.setJdbcUrl(config.db.url)
+    conf.setUsername(config.db.user)
+    conf.setPassword(config.db.password)
+    conf.setDataSource(
+      new DriverDataSource(
+        url = config.db.url,
+        user = config.db.user,
+        password = config.db.password,
+        driverObject = config.db.driver,
+        properties = props
+      )
     )
+
+    println(s"Connecting to DB at: ${config.db.url}")
+
+    new HikariDataSource(conf)
   }
 
   @Provides
