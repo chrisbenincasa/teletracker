@@ -10,7 +10,8 @@ case class TeletrackerConfig(
   mode: String = "multi user",
   db: DbConfig,
   auth: AuthConfig,
-  tmdb: TmdbConfig)
+  tmdb: TmdbConfig,
+  env: String)
 
 case class AuthConfig(jwt: JwtConfig)
 
@@ -25,6 +26,7 @@ case class DbConfig(
   driver: Driver,
   url: String,
   user: String,
-  password: String)
+  password: String,
+  cloudSqlInstance: Option[String])
 
 case class TmdbConfig(api_key: String)

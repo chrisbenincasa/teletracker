@@ -12,7 +12,7 @@ object RunDatabaseMigrationMain extends RunDatabaseMigration
 
 class RunDatabaseMigration extends App {
   val action =
-    flag[String]("action", "migrate", "The migration action to perform")
+    flag[String]("action", "info", "The migration action to perform")
   val loc = flag(
     "loc",
     Option(System.getProperty("java.io.tmpdir")).getOrElse("/tmp"),
@@ -39,8 +39,6 @@ class RunDatabaseMigration extends App {
     val config = injector.instance[TeletrackerConfig]
     val dataSource = injector.instance[DataSource]
 
-    val flyway = new Flyway()
-
     val path = config.db.driver match {
       case _: org.h2.Driver         => "h2"
       case _: org.postgresql.Driver => "postgres"
@@ -52,8 +50,11 @@ class RunDatabaseMigration extends App {
 
     println(s"Looking in location = ${loc()}")
 
-    flyway.setLocations(s"classpath:db/migration/$path", s"filesystem:${loc()}")
-    flyway.setDataSource(dataSource)
+    val flyway = Flyway
+      .configure()
+      .locations(s"classpath:db/migration/$path", s"filesystem:${loc()}")
+      .dataSource(dataSource)
+      .load()
 
     println(withColor(Console.BLUE, s"About to run action: ${action()}"))
 

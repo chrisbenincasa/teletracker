@@ -33,3 +33,4 @@ log.*
 .metals/
 
 data/logos/
+sbt-launch.jar

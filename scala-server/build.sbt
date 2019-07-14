@@ -31,13 +31,15 @@ lazy val server = project
       "com.twitter" %% "finatra-http" % versions.twitter,
       // Db
       "com.typesafe.slick" %% "slick" % "3.2.3",
+      "com.typesafe.slick" %% "slick-hikaricp" % "3.2.3",
       "com.typesafe.slick" %% "slick-codegen" % "3.2.3",
       "com.github.tminglei" %% "slick-pg" % "0.16.2",
       "com.github.tminglei" %% "slick-pg_circe-json" % "0.16.2",
       "com.github.tminglei" %% "slick-pg_joda-time" % "0.16.2",
       "org.postgresql" % "postgresql" % "42.2.2",
-      "org.flywaydb" % "flyway-core" % "5.1.3",
+      "org.flywaydb" % "flyway-core" % "6.0.0-beta2",
       "com.h2database" % "h2" % "1.4.193",
+      "com.google.cloud.sql" % "postgres-socket-factory" % "1.0.14",
       // Auth
       "io.jsonwebtoken" % "jjwt" % "0.9.0",
       // Misc
@@ -65,6 +67,9 @@ lazy val server = project
       "API_KEY" -> System.getenv("API_KEY"),
       "JWT_SECRET" -> System.getenv("JWT_SECRET")
     ),
+    /*javaOptions in reStart ++= Seq(
+      "-Djavax.net.debug=ssl"
+    ),*/
     // Assmebly JAR
     mainClass in assembly := Some("com.teletracker.service.Teletracker"),
     test in assembly := {},
