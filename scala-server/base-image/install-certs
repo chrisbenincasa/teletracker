@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+source /etc/environment
+KEYSTORE_FILE="$JAVA_HOME/lib/security/cacerts"
+mkdir -p $JAVA_HOME/jre/lib/security
+# Define these long-hand in case we have to use this method to install more certs later
+
+mkdir /jks
+cp $KEYSTORE_FILE /jks/truststore.jks
+keytool -importcert -noprompt -trustcacerts -keystore /jks/truststore.jks \
+    -storepass changeit -alias googlecloudsqlservercacert -file /certs/server-ca.pem
+
+openssl pkcs12 -export -in /certs/client-cert.pem -inkey /certs/client-key.pem \
+        -passout pass:changeit -out /jks/client.p12
+
+keytool -importkeystore -srckeystore /jks/client.p12 \
+        -srcstorepass changeit -deststorepass changeit \
+        -srcstoretype PKCS12 -destkeystore /jks/keystore.jks -deststoretype JKS
+
+#CERTS=(/certs/roots.pem /certs/server.crt.der)
+#TMP_DIR="/tmp/certs"
+#mkdir -p $TMP_DIR
+#cd $TMP_DIR
+#for CERT in ${CERTS[@]}; do
+#  if ! keytool -list -keystore $KEYSTORE_FILE -storepass changeit -alias $CERT > /dev/null; then
+#    keytool -importcert -file $CERT -keystore $KEYSTORE_FILE -noprompt -storepass changeit -alias $CERT
+#  else
+#    echo "$CERT already installed, skipping."
+#  fi
+#done
+#rm -rf $TMP_DIR

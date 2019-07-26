@@ -34,8 +34,8 @@ class DbModule extends TwitterModule {
 //        config.db.cloudSqlInstance.get
 //      )
 
-      props.setProperty("ssl", "true")
-      props.setProperty("sslmode", "require")
+//      props.setProperty("ssl", "true")
+//      props.setProperty("sslmode", "require")
 //      props.setProperty("tcpKeepAlive", "true")
     }
 
@@ -59,7 +59,9 @@ class DbModule extends TwitterModule {
 
     println(s"Connecting to DB at: ${config.db.url}")
 
-    new HikariDataSource(conf)
+    val hikari = new HikariDataSource(conf)
+    hikari.setMaximumPoolSize(3)
+    hikari
   }
 
   @Provides

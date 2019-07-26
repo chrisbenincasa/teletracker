@@ -65,6 +65,7 @@ class TeletrackerServer(override protected val modules: Seq[Module] = Modules())
       .add[MetadataController]
       .add[AvailabilityController]
       .add[AdminController]
+      .add[HealthController]
   }
 
   override def postInjectorStartup(): Unit = {
