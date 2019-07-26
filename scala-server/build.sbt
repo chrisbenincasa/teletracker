@@ -67,9 +67,13 @@ lazy val server = project
       "API_KEY" -> System.getenv("API_KEY"),
       "JWT_SECRET" -> System.getenv("JWT_SECRET")
     ),
-    /*javaOptions in reStart ++= Seq(
-      "-Djavax.net.debug=ssl"
-    ),*/
+    javaOptions in reStart ++= Seq(
+//      "-Djavax.net.debug=ssl",
+      "-Djavax.net.ssl.keyStore=jks/keystore.jks",
+      "-Djavax.net.ssl.keyStorePassword=changeit",
+      "-Djavax.net.ssl.trustStore=jks/truststore.jks",
+      "-Djavax.net.ssl.trustStorePassword=changeit"
+    ),
     // Assmebly JAR
     mainClass in assembly := Some("com.teletracker.service.Teletracker"),
     test in assembly := {},
@@ -111,7 +115,9 @@ lazy val server = project
       val artifactTargetPath = s"/app/bin/${artifact.name}"
 
       new Dockerfile {
-        from("openjdk:8u141-jre-slim")
+        from(
+          "gcr.io/teletracker/base@sha256:e586ccd0786a55490f5bb18ad90bb2d26e6fc3df2c37e94a6144d9323fc5c7e8"
+        )
         add(baseDirectory.value / "src/docker/", "/app")
         add(baseDirectory.value / "data", "/data")
         add(artifact, artifactTargetPath)
@@ -120,12 +126,13 @@ lazy val server = project
       }
     },
     imageNames in docker := Seq(
-      ImageName(s"chrisbenincasa/${name.value}:latest"),
-      ImageName(
-        namespace = Some("chrisbenincasa"),
-        repository = name.value,
-        tag = Some("v" + version.value)
-      )
+//      ImageName(s"chrisbenincasa/${name.value}:latest"),
+//      ImageName(
+//        namespace = Some("chrisbenincasa"),
+//        repository = name.value,
+//        tag = Some("v" + version.value)
+//      ),
+      ImageName("gcr.io/teletracker/server:latest")
     ),
     buildOptions in docker := BuildOptions(
       pullBaseImage = BuildOptions.Pull.Always

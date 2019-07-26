@@ -1,0 +1,5 @@
+FROM gcr.io/teletracker/scala-sbt:1.2.8-jdk-8
+
+ADD scala-server/build.sbt
+
+RUN sbt "+update" && rm -rf project target
