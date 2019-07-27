@@ -52,5 +52,18 @@ object BuildConfig {
 
   object Revision {
     lazy val revision = System.getProperty("revision", "SNAPSHOT")
+    lazy val baseImageVersion = {
+      val v = System.getProperty(
+        "base_image_version",
+        "sha256:e586ccd0786a55490f5bb18ad90bb2d26e6fc3df2c37e94a6144d9323fc5c7e8"
+      )
+
+      if (v.startsWith("sha256")) {
+        s"@${v}"
+      } else {
+        s":${v}"
+      }
+    }
+
   }
 }

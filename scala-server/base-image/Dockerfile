@@ -1,5 +1,8 @@
 FROM openjdk:8u141-jre-slim
 
+ADD https://storage.googleapis.com/berglas/master/linux_amd64/berglas /bin/berglas
+RUN chmod +x /bin/berglas
+
 RUN apt-get update
 
 RUN apt-get install -y net-tools git wget curl

@@ -116,7 +116,7 @@ lazy val server = project
 
       new Dockerfile {
         from(
-          "gcr.io/teletracker/base@sha256:e586ccd0786a55490f5bb18ad90bb2d26e6fc3df2c37e94a6144d9323fc5c7e8"
+          s"gcr.io/teletracker/base:latest"
         )
         add(baseDirectory.value / "src/docker/", "/app")
         add(baseDirectory.value / "data", "/data")
@@ -126,16 +126,11 @@ lazy val server = project
       }
     },
     imageNames in docker := Seq(
-//      ImageName(s"chrisbenincasa/${name.value}:latest"),
-//      ImageName(
-//        namespace = Some("chrisbenincasa"),
-//        repository = name.value,
-//        tag = Some("v" + version.value)
-//      ),
-      ImageName("gcr.io/teletracker/server:latest")
-    ),
-    buildOptions in docker := BuildOptions(
-      pullBaseImage = BuildOptions.Pull.Always
+      ImageName(
+        namespace = Some("gcr.io/teletracker"),
+        repository = "server",
+        tag = Some("latest")
+      )
     ),
     `run-db-migrations` := runInputTask(
       Runtime,

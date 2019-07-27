@@ -76,14 +76,15 @@ class TeletrackerServer(override protected val modules: Seq[Module] = Modules())
 }
 
 object Teletracker extends com.twitter.inject.app.App {
-  override protected def modules: Seq[Module] = Modules()
+  override protected def modules: Seq[Module] =
+    Seq(com.google.inject.util.Modules.EMPTY_MODULE)
 
   override protected def run(): Unit = {
     val cmd = args.headOption.getOrElse("server")
     val rest = if (args.nonEmpty) args.tail else Array.empty[String]
 
     cmd match {
-      case "server" => new TeletrackerServer(modules).main(rest)
+      case "server" => new TeletrackerServer(Modules()).main(rest)
       case "reset-db" =>
         val location = new File(
           s"${System.getProperty("java.io.tmpdir")}/db/migrate/postgres"
