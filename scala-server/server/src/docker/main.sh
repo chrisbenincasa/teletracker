@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
 
 # location the fat jar
-BIN_JAR=`ls /app/bin/*.jar | head`
-
-echo $@
+BIN_JAR=$(find /app/bin -maxdepth 1 -name '*.jar' | head)
 
 LOG_PATH="/var/log/teletracker"
 
 mkdir -p ${LOG_PATH}
 
-./cloud_sql_proxy -instances=${SQL_INSTANCE}=tcp:5432 &> ${LOG_PATH}/cloud_sql_proxy.log &
+./cloud_sql_proxy -instances="${SQL_INSTANCE}"=tcp:5432 &> ${LOG_PATH}/cloud_sql_proxy.log &
 
-JVM_OPTS="""
-    -server \
+JVM_OPTS="""-server \
     -XX:+HeapDumpOnOutOfMemoryError \
     -XX:+UseConcMarkSweepGC -XX:+CMSParallelRemarkEnabled \
     -Xmx512m -Xms512m \
@@ -26,4 +23,4 @@ JVM_OPTS="""
     -Djavax.net.ssl.trustStorePassword=changeit \
 """
 
-exec java ${JVM_OPTS} ${JVM_ARGS} -jar ${BIN_JAR} $@
+berglas exec --local -- java ${JVM_OPTS} ${JVM_ARGS} -jar ${BIN_JAR} $@

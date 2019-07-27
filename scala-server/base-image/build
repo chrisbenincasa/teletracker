@@ -1,4 +1,5 @@
 #!/bin/bash
 
 ID=$(docker build -q  .)
+echo "Build $ID"
 docker tag $ID gcr.io/teletracker/base:latest

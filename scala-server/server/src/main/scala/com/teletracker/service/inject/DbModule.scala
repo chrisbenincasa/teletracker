@@ -10,6 +10,7 @@ import com.twitter.inject.TwitterModule
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import io.circe.Json
 import javax.inject.Inject
+import org.slf4j.{Logger, LoggerFactory}
 import slick.jdbc.{DriverDataSource, JdbcProfile}
 import slick.util.AsyncExecutor
 import java.util.Properties
@@ -57,7 +58,9 @@ class DbModule extends TwitterModule {
       )
     )
 
-    println(s"Connecting to DB at: ${config.db.url}")
+    logger.info(
+      s"Connecting to DB at: ${config.db.url}, password = ${config.db.password}"
+    )
 
     val hikari = new HikariDataSource(conf)
     hikari.setMaximumPoolSize(3)
