@@ -30,6 +30,7 @@ import { AppState } from '../reducers';
 import { ActionType, Network, User, UserPreferences } from '../types';
 import { DataResponse, TeletrackerResponse } from '../utils/api-client';
 import { clientEffect, createAction } from './utils';
+import { retrieveAllLists } from './lists';
 
 interface UserSelfRetrieveInitiatedPayload {
   force: boolean;
@@ -309,7 +310,7 @@ export const createNewListSaga = function*() {
 
       if (response.ok) {
         yield put(createListSuccess(response.data!.data));
-        yield put(RetrieveUserSelfInitiated({ force: true }));
+        yield put(retrieveAllLists({}));
       } else {
         // TODO: ERROR
       }

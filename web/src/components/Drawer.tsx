@@ -203,7 +203,7 @@ class Drawer extends Component<Props, State> {
   };
 
   validateListName = () => {
-    let { createList, userSelf } = this.props;
+    let { listsById, userSelf } = this.props;
     let { listName } = this.state;
 
     // Reset error states before validation
@@ -216,10 +216,13 @@ class Drawer extends Component<Props, State> {
 
       if (listName.length === 0) {
         this.setState({ nameLengthError: true });
-      } else if (userSelf.lists.some(nameExists)) {
+      } else if (R.values(listsById).some(nameExists)) {
         this.setState({ nameDuplicateError: true });
       } else {
-        this.setState({ nameLengthError: false, nameDuplicateError: false });
+        this.setState({
+          nameLengthError: false,
+          nameDuplicateError: false,
+        });
         this.handleCreateListSubmit();
       }
     }
