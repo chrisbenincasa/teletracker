@@ -5,6 +5,22 @@ ARG SBT_VERSION=1.2.8
 ARG SHA=f4b9fde91482705a772384c9ba6cdbb84d1c4f7a278fd2bfb34961cd9ed8e1d7
 ARG BASE_URL=https://github.com/sbt/sbt/releases/download
 
+ENV SBT_OPTS="\
+  -J-Djava.net.preferIPv4Stack=true \
+  -J-XX:+AggressiveOpts             \
+  -J-XX:+UseParNewGC                \
+  -J-XX:+UseConcMarkSweepGC         \
+  -J-XX:+CMSParallelRemarkEnabled   \
+  -J-XX:+CMSClassUnloadingEnabled   \
+  -J-XX:ReservedCodeCacheSize=128m  \
+  -J-XX:SurvivorRatio=128           \
+  -J-XX:MaxTenuringThreshold=0      \
+  -J-Xss8M                          \
+  -J-Xms512M                        \
+  -J-Xmx2G                          \
+  -J-server                         \
+  "
+
 RUN apt-get update -qqy \
   && apt-get install -qqy curl bc \
   && mkdir -p /usr/share \
