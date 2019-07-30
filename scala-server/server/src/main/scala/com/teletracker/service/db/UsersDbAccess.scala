@@ -18,7 +18,7 @@ import com.teletracker.service.util.{Field, FieldSelector}
 import io.circe.Json
 import javax.inject.{Inject, Provider}
 import java.sql.Timestamp
-import java.time.OffsetDateTime
+import java.time.{Instant, OffsetDateTime}
 import scala.concurrent.{ExecutionContext, Future}
 
 class UsersDbAccess @Inject()(
@@ -73,6 +73,30 @@ class UsersDbAccess @Inject()(
     }
   }
 
+  def updateUser(
+    id: Int,
+    name: String,
+    username: String,
+    preferences: UserPreferences
+  ) = {
+    run {
+      users.query
+        .filter(_.id === id)
+        .map(u => {
+          (u.name, u.username, u.lastUpdatedAt, u.preferences)
+        })
+        .update(
+          (
+            name,
+            username,
+            Instant.now(),
+            Some(preferences)
+          )
+        )
+        .map(_ => {})
+    }
+  }
+
   def newUser(
     name: String,
     username: String,
@@ -80,8 +104,7 @@ class UsersDbAccess @Inject()(
     password: String
   )(implicit executionContext: ExecutionContext
   ): Future[Int] = {
-    val now = System.currentTimeMillis()
-    val timestamp = new java.sql.Timestamp(now)
+    val timestamp = Instant.now()
     val hashed = PasswordHash.createHash(password)
     val user = UserRow(
       None,
@@ -169,6 +192,67 @@ class UsersDbAccess @Inject()(
     }
   }
 
+  def findNetworkPreferencesForUser(id: Int): Future[Seq[Network]] = {
+    run {
+      findNetworkPreferencesForUserQuery(id)
+    }
+  }
+
+  def findNetworkPreferencesForUpdate(
+    userId: Int
+  ): Future[Seq[UserNetworkPreference]] = {
+    run {
+      userNetworkPreferences.query
+        .filter(
+          _.userId === userId
+        )
+        .result
+    }
+  }
+
+  def updateUserNetworkPreferences(
+    userId: Int,
+    networksToAdd: Set[Int],
+    networksToDelete: Set[Int]
+  ): Future[Unit] = {
+    val deleteAction = if (networksToDelete.nonEmpty) {
+      userNetworkPreferences.query
+        .filter(_.id inSetBind networksToDelete)
+        .delete
+    } else {
+      DBIO.successful(0)
+    }
+
+    val addAction = if (networksToAdd.nonEmpty) {
+      val networkPrefs = networksToAdd.map(network => {
+        UserNetworkPreference(-1, userId, network)
+      })
+      userNetworkPreferences.query ++= networkPrefs
+    } else {
+      DBIO.successful(None)
+    }
+
+    run {
+      DBIO.seq(
+        deleteAction,
+        addAction
+      )
+    }
+  }
+
+  private def findNetworkPreferencesForUserQuery(
+    userId: Int
+  ): DBIOAction[Seq[Network], NoStream, Effect.Read] = {
+    for {
+      prefsAndNetworks <- (userNetworkPreferences.query.filter(
+        _.userId === userId
+      ) joinLeft
+        networks.query on (_.networkId === _.id)).result
+    } yield {
+      prefsAndNetworks.flatMap(_._2)
+    }
+  }
+
   private def findUserAndListsQuery(userId: Int): Query[
     (
       (
@@ -201,8 +285,7 @@ class UsersDbAccess @Inject()(
     selectFields: Option[List[Field]] = None
   ): Future[Option[User]] = {
     val networkPrefsFut = run {
-      (userNetworkPreferences.query.filter(_.userId === userId) joinLeft
-        networks.query on (_.networkId === _.id)).result
+      findNetworkPreferencesForUserQuery(userId)
     }
 
     val userAndListsFut = run {
@@ -299,7 +382,7 @@ class UsersDbAccess @Inject()(
             }
 
           user.toFull
-            .withNetworks(networkPrefs.flatMap(_._2).toList)
+            .withNetworksSubscriptions(networkPrefs.toList)
             .withLists((lists ++ dynamicLists).toList.sortBy(_.id))
         })
     }
@@ -320,6 +403,14 @@ class UsersDbAccess @Inject()(
     }
   }
 
+  def findDynamicLists(userId: Int) = {
+    run {
+      trackedLists.query
+        .filter(tl => tl.userId === userId && tl.isDynamic)
+        .result
+    }
+  }
+
   def findDefaultListForUser(userId: Int): Future[Option[TrackedListRow]] = {
     run {
       trackedLists.query
@@ -328,65 +419,6 @@ class UsersDbAccess @Inject()(
         .result
         .headOption
     }
-  }
-
-  def updateUser(updatedUser: User): Future[Unit] = {
-    val userUpdateQuery = users.query
-      .filter(_.id === updatedUser.id)
-      .map(u => {
-        (u.name, u.username, u.lastUpdatedAt, u.preferences)
-      })
-      .update(
-        (
-          updatedUser.name,
-          updatedUser.username,
-          new Timestamp(System.currentTimeMillis()),
-          Some(updatedUser.userPreferences)
-        )
-      )
-      .map(_ => {})
-
-    val updateNetworksQuery = userNetworkPreferences.query
-      .filter(_.userId === updatedUser.id)
-      .result
-      .flatMap(prefs => {
-        val networkIds = updatedUser.networkSubscriptions.flatMap(_.id).toSet
-        val existingNetworkIds = prefs.map(_.networkId).toSet
-
-        val toDelete = prefs.filter(pref => !networkIds(pref.networkId))
-        val toAdd = updatedUser.networkSubscriptions
-          .filter(net => net.id.isDefined && !existingNetworkIds(net.id.get))
-          .map(network => {
-            UserNetworkPreference(-1, updatedUser.id, network.id.get)
-          })
-
-        val deleteAction = if (toDelete.nonEmpty) {
-          userNetworkPreferences.query
-            .filter(_.id inSetBind toDelete.map(_.id))
-            .delete
-        } else {
-          DBIO.successful(0)
-        }
-
-        val addAction = if (toAdd.nonEmpty) {
-          userNetworkPreferences.query ++= toAdd
-        } else {
-          DBIO.successful(None)
-        }
-
-        DBIO.seq(
-          deleteAction,
-          addAction
-        )
-      })
-
-    Future
-      .sequence(
-        run(userUpdateQuery) ::
-          run(updateNetworksQuery) ::
-          Nil
-      )
-      .map(_ => {})
   }
 
   def insertList(

@@ -30,7 +30,7 @@ const getBlacklists = () => {
   //   return [];
   // } else {
   // }
-  return ['search', 'userSelf', 'lists'];
+  return ['search', 'userSelf', 'lists', 'itemDetail'];
 };
 
 export const persistConfig: rp.PersistConfig = {

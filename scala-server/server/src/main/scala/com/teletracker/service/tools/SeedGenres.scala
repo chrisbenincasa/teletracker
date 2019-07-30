@@ -89,5 +89,6 @@ class GenreSeeder @Inject()(
     )
 
     Await.result(tvGenreInserts, Duration.Inf)
+    provider.shutdown()
   }
 }
