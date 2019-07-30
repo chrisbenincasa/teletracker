@@ -1,8 +1,9 @@
 package com.teletracker.service.db.model
 
+import com.teletracker.service.db.CustomPostgresProfile
 import com.teletracker.service.inject.DbImplicits
 import javax.inject.Inject
-import slick.jdbc.JdbcProfile
+import java.time.Instant
 
 case class UserRow(
   id: Option[Int],
@@ -10,8 +11,8 @@ case class UserRow(
   username: String,
   email: String,
   password: String,
-  createdAt: java.sql.Timestamp,
-  lastUpdatedAt: java.sql.Timestamp,
+  createdAt: Instant,
+  lastUpdatedAt: Instant,
   preferences: Option[UserPreferences]) {
   def toFull: User = User.fromRow(this)
 }
@@ -51,8 +52,8 @@ case class User(
   name: String,
   username: String,
   email: String,
-  createdAt: java.sql.Timestamp,
-  lastUpdatedAt: java.sql.Timestamp,
+  createdAt: Instant,
+  lastUpdatedAt: Instant,
   // Joins
   lists: Option[List[TrackedList]] = None,
   networkSubscriptions: List[Network] = Nil,
@@ -70,7 +71,7 @@ case class User(
     )
   }
 
-  def withNetworks(networks: List[Network]): User = {
+  def withNetworksSubscriptions(networks: List[Network]): User = {
     this.copy(networkSubscriptions = networks)
   }
 
@@ -88,7 +89,7 @@ case class User(
 }
 
 class Users @Inject()(
-  val driver: JdbcProfile,
+  val driver: CustomPostgresProfile,
   dbImplicits: DbImplicits) {
   import driver.api._
   import dbImplicits._
@@ -99,8 +100,8 @@ class Users @Inject()(
     def username = column[String]("username", O.Unique)
     def email = column[String]("email", O.Unique)
     def password = column[String]("password")
-    def createdAt = column[java.sql.Timestamp]("created_at")
-    def lastUpdatedAt = column[java.sql.Timestamp]("last_updated_at")
+    def createdAt = column[Instant]("created_at")
+    def lastUpdatedAt = column[Instant]("last_updated_at")
     def preferences = column[Option[UserPreferences]]("preferences")
 
     override def * =
