@@ -5,6 +5,10 @@ export const USER_SELF_RETRIEVE_FAIL = 'user/self/retrieve/FAILED';
 export const USER_SELF_ADD_NETWORK = 'user/self/network/ADD';
 export const USER_SELF_ADD_SUCCESS_NETWORK = 'user/self/network/ADD_SUCCESS';
 
+export const USER_SELF_UPDATE_NETWORKS = 'user/self/networks/UPDATE';
+export const USER_SELF_UPDATE_NETWORKS_SUCCESS =
+  'user/self/networks/UPDATE_SUCCESS';
+
 export const USER_SELF_UPDATE = 'user/self/update/INITIATED';
 export const USER_SELF_UPDATE_SUCCESS = 'user/self/update/SUCCESS';
 

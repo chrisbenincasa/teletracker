@@ -39,7 +39,7 @@ class NetworkSeeder @Inject()(
 
     val lines = scala.io.Source
       .fromFile(
-        new File(System.getProperty("user.dir") + "/data/providers.json")
+        new File(System.getProperty("user.dir") + "/server/data/providers.json")
       )
       .getLines()
       .mkString("")
@@ -74,6 +74,8 @@ class NetworkSeeder @Inject()(
         })
 
         Await.result(Future.sequence(inserts), Duration.Inf)
+
+        dbProvider.shutdown()
     }
   }
 }

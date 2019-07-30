@@ -29,9 +29,9 @@ import { ValueType } from 'react-select/lib/types';
 import { bindActionCreators } from 'redux';
 import { loadNetworks } from '../../actions/metadata';
 import {
-  addNetworkForUser,
+  updateNetworksForUser,
   updateUserPreferences,
-  UserAddNetworkPayload,
+  UserUpdateNetworksPayload,
 } from '../../actions/user';
 import { AutocompleteOption } from '../../components/AutoComplete';
 import withUser, { WithUserProps } from '../../components/withUser';
@@ -118,7 +118,7 @@ interface StateProps {
 
 interface DispatchProps {
   loadNetworks: () => void;
-  addNetworkForUser: (payload?: UserAddNetworkPayload) => void;
+  updateNetworksForUser: (payload?: UserUpdateNetworksPayload) => void;
   updateUserPreferences: (payload?: UserPreferences) => void;
 }
 
@@ -180,16 +180,25 @@ class Account extends Component<Props, State> {
 
   handleChange = (value: ValueType<AutocompleteOption<Network>>) => {
     if (!R.isNil(value) && !R.is(Array, value)) {
-      this.props.addNetworkForUser({
-        network: (value as AutocompleteOption<Network>).value,
+      this.props.updateNetworksForUser({
+        add: [(value as AutocompleteOption<Network>).value],
+        remove: [],
       });
     }
   };
 
   handleClickItem = (network: Network) => {
-    this.props.addNetworkForUser({
-      network,
-    });
+    if (this.isSubscribedToNetwork(network)) {
+      this.props.updateNetworksForUser({
+        add: [],
+        remove: [network],
+      });
+    } else {
+      this.props.updateNetworksForUser({
+        add: [network],
+        remove: [],
+      });
+    }
   };
 
   handleSwitchChange = (switchName: string) => event => {
@@ -504,7 +513,7 @@ const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
       loadNetworks,
-      addNetworkForUser,
+      updateNetworksForUser,
       updateUserPreferences,
     },
     dispatch,
