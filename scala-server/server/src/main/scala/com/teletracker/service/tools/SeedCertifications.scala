@@ -85,6 +85,7 @@ class CertificationSeeder @Inject()(
     )
 
     Await.result(tvCertInserts, Duration.Inf)
+    provider.shutdown()
   }
 
 }

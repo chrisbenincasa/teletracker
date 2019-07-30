@@ -4,17 +4,19 @@ import {
   select,
   take,
   takeEvery,
-  takeLatest,
   takeLeading,
 } from '@redux-saga/core/effects';
 import { ApiResponse } from 'apisauce';
 import { FSA } from 'flux-standard-action';
+import * as R from 'ramda';
 import {
   USER_SELF_ADD_NETWORK,
   USER_SELF_CREATE_LIST,
   USER_SELF_CREATE_LIST_SUCCESS,
   USER_SELF_DELETE_LIST,
   USER_SELF_DELETE_LIST_SUCCESS,
+  USER_SELF_REMOVE_ITEM_TAGS,
+  USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
   USER_SELF_RENAME_LIST,
   USER_SELF_RENAME_LIST_SUCCESS,
   USER_SELF_RETRIEVE_INITIATED,
@@ -22,15 +24,14 @@ import {
   USER_SELF_UPDATE,
   USER_SELF_UPDATE_ITEM_TAGS,
   USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
+  USER_SELF_UPDATE_NETWORKS,
   USER_SELF_UPDATE_PREFS,
-  USER_SELF_REMOVE_ITEM_TAGS,
-  USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
 } from '../constants/user';
 import { AppState } from '../reducers';
 import { ActionType, Network, User, UserPreferences } from '../types';
 import { DataResponse, TeletrackerResponse } from '../utils/api-client';
-import { clientEffect, createAction } from './utils';
 import { retrieveAllLists } from './lists';
+import { clientEffect, createAction } from './utils';
 
 interface UserSelfRetrieveInitiatedPayload {
   force: boolean;
@@ -46,13 +47,14 @@ export type UserSelfRetrieveSuccessAction = FSA<
   User
 >;
 
-export interface UserAddNetworkPayload {
-  network: Network;
+export interface UserUpdateNetworksPayload {
+  add: Network[];
+  remove: Network[];
 }
 
-export type UserAddNetworkAction = FSA<
-  typeof USER_SELF_ADD_NETWORK,
-  UserAddNetworkPayload
+export type UserUpdateNetworksAction = FSA<
+  typeof USER_SELF_UPDATE_NETWORKS,
+  UserUpdateNetworksPayload
 >;
 
 export type UserUpdateAction = FSA<typeof USER_SELF_UPDATE, User>;
@@ -136,7 +138,7 @@ export type UserRemoveItemTagsSuccessAction = FSA<
 export type UserActionTypes =
   | UserSelfRetrieveInitiatedAction
   | UserSelfRetrieveSuccessAction
-  | UserAddNetworkAction
+  | UserUpdateNetworksAction
   | UserUpdateAction
   | UserUpdatePrefsAction
   | UserCreateListAction
@@ -152,8 +154,8 @@ export const RetrieveUserSelfSuccess = createAction<
   UserSelfRetrieveSuccessAction
 >(USER_SELF_RETRIEVE_SUCCESS);
 
-export const addNetworkForUser = createAction<UserAddNetworkAction>(
-  USER_SELF_ADD_NETWORK,
+export const updateNetworksForUser = createAction<UserUpdateNetworksAction>(
+  USER_SELF_UPDATE_NETWORKS,
 );
 
 export const updateUserPreferences = createAction<UserUpdatePrefsAction>(
@@ -226,10 +228,10 @@ export const retrieveUserSaga = function*() {
   });
 };
 
-export const addNetworkToUserSaga = function*() {
-  yield takeEvery(USER_SELF_ADD_NETWORK, function*({
+export const updateNetworksForUserSaga = function*() {
+  yield takeEvery(USER_SELF_UPDATE_NETWORKS, function*({
     payload,
-  }: UserAddNetworkAction) {
+  }: UserUpdateNetworksAction) {
     if (payload) {
       let currUser: User | undefined = yield select(
         (state: AppState) => state.userSelf!.self,
@@ -238,11 +240,24 @@ export const addNetworkToUserSaga = function*() {
       if (!currUser) {
         // TODO: Fail
       } else {
-        let newSubs = [...currUser.networkSubscriptions, payload.network];
+        let existingIds = R.map(R.prop('id'), currUser.networkSubscriptions);
+        let removeIds = R.map(R.prop('id'), payload.remove);
+        let subsRemoved = R.reject(
+          sub => R.contains(sub.id, removeIds),
+          currUser.networkSubscriptions,
+        );
+
+        let newSubs = R.concat(
+          subsRemoved,
+          R.reject(sub => R.contains(sub.id, existingIds), payload.add),
+        );
+
         let newUser: User = {
           ...currUser,
           networkSubscriptions: newSubs,
         };
+
+        yield put(RetrieveUserSelfSuccess(newUser));
 
         let response: TeletrackerResponse<User> = yield clientEffect(
           client => client.updateUserSelf,
