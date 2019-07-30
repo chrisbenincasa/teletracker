@@ -49,7 +49,7 @@ import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { ListsByIdMap } from '../../reducers/lists';
 import { layoutStyles } from '../../styles';
-import { List } from '../../types';
+import { List, Thing } from '../../types';
 import { LIST_RETRIEVE_INITIATED } from '../../constants/lists';
 import _ from 'lodash';
 
@@ -101,6 +101,7 @@ interface OwnProps {
   isAuthed?: boolean;
   listLoading: boolean;
   listsById: ListsByIdMap;
+  thingsById: { [key: number]: Thing };
 }
 
 interface DrawerProps {
@@ -473,17 +474,19 @@ class ListDetail extends Component<Props, State> {
               {this.renderProfileMenu()}
             </div>
             <Grid container spacing={2}>
-              {list.things.map(item => (
-                <ItemCard
-                  key={item.id}
-                  userSelf={userSelf}
-                  item={item}
-                  listContext={list}
-                  itemCardVisible={false}
-                  withActionButton
-                  hoverDelete
-                />
-              ))}
+              {list.things.map(item =>
+                this.props.thingsById[Number(item.id)] ? (
+                  <ItemCard
+                    key={item.id}
+                    userSelf={userSelf}
+                    item={this.props.thingsById[Number(item.id)]}
+                    listContext={list}
+                    itemCardVisible={false}
+                    withActionButton
+                    hoverDelete
+                  />
+                ) : null,
+              )}
             </Grid>
           </div>
           {this.renderDialog()}
@@ -512,6 +515,7 @@ const mapStateToProps: (appState: AppState) => OwnProps = appState => {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     listLoading: Boolean(appState.lists.loading[LIST_RETRIEVE_INITIATED]),
     listsById: appState.lists.listsById,
+    thingsById: appState.itemDetail.thingsById,
   };
 };
 

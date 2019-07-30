@@ -1,5 +1,6 @@
 package com.teletracker.service.controllers
 
+import com.teletracker.service.api.UserApi
 import com.teletracker.service.auth.RequestContext._
 import com.teletracker.service.auth.jwt.JwtVendor
 import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
@@ -26,6 +27,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 class UserController @Inject()(
+  userApi: UserApi,
   usersDbAccess: UsersDbAccess,
   thingsDbAccess: ThingsDbAccess,
   jwtVendor: JwtVendor
@@ -51,33 +53,17 @@ class UserController @Inject()(
     }
 
     filter[JwtAuthFilter].filter[UserSelfOnlyFilter].apply {
-      get("/:userId") { req: GetUserByIdRequest =>
-        usersDbAccess
-          .findById(req.user.id)
-          .map(result => {
-            if (result.isEmpty) {
-              response.notFound
-            } else {
-              DataResponse.complex(User.fromRow(result.get))
-            }
-          })
+      get("/:userId") { request: GetUserByIdRequest =>
+        getUserOrNotFound(request.user.id)
       }
 
       put("/:userId") { request: Request =>
         decode[UpdateUserRequest](request.contentString) match {
           case Right(UpdateUserRequest(updatedUser)) =>
-            usersDbAccess
+            userApi
               .updateUser(updatedUser)
               .flatMap(_ => {
-                usersDbAccess
-                  .findById(request.user.id)
-                  .map(result => {
-                    if (result.isEmpty) {
-                      response.notFound
-                    } else {
-                      DataResponse.complex(User.fromRow(result.get))
-                    }
-                  })
+                getUserOrNotFound(request.user.id)
               })
 
           case Left(err) => throw err
@@ -346,6 +332,16 @@ class UserController @Inject()(
           .map(DataResponse(_))
           .map(response.created(_))
       }
+    }
+  }
+
+  private def getUserOrNotFound(userId: Int) = {
+    userApi.getUser(userId).map {
+      case None =>
+        response.notFound
+
+      case Some(user) =>
+        DataResponse.complex(user)
     }
   }
 }

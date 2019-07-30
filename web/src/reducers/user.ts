@@ -1,19 +1,17 @@
 import {
-  UserSelfRetrieveSuccessAction,
-  UserAddNetworkAction,
   UserActionTypes,
+  UserSelfRetrieveSuccessAction,
 } from '../actions/user';
 import {
-  USER_SELF_RETRIEVE_INITIATED,
-  USER_SELF_RETRIEVE_SUCCESS,
-  USER_SELF_ADD_NETWORK,
   USER_SELF_CREATE_LIST,
   USER_SELF_CREATE_LIST_SUCCESS,
   USER_SELF_DELETE_LIST,
   USER_SELF_DELETE_LIST_SUCCESS,
   USER_SELF_RENAME_LIST,
   USER_SELF_RENAME_LIST_SUCCESS,
-  USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
+  USER_SELF_RETRIEVE_INITIATED,
+  USER_SELF_RETRIEVE_SUCCESS,
+  USER_SELF_UPDATE_NETWORKS,
 } from '../constants/user';
 import { User } from '../types';
 import { flattenActions, handleAction } from './utils';
@@ -55,12 +53,15 @@ const selfRetrieveSuccess = handleAction(
   },
 );
 
-const userAddNetwork = handleAction(USER_SELF_ADD_NETWORK, (state: State) => {
-  return {
-    ...state,
-    updatingSelf: true,
-  } as State;
-});
+const userUpdateNetworks = handleAction(
+  USER_SELF_UPDATE_NETWORKS,
+  (state: State) => {
+    return {
+      ...state,
+      updatingSelf: true,
+    } as State;
+  },
+);
 
 const userCreateList = handleAction(USER_SELF_CREATE_LIST, (state: State) => {
   return {
@@ -135,7 +136,7 @@ export default flattenActions(
   initialState,
   selfRetrieveInitiated,
   selfRetrieveSuccess,
-  userAddNetwork,
+  userUpdateNetworks,
   userCreateList,
   userCreateListSuccess,
   userDeleteList,

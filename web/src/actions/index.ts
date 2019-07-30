@@ -21,7 +21,7 @@ import {
 import { loadNetworksSaga } from './metadata';
 import { searchSaga } from './search';
 import {
-  addNetworkToUserSaga,
+  updateNetworksForUserSaga,
   retrieveUserSaga,
   updateUserPreferencesSaga,
   updateUserSaga,
@@ -76,7 +76,7 @@ export function* root() {
     retrieveUserSaga(),
     updateListSaga(),
     loadNetworksSaga(),
-    addNetworkToUserSaga(),
+    updateNetworksForUserSaga(),
     updateUserPreferencesSaga(),
     updateUserSaga(),
     createNewListSaga(),

@@ -13,8 +13,10 @@ import javax.inject.Inject
 import org.slf4j.{Logger, LoggerFactory}
 import slick.jdbc.{DriverDataSource, JdbcProfile}
 import slick.util.AsyncExecutor
+import java.io.Closeable
 import java.util.Properties
 import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success, Try}
 
 class DbModule extends TwitterModule {
   @Provides
@@ -96,6 +98,14 @@ class DbProvider @Inject()(
   )
 
   def getDB: Database = db
+
+  def shutdown(): Unit = {
+    Try(dataSource.unwrap(classOf[Closeable])) match {
+      case Success(closeable) => closeable.close()
+      case Failure(_) =>
+        System.err.println(s"${dataSource.getClass} is not Closable!")
+    }
+  }
 }
 
 class DbImplicits @Inject()(val profile: CustomPostgresProfile) {
