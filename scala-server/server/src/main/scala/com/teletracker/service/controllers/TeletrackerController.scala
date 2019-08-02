@@ -1,6 +1,6 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.service.db.UsersDbAccess
+import com.teletracker.service.db.access.UsersDbAccess
 import com.teletracker.service.db.model.{TrackedListRow, User}
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller

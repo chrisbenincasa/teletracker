@@ -1,12 +1,6 @@
-package com.teletracker.service.db
+package com.teletracker.service.db.access
 
-import com.teletracker.service.db.model.{
-  ThingRaw,
-  Things,
-  TrackedListRow,
-  UserThingTag,
-  UserThingTags
-}
+import com.teletracker.service.db.model.{Things, TrackedListRow, UserThingTags}
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext

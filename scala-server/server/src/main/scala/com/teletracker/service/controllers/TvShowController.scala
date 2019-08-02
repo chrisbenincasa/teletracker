@@ -2,7 +2,7 @@ package com.teletracker.service.controllers
 
 import com.teletracker.service.auth.RequestContext._
 import com.teletracker.service.auth.JwtAuthFilter
-import com.teletracker.service.db.ThingsDbAccess
+import com.teletracker.service.db.access.ThingsDbAccess
 import com.teletracker.service.model.DataResponse
 import com.teletracker.service.util.json.circe._
 import com.twitter.finagle.http.Request

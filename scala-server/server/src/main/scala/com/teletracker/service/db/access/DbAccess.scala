@@ -1,4 +1,4 @@
-package com.teletracker.service.db
+package com.teletracker.service.db.access
 
 import com.teletracker.service.inject.DbProvider
 import java.util.concurrent.RejectedExecutionException

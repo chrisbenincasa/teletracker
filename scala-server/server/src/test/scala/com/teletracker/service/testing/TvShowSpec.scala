@@ -1,6 +1,11 @@
 package com.teletracker.service.testing
 
 import com.teletracker.service.db._
+import com.teletracker.service.db.access.{
+  NetworksDbAccess,
+  ThingsDbAccess,
+  TvShowDbAccess
+}
 import com.teletracker.service.db.model._
 import com.teletracker.service.testing.framework.BaseSpecWithServer
 import com.teletracker.service.util.Slug

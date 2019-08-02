@@ -1,15 +1,15 @@
 package com.teletracker.service.controllers
 
+import com.teletracker.service.api.UsersApi
 import com.teletracker.service.auth.RequestContext._
 import com.teletracker.service.auth.jwt.JwtVendor
 import com.teletracker.service.auth.{
   JwtAuthExtractor,
   JwtAuthFilter,
-  PasswordAuthFilter,
-  TokenNotFoundException
+  PasswordAuthFilter
 }
 import com.teletracker.service.config.TeletrackerConfig
-import com.teletracker.service.db.UsersDbAccess
+import com.teletracker.service.db.access.UsersDbAccess
 import com.teletracker.service.model.DataResponse
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -22,6 +22,7 @@ import scala.util.{Failure, Success}
 
 class AuthController @Inject()(
   config: TeletrackerConfig,
+  usersApi: UsersApi,
   usersDbAccess: UsersDbAccess,
   jwtVendor: JwtVendor,
   jwtAuthExtractor: JwtAuthExtractor
@@ -31,7 +32,7 @@ class AuthController @Inject()(
   prefix("/api/v1/auth") {
     // Log in user based on creds
     filter[PasswordAuthFilter].post("/login") { req: LoginRequest =>
-      usersDbAccess
+      usersApi
         .vendToken(req.email)
         .map(token => {
           response.ok(

@@ -92,7 +92,8 @@ final class InMemoryFifoProcessQueue[M <: Message] @Inject()(
       synchronized {
         Future.successful {
           val items = (0 until n).toList.flatMap(_ => Option(queue.poll()))
-          items
+          val unackedItems = items
+          unackedItems
             .filter(item => {
               if (acked.contains(item.contents.id)) {
                 acked.remove(item.contents.id)
@@ -101,7 +102,10 @@ final class InMemoryFifoProcessQueue[M <: Message] @Inject()(
                 true
               }
             })
-            .map(_.contents)
+
+          unackedItems.foreach(inFlight.putIfAbsent(_, true))
+
+          unackedItems.map(_.contents)
         }
       }
     }

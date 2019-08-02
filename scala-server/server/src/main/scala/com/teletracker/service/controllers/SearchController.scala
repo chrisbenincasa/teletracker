@@ -3,30 +3,26 @@ package com.teletracker.service.controllers
 import com.teletracker.service.auth.JwtAuthFilter
 import com.teletracker.service.auth.RequestContext._
 import com.teletracker.service.config.TeletrackerConfig
+import com.teletracker.service.db.access.{ThingsDbAccess, UserThingDetails}
 import com.teletracker.service.db.model.{
   ExternalId,
   ExternalSource,
-  PartialThing
-}
-import com.teletracker.service.db.{
-  ThingFactory,
-  ThingsDbAccess,
-  UserThingDetails
+  PartialThing,
+  ThingFactory
 }
 import com.teletracker.service.external.tmdb.TmdbClient
 import com.teletracker.service.model.DataResponse
 import com.teletracker.service.model.tmdb._
 import com.teletracker.service.process.ProcessQueue
+import com.teletracker.service.process.tmdb.TmdbProcessMessage.ProcessSearchResults
 import com.teletracker.service.process.tmdb.{
   TmdbEntityProcessor,
   TmdbProcessMessage
 }
-import com.teletracker.service.process.tmdb.TmdbProcessMessage.ProcessSearchResults
 import com.teletracker.service.util.TmdbMovieImporter
 import com.teletracker.service.util.json.circe._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
-import io.circe.generic.auto._
 import javax.inject.Inject
 import shapeless.Coproduct
 import scala.concurrent.{ExecutionContext, Future}

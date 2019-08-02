@@ -2,14 +2,13 @@ package com.teletracker.service.process.tmdb
 
 import com.google.common.cache.CacheBuilder
 import com.teletracker.service.cache.{JustWatchLocalCache, TmdbLocalCache}
-import com.teletracker.service.db.model._
-import com.teletracker.service.db.{
-  model,
+import com.teletracker.service.db.access.{
   NetworksDbAccess,
-  ThingFactory,
   ThingsDbAccess,
   TvShowDbAccess
 }
+import com.teletracker.service.db.model
+import com.teletracker.service.db.model._
 import com.teletracker.service.external.justwatch.JustWatchClient
 import com.teletracker.service.external.tmdb.TmdbClient
 import com.teletracker.service.model.justwatch.{
@@ -34,7 +33,9 @@ import javax.inject.Inject
 import shapeless.ops.coproduct.{Folder, Mapper}
 import shapeless.tag.@@
 import shapeless.{:+:, tag, CNil, Coproduct}
+import java.sql.Timestamp
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}

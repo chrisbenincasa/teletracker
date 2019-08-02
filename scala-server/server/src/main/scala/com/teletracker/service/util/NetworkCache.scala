@@ -1,6 +1,6 @@
 package com.teletracker.service.util
 
-import com.teletracker.service.db.NetworksDbAccess
+import com.teletracker.service.db.access.NetworksDbAccess
 import com.teletracker.service.db.model._
 import com.teletracker.service.util.Implicits._
 import com.twitter.cache.ConcurrentMapCache
