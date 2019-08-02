@@ -1,7 +1,7 @@
 package com.teletracker.service.util
 
 import com.teletracker.service.db.model._
-import com.teletracker.service.db.{NetworksDbAccess, ThingsDbAccess}
+import com.teletracker.service.db.access.{NetworksDbAccess, ThingsDbAccess}
 import com.teletracker.service.external.justwatch.JustWatchClient
 import com.teletracker.service.external.tmdb.TmdbClient
 import com.teletracker.service.model.justwatch.{

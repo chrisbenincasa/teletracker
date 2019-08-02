@@ -1,6 +1,5 @@
-package com.teletracker.service.db
+package com.teletracker.service.db.model
 
-import com.teletracker.service.db.model.{ObjectMetadata, Thing, ThingType}
 import com.teletracker.service.model.tmdb.{Movie, MultiTypeXor, Person, TvShow}
 import com.teletracker.service.util.Slug
 import shapeless.Poly1

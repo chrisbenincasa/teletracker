@@ -1,11 +1,11 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.db.NetworksDbAccess
 import com.teletracker.service.db.model._
 import com.teletracker.service.inject.{DbProvider, Modules}
 import com.teletracker.service.model.justwatch.Provider
 import com.teletracker.service.util.Slug
 import com.google.inject.Module
+import com.teletracker.service.db.access.NetworksDbAccess
 import com.twitter.inject.app.App
 import java.io.File
 import javax.inject.Inject

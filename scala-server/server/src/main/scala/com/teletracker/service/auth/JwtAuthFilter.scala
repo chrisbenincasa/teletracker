@@ -1,7 +1,7 @@
 package com.teletracker.service.auth
 
 import com.teletracker.service.config.TeletrackerConfig
-import com.teletracker.service.db.UsersDbAccess
+import com.teletracker.service.db.access.UsersDbAccess
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.util.logging.Logger

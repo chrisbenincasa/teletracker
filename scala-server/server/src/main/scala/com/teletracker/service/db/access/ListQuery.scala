@@ -1,20 +1,10 @@
-package com.teletracker.service.db
+package com.teletracker.service.db.access
 
 import com.teletracker.service.controllers.ListFilters
-import com.teletracker.service.db.model.{
-  ThingRaw,
-  ThingType,
-  Things,
-  TrackedList,
-  TrackedListRow,
-  TrackedListThings,
-  TrackedLists,
-  UserThingTag,
-  UserThingTags,
-  Users
-}
+import com.teletracker.service.db.model._
+import com.teletracker.service.db.util.InhibitFilter
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
-import com.teletracker.service.util.{Field, FieldSelector, Functions}
+import com.teletracker.service.util.Field
 import com.teletracker.service.util.Functions._
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -30,9 +20,9 @@ class ListQuery @Inject()(
   dbImplicits: DbImplicits
 )(implicit executionContext: ExecutionContext)
     extends DbAccess {
+  import dbImplicits._
   import provider.driver.api._
   import slick.lifted.Shape._
-  import dbImplicits._
 
   type ListsQuery =
     Query[trackedLists.TrackedListsTable, TrackedListRow, Seq]
@@ -58,12 +48,11 @@ class ListQuery @Inject()(
     val listsQuery = makeListsQuery(userId)
 
     val (thingsAction, thingCountAction) = if (includeThings) {
-      makeThingsForListQuery(listsQuery, includeThingMetadata, None).result -> DBIO
+      makeThingsForListQuery(listsQuery, None).result -> DBIO
         .successful(Seq.empty)
     } else {
       val countByListIdQuery = makeThingsForListQuery(
         listsQuery,
-        includeThingMetadata,
         None
       ).distinctOn(_._2.id)
         .groupBy(_._1)
@@ -120,9 +109,9 @@ class ListQuery @Inject()(
     ): Future[Option[(TrackedListRow, Seq[(ThingRaw, Seq[UserThingTag])])]] = {
       val thingsQuery = listOrQuery match {
         case Left(query) =>
-          makeThingsForListQuery(query, includeMetadata, typeFilters)
+          makeThingsForListQuery(query, typeFilters)
         case Right(list) =>
-          makeThingsForListQuery(list.id, includeMetadata, typeFilters)
+          makeThingsForListQuery(list.id, typeFilters)
       }
 
       val thingTagsQuery =
@@ -212,7 +201,6 @@ class ListQuery @Inject()(
 
   private def makeThingsForListQuery(
     listsQuery: ListsQuery,
-    includeMetadata: Boolean,
     thingTypeFilter: Option[Set[ThingType]]
   ) = {
     val thingQuery = InhibitFilter(things.rawQuery)
@@ -230,7 +218,6 @@ class ListQuery @Inject()(
 
   private def makeThingsForListQuery(
     listId: Int,
-    includeMetadata: Boolean,
     thingTypeFilter: Option[Set[ThingType]]
   ) = {
     val thingQuery = InhibitFilter(things.rawQuery)

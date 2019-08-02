@@ -1,7 +1,7 @@
 package com.teletracker.service.testing
 
 import com.teletracker.service.controllers.EventCreate
-import com.teletracker.service.db.UsersDbAccess
+import com.teletracker.service.db.access.UsersDbAccess
 import com.teletracker.service.db.model.EventWithTarget
 import com.teletracker.service.model.DataResponse
 import com.teletracker.service.testing.framework.BaseSpecWithServer

@@ -1,4 +1,4 @@
-package com.teletracker.service.db
+package com.teletracker.service.db.test
 
 object H2Helpers {
   val KEEP_ALIVE_SETTING = (delay: Int) => "DB_CLOSE_DELAY" -> s"$delay"

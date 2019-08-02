@@ -1,6 +1,6 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.service.api.UserApi
+import com.teletracker.service.api.{ListsApi, UsersApi}
 import com.teletracker.service.auth.RequestContext._
 import com.teletracker.service.auth.jwt.JwtVendor
 import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
@@ -8,13 +8,13 @@ import com.teletracker.service.controllers.utils.{
   CanParseFieldFilter,
   CanParseListFilters
 }
+import com.teletracker.service.db.access.{ThingsDbAccess, UsersDbAccess}
 import com.teletracker.service.db.model.{
   Event,
   ThingType,
   User,
   UserThingTagType
 }
-import com.teletracker.service.db.{ThingsDbAccess, UsersDbAccess}
 import com.teletracker.service.model.{DataResponse, IllegalActionTypeError}
 import com.teletracker.service.util.HasFieldsFilter
 import com.teletracker.service.util.json.circe._
@@ -24,10 +24,12 @@ import io.circe.generic.JsonCodec
 import io.circe.parser._
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 class UserController @Inject()(
-  userApi: UserApi,
+  usersApi: UsersApi,
+  listsApi: ListsApi,
   usersDbAccess: UsersDbAccess,
   thingsDbAccess: ThingsDbAccess,
   jwtVendor: JwtVendor
@@ -39,7 +41,7 @@ class UserController @Inject()(
     // Create a user
     post("/?") { req: CreateUserRequest =>
       for {
-        (userId, token) <- usersDbAccess.createUserAndToken(
+        (userId, token) <- usersApi.createUserAndToken(
           req.name,
           req.username,
           req.email,
@@ -60,7 +62,7 @@ class UserController @Inject()(
       put("/:userId") { request: Request =>
         decode[UpdateUserRequest](request.contentString) match {
           case Right(UpdateUserRequest(updatedUser)) =>
-            userApi
+            usersApi
               .updateUser(updatedUser)
               .flatMap(_ => {
                 getUserOrNotFound(request.user.id)
@@ -127,33 +129,16 @@ class UserController @Inject()(
 
       delete("/:userId/lists/:listId") { req: DeleteListRequest =>
         withList(req.user.id, req.listId) { list =>
-          req.mergeWithList
-            .map(listId => {
-              usersDbAccess
-                .getList(
-                  req.request.authContext.user.id,
-                  listId.toInt
-                )
-            })
-            .getOrElse(Future.successful(None))
-            .flatMap {
-              case Some(list) if list.isDynamic =>
-                Future.successful(response.badRequest)
-
-              case None if req.mergeWithList.nonEmpty =>
-                Future.successful(response.notFound)
-
-              case _ =>
-                usersDbAccess
-                  .deleteList(
-                    req.request.authContext.user.id,
-                    list.id,
-                    req.mergeWithList.map(_.toInt)
-                  )
-                  .map {
-                    case true  => response.noContent
-                    case false => response.notFound
-                  }
+          listsApi
+            .deleteList(req.user.id, list.id, req.mergeWithList.map(_.toInt))
+            .recover {
+              case _: IllegalArgumentException =>
+                response.badRequest
+              case NonFatal(_) => response.internalServerError
+            }
+            .map {
+              case true  => response.noContent
+              case false => response.notFound
             }
         }
       }
@@ -336,7 +321,7 @@ class UserController @Inject()(
   }
 
   private def getUserOrNotFound(userId: Int) = {
-    userApi.getUser(userId).map {
+    usersApi.getUser(userId).map {
       case None =>
         response.notFound
 

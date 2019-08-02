@@ -1,4 +1,4 @@
-package com.teletracker.service.db
+package com.teletracker.service.db.access
 
 import com.teletracker.service.db.model._
 import com.teletracker.service.inject.DbProvider

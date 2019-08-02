@@ -1,4 +1,4 @@
-package com.teletracker.service.db
+package com.teletracker.service.db.util
 
 import slick.lifted.{CanBeQueryCondition, Query, Rep}
 

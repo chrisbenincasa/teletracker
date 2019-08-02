@@ -1,4 +1,4 @@
-package com.teletracker.service.db
+package com.teletracker.service.db.access
 
 import com.teletracker.service.db.model._
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
@@ -31,8 +31,8 @@ class ThingsDbAccess @Inject()(
   dbImplicits: DbImplicits
 )(implicit executionContext: ExecutionContext)
     extends DbAccess {
-  import provider.driver.api._
   import dbImplicits._
+  import provider.driver.api._
 
   def findThingById(id: Int) = {
     run {

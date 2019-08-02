@@ -1,6 +1,5 @@
-package com.teletracker.service.db
+package com.teletracker.service.db.access
 
-import com.teletracker.service.auth.PasswordHash
 import com.teletracker.service.auth.jwt.JwtVendor
 import com.teletracker.service.controllers.ListFilters
 import com.teletracker.service.db.model.{
@@ -14,10 +13,8 @@ import com.teletracker.service.db.model.{
   _
 }
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
-import com.teletracker.service.util.{Field, FieldSelector}
-import io.circe.Json
+import com.teletracker.service.util.Field
 import javax.inject.{Inject, Provider}
-import java.sql.Timestamp
 import java.time.{Instant, OffsetDateTime}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -59,17 +56,9 @@ class UsersDbAccess @Inject()(
     }
   }
 
-  def createUserAndToken(
-    name: String,
-    username: String,
-    email: String,
-    password: String
-  ): Future[(Int, String)] = {
-    for {
-      userId <- newUser(name, username, email, password)
-      token <- vendToken(email)
-    } yield {
-      (userId, token)
+  def insertUser(user: UserRow): Future[Int] = {
+    run {
+      (users.query returning users.query.map(_.id)) += user
     }
   }
 
@@ -78,7 +67,7 @@ class UsersDbAccess @Inject()(
     name: String,
     username: String,
     preferences: UserPreferences
-  ) = {
+  ): Future[Unit] = {
     run {
       users.query
         .filter(_.id === id)
@@ -97,71 +86,9 @@ class UsersDbAccess @Inject()(
     }
   }
 
-  def newUser(
-    name: String,
-    username: String,
-    email: String,
-    password: String
-  )(implicit executionContext: ExecutionContext
-  ): Future[Int] = {
-    val timestamp = Instant.now()
-    val hashed = PasswordHash.createHash(password)
-    val user = UserRow(
-      None,
-      name,
-      username,
-      email,
-      hashed,
-      timestamp,
-      timestamp,
-      preferences = None
-    )
-
-    val query = (users.query returning users.query.map(_.id)) += user
-
+  def insertToken(token: TokenRow): Future[Int] = {
     run {
-      for {
-        userId <- query
-        _ <- (trackedLists.query returning trackedLists.query.map(_.id)) +=
-          TrackedListRow(
-            -1,
-            "Default List",
-            isDefault = true,
-            isPublic = false,
-            userId
-          )
-
-        _ <- (trackedLists.query returning trackedLists.query.map(_.id)) +=
-          TrackedListRow(
-            -1,
-            "Watched",
-            isDefault = true,
-            isPublic = false,
-            userId,
-            isDynamic = true,
-            Some(DynamicListRules.watched)
-          )
-      } yield userId
-    }
-  }
-
-  def vendToken(email: String): Future[String] = {
-    findByEmail(email).flatMap {
-      case None => throw new IllegalArgumentException
-      case Some(user) =>
-        revokeAllTokens(user.id.get).flatMap(_ => {
-          val token = jwtVendor.vend(email)
-          val now = OffsetDateTime.now()
-          val insert = tokens.query += TokenRow(
-            None,
-            user.id.get,
-            token,
-            now,
-            now,
-            None
-          )
-          run(insert).map(_ => token)
-        })
+      tokens.query += token
     }
   }
 
@@ -253,139 +180,11 @@ class UsersDbAccess @Inject()(
     }
   }
 
-  private def findUserAndListsQuery(userId: Int): Query[
-    (
-      (
-        (users.UsersTable, Rep[Option[trackedLists.TrackedListsTable]]),
-        Rep[Option[trackedListThings.TrackedListThingsTable]]
-      ),
-      Rep[Option[things.ThingsTableRaw]]
-    ),
-    (
-      ((UserRow, Option[TrackedListRow]), Option[TrackedListThing]),
-      Option[ThingRaw]
-    ),
-    Seq
-  ] = {
-    users.query.filter(_.id === userId) joinLeft
-      trackedLists.query.filter(l => !l.isDynamic && l.deletedAt.isEmpty) on (_.id === _.userId) joinLeft
-      trackedListThings.query on (_._2.map(_.id) === _.listId) joinLeft
-      things.rawQuery on (_._2.map(_.thingId) === _.id)
-  }
-
   def findListsForUser(
     userId: Int,
     includeThings: Boolean
   ): Future[Seq[TrackedList]] = {
     listQuery.get().findUsersLists(userId, includeThings = includeThings)
-  }
-
-  def findUserAndLists(
-    userId: Int,
-    selectFields: Option[List[Field]] = None
-  ): Future[Option[User]] = {
-    val networkPrefsFut = run {
-      findNetworkPreferencesForUserQuery(userId)
-    }
-
-    val userAndListsFut = run {
-      (for {
-        (((user, list), _), thing) <- findUserAndListsQuery(userId)
-      } yield {
-        val meta =
-          if (selectFields.isDefined) thing.flatMap(_.metadata)
-          else Rep.None[Json]
-        (
-          user,
-          list,
-          thing.map(_.id),
-          thing.map(_.name),
-          thing.map(_.`type`),
-          meta
-        )
-      }).result
-    }.map(_.map {
-      case (
-          user,
-          optList,
-          thingIdOpt,
-          thingNameOpt,
-          thingTypeOpt,
-          thingMetadata
-          ) =>
-        val newMeta = (for {
-          metadata <- thingMetadata
-          fields <- selectFields
-        } yield {
-          FieldSelector.filter(metadata, fields ::: defaultFields)
-        }).orElse(thingMetadata)
-
-        val thing = thingIdOpt.map(id => {
-          val partialThing =
-            PartialThing(Some(id), thingNameOpt, `type` = thingTypeOpt)
-          newMeta.map(partialThing.withRawMetadata).getOrElse(partialThing)
-        })
-
-        (user, optList, thing)
-    })
-
-    val dynamicListsFut = {
-      run {
-        trackedLists.query
-          .filter(tl => tl.userId === userId && tl.isDynamic)
-          .result
-          .flatMap(lists => {
-            val actionsByList = lists.map(
-              list => dynamicListBuilder.buildList(userId, list).map(list -> _)
-            )
-
-            DBIO.sequence(actionsByList)
-          })
-      }.map(_.map {
-        case (list, thingAndActions) =>
-          val (thingsWithMeta, _) = thingAndActions.unzip
-
-          val partialThings = thingsWithMeta
-            .map {
-              case thing if selectFields.isEmpty => thing.copy(metadata = None)
-              case thing if thing.metadata.isDefined =>
-                val newMeta = FieldSelector.filter(
-                  thing.metadata.get,
-                  selectFields.get ::: defaultFields
-                )
-                thing.copy(metadata = Some(newMeta))
-              case thing => thing
-            }
-            .map(_.toPartial)
-
-          list.toFull.withThings(partialThings.toList)
-      })
-    }
-
-    for {
-      userAndLists <- userAndListsFut
-      networkPrefs <- networkPrefsFut
-      dynamicLists <- dynamicListsFut
-    } yield {
-      userAndLists.headOption
-        .map(_._1)
-        .map(user => {
-          val lists = userAndLists
-            .collect {
-              case (_, Some(list), thingOpt) => (list, thingOpt)
-            }
-            .groupBy(_._1)
-            .map {
-              case (list, matches) =>
-                list.toFull
-                  .withThings(matches.flatMap(_._2).toList)
-            }
-
-          user.toFull
-            .withNetworksSubscriptions(networkPrefs.toList)
-            .withLists((lists ++ dynamicLists).toList.sortBy(_.id))
-        })
-    }
   }
 
   def findUserAndList(
@@ -399,14 +198,6 @@ class UsersDbAccess @Inject()(
         .flatMap(list => {
           list.userId_fk.map(user => user -> list)
         })
-        .result
-    }
-  }
-
-  def findDynamicLists(userId: Int) = {
-    run {
-      trackedLists.query
-        .filter(tl => tl.userId === userId && tl.isDynamic)
         .result
     }
   }
@@ -453,11 +244,20 @@ class UsersDbAccess @Inject()(
     }
   }
 
+//  def getListById(userId: Int, listId: Int) = {
+//    run {
+//      trackedLists
+//        .findSpecificListQuery(userId, listId)
+//    }
+//  }
+
   def deleteList(
     userId: Int,
     listId: Int,
     mergeWithList: Option[Int]
   ): Future[Boolean] = {
+    val value = trackedLists
+      .findSpecificListQuery(userId, listId)
     run {
       trackedLists
         .findSpecificListQuery(userId, listId)

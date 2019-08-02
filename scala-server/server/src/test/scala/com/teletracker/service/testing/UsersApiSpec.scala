@@ -5,7 +5,7 @@ import com.teletracker.service.controllers.{
   CreateUserRequest,
   CreateUserResponse
 }
-import com.teletracker.service.db.ThingsDbAccess
+import com.teletracker.service.db.access.ThingsDbAccess
 import com.teletracker.service.db.model.{Thing, ThingType, TrackedList, User}
 import com.teletracker.service.model.DataResponse
 import com.teletracker.service.testing.framework.BaseSpecWithServer

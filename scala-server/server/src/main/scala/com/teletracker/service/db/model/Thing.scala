@@ -1,6 +1,7 @@
 package com.teletracker.service.db.model
 
-import com.teletracker.service.db.{CustomPostgresProfile, UserThingDetails}
+import com.teletracker.service.db.CustomPostgresProfile
+import com.teletracker.service.db.access.UserThingDetails
 import com.teletracker.service.inject.DbImplicits
 import com.teletracker.service.model.tmdb._
 import com.teletracker.service.util.{Field, FieldSelector, Slug}

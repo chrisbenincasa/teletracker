@@ -1,7 +1,7 @@
 package com.teletracker.service.tools
 
 import com.google.inject.Module
-import com.teletracker.service.db.ThingsDbAccess
+import com.teletracker.service.db.access.ThingsDbAccess
 import com.teletracker.service.db.model.{
   Availability,
   Network,
