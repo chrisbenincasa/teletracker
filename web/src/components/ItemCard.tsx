@@ -23,9 +23,8 @@ import {
   Zoom,
 } from '@material-ui/core';
 import { green, red } from '@material-ui/core/colors';
-import classNames from 'classnames';
 import * as R from 'ramda';
-import { Link as RouterLink, withRouter } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import React, { Component, ReactNode } from 'react';
 import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
@@ -310,15 +309,14 @@ class ItemCard extends Component<Props, ItemCardState> {
       thingId: this.state.currentId,
       action: ActionType.Watched,
     };
-    console.log('watched:', payload);
 
     if (this.itemHasTag(ACTION_WATCHED)) {
       this.props.removeUserItemTags(payload);
     } else {
       this.props.updateUserItemTags(payload);
       this.setState({ hoverRating: true });
+      this.handleHoverRatingOpen();
     }
-    this.handleHoverRatingOpen();
   };
 
   toggleItemRating = (rating: number) => {
@@ -327,8 +325,6 @@ class ItemCard extends Component<Props, ItemCardState> {
       action: ActionType.Enjoyed,
       value: rating,
     };
-    console.log('ratingpayload:', payload);
-    console.log('itemHasTagEnjoyed:', this.itemHasTag(ACTION_ENJOYED));
 
     // Currently no way to 'unrate' an item so no need to remove UserItemTags like we do for 'watched'
     this.props.updateUserItemTags(payload);
@@ -337,8 +333,6 @@ class ItemCard extends Component<Props, ItemCardState> {
   };
 
   itemHasTag = (tagName: string) => {
-    console.log('itemHasTag:', ActionType[tagName]);
-
     if (this.props.item && this.props.item.userMetadata) {
       return R.any(tag => {
         return tag.action == ActionType[tagName];
@@ -349,8 +343,8 @@ class ItemCard extends Component<Props, ItemCardState> {
   };
 
   renderPoster = (thing: Thing) => {
-    let { classes, hoverDelete, hoverWatch, hoverAddToList } = this.props;
-    let { deleted, isHovering, hoverRating } = this.state;
+    let { classes } = this.props;
+    let { isHovering, hoverRating } = this.state;
     let poster = getPosterPath(thing);
 
     const makeLink = (children: ReactNode, className?: string) => (
@@ -428,6 +422,7 @@ class ItemCard extends Component<Props, ItemCardState> {
   renderHoverActions = () => {
     let { classes, hoverAddToList, hoverDelete, hoverWatch, item } = this.props;
     let { isHovering } = this.state;
+    let transitionDelay = 100;
     const tooltipPlacement = 'right';
 
     return (
@@ -447,7 +442,6 @@ class ItemCard extends Component<Props, ItemCardState> {
                   aria-label="Watched"
                   onClick={this.toggleItemWatched}
                   disableRipple
-                  style={{ position: 'relative' }}
                 >
                   <Check
                     className={
@@ -469,14 +463,15 @@ class ItemCard extends Component<Props, ItemCardState> {
           {hoverAddToList && (
             <Zoom
               in={isHovering}
-              style={{ transitionDelay: isHovering ? '100ms' : '0ms' }}
+              style={{
+                transitionDelay: isHovering ? `${transitionDelay}ms` : '0ms',
+              }}
             >
               <Tooltip title="Manage Lists" placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Manage Lists"
                   onClick={() => this.handleListsModalOpen(item)}
                   disableRipple
-                  style={{ position: 'relative' }}
                 >
                   <PlaylistAdd className={classes.hoverWatch} />
                   <Typography variant="srOnly">Manage Lists</Typography>
@@ -485,14 +480,25 @@ class ItemCard extends Component<Props, ItemCardState> {
             </Zoom>
           )}
 
-          {isHovering && this.itemHasTag(ACTION_ENJOYED) && (
-            <Zoom in={isHovering}>
+          {isHovering && this.itemHasTag(ACTION_WATCHED) && (
+            <Zoom
+              in={isHovering}
+              style={{
+                transitionDelay: isHovering
+                  ? `${(transitionDelay += 100)}ms`
+                  : '100ms',
+              }}
+            >
               <Tooltip title={'Rate it!'} placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Rate it!"
                   onClick={this.handleHoverRatingOpen}
                 >
-                  <ThumbDown className={classes.hoverRatingThumbsDown} />
+                  {this.itemHasTag(ACTION_ENJOYED) ? (
+                    <ThumbUp className={classes.hoverRatingThumbsUp} />
+                  ) : (
+                    <ThumbDown className={classes.hoverRatingThumbsDown} />
+                  )}
                   <Typography variant="srOnly">Rate it!</Typography>
                 </IconButton>
               </Tooltip>
@@ -502,7 +508,11 @@ class ItemCard extends Component<Props, ItemCardState> {
           {hoverDelete && (
             <Zoom
               in={isHovering}
-              style={{ transitionDelay: isHovering ? '200ms' : '100ms' }}
+              style={{
+                transitionDelay: isHovering
+                  ? `${(transitionDelay += 100)}ms`
+                  : '100ms',
+              }}
             >
               <Tooltip title={'Remove from List'} placement={tooltipPlacement}>
                 <IconButton
@@ -510,7 +520,6 @@ class ItemCard extends Component<Props, ItemCardState> {
                   className={classes.hoverDelete}
                   onClick={this.handleDeleteModalOpen}
                   disableRipple
-                  style={{ position: 'relative' }}
                 >
                   <DeleteIcon />
                   <Typography variant="srOnly">Delete from List</Typography>
@@ -522,40 +531,6 @@ class ItemCard extends Component<Props, ItemCardState> {
       </Collapse>
     );
   };
-
-  // renderRatingHoverSmall = () => {
-  //   let { classes } = this.props;
-  //   let { isHovering, hoverRating, displayRating } = this.state;
-  //   const tooltipPlacement = 'bottom';
-  //   console.log('test');
-
-  //   return (
-  //     <div className={classes.ratingContainerSmall}>
-  //       {/* <Zoom in={isHovering}>
-  //         <Tooltip title={'Meh'} placement={tooltipPlacement}>
-  //           <IconButton
-  //             aria-label="Didn't Like It"
-  //             onClick={() => this.toggleItemRating(0)}
-  //           >
-  //             <ThumbDown className={classes.hoverRatingThumbsDown} />
-  //             <Typography variant="srOnly">Mark as disliked</Typography>
-  //           </IconButton>
-  //         </Tooltip>
-  //       </Zoom>
-  //       <Zoom in={isHovering}>
-  //         <Tooltip title={'Liked it!'} placement={tooltipPlacement}>
-  //           <IconButton
-  //             aria-label="Liked It"
-  //             onClick={() => this.toggleItemRating(1)}
-  //           >
-  //             <ThumbUp className={classes.hoverRatingThumbsUp} />
-  //             <Typography variant="srOnly">Mark as liked</Typography>
-  //           </IconButton>
-  //         </Tooltip>
-  //       </Zoom> */}
-  //     </div>
-  //   );
-  // };
 
   renderRatingHover = () => {
     let { classes } = this.props;
@@ -620,7 +595,7 @@ class ItemCard extends Component<Props, ItemCardState> {
       itemCardVisible,
       userSelf,
     } = this.props;
-    let { deleted, imageLoaded, listsModalOpen } = this.state;
+    let { deleted, listsModalOpen } = this.state;
 
     let gridProps: Partial<GridProps> = {
       item: true,
