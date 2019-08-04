@@ -21,9 +21,6 @@ import { Thing } from '../../types';
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
-    cardGrid: {
-      padding: `${theme.spacing(8)}px 0`,
-    },
     title: {
       whiteSpace: 'nowrap',
       overflow: 'hidden',
@@ -60,7 +57,7 @@ class Home extends Component<Props & WithUserProps> {
   };
 
   renderSearchResults = () => {
-    let { classes, searchResults } = this.props;
+    let { classes, searchResults, userSelf } = this.props;
     searchResults = searchResults || [];
 
     return this.props.isSearching ? (
@@ -71,21 +68,18 @@ class Home extends Component<Props & WithUserProps> {
           display: 'flex',
           flexDirection: 'column',
           flexGrow: 1,
-          padding: 20,
         }}
       >
         {searchResults.length ? (
-          <div className={classNames(classes.layout, classes.cardGrid)}>
-            <Grid container spacing={1}>
+          <div className={classNames(classes.layout)}>
+            <Grid container spacing={2}>
               {searchResults.map(result => {
                 return (
                   <ItemCard
                     key={result.id}
-                    gridProps={{
-                      xs: 12,
-                    }}
-                    userSelf={this.props.userSelf}
+                    userSelf={userSelf}
                     item={result}
+                    itemCardVisible={false}
                     addButton
                   />
                 );
