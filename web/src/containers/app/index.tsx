@@ -137,7 +137,9 @@ const styles = (theme: Theme) =>
         easing: theme.transitions.easing.easeOut,
         duration: theme.transitions.duration.enteringScreen,
       }),
-      marginLeft: DrawerWidthPx,
+      [theme.breakpoints.up('sm')]: {
+        marginLeft: DrawerWidthPx,
+      },
     },
   });
 
