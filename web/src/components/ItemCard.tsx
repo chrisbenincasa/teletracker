@@ -599,6 +599,7 @@ class ItemCard extends Component<Props, ItemCardState> {
 
     let gridProps: Partial<GridProps> = {
       item: true,
+      xs: 6,
       sm: 4,
       md: 3,
       lg: 2,

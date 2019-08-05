@@ -448,7 +448,7 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderListDetail(list: List) {
-    let { classes, listLoading, userSelf } = this.props;
+    let { classes, listLoading, thingsById, userSelf } = this.props;
     let { deleted } = this.state;
 
     if ((!listLoading && !list) || deleted) {
@@ -475,11 +475,11 @@ class ListDetail extends Component<Props, State> {
             </div>
             <Grid container spacing={2}>
               {list.things.map(item =>
-                this.props.thingsById[Number(item.id)] ? (
+                thingsById[Number(item.id)] ? (
                   <ItemCard
                     key={item.id}
                     userSelf={userSelf}
-                    item={this.props.thingsById[Number(item.id)]}
+                    item={thingsById[Number(item.id)]}
                     listContext={list}
                     itemCardVisible={false}
                     withActionButton
