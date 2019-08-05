@@ -19,6 +19,15 @@ steps:
       - "gcr.io/$PROJECT_ID/scala-sbt:1.2.8-jdk-8"
       - "gcr.io/$PROJECT_ID/scala-sbt"
 
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "--file=Dockerfile.primed.codebuild"
+      - "--tag=gcr.io/$PROJECT_ID/teletracker-sbt-primed"
+      - "."
+    waitFor: ["-"]
+
 images:
   - "gcr.io/$PROJECT_ID/scala-sbt"
   - "gcr.io/$PROJECT_ID/scala-sbt:1.2.8-jdk-8"
+  - "gcr.io/$PROJECT_ID/teletracker-sbt-primed"
