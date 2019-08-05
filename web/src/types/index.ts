@@ -83,4 +83,5 @@ export interface Network {
 
 export enum ActionType {
   Watched = 'watched',
+  Enjoyed = 'enjoyed',
 }
