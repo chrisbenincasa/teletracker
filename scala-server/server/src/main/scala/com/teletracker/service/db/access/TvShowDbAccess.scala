@@ -3,6 +3,7 @@ package com.teletracker.service.db.access
 import com.teletracker.service.db.model._
 import com.teletracker.service.inject.DbProvider
 import javax.inject.Inject
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class TvShowDbAccess @Inject()(
@@ -15,7 +16,7 @@ class TvShowDbAccess @Inject()(
     extends DbAccess {
   import provider.driver.api._
 
-  def findAllSeasonsForShow(showId: Int) = {
+  def findAllSeasonsForShow(showId: UUID) = {
     run {
       tvShowSeasons.query.filter(_.showId === showId).result
     }

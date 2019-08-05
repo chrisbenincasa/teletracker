@@ -13,15 +13,17 @@ import io.circe.generic.auto._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import shapeless.Witness
+import java.util.UUID
 
 case class Thing(
-  id: Option[Int],
+  id: UUID,
   name: String,
   normalizedName: Slug,
   `type`: ThingType,
   createdAt: OffsetDateTime,
   lastUpdatedAt: OffsetDateTime,
-  metadata: Option[ObjectMetadata]) {
+  metadata: Option[ObjectMetadata],
+  tmdbId: Option[String] = None) {
   def toPartial: PartialThing = {
     PartialThing(
       id,
@@ -36,13 +38,14 @@ case class Thing(
 }
 
 case class ThingRaw(
-  id: Option[Int],
+  id: UUID,
   name: String,
   normalizedName: Slug,
   `type`: ThingType,
   createdAt: OffsetDateTime,
   lastUpdatedAt: OffsetDateTime,
-  metadata: Option[Json]) {
+  metadata: Option[Json],
+  tmdbId: Option[String] = None) {
 
   def selectFields(
     fieldsOpt: Option[List[Field]],
@@ -89,7 +92,7 @@ case class ThingRaw(
 }
 
 case class PartialThing(
-  id: Option[Int] = None,
+  id: UUID,
   name: Option[String] = None,
   normalizedName: Option[Slug] = None,
   `type`: Option[ThingType] = None,
@@ -161,7 +164,7 @@ class Things @Inject()(
   import Implicits._
 
   class ThingsTable(tag: Tag) extends Table[Thing](tag, "things") {
-    def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
+    def id = column[UUID]("id", O.PrimaryKey)
     def name = column[String]("name")
     def normalizedName = column[Slug]("normalized_name")
     def `type` = column[ThingType]("type")
@@ -178,22 +181,25 @@ class Things @Inject()(
     def metadata =
       column[Option[ObjectMetadata]]("metadata", O.SqlType("jsonb"))
 
+    def tmdbId = column[Option[String]]("tmdb_id")
+
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
     override def * =
       (
-        id.?,
+        id,
         name,
         normalizedName,
         `type`,
         createdAt,
         lastUpdatedAt,
-        metadata
+        metadata,
+        tmdbId
       ) <> (Thing.tupled, Thing.unapply)
   }
 
   class ThingsTableRaw(tag: Tag) extends Table[ThingRaw](tag, "things") {
-    def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
+    def id = column[UUID]("id", O.PrimaryKey)
     def name = column[String]("name")
     def normalizedName = column[Slug]("normalized_name")
     def `type` = column[ThingType]("type")
@@ -209,17 +215,20 @@ class Things @Inject()(
       )
     def metadata = column[Option[Json]]("metadata", O.SqlType("jsonb"))
 
+    def tmdbId = column[Option[String]]("tmdb_id")
+
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
     def projWithMetadata(includeMetadata: Boolean) =
       (
-        id.?,
+        id,
         name,
         normalizedName,
         `type`,
         createdAt,
         lastUpdatedAt,
-        if (includeMetadata) metadata else Rep.None[Json]
+        if (includeMetadata) metadata else Rep.None[Json],
+        tmdbId
       ) <> (ThingRaw.tupled, ThingRaw.unapply)
 
     override def * =

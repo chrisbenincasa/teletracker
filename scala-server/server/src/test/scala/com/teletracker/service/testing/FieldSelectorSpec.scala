@@ -16,6 +16,29 @@ class FieldSelectorSpec extends FlatSpec {
       |}
     """.stripMargin
 
+  val movie =
+    """
+    |{
+    |   "themoviedb": {
+    |     "movie": {
+    |       "id": 123
+    |     }
+    |   }
+    |}
+  """.stripMargin
+
+  val show =
+    """
+      |{
+      |   "themoviedb": {
+      |     "show": {
+      |       "id": 123,
+      |       "random": "123"
+      |     }
+      |   }
+      |}
+    """.stripMargin
+
   "FieldSelector" should "work" in {
     val json = parse(j).right.get
 
@@ -26,6 +49,15 @@ class FieldSelectorSpec extends FlatSpec {
 
   it should "do" in {
     val res = Field.parse("themoviedb{movie{id,poster_path}}")
+
+    println(res)
+  }
+
+  it should "what on shows" in {
+    val res = FieldSelector.filter(
+      parse(show).right.get,
+      Field.parse("themoviedb{movie{id,poster_path},show}").get
+    )
 
     println(res)
   }

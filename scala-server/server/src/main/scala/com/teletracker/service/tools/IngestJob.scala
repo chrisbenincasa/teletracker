@@ -13,6 +13,10 @@ import com.teletracker.service.external.tmdb.TmdbClient
 import com.teletracker.service.inject.Modules
 import com.teletracker.service.model.tmdb.{Movie, TvShow}
 import com.teletracker.service.process.tmdb.TmdbEntityProcessor
+import com.teletracker.service.process.tmdb.TmdbEntityProcessor.{
+  ProcessFailure,
+  ProcessSuccess
+}
 import com.teletracker.service.util.NetworkCache
 import com.teletracker.service.util.Futures._
 import com.teletracker.service.util.Lists._
@@ -48,6 +52,11 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
   override protected def modules: Seq[Module] = Modules()
 
   protected def networkNames: Set[String]
+
+  protected def presentationTypes: Set[PresentationType] =
+    Set(PresentationType.SD, PresentationType.HD)
+
+  protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
 
   override protected def run(): Unit = {
     val network = getNetworksOrExit()
@@ -98,9 +107,9 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
             .find(findMatch(_, item))
             .map(tmdbProcessor.handleMovie)
             .map(_.map {
-              case (_, thing) =>
-                println(
-                  s"Saved ${item.title} with thing ID = ${thing.id.get}"
+              case ProcessSuccess(_, thing) =>
+                logger.info(
+                  s"Saved ${item.title} with thing ID = ${thing.id}"
                 )
 
                 updateAvailability(
@@ -108,6 +117,10 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
                   thing,
                   item
                 )
+
+              case ProcessFailure(error) =>
+                logger.error("Error handling movie", error)
+                Future.successful(Seq.empty)
             })
             .map(_.map(_ => {}))
             .getOrElse(Future.successful(None))
@@ -120,9 +133,9 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
             .find(findMatch(_, item))
             .map(tmdbProcessor.handleShow(_, handleSeasons = false))
             .map(_.map {
-              case (_, thing) =>
-                println(
-                  s"Saved ${item.title} with thing ID = ${thing.id.get}"
+              case ProcessSuccess(_, thing) =>
+                logger.info(
+                  s"Saved ${item.title} with thing ID = ${thing.id}"
                 )
 
                 updateAvailability(
@@ -130,6 +143,10 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
                   thing,
                   item
                 )
+
+              case ProcessFailure(error) =>
+                logger.error("Error saving show", error)
+                Future.successful(Seq.empty)
             })
             .map(_.map(_ => {}))
             .getOrElse(Future.unit)
@@ -176,11 +193,11 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
       .serialize(networks.toSeq)(
         network => {
           thingsDb
-            .findAvailability(thing.id.get, network.id.get)
+            .findAvailability(thing.id, network.id.get)
             .flatMap {
               case Seq() =>
                 val avs =
-                  Seq(PresentationType.SD, PresentationType.HD).map(pres => {
+                  presentationTypes.toSeq.map(pres => {
                     Availability(
                       None,
                       isAvailable = start.exists(_.isBefore(today)) || end
@@ -190,14 +207,14 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
                       startDate = Some(
                         scrapeItem.availableLocalDate
                           .atStartOfDay()
-                          .atOffset(ZoneOffset.UTC)
+                          .atOffset(networkTimeZone)
                       ),
                       endDate =
-                        end.map(_.atStartOfDay().atOffset(ZoneOffset.UTC)),
+                        end.map(_.atStartOfDay().atOffset(networkTimeZone)),
                       offerType = Some(OfferType.Subscription),
                       cost = None,
                       currency = None,
-                      thingId = Some(thing.id.get),
+                      thingId = Some(thing.id),
                       tvShowEpisodeId = None,
                       networkId = Some(network.id.get),
                       presentationType = Some(pres)
@@ -207,14 +224,16 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
                 thingsDb.insertAvailabilities(avs)
 
               case availabilities =>
+                // TODO(christian) - find missing presentation types
                 val newAvs = availabilities.map(
                   _.copy(
                     isAvailable = start.exists(_.isBefore(today)) || end
                       .exists(_.isAfter(today)),
                     numSeasons = None,
                     startDate =
-                      start.map(_.atStartOfDay().atOffset(ZoneOffset.UTC)),
-                    endDate = end.map(_.atStartOfDay().atOffset(ZoneOffset.UTC))
+                      start.map(_.atStartOfDay().atOffset(networkTimeZone)),
+                    endDate =
+                      end.map(_.atStartOfDay().atOffset(networkTimeZone))
                   )
                 )
 

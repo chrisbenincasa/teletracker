@@ -23,9 +23,11 @@ import com.teletracker.service.util.TmdbMovieImporter
 import com.teletracker.service.util.json.circe._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
+import io.circe.shapes._
 import javax.inject.Inject
 import shapeless.Coproduct
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.control.NonFatal
 
 class SearchController @Inject()(
   config: TeletrackerConfig,
@@ -84,7 +86,7 @@ class SearchController @Inject()(
     // Find any details on existing things
     val thingDetailsByThingIdFut = existingFut.flatMap(existing => {
       thingsDbAccess
-        .getThingsUserDetails(userId, existing.values.flatMap(_.id).toSet)
+        .getThingsUserDetails(userId, existing.values.map(_.id).toSet)
     })
 
     // Partition results by things we've already seen and saved
@@ -113,23 +115,33 @@ class SearchController @Inject()(
         val id = result.fold(extractId)
         val newOrExistingThing = existingThings.get(id) match {
           case Some(existing) =>
-            Future.successful(existing)
+            Future.successful(Some(existing))
 
           case None =>
-            val thing = ThingFactory.makeThing(result)
-            thingsDbAccess
-              .saveThing(thing, Some(ExternalSource.TheMovieDb -> id))
+            Promise
+              .fromTry(ThingFactory.makeThing(result))
+              .future
+              .flatMap(thing => {
+                thingsDbAccess
+                  .saveThing(thing, Some(ExternalSource.TheMovieDb -> id))
+              })
+              .map(Some(_))
+              .recover {
+                case NonFatal(ex) =>
+                  logger
+                    .error("Encountered exception while processing result", ex)
+                  None
+              }
         }
 
-        newOrExistingThing.map(thing => {
-          val meta = thing.id
-            .flatMap(thingDetailsByThingId.get)
-            .getOrElse(UserThingDetails.empty)
+        newOrExistingThing.map(_.map(thing => {
+          val meta = thingDetailsByThingId
+            .getOrElse(thing.id, UserThingDetails.empty)
           thing.toPartial.withUserMetadata(meta)
-        })
+        }))
       })
 
-      Future.sequence(thingFuts)
+      Future.sequence(thingFuts).map(_.flatten)
     }).flatMap(identity)
   }
 

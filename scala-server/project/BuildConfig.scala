@@ -36,18 +36,20 @@ object BuildConfig {
     )
 
     lazy val circe = Seq(
+      "org.gnieh" %% f"diffson-circe" % "4.0.0-M4"
+    ) ++ Seq(
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
       "io.circe" %% "circe-parser",
-      "io.circe" %% "circe-shapes",
-      "io.circe" %% "circe-java8"
+      "io.circe" %% "circe-shapes"
+//      "io.circe" %% "circe-java8"
     ).map(_ % versions.circe)
   }
 
   object versions {
     lazy val twitter = "19.4.0"
 
-    lazy val circe = "0.11.1"
+    lazy val circe = "0.12.0-M4"
   }
 
   object Revision {

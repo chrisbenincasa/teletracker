@@ -111,9 +111,11 @@ class PostgresContainer(
   lazy val dbProvider = new DbProvider(dataSource)
 
   def createAllTables(injector: Injector) = {
-    val flyway = new Flyway()
-    flyway.setDataSource(dataSource)
-    flyway.setLocations("classpath:db/migration/postgres")
+    val flyway = Flyway
+      .configure()
+      .dataSource(dataSource)
+      .locations("classpath:db/migration/postgres")
+      .load()
     flyway.migrate()
   }
 

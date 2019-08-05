@@ -12,7 +12,8 @@ object Modules {
       new ConfigModule,
       new ExecutionContextModule,
       new DbModule,
-      new BackgroundProcessorModule
+      new BackgroundProcessorModule,
+      new CacheModule
     )
   }
 }

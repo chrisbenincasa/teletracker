@@ -12,10 +12,8 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-object SeedGenres extends App {
-  override protected def modules: Seq[Module] = Modules()
-
-  override protected def run(): Unit = {
+object SeedGenres extends TeletrackerJob {
+  override protected def runInternal(): Unit = {
     injector.instance[GenreSeeder].run()
   }
 }
@@ -37,7 +35,8 @@ class GenreSeeder @Inject()(
 
     val inserts = movieGenres.genres.map {
       case g =>
-        val gModel = Genre(None, g.name, GenreType.Movie, Slug(g.name))
+        val gModel =
+          Genre(None, g.name, GenreType.Movie, Slug.forString(g.name))
         val insert = (genres.query returning genres.query.map(_.id) into (
           (
             g,
@@ -67,7 +66,7 @@ class GenreSeeder @Inject()(
 
     val tvInserts = tvGenres.genres.map {
       case g =>
-        val gModel = Genre(None, g.name, GenreType.Tv, Slug(g.name))
+        val gModel = Genre(None, g.name, GenreType.Tv, Slug.forString(g.name))
         val insert = (genres.query returning genres.query.map(_.id) into (
           (
             g,
@@ -89,6 +88,5 @@ class GenreSeeder @Inject()(
     )
 
     Await.result(tvGenreInserts, Duration.Inf)
-    provider.shutdown()
   }
 }

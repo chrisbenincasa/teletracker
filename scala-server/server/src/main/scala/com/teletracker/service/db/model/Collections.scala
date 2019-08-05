@@ -2,6 +2,7 @@ package com.teletracker.service.db.model
 
 import javax.inject.{Inject, Provider}
 import slick.jdbc.JdbcProfile
+import java.util.UUID
 
 case class Collection(
   id: Int,
@@ -12,7 +13,7 @@ case class Collection(
 case class CollectionThing(
   id: Int,
   collectionId: Int,
-  thingId: Int)
+  thingId: UUID)
 
 class Collections @Inject()(
   val driver: JdbcProfile,
@@ -41,7 +42,7 @@ class Collections @Inject()(
       extends Table[CollectionThing](tag, "collection_things") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
     def collectionId = column[Int]("id")
-    def thingId = column[Int]("id")
+    def thingId = column[UUID]("id")
 
     def collection =
       foreignKey(

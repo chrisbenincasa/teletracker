@@ -3,18 +3,36 @@ package com.teletracker.service.controllers
 import com.teletracker.service.auth.JwtAuthFilter
 import com.teletracker.service.auth.RequestContext._
 import com.teletracker.service.db.access.ThingsDbAccess
+import com.teletracker.service.controllers.utils.CanParseFieldFilter
 import com.teletracker.service.model.DataResponse
+import com.teletracker.service.util.json.circe._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
-import com.twitter.finatra.request.RouteParam
+import com.twitter.finatra.request.{QueryParam, RouteParam}
 import javax.inject.Inject
+import java.util.UUID
 import scala.concurrent.ExecutionContext
 
 class ThingController @Inject()(
   thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext)
-    extends Controller {
+    extends Controller
+    with CanParseFieldFilter {
   prefix("/api/v1/things") {
+    filter[JwtAuthFilter].apply {
+      get("/?") { req: BatchGetThingsRequest =>
+        val selectFields = parseFieldsOrNone(req.fields)
+
+        thingsDbAccess
+          .findThingsByIds(req.thingIds.toSet, selectFields)
+          .map(thingsById => {
+            response.ok
+              .contentTypeJson()
+              .body(DataResponse.complex(thingsById.mapValues(_.toPartial)))
+          })
+      }
+    }
+
     filter[JwtAuthFilter].apply {
       get("/:thingId/user-details") { req: GetThingRequest =>
         thingsDbAccess
@@ -28,5 +46,11 @@ class ThingController @Inject()(
 }
 
 case class GetThingRequest(
-  @RouteParam thingId: Int,
+  @RouteParam thingId: UUID,
   request: Request)
+
+case class BatchGetThingsRequest(
+  @QueryParam(commaSeparatedList = true) thingIds: List[UUID],
+  @QueryParam fields: Option[String],
+  request: Request)
+    extends InjectedRequest

@@ -245,6 +245,15 @@ export class TeletrackerApi {
     });
   }
 
+  async getThingsBatch(ids: number[], fields?: KeyMap<ObjectMetadata>) {
+    this.withTokenCheck(async () => {
+      return this.api.get('/api/v1/things', {
+        thingIds: ids,
+        fields: fields ? this.createFilter(fields!) : undefined,
+      });
+    });
+  }
+
   async getItem(id: string | number, type: string) {
     return this.withTokenCheck(async () => {
       return this.api.get<any>(`/api/v1/${type}s/${id}`);
@@ -293,6 +302,30 @@ export class TeletrackerApi {
       return this.api.delete(
         `/api/v1/users/self/things/${thingId}/actions/${action}`,
       );
+    });
+  }
+
+  async getUpcomingAvailability(
+    networkIds?: number[],
+    fields?: KeyMap<ObjectMetadata>,
+  ) {
+    return this.withTokenCheck(async () => {
+      return this.api.get('/api/v1/availability/upcoming', {
+        networkIds,
+        fields: fields ? this.createFilter(fields!) : undefined,
+      });
+    });
+  }
+
+  async getAllAvailability(
+    networkIds?: number[],
+    fields?: KeyMap<ObjectMetadata>,
+  ) {
+    return this.withTokenCheck(async () => {
+      return this.api.get('/api/v1/availability/all', {
+        networkIds,
+        fields: fields ? this.createFilter(fields!) : undefined,
+      });
     });
   }
 

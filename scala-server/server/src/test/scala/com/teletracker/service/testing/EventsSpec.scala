@@ -1,5 +1,6 @@
 package com.teletracker.service.testing
 
+import com.teletracker.service.api.UsersApi
 import com.teletracker.service.controllers.EventCreate
 import com.teletracker.service.db.access.UsersDbAccess
 import com.teletracker.service.db.model.EventWithTarget
@@ -11,7 +12,7 @@ import io.circe.parser._
 
 class EventsSpec extends BaseSpecWithServer {
   "Events" should "should create and read events for a user" in {
-    val access = injector.getInstance(classOf[UsersDbAccess])
+    val access = injector.getInstance(classOf[UsersApi])
     val (userId, jwt) = access
       .createUserAndToken(
         "Christian",

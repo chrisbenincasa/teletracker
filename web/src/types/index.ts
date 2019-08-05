@@ -37,7 +37,7 @@ export interface UserPreferences {
 }
 
 export interface Thing {
-  id: number;
+  id: string;
   name: string;
   normalizedName: string;
   type: 'movie' | 'show' | 'person';
@@ -70,6 +70,7 @@ export interface Availability {
   networkId: number;
   network?: Network;
   presentationType?: PresentationType;
+  thing?: Thing;
 }
 
 export interface Network {

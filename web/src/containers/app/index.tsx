@@ -40,6 +40,7 @@ import ItemDetail from '../item-detail';
 import Lists from '../lists';
 import Login from '../login';
 import Signup from '../signup';
+import New from '../new';
 import Drawer, { DrawerWidthPx } from '../../components/Drawer';
 
 const styles = (theme: Theme) =>
@@ -205,7 +206,7 @@ class App extends Component<Props, State> {
     }
   };
 
-  debouncedExecSearch = _.debounce(this.execSearch, 250);
+  debouncedExecSearch = _.debounce(this.execSearch, 500);
 
   handleMobileSearchDisplay = () => {
     this.setState({ mobileSearchBarOpen: !this.state.mobileSearchBarOpen });
@@ -388,7 +389,7 @@ class App extends Component<Props, State> {
       <div className={classes.root}>
         <CssBaseline />
         <AppBar position="sticky">
-          <Toolbar>
+          <Toolbar variant="regular">
             {isAuthed ? (
               <IconButton
                 focusRipple={false}
@@ -412,6 +413,13 @@ class App extends Component<Props, State> {
             >
               Teletracker
             </Typography>
+            {isAuthed ? (
+              <ButtonLink
+                color="inherit"
+                primary="New, Arriving, &amp; Expiring"
+                to="/new"
+              />
+            ) : null}
             {this.renderSearch()}
             {!isAuthed ? (
               <div>
@@ -437,43 +445,26 @@ class App extends Component<Props, State> {
               [classes.mainContentShift]: this.state.drawerOpen,
             })}
           >
-            <Route
-              exact
-              path="/"
-              render={props => (
-                <Home {...props} drawerOpen={this.state.drawerOpen} />
-              )}
-            />
+            <Route exact path="/" render={props => <Home {...props} />} />
             <Route
               exact
               path="/account"
-              render={props => (
-                <Account {...props} drawerOpen={this.state.drawerOpen} />
-              )}
+              render={props => <Account {...props} />}
             />
             <Route exact path="/login" component={Login} />
             <Route exact path="/signup" component={Signup} />
-            <Route
-              exact
-              path="/lists"
-              render={props => (
-                <Lists {...props} drawerOpen={this.state.drawerOpen} />
-              )}
-            />
+            <Route exact path="/lists" render={props => <Lists {...props} />} />
             <Route
               exact
               path="/lists/:id"
-              render={props => (
-                <ListDetail {...props} drawerOpen={this.state.drawerOpen} />
-              )}
+              render={props => <ListDetail {...props} />}
             />
             <Route
               exact
               path="/item/:type/:id"
-              render={props => (
-                <ItemDetail {...props} drawerOpen={this.state.drawerOpen} />
-              )}
+              render={props => <ItemDetail {...props} />}
             />
+            <Route exact path="/new" render={props => <New {...props} />} />
             <Route exact path="/logout" component={About} />
           </main>
         </div>
