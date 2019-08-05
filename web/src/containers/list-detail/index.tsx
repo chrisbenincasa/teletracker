@@ -114,7 +114,7 @@ interface MenuItemProps {
   button?: any;
   key?: any;
   selected?: any;
-  listLength?: Number;
+  listLength?: number;
   onClick?: any;
 }
 

@@ -12,7 +12,7 @@ import { createAction, clientEffect } from './utils';
 import { takeEvery } from '@redux-saga/core/effects';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 
-export type ItemFetchInitiatedAction = FSA<typeof ITEM_FETCH_INITIATED, number>;
+export type ItemFetchInitiatedAction = FSA<typeof ITEM_FETCH_INITIATED, string>;
 
 export type ItemFetchSuccessfulAction = FSA<
   typeof ITEM_FETCH_SUCCESSFUL,
@@ -55,7 +55,7 @@ export type ItemDetailActionTypes =
 
 const client = TeletrackerApi.instance;
 
-export const fetchItemDetails = (id: number, type: string) => {
+export const fetchItemDetails = (id: string, type: string) => {
   return async (dispatch: Dispatch) => {
     dispatch(itemFetchInitiated(id));
 
