@@ -9,6 +9,7 @@ import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.RouteParam
 import javax.inject.Inject
+import java.util.UUID
 import scala.concurrent.ExecutionContext
 
 class TvShowController @Inject()(
@@ -56,5 +57,5 @@ class TvShowController @Inject()(
 }
 
 case class GetShowRequest(
-  @RouteParam id: Int,
+  @RouteParam id: UUID,
   request: Request)

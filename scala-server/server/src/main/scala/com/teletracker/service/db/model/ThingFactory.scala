@@ -4,54 +4,81 @@ import com.teletracker.service.model.tmdb.{Movie, MultiTypeXor, Person, TvShow}
 import com.teletracker.service.util.Slug
 import shapeless.Poly1
 import java.time.OffsetDateTime
+import com.teletracker.service.util.Movies._
+import com.teletracker.service.util.Shows._
+import com.teletracker.service.util.People._
+import java.util.UUID
+import scala.util.Try
 
 object ThingFactory {
   // NOTE this only handles movies, currently.
-  def makeThing(raw: MultiTypeXor): Thing = {
+  def makeThing(raw: MultiTypeXor): Try[Thing] = {
     raw.fold(thingMaker)
   }
 
-  def makeThing(movie: Movie): Thing = {
-    val now = getNow()
-    Thing(
-      None,
-      movie.title.get,
-      Slug(movie.title.get),
-      ThingType.Movie,
-      now,
-      now,
-      Some(ObjectMetadata.withTmdbMovie(movie))
-    )
-  }
+  def makeThing(movie: Movie): Try[Thing] = {
+    Try {
+      val releaseYear = movie.releaseYear
 
-  object thingMaker extends Poly1 {
-    implicit val atMovie: Case.Aux[Movie, Thing] = at(makeThing)
+      require(movie.title.isDefined)
+      require(releaseYear.isDefined)
 
-    implicit val atTvShow: Case.Aux[TvShow, Thing] = at { show =>
       val now = getNow()
       Thing(
-        None,
+        UUID.randomUUID(),
+        movie.title.get,
+        Slug(movie.title.get, releaseYear.get),
+        ThingType.Movie,
+        now,
+        now,
+        Some(ObjectMetadata.withTmdbMovie(movie))
+      )
+    }
+  }
+
+  def makeThing(show: TvShow): Try[Thing] = {
+    Try {
+      val now = getNow()
+      val releaseYear = show.releaseYear
+
+      require(
+        releaseYear.isDefined,
+        s"Attempted to get release year from ${show.releaseYear}"
+      )
+
+      Thing(
+        UUID.randomUUID(),
         show.name,
-        Slug(show.name),
+        Slug(show.name, releaseYear.get),
         ThingType.Show,
         now,
         now,
-        None // TODO!
+        Some(ObjectMetadata.withTmdbShow(show))
       )
     }
+  }
 
-    implicit val atPerson: Case.Aux[Person, Thing] = at { person =>
+  def makePerson(person: Person): Try[Thing] = {
+    Try {
       val now = getNow()
       Thing(
-        None,
+        UUID.randomUUID(),
         person.name.get,
-        Slug(person.name.get),
+        Slug(person.name.get, person.releaseYear.get),
         ThingType.Person,
         now,
         now,
-        None // TODO!
+        Some(ObjectMetadata.withTmdbPerson(person))
       )
     }
+  }
+
+  object thingMaker extends Poly1 {
+    implicit val atMovie: Case.Aux[Movie, Try[Thing]] = at(makeThing)
+
+    implicit val atTvShow: Case.Aux[TvShow, Try[Thing]] = at(makeThing)
+
+    implicit val atPerson: Case.Aux[Person, Try[Thing]] = at(makePerson)
   }
 
   private def getNow(): OffsetDateTime = OffsetDateTime.now()

@@ -12,12 +12,11 @@ trait CustomPostgresProfile
     with PgSearchSupport
     with PgNetSupport
     with PgCirceJsonSupport
-//    with PgDateSupportJoda
     with PgLTreeSupport {
+
   def pgjson =
     "jsonb" // jsonb support is in postgres 9.4.0 onward; for 9.3.x use "json"
 
-  // Add back `capabilities.insertOrUpdate` to enable native `upsert` support; for postgres 9.5+
   override protected def computeCapabilities: Set[Capability] =
     super.computeCapabilities + slick.jdbc.JdbcCapabilities.insertOrUpdate
 
@@ -26,7 +25,6 @@ trait CustomPostgresProfile
   object CustomAPI
       extends API
       with ArrayImplicits
-//      with JodaDateTimePlainImplicits
       with DateTimeImplicits
       with NetImplicits
       with LTreeImplicits
@@ -37,11 +35,6 @@ trait CustomPostgresProfile
       with SearchAssistants {
     implicit val strListTypeMapper =
       new SimpleArrayJdbcType[String]("text").to(_.toList)
-//    implicit val playJsonArrayTypeMapper =
-//      new AdvancedArrayJdbcType[JsValue](pgjson,
-//        (s) => utils.SimpleArrayUtils.fromString[JsValue](Json.parse(_))(s).orNull,
-//        (v) => utils.SimpleArrayUtils.mkString[JsValue](_.toString())(v)
-//      ).to(_.toList)
   }
 }
 

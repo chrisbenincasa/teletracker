@@ -13,10 +13,8 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-object SeedNetworks extends App {
-  override protected def modules: Seq[Module] = Modules()
-
-  override protected def run(): Unit = {
+object SeedNetworks extends TeletrackerJob {
+  override protected def runInternal(): Unit = {
     injector.instance[NetworkSeeder].run()
   }
 }
@@ -54,7 +52,7 @@ class NetworkSeeder @Inject()(
           val network = Network(
             None,
             provider.clear_name,
-            Slug(provider.clear_name),
+            Slug.forString(provider.clear_name),
             provider.short_name,
             None,
             None
@@ -74,8 +72,6 @@ class NetworkSeeder @Inject()(
         })
 
         Await.result(Future.sequence(inserts), Duration.Inf)
-
-        dbProvider.shutdown()
     }
   }
 }

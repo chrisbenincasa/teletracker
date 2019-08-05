@@ -2,10 +2,11 @@ package com.teletracker.service.db.model
 
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
+import java.util.UUID
 
 case class TrackedListThing(
   listId: Int,
-  thingId: Int)
+  thingId: UUID)
 
 class TrackedListThings @Inject()(
   val driver: JdbcProfile,
@@ -16,7 +17,7 @@ class TrackedListThings @Inject()(
   class TrackedListThingsTable(tag: Tag)
       extends Table[TrackedListThing](tag, "list_things") {
     def listId = column[Int]("lists_id")
-    def thingId = column[Int]("objects_id")
+    def thingId = column[UUID]("objects_id")
 
     def primKey = primaryKey("list_id_thing_id", (listId, thingId))
 

@@ -9,6 +9,7 @@ import com.teletracker.service.db.model.{
 import com.teletracker.service.inject.{DbImplicits, DbProvider}
 import javax.inject.Inject
 import java.time.OffsetDateTime
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListsDbAccess @Inject()(
@@ -63,7 +64,7 @@ class ListsDbAccess @Inject()(
 
   def addTrackedThings(
     listId: Int,
-    thingIds: Set[Int]
+    thingIds: Set[UUID]
   ) = {
     if (thingIds.isEmpty) {
       Future.successful(None)

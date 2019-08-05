@@ -2,9 +2,10 @@ package com.teletracker.service.db.model
 
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
+import java.util.UUID
 
 case class ThingGenre(
-  thingId: Int,
+  thingId: UUID,
   genreId: Int)
 
 class ThingGenres @Inject()(
@@ -16,7 +17,7 @@ class ThingGenres @Inject()(
 
   class ThingGenresTable(tag: Tag)
       extends Table[ThingGenre](tag, "thing_genres") {
-    def thingId = column[Int]("thing_id")
+    def thingId = column[UUID]("thing_id")
     def genreId = column[Int]("genre_id")
 
     def pk = primaryKey("thing_genres_pk_thing_network", (thingId, genreId))

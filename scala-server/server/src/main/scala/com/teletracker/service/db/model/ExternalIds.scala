@@ -2,10 +2,11 @@ package com.teletracker.service.db.model
 
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
+import java.util.UUID
 
 case class ExternalId(
   id: Option[Int],
-  thingId: Option[Int],
+  thingId: Option[UUID],
   tvEpisodeId: Option[Int],
   tmdbId: Option[String],
   imdbId: Option[String],
@@ -21,7 +22,7 @@ class ExternalIds @Inject()(
   class ExternalIdsTable(tag: Tag)
       extends Table[ExternalId](tag, "external_ids") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
-    def thingId = column[Option[Int]]("thing_id")
+    def thingId = column[Option[UUID]]("thing_id")
     def tvEpisodeId = column[Option[Int]]("tv_episode_id")
     def tmdbId = column[Option[String]]("tmdb_id")
     def imdbId = column[Option[String]]("imdb_id")
