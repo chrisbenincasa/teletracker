@@ -142,7 +142,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     );
 
     this.props.updateLists({
-      thingId: Number(this.props.item.id),
+      thingId: this.props.item.id,
       addToLists: extractIds(addedToLists),
       removeFromLists: extractIds(removedFromLists),
     });

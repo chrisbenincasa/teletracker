@@ -74,7 +74,7 @@ const handleListRetrieveSuccess = handleAction<
     let thingsById = state.thingsById || {};
     let things = action.payload.things;
     let newThings = things.reduce((prev, curr) => {
-      let existingThing: Thing | undefined = thingsById[Number(curr.id)];
+      let existingThing: Thing | undefined = thingsById[curr.id];
       let newThing: Thing = curr;
       if (existingThing) {
         newThing = R.mergeDeepRight(existingThing, newThing) as Thing;
@@ -109,7 +109,7 @@ const updateTagsState = (
   payload?: UserUpdateItemTagsPayload,
 ) => {
   let thingsById = state.thingsById || {};
-  let thingId = Number(payload!.thingId);
+  let thingId = payload!.thingId;
   if (payload && thingsById[thingId] && thingsById[thingId].userMetadata) {
     let thing = thingsById[thingId]!;
     let newTagSet = fn(thing.userMetadata!.tags);

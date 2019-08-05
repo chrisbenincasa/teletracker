@@ -202,7 +202,7 @@ export class TeletrackerApi {
   }
 
   async updateListTracking(
-    thingId: number,
+    thingId: string,
     addToLists: string[],
     removeFromLists: string[],
   ) {
@@ -288,7 +288,7 @@ export class TeletrackerApi {
     return this.api.get<DataResponse<Network[]>>('/api/v1/networks');
   }
 
-  async updateActions(thingId: number, action: ActionType, value?: number) {
+  async updateActions(thingId: string, action: ActionType, value?: number) {
     return this.withTokenCheck(async () => {
       return this.api.put(`/api/v1/users/self/things/${thingId}/actions`, {
         action,
@@ -297,7 +297,7 @@ export class TeletrackerApi {
     });
   }
 
-  async removeActions(thingId: number, action: ActionType) {
+  async removeActions(thingId: string, action: ActionType) {
     return this.withTokenCheck(async () => {
       return this.api.delete(
         `/api/v1/users/self/things/${thingId}/actions/${action}`,
