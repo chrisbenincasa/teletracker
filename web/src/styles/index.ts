@@ -6,8 +6,8 @@ export const layoutStyles: (theme: Theme) => CSSProperties = (
 ) => ({
   width: 'auto',
   marginTop: theme.spacing(1),
-  marginLeft: theme.spacing(3),
-  marginRight: theme.spacing(3),
+  marginLeft: theme.spacing(1),
+  marginRight: theme.spacing(1),
   [theme.breakpoints.up(1100 + theme.spacing(4))]: {
     width: 1100,
     marginLeft: 'auto',
