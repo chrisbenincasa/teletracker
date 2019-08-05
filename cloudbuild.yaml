@@ -1,5 +1,5 @@
 steps:
-  - name: "gcr.io/$PROJECT_ID/teletracker-server-primed"
+  - name: "gcr.io/$PROJECT_ID/teletracker-sbt-primed"
     args: ["-J-Xss8m", "clean", "compile", "server/assembly", "server/docker"]
     dir: "scala-server"
 images:
