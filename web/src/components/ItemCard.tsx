@@ -296,7 +296,7 @@ class ItemCard extends Component<Props, ItemCardState> {
 
   handleRemoveFromList = () => {
     this.props.ListUpdate({
-      thingId: parseInt(this.props.item.id.toString()),
+      thingId: this.props.item.id,
       addToLists: [],
       removeFromLists: [this.props.listContext!.id.toString()],
     });
