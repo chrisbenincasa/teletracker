@@ -16,11 +16,7 @@ JVM_OPTS="""-server \
     -Dlog.service.output=${LOG_PATH}/service.log \
     -Dlog.access.output=${LOG_PATH}/access.log \
     -XX:+ScavengeBeforeFullGC -XX:+CMSScavengeBeforeRemark \
-    -Dsun.net.inetaddr.ttl=5 \
-    -Djavax.net.ssl.keyStore=/jks/keystore.jks \
-    -Djavax.net.ssl.keyStorePassword=changeit \
-    -Djavax.net.ssl.trustStore=/jks/truststore.jks \
-    -Djavax.net.ssl.trustStorePassword=changeit \
+    -Dsun.net.inetaddr.ttl=5
 """
 
 berglas exec --local -- java ${JVM_OPTS} ${JVM_ARGS} -jar ${BIN_JAR} $@

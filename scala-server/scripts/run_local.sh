@@ -8,7 +8,7 @@ docker run -it \
   --env-file=.env \
   --env=GOOGLE_APPLICATION_CREDENTIALS="/gcp-keys/teletracker-${ENV}.json" \
   --env=DB_PASSWORD="berglas://teletracker-secrets/db-password-${ENV}" \
-  --env=JWT_SECRET="berglas://teletracker-secrets/jwt-secret-${ENV}" \
+  --env=JWT_SECRET="berglas://teletracker-secrets/jwt-secret-key-${ENV}" \
   --env=TMDB_API_KEY="berglas://teletracker-secrets/tmdb-api-key-${ENV}" \
   -v $(pwd)/server/gcp-keys:/gcp-keys \
   gcr.io/teletracker/server:"${TAG}"
