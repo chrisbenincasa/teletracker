@@ -32,6 +32,8 @@ import {
   removeUserActionSaga,
 } from './user';
 import { createBasicAction } from './utils';
+import { upcomingAvailabilitySaga, allAvailabilitySaga } from './availability';
+import { fetchItemDetailsBatchSaga } from './item-detail';
 
 type StartupAction = FSA<typeof STARTUP>;
 
@@ -84,5 +86,8 @@ export function* root() {
     renameListSaga(),
     updateUserActionSaga(),
     removeUserActionSaga(),
+    upcomingAvailabilitySaga(),
+    fetchItemDetailsBatchSaga(),
+    allAvailabilitySaga(),
   ]);
 }
