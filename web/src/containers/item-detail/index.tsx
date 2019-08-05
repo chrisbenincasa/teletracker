@@ -87,7 +87,7 @@ interface OwnProps {
 }
 
 interface DispatchProps {
-  fetchItemDetails: (id: number, type: string) => void;
+  fetchItemDetails: (id: string, type: string) => void;
   updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
   removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
 }
@@ -109,7 +109,7 @@ type NotOwnProps = RouteComponentProps<RouteParams> &
   WithUserProps;
 
 interface State {
-  currentId: number;
+  currentId: string;
   currentItemType: string;
 }
 
@@ -119,7 +119,7 @@ const gradient =
 class ItemDetails extends Component<Props, State> {
   componentDidMount() {
     let { match } = this.props;
-    let itemId = Number(match.params.id);
+    let itemId = match.params.id;
     let itemType = match.params.type;
 
     this.setState({
@@ -287,7 +287,7 @@ class ItemDetails extends Component<Props, State> {
 
   renderItemDetails = () => {
     let { isFetching, itemDetail, match, userSelf } = this.props;
-    let itemId = Number(match.params.id);
+    let itemId = match.params.id;
     let itemType = String(match.params.type);
 
     if (!itemDetail) {
@@ -375,7 +375,7 @@ const mapStateToProps: (
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
-    itemDetail: appState.itemDetail.thingsById[Number(props.match.params.id)],
+    itemDetail: appState.itemDetail.thingsById[props.match.params.id],
   };
 };
 

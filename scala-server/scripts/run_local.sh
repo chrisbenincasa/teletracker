@@ -11,4 +11,5 @@ docker run -it \
   --env=JWT_SECRET="berglas://teletracker-secrets/jwt-secret-key-${ENV}" \
   --env=TMDB_API_KEY="berglas://teletracker-secrets/tmdb-api-key-${ENV}" \
   -v $(pwd)/server/gcp-keys:/gcp-keys \
+  -p 3001:3001 \
   gcr.io/teletracker/server:"${TAG}"

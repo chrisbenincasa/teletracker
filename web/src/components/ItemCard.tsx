@@ -215,7 +215,7 @@ interface ItemCardState {
   hoverRating: boolean;
   deleteConfirmationOpen: boolean;
   deleted: boolean;
-  currentId: number;
+  currentId: string;
   currentType: string;
   imageLoaded: boolean;
 }
@@ -237,7 +237,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     hoverRating: false,
     deleteConfirmationOpen: false,
     deleted: false,
-    currentId: 0,
+    currentId: '',
     currentType: '',
     imageLoaded: false,
   };
@@ -255,7 +255,7 @@ class ItemCard extends Component<Props, ItemCardState> {
 
   componentDidMount() {
     let { item } = this.props;
-    let itemId = Number(item.id);
+    let itemId = item.id;
 
     this.setState({
       currentId: itemId,

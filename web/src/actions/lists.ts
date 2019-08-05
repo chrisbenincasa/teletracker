@@ -61,7 +61,7 @@ export type ListRetrieveAllSuccessAction = FSA<
 >;
 
 export interface ListUpdatedInitiatedPayload {
-  thingId: number;
+  thingId: string;
   addToLists: string[];
   removeFromLists: string[];
 }

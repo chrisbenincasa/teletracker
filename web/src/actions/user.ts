@@ -109,7 +109,7 @@ export type UserRenameListSuccessAction = FSA<
 >;
 
 export interface UserUpdateItemTagsPayload {
-  thingId: number;
+  thingId: string;
   action: ActionType;
   value?: number;
   lazy?: boolean; // If true, requires the server call to complete before updating state.
