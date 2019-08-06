@@ -2,7 +2,7 @@ import sbt._
 
 object BuildConfig {
   object Compilation {
-    lazy val scalacVersion = "2.12.8"
+    lazy val scalacVersion = "2.12.9"
 
     lazy val scalacOpts = Seq(
       "-deprecation",
@@ -36,20 +36,21 @@ object BuildConfig {
     )
 
     lazy val circe = Seq(
-      "org.gnieh" %% f"diffson-circe" % "4.0.0-M4"
-    ) ++ Seq(
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
       "io.circe" %% "circe-parser",
       "io.circe" %% "circe-shapes"
-//      "io.circe" %% "circe-java8"
     ).map(_ % versions.circe)
   }
 
   object versions {
-    lazy val twitter = "19.4.0"
-
+    lazy val twitter = "19.8.0"
+    lazy val jackson = "2.9.9"
+    lazy val guice = "4.0"
+    lazy val scalaGuice = "4.1.0"
     lazy val circe = "0.12.0-M4"
+    lazy val slick = "3.2.3"
+    lazy val slickPg = "0.16.2"
   }
 
   object Revision {

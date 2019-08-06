@@ -1,7 +1,7 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.util.json.circe._
-import com.teletracker.service.db.model.ThingType
+import com.teletracker.common.util.json.circe._
+import com.teletracker.common.db.model.ThingType
 import io.circe.generic.auto._
 import java.time.{Instant, ZoneId, ZoneOffset}
 

@@ -1,10 +1,10 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.external.tmdb.TmdbClient
-import com.teletracker.service.inject.Modules
-import com.teletracker.service.model.tmdb.{PagedResult, TvShow}
-import com.teletracker.service.util.TmdbShowImporter
-import com.teletracker.service.util.execution.SequentialFutures
+import com.teletracker.common.external.tmdb.TmdbClient
+import com.teletracker.common.inject.Modules
+import com.teletracker.common.model.tmdb.{PagedResult, TvShow}
+import com.teletracker.common.util.TmdbShowImporter
+import com.teletracker.common.util.execution.SequentialFutures
 import com.google.inject.Module
 import com.twitter.inject.app.App
 import scala.concurrent.Await

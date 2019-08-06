@@ -8,7 +8,6 @@ import com.teletracker.service.db.access.{
 }
 import com.teletracker.service.db.model._
 import com.teletracker.service.testing.framework.BaseSpecWithServer
-import com.teletracker.service.util.Slug
 import java.time.OffsetDateTime
 
 class TvShowSpec extends BaseSpecWithServer {

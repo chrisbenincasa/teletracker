@@ -1,12 +1,10 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.db.model._
-import com.teletracker.service.external.tmdb.TmdbClient
-import com.teletracker.service.inject.{DbProvider, Modules}
-import com.teletracker.service.model.tmdb.GenreListResponse
-import com.teletracker.service.util.Slug
-import com.google.inject.Module
-import com.twitter.inject.app.App
+import com.teletracker.common.db.model._
+import com.teletracker.common.external.tmdb.TmdbClient
+import com.teletracker.common.inject.DbProvider
+import com.teletracker.common.model.tmdb.GenreListResponse
+import com.teletracker.common.util.Slug
 import javax.inject.Inject
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global

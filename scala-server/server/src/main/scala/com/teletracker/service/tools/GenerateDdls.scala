@@ -1,7 +1,7 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.db.model._
-import com.teletracker.service.inject.{DbProvider, Modules}
+import com.teletracker.common.db.model._
+import com.teletracker.common.inject.{DbProvider, Modules}
 import com.google.inject.Module
 import com.twitter.inject.app.App
 import java.io.{File, FileWriter, PrintWriter}

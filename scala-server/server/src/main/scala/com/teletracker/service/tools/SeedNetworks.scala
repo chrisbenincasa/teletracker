@@ -1,17 +1,15 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.db.model._
-import com.teletracker.service.inject.{DbProvider, Modules}
-import com.teletracker.service.model.justwatch.Provider
-import com.teletracker.service.util.Slug
-import com.google.inject.Module
-import com.teletracker.service.db.access.NetworksDbAccess
-import com.twitter.inject.app.App
-import java.io.File
+import com.teletracker.common.db.access.NetworksDbAccess
+import com.teletracker.common.db.model._
+import com.teletracker.common.inject.DbProvider
+import com.teletracker.common.model.justwatch.Provider
+import com.teletracker.common.util.Slug
 import javax.inject.Inject
-import scala.concurrent.{Await, Future}
+import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 object SeedNetworks extends TeletrackerJob {
   override protected def runInternal(): Unit = {

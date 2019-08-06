@@ -1,8 +1,8 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.inject.Modules
-import com.teletracker.service.model.justwatch.Provider
-import com.teletracker.service.util.Implicits._
+import com.teletracker.common.inject.Modules
+import com.teletracker.common.model.justwatch.Provider
+import com.teletracker.common.util.Implicits._
 import com.google.inject.Module
 import com.twitter.finagle.Http
 import com.twitter.finagle.http.{Request, Response}
