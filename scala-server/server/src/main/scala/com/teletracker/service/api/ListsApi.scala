@@ -1,6 +1,6 @@
 package com.teletracker.service.api
 
-import com.teletracker.service.db.access.{ListsDbAccess, UsersDbAccess}
+import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 

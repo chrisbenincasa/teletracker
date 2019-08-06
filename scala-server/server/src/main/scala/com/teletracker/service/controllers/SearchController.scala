@@ -1,26 +1,26 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.service.auth.JwtAuthFilter
-import com.teletracker.service.auth.RequestContext._
-import com.teletracker.service.config.TeletrackerConfig
-import com.teletracker.service.db.access.{ThingsDbAccess, UserThingDetails}
-import com.teletracker.service.db.model.{
+import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.db.access.{ThingsDbAccess, UserThingDetails}
+import com.teletracker.common.db.model.{
   ExternalId,
   ExternalSource,
   PartialThing,
   ThingFactory
 }
-import com.teletracker.service.external.tmdb.TmdbClient
-import com.teletracker.service.model.DataResponse
-import com.teletracker.service.model.tmdb._
-import com.teletracker.service.process.ProcessQueue
-import com.teletracker.service.process.tmdb.TmdbProcessMessage.ProcessSearchResults
-import com.teletracker.service.process.tmdb.{
+import com.teletracker.common.external.tmdb.TmdbClient
+import com.teletracker.common.model.DataResponse
+import com.teletracker.common.model.tmdb._
+import com.teletracker.common.process.ProcessQueue
+import com.teletracker.common.process.tmdb.TmdbProcessMessage.ProcessSearchResults
+import com.teletracker.common.process.tmdb.{
   TmdbEntityProcessor,
   TmdbProcessMessage
 }
-import com.teletracker.service.util.TmdbMovieImporter
-import com.teletracker.service.util.json.circe._
+import com.teletracker.common.util.TmdbMovieImporter
+import com.teletracker.common.util.json.circe._
+import com.teletracker.service.auth.JwtAuthFilter
+import com.teletracker.service.auth.RequestContext._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import io.circe.shapes._

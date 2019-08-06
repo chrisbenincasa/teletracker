@@ -1,7 +1,7 @@
 package com.teletracker.service.tools
 
 import com.google.inject.Module
-import com.teletracker.service.inject.Modules
+import com.teletracker.common.inject.Modules
 import io.circe.generic.auto._
 import java.time.{Instant, ZoneId, ZoneOffset}
 import scala.concurrent.ExecutionContext.Implicits.global

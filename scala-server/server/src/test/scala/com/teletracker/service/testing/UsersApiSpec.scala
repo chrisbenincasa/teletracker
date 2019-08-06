@@ -9,8 +9,7 @@ import com.teletracker.service.db.access.ThingsDbAccess
 import com.teletracker.service.db.model.{Thing, ThingType, TrackedList, User}
 import com.teletracker.service.model.DataResponse
 import com.teletracker.service.testing.framework.BaseSpecWithServer
-import com.teletracker.service.util.Slug
-import com.teletracker.service.util.json.circe._
+import com.teletracker.common.util.json.circe._
 import com.twitter.finagle.http.Status
 import io.circe.generic.auto._
 import io.circe.parser._

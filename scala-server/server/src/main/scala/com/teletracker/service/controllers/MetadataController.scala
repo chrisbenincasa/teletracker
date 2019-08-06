@@ -1,8 +1,8 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.service.db.access.{NetworksDbAccess, ThingsDbAccess}
-import com.teletracker.service.db.model.GenreType
-import com.teletracker.service.model.DataResponse
+import com.teletracker.common.db.access.{NetworksDbAccess, ThingsDbAccess}
+import com.teletracker.common.db.model.GenreType
+import com.teletracker.common.model.DataResponse
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.QueryParam

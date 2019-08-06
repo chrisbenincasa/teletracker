@@ -1,7 +1,7 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.db.access.ThingsDbAccess
-import com.teletracker.service.util.Futures._
+import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.util.Futures._
 
 object UpdateAvailabilities extends TeletrackerJob {
   override protected def runInternal(): Unit = {
