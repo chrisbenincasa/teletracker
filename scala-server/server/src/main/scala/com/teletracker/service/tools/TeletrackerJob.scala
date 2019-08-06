@@ -1,7 +1,7 @@
 package com.teletracker.service.tools
 
 import com.google.inject.Module
-import com.teletracker.service.inject.{DbProvider, Modules}
+import com.teletracker.common.inject.{DbProvider, Modules}
 import scala.util.control.NonFatal
 
 trait TeletrackerJob extends com.twitter.inject.app.App {

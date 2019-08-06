@@ -1,26 +1,26 @@
 package com.teletracker.service.tools
 
 import com.google.inject.Module
-import com.teletracker.service.db.access.ThingsDbAccess
-import com.teletracker.service.db.model.{
+import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.model.{
   Availability,
   Network,
   OfferType,
   PresentationType,
   Thing
 }
-import com.teletracker.service.external.tmdb.TmdbClient
-import com.teletracker.service.inject.Modules
-import com.teletracker.service.model.tmdb.{Movie, TvShow}
-import com.teletracker.service.process.tmdb.TmdbEntityProcessor
-import com.teletracker.service.process.tmdb.TmdbEntityProcessor.{
+import com.teletracker.common.external.tmdb.TmdbClient
+import com.teletracker.common.inject.Modules
+import com.teletracker.common.model.tmdb.{Movie, TvShow}
+import com.teletracker.common.process.tmdb.TmdbEntityProcessor
+import com.teletracker.common.process.tmdb.TmdbEntityProcessor.{
   ProcessFailure,
   ProcessSuccess
 }
-import com.teletracker.service.util.NetworkCache
-import com.teletracker.service.util.Futures._
-import com.teletracker.service.util.Lists._
-import com.teletracker.service.util.execution.SequentialFutures
+import com.teletracker.common.util.NetworkCache
+import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.Lists._
+import com.teletracker.common.util.execution.SequentialFutures
 import io.circe.parser._
 import io.circe.Decoder
 import org.apache.commons.text.similarity.LevenshteinDistance

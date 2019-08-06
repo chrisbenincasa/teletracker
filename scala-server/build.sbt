@@ -8,28 +8,36 @@ lazy val `teletracker-repo` = Project("teletracker-repo", file("."))
     publishArtifact := false
   )
   .aggregate(
-    server
+    server,
+    common,
+    consumer
   )
 
-lazy val server = project
-  .in(file("server"))
+lazy val common = project
+  .in(file("common"))
   .settings(
     organization := "com.teletracker",
-    name := "teletracker",
+    name := "common",
     version := s"0.1-${BuildConfig.Revision.revision}",
     // Compilation
     scalaVersion := Compilation.scalacVersion,
     scalacOptions ++= Compilation.scalacOpts,
     libraryDependencies ++= Seq(
+      // Twitter
+      "com.twitter" %% "util-core" % versions.twitter,
+      "com.twitter" %% "inject-core" % versions.twitter,
+      "com.twitter" %% "inject-app" % versions.twitter,
+      "com.twitter" %% "inject-modules" % versions.twitter,
+      "com.twitter" %% "inject-utils" % versions.twitter,
+      "com.twitter" %% "inject-slf4j" % versions.twitter,
       // Config
       "com.iheart" %% "ficus" % "1.4.3",
       "com.github.scopt" %% "scopt" % "3.5.0",
       // Logging
       "ch.qos.logback" % "logback-classic" % "1.2.3",
-      // Service
-      "com.twitter" %% "finagle-core" % versions.twitter,
-      "com.twitter" %% "finagle-http" % versions.twitter,
-      "com.twitter" %% "finatra-http" % versions.twitter,
+      "com.google.cloud" % "google-cloud-logging-logback" % "0.102.0-alpha",
+      // Jackson
+      "com.fasterxml.jackson.core" % "jackson-annotations" % versions.jackson,
       // Db
       "com.typesafe.slick" %% "slick" % "3.2.3",
       "com.typesafe.slick" %% "slick-hikaricp" % "3.2.3",
@@ -43,19 +51,56 @@ lazy val server = project
       "com.google.cloud.sql" % "postgres-socket-factory" % "1.0.14",
       // Auth
       "io.jsonwebtoken" % "jjwt" % "0.9.0",
+      // Inject
+      "com.google.inject" % "guice" % versions.guice,
+      "com.google.inject.extensions" % "guice-assistedinject" % versions.guice,
+      "com.google.inject.extensions" % "guice-multibindings" % versions.guice,
+      "net.codingwell" %% "scala-guice" % versions.scalaGuice,
       // Misc
+      "javax.inject" % "javax.inject" % "1",
       "org.typelevel" %% "cats-core" % "1.1.0",
       "com.google.guava" % "guava" % "20.0",
       "com.lihaoyi" %% "fastparse" % "2.1.0",
       "org.apache.commons" % "commons-lang3" % "3.9",
       "org.apache.commons" % "commons-text" % "1.6",
+      compilerPlugin(
+        "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
+      )
+    ) ++ Dependencies.circe
+  )
+
+lazy val consumer = project
+  .in(file("consumer"))
+  .settings(
+    organization := "com.teletracker",
+    name := "consumer",
+    version := s"0.1-${BuildConfig.Revision.revision}",
+    // Compilation
+    scalaVersion := Compilation.scalacVersion,
+    scalacOptions ++= Compilation.scalacOpts
+  )
+
+lazy val server = project
+  .in(file("server"))
+  .settings(
+    organization := "com.teletracker",
+    name := "server",
+    version := s"0.1-${BuildConfig.Revision.revision}",
+    // Compilation
+    scalaVersion := Compilation.scalacVersion,
+    scalacOptions ++= Compilation.scalacOpts,
+    libraryDependencies ++= Seq(
+      // Service
+      "com.twitter" %% "finagle-core" % versions.twitter,
+      "com.twitter" %% "finagle-http" % versions.twitter,
+      "com.twitter" %% "finatra-http" % versions.twitter,
       // Testing
       "com.spotify" % "docker-client" % "8.11.7" % Test excludeAll "com.fasterxml.jackson.core",
       "org.scalatest" %% "scalatest" % "3.0.5" % Test,
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
       )
-    ) ++ Dependencies.finatraTest ++ Dependencies.circe,
+    ) ++ Dependencies.finatraTest,
     // Testing
     Global / concurrentRestrictions := Seq(Tags.limit(Tags.Test, 1)),
     Test / fork := true,
@@ -67,13 +112,6 @@ lazy val server = project
     envVars in reStart := Map(
       "API_KEY" -> System.getenv("API_KEY"),
       "JWT_SECRET" -> System.getenv("JWT_SECRET")
-    ),
-    javaOptions in reStart ++= Seq(
-//      "-Djavax.net.debug=ssl",
-      "-Djavax.net.ssl.keyStore=jks/keystore.jks",
-      "-Djavax.net.ssl.keyStorePassword=changeit",
-      "-Djavax.net.ssl.trustStore=jks/truststore.jks",
-      "-Djavax.net.ssl.trustStorePassword=changeit"
     ),
     // Assmebly JAR
     mainClass in assembly := Some("com.teletracker.service.Teletracker"),
@@ -147,6 +185,7 @@ lazy val server = project
       .value
   )
   .enablePlugins(FlywayPlugin, DockerPlugin)
+  .dependsOn(common)
 
 lazy val `run-db-migrations` = inputKey[Unit]("generate ddl")
 lazy val `reset-db` = taskKey[Unit]("reset-db")

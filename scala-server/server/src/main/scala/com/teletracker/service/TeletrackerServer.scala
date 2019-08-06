@@ -3,8 +3,9 @@ package com.teletracker.service
 import com.google.inject.Module
 import com.teletracker.service.controllers._
 import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
-import com.teletracker.service.inject.Modules
-import com.teletracker.service.process.tmdb.TmdbBackgroundProcessor
+import com.teletracker.common.inject.Modules
+import com.teletracker.common.process.tmdb.TmdbBackgroundProcessor
+import com.teletracker.service.inject.ServerModules
 import com.teletracker.service.tools._
 import com.teletracker.service.util.json.JsonModule
 import com.twitter.conversions.DurationOps._
@@ -19,7 +20,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object TeletrackerServerMain extends TeletrackerServer
 
-class TeletrackerServer(override protected val modules: Seq[Module] = Modules())
+class TeletrackerServer(
+  override protected val modules: Seq[Module] = ServerModules())
     extends HttpServer
     with Logging {
 

@@ -1,7 +1,7 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.service.cache.{JustWatchLocalCache, TmdbLocalCache}
-import com.teletracker.service.model.DataResponse
+import com.teletracker.common.cache.{JustWatchLocalCache, TmdbLocalCache}
+import com.teletracker.common.model.DataResponse
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import javax.inject.Inject
@@ -22,7 +22,7 @@ class AdminController @Inject()(
   }
 
   get("/caches", admin = true) { _: Request =>
-    import com.teletracker.service.util.json.circe._
+    import com.teletracker.common.util.json.circe._
     import io.circe.generic.auto._
     import io.circe.shapes._
     import io.circe.syntax._
