@@ -1,0 +1,4 @@
+steps:
+  - name: "gcr.io/$PROJECT_ID/teletracker-sbt-primed"
+    args: ["-J-Xss8m", "clean", "compile"]
+    dir: "scala-server"
