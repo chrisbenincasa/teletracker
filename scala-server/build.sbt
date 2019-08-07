@@ -1,5 +1,7 @@
 import BuildConfig._
 
+Global / cancelable := true
+
 lazy val `teletracker-repo` = Project("teletracker-repo", file("."))
   .settings(
     version := s"0.0-${BuildConfig.Revision.revision}",
@@ -77,8 +79,13 @@ lazy val consumer = project
     version := s"0.1-${BuildConfig.Revision.revision}",
     // Compilation
     scalaVersion := Compilation.scalacVersion,
-    scalacOptions ++= Compilation.scalacOpts
+    scalacOptions ++= Compilation.scalacOpts,
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "inject-app" % versions.twitter,
+      "com.google.cloud" % "google-cloud-pubsub" % "1.84.0"
+    )
   )
+  .dependsOn(common)
 
 lazy val server = project
   .in(file("server"))
