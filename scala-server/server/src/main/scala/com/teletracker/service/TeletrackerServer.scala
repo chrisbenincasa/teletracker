@@ -68,6 +68,7 @@ class TeletrackerServer(
       .add[AvailabilityController]
       .add[AdminController]
       .add[HealthController]
+      .add[InternalController]
   }
 
   override def postInjectorStartup(): Unit = {

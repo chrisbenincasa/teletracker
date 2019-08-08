@@ -4,7 +4,8 @@ import com.google.inject.Module
 import com.teletracker.common.inject.{DbProvider, Modules}
 import scala.util.control.NonFatal
 
-trait TeletrackerJob extends com.twitter.inject.app.App {
+abstract class TeletrackerJobApp[T <: TeletrackerJob: Manifest]
+    extends com.twitter.inject.app.App {
   implicit protected val executionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
@@ -16,7 +17,7 @@ trait TeletrackerJob extends com.twitter.inject.app.App {
 
   final override protected def run(): Unit = {
     try {
-      runInternal()
+      injector.instance[T].run(collectArgs)
     } catch {
       case NonFatal(e) =>
         e.printStackTrace()
@@ -25,5 +26,22 @@ trait TeletrackerJob extends com.twitter.inject.app.App {
     }
   }
 
+  protected def collectArgs: Map[String, Option[Any]] = {
+    flag
+      .getAll()
+      .map(f => {
+        f.name -> f.getWithDefault
+      })
+      .toMap
+  }
+
   protected def runInternal(): Unit = {}
+}
+
+trait TeletrackerJob {
+  type Args = Map[String, Option[Any]]
+
+  def preparseArgs(args: Args): Unit = {}
+  def run(): Unit = run(Map.empty)
+  def run(args: Args): Unit
 }

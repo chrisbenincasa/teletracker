@@ -1,14 +1,16 @@
 package com.teletracker.service.testing
 
-import com.teletracker.service.db._
-import com.teletracker.service.db.access.{
+import com.teletracker.common.db._
+import com.teletracker.common.db.access.{
   NetworksDbAccess,
   ThingsDbAccess,
   TvShowDbAccess
 }
-import com.teletracker.service.db.model._
+import com.teletracker.common.db.model._
+import com.teletracker.common.util.Slug
 import com.teletracker.service.testing.framework.BaseSpecWithServer
 import java.time.OffsetDateTime
+import java.util.UUID
 
 class TvShowSpec extends BaseSpecWithServer {
   "TV Shows" should "contain availability information" in {
@@ -20,9 +22,9 @@ class TvShowSpec extends BaseSpecWithServer {
       thingDbAccess
         .saveThing(
           Thing(
-            None,
+            UUID.randomUUID(),
             "Not Friends",
-            Slug("Not Friends"),
+            Slug("Not Friends", 1999),
             ThingType.Show,
             OffsetDateTime.now(),
             OffsetDateTime.now(),
@@ -34,7 +36,7 @@ class TvShowSpec extends BaseSpecWithServer {
     val season =
       tvShowDbAccess
         .insertSeason(
-          TvShowSeason(None, 1, show.id.get, None, None)
+          TvShowSeason(None, 1, show.id, None, None)
         )
         .await()
 
@@ -44,7 +46,7 @@ class TvShowSpec extends BaseSpecWithServer {
           TvShowEpisode(
             None,
             1,
-            show.id.get,
+            show.id,
             season.id.get,
             "The One Where They Explode",
             None
@@ -55,7 +57,14 @@ class TvShowSpec extends BaseSpecWithServer {
     val network =
       networkDbAccess
         .saveNetwork(
-          Network(None, "Netflix", Slug("Netflix"), "nflx", None, None)
+          Network(
+            None,
+            "Netflix",
+            Slug.forString("Netflix"),
+            "nflx",
+            None,
+            None
+          )
         )
         .await()
 
@@ -81,7 +90,7 @@ class TvShowSpec extends BaseSpecWithServer {
         .await()
 
     val foundShow =
-      thingDbAccess.findShowById(show.id.get, withAvailability = true).await()
+      thingDbAccess.findShowById(show.id, withAvailability = true).await()
     assert(foundShow.isDefined)
     assert(foundShow.get.id === show.id)
     assert(foundShow.get.seasons.getOrElse(Nil).length === 1)

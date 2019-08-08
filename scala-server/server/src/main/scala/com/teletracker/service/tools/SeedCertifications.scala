@@ -13,19 +13,16 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-object SeedCertifications extends TeletrackerJob {
-  override protected def runInternal(): Unit = {
-    injector.instance[CertificationSeeder].run()
-  }
-}
+object SeedCertifications extends TeletrackerJobApp[CertificationSeeder]
 
 class CertificationSeeder @Inject()(
   tmdbClient: TmdbClient,
   provider: DbProvider,
-  certifications: Certifications) {
+  certifications: Certifications)
+    extends TeletrackerJob {
   import certifications.driver.api._
 
-  def run() = {
+  def run(args: Map[String, Option[Any]]) = {
     val movieCerts = Await.result(
       tmdbClient
         .makeRequest[CertificationListResponse]("certification/movie/list"),
