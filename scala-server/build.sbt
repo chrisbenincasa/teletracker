@@ -101,6 +101,8 @@ lazy val server = project
       "com.twitter" %% "finagle-core" % versions.twitter,
       "com.twitter" %% "finagle-http" % versions.twitter,
       "com.twitter" %% "finatra-http" % versions.twitter,
+      // Google
+      "com.google.cloud" % "google-cloud-storage" % "1.84.0",
       // Testing
       "com.spotify" % "docker-client" % "8.11.7" % Test excludeAll "com.fasterxml.jackson.core",
       "org.scalatest" %% "scalatest" % "3.0.5" % Test,

@@ -10,20 +10,17 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-object SeedGenres extends TeletrackerJob {
-  override protected def runInternal(): Unit = {
-    injector.instance[GenreSeeder].run()
-  }
-}
+object SeedGenres extends TeletrackerJobApp[GenreSeeder]
 
 class GenreSeeder @Inject()(
   tmdbClient: TmdbClient,
   provider: DbProvider,
   genres: Genres,
-  genreReferences: GenreReferences) {
+  genreReferences: GenreReferences)
+    extends TeletrackerJob {
   import genres.driver.api._
 
-  def run(): Unit = {
+  def run(args: Map[String, Option[Any]]): Unit = {
     Await.result(provider.getDB.run(genres.query.delete), Duration.Inf)
 
     val movieGenres = Await.result(

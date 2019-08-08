@@ -29,7 +29,7 @@ class FinagleHttpClient @Inject()(
     val resFut = client(req)
 
     resFut.onSuccess(res => {
-      HttpResponse(res.contentString)
+      promise.success(HttpResponse(res.contentString))
     })
 
     resFut.onFailure(promise.tryFailure)

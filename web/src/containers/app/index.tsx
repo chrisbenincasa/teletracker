@@ -414,11 +414,7 @@ class App extends Component<Props, State> {
               Teletracker
             </Typography>
             {isAuthed ? (
-              <ButtonLink
-                color="inherit"
-                primary="New, Arriving, &amp; Expiring"
-                to="/new"
-              />
+              <ButtonLink color="inherit" primary="What's New" to="/new" />
             ) : null}
             {this.renderSearch()}
             {!isAuthed ? (

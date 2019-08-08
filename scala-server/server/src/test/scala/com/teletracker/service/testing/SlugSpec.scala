@@ -1,5 +1,6 @@
 package com.teletracker.service.testing
 
+import com.teletracker.common.util.Slug
 import org.scalatest.{FlatSpec, Matchers}
 
 class SlugSpec extends FlatSpec with Matchers {

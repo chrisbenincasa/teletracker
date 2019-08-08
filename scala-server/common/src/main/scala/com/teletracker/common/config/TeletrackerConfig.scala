@@ -13,13 +13,17 @@ case class TeletrackerConfig(
   tmdb: TmdbConfig,
   env: String)
 
-case class AuthConfig(jwt: JwtConfig)
+case class AuthConfig(
+  jwt: JwtConfig,
+  admin: AdminConfig)
 
 case class JwtConfig(
   issuer: String,
   audience: String,
   expiration: Option[FiniteDuration],
   secret: String)
+
+case class AdminConfig(adminKeys: Set[String])
 
 case class DbConfig(
   @JsonSerialize(using = classOf[ClassNameJsonSerializer])
