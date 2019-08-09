@@ -15,6 +15,7 @@ import {
   List,
   ListItem,
   ListItemAvatar,
+  ListItemIcon,
   ListItemText,
   TextField,
   Theme,
@@ -22,7 +23,7 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { AddCircle } from '@material-ui/icons';
+import { AddCircle, PowerSettingsNew, Settings } from '@material-ui/icons';
 import classNames from 'classnames';
 import _ from 'lodash';
 import * as R from 'ramda';
@@ -34,6 +35,7 @@ import {
   withRouter,
 } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
+import { logout } from '../actions/auth';
 import { ListRetrieveAllPayload, retrieveAllLists } from '../actions/lists';
 import { createList, UserCreateListPayload } from '../actions/user';
 import withUser, { WithUserProps } from '../components/withUser';
@@ -100,6 +102,7 @@ interface OwnProps extends WithStyles<typeof styles> {
 interface DispatchProps {
   retrieveAllLists: (payload?: ListRetrieveAllPayload) => void;
   createList: (payload?: UserCreateListPayload) => void;
+  logout: () => void;
 }
 
 interface State {
@@ -128,6 +131,12 @@ interface LinkProps {
   primary: string;
   selected: boolean;
   to: string;
+}
+
+interface ListItemProps {
+  to: any;
+  primary?: string;
+  selected?: any;
 }
 
 // TODO: Get type definitions for props working
@@ -189,6 +198,10 @@ class Drawer extends Component<Props, State> {
       this.setState({ loadingLists: false });
     }
   }
+
+  handleLogout = () => {
+    this.props.logout();
+  };
 
   handleModalOpen = () => {
     this.setState({ createDialogOpen: true });
@@ -259,8 +272,28 @@ class Drawer extends Component<Props, State> {
   };
 
   renderDrawer() {
-    let { classes, userSelf, match, open, listsById } = this.props;
-    let { createDialogOpen } = this.state;
+    let { classes, open, listsById } = this.props;
+
+    // TODO: Get prop types working here
+    // polyfill required for react-router-dom < 5.0.0
+    const Link = React.forwardRef(
+      (props: any, ref: React.Ref<HTMLButtonElement>) => (
+        <RouterLink {...props} innerRef={ref} />
+      ),
+    );
+
+    function ListItemLink(props: ListItemProps) {
+      const { primary, to, selected } = props;
+
+      return (
+        <ListItem button component={Link} to={to} selected={selected}>
+          <ListItemIcon>
+            <Settings />
+          </ListItemIcon>
+          {primary}
+        </ListItem>
+      );
+    }
 
     return (
       <DrawerUI
@@ -290,22 +323,23 @@ class Drawer extends Component<Props, State> {
           />
           Create List
         </Button>
+        <List>{_.map(listsById, this.renderListItems)}</List>
         <List>
-          {/* <ListItemLink
-            key="all"
-            selected={Boolean(match.path === '/lists' && !match.params.id)}
-            to={'/lists'}
-            primary="All Lists"
-            listLength={Object.keys(listsById).length}
-          /> */}
-          {_.map(listsById, this.renderListItems)}
+          <Divider />
+          <ListItemLink to="/account" primary="Settings" />
+          <ListItem button onClick={this.handleLogout}>
+            <ListItemIcon>
+              <PowerSettingsNew />
+            </ListItemIcon>
+            Logout
+          </ListItem>
         </List>
       </DrawerUI>
     );
   }
 
   renderDialog() {
-    let { classes, loading } = this.props;
+    let { loading } = this.props;
     let {
       createDialogOpen,
       listName,
@@ -394,8 +428,9 @@ const mapStateToProps = (appState: AppState) => {
 const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
-      retrieveAllLists,
       createList,
+      logout,
+      retrieveAllLists,
     },
     dispatch,
   );
