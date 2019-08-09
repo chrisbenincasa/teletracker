@@ -240,7 +240,7 @@ class ListDetail extends Component<Props, State> {
     this.setState({ deleteConfirmationOpen: false });
   };
 
-  handleRenameList = event => {
+  handleRenameList = () => {
     let { renameList, userSelf, match } = this.props;
     let { newListName } = this.state;
 
@@ -282,22 +282,6 @@ class ListDetail extends Component<Props, State> {
         <RouterLink {...props} innerRef={ref} />
       ),
     );
-
-    function MenuItemLink(props: MenuItemProps) {
-      const { primary, to, selected, onClick } = props;
-
-      return (
-        <MenuItem
-          button
-          component={Link}
-          to={to}
-          selected={selected}
-          onClick={onClick}
-        >
-          {primary}
-        </MenuItem>
-      );
-    }
 
     return (
       <div>
@@ -475,11 +459,11 @@ class ListDetail extends Component<Props, State> {
             </div>
             <Grid container spacing={2}>
               {list.things.map(item =>
-                thingsById[Number(item.id)] ? (
+                thingsById[item.id] ? (
                   <ItemCard
                     key={item.id}
                     userSelf={userSelf}
-                    item={thingsById[Number(item.id)]}
+                    item={thingsById[item.id]}
                     listContext={list}
                     itemCardVisible={false}
                     withActionButton
@@ -499,10 +483,7 @@ class ListDetail extends Component<Props, State> {
   render() {
     let { listsById, match, userSelf } = this.props;
     let { loadingList } = this.state;
-
     let list = listsById[Number(match.params.id)];
-
-    // console.log(loadingList, list, userSelf);
 
     return loadingList || !list || !userSelf
       ? this.renderLoading()
