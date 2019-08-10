@@ -2,6 +2,7 @@ import BuildConfig._
 
 lazy val `teletracker-repo` = Project("teletracker-repo", file("."))
   .settings(
+    version := s"0.0-${BuildConfig.Revision.revision}",
     publish := {},
     publishLocal := {},
     publishArtifact := false
