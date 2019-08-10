@@ -5,12 +5,12 @@ import com.teletracker.service.controllers.{
   CreateUserRequest,
   CreateUserResponse
 }
-import com.teletracker.service.db.access.ThingsDbAccess
-import com.teletracker.service.db.model.{Thing, ThingType, TrackedList, User}
-import com.teletracker.service.model.DataResponse
+import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.model.{Thing, ThingType, TrackedList, User}
+import com.teletracker.common.model.DataResponse
+import com.teletracker.common.util.Slug
 import com.teletracker.service.testing.framework.BaseSpecWithServer
-import com.teletracker.service.util.Slug
-import com.teletracker.service.util.json.circe._
+import com.teletracker.common.util.json.circe._
 import com.twitter.finagle.http.Status
 import io.circe.generic.auto._
 import io.circe.parser._
@@ -122,9 +122,9 @@ class UsersApiSpec extends BaseSpecWithServer {
       .instance[ThingsDbAccess]
       .saveThing(
         Thing(
-          None,
+          UUID.randomUUID(),
           "Halt and Catch Fire",
-          Slug("Halt and Catch Fire"),
+          Slug("Halt and Catch Fire", 2015),
           ThingType.Show,
           OffsetDateTime.now(),
           OffsetDateTime.now(),
@@ -136,7 +136,7 @@ class UsersApiSpec extends BaseSpecWithServer {
     server.httpPut(
       s"/api/v1/users/self/lists/$listId",
       serializer.writeValueAsString(
-        Map("itemId" -> thing.id.get)
+        Map("itemId" -> thing.id)
       ),
       headers = Map("Authorization" -> s"Bearer $token")
     )
@@ -202,10 +202,10 @@ class UsersApiSpec extends BaseSpecWithServer {
     val mergedList2 = getList(token, list2)
 
     assert(
-      mergedList2.things.getOrElse(Nil).flatMap(_.id).toSet === Set(
-        thing1.id.get,
-        thing2.id.get,
-        thing3.id.get
+      mergedList2.things.getOrElse(Nil).map(_.id).toSet === Set(
+        thing1.id,
+        thing2.id,
+        thing3.id
       )
     )
   }
@@ -258,9 +258,9 @@ class UsersApiSpec extends BaseSpecWithServer {
       .instance[ThingsDbAccess]
       .saveThing(
         Thing(
-          None,
+          UUID.randomUUID(),
           name,
-          Slug(name),
+          Slug(name, 2010),
           ThingType.Show,
           OffsetDateTime.now(),
           OffsetDateTime.now(),
@@ -273,7 +273,7 @@ class UsersApiSpec extends BaseSpecWithServer {
       server.httpPut(
         s"/api/v1/users/self/lists/$listId",
         serializer.writeValueAsString(
-          Map("itemId" -> thing.id.get)
+          Map("itemId" -> thing.id)
         ),
         headers = Map("Authorization" -> s"Bearer $token")
       )

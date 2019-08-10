@@ -1,33 +1,28 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.db.model.{
+import com.teletracker.common.db.model.{
   Certification,
   CertificationType,
   Certifications
 }
-import com.teletracker.service.external.tmdb.TmdbClient
-import com.teletracker.service.inject.{DbProvider, Modules}
-import com.teletracker.service.model.tmdb.CertificationListResponse
-import com.google.inject.Module
-import com.twitter.inject.app.App
+import com.teletracker.common.external.tmdb.TmdbClient
+import com.teletracker.common.inject.DbProvider
+import com.teletracker.common.model.tmdb.CertificationListResponse
 import javax.inject.Inject
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
-object SeedCertifications extends TeletrackerJob {
-  override protected def runInternal(): Unit = {
-    injector.instance[CertificationSeeder].run()
-  }
-}
+object SeedCertifications extends TeletrackerJobApp[CertificationSeeder]
 
 class CertificationSeeder @Inject()(
   tmdbClient: TmdbClient,
   provider: DbProvider,
-  certifications: Certifications) {
+  certifications: Certifications)
+    extends TeletrackerJob {
   import certifications.driver.api._
 
-  def run() = {
+  def run(args: Map[String, Option[Any]]) = {
     val movieCerts = Await.result(
       tmdbClient
         .makeRequest[CertificationListResponse]("certification/movie/list"),

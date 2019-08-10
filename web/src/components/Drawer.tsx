@@ -271,8 +271,8 @@ class Drawer extends Component<Props, State> {
     );
   };
 
-  renderDrawer() {
-    let { classes, open, listsById } = this.props;
+  renderDrawerContents() {
+    let { classes, listsById } = this.props;
 
     // TODO: Get prop types working here
     // polyfill required for react-router-dom < 5.0.0
@@ -296,16 +296,7 @@ class Drawer extends Component<Props, State> {
     }
 
     return (
-      <DrawerUI
-        open={open}
-        anchor="left"
-        className={classes.drawer}
-        variant="persistent"
-        classes={{
-          paper: classes.drawerPaper,
-        }}
-        style={{ width: open ? 216 : 0 }}
-      >
+      <React.Fragment>
         <div className={classes.toolbar} />
         <Typography component="h6" variant="h6" className={classes.margin}>
           My Lists
@@ -334,6 +325,25 @@ class Drawer extends Component<Props, State> {
             Logout
           </ListItem>
         </List>
+      </React.Fragment>
+    );
+  }
+
+  renderDrawer() {
+    let { classes, open, listsById } = this.props;
+
+    return (
+      <DrawerUI
+        open={open}
+        anchor="left"
+        className={classes.drawer}
+        variant="persistent"
+        classes={{
+          paper: classes.drawerPaper,
+        }}
+        style={{ width: open ? 216 : 0 }}
+      >
+        {this.isLoading() ? <CircularProgress /> : this.renderDrawerContents()}
       </DrawerUI>
     );
   }
@@ -399,18 +409,18 @@ class Drawer extends Component<Props, State> {
   }
 
   render() {
-    let { loadingLists, userSelf } = this.props;
+    return (
+      <React.Fragment>
+        {this.renderDrawer()}
+        {this.renderDialog()}
+      </React.Fragment>
+    );
+  }
 
-    if (!this.state.loadingLists && !loadingLists && userSelf) {
-      return (
-        <React.Fragment>
-          {this.renderDrawer()}
-          {this.renderDialog()}
-        </React.Fragment>
-      );
-    } else {
-      return <CircularProgress />;
-    }
+  isLoading() {
+    return (
+      this.state.loadingLists || this.props.loadingLists || !this.props.userSelf
+    );
   }
 }
 
@@ -444,5 +454,4 @@ export default withUser(
       )(Drawer),
     ),
   ),
-  props => (props.open ? <CircularProgress /> : null),
 );

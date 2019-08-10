@@ -2,22 +2,22 @@ package com.teletracker.service.controllers
 
 import com.teletracker.service.api.{ListsApi, UsersApi}
 import com.teletracker.service.auth.RequestContext._
-import com.teletracker.service.auth.jwt.JwtVendor
+import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
-import com.teletracker.service.controllers.utils.{
-  CanParseFieldFilter,
-  CanParseListFilters
-}
-import com.teletracker.service.db.access.{ThingsDbAccess, UsersDbAccess}
-import com.teletracker.service.db.model.{
+import com.teletracker.common.db.access.{ThingsDbAccess, UsersDbAccess}
+import com.teletracker.common.db.model.{
   Event,
   ThingType,
   User,
   UserThingTagType
 }
-import com.teletracker.service.model.{DataResponse, IllegalActionTypeError}
-import com.teletracker.service.util.HasFieldsFilter
-import com.teletracker.service.util.json.circe._
+import com.teletracker.common.model.{DataResponse, IllegalActionTypeError}
+import com.teletracker.common.util.{
+  CanParseFieldFilter,
+  CanParseListFilters,
+  HasFieldsFilter
+}
+import com.teletracker.common.util.json.circe._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import io.circe.generic.JsonCodec

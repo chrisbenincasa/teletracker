@@ -1,9 +1,9 @@
 package com.teletracker.service.api
 
 import com.teletracker.service.auth.PasswordHash
-import com.teletracker.service.auth.jwt.JwtVendor
-import com.teletracker.service.db.access.{ListsDbAccess, UsersDbAccess}
-import com.teletracker.service.db.model.{
+import com.teletracker.common.auth.jwt.JwtVendor
+import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
+import com.teletracker.common.db.model.{
   TokenRow,
   TrackedListFactory,
   User,

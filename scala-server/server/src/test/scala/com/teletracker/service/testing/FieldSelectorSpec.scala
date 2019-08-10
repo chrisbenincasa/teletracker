@@ -1,6 +1,6 @@
 package com.teletracker.service.testing
 
-import com.teletracker.service.util.{Field, FieldSelector}
+import com.teletracker.common.util.{Field, FieldSelector}
 import io.circe.parser._
 import org.scalatest.FlatSpec
 

@@ -2,7 +2,7 @@ package com.teletracker.service.auth
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
-import com.teletracker.service.db.access.UsersDbAccess
+import com.teletracker.common.db.access.UsersDbAccess
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.util.Future

@@ -1,11 +1,11 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.external.tmdb.TmdbClient
-import com.teletracker.service.inject.Modules
-import com.teletracker.service.model.tmdb.{PagedResult, Person, TvShow}
-import com.teletracker.service.process.tmdb.{ItemExpander, TmdbEntityProcessor}
-import com.teletracker.service.util.execution.SequentialFutures
-import com.teletracker.service.util.json.circe._
+import com.teletracker.common.external.tmdb.TmdbClient
+import com.teletracker.common.inject.Modules
+import com.teletracker.common.model.tmdb.{PagedResult, Person, TvShow}
+import com.teletracker.common.process.tmdb.{ItemExpander, TmdbEntityProcessor}
+import com.teletracker.common.util.execution.SequentialFutures
+import com.teletracker.common.util.json.circe._
 import com.google.inject.Module
 import com.twitter.inject.app.App
 import scala.concurrent.Await
