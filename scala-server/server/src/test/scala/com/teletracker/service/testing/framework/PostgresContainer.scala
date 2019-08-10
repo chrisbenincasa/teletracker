@@ -9,8 +9,8 @@ import com.spotify.docker.client.DockerClient.AttachParameter.{
 }
 import com.spotify.docker.client.messages._
 import com.spotify.docker.client.{DefaultDockerClient, DockerClient}
-import com.teletracker.service.db.model._
-import com.teletracker.service.inject.DbProvider
+import com.teletracker.common.db.model._
+import com.teletracker.common.inject.DbProvider
 import javax.sql.DataSource
 import net.codingwell.scalaguice.InjectorExtensions._
 import org.flywaydb.core.Flyway

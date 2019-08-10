@@ -1,17 +1,17 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.external.tmdb.TmdbClient
-import com.teletracker.service.inject.Modules
-import com.teletracker.service.model.tmdb.Network
-import com.teletracker.service.util.Implicits._
-import com.teletracker.service.util.execution.SequentialFutures
 import com.google.inject.Module
+import com.teletracker.common.external.tmdb.TmdbClient
+import com.teletracker.common.inject.Modules
+import com.teletracker.common.model.tmdb.Network
+import com.teletracker.common.util.Implicits._
+import com.teletracker.common.util.execution.SequentialFutures
 import com.twitter.finagle.Http
 import com.twitter.finagle.http.{Request, Response}
 import java.io.{File, FileOutputStream}
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 object DumpNetworkLogos extends com.twitter.inject.app.App {
   override protected def modules: Seq[Module] = Modules()

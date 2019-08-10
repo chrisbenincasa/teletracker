@@ -1,16 +1,16 @@
 package com.teletracker.service.controllers
 
+import com.teletracker.common.auth.jwt.JwtVendor
+import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.db.access.UsersDbAccess
 import com.teletracker.service.api.UsersApi
 import com.teletracker.service.auth.RequestContext._
-import com.teletracker.service.auth.jwt.JwtVendor
 import com.teletracker.service.auth.{
   JwtAuthExtractor,
   JwtAuthFilter,
   PasswordAuthFilter
 }
-import com.teletracker.service.config.TeletrackerConfig
-import com.teletracker.service.db.access.UsersDbAccess
-import com.teletracker.service.model.DataResponse
+import com.teletracker.common.model.DataResponse
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.http.response.ResponseBuilder

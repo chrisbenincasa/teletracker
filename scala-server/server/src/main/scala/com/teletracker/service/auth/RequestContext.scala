@@ -1,6 +1,6 @@
 package com.teletracker.service.auth
 
-import com.teletracker.service.db.model.{User, UserRow}
+import com.teletracker.common.db.model.{User, UserRow}
 import com.twitter.finagle.http.Request
 
 case class AuthenticatedUserContext(user: User)

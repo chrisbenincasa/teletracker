@@ -2,11 +2,11 @@ package com.teletracker.service.testing
 
 import com.teletracker.service.api.UsersApi
 import com.teletracker.service.controllers.EventCreate
-import com.teletracker.service.db.access.UsersDbAccess
-import com.teletracker.service.db.model.EventWithTarget
-import com.teletracker.service.model.DataResponse
+import com.teletracker.common.db.access.UsersDbAccess
+import com.teletracker.common.db.model.EventWithTarget
+import com.teletracker.common.model.DataResponse
 import com.teletracker.service.testing.framework.BaseSpecWithServer
-import com.teletracker.service.util.json.circe._
+import com.teletracker.common.util.json.circe._
 import io.circe.generic.auto._
 import io.circe.parser._
 

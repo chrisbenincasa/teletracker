@@ -1,7 +1,7 @@
 package com.teletracker.service.tools
 
-import com.teletracker.service.config.TeletrackerConfig
-import com.teletracker.service.inject.Modules
+import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.inject.Modules
 import com.google.inject.Module
 import com.twitter.inject.app.App
 import javax.sql.DataSource
