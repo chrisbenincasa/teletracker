@@ -5,3 +5,5 @@ node_modeules/
 *.0
 node_modules
 .metals/
+
+.terraform/
