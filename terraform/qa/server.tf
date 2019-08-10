@@ -3,7 +3,7 @@ module "gce-container" {
 
   container = {
     name  = "teletracker-api-${var.env}"
-    image = "gcr.io/teletracker/server@sha256:12ac3ca423eedb1c9614658ce0fac68854c49a6dd65b271579513c2f65b9bddf"
+    image = "${var.image}"
     env = [
       {
         name  = "ENV"

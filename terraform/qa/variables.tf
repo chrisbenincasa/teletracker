@@ -23,3 +23,8 @@ variable "env" {
   type    = "string"
   default = "qa"
 }
+
+variable "image" {
+  type        = "string"
+  description = "The image string of the currently deployed Teletracker server image"
+}
