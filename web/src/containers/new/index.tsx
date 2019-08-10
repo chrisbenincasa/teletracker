@@ -29,25 +29,7 @@ const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
     cardGrid: {
-      padding: `${theme.spacing(2)}px`,
-    },
-    title: {
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    },
-    card: {
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    cardMedia: {
-      height: 0,
-      width: '100%',
-      paddingTop: '150%',
-    },
-    cardContent: {
-      flexGrow: 1,
+      padding: `${theme.spacing(1)}px`,
     },
   });
 
@@ -103,7 +85,7 @@ class New extends Component<Props> {
     let max = moment(
       _.maxBy(upcoming, av => moment(av.startDate).valueOf())!.startDate,
     );
-    let min = _.minBy(upcoming, av => moment(av.startDate).valueOf());
+    // let min = _.minBy(upcoming, av => moment(av.startDate).valueOf());
     // let diff = moment(max!.startDatez/x/).diff(firstMon);
 
     // console.log(moment.duration(diff));
@@ -134,13 +116,22 @@ class New extends Component<Props> {
         let card = _.chain(avs)
           .groupBy(_.property('thing.id'))
           .map(things => {
-            return <ItemCard key={things[0].id} item={things[0].thing} />;
+            return (
+              <ItemCard
+                key={things[0].id}
+                item={things[0].thing}
+                itemCardVisible={false}
+              />
+            );
           })
           .value();
 
         return (
-          <div key={moment(avs[0].startDate).format('MM/DD')}>
-            <Typography variant="h3">
+          <div
+            key={moment(avs[0].startDate).format('MM/DD')}
+            style={{ marginTop: 15 }}
+          >
+            <Typography variant="h4">
               Week of {moment(avs[0].startDate).format('MM/DD')}
             </Typography>
             <Grid key={key} container spacing={2}>
@@ -157,15 +148,21 @@ class New extends Component<Props> {
       !this.props.upcoming && !this.props.recentlyAdded ? (
         this.renderLoading()
       ) : (
-        <div>
+        <div style={{ display: 'flex', flexGrow: 1 }}>
           {this.props.upcoming ? (
             <div className={this.props.classes.cardGrid}>
               {this.renderUpcoming(this.props.upcoming.availability)}
             </div>
           ) : null}
           {this.props.recentlyAdded ? (
-            <div>
-              <h1>Recently Added</h1>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                flexGrow: 1,
+              }}
+            >
+              <h1 style={{ paddingLeft: 8 }}>Recently Added</h1>
               <div className={this.props.classes.cardGrid}>
                 {this.renderUpcoming(this.props.recentlyAdded.availability)}
               </div>
