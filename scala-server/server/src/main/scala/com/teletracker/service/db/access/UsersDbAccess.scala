@@ -17,6 +17,7 @@ import com.teletracker.service.util.Field
 import com.teletracker.service.util.{Field, FieldSelector, NetworkCache}
 import io.circe.Json
 import javax.inject.{Inject, Provider}
+import org.apache.commons.codec.digest.DigestUtils
 import java.time.{Instant, OffsetDateTime}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -109,18 +110,33 @@ class UsersDbAccess @Inject()(
     userId: Int,
     token: String
   ): Future[Int] = {
-    run {
-      tokens.query
-        .filter(t => t.userId === userId && t.token === token)
-        .map(_.revokedAt)
-        .update(Some(OffsetDateTime.now()))
-    }
+    val now = OffsetDateTime.now()
+    insertToken(
+      TokenRow(
+        None,
+        userId,
+        new String(DigestUtils.sha1(token)),
+        now,
+        now,
+        Some(now)
+      )
+    )
   }
 
   def getToken(token: String): Future[Option[TokenRow]] = {
     run {
       tokens.query.filter(_.token === token).result.headOption
     }
+  }
+
+  def isTokenRevoked(token: String): Future[Boolean] = {
+    val hashed = new String(DigestUtils.sha1(token))
+    run {
+      tokens.query
+        .filter(t => t.token === hashed && t.revokedAt.isDefined)
+        .length
+        .result
+    }.map(_ >= 1)
   }
 
   def findNetworkPreferencesForUser(id: Int): Future[Seq[Network]] = {

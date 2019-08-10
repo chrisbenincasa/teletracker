@@ -99,21 +99,8 @@ class UsersApi @Inject()(
       case Some(user) =>
         usersDbAccess
           .revokeAllTokens(user.id.get)
-          .flatMap(_ => {
-            val token = jwtVendor.vend(email)
-            val now = OffsetDateTime.now()
-            usersDbAccess
-              .insertToken(
-                TokenRow(
-                  None,
-                  user.id.get,
-                  token,
-                  now,
-                  now,
-                  None
-                )
-              )
-              .map(_ => token)
+          .map(_ => {
+            jwtVendor.vend(email)
           })
     }
   }
