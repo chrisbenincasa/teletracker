@@ -76,27 +76,34 @@ class JwtAuthFilter @Inject()(
         extractor.parseToken(t) match {
           case Success(parsed) =>
             val respPromise = Promise[Response]()
-            val foundUserFut = usersDbAccess.getToken(t).flatMap {
-              case None =>
-                SFuture.successful(None)
-              case Some(tok)
-                  if tok.revokedAt.exists(_.isBefore(OffsetDateTime.now())) =>
-                SFuture.successful(None)
-              case Some(_) =>
-                usersDbAccess.findByEmail(parsed.getBody.getSubject)
-            }
 
-            foundUserFut.onComplete {
-              case Success(Some(u)) =>
-                RequestContext.set(request, u, t)
-                respPromise.become(service(request))
-              case Success(None) =>
-                logger.debug(
-                  s"could not find user = ${parsed.getBody.getSubject}"
-                )
+            usersDbAccess.isTokenRevoked(t).andThen {
+              case Success(true) =>
                 respPromise.setValue(Response(Status.Unauthorized))
-              case Failure(e) =>
-                logger.error(e.getMessage, e)
+
+              case Success(false) =>
+                usersDbAccess.findByEmail(parsed.getBody.getSubject).andThen {
+                  case Success(Some(u)) =>
+                    RequestContext.set(request, u, t)
+                    respPromise.become(service(request))
+
+                  case Success(None) =>
+                    logger.warn(
+                      s"Could not find user = ${parsed.getBody.getSubject}"
+                    )
+                    respPromise.setValue(Response(Status.Unauthorized))
+
+                  case Failure(e) =>
+                    logger
+                      .error("Unexpected error while finding user for token", e)
+                    respPromise.setValue(Response(Status.InternalServerError))
+                }
+
+              case Failure(ex) =>
+                logger.error(
+                  "Unexpected error while checking revocation status",
+                  ex
+                )
                 respPromise.setValue(Response(Status.InternalServerError))
             }
 
