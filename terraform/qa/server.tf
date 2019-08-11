@@ -23,6 +23,9 @@ module "gce-container" {
         }, {
         name  = "SQL_INSTANCE"
         value = "teletracker:us-east1:teletracker"
+        }, {
+        name  = "ADMINISTRATOR_KEY"
+        value = "berglas://teletracker-secrets/administrator-key-${var.env}"
       }
     ]
   }
