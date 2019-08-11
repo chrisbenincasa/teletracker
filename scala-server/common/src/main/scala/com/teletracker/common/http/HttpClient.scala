@@ -21,7 +21,7 @@ object HttpClient {
 }
 
 abstract class HttpClient(
-  @Assisted host: String,
-  @Assisted options: HttpClientOptions) {
+  host: String,
+  options: HttpClientOptions) {
   def get(request: HttpRequest): Future[HttpResponse]
 }

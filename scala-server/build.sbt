@@ -4,7 +4,7 @@ Global / cancelable := true
 
 lazy val `teletracker-repo` = Project("teletracker-repo", file("."))
   .settings(
-    version := s"0.0-${BuildConfig.Revision.revision}",
+    version := s"0.1-${BuildConfig.Revision.revision}",
     publish := {},
     publishLocal := {},
     publishArtifact := false
@@ -50,7 +50,6 @@ lazy val common = project
       "org.postgresql" % "postgresql" % "42.2.2",
       "org.flywaydb" % "flyway-core" % "6.0.0-beta2",
       "com.h2database" % "h2" % "1.4.193",
-      "com.google.cloud.sql" % "postgres-socket-factory" % "1.0.14",
       // Auth
       "io.jsonwebtoken" % "jjwt" % "0.9.0",
       // Inject
@@ -59,6 +58,7 @@ lazy val common = project
       "com.google.inject.extensions" % "guice-multibindings" % versions.guice,
       "net.codingwell" %% "scala-guice" % versions.scalaGuice,
       // Misc
+      "commons-codec" % "commons-codec" % "1.13",
       "javax.inject" % "javax.inject" % "1",
       "org.typelevel" %% "cats-core" % "1.1.0",
       "com.google.guava" % "guava" % "20.0",
