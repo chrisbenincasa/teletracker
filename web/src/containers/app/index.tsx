@@ -277,7 +277,7 @@ class App extends Component<Props, State> {
     let { classes } = this.props;
 
     return (
-      <div className={classes.sectionMobile}>
+      <div className={classes.sectionMobile} style={{ flexGrow: 1 }}>
         <div className={classes.searchMobile}>
           <div className={classes.searchIcon}>
             <SearchIcon />
@@ -406,23 +406,23 @@ class App extends Component<Props, State> {
                 />
               )}
             >
-              <Box display={{ xs: 'none', md: 'block' }} m={1}>
+              <Box display={{ xs: 'none', sm: 'block' }} m={1}>
                 Teletracker
               </Box>
-              <Box display={{ xs: 'block', md: 'none' }} m={1}>
+              <Box display={{ xs: 'block', sm: 'none' }} m={1}>
                 TT
               </Box>
             </Typography>
             {isAuthed ? (
               <React.Fragment>
-                <Box display={{ xs: 'none', md: 'block' }} m={1}>
+                <Box display={{ xs: 'none', sm: 'block' }} m={1}>
                   <ButtonLink
                     color="inherit"
                     primary="New, Arriving, &amp; Expiring"
                     to="/new"
                   />
                 </Box>
-                <Box display={{ xs: 'block', md: 'none' }} m={1}>
+                <Box display={{ xs: 'block', sm: 'none' }} m={1}>
                   <ButtonLink color="inherit" primary="New" to="/new" />
                 </Box>
               </React.Fragment>
