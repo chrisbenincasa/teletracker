@@ -111,6 +111,8 @@ case class PartialThing(
   def withCollections(collections: List[Collection]) =
     this.copy(collections = Some(collections))
 
+  def metadataRaw: Option[Json] = metadata.map(_.asJson)
+
   def withRawMetadata(metadata: Json): PartialThing = {
     val typedMeta = metadata.as[ObjectMetadata] match {
       case Left(err) =>

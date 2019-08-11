@@ -4,7 +4,9 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.http.{HttpClient, HttpClientOptions, HttpRequest}
 import com.teletracker.common.model.tmdb.{
   Collection,
+  Movie,
   MovieSearchResult,
+  PagedResult,
   TmdbError,
   TvSearchResult
 }
@@ -39,6 +41,10 @@ class TmdbClient @Inject()(
 
   def getCollection(collectionId: Int): Future[Collection] = {
     makeRequest[Collection](s"collection/$collectionId")
+  }
+
+  def getPopularMovies(): Future[PagedResult[Movie]] = {
+    makeRequest[PagedResult[Movie]]("movie/popular")
   }
 
   def makeRequest[T](
