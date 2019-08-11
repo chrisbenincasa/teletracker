@@ -1,8 +1,8 @@
 package com.teletracker.service.inject
 
 import com.google.cloud.storage.{Storage, StorageOptions}
-import com.google.inject.{Module, Provides}
 import com.google.inject.assistedinject.FactoryModuleBuilder
+import com.google.inject.{Module, Provides}
 import com.teletracker.common.http.HttpClient
 import com.teletracker.common.inject.Modules
 import com.teletracker.service.http.FinagleHttpClient
