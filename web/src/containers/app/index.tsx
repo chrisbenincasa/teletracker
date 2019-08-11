@@ -1,5 +1,6 @@
 import {
   AppBar,
+  Box,
   Button,
   createStyles,
   CssBaseline,
@@ -24,7 +25,6 @@ import { connect } from 'react-redux';
 import {
   Link as RouterLink,
   Route,
-  BrowserRouter,
   RouteComponentProps,
   withRouter,
 } from 'react-router-dom';
@@ -117,7 +117,6 @@ const styles = (theme: Theme) =>
     },
     sectionMobile: {
       display: 'flex',
-      flex: '1 1 auto',
       justifyContent: 'flex-end',
       [theme.breakpoints.up('md')]: {
         display: 'none',
@@ -186,7 +185,6 @@ class App extends Component<Props, State> {
     let searchText = event.currentTarget.value;
 
     this.setState({ searchText });
-
     this.debouncedExecSearch(searchText);
   };
 
@@ -279,24 +277,22 @@ class App extends Component<Props, State> {
     let { classes } = this.props;
 
     return (
-      <React.Fragment>
-        <div className={classes.sectionMobile}>
-          <div className={classes.searchMobile}>
-            <div className={classes.searchIcon}>
-              <SearchIcon />
-            </div>
-            <InputBase
-              placeholder="Search&hellip;"
-              classes={{
-                root: classes.inputRoot,
-                input: classes.inputInput,
-              }}
-              onChange={this.handleSearchChange}
-              onKeyDown={this.handleSearchForEnter}
-            />
+      <div className={classes.sectionMobile}>
+        <div className={classes.searchMobile}>
+          <div className={classes.searchIcon}>
+            <SearchIcon />
           </div>
+          <InputBase
+            placeholder="Search&hellip;"
+            classes={{
+              root: classes.inputRoot,
+              input: classes.inputInput,
+            }}
+            onChange={this.handleSearchChange}
+            onKeyDown={this.handleSearchForEnter}
+          />
         </div>
-      </React.Fragment>
+      </div>
     );
   }
 
@@ -364,7 +360,6 @@ class App extends Component<Props, State> {
   }
 
   render() {
-    let { anchorEl } = this.state;
     let { classes, isAuthed } = this.props;
 
     // TODO: Get prop types working here
@@ -411,10 +406,26 @@ class App extends Component<Props, State> {
                 />
               )}
             >
-              Teletracker
+              <Box display={{ xs: 'none', md: 'block' }} m={1}>
+                Teletracker
+              </Box>
+              <Box display={{ xs: 'block', md: 'none' }} m={1}>
+                TT
+              </Box>
             </Typography>
             {isAuthed ? (
-              <ButtonLink color="inherit" primary="What's New" to="/new" />
+              <React.Fragment>
+                <Box display={{ xs: 'none', md: 'block' }} m={1}>
+                  <ButtonLink
+                    color="inherit"
+                    primary="New, Arriving, &amp; Expiring"
+                    to="/new"
+                  />
+                </Box>
+                <Box display={{ xs: 'block', md: 'none' }} m={1}>
+                  <ButtonLink color="inherit" primary="New" to="/new" />
+                </Box>
+              </React.Fragment>
             ) : null}
             {this.renderSearch()}
             {!isAuthed ? (
