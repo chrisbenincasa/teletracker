@@ -59,10 +59,6 @@ class DbModule extends TwitterModule {
       )
     )
 
-    logger.info(
-      s"Connecting to DB at: ${config.db.url}, password = ${config.db.password}"
-    )
-
     val hikari = new HikariDataSource(conf)
     hikari.setMaximumPoolSize(3)
     hikari

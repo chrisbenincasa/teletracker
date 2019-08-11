@@ -88,7 +88,7 @@ object Teletracker extends com.twitter.inject.app.App {
     val rest = if (args.nonEmpty) args.tail else Array.empty[String]
 
     cmd match {
-      case "server" => new TeletrackerServer(Modules()).main(rest)
+      case "server" => new TeletrackerServer().main(rest)
       case "reset-db" =>
         val location = new File(
           s"${System.getProperty("java.io.tmpdir")}/db/migrate/postgres"
