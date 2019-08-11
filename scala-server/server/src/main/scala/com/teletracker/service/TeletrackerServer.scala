@@ -69,6 +69,7 @@ class TeletrackerServer(
       .add[AdminController]
       .add[HealthController]
       .add[InternalController]
+      .add[PopularItemsController]
   }
 
   override def postInjectorStartup(): Unit = {

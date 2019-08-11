@@ -8,6 +8,16 @@ import com.twitter.finatra.http.response.ResponseBuilder
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
+object TeletrackerController {
+  implicit def toRichInjectedRequest(re: InjectedRequest): RichInjectedRequest =
+    new RichInjectedRequest(re)
+
+  implicit def toRichRegularRequest(re: Request): RichInjectedRequest =
+    toRichInjectedRequest(new InjectedRequest {
+      override def request: Request = re
+    })
+}
+
 abstract class TeletrackerController(
   usersDbAccess: UsersDbAccess
 )(implicit executionContext: ExecutionContext)
