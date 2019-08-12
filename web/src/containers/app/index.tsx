@@ -8,6 +8,7 @@ import {
   InputBase,
   Menu,
   MenuItem,
+  Slide,
   Theme,
   Toolbar,
   Typography,
@@ -15,8 +16,12 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { AccountCircleOutlined, Menu as MenuIcon } from '@material-ui/icons';
-import SearchIcon from '@material-ui/icons/Search';
+import {
+  AccountCircleOutlined,
+  Menu as MenuIcon,
+  Search as SearchIcon,
+  ChevronRight,
+} from '@material-ui/icons';
 import clsx from 'clsx';
 import _ from 'lodash';
 import * as R from 'ramda';
@@ -109,6 +114,17 @@ const styles = (theme: Theme) =>
         },
       },
     },
+    mobileInput: {
+      padding: theme.spacing(1),
+      transition: theme.transitions.create('width'),
+      width: '100%',
+      [theme.breakpoints.up('md')]: {
+        width: 200,
+        '&:focus': {
+          width: 400,
+        },
+      },
+    },
     sectionDesktop: {
       display: 'none',
       [theme.breakpoints.up('md')]: {
@@ -174,6 +190,12 @@ interface MenuItemProps {
 }
 
 class App extends Component<Props, State> {
+  private mobileSearchInput: React.RefObject<HTMLInputElement>;
+  constructor(props) {
+    super(props);
+    this.mobileSearchInput = React.createRef();
+  }
+
   state = {
     anchorEl: null,
     searchText: '',
@@ -207,7 +229,13 @@ class App extends Component<Props, State> {
   debouncedExecSearch = _.debounce(this.execSearch, 500);
 
   handleMobileSearchDisplay = () => {
-    this.setState({ mobileSearchBarOpen: !this.state.mobileSearchBarOpen });
+    this.setState(
+      state => ({ mobileSearchBarOpen: !this.state.mobileSearchBarOpen }),
+      () => {
+        this.mobileSearchInput.current &&
+          this.mobileSearchInput.current.focus();
+      },
+    );
   };
 
   handleMenu = event => {
@@ -254,45 +282,75 @@ class App extends Component<Props, State> {
           </div>
           <div className={classes.grow} />
         </div>
-        <div className={classes.sectionMobile}>
-          <IconButton
-            aria-owns={mobileSearchBarOpen ? 'material-appbar' : undefined}
-            aria-haspopup="true"
-            onClick={this.handleMobileSearchDisplay}
-            color="inherit"
-            style={
-              mobileSearchBarOpen
-                ? { backgroundColor: 'rgba(250,250,250, 0.15)' }
-                : undefined
-            }
-          >
-            <SearchIcon />
-          </IconButton>
-        </div>
+        {!mobileSearchBarOpen ? (
+          <div className={classes.sectionMobile}>
+            <IconButton
+              aria-owns={mobileSearchBarOpen ? 'material-appbar' : undefined}
+              aria-haspopup="true"
+              onClick={this.handleMobileSearchDisplay}
+              color="inherit"
+              style={
+                mobileSearchBarOpen
+                  ? { backgroundColor: 'rgba(250,250,250, 0.15)' }
+                  : undefined
+              }
+            >
+              <SearchIcon />
+            </IconButton>{' '}
+          </div>
+        ) : null}
       </React.Fragment>
     );
   }
 
   renderMobileSearchBar() {
     let { classes } = this.props;
+    let { mobileSearchBarOpen } = this.state;
 
     return (
-      <div className={classes.sectionMobile} style={{ flexGrow: 1 }}>
-        <div className={classes.searchMobile}>
+      <Slide
+        direction="left"
+        in={mobileSearchBarOpen}
+        mountOnEnter
+        unmountOnExit
+      >
+        <div
+          className={classes.sectionMobile}
+          style={{
+            flexGrow: 1,
+            position: 'absolute',
+            width: '100%',
+            backgroundColor: '#3f51b5',
+            zIndex: 9999,
+            padding: 'inherit',
+            left: 0,
+            right: 0,
+          }}
+        >
+          <IconButton
+            onClick={this.handleMobileSearchDisplay}
+            color="inherit"
+            size="small"
+          >
+            <ChevronRight />
+          </IconButton>
+          <div className={classes.searchMobile}>
+            <InputBase
+              placeholder="Search&hellip;"
+              classes={{
+                root: classes.inputRoot,
+                input: classes.mobileInput,
+              }}
+              onChange={this.handleSearchChange}
+              onKeyDown={this.handleSearchForEnter}
+              inputRef={this.mobileSearchInput}
+            />
+          </div>
           <div className={classes.searchIcon}>
             <SearchIcon />
           </div>
-          <InputBase
-            placeholder="Search&hellip;"
-            classes={{
-              root: classes.inputRoot,
-              input: classes.inputInput,
-            }}
-            onChange={this.handleSearchChange}
-            onKeyDown={this.handleSearchForEnter}
-          />
         </div>
-      </div>
+      </Slide>
     );
   }
 
@@ -385,6 +443,9 @@ class App extends Component<Props, State> {
         <CssBaseline />
         <AppBar position="sticky">
           <Toolbar variant="regular">
+            {this.state.mobileSearchBarOpen ? (
+              <React.Fragment>{this.renderMobileSearchBar()}</React.Fragment>
+            ) : null}
             {isAuthed ? (
               <IconButton
                 focusRipple={false}
@@ -429,16 +490,13 @@ class App extends Component<Props, State> {
             ) : null}
             {this.renderSearch()}
             {!isAuthed ? (
-              <div>
+              <React.Fragment>
                 <ButtonLink primary="Login" to="/login" />
                 <ButtonLink primary="Signup" to="/signup" />
-              </div>
+              </React.Fragment>
             ) : null}
             {this.renderProfileMenu()}
           </Toolbar>
-          {this.state.mobileSearchBarOpen ? (
-            <Toolbar>{this.renderMobileSearchBar()}</Toolbar>
-          ) : null}
         </AppBar>
         <div>
           {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
