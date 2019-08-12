@@ -1,38 +1,54 @@
-var request = require("request");
+var request = require("request-promise");
 var cheerio = require("cheerio");
 var moment = require("moment");
-var fs = require("fs");
-const Entities = require("html-entities").AllHtmlEntities;
-const entities = new Entities();
+var fs = require("fs").promises;
 
-request(
-  "https://media.netflix.com/gateway/v1/en/titles/upcoming",
-  (erroer, response, body) => {
-    let parsed = JSON.parse(body);
+const uaString =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36";
 
-    let titles = parsed.items.map(item => {
-      return {
-        title: item.name,
-        releaseYear: 2019,
-        availableDate: item.sortDate,
-        type: item.type === "series" ? "show" : "movie",
-        network: "Netflix",
-        status: "Arriving"
-      };
+const scrape = async () => {
+  let body = await request({
+    uri: "https://media.netflix.com/gateway/v1/en/titles/upcoming",
+    headers: {
+      "User-Agent": uaString
+    }
+  });
+
+  let parsed = JSON.parse(body);
+
+  let titles = parsed.items.map(item => {
+    return {
+      title: item.name,
+      releaseYear: 2019,
+      availableDate: item.sortDate,
+      type: item.type === "series" ? "show" : "movie",
+      network: "Netflix",
+      status: "Arriving"
+    };
+  });
+
+  // Export data into JSON file
+  let currentDate = moment().format("YYYY-MM-DD");
+  let fileName = currentDate + "-netflix-originals-arrivals" + ".json";
+
+  if (process.env.NODE_ENV == "production") {
+    const { Storage } = require("@google-cloud/storage");
+
+    const storage = new Storage();
+    const bucket = storage.bucket("teletracker");
+
+    let file = bucket.file(fileName);
+
+    await fs.writeFile(`/tmp/${fileName}`, JSON.stringify(titles), "utf8");
+
+    return bucket.upload(`/tmp/${fileName}`, {
+      gzip: true,
+      contentType: "application/json",
+      destination: "scrape-results/" + fileName
     });
-
-    // Export data into JSON file
-    let currentDate = moment().format("YYYY-MM-DD");
-    fs.writeFile(
-      currentDate + "-netflix-originals-arrivals" + ".json",
-      JSON.stringify(titles),
-      "utf8",
-      function(err) {
-        if (err) {
-          throw err;
-        }
-        console.log("complete");
-      }
-    );
+  } else {
+    return fs.writeFile(fileName, JSON.stringify(titles), "utf8");
   }
-);
+};
+
+exports.scrape = scrape;
