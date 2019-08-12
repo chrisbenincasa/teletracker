@@ -1,4 +1,5 @@
 # node.js
 #
 node_modules/
-*.json
+*-changes.json
+*.zip

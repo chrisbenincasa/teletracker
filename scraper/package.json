@@ -1,0 +1,22 @@
+{
+  "name": "teletracker-scrapers",
+  "version": "0.0.1",
+  "description": "All Teletracker scrapers",
+  "license": "MIT",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^1.2.1",
+    "@google-cloud/storage": "^3.0.4",
+    "cheerio": "^1.0.0-rc.2",
+    "esm": "^3.2.25",
+    "fs": "^0.0.1-security",
+    "html-entities": "^1.2.1",
+    "lodash": "^4.17.11",
+    "moment": "^2.22.2",
+    "request": "^2.87.0",
+    "request-promise": "^4.2.4"
+  },
+  "scripts": {
+    "main": "node -r esm runner.js",
+    "start": "functions-framework --target=scrape"
+  }
+}

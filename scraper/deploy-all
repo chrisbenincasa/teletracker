@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+NOW=$(date +%s)
+STAMP=${1:-$NOW}
+
+zip scrapers.zip index.js main.js package.json yarn.lock
+
+zip -ur scrapers.zip hbo/whats-new -x "*.DS_Store"
+zip -ur scrapers.zip hulu/changes -x "*.DS_Store"
+zip -ur scrapers.zip netflix -x "*.DS_Store"
+zip -ur scrapers.zip unogs -x "*.DS_Store"
+
+gsutil cp scrapers.zip gs://teletracker-build-artifacts/scrapers/scrapers-${STAMP}.zip

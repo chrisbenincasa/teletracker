@@ -1,7 +1,7 @@
-var request = require("request");
+var request = require("request-promise");
 var cheerio = require("cheerio");
 var moment = require("moment");
-var fs = require("fs");
+var fs = require("fs").promises;
 const Entities = require("html-entities").AllHtmlEntities;
 const entities = new Entities();
 
@@ -18,83 +18,95 @@ curl -s 'https://unogs.com/nf.cgi?u=5unogs&q=get:exp:78&t=ns&cl=21,23&st=adv&ob=
   -H 'Connection: keep-alive' --compressed
 **/
 
-request(
-  "https://unogs.com/nf.cgi",
-  {
-    headers: {
-      Cookie:
-        "cooksess=lv58tc0shun9jq3qgn1o0ft7u6; PHPSESSID=p8qbslkv9oma62ujrhrl684l45; sstring=get%3Aexp%3A78-\\u21and",
-      "Accept-Encoding": "gzip, deflate, br",
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
-      Accept: "application/json, text/javascript, */*; q=0.0",
-      Referer: "https://unogs.com/countrydetail/",
-      "X-Requested-With": "XMLHttpRequest"
-    },
-    qs: {
-      u: "5unogs",
-      q: "get:exp:78",
-      t: "ns",
-      cl: "21",
-      st: "adv",
-      ob: "",
-      p: "0",
-      l: 1000,
-      inc: "",
-      ao: "and"
-    }
-  },
-  (erroer, response, body) => {
-    let parsed = JSON.parse(body);
+const headers = {
+  Cookie:
+    "cooksess=lv58tc0shun9jq3qgn1o0ft7u6; PHPSESSID=p8qbslkv9oma62ujrhrl684l45; sstring=get%3Aexp%3A78-\\u21and",
+  "Accept-Encoding": "gzip, deflate, br",
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
+  Accept: "application/json, text/javascript, */*; q=0.0",
+  Referer: "https://unogs.com/countrydetail/",
+  "X-Requested-With": "XMLHttpRequest"
+};
 
-    let titles = parsed.ITEMS.map(item => {
-      let [
-        netflixId,
-        title,
-        deepLink,
-        htmlDesc,
-        _1,
-        _2,
-        seriesOrMovie,
-        releaseYear,
-        ...rest
-      ] = item;
+const query = {
+  u: "5unogs",
+  q: "get:exp:78",
+  t: "ns",
+  cl: "21",
+  st: "adv",
+  ob: "",
+  p: "0",
+  l: 1000,
+  inc: "",
+  ao: "and"
+};
 
-      var $ = cheerio.load(htmlDesc);
+const scrape = async () => {
+  let body = await request({
+    uri: "https://unogs.com/nf.cgi",
+    headers,
+    qs: query
+  });
 
-      let expiration = $("b")
-        .text()
-        .replace("Expires on ", "")
-        .trim();
+  let parsed = JSON.parse(body);
 
-      let parsed = moment(expiration, "YYYY-MM-DD");
+  let titles = parsed.ITEMS.map(item => {
+    let [
+      netflixId,
+      title,
+      deepLink,
+      htmlDesc,
+      _1,
+      _2,
+      seriesOrMovie,
+      releaseYear,
+      ...rest
+    ] = item;
 
-      var metadata = {
-        availableDate: parsed.format("YYYY-MM-DD"),
-        title: entities.decode(title),
-        releaseYear: releaseYear,
-        // notes: notes,
-        // category: category,
-        type: seriesOrMovie === "movie" ? "movie" : "show",
-        network: "Netflix",
-        status: "Expiring"
-      };
+    var $ = cheerio.load(htmlDesc);
 
-      return metadata;
+    let expiration = $("b")
+      .text()
+      .replace("Expires on ", "")
+      .trim();
+
+    let parsed = moment(expiration, "YYYY-MM-DD");
+
+    var metadata = {
+      availableDate: parsed.format("YYYY-MM-DD"),
+      title: entities.decode(title),
+      releaseYear: releaseYear,
+      // notes: notes,
+      // category: category,
+      type: seriesOrMovie === "movie" ? "movie" : "show",
+      network: "Netflix",
+      status: "Expiring"
+    };
+
+    return metadata;
+  });
+
+  let currentDate = moment().format("YYYY-MM-DD");
+  let fileName = currentDate + "-netflix-expiring" + ".json";
+  if (process.env.NODE_ENV == "production") {
+    const { Storage } = require("@google-cloud/storage");
+
+    const storage = new Storage();
+    const bucket = storage.bucket("teletracker");
+
+    let file = bucket.file(fileName);
+
+    await fs.writeFile(`/tmp/${fileName}`, JSON.stringify(titles), "utf8");
+
+    return bucket.upload(`/tmp/${fileName}`, {
+      gzip: true,
+      contentType: "application/json",
+      destination: "scrape-results/" + fileName
     });
-
-    // Export data into JSON file
-    let currentDate = moment().format("YYYY-MM-DD");
-    fs.writeFile(
-      currentDate + "-netflix-expiring" + ".json",
-      JSON.stringify(titles),
-      "utf8",
-      function(err) {
-        if (err) {
-          throw err;
-        }
-        console.log("complete");
-      }
-    );
+  } else {
+    return fs.writeFile(fileName, JSON.stringify(titles), "utf8");
   }
-);
+};
+
+exports.scrape = scrape;

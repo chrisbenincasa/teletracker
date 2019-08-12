@@ -8,14 +8,12 @@ const uaString =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36";
 
 const scrape = async () => {
-  console.log("enter");
   return request({
     uri: "https://www.hbo.com/whats-new-whats-leaving",
     headers: {
       "User-Agent": uaString
     }
   }).then(async function(html) {
-    console.log("got response");
     var currentYear = new Date().getFullYear();
 
     var parsedResults = [];
@@ -97,8 +95,6 @@ const scrape = async () => {
     let currentDate = moment().format("YYYY-MM-DD");
     let fileName = currentDate + "-hbo-changes" + ".json";
     if (process.env.NODE_ENV == "production") {
-      console.log("uploading file");
-
       const { Storage } = require("@google-cloud/storage");
 
       const storage = new Storage();
@@ -111,12 +107,8 @@ const scrape = async () => {
       return bucket.upload(`/tmp/${fileName}`, {
         gzip: true,
         contentType: "application/json",
-        destination: fileName
+        destination: "scrape-results/" + fileName
       });
-      // return file.save(JSON.stringify(titles), {
-      //   gzip: true,
-      //   contentType: "application/json"
-      // });
     } else {
       return fs.writeFile(fileName, JSON.stringify(titles), "utf8");
     }

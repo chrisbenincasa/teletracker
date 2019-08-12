@@ -1,7 +1,0 @@
-#!/bin/bash
-
-zip hbo-whats-new.zip scrape.js yarn.lock package.json
-
-gsutil cp hbo-whats-new.zip gs://teletracker-build-artifacts/scrapers
-
-gcloud functions deploy function-1 --source=gs://teletracker-build-artifacts/scrapers/hbo-whats-new.zip
