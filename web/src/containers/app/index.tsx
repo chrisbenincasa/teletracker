@@ -213,6 +213,7 @@ class App extends Component<Props, State> {
   handleSearchForEnter = (ev: React.KeyboardEvent<HTMLInputElement>) => {
     if (ev.keyCode === 13) {
       this.execSearch(ev.currentTarget.value, true);
+      ev.currentTarget.blur();
     }
   };
 
@@ -300,57 +301,6 @@ class App extends Component<Props, State> {
           </div>
         ) : null}
       </React.Fragment>
-    );
-  }
-
-  renderMobileSearchBar() {
-    let { classes } = this.props;
-    let { mobileSearchBarOpen } = this.state;
-
-    return (
-      <Slide
-        direction="left"
-        in={mobileSearchBarOpen}
-        mountOnEnter
-        unmountOnExit
-      >
-        <div
-          className={classes.sectionMobile}
-          style={{
-            flexGrow: 1,
-            position: 'absolute',
-            width: '100%',
-            backgroundColor: '#3f51b5',
-            zIndex: 9999,
-            padding: 'inherit',
-            left: 0,
-            right: 0,
-          }}
-        >
-          <IconButton
-            onClick={this.handleMobileSearchDisplay}
-            color="inherit"
-            size="small"
-          >
-            <ChevronRight />
-          </IconButton>
-          <div className={classes.searchMobile}>
-            <InputBase
-              placeholder="Search&hellip;"
-              classes={{
-                root: classes.inputRoot,
-                input: classes.mobileInput,
-              }}
-              onChange={this.handleSearchChange}
-              onKeyDown={this.handleSearchForEnter}
-              inputRef={this.mobileSearchInput}
-            />
-          </div>
-          <div className={classes.searchIcon}>
-            <SearchIcon />
-          </div>
-        </div>
-      </Slide>
     );
   }
 
@@ -443,9 +393,50 @@ class App extends Component<Props, State> {
         <CssBaseline />
         <AppBar position="sticky">
           <Toolbar variant="regular">
-            {this.state.mobileSearchBarOpen ? (
-              <React.Fragment>{this.renderMobileSearchBar()}</React.Fragment>
-            ) : null}
+            <Slide
+              direction="left"
+              in={this.state.mobileSearchBarOpen}
+              timeout={350}
+              mountOnEnter
+              unmountOnExit
+            >
+              <div
+                className={classes.sectionMobile}
+                style={{
+                  flexGrow: 1,
+                  position: 'absolute',
+                  width: '100%',
+                  backgroundColor: '#3f51b5',
+                  zIndex: 9999,
+                  padding: 'inherit',
+                  left: 0,
+                  right: 0,
+                }}
+              >
+                <IconButton
+                  onClick={this.handleMobileSearchDisplay}
+                  color="inherit"
+                  size="small"
+                >
+                  <ChevronRight />
+                </IconButton>
+                <div className={classes.searchMobile}>
+                  <InputBase
+                    placeholder="Search&hellip;"
+                    classes={{
+                      root: classes.inputRoot,
+                      input: classes.mobileInput,
+                    }}
+                    onChange={this.handleSearchChange}
+                    onKeyDown={this.handleSearchForEnter}
+                    inputRef={this.mobileSearchInput}
+                  />
+                </div>
+                <div className={classes.searchIcon}>
+                  <SearchIcon />
+                </div>
+              </div>
+            </Slide>
             {isAuthed ? (
               <IconButton
                 focusRipple={false}
