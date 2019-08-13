@@ -203,13 +203,6 @@ class App extends Component<Props, State> {
     drawerOpen: false,
   };
 
-  handleSearchChange = event => {
-    let searchText = event.currentTarget.value;
-
-    this.setState({ searchText });
-    this.debouncedExecSearch(searchText);
-  };
-
   handleSearchForEnter = (ev: React.KeyboardEvent<HTMLInputElement>) => {
     if (ev.keyCode === 13) {
       this.execSearch(ev.currentTarget.value, true);
@@ -226,8 +219,6 @@ class App extends Component<Props, State> {
       this.props.search(text);
     }
   };
-
-  debouncedExecSearch = _.debounce(this.execSearch, 500);
 
   handleMobileSearchDisplay = () => {
     this.setState(
@@ -277,7 +268,6 @@ class App extends Component<Props, State> {
                 root: classes.inputRoot,
                 input: classes.inputInput,
               }}
-              onChange={this.handleSearchChange}
               onKeyDown={this.handleSearchForEnter}
             />
           </div>
@@ -427,7 +417,6 @@ class App extends Component<Props, State> {
                       root: classes.inputRoot,
                       input: classes.mobileInput,
                     }}
-                    onChange={this.handleSearchChange}
                     onKeyDown={this.handleSearchForEnter}
                     inputRef={this.mobileSearchInput}
                   />
