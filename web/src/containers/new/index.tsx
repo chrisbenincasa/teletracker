@@ -148,7 +148,7 @@ class New extends Component<Props> {
       !this.props.upcoming && !this.props.recentlyAdded ? (
         this.renderLoading()
       ) : (
-        <div style={{ display: 'flex', flexGrow: 1 }}>
+        <div>
           {this.props.upcoming ? (
             <div className={this.props.classes.cardGrid}>
               {this.renderUpcoming(this.props.upcoming.availability)}
