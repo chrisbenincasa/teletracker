@@ -29,3 +29,8 @@ variable "function_version" {
 variable "entrypoint" {
   type = "string"
 }
+
+variable "extra_env_vars" {
+  type    = "map"
+  default = {}
+}

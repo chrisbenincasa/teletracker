@@ -1,3 +1,10 @@
+locals {
+  env_vars = {
+    API_HOST          = "https://api.qa.teletracker.app"
+    ADMINISTRATOR_KEY = "berglas://teletracker-secrets/administrator-key-qa"
+  }
+}
+
 data "google_storage_bucket_object" "archive" {
   name   = "scrapers/scrapers-${var.function_version}.zip"
   bucket = "${var.bucket_name}"
@@ -20,6 +27,11 @@ resource "google_cloudfunctions_function" "scraper-function" {
   event_trigger {
     event_type = "google.pubsub.topic.publish"
     resource   = "${google_pubsub_topic.scraper-trigger.name}"
+  }
+
+  environment_variables = {
+    for key, value in merge(var.extra_env_vars, local.env_vars) :
+    key => value
   }
 }
 
