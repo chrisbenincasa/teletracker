@@ -8,7 +8,5 @@ artifacts:
   objects:
     location: "gs://teletracker-build-artifacts"
     paths:
-      [
-        "scala-server/server/target/scala-2.12/teletracker-assembly-0.1-SNAPSHOT.jar",
-      ]
+      ["scala-server/server/target/scala-2.12/server-assembly-0.1-SNAPSHOT.jar"]
 timeout: 1800s
