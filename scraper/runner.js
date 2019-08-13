@@ -1,7 +1,8 @@
-import * as scrapers from "./index";
+import { startScrape } from "./index";
 
 const run = async () => {
-  await scrapers[process.argv[2]]();
+  await startScrape(process.argv[2]);
+  // await scrapers[process.argv[2]]();
 };
 
 run();

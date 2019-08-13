@@ -5,6 +5,11 @@ module "hbo-scraper" {
   function_name    = "hbo-whats-new"
   entrypoint       = "hboWhatsNew"
   function_version = "1565625563"
+
+  extra_env_vars = {
+    JOB_CLASS_NAME = "com.teletracker.service.tools.IngestHboChanges"
+    SCRAPER        = "hboWhtsNew"
+  }
 }
 
 module "hulu-scraper" {
@@ -13,7 +18,7 @@ module "hulu-scraper" {
   trigger_name     = "hulu-scrape-trigger"
   function_name    = "hulu-changes"
   entrypoint       = "huluChanges"
-  function_version = "1565625563"
+  function_version = "1565627007"
 }
 
 module "netflix-originals-arriving-scraper" {

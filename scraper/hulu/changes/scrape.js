@@ -1,7 +1,9 @@
-var request = require("request-promise");
-var cheerio = require("cheerio");
-var moment = require("moment");
-var fs = require("fs").promises;
+import request from "request-promise";
+import cheerio from "cheerio";
+import moment from "moment";
+import { promises as fs } from "fs";
+import { uploadToStorage } from "../../common/storage";
+import { scheduleJob } from "../../common/api";
 
 const uaString =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36";
@@ -97,21 +99,18 @@ const scrape = async () => {
   let fileName = currentDate + "-hulu-changes" + ".json";
 
   if (process.env.NODE_ENV == "production") {
-    const { Storage } = require("@google-cloud/storage");
+    if (!process.env.API_HOST) {
+      return Promise.reject(
+        new Error("Could not find value for API_HOST variable")
+      );
+    }
 
-    const storage = new Storage();
-    const bucket = storage.bucket("teletracker");
+    let [file, _] = await uploadToStorage(fileName, parsedResults);
 
-    await fs.writeFile(`/tmp/${fileName}`, JSON.stringify(titles), "utf8");
-
-    return bucket.upload(`/tmp/${fileName}`, {
-      gzip: true,
-      contentType: "application/json",
-      destination: "scrape-results/" + fileName
-    });
+    return scheduleJob(file.name);
   } else {
-    return fs.writeFile(fileName, JSON.stringify(titles), "utf8");
+    return fs.writeFile(fileName, JSON.stringify(parsedResults), "utf8");
   }
 };
 
-exports.scrape = scrape;
+export { scrape };
