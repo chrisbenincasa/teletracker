@@ -49,6 +49,7 @@
         </filter>
         <log>application.log</log>
         <flushLevel>WARN</flushLevel>
+        <enhancer>com.teletracker.service.logging.TeletrackerLogsEnhancer</enhancer>
     </appender>
 
     <!-- ===================================================== -->
