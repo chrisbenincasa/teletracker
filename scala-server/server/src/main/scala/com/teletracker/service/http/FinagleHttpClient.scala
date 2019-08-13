@@ -7,8 +7,14 @@ import com.teletracker.common.http.{
   HttpRequest,
   HttpResponse
 }
+import com.twitter.conversions.DurationOps._
 import com.twitter.finagle.Http
 import com.twitter.finagle.http.Request
+import com.twitter.finagle.liveness.{
+  FailureAccrualFactory,
+  FailureAccrualPolicy
+}
+import com.twitter.finagle.service.Backoff
 import javax.inject.Inject
 import scala.concurrent.{Future, Promise}
 
@@ -19,6 +25,17 @@ class FinagleHttpClient @Inject()(
   private lazy val client = {
     Http.client
       .withTls(host)
+      .withSessionQualifier
+      .noFailureAccrual
+      .withSessionQualifier
+      .noFailFast
+//      .configured(
+//        FailureAccrualFactory.Param(
+//          () =>
+//            FailureAccrualPolicy
+//              .consecutiveFailures(5, Backoff.const(10.seconds))
+//        )
+//      )
       .newService(s"$host:${if (options.useTls) "443" else "80"}")
   }
 
