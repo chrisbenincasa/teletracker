@@ -4,6 +4,7 @@ import {
   Button,
   createStyles,
   CssBaseline,
+  Fade,
   IconButton,
   InputBase,
   Menu,
@@ -21,6 +22,7 @@ import {
   Menu as MenuIcon,
   Search as SearchIcon,
   ChevronRight,
+  Close,
 } from '@material-ui/icons';
 import clsx from 'clsx';
 import _ from 'lodash';
@@ -79,6 +81,7 @@ const styles = (theme: Theme) =>
       },
     },
     searchMobile: {
+      display: 'flex',
       position: 'relative',
       borderRadius: theme.shape.borderRadius,
       backgroundColor: fade(theme.palette.common.white, 0.15),
@@ -86,6 +89,10 @@ const styles = (theme: Theme) =>
         backgroundColor: fade(theme.palette.common.white, 0.25),
       },
       width: '100%',
+    },
+    searchClear: {
+      color: theme.palette.common.white,
+      opacity: 0.25,
     },
     searchIcon: {
       width: theme.spacing(9),
@@ -203,9 +210,28 @@ class App extends Component<Props, State> {
     drawerOpen: false,
   };
 
+  clearSearch = () => {
+    let searchText = '';
+    this.setState({ searchText });
+    this.mobileSearchInput.current && this.mobileSearchInput.current.focus();
+  };
+
+  handleSearchChange = event => {
+    let searchText = event.currentTarget.value;
+    this.setState({ searchText });
+  };
+
+  handleSearchForSubmit = () => {
+    if (this.state.searchText.length === 0) {
+      return;
+    }
+
+    this.execSearch(this.state.searchText, true);
+  };
+
   handleSearchForEnter = (ev: React.KeyboardEvent<HTMLInputElement>) => {
     if (ev.keyCode === 13) {
-      this.execSearch(ev.currentTarget.value, true);
+      this.execSearch(this.state.searchText, true);
       ev.currentTarget.blur();
     }
   };
@@ -269,6 +295,7 @@ class App extends Component<Props, State> {
                 input: classes.inputInput,
               }}
               onKeyDown={this.handleSearchForEnter}
+              onChange={this.handleSearchChange}
             />
           </div>
           <div className={classes.grow} />
@@ -359,6 +386,7 @@ class App extends Component<Props, State> {
 
   render() {
     let { classes, isAuthed } = this.props;
+    let { searchText } = this.state;
 
     // TODO: Get prop types working here
     // polyfill required for react-router-dom < 5.0.0
@@ -413,17 +441,36 @@ class App extends Component<Props, State> {
                 <div className={classes.searchMobile}>
                   <InputBase
                     placeholder="Search&hellip;"
+                    inputProps={{ 'aria-label': 'search Teletracker' }}
                     classes={{
                       root: classes.inputRoot,
                       input: classes.mobileInput,
                     }}
                     onKeyDown={this.handleSearchForEnter}
+                    onChange={this.handleSearchChange}
                     inputRef={this.mobileSearchInput}
+                    value={searchText}
                   />
+                  {searchText.length > 0 ? (
+                    <Fade in={true}>
+                      <IconButton
+                        onClick={this.clearSearch}
+                        color="inherit"
+                        size="small"
+                      >
+                        <Close className={classes.searchClear} />
+                      </IconButton>
+                    </Fade>
+                  ) : null}
                 </div>
-                <div className={classes.searchIcon}>
+                <div className={classes.searchIcon} />
+                <IconButton
+                  onClick={this.handleSearchForSubmit}
+                  color="inherit"
+                  size="small"
+                >
                   <SearchIcon />
-                </div>
+                </IconButton>
               </div>
             </Slide>
             {isAuthed ? (
