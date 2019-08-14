@@ -218,6 +218,7 @@ interface ItemCardState {
   currentId: string;
   currentType: string;
   imageLoaded: boolean;
+  imageURL: string;
 }
 
 type Props = ItemCardProps & DispatchProps & WithUserProps;
@@ -240,6 +241,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     currentId: '',
     currentType: '',
     imageLoaded: false,
+    imageURL: '',
   };
 
   constructor(props: Props) {
@@ -260,22 +262,33 @@ class ItemCard extends Component<Props, ItemCardState> {
     this.setState({
       currentId: itemId,
     });
+
+    let poster = getPosterPath(item);
+    let image = new Image();
+    image.src = 'https://image.tmdb.org/t/p/w300' + poster;
+    this.setState({
+      imageURL: image.src,
+    });
+    image.onload = this.handleImageLoaded;
+    image.onerror = this.handleImageError;
   }
 
-  handleListsModalOpen = (item: Thing) => {
-    this.setState({ listsModalOpen: true });
+  handleImageLoaded = () => {
+    this.setState({ imageLoaded: true });
   };
 
-  handleListsModalClose = () => {
-    this.setState({ listsModalOpen: false });
+  handleImageError = () => {
+    this.setState({ imageLoaded: false });
   };
 
-  handleDeleteModalOpen = () => {
-    this.setState({ deleteConfirmationOpen: true });
+  handleListsModal = () => {
+    this.setState({ listsModalOpen: !this.state.listsModalOpen });
   };
 
-  handleDeleteModalClose = () => {
-    this.setState({ deleteConfirmationOpen: false });
+  handleDeleteModal = () => {
+    this.setState({
+      deleteConfirmationOpen: !this.state.deleteConfirmationOpen,
+    });
   };
 
   handleHoverEnter = () => {
@@ -286,12 +299,8 @@ class ItemCard extends Component<Props, ItemCardState> {
     this.setState({ isHovering: false });
   };
 
-  handleHoverRatingOpen = () => {
-    this.setState({ hoverRating: true });
-  };
-
-  handleHoverRatingClose = () => {
-    this.setState({ hoverRating: false });
+  handleHoverRating = () => {
+    this.setState({ hoverRating: !this.state.hoverRating });
   };
 
   handleRemoveFromList = () => {
@@ -301,7 +310,7 @@ class ItemCard extends Component<Props, ItemCardState> {
       removeFromLists: [this.props.listContext!.id.toString()],
     });
     this.setState({ deleted: true });
-    this.handleDeleteModalClose();
+    this.handleDeleteModal();
   };
 
   toggleItemWatched = () => {
@@ -315,7 +324,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     } else {
       this.props.updateUserItemTags(payload);
       this.setState({ hoverRating: true });
-      this.handleHoverRatingOpen();
+      this.handleHoverRating();
     }
   };
 
@@ -372,7 +381,7 @@ class ItemCard extends Component<Props, ItemCardState> {
       return makeLink(
         <CardMedia
           className={this.props.classes.cardMedia}
-          image={'https://image.tmdb.org/t/p/w300' + poster}
+          image={this.state.imageURL}
           title={thing.name}
         />,
       );
@@ -397,7 +406,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     return (
       <Dialog
         open={deleteConfirmationOpen}
-        onClose={this.handleDeleteModalClose}
+        onClose={this.handleDeleteModal}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
@@ -408,7 +417,7 @@ class ItemCard extends Component<Props, ItemCardState> {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={this.handleDeleteModalClose} color="primary">
+          <Button onClick={this.handleDeleteModal} color="primary">
             Cancel
           </Button>
           <Button onClick={this.handleRemoveFromList} color="primary" autoFocus>
@@ -470,7 +479,7 @@ class ItemCard extends Component<Props, ItemCardState> {
               <Tooltip title="Manage Lists" placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Manage Lists"
-                  onClick={() => this.handleListsModalOpen(item)}
+                  onClick={() => this.handleListsModal()}
                   disableRipple
                 >
                   <PlaylistAdd className={classes.hoverWatch} />
@@ -492,7 +501,7 @@ class ItemCard extends Component<Props, ItemCardState> {
               <Tooltip title={'Rate it!'} placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Rate it!"
-                  onClick={this.handleHoverRatingOpen}
+                  onClick={this.handleHoverRating}
                 >
                   {this.itemHasTag(ACTION_ENJOYED) ? (
                     <ThumbUp className={classes.hoverRatingThumbsUp} />
@@ -518,7 +527,7 @@ class ItemCard extends Component<Props, ItemCardState> {
                 <IconButton
                   aria-label="Delete"
                   className={classes.hoverDelete}
-                  onClick={this.handleDeleteModalOpen}
+                  onClick={this.handleDeleteModal}
                   disableRipple
                 >
                   <DeleteIcon />
