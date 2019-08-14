@@ -96,7 +96,8 @@ lazy val tasks = project
       // Google
       "com.github.scopt" %% "scopt" % "3.5.0",
       // Http
-      "org.http4s" %% "http4s-blaze-client" % "0.21.0-M3"
+      "org.http4s" %% "http4s-blaze-client" % "0.21.0-M3",
+      "org.scalatest" %% "scalatest" % "3.0.5" % Test
     ),
     mainClass in assembly := Some(
       "com.teletracker.tasks.TeletrackerTaskRunner"

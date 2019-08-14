@@ -2,7 +2,7 @@ package com.teletracker.tasks.util
 
 import java.io.File
 import java.net.URI
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object Args extends Args
 
@@ -29,19 +29,24 @@ class RichArgs(val args: Map[String, Option[Any]]) extends AnyVal {
 }
 
 trait LowPriArgParsers {
-  implicit def anyArg[T]: ArgParser[T] = build(tryX(_.asInstanceOf[T]))
+  implicit def anyArg[T: Manifest]: ArgParser[T] = build(cast[T])
 
   protected def build[T](parseFunc: Any => Try[T]): ArgParser[T] =
     new ArgParser[T] {
       override def parse(in: Any): Try[T] = parseFunc(in)
     }
 
-  protected def tryX[T](f: (Any => T)*): Any => Try[T] = { in =>
+  def cast[T: Manifest](x: Any): Try[T] = x match {
+    case t: T => Success(t)
+    case _    => Failure(new IllegalArgumentException)
+  }
+
+  protected def tryX[T: Manifest](f: (Any => T)*): Any => Try[T] = { in =>
     f.toStream
       .map(func => Try(func(in)))
       .find(_.isSuccess) match {
       case Some(success) => success
-      case None          => Try(in.asInstanceOf[T])
+      case None          => cast[T](in)
     }
 
   }
