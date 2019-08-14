@@ -1,6 +1,14 @@
 steps:
   - name: "gcr.io/$PROJECT_ID/teletracker-sbt-primed"
-    args: ["-J-Xss8m", "clean", "compile", "server/assembly", "server/docker"]
+    args:
+      [
+        "-J-Xss8m",
+        "clean",
+        "compile",
+        "server/assembly",
+        "tasks/assembly",
+        "server/docker",
+      ]
     dir: "scala-server"
 images:
   - "gcr.io/teletracker/server"
