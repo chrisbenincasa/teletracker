@@ -302,6 +302,7 @@ class App extends Component<Props, State> {
                 input: classes.inputInput,
               }}
               type="search"
+              inputmode="search"
               onChange={this.handleSearchChange}
               onKeyDown={this.handleSearchForEnter}
             />
@@ -458,6 +459,7 @@ class App extends Component<Props, State> {
                     onKeyDown={this.handleSearchForEnter}
                     inputRef={this.mobileSearchInput}
                     type="search"
+                    inputmode="search"
                     value={searchText}
                   />
                   {searchText.length > 0 ? (
