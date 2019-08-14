@@ -1,4 +1,4 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
 import com.teletracker.common.db.model._
 import com.teletracker.common.inject.{DbProvider, Modules}

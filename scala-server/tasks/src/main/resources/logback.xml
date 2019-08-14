@@ -1,0 +1,56 @@
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <encoder>
+            <pattern>%d [%X{traceId}] [%thread] %-5level %logger{36} %marker - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ===================================================== -->
+    <!-- Secondary Appenders -->
+    <!-- ===================================================== -->
+
+    <!-- Service Log (Rollover daily/50MB) -->
+    <appender name="SERVICE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.service.output:-job.log}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>service-%d{yyyy-MM-dd}.%i</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>50MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%date %.-3level %-16X{traceId} %-25logger{0} %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CLOUD" class="com.google.cloud.logging.logback.LoggingAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <log>application.log</log>
+        <flushLevel>WARN</flushLevel>
+        <enhancer>com.teletracker.service.logging.TeletrackerLogsEnhancer</enhancer>
+    </appender>
+
+    <!-- ===================================================== -->
+    <!-- Package Config -->
+    <!-- ===================================================== -->
+
+    <!-- Root Config -->
+    <root level="info">
+        <appender-ref ref="ASYNC-SERVICE"/>
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="CLOUD" />
+    </root>
+
+    <!-- Per-Package Config -->
+    <logger name="com.twitter" level="info"/>
+    <logger name="com.teletracker" level="info"/>
+    <logger name="com.zaxxer" level="info" />
+
+</configuration>

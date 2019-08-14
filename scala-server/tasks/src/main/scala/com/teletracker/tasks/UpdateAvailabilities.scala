@@ -1,9 +1,9 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.util.Futures._
 
-object UpdateAvailabilities extends TeletrackerJobApp {
+object UpdateAvailabilities extends TeletrackerTaskApp {
   override protected def runInternal(): Unit = {
     val access = injector.instance[ThingsDbAccess]
 

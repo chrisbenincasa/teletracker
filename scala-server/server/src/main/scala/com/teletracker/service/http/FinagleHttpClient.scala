@@ -39,14 +39,33 @@ class FinagleHttpClient @Inject()(
       .newService(s"$host:${if (options.useTls) "443" else "80"}")
   }
 
-  override def get(request: HttpRequest): Future[HttpResponse] = {
+  override def get(request: HttpRequest): Future[HttpResponse[String]] = {
     val req = Request(request.path, request.params: _*)
-    val promise = Promise[HttpResponse]
+    val promise = Promise[HttpResponse[String]]
 
     val resFut = client(req)
 
     resFut.onSuccess(res => {
       promise.success(HttpResponse(res.contentString))
+    })
+
+    resFut.onFailure(promise.tryFailure)
+
+    promise.future
+  }
+
+  override def getBytes(
+    request: HttpRequest
+  ): Future[HttpResponse[Array[Byte]]] = {
+    val req = Request(request.path, request.params: _*)
+    val promise = Promise[HttpResponse[Array[Byte]]]
+
+    val resFut = client(req)
+
+    resFut.onSuccess(res => {
+      val bb = new Array[Byte](res.content.length)
+      res.content.write(bb, 0)
+      promise.success(HttpResponse(bb))
     })
 
     resFut.onFailure(promise.tryFailure)

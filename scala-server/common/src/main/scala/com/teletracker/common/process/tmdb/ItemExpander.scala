@@ -13,9 +13,15 @@ class ItemExpander @Inject()(
   tmdbClient: TmdbClient,
   cache: TmdbLocalCache
 )(implicit executionContext: ExecutionContext) {
-  def expandMovie(id: Int): Future[Movie] = expandMovie(id.toString)
+  def expandMovie(
+    id: Int,
+    extraExpandFields: List[String]
+  ): Future[Movie] = expandMovie(id.toString)
 
-  def expandMovie(id: String): Future[Movie] = {
+  def expandMovie(
+    id: String,
+    extraExpandFields: List[String] = Nil
+  ): Future[Movie] = {
     cache.getOrSetEntity(
       ThingType.Movie,
       id, {
@@ -68,7 +74,7 @@ class ItemExpander @Inject()(
     }
 
     implicit val atMovie: Case.Aux[Movie, Future[Movie]] = at { m =>
-      expandMovie(m.id.toString)
+      expandMovie(m.id, Nil)
     }
 
     implicit val atShow: Case.Aux[TvShow, Future[TvShow]] = at { s =>

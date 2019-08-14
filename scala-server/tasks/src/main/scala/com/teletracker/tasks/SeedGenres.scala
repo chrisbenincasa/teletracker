@@ -1,4 +1,4 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
@@ -10,14 +10,14 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-object SeedGenres extends TeletrackerJobApp[GenreSeeder]
+object SeedGenres extends TeletrackerTaskApp[GenreSeeder]
 
 class GenreSeeder @Inject()(
   tmdbClient: TmdbClient,
   provider: DbProvider,
   genres: Genres,
   genreReferences: GenreReferences)
-    extends TeletrackerJob {
+    extends TeletrackerTask {
   import genres.driver.api._
 
   def run(args: Map[String, Option[Any]]): Unit = {

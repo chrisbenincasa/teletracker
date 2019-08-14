@@ -1,4 +1,6 @@
 import sbt._
+import sbt.Keys._
+import sbtassembly.AssemblyPlugin.autoImport._
 
 object BuildConfig {
   object Compilation {
@@ -21,6 +23,51 @@ object BuildConfig {
       "-Xfuture"
     )
   }
+
+  lazy val commonSettings = Seq(
+    organization := "com.teletracker",
+    version := s"0.1-${BuildConfig.Revision.revision}",
+    // Compilation
+    scalaVersion := Compilation.scalacVersion,
+    scalacOptions ++= Compilation.scalacOpts,
+    Global / concurrentRestrictions := Seq(Tags.limit(Tags.Test, 1)),
+    Test / fork := true
+  )
+
+  lazy val commonAssmeblySettings = Seq(
+    test in assembly := {},
+    assemblyMergeStrategy in assembly := {
+      case PathList("META-INF", xs @ _*) =>
+        xs map { _.toLowerCase } match {
+          case (x :: Nil)
+              if Seq("manifest.mf", "index.list", "dependencies") contains x =>
+            MergeStrategy.discard
+          case ps @ (x :: _)
+              if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") || ps.last
+                .endsWith(".rsa") =>
+            MergeStrategy.discard
+          case "maven" :: _ =>
+            MergeStrategy.discard
+          case "plexus" :: _ =>
+            MergeStrategy.discard
+          case "services" :: _ =>
+            MergeStrategy.filterDistinctLines
+          case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) |
+              ("spring.tooling" :: Nil) =>
+            MergeStrategy.filterDistinctLines
+          case _ => MergeStrategy.first
+        }
+
+      case PathList(ps @ _*)
+          if Assembly.isReadme(ps.last) || Assembly.isLicenseFile(ps.last) =>
+        MergeStrategy.rename
+
+      case PathList(ps @ _*) if Assembly.isSystemJunkFile(ps.last) =>
+        MergeStrategy.discard
+
+      case _ => MergeStrategy.first
+    }
+  )
 
   object Dependencies {
     lazy val finatraTest = Seq(

@@ -1,5 +1,6 @@
 package com.teletracker.service.util
 
+import java.io.File
 import java.net.URI
 import scala.util.Try
 
@@ -41,6 +42,9 @@ object ArgParser {
 
   implicit val uriArg: ArgParser[URI] = stringArg andThen (new URI(_))
 
+  implicit val fileArg: ArgParser[File] =
+    (uriArg andThen (new File(_))).or(build(tryX(_.asInstanceOf[File])))
+
   private def build[T](parseFunc: Any => T): ArgParser[T] = new ArgParser[T] {
     override def parse(in: Any): T = parseFunc(in)
   }
@@ -61,5 +65,10 @@ trait ArgParser[T] { self =>
 
   def andThen[U](parser: T => U): ArgParser[U] = new ArgParser[U] {
     override def parse(in: Any): U = parser(self.parse(in))
+  }
+
+  def or(parser: ArgParser[T]): ArgParser[T] = new ArgParser[T] {
+    override def parse(in: Any): T =
+      self.parseOpt(in).orElse(parser.parseOpt(in)).get
   }
 }

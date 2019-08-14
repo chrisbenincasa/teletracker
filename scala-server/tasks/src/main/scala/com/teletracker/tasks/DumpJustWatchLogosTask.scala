@@ -1,27 +1,26 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
-import com.teletracker.common.inject.Modules
+import com.teletracker.common.http.{HttpClient, HttpClientOptions}
 import com.teletracker.common.model.justwatch.Provider
-import com.teletracker.common.util.Implicits._
-import com.google.inject.Module
-import com.twitter.finagle.Http
-import com.twitter.finagle.http.{Request, Response}
-import io.circe.parser.parse
+import javax.inject.Inject
 import java.io.{File, FileOutputStream}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-object DumpJustWatchLogos extends com.twitter.inject.app.App {
-  override protected def modules: Seq[Module] = Modules()
+object DumpJustWatchLogosTask extends TeletrackerTaskApp[DumpJustWatchLogosTask]
 
-  override protected def run(): Unit = {
+class DumpJustWatchLogosTask @Inject()(httpClientFactory: HttpClient.Factory)
+    extends TeletrackerTask {
+
+  override def run(args: Args): Unit = {
     import io.circe.generic.auto._
     import io.circe.parser._
 
-    lazy val imagesClient = Http.client
-      .withTls("images.justwatch.com")
-      .newService("images.justwatch.com:443")
+    lazy val imagesClient = httpClientFactory.create(
+      "images.justwatch.com",
+      HttpClientOptions.withTls
+    )
 
     val lines = scala.io.Source
       .fromFile(
@@ -45,17 +44,17 @@ object DumpJustWatchLogos extends com.twitter.inject.app.App {
         val saves = providers.map(provider => {
           val path = provider.icon_url
             .replaceAllLiterally("{profile}", "s100") + s"/${provider.slug}"
-          val r = Request(path)
-          (imagesClient(r): Future[Response]).map(response => {
-            val f = new File(outputDirBase + s"/${provider.slug}/icon.jpg")
-            f.getParentFile.mkdirs()
-            val bb = new Array[Byte](response.content.length)
-            response.content.write(bb, 0)
-            val fos = new FileOutputStream(f)
-            fos.write(bb)
-            fos.flush()
-            fos.close()
-          })
+
+          imagesClient
+            .getBytes(path)
+            .map(response => {
+              val f = new File(outputDirBase + s"/${provider.slug}/icon.jpg")
+              f.getParentFile.mkdirs()
+              val fos = new FileOutputStream(f)
+              fos.write(response.content)
+              fos.flush()
+              fos.close()
+            })
         })
 
         Await.result(Future.sequence(saves), Duration.Inf)
