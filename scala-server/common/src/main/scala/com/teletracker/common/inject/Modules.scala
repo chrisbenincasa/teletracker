@@ -13,7 +13,8 @@ object Modules {
       new ExecutionContextModule,
       new DbModule,
       new BackgroundProcessorModule,
-      new CacheModule
+      new CacheModule,
+      new GoogleModule
     )
   }
 }

@@ -1,4 +1,4 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
 import com.teletracker.common.db.access.NetworksDbAccess
 import com.teletracker.common.db.model._
@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-object SeedNetworks extends TeletrackerJobApp {
+object SeedNetworks extends TeletrackerTaskApp {
   override protected def runInternal(): Unit = {
     injector.instance[NetworkSeeder].run()
   }
@@ -21,8 +21,9 @@ class NetworkSeeder @Inject()(
   dbProvider: DbProvider,
   networks: Networks,
   networkReferences: NetworkReferences,
-  networksDbAccess: NetworksDbAccess) {
-  def run(): Unit = {
+  networksDbAccess: NetworksDbAccess)
+    extends TeletrackerTask {
+  def run(args: Args): Unit = {
     import io.circe.generic.auto._
     import io.circe.parser._
     import networks.driver.api._

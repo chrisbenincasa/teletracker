@@ -41,7 +41,7 @@ final class TmdbMessageHandler @Inject()(
 
       case ProcessMovie(movieId) =>
         itemExpander
-          .expandMovie(movieId)
+          .expandMovie(movieId, Nil)
           .flatMap(tmdbEntityProcessor.handleMovie)
           .map(_ => {})
     }

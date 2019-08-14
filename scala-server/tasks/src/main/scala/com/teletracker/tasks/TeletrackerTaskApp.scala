@@ -1,21 +1,28 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
 import com.google.inject.Module
 import com.teletracker.common.inject.{DbProvider, Modules}
+import com.teletracker.tasks.inject.HttpClientModule
+import com.twitter.app.Flaggable
+import java.net.URI
 import scala.util.control.NonFatal
 
-abstract class TeletrackerJobApp[T <: TeletrackerJob: Manifest]
+abstract class TeletrackerTaskApp[T <: TeletrackerTask: Manifest]
     extends com.twitter.inject.app.App {
+
+  implicit val uriFlaggable: Flaggable[URI] = Flaggable.mandatory(new URI(_))
+
   implicit protected val executionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected def modules: Seq[Module] = Modules() ++ extraModules
+  override protected def modules: Seq[Module] =
+    Modules() ++ Seq(new HttpClientModule) ++ extraModules
 
   protected def extraModules: Seq[Module] = Seq()
 
   protected lazy val dbProvider = injector.instance[DbProvider]
 
-  final override protected def run(): Unit = {
+  override protected def run(): Unit = {
     try {
       injector.instance[T].run(collectArgs)
     } catch {
@@ -36,12 +43,4 @@ abstract class TeletrackerJobApp[T <: TeletrackerJob: Manifest]
   }
 
   protected def runInternal(): Unit = {}
-}
-
-trait TeletrackerJob {
-  type Args = Map[String, Option[Any]]
-
-  def preparseArgs(args: Args): Unit = {}
-  def run(): Unit = run(Map.empty)
-  def run(args: Args): Unit
 }

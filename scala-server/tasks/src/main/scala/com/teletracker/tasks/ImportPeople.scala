@@ -1,27 +1,23 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.inject.Modules
-import com.teletracker.common.model.tmdb.{PagedResult, Person, TvShow}
+import com.teletracker.common.model.tmdb.{PagedResult, Person}
 import com.teletracker.common.process.tmdb.{ItemExpander, TmdbEntityProcessor}
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.json.circe._
-import com.google.inject.Module
-import com.twitter.inject.app.App
+import javax.inject.Inject
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-object ImportPeople extends App {
-  override protected def modules: Seq[Module] = Modules()
-
-  override protected def run(): Unit = {
-    val tmdbClient = injector.instance[TmdbClient]
-    val processor = injector.instance[TmdbEntityProcessor]
-    val expander = injector.instance[ItemExpander]
-
-    val endpoint = args.headOption.getOrElse("popular")
-    val pages = args.drop(1).headOption.map(_.toInt).getOrElse(5)
+class ImportPeople @Inject()(
+  tmdbClient: TmdbClient,
+  processor: TmdbEntityProcessor,
+  expander: ItemExpander)
+    extends TeletrackerTask {
+  override def run(args: Args): Unit = {
+    val endpoint = args.valueOrDefault[String]("endpoint", "popular")
+    val pages = args.valueOrDefault[Int]("pages", 5)
 
     val requests = (1 to pages).toList.map(
       i =>

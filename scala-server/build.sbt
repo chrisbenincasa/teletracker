@@ -12,7 +12,8 @@ lazy val `teletracker-repo` = Project("teletracker-repo", file("."))
   .aggregate(
     server,
     common,
-    consumer
+    consumer,
+    tasks
   )
 
 lazy val common = project
@@ -34,7 +35,6 @@ lazy val common = project
       "com.twitter" %% "inject-slf4j" % versions.twitter,
       // Config
       "com.iheart" %% "ficus" % "1.4.3",
-      "com.github.scopt" %% "scopt" % "3.5.0",
       // Logging
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "com.google.cloud" % "google-cloud-logging-logback" % "0.102.0-alpha",
@@ -43,16 +43,15 @@ lazy val common = project
       // Db
       "com.typesafe.slick" %% "slick" % "3.2.3",
       "com.typesafe.slick" %% "slick-hikaricp" % "3.2.3",
-      "com.typesafe.slick" %% "slick-codegen" % "3.2.3",
       "com.github.tminglei" %% "slick-pg" % "0.16.2",
       "com.github.tminglei" %% "slick-pg_circe-json" % "0.16.2",
       "com.github.tminglei" %% "slick-pg_joda-time" % "0.16.2",
       "org.postgresql" % "postgresql" % "42.2.2",
-      "org.flywaydb" % "flyway-core" % "6.0.0-beta2",
-      "com.h2database" % "h2" % "1.4.193",
       // Auth
       "io.jsonwebtoken" % "jjwt" % "0.9.0",
       // Inject
+      "com.google.cloud" % "google-cloud-storage" % "1.84.0",
+      "com.google.cloud" % "google-cloud-pubsub" % "1.84.0",
       "com.google.inject" % "guice" % versions.guice,
       "com.google.inject.extensions" % "guice-assistedinject" % versions.guice,
       "com.google.inject.extensions" % "guice-multibindings" % versions.guice,
@@ -81,38 +80,61 @@ lazy val consumer = project
     scalaVersion := Compilation.scalacVersion,
     scalacOptions ++= Compilation.scalacOpts,
     libraryDependencies ++= Seq(
-      "com.twitter" %% "inject-app" % versions.twitter,
-      "com.google.cloud" % "google-cloud-pubsub" % "1.84.0"
+      "com.twitter" %% "inject-app" % versions.twitter
     )
+  )
+  .dependsOn(common)
+
+lazy val tasks = project
+  .in(file("tasks"))
+  .settings(BuildConfig.commonSettings)
+  .settings(BuildConfig.commonAssmeblySettings)
+  .settings(
+    name := "tasks",
+    libraryDependencies ++= Seq(
+      "org.flywaydb" % "flyway-core" % "6.0.0-beta2",
+      // Google
+      "com.github.scopt" %% "scopt" % "3.5.0",
+      // Http
+      "org.http4s" %% "http4s-blaze-client" % "0.21.0-M3"
+    ),
+    mainClass in assembly := Some(
+      "com.teletracker.tasks.TeletrackerTaskRunner"
+    ),
+    `run-db-migrations` := runInputTask(
+      Runtime,
+      "com.teletracker.tasks.RunDatabaseMigrationMain"
+    ).evaluated,
+    `reset-db` := Def
+      .sequential(
+        `run-db-migrations`.toTask(" -action=clean"),
+        `run-db-migrations`.toTask(" -action=migrate"),
+        (runMain in Runtime)
+          .toTask(" com.teletracker.tasks.RunAllSeedsMain")
+      )
+      .value
   )
   .dependsOn(common)
 
 lazy val server = project
   .in(file("server"))
+  .settings(BuildConfig.commonSettings)
+  .settings(BuildConfig.commonAssmeblySettings)
   .settings(
-    organization := "com.teletracker",
     name := "server",
-    version := s"0.1-${BuildConfig.Revision.revision}",
-    // Compilation
-    scalaVersion := Compilation.scalacVersion,
-    scalacOptions ++= Compilation.scalacOpts,
     libraryDependencies ++= Seq(
       // Service
       "com.twitter" %% "finagle-core" % versions.twitter,
       "com.twitter" %% "finagle-http" % versions.twitter,
       "com.twitter" %% "finatra-http" % versions.twitter,
-      // Google
-      "com.google.cloud" % "google-cloud-storage" % "1.84.0",
       // Testing
       "com.spotify" % "docker-client" % "8.11.7" % Test excludeAll "com.fasterxml.jackson.core",
       "org.scalatest" %% "scalatest" % "3.0.5" % Test,
+      "com.h2database" % "h2" % "1.4.193" % Test,
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
       )
     ) ++ Dependencies.finatraTest,
-    // Testing
-    Global / concurrentRestrictions := Seq(Tags.limit(Tags.Test, 1)),
-    Test / fork := true,
     // Local running / testing
     mainClass in reStart := Some(
       "com.teletracker.service.TeletrackerServerMain"
@@ -124,38 +146,6 @@ lazy val server = project
     ),
     // Assmebly JAR
     mainClass in assembly := Some("com.teletracker.service.Teletracker"),
-    test in assembly := {},
-    assemblyMergeStrategy in assembly := {
-      case PathList("META-INF", xs @ _*) =>
-        xs map { _.toLowerCase } match {
-          case (x :: Nil)
-              if Seq("manifest.mf", "index.list", "dependencies") contains x =>
-            MergeStrategy.discard
-          case ps @ (x :: _)
-              if ps.last.endsWith(".sf") || ps.last.endsWith(".dsa") || ps.last
-                .endsWith(".rsa") =>
-            MergeStrategy.discard
-          case "maven" :: _ =>
-            MergeStrategy.discard
-          case "plexus" :: _ =>
-            MergeStrategy.discard
-          case "services" :: _ =>
-            MergeStrategy.filterDistinctLines
-          case ("spring.schemas" :: Nil) | ("spring.handlers" :: Nil) |
-              ("spring.tooling" :: Nil) =>
-            MergeStrategy.filterDistinctLines
-          case _ => MergeStrategy.first
-        }
-
-      case PathList(ps @ _*)
-          if Assembly.isReadme(ps.last) || Assembly.isLicenseFile(ps.last) =>
-        MergeStrategy.rename
-
-      case PathList(ps @ _*) if Assembly.isSystemJunkFile(ps.last) =>
-        MergeStrategy.discard
-
-      case _ => MergeStrategy.first
-    },
     // Docker
     dockerfile in docker := {
       // The assembly task generates a fat JAR file
@@ -179,19 +169,7 @@ lazy val server = project
         repository = "server",
         tag = Some("latest")
       )
-    ),
-    `run-db-migrations` := runInputTask(
-      Runtime,
-      "com.teletracker.service.tools.RunDatabaseMigrationMain"
-    ).evaluated,
-    `reset-db` := Def
-      .sequential(
-        `run-db-migrations`.toTask(" -action=clean"),
-        `run-db-migrations`.toTask(" -action=migrate"),
-        (runMain in Runtime)
-          .toTask(" com.teletracker.service.tools.RunAllSeedsMain")
-      )
-      .value
+    )
   )
   .enablePlugins(FlywayPlugin, DockerPlugin)
   .dependsOn(common)

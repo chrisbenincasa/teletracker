@@ -1,4 +1,4 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
 import com.teletracker.common.db.model.{
   Certification,
@@ -13,13 +13,13 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-object SeedCertifications extends TeletrackerJobApp[CertificationSeeder]
+object SeedCertifications extends TeletrackerTaskApp[CertificationSeeder]
 
 class CertificationSeeder @Inject()(
   tmdbClient: TmdbClient,
   provider: DbProvider,
   certifications: Certifications)
-    extends TeletrackerJob {
+    extends TeletrackerTask {
   import certifications.driver.api._
 
   def run(args: Map[String, Option[Any]]) = {

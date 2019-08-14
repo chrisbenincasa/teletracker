@@ -23,6 +23,7 @@ case class Thing(
   createdAt: OffsetDateTime,
   lastUpdatedAt: OffsetDateTime,
   metadata: Option[ObjectMetadata],
+//  title: String,
   tmdbId: Option[String] = None) {
   def toPartial: PartialThing = {
     PartialThing(

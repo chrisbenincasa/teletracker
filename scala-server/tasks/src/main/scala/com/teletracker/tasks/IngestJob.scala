@@ -1,4 +1,4 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
 import com.google.cloud.storage.{BlobId, Storage}
 import com.teletracker.common.db.access.ThingsDbAccess
@@ -14,7 +14,6 @@ import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.service.util.Args._
 import io.circe.Decoder
 import io.circe.parser._
 import org.apache.commons.text.similarity.LevenshteinDistance
@@ -30,7 +29,7 @@ import scala.io.Source
 import scala.util.control.NonFatal
 
 abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
-    extends TeletrackerJobApp[T] {
+    extends TeletrackerTaskApp[T] {
   val offset = flag[Int]("offset", 0, "The offset to start at")
   val limit = flag[Int]("limit", -1, "The number of items to process")
 
@@ -40,7 +39,7 @@ abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
 }
 
 abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
-    extends TeletrackerJob {
+    extends TeletrackerTask {
 
   protected val logger = LoggerFactory.getLogger(getClass)
 

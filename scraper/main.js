@@ -14,6 +14,18 @@ const startScrape = async scraper => {
       await hboWhatsNew();
       break;
 
+    case "netflixOriginalsArriving":
+      await netflixOriginalsArriving();
+      break;
+
+    case "unogsNetflixExpiring":
+      await unogsNetflixExpiring();
+      break;
+
+    case "huluChanges":
+      await huluChanges();
+      break;
+
     default:
       throw new Error(`Scraper \"${scraperToRun}\" not supported`);
   }

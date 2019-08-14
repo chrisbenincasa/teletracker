@@ -1,4 +1,4 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.inject.Modules
@@ -40,7 +40,7 @@ class RunDatabaseMigration extends App {
     val dataSource = injector.instance[DataSource]
 
     val path = config.db.driver match {
-      case _: org.h2.Driver         => "h2"
+//      case _: org.h2.Driver         => "h2"
       case _: org.postgresql.Driver => "postgres"
       case x =>
         throw new IllegalArgumentException(
@@ -71,12 +71,11 @@ class RunDatabaseMigration extends App {
   }
 }
 
-private[tools] case class RunDatabaseMigrationConfig(
+private case class RunDatabaseMigrationConfig(
   color: Boolean = true,
-  action: String = "migrate"
-)
+  action: String = "migrate")
 
-private[tools] class RunDatabaseMigrationParser
+private class RunDatabaseMigrationParser
     extends scopt.OptionParser[RunDatabaseMigrationConfig](
       "RunDatabaseMigration"
     ) {

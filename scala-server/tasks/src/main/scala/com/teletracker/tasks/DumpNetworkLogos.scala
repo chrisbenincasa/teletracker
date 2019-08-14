@@ -1,27 +1,29 @@
-package com.teletracker.service.tools
+package com.teletracker.tasks
 
-import com.google.inject.Module
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.inject.Modules
+import com.teletracker.common.http.{HttpClient, HttpClientOptions}
 import com.teletracker.common.model.tmdb.Network
-import com.teletracker.common.util.Implicits._
 import com.teletracker.common.util.execution.SequentialFutures
-import com.twitter.finagle.Http
-import com.twitter.finagle.http.{Request, Response}
+import javax.inject.Inject
 import java.io.{File, FileOutputStream}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-object DumpNetworkLogos extends com.twitter.inject.app.App {
-  override protected def modules: Seq[Module] = Modules()
+class DumpNetworkLogos @Inject()(
+  httpClientFactory: HttpClient.Factory,
+  tmdbClient: TmdbClient)
+    extends TeletrackerTask {
 
-  override protected def run(): Unit = {
+  override def run(args: Args): Unit = {
     import io.circe.generic.auto._
     import io.circe.parser._
 
     lazy val imagesClient =
-      Http.client.withTls("image.tmdb.org").newService("image.tmdb.org:443")
+      httpClientFactory.create(
+        "image.tmdb.org",
+        HttpClientOptions.withTls
+      )
 
     val logoSizes = List(
       "w45",
@@ -32,8 +34,6 @@ object DumpNetworkLogos extends com.twitter.inject.app.App {
       "w500",
       "original"
     )
-
-    val client = injector.instance[TmdbClient]
 
     val lines = scala.io.Source
       .fromFile(
@@ -61,7 +61,7 @@ object DumpNetworkLogos extends com.twitter.inject.app.App {
         println(s"Got error: $error")
         Future.unit
       case Right(line) =>
-        client
+        tmdbClient
           .makeRequest[Network](
             s"/network/${line.id}",
             Seq("append_to_response" -> "images")
@@ -76,21 +76,19 @@ object DumpNetworkLogos extends com.twitter.inject.app.App {
               if logo.file_path.isDefined
               size <- logoSizes
             } yield {
-              val r = Request(s"/t/p/$size/${logo.file_path.get}")
               val typ = logo.file_path.get.split("\\.").last
               () =>
-                (imagesClient(r): Future[Response]).map(response => {
-                  val f = new File(
-                    outputDirBase + s"/${network.name.get}/${network.name.get}-${idx}_${size}.$typ"
-                  )
-                  f.getParentFile.mkdirs()
-                  val bb = new Array[Byte](response.content.length)
-                  response.content.write(bb, 0)
-                  val fos = new FileOutputStream(f)
-                  fos.write(bb)
-                  fos.flush()
-                  fos.close()
-                })
+                imagesClient
+                  .getBytes(s"/t/p/$size/${logo.file_path.get}")
+                  .map(response => {
+                    val f = new File(
+                      outputDirBase + s"/${network.name.get}/${network.name.get}-${idx}_${size}.$typ"
+                    )
+                    val fos = new FileOutputStream(f)
+                    fos.write(response.content)
+                    fos.flush()
+                    fos.close()
+                  })
             }
 
             SequentialFutures.batchedIterator[() => Future[Unit], Unit](
