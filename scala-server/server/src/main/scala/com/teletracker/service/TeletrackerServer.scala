@@ -1,13 +1,16 @@
 package com.teletracker.service
 
 import com.google.inject.Module
+import com.teletracker.common.process.tmdb.TmdbBackgroundProcessor
 import com.teletracker.service.controllers._
 import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
-import com.teletracker.common.inject.Modules
-import com.teletracker.common.process.tmdb.TmdbBackgroundProcessor
 import com.teletracker.service.inject.ServerModules
-import com.teletracker.service.tools._
 import com.teletracker.service.util.json.JsonModule
+import com.teletracker.tasks.{
+  GenerateDdls,
+  RunAllSeedsTask,
+  RunDatabaseMigration
+}
 import com.twitter.conversions.DurationOps._
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finatra.http.HttpServer
@@ -109,18 +112,18 @@ object Teletracker extends com.twitter.inject.app.App {
         migrate.main(Array("-action=migrate", s"-loc=$location"))
         Await.result(migrate)
 
-        RunAllSeedsMain.main(rest)
+        injector.instance[RunAllSeedsTask].run()
 
         close()
-      case "generate-ddl"        => new GenerateDdls().main(rest)
-      case "db-migrate"          => new RunDatabaseMigration().main(rest)
-      case "import-movies"       => ImportMovies.main(rest)
-      case "import-tv"           => ImportTv.main(rest)
-      case "import-people"       => ImportPeople.main(rest)
-      case "run-all-seeds"       => RunAllSeedsMain.main(rest)
-      case "seed-certifications" => SeedCertifications.main(rest)
-      case "seed-genres"         => SeedGenres.main(rest)
-      case "seed-networks"       => SeedNetworks.main(rest)
+//      case "generate-ddl"        => new GenerateDdls().main(rest)
+//      case "db-migrate"          => new RunDatabaseMigration().main(rest)
+//      case "import-movies"       => ImportMovies.main(rest)
+//      case "import-tv"           => ImportTv.main(rest)
+//      case "import-people"       => ImportPeople.main(rest)
+//      case "run-all-seeds"       => RunAllSeedsMain.main(rest)
+//      case "seed-certifications" => SeedCertifications.main(rest)
+//      case "seed-genres"         => SeedGenres.main(rest)
+//      case "seed-networks"       => SeedNetworks.main(rest)
       case x =>
         Console.err.println(s"Unrecognized program: $x")
         sys.exit(1)

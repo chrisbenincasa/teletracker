@@ -2,7 +2,7 @@ package com.teletracker.service.controllers
 
 import com.google.inject.Injector
 import com.teletracker.service.auth.AdminFilter
-import com.teletracker.service.tools.TeletrackerJob
+import com.teletracker.tasks.TeletrackerTask
 import com.twitter.concurrent.NamedPoolThreadFactory
 import com.twitter.finatra.http.Controller
 import javax.inject.Inject
@@ -15,18 +15,18 @@ class InternalController @Inject()(
     extends Controller {
 
   private val asyncTaskPool = Executors.newFixedThreadPool(
-    10,
+    1,
     new NamedPoolThreadFactory("teletracker-async-task", true)
   )
 
-  private val jobClazz = classOf[TeletrackerJob]
+  private val jobClazz = classOf[TeletrackerTask]
 
   filter[AdminFilter] {
     prefix("/api/v1/internal") {
       post("/run-task") { req: RunTaskRequest =>
         val clazz = Class.forName(req.className)
         if (jobClazz.isAssignableFrom(clazz)) {
-          val job = injector.getInstance(clazz).asInstanceOf[TeletrackerJob]
+          val job = injector.getInstance(clazz).asInstanceOf[TeletrackerTask]
           val args = req.args.map(_.mapValues(Option(_))).getOrElse(Map.empty)
 
           job.preparseArgs(args)
