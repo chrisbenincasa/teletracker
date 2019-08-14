@@ -120,10 +120,13 @@ const styles = (theme: Theme) =>
           width: 400,
         },
       },
+      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
+        '-webkit-appearance': 'none',
+      },
+      caretColor: theme.palette.common.white,
     },
     mobileInput: {
       padding: theme.spacing(1),
-      transition: theme.transitions.create('width'),
       width: '100%',
       [theme.breakpoints.up('md')]: {
         width: 200,
@@ -131,6 +134,10 @@ const styles = (theme: Theme) =>
           width: 400,
         },
       },
+      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
+        '-webkit-appearance': 'none',
+      },
+      caretColor: theme.palette.common.white,
     },
     sectionDesktop: {
       display: 'none',
@@ -294,6 +301,7 @@ class App extends Component<Props, State> {
                 root: classes.inputRoot,
                 input: classes.inputInput,
               }}
+              type="search"
               onChange={this.handleSearchChange}
               onKeyDown={this.handleSearchForEnter}
             />
@@ -449,6 +457,7 @@ class App extends Component<Props, State> {
                     onChange={this.handleSearchChange}
                     onKeyDown={this.handleSearchForEnter}
                     inputRef={this.mobileSearchInput}
+                    type="search"
                     value={searchText}
                   />
                   {searchText.length > 0 ? (
