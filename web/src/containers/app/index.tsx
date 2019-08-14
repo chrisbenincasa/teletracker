@@ -302,7 +302,10 @@ class App extends Component<Props, State> {
                 input: classes.inputInput,
               }}
               type="search"
-              inputmode="search"
+              inputProps={{
+                'aria-label': 'search Teletracker',
+                inputmode: 'search',
+              }}
               onChange={this.handleSearchChange}
               onKeyDown={this.handleSearchForEnter}
             />
@@ -450,7 +453,10 @@ class App extends Component<Props, State> {
                 <div className={classes.searchMobile}>
                   <InputBase
                     placeholder="Search&hellip;"
-                    inputProps={{ 'aria-label': 'search Teletracker' }}
+                    inputProps={{
+                      'aria-label': 'search Teletracker',
+                      inputmode: 'search',
+                    }}
                     classes={{
                       root: classes.inputRoot,
                       input: classes.mobileInput,
@@ -459,7 +465,6 @@ class App extends Component<Props, State> {
                     onKeyDown={this.handleSearchForEnter}
                     inputRef={this.mobileSearchInput}
                     type="search"
-                    inputmode="search"
                     value={searchText}
                   />
                   {searchText.length > 0 ? (
