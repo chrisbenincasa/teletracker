@@ -172,7 +172,7 @@ lazy val server = project
     )
   )
   .enablePlugins(FlywayPlugin, DockerPlugin)
-  .dependsOn(common)
+  .dependsOn(common, tasks)
 
 lazy val `run-db-migrations` = inputKey[Unit]("generate ddl")
 lazy val `reset-db` = taskKey[Unit]("reset-db")

@@ -72,4 +72,8 @@ class FinagleHttpClient @Inject()(
 
     promise.future
   }
+
+  override def close(): Unit = {
+    client.close()
+  }
 }
