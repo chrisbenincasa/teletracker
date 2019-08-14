@@ -294,8 +294,8 @@ class App extends Component<Props, State> {
                 root: classes.inputRoot,
                 input: classes.inputInput,
               }}
-              onKeyDown={this.handleSearchForEnter}
               onChange={this.handleSearchChange}
+              onKeyDown={this.handleSearchForEnter}
             />
           </div>
           <div className={classes.grow} />
@@ -446,8 +446,8 @@ class App extends Component<Props, State> {
                       root: classes.inputRoot,
                       input: classes.mobileInput,
                     }}
-                    onKeyDown={this.handleSearchForEnter}
                     onChange={this.handleSearchChange}
+                    onKeyDown={this.handleSearchForEnter}
                     inputRef={this.mobileSearchInput}
                     value={searchText}
                   />
