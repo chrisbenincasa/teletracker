@@ -67,12 +67,11 @@ class MovieDump @Inject()(
 
     rotateFile(0)
 
-    val source = Source
-      .fromFile(file)
+    val source = getSource(file)
 
     val processed = new AtomicLong(0)
 
-    getSource(file)
+    source
       .getLines()
       .map(decode[Thingy](_).right.get)
       .drop(offset)
@@ -149,7 +148,7 @@ class MovieDump @Inject()(
         Source.fromFile(uri)
       case _ =>
         throw new IllegalArgumentException(
-          s"Unsupposed file scheme: ${uri.getScheme}"
+          s"Unsupported file scheme: ${uri.getScheme}"
         )
     }
   }

@@ -38,3 +38,5 @@ sbt-launch.jar
 # Temporary for now..
 base-image/certs
 server/jks
+
+movies.*.json
