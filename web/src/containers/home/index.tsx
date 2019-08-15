@@ -3,6 +3,7 @@ import {
   Grid,
   LinearProgress,
   Theme,
+  Typography,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
@@ -17,6 +18,7 @@ import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { Thing } from '../../types';
+import { Error as ErrorIcon } from '@material-ui/icons';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -42,6 +44,7 @@ const styles = (theme: Theme) =>
   });
 
 interface Props extends WithStyles<typeof styles> {
+  error: boolean;
   isAuthed: boolean;
   isSearching: boolean;
   searchResults?: Thing[];
@@ -58,11 +61,12 @@ class Home extends Component<Props & WithUserProps> {
 
   renderSearchResults = () => {
     let { classes, searchResults, userSelf } = this.props;
+    let firstLoad = !searchResults;
     searchResults = searchResults || [];
 
     return this.props.isSearching ? (
       this.renderLoading()
-    ) : (
+    ) : !this.props.error ? (
       <div
         style={{
           display: 'flex',
@@ -86,7 +90,26 @@ class Home extends Component<Props & WithUserProps> {
               })}
             </Grid>
           </div>
-        ) : null}
+        ) : firstLoad ? null : (
+          <Typography variant="h5" gutterBottom align="center">
+            No results :(
+          </Typography>
+        )}
+      </div>
+    ) : (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flexGrow: 1,
+          alignItems: 'center',
+          marginTop: 25,
+        }}
+      >
+        <ErrorIcon color="inherit" fontSize="large" />
+        <Typography variant="h5" gutterBottom align="center">
+          Something went wrong :(
+        </Typography>
       </div>
     );
   };
@@ -106,6 +129,7 @@ const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isSearching: appState.search.searching,
+    error: appState.search.error,
     searchResults: R.path<Thing[]>(['search', 'results', 'data'], appState),
   };
 };
