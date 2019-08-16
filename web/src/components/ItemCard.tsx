@@ -370,13 +370,13 @@ class ItemCard extends Component<Props, ItemCardState> {
       const cardmediaProps = {
         loading: 'lazy',
       };
+      // TODO: Make image util function to generate srcSet
       return makeLink(
         <CardMedia
           src={'https://image.tmdb.org/t/p/w300' + poster}
           title={thing.name}
           component="img"
           {...cardmediaProps}
-          loading="lazy"
           style={{ height: '100%' }}
           srcSet={
             'https://image.tmdb.org/t/p/w92' +
@@ -393,14 +393,6 @@ class ItemCard extends Component<Props, ItemCardState> {
           }
         />,
       );
-
-      // "w92",
-      // "w154",
-      // "w185",
-      // "w342",
-      // "w500",
-      // "w780",
-      // "original"
     } else {
       return makeLink(
         <div style={{ display: 'flex', width: '100%' }}>
