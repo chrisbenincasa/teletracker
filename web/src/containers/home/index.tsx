@@ -129,6 +129,7 @@ const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isSearching: appState.search.searching,
+    // TODO: Pass SearchResult object that either contains error or a response
     error: appState.search.error,
     searchResults: R.path<Thing[]>(['search', 'results', 'data'], appState),
   };
