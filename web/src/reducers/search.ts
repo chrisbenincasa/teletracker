@@ -1,21 +1,39 @@
 import {
+  SearchFailedAction,
   SearchInitiatedAction,
   SearchSuccessfulAction,
 } from '../actions/search';
-import { SEARCH_INITIATED, SEARCH_SUCCESSFUL } from '../constants/search';
-import { Thing } from "../types";
+import {
+  SEARCH_FAILED,
+  SEARCH_INITIATED,
+  SEARCH_SUCCESSFUL,
+} from '../constants/search';
+import { Thing } from '../types';
 import { flattenActions, handleAction } from './utils';
 
 export interface State {
-  searching: boolean;
   currentSearchText: string;
+  error: boolean;
+  searching: boolean;
   results?: Thing[];
 }
 
 const initialState: State = {
-  searching: false,
   currentSearchText: '',
+  error: false,
+  searching: false,
 };
+
+const searchFailed = handleAction<SearchFailedAction, State>(
+  SEARCH_FAILED,
+  (state, error) => {
+    return {
+      ...state,
+      searching: false,
+      error: true,
+    };
+  },
+);
 
 const searchInitiated = handleAction<SearchInitiatedAction, State>(
   SEARCH_INITIATED,
@@ -39,4 +57,9 @@ const searchSuccess = handleAction<SearchSuccessfulAction, State>(
   },
 );
 
-export default flattenActions(initialState, searchInitiated, searchSuccess);
+export default flattenActions(
+  initialState,
+  searchInitiated,
+  searchSuccess,
+  searchFailed,
+);
