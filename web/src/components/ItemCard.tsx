@@ -366,13 +366,41 @@ class ItemCard extends Component<Props, ItemCardState> {
     );
 
     if (poster) {
+      // This is a workaround because loading prop is not currently typed
+      const cardmediaProps = {
+        loading: 'lazy',
+      };
       return makeLink(
         <CardMedia
-          image={'https://image.tmdb.org/t/p/w300' + poster}
+          src={'https://image.tmdb.org/t/p/w300' + poster}
           title={thing.name}
           component="img"
+          {...cardmediaProps}
+          loading="lazy"
+          style={{ height: '100%' }}
+          srcSet={
+            'https://image.tmdb.org/t/p/w92' +
+            poster +
+            ' 92w, https://image.tmdb.org/t/p/w154' +
+            poster +
+            ' 154w, https://image.tmdb.org/t/p/w342' +
+            poster +
+            ' 342w, https://image.tmdb.org/t/p/w500' +
+            poster +
+            ' 500w, https://image.tmdb.org/t/p/w780' +
+            poster +
+            ' 780w'
+          }
         />,
       );
+
+      // "w92",
+      // "w154",
+      // "w185",
+      // "w342",
+      // "w500",
+      // "w780",
+      // "original"
     } else {
       return makeLink(
         <div style={{ display: 'flex', width: '100%' }}>
