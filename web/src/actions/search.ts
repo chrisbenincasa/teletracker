@@ -17,7 +17,10 @@ const SearchInitiated = createAction<SearchInitiatedAction>(SEARCH_INITIATED);
 const SearchSuccess = createAction<SearchSuccessfulAction>(SEARCH_SUCCESSFUL);
 const SearchFailed = createAction<SearchFailedAction>(SEARCH_FAILED);
 
-export type SearchActionTypes = SearchInitiatedAction | SearchSuccessfulAction;
+export type SearchActionTypes =
+  | SearchFailedAction
+  | SearchInitiatedAction
+  | SearchSuccessfulAction;
 
 export const searchSaga = function*() {
   yield takeLatest(SEARCH_INITIATED, function*({
@@ -28,6 +31,8 @@ export const searchSaga = function*() {
 
       if (response.ok) {
         yield put(SearchSuccess(response.data));
+      } else {
+        yield put(SearchFailed(response.problem));
       }
     } catch (e) {
       yield put(SearchFailed(e));
