@@ -1,0 +1,156 @@
+package com.teletracker.tasks
+
+import com.google.cloud.storage.{BlobId, BlobInfo, Storage}
+import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.Lists._
+import io.circe.generic.semiauto.deriveCodec
+import io.circe.parser._
+import org.slf4j.LoggerFactory
+import java.io.{BufferedWriter, File, FileOutputStream, PrintWriter}
+import java.net.URI
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.atomic.AtomicLong
+import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
+import scala.util.control.NonFatal
+
+trait DataDumpTaskApp[T <: DataDumpTask] extends TeletrackerTaskApp[T] {
+  val file = flag[URI]("input", "The input dump file")
+  val offset = flag[Int]("offset", 0, "The offset to start at")
+  val limit = flag[Int]("limit", -1, "The offset to start at")
+  val flushEvery = flag[Int]("flushEvery", 1000, "The offset to start at")
+  val rotateEvery = flag[Int]("rotateEvery", 10000, "The offset to start at")
+}
+
+abstract class DataDumpTask(
+  storage: Storage
+)(implicit executionContext: ExecutionContext)
+    extends TeletrackerTask {
+  private val logger = LoggerFactory.getLogger(getClass)
+  private val dumpTime = Instant.now().toString
+
+  override def run(args: Args): Unit = {
+    implicit val thingyCodec = deriveCodec[Thingy]
+
+    val file = args.value[URI]("input").get
+    val offset = args.value[Int]("offset").get
+    val limit = args.valueOrDefault("limit", -1)
+    val sleepMs = args.valueOrDefault("sleepMs", 250)
+    val flushEvery = args.valueOrDefault("flushEvery", 100)
+    val rotateEvery = args.valueOrDefault("rotateEvery", 1000)
+
+    var output: File = null
+    var writer: BufferedWriter = null
+
+    def rotateFile(batch: Long): Unit = {
+      synchronized {
+        if (writer ne null) {
+          writer.flush()
+          writer.close()
+        }
+
+        if (output ne null) {
+          uploadToGcp(output)
+        }
+
+        output = new File(f"$baseFileName.$batch%03d.json")
+        writer = new BufferedWriter(
+          new PrintWriter(new FileOutputStream(output))
+        )
+      }
+    }
+
+    rotateFile(0)
+
+    val source = getSource(file)
+
+    val processed = new AtomicLong(0)
+
+    source
+      .getLines()
+      .map(decode[Thingy](_).right.get)
+      .drop(offset)
+      .safeTake(limit)
+      .foreach(thing => {
+        getRawJson(thing.id)
+          .map(
+            json =>
+              writer.synchronized {
+                writer.write(json)
+                writer.newLine()
+              }
+          )
+          .recover {
+            case NonFatal(e) => {
+              logger.info(s"Error retrieving ID: ${thing.id}\n${e.getMessage}")
+            }
+          }
+          .await()
+
+        val total = processed.incrementAndGet()
+
+        if (total % flushEvery == 0) {
+          logger.info(s"Processed ${total} items so far.")
+          writer.flush()
+        }
+
+        if (total % rotateEvery == 0) {
+          val suffix = total / rotateEvery
+          rotateFile(suffix)
+        }
+
+        Thread.sleep(sleepMs)
+      })
+
+    writer.flush()
+    writer.close()
+
+    source.close()
+  }
+
+  protected def getRawJson(currentId: Int): Future[String]
+
+  protected def baseFileName: String
+
+  private def uploadToGcp(file: File) = {
+    val writer = storage.writer(
+      BlobInfo
+        .newBuilder(
+          "teletracker",
+          s"data-dump/$baseFileName/$dumpTime/${file.getName}"
+        )
+        .setContentType("text/plain")
+        .build()
+    )
+
+    val source = Source.fromFile(file).getLines()
+
+    source
+      .grouped(5)
+      .foreach(lines => {
+        val finalString = lines.mkString("\n")
+        val bb = ByteBuffer.wrap(finalString.getBytes)
+        writer.write(bb)
+      })
+
+    writer.close()
+  }
+
+  private def getSource(uri: URI): Source = {
+    uri.getScheme match {
+      case "gs" =>
+        Source.fromBytes(
+          storage
+            .get(BlobId.of(uri.getHost, uri.getPath.stripPrefix("/")))
+            .getContent()
+        )
+      case "file" =>
+        Source.fromFile(uri)
+      case _ =>
+        throw new IllegalArgumentException(
+          s"Unsupported file scheme: ${uri.getScheme}"
+        )
+    }
+  }
+}
