@@ -1,6 +1,6 @@
 package com.teletracker.common.process.tmdb
 
-import com.google.common.cache.{Cache, CacheBuilder}
+import com.google.common.cache.Cache
 import com.teletracker.common.cache.{JustWatchLocalCache, TmdbLocalCache}
 import com.teletracker.common.db.access.{
   NetworksDbAccess,
@@ -16,13 +16,12 @@ import com.teletracker.common.model.justwatch.PopularItem
 import com.teletracker.common.model.tmdb
 import com.teletracker.common.model.tmdb._
 import com.teletracker.common.process.ProcessQueue
-import com.teletracker.common.process.tmdb.TmdbEntity.{Entities, EntityIds}
+import com.teletracker.common.process.tmdb.TmdbEntity.Entities
 import com.teletracker.common.process.tmdb.TmdbProcessMessage.ProcessMovie
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.{
   NetworkCache,
   TmdbMovieImporter,
-  TmdbPersonImporter,
   TmdbShowImporter
 }
 import com.teletracker.common.util.json.circe._
@@ -39,8 +38,8 @@ import scala.util.control.NonFatal
 
 object TmdbEntity {
   type Entities = Movie :+: TvShow :+: Person :+: CNil
-  type EntityIds =
-    (String @@ MovieId) :+: (String @@ TvShowId) :+: (String @@ PersonId) :+: CNil
+  type Ids =
+    (Int @@ MovieId) :+: (Int @@ TvShowId) :+: (Int @@ PersonId) :+: CNil
 }
 
 object TmdbEntityProcessor {
@@ -82,7 +81,7 @@ class TmdbEntityProcessor @Inject()(
     e.map(expander.ExpandItem).fold(ResultProcessor)
   }
 
-  def expandAndProcessEntityId(e: EntityIds): Future[ProcessResult] = {
+  def expandAndProcessEntityId(e: TmdbEntity.Ids): Future[ProcessResult] = {
     e.map(expander.ExpandItem).fold(ResultProcessor)
   }
 

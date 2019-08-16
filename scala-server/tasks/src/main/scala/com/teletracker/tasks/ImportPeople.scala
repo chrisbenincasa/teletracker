@@ -32,7 +32,7 @@ class ImportPeople @Inject()(
       r().flatMap(res => {
         SequentialFutures.serialize(res.results, Some(250 millis))(person => {
           expander
-            .expandPerson(person.id.toString)
+            .expandPerson(person.id)
             .flatMap(processor.handlePerson)
         })
       })

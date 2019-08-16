@@ -1,6 +1,6 @@
 package com.teletracker.tasks.http
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.{Blocker, ContextShift, IO}
 import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.http.{
   HttpClient,
@@ -10,7 +10,9 @@ import com.teletracker.common.http.{
 }
 import javax.inject.Inject
 import org.http4s.{EntityDecoder, Uri}
-import org.http4s.client.blaze._
+import java.util.concurrent.Executors
+//import org.http4s.client.blaze._
+import org.http4s.client.JavaNetClientBuilder
 import scala.concurrent.{ExecutionContext, Future}
 
 class Http4sClient @Inject()(
@@ -66,5 +68,10 @@ class Http4sClient @Inject()(
       )
   }
 
-  private val getClient = BlazeClientBuilder[IO](executionContext).allocated
+  private val blockingExecCtx =
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+
+  private val getClient = JavaNetClientBuilder[IO](
+    Blocker.liftExecutionContext(blockingExecCtx)
+  ).allocated
 }

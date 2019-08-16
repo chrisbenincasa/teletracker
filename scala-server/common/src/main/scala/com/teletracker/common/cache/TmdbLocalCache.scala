@@ -13,15 +13,16 @@ import scala.util.Success
 
 @Singleton
 class TmdbLocalCache @JInject()(implicit executionContext: ExecutionContext) {
-  private val cache: Cache[String, TmdbEntity.Entities] = CacheBuilder
-    .newBuilder()
-    .expireAfterWrite(30, TimeUnit.MINUTES)
-    .maximumSize(1000)
-    .build()
+  private val cache: Cache[String, TmdbEntity.Entities] =
+    CacheBuilder
+      .newBuilder()
+      .expireAfterWrite(30, TimeUnit.MINUTES)
+      .maximumSize(1000)
+      .build()
 
   def getOrSetEntity[T](
     thingType: ThingType,
-    id: String,
+    id: Int,
     f: => Future[T]
   )(implicit inj: Inject[Entities, T],
     select: Selector[Entities, T]
@@ -57,7 +58,7 @@ class TmdbLocalCache @JInject()(implicit executionContext: ExecutionContext) {
 
   private def keyForType(
     thingType: ThingType,
-    id: String
+    id: Int
   ): String = {
     s"$thingType.$id"
   }

@@ -15,11 +15,6 @@ class ItemExpander @Inject()(
 )(implicit executionContext: ExecutionContext) {
   def expandMovie(
     id: Int,
-    extraExpandFields: List[String]
-  ): Future[Movie] = expandMovie(id.toString)
-
-  def expandMovie(
-    id: String,
     extraExpandFields: List[String] = Nil
   ): Future[Movie] = {
     cache.getOrSetEntity(
@@ -39,7 +34,7 @@ class ItemExpander @Inject()(
     )
   }
 
-  def expandTvShow(id: String): Future[TvShow] = {
+  def expandTvShow(id: Int): Future[TvShow] = {
     cache.getOrSetEntity(ThingType.Show, id, {
       tmdbClient.makeRequest[TvShow](
         s"tv/$id",
@@ -54,7 +49,7 @@ class ItemExpander @Inject()(
     })
   }
 
-  def expandPerson(id: String): Future[Person] = {
+  def expandPerson(id: Int): Future[Person] = {
     tmdbClient.makeRequest[Person](
       s"person/$id",
       Seq(
@@ -68,9 +63,9 @@ class ItemExpander @Inject()(
   }
 
   object ExpandItem extends shapeless.Poly1 {
-    implicit val atMovieId: Case.Aux[String @@ MovieId, Future[Movie]] = at {
+    implicit val atMovieIdInt: Case.Aux[Int @@ MovieId, Future[Movie]] = at {
       m =>
-        expandMovie(m)
+        expandMovie(m, Nil)
     }
 
     implicit val atMovie: Case.Aux[Movie, Future[Movie]] = at { m =>
@@ -78,19 +73,18 @@ class ItemExpander @Inject()(
     }
 
     implicit val atShow: Case.Aux[TvShow, Future[TvShow]] = at { s =>
-      expandTvShow(s.id.toString)
+      expandTvShow(s.id)
     }
 
-    implicit val atShowId: Case.Aux[String @@ TvShowId, Future[TvShow]] = at {
-      s =>
-        expandTvShow(s)
+    implicit val atShowId: Case.Aux[Int @@ TvShowId, Future[TvShow]] = at { s =>
+      expandTvShow(s)
     }
 
     implicit val atPerson: Case.Aux[Person, Future[Person]] = at { p =>
-      expandPerson(p.id.toString)
+      expandPerson(p.id)
     }
 
-    implicit val atPersonId: Case.Aux[String @@ PersonId, Future[Person]] = at {
+    implicit val atPersonId: Case.Aux[Int @@ PersonId, Future[Person]] = at {
       p =>
         expandPerson(p)
     }

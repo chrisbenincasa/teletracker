@@ -11,8 +11,7 @@ import scala.concurrent.ExecutionContext
 object ServerModules {
   def apply()(implicit executionContext: ExecutionContext): Seq[Module] =
     Modules() ++ Seq(
-      new HttpClientModule,
-      new GoogleModule
+      new HttpClientModule
     )
 }
 

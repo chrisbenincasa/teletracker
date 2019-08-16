@@ -5,15 +5,16 @@ import com.teletracker.common.db.model.{
   ObjectMetadata,
   ThingType
 }
-import com.teletracker.common.model.tmdb._
-import com.teletracker.common.process.tmdb.TmdbEntity.EntityIds
+import com.teletracker.common.external.Ids.ExternalIds
+import com.teletracker.common.external.{MovieId, PersonId, TvShowId}
+import com.teletracker.common.model.tmdb.{Movie, Person, TvShow}
 import shapeless.{tag, Coproduct, Inl, Inr}
 import shapeless.union._
 
 object ObjectMetadataUtils {
   def metadataMatchesId(
     objectMetadata: ObjectMetadata,
-    entityId: EntityIds
+    entityId: ExternalIds
   ): Boolean = {
     entityId match {
       case Inl(movieId) =>
@@ -40,11 +41,13 @@ object ObjectMetadataUtils {
   ): Boolean = {
     source match {
       case ExternalSource.TheMovieDb =>
-        val entityId: EntityIds = typ match {
-          case ThingType.Movie => Coproduct[EntityIds](tag[MovieId][String](id))
-          case ThingType.Show  => Coproduct[EntityIds](tag[TvShowId][String](id))
+        val entityId: ExternalIds = typ match {
+          case ThingType.Movie =>
+            Coproduct[ExternalIds](tag[MovieId][String](id))
+          case ThingType.Show =>
+            Coproduct[ExternalIds](tag[TvShowId][String](id))
           case ThingType.Person =>
-            Coproduct[EntityIds](tag[PersonId][String](id))
+            Coproduct[ExternalIds](tag[PersonId][String](id))
         }
 
         metadataMatchesId(objectMetadata, entityId)
