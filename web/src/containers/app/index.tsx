@@ -229,22 +229,22 @@ class App extends Component<Props, State> {
   };
 
   handleSearchForSubmit = () => {
-    this.execSearch(this.state.searchText, false);
+    this.execSearch(this.state.searchText);
   };
 
   handleSearchForEnter = (ev: React.KeyboardEvent<HTMLInputElement>) => {
     if (ev.keyCode === 13) {
-      this.execSearch(this.state.searchText, false);
+      this.execSearch(this.state.searchText);
       ev.currentTarget.blur();
     }
   };
 
-  execSearch = (text: string, force: boolean = false) => {
+  execSearch = (text: string) => {
     if (this.props.location.pathname !== '/') {
       this.props.history.push('/');
     }
 
-    if (text.length >= 1 && (force || this.props.currentSearchText !== text)) {
+    if (text.length >= 1 && this.props.currentSearchText !== text) {
       this.props.search(text);
     }
   };
