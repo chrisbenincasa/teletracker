@@ -64,11 +64,6 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       position: 'relative',
     },
-    cardMedia: {
-      height: 0,
-      width: '100%',
-      paddingTop: '150%',
-    },
     cardContent: {
       flexGrow: 1,
     },
@@ -373,9 +368,9 @@ class ItemCard extends Component<Props, ItemCardState> {
     if (poster) {
       return makeLink(
         <CardMedia
-          className={this.props.classes.cardMedia}
           image={'https://image.tmdb.org/t/p/w300' + poster}
           title={thing.name}
+          component="img"
         />,
       );
     } else {
