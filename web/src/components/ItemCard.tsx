@@ -373,7 +373,7 @@ class ItemCard extends Component<Props, ItemCardState> {
       // TODO: Make image util function to generate srcSet
       return makeLink(
         <CardMedia
-          src={'https://image.tmdb.org/t/p/w300' + poster}
+          src={'https://image.tmdb.org/t/p/w342' + poster}
           title={thing.name}
           component="img"
           {...cardmediaProps}
