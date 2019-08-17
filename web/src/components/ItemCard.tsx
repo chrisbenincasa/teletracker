@@ -15,7 +15,6 @@ import {
   Grid,
   Icon,
   IconButton,
-  Link,
   Theme,
   Tooltip,
   Typography,
@@ -350,18 +349,14 @@ class ItemCard extends Component<Props, ItemCardState> {
       >
         {isHovering && hoverRating && this.renderRatingHover()}
         {isHovering && !hoverRating && this.renderHoverActions()}
-        <Link
+
+        <RouterLink
+          {...this.props}
+          to={'/item/' + thing.type + '/' + thing.id}
           className={className}
-          component={props => (
-            <RouterLink
-              {...props}
-              to={'/item/' + thing.type + '/' + thing.id}
-            />
-          )}
-          style={{ position: 'relative' }}
         >
           {children}
-        </Link>
+        </RouterLink>
       </div>
     );
 
