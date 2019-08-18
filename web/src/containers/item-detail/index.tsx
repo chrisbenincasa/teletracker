@@ -34,6 +34,8 @@ import {
   getTitlePath,
   getVoteAveragePath,
 } from '../../utils/metadata-access';
+import { ResponsiveImage } from '../../components/ResponsiveImage';
+import imagePlaceholder from '../../assets/images/imagePlaceholder.png';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -161,20 +163,20 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderPoster = (thing: Thing) => {
-    let poster = getPosterPath(thing);
-    if (poster) {
-      return (
-        <CardMedia
-          className={this.props.classes.cardMedia}
-          image={'https://image.tmdb.org/t/p/w342' + poster}
-          title={thing.name}
-        />
-      );
-    } else {
-      return null;
-    }
-  };
+  // renderPoster = (thing: Thing) => {
+  //   let poster = getPosterPath(thing);
+  //   if (poster) {
+  //     return (
+  //       <CardMedia
+  //         className={this.props.classes.cardMedia}
+  //         image={'https://image.tmdb.org/t/p/w342' + poster}
+  //         title={thing.name}
+  //       />
+  //     );
+  //   } else {
+  //     return null;
+  //   }
+  // };
 
   renderDescriptiveDetails = (thing: Thing) => {
     let title = getTitlePath(thing) || '';
@@ -320,7 +322,11 @@ class ItemDetails extends Component<Props, State> {
             style={backdropStyle}
           >
             <Paper className={this.props.classes.imageContainer}>
-              {this.renderPoster(itemDetail)}
+              <CardMedia
+                src={imagePlaceholder}
+                item={itemDetail}
+                component={ResponsiveImage}
+              />
             </Paper>
             <div className={this.props.classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(itemDetail)}
