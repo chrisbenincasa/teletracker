@@ -35,19 +35,22 @@ import { bindActionCreators, Dispatch } from 'redux';
 import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
 import { connect } from 'react-redux';
 import { GridProps } from '@material-ui/core/Grid';
-import Check from '@material-ui/icons/Check';
-import DeleteIcon from '@material-ui/icons/Delete';
-import PlaylistAdd from '@material-ui/icons/PlaylistAdd';
-import Close from '@material-ui/icons/Close';
-import ThumbDown from '@material-ui/icons/ThumbDown';
-import ThumbUp from '@material-ui/icons/ThumbUp';
+import {
+  Check,
+  Delete as DeleteIcon,
+  PlaylistAdd,
+  Close,
+  ThumbDown,
+  ThumbUp,
+} from '@material-ui/icons';
 import {
   removeUserItemTags,
   updateUserItemTags,
   UserUpdateItemTagsPayload,
 } from '../actions/user';
 import withUser, { WithUserProps } from '../components/withUser';
-import {UserSelf} from "../reducers/user";
+import { ResponsiveImage } from './ResponsiveImage';
+import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -368,26 +371,12 @@ class ItemCard extends Component<Props, ItemCardState> {
       // TODO: Make image util function to generate srcSet
       return makeLink(
         <CardMedia
-          src={'https://image.tmdb.org/t/p/w342' + poster}
-          title={thing.name}
-          component="img"
-          {...cardmediaProps}
-          style={{ height: '100%' }}
-          srcSet={
-            'https://image.tmdb.org/t/p/w92' +
-            poster +
-            ' 92w, https://image.tmdb.org/t/p/w154' +
-            poster +
-            ' 154w, https://image.tmdb.org/t/p/w342' +
-            poster +
-            ' 342w, https://image.tmdb.org/t/p/w500' +
-            poster +
-            ' 500w, https://image.tmdb.org/t/p/w780' +
-            poster +
-            ' 780w'
-          }
+          src={imagePlaceholder}
+          item={thing}
+          component={ResponsiveImage}
         />,
       );
+      // return makeLink(<ResponsiveImage item={thing} />);
     } else {
       return makeLink(
         <div style={{ display: 'flex', width: '100%' }}>
