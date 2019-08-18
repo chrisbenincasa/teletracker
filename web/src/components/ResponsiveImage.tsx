@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from '@material-ui/core';
 import { getPosterPath } from '../utils/metadata-access';
 import { Thing } from '../types';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
@@ -41,18 +42,43 @@ export const ResponsiveImage: React.FC<imgProps> = ({ item }) => {
 
     return sourceSet.join(',');
   }
-
-  return (
-    <picture>
-      {generateSource(imageSpecs)}
-      <img
-        data-async-image="true"
-        src={imagePlaceholder}
-        alt=""
-        decoding="async"
-        {...imgProps}
-        style={{ width: '100%', objectFit: 'cover', height: '100%' }}
-      />
-    </picture>
-  );
+  if (poster) {
+    return (
+      <picture>
+        {generateSource(imageSpecs)}
+        <img
+          data-async-image="true"
+          src={imagePlaceholder}
+          alt=""
+          decoding="async"
+          {...imgProps}
+          style={{ width: '100%', objectFit: 'cover', height: '100%' }}
+        />
+      </picture>
+    );
+  } else {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          width: '100%',
+          height: '100%',
+          color: '#9e9e9e',
+          backgroundColor: '#e0e0e0',
+          fontSize: '10em',
+        }}
+      >
+        <Icon
+          style={{
+            alignSelf: 'center',
+            margin: '0 auto',
+            display: 'inline-block',
+          }}
+          fontSize="inherit"
+        >
+          broken_image
+        </Icon>
+      </div>
+    );
+  }
 };
