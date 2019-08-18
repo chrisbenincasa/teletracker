@@ -1,6 +1,7 @@
 import React from 'react';
 import { getPosterPath } from '../utils/metadata-access';
 import { Thing } from '../types';
+import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 
 interface imgProps {
   item: Thing;
@@ -8,34 +9,45 @@ interface imgProps {
 
 export const ResponsiveImage: React.FC<imgProps> = ({ item }) => {
   let poster = getPosterPath(item);
+  const baseImageURL = 'https://image.tmdb.org/t/p/';
+  /* TODO: Figure out image/webp story and add here */
+  const imageSpecs = [
+    {
+      type: 'image/jpeg',
+      sizes: [92, 154, 342, 500, 780],
+    },
+  ];
+
   // This is a workaround because loading prop is not currently typed
   const imgProps = {
     loading: 'lazy',
   };
 
+  function generateSource(imageSpecs) {
+    for (let x = 0; x <= imageSpecs.length; x++) {
+      return (
+        <source
+          srcSet={generateSrcSet(imageSpecs[x].sizes)}
+          type={imageSpecs[x].type}
+        />
+      );
+    }
+  }
+
+  function generateSrcSet(supportedSizes: number[]) {
+    const sourceSet = supportedSizes.map(size => {
+      return `${baseImageURL}w${size}${poster} ${size}w`;
+    });
+
+    return sourceSet.join(',');
+  }
+
   return (
     <picture>
-      {/* TODO: <source srcset="" type="image/webp"> */}
-      {/* TODO: Make image util function to generate srcSet */}
-      <source
-        srcSet={
-          'https://image.tmdb.org/t/p/w92' +
-          poster +
-          ' 92w, https://image.tmdb.org/t/p/w154' +
-          poster +
-          ' 154w, https://image.tmdb.org/t/p/w342' +
-          poster +
-          ' 342w, https://image.tmdb.org/t/p/w500' +
-          poster +
-          ' 500w, https://image.tmdb.org/t/p/w780' +
-          poster +
-          ' 780w'
-        }
-        type="image/jpeg"
-      />
+      {generateSource(imageSpecs)}
       <img
         data-async-image="true"
-        src={'https://image.tmdb.org/t/p/w342' + poster}
+        src={imagePlaceholder}
         alt=""
         decoding="async"
         {...imgProps}
