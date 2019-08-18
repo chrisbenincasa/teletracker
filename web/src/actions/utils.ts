@@ -1,8 +1,8 @@
 import { TeletrackerApi } from '../utils/api-client';
 import { call, put, take, race, delay } from '@redux-saga/core/effects';
-import client from '../utils/api-client';
 import { FSA } from 'flux-standard-action';
 import { SET_TOKEN, TOKEN_SET } from '../constants/auth';
+import client, { SagaTeletrackerClient } from '../utils/saga-client';
 
 /**
  * Alternative to "createAction" where the generation action creator function takes
@@ -38,8 +38,8 @@ export function createAction<T extends FSA<any, any>>(actionType: T['type']) {
  * value on the call so the clalsite doesn't have to worry abou tit
  */
 export function clientEffect<
-  Fn extends (this: TeletrackerApi, ...args: any[]) => any
->(fn: (clnt: TeletrackerApi) => Fn, ...args: Parameters<Fn>) {
+  Fn extends (this: SagaTeletrackerClient, ...args: any[]) => any
+>(fn: (clnt: SagaTeletrackerClient) => Fn, ...args: Parameters<Fn>) {
   return call(
     {
       context: client,

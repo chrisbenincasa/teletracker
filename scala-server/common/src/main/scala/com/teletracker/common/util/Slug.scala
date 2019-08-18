@@ -23,16 +23,16 @@ object Slug {
     year: Int
   ): Slug = {
     val slug = NormalizerFunc(input)
-    new Slug(s"$slug-$year")
+    raw(s"$slug-$year")
   }
 
   def forString(input: String): Slug = new Slug(NormalizerFunc(input))
 
-  @JsonCreator
   def raw(input: String): Slug = new Slug(input)
 }
 
-class Slug private (val value: String) extends AnyVal {
+//@JsonCreator
+class Slug(val value: String) extends AnyVal {
   @JsonValue
   override def toString: String = value
 }

@@ -39,7 +39,7 @@ class ListsDbAccess @Inject()(
   }
 
   def markListDeleted(
-    userId: Int,
+    userId: String,
     listId: Int
   ) = {
     run {
@@ -51,7 +51,7 @@ class ListsDbAccess @Inject()(
   }
 
   def findItemsInList(
-    userId: Int,
+    userId: String,
     listId: Int
   ) = {
     run {

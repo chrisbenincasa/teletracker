@@ -13,7 +13,6 @@ case class Genre(
 
 class Genres @Inject()(
   val driver: JdbcProfile,
-  val users: Users,
   val implicits: DbImplicits) {
   import driver.api._
   import implicits._

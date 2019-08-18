@@ -46,7 +46,7 @@ class FinagleHttpClient @Inject()(
     val resFut = client(req)
 
     resFut.onSuccess(res => {
-      promise.success(HttpResponse(res.contentString))
+      promise.success(HttpResponse(res.headerMap.toMap, res.contentString))
     })
 
     resFut.onFailure(promise.tryFailure)
@@ -65,7 +65,7 @@ class FinagleHttpClient @Inject()(
     resFut.onSuccess(res => {
       val bb = new Array[Byte](res.content.length)
       res.content.write(bb, 0)
-      promise.success(HttpResponse(bb))
+      promise.success(HttpResponse(res.headerMap.toMap, bb))
     })
 
     resFut.onFailure(promise.tryFailure)

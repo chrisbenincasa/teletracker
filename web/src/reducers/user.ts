@@ -1,6 +1,8 @@
 import {
   UserActionTypes,
+  UserSelfRetrieveEmptyAction,
   UserSelfRetrieveSuccessAction,
+  UserUpdateSuccessAction,
 } from '../actions/user';
 import {
   USER_SELF_CREATE_LIST,
@@ -12,22 +14,29 @@ import {
   USER_SELF_RETRIEVE_INITIATED,
   USER_SELF_RETRIEVE_SUCCESS,
   USER_SELF_UPDATE_NETWORKS,
+  USER_SELF_UPDATE_SUCCESS,
 } from '../constants/user';
-import { User } from '../types';
+import { User, UserPreferences, Network } from '../types';
 import { flattenActions, handleAction } from './utils';
+import { LOGOUT_SUCCESSFUL } from '../constants/auth';
 
 export type Loading = { [X in UserActionTypes['type']]: boolean };
 
+export interface UserSelf {
+  user: firebase.User;
+  preferences: UserPreferences;
+  networks: Network[];
+}
+
 export interface State {
   retrievingSelf: boolean;
-  self: User | undefined;
+  self?: UserSelf;
   updatingSelf: boolean;
   loading: Partial<Loading>;
 }
 
 const initialState: State = {
   retrievingSelf: false,
-  self: undefined,
   updatingSelf: false,
   loading: {},
 };
@@ -44,14 +53,50 @@ const selfRetrieveInitiated = handleAction(
 
 const selfRetrieveSuccess = handleAction(
   USER_SELF_RETRIEVE_SUCCESS,
-  (state: State, action: UserSelfRetrieveSuccessAction) => {
-    return {
-      ...state,
-      retrievingSelf: false,
-      self: action.payload,
-    };
+  (
+    state: State,
+    action: UserSelfRetrieveSuccessAction | UserSelfRetrieveEmptyAction,
+  ) => {
+    if (action.payload) {
+      return {
+        ...state,
+        retrievingSelf: false,
+        self: action.payload,
+      };
+    } else {
+      return {
+        ...state,
+        retrievingSelf: false,
+        self: undefined,
+      } as State;
+    }
   },
 );
+
+const updateUserMetadataSuccess = handleAction(
+  USER_SELF_UPDATE_SUCCESS,
+  (state: State, action: UserUpdateSuccessAction) => {
+    if (action.payload) {
+      return {
+        ...state,
+        self: {
+          ...(state.self || {}),
+          preferences: action.payload.preferences,
+          networks: action.payload.networks,
+        },
+      } as State;
+    } else {
+      return state;
+    }
+  },
+);
+
+const logoutUser = handleAction(LOGOUT_SUCCESSFUL, (state: State) => {
+  return {
+    ...state,
+    self: undefined,
+  } as State;
+});
 
 const userUpdateNetworks = handleAction(
   USER_SELF_UPDATE_NETWORKS,
@@ -143,4 +188,6 @@ export default flattenActions(
   userDeleteListSuccess,
   userRenameList,
   userRenameListSuccess,
+  logoutUser,
+  updateUserMetadataSuccess,
 );

@@ -180,7 +180,7 @@ class ListDetail extends Component<Props, State> {
   componentDidMount() {
     let force = !this.state.existingList || !this.state.existingList!.things;
     this.props.retrieveList({
-      listId: this.props.match.params.id,
+      listId: Number(this.props.match.params.id),
       force: true,
     });
   }
@@ -193,7 +193,7 @@ class ListDetail extends Component<Props, State> {
       this.setState({ loadingList: true });
 
       this.props.retrieveList({
-        listId: this.props.match.params.id,
+        listId: Number(this.props.match.params.id),
         force: true,
       });
     } else if (

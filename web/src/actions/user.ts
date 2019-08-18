@@ -1,16 +1,17 @@
 import {
   actionChannel,
+  call,
   put,
   select,
   take,
   takeEvery,
   takeLeading,
 } from '@redux-saga/core/effects';
-import { ApiResponse } from 'apisauce';
+import * as firebase from 'firebase/app';
 import { FSA } from 'flux-standard-action';
 import * as R from 'ramda';
+import { END, eventChannel } from 'redux-saga';
 import {
-  USER_SELF_ADD_NETWORK,
   USER_SELF_CREATE_LIST,
   USER_SELF_CREATE_LIST_SUCCESS,
   USER_SELF_DELETE_LIST,
@@ -26,12 +27,21 @@ import {
   USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
   USER_SELF_UPDATE_NETWORKS,
   USER_SELF_UPDATE_PREFS,
+  USER_SELF_UPDATE_SUCCESS,
 } from '../constants/user';
 import { AppState } from '../reducers';
-import { ActionType, Network, User, UserPreferences } from '../types';
-import { DataResponse, TeletrackerResponse } from '../utils/api-client';
+import {
+  ActionType,
+  Network,
+  User,
+  UserDetails,
+  UserPreferences,
+} from '../types';
+import TeletrackerApi, { TeletrackerResponse } from '../utils/api-client';
 import { retrieveAllLists } from './lists';
-import { clientEffect, createAction } from './utils';
+import { clientEffect, createAction, createBasicAction } from './utils';
+import { UnsetToken } from './auth';
+import { UserSelf } from '../reducers/user';
 
 interface UserSelfRetrieveInitiatedPayload {
   force: boolean;
@@ -42,9 +52,19 @@ export type UserSelfRetrieveInitiatedAction = FSA<
   UserSelfRetrieveInitiatedPayload
 >;
 
+export interface UserSelfRetrievePayload {
+  user: firebase.User;
+  preferences: UserPreferences;
+  networks: Network[];
+}
+
 export type UserSelfRetrieveSuccessAction = FSA<
   typeof USER_SELF_RETRIEVE_SUCCESS,
-  User
+  UserSelfRetrievePayload
+>;
+
+export type UserSelfRetrieveEmptyAction = FSA<
+  typeof USER_SELF_RETRIEVE_SUCCESS
 >;
 
 export interface UserUpdateNetworksPayload {
@@ -57,11 +77,21 @@ export type UserUpdateNetworksAction = FSA<
   UserUpdateNetworksPayload
 >;
 
-export type UserUpdateAction = FSA<typeof USER_SELF_UPDATE, User>;
+export type UserUpdateAction = FSA<
+  typeof USER_SELF_UPDATE,
+  Partial<Omit<UserSelf, 'user'>>
+>;
 
 export type UserUpdatePrefsAction = FSA<
   typeof USER_SELF_UPDATE_PREFS,
   UserPreferences
+>;
+
+export type UserUpdateSuccessPayload = Omit<UserSelf, 'user'>;
+
+export type UserUpdateSuccessAction = FSA<
+  typeof USER_SELF_UPDATE_SUCCESS,
+  UserUpdateSuccessPayload
 >;
 
 export interface UserCreateListPayload {
@@ -154,6 +184,10 @@ export const RetrieveUserSelfSuccess = createAction<
   UserSelfRetrieveSuccessAction
 >(USER_SELF_RETRIEVE_SUCCESS);
 
+export const RetrieveUserSelfEmpty = createBasicAction<
+  UserSelfRetrieveEmptyAction
+>(USER_SELF_RETRIEVE_SUCCESS);
+
 export const updateNetworksForUser = createAction<UserUpdateNetworksAction>(
   USER_SELF_UPDATE_NETWORKS,
 );
@@ -202,27 +236,80 @@ export const removeUserItemTagsSuccess = createAction<
   UserRemoveItemTagsSuccessAction
 >(USER_SELF_REMOVE_ITEM_TAGS_SUCCESS);
 
+export const updateUserSuccess = createAction<UserUpdateSuccessAction>(
+  USER_SELF_UPDATE_SUCCESS,
+);
+
+export const watchAuthState = function*() {
+  const authStateChannel = yield call(authStateChannelMaker);
+  try {
+    while (true) {
+      let { user } = yield take(authStateChannel);
+      if (user) {
+        let token: string = yield call(() => user.getIdToken());
+        yield call([TeletrackerApi, TeletrackerApi.setToken], token);
+        yield put({ type: 'auth/SET_TOKEN', payload: token });
+        yield put({ type: 'USER_STATE_CHANGE', payload: user });
+      } else {
+        yield put(UnsetToken());
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const authStateChannelMaker = function*() {
+  return eventChannel(emitter => {
+    return firebase.auth().onAuthStateChanged(
+      user => {
+        emitter({ user });
+      },
+      err => {
+        console.error(err);
+      },
+      () => {
+        emitter(END);
+      },
+    );
+  });
+};
+
 export const retrieveUserSaga = function*() {
+  const authStateChannel = yield call(authStateChannelMaker);
+
+  function* self(force: boolean) {
+    let currState: AppState = yield select();
+
+    if (currState.userSelf.self && currState.userSelf.self.user && !force) {
+      return { user: currState.userSelf.self.user };
+    } else {
+      let user = firebase.auth().currentUser;
+      if (user) {
+        return { user };
+      } else {
+        return yield take(authStateChannel);
+      }
+    }
+  }
+
   yield takeLeading(USER_SELF_RETRIEVE_INITIATED, function*({
     payload: { force } = { force: false },
   }: UserSelfRetrieveInitiatedAction) {
-    let currState: AppState = yield select();
+    let { user } = yield self(force);
 
-    if (currState.userSelf.self && !force) {
-      yield put(RetrieveUserSelfSuccess(currState.userSelf.self));
+    if (!user) {
+      yield put(RetrieveUserSelfEmpty());
     } else {
-      try {
-        let response: ApiResponse<DataResponse<User>> = yield clientEffect(
-          client => client.getUserSelf,
+      let metadata = yield clientEffect(client => client.getUserSelf);
+      if (metadata.ok && metadata.data) {
+        yield put(
+          RetrieveUserSelfSuccess({
+            user: user as firebase.User,
+            preferences: metadata.data.data.preferences,
+            networks: metadata.data.data.networkPreferences,
+          }),
         );
-
-        if (response.ok && response.data) {
-          yield put(RetrieveUserSelfSuccess(response.data!.data));
-        } else {
-          // TODO handle error
-        }
-      } catch (e) {
-        // TODO handle error
       }
     }
   });
@@ -233,18 +320,18 @@ export const updateNetworksForUserSaga = function*() {
     payload,
   }: UserUpdateNetworksAction) {
     if (payload) {
-      let currUser: User | undefined = yield select(
+      let currUser: UserSelf | undefined = yield select(
         (state: AppState) => state.userSelf!.self,
       );
 
       if (!currUser) {
         // TODO: Fail
       } else {
-        let existingIds = R.map(R.prop('id'), currUser.networkSubscriptions);
+        let existingIds = R.map(R.prop('id'), currUser.networks);
         let removeIds = R.map(R.prop('id'), payload.remove);
         let subsRemoved = R.reject(
           sub => R.contains(sub.id, removeIds),
-          currUser.networkSubscriptions,
+          currUser.networks,
         );
 
         let newSubs = R.concat(
@@ -252,23 +339,12 @@ export const updateNetworksForUserSaga = function*() {
           R.reject(sub => R.contains(sub.id, existingIds), payload.add),
         );
 
-        let newUser: User = {
+        let newUser: UserSelf = {
           ...currUser,
-          networkSubscriptions: newSubs,
+          networks: newSubs,
         };
 
-        yield put(RetrieveUserSelfSuccess(newUser));
-
-        let response: TeletrackerResponse<User> = yield clientEffect(
-          client => client.updateUserSelf,
-          newUser,
-        );
-
-        if (response.ok) {
-          yield put(RetrieveUserSelfSuccess(response.data!.data));
-        } else {
-          // TODO: Handle error
-        }
+        yield put({ type: USER_SELF_UPDATE, payload: newUser });
       }
     }
   });
@@ -280,14 +356,14 @@ export const updateUserPreferencesSaga = function*() {
     const { payload }: UserUpdatePrefsAction = yield take(chan);
 
     if (payload) {
-      let currUser: User | undefined = yield select(
+      let currUser: UserSelf | undefined = yield select(
         (state: AppState) => state.userSelf!.self,
       );
 
       if (currUser) {
-        let newUser: User = {
+        let newUser: UserSelf = {
           ...currUser,
-          userPreferences: payload,
+          preferences: payload,
         };
 
         yield put({ type: USER_SELF_UPDATE, payload: newUser });
@@ -301,13 +377,19 @@ export const updateUserSaga = function*() {
   while (true) {
     const { payload }: UserUpdateAction = yield take(chan);
     if (payload) {
-      let response: TeletrackerResponse<User> = yield clientEffect(
+      let response: TeletrackerResponse<UserDetails> = yield clientEffect(
         client => client.updateUserSelf,
-        payload,
+        payload.networks,
+        payload.preferences,
       );
 
       if (response.ok) {
-        yield put(RetrieveUserSelfSuccess(response.data!.data));
+        yield put(
+          updateUserSuccess({
+            networks: response.data!.data.networkPreferences,
+            preferences: response.data!.data.preferences,
+          }),
+        );
       }
     }
   }

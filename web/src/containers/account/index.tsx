@@ -20,7 +20,7 @@ import {
 } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import CheckIcon from '@material-ui/icons/Check';
-import Slider from '@material-ui/lab/Slider';
+import Slider from '@material-ui/core/Slider';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -152,11 +152,9 @@ class Account extends Component<Props, State> {
     super(props);
 
     if (props.userSelf) {
-      this.state.formatSlider =
-        props.userSelf.userPreferences.presentationTypes.length;
+      this.state.formatSlider = props.userSelf.preferences.presentationTypes.length;
 
-      this.state.switches.showOnlyNetworks =
-        props.userSelf.userPreferences.showOnlyNetworkSubscriptions;
+      this.state.switches.showOnlyNetworks = props.userSelf.preferences.showOnlyNetworkSubscriptions;
     }
   }
 
@@ -167,11 +165,10 @@ class Account extends Component<Props, State> {
   componentDidUpdate(oldProps: Props) {
     if (!oldProps.userSelf && this.props.userSelf) {
       this.setState({
-        formatSlider: this.props.userSelf.userPreferences.presentationTypes
-          .length,
+        formatSlider: this.props.userSelf.preferences.presentationTypes.length,
         switches: {
           ...this.state.switches,
-          showOnlyNetworks: this.props.userSelf.userPreferences
+          showOnlyNetworks: this.props.userSelf.preferences
             .showOnlyNetworkSubscriptions,
         },
       });
@@ -203,7 +200,7 @@ class Account extends Component<Props, State> {
 
   handleSwitchChange = (switchName: string) => event => {
     let newPrefs: UserPreferences = {
-      ...this.props.userSelf!.userPreferences,
+      ...this.props.userSelf.preferences,
       showOnlyNetworkSubscriptions: event.target.checked,
     };
 
@@ -223,7 +220,7 @@ class Account extends Component<Props, State> {
   handleSliderChange = (event, value) => {
     this.setState({ formatSlider: value });
 
-    let currentPref = this.props.userSelf!.userPreferences.presentationTypes;
+    let currentPref = this.props.userSelf.preferences.presentationTypes;
 
     switch (value) {
       case 1:
@@ -240,7 +237,7 @@ class Account extends Component<Props, State> {
     }
 
     let newPrefs: UserPreferences = {
-      ...this.props.userSelf!.userPreferences,
+      ...this.props.userSelf.preferences,
       presentationTypes: currentPref,
     };
 
@@ -265,7 +262,7 @@ class Account extends Component<Props, State> {
   isSubscribedToNetwork = (network: Network) => {
     return R.any(
       R.propEq('slug', network.slug),
-      this.props.userSelf!.networkSubscriptions,
+      this.props.userSelf.networks,
     );
   };
 
@@ -323,10 +320,7 @@ class Account extends Component<Props, State> {
   renderSettings() {
     let { classes, drawerOpen, theme, userSelf } = this.props;
 
-    let usersNetworks = R.map(
-      R.prop('id'),
-      this.props.userSelf!.networkSubscriptions,
-    );
+    let usersNetworks = R.map(R.prop('id'), this.props.userSelf.networks);
 
     let networks: Network[];
     if (this.state.networkFilter && this.state.networkFilter.length > 0) {
@@ -350,7 +344,7 @@ class Account extends Component<Props, State> {
             </div>
             <Card>
               <List disablePadding className={classes.list}>
-                <ListItem divider>
+                {/* <ListItem divider>
                   <ListItemText
                     primary="Username"
                     secondary={this.props.userSelf!.username}
@@ -358,11 +352,11 @@ class Account extends Component<Props, State> {
                   <ListItemSecondaryAction>
                     <Icon style={{ verticalAlign: 'middle' }}>arrow_right</Icon>
                   </ListItemSecondaryAction>
-                </ListItem>
+                </ListItem> */}
                 <ListItem divider>
                   <ListItemText
                     primary="Email"
-                    secondary={this.props.userSelf!.email}
+                    secondary={this.props.userSelf!.user.email}
                   />
                   <ListItemSecondaryAction>
                     <Icon style={{ verticalAlign: 'middle' }}>arrow_right</Icon>
