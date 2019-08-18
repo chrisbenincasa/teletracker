@@ -30,7 +30,6 @@ import { ActionType, Availability, Network, Thing } from '../../types';
 import {
   getBackdropUrl,
   getOverviewPath,
-  getPosterPath,
   getTitlePath,
   getVoteAveragePath,
 } from '../../utils/metadata-access';
@@ -162,21 +161,6 @@ class ItemDetails extends Component<Props, State> {
       </div>
     );
   };
-
-  // renderPoster = (thing: Thing) => {
-  //   let poster = getPosterPath(thing);
-  //   if (poster) {
-  //     return (
-  //       <CardMedia
-  //         className={this.props.classes.cardMedia}
-  //         image={'https://image.tmdb.org/t/p/w342' + poster}
-  //         title={thing.name}
-  //       />
-  //     );
-  //   } else {
-  //     return null;
-  //   }
-  // };
 
   renderDescriptiveDetails = (thing: Thing) => {
     let title = getTitlePath(thing) || '';
