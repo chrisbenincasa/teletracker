@@ -367,6 +367,8 @@ class ItemCard extends Component<Props, ItemCardState> {
         src={imagePlaceholder}
         item={thing}
         component={ResponsiveImage}
+        imageType="poster"
+        imageStyle={{ width: '100%', objectFit: 'cover', height: '100%' }}
       />,
     );
   };

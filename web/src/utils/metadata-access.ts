@@ -26,6 +26,10 @@ const extractor = <T = string>(field: string) =>
     .map(p => _.property<Thing, T>(p));
 
 // Provides the path of metadata
+export const getMetadataPath = (item: Thing, metadata: string) => {
+  return fallbacks<Thing, string>(extractor(metadata))(item);
+};
+
 export const getPosterPath = (item: Thing) => {
   return fallbacks<Thing, string>(extractor('poster_path'))(item);
 };
