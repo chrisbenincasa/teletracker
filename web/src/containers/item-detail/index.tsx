@@ -40,39 +40,35 @@ const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
     backdrop: {
-      backgroundSize: 'cover',
+      contain: 'strict',
+      position: 'absolute',
       width: '100%',
-    },
-    backdropImage: {
-      backgroundSize: 'cover',
-      backgroundPosition: '50% 50%',
-      padding: '3em 0',
+      height: '100%',
+      overflow: 'hidden',
       display: 'flex',
+      // focus: blur(0.6),
+      zIndex: 1,
     },
     heroContent: {
       maxWidth: 600,
       margin: '0 auto',
       padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
     },
-    cardMedia: {
-      height: 0,
-      width: '100%',
-      paddingTop: '150%',
-    },
     imageContainer: {
       width: 250,
       display: 'flex',
       flex: '0 1 auto',
-      marginLeft: 20,
+      position: 'relative',
     },
     itemInformationContainer: {
       width: 250,
       display: 'flex',
       flex: '1 1 auto',
       backgroundColor: 'transparent',
-      color: theme.palette.grey[50],
+      color: '#000',
       flexDirection: 'column',
       marginLeft: 20,
+      position: 'relative',
     },
     descriptionContainer: {
       display: 'flex',
@@ -113,9 +109,6 @@ interface State {
   currentId: string;
   currentItemType: string;
 }
-
-const gradient =
-  'radial-gradient(circle at 20% 50%, rgba(11.76%, 15.29%, 17.25%, 0.98) 0%, rgba(11.76%, 15.29%, 17.25%, 0.88) 100%)';
 
 class ItemDetails extends Component<Props, State> {
   componentDidMount() {
@@ -183,14 +176,6 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  backdropStyle = (item: Thing) => {
-    let backdrop = getBackdropUrl(item, '780');
-
-    return {
-      backgroundImage: `${gradient}, url(${backdrop})`,
-    };
-  };
-
   renderOfferDetails = (availabilities: Availability[]) => {
     let preferences = this.props.userSelf.preferences;
     let networkSubscriptions = this.props.userSelf.networks;
@@ -229,8 +214,8 @@ class ItemDetails extends Component<Props, State> {
           '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
 
         return (
-          <span key={lowestCostAv.id} style={{ color: 'white' }}>
-            <Typography display="inline" color="inherit">
+          <span key={lowestCostAv.id}>
+            <Typography display="inline">
               <img
                 key={lowestCostAv.id}
                 src={logoUri}
@@ -280,8 +265,6 @@ class ItemDetails extends Component<Props, State> {
       return this.renderLoading();
     }
 
-    let backdropStyle = this.backdropStyle(itemDetail);
-
     let availabilities: { [key: string]: Availability[] };
 
     if (itemDetail.availability) {
@@ -301,20 +284,47 @@ class ItemDetails extends Component<Props, State> {
     ) : (
       <React.Fragment>
         <div className={this.props.classes.backdrop}>
+          <ResponsiveImage
+            item={itemDetail}
+            imageType="backdrop"
+            imageStyle={{
+              objectFit: 'cover',
+              objectPosition: 'center top',
+              width: '100%',
+              height: '100%',
+            }}
+            pictureStyle={{
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              opacity: 0.4,
+            }}
+          />
           <div
-            className={this.props.classes.backdropImage}
-            style={backdropStyle}
+            style={{
+              margin: 20,
+              display: 'flex',
+              flex: '1 1 auto',
+              color: '#000',
+            }}
           >
             <Paper className={this.props.classes.imageContainer}>
               <CardMedia
                 src={imagePlaceholder}
                 item={itemDetail}
                 component={ResponsiveImage}
+                imageType="poster"
+                imageStyle={{
+                  width: '100%',
+                  objectFit: 'cover',
+                  height: '100%',
+                }}
               />
             </Paper>
+
             <div className={this.props.classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(itemDetail)}
-              <div style={{ color: 'white' }}>
+              <div>
                 {availabilities.subscription ? (
                   <Typography component="div" color="inherit">
                     Stream:
@@ -325,14 +335,14 @@ class ItemDetails extends Component<Props, State> {
                 ) : null}
 
                 {availabilities.rent ? (
-                  <Typography component="div" color="inherit">
+                  <Typography component="div">
                     Rent:
                     <div>{this.renderOfferDetails(availabilities.rent)}</div>
                   </Typography>
                 ) : null}
 
                 {availabilities.buy ? (
-                  <Typography component="div" color="inherit">
+                  <Typography component="div">
                     Buy:
                     <div>{this.renderOfferDetails(availabilities.buy)}</div>
                   </Typography>
