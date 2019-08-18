@@ -344,9 +344,8 @@ class ItemCard extends Component<Props, ItemCardState> {
   renderPoster = (thing: Thing) => {
     let { classes } = this.props;
     let { isHovering, hoverRating } = this.state;
-    let poster = getPosterPath(thing);
 
-    const makeLink = (children: ReactNode, className?: string) => (
+    const makeLink = (children: ReactNode) => (
       <div
         className={isHovering ? classes.cardHoverEnter : classes.cardHoverExit}
       >
@@ -356,40 +355,20 @@ class ItemCard extends Component<Props, ItemCardState> {
         <RouterLink
           {...this.props}
           to={'/item/' + thing.type + '/' + thing.id}
-          className={className}
+          style={{ display: 'block', height: '100%', textDecoration: 'none' }}
         >
           {children}
         </RouterLink>
       </div>
     );
 
-    if (poster) {
-      // This is a workaround because loading prop is not currently typed
-      const cardmediaProps = {
-        loading: 'lazy',
-      };
-      // TODO: Make image util function to generate srcSet
-      return makeLink(
-        <CardMedia
-          src={imagePlaceholder}
-          item={thing}
-          component={ResponsiveImage}
-        />,
-      );
-      // return makeLink(<ResponsiveImage item={thing} />);
-    } else {
-      return makeLink(
-        <div style={{ display: 'flex', width: '100%' }}>
-          <Icon
-            className={this.props.classes.missingMediaIcon}
-            fontSize="inherit"
-          >
-            broken_image
-          </Icon>
-        </div>,
-        this.props.classes.missingMedia,
-      );
-    }
+    return makeLink(
+      <CardMedia
+        src={imagePlaceholder}
+        item={thing}
+        component={ResponsiveImage}
+      />,
+    );
   };
 
   renderDialog() {
