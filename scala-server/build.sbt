@@ -57,6 +57,8 @@ lazy val common = project
       "com.google.inject.extensions" % "guice-multibindings" % versions.guice,
       "net.codingwell" %% "scala-guice" % versions.scalaGuice,
       // Misc
+      // Http
+      "org.http4s" %% "http4s-blaze-client" % "0.21.0-M3",
       "commons-codec" % "commons-codec" % "1.13",
       "javax.inject" % "javax.inject" % "1",
       "org.typelevel" %% "cats-core" % "1.1.0",
@@ -95,8 +97,6 @@ lazy val tasks = project
       "org.flywaydb" % "flyway-core" % "6.0.0-beta2",
       // Google
       "com.github.scopt" %% "scopt" % "3.5.0",
-      // Http
-      "org.http4s" %% "http4s-blaze-client" % "0.21.0-M3",
       "org.scalatest" %% "scalatest" % "3.0.5" % Test
     ),
     mainClass in assembly := Some(

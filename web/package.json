@@ -38,6 +38,7 @@
     "@types/material-ui": "^0.21.6",
     "apisauce": "^1.0.2",
     "connected-react-router": "4.5.0",
+    "firebase": "^6.4.0",
     "flux-standard-action": "^2.1.0",
     "localforage": "^1.7.3",
     "lodash": "^4.17.11",

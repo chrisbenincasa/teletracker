@@ -1,3 +1,4 @@
+import * as firebase from 'firebase/app';
 import {
   Button,
   Card,
@@ -47,6 +48,7 @@ import {
   UserUpdateItemTagsPayload,
 } from '../actions/user';
 import withUser, { WithUserProps } from '../components/withUser';
+import {UserSelf} from "../reducers/user";
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -188,7 +190,7 @@ const styles = (theme: Theme) =>
 interface ItemCardProps extends WithStyles<typeof styles> {
   key: string | number;
   item: Thing;
-  userSelf?: User;
+  userSelf: UserSelf | null;
 
   // display props
   itemCardVisible?: boolean;
@@ -220,7 +222,7 @@ interface ItemCardState {
   imageLoaded: boolean;
 }
 
-type Props = ItemCardProps & DispatchProps & WithUserProps;
+type Props = ItemCardProps & DispatchProps;
 
 class ItemCard extends Component<Props, ItemCardState> {
   static defaultProps = {
@@ -667,11 +669,9 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
     dispatch,
   );
 
-export default withUser(
-  withStyles(styles)(
-    connect(
-      null,
-      mapDispatchToProps,
-    )(ItemCard),
-  ),
+export default withStyles(styles)(
+  connect(
+    null,
+    mapDispatchToProps,
+  )(ItemCard),
 );

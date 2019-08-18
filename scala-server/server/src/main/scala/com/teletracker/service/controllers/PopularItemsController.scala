@@ -27,7 +27,7 @@ class PopularItemsController @Inject()(
           thingIds = popularItems.map(_.id)
 
           thingUserDetails <- thingsDbAccess
-            .getThingsUserDetails(req.user.id, thingIds.toSet)
+            .getThingsUserDetails(req.authenticatedUserId, thingIds.toSet)
         } yield {
           val itemsWithMeta = popularItems.map(thing => {
             val meta = thingUserDetails

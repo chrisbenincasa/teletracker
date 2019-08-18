@@ -30,7 +30,7 @@ import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import {
-  Link as RouterLink,
+  Link as RouterLink, Redirect,
   Route,
   RouteComponentProps,
   withRouter,
@@ -191,6 +191,7 @@ interface State {
   searchText: string;
   mobileSearchBarOpen: boolean;
   drawerOpen: boolean;
+  isLoggedOut: boolean;
 }
 
 interface MenuItemProps {
@@ -215,6 +216,7 @@ class App extends Component<Props, State> {
     searchText: '',
     mobileSearchBarOpen: false,
     drawerOpen: false,
+    isLoggedOut: true
   };
 
   clearSearch = () => {
@@ -274,6 +276,9 @@ class App extends Component<Props, State> {
   handleLogout = () => {
     this.handleClose();
     this.props.logout();
+    this.setState({
+      isLoggedOut: true
+    });
   };
 
   toggleDrawer = () => {
@@ -304,7 +309,7 @@ class App extends Component<Props, State> {
               type="search"
               inputProps={{
                 'aria-label': 'search Teletracker',
-                inputmode: 'search',
+                inputMode: 'search',
               }}
               onChange={this.handleSearchChange}
               onKeyDown={this.handleSearchForEnter}
@@ -398,7 +403,11 @@ class App extends Component<Props, State> {
 
   render() {
     let { classes, isAuthed } = this.props;
-    let { searchText } = this.state;
+    let { searchText, isLoggedOut } = this.state;
+
+    if (isLoggedOut) {
+      // return <Redirect to={'/login'} />
+    }
 
     // TODO: Get prop types working here
     // polyfill required for react-router-dom < 5.0.0

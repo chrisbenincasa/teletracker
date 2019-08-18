@@ -454,4 +454,5 @@ export default withUser(
       )(Drawer),
     ),
   ),
+  () => null
 );

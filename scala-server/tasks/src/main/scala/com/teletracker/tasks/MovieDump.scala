@@ -2,6 +2,8 @@ package com.teletracker.tasks
 
 import com.google.cloud.storage.Storage
 import com.teletracker.common.process.tmdb.ItemExpander
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -12,7 +14,10 @@ class MovieDump @Inject()(
   storage: Storage,
   itemExpander: ItemExpander
 )(implicit executionContext: ExecutionContext)
-    extends DataDumpTask(storage) {
+    extends DataDumpTask[MovieDumpFileRow](storage) {
+
+  implicit override protected val tDecoder: Decoder[MovieDumpFileRow] =
+    deriveCodec
 
   override protected val baseFileName: String = "movies"
 

@@ -14,7 +14,7 @@ class DynamicListBuilder @Inject()(
   import provider.driver.api._
 
   def buildList(
-    userId: Int,
+    userId: String,
     dynamicList: TrackedListRow,
     includeActions: Boolean = true
   )(implicit executionContext: ExecutionContext

@@ -13,14 +13,17 @@ object MostPopularItemsApp extends TeletrackerTaskApp[MostPopularItems] {
 
 class MostPopularItems extends TeletrackerTask {
   override def run(args: Args): Unit = {
-    implicit val thingyCodec = deriveCodec[Thingy]
+    implicit val thingyCodec = deriveCodec[MovieDumpFileRow]
 
-    val queue = new PriorityQueue[Thingy](100, new Comparator[Thingy] {
-      override def compare(
-        o1: Thingy,
-        o2: Thingy
-      ): Int = if (o1.popularity > o2.popularity) 1 else -1
-    })
+    val queue = new PriorityQueue[MovieDumpFileRow](
+      100,
+      new Comparator[MovieDumpFileRow] {
+        override def compare(
+          o1: MovieDumpFileRow,
+          o2: MovieDumpFileRow
+        ): Int = if (o1.popularity > o2.popularity) 1 else -1
+      }
+    )
     val file = args.value[File]("input").get
 
     val source = Source
@@ -29,7 +32,7 @@ class MostPopularItems extends TeletrackerTask {
     source
       .getLines()
       .toStream
-      .map(decode[Thingy](_).right.get)
+      .map(decode[MovieDumpFileRow](_).right.get)
       .foreach(thingy => {
         queue.offer(thingy)
         if (queue.size() > 100) {
@@ -42,10 +45,3 @@ class MostPopularItems extends TeletrackerTask {
     queue.asScala.toList.sortBy(-_.popularity).foreach(println)
   }
 }
-
-case class Thingy(
-  adult: Boolean,
-  id: Int,
-  original_title: String,
-  popularity: Double,
-  video: Boolean)

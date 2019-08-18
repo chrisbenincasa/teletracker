@@ -18,7 +18,7 @@ class UserSelfOnlyFilter @Inject()() extends SimpleFilter[Request, Response] {
     userId match {
       case Some("self") => service(request)
       case Some(id) if Try(id.toInt).isSuccess =>
-        if (request.authContext.user.id == id.toInt) {
+        if (request.authContext.userId == id) {
           service(request)
         } else {
           Future.value(Response(Status.Unauthorized))

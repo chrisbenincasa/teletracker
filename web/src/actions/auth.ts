@@ -1,3 +1,5 @@
+import * as firebase from 'firebase/app';
+import 'firebase/auth';
 import {
   call,
   put,
@@ -16,8 +18,10 @@ import {
   LOGIN_SUCCESSFUL,
   LOGOUT_INITIATED,
   LOGOUT_SUCCESSFUL,
+  SET_TOKEN,
   SIGNUP_INITIATED,
   SIGNUP_SUCCESSFUL,
+  UNSET_TOKEN,
 } from '../constants/auth';
 import { AppState } from '../reducers';
 import { TeletrackerApi } from '../utils/api-client';
@@ -51,6 +55,8 @@ export type LogoutInitiatedAction = FSA<typeof LOGOUT_INITIATED>;
 export type LogoutSuccessfulAction = FSA<typeof LOGOUT_SUCCESSFUL>;
 export type SignupInitiatedAction = FSA<typeof SIGNUP_INITIATED, SignupPayload>;
 export type SignupSuccessfulAction = FSA<typeof SIGNUP_SUCCESSFUL, string>;
+export type SetTokenAction = FSA<typeof SET_TOKEN, string>;
+export type UnsetTokenAction = FSA<typeof UNSET_TOKEN>;
 
 export const AuthCheckInitiated = createBasicAction<AuthCheckInitiatedAction>(
   AUTH_CHECK_INITIATED,
@@ -92,6 +98,9 @@ export const SignupSuccessful = createAction<SignupSuccessfulAction>(
   SIGNUP_SUCCESSFUL,
 );
 
+export const SetToken = createAction<SetTokenAction>(SET_TOKEN);
+export const UnsetToken = createBasicAction<UnsetTokenAction>(UNSET_TOKEN);
+
 export type AuthActionTypes =
   | AuthCheckInitiatedAction
   | AuthCheckAuthorizedAction
@@ -109,7 +118,34 @@ export type AuthActionTypes =
  */
 export const checkAuthSaga = function*() {
   yield takeLeading(AUTH_CHECK_INITIATED, function*() {
+    console.log('got check auth');
+    try {
+      let response: ApiResponse<any> = yield clientEffect(
+        client => client.getAuthStatus,
+      );
+
+      console.log(response);
+
+      if (response.status == 200) {
+        yield put(AuthCheckAuthorized());
+      } else if (response.status === 401) {
+        yield put(AuthCheckUnauthorized());
+      } else {
+        yield put(
+          AuthCheckFailed(
+            new Error(
+              `Got error code ${response.status} while checking auth status`,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      yield put(AuthCheckFailed(e));
+    }
+
     let result = yield checkOrSetToken();
+
+    console.log(result);
 
     if (result.token) {
       let currState: AppState = yield select();
@@ -121,10 +157,9 @@ export const checkAuthSaga = function*() {
 
       // Check the current token's auth status
       try {
-        let response: ApiResponse<any> = yield call({
-          context: client,
-          fn: client.getAuthStatus,
-        });
+        let response: ApiResponse<any> = yield clientEffect(
+          client => client.getAuthStatus,
+        );
 
         if (response.status == 200) {
           yield put(AuthCheckAuthorized());
@@ -165,24 +200,15 @@ export const signupSaga = function*() {
   }: SignupInitiatedAction) {
     if (payload) {
       try {
-        // Call out to the Teletracker API to attempt to signup the user
-        let response: ApiResponse<any> = yield clientEffect(
-          client => client.registerUser,
-          payload.username,
+        yield call(
+          (email: string, password: string) =>
+            firebase.auth().createUserWithEmailAndPassword(email, password),
           payload.email,
           payload.password,
         );
-
-        if (response.ok) {
-          let token = response.data.data.token;
-          // Sets the token on the "global" TeletrackerApi instance. This is required
-          // when doing auth-gated calls
-          client.setToken(token);
-
-          yield put(SignupSuccessful(token));
-          yield put(LoginInitiated({ email: payload.email, password: payload.password }));
-        }
-      } catch (e) {}
+      } catch (e) {
+        console.error(e);
+      }
     } else {
     }
   });
@@ -197,21 +223,23 @@ export const loginSaga = function*() {
   }: LoginInitiatedAction) {
     if (payload) {
       try {
-        // Call out to the Teletracker API to attempt to login the user
-        let response: ApiResponse<any> = yield clientEffect(
-          client => client.loginUser,
+        yield call(() =>
+          firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL),
+        );
+
+        yield call(
+          (email: string, password: string) =>
+            firebase.auth().signInWithEmailAndPassword(email, password),
           payload.email,
           payload.password,
         );
 
-        if (response.ok) {
-          let token = response.data.data.token;
-          // Sets the token on the "global" TeletrackerApi instance. This is required
-          // when doing auth-gated calls
-          client.setToken(token);
+        let token: string = yield call(() =>
+          firebase.auth().currentUser!.getIdToken(),
+        );
 
-          yield put(LoginSuccessful(token));
-        }
+        yield put(LoginSuccessful(token));
+        // }
       } catch (e) {}
     } else {
     }
@@ -224,16 +252,8 @@ export const loginSaga = function*() {
 export const logoutSaga = function*() {
   yield takeLatest(LOGOUT_INITIATED, function*() {
     try {
-      let response: ApiResponse<any> = yield clientEffect(
-        client => client.logoutUser,
-      );
-
-      if (response.ok) {
-        // Clear the token from the global client. Auth-gated calls will fail now
-        client.clearToken();
-
-        yield put(LogoutSuccessful());
-      }
+      yield call(() => firebase.auth().signOut());
+      yield put(LogoutSuccessful());
     } catch (e) {}
   });
 };

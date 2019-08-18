@@ -2,23 +2,28 @@ package com.teletracker.tasks
 
 import com.google.cloud.storage.Storage
 import com.teletracker.common.process.tmdb.ItemExpander
+import io.circe.Decoder
 import javax.inject.Inject
+import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 import scala.concurrent.{ExecutionContext, Future}
 
-object TvShowDumpTool extends DataDumpTaskApp[MovieDump]
+object TvShowDumpTool extends DataDumpTaskApp[TvShowDump]
 
 class TvShowDump @Inject()(
   storage: Storage,
   itemExpander: ItemExpander
 )(implicit executionContext: ExecutionContext)
-    extends DataDumpTask(storage) {
+    extends DataDumpTask[TvShowDumpFileRow](storage) {
+
+  implicit override protected val tDecoder: Decoder[TvShowDumpFileRow] =
+    deriveCodec
 
   override protected val baseFileName = "shows"
 
   override protected def getRawJson(currentId: Int): Future[String] = {
     itemExpander
-      .expandMovie(currentId, List("recommendations", "similar"))
+      .expandTvShow(currentId, List("recommendations", "similar"))
       .map(_.asJson.noSpaces)
   }
 }

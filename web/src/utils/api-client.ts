@@ -1,6 +1,6 @@
 import * as apisauce from 'apisauce';
 import { merge } from 'ramda';
-import { List, User, Network, ActionType } from '../types';
+import { List, User, Network, ActionType, UserPreferences } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import { Thing } from '../types';
 import _ from 'lodash';
@@ -35,20 +35,6 @@ export class TeletrackerApi {
     });
 
     this.token = options.token;
-
-    this.api.addRequestTransform(req => {
-      if (this.token) {
-        if (req.params) {
-          Object.assign(req.params, {
-            token: this.token,
-          });
-        } else {
-          req.params = {
-            token: this.token,
-          };
-        }
-      }
-    });
   }
 
   isTokenSet(): boolean {
@@ -63,32 +49,28 @@ export class TeletrackerApi {
     this.token = undefined;
   }
 
-  async getAuthStatus(): Promise<apisauce.ApiResponse<any>> {
-    return this.api.get('/api/v1/auth/status');
+  async getAuthStatus(token: string): Promise<apisauce.ApiResponse<any>> {
+    return this.api.get('/api/v1/auth/status', { token });
   }
 
-  async getUser(id: string | number) {
-    return this.withTokenCheck(async () => {
-      return this.api.get<User>(`/api/v1/users/${id}`, {});
-    });
+  async getUser(token: string, id: string) {
+    return this.api.get<User>(`/api/v1/users/${id}`, { token });
   }
 
-  async getUserSelf() {
-    if (!this.token) {
-      return Promise.reject(new Error('getUser requires a token to be set'));
-    }
+  async getUserSelf(token: string) {
+    return this.api.get<DataResponse<User>>('/api/v1/users/self', { token });
+  }
 
-    return this.api.get<DataResponse<User>>(
+  async updateUserSelf(
+    token: string,
+    networkSubscriptions: Network[] | undefined,
+    userPreferences?: UserPreferences | undefined,
+  ) {
+    return this.api.put(
       '/api/v1/users/self',
-      {},
-      { headers: this.authHeaders() },
+      { networkSubscriptions, userPreferences },
+      { params: { token } },
     );
-  }
-
-  async updateUserSelf(user: User) {
-    return this.withTokenCheck(async () => {
-      return this.api.put('/api/v1/users/self', { user });
-    });
   }
 
   async loginUser(email: string, password: string) {
@@ -119,51 +101,54 @@ export class TeletrackerApi {
     });
   }
 
-  async search(searchText: string) {
-    return this.withTokenCheck(async () => {
-      return this.api.get<Thing[]>('/api/v1/search', {
-        query: searchText,
-      });
+  async search(token: string, searchText: string) {
+    return this.api.get<Thing[]>('/api/v1/search', {
+      query: searchText,
+      token,
     });
   }
 
-  async createList(name: string) {
-    return this.withTokenCheck(async () => {
-      return this.api.post<DataResponse<{ id: number }>>(
-        '/api/v1/users/self/lists',
-        {
-          name,
-        },
+  async createList(token: string, name: string) {
+    return this.api.post<DataResponse<{ id: number }>>(
+      '/api/v1/users/self/lists',
+      {
+        name,
+      },
+      { params: { token } },
+    );
+  }
+
+  async deleteList(token: string, listId: number, mergeListId: number) {
+    if (mergeListId === 0) {
+      return this.api.delete(`/api/v1/users/self/lists/${listId}`, { token });
+    } else {
+      return this.api.delete(
+        `/api/v1/users/self/lists/${listId}?mergeWithList=${mergeListId}`,
+        { token },
       );
-    });
+    }
   }
 
-  async deleteList(listId: number, mergeListId: number) {
-    return this.withTokenCheck(async () => {
-      if (mergeListId === 0) {
-        return this.api.delete(`/api/v1/users/self/lists/${listId}`);
-      } else {
-        return this.api.delete(
-          `/api/v1/users/self/lists/${listId}?mergeWithList=${mergeListId}`,
-        );
-      }
-    });
-  }
-
-  async renameList(listId: number, listName: string) {
-    return this.withTokenCheck(async () => {
-      return this.api.put(`/api/v1/users/self/lists/${listId}`, {
+  async renameList(token: string, listId: number, listName: string) {
+    return this.api.put(
+      `/api/v1/users/self/lists/${listId}`,
+      {
         name: listName,
-      });
-    });
+      },
+      {
+        params: { token },
+      },
+    );
   }
 
   async getLists(
+    token: string,
     fields?: KeyMap<ObjectMetadata>,
     includeThings: boolean = false,
   ) {
     let filterString = fields ? this.createFilter(fields) : '';
     let params = {
+      token,
       includeThings,
     };
 
@@ -171,12 +156,7 @@ export class TeletrackerApi {
       params['fields'] = filterString;
     }
 
-    return this.withTokenCheck(async () => {
-      return this.api.get<DataResponse<User>>(
-        '/api/v1/users/self/lists',
-        params,
-      );
-    });
+    return this.api.get<DataResponse<User>>('/api/v1/users/self/lists', params);
   }
 
   private createFilter<T>(fields: KeyMap<T>): string {
@@ -195,45 +175,48 @@ export class TeletrackerApi {
       .join(',');
   }
 
-  async getList(id: string | number) {
-    return this.withTokenCheck(async () => {
-      return this.api.get<DataResponse<List>>(`/api/v1/users/self/lists/${id}`);
+  async getList(token: string, id: string | number) {
+    return this.api.get<DataResponse<List>>(`/api/v1/users/self/lists/${id}`, {
+      token,
     });
   }
 
   async updateListTracking(
+    token: string,
     thingId: string,
     addToLists: string[],
     removeFromLists: string[],
   ) {
-    return this.withTokenCheck(async () => {
-      return this.api.put<any>(`/api/v1/users/self/things/${thingId}/lists`, {
+    return this.api.put<any>(
+      `/api/v1/users/self/things/${thingId}/lists`,
+      {
         addToLists,
         removeFromLists,
-      });
-    });
+      },
+      {
+        params: { token },
+      },
+    );
   }
 
-  async addItemToList(listId: string, itemId: string) {
-    if (!this.token) {
-      return Promise.reject(new Error('getUser requires a token to be set'));
-    }
-
+  async addItemToList(token: string, listId: string, itemId: string) {
     return this.api.put<any>(
       `/api/v1/users/self/lists/${listId}/things`,
       { itemId },
-      { headers: this.authHeaders() },
+      { params: { token } },
     );
   }
 
   async postEvent(
+    token: string,
     eventType: string,
     targetType: string,
     targetId: string,
     details: string,
   ) {
-    this.withTokenCheck(async () => {
-      return this.api.post<any>('/api/v1/users/self/events', {
+    return this.api.post<any>(
+      '/api/v1/users/self/events',
+      {
         event: {
           type: eventType,
           targetEntityType: targetType,
@@ -241,91 +224,95 @@ export class TeletrackerApi {
           timestamp: new Date().getTime(),
           details,
         },
-      });
+      },
+      {
+        params: { token },
+      },
+    );
+  }
+
+  async getThingsBatch(
+    token: string,
+    ids: number[],
+    fields?: KeyMap<ObjectMetadata>,
+  ) {
+    return this.api.get('/api/v1/things', {
+      thingIds: ids,
+      fields: fields ? this.createFilter(fields!) : undefined,
+      token,
     });
   }
 
-  async getThingsBatch(ids: number[], fields?: KeyMap<ObjectMetadata>) {
-    this.withTokenCheck(async () => {
-      return this.api.get('/api/v1/things', {
-        thingIds: ids,
-        fields: fields ? this.createFilter(fields!) : undefined,
-      });
+  async getItem(token: string, id: string | number, type: string) {
+    return this.api.get<any>(`/api/v1/${type}s/${id}`, { token });
+  }
+
+  async getShow(token: string, id: string | number) {
+    return this.api.get<any>(`/api/v1/shows/${id}`, { token });
+  }
+
+  async getMovie(token: string, id: string | number) {
+    return this.api.get<any>(`/api/v1/movies/${id}`, { token });
+  }
+
+  async getEvents(token: string) {
+    return this.api.get<any>('/api/v1/users/self/events', { token });
+  }
+
+  async getThingUserDetails(token: string, showId: string | number) {
+    return this.api.get<any>(`/api/v1/things/${showId}/user-details`, {
+      token,
     });
   }
 
-  async getItem(id: string | number, type: string) {
-    return this.withTokenCheck(async () => {
-      return this.api.get<any>(`/api/v1/${type}s/${id}`);
-    });
+  async getNetworks(token: string): Promise<TeletrackerResponse<Network[]>> {
+    return this.api.get<DataResponse<Network[]>>('/api/v1/networks', { token });
   }
 
-  async getShow(id: string | number) {
-    return this.withTokenCheck(async () => {
-      return this.api.get<any>(`/api/v1/shows/${id}`);
-    });
-  }
-
-  async getMovie(id: string | number) {
-    return this.withTokenCheck(async () => {
-      return this.api.get<any>(`/api/v1/movies/${id}`);
-    });
-  }
-
-  async getEvents() {
-    return this.withTokenCheck(async () => {
-      return this.api.get<any>('/api/v1/users/self/events');
-    });
-  }
-
-  async getThingUserDetails(showId: string | number) {
-    return this.withTokenCheck(async () => {
-      return this.api.get<any>(`/api/v1/things/${showId}/user-details`);
-    });
-  }
-
-  async getNetworks(): Promise<TeletrackerResponse<Network[]>> {
-    return this.api.get<DataResponse<Network[]>>('/api/v1/networks');
-  }
-
-  async updateActions(thingId: string, action: ActionType, value?: number) {
-    return this.withTokenCheck(async () => {
-      return this.api.put(`/api/v1/users/self/things/${thingId}/actions`, {
+  async updateActions(
+    token: string,
+    thingId: string,
+    action: ActionType,
+    value?: number,
+  ) {
+    return this.api.put(
+      `/api/v1/users/self/things/${thingId}/actions`,
+      {
         action,
         value,
-      });
-    });
+      },
+      { params: { token } },
+    );
   }
 
-  async removeActions(thingId: string, action: ActionType) {
-    return this.withTokenCheck(async () => {
-      return this.api.delete(
-        `/api/v1/users/self/things/${thingId}/actions/${action}`,
-      );
-    });
+  async removeActions(token: string, thingId: string, action: ActionType) {
+    return this.api.delete(
+      `/api/v1/users/self/things/${thingId}/actions/${action}`,
+      { token },
+    );
   }
 
   async getUpcomingAvailability(
+    token: string,
     networkIds?: number[],
     fields?: KeyMap<ObjectMetadata>,
   ) {
-    return this.withTokenCheck(async () => {
-      return this.api.get('/api/v1/availability/upcoming', {
-        networkIds,
-        fields: fields ? this.createFilter(fields!) : undefined,
-      });
+    return this.api.get('/api/v1/availability/upcoming', {
+      networkIds,
+      fields: fields ? this.createFilter(fields!) : undefined,
+      token,
     });
   }
 
   async getAllAvailability(
+    token: string,
     networkIds?: number[],
     fields?: KeyMap<ObjectMetadata>,
   ) {
-    return this.withTokenCheck(async () => {
-      return this.api.get('/api/v1/availability/all', {
-        networkIds,
-        fields: fields ? this.createFilter(fields!) : undefined,
-      });
+    return this.api.get('/api/v1/availability/all', {
+      networkIds,
+      fields: fields ? this.createFilter(fields!) : undefined,
+      token,
     });
   }
 

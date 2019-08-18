@@ -1,18 +1,24 @@
 import {
+  ITEM_BATCH_INITIATED,
+  ITEM_FETCH_FAILED,
   ITEM_FETCH_INITIATED,
   ITEM_FETCH_SUCCESSFUL,
-  ITEM_FETCH_FAILED,
-  ITEM_BATCH_INITIATED,
 } from '../constants/item-detail';
-import { FSA, ErrorFluxStandardAction } from 'flux-standard-action';
-import { Dispatch } from 'redux';
-import { TeletrackerApi } from '../utils/api-client';
+import { ErrorFluxStandardAction, FSA } from 'flux-standard-action';
 import { Thing } from '../types';
-import { createAction, clientEffect } from './utils';
-import { takeEvery } from '@redux-saga/core/effects';
+import { clientEffect, createAction } from './utils';
+import { put, takeEvery } from '@redux-saga/core/effects';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 
-export type ItemFetchInitiatedAction = FSA<typeof ITEM_FETCH_INITIATED, string>;
+export interface ItemFetchInitiatedPayload {
+  id: string | number;
+  type: string;
+}
+
+export type ItemFetchInitiatedAction = FSA<
+  typeof ITEM_FETCH_INITIATED,
+  ItemFetchInitiatedPayload
+>;
 
 export type ItemFetchSuccessfulAction = FSA<
   typeof ITEM_FETCH_SUCCESSFUL,
@@ -53,29 +59,47 @@ export type ItemDetailActionTypes =
   | ItemFetchSuccessfulAction
   | ItemFetchFailedAction;
 
-const client = TeletrackerApi.instance;
+// export const fetchItemDetails = (id: string, type: string) => {
+//   return async (dispatch: Dispatch) => {
+//     dispatch(itemFetchInitiated(id));
+//
+//     // To do fix for shows and such
+//     // just testing for now
+//     return client
+//       .getItem(id, type)
+//       .then(response => {
+//         if (response.ok) {
+//           dispatch(itemFetchSuccess(response.data.data));
+//         } else {
+//           dispatch(ItemFetchFailed(new Error()));
+//         }
+//       })
+//       .catch(e => {
+//         console.error(e);
+//
+//         dispatch(ItemFetchFailed(e));
+//       });
+//   };
+// };
 
-export const fetchItemDetails = (id: string, type: string) => {
-  return async (dispatch: Dispatch) => {
-    dispatch(itemFetchInitiated(id));
+export const fetchItemDetailsSaga = function*() {
+  yield takeEvery(ITEM_FETCH_INITIATED, function*({
+    payload,
+  }: ItemFetchInitiatedAction) {
+    if (payload) {
+      let response = yield clientEffect(
+        client => client.getItem,
+        payload.id,
+        payload.type,
+      );
 
-    // To do fix for shows and such
-    // just testing for now
-    return client
-      .getItem(id, type)
-      .then(response => {
-        if (response.ok) {
-          dispatch(itemFetchSuccess(response.data.data));
-        } else {
-          dispatch(ItemFetchFailed(new Error()));
-        }
-      })
-      .catch(e => {
-        console.error(e);
-
-        dispatch(ItemFetchFailed(e));
-      });
-  };
+      if (response.ok) {
+        yield put(itemFetchSuccess(response.data.data));
+      } else {
+        yield put(ItemFetchFailed(new Error()));
+      }
+    }
+  });
 };
 
 export const fetchItemDetailsBatchSaga = function*() {

@@ -31,7 +31,7 @@ class SearchController @Inject()(
 
         tmdbClient
           .makeRequest[SearchResult]("search/multi", Seq("query" -> query))
-          .flatMap(handleSearchMultiResult(req.authContext.user.id, _))
+          .flatMap(handleSearchMultiResult(req.authContext.userId, _))
           .map(result => {
             response.ok.contentTypeJson().body(DataResponse.complex(result))
           })
@@ -40,14 +40,14 @@ class SearchController @Inject()(
   }
 
   private def handleSearchMultiResult(
-    userId: Int,
+    userId: String,
     result: SearchResult
   ): Future[List[PartialThing]] = {
     handleSearchMultiResult(userId, result.results)
   }
 
   private def handleSearchMultiResult(
-    userId: Int,
+    userId: String,
     results: List[MultiTypeXor]
   ): Future[List[PartialThing]] = {
 

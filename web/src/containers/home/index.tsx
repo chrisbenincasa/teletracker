@@ -80,7 +80,7 @@ class Home extends Component<Props & WithUserProps> {
                     userSelf={userSelf}
                     item={result}
                     itemCardVisible={false}
-                    addButton
+                    // addButton
                   />
                 );
               })}

@@ -21,7 +21,7 @@ class MovieController @Inject()(
   prefix("/api/v1/movies") {
     filter[JwtAuthFilter].apply {
       get("/:id") { req: GetMovieRequest =>
-        val userId = req.request.authContext.user.id
+        val userId = req.request.authContext.userId
         val thingDetailsFut = thingsDbAccess.getThingUserDetails(userId, req.id)
 
         val movieByIdFut = thingsDbAccess.findMovieById(req.id)
