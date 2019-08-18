@@ -33,3 +33,4 @@ buck-out/
 .env
 .env.development.local
 build/
+.idea/

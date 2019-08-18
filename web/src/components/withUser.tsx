@@ -1,17 +1,17 @@
 import _ from 'lodash';
-import React, { ReactElement } from 'react';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
-import { retrieveUser } from '../actions/user';
-import { AppState } from '../reducers';
-import { User } from '../types';
-import { LinearProgress } from '@material-ui/core';
+import React, {ReactElement} from 'react';
+import {connect} from 'react-redux';
+import {bindActionCreators} from 'redux';
+import {retrieveUser} from '../actions/user';
+import {AppState} from '../reducers';
+import {LinearProgress} from '@material-ui/core';
+import {UserSelf} from "../reducers/user";
 
 export interface WithUserStateProps {
   isCheckingAuth: boolean;
   isLoggedIn: boolean;
   retrievingUser: boolean;
-  userSelf?: User;
+  userSelf: UserSelf;
 }
 
 export interface WithUserDispatchProps {

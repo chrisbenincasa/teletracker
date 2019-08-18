@@ -21,6 +21,11 @@ export interface User {
   userPreferences: UserPreferences;
 }
 
+export interface UserDetails {
+  networkPreferences: Network[];
+  preferences: UserPreferences;
+}
+
 export interface UserThingTag {
   id?: number;
   userId?: number;

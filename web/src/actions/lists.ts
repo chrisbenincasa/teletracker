@@ -32,7 +32,7 @@ export type ListAddSuccessAction = FSA<typeof LIST_ADD_ITEM_SUCCESS>;
 export type ListAddFailedAction = FSA<typeof LIST_ADD_ITEM_FAILED>;
 
 export interface ListRetrieveInitiatedPayload {
-  listId: string | number;
+  listId: number;
   force?: boolean;
 }
 

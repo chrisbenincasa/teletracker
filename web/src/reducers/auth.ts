@@ -3,6 +3,8 @@ import {
   AuthCheckInitiatedAction,
   LoginSuccessfulAction,
   LogoutSuccessfulAction,
+  SetTokenAction,
+  UnsetTokenAction,
 } from '../actions/auth';
 import {
   AUTH_CHECK_AUTHORIZED,
@@ -11,9 +13,11 @@ import {
   AUTH_CHECK_UNAUTH,
   LOGIN_SUCCESSFUL,
   LOGOUT_SUCCESSFUL,
+  SET_TOKEN,
+  UNSET_TOKEN,
 } from '../constants/auth';
 import { User } from '../types';
-import { flattenActions, handleAction, AnyFSAReducer } from './utils';
+import { AnyFSAReducer, flattenActions, handleAction } from './utils';
 import { PURGE } from 'redux-persist';
 
 export interface UserState extends Partial<User> {
@@ -86,7 +90,38 @@ const logoutSuccess = handleAction<LogoutSuccessfulAction, State>(
     return {
       ...state,
       token: undefined,
+      isLoggedIn: false,
     };
+  },
+);
+
+const setToken = handleAction<SetTokenAction, State>(
+  SET_TOKEN,
+  (state, action) => {
+    if (action.payload) {
+      return {
+        ...state,
+        isLoggedIn: true,
+        token: action.payload,
+      };
+    } else {
+      return state;
+    }
+  },
+);
+
+const unsetToken = handleAction<UnsetTokenAction, State>(
+  UNSET_TOKEN,
+  (state, action) => {
+    if (action.payload) {
+      return {
+        ...state,
+        token: undefined,
+        isLoggedIn: false,
+      };
+    } else {
+      return state;
+    }
   },
 );
 
@@ -107,6 +142,7 @@ export default flattenActions(
     ...unsetCheckingAuthReducers,
     loginSuccess,
     logoutSuccess,
-    purge,
+    setToken,
+    unsetToken,
   ],
 );
