@@ -1,4 +1,6 @@
 import {
+  ITEM_FETCH_INITIATED,
+  ITEM_FETCH_SUCCESSFUL,
   ItemFetchInitiatedAction,
   ItemFetchSuccessfulAction,
 } from '../actions/item-detail';
@@ -6,20 +8,16 @@ import {
   UserUpdateItemTagsSuccessAction,
   UserRemoveItemTagsSuccessAction,
   UserUpdateItemTagsPayload,
-} from '../actions/user';
-import {
-  ITEM_FETCH_INITIATED,
-  ITEM_FETCH_SUCCESSFUL,
-} from '../constants/item-detail';
-import {
   USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
   USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
-} from '../constants/user';
+} from '../actions/user';
 import { Thing, UserThingTag } from '../types';
 import { flattenActions, handleAction } from './utils';
 import * as R from 'ramda';
-import { LIST_RETRIEVE_SUCCESS } from '../constants/lists';
-import { ListRetrieveSuccessAction } from '../actions/lists';
+import {
+  LIST_RETRIEVE_SUCCESS,
+  ListRetrieveSuccessAction,
+} from '../actions/lists';
 
 export interface State {
   fetching: boolean;

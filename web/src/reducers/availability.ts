@@ -1,12 +1,10 @@
 import { Availability } from '../types';
 import { handleAction, flattenActions } from './utils';
 import {
-  UPCOMING_AVAILABILITY_SUCCESSFUL,
-  ALL_AVAILABILITY_SUCCESSFUL,
-} from '../constants/availability';
-import {
   UpcomingAvailabilitySuccessfulAction,
   AllAvailabilitySuccessfulAction,
+  UPCOMING_AVAILABILITY_SUCCESSFUL,
+  ALL_AVAILABILITY_SUCCESSFUL,
 } from '../actions/availability';
 
 export interface AvailabilityState {
