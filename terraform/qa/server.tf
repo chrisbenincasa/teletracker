@@ -26,8 +26,8 @@ module "gce-container" {
         }, {
         name  = "ADMINISTRATOR_KEY"
         value = "berglas://teletracker-secrets/administrator-key-${var.env}"
-      }, {
-        name "APPLICATION_NAME"
+        }, {
+        name  = "APPLICATION_NAME"
         value = "teletracker-server"
       }
     ]
