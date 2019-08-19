@@ -51,7 +51,7 @@ import {
 import withUser, { WithUserProps } from '../components/withUser';
 import { ResponsiveImage } from './ResponsiveImage';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
-import {UserSelf} from "../reducers/user";
+import { UserSelf } from '../reducers/user';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -346,7 +346,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     let { classes } = this.props;
     let { isHovering, hoverRating } = this.state;
 
-    const makeLink = (children: ReactNode) => (
+    return (
       <div
         className={isHovering ? classes.cardHoverEnter : classes.cardHoverExit}
       >
@@ -354,23 +354,18 @@ class ItemCard extends Component<Props, ItemCardState> {
         {isHovering && !hoverRating && this.renderHoverActions()}
 
         <RouterLink
-          {...this.props}
           to={'/item/' + thing.type + '/' + thing.id}
           style={{ display: 'block', height: '100%', textDecoration: 'none' }}
         >
-          {children}
+          <CardMedia
+            src={imagePlaceholder}
+            item={thing}
+            component={ResponsiveImage}
+            imageType="poster"
+            imageStyle={{ width: '100%', objectFit: 'cover', height: '100%' }}
+          />
         </RouterLink>
       </div>
-    );
-
-    return makeLink(
-      <CardMedia
-        src={imagePlaceholder}
-        item={thing}
-        component={ResponsiveImage}
-        imageType="poster"
-        imageStyle={{ width: '100%', objectFit: 'cover', height: '100%' }}
-      />,
     );
   };
 
