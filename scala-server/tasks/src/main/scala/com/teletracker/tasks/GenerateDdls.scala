@@ -1,8 +1,8 @@
 package com.teletracker.tasks
 
+import com.google.inject.Module
 import com.teletracker.common.db.model._
 import com.teletracker.common.inject.{DbProvider, Modules}
-import com.google.inject.Module
 import com.twitter.inject.app.App
 import java.io.{File, FileWriter, PrintWriter}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,8 +17,6 @@ class GenerateDdls extends App {
     import d.driver.api._
 
     val createStatements = List(
-      injector.instance[Users].query,
-      injector.instance[UserCredentials].query,
       injector.instance[Events].query,
       injector.instance[Genres].query,
       injector.instance[Networks].query,
@@ -34,8 +32,7 @@ class GenerateDdls extends App {
       injector.instance[GenreReferences].query,
       injector.instance[ThingGenres].query,
       injector.instance[Certifications].query,
-      injector.instance[PersonThings].query,
-      injector.instance[Tokens].query
+      injector.instance[PersonThings].query
     ).flatMap(_.schema.createStatements).groupBy(_.split(" ").take(2).toList)
 
     val outputFile = args.head

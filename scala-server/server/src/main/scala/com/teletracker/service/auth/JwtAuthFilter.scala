@@ -6,9 +6,18 @@ import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.util.logging.Logger
 import com.twitter.util.{Future, Promise}
-import io.jsonwebtoken.{Claims, Jws, Jwts, SignatureException}
+import io.jsonwebtoken.{
+  Claims,
+  ExpiredJwtException,
+  Jws,
+  Jwts,
+  MalformedJwtException,
+  SignatureException,
+  UnsupportedJwtException
+}
 import javax.inject.Inject
-import java.time.OffsetDateTime
+import java.io.ByteArrayInputStream
+import java.security.cert.CertificateFactory
 import scala.concurrent.{ExecutionContext, Future => SFuture}
 import scala.util.{Failure, Success, Try}
 
@@ -26,8 +35,13 @@ object JwtAuthFilter {
   }
 }
 
-class JwtAuthExtractor @Inject()(config: TeletrackerConfig) {
+class JwtAuthExtractor @Inject()(
+  config: TeletrackerConfig,
+  googlePublicKeyRetriever: GooglePublicKeyRetriever
+)(implicit executionContext: ExecutionContext) {
   import com.teletracker.service.auth.JwtAuthFilter.extractAuthHeaderValue
+
+  private val certificateFactory = CertificateFactory.getInstance("X.509")
 
   def extractToken(request: Request): Option[String] = {
     request.params
@@ -39,19 +53,36 @@ class JwtAuthExtractor @Inject()(config: TeletrackerConfig) {
       )
   }
 
-  def parseToken(token: String): Try[Jws[Claims]] = {
-    Try {
-      Jwts
-        .parser()
-        .setSigningKey(config.auth.jwt.secret.getBytes())
-        .parseClaimsJws(token)
-    }
+  def parseToken(token: String): SFuture[Try[Jws[Claims]]] = {
+    googlePublicKeyRetriever
+      .getPublicCerts()
+      .map(certs => {
+        if (certs.isEmpty) {
+          throw new IllegalStateException("")
+        }
+
+        certs.values
+          .map(cert => {
+            val certificate = certificateFactory
+              .generateCertificate(new ByteArrayInputStream(cert.getBytes()))
+
+            () =>
+              Try(
+                Jwts
+                  .parser()
+                  .setSigningKey(certificate.getPublicKey)
+                  .parseClaimsJws(token)
+              )
+          })
+          .reduce((l, r) => () => l().orElse(r()))
+      })
+      .map(_())
   }
 
-  def extractAndParse(request: Request): Try[Jws[Claims]] = {
+  def extractAndParse(request: Request): SFuture[Try[Jws[Claims]]] = {
     extractToken(request) match {
       case Some(token) => parseToken(token)
-      case None        => Failure(TokenNotFoundException)
+      case None        => SFuture.successful(Failure(TokenNotFoundException))
     }
   }
 }
@@ -73,49 +104,25 @@ class JwtAuthFilter @Inject()(
     extractor.extractToken(request) match {
       case None => Future.value(Response(Status.Unauthorized))
       case Some(t) =>
-        extractor.parseToken(t) match {
+        val respPromise = Promise[Response]()
+        extractor.parseToken(t).transform(_.flatten).andThen {
           case Success(parsed) =>
-            val respPromise = Promise[Response]()
+            RequestContext.set(request, parsed.getBody.getSubject, t)
+            respPromise.become(service(request))
 
-            usersDbAccess.isTokenRevoked(t).andThen {
-              case Success(true) =>
-                respPromise.setValue(Response(Status.Unauthorized))
-
-              case Success(false) =>
-                usersDbAccess.findByEmail(parsed.getBody.getSubject).andThen {
-                  case Success(Some(u)) =>
-                    RequestContext.set(request, u, t)
-                    respPromise.become(service(request))
-
-                  case Success(None) =>
-                    logger.warn(
-                      s"Could not find user = ${parsed.getBody.getSubject}"
-                    )
-                    respPromise.setValue(Response(Status.Unauthorized))
-
-                  case Failure(e) =>
-                    logger
-                      .error("Unexpected error while finding user for token", e)
-                    respPromise.setValue(Response(Status.InternalServerError))
-                }
-
-              case Failure(ex) =>
-                logger.error(
-                  "Unexpected error while checking revocation status",
-                  ex
-                )
-                respPromise.setValue(Response(Status.InternalServerError))
-            }
-
-            respPromise
-          case Failure(_: SignatureException) =>
-            logger.error("Invalid JWT token")
-            Future.value(Response(Status.Unauthorized))
+          case Failure(
+              e @ (_: SignatureException | _: UnsupportedJwtException |
+              _: MalformedJwtException | _: ExpiredJwtException)
+              ) =>
+            logger.error(s"Invalid JWT token: ${e.getMessage}")
+            respPromise.setValue(Response(Status.Unauthorized))
 
           case Failure(e) =>
             logger.error(e.getMessage, e)
-            Future.value(Response(Status.InternalServerError))
+            respPromise.setValue(Response(Status.InternalServerError))
         }
+
+        respPromise
     }
   }
 }

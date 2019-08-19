@@ -19,7 +19,7 @@ class TvShowController @Inject()(
   prefix("/api/v1/shows") {
     filter[JwtAuthFilter].apply {
       get("/:id") { req: GetShowRequest =>
-        val userId = req.request.authContext.user.id
+        val userId = req.request.authContext.userId
         val thingDetailsFut = thingsDbAccess.getThingUserDetails(userId, req.id)
 
         val showByIdFut = thingsDbAccess.findShowByIdBasic(req.id)

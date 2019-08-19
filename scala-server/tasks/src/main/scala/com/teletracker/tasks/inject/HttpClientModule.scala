@@ -1,8 +1,7 @@
 package com.teletracker.tasks.inject
 
 import com.google.inject.assistedinject.FactoryModuleBuilder
-import com.teletracker.common.http.HttpClient
-import com.teletracker.tasks.http.Http4sClient
+import com.teletracker.common.http.{Http4sClient, HttpClient}
 import com.twitter.inject.TwitterModule
 
 class HttpClientModule extends TwitterModule {

@@ -1,7 +1,7 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.db.access.UsersDbAccess
-import com.teletracker.common.db.model.{TrackedListRow, User}
+import com.teletracker.common.db.model.TrackedListRow
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.http.response.ResponseBuilder
@@ -31,7 +31,7 @@ abstract class TeletrackerController(
     })
 
   def withList(
-    userId: Int,
+    userId: String,
     listId: String
   )(
     f: TrackedListRow => Future[ResponseBuilder#EnrichedResponse]
@@ -43,7 +43,7 @@ abstract class TeletrackerController(
   }
 
   def getListForId(
-    userId: Int,
+    userId: String,
     listId: String
   ): Future[Option[TrackedListRow]] = {
     if (listId == "default") {
@@ -54,8 +54,7 @@ abstract class TeletrackerController(
         .future
         .flatMap(listId => {
           usersDbAccess
-            .findUserAndList(userId, listId)
-            .map(_.headOption.map(_._2))
+            .findListForUser(userId, listId)
         })
     }
   }
@@ -64,5 +63,5 @@ abstract class TeletrackerController(
 final class RichInjectedRequest(val r: InjectedRequest) extends AnyVal {
   import com.teletracker.service.auth.RequestContext._
 
-  def user: User = r.request.authContext.user
+  def authenticatedUserId: String = r.request.authContext.userId
 }

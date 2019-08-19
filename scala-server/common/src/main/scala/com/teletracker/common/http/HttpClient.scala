@@ -14,7 +14,9 @@ case class HttpRequest(
   path: String,
   params: List[(String, String)])
 
-case class HttpResponse[T](content: T)
+case class HttpResponse[T](
+  headers: Map[String, String],
+  content: T)
 
 object HttpClient {
   trait Factory {

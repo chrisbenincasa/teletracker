@@ -9,7 +9,7 @@ class ListsApi @Inject()(
   listsDbAccess: ListsDbAccess
 )(implicit executionContext: ExecutionContext) {
   def deleteList(
-    userId: Int,
+    userId: String,
     listId: Int,
     mergeWithList: Option[Int]
   ): Future[Boolean] = {
@@ -45,7 +45,7 @@ class ListsApi @Inject()(
   }
 
   def mergeLists(
-    userId: Int,
+    userId: String,
     sourceList: Int,
     targetList: Int
   ): Future[Unit] = {

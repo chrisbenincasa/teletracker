@@ -40,3 +40,4 @@ base-image/certs
 server/jks
 
 movies.*.json
+shows.*.json

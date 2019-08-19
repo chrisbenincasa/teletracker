@@ -36,7 +36,7 @@ class ThingController @Inject()(
     filter[JwtAuthFilter].apply {
       get("/:thingId/user-details") { req: GetThingRequest =>
         thingsDbAccess
-          .getThingUserDetails(req.request.authContext.user.id, req.thingId)
+          .getThingUserDetails(req.request.authContext.userId, req.thingId)
           .map(details => {
             response.ok.contentTypeJson().body(DataResponse(details))
           })

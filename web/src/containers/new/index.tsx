@@ -53,7 +53,6 @@ type Props = OwnProps & InjectedProps & DispatchProps & WithUserProps;
 
 class New extends Component<Props> {
   componentDidMount() {
-    console.log(this.props.userSelf!.networkSubscriptions);
     this.props.retrieveUpcomingAvailability();
     this.props.retrieveAllAvailability();
   }
@@ -119,8 +118,9 @@ class New extends Component<Props> {
             return (
               <ItemCard
                 key={things[0].id}
-                item={things[0].thing}
+                item={things[0].thing!}
                 itemCardVisible={false}
+                userSelf={this.props.userSelf!}
               />
             );
           })

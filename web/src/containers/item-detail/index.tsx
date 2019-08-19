@@ -17,7 +17,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
-import { fetchItemDetails } from '../../actions/item-detail';
+import {itemFetchInitiated, ItemFetchInitiatedPayload} from '../../actions/item-detail';
 import {
   removeUserItemTags,
   updateUserItemTags,
@@ -87,7 +87,7 @@ interface OwnProps {
 }
 
 interface DispatchProps {
-  fetchItemDetails: (id: string, type: string) => void;
+  fetchItemDetails: (payload: ItemFetchInitiatedPayload) => void;
   updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
   removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
 }
@@ -127,7 +127,7 @@ class ItemDetails extends Component<Props, State> {
       currentItemType: itemType,
     });
 
-    this.props.fetchItemDetails(itemId, itemType);
+    this.props.fetchItemDetails({id: itemId, type: itemType});
   }
 
   toggleItemWatched = () => {
@@ -206,8 +206,8 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderOfferDetails = (availabilities: Availability[]) => {
-    let preferences = this.props.userSelf!.userPreferences;
-    let networkSubscriptions = this.props.userSelf!.networkSubscriptions;
+    let preferences = this.props.userSelf.preferences;
+    let networkSubscriptions = this.props.userSelf.networks;
     let onlyShowsSubs = preferences.showOnlyNetworkSubscriptions;
 
     const includeFromPrefs = (av: Availability, network: Network) => {
@@ -382,7 +382,7 @@ const mapStateToProps: (
 const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
-      fetchItemDetails,
+      fetchItemDetails: itemFetchInitiated,
       updateUserItemTags,
       removeUserItemTags,
     },

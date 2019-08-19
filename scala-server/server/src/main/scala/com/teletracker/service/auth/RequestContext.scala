@@ -1,9 +1,8 @@
 package com.teletracker.service.auth
 
-import com.teletracker.common.db.model.{User, UserRow}
 import com.twitter.finagle.http.Request
 
-case class AuthenticatedUserContext(user: User)
+case class AuthenticatedUserContext(userId: String)
 case class AuthenticatedTokenContext(token: String)
 
 object RequestContext {
@@ -19,17 +18,17 @@ object RequestContext {
 
   private[teletracker] def set(
     request: Request,
-    user: UserRow,
+    userId: String,
     token: String
   ): Unit = {
-    set(request, user)
+    set(request, userId)
     request.ctx.update(authTokenField, AuthenticatedTokenContext(token))
   }
 
   private[teletracker] def set(
     request: Request,
-    user: UserRow
+    userId: String
   ): Unit = {
-    request.ctx.update(authUserField, AuthenticatedUserContext(user.toFull))
+    request.ctx.update(authUserField, AuthenticatedUserContext(userId))
   }
 }

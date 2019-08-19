@@ -4,37 +4,25 @@ import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.db.model.{
   Events,
   Things,
-  Tokens,
   TrackedListThings,
   TrackedLists,
-  UserCredentials,
-  Users,
   _
 }
 import com.teletracker.common.inject.{DbImplicits, DbProvider}
-import com.teletracker.common.util.{
-  Field,
-  FieldSelector,
-  ListFilters,
-  NetworkCache
-}
-import io.circe.Json
+import com.teletracker.common.util.{Field, ListFilters, NetworkCache}
 import javax.inject.{Inject, Provider}
-import org.apache.commons.codec.digest.DigestUtils
 import java.time.{Instant, OffsetDateTime}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class UsersDbAccess @Inject()(
   val provider: DbProvider,
-  val users: Users,
+  val userMetadata: UsersMetadata,
   val userNetworkPreferences: UserNetworkPreferences,
-  val userCredentials: UserCredentials,
   val trackedLists: TrackedLists,
   val trackedListThings: TrackedListThings,
   val things: Things,
   val events: Events,
-  val tokens: Tokens,
   val networks: Networks,
   val userThingTags: UserThingTags,
   listQuery: Provider[ListQuery],
@@ -47,109 +35,38 @@ class UsersDbAccess @Inject()(
   import dbImplicits._
   import provider.driver.api._
 
-  implicit private class UserExtensions[C[_]](
-    q: Query[Users#UsersTable, UserRow, C]) {
-    def withCredentials = q.join(userCredentials.query).on(_.id === _.userId)
-  }
-
-  def findById(id: Int): Future[Option[UserRow]] = {
-    run {
-      users.query.filter(_.id === id).result.headOption
-    }
-  }
-
-  def findByEmail(email: String): Future[Option[UserRow]] = {
-    run {
-      users.query.filter(_.email === email).result.headOption
-    }
-  }
-
-  def insertUser(user: UserRow): Future[Int] = {
-    run {
-      (users.query returning users.query.map(_.id)) += user
-    }
-  }
-
-  def updateUser(
-    id: Int,
-    name: String,
-    username: String,
+  def updateUserMetadata(
+    userId: String,
     preferences: UserPreferences
   ): Future[Unit] = {
     run {
-      users.query
-        .filter(_.id === id)
-        .map(u => {
-          (u.name, u.username, u.lastUpdatedAt, u.preferences)
-        })
-        .update(
-          (
-            name,
-            username,
-            Instant.now(),
-            Some(preferences)
-          )
-        )
+      userMetadata.query
+        .filter(_.userId === userId)
+        .map(u => (u.lastUpdatedAt, u.preferences))
+        .update((Instant.now(), Some(preferences)))
         .map(_ => {})
     }
   }
 
-  def insertToken(token: TokenRow): Future[Int] = {
+  def findMetadataForUser(userId: String): Future[UserMetadataRow] = {
     run {
-      tokens.query += token
+      userMetadata.query.filter(_.userId === userId).result.headOption.flatMap {
+        case Some(meta) => DBIO.successful(meta)
+        case None =>
+          val meta = UserMetadataRow(userId, None, Instant.now(), Instant.now())
+          (userMetadata.query += meta).map(_ => meta)
+      }
     }
   }
 
-  def revokeAllTokens(userId: Int): Future[Int] = {
+  def findNetworkPreferencesForUser(userId: String): Future[Seq[Network]] = {
     run {
-      tokens.query
-        .filter(t => t.userId === userId && t.revokedAt.isEmpty)
-        .map(_.revokedAt)
-        .update(Some(OffsetDateTime.now()))
-    }
-  }
-
-  def revokeToken(
-    userId: Int,
-    token: String
-  ): Future[Int] = {
-    val now = OffsetDateTime.now()
-    insertToken(
-      TokenRow(
-        None,
-        userId,
-        new String(DigestUtils.sha1(token)),
-        now,
-        now,
-        Some(now)
-      )
-    )
-  }
-
-  def getToken(token: String): Future[Option[TokenRow]] = {
-    run {
-      tokens.query.filter(_.token === token).result.headOption
-    }
-  }
-
-  def isTokenRevoked(token: String): Future[Boolean] = {
-    val hashed = new String(DigestUtils.sha1(token))
-    run {
-      tokens.query
-        .filter(t => t.token === hashed && t.revokedAt.isDefined)
-        .length
-        .result
-    }.map(_ >= 1)
-  }
-
-  def findNetworkPreferencesForUser(id: Int): Future[Seq[Network]] = {
-    run {
-      findNetworkPreferencesForUserQuery(id)
+      findNetworkPreferencesForUserQuery(userId)
     }
   }
 
   def findNetworkPreferencesForUpdate(
-    userId: Int
+    userId: String
   ): Future[Seq[UserNetworkPreference]] = {
     run {
       userNetworkPreferences.query
@@ -161,7 +78,7 @@ class UsersDbAccess @Inject()(
   }
 
   def updateUserNetworkPreferences(
-    userId: Int,
+    userId: String,
     networksToAdd: Set[Int],
     networksToDelete: Set[Int]
   ): Future[Unit] = {
@@ -191,7 +108,7 @@ class UsersDbAccess @Inject()(
   }
 
   private def findNetworkPreferencesForUserQuery(
-    userId: Int
+    userId: String
   ): DBIOAction[Seq[Network], NoStream, Effect.Read] = {
     for {
       prefsAndNetworks <- (userNetworkPreferences.query.filter(
@@ -204,28 +121,26 @@ class UsersDbAccess @Inject()(
   }
 
   def findListsForUser(
-    userId: Int,
+    userId: String,
     includeThings: Boolean
   ): Future[Seq[TrackedList]] = {
     listQuery.get().findUsersLists(userId, includeThings = includeThings)
   }
 
-  def findUserAndList(
-    userId: Int,
+  def findListForUser(
+    userId: String,
     listId: Int
-  ): Future[Seq[(UserRow, TrackedListRow)]] = {
+  ) = {
     run {
       trackedLists.query
         .filter(tl => tl.userId === userId && tl.id === listId)
         .take(1)
-        .flatMap(list => {
-          list.userId_fk.map(user => user -> list)
-        })
         .result
+        .headOption // TODO: dont select all metadata
     }
   }
 
-  def findDefaultListForUser(userId: Int): Future[Option[TrackedListRow]] = {
+  def findDefaultListForUser(userId: String): Future[Option[TrackedListRow]] = {
     run {
       trackedLists.query
         .filter(tl => tl.userId === userId && tl.isDefault === true)
@@ -236,7 +151,7 @@ class UsersDbAccess @Inject()(
   }
 
   def insertList(
-    userId: Int,
+    userId: String,
     name: String
   ): Future[TrackedListRow] = {
     run {
@@ -255,7 +170,7 @@ class UsersDbAccess @Inject()(
   }
 
   def updateList(
-    userId: Int,
+    userId: String,
     listId: Int,
     name: String
   ): Future[Int] = {
@@ -267,15 +182,8 @@ class UsersDbAccess @Inject()(
     }
   }
 
-//  def getListById(userId: Int, listId: Int) = {
-//    run {
-//      trackedLists
-//        .findSpecificListQuery(userId, listId)
-//    }
-//  }
-
   def deleteList(
-    userId: Int,
+    userId: String,
     listId: Int,
     mergeWithList: Option[Int]
   ): Future[Boolean] = {
@@ -299,7 +207,7 @@ class UsersDbAccess @Inject()(
   }
 
   def mergeLists(
-    userId: Int,
+    userId: String,
     sourceList: Int,
     targetList: Int
   ): Future[Unit] = {
@@ -339,7 +247,7 @@ class UsersDbAccess @Inject()(
   }
 
   def getList(
-    userId: Int,
+    userId: String,
     listId: Int
   ): Future[Option[TrackedListRow]] = {
     run {
@@ -352,7 +260,7 @@ class UsersDbAccess @Inject()(
   }
 
   def findList(
-    userId: Int,
+    userId: String,
     listId: Int,
     includeMetadata: Boolean = true,
     selectFields: Option[List[Field]] = None,
@@ -407,7 +315,7 @@ class UsersDbAccess @Inject()(
     }
   }
 
-  def getUserEvents(userId: Int): Future[Seq[EventWithTarget]] = {
+  def getUserEvents(userId: String): Future[Seq[EventWithTarget]] = {
     run {
       (for {
         (ev, thing) <- events.query
@@ -437,15 +345,12 @@ class UsersDbAccess @Inject()(
   }
 
   def insertOrUpdateAction(
-    userId: Int,
+    userId: String,
     thingId: UUID,
     action: UserThingTagType,
     value: Option[Double]
   ): Future[Int] = {
     run {
-//      sql"""
-//        select
-//      """
       userThingTags.query
         .filter(utt => {
           utt.userId === userId && utt.thingId === thingId && utt.action === action
@@ -470,7 +375,7 @@ class UsersDbAccess @Inject()(
   }
 
   def removeAction(
-    userId: Int,
+    userId: String,
     thingId: UUID,
     action: UserThingTagType
   ): Future[Int] = {
