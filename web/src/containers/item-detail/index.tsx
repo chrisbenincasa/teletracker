@@ -1,16 +1,15 @@
 import {
   CardMedia,
-  CircularProgress,
   createStyles,
   Fab,
   LinearProgress,
-  Paper,
   Theme,
   Tooltip,
   Typography,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
+import { Rating } from '@material-ui/lab';
 import { Check } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -163,10 +162,7 @@ class ItemDetails extends Component<Props, State> {
     return (
       <div className={this.props.classes.descriptionContainer}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-          <Typography color="inherit" variant="h4">
-            {`${title} (${voteAverage * 10})`}{' '}
-          </Typography>
-          <CircularProgress variant="static" value={voteAverage * 10} />
+          <Rating value={voteAverage / 2} precision={0.1} readOnly />
           {this.renderWatchedToggle()}
         </div>
         <div>
@@ -308,7 +304,7 @@ class ItemDetails extends Component<Props, State> {
               color: '#000',
             }}
           >
-            <Paper className={this.props.classes.imageContainer}>
+            <div className={this.props.classes.imageContainer}>
               <CardMedia
                 src={imagePlaceholder}
                 item={itemDetail}
@@ -320,7 +316,7 @@ class ItemDetails extends Component<Props, State> {
                   height: '100%',
                 }}
               />
-            </Paper>
+            </div>
 
             <div className={this.props.classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(itemDetail)}
