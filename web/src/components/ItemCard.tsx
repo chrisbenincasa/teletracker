@@ -51,6 +51,7 @@ import {
 import withUser, { WithUserProps } from '../components/withUser';
 import { ResponsiveImage } from './ResponsiveImage';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import {UserSelf} from "../reducers/user";
 
 const styles = (theme: Theme) =>
   createStyles({

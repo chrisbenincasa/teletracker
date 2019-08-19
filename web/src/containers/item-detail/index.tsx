@@ -16,7 +16,10 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
-import {itemFetchInitiated, ItemFetchInitiatedPayload} from '../../actions/item-detail';
+import {
+  itemFetchInitiated,
+  ItemFetchInitiatedPayload,
+} from '../../actions/item-detail';
 import {
   removeUserItemTags,
   updateUserItemTags,
@@ -26,12 +29,7 @@ import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { ActionType, Availability, Network, Thing } from '../../types';
-import {
-  getBackdropUrl,
-  getOverviewPath,
-  getTitlePath,
-  getVoteAveragePath,
-} from '../../utils/metadata-access';
+import { getMetadataPath } from '../../utils/metadata-access';
 import { ResponsiveImage } from '../../components/ResponsiveImage';
 import imagePlaceholder from '../../assets/images/imagePlaceholder.png';
 
@@ -120,7 +118,7 @@ class ItemDetails extends Component<Props, State> {
       currentItemType: itemType,
     });
 
-    this.props.fetchItemDetails({id: itemId, type: itemType});
+    this.props.fetchItemDetails({ id: itemId, type: itemType });
   }
 
   toggleItemWatched = () => {
@@ -155,14 +153,30 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderDescriptiveDetails = (thing: Thing) => {
-    let title = getTitlePath(thing) || '';
-    let overview = getOverviewPath(thing) || '';
-    let voteAverage = Number(getVoteAveragePath(thing)) || 0;
+    const title = getMetadataPath(thing, 'title') || '';
+    const overview = getMetadataPath(thing, 'overview') || '';
+    const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
+    const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
 
     return (
       <div className={this.props.classes.descriptionContainer}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-          <Rating value={voteAverage / 2} precision={0.1} readOnly />
+        <div
+          style={{
+            display: 'flex',
+            marginBottom: 8,
+            flexDirection: 'column',
+            alignItems: 'self-start',
+          }}
+        >
+          <Typography color="inherit" variant="h4">
+            {`${title}`}
+          </Typography>
+          <div style={{ display: 'flex', flexDirection: 'row' }}>
+            <Rating value={voteAverage / 2} precision={0.1} readOnly />
+            <Typography color="inherit" variant="body1">
+              {`(${voteCount})`}
+            </Typography>
+          </div>
           {this.renderWatchedToggle()}
         </div>
         <div>
@@ -312,8 +326,6 @@ class ItemDetails extends Component<Props, State> {
                 imageType="poster"
                 imageStyle={{
                   width: '100%',
-                  objectFit: 'cover',
-                  height: '100%',
                 }}
               />
             </div>
