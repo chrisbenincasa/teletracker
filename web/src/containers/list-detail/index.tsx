@@ -35,6 +35,7 @@ import {
 } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
+  LIST_RETRIEVE_INITIATED,
   ListRetrieveInitiated,
   ListRetrieveInitiatedPayload,
 } from '../../actions/lists';
@@ -43,14 +44,13 @@ import {
   renameList,
   UserDeleteListPayload,
   UserRenameListPayload,
-} from '../../actions/user';
+} from '../../actions/lists';
 import ItemCard from '../../components/ItemCard';
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { ListsByIdMap } from '../../reducers/lists';
 import { layoutStyles } from '../../styles';
 import { List, Thing } from '../../types';
-import { LIST_RETRIEVE_INITIATED } from '../../constants/lists';
 import _ from 'lodash';
 
 const styles = (theme: Theme) =>

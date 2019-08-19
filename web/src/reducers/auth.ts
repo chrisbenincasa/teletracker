@@ -1,21 +1,19 @@
 import { FSA } from 'flux-standard-action';
 import {
-  AuthCheckInitiatedAction,
-  LoginSuccessfulAction,
-  LogoutSuccessfulAction,
-  SetTokenAction,
-  UnsetTokenAction,
-} from '../actions/auth';
-import {
   AUTH_CHECK_AUTHORIZED,
   AUTH_CHECK_FAILED,
   AUTH_CHECK_INITIATED,
   AUTH_CHECK_UNAUTH,
+  AuthCheckInitiatedAction,
   LOGIN_SUCCESSFUL,
+  LoginSuccessfulAction,
   LOGOUT_SUCCESSFUL,
+  LogoutSuccessfulAction,
   SET_TOKEN,
+  SetTokenAction,
   UNSET_TOKEN,
-} from '../constants/auth';
+  UnsetTokenAction,
+} from '../actions/auth';
 import { User } from '../types';
 import { AnyFSAReducer, flattenActions, handleAction } from './utils';
 import { PURGE } from 'redux-persist';
@@ -37,7 +35,7 @@ export interface State {
 }
 
 const initialState: State = {
-  checkingAuth: true,
+  checkingAuth: false,
   isLoggedIn: false,
 };
 

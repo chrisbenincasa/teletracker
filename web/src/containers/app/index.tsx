@@ -30,13 +30,14 @@ import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import {
-  Link as RouterLink, Redirect,
+  Link as RouterLink,
+  Redirect,
   Route,
   RouteComponentProps,
   withRouter,
 } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
-import { checkAuth, logout } from '../../actions/auth';
+import { logout } from '../../actions/auth';
 import { search } from '../../actions/search';
 import { AppState } from '../../reducers';
 import About from '../about';
@@ -179,7 +180,6 @@ interface OwnProps extends WithStyles<typeof styles> {
 }
 
 interface DispatchProps {
-  checkAuth: () => void;
   logout: () => void;
   search: (text: string) => void;
 }
@@ -216,7 +216,7 @@ class App extends Component<Props, State> {
     searchText: '',
     mobileSearchBarOpen: false,
     drawerOpen: false,
-    isLoggedOut: true
+    isLoggedOut: true,
   };
 
   clearSearch = () => {
@@ -273,7 +273,7 @@ class App extends Component<Props, State> {
     this.handleClose();
     this.props.logout();
     this.setState({
-      isLoggedOut: true
+      isLoggedOut: true,
     });
   };
 
@@ -599,7 +599,6 @@ const mapStateToProps = (appState: AppState) => {
 const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
   return bindActionCreators(
     {
-      checkAuth,
       logout,
       search,
     },
