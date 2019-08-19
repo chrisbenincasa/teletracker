@@ -1,8 +1,8 @@
 import { TeletrackerApi } from '../utils/api-client';
 import { call, put, take, race, delay } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import { SET_TOKEN, TOKEN_SET } from '../constants/auth';
 import client, { SagaTeletrackerClient } from '../utils/saga-client';
+import { SET_TOKEN, TOKEN_SET } from './auth';
 
 /**
  * Alternative to "createAction" where the generation action creator function takes

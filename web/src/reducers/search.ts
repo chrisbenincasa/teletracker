@@ -1,13 +1,11 @@
 import {
+  SEARCH_FAILED,
+  SEARCH_INITIATED,
+  SEARCH_SUCCESSFUL,
   SearchFailedAction,
   SearchInitiatedAction,
   SearchSuccessfulAction,
 } from '../actions/search';
-import {
-  SEARCH_FAILED,
-  SEARCH_INITIATED,
-  SEARCH_SUCCESSFUL,
-} from '../constants/search';
 import { Thing } from '../types';
 import { flattenActions, handleAction } from './utils';
 

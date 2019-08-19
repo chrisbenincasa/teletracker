@@ -8,16 +8,14 @@ import {
   ListRetrieveInitiatedAction,
   ListRetrieveSuccessAction,
   ListActions,
-} from '../actions/lists';
-import {
-  LIST_ADD_ITEM_FAILED,
   LIST_ADD_ITEM_INITIATED,
-  LIST_ADD_ITEM_SUCCESS,
   LIST_RETRIEVE_ALL_INITIATED,
-  LIST_RETRIEVE_ALL_SUCCESS,
   LIST_RETRIEVE_INITIATED,
+  LIST_ADD_ITEM_FAILED,
+  LIST_ADD_ITEM_SUCCESS,
   LIST_RETRIEVE_SUCCESS,
-} from '../constants/lists';
+  LIST_RETRIEVE_ALL_SUCCESS,
+} from '../actions/lists';
 import { List, Thing } from '../types';
 import { flattenActions, handleAction } from './utils';
 
