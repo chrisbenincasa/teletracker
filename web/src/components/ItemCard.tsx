@@ -1,4 +1,3 @@
-import * as firebase from 'firebase/app';
 import {
   Button,
   Card,
@@ -28,8 +27,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import React, { Component, ReactNode } from 'react';
 import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
-import { ActionType, List, User, Thing } from '../types';
-import { ACTION_ENJOYED, ACTION_WATCHED } from '../constants/item';
+import { ActionType, List, Thing } from '../types';
 import { getDescription, getPosterPath } from '../utils/metadata-access';
 import { bindActionCreators, Dispatch } from 'redux';
 import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
@@ -48,10 +46,10 @@ import {
   updateUserItemTags,
   UserUpdateItemTagsPayload,
 } from '../actions/user';
-import withUser, { WithUserProps } from '../components/withUser';
 import { ResponsiveImage } from './ResponsiveImage';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import { UserSelf } from '../reducers/user';
+import { ACTION_ENJOYED, ACTION_WATCHED } from '../actions/item-detail';
 
 const styles = (theme: Theme) =>
   createStyles({

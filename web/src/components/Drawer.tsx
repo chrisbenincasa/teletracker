@@ -36,11 +36,15 @@ import {
 } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../actions/auth';
-import { ListRetrieveAllPayload, retrieveAllLists } from '../actions/lists';
-import { createList, UserCreateListPayload } from '../actions/user';
+import {
+  createList,
+  LIST_RETRIEVE_ALL_INITIATED,
+  ListRetrieveAllPayload,
+  retrieveAllLists,
+  USER_SELF_CREATE_LIST,
+  UserCreateListPayload,
+} from '../actions/lists';
 import withUser, { WithUserProps } from '../components/withUser';
-import { LIST_RETRIEVE_ALL_INITIATED } from '../constants/lists';
-import { USER_SELF_CREATE_LIST } from '../constants/user';
 import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
@@ -454,5 +458,5 @@ export default withUser(
       )(Drawer),
     ),
   ),
-  () => null
+  () => null,
 );
