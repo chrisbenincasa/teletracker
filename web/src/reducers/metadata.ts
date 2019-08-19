@@ -1,12 +1,12 @@
 import { Network } from '../types';
 
-import { handleAction, flattenActions } from './utils';
+import { flattenActions, handleAction } from './utils';
 import {
+  NETWORKS_LOAD,
+  NETWORKS_LOAD_SUCCESS,
   NetworksLoadAction,
   NetworksLoadSuccessAction,
-  NetworkMetadataPayload,
 } from '../actions/metadata';
-import { NETWORKS_LOAD, NETWORKS_LOAD_SUCCESS } from '../constants/metadata';
 
 export interface State {
   networksLoading: boolean;

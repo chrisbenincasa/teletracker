@@ -1,10 +1,18 @@
 import { all, put, take } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { REHYDRATE } from 'redux-persist';
-import { STARTUP } from '../constants';
-import { checkAuthSaga, loginSaga, logoutSaga, signupSaga } from './auth';
+import {
+  checkAuthSaga,
+  loginSaga,
+  logoutSaga,
+  signupSaga,
+  watchAuthState,
+} from './auth';
 import {
   addToListSaga,
+  createNewListSaga,
+  deleteListSaga,
+  renameListSaga,
   retrieveListSaga,
   retrieveListsSaga,
   updateListSaga,
@@ -12,20 +20,18 @@ import {
 import { loadNetworksSaga } from './metadata';
 import { searchSaga } from './search';
 import {
-  createNewListSaga,
-  deleteListSaga,
+  getUserSelfSaga,
   removeUserActionSaga,
-  renameListSaga,
-  retrieveUserSaga,
   updateNetworksForUserSaga,
   updateUserActionSaga,
   updateUserPreferencesSaga,
   updateUserSaga,
-  watchAuthState,
 } from './user';
 import { createBasicAction } from './utils';
 import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
 import { fetchItemDetailsBatchSaga, fetchItemDetailsSaga } from './item-detail';
+
+export const STARTUP = 'startup';
 
 type StartupAction = FSA<typeof STARTUP>;
 
@@ -51,7 +57,7 @@ export function* root() {
     loginSaga(),
     logoutSaga(),
     signupSaga(),
-    retrieveUserSaga(),
+    getUserSelfSaga(),
     updateListSaga(),
     loadNetworksSaga(),
     updateNetworksForUserSaga(),

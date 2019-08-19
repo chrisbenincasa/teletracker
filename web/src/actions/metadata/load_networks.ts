@@ -1,14 +1,13 @@
 import { FSA } from 'flux-standard-action';
-import {
-  NETWORKS_LOAD,
-  NETWORKS_LOAD_SUCCESS,
-  NETWORKS_LOAD_FAILED,
-} from '../constants/metadata';
-import { createAction, clientEffect, createBasicAction } from './utils';
-import { takeEvery, put, takeLatest, select } from '@redux-saga/core/effects';
-import { TeletrackerResponse } from '../utils/api-client';
-import { Network } from '../types';
-import { AppState } from '../reducers';
+import { clientEffect, createAction, createBasicAction } from '../utils';
+import { put, select, takeLatest } from '@redux-saga/core/effects';
+import { TeletrackerResponse } from '../../utils/api-client';
+import { Network } from '../../types';
+import { AppState } from '../../reducers';
+
+export const NETWORKS_LOAD = 'metadata/networks/LOAD';
+export const NETWORKS_LOAD_SUCCESS = 'metadata/networks/SUCCESS';
+export const NETWORKS_LOAD_FAILED = 'metadata/networks/FAILED';
 
 export type NetworksLoadAction = FSA<typeof NETWORKS_LOAD>;
 

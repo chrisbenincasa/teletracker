@@ -1,9 +1,15 @@
 import {
+  USER_SELF_RETRIEVE_INITIATED,
+  USER_SELF_RETRIEVE_SUCCESS,
+  USER_SELF_UPDATE_NETWORKS,
+  USER_SELF_UPDATE_SUCCESS,
   UserActionTypes,
   UserSelfRetrieveEmptyAction,
   UserSelfRetrieveSuccessAction,
   UserUpdateSuccessAction,
 } from '../actions/user';
+import { User, UserPreferences, Network } from '../types';
+import { flattenActions, handleAction } from './utils';
 import {
   USER_SELF_CREATE_LIST,
   USER_SELF_CREATE_LIST_SUCCESS,
@@ -11,14 +17,8 @@ import {
   USER_SELF_DELETE_LIST_SUCCESS,
   USER_SELF_RENAME_LIST,
   USER_SELF_RENAME_LIST_SUCCESS,
-  USER_SELF_RETRIEVE_INITIATED,
-  USER_SELF_RETRIEVE_SUCCESS,
-  USER_SELF_UPDATE_NETWORKS,
-  USER_SELF_UPDATE_SUCCESS,
-} from '../constants/user';
-import { User, UserPreferences, Network } from '../types';
-import { flattenActions, handleAction } from './utils';
-import { LOGOUT_SUCCESSFUL } from '../constants/auth';
+} from '../actions/lists';
+import { LOGOUT_SUCCESSFUL } from '../actions/auth';
 
 export type Loading = { [X in UserActionTypes['type']]: boolean };
 

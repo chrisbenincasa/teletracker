@@ -1,11 +1,11 @@
 import _ from 'lodash';
-import React, {ReactElement} from 'react';
-import {connect} from 'react-redux';
-import {bindActionCreators} from 'redux';
-import {retrieveUser} from '../actions/user';
-import {AppState} from '../reducers';
-import {LinearProgress} from '@material-ui/core';
-import {UserSelf} from "../reducers/user";
+import React, { ReactElement } from 'react';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import { getUserSelf } from '../actions/user';
+import { AppState } from '../reducers';
+import { LinearProgress } from '@material-ui/core';
+import { UserSelf } from '../reducers/user';
 
 export interface WithUserStateProps {
   isCheckingAuth: boolean;
@@ -15,7 +15,7 @@ export interface WithUserStateProps {
 }
 
 export interface WithUserDispatchProps {
-  retrieveUser: (force: boolean) => void;
+  getUserSelf: (force: boolean) => void;
 }
 
 export type WithUserProps = WithUserStateProps & WithUserDispatchProps;
@@ -42,7 +42,7 @@ const withUser = <P extends object>(
 
     loadUser = _.debounce((props: WithUserProps) => {
       if (!props.isCheckingAuth && !props.userSelf && !props.retrievingUser) {
-        props.retrieveUser(false);
+        props.getUserSelf(false);
       }
     }, 100);
 
@@ -73,7 +73,7 @@ const withUser = <P extends object>(
   const mapDispatchToProps = dispatch =>
     bindActionCreators(
       {
-        retrieveUser,
+        getUserSelf,
       },
       dispatch,
     );
