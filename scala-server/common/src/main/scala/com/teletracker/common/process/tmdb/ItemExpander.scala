@@ -23,30 +23,36 @@ class ItemExpander @Inject()(
         tmdbClient.makeRequest[Movie](
           s"movie/$id",
           Seq(
-            "append_to_response" -> List(
+            "append_to_response" -> (extraExpandFields ++ List(
               "release_dates",
               "credits",
               "external_ids"
-            ).mkString(",")
+            )).distinct.mkString(",")
           )
         )
       }
     )
   }
 
-  def expandTvShow(id: Int): Future[TvShow] = {
-    cache.getOrSetEntity(ThingType.Show, id, {
-      tmdbClient.makeRequest[TvShow](
-        s"tv/$id",
-        Seq(
-          "append_to_response" -> List(
-            "release_dates",
-            "credits",
-            "external_ids"
-          ).mkString(",")
+  def expandTvShow(
+    id: Int,
+    extraExpandFields: List[String] = Nil
+  ): Future[TvShow] = {
+    cache.getOrSetEntity(
+      ThingType.Show,
+      id, {
+        tmdbClient.makeRequest[TvShow](
+          s"tv/$id",
+          Seq(
+            "append_to_response" -> (extraExpandFields ++ List(
+              "release_dates",
+              "credits",
+              "external_ids"
+            )).distinct.mkString(",")
+          )
         )
-      )
-    })
+      }
+    )
   }
 
   def expandPerson(id: Int): Future[Person] = {

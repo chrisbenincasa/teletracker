@@ -10,7 +10,7 @@ case class Event(
   targetEntityType: String,
   targetEntityId: String,
   details: Option[String],
-  userId: Int,
+  userId: String,
   timestamp: java.sql.Timestamp) {
   def withTarget(thing: Thing): EventWithTarget =
     EventWithTarget(this, Some(thing.toPartial))
@@ -22,9 +22,7 @@ case class EventWithTarget(
   event: Event,
   target: Option[PartialThing])
 
-class Events @Inject()(
-  val driver: JdbcProfile,
-  val users: Provider[Users]) {
+class Events @Inject()(val driver: JdbcProfile) {
   import driver.api._
 
   class EventsTable(tag: Tag) extends Table[Event](tag, "events") {
@@ -33,10 +31,8 @@ class Events @Inject()(
     def targetEntityType = column[String]("target_entity_type")
     def targetEntityId = column[String]("target_entity_id")
     def details = column[Option[String]]("details")
-    def userId = column[Int]("user_id")
+    def userId = column[String]("user_id")
     def timestamp = column[java.sql.Timestamp]("timestamp")
-
-    def user = foreignKey("events_user_fk", userId, users.get().query)(_.id)
 
     override def * =
       (

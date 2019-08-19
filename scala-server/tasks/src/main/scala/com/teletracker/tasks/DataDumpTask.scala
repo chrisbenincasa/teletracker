@@ -3,7 +3,7 @@ package com.teletracker.tasks
 import com.google.cloud.storage.{BlobId, BlobInfo, Storage}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import io.circe.generic.semiauto.deriveCodec
+import io.circe.Decoder
 import io.circe.parser._
 import org.slf4j.LoggerFactory
 import java.io.{BufferedWriter, File, FileOutputStream, PrintWriter}
@@ -15,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.control.NonFatal
 
-trait DataDumpTaskApp[T <: DataDumpTask] extends TeletrackerTaskApp[T] {
+trait DataDumpTaskApp[T <: DataDumpTask[_]] extends TeletrackerTaskApp[T] {
   val file = flag[URI]("input", "The input dump file")
   val offset = flag[Int]("offset", 0, "The offset to start at")
   val limit = flag[Int]("limit", -1, "The offset to start at")
@@ -23,16 +23,16 @@ trait DataDumpTaskApp[T <: DataDumpTask] extends TeletrackerTaskApp[T] {
   val rotateEvery = flag[Int]("rotateEvery", 10000, "The offset to start at")
 }
 
-abstract class DataDumpTask(
+abstract class DataDumpTask[T <: TmdbDumpFileRow](
   storage: Storage
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
   private val logger = LoggerFactory.getLogger(getClass)
   private val dumpTime = Instant.now().toString
 
-  override def run(args: Args): Unit = {
-    implicit val thingyCodec = deriveCodec[Thingy]
+  implicit protected def tDecoder: Decoder[T]
 
+  override def run(args: Args): Unit = {
     val file = args.value[URI]("input").get
     val offset = args.value[Int]("offset").get
     val limit = args.valueOrDefault("limit", -1)
@@ -67,9 +67,18 @@ abstract class DataDumpTask(
 
     val processed = new AtomicLong(0)
 
+    def dec(s: String) = {
+      decode[T](s) match {
+        case Left(ex) =>
+          ex.printStackTrace()
+          throw ex
+        case Right(v) => v
+      }
+    }
+
     source
       .getLines()
-      .map(decode[Thingy](_).right.get)
+      .map(dec)
       .drop(offset)
       .safeTake(limit)
       .foreach(thing => {
@@ -107,6 +116,8 @@ abstract class DataDumpTask(
     writer.close()
 
     source.close()
+
+    sys.exit(0)
   }
 
   protected def getRawJson(currentId: Int): Future[String]
@@ -154,3 +165,21 @@ abstract class DataDumpTask(
     }
   }
 }
+
+trait TmdbDumpFileRow {
+  def id: Int
+}
+
+case class MovieDumpFileRow(
+  adult: Boolean,
+  id: Int,
+  original_title: String,
+  popularity: Double,
+  video: Boolean)
+    extends TmdbDumpFileRow
+
+case class TvShowDumpFileRow(
+  id: Int,
+  original_name: String,
+  popularity: Double)
+    extends TmdbDumpFileRow

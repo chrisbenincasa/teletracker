@@ -1,6 +1,5 @@
-package com.teletracker.service.testing
+package com.teletracker.service.testing.integration
 
-import com.teletracker.common.db._
 import com.teletracker.common.db.access.{
   NetworksDbAccess,
   ThingsDbAccess,

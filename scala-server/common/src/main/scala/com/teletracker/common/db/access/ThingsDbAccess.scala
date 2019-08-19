@@ -28,7 +28,6 @@ class ThingsDbAccess @Inject()(
   val thingGenres: ThingGenres,
   val availabilities: Availabilities,
   val personThings: PersonThings,
-  val users: Users,
   val trackedListThings: TrackedListThings,
   val trackedLists: TrackedLists,
   val userThingTags: UserThingTags,
@@ -47,7 +46,7 @@ class ThingsDbAccess @Inject()(
 
   def findThingsByNormalizedName(name: String): Future[Seq[ThingRaw]] = {
     run {
-      things.rawQuery.filter(_.normalizedName === Slug.raw(name)).result
+      things.rawQuery.filter(_.normalizedName === Slug.forString(name)).result
     }
   }
 
@@ -790,7 +789,7 @@ class ThingsDbAccess @Inject()(
   }
 
   def getThingUserDetails(
-    userId: Int,
+    userId: String,
     thingId: UUID
   ): Future[UserThingDetails] = {
     // Do they track it?
@@ -820,7 +819,7 @@ class ThingsDbAccess @Inject()(
   }
 
   def getThingsUserDetails(
-    userId: Int,
+    userId: String,
     thingIds: Set[UUID]
   ): Future[Map[UUID, UserThingDetails]] = {
     val lists = trackedListThings.query

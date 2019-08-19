@@ -10,7 +10,7 @@ case class TrackedListRow(
   name: String,
   isDefault: Boolean,
   isPublic: Boolean,
-  userId: Int,
+  userId: String,
   isDynamic: Boolean = false,
   rules: Option[DynamicListRules] = None,
   deletedAt: Option[OffsetDateTime] = None) {
@@ -38,7 +38,7 @@ case class TrackedList(
   name: String,
   isDefault: Boolean,
   isPublic: Boolean,
-  userId: Int,
+  userId: String,
   things: Option[List[PartialThing]] = None,
   isDynamic: Boolean = false,
   rules: Option[DynamicListRules] = None,
@@ -77,10 +77,9 @@ case class DynamicListRules(tagRules: List[DynamicListTagRule])
 
 class TrackedLists @Inject()(
   val driver: CustomPostgresProfile,
-  val users: Users,
   dbImplicits: DbImplicits) {
-  import driver.api._
   import dbImplicits._
+  import driver.api._
 
   class TrackedListsTable(tag: Tag)
       extends Table[TrackedListRow](tag, "lists") {
@@ -90,7 +89,7 @@ class TrackedLists @Inject()(
     def isPublic = column[Boolean]("is_public", O.Default(true))
     def createdAt = column[java.sql.Timestamp]("created_at")
     def lastUpdatedAt = column[java.sql.Timestamp]("last_updated_at")
-    def userId = column[Int]("user_id")
+    def userId = column[String]("user_id")
     def isDynamic = column[Boolean]("is_dynamic", O.Default(false))
     def rules = column[Option[DynamicListRules]]("rules", O.SqlType("jsonb"))
     def deletedAt =
@@ -98,8 +97,6 @@ class TrackedLists @Inject()(
         "deleted_at",
         O.SqlType("timestamp with timezone")
       )
-
-    def userId_fk = foreignKey("lists_user_id_fk", userId, users.query)(_.id)
 
     override def * =
       (
@@ -116,7 +113,7 @@ class TrackedLists @Inject()(
 
   val query = TableQuery[TrackedListsTable]
 
-  val findSpecificListQuery = (userId: Rep[Int], listId: Rep[Int]) =>
+  val findSpecificListQuery = (userId: Rep[String], listId: Rep[Int]) =>
     Compiled(
       query.filter(
         list =>

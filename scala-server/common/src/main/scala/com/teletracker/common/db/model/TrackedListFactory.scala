@@ -1,7 +1,7 @@
 package com.teletracker.common.db.model
 
 object TrackedListFactory {
-  def defaultList(userId: Int): TrackedListRow = {
+  def defaultList(userId: String): TrackedListRow = {
     TrackedListRow(
       -1,
       "Default List",
@@ -11,7 +11,7 @@ object TrackedListFactory {
     )
   }
 
-  def watchedList(userId: Int): TrackedListRow = {
+  def watchedList(userId: String): TrackedListRow = {
     TrackedListRow(
       -1,
       "Watched",

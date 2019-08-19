@@ -1,18 +1,23 @@
-package com.teletracker.tasks.http
+package com.teletracker.common.http
 
+import cats.data.EitherT
 import cats.effect.{Blocker, ContextShift, IO}
 import com.google.inject.assistedinject.Assisted
-import com.teletracker.common.http.{
-  HttpClient,
-  HttpClientOptions,
-  HttpRequest,
-  HttpResponse
-}
 import javax.inject.Inject
-import org.http4s.{EntityDecoder, Uri}
-import java.util.concurrent.Executors
-//import org.http4s.client.blaze._
+import org.http4s.{
+  DecodeFailure,
+  DecodeResult,
+  EntityDecoder,
+  Request,
+  Response,
+  Uri
+}
 import org.http4s.client.JavaNetClientBuilder
+import org.http4s.headers.{Accept, MediaRangeAndQValue}
+import java.util.concurrent.Executors
+import cats.implicits._
+import cats.syntax.all._
+import cats.data.EitherT._
 import scala.concurrent.{ExecutionContext, Future}
 
 class Http4sClient @Inject()(
@@ -32,13 +37,13 @@ class Http4sClient @Inject()(
   }
 
   override def get(request: HttpRequest): Future[HttpResponse[String]] = {
-    getBasic[String](request, HttpResponse(_))
+    getBasic[String](request, parseResponseDefault(_))
   }
 
   override def getBytes(
     request: HttpRequest
   ): Future[HttpResponse[Array[Byte]]] = {
-    getBasic[Array[Byte]](request, HttpResponse(_))
+    getBasic[Array[Byte]](request, parseResponseDefault(_))
   }
 
   override def close(): Unit = {
@@ -47,7 +52,7 @@ class Http4sClient @Inject()(
 
   private def getBasic[T](
     request: HttpRequest,
-    makeResponse: T => HttpResponse[T]
+    makeResponse: Response[IO] => IO[HttpResponse[T]]
   )(implicit ed: EntityDecoder[IO, T]
   ): Future[HttpResponse[T]] = {
     val params = if (request.params.nonEmpty) request.params.foldLeft("?") {
@@ -61,11 +66,46 @@ class Http4sClient @Inject()(
         uri => {
           getClient
             .map(_._1)
-            .flatMap(_.expect[T](uri))
-            .map(makeResponse)
+            .flatMap(client => {
+              val request = buildRequest(uri)
+              client.fetch(request)(makeResponse)
+            })
+//            .flatMap(_.expect[T](uri))
+//            .map(makeResponse)
             .unsafeToFuture()
         }
       )
+  }
+
+  private def buildRequest[T](uri: Uri)(implicit d: EntityDecoder[IO, T]) = {
+    val req = Request[IO](uri = uri)
+    if (d.consumes.nonEmpty) {
+      val m = d.consumes.toList
+      req.putHeaders(
+        Accept(
+          MediaRangeAndQValue(m.head),
+          m.tail.map(MediaRangeAndQValue(_)): _*
+        )
+      )
+    } else req
+  }
+
+  private def parseResponseDefault[T](
+    res: Response[IO]
+  )(implicit d: EntityDecoder[IO, T]
+  ): IO[HttpResponse[T]] = {
+    catsDataBifunctorForEitherT[IO]
+      .leftWiden[DecodeFailure, T, Throwable](d.decode(res, strict = false))
+      .rethrowT
+      .map(value => {
+        HttpResponse[T](
+          headers = res.headers.toList
+            .map(header => header.name.value -> header.value)
+            .toMap,
+          content = value
+        )
+      })
+
   }
 
   private val blockingExecCtx =

@@ -7,8 +7,10 @@ import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
 import com.teletracker.common.db.access.{ThingsDbAccess, UsersDbAccess}
 import com.teletracker.common.db.model.{
   Event,
+  Network,
   ThingType,
-  User,
+  TrackedList,
+  UserPreferences,
   UserThingTagType
 }
 import com.teletracker.common.model.{DataResponse, IllegalActionTypeError}
@@ -40,33 +42,25 @@ class UserController @Inject()(
     with CanParseListFilters {
   prefix("/api/v1/users") {
     // Create a user
-    post("/?") { req: CreateUserRequest =>
-      for {
-        (userId, token) <- usersApi.createUserAndToken(
-          req.name,
-          req.username,
-          req.email,
-          req.password
-        )
-      } yield {
-        DataResponse(
-          CreateUserResponse(userId, token)
-        )
-      }
+    post("/?") { req: RegisterUserRequest =>
+      usersApi.registerUser(req.userId).map(_ => response.ok)
     }
 
     filter[JwtAuthFilter].filter[UserSelfOnlyFilter].apply {
       get("/:userId") { request: GetUserByIdRequest =>
-        getUserOrNotFound(request.user.id)
+        getUserOrNotFound(request.authenticatedUserId)
       }
 
-      put("/:userId") { request: Request =>
-        decode[UpdateUserRequest](request.contentString) match {
-          case Right(UpdateUserRequest(updatedUser)) =>
+      put("/:userId") { request: UpdateUserRequest =>
+        decode[UpdateUserRequestPayload](request.request.contentString) match {
+          case Right(updateUserRequest) =>
             usersApi
-              .updateUser(updatedUser)
+              .updateUser(
+                request.request.authenticatedUserId,
+                updateUserRequest
+              )
               .flatMap(_ => {
-                getUserOrNotFound(request.user.id)
+                getUserOrNotFound(request.request.authenticatedUserId)
               })
 
           case Left(err) => throw err
@@ -74,26 +68,38 @@ class UserController @Inject()(
       }
 
       get("/:userId/lists") { req: GetUserListsRequest =>
+        def returnLists(lists: Seq[TrackedList]) =
+          response.ok
+            .contentTypeJson()
+            .body(
+              DataResponse.complex(
+                lists
+              )
+            )
+
         usersDbAccess
-          .findListsForUser(req.user.id, req.includeThings)
-          .map(result => {
+          .findListsForUser(req.authenticatedUserId, req.includeThings)
+          .flatMap(result => {
             if (result.isEmpty) {
-              response.notFound
+              usersApi
+                .createDefaultListsForUser(req.authenticatedUserId)
+                .flatMap(_ => {
+                  usersDbAccess
+                    .findListsForUser(
+                      req.authenticatedUserId,
+                      req.includeThings
+                    )
+                    .map(returnLists)
+                })
             } else {
-              response.ok
-                .contentTypeJson()
-                .body(
-                  DataResponse.complex(
-                    result
-                  )
-                )
+              Future.successful(returnLists(result))
             }
           })
       }
 
       post("/:userId/lists") { req: CreateListRequest =>
         usersDbAccess
-          .insertList(req.request.authContext.user.id, req.name)
+          .insertList(req.authenticatedUserId, req.name)
           .map(newList => {
             DataResponse(
               CreateListResponse(newList.id)
@@ -107,7 +113,7 @@ class UserController @Inject()(
 
         usersDbAccess
           .findList(
-            req.user.id,
+            req.authenticatedUserId,
             req.listId,
             includeMetadata = true,
             selectFields,
@@ -129,9 +135,13 @@ class UserController @Inject()(
       }
 
       delete("/:userId/lists/:listId") { req: DeleteListRequest =>
-        withList(req.user.id, req.listId) { list =>
+        withList(req.authenticatedUserId, req.listId) { list =>
           listsApi
-            .deleteList(req.user.id, list.id, req.mergeWithList.map(_.toInt))
+            .deleteList(
+              req.authenticatedUserId,
+              list.id,
+              req.mergeWithList.map(_.toInt)
+            )
             .recover {
               case _: IllegalArgumentException =>
                 response.badRequest
@@ -145,11 +155,13 @@ class UserController @Inject()(
       }
 
       put("/:userId/lists/:listId") { req: UpdateListRequest =>
-        withList(req.user.id, req.listId) { list =>
-          usersDbAccess.updateList(req.user.id, list.id, req.name).map {
-            case 0 => response.notFound
-            case _ => response.noContent
-          }
+        withList(req.authenticatedUserId, req.listId) { list =>
+          usersDbAccess
+            .updateList(req.authenticatedUserId, list.id, req.name)
+            .map {
+              case 0 => response.notFound
+              case _ => response.noContent
+            }
         }
       }
 
@@ -159,7 +171,7 @@ class UserController @Inject()(
 
         usersDbAccess
           .findList(
-            req.user.id,
+            req.authenticatedUserId,
             req.listId,
             includeMetadata = true,
             selectFields,
@@ -181,7 +193,7 @@ class UserController @Inject()(
       }
 
       put("/:userId/lists/:listId/things") { req: AddThingToListRequest =>
-        withList(req.user.id, req.listId) { list =>
+        withList(req.authenticatedUserId, req.listId) { list =>
           thingsDbAccess.findThingById(req.itemId).flatMap {
             case None => Future.successful(response.notFound)
             case Some(thing) =>
@@ -195,7 +207,7 @@ class UserController @Inject()(
       put("/:userId/lists") { req: AddThingToListsRequest =>
         usersDbAccess
           .findListsForUser(
-            req.request.authContext.user.id,
+            req.authenticatedUserId,
             includeThings = false
           )
           .flatMap(lists => {
@@ -220,7 +232,7 @@ class UserController @Inject()(
 
       put("/:userId/things/:thingId/lists") { req: ManageShowListsRequest =>
         usersDbAccess
-          .findListsForUser(req.user.id, includeThings = false)
+          .findListsForUser(req.authenticatedUserId, includeThings = false)
           .flatMap(lists => {
             val listIds = lists.map(_.id).toSet
             val validAdds = req.addToLists.filter(listIds(_))
@@ -256,7 +268,7 @@ class UserController @Inject()(
               } else {
                 usersDbAccess
                   .insertOrUpdateAction(
-                    req.request.authContext.user.id,
+                    req.request.authenticatedUserId,
                     req.thingId,
                     action,
                     req.value
@@ -279,7 +291,7 @@ class UserController @Inject()(
             case Success(action) =>
               usersDbAccess
                 .removeAction(
-                  req.request.authContext.user.id,
+                  req.request.authenticatedUserId,
                   req.thingId,
                   action
                 )
@@ -298,7 +310,7 @@ class UserController @Inject()(
 
       get("/:userId/events") { req: GetUserByIdRequest =>
         usersDbAccess
-          .getUserEvents(req.request.authContext.user.id)
+          .getUserEvents(req.authenticatedUserId)
           .map(DataResponse(_))
       }
 
@@ -309,7 +321,7 @@ class UserController @Inject()(
           req.event.targetEntityType,
           req.event.targetEntityId,
           req.event.details,
-          req.request.authContext.user.id,
+          req.authenticatedUserId,
           new java.sql.Timestamp(req.event.timestamp)
         )
 
@@ -321,14 +333,8 @@ class UserController @Inject()(
     }
   }
 
-  private def getUserOrNotFound(userId: Int) = {
-    usersApi.getUser(userId).map {
-      case None =>
-        response.notFound
-
-      case Some(user) =>
-        DataResponse.complex(user)
-    }
+  private def getUserOrNotFound(userId: String): Future[String] = {
+    usersApi.getUser(userId).map(DataResponse.complex(_))
   }
 }
 
@@ -337,6 +343,8 @@ trait InjectedRequest {
 }
 
 case class ListFilters(itemTypes: Option[Set[ThingType]])
+
+case class RegisterUserRequest(userId: String)
 
 case class GetUserByIdRequest(
   @RouteParam userId: String,
@@ -431,8 +439,15 @@ case class CreateUserResponse(
   userId: Int,
   token: String)
 
+case class UpdateUserRequest(
+  @RouteParam userId: String,
+  request: Request)
+
 @JsonCodec
-case class UpdateUserRequest(user: User)
+case class UpdateUserRequestPayload(
+  networkSubscriptions: Option[List[Network]],
+  userPreferences: Option[UserPreferences]
+)
 
 case class UpdateUserThingActionRequest(
   @RouteParam userId: String,

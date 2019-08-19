@@ -11,7 +11,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ListQuery @Inject()(
   val provider: DbProvider,
-  val users: Users,
   val trackedLists: TrackedLists,
   val trackedListThings: TrackedListThings,
   val things: Things,
@@ -40,7 +39,7 @@ class ListQuery @Inject()(
   private val defaultFields = List(Field("id"))
 
   def findUsersLists(
-    userId: Int,
+    userId: String,
     includeThings: Boolean = true,
     includeThingMetadata: Boolean = false,
     selectThingFields: Option[List[Field]] = None
@@ -94,7 +93,7 @@ class ListQuery @Inject()(
   }
 
   def findList(
-    userId: Int,
+    userId: String,
     listId: Int,
     includeMetadata: Boolean = true,
     includeTags: Boolean = true,
@@ -188,7 +187,7 @@ class ListQuery @Inject()(
   }
 
   private def makeListsQuery(
-    userId: Int,
+    userId: String,
     listId: Option[Int] = None,
     includeDynamic: Boolean = false
   ): ListsQuery = {
@@ -233,7 +232,7 @@ class ListQuery @Inject()(
   }
 
   private def makeUserThingTagQuery(
-    userId: Int,
+    userId: String,
     thingQuery: Query[Rep[UUID], UUID, Seq],
     includeTags: Boolean
   ) = {

@@ -4,21 +4,11 @@ import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.access.UsersDbAccess
 import com.teletracker.service.api.UsersApi
-import com.teletracker.service.auth.RequestContext._
-import com.teletracker.service.auth.{
-  JwtAuthExtractor,
-  JwtAuthFilter,
-  PasswordAuthFilter
-}
-import com.teletracker.common.model.DataResponse
+import com.teletracker.service.auth.{JwtAuthExtractor, JwtAuthFilter}
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
-import com.twitter.finatra.http.response.ResponseBuilder
-import io.jsonwebtoken.ExpiredJwtException
 import javax.inject.Inject
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext
 
 class AuthController @Inject()(
   config: TeletrackerConfig,
@@ -30,71 +20,11 @@ class AuthController @Inject()(
     extends Controller {
 
   prefix("/api/v1/auth") {
-    // Log in user based on creds
-    filter[PasswordAuthFilter].post("/login") { req: LoginRequest =>
-      usersApi
-        .vendToken(req.email)
-        .map(token => {
-          response.ok(
-            DataResponse(
-              CreateUserResponse(req.request.authContext.user.id, token)
-            )
-          )
-        })
-    }
-
-    filter[JwtAuthFilter].get("/status") { req: Request =>
-      response.ok(
-        DataResponse(AuthenticatedResponse(true, req.authContext.user.email))
-      )
-    }
-
-    // Log current user out
-    post("/logout") { request: Request =>
-      def revoke(
-        userId: Int,
-        token: String
-      ): Future[ResponseBuilder#EnrichedResponse] = {
-        usersDbAccess
-          .revokeToken(userId, token)
-          .map(_ => {
-            response.ok
-          })
-      }
-
-      jwtAuthExtractor.extractToken(request) match {
-        case None =>
-          Future.successful(
-            response.badRequest("Could not get token from request")
-          )
-        case Some(token) =>
-          jwtAuthExtractor.parseToken(token) match {
-            case Success(value) =>
-              usersDbAccess.findByEmail(value.getBody.getSubject).flatMap {
-                case None       => Future.successful(response.ok)
-                case Some(user) => revoke(user.id.get, token)
-              }
-
-            case Failure(ex: ExpiredJwtException) =>
-              usersDbAccess.findByEmail(ex.getClaims.getSubject).flatMap {
-                case None       => Future.successful(response.badRequest)
-                case Some(user) => revoke(user.id.get, token)
-              }
-
-            case Failure(NonFatal(e)) =>
-              Future.successful(response.internalServerError)
-            case Failure(ex) => throw ex
-          }
-      }
+    filter[JwtAuthFilter].get("/status") { _: Request =>
+      response.ok
     }
   }
 }
-
-case class CreateUserRequest(
-  email: String,
-  username: String,
-  name: String,
-  password: String)
 
 case class LoginRequest(
   request: Request,

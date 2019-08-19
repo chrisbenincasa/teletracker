@@ -15,4 +15,5 @@ export const LOGOUT_SUCCESSFUL = 'logout/SUCCESSFUL';
 export const LOGOUT_FAILED = 'logout/FAILED';
 
 export const SET_TOKEN = 'auth/SET_TOKEN';
+export const UNSET_TOKEN = 'auth/UNSET_TOKEN';
 export const TOKEN_SET = 'auth/TOKEN_SET';
