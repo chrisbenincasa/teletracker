@@ -15,7 +15,6 @@ import {
   Grid,
   Icon,
   IconButton,
-  Link,
   Theme,
   Tooltip,
   Typography,
@@ -36,19 +35,23 @@ import { bindActionCreators, Dispatch } from 'redux';
 import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
 import { connect } from 'react-redux';
 import { GridProps } from '@material-ui/core/Grid';
-import Check from '@material-ui/icons/Check';
-import DeleteIcon from '@material-ui/icons/Delete';
-import PlaylistAdd from '@material-ui/icons/PlaylistAdd';
-import Close from '@material-ui/icons/Close';
-import ThumbDown from '@material-ui/icons/ThumbDown';
-import ThumbUp from '@material-ui/icons/ThumbUp';
+import {
+  Check,
+  Delete as DeleteIcon,
+  PlaylistAdd,
+  Close,
+  ThumbDown,
+  ThumbUp,
+} from '@material-ui/icons';
 import {
   removeUserItemTags,
   updateUserItemTags,
   UserUpdateItemTagsPayload,
 } from '../actions/user';
 import withUser, { WithUserProps } from '../components/withUser';
-import {UserSelf} from "../reducers/user";
+import { ResponsiveImage } from './ResponsiveImage';
+import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import { UserSelf } from '../reducers/user';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -63,11 +66,6 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
-    },
-    cardMedia: {
-      height: 0,
-      width: '100%',
-      paddingTop: '150%',
     },
     cardContent: {
       flexGrow: 1,
@@ -347,50 +345,28 @@ class ItemCard extends Component<Props, ItemCardState> {
   renderPoster = (thing: Thing) => {
     let { classes } = this.props;
     let { isHovering, hoverRating } = this.state;
-    let poster = getPosterPath(thing);
 
-    const makeLink = (children: ReactNode, className?: string) => (
+    return (
       <div
         className={isHovering ? classes.cardHoverEnter : classes.cardHoverExit}
       >
         {isHovering && hoverRating && this.renderRatingHover()}
         {isHovering && !hoverRating && this.renderHoverActions()}
-        <Link
-          className={className}
-          component={props => (
-            <RouterLink
-              {...props}
-              to={'/item/' + thing.type + '/' + thing.id}
-            />
-          )}
-          style={{ position: 'relative' }}
+
+        <RouterLink
+          to={'/item/' + thing.type + '/' + thing.id}
+          style={{ display: 'block', height: '100%', textDecoration: 'none' }}
         >
-          {children}
-        </Link>
+          <CardMedia
+            src={imagePlaceholder}
+            item={thing}
+            component={ResponsiveImage}
+            imageType="poster"
+            imageStyle={{ width: '100%', objectFit: 'cover', height: '100%' }}
+          />
+        </RouterLink>
       </div>
     );
-
-    if (poster) {
-      return makeLink(
-        <CardMedia
-          className={this.props.classes.cardMedia}
-          image={'https://image.tmdb.org/t/p/w300' + poster}
-          title={thing.name}
-        />,
-      );
-    } else {
-      return makeLink(
-        <div style={{ display: 'flex', width: '100%' }}>
-          <Icon
-            className={this.props.classes.missingMediaIcon}
-            fontSize="inherit"
-          >
-            broken_image
-          </Icon>
-        </div>,
-        this.props.classes.missingMedia,
-      );
-    }
   };
 
   renderDialog() {
