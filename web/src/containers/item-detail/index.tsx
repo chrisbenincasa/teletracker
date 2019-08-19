@@ -1,23 +1,25 @@
 import {
   CardMedia,
-  CircularProgress,
   createStyles,
   Fab,
   LinearProgress,
-  Paper,
   Theme,
   Tooltip,
   Typography,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
+import { Rating } from '@material-ui/lab';
 import { Check } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
-import {itemFetchInitiated, ItemFetchInitiatedPayload} from '../../actions/item-detail';
+import {
+  itemFetchInitiated,
+  ItemFetchInitiatedPayload,
+} from '../../actions/item-detail';
 import {
   removeUserItemTags,
   updateUserItemTags,
@@ -27,51 +29,43 @@ import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { ActionType, Availability, Network, Thing } from '../../types';
-import {
-  getBackdropUrl,
-  getOverviewPath,
-  getPosterPath,
-  getTitlePath,
-  getVoteAveragePath,
-} from '../../utils/metadata-access';
+import { getMetadataPath } from '../../utils/metadata-access';
+import { ResponsiveImage } from '../../components/ResponsiveImage';
+import imagePlaceholder from '../../assets/images/imagePlaceholder.png';
 
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
     backdrop: {
-      backgroundSize: 'cover',
+      contain: 'strict',
+      position: 'absolute',
       width: '100%',
-    },
-    backdropImage: {
-      backgroundSize: 'cover',
-      backgroundPosition: '50% 50%',
-      padding: '3em 0',
+      height: '100%',
+      overflow: 'hidden',
       display: 'flex',
+      // focus: blur(0.6),
+      zIndex: 1,
     },
     heroContent: {
       maxWidth: 600,
       margin: '0 auto',
       padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
     },
-    cardMedia: {
-      height: 0,
-      width: '100%',
-      paddingTop: '150%',
-    },
     imageContainer: {
       width: 250,
       display: 'flex',
       flex: '0 1 auto',
-      marginLeft: 20,
+      position: 'relative',
     },
     itemInformationContainer: {
       width: 250,
       display: 'flex',
       flex: '1 1 auto',
       backgroundColor: 'transparent',
-      color: theme.palette.grey[50],
+      color: '#000',
       flexDirection: 'column',
       marginLeft: 20,
+      position: 'relative',
     },
     descriptionContainer: {
       display: 'flex',
@@ -113,9 +107,6 @@ interface State {
   currentItemType: string;
 }
 
-const gradient =
-  'radial-gradient(circle at 20% 50%, rgba(11.76%, 15.29%, 17.25%, 0.98) 0%, rgba(11.76%, 15.29%, 17.25%, 0.88) 100%)';
-
 class ItemDetails extends Component<Props, State> {
   componentDidMount() {
     let { match } = this.props;
@@ -127,7 +118,7 @@ class ItemDetails extends Component<Props, State> {
       currentItemType: itemType,
     });
 
-    this.props.fetchItemDetails({id: itemId, type: itemType});
+    this.props.fetchItemDetails({ id: itemId, type: itemType });
   }
 
   toggleItemWatched = () => {
@@ -161,33 +152,31 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderPoster = (thing: Thing) => {
-    let poster = getPosterPath(thing);
-    if (poster) {
-      return (
-        <CardMedia
-          className={this.props.classes.cardMedia}
-          image={'https://image.tmdb.org/t/p/w342' + poster}
-          title={thing.name}
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
   renderDescriptiveDetails = (thing: Thing) => {
-    let title = getTitlePath(thing) || '';
-    let overview = getOverviewPath(thing) || '';
-    let voteAverage = Number(getVoteAveragePath(thing)) || 0;
+    const title = getMetadataPath(thing, 'title') || '';
+    const overview = getMetadataPath(thing, 'overview') || '';
+    const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
+    const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
 
     return (
       <div className={this.props.classes.descriptionContainer}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            marginBottom: 8,
+            flexDirection: 'column',
+            alignItems: 'self-start',
+          }}
+        >
           <Typography color="inherit" variant="h4">
-            {`${title} (${voteAverage * 10})`}{' '}
+            {`${title}`}
           </Typography>
-          <CircularProgress variant="static" value={voteAverage * 10} />
+          <div style={{ display: 'flex', flexDirection: 'row' }}>
+            <Rating value={voteAverage / 2} precision={0.1} readOnly />
+            <Typography color="inherit" variant="body1">
+              {`(${voteCount})`}
+            </Typography>
+          </div>
           {this.renderWatchedToggle()}
         </div>
         <div>
@@ -195,14 +184,6 @@ class ItemDetails extends Component<Props, State> {
         </div>
       </div>
     );
-  };
-
-  backdropStyle = (item: Thing) => {
-    let backdrop = getBackdropUrl(item, '780');
-
-    return {
-      backgroundImage: `${gradient}, url(${backdrop})`,
-    };
   };
 
   renderOfferDetails = (availabilities: Availability[]) => {
@@ -243,8 +224,8 @@ class ItemDetails extends Component<Props, State> {
           '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
 
         return (
-          <span key={lowestCostAv.id} style={{ color: 'white' }}>
-            <Typography display="inline" color="inherit">
+          <span key={lowestCostAv.id}>
+            <Typography display="inline">
               <img
                 key={lowestCostAv.id}
                 src={logoUri}
@@ -294,8 +275,6 @@ class ItemDetails extends Component<Props, State> {
       return this.renderLoading();
     }
 
-    let backdropStyle = this.backdropStyle(itemDetail);
-
     let availabilities: { [key: string]: Availability[] };
 
     if (itemDetail.availability) {
@@ -315,16 +294,45 @@ class ItemDetails extends Component<Props, State> {
     ) : (
       <React.Fragment>
         <div className={this.props.classes.backdrop}>
+          <ResponsiveImage
+            item={itemDetail}
+            imageType="backdrop"
+            imageStyle={{
+              objectFit: 'cover',
+              objectPosition: 'center top',
+              width: '100%',
+              height: '100%',
+            }}
+            pictureStyle={{
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              opacity: 0.4,
+            }}
+          />
           <div
-            className={this.props.classes.backdropImage}
-            style={backdropStyle}
+            style={{
+              margin: 20,
+              display: 'flex',
+              flex: '1 1 auto',
+              color: '#000',
+            }}
           >
-            <Paper className={this.props.classes.imageContainer}>
-              {this.renderPoster(itemDetail)}
-            </Paper>
+            <div className={this.props.classes.imageContainer}>
+              <CardMedia
+                src={imagePlaceholder}
+                item={itemDetail}
+                component={ResponsiveImage}
+                imageType="poster"
+                imageStyle={{
+                  width: '100%',
+                }}
+              />
+            </div>
+
             <div className={this.props.classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(itemDetail)}
-              <div style={{ color: 'white' }}>
+              <div>
                 {availabilities.subscription ? (
                   <Typography component="div" color="inherit">
                     Stream:
@@ -335,14 +343,14 @@ class ItemDetails extends Component<Props, State> {
                 ) : null}
 
                 {availabilities.rent ? (
-                  <Typography component="div" color="inherit">
+                  <Typography component="div">
                     Rent:
                     <div>{this.renderOfferDetails(availabilities.rent)}</div>
                   </Typography>
                 ) : null}
 
                 {availabilities.buy ? (
-                  <Typography component="div" color="inherit">
+                  <Typography component="div">
                     Buy:
                     <div>{this.renderOfferDetails(availabilities.buy)}</div>
                   </Typography>
