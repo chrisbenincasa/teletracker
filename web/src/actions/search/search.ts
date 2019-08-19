@@ -1,12 +1,10 @@
 import { put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import {
-  SEARCH_FAILED,
-  SEARCH_INITIATED,
-  SEARCH_SUCCESSFUL,
-} from '../constants/search';
-import { clientEffect, createAction } from './utils';
+import { clientEffect, createAction } from '../utils';
 
+export const SEARCH_INITIATED = 'search/INITIATED';
+export const SEARCH_SUCCESSFUL = 'search/SUCCESSFUL';
+export const SEARCH_FAILED = 'search/FAILED';
 export type SearchInitiatedAction = FSA<typeof SEARCH_INITIATED, string>;
 export type SearchSuccessfulAction = FSA<typeof SEARCH_SUCCESSFUL, any>;
 
