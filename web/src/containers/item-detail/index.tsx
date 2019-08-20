@@ -10,7 +10,7 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
-import { Check } from '@material-ui/icons';
+import { Check, List as ListIcon } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -32,6 +32,7 @@ import { ActionType, Availability, Network, Thing } from '../../types';
 import { getMetadataPath } from '../../utils/metadata-access';
 import { ResponsiveImage } from '../../components/ResponsiveImage';
 import imagePlaceholder from '../../assets/images/imagePlaceholder.png';
+import AddToListDialog from '../../components/AddToListDialog';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -105,9 +106,16 @@ type NotOwnProps = RouteComponentProps<RouteParams> &
 interface State {
   currentId: string;
   currentItemType: string;
+  manageTrackingModalOpen: boolean;
 }
 
 class ItemDetails extends Component<Props, State> {
+  state: State = {
+    currentId: '',
+    currentItemType: '',
+    manageTrackingModalOpen: false,
+  };
+
   componentDidMount() {
     let { match } = this.props;
     let itemId = match.params.id;
@@ -120,6 +128,14 @@ class ItemDetails extends Component<Props, State> {
 
     this.props.fetchItemDetails({ id: itemId, type: itemType });
   }
+
+  openManageTrackingModal = () => {
+    this.setState({ manageTrackingModalOpen: true });
+  };
+
+  closeManageTrackingModal = () => {
+    this.setState({ manageTrackingModalOpen: false });
+  };
 
   toggleItemWatched = () => {
     let payload = {
@@ -177,7 +193,6 @@ class ItemDetails extends Component<Props, State> {
               {`(${voteCount})`}
             </Typography>
           </div>
-          {this.renderWatchedToggle()}
         </div>
         <div>
           <Typography color="inherit">{overview}</Typography>
@@ -240,36 +255,46 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderWatchedToggle = () => {
+    let watchedStatus = this.itemMarkedAsWatched();
+    let watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
     return (
       <div>
-        <Tooltip
-          title={
-            this.itemMarkedAsWatched()
-              ? 'Mark as not watched'
-              : 'Mark as watched'
-          }
-          placement="top"
+        <Fab
+          size="small"
+          variant="extended"
+          aria-label="Add"
+          onClick={this.toggleItemWatched}
+          style={{ marginTop: 5, width: '100%' }}
+          color={watchedStatus ? 'primary' : undefined}
         >
-          <Fab
-            size="small"
-            variant="extended"
-            aria-label="Add"
-            onClick={this.toggleItemWatched}
-            style={{ margin: 8 }}
-            color={this.itemMarkedAsWatched() ? 'primary' : undefined}
-          >
-            <Check style={{ marginRight: 8 }} />
-            Watched
-          </Fab>
-        </Tooltip>
+          <Check style={{ marginRight: 8 }} />
+          {watchedCTA}
+        </Fab>
+      </div>
+    );
+  };
+
+  renderTrackingToggle = () => {
+    let trackingCTA = 'Manage Tracking';
+    return (
+      <div>
+        <Fab
+          size="small"
+          variant="extended"
+          aria-label="Add"
+          onClick={this.openManageTrackingModal}
+          style={{ marginTop: 5, width: '100%' }}
+        >
+          <ListIcon style={{ marginRight: 8 }} />
+          {trackingCTA}
+        </Fab>
       </div>
     );
   };
 
   renderItemDetails = () => {
-    let { isFetching, itemDetail, match, userSelf } = this.props;
-    let itemId = match.params.id;
-    let itemType = String(match.params.type);
+    let { isFetching, itemDetail, userSelf } = this.props;
+    let { manageTrackingModalOpen } = this.state;
 
     if (!itemDetail) {
       return this.renderLoading();
@@ -318,18 +343,27 @@ class ItemDetails extends Component<Props, State> {
               color: '#000',
             }}
           >
-            <div className={this.props.classes.imageContainer}>
-              <CardMedia
-                src={imagePlaceholder}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className={this.props.classes.imageContainer}>
+                <CardMedia
+                  src={imagePlaceholder}
+                  item={itemDetail}
+                  component={ResponsiveImage}
+                  imageType="poster"
+                  imageStyle={{
+                    width: '100%',
+                  }}
+                />
+              </div>
+              {this.renderWatchedToggle()}
+              {this.renderTrackingToggle()}
+              <AddToListDialog
+                open={manageTrackingModalOpen}
+                onClose={this.closeManageTrackingModal.bind(this)}
+                userSelf={userSelf!}
                 item={itemDetail}
-                component={ResponsiveImage}
-                imageType="poster"
-                imageStyle={{
-                  width: '100%',
-                }}
               />
             </div>
-
             <div className={this.props.classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(itemDetail)}
               <div>
