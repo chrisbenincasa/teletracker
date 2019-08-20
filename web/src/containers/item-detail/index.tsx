@@ -130,12 +130,10 @@ class ItemDetails extends Component<Props, State> {
   }
 
   openManageTrackingModal = () => {
-    console.log('openManageTrackingModal');
     this.setState({ manageTrackingModalOpen: true });
   };
 
   closeManageTrackingModal = () => {
-    console.log('closeManageTrackingModal');
     this.setState({ manageTrackingModalOpen: false });
   };
 
