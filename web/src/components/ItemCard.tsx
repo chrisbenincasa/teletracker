@@ -208,7 +208,7 @@ interface DispatchProps {
 }
 
 interface ItemCardState {
-  listsModalOpen: boolean;
+  manageTrackingModalOpen: boolean;
   isHovering: boolean;
   hoverRating: boolean;
   deleteConfirmationOpen: boolean;
@@ -230,7 +230,7 @@ class ItemCard extends Component<Props, ItemCardState> {
   };
 
   state: ItemCardState = {
-    listsModalOpen: false,
+    manageTrackingModalOpen: false,
     isHovering: false,
     hoverRating: false,
     deleteConfirmationOpen: false,
@@ -260,12 +260,12 @@ class ItemCard extends Component<Props, ItemCardState> {
     });
   }
 
-  handleListsModalOpen = (item: Thing) => {
-    this.setState({ listsModalOpen: true });
+  openManageTrackingModal = () => {
+    this.setState({ manageTrackingModalOpen: true });
   };
 
-  handleListsModalClose = () => {
-    this.setState({ listsModalOpen: false });
+  closeManageTrackingModal = () => {
+    this.setState({ manageTrackingModalOpen: false });
   };
 
   handleDeleteModalOpen = () => {
@@ -446,7 +446,7 @@ class ItemCard extends Component<Props, ItemCardState> {
               <Tooltip title="Manage Lists" placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Manage Lists"
-                  onClick={() => this.handleListsModalOpen(item)}
+                  onClick={this.openManageTrackingModal}
                   disableRipple
                 >
                   <PlaylistAdd className={classes.hoverWatch} />
@@ -571,7 +571,7 @@ class ItemCard extends Component<Props, ItemCardState> {
       itemCardVisible,
       userSelf,
     } = this.props;
-    let { deleted, listsModalOpen } = this.state;
+    let { deleted, manageTrackingModalOpen } = this.state;
 
     let gridProps: Partial<GridProps> = {
       item: true,
@@ -622,7 +622,8 @@ class ItemCard extends Component<Props, ItemCardState> {
         </Fade>
         {hoverAddToList ? (
           <AddToListDialog
-            open={listsModalOpen}
+            open={manageTrackingModalOpen}
+            onClose={this.closeManageTrackingModal.bind(this)}
             userSelf={userSelf!}
             item={item}
           />
