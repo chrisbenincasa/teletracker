@@ -26,7 +26,7 @@ import { AppState } from '../reducers';
 import { ListOperationState, ListsByIdMap } from '../reducers/lists';
 import { List, Thing, User } from '../types';
 import _ from 'lodash';
-import {UserSelf} from "../reducers/user";
+import { UserSelf } from '../reducers/user';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -37,6 +37,7 @@ const styles = (theme: Theme) =>
 
 interface AddToListDialogProps {
   open: boolean;
+  onClose: () => void;
   userSelf: UserSelf;
   item: Thing;
   listOperations: ListOperationState;
@@ -102,6 +103,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
 
   handleModalClose = () => {
     this.setState({ exited: true });
+    this.props.onClose();
   };
 
   handleAddToList = (id: number) => {
@@ -148,6 +150,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       addToLists: extractIds(addedToLists),
       removeFromLists: extractIds(removedFromLists),
     });
+    this.handleModalClose();
   };
 
   render() {
