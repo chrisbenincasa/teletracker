@@ -49,7 +49,9 @@ export const loginSaga = function*() {
 
         yield put(LoginSuccessful(token));
         // }
-      } catch (e) {}
+      } catch (e) {
+        console.error(e);
+      }
     } else {
     }
   });

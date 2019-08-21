@@ -12,7 +12,7 @@ import createStore, { history } from './store';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAnt0_Kk2HihdTg8jcqozLTlL1qTad09-k',
-  authDomain: 'teletracker.firebaseapp.com',
+  authDomain: process.env.REACT_APP_AUTH_DOMAIN,
   databaseURL: 'https://teletracker.firebaseio.com',
   projectId: 'teletracker',
   storageBucket: 'teletracker.appspot.com',

@@ -1,4 +1,3 @@
-import * as firebase from 'firebase';
 import {
   Button,
   Checkbox,
@@ -26,7 +25,7 @@ import { AppState } from '../reducers';
 import { ListOperationState, ListsByIdMap } from '../reducers/lists';
 import { List, Thing, User } from '../types';
 import _ from 'lodash';
-import {UserSelf} from "../reducers/user";
+import { UserSelf } from '../reducers/user';
 
 const styles = (theme: Theme) =>
   createStyles({
