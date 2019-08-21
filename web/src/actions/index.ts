@@ -6,6 +6,7 @@ import {
   loginSaga,
   logoutSaga,
   signupSaga,
+  authWithGoogleSaga,
   watchAuthState,
 } from './auth';
 import {
@@ -57,6 +58,7 @@ export function* root() {
     loginSaga(),
     logoutSaga(),
     signupSaga(),
+    authWithGoogleSaga(),
     getUserSelfSaga(),
     updateListSaga(),
     loadNetworksSaga(),
