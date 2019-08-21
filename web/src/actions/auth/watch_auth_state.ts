@@ -1,7 +1,7 @@
 import { call, put, take } from '@redux-saga/core/effects';
 import TeletrackerApi from '../../utils/api-client';
 import { END, eventChannel } from '@redux-saga/core';
-import * as firebase from 'firebase';
+import * as firebase from 'firebase/app';
 import { UnsetToken } from './set_token_action';
 
 export const watchAuthState = function*() {

@@ -1,6 +1,6 @@
 import { call, put, select, take, takeLeading } from '@redux-saga/core/effects';
 import { AppState } from '../../reducers';
-import * as firebase from 'firebase';
+import * as firebase from 'firebase/app';
 import { clientEffect, createAction, createBasicAction } from '../utils';
 import { authStateChannelMaker } from '../auth/watch_auth_state';
 import { FSA } from 'flux-standard-action';
