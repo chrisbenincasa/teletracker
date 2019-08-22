@@ -244,7 +244,10 @@ export class TeletrackerApi {
   }
 
   async getItem(token: string, id: string | number, type: string) {
-    return this.api.get<any>(`/api/v1/${type}s/${id}`, { token });
+    return this.api.get<any>(`/api/v1/things/${id}`, {
+      token,
+      thingType: type,
+    });
   }
 
   async getShow(token: string, id: string | number) {
@@ -257,12 +260,6 @@ export class TeletrackerApi {
 
   async getEvents(token: string) {
     return this.api.get<any>('/api/v1/users/self/events', { token });
-  }
-
-  async getThingUserDetails(token: string, showId: string | number) {
-    return this.api.get<any>(`/api/v1/things/${showId}/user-details`, {
-      token,
-    });
   }
 
   async getNetworks(token: string): Promise<TeletrackerResponse<Network[]>> {
