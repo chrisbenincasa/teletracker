@@ -1,16 +1,28 @@
 import {
+  CardContent,
   CardMedia,
+  Chip,
+  Collapse,
+  Slide,
   createStyles,
   Fab,
   LinearProgress,
+  Paper,
+  Tabs,
+  Tab,
   Theme,
-  Tooltip,
   Typography,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
-import { Check, List as ListIcon } from '@material-ui/icons';
+import {
+  Check,
+  List as ListIcon,
+  Subscriptions,
+  AttachMoney,
+  Cloud,
+} from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -37,6 +49,13 @@ import AddToListDialog from '../../components/AddToListDialog';
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
+    root: {
+      flexGrow: 1,
+      maxWidth: 500,
+    },
+    card: {
+      margin: '10px 0',
+    },
     backdrop: {
       contain: 'strict',
       position: 'absolute',
@@ -71,7 +90,12 @@ const styles = (theme: Theme) =>
     descriptionContainer: {
       display: 'flex',
       flexDirection: 'column',
-      flex: '1 0 auto',
+      marginBottom: 10,
+    },
+    availabilePlatforms: {
+      display: 'flex',
+      justifyContent: 'flex-start',
+      flexWrap: 'wrap',
     },
   });
 
@@ -107,6 +131,7 @@ interface State {
   currentId: string;
   currentItemType: string;
   manageTrackingModalOpen: boolean;
+  openTab: number;
 }
 
 class ItemDetails extends Component<Props, State> {
@@ -114,6 +139,7 @@ class ItemDetails extends Component<Props, State> {
     currentId: '',
     currentItemType: '',
     manageTrackingModalOpen: false,
+    openTab: 0,
   };
 
   componentDidMount() {
@@ -135,6 +161,10 @@ class ItemDetails extends Component<Props, State> {
 
   closeManageTrackingModal = () => {
     this.setState({ manageTrackingModalOpen: false });
+  };
+
+  manageAvailabilityTabs = value => {
+    this.setState({ openTab: value });
   };
 
   toggleItemWatched = () => {
@@ -239,14 +269,23 @@ class ItemDetails extends Component<Props, State> {
           '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
 
         return (
-          <span key={lowestCostAv.id}>
-            <Typography display="inline">
+          <span key={lowestCostAv.id} style={{ margin: 10 }}>
+            <Typography
+              display="inline"
+              style={{ display: 'flex', flexDirection: 'column' }}
+            >
               <img
                 key={lowestCostAv.id}
                 src={logoUri}
                 style={{ width: 50, borderRadius: 10 }}
               />
-              {lowestCostAv.cost}
+              {lowestCostAv.cost && (
+                <Chip
+                  size="small"
+                  label={`$${lowestCostAv.cost}`}
+                  style={{ marginTop: 5 }}
+                />
+              )}
             </Typography>
           </span>
         );
@@ -294,7 +333,7 @@ class ItemDetails extends Component<Props, State> {
 
   renderItemDetails = () => {
     let { isFetching, itemDetail, userSelf } = this.props;
-    let { manageTrackingModalOpen } = this.state;
+    let { manageTrackingModalOpen, openTab } = this.state;
 
     if (!itemDetail) {
       return this.renderLoading();
@@ -367,28 +406,58 @@ class ItemDetails extends Component<Props, State> {
             <div className={this.props.classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(itemDetail)}
               <div>
-                {availabilities.subscription ? (
-                  <Typography component="div" color="inherit">
-                    Stream:
-                    <div>
-                      {this.renderOfferDetails(availabilities.subscription)}
-                    </div>
-                  </Typography>
-                ) : null}
-
-                {availabilities.rent ? (
-                  <Typography component="div">
-                    Rent:
-                    <div>{this.renderOfferDetails(availabilities.rent)}</div>
-                  </Typography>
-                ) : null}
-
-                {availabilities.buy ? (
-                  <Typography component="div">
-                    Buy:
-                    <div>{this.renderOfferDetails(availabilities.buy)}</div>
-                  </Typography>
-                ) : null}
+                <Paper square className={this.props.classes.root}>
+                  <Tabs
+                    value={this.state.openTab}
+                    variant="fullWidth"
+                    indicatorColor="primary"
+                    textColor="primary"
+                    aria-label="icon label tabs example"
+                  >
+                    <Tab
+                      icon={<Subscriptions />}
+                      label="Stream"
+                      onClick={() => this.manageAvailabilityTabs(0)}
+                    />
+                    <Tab
+                      icon={<Cloud />}
+                      label="Rent"
+                      onClick={() => this.manageAvailabilityTabs(1)}
+                    />
+                    <Tab
+                      icon={<AttachMoney />}
+                      label="Buy"
+                      onClick={() => this.manageAvailabilityTabs(2)}
+                    />
+                  </Tabs>
+                  <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
+                    {availabilities.subscription ? (
+                      <CardContent
+                        className={this.props.classes.availabilePlatforms}
+                      >
+                        {this.renderOfferDetails(availabilities.subscription)}
+                      </CardContent>
+                    ) : null}
+                  </Collapse>
+                  <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
+                    {availabilities.rent ? (
+                      <CardContent
+                        className={this.props.classes.availabilePlatforms}
+                      >
+                        {this.renderOfferDetails(availabilities.rent)}
+                      </CardContent>
+                    ) : null}
+                  </Collapse>
+                  <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
+                    {availabilities.buy ? (
+                      <CardContent
+                        className={this.props.classes.availabilePlatforms}
+                      >
+                        {this.renderOfferDetails(availabilities.buy)}
+                      </CardContent>
+                    ) : null}
+                  </Collapse>
+                </Paper>
               </div>
             </div>
           </div>
