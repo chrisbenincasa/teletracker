@@ -18,7 +18,7 @@ resource "google_cloudfunctions_function" "scraper-function" {
   name    = "${var.function_name}"
   runtime = "nodejs10"
 
-  available_memory_mb   = 128
+  available_memory_mb   = 256
   source_archive_bucket = "${var.bucket_name}"
   source_archive_object = "${data.google_storage_bucket_object.archive.name}"
   timeout               = 60

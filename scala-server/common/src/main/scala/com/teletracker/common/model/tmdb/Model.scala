@@ -88,6 +88,7 @@ trait MovieId
 
 trait PersonId
 
+@JsonCodec
 case class Person(
   adult: Option[Boolean],
 //  also_known_as: Option[Map[String, Any]],

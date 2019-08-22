@@ -30,7 +30,8 @@ import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import {
-  Link as RouterLink,
+  Link,
+  // Link as RouterLink,
   RouteComponentProps,
   withRouter,
 } from 'react-router-dom';
@@ -50,6 +51,8 @@ import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
 import { layoutStyles } from '../styles';
 import { List as ListType } from '../types';
+import RouterLink from './RouterLink';
+import { render } from 'react-dom';
 
 export const DrawerWidthPx = 220;
 
@@ -144,23 +147,23 @@ interface ListItemProps {
 }
 
 // TODO: Get type definitions for props working
-class ListItemLink extends React.Component<LinkProps, {}> {
-  renderLink = React.forwardRef(
-    (itemProps: any, ref: React.Ref<HTMLButtonElement>) => (
-      <RouterLink to={this.props.to} {...itemProps} ref={ref} />
-    ),
-  );
+const ListItemLink = withStyles(styles, { withTheme: true })(
+  (props: LinkProps & WithStyles<typeof styles, true>) => {
+    const { index, primary, selected, listLength } = props;
 
-  render() {
-    const { index, primary, selected, listLength } = this.props;
-    const hue = 'blue';
+    const backgroundColor =
+      props.theme.palette.primary[
+        index ? (index < 9 ? `${9 - index}00` : 100) : 900
+      ];
+
+    console.log(backgroundColor);
+
     return (
-      <ListItem button component={this.renderLink} selected={selected}>
+      <ListItem button to={props.to} component={RouterLink} selected={selected}>
         <ListItemAvatar>
           <Avatar
             style={{
-              backgroundColor:
-                colors[hue][index ? (index < 9 ? `${9 - index}00` : 100) : 900],
+              backgroundColor,
               width: 25,
               height: 25,
               fontSize: '1em',
@@ -172,8 +175,8 @@ class ListItemLink extends React.Component<LinkProps, {}> {
         <ListItemText primary={primary} />
       </ListItem>
     );
-  }
-}
+  },
+);
 
 class Drawer extends Component<Props, State> {
   state: State = {
@@ -254,11 +257,9 @@ class Drawer extends Component<Props, State> {
   };
 
   renderListItems = (userList: ListType, index: number) => {
-    let { listsById, classes, match } = this.props;
+    let { listsById, match } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
-    // TODO: Figure out what to do with the color styling for these icons
-    const hue = 'blue';
 
     return (
       <ListItemLink
@@ -277,20 +278,11 @@ class Drawer extends Component<Props, State> {
 
   renderDrawerContents() {
     let { classes, listsById } = this.props;
-
-    // TODO: Get prop types working here
-    // polyfill required for react-router-dom < 5.0.0
-    const Link = React.forwardRef(
-      (props: any, ref: React.Ref<HTMLButtonElement>) => (
-        <RouterLink {...props} innerRef={ref} />
-      ),
-    );
-
     function ListItemLink(props: ListItemProps) {
       const { primary, to, selected } = props;
 
       return (
-        <ListItem button component={Link} to={to} selected={selected}>
+        <ListItem button component={RouterLink} to={to} selected={selected}>
           <ListItemIcon>
             <Settings />
           </ListItemIcon>
@@ -450,7 +442,7 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   );
 
 export default withUser(
-  withStyles(styles)(
+  withStyles(styles, { withTheme: true })(
     withRouter(
       connect(
         mapStateToProps,
