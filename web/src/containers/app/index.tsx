@@ -157,7 +157,6 @@ const styles = (theme: Theme) =>
         duration: theme.transitions.duration.leavingScreen,
       }),
       marginLeft: 0,
-      marginTop: 64,
     },
     mainContentShift: {
       transition: theme.transitions.create('margin', {
@@ -199,17 +198,6 @@ interface MenuItemProps {
   selected?: any;
   listLength?: number;
   onClick?: any;
-}
-
-function HideOnScroll(props: Props) {
-  console.log(props);
-  const { children } = props;
-  const trigger = useScrollTrigger();
-  return (
-    <Slide appear={false} direction="down" in={!trigger}>
-      {children}
-    </Slide>
-  );
 }
 
 class App extends Component<Props, State> {
@@ -418,7 +406,7 @@ class App extends Component<Props, State> {
     return (
       <div className={classes.root}>
         <CssBaseline />
-        <AppBar>
+        <AppBar position="sticky">
           <Toolbar variant="dense">
             <Slide
               direction="left"
@@ -427,87 +415,71 @@ class App extends Component<Props, State> {
               mountOnEnter
               unmountOnExit
             >
-                <div
-                  className={classes.sectionMobile}
-                  style={{
-                    flexGrow: 1,
-                    position: 'absolute',
-                    width: '100%',
-                    backgroundColor: '#3f51b5',
-                    zIndex: 9999,
-                    padding: 'inherit',
-                    left: 0,
-                    right: 0,
-                  }}
-                >
-                  <IconButton
-                    onClick={this.handleMobileSearchDisplay}
-                    color="inherit"
-                    size="small"
-                  >
-                    <ChevronRight />
-                  </IconButton>
-                  <div className={classes.searchMobile}>
-                    <InputBase
-                      placeholder="Search&hellip;"
-                      inputProps={{
-                        'aria-label': 'search Teletracker',
-                        inputmode: 'search',
-                      }}
-                      classes={{
-                        root: classes.inputRoot,
-                        input: classes.mobileInput,
-                      }}
-                      onChange={this.handleSearchChange}
-                      onKeyDown={this.handleSearchForEnter}
-                      inputRef={this.mobileSearchInput}
-                      type="search"
-                      value={searchText}
-                    />
-                    {searchText.length > 0 ? (
-                      <Fade in={true}>
-                        <IconButton
-                          onClick={this.clearSearch}
-                          color="inherit"
-                          size="small"
-                        >
-                          <Close className={classes.searchClear} />
-                        </IconButton>
-                      </Fade>
-                    ) : null}
-                  </div>
-                  <div className={classes.searchIcon} />
-                  <IconButton
-                    onClick={this.handleSearchForSubmit}
-                    color="inherit"
-                    size="small"
-                  >
-                    <SearchIcon />
-                  </IconButton>
-                </div>
-              </Slide>
-              {isAuthed ? (
-                <IconButton
-                  focusRipple={false}
-                  onClick={this.toggleDrawer}
-                  color="inherit"
-                >
-                  <MenuIcon />
-                </IconButton>
-              ) : null}
-              <Typography
-                variant="h6"
-                color="inherit"
-                className={classes.grow}
-                component={props => (
-                  <RouterLink
-                    {...props}
-                    to="/"
-                    style={{ textDecoration: 'none' }}
-                  />
-                )}
+              <div
+                className={classes.sectionMobile}
+                style={{
+                  flexGrow: 1,
+                  position: 'absolute',
+                  width: '100%',
+                  backgroundColor: '#3f51b5',
+                  zIndex: 9999,
+                  padding: 'inherit',
+                  left: 0,
+                  right: 0,
+                }}
               >
-<<<<<<< HEAD
+                <IconButton
+                  onClick={this.handleMobileSearchDisplay}
+                  color="inherit"
+                  size="small"
+                >
+                  <ChevronRight />
+                </IconButton>
+                <div className={classes.searchMobile}>
+                  <InputBase
+                    placeholder="Search&hellip;"
+                    inputProps={{
+                      'aria-label': 'search Teletracker',
+                      inputmode: 'search',
+                    }}
+                    classes={{
+                      root: classes.inputRoot,
+                      input: classes.mobileInput,
+                    }}
+                    onChange={this.handleSearchChange}
+                    onKeyDown={this.handleSearchForEnter}
+                    inputRef={this.mobileSearchInput}
+                    type="search"
+                    value={searchText}
+                  />
+                  {searchText.length > 0 ? (
+                    <Fade in={true}>
+                      <IconButton
+                        onClick={this.clearSearch}
+                        color="inherit"
+                        size="small"
+                      >
+                        <Close className={classes.searchClear} />
+                      </IconButton>
+                    </Fade>
+                  ) : null}
+                </div>
+                <div className={classes.searchIcon} />
+                <IconButton
+                  onClick={this.handleSearchForSubmit}
+                  color="inherit"
+                  size="small"
+                >
+                  <SearchIcon />
+                </IconButton>
+              </div>
+            </Slide>
+            {isAuthed ? (
+              <IconButton
+                focusRipple={false}
+                onClick={this.toggleDrawer}
+                color="inherit"
+              >
                 <MenuIcon />
               </IconButton>
             ) : null}
@@ -531,40 +503,28 @@ class App extends Component<Props, State> {
             </Typography>
             {isAuthed ? (
               <React.Fragment>
-=======
->>>>>>> c9609ec... stuff
                 <Box display={{ xs: 'none', sm: 'block' }} m={1}>
-                  Teletracker
+                  <ButtonLink
+                    color="inherit"
+                    primary="New, Arriving, &amp; Expiring"
+                    to="/new"
+                  />
                 </Box>
                 <Box display={{ xs: 'block', sm: 'none' }} m={1}>
-                  TT
+                  <ButtonLink color="inherit" primary="New" to="/new" />
                 </Box>
-              </Typography>
-              {isAuthed ? (
-                <React.Fragment>
-                  <Box display={{ xs: 'none', sm: 'block' }} m={1}>
-                    <ButtonLink
-                      color="inherit"
-                      primary="New, Arriving, &amp; Expiring"
-                      to="/new"
-                    />
-                  </Box>
-                  <Box display={{ xs: 'block', sm: 'none' }} m={1}>
-                    <ButtonLink color="inherit" primary="New" to="/new" />
-                  </Box>
-                </React.Fragment>
-              ) : null}
-              {this.renderSearch()}
-              {!isAuthed ? (
-                <React.Fragment>
-                  <ButtonLink primary="Login" to="/login" />
-                  <ButtonLink primary="Signup" to="/signup" />
-                </React.Fragment>
-              ) : null}
-              {this.renderProfileMenu()}
-            </Toolbar>
-          </AppBar>
-        </HideOnScroll>
+              </React.Fragment>
+            ) : null}
+            {this.renderSearch()}
+            {!isAuthed ? (
+              <React.Fragment>
+                <ButtonLink primary="Login" to="/login" />
+                <ButtonLink primary="Signup" to="/signup" />
+              </React.Fragment>
+            ) : null}
+            {this.renderProfileMenu()}
+          </Toolbar>
+        </AppBar>
         <div>
           {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
           <Drawer open={this.state.drawerOpen} />
