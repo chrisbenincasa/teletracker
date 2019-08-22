@@ -51,6 +51,7 @@ interface AddToListDialogDispatchProps {
 interface AddToListDialogState {
   exited: boolean;
   actionPending: boolean;
+  originalListState: { [listId: number]: boolean };
   listChanges: { [listId: number]: boolean };
 }
 
@@ -76,8 +77,15 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     this.state = {
       exited: false,
       actionPending: props.listOperations.inProgress,
+      originalListState: {
+        ...listChanges,
+      },
       listChanges,
     };
+  }
+
+  hasTrackingChanged() {
+    return _.isEqual(this.state.originalListState, this.state.listChanges);
   }
 
   componentDidUpdate(prevProps: AddToListDialogProps) {
@@ -193,10 +201,15 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
           </FormGroup>
         </DialogContent>
         <DialogActions>
+          <Button>Create a new List</Button>
           <Button onClick={this.handleModalClose} color="primary">
             Cancel
           </Button>
-          <Button onClick={this.handleSubmit} color="primary">
+          <Button
+            disabled={this.hasTrackingChanged()}
+            onClick={this.handleSubmit}
+            color="primary"
+          >
             Save
           </Button>
         </DialogActions>

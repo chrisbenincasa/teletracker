@@ -1,13 +1,33 @@
 package com.teletracker.service.api
 
 import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
+import com.teletracker.common.db.model.TrackedListRow
 import javax.inject.Inject
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListsApi @Inject()(
   usersDbAccess: UsersDbAccess,
   listsDbAccess: ListsDbAccess
 )(implicit executionContext: ExecutionContext) {
+  def createList(
+    userId: String,
+    name: String,
+    thingsToAdd: List[UUID]
+  ): Future[TrackedListRow] = {
+    usersDbAccess
+      .insertList(userId, name)
+      .flatMap(newList => {
+        if (thingsToAdd.nonEmpty) {
+          listsDbAccess
+            .addTrackedThings(newList.id, thingsToAdd.toSet)
+            .map(_ => newList)
+        } else {
+          Future.successful(newList)
+        }
+      })
+  }
+
   def deleteList(
     userId: String,
     listId: Int,

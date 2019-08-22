@@ -479,6 +479,10 @@ class ItemDetails extends Component<Props, State> {
   }
 }
 
+const findThingBySlug = (things: Thing[], slug: string) => {
+  return R.find(t => t.normalizedName === slug, things);
+};
+
 const mapStateToProps: (
   initialState: AppState,
   props: NotOwnProps,
@@ -486,7 +490,13 @@ const mapStateToProps: (
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
-    itemDetail: appState.itemDetail.thingsById[props.match.params.id],
+    itemDetail:
+      appState.itemDetail.thingsById[props.match.params.id] ||
+      appState.itemDetail.thingsBySlug[props.match.params.id] ||
+      findThingBySlug(
+        R.values(appState.itemDetail.thingsById),
+        props.match.params.id,
+      ),
   };
 };
 

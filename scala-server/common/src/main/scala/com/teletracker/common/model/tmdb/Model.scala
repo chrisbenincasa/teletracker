@@ -64,7 +64,9 @@ trait MovieId
   // Join fields
   release_dates: Option[MovieReleaseDates],
   credits: Option[MovieCredits],
-  external_ids: Option[ExternalIds])
+  external_ids: Option[ExternalIds],
+  recommendations: Option[PagedResult[Movie]],
+  similar: Option[PagedResult[Movie]])
 
 @JsonCodec case class MovieExternalIds(
   imdb_id: Option[String],
@@ -171,7 +173,9 @@ trait TvShowId
   // Join fields
   content_ratings: Option[TvContentRatings],
   credits: Option[TvShowCredits],
-  external_ids: Option[ExternalIds])
+  external_ids: Option[ExternalIds],
+  recommendations: Option[PagedResult[TvShow]],
+  similar: Option[PagedResult[TvShow]])
 
 @JsonCodec case class TvNetwork(
   id: Int,

@@ -24,11 +24,13 @@ export interface State {
   currentId?: number;
   itemDetail?: Thing;
   thingsById: { [key: number]: Thing };
+  thingsBySlug: { [key: string]: Thing };
 }
 
 const initialState: State = {
   fetching: false,
   thingsById: {},
+  thingsBySlug: {},
 };
 
 const itemFetchInitiated = handleAction(
@@ -52,6 +54,7 @@ const itemFetchSuccess = handleAction(
       newThing = R.mergeDeepRight(existingThing, newThing) as Thing;
     }
 
+    // TODO: Truncate thingsById after a certain point
     return {
       ...state,
       fetching: false,
@@ -59,6 +62,10 @@ const itemFetchSuccess = handleAction(
       thingsById: {
         ...state.thingsById,
         [payload!.id]: newThing,
+      },
+      thingsBySlug: {
+        ...state.thingsBySlug,
+        [payload!.normalizedName]: newThing,
       },
     } as State;
   },
@@ -71,16 +78,26 @@ const handleListRetrieveSuccess = handleAction<
   if (action.payload && action.payload.things) {
     let thingsById = state.thingsById || {};
     let things = action.payload.things;
-    let newThings = things.reduce((prev, curr) => {
+    let newThings = things.map(curr => {
       let existingThing: Thing | undefined = thingsById[curr.id];
       let newThing: Thing = curr;
       if (existingThing) {
         newThing = R.mergeDeepRight(existingThing, newThing) as Thing;
       }
 
+      return newThing;
+    });
+
+    let newThingsById = newThings.reduce((prev, curr) => {
       return {
         ...prev,
-        [curr.id]: newThing,
+        [curr.id]: curr,
+      };
+    }, {});
+    let newThingsBySlug = newThings.reduce((prev, curr) => {
+      return {
+        ...prev,
+        [curr.normalizedName]: curr,
       };
     }, {});
 
@@ -88,7 +105,11 @@ const handleListRetrieveSuccess = handleAction<
       ...state,
       thingsById: {
         ...state.thingsById,
-        ...newThings,
+        ...newThingsById,
+      },
+      thingsBySlug: {
+        ...state.thingsBySlug,
+        ...newThingsBySlug,
       },
     };
   } else {
