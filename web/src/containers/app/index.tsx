@@ -19,23 +19,16 @@ import {
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
   AccountCircleOutlined,
-  Menu as MenuIcon,
-  Search as SearchIcon,
   ChevronRight,
   Close,
+  Menu as MenuIcon,
+  Search as SearchIcon,
 } from '@material-ui/icons';
 import clsx from 'clsx';
-import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import {
-  Link as RouterLink,
-  Redirect,
-  Route,
-  RouteComponentProps,
-  withRouter,
-} from 'react-router-dom';
+import { Route, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../../actions/auth';
 import { search } from '../../actions/search';
@@ -50,6 +43,7 @@ import Login from '../login';
 import Signup from '../signup';
 import New from '../new';
 import Drawer, { DrawerWidthPx } from '../../components/Drawer';
+import RouterLink, { StdRouterLink } from '../../components/RouterLink';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -343,21 +337,13 @@ class App extends Component<Props, State> {
     let { classes } = this.props;
     let isMenuOpen = !!anchorEl;
 
-    // TODO: Get prop types working here
-    // polyfill required for react-router-dom < 5.0.0
-    const Link = React.forwardRef(
-      (props: any, ref: React.Ref<HTMLButtonElement>) => (
-        <RouterLink {...props} innerRef={ref} />
-      ),
-    );
-
     function MenuItemLink(props: MenuItemProps) {
       const { primary, to, selected, onClick } = props;
 
       return (
         <MenuItem
           button
-          component={Link}
+          component={RouterLink}
           to={to}
           selected={selected}
           onClick={onClick}
@@ -405,19 +391,11 @@ class App extends Component<Props, State> {
       // return <Redirect to={'/login'} />
     }
 
-    // TODO: Get prop types working here
-    // polyfill required for react-router-dom < 5.0.0
-    const Link = React.forwardRef(
-      (props: any, ref: React.Ref<HTMLButtonElement>) => (
-        <RouterLink {...props} innerRef={ref} />
-      ),
-    );
-
     function ButtonLink(props) {
       const { primary, to } = props;
 
       return (
-        <Button component={Link} to={to} color="inherit">
+        <Button component={RouterLink} to={to} color="inherit">
           {primary}
         </Button>
       );
@@ -427,7 +405,7 @@ class App extends Component<Props, State> {
       <div className={classes.root}>
         <CssBaseline />
         <AppBar position="sticky">
-          <Toolbar variant="regular">
+          <Toolbar variant="dense">
             <Slide
               direction="left"
               in={this.state.mobileSearchBarOpen}
@@ -507,13 +485,12 @@ class App extends Component<Props, State> {
               variant="h6"
               color="inherit"
               className={classes.grow}
-              component={props => (
-                <RouterLink
-                  {...props}
-                  to="/"
-                  style={{ textDecoration: 'none' }}
-                />
-              )}
+              component={props =>
+                StdRouterLink('/', {
+                  ...props,
+                  style: { textDecoration: 'none' },
+                })
+              }
             >
               <Box display={{ xs: 'none', sm: 'block' }} m={1}>
                 Teletracker

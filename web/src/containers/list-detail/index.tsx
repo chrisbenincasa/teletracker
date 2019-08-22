@@ -52,6 +52,7 @@ import { ListsByIdMap } from '../../reducers/lists';
 import { layoutStyles } from '../../styles';
 import { List, Thing } from '../../types';
 import _ from 'lodash';
+import { StdRouterLink } from '../../components/RouterLink';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -72,7 +73,7 @@ const styles = (theme: Theme) =>
     listName: {
       textDecoration: 'none',
       '&:focus, &:hover, &:visited, &:link &:active': {
-        color: '#000',
+        color: theme.palette.text.primary,
       },
     },
     formControl: {
@@ -275,14 +276,6 @@ class ListDetail extends Component<Props, State> {
     let { classes } = this.props;
     let isMenuOpen = !!anchorEl;
 
-    // TODO: Get prop types working here
-    // polyfill required for react-router-dom < 5.0.0
-    const Link = React.forwardRef(
-      (props: any, ref: React.Ref<HTMLButtonElement>) => (
-        <RouterLink {...props} innerRef={ref} />
-      ),
-    );
-
     return (
       <div>
         <IconButton
@@ -444,9 +437,7 @@ class ListDetail extends Component<Props, State> {
             <div className={classes.listHeader}>
               <div className={classes.listNameContainer}>
                 <Typography
-                  component={props => (
-                    <RouterLink {...props} to={'/lists/' + list.id} />
-                  )}
+                  component={props => StdRouterLink('/lists/' + list.id, props)}
                   variant="h4"
                   align="left"
                   className={classes.listName}
