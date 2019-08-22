@@ -88,7 +88,6 @@ const styles = (theme: Theme) =>
     listContainer: {
       display: 'flex',
       flexDirection: 'column',
-      flex: '1 0 auto',
       padding: `0 ${theme.spacing(2)}px`,
     },
     textField: {
