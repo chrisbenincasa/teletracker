@@ -41,3 +41,4 @@ server/jks
 
 movies.*.json
 shows.*.json
+people.*.json
