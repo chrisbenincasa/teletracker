@@ -1,10 +1,12 @@
 import {
   Avatar,
   Button,
+  CircularProgress,
   createStyles,
   FormControl,
   Input,
   InputLabel,
+  Link,
   Paper,
   Theme,
   Typography,
@@ -22,8 +24,6 @@ import { AppState } from '../../reducers';
 import { Redirect } from 'react-router';
 import { Link as RouterLink } from 'react-router-dom';
 import * as firebase from 'firebase/app';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import Link from '@material-ui/core/Link';
 import GoogleLoginButton from '../../components/GoogleLoginButton';
 
 const styles = (theme: Theme) =>
