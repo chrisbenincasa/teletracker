@@ -13,7 +13,6 @@ import {
   Theme,
   Toolbar,
   Typography,
-  useScrollTrigger,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
@@ -172,7 +171,6 @@ const styles = (theme: Theme) =>
 interface OwnProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
   currentSearchText?: string;
-  children?: any;
 }
 
 interface DispatchProps {
