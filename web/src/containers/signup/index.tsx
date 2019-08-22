@@ -1,13 +1,15 @@
 import {
-  Paper,
   Avatar,
-  FormControl,
-  Typography,
-  InputLabel,
-  Input,
   Button,
   createStyles,
+  Divider,
+  FormControl,
+  Input,
+  InputLabel,
+  Link,
+  Paper,
   Theme,
+  Typography,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
@@ -17,9 +19,12 @@ import * as R from 'ramda';
 import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { signup } from '../../actions/auth';
+import { signup, signUpWithGoogle } from '../../actions/auth';
 import { AppState } from '../../reducers';
 import { Redirect } from 'react-router';
+import * as firebase from 'firebase/app';
+import { Link as RouterLink } from 'react-router-dom';
+import GoogleLoginButton from '../../components/GoogleLoginButton';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -40,7 +45,7 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       alignItems: 'center',
       padding: `${theme.spacing(2)}px ${theme.spacing(3)}px ${theme.spacing(
-        24,
+        3,
       )}px`,
     },
     avatar: {
@@ -54,11 +59,19 @@ const styles = (theme: Theme) =>
     submit: {
       marginTop: theme.spacing(3),
     },
+    socialSignInContainer: {
+      marginTop: theme.spacing(1),
+    },
+    signUpLinkText: {
+      marginTop: theme.spacing(2),
+      textAlign: 'center',
+    },
   });
 
 interface Props extends WithStyles<typeof styles> {
   isAuthed: boolean;
   signup: (username: string, email: string, password: string) => void;
+  signUpWithGoogle: () => any;
   changePage: () => void;
 }
 
@@ -73,6 +86,20 @@ class Signup extends Component<Props, State> {
     username: '',
     email: '',
     password: '',
+  };
+
+  componentDidMount(): void {
+    firebase
+      .auth()
+      .getRedirectResult()
+      .then(result => {
+        console.log(result);
+      })
+      .catch(console.error);
+  }
+
+  signUpWithGoogle = () => {
+    this.props.signUpWithGoogle();
   };
 
   onSubmit(ev: FormEvent<HTMLFormElement>) {
@@ -105,8 +132,14 @@ class Signup extends Component<Props, State> {
             <LockOutlinedIcon />
           </Avatar>
           <Typography component="h1" variant="h5">
-            Signup
+            Sign Up
           </Typography>
+
+          <Divider />
+
+          <div className={classes.socialSignInContainer}>
+            <GoogleLoginButton onClick={this.signUpWithGoogle} />
+          </div>
 
           <form className={classes.form} onSubmit={ev => this.onSubmit(ev)}>
             <FormControl margin="normal" required fullWidth>
@@ -119,17 +152,6 @@ class Signup extends Component<Props, State> {
                 type="email"
                 onChange={e => this.setState({ email: e.target.value })}
                 value={email}
-              />
-            </FormControl>
-            <FormControl margin="normal" required fullWidth>
-              <InputLabel htmlFor="username">Username</InputLabel>
-              <Input
-                id="username"
-                name="username"
-                autoComplete="username"
-                type="text"
-                onChange={e => this.setState({ username: e.target.value })}
-                value={username}
               />
             </FormControl>
             <FormControl margin="normal" required fullWidth>
@@ -151,8 +173,14 @@ class Signup extends Component<Props, State> {
               color="primary"
               className={classes.submit}
             >
-              Signup
+              Sign Up
             </Button>
+            <Typography className={classes.signUpLinkText}>
+              Already have an account?&nbsp;
+              <Link component={RouterLink} to="/login">
+                Login!
+              </Link>
+            </Typography>
           </form>
         </Paper>
       </main>
@@ -173,6 +201,7 @@ const mapDispatchToProps = dispatch =>
     {
       signup: (username: string, email: string, password: string) =>
         signup(username, email, password),
+      signUpWithGoogle,
       changePage: () => push('/'),
     },
     dispatch,
