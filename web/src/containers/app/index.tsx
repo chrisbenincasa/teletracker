@@ -551,7 +551,7 @@ class App extends Component<Props, State> {
             />
             <Route
               exact
-              path="/item/:type/:id"
+              path="/:type/:id"
               render={props => <ItemDetail {...props} />}
             />
             <Route exact path="/new" render={props => <New {...props} />} />

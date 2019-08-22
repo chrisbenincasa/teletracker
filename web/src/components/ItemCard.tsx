@@ -352,7 +352,7 @@ class ItemCard extends Component<Props, ItemCardState> {
         {isHovering && !hoverRating && this.renderHoverActions()}
 
         <RouterLink
-          to={'/item/' + thing.type + '/' + thing.id}
+          to={'/' + thing.type + '/' + thing.normalizedName}
           style={{ display: 'block', height: '100%', textDecoration: 'none' }}
         >
           <CardMedia

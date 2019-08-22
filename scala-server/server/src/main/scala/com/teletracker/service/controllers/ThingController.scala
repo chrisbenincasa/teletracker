@@ -6,21 +6,26 @@ import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.model.DataResponse
 import com.teletracker.common.util.CanParseFieldFilter
 import com.teletracker.common.util.json.circe._
+import com.teletracker.service.api.ThingApi
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import javax.inject.Inject
 import java.util.UUID
+import TeletrackerController._
+import com.teletracker.common.db.model.ThingType
 import scala.concurrent.ExecutionContext
 
 class ThingController @Inject()(
-  thingsDbAccess: ThingsDbAccess
+  thingsDbAccess: ThingsDbAccess,
+  thingApi: ThingApi
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with CanParseFieldFilter {
   prefix("/api/v1/things") {
-    filter[JwtAuthFilter].apply {
-      get("/?") { req: BatchGetThingsRequest =>
+    filter[JwtAuthFilter] {
+
+      post("/batch/?") { req: BatchGetThingsRequest =>
         val selectFields = parseFieldsOrNone(req.fields)
 
         thingsDbAccess
@@ -31,26 +36,32 @@ class ThingController @Inject()(
               .body(DataResponse.complex(thingsById.mapValues(_.toPartial)))
           })
       }
-    }
 
-    filter[JwtAuthFilter].apply {
-      get("/:thingId/user-details") { req: GetThingRequest =>
-        thingsDbAccess
-          .getThingUserDetails(req.request.authContext.userId, req.thingId)
-          .map(details => {
-            response.ok.contentTypeJson().body(DataResponse(details))
-          })
+      get("/:thingId/?") { req: GetThingRequest =>
+        thingApi
+          .getThing(req.authenticatedUserId, req.thingId, req.thingType)
+          .map {
+            case None =>
+              response.notFound
+
+            case Some(found) =>
+              response.ok
+                .contentTypeJson()
+                .body(DataResponse.complex(found))
+          }
       }
     }
   }
 }
 
 case class GetThingRequest(
-  @RouteParam thingId: UUID,
+  @RouteParam thingId: String,
+  @QueryParam thingType: ThingType,
   request: Request)
+    extends InjectedRequest
 
 case class BatchGetThingsRequest(
-  @QueryParam(commaSeparatedList = true) thingIds: List[UUID],
-  @QueryParam fields: Option[String],
+  thingIds: List[UUID],
+  fields: Option[String],
   request: Request)
     extends InjectedRequest

@@ -69,33 +69,6 @@ class ThingsDbAccess @Inject()(
     things.query.filter(_.id inSetBind ids)
   }
 
-  def findShowByIdBasic(
-    id: UUID,
-    withAvailability: Boolean = true
-  ): Future[Option[PartialThing]] = {
-    val showQuery =
-      things.query.filter(t => t.id === id && t.`type` === ThingType.Show)
-
-    val availabilityQuery = availabilities.query
-      .filter(a => a.thingId === id)
-      .flatMap(av => {
-        av.networkId_fk.map(_ -> av)
-      })
-
-    val movieFut = run(showQuery.result.headOption)
-    val avFut = run(availabilityQuery.result)
-
-    for {
-      movie <- movieFut
-      avs <- avFut
-    } yield {
-      val avWithDetails = avs.map {
-        case (network, av) => av.withNetwork(network)
-      }
-      movie.map(m => m.toPartial.withAvailability(avWithDetails.toList))
-    }
-  }
-
   def findShowById(
     id: UUID,
     withAvailability: Boolean = false
@@ -196,9 +169,12 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def findMovieById(id: UUID): Future[Option[PartialThing]] = {
-    val showQuery = things.query
-      .filter(t => t.id === id && t.`type` === ThingType.Movie)
+  def findThingById(
+    id: UUID,
+    typ: ThingType
+  ): Future[Option[PartialThing]] = {
+    val thingQuery = things.query
+      .filter(t => t.id === id && t.`type` === typ)
       .take(1)
 
     val availabilityQuery = availabilities.query
@@ -207,17 +183,48 @@ class ThingsDbAccess @Inject()(
         av.networkId_fk.map(_ -> av)
       })
 
-    val movieFut = run(showQuery.result.headOption)
+    val thingFut = run(thingQuery.result.headOption)
     val avFut = run(availabilityQuery.result)
 
     for {
-      movie <- movieFut
+      thing <- thingFut
       avs <- avFut
     } yield {
       val avWithDetails = avs.map {
         case (network, av) => av.withNetwork(network)
       }
-      movie.map(m => m.toPartial.withAvailability(avWithDetails.toList))
+
+      thing.map(_.toPartial.withAvailability(avWithDetails.toList))
+    }
+  }
+
+  def findThingBySlug(
+    slug: Slug,
+    typ: ThingType
+  ): Future[Option[PartialThing]] = {
+    val thingQuery = things.query
+      .filter(t => t.normalizedName === slug && t.`type` === typ)
+      .take(1)
+
+    val availabilityQuery = thingQuery.flatMap(q => {
+      availabilities.query
+        .filter(a => a.thingId === q.id)
+        .flatMap(av => {
+          av.networkId_fk.map(_ -> av)
+        })
+    })
+
+    val thingFut = run(thingQuery.result.headOption)
+    val avFut = run(availabilityQuery.result)
+
+    for {
+      thing <- thingFut
+      avs <- avFut
+    } yield {
+      val avWithDetails = avs.map {
+        case (network, av) => av.withNetwork(network)
+      }
+      thing.map(_.toPartial.withAvailability(avWithDetails.toList))
     }
   }
 

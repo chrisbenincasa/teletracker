@@ -98,8 +98,12 @@ class UserController @Inject()(
       }
 
       post("/:userId/lists") { req: CreateListRequest =>
-        usersDbAccess
-          .insertList(req.authenticatedUserId, req.name)
+        listsApi
+          .createList(
+            req.authenticatedUserId,
+            req.name,
+            req.thingIds.getOrElse(Nil)
+          )
           .map(newList => {
             DataResponse(
               CreateListResponse(newList.id)
@@ -372,7 +376,8 @@ case class GetUserAndListByIdRequest(
 case class CreateListRequest(
   @RouteParam userId: String,
   request: Request,
-  name: String)
+  name: String,
+  thingIds: Option[List[UUID]])
     extends InjectedRequest
 
 case class CreateListResponse(id: Int)
@@ -446,8 +451,7 @@ case class UpdateUserRequest(
 @JsonCodec
 case class UpdateUserRequestPayload(
   networkSubscriptions: Option[List[Network]],
-  userPreferences: Option[UserPreferences]
-)
+  userPreferences: Option[UserPreferences])
 
 case class UpdateUserThingActionRequest(
   @RouteParam userId: String,
