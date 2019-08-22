@@ -5,6 +5,8 @@ import {
   AUTH_CHECK_INITIATED,
   AUTH_CHECK_UNAUTH,
   AuthCheckInitiatedAction,
+  LOGIN_GOOGLE_INITIATED,
+  LOGIN_INITIATED,
   LOGIN_SUCCESSFUL,
   LoginSuccessfulAction,
   LOGOUT_SUCCESSFUL,
@@ -29,6 +31,7 @@ export interface UserState extends Partial<User> {
 
 export interface State {
   checkingAuth: boolean;
+  isLoggingIn: boolean;
   isLoggedIn: boolean;
   token?: string;
   user?: UserState;
@@ -36,6 +39,7 @@ export interface State {
 
 const initialState: State = {
   checkingAuth: false,
+  isLoggingIn: false,
   isLoggedIn: false,
 };
 
@@ -71,12 +75,24 @@ const unsetCheckingAuthReducers = [
   });
 });
 
+const loginInitiated = [LOGIN_INITIATED, LOGIN_GOOGLE_INITIATED].map(
+  actionType => {
+    return handleAction<FSA<typeof actionType>, State>(actionType, state => {
+      return {
+        ...state,
+        isLoggingIn: true,
+      };
+    });
+  },
+);
+
 const loginSuccess = handleAction<LoginSuccessfulAction, State>(
   LOGIN_SUCCESSFUL,
   (state, action) => {
     return {
       ...state,
       token: action.payload,
+      isLoggingIn: false,
       isLoggedIn: true,
     };
   },
@@ -138,6 +154,7 @@ export default flattenActions(
   ...[
     authInitiated,
     ...unsetCheckingAuthReducers,
+    ...loginInitiated,
     loginSuccess,
     logoutSuccess,
     setToken,
