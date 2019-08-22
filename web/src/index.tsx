@@ -9,6 +9,8 @@ import 'sanitize.css/sanitize.css';
 import App from './containers/app';
 import './index.css';
 import createStore, { history } from './store';
+import { createMuiTheme, MuiThemeProvider } from '@material-ui/core';
+import { blueGrey } from '@material-ui/core/colors';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAnt0_Kk2HihdTg8jcqozLTlL1qTad09-k',
@@ -27,13 +29,22 @@ const target = document.querySelector('#root');
 
 export const { store, persistor } = createStore();
 
+const theme = createMuiTheme({
+  palette: {
+    primary: blueGrey,
+    type: 'dark',
+  },
+});
+
 render(
   <Provider store={store}>
     <PersistGate loading={null} persistor={persistor}>
       <ConnectedRouter history={history}>
-        <div>
-          <App />
-        </div>
+        <MuiThemeProvider theme={theme}>
+          <div>
+            <App />
+          </div>
+        </MuiThemeProvider>
       </ConnectedRouter>
     </PersistGate>
   </Provider>,

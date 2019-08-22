@@ -93,7 +93,7 @@ class Signup extends Component<Props, State> {
       .auth()
       .getRedirectResult()
       .then(result => {
-        console.log(result);
+        // TODO: do something with this...
       })
       .catch(console.error);
   }
