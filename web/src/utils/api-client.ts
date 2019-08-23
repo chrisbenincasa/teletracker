@@ -118,8 +118,8 @@ export class TeletrackerApi {
     );
   }
 
-  async deleteList(token: string, listId: number, mergeListId: number) {
-    if (mergeListId === 0) {
+  async deleteList(token: string, listId: number, mergeListId?: number) {
+    if (!mergeListId || mergeListId === 0) {
       return this.api.delete(`/api/v1/users/self/lists/${listId}`, { token });
     } else {
       return this.api.delete(

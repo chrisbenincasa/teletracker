@@ -49,7 +49,7 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *deleteList(listId: number, mergeListId: number) {
+  *deleteList(listId: number, mergeListId?: number) {
     return yield this.apiCall(
       client => client.deleteList,
       yield this.withToken(),

@@ -53,6 +53,7 @@ import { layoutStyles } from '../styles';
 import { List as ListType } from '../types';
 import RouterLink from './RouterLink';
 import { render } from 'react-dom';
+import CreateAListValidator from '../utils/validation/CreateAListValidator';
 
 export const DrawerWidthPx = 220;
 
@@ -227,22 +228,14 @@ class Drawer extends Component<Props, State> {
     let { listName } = this.state;
 
     // Reset error states before validation
-    this.setState({ nameLengthError: false, nameDuplicateError: false });
-
     if (userSelf) {
-      let nameExists = function(element) {
-        return listName.toLowerCase() === element.name.toLowerCase();
-      };
+      this.setState(CreateAListValidator.defaultState().asObject());
 
-      if (listName.length === 0) {
-        this.setState({ nameLengthError: true });
-      } else if (R.values(listsById).some(nameExists)) {
-        this.setState({ nameDuplicateError: true });
+      let validationResult = CreateAListValidator.validate(listsById, listName);
+
+      if (validationResult.hasError()) {
+        this.setState(validationResult.asObject());
       } else {
-        this.setState({
-          nameLengthError: false,
-          nameDuplicateError: false,
-        });
         this.handleCreateListSubmit();
       }
     }
