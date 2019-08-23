@@ -3,6 +3,7 @@ import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect, createAction } from '../utils';
 import { RetrieveUserSelfInitiated } from '../user';
 import { FSA } from 'flux-standard-action';
+import { retrieveAllLists } from './retrieve_all_lists';
 
 export const USER_SELF_DELETE_LIST = 'user/self/delete_list/INITIATED';
 export const USER_SELF_DELETE_LIST_SUCCESS = 'user/self/delete_list/SUCCESS';
@@ -38,7 +39,7 @@ export const deleteListSaga = function*() {
       let response: TeletrackerResponse<any> = yield clientEffect(
         client => client.deleteList,
         payload.listId,
-        Number(payload.mergeListId),
+        payload.mergeListId ? Number(payload.mergeListId) : undefined,
       );
 
       if (response.ok) {
@@ -48,7 +49,7 @@ export const deleteListSaga = function*() {
             mergeListId: payload.mergeListId,
           }),
         );
-        yield put(RetrieveUserSelfInitiated({ force: true }));
+        yield put(retrieveAllLists({}));
       } else {
         // TODO: ERROR
       }
