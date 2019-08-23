@@ -28,7 +28,12 @@ import clsx from 'clsx';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Route, RouteComponentProps, withRouter } from 'react-router-dom';
+import {
+  Route,
+  RouteComponentProps,
+  Switch,
+  withRouter,
+} from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../../actions/auth';
 import { search } from '../../actions/search';
@@ -535,27 +540,33 @@ class App extends Component<Props, State> {
               [classes.mainContentShift]: this.state.drawerOpen,
             })}
           >
-            <Route exact path="/" render={props => <Home {...props} />} />
-            <Route
-              exact
-              path="/account"
-              render={props => <Account {...props} />}
-            />
-            <Route exact path="/login" component={Login} />
-            <Route exact path="/signup" component={Signup} />
-            <Route exact path="/lists" render={props => <Lists {...props} />} />
-            <Route
-              exact
-              path="/lists/:id"
-              render={props => <ListDetail {...props} />}
-            />
-            <Route
-              exact
-              path="/:type/:id"
-              render={props => <ItemDetail {...props} />}
-            />
-            <Route exact path="/new" render={props => <New {...props} />} />
-            <Route exact path="/logout" component={About} />
+            <Switch>
+              <Route exact path="/" render={props => <Home {...props} />} />
+              <Route
+                exact
+                path="/account"
+                render={props => <Account {...props} />}
+              />
+              <Route exact path="/login" component={Login} />
+              <Route exact path="/signup" component={Signup} />
+              <Route exact path="/new" render={props => <New {...props} />} />
+              <Route exact path="/logout" component={About} />
+              <Route
+                exact
+                path="/lists"
+                render={props => <Lists {...props} />}
+              />
+              <Route
+                exact
+                path="/lists/:id"
+                render={props => <ListDetail {...props} />}
+              />
+              <Route
+                exact
+                path="/:type/:id"
+                render={props => <ItemDetail {...props} />}
+              />
+            </Switch>
           </main>
         </div>
       </div>
