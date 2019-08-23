@@ -6,26 +6,40 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   FormControlLabel,
   FormGroup,
+  FormHelperText,
+  IconButton,
+  Input,
+  InputAdornment,
+  InputLabel,
   Theme,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
 import * as R from 'ramda';
-import React, { Component } from 'react';
+import React, { ChangeEvent, Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import {
   addToList,
+  createList,
+  LIST_ADD_ITEM_INITIATED,
   ListUpdate,
   ListUpdatedInitiatedPayload,
+  USER_SELF_CREATE_LIST,
+  UserCreateListPayload,
 } from '../actions/lists';
 import { AppState } from '../reducers';
 import { ListOperationState, ListsByIdMap } from '../reducers/lists';
-import { List, Thing, User } from '../types';
+import { List, Thing } from '../types';
 import _ from 'lodash';
 import { UserSelf } from '../reducers/user';
+import { Cancel, Check } from '@material-ui/icons';
+import CreateAListValidator, {
+  CreateAListValidationStateObj,
+} from '../utils/validation/CreateAListValidator';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -40,12 +54,15 @@ interface AddToListDialogProps {
   userSelf: UserSelf;
   item: Thing;
   listOperations: ListOperationState;
+  listItemAddLoading: boolean;
+  createAListLoading: boolean;
   listsById: ListsByIdMap;
 }
 
 interface AddToListDialogDispatchProps {
   addToList: (listId: string, itemId: string) => void;
   updateLists: (payload: ListUpdatedInitiatedPayload) => void;
+  createList: (payload: UserCreateListPayload) => void;
 }
 
 interface AddToListDialogState {
@@ -53,6 +70,9 @@ interface AddToListDialogState {
   actionPending: boolean;
   originalListState: { [listId: number]: boolean };
   listChanges: { [listId: number]: boolean };
+  createAListEnabled: boolean;
+  newListName: string;
+  newListValidation: CreateAListValidationStateObj;
 }
 
 type Props = AddToListDialogProps &
@@ -81,6 +101,9 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
         ...listChanges,
       },
       listChanges,
+      createAListEnabled: false,
+      newListName: '',
+      newListValidation: CreateAListValidator.defaultState().asObject(),
     };
   }
 
@@ -95,21 +118,23 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       this.setState({ exited: false });
     }
 
-    if (
-      !prevProps.listOperations.inProgress &&
-      this.props.listOperations.inProgress
-    ) {
+    if (!prevProps.listItemAddLoading && this.props.listItemAddLoading) {
       this.setState({ actionPending: true });
-    } else if (
-      prevProps.listOperations.inProgress &&
-      !this.props.listOperations.inProgress
-    ) {
+    } else if (prevProps.listItemAddLoading && !this.props.listItemAddLoading) {
       this.setState({ actionPending: false, exited: true });
+    }
+
+    if (prevProps.createAListLoading && !this.props.createAListLoading) {
+      this.setState({
+        createAListEnabled: false,
+        newListName: '',
+        newListValidation: CreateAListValidator.defaultState().asObject(),
+      });
     }
   }
 
   handleModalClose = () => {
-    this.setState({ exited: true });
+    this.setState({ exited: true, createAListEnabled: false });
     this.props.onClose();
   };
 
@@ -160,6 +185,93 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     this.handleModalClose();
   };
 
+  toggleCreateAList = () => {
+    this.setState({
+      createAListEnabled: !this.state.createAListEnabled,
+      newListName: '',
+    });
+  };
+
+  createNewList = () => {
+    this.setState({
+      newListValidation: CreateAListValidator.defaultState().asObject(),
+    });
+
+    let result = CreateAListValidator.validate(
+      this.props.listsById,
+      this.state.newListName,
+    );
+
+    if (result.hasError()) {
+      this.setState({
+        newListValidation: result.asObject(),
+      });
+    } else {
+      this.props.createList({ name: this.state.newListName });
+    }
+  };
+
+  updateListName = (ev: ChangeEvent<HTMLInputElement>) => {
+    this.setState({
+      newListName: ev.target.value,
+    });
+  };
+
+  renderCreateNewListSection() {
+    let {
+      newListValidation: { nameDuplicateError, nameLengthError },
+    } = this.state;
+
+    return (
+      <React.Fragment>
+        <FormControl disabled={this.props.createAListLoading}>
+          <InputLabel>New list</InputLabel>
+          <Input
+            type="text"
+            value={this.state.newListName}
+            onChange={this.updateListName}
+            error={nameDuplicateError || nameLengthError}
+            fullWidth
+            disabled={this.props.createAListLoading}
+            endAdornment={
+              <React.Fragment>
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    disableRipple
+                    onClick={this.toggleCreateAList}
+                  >
+                    <Cancel />
+                  </IconButton>
+                </InputAdornment>
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={this.createNewList}
+                    disableRipple
+                  >
+                    <Check />
+                  </IconButton>
+                </InputAdornment>
+              </React.Fragment>
+            }
+          />
+          <FormHelperText
+            id="component-error-text"
+            style={{
+              display: nameDuplicateError || nameLengthError ? 'block' : 'none',
+            }}
+          >
+            {nameLengthError ? 'List name cannot be blank' : null}
+            {nameDuplicateError
+              ? 'You already have a list with this name'
+              : null}
+          </FormHelperText>
+        </FormControl>
+      </React.Fragment>
+    );
+  }
+
   render() {
     return (
       <Dialog
@@ -177,14 +289,6 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
         <DialogContent style={{ display: 'flex' }}>
           <FormGroup>
             {_.map(this.props.listsById, list => (
-              // <ListItem
-              //   button
-              //   disabled={this.props.listOperations.inProgress}
-              //   key={list.id}
-              //   onClick={() => this.handleAddToList(list.id)}
-              // >
-              //   <ListItemText primary={list.name} />
-              // </ListItem>
               <FormControlLabel
                 key={list.id}
                 control={
@@ -198,17 +302,22 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
                 label={list.name}
               />
             ))}
+            {this.state.createAListEnabled
+              ? this.renderCreateNewListSection()
+              : null}
           </FormGroup>
         </DialogContent>
         <DialogActions>
-          <Button>Create a new List</Button>
-          <Button onClick={this.handleModalClose} color="primary">
-            Cancel
+          <Button
+            disabled={this.state.createAListEnabled}
+            onClick={this.toggleCreateAList}
+          >
+            New List
           </Button>
+          <Button onClick={this.handleModalClose}>Cancel</Button>
           <Button
             disabled={this.hasTrackingChanged()}
             onClick={this.handleSubmit}
-            color="primary"
           >
             Save
           </Button>
@@ -222,6 +331,12 @@ const mapStateToProps = (appState: AppState) => {
   return {
     listOperations: appState.lists.operation,
     listsById: appState.lists.listsById,
+    listItemAddLoading: R.defaultTo(false)(
+      appState.lists.loading[LIST_ADD_ITEM_INITIATED],
+    ),
+    createAListLoading: R.defaultTo(false)(
+      appState.userSelf.loading[USER_SELF_CREATE_LIST],
+    ),
   };
 };
 
@@ -230,6 +345,7 @@ const mapDispatchToProps = dispatch =>
     {
       addToList,
       updateLists: ListUpdate,
+      createList,
     },
     dispatch,
   );
