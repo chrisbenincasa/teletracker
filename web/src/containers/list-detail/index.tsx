@@ -428,7 +428,7 @@ class ListDetail extends Component<Props, State> {
     let { deleted } = this.state;
 
     if ((!listLoading && !list) || deleted) {
-      return <Redirect to="/lists" />;
+      return <Redirect to="/" />;
     } else {
       return (
         <div className={classes.root}>

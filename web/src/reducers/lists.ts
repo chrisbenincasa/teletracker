@@ -207,6 +207,12 @@ const handleUserRetrieve = handleAction<ListRetrieveAllSuccessAction, State>(
           {} as ListsByIdMap,
           action.payload,
         );
+
+        Object.keys(state.listsById).forEach(key => {
+          if (!newListsById.hasOwnProperty(key)) {
+            delete state.listsById[key];
+          }
+        });
       } catch (e) {
         console.error(e);
       }
