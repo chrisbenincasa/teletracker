@@ -98,6 +98,10 @@ class Lists extends Component<Props, State> {
   }
 
   renderItemPreviews = (list: ListType) => {
+    if (!list.things) {
+      return null;
+    }
+
     let things: (Thing)[] = list.things.slice(0, 6);
     let { classes, userSelf } = this.props;
 
