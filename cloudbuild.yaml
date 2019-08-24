@@ -24,6 +24,7 @@ steps:
   - name: "gcr.io/cloud-builders/git"
     entrypoint: "/bin/bash"
     args: ["-c", '"git tag -d $(cat FULL_VERSION)"']
+    dir: "scala-server"
 
   - name: "gcr.io/cloud-builders/git"
     args: ["push", "--tags"]
