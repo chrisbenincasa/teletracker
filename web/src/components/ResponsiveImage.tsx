@@ -11,6 +11,7 @@ interface imgProps {
   pictureStyle?: object;
 }
 
+// TODO: Refactor this entire thing to support more than just backdrop and poster
 export const ResponsiveImage: React.FC<imgProps> = ({
   item,
   imageType,
