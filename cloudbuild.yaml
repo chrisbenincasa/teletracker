@@ -1,4 +1,52 @@
 steps:
+  # Decrypt the Github ssh key
+  - id: berglas
+    name: gcr.io/berglas/berglas
+    env:
+      - API_KEY=berglas://${_BUCKET_ID}/github-ssh?destination=/secrets/github-ssh
+    args: ["exec", "--local", "--", "/bin/sh"]
+    volumes:
+      - name: "secrets"
+        path: /secrets
+
+  # Decrypt the base64 encoded ssh key
+  - name: "gcr.io/cloud-builders/curl"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - base64 -d /secrets/github-ssh > /root/.ssh/id_rsa
+    volumes:
+      - name: "ssh"
+        path: /root/.ssh
+      - name: "secrets"
+        path: /secrets
+
+  # Produce a known_hosts file for ssh
+  - name: gcr.io/teletracker/teletracker-sbt-primed
+    entrypoint: bash
+    args:
+      - "-c"
+      - "ssh-keyscan -t rsa github.com > /root/.ssh/known_hosts"
+    volumes:
+      - name: ssh
+        path: /root/.ssh
+
+  # Set up git with key and domain.
+  - name: "gcr.io/cloud-builders/git"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        chmod 600 /root/.ssh/id_rsa
+        cat <<EOF >/root/.ssh/config
+        Hostname github.com
+        IdentityFile /root/.ssh/id_rsa
+        EOF
+        # mv known_hosts /root/.ssh/known_hosts
+    volumes:
+      - name: "ssh"
+        path: /root/.ssh
+
   # Create our new version and save it to the FULL_VERSION file
   - name: "gcr.io/cloud-builders/curl"
     entrypoint: "/bin/bash"
@@ -27,7 +75,7 @@ steps:
     dir: "scala-server"
 
   - name: "gcr.io/cloud-builders/git"
-    args: ["push", "--tags"]
+    args: ["push", "--tags", "git@github.com:chrisbenincasa/teletracker"]
 images:
   - "gcr.io/teletracker/server"
 artifacts:
@@ -39,3 +87,5 @@ artifacts:
         "scala-server/tasks/target/scala-2.12/tasks-assembly-*.jar",
       ]
 timeout: 1800s
+substitutions:
+  _BUCKET_ID: teletracker-secrets
