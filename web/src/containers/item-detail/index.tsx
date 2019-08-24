@@ -1,13 +1,14 @@
 import {
+  Avatar,
   CardContent,
   CardMedia,
   Chip,
   Collapse,
-  Slide,
   createStyles,
   Fab,
+  Grid,
+  Hidden,
   LinearProgress,
-  Paper,
   Tabs,
   Tab,
   Theme,
@@ -45,26 +46,35 @@ import { getMetadataPath } from '../../utils/metadata-access';
 import { ResponsiveImage } from '../../components/ResponsiveImage';
 import imagePlaceholder from '../../assets/images/imagePlaceholder.png';
 import AddToListDialog from '../../components/AddToListDialog';
+import { parseInitials } from '../../utils/textHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
     root: {
       flexGrow: 1,
-      maxWidth: 500,
     },
     card: {
       margin: '10px 0',
     },
     backdrop: {
-      contain: 'strict',
       position: 'absolute',
       width: '100%',
       height: '100%',
-      overflow: 'hidden',
       display: 'flex',
-      // focus: blur(0.6),
       zIndex: 1,
+      background:
+        'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
+      //To do: integrate with theme styling for primary
+    },
+    itemDetailContainer: {
+      margin: 20,
+      display: 'flex',
+      flex: '1 1 auto',
+      color: '#fff',
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'column',
+      },
     },
     heroContent: {
       maxWidth: 600,
@@ -72,17 +82,28 @@ const styles = (theme: Theme) =>
       padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
     },
     imageContainer: {
-      width: 250,
+      [theme.breakpoints.up('sm')]: {
+        width: 250,
+      },
+      width: '80%',
       display: 'flex',
       flex: '0 1 auto',
       position: 'relative',
     },
+    itemCTA: {
+      [theme.breakpoints.down('sm')]: {
+        width: '80%',
+      },
+      width: '100%',
+    },
     itemInformationContainer: {
-      width: 250,
+      [theme.breakpoints.up('sm')]: {
+        width: 250,
+      },
       display: 'flex',
       flex: '1 1 auto',
       backgroundColor: 'transparent',
-      color: '#000',
+      color: '#fff',
       flexDirection: 'column',
       marginLeft: 20,
       position: 'relative',
@@ -198,11 +219,41 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderDescriptiveDetails = (thing: Thing) => {
-    const title = getMetadataPath(thing, 'title') || '';
-    const overview = getMetadataPath(thing, 'overview') || '';
+  renderTitle = (thing: Thing) => {
+    const title =
+      (thing.type === 'movie'
+        ? getMetadataPath(thing, 'title')
+        : getMetadataPath(thing, 'name')) || '';
     const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
     const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          width: '80%',
+          marginBottom: 10,
+        }}
+      >
+        <Typography color="inherit" variant="h4">
+          {`${title}`}
+        </Typography>
+        <div style={{ display: 'flex', flexDirection: 'row' }}>
+          <Rating value={voteAverage / 2} precision={0.1} readOnly />
+          <Typography color="inherit" variant="body1">
+            {`(${voteCount})`}
+          </Typography>
+        </div>
+      </div>
+    );
+  };
+
+  renderDescriptiveDetails = (thing: Thing) => {
+    const overview = getMetadataPath(thing, 'overview') || '';
+
+    const genres = Object(getMetadataPath(thing, 'genres')) || [];
 
     return (
       <div className={this.props.classes.descriptionContainer}>
@@ -212,20 +263,19 @@ class ItemDetails extends Component<Props, State> {
             marginBottom: 8,
             flexDirection: 'column',
             alignItems: 'self-start',
+            color: '#fff',
           }}
         >
-          <Typography color="inherit" variant="h4">
-            {`${title}`}
-          </Typography>
-          <div style={{ display: 'flex', flexDirection: 'row' }}>
-            <Rating value={voteAverage / 2} precision={0.1} readOnly />
-            <Typography color="inherit" variant="body1">
-              {`(${voteCount})`}
-            </Typography>
-          </div>
+          <Hidden only={['xs', 'sm']}>{this.renderTitle(thing)}</Hidden>
         </div>
         <div>
           <Typography color="inherit">{overview}</Typography>
+        </div>
+        <div style={{ display: 'flex' }}>
+          {genres &&
+            genres.map(genre => (
+              <Chip label={`${genre.name}`} style={{ margin: 5 }} />
+            ))}
         </div>
       </div>
     );
@@ -297,7 +347,7 @@ class ItemDetails extends Component<Props, State> {
     let watchedStatus = this.itemMarkedAsWatched();
     let watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
     return (
-      <div>
+      <div className={this.props.classes.itemCTA}>
         <Fab
           size="small"
           variant="extended"
@@ -316,7 +366,7 @@ class ItemDetails extends Component<Props, State> {
   renderTrackingToggle = () => {
     let trackingCTA = 'Manage Tracking';
     return (
-      <div>
+      <div className={this.props.classes.itemCTA}>
         <Fab
           size="small"
           variant="extended"
@@ -331,6 +381,86 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
+  renderCastDetails = (thing: Thing) => {
+    const credits = Object(getMetadataPath(thing, 'credits'));
+
+    return credits && credits.cast && credits.cast.length > 0 ? (
+      <React.Fragment>
+        <div style={{ marginTop: 10 }}>
+          <Typography color="inherit" variant="h5">
+            Cast
+          </Typography>
+
+          <Grid container>
+            {credits.cast.map(person => (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  maxWidth: 100,
+                  margin: 10,
+                }}
+              >
+                <Avatar
+                  alt={person.name}
+                  src={
+                    person.profile_path
+                      ? `https://image.tmdb.org/t/p/w185/${person.profile_path}`
+                      : ''
+                  }
+                  style={{ width: 100, height: 100 }}
+                >
+                  {person.profile_path
+                    ? null
+                    : parseInitials(person.name, 'name')}
+                </Avatar>
+                <Typography
+                  variant="subtitle1"
+                  color="inherit"
+                  style={{ fontWeight: 'bold' }}
+                  align="center"
+                >
+                  {person.character}
+                </Typography>
+                <Typography
+                  variant="subtitle2"
+                  color="inherit"
+                  style={{ fontStyle: 'Italic' }}
+                  align="center"
+                >
+                  {person.name}
+                </Typography>
+              </div>
+            ))}
+          </Grid>
+        </div>
+      </React.Fragment>
+    ) : null;
+  };
+
+  renderSeriesDetails = (thing: Thing) => {
+    const seasons = Object(getMetadataPath(thing, 'seasons'));
+
+    return seasons && seasons.length > 0 ? (
+      <React.Fragment>
+        <Typography color="inherit" variant="h5">
+          Seasons
+        </Typography>
+
+        <Grid container>
+          {seasons.map(season =>
+            season.episode_count > 0 && season.poster_path ? (
+              <img
+                src={`https://image.tmdb.org/t/p/w342/${season.poster_path}`}
+                style={{ margin: 10, width: 100 }}
+              />
+            ) : null,
+          )}
+        </Grid>
+      </React.Fragment>
+    ) : null;
+  };
+
   renderItemDetails = () => {
     let { isFetching, itemDetail, userSelf } = this.props;
     let { manageTrackingModalOpen, openTab } = this.state;
@@ -338,6 +468,7 @@ class ItemDetails extends Component<Props, State> {
     if (!itemDetail) {
       return this.renderLoading();
     }
+    console.log(itemDetail);
 
     let availabilities: { [key: string]: Availability[] };
 
@@ -371,18 +502,20 @@ class ItemDetails extends Component<Props, State> {
               position: 'absolute',
               width: '100%',
               height: '100%',
-              opacity: 0.4,
+              opacity: 0.2,
+              filter: 'blur(3px)',
             }}
           />
-          <div
-            style={{
-              margin: 20,
-              display: 'flex',
-              flex: '1 1 auto',
-              color: '#000',
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className={this.props.classes.itemDetailContainer}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <Hidden smUp>{this.renderTitle(itemDetail)}</Hidden>
+
               <div className={this.props.classes.imageContainer}>
                 <CardMedia
                   src={imagePlaceholder}
@@ -406,59 +539,61 @@ class ItemDetails extends Component<Props, State> {
             <div className={this.props.classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(itemDetail)}
               <div>
-                <Paper square className={this.props.classes.root}>
-                  <Tabs
-                    value={this.state.openTab}
-                    variant="fullWidth"
-                    indicatorColor="primary"
-                    textColor="primary"
-                    aria-label="icon label tabs example"
-                  >
-                    <Tab
-                      icon={<Subscriptions />}
-                      label="Stream"
-                      onClick={() => this.manageAvailabilityTabs(0)}
-                    />
-                    <Tab
-                      icon={<Cloud />}
-                      label="Rent"
-                      onClick={() => this.manageAvailabilityTabs(1)}
-                    />
-                    <Tab
-                      icon={<AttachMoney />}
-                      label="Buy"
-                      onClick={() => this.manageAvailabilityTabs(2)}
-                    />
-                  </Tabs>
-                  <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
-                    {availabilities.subscription ? (
-                      <CardContent
-                        className={this.props.classes.availabilePlatforms}
-                      >
-                        {this.renderOfferDetails(availabilities.subscription)}
-                      </CardContent>
-                    ) : null}
-                  </Collapse>
-                  <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
-                    {availabilities.rent ? (
-                      <CardContent
-                        className={this.props.classes.availabilePlatforms}
-                      >
-                        {this.renderOfferDetails(availabilities.rent)}
-                      </CardContent>
-                    ) : null}
-                  </Collapse>
-                  <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
-                    {availabilities.buy ? (
-                      <CardContent
-                        className={this.props.classes.availabilePlatforms}
-                      >
-                        {this.renderOfferDetails(availabilities.buy)}
-                      </CardContent>
-                    ) : null}
-                  </Collapse>
-                </Paper>
+                <Tabs
+                  value={this.state.openTab}
+                  indicatorColor="primary"
+                  textColor="primary"
+                  aria-label="icon label tabs example"
+                  variant="fullWidth"
+                >
+                  <Tab
+                    icon={<Subscriptions />}
+                    label="Stream"
+                    onClick={() => this.manageAvailabilityTabs(0)}
+                  />
+                  <Tab
+                    icon={<Cloud />}
+                    label="Rent"
+                    onClick={() => this.manageAvailabilityTabs(1)}
+                  />
+                  <Tab
+                    icon={<AttachMoney />}
+                    label="Buy"
+                    onClick={() => this.manageAvailabilityTabs(2)}
+                  />
+                </Tabs>
+                {/* <Paper square className={this.props.classes.root}> */}
+                <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
+                  {availabilities.subscription ? (
+                    <CardContent
+                      className={this.props.classes.availabilePlatforms}
+                    >
+                      {this.renderOfferDetails(availabilities.subscription)}
+                    </CardContent>
+                  ) : null}
+                </Collapse>
+                <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
+                  {availabilities.rent ? (
+                    <CardContent
+                      className={this.props.classes.availabilePlatforms}
+                    >
+                      {this.renderOfferDetails(availabilities.rent)}
+                    </CardContent>
+                  ) : null}
+                </Collapse>
+                <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
+                  {availabilities.buy ? (
+                    <CardContent
+                      className={this.props.classes.availabilePlatforms}
+                    >
+                      {this.renderOfferDetails(availabilities.buy)}
+                    </CardContent>
+                  ) : null}
+                </Collapse>
+                {/* </Paper> */}
               </div>
+              {this.renderCastDetails(itemDetail)}
+              {this.renderSeriesDetails(itemDetail)}
             </div>
           </div>
         </div>
