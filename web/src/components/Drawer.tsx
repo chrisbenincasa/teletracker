@@ -157,8 +157,6 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
         index ? (index < 9 ? `${9 - index}00` : 100) : 900
       ];
 
-    console.log(backgroundColor);
-
     return (
       <ListItem button to={props.to} component={RouterLink} selected={selected}>
         <ListItemAvatar>
