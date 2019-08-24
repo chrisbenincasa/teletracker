@@ -17,9 +17,11 @@ import com.teletracker.common.model.{DataResponse, IllegalActionTypeError}
 import com.teletracker.common.util.{
   CanParseFieldFilter,
   CanParseListFilters,
-  HasFieldsFilter
+  HasFieldsFilter,
+  Slug
 }
 import com.teletracker.common.util.json.circe._
+import com.teletracker.service.util.HasThingIdOrSlug
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import io.circe.generic.JsonCodec
@@ -198,7 +200,7 @@ class UserController @Inject()(
 
       put("/:userId/lists/:listId/things") { req: AddThingToListRequest =>
         withList(req.authenticatedUserId, req.listId) { list =>
-          thingsDbAccess.findThingById(req.itemId).flatMap {
+          thingsDbAccess.findThingByIdOrSlug(req.idOrSlug).flatMap {
             case None => Future.successful(response.notFound)
             case Some(thing) =>
               usersDbAccess
@@ -221,7 +223,7 @@ class UserController @Inject()(
             if (validListIds.isEmpty) {
               Future.successful(response.notFound)
             } else {
-              thingsDbAccess.findThingById(req.itemId).flatMap {
+              thingsDbAccess.findThingByIdOrSlug(req.idOrSlug).flatMap {
                 case None => Future.successful(response.notFound)
                 case Some(thing) =>
                   val futs = validListIds.map(listId => {
@@ -245,7 +247,7 @@ class UserController @Inject()(
             if (validAdds.isEmpty && validRemoves.isEmpty) {
               Future.successful(response.notFound)
             } else {
-              thingsDbAccess.findThingById(req.thingId).flatMap {
+              thingsDbAccess.findThingByIdOrSlug(req.idOrSlug).flatMap {
                 case None => Future.successful(response.notFound)
                 case Some(thing) =>
                   val futs = validAdds.map(listId => {
@@ -273,7 +275,7 @@ class UserController @Inject()(
                 usersDbAccess
                   .insertOrUpdateAction(
                     req.request.authenticatedUserId,
-                    req.thingId,
+                    req.idOrSlug,
                     action,
                     req.value
                   )
@@ -296,7 +298,7 @@ class UserController @Inject()(
               usersDbAccess
                 .removeAction(
                   req.request.authenticatedUserId,
-                  req.thingId,
+                  req.idOrSlug,
                   action
                 )
                 .map(_ => {
@@ -401,9 +403,10 @@ case class GetListThingsRequest(
 case class AddThingToListRequest(
   @RouteParam userId: String,
   @RouteParam listId: String,
-  itemId: UUID,
+  thingId: String,
   request: Request)
     extends InjectedRequest
+    with HasThingIdOrSlug
 
 case class DeleteListRequest(
   @RouteParam userId: String,
@@ -414,10 +417,11 @@ case class DeleteListRequest(
 
 case class AddThingToListsRequest(
   @RouteParam userId: String,
-  itemId: UUID,
+  thingId: String,
   listIds: List[Int],
   request: Request)
     extends InjectedRequest
+    with HasThingIdOrSlug
 
 case class AddUserEventRequest(
   @RouteParam userId: String,
@@ -427,11 +431,12 @@ case class AddUserEventRequest(
 
 case class ManageShowListsRequest(
   @RouteParam userId: String,
-  @RouteParam thingId: UUID,
+  @RouteParam thingId: String,
   addToLists: List[Int],
   removeFromLists: List[Int],
   request: Request)
     extends InjectedRequest
+    with HasThingIdOrSlug
 
 case class EventCreate(
   `type`: String,
@@ -455,13 +460,15 @@ case class UpdateUserRequestPayload(
 
 case class UpdateUserThingActionRequest(
   @RouteParam userId: String,
-  @RouteParam thingId: UUID,
+  @RouteParam thingId: String,
   action: String,
   value: Option[Double],
   request: Request)
+    extends HasThingIdOrSlug
 
 case class DeleteUserThingActionRequest(
   @RouteParam userId: String,
-  @RouteParam thingId: UUID,
+  @RouteParam thingId: String,
   @RouteParam actionType: String,
   request: Request)
+    extends HasThingIdOrSlug

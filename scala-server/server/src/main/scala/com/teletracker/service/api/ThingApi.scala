@@ -2,15 +2,9 @@ package com.teletracker.service.api
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{PartialThing, ThingType}
-import com.teletracker.common.util.Slug
+import com.teletracker.service.util.HasThingIdOrSlug
 import javax.inject.Inject
-import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-
-object ThingApi {
-  final private val UuidRegex =
-    "[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}".r
-}
 
 class ThingApi @Inject()(
   thingsDbAccess: ThingsDbAccess
@@ -20,13 +14,10 @@ class ThingApi @Inject()(
     idOrSlug: String,
     thingType: ThingType
   ): Future[Option[PartialThing]] = {
-    val movieFut =
-      if (ThingApi.UuidRegex.findFirstIn(idOrSlug).isDefined) {
-        val id = UUID.fromString(idOrSlug)
-        thingsDbAccess.findThingById(id, thingType)
-      } else {
-        thingsDbAccess.findThingBySlug(Slug.raw(idOrSlug), thingType)
-      }
+    val movieFut = HasThingIdOrSlug.parse(idOrSlug) match {
+      case Left(id)    => thingsDbAccess.findThingById(id, thingType)
+      case Right(slug) => thingsDbAccess.findThingBySlug(slug, thingType)
+    }
 
     movieFut.flatMap {
       case None =>

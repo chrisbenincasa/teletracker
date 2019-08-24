@@ -1,6 +1,7 @@
 package com.teletracker.common.db.access
 
 import com.teletracker.common.db.model._
+import com.teletracker.common.db.util.InhibitFilter
 import com.teletracker.common.inject.{DbImplicits, DbProvider}
 import com.teletracker.common.util.{Field, Slug}
 import javax.inject.Inject
@@ -42,6 +43,19 @@ class ThingsDbAccess @Inject()(
     run {
       things.query.filter(_.id === id).take(1).result.headOption
     }
+  }
+
+  def findThingBySlugRaw(slug: Slug) = {
+    run {
+      things.query.filter(_.normalizedName === slug).take(1).result.headOption
+    }
+  }
+
+  def findThingByIdOrSlug(idOrSlug: Either[UUID, Slug]) = {
+    idOrSlug.fold(
+      findThingById,
+      findThingBySlugRaw(_)
+    )
   }
 
   def findThingsByNormalizedName(name: String): Future[Seq[ThingRaw]] = {
@@ -200,11 +214,11 @@ class ThingsDbAccess @Inject()(
 
   def findThingBySlug(
     slug: Slug,
-    typ: ThingType
-  ): Future[Option[PartialThing]] = {
-    val thingQuery = things.query
-      .filter(t => t.normalizedName === slug && t.`type` === typ)
-      .take(1)
+    thingType: Option[ThingType]
+  ) = {
+    val thingQuery = InhibitFilter(
+      things.query.filter(_.normalizedName === slug)
+    ).filter(thingType)(typ => _.`type` === typ).query.take(1)
 
     val availabilityQuery = thingQuery.flatMap(q => {
       availabilities.query
@@ -226,6 +240,13 @@ class ThingsDbAccess @Inject()(
       }
       thing.map(_.toPartial.withAvailability(avWithDetails.toList))
     }
+  }
+
+  def findThingBySlug(
+    slug: Slug,
+    typ: ThingType
+  ): Future[Option[PartialThing]] = {
+    findThingBySlug(slug, Some(typ))
   }
 
   def findPersonById(id: UUID): Future[Option[Thing]] = {
@@ -373,12 +394,15 @@ class ThingsDbAccess @Inject()(
       }
     }
 
-    def update(existingId: UUID): Future[Thing] = {
-      val updated = thingToInsert.copy(id = existingId)
+    def update(existingThing: Thing): Future[Thing] = {
+      val updated = thingToInsert.copy(
+        id = existingThing.id,
+        createdAt = existingThing.createdAt
+      )
 
       run {
         things.query
-          .filter(t => t.id === existingId)
+          .filter(t => t.id === existingThing.id)
           .update(updated)
           .map(_ => updated)
       }
@@ -394,18 +418,24 @@ class ThingsDbAccess @Inject()(
                   "Received duplicate key exception, but could not find existing value"
                 )
               case Some(existing) =>
-                update(existing.id)
+                update(existing)
             }
         }
 
       case Some(e) =>
-        update(e.id)
+        update(e)
     }
   }
 
   def findExternalIdsByTmdbId(tmdbId: String): Future[Option[ExternalId]] = {
     run {
       externalIds.query.filter(_.tmdbId === tmdbId).result.headOption
+    }
+  }
+
+  def findExternalIds(thingId: UUID): Future[Option[ExternalId]] = {
+    run {
+      externalIds.query.filter(_.thingId === thingId).result.headOption
     }
   }
 
