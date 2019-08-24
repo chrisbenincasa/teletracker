@@ -30,7 +30,6 @@ buck-out/
 
 # Misc
 #
-.env
 .env.development.local
 build/
 .idea/
