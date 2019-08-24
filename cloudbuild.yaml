@@ -76,6 +76,9 @@ steps:
 
   - name: "gcr.io/cloud-builders/git"
     args: ["push", "--tags", "git@github.com:chrisbenincasa/teletracker"]
+    volumes:
+      - name: "ssh"
+        path: /root/.ssh
 images:
   - "gcr.io/teletracker/server"
 artifacts:
