@@ -4,7 +4,7 @@ Global / cancelable := true
 
 lazy val `teletracker-repo` = Project("teletracker-repo", file("."))
   .settings(
-    version := s"0.1-${BuildConfig.Revision.revision}",
+    version := BuildConfig.Revision.wholeVersion,
     publish := {},
     publishLocal := {},
     publishArtifact := false
@@ -21,7 +21,7 @@ lazy val common = project
   .settings(
     organization := "com.teletracker",
     name := "common",
-    version := s"0.1-${BuildConfig.Revision.revision}",
+    version := BuildConfig.Revision.wholeVersion,
     // Compilation
     scalaVersion := Compilation.scalacVersion,
     scalacOptions ++= Compilation.scalacOpts,
@@ -77,7 +77,7 @@ lazy val consumer = project
   .settings(
     organization := "com.teletracker",
     name := "consumer",
-    version := s"0.1-${BuildConfig.Revision.revision}",
+    version := BuildConfig.Revision.wholeVersion,
     // Compilation
     scalaVersion := Compilation.scalacVersion,
     scalacOptions ++= Compilation.scalacOpts,
@@ -169,6 +169,11 @@ lazy val server = project
         namespace = Some("gcr.io/teletracker"),
         repository = "server",
         tag = Some("latest")
+      ),
+      ImageName(
+        namespace = Some("gcr.io/teletracker"),
+        repository = "server",
+        tag = Some(version.value)
       )
     )
   )
