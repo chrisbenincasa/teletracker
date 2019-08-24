@@ -3,6 +3,9 @@ FROM gcr.io/teletracker/scala-sbt:1.2.8-jdk-8
 ADD build.sbt build.sbt
 ADD project project
 
+RUN apt-get -yq update && \
+    apt-get -yqq install ssh
+
 RUN sbt "+update" && rm -rf project target
 
 RUN rm build.sbt
