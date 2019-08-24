@@ -26,7 +26,7 @@ object BuildConfig {
 
   lazy val commonSettings = Seq(
     organization := "com.teletracker",
-    version := s"0.1-${BuildConfig.Revision.revision}",
+    version := BuildConfig.Revision.wholeVersion,
     // Compilation
     scalaVersion := Compilation.scalacVersion,
     scalacOptions ++= Compilation.scalacOpts,
@@ -101,6 +101,7 @@ object BuildConfig {
   }
 
   object Revision {
+    lazy val wholeVersion = System.getProperty("version", "0.1-SNAPSHOT")
     lazy val revision = System.getProperty("revision", "SNAPSHOT")
     lazy val baseImageVersion = {
       val v = System.getProperty(

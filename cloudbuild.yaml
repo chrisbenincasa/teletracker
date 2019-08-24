@@ -1,15 +1,31 @@
 steps:
-  - name: "gcr.io/$PROJECT_ID/teletracker-sbt-primed"
+  # Create our new version and save it to the FULL_VERSION file
+  - name: "gcr.io/cloud-builders/curl"
+    entrypoint: "/bin/bash"
     args:
       [
-        "-J-Xss8m",
-        "clean",
-        "compile",
-        "server/assembly",
-        "tasks/assembly",
-        "server/docker",
+        "-c",
+        'echo "$(cat VERSION)-$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}" > FULL_VERSION',
+      ]
+    env:
+      - "SHORT_SHA=$SHORT_SHA"
+
+  # Using FULL_VERSION, but and deploy some images
+  - name: "gcr.io/$PROJECT_ID/teletracker-sbt-primed"
+    entrypoint: "/bin/bash"
+    args:
+      [
+        "-c",
+        '/usr/bin/sbt -J-Xss8m -Dversion="$(cat FULL_VERSION)" clean compile server/assembly tasks/assembly server/docker',
       ]
     dir: "scala-server"
+
+  - name: "gcr.io/cloud-builders/git"
+    entrypoint: "/bin/bash"
+    args: ["-c", '"git tag -d $(cat FULL_VERSION)"']
+
+  - name: "gcr.io/cloud-builders/git"
+    args: ["push", "--tags"]
 images:
   - "gcr.io/teletracker/server"
 artifacts:
@@ -17,7 +33,7 @@ artifacts:
     location: "gs://teletracker-build-artifacts"
     paths:
       [
-        "scala-server/server/target/scala-2.12/server-assembly-0.1-SNAPSHOT.jar",
-        "scala-server/tasks/target/scala-2.12/tasks-assembly-0.1-SNAPSHOT.jar",
+        "scala-server/server/target/scala-2.12/server-assembly-*.jar",
+        "scala-server/tasks/target/scala-2.12/tasks-assembly-*.jar",
       ]
 timeout: 1800s
