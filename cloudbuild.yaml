@@ -7,7 +7,7 @@ steps:
         "-c",
         'echo "$(cat VERSION)-$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}" > FULL_VERSION',
       ]
-    dir: "scala-server"d
+    dir: "scala-server"
     env:
       - "SHORT_SHA=$SHORT_SHA"
 
