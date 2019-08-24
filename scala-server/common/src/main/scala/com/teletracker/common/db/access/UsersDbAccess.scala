@@ -9,7 +9,7 @@ import com.teletracker.common.db.model.{
   _
 }
 import com.teletracker.common.inject.{DbImplicits, DbProvider}
-import com.teletracker.common.util.{Field, ListFilters, NetworkCache}
+import com.teletracker.common.util.{Field, ListFilters, NetworkCache, Slug}
 import javax.inject.{Inject, Provider}
 import java.time.{Instant, OffsetDateTime}
 import java.util.UUID
@@ -344,47 +344,72 @@ class UsersDbAccess @Inject()(
     }
   }
 
+  def withThingId(idOrSlug: Either[UUID, Slug]) = {
+    idOrSlug match {
+      case Left(id) => DBIO.successful(Some(id))
+      case Right(slug) =>
+        things.query
+          .filter(_.normalizedName === slug)
+          .take(1)
+          .map(_.id)
+          .result
+          .headOption
+    }
+  }
+
   def insertOrUpdateAction(
     userId: String,
-    thingId: UUID,
+    thingId: Either[UUID, Slug],
     action: UserThingTagType,
     value: Option[Double]
   ): Future[Int] = {
     run {
-      userThingTags.query
-        .filter(utt => {
-          utt.userId === userId && utt.thingId === thingId && utt.action === action
-        })
-        .take(1)
-        .result
-        .headOption
-        .flatMap {
-          case Some(existing) =>
-            userThingTags.query.update(existing.copy(value = value))
+      withThingId(thingId).flatMap {
+        case None =>
+          DBIO.failed(
+            new IllegalArgumentException(s"Thing not found: $thingId")
+          )
+        case Some(id) =>
+          userThingTags.query
+            .filter(utt => {
+              utt.userId === userId && utt.thingId === id && utt.action === action
+            })
+            .take(1)
+            .result
+            .headOption
+            .flatMap {
+              case Some(existing) =>
+                userThingTags.query.update(existing.copy(value = value))
 
-          case None =>
-            userThingTags.query += UserThingTag(
-              -1,
-              userId,
-              thingId,
-              action,
-              value
-            )
-        }
+              case None =>
+                userThingTags.query += UserThingTag(
+                  -1,
+                  userId,
+                  id,
+                  action,
+                  value
+                )
+            }
+      }
     }
+
   }
 
   def removeAction(
     userId: String,
-    thingId: UUID,
+    thingId: Either[UUID, Slug],
     action: UserThingTagType
   ): Future[Int] = {
     run {
-      userThingTags.query
-        .filter(utt => {
-          utt.userId === userId && utt.thingId === thingId && utt.action === action
-        })
-        .delete
+      withThingId(thingId).flatMap {
+        case None => DBIO.successful(0)
+        case Some(id) =>
+          userThingTags.query
+            .filter(utt => {
+              utt.userId === userId && utt.thingId === id && utt.action === action
+            })
+            .delete
+      }
     }
   }
 }

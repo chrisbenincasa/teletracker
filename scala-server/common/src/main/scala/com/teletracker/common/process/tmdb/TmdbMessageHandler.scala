@@ -1,7 +1,7 @@
 package com.teletracker.common.process.tmdb
 
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.model.tmdb.{BelongsToCollection, MovieId}
+import com.teletracker.common.model.tmdb.BelongsToCollection
 import com.teletracker.common.process.tmdb.TmdbProcessMessage.{
   ProcessBelongsToCollections,
   ProcessMovie,
@@ -25,7 +25,7 @@ final class TmdbMessageHandler @Inject()(
 
   def handle(message: TmdbProcessMessage): Future[Unit] = {
     logger.info(
-      s"Handling ${message.action.getClass.getSimpleName} message id = ${message.id}"
+      s"Handling ${message.action.getClass.getSimpleName} message id = ${message.id} with action: ${message.action}"
     )
     message.action match {
       case ProcessSearchResults(payload) =>
