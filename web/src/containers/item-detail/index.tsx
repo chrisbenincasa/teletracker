@@ -58,7 +58,6 @@ const styles = (theme: Theme) =>
       margin: '10px 0',
     },
     backdrop: {
-      position: 'absolute',
       width: '100%',
       height: '100%',
       display: 'flex',
