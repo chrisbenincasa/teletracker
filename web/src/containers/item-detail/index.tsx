@@ -99,13 +99,13 @@ const styles = (theme: Theme) =>
     itemInformationContainer: {
       [theme.breakpoints.up('sm')]: {
         width: 250,
+        marginLeft: 20,
       },
       display: 'flex',
       flex: '1 1 auto',
       backgroundColor: 'transparent',
       color: '#fff',
       flexDirection: 'column',
-      marginLeft: 20,
       position: 'relative',
     },
     descriptionContainer: {
@@ -116,6 +116,9 @@ const styles = (theme: Theme) =>
     availabilePlatforms: {
       display: 'flex',
       justifyContent: 'flex-start',
+      [theme.breakpoints.down('sm')]: {
+        justifyContent: 'center',
+      },
       flexWrap: 'wrap',
     },
   });
@@ -391,7 +394,7 @@ class ItemDetails extends Component<Props, State> {
             Cast
           </Typography>
 
-          <Grid container>
+          <Grid container style={{ justifyContent: 'center' }}>
             {credits.cast.map(person => (
               <div
                 style={{
@@ -468,7 +471,6 @@ class ItemDetails extends Component<Props, State> {
     if (!itemDetail) {
       return this.renderLoading();
     }
-    console.log(itemDetail);
 
     let availabilities: { [key: string]: Availability[] };
 
@@ -539,58 +541,63 @@ class ItemDetails extends Component<Props, State> {
             <div className={this.props.classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(itemDetail)}
               <div>
-                <Tabs
-                  value={this.state.openTab}
-                  indicatorColor="primary"
-                  textColor="primary"
-                  aria-label="icon label tabs example"
-                  variant="fullWidth"
-                >
-                  <Tab
-                    icon={<Subscriptions />}
-                    label="Stream"
-                    onClick={() => this.manageAvailabilityTabs(0)}
-                  />
-                  <Tab
-                    icon={<Cloud />}
-                    label="Rent"
-                    onClick={() => this.manageAvailabilityTabs(1)}
-                  />
-                  <Tab
-                    icon={<AttachMoney />}
-                    label="Buy"
-                    onClick={() => this.manageAvailabilityTabs(2)}
-                  />
-                </Tabs>
-                {/* <Paper square className={this.props.classes.root}> */}
-                <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
-                  {availabilities.subscription ? (
-                    <CardContent
-                      className={this.props.classes.availabilePlatforms}
-                    >
-                      {this.renderOfferDetails(availabilities.subscription)}
-                    </CardContent>
-                  ) : null}
-                </Collapse>
-                <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
-                  {availabilities.rent ? (
-                    <CardContent
-                      className={this.props.classes.availabilePlatforms}
-                    >
-                      {this.renderOfferDetails(availabilities.rent)}
-                    </CardContent>
-                  ) : null}
-                </Collapse>
-                <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
-                  {availabilities.buy ? (
-                    <CardContent
-                      className={this.props.classes.availabilePlatforms}
-                    >
-                      {this.renderOfferDetails(availabilities.buy)}
-                    </CardContent>
-                  ) : null}
-                </Collapse>
-                {/* </Paper> */}
+                <div style={{ marginTop: 10 }}>
+                  <Typography color="inherit" variant="h5">
+                    Availability
+                  </Typography>
+
+                  <Tabs
+                    value={this.state.openTab}
+                    indicatorColor="primary"
+                    textColor="primary"
+                    aria-label="icon label tabs example"
+                    variant="fullWidth"
+                  >
+                    <Tab
+                      icon={<Subscriptions />}
+                      label="Stream"
+                      onClick={() => this.manageAvailabilityTabs(0)}
+                    />
+                    <Tab
+                      icon={<Cloud />}
+                      label="Rent"
+                      onClick={() => this.manageAvailabilityTabs(1)}
+                    />
+                    <Tab
+                      icon={<AttachMoney />}
+                      label="Buy"
+                      onClick={() => this.manageAvailabilityTabs(2)}
+                    />
+                  </Tabs>
+
+                  <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
+                    {availabilities.subscription ? (
+                      <CardContent
+                        className={this.props.classes.availabilePlatforms}
+                      >
+                        {this.renderOfferDetails(availabilities.subscription)}
+                      </CardContent>
+                    ) : null}
+                  </Collapse>
+                  <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
+                    {availabilities.rent ? (
+                      <CardContent
+                        className={this.props.classes.availabilePlatforms}
+                      >
+                        {this.renderOfferDetails(availabilities.rent)}
+                      </CardContent>
+                    ) : null}
+                  </Collapse>
+                  <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
+                    {availabilities.buy ? (
+                      <CardContent
+                        className={this.props.classes.availabilePlatforms}
+                      >
+                        {this.renderOfferDetails(availabilities.buy)}
+                      </CardContent>
+                    ) : null}
+                  </Collapse>
+                </div>
               </div>
               {this.renderCastDetails(itemDetail)}
               {this.renderSeriesDetails(itemDetail)}

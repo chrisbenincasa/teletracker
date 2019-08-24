@@ -90,6 +90,16 @@ const styles = (theme: Theme) =>
       },
       width: '100%',
     },
+    mobileSearchContainer: {
+      flexGrow: 1,
+      position: 'absolute',
+      width: '100%',
+      backgroundColor: theme.palette.primary[500],
+      zIndex: 9999,
+      padding: 'inherit',
+      left: 0,
+      right: 0,
+    },
     searchClear: {
       color: theme.palette.common.white,
       opacity: 0.25,
@@ -419,17 +429,10 @@ class App extends Component<Props, State> {
               unmountOnExit
             >
               <div
-                className={classes.sectionMobile}
-                style={{
-                  flexGrow: 1,
-                  position: 'absolute',
-                  width: '100%',
-                  backgroundColor: '#3f51b5',
-                  zIndex: 9999,
-                  padding: 'inherit',
-                  left: 0,
-                  right: 0,
-                }}
+                className={clsx(
+                  classes.sectionMobile,
+                  classes.mobileSearchContainer,
+                )}
               >
                 <IconButton
                   onClick={this.handleMobileSearchDisplay}
