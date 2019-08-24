@@ -6,11 +6,12 @@ import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 
 interface imgProps {
   item: Thing;
-  imageType: 'poster' | 'backdrop';
+  imageType: 'poster' | 'backdrop' | 'profile';
   imageStyle?: object;
   pictureStyle?: object;
 }
 
+// TODO: Refactor this entire thing to support more than just backdrop and poster
 export const ResponsiveImage: React.FC<imgProps> = ({
   item,
   imageType,
@@ -46,14 +47,29 @@ export const ResponsiveImage: React.FC<imgProps> = ({
     },
   ];
 
+  // We also support 780 & 1280, however our current use case blurs the image so we can get away with loading a much smaller image, improving performance
   const backdropSpecs = [
     {
       type: 'image/jpeg',
-      sizes: [300, 780, 1280],
+      sizes: [300],
     },
   ];
 
-  const imageSpecs = imageType === 'poster' ? posterSpecs : backdropSpecs;
+  const profileSpecs = [
+    {
+      type: 'image/jpeg',
+      sizes: [45, 185, 632],
+    },
+  ];
+
+  let imageSpecs;
+  if (imageType === 'profile') {
+    imageSpecs = profileSpecs;
+  } else if (imageType === 'backdrop') {
+    imageSpecs = backdropSpecs;
+  } else {
+    imageSpecs = posterSpecs;
+  }
 
   // This is a workaround because loading prop is not currently typed
   const imgProps = {
