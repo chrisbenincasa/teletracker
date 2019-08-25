@@ -1,11 +1,11 @@
 import {
   createStyles,
+  Grid,
   LinearProgress,
   Theme,
   Typography,
-  WithStyles,
   withStyles,
-  Grid,
+  WithStyles,
 } from '@material-ui/core';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -17,7 +17,6 @@ import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
 import { Thing } from '../../types';
 import { retrievePopular } from '../../actions/popular';
-import _ from 'lodash';
 import ItemCard from '../../components/ItemCard';
 
 const styles = (theme: Theme) =>
@@ -49,7 +48,8 @@ interface InjectedProps {
   isAuthed: boolean;
   isSearching: boolean;
   searchResults?: Thing[];
-  popular?: any;
+  popular?: string[];
+  thingsBySlug: { [key: string]: Thing };
 }
 
 interface DispatchProps {
@@ -72,24 +72,29 @@ class Popular extends Component<Props> {
   };
 
   renderPopular = () => {
-    let { classes, popular, userSelf } = this.props;
+    let { classes, popular, userSelf, thingsBySlug } = this.props;
     // console.log(this.props.popular);
-    return popular && popular.payload && popular.payload.length ? (
+    return popular && popular && popular.length ? (
       <div className={classes.layout}>
         <Typography color="inherit" variant="h5">
           Popular
         </Typography>
         <Grid container spacing={2}>
-          {popular.payload.map(result => {
-            return (
-              <ItemCard
-                key={result.id}
-                userSelf={userSelf}
-                item={result}
-                itemCardVisible={false}
-                // addButton
-              />
-            );
+          {popular.map(result => {
+            let thing = thingsBySlug[result];
+            if (thing) {
+              return (
+                <ItemCard
+                  key={result}
+                  userSelf={userSelf}
+                  item={thing}
+                  itemCardVisible={false}
+                  // addButton
+                />
+              );
+            } else {
+              return null;
+            }
           })}
         </Grid>
       </div>
@@ -97,7 +102,7 @@ class Popular extends Component<Props> {
   };
 
   render() {
-    return this.props.isAuthed && this.props.popular ? (
+    return this.props.isAuthed ? (
       <div style={{ display: 'flex', flexGrow: 1 }}>{this.renderPopular()}</div>
     ) : (
       <Redirect to="/login" />
@@ -110,7 +115,8 @@ const mapStateToProps = (appState: AppState) => {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isSearching: appState.search.searching,
     searchResults: R.path<Thing[]>(['search', 'results', 'data'], appState),
-    popular: appState.popular,
+    popular: appState.popular.popular,
+    thingsBySlug: appState.itemDetail.thingsBySlug,
   };
 };
 
