@@ -4,6 +4,7 @@ import com.google.inject.Module
 import com.teletracker.common.process.tmdb.TmdbBackgroundProcessor
 import com.teletracker.service.controllers._
 import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
+import com.teletracker.service.filters.OpenCensusMonitoringFilter
 import com.teletracker.service.inject.ServerModules
 import com.teletracker.service.util.json.JsonModule
 import com.teletracker.tasks.{
@@ -14,10 +15,19 @@ import com.teletracker.tasks.{
 import com.twitter.conversions.DurationOps._
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finatra.http.HttpServer
-import com.twitter.finatra.http.filters.{LoggingMDCFilter, TraceIdMDCFilter}
+import com.twitter.finatra.http.filters.{
+  LoggingMDCFilter,
+  StatsFilter,
+  TraceIdMDCFilter
+}
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.inject.Logging
 import com.twitter.util.Await
+import io.opencensus.common.Duration
+import io.opencensus.exporter.stats.stackdriver.{
+  StackdriverStatsConfiguration,
+  StackdriverStatsExporter
+}
 import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -27,6 +37,16 @@ class TeletrackerServer(
   override protected val modules: Seq[Module] = ServerModules())
     extends HttpServer
     with Logging {
+
+  premain {
+    StackdriverStatsExporter.createAndRegister(
+      StackdriverStatsConfiguration
+        .builder()
+        .setExportInterval(Duration.fromMillis(30000))
+        .setProjectId("teletracker")
+        .build()
+    )
+  }
 
   override protected def defaultHttpPort: String = ":3001"
 
@@ -58,6 +78,8 @@ class TeletrackerServer(
       )
       .filter[LoggingMDCFilter[Request, Response]]
       .filter[TraceIdMDCFilter[Request, Response]]
+      .filter[OpenCensusMonitoringFilter]
+      .filter[StatsFilter[Request]]
       .exceptionMapper[PassThroughExceptionMapper]
       .add[PreflightController]
       .add[AuthController]
