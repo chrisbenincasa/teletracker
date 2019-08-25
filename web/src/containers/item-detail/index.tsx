@@ -10,7 +10,6 @@ import {
   Hidden,
   IconButton,
   LinearProgress,
-  Modal,
   Popover,
   Tabs,
   Tab,
@@ -95,7 +94,6 @@ const styles = (theme: Theme) =>
       position: 'relative',
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
-        // opacity: 0.2,
       },
     },
     itemCTA: {
@@ -128,12 +126,6 @@ const styles = (theme: Theme) =>
         justifyContent: 'center',
       },
       flexWrap: 'wrap',
-    },
-    paper: {
-      position: 'absolute',
-      backgroundColor: fade(theme.palette.background.paper, 0.25),
-      boxShadow: theme.shadows[5],
-      padding: theme.spacing(2, 4, 3),
     },
     modal: {
       backgroundColor: fade(theme.palette.background.paper, 0.75),
@@ -502,7 +494,7 @@ class ItemDetails extends Component<Props, State> {
   renderItemDetails = () => {
     let { classes, isFetching, itemDetail, userSelf } = this.props;
     let { manageTrackingModalOpen, openTab } = this.state;
-    console.log(itemDetail);
+
     if (!itemDetail) {
       return this.renderLoading();
     }
