@@ -89,7 +89,6 @@ class Popular extends Component<Props> {
                   userSelf={userSelf}
                   item={thing}
                   itemCardVisible={false}
-                  // addButton
                 />
               );
             } else {
