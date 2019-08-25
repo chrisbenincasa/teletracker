@@ -6,7 +6,7 @@ import {
 } from '../actions/popular';
 
 export interface State {
-  popular?: Thing[];
+  popular?: any;
 }
 
 const initialState: State = {};
