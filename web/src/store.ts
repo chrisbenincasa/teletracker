@@ -4,7 +4,10 @@ import * as localforage from 'localforage';
 import { applyMiddleware, compose, createStore } from 'redux';
 import * as rp from 'redux-persist';
 import { persistReducer, persistStore } from 'redux-persist';
-import { createBlacklistFilter } from 'redux-persist-transform-filter';
+import {
+  createBlacklistFilter,
+  createWhitelistFilter,
+} from 'redux-persist-transform-filter';
 import createSagaMiddleware from 'redux-saga';
 import thunk from 'redux-thunk';
 import { root } from './actions';
@@ -19,10 +22,10 @@ const middleware = [thunk, routerMiddleware(history), sagaMiddleware];
 
 let env = process.env.NODE_ENV;
 
-const authBlacklistFilter = createBlacklistFilter(
+const authBlacklistFilter = createWhitelistFilter(
   'auth',
-  ['checkingAuth'],
-  ['checkingAuth'],
+  ['token', 'user'],
+  ['token', 'user'],
 );
 
 const getBlacklists = () => {
@@ -30,7 +33,14 @@ const getBlacklists = () => {
   //   return [];
   // } else {
   // }
-  return ['search', 'userSelf', 'lists', 'availability', 'itemDetail'];
+  return [
+    'search',
+    'userSelf',
+    'lists',
+    'availability',
+    'itemDetail',
+    'popular',
+  ];
 };
 
 export const persistConfig: rp.PersistConfig = {

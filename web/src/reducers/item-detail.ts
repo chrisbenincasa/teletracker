@@ -18,6 +18,10 @@ import {
   LIST_RETRIEVE_SUCCESS,
   ListRetrieveSuccessAction,
 } from '../actions/lists';
+import {
+  POPULAR_SUCCESSFUL,
+  PopularSuccessfulAction,
+} from '../actions/popular';
 
 export interface State {
   fetching: boolean;
@@ -71,47 +75,63 @@ const itemFetchSuccess = handleAction(
   },
 );
 
+const updateStateWithNewThings = (existingState: State, newThings: Thing[]) => {
+  let thingsById = existingState.thingsById || {};
+  let newThingsMerged = newThings.map(curr => {
+    let existingThing: Thing | undefined = thingsById[curr.id];
+    let newThing: Thing = curr;
+    if (existingThing) {
+      newThing = R.mergeDeepRight(existingThing, newThing) as Thing;
+    }
+
+    return newThing;
+  });
+
+  let newThingsById = newThingsMerged.reduce((prev, curr) => {
+    return {
+      ...prev,
+      [curr.id]: curr,
+    };
+  }, {});
+  let newThingsBySlug = newThingsMerged.reduce((prev, curr) => {
+    return {
+      ...prev,
+      [curr.normalizedName]: curr,
+    };
+  }, {});
+
+  return {
+    ...existingState,
+    thingsById: {
+      ...existingState.thingsById,
+      ...newThingsById,
+    },
+    thingsBySlug: {
+      ...existingState.thingsBySlug,
+      ...newThingsBySlug,
+    },
+  };
+};
+
 const handleListRetrieveSuccess = handleAction<
   ListRetrieveSuccessAction,
   State
 >(LIST_RETRIEVE_SUCCESS, (state, action) => {
   if (action.payload && action.payload.things) {
-    let thingsById = state.thingsById || {};
     let things = action.payload.things;
-    let newThings = things.map(curr => {
-      let existingThing: Thing | undefined = thingsById[curr.id];
-      let newThing: Thing = curr;
-      if (existingThing) {
-        newThing = R.mergeDeepRight(existingThing, newThing) as Thing;
-      }
+    return updateStateWithNewThings(state, things);
+  } else {
+    return state;
+  }
+});
 
-      return newThing;
-    });
-
-    let newThingsById = newThings.reduce((prev, curr) => {
-      return {
-        ...prev,
-        [curr.id]: curr,
-      };
-    }, {});
-    let newThingsBySlug = newThings.reduce((prev, curr) => {
-      return {
-        ...prev,
-        [curr.normalizedName]: curr,
-      };
-    }, {});
-
-    return {
-      ...state,
-      thingsById: {
-        ...state.thingsById,
-        ...newThingsById,
-      },
-      thingsBySlug: {
-        ...state.thingsBySlug,
-        ...newThingsBySlug,
-      },
-    };
+const handlePopularRetrieveSuccess = handleAction<
+  PopularSuccessfulAction,
+  State
+>(POPULAR_SUCCESSFUL, (state, action) => {
+  if (action.payload && action.payload.popular) {
+    let things = action.payload.popular;
+    return updateStateWithNewThings(state, things);
   } else {
     return state;
   }
@@ -189,4 +209,5 @@ export default flattenActions(
   itemUpdateTagsSuccess,
   itemRemoveTagsSuccess,
   handleListRetrieveSuccess,
+  handlePopularRetrieveSuccess,
 );
