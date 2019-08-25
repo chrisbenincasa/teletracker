@@ -4,9 +4,10 @@ import {
   PopularSuccessfulAction,
   POPULAR_SUCCESSFUL,
 } from '../actions/popular';
+import * as R from 'ramda';
 
 export interface State {
-  popular?: any;
+  popular?: string[]; // Array of popular slugs
 }
 
 const initialState: State = {};
@@ -14,10 +15,12 @@ const initialState: State = {};
 const PopularSuccess = handleAction<PopularSuccessfulAction, State>(
   POPULAR_SUCCESSFUL,
   (state: State, { payload }: PopularSuccessfulAction) => {
+    // TODO: Return popularity and sort by that.
+    console.log(payload);
     if (payload) {
       return {
         ...state,
-        ...payload,
+        popular: R.map(R.prop('normalizedName'), payload.popular),
       };
     } else {
       return state;

@@ -44,9 +44,10 @@ export const popularSaga = function*() {
       );
 
       if (response.ok) {
-        yield put(popularSuccess(response.data.data));
+        yield put(popularSuccess({ popular: response.data.data }));
       }
     } catch (e) {
+      console.error(e);
       yield put(popularFailed(e));
     }
   });
