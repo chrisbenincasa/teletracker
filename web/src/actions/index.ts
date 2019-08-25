@@ -30,6 +30,7 @@ import {
 } from './user';
 import { createBasicAction } from './utils';
 import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
+import { popularSaga } from './popular';
 import { fetchItemDetailsBatchSaga, fetchItemDetailsSaga } from './item-detail';
 
 export const STARTUP = 'startup';
@@ -74,5 +75,6 @@ export function* root() {
     fetchItemDetailsSaga(),
     fetchItemDetailsBatchSaga(),
     allAvailabilitySaga(),
+    popularSaga(),
   ]);
 }
