@@ -72,11 +72,11 @@ class Popular extends Component<Props> {
   };
 
   renderPopular = () => {
-    let { classes, popular, userSelf, thingsBySlug } = this.props;
-    // console.log(this.props.popular);
+    let { popular, userSelf, thingsBySlug } = this.props;
+
     return popular && popular && popular.length ? (
-      <div className={classes.layout}>
-        <Typography color="inherit" variant="h5">
+      <div style={{ padding: 8, margin: 20 }}>
+        <Typography color="inherit" variant="h4">
           Popular
         </Typography>
         <Grid container spacing={2}>
@@ -89,7 +89,6 @@ class Popular extends Component<Props> {
                   userSelf={userSelf}
                   item={thing}
                   itemCardVisible={false}
-                  // addButton
                 />
               );
             } else {
