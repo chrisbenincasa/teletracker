@@ -47,6 +47,7 @@ import Lists from '../lists';
 import Login from '../login';
 import Signup from '../signup';
 import New from '../new';
+import Popular from '../popular';
 import Drawer, { DrawerWidthPx } from '../../components/Drawer';
 import RouterLink, { StdRouterLink } from '../../components/RouterLink';
 
@@ -519,6 +520,7 @@ class App extends Component<Props, State> {
                 <Box display={{ xs: 'block', sm: 'none' }} m={1}>
                   <ButtonLink color="inherit" primary="New" to="/new" />
                 </Box>
+                <ButtonLink color="inherit" primary="Popular" to="/popular" />
               </React.Fragment>
             ) : null}
             {this.renderSearch()}
@@ -553,6 +555,11 @@ class App extends Component<Props, State> {
               <Route exact path="/login" component={Login} />
               <Route exact path="/signup" component={Signup} />
               <Route exact path="/new" render={props => <New {...props} />} />
+              <Route
+                exact
+                path="/popular"
+                render={props => <Popular {...props} />}
+              />
               <Route exact path="/logout" component={About} />
               <Route
                 exact

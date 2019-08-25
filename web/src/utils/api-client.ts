@@ -313,6 +313,18 @@ export class TeletrackerApi {
     });
   }
 
+  async getPopular(
+    token: string,
+    networkIds?: number[],
+    fields?: KeyMap<ObjectMetadata>,
+  ) {
+    return this.api.get('/api/v1/popular', {
+      networkIds,
+      fields: fields ? this.createFilter(fields!) : undefined,
+      token,
+    });
+  }
+
   private withTokenCheck<T>(f: () => Promise<T>): Promise<T> {
     if (!this.token) {
       return Promise.reject(new Error('function requires a token to be set'));
