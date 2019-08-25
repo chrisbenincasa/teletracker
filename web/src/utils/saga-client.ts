@@ -157,6 +157,15 @@ export class SagaTeletrackerClient {
     );
   }
 
+  *getPopular(networkIds?: number[], fields?: KeyMap<ObjectMetadata>) {
+    return yield this.apiCall(
+      client => client.getPopular,
+      yield this.withToken(),
+      networkIds,
+      fields,
+    );
+  }
+
   *search(searchText: string) {
     return yield this.apiCall(
       client => client.search,
