@@ -2,6 +2,7 @@ import {
   createStyles,
   LinearProgress,
   Theme,
+  Typography,
   WithStyles,
   withStyles,
   Grid,
@@ -73,10 +74,13 @@ class Popular extends Component<Props> {
   renderPopular = () => {
     let { classes, popular, userSelf } = this.props;
     // console.log(this.props.popular);
-    return popular && popular.length ? (
+    return popular && popular.payload && popular.payload.length ? (
       <div className={classes.layout}>
+        <Typography color="inherit" variant="h5">
+          Popular
+        </Typography>
         <Grid container spacing={2}>
-          {popular.map(result => {
+          {popular.payload.map(result => {
             return (
               <ItemCard
                 key={result.id}
