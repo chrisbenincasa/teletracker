@@ -77,7 +77,6 @@ export interface Availability {
   presentationType?: PresentationType;
   thing?: Thing;
 }
-
 export interface Network {
   id: number;
   name: string;
