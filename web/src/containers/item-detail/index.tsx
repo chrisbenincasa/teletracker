@@ -8,7 +8,10 @@ import {
   Fab,
   Grid,
   Hidden,
+  IconButton,
   LinearProgress,
+  Modal,
+  Popover,
   Tabs,
   Tab,
   Theme,
@@ -17,12 +20,14 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
+import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
   Check,
   List as ListIcon,
   Subscriptions,
   AttachMoney,
   Cloud,
+  PlayArrow,
 } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -80,7 +85,7 @@ const styles = (theme: Theme) =>
       margin: '0 auto',
       padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
     },
-    imageContainer: {
+    posterContainer: {
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
@@ -88,6 +93,10 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flex: '0 1 auto',
       position: 'relative',
+      '&:hover': {
+        backgroundColor: fade(theme.palette.common.white, 0.25),
+        // opacity: 0.2,
+      },
     },
     itemCTA: {
       [theme.breakpoints.down('sm')]: {
@@ -119,6 +128,15 @@ const styles = (theme: Theme) =>
         justifyContent: 'center',
       },
       flexWrap: 'wrap',
+    },
+    paper: {
+      position: 'absolute',
+      backgroundColor: fade(theme.palette.background.paper, 0.25),
+      boxShadow: theme.shadows[5],
+      padding: theme.spacing(2, 4, 3),
+    },
+    modal: {
+      backgroundColor: fade(theme.palette.background.paper, 0.75),
     },
   });
 
@@ -155,6 +173,9 @@ interface State {
   currentItemType: string;
   manageTrackingModalOpen: boolean;
   openTab: number;
+  showPlayIcon: boolean;
+  trailerModalOpen: boolean;
+  anchorEl: any;
 }
 
 class ItemDetails extends Component<Props, State> {
@@ -163,6 +184,9 @@ class ItemDetails extends Component<Props, State> {
     currentItemType: '',
     manageTrackingModalOpen: false,
     openTab: 0,
+    showPlayIcon: false,
+    trailerModalOpen: false,
+    anchorEl: null,
   };
 
   componentDidMount() {
@@ -184,6 +208,18 @@ class ItemDetails extends Component<Props, State> {
 
   closeManageTrackingModal = () => {
     this.setState({ manageTrackingModalOpen: false });
+  };
+
+  togglePosterHover = () => {
+    this.setState({ showPlayIcon: !this.state.showPlayIcon });
+  };
+
+  toggleTrailerModalOpen = event => {
+    this.setState({ trailerModalOpen: true, anchorEl: event.currentTarget });
+  };
+
+  toggleTrailerModalClose = () => {
+    this.setState({ trailerModalOpen: false, anchorEl: null });
   };
 
   manageAvailabilityTabs = value => {
@@ -254,7 +290,6 @@ class ItemDetails extends Component<Props, State> {
 
   renderDescriptiveDetails = (thing: Thing) => {
     const overview = getMetadataPath(thing, 'overview') || '';
-
     const genres = Object(getMetadataPath(thing, 'genres')) || [];
 
     return (
@@ -275,6 +310,7 @@ class ItemDetails extends Component<Props, State> {
         </div>
         <div style={{ display: 'flex' }}>
           {genres &&
+            genres.length &&
             genres.map(genre => (
               <Chip label={`${genre.name}`} style={{ margin: 5 }} />
             ))}
@@ -464,9 +500,9 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderItemDetails = () => {
-    let { isFetching, itemDetail, userSelf } = this.props;
+    let { classes, isFetching, itemDetail, userSelf } = this.props;
     let { manageTrackingModalOpen, openTab } = this.state;
-
+    console.log(itemDetail);
     if (!itemDetail) {
       return this.renderLoading();
     }
@@ -489,7 +525,7 @@ class ItemDetails extends Component<Props, State> {
       this.renderLoading()
     ) : (
       <React.Fragment>
-        <div className={this.props.classes.backdrop}>
+        <div className={classes.backdrop}>
           <ResponsiveImage
             item={itemDetail}
             imageType="backdrop"
@@ -502,12 +538,12 @@ class ItemDetails extends Component<Props, State> {
             pictureStyle={{
               position: 'absolute',
               width: '100%',
-              height: '100%',
+              height: 'auto',
               opacity: 0.2,
               filter: 'blur(3px)',
             }}
           />
-          <div className={this.props.classes.itemDetailContainer}>
+          <div className={classes.itemDetailContainer}>
             <div
               style={{
                 display: 'flex',
@@ -516,8 +552,22 @@ class ItemDetails extends Component<Props, State> {
               }}
             >
               <Hidden smUp>{this.renderTitle(itemDetail)}</Hidden>
-
-              <div className={this.props.classes.imageContainer}>
+              <div
+                className={classes.posterContainer}
+                onMouseEnter={this.togglePosterHover}
+                onMouseLeave={this.togglePosterHover}
+              >
+                {this.state.showPlayIcon &&
+                itemDetail.id === '7b6dbeb1-8353-45a7-8c9b-7f9ab8b037f8' ? (
+                  <IconButton
+                    aria-haspopup="true"
+                    color="inherit"
+                    style={{ position: 'absolute' }}
+                    onClick={this.toggleTrailerModalOpen}
+                  >
+                    <PlayArrow fontSize="large" />
+                  </IconButton>
+                ) : null}
                 <CardMedia
                   src={imagePlaceholder}
                   item={itemDetail}
@@ -537,7 +587,7 @@ class ItemDetails extends Component<Props, State> {
                 item={itemDetail}
               />
             </div>
-            <div className={this.props.classes.itemInformationContainer}>
+            <div className={classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(itemDetail)}
               <div>
                 <div style={{ marginTop: 10 }}>
@@ -571,27 +621,21 @@ class ItemDetails extends Component<Props, State> {
 
                   <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
                     {availabilities.subscription ? (
-                      <CardContent
-                        className={this.props.classes.availabilePlatforms}
-                      >
+                      <CardContent className={classes.availabilePlatforms}>
                         {this.renderOfferDetails(availabilities.subscription)}
                       </CardContent>
                     ) : null}
                   </Collapse>
                   <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
                     {availabilities.rent ? (
-                      <CardContent
-                        className={this.props.classes.availabilePlatforms}
-                      >
+                      <CardContent className={classes.availabilePlatforms}>
                         {this.renderOfferDetails(availabilities.rent)}
                       </CardContent>
                     ) : null}
                   </Collapse>
                   <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
                     {availabilities.buy ? (
-                      <CardContent
-                        className={this.props.classes.availabilePlatforms}
-                      >
+                      <CardContent className={classes.availabilePlatforms}>
                         {this.renderOfferDetails(availabilities.buy)}
                       </CardContent>
                     ) : null}
@@ -603,6 +647,30 @@ class ItemDetails extends Component<Props, State> {
             </div>
           </div>
         </div>
+
+        <Popover
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          anchorEl={this.state.anchorEl}
+          open={this.state.trailerModalOpen}
+          onClose={this.toggleTrailerModalClose}
+          className={this.props.classes.modal}
+        >
+          <iframe
+            width="615"
+            height="370"
+            src="https://www.youtube.com/embed/m8e-FF8MsqU"
+            frameBorder="0"
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </Popover>
       </React.Fragment>
     );
   };
