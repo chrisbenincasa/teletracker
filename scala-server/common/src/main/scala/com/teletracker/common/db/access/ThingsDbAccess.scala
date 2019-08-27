@@ -1,5 +1,6 @@
 package com.teletracker.common.db.access
 
+import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
 import com.teletracker.common.inject.{DbImplicits, DbProvider}
@@ -33,9 +34,10 @@ class ThingsDbAccess @Inject()(
   val trackedLists: TrackedLists,
   val userThingTags: UserThingTags,
   val collections: Collections,
-  dbImplicits: DbImplicits
+  dbImplicits: DbImplicits,
+  dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess {
+    extends DbAccess(dbMonitoring) {
   import dbImplicits._
   import provider.driver.api._
 
@@ -131,17 +133,20 @@ class ThingsDbAccess @Inject()(
           }
           .query
 
-      run {
-        additionalFilters.sortBy {
-          case thing if options.rankingMode == SearchRankingMode.Popularity =>
-            thing.popularity.desc.nullsLast
+      run("search") {
+        additionalFilters
+          .sortBy {
+            case thing if options.rankingMode == SearchRankingMode.Popularity =>
+              thing.popularity.desc.nullsLast
 
-          case thing
-              if options.rankingMode == SearchRankingMode.PopularityAndVotes =>
-            (logarithm(thing.popularity.ifNull(1.0)) + ((voteCount(thing) * voteAverage(
-              thing
-            )) / 150000.0)).desc.nullsLast
-        }.result
+            case thing
+                if options.rankingMode == SearchRankingMode.PopularityAndVotes =>
+              (logarithm(thing.popularity.ifNull(1.0)) + ((voteCount(thing) * voteAverage(
+                thing
+              )) / 150000.0)).desc.nullsLast
+          }
+          .take(20)
+          .result
       }
     }
   }
@@ -550,7 +555,7 @@ class ThingsDbAccess @Inject()(
             .update(updated)
             .map(_ => updated)
       })
-      .map(run)
+      .map(run(_))
       .getOrElse(
         Future.failed(
           new IllegalArgumentException(

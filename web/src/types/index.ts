@@ -41,6 +41,13 @@ export interface UserPreferences {
   showOnlyNetworkSubscriptions: boolean;
 }
 
+export interface ThingLite {
+  id: string;
+  name: string;
+  normalizedName: string;
+  type: 'movie' | 'show' | 'person';
+}
+
 export interface Thing {
   id: string;
   name: string;

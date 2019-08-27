@@ -31,15 +31,15 @@ class ImportMoviesFromDump @Inject()(
     val file = args.value[URI]("input").get
     val offset = args.valueOrDefault("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
-    val filesToConsume = args.valueOrDefault("fileLimit", -1)
 
     getSourceStream(file)
-      .safeTake(filesToConsume)
+      .drop(offset)
+      .safeTake(limit)
       .foreach(source => {
         try {
           SequentialFutures
             .batchedIterator(
-              source.getLines().drop(offset).safeTake(limit),
+              source.getLines(),
               8,
               (_: List[Option[Thing]], _: List[Option[Thing]]) =>
                 List.empty[Option[Thing]]

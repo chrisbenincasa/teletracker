@@ -1,5 +1,6 @@
 package com.teletracker.common.db.access
 
+import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
 import com.teletracker.common.inject.{DbImplicits, DbProvider}
 import com.teletracker.common.util.Slug
@@ -11,9 +12,10 @@ class NetworksDbAccess @Inject()(
   val networks: Networks,
   val networkReferences: NetworkReferences,
   val thingNetworks: ThingNetworks,
-  dbImplicits: DbImplicits
+  dbImplicits: DbImplicits,
+  dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess {
+    extends DbAccess(dbMonitoring) {
   import dbImplicits._
   import provider.driver.api._
 
