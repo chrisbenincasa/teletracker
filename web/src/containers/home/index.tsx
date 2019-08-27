@@ -75,7 +75,7 @@ class Home extends Component<Props & WithUserProps> {
         }}
       >
         {searchResults.length ? (
-          <div className={classNames(classes.layout)}>
+          <div style={{ margin: 24, padding: 8 }}>
             <Grid container spacing={2}>
               {searchResults.map(result => {
                 return (
