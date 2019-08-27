@@ -1,6 +1,7 @@
 package com.teletracker.common.db.access
 
 import com.teletracker.common.auth.jwt.JwtVendor
+import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model.{
   Events,
   Things,
@@ -29,9 +30,10 @@ class UsersDbAccess @Inject()(
   dynamicListBuilder: DynamicListBuilder,
   jwtVendor: JwtVendor,
   dbImplicits: DbImplicits,
-  networkCache: NetworkCache
+  networkCache: NetworkCache,
+  dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess {
+    extends DbAccess(dbMonitoring) {
   import dbImplicits._
   import provider.driver.api._
 

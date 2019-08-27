@@ -14,7 +14,7 @@ class OpenCensusMonitoringFilter @Inject()()(implicit monitoring: Monitoring)
 
   final private val CodeKey = TagKey.create("code")
   final private val RouteKey = TagKey.create("route")
-  final private val MethodKey = TagKey.create("Method")
+  final private val MethodKey = TagKey.create("method")
 
   final private val StatusCounter = monitoring.createStdCounter(
     "teletracker/service/http/status",

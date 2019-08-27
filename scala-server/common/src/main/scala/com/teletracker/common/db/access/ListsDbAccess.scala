@@ -1,5 +1,6 @@
 package com.teletracker.common.db.access
 
+import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model.{
   TrackedListRow,
   TrackedListThing,
@@ -16,9 +17,10 @@ class ListsDbAccess @Inject()(
   val provider: DbProvider,
   val trackedLists: TrackedLists,
   val trackedListThings: TrackedListThings,
-  dbImplicits: DbImplicits
+  dbImplicits: DbImplicits,
+  dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess {
+    extends DbAccess(dbMonitoring) {
 
   import provider.driver.api._
 

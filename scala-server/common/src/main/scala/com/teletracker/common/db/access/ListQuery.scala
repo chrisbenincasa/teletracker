@@ -1,5 +1,6 @@
 package com.teletracker.common.db.access
 
+import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
 import com.teletracker.common.inject.{DbImplicits, DbProvider}
@@ -16,9 +17,10 @@ class ListQuery @Inject()(
   val things: Things,
   val userThingTags: UserThingTags,
   dynamicListBuilder: DynamicListBuilder,
-  dbImplicits: DbImplicits
+  dbImplicits: DbImplicits,
+  dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess {
+    extends DbAccess(dbMonitoring) {
   import dbImplicits._
   import provider.driver.api._
   import slick.lifted.Shape._
@@ -63,9 +65,9 @@ class ListQuery @Inject()(
       DBIO.successful(Seq.empty) -> countByListIdQuery
     }
 
-    val listsF = run(listsQuery.result)
-    val thingsF = run(thingsAction)
-    val thingCountF = run(thingCountAction)
+    val listsF = run("findUsersLists_lists")(listsQuery.result)
+    val thingsF = run("findUsersLists_things")(thingsAction)
+    val thingCountF = run("findUsersLists_thing")(thingCountAction)
 
     for {
       lists <- listsF
@@ -116,15 +118,15 @@ class ListQuery @Inject()(
       val thingTagsQuery =
         makeUserThingTagQuery(userId, thingsQuery.map(_._2.id), includeTags)
 
-      val thingsFut = run(thingsQuery.map {
+      val thingsFut = run("findList_things")(thingsQuery.map {
         case (listId, thing) =>
           listId -> thing.projWithMetadata(includeMetadata)
       }.result)
 
-      val thingTagsFut = run(thingTagsQuery.result)
+      val thingTagsFut = run("findList_thingTags")(thingTagsQuery.result)
 
       val listFut = listOrQuery match {
-        case Left(query) => run(query.result.headOption)
+        case Left(query) => run("findList_list")(query.result.headOption)
         case Right(list) => Future.successful(Some(list))
       }
 
@@ -154,14 +156,14 @@ class ListQuery @Inject()(
         materialize(Left(listQuery))
 
       case _ =>
-        run {
+        run("findList_dynamic") {
           makeListsQuery(userId, Some(listId), includeDynamic = true).result.headOption
         }.flatMap {
           case None =>
             Future.successful(None)
 
           case Some(list) if list.isDynamic =>
-            run(
+            run("findList_dynamicThings")(
               dynamicListBuilder
                 .buildList(userId, list)
                 .map(list -> _)

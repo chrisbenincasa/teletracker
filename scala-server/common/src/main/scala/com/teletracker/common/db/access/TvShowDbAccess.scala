@@ -1,5 +1,6 @@
 package com.teletracker.common.db.access
 
+import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
 import com.teletracker.common.inject.DbProvider
 import javax.inject.Inject
@@ -11,9 +12,10 @@ class TvShowDbAccess @Inject()(
   val things: Things,
   val tvShowSeasons: TvShowSeasons,
   val tvShowEpisodes: TvShowEpisodes,
-  val externalIds: ExternalIds
+  val externalIds: ExternalIds,
+  dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess {
+    extends DbAccess(dbMonitoring) {
   import provider.driver.api._
 
   def findAllSeasonsForShow(showId: UUID) = {
@@ -88,6 +90,6 @@ class TvShowDbAccess @Inject()(
             tvShowEpisodes.query.map(_.id) into
             ((ep, id) => ep.copy(id = Some(id)))) += model
       }
-      .flatMap(run)
+      .flatMap(run(_))
   }
 }
