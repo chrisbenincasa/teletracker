@@ -69,7 +69,11 @@ class TmdbClient @Inject()(
             throw e
           case Right(s) =>
             s.as[T] match {
-              case Left(_)     => s.as[TmdbError].fold(throw _, throw _)
+              case Left(err) =>
+                logger.warn(
+                  s"Could not parse json: ${err.message} (cursor: ${err.history}). Attempting to decode as error"
+                )
+                s.as[TmdbError].fold(throw _, throw _)
               case Right(json) => json
             }
         }

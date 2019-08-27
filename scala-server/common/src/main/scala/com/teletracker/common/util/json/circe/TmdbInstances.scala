@@ -28,8 +28,8 @@ trait TmdbInstances {
   }
 
   import io.circe.shapes._
-  implicit val personCreditsDecoder: Decoder[PersonCredits] = deriveDecoder
-  implicit val personCreditsEncoder: Encoder[PersonCredits] = deriveEncoder
+//  implicit val personCreditsDecoder: Decoder[PersonCredits] = deriveDecoder
+//  implicit val personCreditsEncoder: Encoder[PersonCredits] = deriveEncoder
 
   implicit def personDecoder(
     implicit

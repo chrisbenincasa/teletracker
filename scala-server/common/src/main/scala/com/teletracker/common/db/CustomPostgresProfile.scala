@@ -1,7 +1,10 @@
 package com.teletracker.common.db
 
 import com.github.tminglei.slickpg._
+import io.circe.Json
+import io.circe.parser.parse
 import slick.basic.Capability
+import slick.jdbc.JdbcType
 
 trait CustomPostgresProfile
     extends ExPostgresProfile
@@ -33,8 +36,18 @@ trait CustomPostgresProfile
       with SearchImplicits
       with JsonImplicits
       with SearchAssistants {
+
+    import io.circe.syntax._
+
     implicit val strListTypeMapper =
       new SimpleArrayJdbcType[String]("text").to(_.toList)
+    implicit override val circeJsonTypeMapper: JdbcType[Json] =
+      new GenericJdbcType[Json](
+        pgjson,
+        (v) => parse(v).getOrElse(Json.Null),
+        (v) => v.asJson.noSpaces,
+        hasLiteralForm = false
+      )
   }
 }
 

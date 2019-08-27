@@ -23,8 +23,8 @@ case class Thing(
   createdAt: OffsetDateTime,
   lastUpdatedAt: OffsetDateTime,
   metadata: Option[ObjectMetadata],
-//  title: String,
-  tmdbId: Option[String] = None) {
+  tmdbId: Option[String],
+  popularity: Option[Double]) {
   def toPartial: PartialThing = {
     PartialThing(
       id,
@@ -46,7 +46,8 @@ case class ThingRaw(
   createdAt: OffsetDateTime,
   lastUpdatedAt: OffsetDateTime,
   metadata: Option[Json],
-  tmdbId: Option[String] = None) {
+  tmdbId: Option[String] = None,
+  popularity: Option[Double]) {
 
   def selectFields(
     fieldsOpt: Option[List[Field]],
@@ -186,6 +187,8 @@ class Things @Inject()(
 
     def tmdbId = column[Option[String]]("tmdb_id")
 
+    def popularity = column[Option[Double]]("popularity")
+
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
     override def * =
@@ -197,7 +200,8 @@ class Things @Inject()(
         createdAt,
         lastUpdatedAt,
         metadata,
-        tmdbId
+        tmdbId,
+        popularity
       ) <> (Thing.tupled, Thing.unapply)
   }
 
@@ -220,6 +224,8 @@ class Things @Inject()(
 
     def tmdbId = column[Option[String]]("tmdb_id")
 
+    def popularity = column[Option[Double]]("popularity")
+
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
     def projWithMetadata(includeMetadata: Boolean) =
@@ -231,7 +237,8 @@ class Things @Inject()(
         createdAt,
         lastUpdatedAt,
         if (includeMetadata) metadata else Rep.None[Json],
-        tmdbId
+        tmdbId,
+        popularity
       ) <> (ThingRaw.tupled, ThingRaw.unapply)
 
     override def * =

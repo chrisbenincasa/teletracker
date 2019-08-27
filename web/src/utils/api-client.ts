@@ -102,7 +102,7 @@ export class TeletrackerApi {
   }
 
   async search(token: string, searchText: string) {
-    return this.api.get<Thing[]>('/api/v1/search', {
+    return this.api.get<Thing[]>('/api/v2/search', {
       query: searchText,
       token,
     });

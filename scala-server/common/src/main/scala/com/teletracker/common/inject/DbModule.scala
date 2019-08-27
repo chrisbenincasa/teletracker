@@ -122,6 +122,11 @@ class DbImplicits @Inject()(val profile: CustomPostgresProfile) {
     .base[UserThingTagType, String](_.getName, UserThingTagType.fromString)
   implicit val slugTypeMapper =
     MappedColumnType.base[Slug, String](_.value, Slug.raw)
+  implicit val personAssociationTypeMapper =
+    MappedColumnType.base[PersonAssociationType, String](
+      _.toString,
+      PersonAssociationType.fromString
+    )
 
   implicit val userPrefsToJson = MappedColumnType
     .base[UserPreferences, Json](_.asJson, _.as[UserPreferences].right.get)

@@ -1,0 +1,4 @@
+ALTER TABLE "things"
+    ADD COLUMN "popularity" DOUBLE PRECISION DEFAULT NULL;
+
+CREATE INDEX ON "things" (popularity NULLS LAST);

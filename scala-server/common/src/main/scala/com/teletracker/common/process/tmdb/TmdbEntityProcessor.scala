@@ -64,6 +64,7 @@ class TmdbEntityProcessor @Inject()(
   processQueue: ProcessQueue[TmdbProcessMessage],
   movieImporter: TmdbMovieImporter,
   showImporter: TmdbShowImporter,
+  tmdbSynchronousProcessor: TmdbSynchronousProcessor,
   @RecentlyProcessedCollections recentlyProcessedCollections: Cache[
     Integer,
     java.lang.Boolean
@@ -164,9 +165,12 @@ class TmdbEntityProcessor @Inject()(
     def insertAssociations(
       personId: UUID,
       thingId: UUID,
-      typ: String
-    ) = {
-      thingsDbAccess.upsertPersonThing(PersonThing(personId, thingId, typ))
+      typ: PersonAssociationType,
+      character: Option[String]
+    ): Future[PersonThing] = {
+      thingsDbAccess.upsertPersonThing(
+        PersonThing(personId, thingId, typ, character)
+      )
     }
 
     val now = OffsetDateTime.now()
@@ -188,44 +192,60 @@ class TmdbEntityProcessor @Inject()(
 
     val creditsSave = person.combined_credits
       .map(credits => {
+        val castById = credits.cast.map(c => c.id.toString -> c).toMap
+
+        val castFut =
+          tmdbSynchronousProcessor.processPersonCredits(credits.cast)
+        val crewFut =
+          tmdbSynchronousProcessor.processPersonCredits(credits.crew)
+
         for {
-          // TODO: Push to queue
           savedPerson <- personSave
-          _ <- SequentialFutures.serialize(credits.cast, Some(250 millis)) {
-            castMember =>
-              savedPerson match {
-                case ProcessSuccess(_, savedPerson) =>
-                  processResult(castMember).flatMap {
-                    case ProcessSuccess(_, savedCastMember) =>
-                      insertAssociations(
-                        savedPerson.id,
-                        savedCastMember.id,
-                        "cast"
-                      ).map(Some(_))
-                    case ProcessFailure(ex) => Future.successful(None)
-                  }
-                case ProcessFailure(ex) =>
-                  Future.successful(None)
+          savedCastMemberships <- castFut
+          savedCrewMemberships <- crewFut
+        } yield {
+          savedPerson match {
+            case ProcessSuccess(_, savedPerson) =>
+              val castInserts = savedCastMemberships.map {
+                case (id, thing) =>
+                  val characterName = castById.get(id).flatMap(_.character)
+                  () =>
+                    insertAssociations(
+                      savedPerson.id,
+                      thing.id,
+                      PersonAssociationType.Cast,
+                      characterName
+                    ).map(Some(_)).recover {
+                      case NonFatal(ex) => None
+                    }
               }
-          }
-          _ <- SequentialFutures.serialize(credits.crew, Some(250 millis)) {
-            castMember =>
-              savedPerson match {
-                case ProcessSuccess(_, savedPerson) =>
-                  processResult(castMember).flatMap {
-                    case ProcessSuccess(_, savedCastMember) =>
-                      insertAssociations(
-                        savedPerson.id,
-                        savedCastMember.id,
-                        "crew"
-                      ).map(Some(_))
-                    case ProcessFailure(ex) => Future.successful(None)
-                  }
-                case ProcessFailure(ex) =>
-                  Future.successful(None)
+
+              val crewInserts = savedCrewMemberships.map {
+                case (_, thing) =>
+                  () =>
+                    insertAssociations(
+                      savedPerson.id,
+                      thing.id,
+                      PersonAssociationType.Crew,
+                      None
+                    ).map(Some(_)).recover {
+                      case NonFatal(ex) => None
+                    }
               }
+
+              SequentialFutures
+                .batchedIterator((castInserts ++ crewInserts).iterator, 8)(
+                  batch => {
+                    Future.sequence(batch.map(_.apply()))
+                  }
+                )
+                .map(_.flatten)
+
+            case ProcessFailure(ex) =>
+              // TODO: Log
+              Future.successful(Nil)
           }
-        } yield {}
+        }
       })
       .getOrElse(Future.successful(Nil))
 

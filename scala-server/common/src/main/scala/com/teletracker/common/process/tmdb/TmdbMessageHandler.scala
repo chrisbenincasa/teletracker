@@ -5,7 +5,8 @@ import com.teletracker.common.model.tmdb.BelongsToCollection
 import com.teletracker.common.process.tmdb.TmdbProcessMessage.{
   ProcessBelongsToCollections,
   ProcessMovie,
-  ProcessSearchResults
+  ProcessSearchResults,
+  ProcessTvShow
 }
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
@@ -43,6 +44,12 @@ final class TmdbMessageHandler @Inject()(
         itemExpander
           .expandMovie(movieId, Nil)
           .flatMap(tmdbEntityProcessor.handleMovie)
+          .map(_ => {})
+
+      case ProcessTvShow(showId) =>
+        itemExpander
+          .expandTvShow(showId, Nil)
+          .flatMap(tmdbEntityProcessor.handleShow(_, handleSeasons = false))
           .map(_ => {})
     }
   }

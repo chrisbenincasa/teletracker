@@ -64,6 +64,88 @@ class ThingsDbAccess @Inject()(
     }
   }
 
+  private val logarithm = SimpleFunction.unary[Double, Double]("log")
+
+  def searchForThings(
+    query: String,
+    options: SearchOptions
+  ): Future[Seq[ThingRaw]] = {
+    if (query.isEmpty) {
+      Future.successful(Seq.empty)
+    } else {
+      val terms = query.split(" ").filter(_.nonEmpty)
+      val first = terms.init
+      val last = terms.last + ":*"
+      val finalQuery = (first :+ last).mkString(" & ")
+
+      def mkQuery(s: Rep[String]) = {
+        toTsQuery(s, Some("english"))
+      }
+
+      def mkVector(s: Rep[String]) = {
+        toTsVector(
+          s,
+          Some("english")
+        )
+      }
+
+      def voteAverage(thing: this.things.ThingsTableRaw) = {
+        thing.metadata
+          .map(m => {
+            (m +> "themoviedb" +> "movie" +>> "vote_average")
+              .asColumnOf[Double]
+              .ifNull(
+                (m +> "themoviedb" +> "show" +>> "vote_average")
+                  .asColumnOf[Double]
+              )
+              .ifNull(0.0)
+          })
+      }
+
+      def voteCount(thing: this.things.ThingsTableRaw) = {
+        thing.metadata
+          .map(m => {
+            (m +> "themoviedb" +> "movie" +>> "vote_count")
+              .asColumnOf[Double]
+              .ifNull(
+                (m +> "themoviedb" +> "show" +>> "vote_count")
+                  .asColumnOf[Double]
+              )
+              .ifNull(0.0)
+          })
+      }
+
+      val baseSearch =
+        things.rawQuery
+          .filter(t => {
+            mkQuery(finalQuery.bind) @@ mkVector(t.name)
+          })
+
+      val additionalFilters =
+        InhibitFilter(baseSearch)
+          .filter(options.thingTypeFilter) {
+            case thingTypes if thingTypes.size == 1 =>
+              t => t.`type` === thingTypes.head
+            case thingTypes =>
+              t => t.`type` inSetBind thingTypes
+          }
+          .query
+
+      run {
+        additionalFilters.sortBy {
+          case thing if options.rankingMode == SearchRankingMode.Popularity =>
+            thing.popularity.desc.nullsLast
+
+          case thing
+              if options.rankingMode == SearchRankingMode.PopularityAndVotes =>
+            (logarithm(thing.popularity.ifNull(1.0)) + ((voteCount(thing) * voteAverage(
+              thing
+            )) / 150000.0)).desc.nullsLast
+        }.result
+      }
+    }
+  }
+
   private val defaultFields = List(Field("id"))
 
   def findThingsByIds(
@@ -929,3 +1011,7 @@ case class RecentAvailability(
 case class FutureAvailability(
   upcoming: Seq[AvailabilityWithDetails],
   expiring: Seq[AvailabilityWithDetails])
+
+case class SearchOptions(
+  rankingMode: SearchRankingMode,
+  thingTypeFilter: Option[Set[ThingType]])
