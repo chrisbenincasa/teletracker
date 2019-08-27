@@ -50,11 +50,9 @@ trait MovieId
   popularity: Option[Double],
   poster_path: Option[String],
   production_companies: Option[List[ProductionCompany]],
-//  production_countries: Option[List[Map[String, Any]]],
   release_date: Option[String],
   revenue: Option[Int],
   runtime: Option[Int],
-//  spoken_languages: Option[List[Map[String, Any]]],
   status: Option[String],
   tagline: Option[String],
   title: Option[String],
@@ -138,9 +136,30 @@ case class Person(
   crew: List[TvShow],
   cast: List[TvShow])
 
+@JsonCodec
 case class PersonCredits(
-  crew: List[Movie :+: TvShow :+: CNil],
-  cast: List[Movie :+: TvShow :+: CNil])
+  crew: List[PersonCredit],
+  cast: List[PersonCredit])
+
+@JsonCodec
+case class PersonCredit(
+  adult: Option[Boolean],
+  backdrop_path: Option[String],
+  genre_ids: Option[List[Int]],
+  id: Int,
+  character: Option[String],
+  media_type: Option[MediaType],
+  original_language: Option[String],
+  original_title: Option[String],
+  overview: Option[String],
+  popularity: Option[Double],
+  poster_path: Option[String],
+  release_date: Option[String],
+  name: Option[String],
+  title: Option[String],
+  video: Option[Boolean],
+  vote_average: Option[Double],
+  vote_count: Option[Int])
 
 trait TvShowId
 

@@ -9,19 +9,22 @@ import java.util.UUID
 case class PersonThing(
   personId: UUID,
   thingId: UUID,
-  relationType: String)
+  relationType: PersonAssociationType,
+  characterName: Option[String])
 
 class PersonThings @Inject()(
   val profile: CustomPostgresProfile,
   dbImplicits: DbImplicits,
   val things: Provider[Things]) {
   import profile.api._
+  import dbImplicits._
 
   class PersonThingsTable(tag: Tag)
       extends Table[PersonThing](tag, "person_things") {
     def personId = column[UUID]("person_id")
     def thingId = column[UUID]("thing_id")
-    def relationType = column[String]("relation_type")
+    def relationType = column[PersonAssociationType]("relation_type")
+    def characterName = column[Option[String]]("character_name")
 
     def personThingPrimary =
       primaryKey("person_thing_prim_key", (personId, thingId))
@@ -34,7 +37,8 @@ class PersonThings @Inject()(
       (
         personId,
         thingId,
-        relationType
+        relationType,
+        characterName
       ) <> (PersonThing.tupled, PersonThing.unapply)
   }
 

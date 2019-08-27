@@ -1,8 +1,13 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.access.{ThingsDbAccess, UserThingDetails}
-import com.teletracker.common.db.model.PartialThing
+import com.teletracker.common.db.access.{
+  SearchOptions,
+  SearchRankingMode,
+  ThingsDbAccess,
+  UserThingDetails
+}
+import com.teletracker.common.db.model.{PartialThing, ThingType}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.DataResponse
 import com.teletracker.common.model.tmdb._
@@ -12,10 +17,12 @@ import com.teletracker.service.auth.JwtAuthFilter
 import com.teletracker.service.auth.RequestContext._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
+import com.twitter.finatra.request.QueryParam
 import io.circe.shapes._
 import javax.inject.Inject
 import shapeless.Coproduct
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class SearchController @Inject()(
   config: TeletrackerConfig,
@@ -35,6 +42,34 @@ class SearchController @Inject()(
           .map(result => {
             response.ok.contentTypeJson().body(DataResponse.complex(result))
           })
+      }
+    }
+  }
+
+  prefix("/api/v2") {
+    filter[JwtAuthFilter] {
+      get("/search") { req: SearchRequest =>
+        val query = req.query
+        val mode = req.rankingMode.getOrElse(SearchRankingMode.Popularity)
+        val options = SearchOptions(mode, req.types.map(_.toSet))
+
+        for {
+          things <- thingsDbAccess.searchForThings(query, options)
+          thingIds = things.map(_.id)
+          thingUserDetails <- thingsDbAccess
+            .getThingsUserDetails(
+              req.request.authContext.userId,
+              thingIds.toSet
+            )
+        } yield {
+          val allThings = things.map(thing => {
+            val meta = thingUserDetails
+              .getOrElse(thing.id, UserThingDetails.empty)
+            thing.toPartial.withUserMetadata(meta)
+          })
+
+          response.ok.contentTypeJson().body(DataResponse.complex(allThings))
+        }
       }
     }
   }
@@ -65,3 +100,10 @@ class SearchController @Inject()(
     }
   }
 }
+
+case class SearchRequest(
+  @QueryParam query: String,
+  @QueryParam rankingMode: Option[SearchRankingMode],
+  @QueryParam(commaSeparatedList = true) types: Option[List[ThingType]],
+  request: Request)
+    extends InjectedRequest

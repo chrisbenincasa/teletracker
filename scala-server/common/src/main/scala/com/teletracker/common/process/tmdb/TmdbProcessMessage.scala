@@ -3,7 +3,8 @@ package com.teletracker.common.process.tmdb
 import com.teletracker.common.model.tmdb.{
   BelongsToCollection,
   MovieId,
-  MultiTypeXor
+  MultiTypeXor,
+  TvShowId
 }
 import com.teletracker.common.process.Message
 import com.teletracker.common.process.tmdb.TmdbProcessMessage.MessageActionType
@@ -19,6 +20,8 @@ object TmdbProcessMessage {
     thingId: UUID,
     collection: BelongsToCollection)
       extends MessageActionType
+
+  case class ProcessTvShow(showId: Int @@ TvShowId) extends MessageActionType
 
   case class ProcessMovie(movieId: Int @@ MovieId) extends MessageActionType
 

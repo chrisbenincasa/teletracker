@@ -6,6 +6,9 @@ object Lists {
 
   implicit def toSafeTakeIterator[T](l: Iterator[T]): IteratorWithSafeTake[T] =
     new IteratorWithSafeTake[T](l)
+
+  implicit def toStreamTakeIterator[T](l: Stream[T]): StreamWithSafeTake[T] =
+    new StreamWithSafeTake(l)
 }
 
 class ListWithSafeTake[T](val l: List[T]) extends AnyVal {
@@ -14,4 +17,8 @@ class ListWithSafeTake[T](val l: List[T]) extends AnyVal {
 
 class IteratorWithSafeTake[T](val l: Iterator[T]) extends AnyVal {
   def safeTake(n: Int): Iterator[T] = if (n < 0) l else l.take(n)
+}
+
+class StreamWithSafeTake[T](val l: Stream[T]) extends AnyVal {
+  def safeTake(n: Int): Stream[T] = if (n < 0) l else l.take(n)
 }
