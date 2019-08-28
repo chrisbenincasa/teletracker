@@ -1,9 +1,6 @@
 import {
-  Avatar,
-  CardContent,
   CardMedia,
   Chip,
-  Collapse,
   createStyles,
   Fab,
   Grid,
@@ -11,8 +8,6 @@ import {
   IconButton,
   LinearProgress,
   Popover,
-  Tabs,
-  Tab,
   Theme,
   Typography,
   WithStyles,
@@ -20,14 +15,7 @@ import {
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import {
-  Check,
-  List as ListIcon,
-  Subscriptions,
-  AttachMoney,
-  Cloud,
-  PlayArrow,
-} from '@material-ui/icons';
+import { Check, List as ListIcon, PlayArrow } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -45,12 +33,13 @@ import {
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { ActionType, Availability, Network, Thing } from '../../types';
+import { ActionType, Availability, Thing } from '../../types';
 import { getMetadataPath } from '../../utils/metadata-access';
 import { ResponsiveImage } from '../../components/ResponsiveImage';
+import ThingAvailability from '../../components/Availability';
+import Cast from '../../components/Cast';
 import imagePlaceholder from '../../assets/images/imagePlaceholder.png';
 import AddToListDialog from '../../components/AddToListDialog';
-import { parseInitials } from '../../utils/textHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -91,6 +80,7 @@ const styles = (theme: Theme) =>
       width: '80%',
       display: 'flex',
       flex: '0 1 auto',
+      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
       position: 'relative',
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
@@ -118,14 +108,6 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       marginBottom: 10,
-    },
-    availabilePlatforms: {
-      display: 'flex',
-      justifyContent: 'flex-start',
-      [theme.breakpoints.down('sm')]: {
-        justifyContent: 'center',
-      },
-      flexWrap: 'wrap',
     },
     modal: {
       backgroundColor: fade(theme.palette.background.paper, 0.75),
@@ -164,7 +146,6 @@ interface State {
   currentId: string;
   currentItemType: string;
   manageTrackingModalOpen: boolean;
-  openTab: number;
   showPlayIcon: boolean;
   trailerModalOpen: boolean;
   anchorEl: any;
@@ -175,7 +156,6 @@ class ItemDetails extends Component<Props, State> {
     currentId: '',
     currentItemType: '',
     manageTrackingModalOpen: false,
-    openTab: 0,
     showPlayIcon: false,
     trailerModalOpen: false,
     anchorEl: null,
@@ -206,16 +186,12 @@ class ItemDetails extends Component<Props, State> {
     this.setState({ showPlayIcon: !this.state.showPlayIcon });
   };
 
-  toggleTrailerModalOpen = event => {
+  openTrailerModal = event => {
     this.setState({ trailerModalOpen: true, anchorEl: event.currentTarget });
   };
 
-  toggleTrailerModalClose = () => {
+  closeTrailerModal = () => {
     this.setState({ trailerModalOpen: false, anchorEl: null });
-  };
-
-  manageAvailabilityTabs = value => {
-    this.setState({ openTab: value });
   };
 
   toggleItemWatched = () => {
@@ -311,68 +287,6 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderOfferDetails = (availabilities: Availability[]) => {
-    let preferences = this.props.userSelf.preferences;
-    let networkSubscriptions = this.props.userSelf.networks;
-    let onlyShowsSubs = preferences.showOnlyNetworkSubscriptions;
-
-    const includeFromPrefs = (av: Availability, network: Network) => {
-      let showFromSubscriptions = onlyShowsSubs
-        ? R.any(R.propEq('slug', network.slug), networkSubscriptions)
-        : true;
-
-      let hasPresentation = av.presentationType
-        ? R.contains(av.presentationType, preferences.presentationTypes)
-        : true;
-
-      return showFromSubscriptions && hasPresentation;
-    };
-
-    const availabilityFilter = (av: Availability) => {
-      return !R.isNil(av.network) && includeFromPrefs(av, av.network!);
-    };
-
-    let groupedByNetwork = availabilities
-      ? R.groupBy(
-          (av: Availability) => av.network!.slug,
-          R.filter(availabilityFilter, availabilities),
-        )
-      : {};
-
-    return R.values(
-      R.mapObjIndexed(avs => {
-        let lowestCostAv = R.head(R.sortBy(R.prop('cost'))(avs))!;
-        let hasHd = R.find(R.propEq('presentationType', 'hd'), avs);
-        let has4k = R.find(R.propEq('presentationType', '4k'), avs);
-
-        let logoUri =
-          '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
-
-        return (
-          <span key={lowestCostAv.id} style={{ margin: 10 }}>
-            <Typography
-              display="inline"
-              style={{ display: 'flex', flexDirection: 'column' }}
-            >
-              <img
-                key={lowestCostAv.id}
-                src={logoUri}
-                style={{ width: 50, borderRadius: 10 }}
-              />
-              {lowestCostAv.cost && (
-                <Chip
-                  size="small"
-                  label={`$${lowestCostAv.cost}`}
-                  style={{ marginTop: 5 }}
-                />
-              )}
-            </Typography>
-          </span>
-        );
-      }, groupedByNetwork),
-    );
-  };
-
   renderWatchedToggle = () => {
     let watchedStatus = this.itemMarkedAsWatched();
     let watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
@@ -411,63 +325,6 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderCastDetails = (thing: Thing) => {
-    const credits = Object(getMetadataPath(thing, 'credits'));
-
-    return credits && credits.cast && credits.cast.length > 0 ? (
-      <React.Fragment>
-        <div style={{ marginTop: 10 }}>
-          <Typography color="inherit" variant="h5">
-            Cast
-          </Typography>
-
-          <Grid container style={{ justifyContent: 'center' }}>
-            {credits.cast.map(person => (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  maxWidth: 100,
-                  margin: 10,
-                }}
-              >
-                <Avatar
-                  alt={person.name}
-                  src={
-                    person.profile_path
-                      ? `https://image.tmdb.org/t/p/w185/${person.profile_path}`
-                      : ''
-                  }
-                  style={{ width: 100, height: 100 }}
-                >
-                  {person.profile_path
-                    ? null
-                    : parseInitials(person.name, 'name')}
-                </Avatar>
-                <Typography
-                  variant="subtitle1"
-                  color="inherit"
-                  style={{ fontWeight: 'bold' }}
-                  align="center"
-                >
-                  {person.character}
-                </Typography>
-                <Typography
-                  variant="subtitle2"
-                  color="inherit"
-                  style={{ fontStyle: 'Italic' }}
-                  align="center"
-                >
-                  {person.name}
-                </Typography>
-              </div>
-            ))}
-          </Grid>
-        </div>
-      </React.Fragment>
-    ) : null;
-  };
-
   renderSeriesDetails = (thing: Thing) => {
     const seasons = Object(getMetadataPath(thing, 'seasons'));
 
@@ -493,24 +350,10 @@ class ItemDetails extends Component<Props, State> {
 
   renderItemDetails = () => {
     let { classes, isFetching, itemDetail, userSelf } = this.props;
-    let { manageTrackingModalOpen, openTab } = this.state;
+    let { manageTrackingModalOpen } = this.state;
 
     if (!itemDetail) {
       return this.renderLoading();
-    }
-
-    let availabilities: { [key: string]: Availability[] };
-
-    if (itemDetail.availability) {
-      availabilities = R.mapObjIndexed(
-        R.pipe(
-          R.filter<Availability, 'array'>(R.propEq('isAvailable', true)),
-          R.sortBy(R.prop('cost')),
-        ),
-        R.groupBy(R.prop('offerType'), itemDetail.availability),
-      );
-    } else {
-      availabilities = {};
     }
 
     return isFetching || !itemDetail ? (
@@ -535,6 +378,13 @@ class ItemDetails extends Component<Props, State> {
               filter: 'blur(3px)',
             }}
           />
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          />
           <div className={classes.itemDetailContainer}>
             <div
               style={{
@@ -555,7 +405,7 @@ class ItemDetails extends Component<Props, State> {
                     aria-haspopup="true"
                     color="inherit"
                     style={{ position: 'absolute' }}
-                    onClick={this.toggleTrailerModalOpen}
+                    onClick={this.openTrailerModal}
                   >
                     <PlayArrow fontSize="large" />
                   </IconButton>
@@ -570,6 +420,7 @@ class ItemDetails extends Component<Props, State> {
                   }}
                 />
               </div>
+
               {this.renderWatchedToggle()}
               {this.renderTrackingToggle()}
               <AddToListDialog
@@ -583,58 +434,13 @@ class ItemDetails extends Component<Props, State> {
               {this.renderDescriptiveDetails(itemDetail)}
               <div>
                 <div style={{ marginTop: 10 }}>
-                  <Typography color="inherit" variant="h5">
-                    Availability
-                  </Typography>
-
-                  <Tabs
-                    value={this.state.openTab}
-                    indicatorColor="primary"
-                    textColor="primary"
-                    aria-label="icon label tabs example"
-                    variant="fullWidth"
-                  >
-                    <Tab
-                      icon={<Subscriptions />}
-                      label="Stream"
-                      onClick={() => this.manageAvailabilityTabs(0)}
-                    />
-                    <Tab
-                      icon={<Cloud />}
-                      label="Rent"
-                      onClick={() => this.manageAvailabilityTabs(1)}
-                    />
-                    <Tab
-                      icon={<AttachMoney />}
-                      label="Buy"
-                      onClick={() => this.manageAvailabilityTabs(2)}
-                    />
-                  </Tabs>
-
-                  <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
-                    {availabilities.subscription ? (
-                      <CardContent className={classes.availabilePlatforms}>
-                        {this.renderOfferDetails(availabilities.subscription)}
-                      </CardContent>
-                    ) : null}
-                  </Collapse>
-                  <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
-                    {availabilities.rent ? (
-                      <CardContent className={classes.availabilePlatforms}>
-                        {this.renderOfferDetails(availabilities.rent)}
-                      </CardContent>
-                    ) : null}
-                  </Collapse>
-                  <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
-                    {availabilities.buy ? (
-                      <CardContent className={classes.availabilePlatforms}>
-                        {this.renderOfferDetails(availabilities.buy)}
-                      </CardContent>
-                    ) : null}
-                  </Collapse>
+                  <ThingAvailability
+                    userSelf={userSelf!}
+                    itemDetail={itemDetail}
+                  />
                 </div>
               </div>
-              {this.renderCastDetails(itemDetail)}
+              <Cast itemDetail={itemDetail} />
               {this.renderSeriesDetails(itemDetail)}
             </div>
           </div>
@@ -651,7 +457,7 @@ class ItemDetails extends Component<Props, State> {
           }}
           anchorEl={this.state.anchorEl}
           open={this.state.trailerModalOpen}
-          onClose={this.toggleTrailerModalClose}
+          onClose={this.closeTrailerModal}
           className={this.props.classes.modal}
         >
           <iframe
