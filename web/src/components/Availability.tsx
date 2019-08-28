@@ -25,6 +25,9 @@ const styles = (theme: Theme) =>
       },
       flexWrap: 'wrap',
     },
+    genre: { marginTop: 5 },
+    logo: { width: 50, borderRadius: 10 },
+    platform: { display: 'flex', flexDirection: 'column', margin: 10 },
   });
 
 interface Props extends WithStyles<typeof styles> {
@@ -50,7 +53,7 @@ class ThingAvailability extends Component<Props, State> {
   };
 
   renderOfferDetails = (availabilities: Availability[]) => {
-    let { userSelf } = this.props;
+    let { classes, userSelf } = this.props;
 
     let preferences = userSelf.preferences;
     let networkSubscriptions = userSelf.networks;
@@ -89,25 +92,16 @@ class ThingAvailability extends Component<Props, State> {
           '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
 
         return (
-          <span key={lowestCostAv.id} style={{ margin: 10 }}>
-            <Typography
-              display="inline"
-              style={{ display: 'flex', flexDirection: 'column' }}
-            >
-              <img
-                key={lowestCostAv.id}
-                src={logoUri}
-                style={{ width: 50, borderRadius: 10 }}
+          <div className={classes.platform}>
+            <img key={lowestCostAv.id} src={logoUri} className={classes.logo} />
+            {lowestCostAv.cost && (
+              <Chip
+                size="small"
+                label={`$${lowestCostAv.cost}`}
+                className={classes.genre}
               />
-              {lowestCostAv.cost && (
-                <Chip
-                  size="small"
-                  label={`$${lowestCostAv.cost}`}
-                  style={{ marginTop: 5 }}
-                />
-              )}
-            </Typography>
-          </span>
+            )}
+          </div>
         );
       }, groupedByNetwork),
     );

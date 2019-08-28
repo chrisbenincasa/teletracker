@@ -21,14 +21,7 @@ import {
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import {
-  Check,
-  List as ListIcon,
-  Subscriptions,
-  AttachMoney,
-  Cloud,
-  PlayArrow,
-} from '@material-ui/icons';
+import { Check, List as ListIcon, PlayArrow } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -50,6 +43,7 @@ import { ActionType, Availability, Network, Thing } from '../../types';
 import { getMetadataPath } from '../../utils/metadata-access';
 import { ResponsiveImage } from '../../components/ResponsiveImage';
 import ThingAvailability from '../../components/Availability';
+import Cast from '../../components/Cast';
 import imagePlaceholder from '../../assets/images/imagePlaceholder.png';
 import AddToListDialog from '../../components/AddToListDialog';
 import { parseInitials } from '../../utils/textHelper';
@@ -341,63 +335,6 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderCastDetails = (thing: Thing) => {
-    const credits = Object(getMetadataPath(thing, 'credits'));
-
-    return credits && credits.cast && credits.cast.length > 0 ? (
-      <React.Fragment>
-        <div style={{ marginTop: 10 }}>
-          <Typography color="inherit" variant="h5">
-            Cast
-          </Typography>
-
-          <Grid container style={{ justifyContent: 'center' }}>
-            {credits.cast.map(person => (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  maxWidth: 100,
-                  margin: 10,
-                }}
-              >
-                <Avatar
-                  alt={person.name}
-                  src={
-                    person.profile_path
-                      ? `https://image.tmdb.org/t/p/w185/${person.profile_path}`
-                      : ''
-                  }
-                  style={{ width: 100, height: 100 }}
-                >
-                  {person.profile_path
-                    ? null
-                    : parseInitials(person.name, 'name')}
-                </Avatar>
-                <Typography
-                  variant="subtitle1"
-                  color="inherit"
-                  style={{ fontWeight: 'bold' }}
-                  align="center"
-                >
-                  {person.character}
-                </Typography>
-                <Typography
-                  variant="subtitle2"
-                  color="inherit"
-                  style={{ fontStyle: 'Italic' }}
-                  align="center"
-                >
-                  {person.name}
-                </Typography>
-              </div>
-            ))}
-          </Grid>
-        </div>
-      </React.Fragment>
-    ) : null;
-  };
-
   renderSeriesDetails = (thing: Thing) => {
     const seasons = Object(getMetadataPath(thing, 'seasons'));
 
@@ -529,7 +466,7 @@ class ItemDetails extends Component<Props, State> {
                   />
                 </div>
               </div>
-              {this.renderCastDetails(itemDetail)}
+              <Cast itemDetail={itemDetail} />
               {this.renderSeriesDetails(itemDetail)}
             </div>
           </div>
