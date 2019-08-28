@@ -1,11 +1,11 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.tmdb.export_tasks
 
 import com.google.cloud.storage.Storage
 import com.teletracker.common.process.tmdb.ItemExpander
 import io.circe.Decoder
-import javax.inject.Inject
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 object TvShowDumpTool extends DataDumpTaskApp[TvShowDump]

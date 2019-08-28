@@ -1,8 +1,9 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.tmdb.export_tasks
 
 import com.google.cloud.storage.{BlobId, BlobInfo, Storage}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import io.circe.Decoder
 import io.circe.parser._
 import org.slf4j.LoggerFactory

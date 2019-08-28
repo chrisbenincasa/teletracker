@@ -5,6 +5,7 @@ import com.teletracker.common.model.tmdb.BelongsToCollection
 import com.teletracker.common.process.tmdb.TmdbProcessMessage.{
   ProcessBelongsToCollections,
   ProcessMovie,
+  ProcessPerson,
   ProcessSearchResults,
   ProcessTvShow
 }
@@ -50,6 +51,12 @@ final class TmdbMessageHandler @Inject()(
         itemExpander
           .expandTvShow(showId, Nil)
           .flatMap(tmdbEntityProcessor.handleShow(_, handleSeasons = false))
+          .map(_ => {})
+
+      case ProcessPerson(personId) =>
+        itemExpander
+          .expandPerson(personId)
+          .flatMap(tmdbEntityProcessor.handlePerson)
           .map(_ => {})
     }
   }

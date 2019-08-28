@@ -98,11 +98,11 @@ class TmdbSynchronousProcessor @Inject()(
 
           case None =>
             Promise
-              .fromTry(ThingFactory.makeThingGen(result))
+              .fromTry(ThingFactory.toWatchableThing(result))
               .future
               .flatMap(thing => {
                 thingsDbAccess
-                  .saveThing(thing, Some(ExternalSource.TheMovieDb -> id))
+                  .saveThingRaw(thing, Some(ExternalSource.TheMovieDb -> id))
                   .map(id -> _)
               })
               .map(Some(_))
@@ -126,7 +126,8 @@ class TmdbSynchronousProcessor @Inject()(
   def processMixedTypes(
     results: List[MultiTypeXor]
   ): Future[List[PartialThing]] = {
-    val resultIds = results.map(_.fold(extractId)).toSet
+    val noPersonResults = results.flatMap(_.filterNot[Person])
+    val resultIds = noPersonResults.map(_.fold(extractId)).toSet
     val existingFut = thingsDbAccess
       .findThingsByExternalIds(ExternalSource.TheMovieDb, resultIds, None)
       .map(groupByExternalId)
@@ -135,7 +136,7 @@ class TmdbSynchronousProcessor @Inject()(
     val partitionedResults = for {
       existing <- existingFut
     } yield {
-      results.partition(result => {
+      noPersonResults.partition(result => {
         val id = result.fold(extractId)
         !existing.isDefinedAt(id)
       })
@@ -152,7 +153,7 @@ class TmdbSynchronousProcessor @Inject()(
     (for {
       existingThings <- existingFut
     } yield {
-      val thingFuts = results.map(result => {
+      val thingFuts = noPersonResults.map(result => {
         val id = result.fold(extractId)
         val newOrExistingThing = existingThings.get(id) match {
           case Some(existing) =>
@@ -160,11 +161,11 @@ class TmdbSynchronousProcessor @Inject()(
 
           case None =>
             Promise
-              .fromTry(ThingFactory.makeThing(result))
+              .fromTry(ThingFactory.toWatchableThing(result))
               .future
               .flatMap(thing => {
                 thingsDbAccess
-                  .saveThing(thing, Some(ExternalSource.TheMovieDb -> id))
+                  .saveThingRaw(thing, Some(ExternalSource.TheMovieDb -> id))
               })
               .map(Some(_))
               .recover {

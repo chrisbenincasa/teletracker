@@ -7,7 +7,7 @@ import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
 import com.teletracker.service.filters.OpenCensusMonitoringFilter
 import com.teletracker.service.inject.ServerModules
 import com.teletracker.service.util.json.JsonModule
-import com.teletracker.tasks.{
+import com.teletracker.tasks.db.{
   GenerateDdls,
   RunAllSeedsTask,
   RunDatabaseMigration

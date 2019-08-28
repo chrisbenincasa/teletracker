@@ -1,10 +1,11 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.db
 
 import com.teletracker.common.db.access.NetworksDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.inject.DbProvider
 import com.teletracker.common.model.justwatch.Provider
 import com.teletracker.common.util.Slug
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import javax.inject.Inject
 import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global

@@ -25,10 +25,10 @@ object ObjectMetadataUtils {
         objectMetadata.themoviedb
           .flatMap(_.union.selectDynamic("show"))
           .exists((m: TvShow) => m.id.toString == showId)
-      case Inr(Inr(Inl(personId))) =>
-        objectMetadata.themoviedb
-          .flatMap(_.union.selectDynamic("person"))
-          .exists((m: Person) => m.id.toString == personId)
+//      case Inr(Inr(Inl(personId))) =>
+//        objectMetadata.themoviedb
+//          .flatMap(_.union.selectDynamic("person"))
+//          .exists((m: Person) => m.id.toString == personId)
       case _ => ???
     }
   }

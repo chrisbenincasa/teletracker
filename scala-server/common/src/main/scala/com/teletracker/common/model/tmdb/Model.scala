@@ -1,5 +1,6 @@
 package com.teletracker.common.model.tmdb
 
+import com.teletracker.common.util.Slug
 import io.circe.generic.JsonCodec
 import io.circe._
 import io.circe.shapes._
@@ -7,6 +8,8 @@ import io.circe.generic.semiauto._
 import io.circe.syntax._
 import com.teletracker.common.util.json.circe._
 import shapeless.{:+:, CNil}
+
+sealed trait TmdbQueryableEntity
 
 case class SearchMultiRequest(
   query: String,
@@ -65,6 +68,7 @@ trait MovieId
   external_ids: Option[ExternalIds],
   recommendations: Option[PagedResult[Movie]],
   similar: Option[PagedResult[Movie]])
+    extends TmdbQueryableEntity
 
 @JsonCodec case class MovieExternalIds(
   imdb_id: Option[String],
@@ -109,6 +113,7 @@ case class Person(
   combined_credits: Option[PersonCredits],
   movie_credits: Option[PersonMovieCredits],
   tv_credits: Option[PersonTvCredits])
+    extends TmdbQueryableEntity
 
 @JsonCodec case class CastMember(
   character: Option[String],
@@ -117,7 +122,9 @@ case class Person(
   id: Int,
   name: Option[String],
   order: Option[Int],
-  profile_path: Option[String])
+  profile_path: Option[String],
+  // Computed fields
+  normalizedName: Option[Slug] = None)
 
 @JsonCodec case class CrewMember(
   credit_id: Option[String],
