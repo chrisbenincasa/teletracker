@@ -1,5 +1,6 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.db
 
+import com.teletracker.tasks.{TeletrackerCompoundTask, TeletrackerTask}
 import javax.inject.Inject
 
 class RunAllSeedsTask @Inject()(

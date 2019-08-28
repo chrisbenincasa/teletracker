@@ -8,7 +8,7 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class DbMonitoring @Inject()()(implicit monitoring: Monitoring) {
-  final private val MethodKey = TagKey.create("method")
+  final private val MethodKey = TagKey.create("db_method")
 
   final private val LatencyHistogram = monitoring.createStdHistogram(
     "teletracker/service/db/latency",

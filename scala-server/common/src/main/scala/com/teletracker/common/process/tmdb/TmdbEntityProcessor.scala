@@ -14,7 +14,7 @@ import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.inject.RecentlyProcessedCollections
 import com.teletracker.common.model.justwatch.PopularItem
 import com.teletracker.common.model.tmdb
-import com.teletracker.common.model.tmdb._
+import com.teletracker.common.model.tmdb.{Person => TmdbPerson, _}
 import com.teletracker.common.process.ProcessQueue
 import com.teletracker.common.process.tmdb.TmdbEntity.Entities
 import com.teletracker.common.process.tmdb.TmdbProcessMessage.ProcessMovie
@@ -37,7 +37,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 
 object TmdbEntity {
-  type Entities = Movie :+: TvShow :+: Person :+: CNil
+  type Entities = Movie :+: TvShow :+: TmdbPerson :+: CNil
   type Ids =
     (Int @@ MovieId) :+: (Int @@ TvShowId) :+: (Int @@ PersonId) :+: CNil
 }
@@ -46,7 +46,7 @@ object TmdbEntityProcessor {
   sealed trait ProcessResult
   case class ProcessSuccess(
     tmdbId: String,
-    savedThing: Thing)
+    savedThing: ThingLike)
       extends ProcessResult
   case class ProcessFailure(error: Throwable) extends ProcessResult
 }
@@ -73,7 +73,7 @@ class TmdbEntityProcessor @Inject()(
   import TmdbEntityProcessor._
 
   def processSearchResults(
-    results: List[Movie :+: TvShow :+: Person :+: CNil]
+    results: List[Movie :+: TvShow :+: CNil]
   ): List[Future[ProcessResult]] = {
     results.map(_.map(expander.ExpandItem)).map(_.fold(ResultProcessor))
   }
@@ -114,7 +114,7 @@ class TmdbEntityProcessor @Inject()(
       handleShow(_, handleSeasons = false)
     )
 
-    implicit val atPerson: Case.Aux[Person, Future[ProcessResult]] = at(
+    implicit val atPerson: Case.Aux[TmdbPerson, Future[ProcessResult]] = at(
       handlePerson
     )
 
@@ -161,7 +161,7 @@ class TmdbEntityProcessor @Inject()(
     showImporter.handleShow(show, handleSeasons)
   }
 
-  def handlePerson(person: Person): Future[ProcessResult] = {
+  def handlePerson(person: TmdbPerson): Future[ProcessResult] = {
     def insertAssociations(
       personId: UUID,
       thingId: UUID,
@@ -176,7 +176,7 @@ class TmdbEntityProcessor @Inject()(
     val now = OffsetDateTime.now()
 
     val personSave = Promise
-      .fromTry(ThingFactory.makePerson(person))
+      .fromTry(ThingFactory.makeThing(person))
       .future
       .flatMap(thing => {
         thingsDbAccess

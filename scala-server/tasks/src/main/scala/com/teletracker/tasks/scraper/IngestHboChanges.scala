@@ -1,4 +1,4 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.scraper
 
 import com.google.cloud.storage.Storage
 import com.teletracker.common.db.access.ThingsDbAccess
@@ -9,29 +9,30 @@ import io.circe.generic.auto._
 import javax.inject.Inject
 import java.time.{Instant, ZoneId, ZoneOffset}
 
-class IngestHuluChanges @Inject()(
+object IngestHboChanges extends IngestJobApp[IngestHboChanges]
+
+class IngestHboChanges @Inject()(
   protected val tmdbClient: TmdbClient,
   protected val tmdbProcessor: TmdbEntityProcessor,
   protected val thingsDb: ThingsDbAccess,
   protected val storage: Storage,
   protected val networkCache: NetworkCache)
-    extends IngestJob[HuluScrapeItem] {
-  override protected def networkNames: Set[String] = Set("hulu")
+    extends IngestJob[HboScrapeItem] {
+  override protected def networkNames: Set[String] = Set("hbo-now", "hbo-go")
 
   override protected def networkTimeZone: ZoneOffset =
-    ZoneId.of("US/Pacific").getRules.getOffset(Instant.now())
+    ZoneId.of("US/Eastern").getRules.getOffset(Instant.now())
 }
 
-case class HuluScrapeItem(
+case class HboScrapeItem(
   availableDate: String,
   title: String,
   releaseYear: Option[String],
-  notes: String,
   category: String,
   network: String,
   status: String)
     extends ScrapedItem {
   override def isMovie: Boolean = category.toLowerCase().trim() == "film"
 
-  override def isTvShow: Boolean = !isMovie
+  override def isTvShow: Boolean = false
 }

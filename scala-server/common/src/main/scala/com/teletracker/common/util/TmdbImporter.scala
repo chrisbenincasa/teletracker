@@ -2,7 +2,7 @@ package com.teletracker.common.util
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model
-import com.teletracker.common.db.model.{ExternalId, Thing}
+import com.teletracker.common.db.model.{ExternalId, ThingLike}
 import com.teletracker.common.model.tmdb
 import java.sql.Timestamp
 import scala.concurrent.{ExecutionContext, Future}
@@ -11,7 +11,7 @@ abstract class TmdbImporter(
   thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext) {
   protected def handleExternalIds(
-    entity: Either[Thing, model.TvShowEpisode],
+    entity: Either[ThingLike, model.TvShowEpisode],
     externalIds: Option[tmdb.ExternalIds],
     tmdbId: Option[String]
   ): Future[Option[ExternalId]] = {

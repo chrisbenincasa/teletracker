@@ -1,17 +1,17 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.tmdb.import_tasks
 
 import com.google.api.gax.paging.Page
 import com.google.cloud.storage.Storage.BlobListOption
 import com.google.cloud.storage.{Blob, BlobId, Storage}
 import com.teletracker.common.db.access.ThingsDbAccess
-import com.teletracker.common.db.model.{ExternalSource, Thing, ThingFactory}
-import com.teletracker.common.model.tmdb.Movie
-import com.teletracker.common.process.tmdb.TmdbSynchronousProcessor
+import com.teletracker.common.db.model.{ExternalSource, ThingLike}
+import com.teletracker.common.model.Thingable
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
+import com.teletracker.tasks.TeletrackerTask
+import io.circe.Decoder
 import io.circe.parser._
-import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import java.net.URI
 import scala.collection.JavaConverters._
@@ -19,18 +19,23 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.{Failure, Success}
 
-class ImportMoviesFromDump @Inject()(
+abstract class ImportTmdbDumpTask[T: Decoder](
   storage: Storage,
-  tmdbSynchronousProcessor: TmdbSynchronousProcessor,
   thingsDbAccess: ThingsDbAccess
-)(implicit executionContext: ExecutionContext)
+)(implicit executionContext: ExecutionContext,
+  thingLike: Thingable[T])
     extends TeletrackerTask {
-  private val logger = LoggerFactory.getLogger(getClass)
+  protected val logger = LoggerFactory.getLogger(getClass)
 
   override def run(args: Args): Unit = {
     val file = args.value[URI]("input").get
     val offset = args.valueOrDefault("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
+
+    def sink[X](
+      x: List[Option[X]],
+      y: List[Option[X]]
+    ) = List.empty[Option[X]]
 
     getSourceStream(file)
       .drop(offset)
@@ -41,19 +46,18 @@ class ImportMoviesFromDump @Inject()(
             .batchedIterator(
               source.getLines(),
               8,
-              (_: List[Option[Thing]], _: List[Option[Thing]]) =>
-                List.empty[Option[Thing]]
+              sink[ThingLike]
             )(batch => {
               val processedBatch = batch.flatMap(line => {
                 sanitizeLine(line).map(sanitizedLine => {
                   parse(sanitizedLine)
-                    .flatMap(_.as[Movie]) match {
+                    .flatMap(_.as[T]) match {
                     case Left(failure) =>
-                      logger.error("Unspected parsing error", failure)
+                      logger.error("Unexpected parsing error", failure)
                       Future.successful(None)
 
                     case Right(value) =>
-                      ThingFactory.makeThing(value) match {
+                      thingLike.toThing(value) match {
                         case Success(value) =>
                           val fut = thingsDbAccess
                             .saveThing(

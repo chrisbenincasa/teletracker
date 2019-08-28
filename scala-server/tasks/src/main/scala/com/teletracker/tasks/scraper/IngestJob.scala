@@ -1,4 +1,4 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.scraper
 
 import com.google.cloud.storage.{BlobId, Storage}
 import com.teletracker.common.db.access.ThingsDbAccess
@@ -14,6 +14,8 @@ import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.execution.SequentialFutures
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
+import com.twitter.finagle.server
 import io.circe.Decoder
 import io.circe.parser._
 import org.apache.commons.text.similarity.LevenshteinDistance
@@ -139,7 +141,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
             .find(findMatch(_, item, titleMatchThreshold))
             .map(tmdbProcessor.handleMovie)
             .map(_.map {
-              case ProcessSuccess(_, thing) =>
+              case ProcessSuccess(_, thing: ThingRaw) =>
                 logger.info(
                   s"Saved ${item.title} with thing ID = ${thing.id}"
                 )
@@ -149,6 +151,10 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
                   thing,
                   item
                 )
+
+              case ProcessSuccess(_, _) =>
+                logger.error("Unexpected result")
+                Future.successful(Seq.empty)
 
               case ProcessFailure(error) =>
                 logger.error("Error handling movie", error)
@@ -165,7 +171,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
             .find(findMatch(_, item, titleMatchThreshold))
             .map(tmdbProcessor.handleShow(_, handleSeasons = false))
             .map(_.map {
-              case ProcessSuccess(_, thing) =>
+              case ProcessSuccess(_, thing: ThingRaw) =>
                 logger.info(
                   s"Saved ${item.title} with thing ID = ${thing.id}"
                 )
@@ -175,6 +181,10 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
                   thing,
                   item
                 )
+
+              case ProcessSuccess(_, _) =>
+                logger.error("Unexpected result")
+                Future.successful(Seq.empty)
 
               case ProcessFailure(error) =>
                 logger.error("Error saving show", error)
@@ -226,7 +236,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
   protected def updateAvailability(
     networks: Set[Network],
-    thing: Thing,
+    thing: ThingRaw,
     scrapeItem: T
   ): Future[Seq[Availability]] = {
     val start =

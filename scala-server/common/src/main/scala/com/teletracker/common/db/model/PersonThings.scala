@@ -15,7 +15,8 @@ case class PersonThing(
 class PersonThings @Inject()(
   val profile: CustomPostgresProfile,
   dbImplicits: DbImplicits,
-  val things: Provider[Things]) {
+  val things: Provider[Things],
+  val people: Provider[People]) {
   import profile.api._
   import dbImplicits._
 
@@ -29,7 +30,7 @@ class PersonThings @Inject()(
     def personThingPrimary =
       primaryKey("person_thing_prim_key", (personId, thingId))
     def person =
-      foreignKey("person_id_foreign", personId, things.get().query)(_.id)
+      foreignKey("person_id_foreign", personId, people.get().query)(_.id)
     def thing =
       foreignKey("thing_id_foreign", thingId, things.get().query)(_.id)
 

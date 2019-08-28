@@ -1,9 +1,10 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.tmdb
 
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.tmdb.{PagedResult, TvShow}
 import com.teletracker.common.util.TmdbShowImporter
 import com.teletracker.common.util.execution.SequentialFutures
+import com.teletracker.tasks.TeletrackerTask
 import javax.inject.Inject
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global

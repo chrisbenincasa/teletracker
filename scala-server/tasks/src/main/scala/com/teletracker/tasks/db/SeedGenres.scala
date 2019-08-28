@@ -1,10 +1,11 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.db
 
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.inject.DbProvider
 import com.teletracker.common.model.tmdb.GenreListResponse
 import com.teletracker.common.util.Slug
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import javax.inject.Inject
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global

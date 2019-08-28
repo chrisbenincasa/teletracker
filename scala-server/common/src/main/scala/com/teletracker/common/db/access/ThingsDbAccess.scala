@@ -34,6 +34,8 @@ class ThingsDbAccess @Inject()(
   val trackedLists: TrackedLists,
   val userThingTags: UserThingTags,
   val collections: Collections,
+  val people: People,
+  val peopleThings: PersonThings,
   dbImplicits: DbImplicits,
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
@@ -302,7 +304,7 @@ class ThingsDbAccess @Inject()(
   def findThingBySlug(
     slug: Slug,
     thingType: Option[ThingType]
-  ) = {
+  ): Future[Option[PartialThing]] = {
     val thingQuery = InhibitFilter(
       things.query.filter(_.normalizedName === slug)
     ).filter(thingType)(typ => _.`type` === typ).query.take(1)
@@ -336,9 +338,18 @@ class ThingsDbAccess @Inject()(
     findThingBySlug(slug, Some(typ))
   }
 
-  def findPersonById(id: UUID): Future[Option[Thing]] = {
+  def findPersonById(id: UUID): Future[Option[Person]] = {
     val person =
-      things.query.filter(p => p.id === id && p.`type` === ThingType.Person)
+      people.query.filter(p => p.id === id)
+
+    run {
+      person.result.headOption
+    }
+  }
+
+  def findPersonBySlug(slug: Slug): Future[Option[Person]] = {
+    val person =
+      people.query.filter(p => p.normalizedName === slug)
 
     run {
       person.result.headOption
@@ -349,7 +360,7 @@ class ThingsDbAccess @Inject()(
     source: ExternalSource,
     ids: Set[String],
     typ: Option[ThingType]
-  ): Future[Seq[(ExternalId, Thing)]] = {
+  ): Future[Seq[(ExternalId, ThingRaw)]] = {
     if (ids.isEmpty) {
       Future.successful(Seq.empty)
     } else {
@@ -366,8 +377,8 @@ class ThingsDbAccess @Inject()(
         baseQuery
           .flatMap(eid => {
             (typ match {
-              case Some(t) => eid.thing.filter(_.`type` === t)
-              case None    => eid.thing
+              case Some(t) => eid.thingRaw.filter(_.`type` === t)
+              case None    => eid.thingRaw
             }).map(eid -> _)
           })
           .result
@@ -443,22 +454,39 @@ class ThingsDbAccess @Inject()(
   }
 
   def saveThing(
-    thing: Thing,
+    thing: ThingLike,
     externalPair: Option[(ExternalSource, String)] = None
-  ): Future[Thing] = {
+  ): Future[ThingLike] = {
+    thing match {
+      case raw: ThingRaw =>
+        saveThingRaw(raw, externalPair)
+
+      case person: Person =>
+        savePerson(person, externalPair)
+    }
+  }
+
+  def saveThingRaw(
+    thing: ThingRaw,
+    externalPair: Option[(ExternalSource, String)] = None
+  ): Future[ThingRaw] = {
     val thingToInsert = externalPair match {
-      case Some((source, id))
-          if source == ExternalSource.TheMovieDb && thing.tmdbId.isEmpty =>
-        thing.copy(tmdbId = Some(id))
+      case Some((source, id)) if source == ExternalSource.TheMovieDb =>
+        if (thing.tmdbId.isEmpty) {
+          thing.copy(tmdbId = Some(id))
+        } else {
+          require(thing.tmdbId.get == id)
+          thing
+        }
 
       case _ => thing
     }
 
-    def findByExternalId: Future[Option[Thing]] = {
+    def findByExternalId: Future[Option[ThingRaw]] = {
       externalPair match {
         case _ if thing.tmdbId.isDefined =>
           run {
-            things.query
+            things.rawQuery
               .filter(_.tmdbId === thing.tmdbId.get)
               .take(1)
               .result
@@ -467,12 +495,12 @@ class ThingsDbAccess @Inject()(
 
         case Some((source, id)) if source == ExternalSource.TheMovieDb =>
           run {
-            things.query.filter(_.tmdbId === id).take(1).result.headOption
+            things.rawQuery.filter(_.tmdbId === id).take(1).result.headOption
           }
 
         case _ =>
           run {
-            things.query
+            things.rawQuery
               .filter(_.normalizedName === thing.normalizedName)
               .filter(_.`type` === thing.`type`)
               .result
@@ -481,14 +509,14 @@ class ThingsDbAccess @Inject()(
       }
     }
 
-    def update(existingThing: Thing): Future[Thing] = {
+    def update(existingThing: ThingRaw): Future[ThingRaw] = {
       val updated = thingToInsert.copy(
         id = existingThing.id,
         createdAt = existingThing.createdAt
       )
 
       run {
-        things.query
+        things.rawQuery
           .filter(t => t.id === existingThing.id)
           .update(updated)
           .map(_ => updated)
@@ -497,12 +525,84 @@ class ThingsDbAccess @Inject()(
 
     findByExternalId.flatMap {
       case None =>
-        run(things.query += thingToInsert).map(_ => thing).recoverWith {
+        run(things.rawQuery += thingToInsert).map(_ => thing).recoverWith {
           case NonFatal(_: PSQLException) =>
             findByExternalId.flatMap {
               case None =>
                 throw new IllegalStateException(
                   "Received duplicate key exception, but could not find existing value"
+                )
+              case Some(existing) =>
+                update(existing)
+            }
+        }
+
+      case Some(e) =>
+        update(e)
+    }
+  }
+
+  def savePerson(
+    thing: Person,
+    externalPair: Option[(ExternalSource, String)] = None
+  ): Future[Person] = {
+    val thingToInsert = externalPair match {
+      case Some((source, id))
+          if source == ExternalSource.TheMovieDb && thing.tmdbId.isEmpty =>
+        thing.copy(tmdbId = Some(id))
+
+      case _ => thing
+    }
+
+    def findByExternalId: Future[Option[Person]] = {
+      externalPair match {
+        case _ if thing.tmdbId.isDefined =>
+          run {
+            people.query
+              .filter(_.tmdbId === thing.tmdbId.get)
+              .take(1)
+              .result
+              .headOption
+          }
+
+        case Some((source, id)) if source == ExternalSource.TheMovieDb =>
+          run {
+            people.query.filter(_.tmdbId === id).take(1).result.headOption
+          }
+
+        case _ =>
+          run {
+            people.query
+              .filter(_.normalizedName === thing.normalizedName)
+              .result
+              .headOption
+          }
+      }
+    }
+
+    def update(existingThing: Person): Future[Person] = {
+      val updated = thingToInsert.copy(
+        id = existingThing.id,
+        createdAt = existingThing.createdAt
+      )
+
+      run {
+        people.query
+          .filter(t => t.id === existingThing.id)
+          .update(updated)
+          .map(_ => updated)
+      }
+    }
+
+    findByExternalId.flatMap {
+      case None =>
+        run(people.query += thingToInsert).map(_ => thing).recoverWith {
+          case NonFatal(x: PSQLException) =>
+            findByExternalId.flatMap {
+              case None =>
+                throw new IllegalStateException(
+                  s"Received duplicate key exception, but could not find existing value. $thingToInsert",
+                  x
                 )
               case Some(existing) =>
                 update(existing)
@@ -997,6 +1097,45 @@ class ThingsDbAccess @Inject()(
             ON CONFLICT ON CONSTRAINT collection_things_by_collection DO NOTHING
             RETURNING id;
       """.as[Int].headOption
+    }
+  }
+
+  def findPeopleForThing(
+    thingId: UUID,
+    relationType: Option[PersonAssociationType]
+  ): Future[Seq[(Person, PersonThing)]] = {
+//    InhibitFilter(personThings.query)
+//      .filter(relationType)(typ => _.relationType === typ).query.groupBy(_.thingId)
+    run {
+      InhibitFilter(personThings.query)
+        .filter(relationType)(typ => _.relationType === typ)
+        .query
+        .filter(_.thingId === thingId)
+        .flatMap(personThing => {
+          personThing.person.map(person => (person, personThing))
+        })
+        .result
+    }
+  }
+
+  def findPeopleForThings(
+    thingIds: Set[UUID],
+    relationType: Option[PersonAssociationType]
+  ) = {
+    run {
+      InhibitFilter(personThings.query)
+        .filter(relationType)(typ => _.relationType === typ)
+        .query
+        .filter(_.thingId inSetBind thingIds)
+        .groupBy(_.thingId)
+        .flatMap {
+          case (id, q) =>
+            q.flatMap(personThing => {
+              personThing.person
+                .map(person => (id, person, personThing.characterName))
+            })
+        }
+        .result
     }
   }
 }
