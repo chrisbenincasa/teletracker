@@ -5,6 +5,7 @@ import {
   createStyles,
   CssBaseline,
   Fade,
+  Icon,
   IconButton,
   InputBase,
   Menu,
@@ -401,7 +402,7 @@ class App extends Component<Props, State> {
 
   render() {
     let { classes, isAuthed } = this.props;
-    let { searchText, isLoggedOut } = this.state;
+    let { drawerOpen, searchText, isLoggedOut } = this.state;
 
     if (isLoggedOut) {
       // return <Redirect to={'/login'} />
@@ -487,7 +488,7 @@ class App extends Component<Props, State> {
                 onClick={this.toggleDrawer}
                 color="inherit"
               >
-                <MenuIcon />
+                {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
               </IconButton>
             ) : null}
             <Typography
