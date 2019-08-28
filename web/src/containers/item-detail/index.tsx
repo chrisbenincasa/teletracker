@@ -1,10 +1,6 @@
 import {
-  Avatar,
-  Button,
-  CardContent,
   CardMedia,
   Chip,
-  Collapse,
   createStyles,
   Fab,
   Grid,
@@ -12,8 +8,6 @@ import {
   IconButton,
   LinearProgress,
   Popover,
-  Tabs,
-  Tab,
   Theme,
   Typography,
   WithStyles,
@@ -39,14 +33,13 @@ import {
 import withUser, { WithUserProps } from '../../components/withUser';
 import { AppState } from '../../reducers';
 import { layoutStyles } from '../../styles';
-import { ActionType, Availability, Network, Thing } from '../../types';
+import { ActionType, Availability, Thing } from '../../types';
 import { getMetadataPath } from '../../utils/metadata-access';
 import { ResponsiveImage } from '../../components/ResponsiveImage';
 import ThingAvailability from '../../components/Availability';
 import Cast from '../../components/Cast';
 import imagePlaceholder from '../../assets/images/imagePlaceholder.png';
 import AddToListDialog from '../../components/AddToListDialog';
-import { parseInitials } from '../../utils/textHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -116,7 +109,6 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       marginBottom: 10,
     },
-
     modal: {
       backgroundColor: fade(theme.palette.background.paper, 0.75),
     },
@@ -154,7 +146,6 @@ interface State {
   currentId: string;
   currentItemType: string;
   manageTrackingModalOpen: boolean;
-
   showPlayIcon: boolean;
   trailerModalOpen: boolean;
   anchorEl: any;
@@ -165,7 +156,6 @@ class ItemDetails extends Component<Props, State> {
     currentId: '',
     currentItemType: '',
     manageTrackingModalOpen: false,
-
     showPlayIcon: false,
     trailerModalOpen: false,
     anchorEl: null,
@@ -196,11 +186,11 @@ class ItemDetails extends Component<Props, State> {
     this.setState({ showPlayIcon: !this.state.showPlayIcon });
   };
 
-  toggleTrailerModalOpen = event => {
+  openTrailerModal = event => {
     this.setState({ trailerModalOpen: true, anchorEl: event.currentTarget });
   };
 
-  toggleTrailerModalClose = () => {
+  closeTrailerModal = () => {
     this.setState({ trailerModalOpen: false, anchorEl: null });
   };
 
@@ -366,22 +356,6 @@ class ItemDetails extends Component<Props, State> {
       return this.renderLoading();
     }
 
-    let availabilities: { [key: string]: Availability[] };
-
-    if (itemDetail.availability) {
-      availabilities = R.mapObjIndexed(
-        R.pipe(
-          R.filter<Availability, 'array'>(R.propEq('isAvailable', true)),
-          R.sortBy(R.prop('cost')),
-        ),
-        R.groupBy(R.prop('offerType'), itemDetail.availability),
-      );
-    } else {
-      availabilities = {};
-    }
-
-    console.log(this.props);
-
     return isFetching || !itemDetail ? (
       this.renderLoading()
     ) : (
@@ -431,7 +405,7 @@ class ItemDetails extends Component<Props, State> {
                     aria-haspopup="true"
                     color="inherit"
                     style={{ position: 'absolute' }}
-                    onClick={this.toggleTrailerModalOpen}
+                    onClick={this.openTrailerModal}
                   >
                     <PlayArrow fontSize="large" />
                   </IconButton>
@@ -483,7 +457,7 @@ class ItemDetails extends Component<Props, State> {
           }}
           anchorEl={this.state.anchorEl}
           open={this.state.trailerModalOpen}
-          onClose={this.toggleTrailerModalClose}
+          onClose={this.closeTrailerModal}
           className={this.props.classes.modal}
         >
           <iframe
