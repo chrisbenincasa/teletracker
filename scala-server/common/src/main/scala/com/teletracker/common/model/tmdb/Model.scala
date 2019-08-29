@@ -123,6 +123,7 @@ case class Person(
 
 @JsonCodec case class CastMember(
   character: Option[String],
+  character_name: Option[String],
   credit_id: Option[String],
   gender: Option[Int],
   id: Int,

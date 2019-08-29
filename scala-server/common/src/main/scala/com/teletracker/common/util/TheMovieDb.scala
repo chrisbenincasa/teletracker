@@ -1,6 +1,7 @@
 package com.teletracker.common.util
 
 import com.teletracker.common.model.tmdb.{Genre, Movie, PersonCredit, TvShow}
+import java.time.LocalDate
 
 object TheMovieDb {
   implicit def toRichPersonCredits(pc: PersonCredit): RichPersonCredits =
@@ -8,6 +9,11 @@ object TheMovieDb {
 }
 
 final class RichPersonCredits(val pc: PersonCredit) extends AnyVal {
+  def releaseYear: Option[Int] =
+    pc.release_date
+      .filter(_.nonEmpty)
+      .map(LocalDate.parse(_).getYear)
+
   def asMovie: Movie = {
     Movie(
       adult = pc.adult,
