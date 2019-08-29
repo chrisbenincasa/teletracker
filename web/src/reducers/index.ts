@@ -7,6 +7,7 @@ import userSelf, { State as UserSelfState } from './user';
 import metadata, { State as MetadataState } from './metadata';
 import availability, { State as AvailabilityState } from './availability';
 import popular, { State as PopularState } from './popular';
+import people, { State as PersonState } from './people';
 
 // A type that represents the entire app state
 export interface AppState {
@@ -18,6 +19,7 @@ export interface AppState {
   metadata: MetadataState;
   availability: AvailabilityState;
   popular: PopularState;
+  people: PersonState;
 }
 
 function startupReducer(state: any | undefined, action: Action): any {
@@ -38,4 +40,5 @@ export default combineReducers({
   metadata,
   availability,
   popular,
+  people,
 });

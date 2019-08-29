@@ -131,16 +131,12 @@ interface RouteParams {
   type: string;
 }
 
-type Props = OwnProps &
-  RouteComponentProps<RouteParams> &
-  DispatchProps &
-  WithStyles<typeof styles> &
-  WithUserProps;
-
 type NotOwnProps = RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
   WithUserProps;
+
+type Props = OwnProps & NotOwnProps;
 
 interface State {
   currentId: string;
