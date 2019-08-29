@@ -19,12 +19,12 @@ import * as R from 'ramda';
 import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { signup, signUpWithGoogle } from '../../actions/auth';
-import { AppState } from '../../reducers';
+import { signup, signUpWithGoogle } from '../actions/auth';
+import { AppState } from '../reducers';
 import { Redirect } from 'react-router';
 import * as firebase from 'firebase/app';
 import { Link as RouterLink } from 'react-router-dom';
-import GoogleLoginButton from '../../components/GoogleLoginButton';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 const styles = (theme: Theme) =>
   createStyles({

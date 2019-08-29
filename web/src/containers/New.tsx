@@ -12,17 +12,17 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import withUser, { WithUserProps } from '../../components/withUser';
-import { AppState } from '../../reducers';
-import { layoutStyles } from '../../styles';
-import { Thing, Availability } from '../../types';
+import withUser, { WithUserProps } from '../components/withUser';
+import { AppState } from '../reducers';
+import { layoutStyles } from '../styles';
+import { Thing, Availability } from '../types';
 import {
   retrieveUpcomingAvailability,
   retrieveAllAvailability,
-} from '../../actions/availability';
-import { AvailabilityState } from '../../reducers/availability';
+} from '../actions/availability';
+import { AvailabilityState } from '../reducers/availability';
 import _ from 'lodash';
-import ItemCard from '../../components/ItemCard';
+import ItemCard from '../components/ItemCard';
 import moment from 'moment';
 
 const styles = (theme: Theme) =>
