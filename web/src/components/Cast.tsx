@@ -26,6 +26,9 @@ const styles = (theme: Theme) =>
         opacity: 0.8,
       },
     },
+    avatarLink: {
+      textDecoration: 'none',
+    },
     actualName: {
       fontStyle: 'Italic',
     },
@@ -102,7 +105,7 @@ class ThingAvailability extends Component<Props, {}> {
 
           <Grid container className={classes.grid}>
             {credits.cast.map(person => (
-              <div className={classes.personContainer}>
+              <div className={classes.personContainer} key={person.id}>
                 {this.renderAvatar(person, castByTmdbId)}
                 <Typography
                   variant="subtitle1"
