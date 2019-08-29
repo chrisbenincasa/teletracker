@@ -111,14 +111,14 @@ lazy val tasks = project
     ),
     `run-db-migrations` := runInputTask(
       Runtime,
-      "com.teletracker.tasks.RunDatabaseMigrationMain"
+      "com.teletracker.tasks.db.RunDatabaseMigrationMain"
     ).evaluated,
     `reset-db` := Def
       .sequential(
         `run-db-migrations`.toTask(" -action=clean"),
         `run-db-migrations`.toTask(" -action=migrate"),
         (runMain in Runtime)
-          .toTask(" com.teletracker.tasks.RunAllSeedsMain")
+          .toTask(" com.teletracker.tasks.db.RunAllSeedsMain")
       )
       .value
   )

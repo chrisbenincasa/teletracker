@@ -143,8 +143,8 @@ class TmdbMovieImporter @Inject()(
 
   private def handleMovieAvailability(
     movie: Movie,
-    processedMovieFut: Future[Thing]
-  ): Future[Thing] = {
+    processedMovieFut: Future[ThingLike]
+  ): Future[ThingLike] = {
     import io.circe.generic.auto._
     import io.circe.syntax._
 

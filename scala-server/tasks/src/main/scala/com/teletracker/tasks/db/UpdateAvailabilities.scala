@@ -1,7 +1,8 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.db
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.util.Futures._
+import com.teletracker.tasks.TeletrackerTaskApp
 
 object UpdateAvailabilities extends TeletrackerTaskApp {
   override protected def runInternal(): Unit = {

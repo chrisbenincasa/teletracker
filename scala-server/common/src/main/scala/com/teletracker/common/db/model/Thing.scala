@@ -38,60 +38,94 @@ case class Thing(
   }
 }
 
-case class ThingRaw(
-  id: UUID,
-  name: String,
-  normalizedName: Slug,
-  `type`: ThingType,
-  createdAt: OffsetDateTime,
-  lastUpdatedAt: OffsetDateTime,
-  metadata: Option[Json],
-  tmdbId: Option[String] = None,
-  popularity: Option[Double]) {
-
-  def selectFields(
-    fieldsOpt: Option[List[Field]],
-    defaultFields: List[Field]
-  ) = {
-    fieldsOpt
-      .map(fields => {
-        metadata match {
-          case Some(metadata) =>
-            copy(
-              metadata = Some(
-                FieldSelector
-                  .filter(metadata, fields ::: defaultFields)
-              )
-            )
-
-          case None => this
-        }
-      })
-      .getOrElse(this)
-  }
-
-  def toPartial: PartialThing = {
-    val typedMeta = metadata.flatMap(rawMeta => {
-      rawMeta.as[ObjectMetadata] match {
-        case Left(err) =>
-          err.printStackTrace()
-          println(err.getMessage())
-          None
-        case Right(value) =>
-          Some(value)
-      }
-    })
-    PartialThing(
-      id,
-      Some(name),
-      Some(normalizedName),
-      Some(`type`),
-      Some(createdAt),
-      Some(lastUpdatedAt),
-      typedMeta
+object ThingRawFactory {
+  def forObjectMetadata(
+    id: UUID,
+    name: String,
+    normalizedName: Slug,
+    `type`: ThingType,
+    createdAt: OffsetDateTime,
+    lastUpdatedAt: OffsetDateTime,
+    metadata: Option[ObjectMetadata],
+    tmdbId: Option[String] = None,
+    popularity: Option[Double]
+  ): ThingRaw = {
+    ThingRaw(
+      id = id,
+      name = name,
+      normalizedName = normalizedName,
+      `type` = `type`,
+      createdAt = createdAt,
+      lastUpdatedAt = lastUpdatedAt,
+      metadata = metadata.map(_.asJson),
+      tmdbId = tmdbId,
+      popularity = popularity
     )
   }
 }
+
+//case class ThingRaw(
+//  id: UUID,
+//  name: String,
+//  normalizedName: Slug,
+//  `type`: ThingType,
+//  createdAt: OffsetDateTime,
+//  lastUpdatedAt: OffsetDateTime,
+//  metadata: Option[Json],
+//  tmdbId: Option[String] = None,
+//  popularity: Option[Double])
+//    extends ThingLike {
+//
+//  def selectFields(
+//    fieldsOpt: Option[List[Field]],
+//    defaultFields: List[Field]
+//  ): ThingRaw = {
+//    fieldsOpt
+//      .map(fields => {
+//        metadata match {
+//          case Some(metadata) =>
+//            copy(
+//              metadata = Some(
+//                FieldSelector
+//                  .filter(metadata, fields ::: defaultFields)
+//              )
+//            )
+//
+//          case None => this
+//        }
+//      })
+//      .getOrElse(this)
+//  }
+//
+//  def toPartial: PartialThing = {
+//    val typedMeta = metadata.flatMap(rawMeta => {
+//      rawMeta.as[ObjectMetadata] match {
+//        case Left(err) =>
+//          err.printStackTrace()
+//          println(err.getMessage())
+//          None
+//        case Right(value) =>
+//          Some(value)
+//      }
+//    })
+//    PartialThing(
+//      id,
+//      Some(name),
+//      Some(normalizedName),
+//      Some(`type`),
+//      Some(createdAt),
+//      Some(lastUpdatedAt),
+//      typedMeta
+//    )
+//  }
+//}
+
+case class ThingCastMember(
+  id: UUID,
+  slug: Slug,
+  characterName: Option[String],
+  relation: Option[PersonAssociationType],
+  tmdbId: Option[String])
 
 case class PartialThing(
   id: UUID,
@@ -105,13 +139,16 @@ case class PartialThing(
   seasons: Option[List[TvShowSeasonWithEpisodes]] = None,
   availability: Option[List[AvailabilityWithDetails]] = None,
   userMetadata: Option[UserThingDetails] = None,
-  collections: Option[List[Collection]] = None) {
+  collections: Option[List[Collection]] = None,
+  cast: Option[List[ThingCastMember]] = None) {
   def withAvailability(av: List[AvailabilityWithDetails]) =
     this.copy(availability = Some(av))
   def withUserMetadata(userMeta: UserThingDetails) =
     this.copy(userMetadata = Some(userMeta))
   def withCollections(collections: List[Collection]) =
     this.copy(collections = Some(collections))
+  def withCast(cast: List[ThingCastMember]) =
+    this.copy(cast = Some(cast))
 
   def metadataRaw: Option[Json] = metadata.map(_.asJson)
 
@@ -135,14 +172,14 @@ object ObjectMetadata {
   import shapeless.syntax.singleton._
 
   type TmdbExternalEntity =
-    Union.`'movie -> Movie, 'show -> TvShow, 'person -> Person`.T
+    Union.`'movie -> Movie, 'show -> TvShow`.T
 
   def withTmdbMovie(movie: Movie): ObjectMetadata =
     ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('movie ->> movie)))
   def withTmdbShow(show: TvShow): ObjectMetadata =
     ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('show ->> show)))
-  def withTmdbPerson(person: Person): ObjectMetadata =
-    ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('person ->> person)))
+//  def withTmdbPerson(person: tmdb.Person): ObjectMetadata =
+//    ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('person ->> person)))
 }
 
 case class ObjectMetadata(

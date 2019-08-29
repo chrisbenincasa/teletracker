@@ -1,8 +1,8 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.db
 
+import com.google.inject.Module
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.inject.Modules
-import com.google.inject.Module
 import com.twitter.inject.app.App
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
