@@ -121,7 +121,6 @@ class ThingAvailability extends Component<Props, State> {
     let { openTab } = this.state;
     let availabilities: { [key: string]: Availability[] };
 
-    console.log(itemDetail);
     if (itemDetail.availability) {
       availabilities = R.mapObjIndexed(
         R.pipe(
@@ -139,14 +138,11 @@ class ThingAvailability extends Component<Props, State> {
         <Typography color="inherit" variant="h5">
           Availability
         </Typography>
-        {availabilities.theater &&
-        availabilities.theater.length > 0 &&
-        availabilities.subscription &&
-        availabilities.subscription.length > 0 &&
-        availabilities.rent &&
-        availabilities.rent.length > 0 &&
-        availabilities.buy &&
-        availabilities.buy.length > 0 ? (
+        {(availabilities.theater && availabilities.theater.length > 0) ||
+        (availabilities.subscription &&
+          availabilities.subscription.length > 0) ||
+        (availabilities.rent && availabilities.rent.length > 0) ||
+        (availabilities.buy && availabilities.buy.length > 0) ? (
           <React.Fragment>
             <Tabs
               value={openTab}
