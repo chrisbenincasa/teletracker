@@ -27,17 +27,17 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { ValueType } from 'react-select/lib/types';
 import { bindActionCreators } from 'redux';
-import { loadNetworks } from '../../actions/metadata';
+import { loadNetworks } from '../actions/metadata';
 import {
   updateNetworksForUser,
   updateUserPreferences,
   UserUpdateNetworksPayload,
-} from '../../actions/user';
-import { AutocompleteOption } from '../../components/AutoComplete';
-import withUser, { WithUserProps } from '../../components/withUser';
-import { AppState } from '../../reducers';
-import { layoutStyles } from '../../styles';
-import { Network, UserPreferences } from '../../types';
+} from '../actions/user';
+import { AutocompleteOption } from '../components/AutoComplete';
+import withUser, { WithUserProps } from '../components/withUser';
+import { AppState } from '../reducers';
+import { layoutStyles } from '../styles';
+import { Network, UserPreferences } from '../types';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -152,9 +152,11 @@ class Account extends Component<Props, State> {
     super(props);
 
     if (props.userSelf) {
-      this.state.formatSlider = props.userSelf.preferences.presentationTypes.length;
+      this.state.formatSlider =
+        props.userSelf.preferences.presentationTypes.length;
 
-      this.state.switches.showOnlyNetworks = props.userSelf.preferences.showOnlyNetworkSubscriptions;
+      this.state.switches.showOnlyNetworks =
+        props.userSelf.preferences.showOnlyNetworkSubscriptions;
     }
   }
 
@@ -260,10 +262,7 @@ class Account extends Component<Props, State> {
   };
 
   isSubscribedToNetwork = (network: Network) => {
-    return R.any(
-      R.propEq('slug', network.slug),
-      this.props.userSelf.networks,
-    );
+    return R.any(R.propEq('slug', network.slug), this.props.userSelf.networks);
   };
 
   renderNetworkGridItem = (network: Network) => {
