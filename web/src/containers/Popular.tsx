@@ -12,12 +12,12 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import withUser, { WithUserProps } from '../../components/withUser';
-import { AppState } from '../../reducers';
-import { layoutStyles } from '../../styles';
-import { Thing } from '../../types';
-import { retrievePopular } from '../../actions/popular';
-import ItemCard from '../../components/ItemCard';
+import withUser, { WithUserProps } from '../components/withUser';
+import { AppState } from '../reducers';
+import { layoutStyles } from '../styles';
+import { Thing } from '../types';
+import { retrievePopular } from '../actions/popular';
+import ItemCard from '../components/ItemCard';
 
 const styles = (theme: Theme) =>
   createStyles({
