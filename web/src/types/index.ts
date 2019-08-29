@@ -48,7 +48,21 @@ export interface ThingLite {
   type: 'movie' | 'show' | 'person';
 }
 
-export interface Thing {
+export interface CastMember {
+  id: string;
+  slug: string;
+  characterName?: string;
+  relation?: string;
+  tmdbId?: string;
+}
+
+abstract class HasImagery {
+  abstract getBackdropPath();
+  abstract getPosterPath();
+  abstract getProfilePath(): string | undefined;
+}
+
+interface ThingLike {
   id: string;
   name: string;
   normalizedName: string;
@@ -56,6 +70,14 @@ export interface Thing {
   metadata?: ObjectMetadata;
   userMetadata?: ThingUserMetadata;
   availability: Availability[];
+}
+
+export interface Thing extends ThingLike {
+  cast?: CastMember[];
+}
+
+export interface Person extends ThingLike {
+  type: 'person';
 }
 
 export interface ThingUserMetadata {

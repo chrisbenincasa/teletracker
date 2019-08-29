@@ -1,5 +1,7 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.tmdb
 
+import com.teletracker.tasks.tmdb.export_tasks.MovieDumpFileRow
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.parser._
 import java.io.File

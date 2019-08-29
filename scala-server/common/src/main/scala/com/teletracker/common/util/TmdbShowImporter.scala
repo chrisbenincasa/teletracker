@@ -122,7 +122,7 @@ class TmdbShowImporter @Inject()(
       .fromTry(ThingFactory.makeThing(show))
       .future
       .flatMap(thing => {
-        thingsDbAccess.saveThing(
+        thingsDbAccess.saveThingRaw(
           thing,
           Some(ExternalSource.TheMovieDb, show.id.toString)
         )
@@ -188,8 +188,8 @@ class TmdbShowImporter @Inject()(
 
   private def handleShowAvailability(
     show: TvShow,
-    processedShowFut: Future[Thing]
-  ): Future[Thing] = {
+    processedShowFut: Future[ThingRaw]
+  ): Future[ThingRaw] = {
     import io.circe.generic.auto._
     import io.circe.syntax._
 

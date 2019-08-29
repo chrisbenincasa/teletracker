@@ -26,6 +26,13 @@ object Slug {
     raw(s"$slug-$year")
   }
 
+  def apply(
+    input: String,
+    year: Option[Int]
+  ): Slug = {
+    year.map(apply(input, _)).getOrElse(forString(input))
+  }
+
   def forString(input: String): Slug = new Slug(NormalizerFunc(input))
 
   def raw(input: String): Slug = new Slug(input)

@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Close,
   Menu as MenuIcon,
+  Person,
   Search as SearchIcon,
 } from '@material-ui/icons';
 import clsx from 'clsx';
@@ -51,6 +52,7 @@ import New from '../new';
 import Popular from '../popular';
 import Drawer, { DrawerWidthPx } from '../../components/Drawer';
 import RouterLink, { StdRouterLink } from '../../components/RouterLink';
+import PersonDetail from '../PersonDetail';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -572,6 +574,7 @@ class App extends Component<Props, State> {
                 path="/lists/:id"
                 render={props => <ListDetail {...props} />}
               />
+              <Route exact path="/person/:id" component={PersonDetail} />
               <Route
                 exact
                 path="/:type/:id"

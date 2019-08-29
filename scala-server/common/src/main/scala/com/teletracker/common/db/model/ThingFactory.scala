@@ -1,13 +1,13 @@
 package com.teletracker.common.db.model
 
+import com.teletracker.common.model.Watchable
 import com.teletracker.common.model.tmdb.{
-  CastMember,
   MediaType,
   Movie,
   MultiTypeXor,
-  Person,
   PersonCredit,
-  TvShow
+  TvShow,
+  Person => TmdbPerson
 }
 import com.teletracker.common.util.Slug
 import shapeless.{HNil, Poly1, PolyDefns}
@@ -15,27 +15,35 @@ import java.time.{LocalDate, OffsetDateTime}
 import com.teletracker.common.util.Movies._
 import com.teletracker.common.util.Shows._
 import com.teletracker.common.util.People._
+import io.circe.syntax._
 import java.util.UUID
 import com.teletracker.common.util.TheMovieDb._
 import scala.util.{Failure, Try}
 
 object ThingFactory {
   // NOTE this only handles movies, currently.
-  def makeThing(raw: MultiTypeXor): Try[Thing] = {
+  def makeThing(raw: MultiTypeXor): Try[ThingLike] = {
     raw.fold(thingMaker)
   }
 
   def makeThingGen[T](
     thing: T
-  )(implicit caseExists: PolyDefns.Case1.Aux[thingMaker.type, T, Try[Thing]]
-  ): Try[Thing] = {
+  )(implicit caseExists: PolyDefns.Case1.Aux[thingMaker.type, T, Try[ThingLike]]
+  ): Try[ThingLike] = {
     caseExists.apply(thing :: HNil)
+  }
+
+  def toWatchableThing[T](
+    thing: T
+  )(implicit watchable: Watchable[T]
+  ): Try[ThingRaw] = {
+    watchable.toThingRaw(thing)
   }
 
   def makeThing(
     credit: PersonCredit,
     thingType: ThingType
-  ): Try[Thing] = {
+  ): Try[ThingRaw] = {
     Try {
       val releaseYear = credit.release_date
         .filter(_.nonEmpty)
@@ -64,7 +72,7 @@ object ThingFactory {
 
       val now = getNow()
 
-      Thing(
+      ThingRawFactory.forObjectMetadata(
         UUID.randomUUID(),
         chosenName,
         Slug(chosenName, releaseYear.get),
@@ -78,7 +86,7 @@ object ThingFactory {
     }
   }
 
-  def makeThing(movie: Movie): Try[Thing] = {
+  def makeThing(movie: Movie): Try[ThingRaw] = {
     Try {
       val releaseYear = movie.releaseYear
 
@@ -92,7 +100,7 @@ object ThingFactory {
       )
 
       val now = getNow()
-      Thing(
+      ThingRawFactory.forObjectMetadata(
         UUID.randomUUID(),
         movie.title.get,
         Slug(movie.title.get, releaseYear.get),
@@ -106,7 +114,7 @@ object ThingFactory {
     }
   }
 
-  def makeThing(show: TvShow): Try[Thing] = {
+  def makeThing(show: TvShow): Try[ThingRaw] = {
     Try {
       val now = getNow()
       val releaseYear = show.releaseYear
@@ -116,7 +124,7 @@ object ThingFactory {
         s"Attempted to get release year from show = ${show.id} but couldn't: (original field = ${show.first_air_date})"
       )
 
-      Thing(
+      ThingRawFactory.forObjectMetadata(
         UUID.randomUUID(),
         show.name,
         Slug(show.name, releaseYear.get),
@@ -130,17 +138,16 @@ object ThingFactory {
     }
   }
 
-  def makePerson(person: Person): Try[Thing] = {
+  def makeThing(person: TmdbPerson): Try[ThingLike] = {
     Try {
       val now = getNow()
-      Thing(
+      Person(
         UUID.randomUUID(),
         person.name.get,
-        Slug(person.name.get, person.releaseYear.get),
-        ThingType.Person,
+        Slug(person.name.get, person.releaseYear),
         now,
         now,
-        Some(ObjectMetadata.withTmdbPerson(person)),
+        Some(person.asJson),
         Some(person.id.toString),
         person.popularity
       )
@@ -165,13 +172,13 @@ object ThingFactory {
 //  }
 
   object thingMaker extends Poly1 {
-    implicit val atMovie: Case.Aux[Movie, Try[Thing]] = at(makeThing)
+    implicit val atMovie: Case.Aux[Movie, Try[ThingLike]] = at(makeThing)
 
-    implicit val atTvShow: Case.Aux[TvShow, Try[Thing]] = at(makeThing)
+    implicit val atTvShow: Case.Aux[TvShow, Try[ThingLike]] = at(makeThing)
 
-    implicit val atPerson: Case.Aux[Person, Try[Thing]] = at(makePerson)
+    implicit val atPerson: Case.Aux[TmdbPerson, Try[ThingLike]] = at(makeThing)
 
-    implicit val atPersonCredit: Case.Aux[PersonCredit, Try[Thing]] = at {
+    implicit val atPersonCredit: Case.Aux[PersonCredit, Try[ThingLike]] = at {
       credit =>
         credit.media_type match {
           case Some(MediaType.Movie) => makeThing(credit, ThingType.Movie)

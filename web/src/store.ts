@@ -40,6 +40,7 @@ const getBlacklists = () => {
     'availability',
     'itemDetail',
     'popular',
+    'people',
   ];
 };
 

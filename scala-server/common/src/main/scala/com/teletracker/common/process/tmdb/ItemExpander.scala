@@ -3,7 +3,7 @@ package com.teletracker.common.process.tmdb
 import com.teletracker.common.cache.TmdbLocalCache
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.model.tmdb._
+import com.teletracker.common.model.tmdb.{Person => TmdbPerson, _}
 import com.teletracker.common.util.json.circe._
 import javax.inject.Inject
 import shapeless.tag.@@
@@ -55,8 +55,8 @@ class ItemExpander @Inject()(
     )
   }
 
-  def expandPerson(id: Int): Future[Person] = {
-    tmdbClient.makeRequest[Person](
+  def expandPerson(id: Int): Future[TmdbPerson] = {
+    tmdbClient.makeRequest[TmdbPerson](
       s"person/$id",
       Seq(
         "append_to_response" -> List(
@@ -86,13 +86,13 @@ class ItemExpander @Inject()(
       expandTvShow(s)
     }
 
-    implicit val atPerson: Case.Aux[Person, Future[Person]] = at { p =>
+    implicit val atPerson: Case.Aux[TmdbPerson, Future[TmdbPerson]] = at { p =>
       expandPerson(p.id)
     }
 
-    implicit val atPersonId: Case.Aux[Int @@ PersonId, Future[Person]] = at {
-      p =>
+    implicit val atPersonId: Case.Aux[Int @@ PersonId, Future[TmdbPerson]] =
+      at { p =>
         expandPerson(p)
-    }
+      }
   }
 }

@@ -86,7 +86,8 @@ object BuildConfig {
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
       "io.circe" %% "circe-parser",
-      "io.circe" %% "circe-shapes"
+      "io.circe" %% "circe-shapes",
+      "io.circe" %% "circe-optics"
     ).map(_ % versions.circe)
   }
 
@@ -95,7 +96,7 @@ object BuildConfig {
     lazy val jackson = "2.9.9"
     lazy val guice = "4.0"
     lazy val scalaGuice = "4.1.0"
-    lazy val circe = "0.12.0-M4"
+    lazy val circe = "0.12.0-RC2"
     lazy val slick = "3.2.3"
     lazy val slickPg = "0.16.2"
   }

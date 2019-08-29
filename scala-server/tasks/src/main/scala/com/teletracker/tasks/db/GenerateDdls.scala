@@ -1,4 +1,4 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.db
 
 import com.google.inject.Module
 import com.teletracker.common.db.model._

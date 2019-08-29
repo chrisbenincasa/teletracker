@@ -1,4 +1,4 @@
-package com.teletracker.tasks
+package com.teletracker.tasks.scraper
 
 import com.google.cloud.storage.Storage
 import com.teletracker.common.db.access.ThingsDbAccess
