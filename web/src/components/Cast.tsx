@@ -21,6 +21,10 @@ const styles = (theme: Theme) =>
     avatar: {
       width: 100,
       height: 100,
+      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+      '&:hover': {
+        opacity: 0.8,
+      },
     },
     actualName: {
       fontStyle: 'Italic',

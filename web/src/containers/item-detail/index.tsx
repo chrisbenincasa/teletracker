@@ -59,6 +59,8 @@ const styles = (theme: Theme) =>
         'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
       //To do: integrate with theme styling for primary
     },
+    genre: { margin: 5 },
+    genreContainer: { display: 'flex' },
     itemDetailContainer: {
       margin: 20,
       display: 'flex',
@@ -253,11 +255,12 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderDescriptiveDetails = (thing: Thing) => {
+    const { classes } = this.props;
     const overview = getMetadataPath(thing, 'overview') || '';
     const genres = Object(getMetadataPath(thing, 'genres')) || [];
 
     return (
-      <div className={this.props.classes.descriptionContainer}>
+      <div className={classes.descriptionContainer}>
         <div
           style={{
             display: 'flex',
@@ -272,11 +275,16 @@ class ItemDetails extends Component<Props, State> {
         <div>
           <Typography color="inherit">{overview}</Typography>
         </div>
-        <div style={{ display: 'flex' }}>
+        <div className={classes.genreContainer}>
           {genres &&
             genres.length &&
             genres.map(genre => (
-              <Chip label={`${genre.name}`} style={{ margin: 5 }} />
+              <Chip
+                key={genre.id}
+                label={genre.name}
+                className={classes.genre}
+                onClick={()=>{}}
+              />
             ))}
         </div>
       </div>
@@ -284,10 +292,12 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderWatchedToggle = () => {
+    const { classes } = this.props;
     let watchedStatus = this.itemMarkedAsWatched();
     let watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
+
     return (
-      <div className={this.props.classes.itemCTA}>
+      <div className={classes.itemCTA}>
         <Fab
           size="small"
           variant="extended"
@@ -304,9 +314,11 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderTrackingToggle = () => {
+    const { classes } = this.props;
     let trackingCTA = 'Manage Tracking';
+
     return (
-      <div className={this.props.classes.itemCTA}>
+      <div className={classes.itemCTA}>
         <Fab
           size="small"
           variant="extended"
