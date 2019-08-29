@@ -250,6 +250,12 @@ export class TeletrackerApi {
     });
   }
 
+  async getPerson(token: String, id: string) {
+    return this.api.get<any>(`/api/v1/people/${id}`, {
+      token,
+    });
+  }
+
   async getShow(token: string, id: string | number) {
     return this.api.get<any>(`/api/v1/shows/${id}`, { token });
   }
