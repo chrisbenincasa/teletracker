@@ -108,6 +108,14 @@ export class SagaTeletrackerClient {
     );
   }
 
+  *getPerson(id: string) {
+    return yield this.apiCall(
+      client => client.getPerson,
+      yield this.withToken(),
+      id,
+    );
+  }
+
   *getThingsBatch(ids: number[], fields?: KeyMap<ObjectMetadata>) {
     return yield this.apiCall(
       client => client.getThingsBatch,

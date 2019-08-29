@@ -35,7 +35,7 @@ export const itemFetchSuccess = createAction<ItemFetchSuccessfulAction>(
   ITEM_FETCH_SUCCESSFUL,
 );
 
-const ItemFetchFailed = createAction<ItemFetchFailedAction>(ITEM_FETCH_FAILED);
+const itemFetchFailed = createAction<ItemFetchFailedAction>(ITEM_FETCH_FAILED);
 
 export const fetchItemDetailsSaga = function*() {
   yield takeEvery(ITEM_FETCH_INITIATED, function*({
@@ -51,7 +51,7 @@ export const fetchItemDetailsSaga = function*() {
       if (response.ok) {
         yield put(itemFetchSuccess(response.data.data));
       } else {
-        yield put(ItemFetchFailed(new Error()));
+        yield put(itemFetchFailed(new Error()));
       }
     }
   });
