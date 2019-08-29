@@ -33,6 +33,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
     val offset = args.valueOrDefault("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
     val parallelism = args.valueOrDefault("parallelism", 8)
+    val perFileLimit = args.valueOrDefault("perFileLimit", -1)
 
     def sink[X](
       x: List[Option[X]],
@@ -46,7 +47,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
         try {
           SequentialFutures
             .batchedIterator(
-              source.getLines(),
+              source.getLines().safeTake(perFileLimit),
               parallelism,
               sink[ThingLike]
             )(batch => {
