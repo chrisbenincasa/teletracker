@@ -27,32 +27,27 @@ import SettingsIcon from '@material-ui/icons/Settings';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import {
-  Link as RouterLink,
-  Redirect,
-  RouteComponentProps,
-  withRouter,
-} from 'react-router-dom';
+import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
   LIST_RETRIEVE_INITIATED,
   ListRetrieveInitiated,
   ListRetrieveInitiatedPayload,
-} from '../../actions/lists';
+} from '../actions/lists';
 import {
   deleteList,
   renameList,
   UserDeleteListPayload,
   UserRenameListPayload,
-} from '../../actions/lists';
-import ItemCard from '../../components/ItemCard';
-import withUser, { WithUserProps } from '../../components/withUser';
-import { AppState } from '../../reducers';
-import { ListsByIdMap } from '../../reducers/lists';
-import { layoutStyles } from '../../styles';
-import { List, Thing } from '../../types';
+} from '../actions/lists';
+import ItemCard from '../components/ItemCard';
+import withUser, { WithUserProps } from '../components/withUser';
+import { AppState } from '../reducers';
+import { ListsByIdMap } from '../reducers/lists';
+import { layoutStyles } from '../styles';
+import { List, Thing } from '../types';
 import _ from 'lodash';
-import { StdRouterLink } from '../../components/RouterLink';
+import { StdRouterLink } from '../components/RouterLink';
 
 const styles = (theme: Theme) =>
   createStyles({

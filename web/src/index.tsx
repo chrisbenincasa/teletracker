@@ -6,7 +6,7 @@ import { render } from 'react-dom';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import 'sanitize.css/sanitize.css';
-import App from './containers/app';
+import App from './containers/App';
 import './index.css';
 import createStore, { history } from './store';
 import { createMuiTheme, MuiThemeProvider } from '@material-ui/core';

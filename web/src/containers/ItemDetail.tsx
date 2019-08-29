@@ -27,22 +27,22 @@ import { bindActionCreators, Dispatch } from 'redux';
 import {
   itemFetchInitiated,
   ItemFetchInitiatedPayload,
-} from '../../actions/item-detail';
+} from '../actions/item-detail';
 import {
   removeUserItemTags,
   updateUserItemTags,
   UserUpdateItemTagsPayload,
-} from '../../actions/user';
-import withUser, { WithUserProps } from '../../components/withUser';
-import { AppState } from '../../reducers';
-import { layoutStyles } from '../../styles';
-import { ActionType, Availability, Thing } from '../../types';
-import { getMetadataPath } from '../../utils/metadata-access';
-import { ResponsiveImage } from '../../components/ResponsiveImage';
-import ThingAvailability from '../../components/Availability';
-import Cast from '../../components/Cast';
-import imagePlaceholder from '../../assets/images/imagePlaceholder.png';
-import AddToListDialog from '../../components/AddToListDialog';
+} from '../actions/user';
+import withUser, { WithUserProps } from '../components/withUser';
+import { AppState } from '../reducers';
+import { layoutStyles } from '../styles';
+import { ActionType, Thing } from '../types';
+import { getMetadataPath } from '../utils/metadata-access';
+import { ResponsiveImage } from '../components/ResponsiveImage';
+import ThingAvailability from '../components/Availability';
+import Cast from '../components/Cast';
+import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import AddToListDialog from '../components/AddToListDialog';
 
 const styles = (theme: Theme) =>
   createStyles({
