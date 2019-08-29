@@ -23,7 +23,6 @@ import {
   ChevronRight,
   Close,
   Menu as MenuIcon,
-  Person,
   Search as SearchIcon,
 } from '@material-ui/icons';
 import clsx from 'clsx';
@@ -37,22 +36,22 @@ import {
   withRouter,
 } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
-import { logout } from '../../actions/auth';
-import { search } from '../../actions/search';
-import { AppState } from '../../reducers';
-import About from '../about';
-import Account from '../account';
-import Home from '../home';
-import ListDetail from '../list-detail';
-import ItemDetail from '../item-detail';
-import Lists from '../lists';
-import Login from '../login';
-import Signup from '../signup';
-import New from '../new';
-import Popular from '../popular';
-import Drawer, { DrawerWidthPx } from '../../components/Drawer';
-import RouterLink, { StdRouterLink } from '../../components/RouterLink';
-import PersonDetail from '../PersonDetail';
+import { logout } from '../actions/auth';
+import { search } from '../actions/search';
+import { AppState } from '../reducers';
+import About from './About';
+import Account from './Account';
+import Home from './Home';
+import ListDetail from './ListDetail';
+import ItemDetail from './ItemDetail';
+import Lists from './Lists';
+import Login from './Login';
+import Signup from './Signup';
+import New from './New';
+import Popular from './Popular';
+import PersonDetail from './PersonDetail';
+import Drawer, { DrawerWidthPx } from '../components/Drawer';
+import RouterLink, { StdRouterLink } from '../components/RouterLink';
 
 const styles = (theme: Theme) =>
   createStyles({

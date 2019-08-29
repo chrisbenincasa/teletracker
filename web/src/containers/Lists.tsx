@@ -17,14 +17,14 @@ import {
   ListRetrieveAllPayload,
   retrieveAllLists,
   UserCreateListPayload,
-} from '../../actions/lists';
-import ItemCard from '../../components/ItemCard';
-import withUser, { WithUserProps } from '../../components/withUser';
-import { AppState } from '../../reducers';
-import { ListsByIdMap } from '../../reducers/lists';
-import { Loading } from '../../reducers/user';
-import { layoutStyles } from '../../styles';
-import { List as ListType, Thing } from '../../types';
+} from '../actions/lists';
+import ItemCard from '../components/ItemCard';
+import withUser, { WithUserProps } from '../components/withUser';
+import { AppState } from '../reducers';
+import { ListsByIdMap } from '../reducers/lists';
+import { Loading } from '../reducers/user';
+import { layoutStyles } from '../styles';
+import { List as ListType, Thing } from '../types';
 import _ from 'lodash';
 
 const styles = (theme: Theme) =>
