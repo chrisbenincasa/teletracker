@@ -69,7 +69,12 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
                                 ExternalSource.TheMovieDb -> value.id.toString
                               )
                             )
-                          fut.map(Some(_))
+
+                          fut
+                            .flatMap(
+                              thing => extraWork(thing, value).map(_ => thing)
+                            )
+                            .map(Some(_))
 
                         case Failure(exception) =>
                           logger.error(
