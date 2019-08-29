@@ -1,12 +1,15 @@
 import {
+  Backdrop,
   CardMedia,
   Chip,
   createStyles,
   Fab,
+  Fade,
   Grid,
   Hidden,
   IconButton,
   LinearProgress,
+  Modal,
   Popover,
   Theme,
   Typography,
@@ -44,6 +47,19 @@ import AddToListDialog from '../../components/AddToListDialog';
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
+    trailerVideo: {
+      width: '60vw',
+      height: '34vw',
+      [theme.breakpoints.down('sm')]: {
+        width: '100vw',
+        height: '56vw',
+      },
+    },
+    modal: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     root: {
       flexGrow: 1,
     },
@@ -59,6 +75,8 @@ const styles = (theme: Theme) =>
         'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
       //To do: integrate with theme styling for primary
     },
+    genre: { margin: 5 },
+    genreContainer: { display: 'flex' },
     itemDetailContainer: {
       margin: 20,
       display: 'flex',
@@ -109,9 +127,6 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       marginBottom: 10,
     },
-    modal: {
-      backgroundColor: fade(theme.palette.background.paper, 0.75),
-    },
   });
 
 interface OwnProps {
@@ -144,7 +159,6 @@ interface State {
   manageTrackingModalOpen: boolean;
   showPlayIcon: boolean;
   trailerModalOpen: boolean;
-  anchorEl: any;
 }
 
 class ItemDetails extends Component<Props, State> {
@@ -154,7 +168,6 @@ class ItemDetails extends Component<Props, State> {
     manageTrackingModalOpen: false,
     showPlayIcon: false,
     trailerModalOpen: false,
-    anchorEl: null,
   };
 
   componentDidMount() {
@@ -178,16 +191,20 @@ class ItemDetails extends Component<Props, State> {
     this.setState({ manageTrackingModalOpen: false });
   };
 
-  togglePosterHover = () => {
-    this.setState({ showPlayIcon: !this.state.showPlayIcon });
+  showPlayTrailerIcon = () => {
+    this.setState({ showPlayIcon: true });
   };
 
-  openTrailerModal = event => {
-    this.setState({ trailerModalOpen: true, anchorEl: event.currentTarget });
+  hidePlayTrailerIcon = () => {
+    this.setState({ showPlayIcon: false });
+  };
+
+  openTrailerModal = () => {
+    this.setState({ trailerModalOpen: true });
   };
 
   closeTrailerModal = () => {
-    this.setState({ trailerModalOpen: false, anchorEl: null });
+    this.setState({ trailerModalOpen: false });
   };
 
   toggleItemWatched = () => {
@@ -253,11 +270,12 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderDescriptiveDetails = (thing: Thing) => {
+    const { classes } = this.props;
     const overview = getMetadataPath(thing, 'overview') || '';
     const genres = Object(getMetadataPath(thing, 'genres')) || [];
 
     return (
-      <div className={this.props.classes.descriptionContainer}>
+      <div className={classes.descriptionContainer}>
         <div
           style={{
             display: 'flex',
@@ -272,11 +290,16 @@ class ItemDetails extends Component<Props, State> {
         <div>
           <Typography color="inherit">{overview}</Typography>
         </div>
-        <div style={{ display: 'flex' }}>
+        <div className={classes.genreContainer}>
           {genres &&
             genres.length &&
             genres.map(genre => (
-              <Chip label={`${genre.name}`} style={{ margin: 5 }} />
+              <Chip
+                key={genre.id}
+                label={genre.name}
+                className={classes.genre}
+                onClick={() => {}}
+              />
             ))}
         </div>
       </div>
@@ -284,10 +307,12 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderWatchedToggle = () => {
+    const { classes } = this.props;
     let watchedStatus = this.itemMarkedAsWatched();
     let watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
+
     return (
-      <div className={this.props.classes.itemCTA}>
+      <div className={classes.itemCTA}>
         <Fab
           size="small"
           variant="extended"
@@ -304,9 +329,11 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderTrackingToggle = () => {
+    const { classes } = this.props;
     let trackingCTA = 'Manage Tracking';
+
     return (
-      <div className={this.props.classes.itemCTA}>
+      <div className={classes.itemCTA}>
         <Fab
           size="small"
           variant="extended"
@@ -392,8 +419,8 @@ class ItemDetails extends Component<Props, State> {
               <Hidden smUp>{this.renderTitle(itemDetail)}</Hidden>
               <div
                 className={classes.posterContainer}
-                onMouseEnter={this.togglePosterHover}
-                onMouseLeave={this.togglePosterHover}
+                onMouseEnter={this.showPlayTrailerIcon}
+                onMouseLeave={this.hidePlayTrailerIcon}
               >
                 {this.state.showPlayIcon &&
                 itemDetail.id === '7b6dbeb1-8353-45a7-8c9b-7f9ab8b037f8' ? (
@@ -441,30 +468,31 @@ class ItemDetails extends Component<Props, State> {
             </div>
           </div>
         </div>
-
-        <Popover
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'left',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'left',
-          }}
-          anchorEl={this.state.anchorEl}
+        <Modal
+          aria-labelledby="transition-modal-title"
+          aria-describedby="transition-modal-description"
+          className={classes.modal}
           open={this.state.trailerModalOpen}
           onClose={this.closeTrailerModal}
-          className={this.props.classes.modal}
+          closeAfterTransition
+          BackdropComponent={Backdrop}
+          BackdropProps={{
+            timeout: 500,
+          }}
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
         >
-          <iframe
-            width="615"
-            height="370"
-            src="https://www.youtube.com/embed/m8e-FF8MsqU"
-            frameBorder="0"
-            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </Popover>
+          <Fade in={this.state.trailerModalOpen}>
+            <iframe
+              width="600"
+              height="338"
+              src="https://www.youtube.com/embed/m8e-FF8MsqU?autoplay=1 "
+              frameBorder="0"
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className={classes.trailerVideo}
+            />
+          </Fade>
+        </Modal>
       </React.Fragment>
     );
   };

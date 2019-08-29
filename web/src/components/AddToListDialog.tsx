@@ -36,15 +36,28 @@ import { ListOperationState, ListsByIdMap } from '../reducers/lists';
 import { List, Thing } from '../types';
 import _ from 'lodash';
 import { UserSelf } from '../reducers/user';
-import { Cancel, Check } from '@material-ui/icons';
+import { Cancel, Check, PlaylistAdd } from '@material-ui/icons';
 import CreateAListValidator, {
   CreateAListValidationStateObj,
 } from '../utils/validation/CreateAListValidator';
 
 const styles = (theme: Theme) =>
   createStyles({
+    dialogContainer: {
+      display: 'flex',
+    },
     formControl: {
       margin: theme.spacing(3),
+    },
+    button: {
+      margin: theme.spacing(1),
+    },
+    leftIcon: {
+      marginRight: theme.spacing(1),
+    },
+    spacer: {
+      display: 'flex',
+      flexGrow: 1,
     },
   });
 
@@ -273,20 +286,21 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   }
 
   render() {
+    const { classes } = this.props;
     return (
       <Dialog
-        aria-labelledby="simple-modal-title"
-        aria-describedby="simple-modal-description"
+        aria-labelledby="update-tracking-dialog"
+        aria-describedby="update-tracking-dialog"
         open={this.props.open && !this.state.exited}
         onClose={this.handleModalClose}
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle id="simple-dialog-title">
-          Add or Remove "{this.props.item.name}" from your lists
+        <DialogTitle id="update-tracking-dialog">
+          Add or Remove {this.props.item.name} from your lists
         </DialogTitle>
 
-        <DialogContent style={{ display: 'flex' }}>
+        <DialogContent className={classes.dialogContainer}>
           <FormGroup>
             {_.map(this.props.listsById, list => (
               <FormControlLabel
@@ -309,15 +323,24 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
         </DialogContent>
         <DialogActions>
           <Button
+            variant="contained"
+            className={classes.button}
             disabled={this.state.createAListEnabled}
             onClick={this.toggleCreateAList}
           >
+            <PlaylistAdd className={classes.leftIcon} />
             New List
           </Button>
-          <Button onClick={this.handleModalClose}>Cancel</Button>
+          <div className={classes.spacer} />
+          <Button onClick={this.handleModalClose} className={classes.button}>
+            Cancel
+          </Button>
           <Button
             disabled={this.hasTrackingChanged()}
             onClick={this.handleSubmit}
+            color="secondary"
+            variant="contained"
+            className={classes.button}
           >
             Save
           </Button>

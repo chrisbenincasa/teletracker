@@ -10,7 +10,13 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import { Subscriptions, AttachMoney, Cloud } from '@material-ui/icons';
+import {
+  AttachMoney,
+  Cloud,
+  Visibility,
+  TvOff,
+  Theaters,
+} from '@material-ui/icons';
 import * as R from 'ramda';
 import { Availability, Network, Thing } from '../types';
 import React, { Component } from 'react';
@@ -52,6 +58,10 @@ class ThingAvailability extends Component<Props, State> {
     this.setState({ openTab: value });
   };
 
+  setDefaultAvailbilityTab = () => {
+    // this.manageAvailabilityTabs();
+  };
+
   renderOfferDetails = (availabilities: Availability[]) => {
     let { classes, userSelf } = this.props;
 
@@ -87,13 +97,12 @@ class ThingAvailability extends Component<Props, State> {
         let lowestCostAv = R.head(R.sortBy(R.prop('cost'))(avs))!;
         let hasHd = R.find(R.propEq('presentationType', 'hd'), avs);
         let has4k = R.find(R.propEq('presentationType', '4k'), avs);
-
         let logoUri =
           '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
 
         return (
-          <div className={classes.platform}>
-            <img key={lowestCostAv.id} src={logoUri} className={classes.logo} />
+          <div className={classes.platform} key={lowestCostAv.id}>
+            <img src={logoUri} className={classes.logo} />
             {lowestCostAv.cost && (
               <Chip
                 size="small"
@@ -129,52 +138,105 @@ class ThingAvailability extends Component<Props, State> {
         <Typography color="inherit" variant="h5">
           Availability
         </Typography>
-
-        <Tabs
-          value={openTab}
-          indicatorColor="primary"
-          textColor="primary"
-          aria-label="icon label tabs example"
-          variant="fullWidth"
-        >
-          <Tab
-            icon={<Subscriptions />}
-            label="Stream"
-            onClick={() => this.manageAvailabilityTabs(0)}
-          />
-          <Tab
-            icon={<Cloud />}
-            label="Rent"
-            onClick={() => this.manageAvailabilityTabs(1)}
-          />
-          <Tab
-            icon={<AttachMoney />}
-            label="Buy"
-            onClick={() => this.manageAvailabilityTabs(2)}
-          />
-        </Tabs>
-
-        <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
-          {availabilities.subscription ? (
-            <CardContent className={classes.availabilePlatforms}>
-              {this.renderOfferDetails(availabilities.subscription)}
-            </CardContent>
-          ) : null}
-        </Collapse>
-        <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
-          {availabilities.rent ? (
-            <CardContent className={classes.availabilePlatforms}>
-              {this.renderOfferDetails(availabilities.rent)}
-            </CardContent>
-          ) : null}
-        </Collapse>
-        <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
-          {availabilities.buy ? (
-            <CardContent className={classes.availabilePlatforms}>
-              {this.renderOfferDetails(availabilities.buy)}
-            </CardContent>
-          ) : null}
-        </Collapse>
+        {(availabilities.theater && availabilities.theater.length > 0) ||
+        (availabilities.subscription &&
+          availabilities.subscription.length > 0) ||
+        (availabilities.rent && availabilities.rent.length > 0) ||
+        (availabilities.buy && availabilities.buy.length > 0) ? (
+          <React.Fragment>
+            <Tabs
+              value={openTab}
+              indicatorColor="primary"
+              textColor="primary"
+              aria-label="Availibility"
+              variant="fullWidth"
+            >
+              <Tab
+                icon={<Theaters />}
+                label="Theaters"
+                onClick={() => this.manageAvailabilityTabs(0)}
+                disabled={
+                  !(availabilities.theater && availabilities.theater.length)
+                }
+              />
+              <Tab
+                icon={<Cloud />}
+                label="Stream"
+                onClick={() => this.manageAvailabilityTabs(1)}
+                disabled={
+                  !(
+                    availabilities.subscription &&
+                    availabilities.subscription.length
+                  )
+                }
+              />
+              <Tab
+                icon={<Visibility />}
+                label="Rent"
+                onClick={() => this.manageAvailabilityTabs(2)}
+                disabled={!(availabilities.rent && availabilities.rent.length)}
+              />
+              <Tab
+                icon={<AttachMoney />}
+                label="Buy"
+                onClick={() => this.manageAvailabilityTabs(3)}
+                disabled={!(availabilities.buy && availabilities.buy.length)}
+              />
+            </Tabs>
+            <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
+              {availabilities.theater ? (
+                <CardContent className={classes.availabilePlatforms}>
+                  {this.renderOfferDetails(availabilities.theater)}
+                </CardContent>
+              ) : null}
+            </Collapse>
+            <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
+              {availabilities.subscription ? (
+                <CardContent className={classes.availabilePlatforms}>
+                  {this.renderOfferDetails(availabilities.subscription)}
+                </CardContent>
+              ) : null}
+            </Collapse>
+            <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
+              {availabilities.rent ? (
+                <CardContent className={classes.availabilePlatforms}>
+                  {this.renderOfferDetails(availabilities.rent)}
+                </CardContent>
+              ) : null}
+            </Collapse>
+            <Collapse in={openTab === 3} timeout="auto" unmountOnExit>
+              {availabilities.buy ? (
+                <CardContent className={classes.availabilePlatforms}>
+                  {this.renderOfferDetails(availabilities.buy)}
+                </CardContent>
+              ) : null}
+            </Collapse>
+          </React.Fragment>
+        ) : (
+          <React.Fragment>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'center',
+              }}
+            >
+              <TvOff fontSize="large" style={{ margin: 10 }} />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="subtitle1">
+                  {`${
+                    itemDetail.name
+                  } is not currently available to stream, rent,
+                  or purchase.`}
+                </Typography>
+                <Typography variant="subtitle1">
+                  Add it to your list and we'll be sure to notify you when it
+                  becomes available!
+                </Typography>
+              </div>
+            </div>
+          </React.Fragment>
+        )}
       </React.Fragment>
     );
   }
