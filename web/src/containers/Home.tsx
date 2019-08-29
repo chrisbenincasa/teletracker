@@ -7,17 +7,16 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import classNames from 'classnames';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import ItemCard from '../../components/ItemCard';
-import withUser, { WithUserProps } from '../../components/withUser';
-import { AppState } from '../../reducers';
-import { layoutStyles } from '../../styles';
-import { Thing } from '../../types';
+import ItemCard from '../components/ItemCard';
+import withUser, { WithUserProps } from '../components/withUser';
+import { AppState } from '../reducers';
+import { layoutStyles } from '../styles';
+import { Thing } from '../types';
 import { Error as ErrorIcon } from '@material-ui/icons';
 
 const styles = (theme: Theme) =>
