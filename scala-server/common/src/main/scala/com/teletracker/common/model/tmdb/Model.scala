@@ -37,6 +37,10 @@ trait MovieId
   poster_path: Option[String],
   backdrop_path: Option[String])
 
+trait HasTmdbId {
+  def id: Int
+}
+
 @JsonCodec case class Movie(
   adult: Option[Boolean],
   backdrop_path: Option[String],
@@ -69,6 +73,7 @@ trait MovieId
   recommendations: Option[PagedResult[Movie]],
   similar: Option[PagedResult[Movie]])
     extends TmdbQueryableEntity
+    with HasTmdbId
 
 @JsonCodec case class MovieExternalIds(
   imdb_id: Option[String],
@@ -114,6 +119,7 @@ case class Person(
   movie_credits: Option[PersonMovieCredits],
   tv_credits: Option[PersonTvCredits])
     extends TmdbQueryableEntity
+    with HasTmdbId
 
 @JsonCodec case class CastMember(
   character: Option[String],
@@ -202,6 +208,7 @@ trait TvShowId
   external_ids: Option[ExternalIds],
   recommendations: Option[PagedResult[TvShow]],
   similar: Option[PagedResult[TvShow]])
+    extends HasTmdbId
 
 @JsonCodec case class TvNetwork(
   id: Int,

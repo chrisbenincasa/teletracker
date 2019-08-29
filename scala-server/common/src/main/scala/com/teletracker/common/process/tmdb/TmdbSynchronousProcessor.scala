@@ -5,7 +5,8 @@ import com.teletracker.common.db.model.{
   ExternalId,
   ExternalSource,
   PartialThing,
-  ThingFactory
+  ThingFactory,
+  ThingType
 }
 import com.teletracker.common.model.tmdb.{
   MediaType,
@@ -42,6 +43,18 @@ class TmdbSynchronousProcessor @Inject()(
     implicit val atPerson: Case.Aux[Person, String] = at { _.id.toString }
   }
 
+  object extractType extends shapeless.Poly1 {
+    implicit val atMovie: Case.Aux[Movie, ThingType] = at { _ =>
+      ThingType.Movie
+    }
+    implicit val atShow: Case.Aux[TvShow, ThingType] = at { _ =>
+      ThingType.Show
+    }
+    implicit val atPerson: Case.Aux[Person, ThingType] = at { _ =>
+      ThingType.Person
+    }
+  }
+
   def processMovies(results: List[Movie]): Future[List[PartialThing]] = {
     processMixedTypes(results.map(Coproduct[MultiTypeXor](_)))
   }
@@ -54,19 +67,42 @@ class TmdbSynchronousProcessor @Inject()(
     results: List[PersonCredit],
     scheduleAsyncWork: Boolean = true
   ): Future[Map[String, PartialThing]] = { // TODO: Refine ID return type
-    val resultIds = results.map(_.id.toString).toSet
-    val existingFut = thingsDbAccess
-      .findThingsByExternalIds(ExternalSource.TheMovieDb, resultIds, None)
+    val filteredResults = results.filter(_.media_type.isDefined)
+
+    val movieResults =
+      filteredResults.filter(_.media_type.contains(MediaType.Movie))
+
+    val tvResults = filteredResults.filter(_.media_type.contains(MediaType.Tv))
+
+    val existingMoviesFut = thingsDbAccess
+      .findThingsByExternalIds(
+        ExternalSource.TheMovieDb,
+        movieResults.map(_.id.toString).toSet,
+        Some(ThingType.Movie)
+      )
+      .map(groupByExternalId)
+
+    val existingShowsFut = thingsDbAccess
+      .findThingsByExternalIds(
+        ExternalSource.TheMovieDb,
+        tvResults.map(_.id.toString).toSet,
+        Some(ThingType.Show)
+      )
       .map(groupByExternalId)
 
     // Partition results by things we've already seen and saved
     val partitionedResults = for {
-      existing <- existingFut
+      existingMovies <- existingMoviesFut
+      existingShows <- existingShowsFut
     } yield {
-      results.partition(result => {
-        val id = result.id.toString
-        !existing.isDefinedAt(id)
-      })
+      filteredResults
+        .partition(result => {
+          val id = result.id.toString
+          result.media_type.get match {
+            case MediaType.Movie => !existingMovies.isDefinedAt(id)
+            case MediaType.Tv    => !existingShows.isDefinedAt(id)
+          }
+        })
     }
 
     // Kick off background tasks for updating the full metadata for all results
@@ -88,11 +124,17 @@ class TmdbSynchronousProcessor @Inject()(
     }
 
     (for {
-      existingThings <- existingFut
+      existingMovies <- existingMoviesFut
+      existingShows <- existingShowsFut
     } yield {
-      val thingFuts = results.map(result => {
+      val thingFuts = filteredResults.map(result => {
         val id = result.id.toString
-        val newOrExistingThing = existingThings.get(id) match {
+        val existingThing = result.media_type.get match {
+          case MediaType.Movie => existingMovies.get(id)
+          case MediaType.Tv    => existingShows.get(id)
+        }
+
+        val newOrExistingThing = existingThing match {
           case Some(existing) =>
             Future.successful(Some(id -> existing))
 
@@ -130,7 +172,12 @@ class TmdbSynchronousProcessor @Inject()(
     val resultIds = noPersonResults.map(_.fold(extractId)).toSet
     val existingFut = thingsDbAccess
       .findThingsByExternalIds(ExternalSource.TheMovieDb, resultIds, None)
-      .map(groupByExternalId)
+      .map(externalIdsAndThings => {
+        externalIdsAndThings.collect {
+          case (eid, thing) if eid.tmdbId.isDefined =>
+            (eid.tmdbId.get, thing.`type`) -> thing
+        }.toMap
+      })
 
     // Partition results by things we've already seen and saved
     val partitionedResults = for {
@@ -138,7 +185,8 @@ class TmdbSynchronousProcessor @Inject()(
     } yield {
       noPersonResults.partition(result => {
         val id = result.fold(extractId)
-        !existing.isDefinedAt(id)
+        val typ = result.fold(extractType)
+        !existing.isDefinedAt(id -> typ)
       })
     }
 
@@ -155,7 +203,8 @@ class TmdbSynchronousProcessor @Inject()(
     } yield {
       val thingFuts = noPersonResults.map(result => {
         val id = result.fold(extractId)
-        val newOrExistingThing = existingThings.get(id) match {
+        val typ = result.fold(extractType)
+        val newOrExistingThing = existingThings.get(id -> typ) match {
           case Some(existing) =>
             Future.successful(Some(existing))
 

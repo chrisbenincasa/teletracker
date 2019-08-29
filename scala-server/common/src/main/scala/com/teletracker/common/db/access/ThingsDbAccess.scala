@@ -35,7 +35,6 @@ class ThingsDbAccess @Inject()(
   val userThingTags: UserThingTags,
   val collections: Collections,
   val people: People,
-  val peopleThings: PersonThings,
   dbImplicits: DbImplicits,
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
@@ -488,6 +487,7 @@ class ThingsDbAccess @Inject()(
           run {
             things.rawQuery
               .filter(_.tmdbId === thing.tmdbId.get)
+              .filter(_.`type` === thing.`type`)
               .take(1)
               .result
               .headOption
@@ -495,7 +495,12 @@ class ThingsDbAccess @Inject()(
 
         case Some((source, id)) if source == ExternalSource.TheMovieDb =>
           run {
-            things.rawQuery.filter(_.tmdbId === id).take(1).result.headOption
+            things.rawQuery
+              .filter(_.tmdbId === id)
+              .filter(_.`type` === thing.`type`)
+              .take(1)
+              .result
+              .headOption
           }
 
         case _ =>

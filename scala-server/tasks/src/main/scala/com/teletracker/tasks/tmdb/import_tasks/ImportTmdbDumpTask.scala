@@ -6,6 +6,7 @@ import com.google.cloud.storage.{Blob, BlobId, Storage}
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{ExternalSource, ThingLike}
 import com.teletracker.common.model.Thingable
+import com.teletracker.common.model.tmdb.HasTmdbId
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
@@ -19,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.{Failure, Success}
 
-abstract class ImportTmdbDumpTask[T: Decoder](
+abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
   storage: Storage,
   thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext,
@@ -31,6 +32,7 @@ abstract class ImportTmdbDumpTask[T: Decoder](
     val file = args.value[URI]("input").get
     val offset = args.valueOrDefault("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
+    val parallelism = args.valueOrDefault("parallelism", 8)
 
     def sink[X](
       x: List[Option[X]],
@@ -45,7 +47,7 @@ abstract class ImportTmdbDumpTask[T: Decoder](
           SequentialFutures
             .batchedIterator(
               source.getLines(),
-              8,
+              parallelism,
               sink[ThingLike]
             )(batch => {
               val processedBatch = batch.flatMap(line => {
@@ -58,10 +60,10 @@ abstract class ImportTmdbDumpTask[T: Decoder](
 
                     case Right(value) =>
                       thingLike.toThing(value) match {
-                        case Success(value) =>
+                        case Success(thing) =>
                           val fut = thingsDbAccess
                             .saveThing(
-                              value,
+                              thing,
                               Some(
                                 ExternalSource.TheMovieDb -> value.id.toString
                               )
@@ -86,8 +88,12 @@ abstract class ImportTmdbDumpTask[T: Decoder](
           source.close()
         }
       })
-
   }
+
+  protected def extraWork(
+    thingLike: ThingLike,
+    entity: T
+  ): Future[Unit] = Future.unit
 
   private def sanitizeLine(line: String): List[String] = {
     if (line.contains("}{")) {
