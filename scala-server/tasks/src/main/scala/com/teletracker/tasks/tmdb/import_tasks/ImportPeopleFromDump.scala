@@ -6,11 +6,20 @@ import com.teletracker.common.db.model.{
   ExternalSource,
   PersonAssociationType,
   PersonThing,
-  ThingLike
+  ThingLike,
+  ThingRaw,
+  ThingType
 }
-import com.teletracker.common.model.tmdb.Person
+import com.teletracker.common.model.tmdb.{
+  CastMember,
+  MediaType,
+  Person,
+  PersonCredit
+}
 import com.teletracker.common.process.tmdb.TmdbSynchronousProcessor
+import com.teletracker.common.util.Slug
 import javax.inject.Inject
+import com.teletracker.common.util.TheMovieDb._
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -33,28 +42,22 @@ class ImportPeopleFromDump @Inject()(
       .map(_.toSet)
       .map(
         thingsDbAccess
-          .findThingsByExternalIds(ExternalSource.TheMovieDb, _, None)
+          .findThingsByTmdbIds(ExternalSource.TheMovieDb, _, None)
       )
-      .map(_.flatMap(things => {
-        val thingByExternalId = things.collect {
-          case (externalId, thing) if externalId.tmdbId.isDefined =>
-            externalId.tmdbId.get -> thing
-        }.toMap
-
+      .map(_.flatMap(thingByExternalId => {
         val cast = entity.combined_credits
           .map(_.cast)
           .map(
             _.flatMap(
               credit =>
-                thingByExternalId
-                  .get(credit.id.toString)
+                getThingForCredit(credit, thingByExternalId)
                   .map(
                     thing =>
                       saveAssociations(
                         thingLike.id,
                         thing.id,
                         PersonAssociationType.Cast,
-                        credit.character
+                        getCharacterName(entity, credit, thing)
                       )
                   )
             )
@@ -65,18 +68,18 @@ class ImportPeopleFromDump @Inject()(
 
         val crew = entity.combined_credits
           .map(_.crew)
+          .map(_.filter(_.media_type.isDefined))
           .map(
             _.flatMap(
               credit =>
-                thingByExternalId
-                  .get(credit.id.toString)
+                getThingForCredit(credit, thingByExternalId)
                   .map(
                     thing =>
                       saveAssociations(
                         thingLike.id,
                         thing.id,
                         PersonAssociationType.Crew,
-                        credit.character
+                        None
                       )
                   )
             )
@@ -94,7 +97,65 @@ class ImportPeopleFromDump @Inject()(
         }
       }))
       .getOrElse(Future.unit)
+  }
 
+  private def getThingForCredit(
+    personCredit: PersonCredit,
+    things: Map[(String, ThingType), ThingRaw]
+  ): Option[ThingRaw] = {
+    personCredit.media_type
+      .flatMap {
+        case MediaType.Movie =>
+          things.get(personCredit.id.toString -> ThingType.Movie)
+        case MediaType.Tv =>
+          things.get(personCredit.id.toString -> ThingType.Show)
+      }
+      .orElse {
+        personCredit.name.flatMap(name => {
+          val both = List(
+            things.get(personCredit.id.toString -> ThingType.Movie),
+            things.get(personCredit.id.toString -> ThingType.Show)
+          ).flatten
+          val slug = personCredit.releaseYear.map(year => Slug(name, year))
+
+          slug.flatMap(s => both.find(_.normalizedName == s)).orElse {
+            both.find(_.name == name)
+          }
+        })
+      }
+  }
+
+  import io.circe.optics.JsonPath._
+
+  val movieCast =
+    root.themoviedb.movie.credits.cast.as[Option[List[CastMember]]]
+  val showCast = root.themoviedb.show.credits.cast.as[Option[List[CastMember]]]
+
+  private def getCharacterName(
+    person: Person,
+    credit: PersonCredit,
+    thingRaw: ThingRaw
+  ) = {
+    credit.character.orElse {
+      thingRaw.metadata.flatMap(json => {
+        Stream(movieCast, showCast)
+          .flatMap(lens => {
+            val found = lens.getOption(json).flatten
+            found.flatMap(findMatchInCast(person, _))
+          })
+          .headOption
+          .flatMap(c => c.character.orElse(c.character_name))
+      })
+    }
+  }
+
+  private def findMatchInCast(
+    person: Person,
+    members: List[CastMember]
+  ) = {
+    members.find(member => {
+      member.name.isDefined && person.name.isDefined && member.name.get == person.name.get
+    })
   }
 
   private def saveAssociations(

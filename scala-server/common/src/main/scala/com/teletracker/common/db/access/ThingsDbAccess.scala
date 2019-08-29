@@ -385,6 +385,36 @@ class ThingsDbAccess @Inject()(
     }
   }
 
+  def findThingsByTmdbIds(
+    source: ExternalSource,
+    ids: Set[String],
+    typ: Option[ThingType]
+  ): Future[Map[(String, ThingType), ThingRaw]] = {
+    if (ids.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      val baseQuery = source match {
+        case ExternalSource.TheMovieDb =>
+          things.rawQuery
+            .filter(_.tmdbId.isDefined)
+            .filter(_.tmdbId inSetBind ids)
+        case _ =>
+          throw new IllegalArgumentException(
+            s"Cannot get things by external source = $source"
+          )
+      }
+
+      val withTypeFilter = typ match {
+        case Some(t) => baseQuery.filter(_.`type` === t)
+        case None    => baseQuery
+      }
+
+      run {
+        withTypeFilter.result
+      }.map(_.map(thing => (thing.tmdbId.get, thing.`type`) -> thing).toMap)
+    }
+  }
+
   def findRawThingsByExternalIds(
     source: ExternalSource,
     ids: Set[String],
