@@ -1,1 +1,1 @@
-ALTER TABLE "people_things" ADD INDEX "thing_id";
+CREATE INDEX "people_by_thing_id_idx" ON "person_things" ("thing_id");
