@@ -1,0 +1,1 @@
+CREATE INDEX "person_by_slug" ON people (normalized_name);

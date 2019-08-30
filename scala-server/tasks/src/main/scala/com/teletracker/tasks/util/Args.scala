@@ -2,6 +2,7 @@ package com.teletracker.tasks.util
 
 import java.io.File
 import java.net.URI
+import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
 object Args extends Args
@@ -69,6 +70,9 @@ object ArgParser extends LowPriArgParsers {
       _
     ))
   )
+
+  implicit val uuidArg: ArgParser[UUID] =
+    stringArg.andThen(UUID.fromString)
 }
 
 trait ArgParser[T] { self =>

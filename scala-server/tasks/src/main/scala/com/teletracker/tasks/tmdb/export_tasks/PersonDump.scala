@@ -23,8 +23,8 @@ class PersonDump @Inject()(
 
   override protected def getRawJson(currentId: Int): Future[String] = {
     itemExpander
-      .expandPerson(currentId)
-      .map(_.asJson.noSpaces)
+      .expandPersonRaw(currentId)
+      .map(_.noSpaces)
   }
 }
 

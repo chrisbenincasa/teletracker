@@ -5,6 +5,7 @@ import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.tmdb.{Person => TmdbPerson, _}
 import com.teletracker.common.util.json.circe._
+import io.circe.Json
 import javax.inject.Inject
 import shapeless.tag.@@
 import scala.concurrent.{ExecutionContext, Future}
@@ -57,6 +58,19 @@ class ItemExpander @Inject()(
 
   def expandPerson(id: Int): Future[TmdbPerson] = {
     tmdbClient.makeRequest[TmdbPerson](
+      s"person/$id",
+      Seq(
+        "append_to_response" -> List(
+          "combined_credits",
+          "images",
+          "external_ids"
+        ).mkString(",")
+      )
+    )
+  }
+
+  def expandPersonRaw(id: Int): Future[Json] = {
+    tmdbClient.makeRequest[Json](
       s"person/$id",
       Seq(
         "append_to_response" -> List(

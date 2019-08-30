@@ -103,7 +103,7 @@ lazy val tasks = project
       "com.github.scopt" %% "scopt" % "3.5.0",
       "org.scalatest" %% "scalatest" % "3.0.5" % Test
     ),
-    mainClass := Some(
+    Compile / run / mainClass := Some(
       "com.teletracker.tasks.TeletrackerTaskRunner"
     ),
     mainClass in assembly := Some(

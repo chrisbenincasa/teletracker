@@ -35,68 +35,69 @@ class ImportPeopleFromDump @Inject()(
     thingLike: ThingLike,
     entity: Person
   ): Future[Unit] = {
-    entity.combined_credits
-      .map(credits => {
-        credits.cast.map(_.id.toString) ++ credits.crew.map(_.id.toString)
-      })
-      .map(_.toSet)
-      .map(
-        thingsDbAccess
-          .findThingsByTmdbIds(ExternalSource.TheMovieDb, _, None)
-      )
-      .map(_.flatMap(thingByExternalId => {
-        val cast = entity.combined_credits
-          .map(_.cast)
-          .map(
-            _.flatMap(
-              credit =>
-                getThingForCredit(credit, thingByExternalId)
-                  .map(
-                    thing =>
-                      saveAssociations(
-                        thingLike.id,
-                        thing.id,
-                        PersonAssociationType.Cast,
-                        getCharacterName(entity, credit, thing)
-                      )
-                  )
-            )
-          )
-          .map(Future.sequence(_))
-          .map(_.map(_ => {}))
-          .getOrElse(Future.unit)
-
-        val crew = entity.combined_credits
-          .map(_.crew)
-          .map(_.filter(_.media_type.isDefined))
-          .map(
-            _.flatMap(
-              credit =>
-                getThingForCredit(credit, thingByExternalId)
-                  .map(
-                    thing =>
-                      saveAssociations(
-                        thingLike.id,
-                        thing.id,
-                        PersonAssociationType.Crew,
-                        None
-                      )
-                  )
-            )
-          )
-          .map(Future.sequence(_))
-          .map(_.map(_ => {}))
-          .getOrElse(Future.unit)
-
-        (for {
-          _ <- cast
-          _ <- crew
-        } yield {}).recover {
-          case NonFatal(e) =>
-            logger.error("Hit error during estra work", e)
-        }
-      }))
-      .getOrElse(Future.unit)
+    Future.unit
+//    entity.combined_credits
+//      .map(credits => {
+//        credits.cast.map(_.id.toString) ++ credits.crew.map(_.id.toString)
+//      })
+//      .map(_.toSet)
+//      .map(
+//        thingsDbAccess
+//          .findThingsByTmdbIds(ExternalSource.TheMovieDb, _, None)
+//      )
+//      .map(_.flatMap(thingByExternalId => {
+//        val cast = entity.combined_credits
+//          .map(_.cast)
+//          .map(
+//            _.flatMap(
+//              credit =>
+//                getThingForCredit(credit, thingByExternalId)
+//                  .map(
+//                    thing =>
+//                      saveAssociations(
+//                        thingLike.id,
+//                        thing.id,
+//                        PersonAssociationType.Cast,
+//                        getCharacterName(entity, credit, thing)
+//                      )
+//                  )
+//            )
+//          )
+//          .map(Future.sequence(_))
+//          .map(_.map(_ => {}))
+//          .getOrElse(Future.unit)
+//
+//        val crew = entity.combined_credits
+//          .map(_.crew)
+//          .map(_.filter(_.media_type.isDefined))
+//          .map(
+//            _.flatMap(
+//              credit =>
+//                getThingForCredit(credit, thingByExternalId)
+//                  .map(
+//                    thing =>
+//                      saveAssociations(
+//                        thingLike.id,
+//                        thing.id,
+//                        PersonAssociationType.Crew,
+//                        None
+//                      )
+//                  )
+//            )
+//          )
+//          .map(Future.sequence(_))
+//          .map(_.map(_ => {}))
+//          .getOrElse(Future.unit)
+//
+//        (for {
+//          _ <- cast
+//          _ <- crew
+//        } yield {}).recover {
+//          case NonFatal(e) =>
+//            logger.error("Hit error during estra work", e)
+//        }
+//      }))
+//      .getOrElse(Future.unit)
   }
 
   private def getThingForCredit(
