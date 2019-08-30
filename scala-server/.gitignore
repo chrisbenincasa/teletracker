@@ -44,3 +44,4 @@ shows.*.json
 people.*.json
 
 FULL_VERSION
+*.csv

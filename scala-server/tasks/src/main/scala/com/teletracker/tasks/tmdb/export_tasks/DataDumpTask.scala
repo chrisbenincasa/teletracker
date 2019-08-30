@@ -14,6 +14,7 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
+import scala.util.Try
 import scala.util.control.NonFatal
 
 trait DataDumpTaskApp[T <: DataDumpTask[_]] extends TeletrackerTaskApp[T] {
@@ -54,6 +55,8 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
         if (output ne null) {
           uploadToGcp(output)
         }
+
+        Try(output.delete())
 
         output = new File(f"$baseFileName.$batch%03d.json")
         writer = new BufferedWriter(

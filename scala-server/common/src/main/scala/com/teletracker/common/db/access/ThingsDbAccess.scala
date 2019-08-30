@@ -48,6 +48,12 @@ class ThingsDbAccess @Inject()(
     }
   }
 
+  def findThingByIdRaw(id: UUID): Future[Option[ThingRaw]] = {
+    run {
+      things.rawQuery.filter(_.id === id).take(1).result.headOption
+    }
+  }
+
   def findThingBySlugRaw(slug: Slug) = {
     run {
       things.query.filter(_.normalizedName === slug).take(1).result.headOption
@@ -64,6 +70,58 @@ class ThingsDbAccess @Inject()(
   def findThingsByNormalizedName(name: String): Future[Seq[ThingRaw]] = {
     run {
       things.rawQuery.filter(_.normalizedName === Slug.forString(name)).result
+    }
+  }
+
+  def loopThroughAllThings(
+    offset: Int = 0,
+    perPage: Int = 50,
+    limit: Int = -1
+  )(
+    process: Seq[ThingRaw] => Future[Unit]
+  ): Future[Unit] = {
+    if (limit > 0 && offset >= limit) {
+      Future.unit
+    } else {
+      run {
+        things.rawQuery
+          .drop(offset)
+          .take(perPage)
+          .sortBy(t => (t.tmdbId.asc.nullsLast, t.id))
+          .result
+      }.flatMap {
+        case x if x.isEmpty => Future.unit
+        case x =>
+          process(x).flatMap(
+            _ => loopThroughAllThings(offset + perPage, perPage, limit)(process)
+          )
+      }
+    }
+  }
+
+  def loopThroughAllPeople(
+    offset: Int = 0,
+    perPage: Int = 50,
+    limit: Int = -1
+  )(
+    process: Seq[Person] => Future[Unit]
+  ): Future[Unit] = {
+    if (limit > 0 && offset >= limit) {
+      Future.unit
+    } else {
+      run {
+        people.query
+          .drop(offset)
+          .take(perPage)
+          .sortBy(t => (t.tmdbId.asc.nullsLast, t.id))
+          .result
+      }.flatMap {
+        case x if x.isEmpty => Future.unit
+        case x =>
+          process(x).flatMap(
+            _ => loopThroughAllPeople(offset + perPage, perPage, limit)(process)
+          )
+      }
     }
   }
 
@@ -352,6 +410,20 @@ class ThingsDbAccess @Inject()(
 
     run {
       person.result.headOption
+    }
+  }
+
+  def findPeopleByTmdbIds(ids: Set[String]): Future[Seq[(String, UUID)]] = {
+    if (ids.isEmpty) {
+      Future.successful(Seq.empty)
+    } else {
+      run {
+        people.query
+          .filter(_.tmdbId.isDefined)
+          .filter(_.tmdbId inSetBind ids)
+          .map(p => (p.tmdbId.get -> p.id))
+          .result
+      }
     }
   }
 
