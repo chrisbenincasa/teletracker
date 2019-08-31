@@ -1,32 +1,32 @@
 import {
-  createStyles,
   CardMedia,
+  createStyles,
   Fab,
-  Grid,
   Fade,
+  Grid,
   LinearProgress,
   Theme,
   Typography,
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import * as R from 'ramda';
+import { List as ListIcon } from '@material-ui/icons';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Redirect, Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import withUser, { WithUserProps } from '../components/withUser';
+import * as R from 'ramda';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Thing } from '../types';
 import { retrievePopular } from '../actions/popular';
-import ItemCard from '../components/ItemCard';
-import { ResponsiveImage } from '../components/ResponsiveImage';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import { getMetadataPath } from '../utils/metadata-access';
-import { List as ListIcon } from '@material-ui/icons';
+import ItemCard from '../components/ItemCard';
+import withUser, { WithUserProps } from '../components/withUser';
+import { ResponsiveImage } from '../components/ResponsiveImage';
 import AddToListDialog from '../components/AddToListDialog';
+import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 
 const styles = (theme: Theme) =>
   createStyles({
