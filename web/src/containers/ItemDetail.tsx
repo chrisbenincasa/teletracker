@@ -43,6 +43,7 @@ import ThingAvailability from '../components/Availability';
 import Cast from '../components/Cast';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import AddToListDialog from '../components/AddToListDialog';
+import { formatRuntime } from '../utils/textHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -245,6 +246,10 @@ class ItemDetails extends Component<Props, State> {
         : getMetadataPath(thing, 'name')) || '';
     const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
     const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
+    const runtime =
+      thing.type === 'movie'
+        ? formatRuntime(getMetadataPath(thing, 'runtime'), thing.type)
+        : formatRuntime(getMetadataPath(thing, 'episode_run_time'), thing.type);
 
     return (
       <div
@@ -261,8 +266,19 @@ class ItemDetails extends Component<Props, State> {
         </Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Rating value={voteAverage / 2} precision={0.1} readOnly />
-          <Typography color="inherit" variant="body1">
+          <Typography
+            color="inherit"
+            variant="body1"
+            style={{ marginRight: 10 }}
+          >
             {`(${voteCount})`}
+          </Typography>
+          <Typography
+            color="inherit"
+            variant="body1"
+            style={{ marginLeft: 10 }}
+          >
+            {`${runtime}`}
           </Typography>
         </div>
       </div>
@@ -375,9 +391,7 @@ class ItemDetails extends Component<Props, State> {
     let { classes, isFetching, itemDetail, userSelf } = this.props;
     let { manageTrackingModalOpen } = this.state;
 
-    if (!itemDetail) {
-      return this.renderLoading();
-    }
+    console.log(itemDetail);
 
     return isFetching || !itemDetail ? (
       this.renderLoading()
