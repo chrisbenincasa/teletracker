@@ -51,7 +51,7 @@ export const ResponsiveImage: React.FC<imgProps> = ({
   const backdropSpecs = [
     {
       type: 'image/jpeg',
-      sizes: [300],
+      sizes: [300, 780],
     },
   ];
 
