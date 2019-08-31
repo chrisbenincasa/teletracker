@@ -387,8 +387,6 @@ class ItemDetails extends Component<Props, State> {
     let { classes, isFetching, itemDetail, userSelf } = this.props;
     let { manageTrackingModalOpen } = this.state;
 
-    console.log(itemDetail);
-
     return isFetching || !itemDetail ? (
       this.renderLoading()
     ) : (
