@@ -273,14 +273,10 @@ class ItemDetails extends Component<Props, State> {
           >
             {`(${voteCount})`}
           </Typography>
-          <Typography
-            color="inherit"
-            variant="body1"
-            style={{ marginLeft: 10 }}
-          >
-            {`${runtime}`}
-          </Typography>
         </div>
+        <Typography color="inherit" variant="body1">
+          {`${runtime}`}
+        </Typography>
       </div>
     );
   };
