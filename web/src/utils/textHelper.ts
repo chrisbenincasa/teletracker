@@ -13,3 +13,32 @@ export const parseInitials = (name: string, type: string) => {
     return matches!.join('');
   }
 };
+
+// Format Run Time
+export const formatRuntime = (runtime: number | number[], type: string) => {
+  if (type === 'movie') {
+    const hours = Math.floor(Number(runtime) / 60);
+    const minutes = Number(runtime) % 60;
+
+    if (hours > 0 && minutes > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (hours > 0 && minutes === 0) {
+      return `${hours}h`;
+    } else if (hours === 0 && minutes > 0) {
+      return `${minutes}m`;
+    } else {
+      return null;
+    }
+  } else if (type === 'show') {
+    const max = Math.max(...runtime);
+    const min = Math.min(...runtime);
+
+    if (max === min) {
+      return `Episode Length: ${max}m`;
+    } else {
+      return `Episode Length: ${min}-${max}m`;
+    }
+  } else {
+    return null;
+  }
+};
