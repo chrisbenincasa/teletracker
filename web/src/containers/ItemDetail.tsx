@@ -378,7 +378,7 @@ class ItemDetails extends Component<Props, State> {
     if (!itemDetail) {
       return this.renderLoading();
     }
-
+    console.log(itemDetail);
     return isFetching || !itemDetail ? (
       this.renderLoading()
     ) : (
