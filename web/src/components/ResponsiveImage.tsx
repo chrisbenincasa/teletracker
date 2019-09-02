@@ -37,7 +37,8 @@ export const ResponsiveImage: React.FC<imgProps> = ({
     return sourceSet.join(',');
   }
 
-  let imageName = getMetadataPath(item, `${imageType}_path`);
+  let imageName =
+    getMetadataPath(item, `${imageType}_path`) || item[`${imageType}_path`];
   const baseImageURL = 'https://image.tmdb.org/t/p/';
   /* TODO: Figure out image/webp story and add here */
   const posterSpecs = [
