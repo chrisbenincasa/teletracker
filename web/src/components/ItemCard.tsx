@@ -258,6 +258,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     this.setState({
       currentId: itemId,
     });
+    console.log(item);
   }
 
   openManageTrackingModal = () => {
