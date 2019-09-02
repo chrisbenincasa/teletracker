@@ -51,6 +51,12 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       marginBottom: 10,
     },
+    filterSortContainer: {
+      [theme.breakpoints.up('sm')]: {
+        display: 'flex',
+      },
+      marginBottom: 8,
+    },
     genre: { margin: 5 },
     genreContainer: { display: 'flex', flexWrap: 'wrap' },
     itemCTA: {
@@ -84,6 +90,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
+      width: '80%',
     },
   });
 
@@ -148,12 +155,10 @@ class PersonDetail extends React.Component<Props, State> {
   }
 
   setSortOrder = event => {
-    console.log(event.target);
     this.setState({ sortOrder: event.target.value });
   };
 
   setFilter = genreId => {
-    console.log(genreId);
     this.setState({ filter: genreId });
   };
 
@@ -200,15 +205,24 @@ class PersonDetail extends React.Component<Props, State> {
         person.metadata['combined_credits'] &&
         person.metadata['combined_credits'].cast) ||
       [];
-    filmography = filmography.sort((a, b) => {
-      if (this.state.sortOrder === 'Popularity') {
-        return a.popularity < b.popularity ? 1 : -1;
-      } else if (this.state.sortOrder === 'Latest') {
-        return a.release_date < b.release_date ? 1 : -1;
-      } else if (this.state.sortOrder === 'Oldest') {
-        return a.release_date > b.release_date ? 1 : -1;
-      }
-    });
+
+    let filmographyFiltered = filmography
+      .filter(
+        item =>
+          (item &&
+            item.genre_ids &&
+            item.genre_ids.includes(this.state.filter)) ||
+          this.state.filter === -1,
+      )
+      .sort((a, b) => {
+        if (this.state.sortOrder === 'Popularity') {
+          return a.popularity < b.popularity ? 1 : -1;
+        } else if (this.state.sortOrder === 'Latest') {
+          return a.release_date < b.release_date ? 1 : -1;
+        } else if (this.state.sortOrder === 'Oldest') {
+          return a.release_date > b.release_date ? 1 : -1;
+        }
+      });
     let genres = filmography
       .map(genre => genre.genre_ids)
       .flat()
@@ -221,7 +235,6 @@ class PersonDetail extends React.Component<Props, State> {
         }
         return accumulator;
       }, []);
-    console.log(genres);
     return (
       <div className={classes.genreContainer}>
         <Typography
@@ -231,7 +244,7 @@ class PersonDetail extends React.Component<Props, State> {
         >
           Filmography
         </Typography>
-        <div style={{ display: 'flex' }}>
+        <div className={classes.filterSortContainer}>
           <div
             style={{
               display: 'flex',
@@ -245,7 +258,7 @@ class PersonDetail extends React.Component<Props, State> {
               label="All"
               className={classes.genre}
               onClick={() => this.setFilter(-1)}
-              color={this.state.filter === -1 ? 'secondary' : 'inherit'}
+              color={this.state.filter === -1 ? 'secondary' : 'default'}
             />
             {genres.map(genre => (
               <Chip
@@ -253,7 +266,7 @@ class PersonDetail extends React.Component<Props, State> {
                 label={genre}
                 className={classes.genre}
                 onClick={() => this.setFilter(genre)}
-                color={this.state.filter === genre ? 'secondary' : 'inherit'}
+                color={this.state.filter === genre ? 'secondary' : 'default'}
               />
             ))}
           </div>
@@ -276,7 +289,7 @@ class PersonDetail extends React.Component<Props, State> {
           </div>
         </div>
         <Grid container spacing={2}>
-          {filmography.map(item =>
+          {filmographyFiltered.map(item =>
             item && item.poster_path ? (
               <ItemCard
                 key={item.id}
@@ -351,7 +364,6 @@ class PersonDetail extends React.Component<Props, State> {
     const profilePath =
       (person && person.metadata && person.metadata['profile_path']) || '';
 
-    console.log(person);
     return !person ? (
       this.renderLoading()
     ) : (
