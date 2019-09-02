@@ -1,5 +1,6 @@
 import {
   Backdrop,
+  Badge,
   CardMedia,
   Chip,
   createStyles,
@@ -46,25 +47,6 @@ import AddToListDialog from '../components/AddToListDialog';
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
-    trailerVideo: {
-      width: '60vw',
-      height: '34vw',
-      [theme.breakpoints.down('sm')]: {
-        width: '100vw',
-        height: '56vw',
-      },
-    },
-    modal: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    root: {
-      flexGrow: 1,
-    },
-    card: {
-      margin: '10px 0',
-    },
     backdrop: {
       width: '100%',
       height: '100%',
@@ -74,8 +56,34 @@ const styles = (theme: Theme) =>
         'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
       //To do: integrate with theme styling for primary
     },
-    genre: { margin: 5 },
-    genreContainer: { display: 'flex' },
+    badge: {
+      margin: theme.spacing(1),
+    },
+    card: {
+      margin: '10px 0',
+    },
+    descriptionContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      marginBottom: 10,
+    },
+    genre: {
+      margin: 5,
+    },
+    genreContainer: {
+      display: 'flex',
+    },
+    heroContent: {
+      maxWidth: 600,
+      margin: '0 auto',
+      padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
+    },
+    itemCTA: {
+      [theme.breakpoints.down('sm')]: {
+        width: '80%',
+      },
+      width: '100%',
+    },
     itemDetailContainer: {
       margin: 20,
       display: 'flex',
@@ -85,10 +93,21 @@ const styles = (theme: Theme) =>
         flexDirection: 'column',
       },
     },
-    heroContent: {
-      maxWidth: 600,
-      margin: '0 auto',
-      padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
+    itemInformationContainer: {
+      [theme.breakpoints.up('sm')]: {
+        marginLeft: 20,
+      },
+      display: 'flex',
+      flex: '1 1 auto',
+      backgroundColor: 'transparent',
+      color: '#fff',
+      flexDirection: 'column',
+      position: 'relative',
+    },
+    modal: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     posterContainer: {
       [theme.breakpoints.up('sm')]: {
@@ -103,28 +122,30 @@ const styles = (theme: Theme) =>
         backgroundColor: fade(theme.palette.common.white, 0.25),
       },
     },
-    itemCTA: {
-      [theme.breakpoints.down('sm')]: {
-        width: '80%',
-      },
-      width: '100%',
+    root: {
+      flexGrow: 1,
     },
-    itemInformationContainer: {
-      [theme.breakpoints.up('sm')]: {
-        width: 250,
-        marginLeft: 20,
-      },
+    seasonPoster: {
+      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+      width: 100,
+    },
+    seasonTitle: {
+      marginLeft: 8,
+    },
+    titleContainer: {
       display: 'flex',
-      flex: '1 1 auto',
-      backgroundColor: 'transparent',
+      marginBottom: 8,
+      flexDirection: 'column',
+      alignItems: 'self-start',
       color: '#fff',
-      flexDirection: 'column',
-      position: 'relative',
     },
-    descriptionContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      marginBottom: 10,
+    trailerVideo: {
+      width: '60vw',
+      height: '34vw',
+      [theme.breakpoints.down('sm')]: {
+        width: '100vw',
+        height: '56vw',
+      },
     },
   });
 
@@ -275,15 +296,7 @@ class ItemDetails extends Component<Props, State> {
 
     return (
       <div className={classes.descriptionContainer}>
-        <div
-          style={{
-            display: 'flex',
-            marginBottom: 8,
-            flexDirection: 'column',
-            alignItems: 'self-start',
-            color: '#fff',
-          }}
-        >
+        <div className={classes.titleContainer}>
           <Hidden only={['xs', 'sm']}>{this.renderTitle(thing)}</Hidden>
         </div>
         <div>
@@ -348,21 +361,39 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderSeriesDetails = (thing: Thing) => {
+    const { classes } = this.props;
     const seasons = Object(getMetadataPath(thing, 'seasons'));
 
     return seasons && seasons.length > 0 ? (
       <React.Fragment>
-        <Typography color="inherit" variant="h5">
+        <Typography
+          color="inherit"
+          variant="h5"
+          className={classes.seasonTitle}
+        >
           Seasons
         </Typography>
 
         <Grid container>
           {seasons.map(season =>
-            season.episode_count > 0 && season.poster_path ? (
-              <img
-                src={`https://image.tmdb.org/t/p/w342/${season.poster_path}`}
-                style={{ margin: 10, width: 100 }}
-              />
+            season.episode_count > 0 &&
+            season.poster_path &&
+            season.name !== 'Specials' ? (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <Badge
+                  className={classes.badge}
+                  badgeContent={season.episode_count}
+                  color="primary"
+                >
+                  <img
+                    src={`https://image.tmdb.org/t/p/w342/${
+                      season.poster_path
+                    }`}
+                    className={classes.seasonPoster}
+                  />
+                </Badge>
+                <Typography style={{ marginLeft: 8 }}>{season.name}</Typography>
+              </div>
             ) : null,
           )}
         </Grid>
