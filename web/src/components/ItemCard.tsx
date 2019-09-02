@@ -343,7 +343,7 @@ class ItemCard extends Component<Props, ItemCardState> {
   renderPoster = (thing: Thing) => {
     let { classes } = this.props;
     let { isHovering, hoverRating } = this.state;
-    console.log(thing);
+
     return (
       <div
         className={isHovering ? classes.cardHoverEnter : classes.cardHoverExit}
