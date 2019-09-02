@@ -55,6 +55,15 @@ const styles = (theme: Theme) =>
       textOverflow: 'ellipsis',
       marginBottom: 10,
     },
+    titleContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      position: 'absolute',
+      bottom: 0,
+      right: 10,
+      marginBottom: 10,
+    },
     card: {
       height: '100%',
       display: 'flex',
@@ -140,23 +149,11 @@ class Popular extends Component<Props, State> {
   };
 
   renderTitle = (thing: Thing) => {
-    const title =
-      (thing.type === 'movie'
-        ? getMetadataPath(thing, 'title')
-        : getMetadataPath(thing, 'name')) || '';
+    const { classes } = this.props;
+    const title = thing.name || '';
 
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          position: 'absolute',
-          bottom: 0,
-          right: 10,
-          marginBottom: 10,
-        }}
-      >
+      <div className={classes.titleContainer} style={{}}>
         <Typography color="inherit" variant="h3">
           {`${title}`}
         </Typography>
