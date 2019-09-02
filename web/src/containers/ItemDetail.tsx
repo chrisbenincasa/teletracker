@@ -10,7 +10,6 @@ import {
   IconButton,
   LinearProgress,
   Modal,
-  Popover,
   Theme,
   Typography,
   WithStyles,

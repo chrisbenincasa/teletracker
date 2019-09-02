@@ -16,7 +16,6 @@ const PopularSuccess = handleAction<PopularSuccessfulAction, State>(
   POPULAR_SUCCESSFUL,
   (state: State, { payload }: PopularSuccessfulAction) => {
     // TODO: Return popularity and sort by that.
-    console.log(payload);
     if (payload) {
       return {
         ...state,
