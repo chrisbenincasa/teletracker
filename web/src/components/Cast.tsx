@@ -38,7 +38,12 @@ const styles = (theme: Theme) =>
     characterName: {
       fontWeight: 'bold',
     },
-    grid: { justifyContent: 'flex-start' },
+    grid: {
+      [theme.breakpoints.up('sm')]: {
+        justifyContent: 'flex-start',
+      },
+      justifyContent: 'space-around',
+    },
     personContainer: {
       display: 'flex',
       flexDirection: 'column',
