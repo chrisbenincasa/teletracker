@@ -15,7 +15,11 @@ import {
   LinearProgress,
   CardMedia,
   createStyles,
+  Fab,
   Hidden,
+  InputLabel,
+  Select,
+  MenuItem,
   Theme,
   Typography,
   withStyles,
@@ -28,6 +32,7 @@ import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import { Thing } from '../types';
 import withUser, { WithUserProps } from '../components/withUser';
 import ItemCard from '../components/ItemCard';
+import { List as ListIcon } from '@material-ui/icons';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -48,6 +53,12 @@ const styles = (theme: Theme) =>
     },
     genre: { margin: 5 },
     genreContainer: { display: 'flex', flexWrap: 'wrap' },
+    itemCTA: {
+      [theme.breakpoints.down('sm')]: {
+        width: '80%',
+      },
+      width: '100%',
+    },
     itemInformationContainer: {
       [theme.breakpoints.up('sm')]: {
         width: 250,
@@ -78,6 +89,12 @@ const styles = (theme: Theme) =>
 
 interface OwnProps {}
 
+interface State {
+  sortOrder: string;
+  filter: number;
+  manageTrackingModalOpen: boolean;
+}
+
 interface StateProps {
   isAuthed: boolean;
   person?: Person;
@@ -98,10 +115,15 @@ type NotOwnProps = DispatchProps &
 
 type Props = OwnProps & StateProps & NotOwnProps;
 
-class PersonDetail extends React.Component<Props> {
+class PersonDetail extends React.Component<Props, State> {
+  state: State = {
+    sortOrder: 'Popularity',
+    filter: -1,
+    manageTrackingModalOpen: false,
+  };
+
   componentDidMount() {
     this.props.personFetchInitiated({ id: this.props.match.params.id });
-
     // const { person } = this.props;
     // const { mainItemIndex } = this.state;
 
@@ -124,6 +146,24 @@ class PersonDetail extends React.Component<Props> {
     //   });
     // }
   }
+
+  setSortOrder = event => {
+    console.log(event.target);
+    this.setState({ sortOrder: event.target.value });
+  };
+
+  setFilter = genreId => {
+    console.log(genreId);
+    this.setState({ filter: genreId });
+  };
+
+  openManageTrackingModal = () => {
+    this.setState({ manageTrackingModalOpen: true });
+  };
+
+  closeManageTrackingModal = () => {
+    this.setState({ manageTrackingModalOpen: false });
+  };
 
   renderLoading = () => {
     return (
@@ -160,14 +200,23 @@ class PersonDetail extends React.Component<Props> {
         person.metadata['combined_credits'] &&
         person.metadata['combined_credits'].cast) ||
       [];
-    filmography = filmography.sort((a, b) =>
-      a.popularity < b.popularity ? 1 : -1,
-    );
+    filmography = filmography.sort((a, b) => {
+      if (this.state.sortOrder === 'Popularity') {
+        return a.popularity < b.popularity ? 1 : -1;
+      } else if (this.state.sortOrder === 'Latest') {
+        return a.release_date < b.release_date ? 1 : -1;
+      } else if (this.state.sortOrder === 'Oldest') {
+        return a.release_date > b.release_date ? 1 : -1;
+      }
+    });
     let genres = filmography
       .map(genre => genre.genre_ids)
       .flat()
       .reduce((accumulator, currentValue) => {
-        if (accumulator.indexOf(currentValue) === -1) {
+        if (
+          accumulator.indexOf(currentValue) === -1 &&
+          currentValue !== undefined
+        ) {
           accumulator.push(currentValue);
         }
         return accumulator;
@@ -182,21 +231,50 @@ class PersonDetail extends React.Component<Props> {
         >
           Filmography
         </Typography>
-        <Chip
-          key={0}
-          label="All"
-          className={classes.genre}
-          onClick={() => {}}
-          color="secondary"
-        />
-        {genres.map(genre => (
-          <Chip
-            key={genre}
-            label={genre}
-            className={classes.genre}
-            onClick={() => {}}
-          />
-        ))}
+        <div style={{ display: 'flex' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              flexGrow: 1,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Chip
+              key={-1}
+              label="All"
+              className={classes.genre}
+              onClick={() => this.setFilter(-1)}
+              color={this.state.filter === -1 ? 'secondary' : 'inherit'}
+            />
+            {genres.map(genre => (
+              <Chip
+                key={genre}
+                label={genre}
+                className={classes.genre}
+                onClick={() => this.setFilter(genre)}
+                color={this.state.filter === genre ? 'secondary' : 'inherit'}
+              />
+            ))}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <InputLabel shrink htmlFor="age-label-placeholder">
+              Sort by:
+            </InputLabel>
+            <Select
+              value={this.state.sortOrder}
+              inputProps={{
+                name: 'sortOrder',
+                id: 'sort-order',
+              }}
+              onChange={this.setSortOrder}
+            >
+              <MenuItem value="Popularity">Popularity</MenuItem>
+              <MenuItem value="Latest">Latest</MenuItem>
+              <MenuItem value="Oldest">Oldest</MenuItem>
+            </Select>
+          </div>
+        </div>
         <Grid container spacing={2}>
           {filmography.map(item =>
             item && item.poster_path ? (
@@ -239,8 +317,29 @@ class PersonDetail extends React.Component<Props> {
     );
   };
 
+  renderTrackingToggle = () => {
+    const { classes } = this.props;
+    let trackingCTA = 'Manage Tracking';
+
+    return (
+      <div className={classes.itemCTA}>
+        <Fab
+          size="small"
+          variant="extended"
+          aria-label="Add"
+          onClick={this.openManageTrackingModal}
+          style={{ marginTop: 5, width: '100%' }}
+        >
+          <ListIcon style={{ marginRight: 8 }} />
+          {trackingCTA}
+        </Fab>
+      </div>
+    );
+  };
+
   renderPerson() {
-    let { classes, person } = this.props;
+    let { classes, person, userSelf } = this.props;
+    const { manageTrackingModalOpen } = this.state;
 
     const backdrop =
       (person &&
@@ -248,7 +347,9 @@ class PersonDetail extends React.Component<Props> {
         person.metadata['combined_credits'] &&
         person.metadata['combined_credits'].cast[0]) ||
       {};
-    console.log(backdrop);
+
+    const profilePath =
+      (person && person.metadata && person.metadata['profile_path']) || '';
 
     console.log(person);
     return !person ? (
@@ -286,29 +387,29 @@ class PersonDetail extends React.Component<Props> {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                zIndex: 99999,
               }}
             >
               <Hidden smUp>{this.renderTitle(person)}</Hidden>
               <div className={classes.posterContainer}>
-                <CardMedia
-                  src={imagePlaceholder}
-                  item={person}
-                  component={ResponsiveImage}
-                  imageType="profile"
-                  imageStyle={{
+                <img
+                  src={
+                    profilePath
+                      ? `https://image.tmdb.org/t/p/w185/${profilePath}`
+                      : ''
+                  }
+                  style={{
                     width: '100%',
                   }}
                 />
               </div>
-              {/*
-              {this.renderWatchedToggle()}
-              {this.renderTrackingToggle()} */}
-              {/* <AddToListDialog
+              {this.renderTrackingToggle()}
+              <AddToListDialog
                 open={manageTrackingModalOpen}
                 onClose={this.closeManageTrackingModal.bind(this)}
                 userSelf={userSelf!}
-                item={itemDetail}
-              /> */}
+                item={person}
+              />
             </div>
             <div className={classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(person)}
