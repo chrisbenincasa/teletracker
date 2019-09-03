@@ -14,7 +14,8 @@ import { parseInitials } from '../utils/textHelper';
 import RouterLink from './RouterLink';
 import * as R from 'ramda';
 import _ from 'lodash';
-import { Person } from 'themoviedb-client-typed';
+import ItemCard from './ItemCard';
+import { UserSelf } from '../reducers/user';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -35,17 +36,18 @@ const styles = (theme: Theme) =>
 
 interface OwnProps {
   itemDetail: Thing;
+  userSelf: UserSelf;
 }
 
 type Props = OwnProps & WithStyles<typeof styles>;
 
 class Recommendations extends Component<Props, {}> {
   render() {
-    const { classes, itemDetail } = this.props;
+    const { classes, itemDetail, userSelf } = this.props;
     const recommendations = Object(
       getMetadataPath(itemDetail, 'recommendations'),
     );
-
+    console.log(recommendations);
     return recommendations &&
       recommendations.results &&
       recommendations.results.length > 0 ? (
@@ -55,13 +57,18 @@ class Recommendations extends Component<Props, {}> {
             Recommendations:
           </Typography>
 
-          <Grid container className={classes.grid}>
-            {recommendations.cast.map(person => (
-              <div
-                className={classes.recommendationContainer}
-                key={person.id}
-              />
-            ))}
+          <Grid container spacing={2} className={classes.grid}>
+            {recommendations.results.map(item => {
+              return item && item.poster_path ? (
+                <ItemCard
+                  key={item.id}
+                  userSelf={userSelf}
+                  item={item}
+                  itemCardVisible={false}
+                  // addButton
+                />
+              ) : null;
+            })}
           </Grid>
         </div>
       </React.Fragment>
