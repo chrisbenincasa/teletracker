@@ -506,7 +506,6 @@ class ItemDetails extends Component<Props, State> {
               <Cast itemDetail={itemDetail} />
               {this.renderSeriesDetails(itemDetail)}
               <Recommendations itemDetail={itemDetail} userSelf={userSelf!} />
-              <Similar itemDetail={itemDetail} userSelf={userSelf!} />
             </div>
           </div>
         </div>
