@@ -18,8 +18,9 @@ import {
   Theaters,
 } from '@material-ui/icons';
 import * as R from 'ramda';
-import { Availability, Network, Thing } from '../types';
+import { Availability, Network } from '../types';
 import React, { Component } from 'react';
+import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({

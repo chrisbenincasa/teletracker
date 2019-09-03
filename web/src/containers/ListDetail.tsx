@@ -45,9 +45,10 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { layoutStyles } from '../styles';
-import { List, Thing } from '../types';
+import { List } from '../types';
 import _ from 'lodash';
 import { StdRouterLink } from '../components/RouterLink';
+import { ThingMap } from '../reducers/item-detail';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -96,7 +97,7 @@ interface OwnProps {
   isAuthed?: boolean;
   listLoading: boolean;
   listsById: ListsByIdMap;
-  thingsById: { [key: number]: Thing };
+  thingsById: ThingMap;
 }
 
 interface DrawerProps {

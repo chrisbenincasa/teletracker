@@ -11,7 +11,7 @@ import {
   USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
   USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
 } from '../actions/user';
-import { Thing, UserThingTag } from '../types';
+import { UserThingTag } from '../types';
 import { flattenActions, handleAction } from './utils';
 import * as R from 'ramda';
 import {
@@ -22,13 +22,18 @@ import {
   POPULAR_SUCCESSFUL,
   PopularSuccessfulAction,
 } from '../actions/popular';
+import Thing, { ThingFactory } from '../types/Thing';
+
+export type ThingMap = {
+  [key: string]: Thing;
+};
 
 export interface State {
   fetching: boolean;
   currentId?: number;
   itemDetail?: Thing;
-  thingsById: { [key: number]: Thing };
-  thingsBySlug: { [key: string]: Thing };
+  thingsById: ThingMap;
+  thingsBySlug: ThingMap;
 }
 
 const initialState: State = {
@@ -53,24 +58,25 @@ const itemFetchSuccess = handleAction(
   (state: State, { payload }: ItemFetchSuccessfulAction) => {
     let thingsById = state.thingsById || {};
     let existingThing: Thing | undefined = thingsById[payload!.id];
-    let newThing: Thing = payload!;
+
+    let newThing: Thing = ThingFactory.create(payload!);
     if (existingThing) {
-      newThing = R.mergeDeepRight(existingThing, newThing) as Thing;
+      newThing = ThingFactory.merge(existingThing, newThing);
     }
 
     // TODO: Truncate thingsById after a certain point
     return {
       ...state,
       fetching: false,
-      itemDetail: payload!,
+      itemDetail: newThing,
       thingsById: {
         ...state.thingsById,
         [payload!.id]: newThing,
-      },
+      } as ThingMap,
       thingsBySlug: {
         ...state.thingsBySlug,
         [payload!.normalizedName]: newThing,
-      },
+      } as ThingMap,
     } as State;
   },
 );
@@ -96,7 +102,7 @@ const updateStateWithNewThings = (existingState: State, newThings: Thing[]) => {
   let newThingsBySlug = newThingsMerged.reduce((prev, curr) => {
     return {
       ...prev,
-      [curr.normalizedName]: curr,
+      [curr.slug]: curr,
     };
   }, {});
 
