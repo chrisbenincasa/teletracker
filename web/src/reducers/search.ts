@@ -6,8 +6,8 @@ import {
   SearchInitiatedAction,
   SearchSuccessfulAction,
 } from '../actions/search';
-import { Thing } from '../types';
 import { flattenActions, handleAction } from './utils';
+import Thing from '../types/Thing';
 
 export interface State {
   currentSearchText: string;
@@ -47,11 +47,15 @@ const searchInitiated = handleAction<SearchInitiatedAction, State>(
 const searchSuccess = handleAction<SearchSuccessfulAction, State>(
   SEARCH_SUCCESSFUL,
   (state, { payload }) => {
-    return {
-      ...state,
-      searching: false,
-      results: payload,
-    };
+    if (payload) {
+      return {
+        ...state,
+        searching: false,
+        results: payload.results,
+      };
+    } else {
+      return state;
+    }
   },
 );
 

@@ -6,12 +6,11 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import { Thing } from '../types';
 import React, { Component } from 'react';
 import { getMetadataPath } from '../utils/metadata-access';
-import _ from 'lodash';
 import ItemCard from './ItemCard';
 import { UserSelf } from '../reducers/user';
+import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({

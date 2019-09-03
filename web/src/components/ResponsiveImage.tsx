@@ -1,11 +1,10 @@
 import React from 'react';
 import { Icon } from '@material-ui/core';
-import { getMetadataPath } from '../utils/metadata-access';
-import { Thing } from '../types';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import HasImagery from '../types/HasImagery';
 
 interface imgProps {
-  item: Thing;
+  item: HasImagery;
   imageType: 'poster' | 'backdrop' | 'profile';
   imageStyle?: object;
   pictureStyle?: object;
@@ -37,8 +36,19 @@ export const ResponsiveImage: React.FC<imgProps> = ({
     return sourceSet.join(',');
   }
 
-  let imageName =
-    getMetadataPath(item, `${imageType}_path`) || item[`${imageType}_path`];
+  let imageName;
+  switch (imageType) {
+    case 'backdrop':
+      imageName = item.backdropPath;
+      break;
+    case 'poster':
+      imageName = item.posterPath;
+      break;
+    case 'profile':
+      imageName = item.profilePath;
+      break;
+  }
+
   const baseImageURL = 'https://image.tmdb.org/t/p/';
   /* TODO: Figure out image/webp story and add here */
   const posterSpecs = [

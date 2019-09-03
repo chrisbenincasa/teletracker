@@ -12,7 +12,6 @@ import {
   DialogTitle,
   Fade,
   Grid,
-  Icon,
   IconButton,
   Theme,
   Tooltip,
@@ -22,22 +21,20 @@ import {
   Zoom,
 } from '@material-ui/core';
 import { green, red } from '@material-ui/core/colors';
-import * as R from 'ramda';
 import { Link as RouterLink } from 'react-router-dom';
-import React, { Component, ReactNode } from 'react';
+import React, { Component } from 'react';
 import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
-import { ActionType, List, Thing } from '../types';
-import { getDescription, getPosterPath } from '../utils/metadata-access';
+import { ActionType, List } from '../types';
 import { bindActionCreators, Dispatch } from 'redux';
 import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
 import { connect } from 'react-redux';
 import { GridProps } from '@material-ui/core/Grid';
 import {
   Check,
+  Close,
   Delete as DeleteIcon,
   PlaylistAdd,
-  Close,
   ThumbDown,
   ThumbUp,
 } from '@material-ui/icons';
@@ -50,6 +47,13 @@ import { ResponsiveImage } from './ResponsiveImage';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import { UserSelf } from '../reducers/user';
 import { ACTION_ENJOYED, ACTION_WATCHED } from '../actions/item-detail';
+import {
+  HasDescription,
+  itemHasTag,
+  Linkable,
+  ThingLikeStruct,
+} from '../types/Thing';
+import HasImagery from '../types/HasImagery';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -183,9 +187,14 @@ const styles = (theme: Theme) =>
     },
   });
 
+type RequiredThingType = ThingLikeStruct &
+  HasDescription &
+  Linkable &
+  HasImagery;
+
 interface ItemCardProps extends WithStyles<typeof styles> {
   key: string | number;
-  item: Thing;
+  item: RequiredThingType;
   userSelf: UserSelf | null;
 
   // display props
@@ -331,16 +340,14 @@ class ItemCard extends Component<Props, ItemCardState> {
   };
 
   itemHasTag = (tagName: string) => {
-    if (this.props.item && this.props.item.userMetadata) {
-      return R.any(tag => {
-        return tag.action == ActionType[tagName];
-      }, this.props.item.userMetadata.tags);
+    if (this.props.item) {
+      return itemHasTag(this.props.item, ActionType[tagName]);
     }
 
     return false;
   };
 
-  renderPoster = (thing: Thing) => {
+  renderPoster = (thing: RequiredThingType) => {
     let { classes } = this.props;
     let { isHovering, hoverRating } = this.state;
 
@@ -352,7 +359,7 @@ class ItemCard extends Component<Props, ItemCardState> {
         {isHovering && !hoverRating && this.renderHoverActions()}
 
         <RouterLink
-          to={'/' + thing.type + '/' + thing.normalizedName}
+          to={thing.relativeUrl}
           style={{ display: 'block', height: '100%', textDecoration: 'none' }}
         >
           <CardMedia
@@ -612,7 +619,7 @@ class ItemCard extends Component<Props, ItemCardState> {
                   </div>
                   <Typography style={{ height: '60px' }}>
                     <Truncate lines={3} ellipsis={<span>...</span>}>
-                      {getDescription(item)}
+                      {item.description}
                     </Truncate>
                   </Typography>
                 </CardContent>

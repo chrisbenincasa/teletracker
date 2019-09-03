@@ -1,7 +1,6 @@
 import _ from 'lodash';
-import { Thing } from '../types';
-
-const tmdbMetadataPath = ['metadata', 'themoviedb'];
+import Thing, { HasThingMetadata } from '../types/Thing';
+// import { Thing } from '../types';
 
 const makePath = (typ: string, field: string) => {
   return ['metadata', 'themoviedb', typ, field];
@@ -23,31 +22,38 @@ const fallbacks = function<T, U>(x: ((x: T) => U | undefined)[]) {
 const extractor = <T = string>(field: string) =>
   ['movie', 'show']
     .map(t => makePath(t, field))
-    .map(p => _.property<Thing, T>(p));
+    .map(p => _.property<HasThingMetadata, T>(p));
 
 // Provides the path of metadata
-export const getMetadataPath = (item: Thing, metadata: string) => {
-  return fallbacks<Thing, any>(extractor(metadata))(item);
+export const getMetadataPath = <T = any>(
+  item: HasThingMetadata,
+  metadata: string,
+) => {
+  return fallbacks<HasThingMetadata, T>(extractor(metadata))(item);
 };
 
-export const getPosterPath = (item: Thing) => {
-  return fallbacks<Thing, string>(extractor('poster_path'))(item);
+export const getPosterPath = (item: HasThingMetadata) => {
+  return fallbacks<HasThingMetadata, string>(extractor('poster_path'))(item);
 };
 
-export const getBackdropPath = (item: Thing) => {
-  return fallbacks<Thing, string>(extractor('backdrop_path'))(item);
+export const getBackdropPath = (item: HasThingMetadata) => {
+  return fallbacks<HasThingMetadata, string>(extractor('backdrop_path'))(item);
 };
 
-export const getTitlePath = (item: Thing) => {
-  return fallbacks<Thing, string>(extractor('title'))(item);
+export const getProfilePath = (item: HasThingMetadata) => {
+  return fallbacks<HasThingMetadata, string>(extractor('profile_path'))(item);
 };
 
-export const getOverviewPath = (item: Thing) => {
-  return fallbacks<Thing, string>(extractor('overview'))(item);
+export const getTitlePath = (item: HasThingMetadata) => {
+  return fallbacks<HasThingMetadata, string>(extractor('title'))(item);
 };
 
-export const getVoteAveragePath = (item: Thing) => {
-  return fallbacks<Thing, string>(extractor('vote_average'))(item);
+export const getOverviewPath = (item: HasThingMetadata) => {
+  return fallbacks<HasThingMetadata, string>(extractor('overview'))(item);
+};
+
+export const getVoteAveragePath = (item: HasThingMetadata) => {
+  return fallbacks<HasThingMetadata, string>(extractor('vote_average'))(item);
 };
 
 type BackdropUrlSize = '300' | '780' | '1280' | 'original';
@@ -82,6 +88,6 @@ export const getBackdropUrl = (item: Thing, size: BackdropUrlSize) => {
   if (path) return makeUrl(path, size);
 };
 
-export const getDescription = (item: Thing) => {
-  return fallbacks<Thing, string>(extractor('overview'))(item);
+export const getDescription = (item: HasThingMetadata) => {
+  return fallbacks<HasThingMetadata, string>(extractor('overview'))(item);
 };

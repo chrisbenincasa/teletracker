@@ -15,7 +15,7 @@ import { bindActionCreators } from 'redux';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { Thing, Availability } from '../types';
+import { Availability } from '../types';
 import {
   retrieveUpcomingAvailability,
   retrieveAllAvailability,
@@ -24,6 +24,7 @@ import { AvailabilityState } from '../reducers/availability';
 import _ from 'lodash';
 import ItemCard from '../components/ItemCard';
 import moment from 'moment';
+import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -180,7 +181,7 @@ const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isSearching: appState.search.searching,
-    searchResults: R.path<Thing[]>(['search', 'results', 'data'], appState),
+    searchResults: appState.search.results,
     upcoming: appState.availability.upcoming,
     expiring: appState.availability.expiring,
     recentlyAdded: appState.availability.recentlyAdded,

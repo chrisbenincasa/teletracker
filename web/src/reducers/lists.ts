@@ -16,8 +16,9 @@ import {
   LIST_RETRIEVE_SUCCESS,
   LIST_RETRIEVE_ALL_SUCCESS,
 } from '../actions/lists';
-import { List, Thing } from '../types';
+import { List } from '../types';
 import { flattenActions, handleAction } from './utils';
+import Thing from '../types/Thing';
 
 export type Loading = { [X in ListActions['type']]: boolean };
 
