@@ -42,6 +42,7 @@ import { ResponsiveImage } from '../components/ResponsiveImage';
 import ThingAvailability from '../components/Availability';
 import Cast from '../components/Cast';
 import Recommendations from '../components/Recommendations';
+import Similar from '../components/Similar';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import AddToListDialog from '../components/AddToListDialog';
 import { formatRuntime } from '../utils/textHelper';
@@ -505,6 +506,7 @@ class ItemDetails extends Component<Props, State> {
               <Cast itemDetail={itemDetail} />
               {this.renderSeriesDetails(itemDetail)}
               <Recommendations itemDetail={itemDetail} userSelf={userSelf!} />
+              <Similar itemDetail={itemDetail} userSelf={userSelf!} />
             </div>
           </div>
         </div>
