@@ -24,8 +24,9 @@ import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
 import { layoutStyles } from '../styles';
-import { List as ListType, Thing } from '../types';
+import { List as ListType } from '../types';
 import _ from 'lodash';
+import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({

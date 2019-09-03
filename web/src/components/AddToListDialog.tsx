@@ -33,13 +33,14 @@ import {
 } from '../actions/lists';
 import { AppState } from '../reducers';
 import { ListOperationState, ListsByIdMap } from '../reducers/lists';
-import { List, Thing } from '../types';
+import { List } from '../types';
 import _ from 'lodash';
 import { UserSelf } from '../reducers/user';
 import { Cancel, Check, PlaylistAdd } from '@material-ui/icons';
 import CreateAListValidator, {
   CreateAListValidationStateObj,
 } from '../utils/validation/CreateAListValidator';
+import Thing, { ThingLikeStruct } from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -65,7 +66,7 @@ interface AddToListDialogProps {
   open: boolean;
   onClose: () => void;
   userSelf: UserSelf;
-  item: Thing;
+  item: ThingLikeStruct;
   listOperations: ListOperationState;
   listItemAddLoading: boolean;
   createAListLoading: boolean;
@@ -164,7 +165,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     });
   };
 
-  listContainsItem = (list: List, item: Thing) => {
+  listContainsItem = (list: List, item: ThingLikeStruct) => {
     return list.things ? R.any(R.propEq('id', item.id), list.things) : false;
   };
 
