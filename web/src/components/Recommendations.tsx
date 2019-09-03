@@ -1,5 +1,4 @@
 import {
-  Avatar,
   createStyles,
   Grid,
   Theme,
@@ -7,12 +6,9 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import { CastMember, Thing } from '../types';
+import { Thing } from '../types';
 import React, { Component } from 'react';
 import { getMetadataPath } from '../utils/metadata-access';
-import { parseInitials } from '../utils/textHelper';
-import RouterLink from './RouterLink';
-import * as R from 'ramda';
 import _ from 'lodash';
 import ItemCard from './ItemCard';
 import { UserSelf } from '../reducers/user';
@@ -47,7 +43,7 @@ class Recommendations extends Component<Props, {}> {
     const recommendations = Object(
       getMetadataPath(itemDetail, 'recommendations'),
     );
-    console.log(recommendations);
+
     return recommendations &&
       recommendations.results &&
       recommendations.results.length > 0 ? (
@@ -65,7 +61,6 @@ class Recommendations extends Component<Props, {}> {
                   userSelf={userSelf}
                   item={item}
                   itemCardVisible={false}
-                  // addButton
                 />
               ) : null;
             })}
