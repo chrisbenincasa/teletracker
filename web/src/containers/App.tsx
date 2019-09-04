@@ -39,7 +39,7 @@ import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../actions/auth';
 import { search } from '../actions/search';
 import { AppState } from '../reducers';
-import About from './About';
+import Search from './Search';
 import Account from './Account';
 import Home from './Home';
 import ListDetail from './ListDetail';
@@ -254,8 +254,8 @@ class App extends Component<Props, State> {
   };
 
   execSearch = (text: string) => {
-    if (this.props.location.pathname !== '/') {
-      this.props.history.push('/');
+    if (this.props.location.pathname !== '/search') {
+      this.props.history.push('/search');
     }
 
     if (text.length >= 1 && this.props.currentSearchText !== text) {
@@ -294,10 +294,6 @@ class App extends Component<Props, State> {
   };
 
   renderSearch() {
-    if (!this.props.isAuthed) {
-      return null;
-    }
-
     let { classes } = this.props;
     let { mobileSearchBarOpen } = this.state;
 
@@ -483,15 +479,13 @@ class App extends Component<Props, State> {
                 </IconButton>
               </div>
             </Slide>
-            {isAuthed ? (
-              <IconButton
-                focusRipple={false}
-                onClick={this.toggleDrawer}
-                color="inherit"
-              >
-                {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
-              </IconButton>
-            ) : null}
+            <IconButton
+              focusRipple={false}
+              onClick={this.toggleDrawer}
+              color="inherit"
+            >
+              {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
+            </IconButton>
             <Typography
               variant="h6"
               color="inherit"
@@ -510,21 +504,17 @@ class App extends Component<Props, State> {
                 TT
               </Box>
             </Typography>
-            {isAuthed ? (
-              <React.Fragment>
-                <Box display={{ xs: 'none', sm: 'block' }} m={1}>
-                  <ButtonLink
-                    color="inherit"
-                    primary="New, Arriving, &amp; Expiring"
-                    to="/new"
-                  />
-                </Box>
-                <Box display={{ xs: 'block', sm: 'none' }} m={1}>
-                  <ButtonLink color="inherit" primary="New" to="/new" />
-                </Box>
-                <ButtonLink color="inherit" primary="Popular" to="/popular" />
-              </React.Fragment>
-            ) : null}
+
+            <Box display={{ xs: 'none', sm: 'block' }} m={1}>
+              <ButtonLink
+                color="inherit"
+                primary="New, Arriving, &amp; Expiring"
+                to="/new"
+              />
+            </Box>
+            <Box display={{ xs: 'block', sm: 'none' }} m={1}>
+              <ButtonLink color="inherit" primary="New" to="/new" />
+            </Box>
             {this.renderSearch()}
             {!isAuthed ? (
               <React.Fragment>
@@ -548,7 +538,12 @@ class App extends Component<Props, State> {
             })}
           >
             <Switch>
-              <Route exact path="/" render={props => <Home {...props} />} />
+              <Route exact path="/" render={props => <Popular {...props} />} />
+              <Route
+                exact
+                path="/search"
+                render={props => <Search {...props} />}
+              />
               <Route
                 exact
                 path="/account"
@@ -557,12 +552,8 @@ class App extends Component<Props, State> {
               <Route exact path="/login" component={Login} />
               <Route exact path="/signup" component={Signup} />
               <Route exact path="/new" render={props => <New {...props} />} />
-              <Route
-                exact
-                path="/popular"
-                render={props => <Popular {...props} />}
-              />
-              <Route exact path="/logout" component={About} />
+              <Route exact path="/popular" component={Popular} />
+              {/* <Route exact path="/logout" component={this.handleLogout} /> */}
               <Route
                 exact
                 path="/lists"
