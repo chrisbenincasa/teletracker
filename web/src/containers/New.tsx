@@ -20,7 +20,10 @@ import {
   retrieveUpcomingAvailability,
   retrieveAllAvailability,
 } from '../actions/availability';
-import { AvailabilityState } from '../reducers/availability';
+import {
+  AvailabilityState,
+  DerivedAvailability,
+} from '../reducers/availability';
 import _ from 'lodash';
 import ItemCard from '../components/ItemCard';
 import moment from 'moment';
@@ -66,7 +69,7 @@ class New extends Component<Props> {
     );
   };
 
-  renderUpcoming = (upcoming: Availability[]) => {
+  renderUpcoming = (upcoming: DerivedAvailability[]) => {
     if (upcoming.length == 0) {
       return null;
     }

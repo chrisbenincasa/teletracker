@@ -22,7 +22,7 @@ import {
   POPULAR_SUCCESSFUL,
   PopularSuccessfulAction,
 } from '../actions/popular';
-import Thing, { ThingFactory } from '../types/Thing';
+import Thing, { ApiThing, ThingFactory } from '../types/Thing';
 
 export type ThingMap = {
   [key: string]: Thing;
@@ -81,13 +81,16 @@ const itemFetchSuccess = handleAction(
   },
 );
 
-const updateStateWithNewThings = (existingState: State, newThings: Thing[]) => {
+const updateStateWithNewThings = (
+  existingState: State,
+  newThings: ApiThing[],
+) => {
   let thingsById = existingState.thingsById || {};
   let newThingsMerged = newThings.map(curr => {
     let existingThing: Thing | undefined = thingsById[curr.id];
-    let newThing: Thing = curr;
+    let newThing: Thing = ThingFactory.create(curr);
     if (existingThing) {
-      newThing = R.mergeDeepRight(existingThing, newThing) as Thing;
+      newThing = ThingFactory.merge(existingThing, newThing);
     }
 
     return newThing;

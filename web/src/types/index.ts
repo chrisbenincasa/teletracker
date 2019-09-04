@@ -1,10 +1,10 @@
 import { ObjectMetadata } from './external/themoviedb/Movie';
-import Thing from './Thing';
+import Thing, { ApiThing } from './Thing';
 
 export interface List {
   id: number;
   name: string;
-  things: Thing[];
+  things: ApiThing[];
   isDefault?: boolean;
   isDeleted?: boolean;
   isDynamic?: boolean;
@@ -81,7 +81,7 @@ export interface Availability {
   networkId: number;
   network?: Network;
   presentationType?: PresentationType;
-  thing?: Thing;
+  thing?: ApiThing;
 }
 export interface Network {
   id: number;
