@@ -40,6 +40,15 @@ class ImportPersonAssociations @Inject()(
     val offset = args.valueOrDefault[Int]("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
     val specificThingId = args.value[UUID]("thingId")
+    val mode = args.valueOrDefault("mode", "insert")
+
+    val procFunc = if (mode == "insert") {
+      handleSingleThing _
+    } else if (mode == "csv") {
+      handleSingleThingCsv _
+    } else {
+      throw new IllegalArgumentException
+    }
 
     if (specificThingId.isDefined) {
       thingsDbAccess
@@ -51,42 +60,74 @@ class ImportPersonAssociations @Inject()(
                 s"Could not find thing with id = ${specificThingId.get}"
               )
             )
-          case Some(thing) => handleSingleThing(thing)
+          case Some(thing) => procFunc(thing)
         }
         .await()
     } else {
       thingsDbAccess
         .loopThroughAllThings(offset, limit = limit) { things =>
           SequentialFutures
-            .serialize(things)(handleSingleThing)
+            .serialize(things)(procFunc)
             .map(_ => {})
         }
         .await()
     }
   }
 
+  private def handleSingleThingCsv(thing: ThingRaw): Future[Unit] = {
+    logger.info(s"Handling thing id = ${thing.id}")
+
+    extractCastMembers(thing)
+      .map(members => {
+        extractCastMembers(
+          thing.id,
+          members,
+          PersonAssociationType.Cast
+        ).map(personThings => {
+          personThings.map(personThingToCsv).foreach(println)
+        })
+      })
+      .getOrElse(Future.unit)
+  }
+
+  private def personThingToCsv(personThing: PersonThing) = {
+    List(
+      personThing.personId,
+      personThing.thingId,
+      personThing.relationType,
+      personThing.characterName.getOrElse("")
+    ).map(_.toString).mkString(",")
+  }
+
   private def handleSingleThing(thing: ThingRaw): Future[Unit] = {
     logger.info(s"Handling thing id = ${thing.id}")
 
+    extractCastMembers(thing)
+      .map(members => {
+        extractCastMembers(
+          thing.id,
+          members,
+          PersonAssociationType.Cast
+        ).flatMap(personThings => {
+            Future
+              .sequence(personThings.map(thingsDbAccess.upsertPersonThing))
+          })
+          .map(_ => {})
+      })
+      .getOrElse(Future.unit)
+  }
+
+  private def extractCastMembers(thing: ThingRaw) = {
     thing.metadata
       .flatMap(meta => {
         movieCast
           .getOption(meta)
           .orElse(showCast.getOption(meta))
           .flatten
-          .map(
-            processCastMembers(
-              thing.id,
-              _,
-              PersonAssociationType.Cast
-            )
-          )
-          .map(_.map(_ => {}))
       })
-      .getOrElse(Future.unit)
   }
 
-  private def processCastMembers(
+  private def extractCastMembers(
     thingId: UUID,
     castMembers: List[CastMember],
     relationType: PersonAssociationType
@@ -99,12 +140,12 @@ class ImportPersonAssociations @Inject()(
 
     thingsDbAccess
       .findPeopleByTmdbIds(doesntContain)
-      .flatMap(ids => {
+      .map(ids => {
         ids.foreach {
           case (tmdbId, id) => personIdCache.put(tmdbId, id)
         }
 
-        val relations = castMembers.flatMap(member => {
+        castMembers.flatMap(member => {
           Option(personIdCache.get(member.id.toString)).map(personId => {
             PersonThing(
               personId,
@@ -114,8 +155,6 @@ class ImportPersonAssociations @Inject()(
             )
           })
         })
-
-        Future.sequence(relations.map(thingsDbAccess.upsertPersonThing))
       })
   }
 }
