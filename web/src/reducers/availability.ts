@@ -6,11 +6,16 @@ import {
   UPCOMING_AVAILABILITY_SUCCESSFUL,
   ALL_AVAILABILITY_SUCCESSFUL,
 } from '../actions/availability';
+import Thing, { ThingFactory } from '../types/Thing';
+
+export type DerivedAvailability = Omit<Availability, 'thing'> & {
+  thing?: Thing;
+};
 
 export interface AvailabilityState {
   offset: number;
   canFetchMore: boolean;
-  availability: Availability[];
+  availability: DerivedAvailability[];
 }
 
 export interface State {
@@ -28,17 +33,31 @@ const upcomingExpiringSuccess = handleAction<
   UPCOMING_AVAILABILITY_SUCCESSFUL,
   (state: State, { payload }: UpcomingAvailabilitySuccessfulAction) => {
     if (payload) {
+      let derivedUpcoming = payload.upcoming.map(av => {
+        return {
+          ...av,
+          thing: av.thing ? ThingFactory.create(av.thing) : undefined,
+        } as DerivedAvailability;
+      });
+
+      let derivedExpiring = payload.expiring.map(av => {
+        return {
+          ...av,
+          thing: av.thing ? ThingFactory.create(av.thing) : undefined,
+        } as DerivedAvailability;
+      });
+
       return {
         ...state,
         upcoming: {
           offset: 0,
           canFetchMore: false, // TODO(christian) change this when we can page through
-          availability: payload.upcoming,
+          availability: derivedUpcoming,
         },
         expiring: {
           offset: 0,
           canFetchMore: false,
-          availability: payload.expiring,
+          availability: derivedExpiring,
         },
       };
     } else {
@@ -54,12 +73,19 @@ const allAvailabilitySuccess = handleAction<
   ALL_AVAILABILITY_SUCCESSFUL,
   (state: State, { payload }: AllAvailabilitySuccessfulAction) => {
     if (payload) {
+      let derivedAdded = payload.recentlyAdded.map(av => {
+        return {
+          ...av,
+          thing: av.thing ? ThingFactory.create(av.thing) : undefined,
+        } as DerivedAvailability;
+      });
+
       return {
         ...state,
         recentlyAdded: {
           offset: 0,
           canFetchMore: false,
-          availability: payload.recentlyAdded,
+          availability: derivedAdded,
         },
       };
     } else {
