@@ -7,7 +7,6 @@ import {
   personFetchInitiated,
   PersonFetchInitiatedPayload,
 } from '../actions/people/get_person';
-import { Person } from '../types';
 import * as R from 'ramda';
 import {
   Chip,
@@ -28,11 +27,11 @@ import {
 import { layoutStyles } from '../styles';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import AddToListDialog from '../components/AddToListDialog';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
-import { Thing } from '../types';
 import withUser, { WithUserProps } from '../components/withUser';
 import ItemCard from '../components/ItemCard';
 import { List as ListIcon } from '@material-ui/icons';
+import Thing from '../types/Thing';
+import Person from '../types/Person';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -178,7 +177,7 @@ class PersonDetail extends React.Component<Props, State> {
     );
   };
 
-  renderTitle = (thing: Thing) => {
+  renderTitle = (person: Person) => {
     return (
       <div
         style={{
@@ -190,7 +189,7 @@ class PersonDetail extends React.Component<Props, State> {
         }}
       >
         <Typography color="inherit" variant="h4">
-          {`${thing.name}`}
+          {`${person.name}`}
         </Typography>
       </div>
     );
@@ -199,32 +198,41 @@ class PersonDetail extends React.Component<Props, State> {
   renderFilmography = () => {
     const { classes, person, userSelf } = this.props;
 
-    let filmography =
-      (person &&
-        person.metadata &&
-        person.metadata['combined_credits'] &&
-        person.metadata['combined_credits'].cast) ||
-      [];
+    let filmography = person!.castMemberOf;
 
     let filmographyFiltered = filmography
       .filter(
         item =>
           (item &&
-            item.genre_ids &&
-            item.genre_ids.includes(this.state.filter)) ||
+            item.genreIds &&
+            item.genreIds.includes(this.state.filter)) ||
           this.state.filter === -1,
       )
       .sort((a, b) => {
         if (this.state.sortOrder === 'Popularity') {
-          return a.popularity < b.popularity ? 1 : -1;
+          return (a.popularity || 0.0) < (b.popularity || 0.0) ? 1 : -1;
         } else if (this.state.sortOrder === 'Latest') {
-          return a.release_date < b.release_date ? 1 : -1;
+          if (!b.releaseDate) {
+            return 1;
+          } else if (!a.releaseDate) {
+            return -1;
+          } else {
+            return a.releaseDate < b.releaseDate ? 1 : -1;
+          }
         } else if (this.state.sortOrder === 'Oldest') {
-          return a.release_date > b.release_date ? 1 : -1;
+          if (!b.releaseDate) {
+            return -1;
+          } else if (!a.releaseDate) {
+            return 1;
+          } else {
+            return a.releaseDate < b.releaseDate ? 1 : -1;
+          }
+        } else {
+          return 0;
         }
       });
     let genres = filmography
-      .map(genre => genre.genre_ids)
+      .map(genre => genre.genreIds)
       .flat()
       .reduce((accumulator, currentValue) => {
         if (
@@ -288,27 +296,26 @@ class PersonDetail extends React.Component<Props, State> {
             </Select>
           </div>
         </div>
-        <Grid container spacing={2}>
-          {filmographyFiltered.map(item =>
-            item && item.poster_path ? (
-              <ItemCard
-                key={item.id}
-                userSelf={userSelf}
-                item={item}
-                itemCardVisible={false}
-                // addButton
-              />
-            ) : null,
-          )}
-        </Grid>
+        {/*<Grid container spacing={2}>*/}
+        {/*  {filmographyFiltered.map(item =>*/}
+        {/*    item && item.posterPath ? (*/}
+        {/*      <ItemCard*/}
+        {/*        key={item.id}*/}
+        {/*        userSelf={userSelf}*/}
+        {/*        item={item}*/}
+        {/*        itemCardVisible={false}*/}
+        {/*        // addButton*/}
+        {/*      />*/}
+        {/*    ) : null,*/}
+        {/*  )}*/}
+        {/*</Grid>*/}
       </div>
     );
   };
 
-  renderDescriptiveDetails = (thing: Thing) => {
+  renderDescriptiveDetails = (person: Person) => {
     const { classes } = this.props;
-    const { metadata } = thing;
-    const biography = (metadata && metadata['biography']) || '';
+    const biography = person.biography || '';
 
     return (
       <div className={classes.descriptionContainer}>
@@ -321,7 +328,7 @@ class PersonDetail extends React.Component<Props, State> {
             color: '#fff',
           }}
         >
-          <Hidden only={['xs', 'sm']}>{this.renderTitle(thing)}</Hidden>
+          <Hidden only={['xs', 'sm']}>{this.renderTitle(person)}</Hidden>
         </div>
         <div>
           <Typography color="inherit">{biography}</Typography>
@@ -354,19 +361,15 @@ class PersonDetail extends React.Component<Props, State> {
     let { classes, person, userSelf } = this.props;
     const { manageTrackingModalOpen } = this.state;
 
-    const backdrop =
-      (person &&
-        person.metadata &&
-        person.metadata['combined_credits'] &&
-        person.metadata['combined_credits'].cast[0]) ||
-      {};
+    if (!person) {
+      return this.renderLoading();
+    }
 
-    const profilePath =
-      (person && person.metadata && person.metadata['profile_path']) || '';
+    const backdrop = person!.castMemberOf[0];
 
-    return !person ? (
-      this.renderLoading()
-    ) : (
+    const profilePath = person!.profilePath || '';
+
+    return (
       <React.Fragment>
         <div className={classes.backdrop}>
           <ResponsiveImage
@@ -416,12 +419,12 @@ class PersonDetail extends React.Component<Props, State> {
                 />
               </div>
               {this.renderTrackingToggle()}
-              <AddToListDialog
-                open={manageTrackingModalOpen}
-                onClose={this.closeManageTrackingModal.bind(this)}
-                userSelf={userSelf!}
-                item={person}
-              />
+              {/*<AddToListDialog*/}
+              {/*  open={manageTrackingModalOpen}*/}
+              {/*  onClose={this.closeManageTrackingModal.bind(this)}*/}
+              {/*  userSelf={userSelf!}*/}
+              {/*  item={person}*/}
+              {/*/>*/}
             </div>
             <div className={classes.itemInformationContainer}>
               {this.renderDescriptiveDetails(person)}

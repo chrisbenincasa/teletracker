@@ -1,12 +1,20 @@
 import { put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { clientEffect, createAction } from '../utils';
+import Thing, { ApiThing, ThingFactory } from '../../types/Thing';
 
 export const SEARCH_INITIATED = 'search/INITIATED';
 export const SEARCH_SUCCESSFUL = 'search/SUCCESSFUL';
 export const SEARCH_FAILED = 'search/FAILED';
 export type SearchInitiatedAction = FSA<typeof SEARCH_INITIATED, string>;
-export type SearchSuccessfulAction = FSA<typeof SEARCH_SUCCESSFUL, any>;
+export interface SearchSuccessfulPayload {
+  results: Thing[];
+}
+
+export type SearchSuccessfulAction = FSA<
+  typeof SEARCH_SUCCESSFUL,
+  SearchSuccessfulPayload
+>;
 
 // TODO: Could fold this into a single action type "SearchCompleted"
 export type SearchFailedAction = FSA<typeof SEARCH_FAILED, Error>;
@@ -28,7 +36,13 @@ export const searchSaga = function*() {
       let response = yield clientEffect(client => client.search, payload!);
 
       if (response.ok) {
-        yield put(SearchSuccess(response.data));
+        let payload = {
+          results: (response.data.data as ApiThing[]).map(thing =>
+            ThingFactory.create(thing),
+          ),
+        };
+
+        yield put(SearchSuccess(payload));
       } else {
         yield put(SearchFailed(response.problem));
       }

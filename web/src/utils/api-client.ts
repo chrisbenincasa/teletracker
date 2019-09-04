@@ -1,9 +1,9 @@
 import * as apisauce from 'apisauce';
 import { merge } from 'ramda';
-import { List, User, Network, ActionType, UserPreferences } from '../types';
+import { ActionType, List, Network, User, UserPreferences } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
-import { Thing } from '../types';
 import _ from 'lodash';
+import { ApiThing } from '../types/Thing';
 
 export interface TeletrackerApiOptions {
   url?: string;
@@ -102,7 +102,7 @@ export class TeletrackerApi {
   }
 
   async search(token: string, searchText: string) {
-    return this.api.get<Thing[]>('/api/v2/search', {
+    return this.api.get<ApiThing[]>('/api/v2/search', {
       query: searchText,
       token,
     });

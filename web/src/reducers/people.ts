@@ -1,10 +1,9 @@
-import { Person } from '../types';
 import { flattenActions, handleAction } from './utils';
-import * as R from 'ramda';
 import {
   PERSON_FETCH_SUCCESSFUL,
   PersonFetchSuccessfulAction,
 } from '../actions/people/get_person';
+import Person, { PersonFactory } from '../types/Person';
 
 export interface State {
   peopleById: { [key: string]: Person };
@@ -23,7 +22,7 @@ const personFetchSuccess = handleAction(
     let existingPerson: Person | undefined = peopleById[payload!.id];
     let newThing: Person = payload!;
     if (existingPerson) {
-      newThing = R.mergeDeepRight(existingPerson, newThing) as Person;
+      newThing = PersonFactory.merge(existingPerson, newThing);
     }
 
     // TODO: Truncate thingsById after a certain point

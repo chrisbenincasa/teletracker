@@ -1,4 +1,3 @@
-import { Thing } from '../types';
 import { handleAction, flattenActions } from './utils';
 import {
   PopularSuccessfulAction,
@@ -19,7 +18,7 @@ const PopularSuccess = handleAction<PopularSuccessfulAction, State>(
     if (payload) {
       return {
         ...state,
-        popular: R.map(R.prop('normalizedName'), payload.popular),
+        popular: R.map(t => t.slug, payload.popular),
       };
     } else {
       return state;
