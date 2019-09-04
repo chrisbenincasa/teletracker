@@ -35,7 +35,27 @@ object SequentialFutures {
     }
   }
 
-  def batchedIterator[Element, OtherElement](
+  def batchedIterator[Element](
+    collection: Iterator[Element],
+    batchSize: Int
+  )(
+    fn: Iterable[Element] => Future[Unit]
+  )(implicit ec: ExecutionContext
+  ): Future[Unit] = {
+    def process(curr: List[Element]): Future[Unit] = {
+      fn(curr).flatMap(result => {
+        if (collection.isEmpty) {
+          Future.unit
+        } else {
+          process(collection.take(batchSize).toList)
+        }
+      })
+    }
+
+    process(collection.take(batchSize).toList)
+  }
+
+  def batchedIteratorAccum[Element, OtherElement](
     collection: Iterator[Element],
     batchSize: Int,
     aggregator: (List[OtherElement], List[OtherElement]) => List[OtherElement] =

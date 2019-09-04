@@ -86,7 +86,8 @@ class ThingsDbAccess @Inject()(
   def loopThroughAllThings(
     offset: Int = 0,
     perPage: Int = 50,
-    limit: Int = -1
+    limit: Int = -1,
+    startingId: Option[Int] = None
   )(
     process: Seq[ThingRaw] => Future[Unit]
   ): Future[Unit] = {
@@ -94,7 +95,9 @@ class ThingsDbAccess @Inject()(
       Future.unit
     } else {
       run {
-        things.rawQuery
+        InhibitFilter(things.rawQuery)
+          .filter(startingId)(id => _.tmdbId.asColumnOf[Int] >= id)
+          .query
           .drop(offset)
           .take(perPage)
           .sortBy(t => (t.tmdbId.asc.nullsLast, t.id))

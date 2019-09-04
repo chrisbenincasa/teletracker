@@ -10,7 +10,8 @@ case class PersonThing(
   personId: UUID,
   thingId: UUID,
   relationType: PersonAssociationType,
-  characterName: Option[String])
+  characterName: Option[String],
+  order: Option[Int])
 
 class PersonThings @Inject()(
   val profile: CustomPostgresProfile,
@@ -26,6 +27,7 @@ class PersonThings @Inject()(
     def thingId = column[UUID]("thing_id")
     def relationType = column[PersonAssociationType]("relation_type")
     def characterName = column[Option[String]]("character_name")
+    def order = column[Option[Int]]("ordering")
 
     def personThingPrimary =
       primaryKey("person_thing_prim_key", (personId, thingId))
@@ -39,7 +41,8 @@ class PersonThings @Inject()(
         personId,
         thingId,
         relationType,
-        characterName
+        characterName,
+        order
       ) <> (PersonThing.tupled, PersonThing.unapply)
   }
 
