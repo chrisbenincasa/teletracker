@@ -92,10 +92,9 @@ class DumpNetworkLogos @Inject()(
                   })
             }
 
-            SequentialFutures.batchedIterator[() => Future[Unit], Unit](
+            SequentialFutures.batchedIteratorAccum[() => Future[Unit], Unit](
               requests.iterator,
-              5,
-              _ ++ _
+              5
             )(batch => {
               Future.sequence(batch.map(f => f().recover { case _ => }))
             })

@@ -166,10 +166,12 @@ class TmdbEntityProcessor @Inject()(
       personId: UUID,
       thingId: UUID,
       typ: PersonAssociationType,
-      character: Option[String]
+      character: Option[String],
+      order: Option[Int]
     ): Future[PersonThing] = {
+      // TODO figure out order it wrong
       thingsDbAccess.upsertPersonThing(
-        PersonThing(personId, thingId, typ, character)
+        PersonThing(personId, thingId, typ, character, order)
       )
     }
 
@@ -214,7 +216,8 @@ class TmdbEntityProcessor @Inject()(
                       savedPerson.id,
                       thing.id,
                       PersonAssociationType.Cast,
-                      characterName
+                      characterName,
+                      None
                     ).map(Some(_)).recover {
                       case NonFatal(ex) => None
                     }
@@ -227,6 +230,7 @@ class TmdbEntityProcessor @Inject()(
                       savedPerson.id,
                       thing.id,
                       PersonAssociationType.Crew,
+                      None,
                       None
                     ).map(Some(_)).recover {
                       case NonFatal(ex) => None
@@ -234,7 +238,7 @@ class TmdbEntityProcessor @Inject()(
               }
 
               SequentialFutures
-                .batchedIterator((castInserts ++ crewInserts).iterator, 8)(
+                .batchedIteratorAccum((castInserts ++ crewInserts).iterator, 8)(
                   batch => {
                     Future.sequence(batch.map(_.apply()))
                   }

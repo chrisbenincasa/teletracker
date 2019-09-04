@@ -1,0 +1,1 @@
+ALTER TABLE person_things ADD COLUMN "ordering" INT DEFAULT NULL;

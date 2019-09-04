@@ -48,8 +48,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
           SequentialFutures
             .batchedIterator(
               source.getLines().safeTake(perFileLimit),
-              parallelism,
-              sink[ThingLike]
+              parallelism
             )(batch => {
               val processedBatch = batch.flatMap(line => {
                 sanitizeLine(line).map(sanitizedLine => {
@@ -87,7 +86,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
                 })
               })
 
-              Future.sequence(processedBatch)
+              Future.sequence(processedBatch).map(_ => {})
             })
             .await()
         } finally {

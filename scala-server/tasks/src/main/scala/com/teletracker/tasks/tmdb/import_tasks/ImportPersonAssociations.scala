@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class ImportPersonAssociations @Inject()(
   thingsDbAccess: ThingsDbAccess
@@ -43,9 +44,9 @@ class ImportPersonAssociations @Inject()(
     val mode = args.valueOrDefault("mode", "insert")
 
     val procFunc = if (mode == "insert") {
-      handleSingleThing _
+      handleError(handleSingleThing)
     } else if (mode == "csv") {
-      handleSingleThingCsv _
+      handleError(handleSingleThingCsv)
     } else {
       throw new IllegalArgumentException
     }
@@ -66,11 +67,25 @@ class ImportPersonAssociations @Inject()(
     } else {
       thingsDbAccess
         .loopThroughAllThings(offset, limit = limit) { things =>
-          SequentialFutures
-            .serialize(things)(procFunc)
-            .map(_ => {})
+          SequentialFutures.batchedIterator(
+            things.iterator,
+            8
+          )(batch => {
+            Future.sequence(batch.map(procFunc)).map(_ => {})
+          })
         }
         .await()
+    }
+  }
+
+  private def handleError(
+    fn: ThingRaw => Future[Unit]
+  ): ThingRaw => Future[Unit] = { thing =>
+    {
+      fn(thing).recover {
+        case NonFatal(e) =>
+          logger.error(s"Error while processing thing ID = ${thing.id}", e)
+      }
     }
   }
 
@@ -151,7 +166,8 @@ class ImportPersonAssociations @Inject()(
               personId,
               thingId,
               relationType,
-              member.character.orElse(member.character_name)
+              member.character.orElse(member.character_name),
+              member.order
             )
           })
         })
