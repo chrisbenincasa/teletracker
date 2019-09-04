@@ -9,7 +9,7 @@ import javax.inject.Inject
 import org.postgresql.util.PSQLException
 import slick.jdbc.{PositionedParameters, SetParameter}
 import java.sql.JDBCType
-import java.time.{Instant, LocalDate, OffsetDateTime, ZoneId, ZoneOffset}
+import java.time._
 import java.util.UUID
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -54,16 +54,26 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def findThingBySlugRaw(slug: Slug) = {
+  def findThingBySlug(slug: Slug) = {
     run {
       things.query.filter(_.normalizedName === slug).take(1).result.headOption
+    }
+  }
+
+  def findThingBySlugRaw(slug: Slug) = {
+    run {
+      things.rawQuery
+        .filter(_.normalizedName === slug)
+        .take(1)
+        .result
+        .headOption
     }
   }
 
   def findThingByIdOrSlug(idOrSlug: Either[UUID, Slug]) = {
     idOrSlug.fold(
       findThingById,
-      findThingBySlugRaw(_)
+      findThingBySlug
     )
   }
 
@@ -234,7 +244,7 @@ class ThingsDbAccess @Inject()(
     withAvailability: Boolean = false
   ): Future[Option[PartialThing]] = {
     val showQuery =
-      things.query.filter(t => t.id === id && t.`type` === ThingType.Show)
+      things.rawQuery.filter(t => t.id === id && t.`type` === ThingType.Show)
 
     val baseEpisodesQuery = tvShowSeasons.query.filter(_.showId === id) joinLeft
       tvShowEpisodes.query on (_.id === _.seasonId)

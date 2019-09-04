@@ -55,6 +55,35 @@ class AdminController @Inject()(
     }
   }
 
+  get("/admin/finatra/things/:thingId", admin = true) { req: Request =>
+    import com.teletracker.common.util.json.circe._
+
+    (HasThingIdOrSlug.parse(req.getParam("thingId")) match {
+      case Left(id)    => thingsDbAccess.findThingByIdRaw(id)
+      case Right(slug) => thingsDbAccess.findThingBySlugRaw(slug)
+    }).map {
+      case None => response.notFound
+      case Some(thing) =>
+        response.ok(DataResponse.complex(thing.toPartial)).contentTypeJson()
+    }
+  }
+
+  get("/admin/finatra/partial-things/:thingId", admin = true) { req: Request =>
+    import com.teletracker.common.util.json.circe._
+
+    thingsApi
+      .getThing(
+        "admin",
+        req.getParam("thingId"),
+        ThingType.fromString(req.getParam("type"))
+      )
+      .map {
+        case None => response.notFound
+        case Some(thing) =>
+          response.ok(DataResponse.complex(thing)).contentTypeJson()
+      }
+  }
+
   post("/refresh-thing", admin = true) { req: RefreshThingRequest =>
     (req.idOrSlug match {
       case Left(id)    => thingsDbAccess.findThingById(id, ThingType.Movie)

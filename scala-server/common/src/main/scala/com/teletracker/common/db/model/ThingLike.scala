@@ -88,16 +88,6 @@ case class ThingRaw(
     copy(metadata = json)
 
   def toPartial: PartialThing = {
-    val typedMeta = metadata.flatMap(rawMeta => {
-      rawMeta.as[ObjectMetadata] match {
-        case Left(err) =>
-          err.printStackTrace()
-          println(err.getMessage())
-          None
-        case Right(value) =>
-          Some(value)
-      }
-    })
     PartialThing(
       id,
       Some(name),
@@ -105,7 +95,7 @@ case class ThingRaw(
       Some(`type`),
       Some(createdAt),
       Some(lastUpdatedAt),
-      typedMeta
+      metadata
     )
   }
 }

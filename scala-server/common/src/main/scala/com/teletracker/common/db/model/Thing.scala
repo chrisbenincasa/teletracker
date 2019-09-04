@@ -4,7 +4,7 @@ import com.teletracker.common.db.CustomPostgresProfile
 import com.teletracker.common.db.access.UserThingDetails
 import com.teletracker.common.inject.DbImplicits
 import com.teletracker.common.model.tmdb._
-import com.teletracker.common.util.{Field, FieldSelector, Slug}
+import com.teletracker.common.util.Slug
 import java.time.OffsetDateTime
 import javax.inject.Inject
 import io.circe._
@@ -13,6 +13,9 @@ import io.circe.generic.auto._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import shapeless.Witness
+import slick.ast.BaseTypedType
+import slick.jdbc.JdbcType
+import slick.lifted.MappedProjection
 import java.util.UUID
 
 case class Thing(
@@ -33,7 +36,7 @@ case class Thing(
       Some(`type`),
       Some(createdAt),
       Some(lastUpdatedAt),
-      metadata
+      metadata.map(_.asJson)
     )
   }
 }
@@ -64,68 +67,18 @@ object ThingRawFactory {
   }
 }
 
-//case class ThingRaw(
-//  id: UUID,
-//  name: String,
-//  normalizedName: Slug,
-//  `type`: ThingType,
-//  createdAt: OffsetDateTime,
-//  lastUpdatedAt: OffsetDateTime,
-//  metadata: Option[Json],
-//  tmdbId: Option[String] = None,
-//  popularity: Option[Double])
-//    extends ThingLike {
-//
-//  def selectFields(
-//    fieldsOpt: Option[List[Field]],
-//    defaultFields: List[Field]
-//  ): ThingRaw = {
-//    fieldsOpt
-//      .map(fields => {
-//        metadata match {
-//          case Some(metadata) =>
-//            copy(
-//              metadata = Some(
-//                FieldSelector
-//                  .filter(metadata, fields ::: defaultFields)
-//              )
-//            )
-//
-//          case None => this
-//        }
-//      })
-//      .getOrElse(this)
-//  }
-//
-//  def toPartial: PartialThing = {
-//    val typedMeta = metadata.flatMap(rawMeta => {
-//      rawMeta.as[ObjectMetadata] match {
-//        case Left(err) =>
-//          err.printStackTrace()
-//          println(err.getMessage())
-//          None
-//        case Right(value) =>
-//          Some(value)
-//      }
-//    })
-//    PartialThing(
-//      id,
-//      Some(name),
-//      Some(normalizedName),
-//      Some(`type`),
-//      Some(createdAt),
-//      Some(lastUpdatedAt),
-//      typedMeta
-//    )
-//  }
-//}
-
 case class ThingCastMember(
   id: UUID,
   slug: Slug,
   characterName: Option[String],
   relation: Option[PersonAssociationType],
-  tmdbId: Option[String])
+  tmdbId: Option[String],
+  popularity: Option[Double],
+  order: Option[Int] = None) {
+  def withOrder(order: Option[Int]): ThingCastMember = {
+    this.copy(order = order)
+  }
+}
 
 case class PartialThing(
   id: UUID,
@@ -134,35 +87,24 @@ case class PartialThing(
   `type`: Option[ThingType] = None,
   createdAt: Option[OffsetDateTime] = None,
   lastUpdatedAt: Option[OffsetDateTime] = None,
-  metadata: Option[ObjectMetadata] = None,
+  metadata: Option[Json] = None,
   networks: Option[List[Network]] = None,
   seasons: Option[List[TvShowSeasonWithEpisodes]] = None,
   availability: Option[List[AvailabilityWithDetails]] = None,
   userMetadata: Option[UserThingDetails] = None,
   collections: Option[List[Collection]] = None,
   cast: Option[List[ThingCastMember]] = None) {
-  def withAvailability(av: List[AvailabilityWithDetails]) =
+  def withAvailability(av: List[AvailabilityWithDetails]): PartialThing =
     this.copy(availability = Some(av))
-  def withUserMetadata(userMeta: UserThingDetails) =
+  def withUserMetadata(userMeta: UserThingDetails): PartialThing =
     this.copy(userMetadata = Some(userMeta))
-  def withCollections(collections: List[Collection]) =
+  def withCollections(collections: List[Collection]): PartialThing =
     this.copy(collections = Some(collections))
-  def withCast(cast: List[ThingCastMember]) =
+  def withCast(cast: List[ThingCastMember]): PartialThing =
     this.copy(cast = Some(cast))
 
-  def metadataRaw: Option[Json] = metadata.map(_.asJson)
-
   def withRawMetadata(metadata: Json): PartialThing = {
-    val typedMeta = metadata.as[ObjectMetadata] match {
-      case Left(err) =>
-        err.printStackTrace()
-        println(err.getMessage())
-        None
-      case Right(value) =>
-        Some(value)
-    }
-
-    this.copy(metadata = typedMeta)
+    this.copy(metadata = Some(metadata))
   }
 }
 
@@ -178,8 +120,6 @@ object ObjectMetadata {
     ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('movie ->> movie)))
   def withTmdbShow(show: TvShow): ObjectMetadata =
     ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('show ->> show)))
-//  def withTmdbPerson(person: tmdb.Person): ObjectMetadata =
-//    ObjectMetadata(Some(Coproduct[TmdbExternalEntity]('person ->> person)))
 }
 
 case class ObjectMetadata(
@@ -198,8 +138,10 @@ class Things @Inject()(
   import dbImplicits._
 
   object Implicits {
-    implicit val metaToJson = MappedColumnType
-      .base[ObjectMetadata, Json](_.asJson, _.as[ObjectMetadata].right.get)
+    implicit val metaToJson
+      : JdbcType[ObjectMetadata] with BaseTypedType[ObjectMetadata] =
+      MappedColumnType
+        .base[ObjectMetadata, Json](_.asJson, _.as[ObjectMetadata].right.get)
   }
 
   import Implicits._
@@ -265,7 +207,20 @@ class Things @Inject()(
 
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
-    def projWithMetadata(includeMetadata: Boolean) =
+    def projWithMetadata(includeMetadata: Boolean): MappedProjection[
+      ThingRaw,
+      (
+        UUID,
+        String,
+        Slug,
+        ThingType,
+        OffsetDateTime,
+        OffsetDateTime,
+        Option[Json],
+        Option[String],
+        Option[Double]
+      )
+    ] =
       (
         id,
         name,
