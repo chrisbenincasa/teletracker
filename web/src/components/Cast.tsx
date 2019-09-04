@@ -7,7 +7,7 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import { CastMember, Thing } from '../types';
+import { CastMember } from '../types';
 import React, { Component } from 'react';
 import { getMetadataPath } from '../utils/metadata-access';
 import { parseInitials } from '../utils/textHelper';
@@ -15,6 +15,7 @@ import RouterLink from './RouterLink';
 import * as R from 'ramda';
 import _ from 'lodash';
 import { Person } from 'themoviedb-client-typed';
+import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -58,7 +59,7 @@ interface OwnProps {
 
 type Props = OwnProps & WithStyles<typeof styles>;
 
-class ThingAvailability extends Component<Props, {}> {
+class Cast extends Component<Props, {}> {
   constructor(props: Props) {
     super(props);
   }
@@ -137,4 +138,4 @@ class ThingAvailability extends Component<Props, {}> {
   }
 }
 
-export default withStyles(styles)(ThingAvailability);
+export default withStyles(styles)(Cast);

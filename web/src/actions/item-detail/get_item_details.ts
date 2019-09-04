@@ -1,7 +1,7 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { clientEffect, createAction } from '../utils';
 import { ErrorFluxStandardAction, FSA } from 'flux-standard-action';
-import { Thing } from '../../types';
+import { ApiThing } from '../../types/Thing';
 
 export const ITEM_FETCH_INITIATED = 'item-detail/INITIATED';
 export const ITEM_FETCH_SUCCESSFUL = 'item-detail/SUCCESSFUL';
@@ -19,7 +19,7 @@ export type ItemFetchInitiatedAction = FSA<
 
 export type ItemFetchSuccessfulAction = FSA<
   typeof ITEM_FETCH_SUCCESSFUL,
-  Thing
+  ApiThing
 >;
 
 export type ItemFetchFailedAction = ErrorFluxStandardAction<

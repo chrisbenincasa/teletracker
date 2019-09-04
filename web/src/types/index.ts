@@ -1,4 +1,5 @@
 import { ObjectMetadata } from './external/themoviedb/Movie';
+import Thing from './Thing';
 
 export interface List {
   id: number;
@@ -54,30 +55,6 @@ export interface CastMember {
   characterName?: string;
   relation?: string;
   tmdbId?: string;
-}
-
-abstract class HasImagery {
-  abstract getBackdropPath();
-  abstract getPosterPath();
-  abstract getProfilePath(): string | undefined;
-}
-
-interface ThingLike {
-  id: string;
-  name: string;
-  normalizedName: string;
-  type: 'movie' | 'show' | 'person';
-  metadata?: ObjectMetadata;
-  userMetadata?: ThingUserMetadata;
-  availability: Availability[];
-}
-
-export interface Thing extends ThingLike {
-  cast?: CastMember[];
-}
-
-export interface Person extends ThingLike {
-  type: 'person';
 }
 
 export interface ThingUserMetadata {

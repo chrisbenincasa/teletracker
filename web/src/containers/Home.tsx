@@ -16,8 +16,8 @@ import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { Thing } from '../types';
 import { Error as ErrorIcon } from '@material-ui/icons';
+import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -130,7 +130,7 @@ const mapStateToProps = (appState: AppState) => {
     isSearching: appState.search.searching,
     // TODO: Pass SearchResult object that either contains error or a response
     error: appState.search.error,
-    searchResults: R.path<Thing[]>(['search', 'results', 'data'], appState),
+    searchResults: appState.search.results,
   };
 };
 
