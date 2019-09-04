@@ -26,7 +26,7 @@ import { Loading } from '../reducers/user';
 import { layoutStyles } from '../styles';
 import { List as ListType } from '../types';
 import _ from 'lodash';
-import Thing from '../types/Thing';
+import Thing, { ApiThing, ThingFactory } from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -103,7 +103,7 @@ class Lists extends Component<Props, State> {
       return null;
     }
 
-    let things: (Thing)[] = list.things.slice(0, 6);
+    let things = list.things.slice(0, 6).map(ThingFactory.create);
     let { classes, userSelf } = this.props;
 
     return (
