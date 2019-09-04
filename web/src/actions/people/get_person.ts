@@ -1,7 +1,7 @@
 import { ErrorFluxStandardAction, FSA } from 'flux-standard-action';
-import { Person } from '../../types';
 import { clientEffect, createAction } from '../utils';
 import { put, takeEvery } from '@redux-saga/core/effects';
+import Person, { PersonFactory } from '../../types/Person';
 
 export const PERSON_FETCH_INITIATED = 'person/fetch/INITIATED';
 export const PERSON_FETCH_SUCCESSFUL = 'person/fetch/SUCCESSFUL';
@@ -46,7 +46,7 @@ export const fetchPersonDetailsSaga = function*() {
       let response = yield clientEffect(client => client.getPerson, payload.id);
 
       if (response.ok) {
-        yield put(personFetchSuccess(response.data.data));
+        yield put(personFetchSuccess(PersonFactory.create(response.data.data)));
       } else {
         yield put(personFetchFailed(new Error()));
       }

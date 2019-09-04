@@ -36,7 +36,7 @@ import {
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { ActionType, Thing } from '../types';
+import { ActionType } from '../types';
 import { getMetadataPath } from '../utils/metadata-access';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import ThingAvailability from '../components/Availability';
@@ -45,6 +45,7 @@ import Recommendations from '../components/Recommendations';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import AddToListDialog from '../components/AddToListDialog';
 import { formatRuntime } from '../utils/textHelper';
+import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -243,10 +244,8 @@ class ItemDetails extends Component<Props, State> {
   };
 
   itemMarkedAsWatched = () => {
-    if (this.props.itemDetail && this.props.itemDetail.userMetadata) {
-      return R.any(tag => {
-        return tag.action == ActionType.Watched;
-      }, this.props.itemDetail.userMetadata.tags);
+    if (this.props.itemDetail) {
+      return this.props.itemDetail.itemMarkedAsWatched;
     }
 
     return false;
@@ -261,16 +260,11 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderTitle = (thing: Thing) => {
-    const title =
-      (thing.type === 'movie'
-        ? getMetadataPath(thing, 'title')
-        : getMetadataPath(thing, 'name')) || '';
+    const title = thing.name;
     const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
     const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
-    const runtime =
-      thing.type === 'movie'
-        ? formatRuntime(getMetadataPath(thing, 'runtime'), thing.type)
-        : formatRuntime(getMetadataPath(thing, 'episode_run_time'), thing.type);
+    // TODO: handle undefined runtime
+    const runtime = formatRuntime(thing.runtime || 0, thing.type);
 
     return (
       <div
@@ -551,7 +545,7 @@ class ItemDetails extends Component<Props, State> {
 }
 
 const findThingBySlug = (things: Thing[], slug: string) => {
-  return R.find(t => t.normalizedName === slug, things);
+  return R.find(t => t.slug === slug, things);
 };
 
 const mapStateToProps: (

@@ -19,7 +19,6 @@ import { bindActionCreators } from 'redux';
 import * as R from 'ramda';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { Thing } from '../types';
 import { retrievePopular } from '../actions/popular';
 import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from '../components/ItemCard';
@@ -27,6 +26,7 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import AddToListDialog from '../components/AddToListDialog';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -90,7 +90,6 @@ interface OwnProps extends WithStyles<typeof styles> {}
 interface InjectedProps {
   isAuthed: boolean;
   isSearching: boolean;
-  searchResults?: Thing[];
   popular?: string[];
   thingsBySlug: { [key: string]: Thing };
 }
@@ -293,7 +292,6 @@ const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isSearching: appState.search.searching,
-    searchResults: R.path<Thing[]>(['search', 'results', 'data'], appState),
     popular: appState.popular.popular,
     thingsBySlug: appState.itemDetail.thingsBySlug,
   };
