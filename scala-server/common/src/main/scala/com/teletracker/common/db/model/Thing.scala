@@ -93,7 +93,8 @@ case class PartialThing(
   availability: Option[List[AvailabilityWithDetails]] = None,
   userMetadata: Option[UserThingDetails] = None,
   collections: Option[List[Collection]] = None,
-  cast: Option[List[ThingCastMember]] = None) {
+  cast: Option[List[ThingCastMember]] = None,
+  recommendations: Option[List[PartialThing]] = None) {
   def withAvailability(av: List[AvailabilityWithDetails]): PartialThing =
     this.copy(availability = Some(av))
   def withUserMetadata(userMeta: UserThingDetails): PartialThing =
@@ -102,10 +103,12 @@ case class PartialThing(
     this.copy(collections = Some(collections))
   def withCast(cast: List[ThingCastMember]): PartialThing =
     this.copy(cast = Some(cast))
-
+  def withRecommendations(recommendations: List[PartialThing]) =
+    this.copy(recommendations = Some(recommendations))
   def withRawMetadata(metadata: Json): PartialThing = {
     this.copy(metadata = Some(metadata))
   }
+  def clearMetadata: PartialThing = this.copy(metadata = None)
 }
 
 object ObjectMetadata {

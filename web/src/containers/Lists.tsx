@@ -114,7 +114,6 @@ class Lists extends Component<Props, State> {
               key={item.id}
               userSelf={userSelf}
               item={item}
-              itemCardVisible={false}
               listContext={list}
               withActionButton
             />
