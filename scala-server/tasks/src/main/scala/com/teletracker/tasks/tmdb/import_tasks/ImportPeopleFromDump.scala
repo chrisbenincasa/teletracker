@@ -163,10 +163,11 @@ class ImportPeopleFromDump @Inject()(
     personId: UUID,
     thingId: UUID,
     personAssociationType: PersonAssociationType,
-    character: Option[String]
+    character: Option[String],
+    order: Option[Int]
   ): Future[PersonThing] = {
     thingsDbAccess.upsertPersonThing(
-      PersonThing(personId, thingId, personAssociationType, character)
+      PersonThing(personId, thingId, personAssociationType, character, order)
     )
   }
 }
