@@ -116,7 +116,6 @@ class Login extends Component<Props, State> {
       .auth()
       .getRedirectResult()
       .then(result => {
-        console.log(result);
         if (result.user) {
           result.user.getIdToken().then(token => {
             this.props.logInSuccessful(token);
