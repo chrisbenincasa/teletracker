@@ -297,13 +297,7 @@ class PersonDetail extends React.Component<Props, State> {
         <Grid container spacing={2}>
           {filmographyFiltered.map(item =>
             item && item.posterPath ? (
-              <ItemCard
-                key={item.id}
-                userSelf={userSelf}
-                item={item}
-                itemCardVisible={false}
-                // addButton
-              />
+              <ItemCard key={item.id} userSelf={userSelf} item={item} />
             ) : null,
           )}
         </Grid>

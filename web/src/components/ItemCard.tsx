@@ -187,18 +187,12 @@ const styles = (theme: Theme) =>
     },
   });
 
-type RequiredThingType = ThingLikeStruct &
-  HasDescription &
-  Linkable &
-  HasImagery;
-
 interface ItemCardProps extends WithStyles<typeof styles> {
   key: string | number;
   item: RequiredThingType;
   userSelf: UserSelf | null;
 
   // display props
-  itemCardVisible?: boolean;
   hoverAddToList: boolean;
   hoverDelete?: boolean;
   hoverWatch?: boolean;
@@ -209,6 +203,8 @@ interface ItemCardProps extends WithStyles<typeof styles> {
   // This is probably not scalable, but it'll work for now.
   listContext?: List;
 }
+
+type RequiredThingType = ThingLikeStruct & Linkable & HasImagery;
 
 interface DispatchProps {
   ListUpdate: (payload: ListUpdatedInitiatedPayload) => void;
@@ -232,7 +228,6 @@ type Props = ItemCardProps & DispatchProps;
 class ItemCard extends Component<Props, ItemCardState> {
   static defaultProps = {
     withActionButton: false,
-    itemCardVisible: true,
     hoverDelete: false,
     hoverWatch: true,
     hoverAddToList: true,
@@ -263,7 +258,6 @@ class ItemCard extends Component<Props, ItemCardState> {
   componentDidMount() {
     let { item } = this.props;
     let itemId = item.id;
-    console.log(item);
 
     this.setState({
       currentId: itemId,
@@ -351,7 +345,6 @@ class ItemCard extends Component<Props, ItemCardState> {
   renderPoster = (thing: RequiredThingType) => {
     let { classes } = this.props;
     let { isHovering, hoverRating } = this.state;
-
     return (
       <div
         className={isHovering ? classes.cardHoverEnter : classes.cardHoverExit}
@@ -572,13 +565,7 @@ class ItemCard extends Component<Props, ItemCardState> {
   };
 
   render() {
-    let {
-      classes,
-      hoverAddToList,
-      item,
-      itemCardVisible,
-      userSelf,
-    } = this.props;
+    let { classes, hoverAddToList, item, userSelf } = this.props;
     let { deleted, manageTrackingModalOpen } = this.state;
 
     let gridProps: Partial<GridProps> = {
@@ -600,31 +587,6 @@ class ItemCard extends Component<Props, ItemCardState> {
               onMouseLeave={this.handleHoverExit}
             >
               {this.renderPoster(item)}
-              {itemCardVisible && (
-                <CardContent className={classes.cardContent}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      margin: '-8px -8px 0 0',
-                    }}
-                  >
-                    <Typography
-                      className={classes.title}
-                      variant="h5"
-                      component="h2"
-                      title={item.name}
-                    >
-                      {item.name}
-                    </Typography>
-                  </div>
-                  <Typography style={{ height: '60px' }}>
-                    <Truncate lines={3} ellipsis={<span>...</span>}>
-                      {item.description}
-                    </Truncate>
-                  </Typography>
-                </CardContent>
-              )}
             </Card>
           </Grid>
         </Fade>

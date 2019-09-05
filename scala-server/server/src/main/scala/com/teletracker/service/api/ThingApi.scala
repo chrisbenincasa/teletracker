@@ -1,29 +1,46 @@
 package com.teletracker.service.api
 
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.google.common.cache.{Cache, CacheBuilder}
+import com.teletracker.common.db.access.{ThingsDbAccess, UserThingDetails}
 import com.teletracker.common.db.model.{
+  ExternalSource,
   PartialThing,
   Person,
+  PersonThing,
   ThingCastMember,
+  ThingFactory,
   ThingRaw,
   ThingType
 }
-import com.teletracker.common.model.tmdb.CastMember
+import com.teletracker.common.model.tmdb.{
+  CastMember,
+  Movie,
+  PagedResult,
+  TvShow
+}
+import com.teletracker.common.util.Slug
 import com.teletracker.service.api.model.{
   Converters,
   EnrichedPerson,
   PersonCredit
 }
 import com.teletracker.service.util.HasThingIdOrSlug
+import com.twitter.util.Stopwatch
 import io.circe.Json
 import javax.inject.Inject
+import org.slf4j.LoggerFactory
 import java.time.LocalDate
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.math.Ordering.OptionOrdering
 
 class ThingApi @Inject()(
   thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext) {
+  private val logger = LoggerFactory.getLogger(getClass)
+  private val slugToIdCache: Cache[String, UUID] =
+    CacheBuilder.newBuilder().maximumSize(10000).build()
+
   import io.circe.optics.JsonPath._
 
   private val movieCast =
@@ -33,9 +50,13 @@ class ThingApi @Inject()(
 
   private val movieReleaseDate =
     root.themoviedb.movie.release_date.as[String]
-
   private val tvReleaseDate =
     root.themoviedb.show.first_air_date.as[String]
+
+  private val movieRecommendations =
+    root.themoviedb.movie.recommendations.as[PagedResult[Movie]]
+  private val tvRecommendations =
+    root.themoviedb.show.recommendations.as[PagedResult[TvShow]]
 
   private val posterPaths =
     Stream("movie", "show").map(tpe => {
@@ -48,26 +69,79 @@ class ThingApi @Inject()(
           .flatten
     })
 
+  private case class GetThingIntermediate(
+    thing: Option[PartialThing],
+    userDetails: UserThingDetails,
+    people: Seq[(Person, PersonThing)])
+
   def getThing(
     userId: String,
     idOrSlug: String,
     thingType: ThingType
   ): Future[Option[PartialThing]] = {
-    val thingFut = HasThingIdOrSlug.parse(idOrSlug) match {
-      case Left(id)    => thingsDbAccess.findThingById(id, thingType)
-      case Right(slug) => thingsDbAccess.findThingBySlug(slug, thingType)
+    def queryViaId(id: UUID) = {
+      val thingFut = thingsDbAccess.findThingById(id, thingType)
+      val userDetailsFut = thingsDbAccess.getThingUserDetails(userId, id)
+      val peopleFut = thingsDbAccess.findPeopleForThing(id, None)
+
+      for {
+        thing <- thingFut
+        details <- userDetailsFut
+        people <- peopleFut
+      } yield Some(GetThingIntermediate(thing, details, people))
     }
 
-    thingFut.flatMap {
-      case None =>
+    def queryViaSlug(slug: Slug) = {
+      timed("findThingBySlug")(
+        thingsDbAccess.findThingBySlug(slug, thingType)
+      ).flatMap {
+        case None => Future.successful(None)
+        case Some(thing) =>
+          slugToIdCache.put(slug.value, thing.id)
+
+          val userDetailsFut =
+            timed("getThingUserDetails") {
+              thingsDbAccess.getThingUserDetails(userId, thing.id)
+            }
+          val peopleFut = timed("findPeopleForThing") {
+            thingsDbAccess.findPeopleForThing(thing.id, None)
+          }
+
+          for {
+            details <- userDetailsFut
+            people <- peopleFut
+          } yield {
+            Some(GetThingIntermediate(Some(thing), details, people))
+          }
+      }
+    }
+
+    val thingAndDetailsFut = HasThingIdOrSlug.parse(idOrSlug) match {
+      case Left(id) => queryViaId(id)
+
+      case Right(slug) =>
+        Option(slugToIdCache.getIfPresent(slug.value)) match {
+          case Some(id) => queryViaId(id)
+          case None     => queryViaSlug(slug)
+        }
+    }
+
+    thingAndDetailsFut.flatMap {
+      case None | Some(GetThingIntermediate(None, _, _)) =>
         Future.successful(None)
 
-      case Some(thing) =>
-        val userThingDetailsFut = thingsDbAccess
-          .getThingUserDetails(userId, thing.id)
-
-        val relevantPeopleFut =
-          thingsDbAccess.findPeopleForThing(thing.id, None)
+      case Some(GetThingIntermediate(Some(thing), details, people)) =>
+        val cast = people.map {
+          case (person, relation) =>
+            ThingCastMember(
+              person.id,
+              person.normalizedName,
+              relation.characterName,
+              Some(relation.relationType),
+              person.tmdbId,
+              person.popularity
+            )
+        }
 
         val rawJsonMembers = thing.metadata
           .flatMap(meta => {
@@ -77,29 +151,75 @@ class ThingApi @Inject()(
               .flatten
           })
 
-        for {
-          userThingDetails <- userThingDetailsFut
-          relevantPeople <- relevantPeopleFut
-        } yield {
-          val cast = relevantPeople.map {
-            case (person, relation) =>
-              ThingCastMember(
-                person.id,
-                person.normalizedName,
-                relation.characterName,
-                Some(relation.relationType),
-                person.tmdbId,
-                person.popularity
-              )
-          }
+        val rawRecommendations = gatherRecommendations(thing)
 
-          Some(
-            thing
-              .withUserMetadata(userThingDetails)
-              .withCast(sortCastMembers(rawJsonMembers, cast.toList))
-          )
+        val baseThing = thing
+          .withUserMetadata(details)
+          .withCast(sortCastMembers(rawJsonMembers, cast.toList))
+
+        rawRecommendations match {
+          case Some(recsFut) =>
+            recsFut.map(recs => {
+              // TODO: Just select the thing without metadata from the server...
+              Some(baseThing.withRecommendations(recs.map(_.toPartial)))
+            })
+          case None =>
+            Future.successful(Some(baseThing))
         }
     }
+  }
+
+  private def gatherRecommendations(
+    thing: PartialThing
+  ): Option[Future[List[ThingRaw]]] = {
+    thing.metadata
+      .flatMap(movieRecommendations.getOption)
+      .map(movies => {
+        val ids = movies.results.map(_.id.toString).take(6)
+        timed("gatherThings") {
+          gatherThings(ids, ThingType.Movie)
+        }
+      })
+      .orElse {
+        thing.metadata
+          .flatMap(tvRecommendations.getOption)
+          .map(shows => {
+            val ids = shows.results.map(_.id.toString).take(6)
+            gatherThings(ids, ThingType.Show)
+          })
+      }
+  }
+
+  private def timed[T](op: String)(f: => Future[T]): Future[T] = {
+    val s = Stopwatch.start()
+    val ret = f
+    f.onComplete(_ => {
+      logger.debug(s"op: $op took ${s().inMillis} ms")
+    })
+    ret
+  }
+
+  private def gatherThings(
+    ids: List[String],
+    thingType: ThingType
+  ): Future[List[ThingRaw]] = {
+    val idsByOrder = ids.zipWithIndex.toMap
+    thingsDbAccess
+      .findThingsByTmdbIds(
+        ExternalSource.TheMovieDb,
+        ids.toSet,
+        Some(thingType)
+      )
+      .map(results => {
+        results.toList
+          .map {
+            case ((tmdbId, _), thing) => tmdbId -> thing
+          }
+          .sortBy {
+            case (tmdbId, _) => idsByOrder(tmdbId)
+          }
+          .map(_._2)
+      })
   }
 
   private def sortCastMembers(
@@ -119,11 +239,7 @@ class ThingApi @Inject()(
           .map(member => {
             member.withOrder(member.tmdbId.flatMap(orderById.get))
           })
-          .sortWith {
-            case (left, _) if left.order.isEmpty   => false
-            case (_, right) if right.order.isEmpty => true
-            case (left, right)                     => left.order.get < right.order.get
-          }
+          .sortBy(_.order)(NullsLastOrdering)
       }
     }
   }

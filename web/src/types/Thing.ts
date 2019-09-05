@@ -53,11 +53,24 @@ export interface Linkable {
   relativeUrl: string;
 }
 
+export interface HasRecommendations<
+  T extends ThingLikeStruct &
+    HasAvailability &
+    HasCast &
+    HasThingMetadata = ThingLikeStruct &
+    HasAvailability &
+    HasCast &
+    HasThingMetadata
+> {
+  recommendations?: T[];
+}
+
 export interface ApiThing
   extends ThingLikeStruct,
     HasThingMetadata,
     HasAvailability,
-    HasCast {}
+    HasCast,
+    HasRecommendations<ApiThing> {}
 
 export default interface Thing
   extends ThingLikeStruct,
@@ -66,34 +79,43 @@ export default interface Thing
     HasAvailability,
     HasCast,
     HasDescription,
-    Linkable {
+    Linkable,
+    HasRecommendations<Thing> {
   // Calculated
   slug: string;
   itemMarkedAsWatched: boolean;
   runtime?: number;
+  recommendations?: Thing[];
 }
 
 export class ThingFactory {
   static create(
-    apiThing: ThingLikeStruct & HasAvailability & HasCast & HasThingMetadata,
+    thingLike: ThingLikeStruct &
+      HasAvailability &
+      HasCast &
+      HasThingMetadata &
+      HasRecommendations,
   ): Thing {
     return {
-      ...apiThing,
+      ...thingLike,
 
       // Calculated fields
-      slug: apiThing.normalizedName,
-      relativeUrl: `/${apiThing.type}/${apiThing.normalizedName}`,
-      description: getDescription(apiThing),
-      itemMarkedAsWatched: itemHasTag(apiThing, ActionType.Watched),
+      slug: thingLike.normalizedName,
+      relativeUrl: `/${thingLike.type}/${thingLike.normalizedName}`,
+      description: getDescription(thingLike),
+      itemMarkedAsWatched: itemHasTag(thingLike, ActionType.Watched),
       runtime:
-        apiThing.type === 'movie'
-          ? getMetadataPath<number>(apiThing, 'runtime')
-          : getMetadataPath<number>(apiThing, 'episode_run_time'),
+        thingLike.type === 'movie'
+          ? getMetadataPath<number>(thingLike, 'runtime')
+          : getMetadataPath<number>(thingLike, 'episode_run_time'),
 
       // Images
-      posterPath: getPosterPath(apiThing),
-      backdropPath: getBackdropPath(apiThing),
-      profilePath: getProfilePath(apiThing),
+      posterPath: getPosterPath(thingLike),
+      backdropPath: getBackdropPath(thingLike),
+      profilePath: getProfilePath(thingLike),
+      recommendations: (thingLike.recommendations || []).map(
+        ThingFactory.create,
+      ),
     };
   }
 

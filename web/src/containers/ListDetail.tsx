@@ -451,7 +451,6 @@ class ListDetail extends Component<Props, State> {
                     userSelf={userSelf}
                     item={thingsById[item.id]}
                     listContext={list}
-                    itemCardVisible={false}
                     withActionButton
                     hoverDelete
                   />
