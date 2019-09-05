@@ -78,13 +78,7 @@ class Search extends Component<Props & WithUserProps> {
             <Grid container spacing={2}>
               {searchResults.map(result => {
                 return (
-                  <ItemCard
-                    key={result.id}
-                    userSelf={userSelf}
-                    item={result}
-                    itemCardVisible={false}
-                    // addButton
-                  />
+                  <ItemCard key={result.id} userSelf={userSelf} item={result} />
                 );
               })}
             </Grid>
@@ -130,7 +124,7 @@ const mapStateToProps = (appState: AppState) => {
     isSearching: appState.search.searching,
     // TODO: Pass SearchResult object that either contains error or a response
     error: appState.search.error,
-    searchResults: R.path<Thing[]>(['search', 'results', 'data'], appState),
+    searchResults: appState.search.results,
   };
 };
 

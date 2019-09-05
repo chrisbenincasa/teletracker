@@ -259,14 +259,7 @@ class Popular extends Component<Props, State> {
           {popular.map((result, index) => {
             let thing = thingsBySlug[result];
             if (thing && index !== this.state.mainItemIndex) {
-              return (
-                <ItemCard
-                  key={result}
-                  userSelf={userSelf}
-                  item={thing}
-                  itemCardVisible={false}
-                />
-              );
+              return <ItemCard key={result} userSelf={userSelf} item={thing} />;
             } else {
               return null;
             }

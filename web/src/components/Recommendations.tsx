@@ -39,13 +39,9 @@ type Props = OwnProps & WithStyles<typeof styles>;
 class Recommendations extends Component<Props, {}> {
   render() {
     const { classes, itemDetail, userSelf } = this.props;
-    const recommendations = Object(
-      getMetadataPath(itemDetail, 'recommendations'),
-    );
+    const recommendations = itemDetail.recommendations || [];
 
-    return recommendations &&
-      recommendations.results &&
-      recommendations.results.length > 0 ? (
+    return recommendations && recommendations && recommendations.length > 0 ? (
       <React.Fragment>
         <div className={classes.recommendationsContainer}>
           <Typography color="inherit" variant="h5">
@@ -53,14 +49,9 @@ class Recommendations extends Component<Props, {}> {
           </Typography>
 
           <Grid container spacing={2} className={classes.grid}>
-            {recommendations.results.map(item => {
-              return item && item.poster_path ? (
-                <ItemCard
-                  key={item.id}
-                  userSelf={userSelf}
-                  item={item}
-                  itemCardVisible={false}
-                />
+            {recommendations.map(item => {
+              return item && item.posterPath ? (
+                <ItemCard key={item.id} userSelf={userSelf} item={item} />
               ) : null;
             })}
           </Grid>

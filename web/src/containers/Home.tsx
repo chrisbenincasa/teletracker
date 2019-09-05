@@ -78,13 +78,7 @@ class Home extends Component<Props & WithUserProps> {
             <Grid container spacing={2}>
               {searchResults.map(result => {
                 return (
-                  <ItemCard
-                    key={result.id}
-                    userSelf={userSelf}
-                    item={result}
-                    itemCardVisible={false}
-                    // addButton
-                  />
+                  <ItemCard key={result.id} userSelf={userSelf} item={result} />
                 );
               })}
             </Grid>

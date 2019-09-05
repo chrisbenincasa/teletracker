@@ -123,7 +123,6 @@ class New extends Component<Props> {
               <ItemCard
                 key={things[0].id}
                 item={things[0].thing!}
-                itemCardVisible={false}
                 userSelf={this.props.userSelf!}
               />
             );
