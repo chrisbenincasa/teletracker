@@ -34,7 +34,7 @@ class PersonThings @Inject()(
     def person =
       foreignKey("person_id_foreign", personId, people.get().query)(_.id)
     def thing =
-      foreignKey("thing_id_foreign", thingId, things.get().query)(_.id)
+      foreignKey("thing_id_foreign", thingId, things.get().rawQuery)(_.id)
 
     override def * =
       (

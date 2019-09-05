@@ -60,7 +60,7 @@ class ThingController @Inject()(
           case None => response.notFound
           case Some(person) =>
             response.ok(
-              DataResponse.complex(Converters.dbPersonToEnrichedPerson(person))
+              DataResponse.complex(person)
             )
         }
       }

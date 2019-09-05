@@ -5,12 +5,21 @@ import com.teletracker.common.db.model.{
   PartialThing,
   Person,
   ThingCastMember,
+  ThingRaw,
   ThingType
 }
 import com.teletracker.common.model.tmdb.CastMember
+import com.teletracker.service.api.model.{
+  Converters,
+  EnrichedPerson,
+  PersonCredit
+}
 import com.teletracker.service.util.HasThingIdOrSlug
+import io.circe.Json
 import javax.inject.Inject
+import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
+import scala.math.Ordering.OptionOrdering
 
 class ThingApi @Inject()(
   thingsDbAccess: ThingsDbAccess
@@ -21,6 +30,23 @@ class ThingApi @Inject()(
     root.themoviedb.movie.credits.cast.as[Option[List[CastMember]]]
   private val showCast =
     root.themoviedb.show.credits.cast.as[Option[List[CastMember]]]
+
+  private val movieReleaseDate =
+    root.themoviedb.movie.release_date.as[String]
+
+  private val tvReleaseDate =
+    root.themoviedb.show.first_air_date.as[String]
+
+  private val posterPaths =
+    Stream("movie", "show").map(tpe => {
+      (j: Json) =>
+        j.hcursor
+          .downField("themoviedb")
+          .downField(tpe)
+          .get[Option[String]]("poster_path")
+          .toOption
+          .flatten
+    })
 
   def getThing(
     userId: String,
@@ -102,13 +128,81 @@ class ThingApi @Inject()(
     }
   }
 
+  implicit private val LocalDateOrdering: Ordering[LocalDate] =
+    Ordering.fromLessThan(_.isBefore(_))
+
+  private def NullsLastOrdering[T](
+    implicit ord: Ordering[T]
+  ): Ordering[Option[T]] = new OptionOrdering[T] {
+    override def optionOrdering: Ordering[T] = ord
+    override def compare(
+      x: Option[T],
+      y: Option[T]
+    ) = (x, y) match {
+      case (None, None)       => 0
+      case (None, _)          => 1
+      case (_, None)          => -1
+      case (Some(x), Some(y)) => optionOrdering.compare(x, y)
+    }
+  }
+
   def getPerson(
     userId: String,
     idOrSlug: String
-  ): Future[Option[Person]] = {
-    HasThingIdOrSlug.parse(idOrSlug) match {
+  ): Future[Option[EnrichedPerson]] = {
+    val personFut = HasThingIdOrSlug.parse(idOrSlug) match {
       case Left(id)    => thingsDbAccess.findPersonById(id)
       case Right(slug) => thingsDbAccess.findPersonBySlug(slug)
     }
+
+    personFut.flatMap {
+      case None => Future.successful(None)
+
+      case Some(person) =>
+        val relevantThingsFut =
+          thingsDbAccess.findThingsForPerson(person.id, None)
+
+        relevantThingsFut.map(relevantThings => {
+          val credits = relevantThings.map {
+            case (thing, relation) =>
+              PersonCredit(
+                id = thing.id,
+                name = thing.name,
+                normalizedName = thing.normalizedName,
+                tmdbId = thing.tmdbId,
+                popularity = thing.popularity,
+                `type` = thing.`type`,
+                associationType = relation.relationType,
+                characterName = relation.characterName,
+                releaseDate = extractReleaseDate(thing),
+                posterPath = extractPosterPath(thing)
+              )
+          }
+
+          Some(
+            Converters
+              .dbPersonToEnrichedPerson(person)
+              .withCredits(
+                credits.toList
+                  .sortBy(_.releaseDate)(NullsLastOrdering[LocalDate].reverse)
+              )
+          )
+        })
+    }
+  }
+
+  private def extractReleaseDate(thingRaw: ThingRaw) = {
+    thingRaw.metadata
+      .flatMap(meta => {
+        movieReleaseDate.getOption(meta).orElse(tvReleaseDate.getOption(meta))
+      })
+      .filter(_.nonEmpty)
+      .map(LocalDate.parse(_))
+  }
+
+  private def extractPosterPath(thingRaw: ThingRaw) = {
+    thingRaw.metadata.collectFirst {
+      case meta => posterPaths.map(_.apply(meta)).find(_.isDefined).flatten
+    }.flatten
   }
 }
