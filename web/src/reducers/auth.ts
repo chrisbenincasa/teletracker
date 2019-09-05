@@ -9,7 +9,9 @@ import {
   LOGIN_INITIATED,
   LOGIN_SUCCESSFUL,
   LoginSuccessfulAction,
+  LOGOUT_INITIATED,
   LOGOUT_SUCCESSFUL,
+  LogoutInitiatedAction,
   LogoutSuccessfulAction,
   SET_TOKEN,
   SetTokenAction,
@@ -24,15 +26,13 @@ export interface UserState extends Partial<User> {
   fetching: boolean;
   token?: string;
   error: boolean;
-  // signup: SignupState,
-  // login: LoginState,
-  details: User;
 }
 
 export interface State {
   checkingAuth: boolean;
   isLoggingIn: boolean;
   isLoggedIn: boolean;
+  isLoggingOut: boolean;
   token?: string;
   user?: UserState;
 }
@@ -41,6 +41,7 @@ const initialState: State = {
   checkingAuth: false,
   isLoggingIn: false,
   isLoggedIn: false,
+  isLoggingOut: false,
 };
 
 const authInitiated = handleAction<AuthCheckInitiatedAction, State>(
@@ -98,6 +99,16 @@ const loginSuccess = handleAction<LoginSuccessfulAction, State>(
   },
 );
 
+const logoutInitiated = handleAction<LogoutInitiatedAction, State>(
+  LOGOUT_INITIATED,
+  state => {
+    return {
+      ...state,
+      isLoggingOut: true,
+    };
+  },
+);
+
 const logoutSuccess = handleAction<LogoutSuccessfulAction, State>(
   LOGOUT_SUCCESSFUL,
   state => {
@@ -105,6 +116,7 @@ const logoutSuccess = handleAction<LogoutSuccessfulAction, State>(
       ...state,
       token: undefined,
       isLoggedIn: false,
+      isLoggingOut: false,
     };
   },
 );
