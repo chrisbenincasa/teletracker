@@ -3,6 +3,7 @@ import TeletrackerApi from '../../utils/api-client';
 import { END, eventChannel } from '@redux-saga/core';
 import * as firebase from 'firebase/app';
 import { UnsetToken } from './set_token_action';
+import { LogoutSuccessful } from './logout_action';
 
 export const watchAuthState = function*() {
   const authStateChannel = yield call(authStateChannelMaker);
@@ -16,6 +17,7 @@ export const watchAuthState = function*() {
         yield put({ type: 'USER_STATE_CHANGE', payload: user });
       } else {
         yield put(UnsetToken());
+        yield put(LogoutSuccessful());
       }
     }
   } catch (e) {
