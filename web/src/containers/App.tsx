@@ -52,6 +52,7 @@ import Popular from './Popular';
 import PersonDetail from './PersonDetail';
 import Drawer, { DrawerWidthPx } from '../components/Drawer';
 import RouterLink, { StdRouterLink } from '../components/RouterLink';
+import Logout from './Logout';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -553,7 +554,7 @@ class App extends Component<Props, State> {
               <Route exact path="/signup" component={Signup} />
               <Route exact path="/new" render={props => <New {...props} />} />
               <Route exact path="/popular" component={Popular} />
-              {/* <Route exact path="/logout" component={this.handleLogout} /> */}
+              <Route exact path="/logout" component={Logout} />
               <Route
                 exact
                 path="/lists"
