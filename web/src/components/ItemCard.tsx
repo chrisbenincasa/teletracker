@@ -263,6 +263,7 @@ class ItemCard extends Component<Props, ItemCardState> {
   componentDidMount() {
     let { item } = this.props;
     let itemId = item.id;
+    console.log(item);
 
     this.setState({
       currentId: itemId,

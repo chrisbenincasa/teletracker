@@ -211,22 +211,20 @@ class PersonDetail extends React.Component<Props, State> {
       .sort((a, b) => {
         if (this.state.sortOrder === 'Popularity') {
           return (a.popularity || 0.0) < (b.popularity || 0.0) ? 1 : -1;
-        } else if (this.state.sortOrder === 'Latest') {
+        } else if (
+          this.state.sortOrder === 'Latest' ||
+          this.state.sortOrder === 'Oldest'
+        ) {
+          let sort;
           if (!b.releaseDate) {
-            return 1;
+            sort = 1;
           } else if (!a.releaseDate) {
-            return -1;
+            sort = -1;
           } else {
-            return a.releaseDate < b.releaseDate ? 1 : -1;
+            sort = a.releaseDate < b.releaseDate ? 1 : -1;
           }
-        } else if (this.state.sortOrder === 'Oldest') {
-          if (!b.releaseDate) {
-            return -1;
-          } else if (!a.releaseDate) {
-            return 1;
-          } else {
-            return a.releaseDate < b.releaseDate ? 1 : -1;
-          }
+
+          return this.state.sortOrder === 'Oldest' ? -sort : sort;
         } else {
           return 0;
         }
@@ -296,19 +294,19 @@ class PersonDetail extends React.Component<Props, State> {
             </Select>
           </div>
         </div>
-        {/*<Grid container spacing={2}>*/}
-        {/*  {filmographyFiltered.map(item =>*/}
-        {/*    item && item.posterPath ? (*/}
-        {/*      <ItemCard*/}
-        {/*        key={item.id}*/}
-        {/*        userSelf={userSelf}*/}
-        {/*        item={item}*/}
-        {/*        itemCardVisible={false}*/}
-        {/*        // addButton*/}
-        {/*      />*/}
-        {/*    ) : null,*/}
-        {/*  )}*/}
-        {/*</Grid>*/}
+        <Grid container spacing={2}>
+          {filmographyFiltered.map(item =>
+            item && item.posterPath ? (
+              <ItemCard
+                key={item.id}
+                userSelf={userSelf}
+                item={item}
+                itemCardVisible={false}
+                // addButton
+              />
+            ) : null,
+          )}
+        </Grid>
       </div>
     );
   };

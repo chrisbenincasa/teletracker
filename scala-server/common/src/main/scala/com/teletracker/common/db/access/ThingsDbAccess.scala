@@ -1224,8 +1224,6 @@ class ThingsDbAccess @Inject()(
     thingId: UUID,
     relationType: Option[PersonAssociationType]
   ): Future[Seq[(Person, PersonThing)]] = {
-//    InhibitFilter(personThings.query)
-//      .filter(relationType)(typ => _.relationType === typ).query.groupBy(_.thingId)
     run {
       InhibitFilter(personThings.query)
         .filter(relationType)(typ => _.relationType === typ)
@@ -1233,6 +1231,22 @@ class ThingsDbAccess @Inject()(
         .filter(_.thingId === thingId)
         .flatMap(personThing => {
           personThing.person.map(person => (person, personThing))
+        })
+        .result
+    }
+  }
+
+  def findThingsForPerson(
+    personId: UUID,
+    relationType: Option[PersonAssociationType]
+  ): Future[Seq[(ThingRaw, PersonThing)]] = {
+    run {
+      InhibitFilter(personThings.query)
+        .filter(relationType)(typ => _.relationType === typ)
+        .query
+        .filter(_.personId === personId)
+        .flatMap(personThing => {
+          personThing.thing.map(thing => (thing, personThing))
         })
         .result
     }

@@ -12,7 +12,8 @@ object Converters {
       lastUpdatedAt = person.lastUpdatedAt,
       metadata = person.metadata,
       tmdbId = person.tmdbId,
-      popularity = person.popularity
+      popularity = person.popularity,
+      credits = None
     )
   }
 }

@@ -1,4 +1,4 @@
-import { ThingLikeStruct } from './Thing';
+import { HasDescription, Linkable, ThingLikeStruct } from './Thing';
 import { Person as TmdbPerson } from './external/themoviedb/Person';
 import HasImagery from './HasImagery';
 import * as R from 'ramda';
@@ -10,6 +10,22 @@ export interface PersonStruct extends ThingLikeStruct {
 
 export interface ApiPerson extends PersonStruct {
   type: 'person';
+  credits?: ApiPersonCredit[];
+}
+
+export interface ApiPersonCredit
+  extends HasImagery,
+    ThingLikeStruct,
+    HasDescription,
+    Linkable {
+  id: string;
+  name: string;
+  normalizedName: string;
+  tmdbId?: string;
+  popularity?: number;
+  type: 'movie' | 'show';
+  associationType: string;
+  characterName?: string;
 }
 
 export default interface Person extends PersonStruct, HasImagery {
@@ -24,11 +40,7 @@ export class PersonFactory {
   static create(apiPerson: ApiPerson): Person {
     return {
       ...apiPerson,
-      castMemberOf: apiPerson.metadata.combined_credits
-        ? (apiPerson.metadata.combined_credits.cast || []).map(
-            PersonCreditFactory.create,
-          )
-        : [],
+      castMemberOf: (apiPerson.credits || []).map(PersonCreditFactory.create),
       biography: apiPerson.metadata.biography,
       profilePath: apiPerson.metadata.profile_path,
       backdropPath: undefined,
