@@ -49,6 +49,7 @@ const itemFetchInitiated = handleAction(
       ...state,
       fetching: true,
       currentId: payload,
+      itemDetail: undefined,
     } as State;
   },
 );
