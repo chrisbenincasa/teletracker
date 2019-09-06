@@ -194,6 +194,16 @@ class ItemDetails extends Component<Props, State> {
   };
 
   componentDidMount() {
+    this.loadItem();
+  }
+
+  componentDidUpdate(prevProps: Readonly<Props>): void {
+    if (prevProps.match.params.id != this.props.match.params.id) {
+      this.loadItem();
+    }
+  }
+
+  loadItem = () => {
     let { match } = this.props;
     let itemId = match.params.id;
     let itemType = match.params.type;
@@ -204,7 +214,7 @@ class ItemDetails extends Component<Props, State> {
     });
 
     this.props.fetchItemDetails({ id: itemId, type: itemType });
-  }
+  };
 
   openManageTrackingModal = () => {
     this.setState({ manageTrackingModalOpen: true });
@@ -555,13 +565,7 @@ const mapStateToProps: (
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
-    itemDetail:
-      appState.itemDetail.thingsById[props.match.params.id] ||
-      appState.itemDetail.thingsBySlug[props.match.params.id] ||
-      findThingBySlug(
-        R.values(appState.itemDetail.thingsById),
-        props.match.params.id,
-      ),
+    itemDetail: appState.itemDetail.itemDetail,
   };
 };
 
