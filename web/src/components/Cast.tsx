@@ -31,13 +31,13 @@ const styles = (theme: Theme) =>
       textDecoration: 'none',
     },
     actualName: {
-      fontStyle: 'Italic',
+      fontWeight: 'bold',
     },
     castContainer: {
       marginTop: 10,
     },
     characterName: {
-      fontWeight: 'bold',
+      fontStyle: 'Italic',
     },
     grid: {
       [theme.breakpoints.up('sm')]: {
@@ -84,7 +84,14 @@ class Cast extends Component<Props, {}> {
     let dbPerson = memberById[person.id.toString()];
 
     if (dbPerson) {
-      return <RouterLink to={'/person/' + dbPerson.slug}>{avatar}</RouterLink>;
+      return (
+        <RouterLink
+          to={'/person/' + dbPerson.slug}
+          className={classes.avatarLink}
+        >
+          {avatar}
+        </RouterLink>
+      );
     } else {
       return avatar;
     }
@@ -116,18 +123,18 @@ class Cast extends Component<Props, {}> {
                 <Typography
                   variant="subtitle1"
                   color="inherit"
-                  className={classes.characterName}
-                  align="center"
-                >
-                  {person.character}
-                </Typography>
-                <Typography
-                  variant="subtitle2"
-                  color="inherit"
                   className={classes.actualName}
                   align="center"
                 >
                   {person.name}
+                </Typography>
+                <Typography
+                  variant="subtitle2"
+                  color="inherit"
+                  className={classes.characterName}
+                  align="center"
+                >
+                  {person.character}
                 </Typography>
               </div>
             ))}
