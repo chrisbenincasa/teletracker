@@ -411,7 +411,10 @@ class ItemDetails extends Component<Props, State> {
             season.episode_count > 0 &&
             season.poster_path &&
             season.name !== 'Specials' ? (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div
+                style={{ display: 'flex', flexDirection: 'column' }}
+                key={season.id}
+              >
                 <Badge
                   className={classes.badge}
                   badgeContent={season.episode_count}
