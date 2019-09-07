@@ -70,14 +70,17 @@ object ThingRawFactory {
 case class ThingCastMember(
   id: UUID,
   slug: Slug,
+  name: String,
   characterName: Option[String],
   relation: Option[PersonAssociationType],
   tmdbId: Option[String],
   popularity: Option[Double],
-  order: Option[Int] = None) {
+  order: Option[Int] = None,
+  profilePath: Option[String] = None) {
   def withOrder(order: Option[Int]): ThingCastMember = {
     this.copy(order = order)
   }
+  def withProfilePath(path: Option[String]) = this.copy(profilePath = path)
 }
 
 case class PartialThing(
