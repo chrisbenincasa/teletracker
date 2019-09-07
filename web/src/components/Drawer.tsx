@@ -251,6 +251,7 @@ class Drawer extends Component<Props, State> {
     let { listsById, match } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
+    const listPath = `/lists/${list.id}`;
 
     return (
       <ListItemLink
@@ -258,9 +259,7 @@ class Drawer extends Component<Props, State> {
         key={userList.id}
         to={`/lists/${list.id}`}
         // TODO: Improve logic for selection
-        selected={Boolean(
-          !match.params.type && Number(match.params.id) === Number(list.id),
-        )}
+        selected={listPath === location.pathname}
         primary={list.name}
         listLength={userList.thingCount}
       />
