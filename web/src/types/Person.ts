@@ -31,7 +31,7 @@ export interface ApiPersonCredit
 export default interface Person extends PersonStruct, HasImagery {
   type: 'person';
   // Calculated
-  castMemberOf: PersonCredit[];
+  credits?: PersonCredit[];
   biography?: string;
   genreIds?: number[];
 }
@@ -40,7 +40,7 @@ export class PersonFactory {
   static create(apiPerson: ApiPerson): Person {
     return {
       ...apiPerson,
-      castMemberOf: (apiPerson.credits || []).map(PersonCreditFactory.create),
+      credits: (apiPerson.credits || []).map(PersonCreditFactory.create),
       biography: apiPerson.metadata.biography,
       profilePath: apiPerson.metadata.profile_path,
       backdropPath: undefined,

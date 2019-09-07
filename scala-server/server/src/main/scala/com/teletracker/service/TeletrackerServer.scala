@@ -2,6 +2,7 @@ package com.teletracker.service
 
 import com.google.inject.Module
 import com.teletracker.common.process.tmdb.TmdbBackgroundProcessor
+import com.teletracker.common.util.{GenreCache, NetworkCache}
 import com.teletracker.service.controllers._
 import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
 import com.teletracker.service.filters.OpenCensusMonitoringFilter
@@ -46,6 +47,11 @@ class TeletrackerServer(
         .setProjectId("teletracker")
         .build()
     )
+  }
+
+  postmain {
+    injector.instance[NetworkCache].get()
+    injector.instance[GenreCache].get()
   }
 
   override protected def defaultHttpPort: String = ":3001"

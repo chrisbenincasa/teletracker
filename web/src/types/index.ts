@@ -85,6 +85,13 @@ export interface Network {
   origin?: string;
 }
 
+export interface Genre {
+  id: number;
+  name: string;
+  type: string;
+  slug: string;
+}
+
 export enum ActionType {
   Watched = 'watched',
   Enjoyed = 'enjoyed',
