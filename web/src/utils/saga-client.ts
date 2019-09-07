@@ -189,6 +189,13 @@ export class SagaTeletrackerClient {
     );
   }
 
+  *getGenres() {
+    return yield this.apiCall(
+      client => client.getGenres,
+      yield this.withToken(),
+    );
+  }
+
   private apiCall<Fn extends (this: TeletrackerApi, ...args: any[]) => any>(
     fn: (clnt: TeletrackerApi) => Fn,
     ...args: Parameters<Fn>
