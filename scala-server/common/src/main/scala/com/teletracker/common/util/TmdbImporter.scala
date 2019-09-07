@@ -5,6 +5,7 @@ import com.teletracker.common.db.model
 import com.teletracker.common.db.model.{ExternalId, ThingLike}
 import com.teletracker.common.model.tmdb
 import java.sql.Timestamp
+import java.time.OffsetDateTime
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class TmdbImporter(
@@ -26,7 +27,7 @@ abstract class TmdbImporter(
             Some(id),
             externalIds.flatMap(_.imdb_id),
             None,
-            new Timestamp(System.currentTimeMillis())
+            OffsetDateTime.now()
           )
 
           val eid = entity match {

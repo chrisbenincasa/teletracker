@@ -25,12 +25,13 @@ class IngestHboChanges @Inject()(
 }
 
 case class HboScrapeItem(
-  availableDate: String,
+  availableDate: Option[String],
   title: String,
   releaseYear: Option[String],
   category: String,
   network: String,
-  status: String)
+  status: String,
+  externalId: Option[String])
     extends ScrapedItem {
   override def isMovie: Boolean = category.toLowerCase().trim() == "film"
 
