@@ -29,7 +29,7 @@ import { ResponsiveImage } from '../components/ResponsiveImage';
 import AddToListDialog from '../components/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
 import ItemCard from '../components/ItemCard';
-import { List as ListIcon } from '@material-ui/icons';
+import { ChevronLeft, List as ListIcon } from '@material-ui/icons';
 import Thing from '../types/Thing';
 import Person from '../types/Person';
 
@@ -55,6 +55,7 @@ const styles = (theme: Theme) =>
         display: 'flex',
       },
       marginBottom: 8,
+      flexGrow: 1,
     },
     genre: { margin: 5 },
     genreContainer: { display: 'flex', flexWrap: 'wrap' },
@@ -66,7 +67,6 @@ const styles = (theme: Theme) =>
     },
     itemInformationContainer: {
       [theme.breakpoints.up('sm')]: {
-        width: 250,
         marginLeft: 20,
       },
       display: 'flex',
@@ -89,7 +89,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
-      width: '80%',
+      width: '90%',
     },
   });
 
@@ -130,27 +130,6 @@ class PersonDetail extends React.Component<Props, State> {
 
   componentDidMount() {
     this.props.personFetchInitiated({ id: this.props.match.params.id });
-    // const { person } = this.props;
-    // const { mainItemIndex } = this.state;
-
-    // // Grab random item from filtered list of popular movies
-    // if ((!prevProps.popular && popular) || (popular && mainItemIndex === -1)) {
-    //   const highestRated = popular.filter(item => {
-    //     const thing = thingsBySlug[item];
-    //     const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
-    //     const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
-    //     return voteAverage > 7 && voteCount > 1000;
-    //   });
-
-    //   const randomItem = Math.floor(Math.random() * highestRated.length);
-    //   const popularItem = popular.findIndex(
-    //     name => name === highestRated[randomItem],
-    //   );
-
-    //   this.setState({
-    //     mainItemIndex: popularItem,
-    //   });
-    // }
   }
 
   setSortOrder = event => {
@@ -385,42 +364,54 @@ class PersonDetail extends React.Component<Props, State> {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
+              alignItems: 'flex-start',
             }}
-          />
-          <div className={classes.itemDetailContainer}>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                zIndex: 99999,
-              }}
+          >
+            <Fab
+              size="small"
+              onClick={this.props.history.goBack}
+              variant="extended"
+              aria-label="Go Back"
+              style={{ marginTop: 20, marginLeft: 20 }}
             >
-              <Hidden smUp>{this.renderTitle(person)}</Hidden>
-              <div className={classes.posterContainer}>
-                <img
-                  src={
-                    profilePath
-                      ? `https://image.tmdb.org/t/p/w185/${profilePath}`
-                      : ''
-                  }
-                  style={{
-                    width: '100%',
-                  }}
-                />
+              <ChevronLeft style={{ marginRight: 8 }} />
+              Go Back
+            </Fab>
+
+            <div className={classes.itemDetailContainer}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  zIndex: 99999,
+                }}
+              >
+                <Hidden smUp>{this.renderTitle(person)}</Hidden>
+                <div className={classes.posterContainer}>
+                  <img
+                    src={
+                      profilePath
+                        ? `https://image.tmdb.org/t/p/w185/${profilePath}`
+                        : ''
+                    }
+                    style={{
+                      width: '100%',
+                    }}
+                  />
+                </div>
+                {this.renderTrackingToggle()}
+                {/*<AddToListDialog*/}
+                {/*  open={manageTrackingModalOpen}*/}
+                {/*  onClose={this.closeManageTrackingModal.bind(this)}*/}
+                {/*  userSelf={userSelf!}*/}
+                {/*  item={person}*/}
+                {/*/>*/}
               </div>
-              {this.renderTrackingToggle()}
-              {/*<AddToListDialog*/}
-              {/*  open={manageTrackingModalOpen}*/}
-              {/*  onClose={this.closeManageTrackingModal.bind(this)}*/}
-              {/*  userSelf={userSelf!}*/}
-              {/*  item={person}*/}
-              {/*/>*/}
-            </div>
-            <div className={classes.itemInformationContainer}>
-              {this.renderDescriptiveDetails(person)}
-              {this.renderFilmography()}
+              <div className={classes.itemInformationContainer}>
+                {this.renderDescriptiveDetails(person)}
+                {this.renderFilmography()}
+              </div>
             </div>
           </div>
         </div>

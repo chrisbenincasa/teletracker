@@ -18,7 +18,12 @@ import {
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { Check, List as ListIcon, PlayArrow } from '@material-ui/icons';
+import {
+  Check,
+  List as ListIcon,
+  PlayArrow,
+  ChevronLeft,
+} from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -107,6 +112,16 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       position: 'relative',
     },
+    leftContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      [theme.breakpoints.up('sm')]: {
+        position: 'sticky',
+        top: 75,
+        height: 475,
+      },
+    },
     modal: {
       display: 'flex',
       alignItems: 'center',
@@ -116,7 +131,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
-      width: '80%',
+      width: '90%',
       display: 'flex',
       flex: '0 1 auto',
       boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
@@ -448,67 +463,73 @@ class ItemDetails extends Component<Props, State> {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
+              alignItems: 'flex-start',
             }}
-          />
-          <div className={classes.itemDetailContainer}>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
+          >
+            <Fab
+              size="small"
+              onClick={this.props.history.goBack}
+              variant="extended"
+              aria-label="Go Back"
+              style={{ marginTop: 20, marginLeft: 20 }}
             >
-              <Hidden smUp>{this.renderTitle(itemDetail)}</Hidden>
-              <div
-                className={classes.posterContainer}
-                onMouseEnter={this.showPlayTrailerIcon}
-                onMouseLeave={this.hidePlayTrailerIcon}
-              >
-                {this.state.showPlayIcon &&
-                itemDetail.id === '7b6dbeb1-8353-45a7-8c9b-7f9ab8b037f8' ? (
-                  <IconButton
-                    aria-haspopup="true"
-                    color="inherit"
-                    style={{ position: 'absolute' }}
-                    onClick={this.openTrailerModal}
-                  >
-                    <PlayArrow fontSize="large" />
-                  </IconButton>
-                ) : null}
-                <CardMedia
-                  src={imagePlaceholder}
-                  item={itemDetail}
-                  component={ResponsiveImage}
-                  imageType="poster"
-                  imageStyle={{
-                    width: '100%',
-                  }}
-                />
-              </div>
+              <ChevronLeft style={{ marginRight: 8 }} />
+              Go Back
+            </Fab>
 
-              {this.renderWatchedToggle()}
-              {this.renderTrackingToggle()}
-              <AddToListDialog
-                open={manageTrackingModalOpen}
-                onClose={this.closeManageTrackingModal.bind(this)}
-                userSelf={userSelf!}
-                item={itemDetail}
-              />
-            </div>
-            <div className={classes.itemInformationContainer}>
-              {this.renderDescriptiveDetails(itemDetail)}
-              <div>
-                <div style={{ marginTop: 10 }}>
-                  <ThingAvailability
-                    userSelf={userSelf!}
-                    itemDetail={itemDetail}
+            <div className={classes.itemDetailContainer}>
+              <div className={classes.leftContainer}>
+                <Hidden smUp>{this.renderTitle(itemDetail)}</Hidden>
+                <div
+                  className={classes.posterContainer}
+                  onMouseEnter={this.showPlayTrailerIcon}
+                  onMouseLeave={this.hidePlayTrailerIcon}
+                >
+                  {this.state.showPlayIcon &&
+                  itemDetail.id === '7b6dbeb1-8353-45a7-8c9b-7f9ab8b037f8' ? (
+                    <IconButton
+                      aria-haspopup="true"
+                      color="inherit"
+                      style={{ position: 'absolute' }}
+                      onClick={this.openTrailerModal}
+                    >
+                      <PlayArrow fontSize="large" />
+                    </IconButton>
+                  ) : null}
+                  <CardMedia
+                    src={imagePlaceholder}
+                    item={itemDetail}
+                    component={ResponsiveImage}
+                    imageType="poster"
+                    imageStyle={{
+                      width: '100%',
+                    }}
                   />
                 </div>
+
+                {this.renderWatchedToggle()}
+                {this.renderTrackingToggle()}
+                <AddToListDialog
+                  open={manageTrackingModalOpen}
+                  onClose={this.closeManageTrackingModal.bind(this)}
+                  userSelf={userSelf!}
+                  item={itemDetail}
+                />
               </div>
-              <Cast itemDetail={itemDetail} />
-              {this.renderSeriesDetails(itemDetail)}
-              <Recommendations itemDetail={itemDetail} userSelf={userSelf!} />
+              <div className={classes.itemInformationContainer}>
+                {this.renderDescriptiveDetails(itemDetail)}
+                <div>
+                  <div style={{ marginTop: 10 }}>
+                    <ThingAvailability
+                      userSelf={userSelf!}
+                      itemDetail={itemDetail}
+                    />
+                  </div>
+                </div>
+                <Cast itemDetail={itemDetail} />
+                {this.renderSeriesDetails(itemDetail)}
+                <Recommendations itemDetail={itemDetail} userSelf={userSelf!} />
+              </div>
             </div>
           </div>
         </div>
