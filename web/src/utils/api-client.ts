@@ -1,6 +1,13 @@
 import * as apisauce from 'apisauce';
 import { merge } from 'ramda';
-import { ActionType, List, Network, User, UserPreferences } from '../types';
+import {
+  ActionType,
+  Genre,
+  List,
+  Network,
+  User,
+  UserPreferences,
+} from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import _ from 'lodash';
 import { ApiThing } from '../types/Thing';
@@ -270,6 +277,10 @@ export class TeletrackerApi {
 
   async getNetworks(token: string): Promise<TeletrackerResponse<Network[]>> {
     return this.api.get<DataResponse<Network[]>>('/api/v1/networks', { token });
+  }
+
+  async getGenres(token: string): Promise<TeletrackerResponse<Genre[]>> {
+    return this.api.get<DataResponse<Genre[]>>('/api/v1/genres', { token });
   }
 
   async updateActions(

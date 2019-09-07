@@ -33,6 +33,11 @@ import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
 import { popularSaga } from './popular';
 import { fetchItemDetailsBatchSaga, fetchItemDetailsSaga } from './item-detail';
 import { fetchPersonDetailsSaga } from './people/get_person';
+import {
+  GENRES_LOAD_SUCCESS,
+  loadGenres,
+  loadGenresSaga,
+} from './metadata/load_genres';
 
 export const STARTUP = 'startup';
 
@@ -42,6 +47,7 @@ const StartupAction = createBasicAction<StartupAction>(STARTUP);
 
 function* startupSaga() {
   yield put(StartupAction());
+  yield put(loadGenres());
 }
 
 export function* root() {
@@ -50,7 +56,6 @@ export function* root() {
 
   // Start all of the sagas
   yield all([
-    startupSaga(),
     watchAuthState(),
     checkAuthSaga(),
     retrieveListSaga(),
@@ -78,5 +83,7 @@ export function* root() {
     allAvailabilitySaga(),
     popularSaga(),
     fetchPersonDetailsSaga(),
+    loadGenresSaga(),
+    startupSaga(),
   ]);
 }

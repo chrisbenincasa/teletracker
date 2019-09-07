@@ -14,11 +14,13 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.model.tmdb.{
   CastMember,
+  Genre,
   Movie,
   PagedResult,
   TvShow
 }
-import com.teletracker.common.util.Slug
+import com.teletracker.common.util.GenreCache.GenreMap
+import com.teletracker.common.util.{GenreCache, Slug}
 import com.teletracker.service.api.model.{
   Converters,
   EnrichedPerson,
@@ -35,7 +37,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.math.Ordering.OptionOrdering
 
 class ThingApi @Inject()(
-  thingsDbAccess: ThingsDbAccess
+  thingsDbAccess: ThingsDbAccess,
+  genreCache: GenreCache
 )(implicit executionContext: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
   private val slugToIdCache: Cache[String, UUID] =
@@ -57,6 +60,11 @@ class ThingApi @Inject()(
     root.themoviedb.movie.recommendations.as[PagedResult[Movie]]
   private val tvRecommendations =
     root.themoviedb.show.recommendations.as[PagedResult[TvShow]]
+
+  private val movieGenres =
+    root.themoviedb.movie.genres.as[List[Genre]]
+  private val tvGenres =
+    root.themoviedb.show.genres.as[List[Genre]]
 
   private val posterPaths =
     Stream("movie", "show").map(tpe => {
@@ -275,10 +283,15 @@ class ThingApi @Inject()(
       case None => Future.successful(None)
 
       case Some(person) =>
+        val genreCacheFut = genreCache.get()
+
         val relevantThingsFut =
           thingsDbAccess.findThingsForPerson(person.id, None)
 
-        relevantThingsFut.map(relevantThings => {
+        for {
+          relevantThings <- relevantThingsFut
+          genres <- genreCacheFut
+        } yield {
           val credits = relevantThings.map {
             case (thing, relation) =>
               PersonCredit(
@@ -291,7 +304,8 @@ class ThingApi @Inject()(
                 associationType = relation.relationType,
                 characterName = relation.characterName,
                 releaseDate = extractReleaseDate(thing),
-                posterPath = extractPosterPath(thing)
+                posterPath = extractPosterPath(thing),
+                genreIds = extractGenreIds(thing, genres).toSet
               )
           }
 
@@ -300,10 +314,12 @@ class ThingApi @Inject()(
               .dbPersonToEnrichedPerson(person)
               .withCredits(
                 credits.toList
-                  .sortBy(_.releaseDate)(NullsLastOrdering[LocalDate].reverse)
+                  .sortBy(_.releaseDate)(
+                    NullsLastOrdering[LocalDate].reverse
+                  )
               )
           )
-        })
+        }
     }
   }
 
@@ -320,5 +336,21 @@ class ThingApi @Inject()(
     thingRaw.metadata.collectFirst {
       case meta => posterPaths.map(_.apply(meta)).find(_.isDefined).flatten
     }.flatten
+  }
+
+  private def extractGenreIds(
+    thingRaw: ThingRaw,
+    genres: GenreMap
+  ) = {
+    thingRaw.metadata.toList
+      .flatMap(meta => {
+        movieGenres.getOption(meta).orElse(tvGenres.getOption(meta))
+      })
+      .flatMap(tmdbGenres => {
+        tmdbGenres
+          .map(_.id)
+          .flatMap(id => genres.get(ExternalSource.TheMovieDb -> id.toString))
+          .flatMap(_.id)
+      })
   }
 }
