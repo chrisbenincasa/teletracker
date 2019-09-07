@@ -144,6 +144,7 @@ class ThingApi @Inject()(
             ThingCastMember(
               person.id,
               person.normalizedName,
+              person.name,
               relation.characterName,
               Some(relation.relationType),
               person.tmdbId,
@@ -161,9 +162,11 @@ class ThingApi @Inject()(
 
         val rawRecommendations = gatherRecommendations(thing)
 
+        val sanitizedCast = sanitizeCastMembers(rawJsonMembers, cast.toList)
+
         val baseThing = thing
           .withUserMetadata(details)
-          .withCast(sortCastMembers(rawJsonMembers, cast.toList))
+          .withCast(sanitizedCast)
 
         rawRecommendations match {
           case Some(recsFut) =>
@@ -230,13 +233,16 @@ class ThingApi @Inject()(
       })
   }
 
-  private def sortCastMembers(
+  private def sanitizeCastMembers(
     rawJsonMembers: Option[List[CastMember]],
     thingCastMember: List[ThingCastMember]
   ): List[ThingCastMember] = {
     rawJsonMembers match {
       case None => thingCastMember
       case Some(rawMembers) => {
+        val rawMemberById =
+          rawMembers.map(member => member.id.toString -> member).toMap
+
         val orderById = rawMembers
           .map(
             member => member.id.toString -> member.order.getOrElse(Int.MaxValue)
@@ -245,7 +251,10 @@ class ThingApi @Inject()(
 
         thingCastMember
           .map(member => {
-            member.withOrder(member.tmdbId.flatMap(orderById.get))
+            val rawMember = member.tmdbId.flatMap(rawMemberById.get)
+            member
+              .withOrder(member.tmdbId.flatMap(orderById.get))
+              .withProfilePath(rawMember.flatMap(_.profile_path))
           })
           .sortBy(_.order)(NullsLastOrdering)
       }

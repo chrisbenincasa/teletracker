@@ -44,10 +44,12 @@ export interface UserPreferences {
 
 export interface CastMember {
   id: string;
+  name: string;
   slug: string;
   characterName?: string;
   relation?: string;
   tmdbId?: string;
+  profilePath?: string;
 }
 
 export interface ThingUserMetadata {
