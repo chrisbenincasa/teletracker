@@ -29,7 +29,12 @@ import { ResponsiveImage } from '../components/ResponsiveImage';
 import AddToListDialog from '../components/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
 import ItemCard from '../components/ItemCard';
-import { ChevronLeft, List as ListIcon } from '@material-ui/icons';
+import {
+  ChevronLeft,
+  List as ListIcon,
+  ExpandMore,
+  ExpandLess,
+} from '@material-ui/icons';
 import Thing from '../types/Thing';
 import Person from '../types/Person';
 
@@ -59,13 +64,23 @@ const styles = (theme: Theme) =>
     },
     genre: { margin: 5 },
     genreContainer: { display: 'flex', flexWrap: 'wrap' },
-    itemCTA: {
+    leftContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      [theme.breakpoints.up('sm')]: {
+        position: 'sticky',
+        top: 75,
+        height: 475,
+      },
+    },
+    personCTA: {
       [theme.breakpoints.down('sm')]: {
         width: '80%',
       },
       width: '100%',
     },
-    itemInformationContainer: {
+    personInformationContainer: {
       [theme.breakpoints.up('sm')]: {
         marginLeft: 20,
       },
@@ -76,7 +91,7 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       position: 'relative',
     },
-    itemDetailContainer: {
+    personDetailContainer: {
       margin: 20,
       display: 'flex',
       flex: '1 1 auto',
@@ -99,6 +114,7 @@ interface State {
   sortOrder: string;
   filter: number;
   manageTrackingModalOpen: boolean;
+  showFullBiography: boolean;
 }
 
 interface StateProps {
@@ -126,6 +142,7 @@ class PersonDetail extends React.Component<Props, State> {
     sortOrder: 'Popularity',
     filter: -1,
     manageTrackingModalOpen: false,
+    showFullBiography: false,
   };
 
   componentDidMount() {
@@ -146,6 +163,10 @@ class PersonDetail extends React.Component<Props, State> {
 
   closeManageTrackingModal = () => {
     this.setState({ manageTrackingModalOpen: false });
+  };
+
+  showFullBiography = () => {
+    this.setState({ showFullBiography: !this.state.showFullBiography });
   };
 
   renderLoading = () => {
@@ -286,6 +307,8 @@ class PersonDetail extends React.Component<Props, State> {
 
   renderDescriptiveDetails = (person: Person) => {
     const { classes } = this.props;
+    const { showFullBiography } = this.state;
+
     const biography = person.biography || '';
 
     return (
@@ -301,8 +324,24 @@ class PersonDetail extends React.Component<Props, State> {
         >
           <Hidden only={['xs', 'sm']}>{this.renderTitle(person)}</Hidden>
         </div>
-        <div>
-          <Typography color="inherit">{biography}</Typography>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography color="inherit">
+            {showFullBiography ? biography : biography.substr(0, 1200)}
+          </Typography>
+          <Fab
+            size="small"
+            variant="extended"
+            aria-label={showFullBiography ? 'Read Less' : 'Read More'}
+            onClick={this.showFullBiography}
+            style={{ marginTop: 5, display: 'flex', alignSelf: 'center' }}
+          >
+            {showFullBiography ? (
+              <ExpandLess style={{ marginRight: 8 }} />
+            ) : (
+              <ExpandMore style={{ marginRight: 8 }} />
+            )}
+            {showFullBiography ? 'Read Less' : 'Read More'}
+          </Fab>
         </div>
       </div>
     );
@@ -313,7 +352,7 @@ class PersonDetail extends React.Component<Props, State> {
     let trackingCTA = 'Manage Tracking';
 
     return (
-      <div className={classes.itemCTA}>
+      <div className={classes.personCTA}>
         <Fab
           size="small"
           variant="extended"
@@ -378,15 +417,8 @@ class PersonDetail extends React.Component<Props, State> {
               Go Back
             </Fab>
 
-            <div className={classes.itemDetailContainer}>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  zIndex: 99999,
-                }}
-              >
+            <div className={classes.personDetailContainer}>
+              <div className={classes.leftContainer}>
                 <Hidden smUp>{this.renderTitle(person)}</Hidden>
                 <div className={classes.posterContainer}>
                   <img
@@ -408,7 +440,7 @@ class PersonDetail extends React.Component<Props, State> {
                 {/*  item={person}*/}
                 {/*/>*/}
               </div>
-              <div className={classes.itemInformationContainer}>
+              <div className={classes.personInformationContainer}>
                 {this.renderDescriptiveDetails(person)}
                 {this.renderFilmography()}
               </div>
