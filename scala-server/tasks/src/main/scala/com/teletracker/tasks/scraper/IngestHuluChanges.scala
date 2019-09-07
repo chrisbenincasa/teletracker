@@ -23,13 +23,14 @@ class IngestHuluChanges @Inject()(
 }
 
 case class HuluScrapeItem(
-  availableDate: String,
+  availableDate: Option[String],
   title: String,
   releaseYear: Option[String],
   notes: String,
   category: String,
   network: String,
-  status: String)
+  status: String,
+  externalId: Option[String])
     extends ScrapedItem {
   override def isMovie: Boolean = category.toLowerCase().trim() == "film"
 

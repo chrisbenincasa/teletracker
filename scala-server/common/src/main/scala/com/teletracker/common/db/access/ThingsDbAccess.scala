@@ -11,6 +11,7 @@ import slick.jdbc.{PositionedParameters, SetParameter}
 import java.sql.JDBCType
 import java.time._
 import java.util.UUID
+import java.util.regex.Pattern
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -68,6 +69,14 @@ class ThingsDbAccess @Inject()(
         .result
         .headOption
     }
+  }
+
+  def findThingsBySlugsRaw(slugs: Set[Slug]) = {
+    run {
+      things.rawQuery
+        .filter(_.normalizedName inSetBind slugs)
+        .result
+    }.map(_.map(t => t.normalizedName -> t).toMap)
   }
 
   def findThingByIdOrSlug(idOrSlug: Either[UUID, Slug]) = {
@@ -139,6 +148,7 @@ class ThingsDbAccess @Inject()(
   }
 
   private val logarithm = SimpleFunction.unary[Double, Double]("log")
+  private val NonLatin = Pattern.compile("[^\\w-]")
 
   def searchForThings(
     query: String,
@@ -147,7 +157,14 @@ class ThingsDbAccess @Inject()(
     if (query.isEmpty) {
       Future.successful(Seq.empty)
     } else {
-      val terms = query.split(" ").filter(_.nonEmpty)
+      val terms =
+        NonLatin
+          .matcher(query)
+          .replaceAll("")
+          .replaceAllLiterally("'", "")
+          .split(" ")
+          .filter(_.nonEmpty)
+
       val first = terms.init
       val last = terms.last + ":*"
       val finalQuery = (first :+ last).mkString(" & ")
@@ -219,6 +236,10 @@ class ThingsDbAccess @Inject()(
           }
           .take(20)
           .result
+      }.recover {
+        case e: PSQLException =>
+          println(s"Bad query: $finalQuery")
+          throw e
       }
     }
   }
@@ -1293,3 +1314,10 @@ case class FutureAvailability(
 case class SearchOptions(
   rankingMode: SearchRankingMode,
   thingTypeFilter: Option[Set[ThingType]])
+
+object SearchOptions {
+  val default = SearchOptions(
+    rankingMode = SearchRankingMode.Popularity,
+    thingTypeFilter = None
+  )
+}

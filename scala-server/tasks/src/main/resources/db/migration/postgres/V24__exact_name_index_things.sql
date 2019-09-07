@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS things_exact_name_idx ON "things" ("name");

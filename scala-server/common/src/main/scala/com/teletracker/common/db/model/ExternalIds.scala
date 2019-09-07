@@ -1,5 +1,6 @@
 package com.teletracker.common.db.model
 
+import com.teletracker.common.db.CustomPostgresProfile
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
 import java.util.UUID
@@ -11,10 +12,10 @@ case class ExternalId(
   tmdbId: Option[String],
   imdbId: Option[String],
   netflixId: Option[String],
-  lastUpdatedAt: java.sql.Timestamp)
+  lastUpdatedAt: java.time.OffsetDateTime)
 
 class ExternalIds @Inject()(
-  val driver: JdbcProfile,
+  val driver: CustomPostgresProfile,
   val things: Things,
   val tvShowEpisodes: TvShowEpisodes) {
   import driver.api._
@@ -28,7 +29,7 @@ class ExternalIds @Inject()(
     def imdbId = column[Option[String]]("imdb_id")
     def netflixId = column[Option[String]]("netflix_id")
     def lastUpdatedAt =
-      column[java.sql.Timestamp](
+      column[java.time.OffsetDateTime](
         "last_updated_at",
         O.SqlType("timestamp with time zone default now()")
       )

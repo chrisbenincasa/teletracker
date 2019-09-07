@@ -125,6 +125,18 @@ class TmdbEntityProcessor @Inject()(
     }
   }
 
+  def handleWatchable[W](
+    x: W
+  )(implicit watchable: TmdbWatchable[W]
+  ): Future[ProcessResult] = {
+    watchable.mediaType(x) match {
+      case ThingType.Movie => handleMovie(watchable.asMovie(x).get)
+      case ThingType.Show =>
+        handleShow(watchable.asShow(x).get, handleSeasons = false)
+      case _ => Future.failed(new IllegalArgumentException)
+    }
+  }
+
   def handleMovie(movie: Movie): Future[ProcessResult] = {
     movieImporter.handleMovie(movie)
   }
@@ -275,7 +287,7 @@ class TmdbEntityProcessor @Inject()(
             Some(id),
             externalIds.flatMap(_.imdb_id),
             None,
-            new Timestamp(System.currentTimeMillis())
+            OffsetDateTime.now()
           )
 
           val eid = entity match {

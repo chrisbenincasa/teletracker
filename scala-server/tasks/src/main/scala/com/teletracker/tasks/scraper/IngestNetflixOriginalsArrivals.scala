@@ -25,12 +25,13 @@ class IngestNetflixOriginalsArrivals @Inject()(
 }
 
 case class NetflixOriginalScrapeItem(
-  availableDate: String,
+  availableDate: Option[String],
   title: String,
   releaseYear: Option[String],
   network: String,
   status: String,
-  `type`: ThingType)
+  `type`: ThingType,
+  externalId: Option[String])
     extends ScrapedItem {
   override def category: String = ""
 
