@@ -36,4 +36,5 @@ case class PersonCredit(
   associationType: PersonAssociationType,
   characterName: Option[String],
   releaseDate: Option[LocalDate],
-  posterPath: Option[String])
+  posterPath: Option[String],
+  genreIds: Set[Int])

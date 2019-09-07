@@ -32,6 +32,9 @@ import ItemCard from '../components/ItemCard';
 import { ChevronLeft, List as ListIcon } from '@material-ui/icons';
 import Thing from '../types/Thing';
 import Person from '../types/Person';
+import { Genre } from '../types';
+import _ from 'lodash';
+import { PersonCredit } from '../types/PersonCredit';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -104,6 +107,7 @@ interface State {
 interface StateProps {
   isAuthed: boolean;
   person?: Person;
+  genres?: Genre[];
 }
 
 interface DispatchProps {
@@ -177,7 +181,7 @@ class PersonDetail extends React.Component<Props, State> {
   renderFilmography = () => {
     const { classes, person, userSelf } = this.props;
 
-    let filmography = person!.castMemberOf;
+    let filmography = person!.credits || [];
 
     let filmographyFiltered = filmography
       .filter(
@@ -208,18 +212,26 @@ class PersonDetail extends React.Component<Props, State> {
           return 0;
         }
       });
-    let genres = filmography
-      .map(genre => genre.genreIds)
-      .flat()
-      .reduce((accumulator, currentValue) => {
-        if (
-          accumulator.indexOf(currentValue) === -1 &&
-          currentValue !== undefined
-        ) {
-          accumulator.push(currentValue);
-        }
-        return accumulator;
-      }, []);
+
+    let finalGenres: Genre[] = [];
+
+    if (this.props.genres) {
+      finalGenres = _.chain(filmography)
+        .map((f: PersonCredit) => f.genreIds || [])
+        .flatten()
+        .uniq()
+        .map(id => {
+          let g = _.find(this.props.genres, g => g.id === id);
+          if (g) {
+            return [g];
+          } else {
+            return [];
+          }
+        })
+        .flatten()
+        .value();
+    }
+
     return (
       <div className={classes.genreContainer}>
         <Typography
@@ -245,13 +257,13 @@ class PersonDetail extends React.Component<Props, State> {
               onClick={() => this.setFilter(-1)}
               color={this.state.filter === -1 ? 'secondary' : 'default'}
             />
-            {genres.map(genre => (
+            {finalGenres.map(genre => (
               <Chip
-                key={genre}
-                label={genre}
+                key={genre.id}
+                label={genre.name}
                 className={classes.genre}
-                onClick={() => this.setFilter(genre)}
-                color={this.state.filter === genre ? 'secondary' : 'default'}
+                onClick={() => this.setFilter(genre.id)}
+                color={this.state.filter === genre.id ? 'secondary' : 'default'}
               />
             ))}
           </div>
@@ -336,7 +348,7 @@ class PersonDetail extends React.Component<Props, State> {
       return this.renderLoading();
     }
 
-    const backdrop = person!.castMemberOf[0];
+    const backdrop = person!.credits![0];
 
     const profilePath = person!.profilePath || '';
 
@@ -440,6 +452,7 @@ const mapStateToProps: (
     person:
       appState.people.peopleById[props.match.params.id] ||
       appState.people.peopleBySlug[props.match.params.id],
+    genres: appState.metadata.genres,
   };
 };
 
