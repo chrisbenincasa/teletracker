@@ -7,6 +7,7 @@ import {
   DialogContentText,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   Grid,
   IconButton,
   InputLabel,
@@ -15,6 +16,7 @@ import {
   Menu,
   MenuItem,
   Select,
+  Switch,
   TextField,
   Theme,
   Typography,
@@ -140,6 +142,7 @@ interface State {
   newListName: string;
   prevListId: number;
   existingList?: List;
+  deleteOnWatch: boolean;
 }
 
 class ListDetail extends Component<Props, State> {
@@ -156,6 +159,7 @@ class ListDetail extends Component<Props, State> {
       newListName: '',
       prevListId: listId,
       existingList: this.props.listsById[listId],
+      deleteOnWatch: true,
     };
   }
 
@@ -202,6 +206,10 @@ class ListDetail extends Component<Props, State> {
       });
     }
   }
+
+  setWatchedSetting = event => {
+    this.setState({ deleteOnWatch: !this.state.deleteOnWatch });
+  };
 
   handleMigration = event => {
     this.setState({ migrateListId: event.target.value });
@@ -291,7 +299,6 @@ class ListDetail extends Component<Props, State> {
           onClose={this.handleClose}
           disableAutoFocusItem
         >
-          {/* TODO: Add support for editing List name */}
           <MenuItem onClick={this.handleRenameModalOpen}>
             <ListItemIcon>
               <EditIcon />
@@ -303,6 +310,19 @@ class ListDetail extends Component<Props, State> {
               <DeleteIcon />
             </ListItemIcon>
             Delete List
+          </MenuItem>
+          <MenuItem>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={this.state.deleteOnWatch}
+                  onChange={this.setWatchedSetting}
+                  value="checkedB"
+                  color="primary"
+                />
+              }
+              label="Delete after watched"
+            />
           </MenuItem>
         </Menu>
       </div>
