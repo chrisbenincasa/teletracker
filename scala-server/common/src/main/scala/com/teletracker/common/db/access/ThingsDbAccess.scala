@@ -3,9 +3,8 @@ package com.teletracker.common.db.access
 import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
-import com.teletracker.common.inject.{DbImplicits, DbProvider}
+import com.teletracker.common.inject.{BaseDbProvider, DbImplicits}
 import com.teletracker.common.util.{Field, Slug}
-import javax.inject.Inject
 import org.postgresql.util.PSQLException
 import slick.jdbc.{PositionedParameters, SetParameter}
 import java.sql.JDBCType
@@ -16,8 +15,8 @@ import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-class ThingsDbAccess @Inject()(
-  val provider: DbProvider,
+abstract class ThingsDbAccess(
+  override val provider: BaseDbProvider,
   val things: Things,
   val tvShowSeasons: TvShowSeasons,
   val thingNetworks: ThingNetworks,
@@ -96,7 +95,8 @@ class ThingsDbAccess @Inject()(
     offset: Int = 0,
     perPage: Int = 50,
     limit: Int = -1,
-    startingId: Option[Int] = None
+    startingId: Option[UUID] = None,
+    thingType: Option[ThingType] = None
   )(
     process: Seq[ThingRaw] => Future[Unit]
   ): Future[Unit] = {
@@ -104,13 +104,18 @@ class ThingsDbAccess @Inject()(
       Future.unit
     } else {
       run {
-        InhibitFilter(things.rawQuery)
-          .filter(startingId)(id => _.tmdbId.asColumnOf[Int] >= id)
+        val res = InhibitFilter(things.rawQuery)
+          .filter(startingId)(id => _.id >= id)
+          .filter(thingType)(t => _.`type` === t)
           .query
+          .sortBy(_.id.asc)
           .drop(offset)
           .take(perPage)
-          .sortBy(t => (t.tmdbId.asc.nullsLast, t.id))
           .result
+
+        println(res.statements)
+
+        res
       }.flatMap {
         case x if x.isEmpty => Future.unit
         case x =>
@@ -158,11 +163,14 @@ class ThingsDbAccess @Inject()(
       Future.successful(Seq.empty)
     } else {
       val terms =
-        NonLatin
-          .matcher(query)
-          .replaceAll("")
-          .replaceAllLiterally("'", "")
+        query
           .split(" ")
+          .map(
+            NonLatin
+              .matcher(_)
+              .replaceAll("")
+              .replaceAllLiterally("'", "")
+          )
           .filter(_.nonEmpty)
 
       val first = terms.init
@@ -447,7 +455,21 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def findPeopleByTmdbIds(ids: Set[String]): Future[Seq[(String, UUID)]] = {
+  def findPeopleByTmdbIds(ids: Set[String]): Future[Map[String, Person]] = {
+    if (ids.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      run {
+        people.query
+          .filter(_.tmdbId.isDefined)
+          .filter(_.tmdbId inSetBind ids)
+          .map(p => (p.tmdbId.get -> p))
+          .result
+      }.map(_.toMap)
+    }
+  }
+
+  def findPeopleIdsByTmdbIds(ids: Set[String]): Future[Seq[(String, UUID)]] = {
     if (ids.isEmpty) {
       Future.successful(Seq.empty)
     } else {
@@ -653,7 +675,8 @@ class ThingsDbAccess @Inject()(
     def update(existingThing: ThingRaw): Future[ThingRaw] = {
       val updated = thingToInsert.copy(
         id = existingThing.id,
-        createdAt = existingThing.createdAt
+        createdAt = existingThing.createdAt,
+        genres = thingToInsert.genres.orElse(existingThing.genres)
       )
 
       run {
@@ -809,7 +832,7 @@ class ThingsDbAccess @Inject()(
   def getAllGenres(typ: Option[GenreType]): Future[Seq[Genre]] = {
     run {
       val q = genres.query
-      val filtered = if (typ.isDefined) q.filter(_.`type` === typ.get) else q
+      val filtered = if (typ.isDefined) q.filter(_.`type` @> typ.toList) else q
       filtered.result
     }
   }
@@ -1291,6 +1314,18 @@ class ThingsDbAccess @Inject()(
             })
         }
         .result
+    }
+  }
+
+  def updateGenresForThing(
+    thingId: UUID,
+    genreIds: List[Int]
+  ) = {
+    run {
+      things.rawQuery
+        .filter(_.id === thingId)
+        .map(_.genres)
+        .update(Some(genreIds))
     }
   }
 }

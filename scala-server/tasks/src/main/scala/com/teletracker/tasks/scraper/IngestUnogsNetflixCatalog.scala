@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper
 
 import com.google.cloud.storage.Storage
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.access.{AsyncThingsDbAccess, ThingsDbAccess}
 import com.teletracker.common.db.model.{
   Availability,
   Network,
@@ -21,7 +21,7 @@ import scala.concurrent.Future
 class IngestUnogsNetflixCatalog @Inject()(
   protected val tmdbClient: TmdbClient,
   protected val tmdbProcessor: TmdbEntityProcessor,
-  protected val thingsDb: ThingsDbAccess,
+  protected val thingsDb: AsyncThingsDbAccess,
   protected val storage: Storage,
   protected val networkCache: NetworkCache)
     extends IngestJob[UnogsNetflixCatalogItem] {

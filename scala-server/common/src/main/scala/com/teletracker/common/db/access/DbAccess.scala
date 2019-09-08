@@ -1,14 +1,15 @@
 package com.teletracker.common.db.access
 
 import com.teletracker.common.db.DbMonitoring
-import com.teletracker.common.inject.DbProvider
+import com.teletracker.common.inject.{BaseDbProvider, SyncDbProvider}
+import slick.dbio.NoStream
 import java.util.concurrent.RejectedExecutionException
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class DbAccess(
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext) {
-  val provider: DbProvider
+  val provider: BaseDbProvider
 
   import provider.driver.api._
 

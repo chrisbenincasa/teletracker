@@ -77,7 +77,8 @@ case class ThingRaw(
   lastUpdatedAt: OffsetDateTime,
   metadata: Option[Json],
   tmdbId: Option[String] = None,
-  popularity: Option[Double])
+  popularity: Option[Double],
+  genres: Option[List[Int]])
     extends ThingLike {
 
   override type This = ThingRaw

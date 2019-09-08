@@ -111,7 +111,9 @@ lazy val tasks = project
     ),
     `run-db-migrations` := runInputTask(
       Runtime,
-      "com.teletracker.tasks.db.RunDatabaseMigrationMain"
+      "com.teletracker.tasks.TeletrackerTaskRunner",
+      "-class=com.teletracker.tasks.db.RunDatabaseMigration",
+      "-action=migrate"
     ).evaluated,
     `reset-db` := Def
       .sequential(

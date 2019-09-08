@@ -4,7 +4,7 @@ import cats.syntax.writer
 import com.google.api.gax.paging.Page
 import com.google.cloud.storage.Storage.BlobListOption
 import com.google.cloud.storage.{Blob, BlobId, Storage}
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.access.{AsyncThingsDbAccess, ThingsDbAccess}
 import com.teletracker.common.db.model.ThingFactory
 import com.teletracker.common.model.Thingable
 import com.teletracker.common.model.tmdb.Person
@@ -22,7 +22,7 @@ import scala.io.Source
 import scala.collection.JavaConverters._
 
 class CreatePersonImportCsv @Inject()(
-  thingsDbAccess: ThingsDbAccess,
+  thingsDbAccess: AsyncThingsDbAccess,
   storage: Storage
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {

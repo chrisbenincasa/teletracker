@@ -1,12 +1,12 @@
 package com.teletracker.common.db.access
 
 import com.teletracker.common.db.model.{Things, TrackedListRow, UserThingTags}
-import com.teletracker.common.inject.{DbImplicits, DbProvider}
+import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 
 class DynamicListBuilder @Inject()(
-  val provider: DbProvider,
+  val provider: SyncDbProvider,
   val userThingTags: UserThingTags,
   val things: Things,
   dbImplicits: DbImplicits) {

@@ -1,8 +1,10 @@
 package com.teletracker.common.inject
 
-import com.google.inject.{Provides, Singleton}
+import com.google.inject.assistedinject.FactoryModuleBuilder
+import com.google.inject.{Key, Provider, Provides, Singleton}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.CustomPostgresProfile
+import com.teletracker.common.db.access.GenresDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.execution.ExecutionContextProvider
@@ -14,32 +16,36 @@ import slick.jdbc.{DriverDataSource, JdbcProfile}
 import slick.util.AsyncExecutor
 import java.io.Closeable
 import java.util.Properties
+import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 class DbModule extends TwitterModule {
+
+  override protected def configure(): Unit = {
+    bind[BaseDbProvider, SyncPath].to(classOf[SyncDbProvider])
+    bind[BaseDbProvider, AsyncPath].to(classOf[AsyncDbProvider])
+  }
+
   @Provides
   @Singleton
-  def dataSource(
-    config: TeletrackerConfig
-  )(implicit executionContext: ExecutionContext
-  ): javax.sql.DataSource = {
-    val props = new Properties()
-    if (config.env != "local") {
-      //      props.setProperty(
-      //        "socketFactory",
-      //        classOf[SocketFactory].getName
-      //      )
-      //
-      //      props.setProperty(
-      //        "cloudSqlInstance",
-      //        config.db.cloudSqlInstance.get
-      //      )
+  @SyncPath
+  def dataSource(config: TeletrackerConfig): javax.sql.DataSource = {
+    mkDataSource("Sync DB Pool", config)
+  }
 
-      //      props.setProperty("ssl", "true")
-      //      props.setProperty("sslmode", "require")
-      //      props.setProperty("tcpKeepAlive", "true")
-    }
+  @Provides
+  @Singleton
+  @AsyncPath
+  def asyncDataSource(config: TeletrackerConfig): javax.sql.DataSource = {
+    mkDataSource("Async DB Pool", config)
+  }
+
+  private def mkDataSource(
+    poolName: String,
+    config: TeletrackerConfig
+  ) = {
+    val props = new Properties()
 
     props.setProperty("dataSourceClassName", config.db.driver.getClass.getName)
     props.setProperty("username", config.db.user)
@@ -60,6 +66,7 @@ class DbModule extends TwitterModule {
     )
 
     val hikari = new HikariDataSource(conf)
+    hikari.setPoolName(poolName)
     hikari.setMaximumPoolSize(3)
     hikari
   }
@@ -79,9 +86,10 @@ class DbModule extends TwitterModule {
   }
 }
 
-class DbProvider @Inject()(
-  val dataSource: javax.sql.DataSource
-)(implicit executionContext: ExecutionContext) {
+abstract class BaseDbProvider(dataSource: javax.sql.DataSource) {
+  protected val fixedPool =
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+
   val driver: CustomPostgresProfile = CustomPostgresProfile
 
   import driver.api._
@@ -89,7 +97,7 @@ class DbProvider @Inject()(
   private lazy val db = Database.forDataSource(
     dataSource,
     None,
-    executor = CustomAsyncExecutor(executionContext)
+    executor = CustomAsyncExecutor(fixedPool)
   )
 
   def getDB: Database = db
@@ -102,6 +110,14 @@ class DbProvider @Inject()(
     }
   }
 }
+
+@Singleton
+class SyncDbProvider @Inject()(@SyncPath val dataSource: javax.sql.DataSource)
+    extends BaseDbProvider(dataSource)
+
+@Singleton
+class AsyncDbProvider @Inject()(@AsyncPath val dataSource: javax.sql.DataSource)
+    extends BaseDbProvider(dataSource)
 
 class DbImplicits @Inject()(val profile: CustomPostgresProfile) {
   import com.teletracker.common.util.json.circe._
@@ -116,6 +132,11 @@ class DbImplicits @Inject()(val profile: CustomPostgresProfile) {
     .base[PresentationType, String](_.getName, PresentationType.fromString)
   implicit val genreTypeMapper =
     MappedColumnType.base[GenreType, String](_.getName, GenreType.fromString)
+  implicit val genreListTypeMapper =
+    MappedColumnType.base[List[GenreType], List[String]](
+      _.map(_.getName),
+      _.map(GenreType.fromString)
+    )
   implicit val thingTypeMapper =
     MappedColumnType.base[ThingType, String](_.getName, ThingType.fromString)
   implicit val actionTypeMapper = MappedColumnType

@@ -1,7 +1,7 @@
 package com.teletracker.tasks
 
 import com.google.inject.Module
-import com.teletracker.common.inject.{DbProvider, Modules}
+import com.teletracker.common.inject.{Modules, SyncDbProvider}
 import com.teletracker.tasks.inject.HttpClientModule
 import com.twitter.app.Flaggable
 import java.net.URI
@@ -20,7 +20,7 @@ abstract class TeletrackerTaskApp[T <: TeletrackerTask: Manifest]
 
   protected def extraModules: Seq[Module] = Seq()
 
-  protected lazy val dbProvider = injector.instance[DbProvider]
+  protected lazy val dbProvider = injector.instance[SyncDbProvider]
 
   override protected def run(): Unit = {
     try {
@@ -29,7 +29,7 @@ abstract class TeletrackerTaskApp[T <: TeletrackerTask: Manifest]
       case NonFatal(e) =>
         e.printStackTrace()
     } finally {
-      injector.instance[DbProvider].shutdown()
+      injector.instance[SyncDbProvider].shutdown()
     }
   }
 

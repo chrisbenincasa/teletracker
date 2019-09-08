@@ -2,13 +2,13 @@ package com.teletracker.common.db.access
 
 import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
-import com.teletracker.common.inject.{DbImplicits, DbProvider}
+import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
 import com.teletracker.common.util.Slug
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class NetworksDbAccess @Inject()(
-  val provider: DbProvider,
+  val provider: SyncDbProvider,
   val networks: Networks,
   val networkReferences: NetworkReferences,
   val thingNetworks: ThingNetworks,

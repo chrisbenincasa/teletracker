@@ -1,6 +1,10 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.access.{ThingsDbAccess, UserThingDetails}
+import com.teletracker.common.db.access.{
+  SyncThingsDbAccess,
+  ThingsDbAccess,
+  UserThingDetails
+}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.DataResponse
 import com.teletracker.common.util.json.circe._
@@ -15,7 +19,7 @@ import scala.concurrent.ExecutionContext
 class PopularItemsController @Inject()(
   popularItemsCache: PopularItemsCache,
   tmdbClient: TmdbClient,
-  thingsDbAccess: ThingsDbAccess
+  thingsDbAccess: SyncThingsDbAccess
 )(implicit executionContext: ExecutionContext)
     extends Controller {
   prefix("/api/v1") {

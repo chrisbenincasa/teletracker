@@ -1,15 +1,16 @@
-package com.teletracker.common.util
+package com.teletracker.common.process.tmdb
 
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.access.AsyncThingsDbAccess
 import com.teletracker.common.db.model
 import com.teletracker.common.db.model.{ExternalId, ThingLike}
+import com.teletracker.common.model.justwatch.PopularItem
 import com.teletracker.common.model.tmdb
-import java.sql.Timestamp
+import com.teletracker.common.model.tmdb.TmdbWatchable
 import java.time.OffsetDateTime
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class TmdbImporter(
-  thingsDbAccess: ThingsDbAccess
+  thingsDbAccess: AsyncThingsDbAccess
 )(implicit executionContext: ExecutionContext) {
   protected def handleExternalIds(
     entity: Either[ThingLike, model.TvShowEpisode],
@@ -42,5 +43,28 @@ abstract class TmdbImporter(
     } else {
       Future.successful(None)
     }
+  }
+
+  protected def matchJustWatchItem[W](
+    entity: W,
+    popularItems: List[PopularItem]
+  )(implicit tmdbWatchable: TmdbWatchable[W]
+  ): Option[PopularItem] = {
+    popularItems.find(item => {
+      val idMatch = item.scoring
+        .getOrElse(Nil)
+        .exists(
+          s =>
+            s.provider_type == "tmdb:id" && s.value.toInt.toString == tmdbWatchable
+              .id(entity)
+              .toString
+        )
+      val nameMatch = item.title.exists(tmdbWatchable.title(entity).contains)
+      val yearMatch = item.original_release_year.exists(year => {
+        tmdbWatchable.releaseYear(entity).contains(year)
+      })
+
+      idMatch || (nameMatch && yearMatch)
+    })
   }
 }

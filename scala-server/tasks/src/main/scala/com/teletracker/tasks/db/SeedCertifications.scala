@@ -6,7 +6,7 @@ import com.teletracker.common.db.model.{
   Certifications
 }
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.inject.DbProvider
+import com.teletracker.common.inject.SyncDbProvider
 import com.teletracker.common.model.tmdb.CertificationListResponse
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import javax.inject.Inject
@@ -18,7 +18,7 @@ object SeedCertifications extends TeletrackerTaskApp[CertificationSeeder]
 
 class CertificationSeeder @Inject()(
   tmdbClient: TmdbClient,
-  provider: DbProvider,
+  provider: SyncDbProvider,
   certifications: Certifications)
     extends TeletrackerTask {
   import certifications.driver.api._

@@ -7,14 +7,14 @@ import com.teletracker.common.db.model.{
   TrackedListThings,
   TrackedLists
 }
-import com.teletracker.common.inject.{DbImplicits, DbProvider}
+import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
 import javax.inject.Inject
 import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListsDbAccess @Inject()(
-  val provider: DbProvider,
+  val provider: SyncDbProvider,
   val trackedLists: TrackedLists,
   val trackedListThings: TrackedListThings,
   dbImplicits: DbImplicits,

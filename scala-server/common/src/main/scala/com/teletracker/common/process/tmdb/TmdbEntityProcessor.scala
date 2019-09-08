@@ -3,6 +3,7 @@ package com.teletracker.common.process.tmdb
 import com.google.common.cache.Cache
 import com.teletracker.common.cache.{JustWatchLocalCache, TmdbLocalCache}
 import com.teletracker.common.db.access.{
+  AsyncThingsDbAccess,
   NetworksDbAccess,
   ThingsDbAccess,
   TvShowDbAccess
@@ -19,11 +20,7 @@ import com.teletracker.common.process.ProcessQueue
 import com.teletracker.common.process.tmdb.TmdbEntity.Entities
 import com.teletracker.common.process.tmdb.TmdbProcessMessage.ProcessMovie
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.common.util.{
-  NetworkCache,
-  TmdbMovieImporter,
-  TmdbShowImporter
-}
+import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import javax.inject.Inject
 import shapeless.ops.coproduct.{Folder, Mapper}
@@ -53,7 +50,7 @@ object TmdbEntityProcessor {
 
 class TmdbEntityProcessor @Inject()(
   tmdbClient: TmdbClient,
-  thingsDbAccess: ThingsDbAccess,
+  thingsDbAccess: AsyncThingsDbAccess,
   networksDbAccess: NetworksDbAccess,
   expander: ItemExpander,
   tvShowDbAccess: TvShowDbAccess,
@@ -68,7 +65,8 @@ class TmdbEntityProcessor @Inject()(
   @RecentlyProcessedCollections recentlyProcessedCollections: Cache[
     Integer,
     java.lang.Boolean
-  ]
+  ],
+  tmdbPersonCreditProcessor: TmdbPersonCreditProcessor
 )(implicit executionContext: ExecutionContext) {
   import TmdbEntityProcessor._
 
@@ -84,22 +82,6 @@ class TmdbEntityProcessor @Inject()(
 
   def expandAndProcessEntityId(e: TmdbEntity.Ids): Future[ProcessResult] = {
     e.map(expander.ExpandItem).fold(ResultProcessor)
-  }
-
-  def processResults[X <: Coproduct, M <: Coproduct, F](
-    results: List[X]
-  )(implicit m: Mapper.Aux[expander.ExpandItem.type, X, M],
-    f: Folder.Aux[ResultProcessor.type, M, F]
-  ): List[F] = {
-    results.map(m.apply).map(f.apply)
-  }
-
-  def processResult[X <: Coproduct, M <: Coproduct, F](
-    result: X
-  )(implicit m: Mapper.Aux[expander.ExpandItem.type, X, M],
-    f: Folder.Aux[ResultProcessor.type, M, F]
-  ): F = {
-    f(m(result))
   }
 
   /**
@@ -139,31 +121,6 @@ class TmdbEntityProcessor @Inject()(
 
   def handleMovie(movie: Movie): Future[ProcessResult] = {
     movieImporter.handleMovie(movie)
-  }
-
-  private def matchJustWatchMovie(
-    movie: Movie,
-    popularItems: List[PopularItem]
-  ): Option[PopularItem] = {
-    popularItems.find(item => {
-      val idMatch = item.scoring
-        .getOrElse(Nil)
-        .exists(
-          s =>
-            s.provider_type == "tmdb:id" && s.value.toInt.toString == movie.id.toString
-        )
-      val nameMatch = item.title.exists(movie.title.contains)
-      val originalMatch =
-        movie.original_title.exists(item.original_title.contains)
-      val yearMatch = item.original_release_year.exists(year => {
-        movie.release_date
-          .filter(_.nonEmpty)
-          .map(LocalDate.parse(_).getYear)
-          .contains(year)
-      })
-
-      idMatch || (nameMatch && yearMatch) || (originalMatch && yearMatch)
-    })
   }
 
   def handleShow(
@@ -209,9 +166,9 @@ class TmdbEntityProcessor @Inject()(
         val castById = credits.cast.map(c => c.id.toString -> c).toMap
 
         val castFut =
-          tmdbSynchronousProcessor.processPersonCredits(credits.cast)
+          tmdbPersonCreditProcessor.processPersonCredits(credits.cast)
         val crewFut =
-          tmdbSynchronousProcessor.processPersonCredits(credits.crew)
+          tmdbPersonCreditProcessor.processPersonCredits(credits.crew)
 
         for {
           savedPerson <- personSave

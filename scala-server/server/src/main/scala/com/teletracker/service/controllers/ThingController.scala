@@ -1,6 +1,6 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.access.{SyncThingsDbAccess, ThingsDbAccess}
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.model.DataResponse
 import com.teletracker.common.util.CanParseFieldFilter
@@ -17,7 +17,7 @@ import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ThingController @Inject()(
-  thingsDbAccess: ThingsDbAccess,
+  thingsDbAccess: SyncThingsDbAccess,
   thingApi: ThingApi
 )(implicit executionContext: ExecutionContext)
     extends Controller

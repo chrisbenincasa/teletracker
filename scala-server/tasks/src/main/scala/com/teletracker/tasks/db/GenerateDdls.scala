@@ -2,7 +2,7 @@ package com.teletracker.tasks.db
 
 import com.google.inject.Module
 import com.teletracker.common.db.model._
-import com.teletracker.common.inject.{DbProvider, Modules}
+import com.teletracker.common.inject.{Modules, SyncDbProvider}
 import com.twitter.inject.app.App
 import java.io.{File, FileWriter, PrintWriter}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -13,7 +13,7 @@ class GenerateDdls extends App {
   override protected def modules: Seq[Module] = Modules()
 
   override protected def run(): Unit = {
-    val d = injector.instance(classOf[DbProvider])
+    val d = injector.instance(classOf[SyncDbProvider])
     import d.driver.api._
 
     val createStatements = List(

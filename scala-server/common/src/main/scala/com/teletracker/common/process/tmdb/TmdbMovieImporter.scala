@@ -1,8 +1,8 @@
-package com.teletracker.common.util
+package com.teletracker.common.process.tmdb
 
 import com.google.common.cache.Cache
 import com.teletracker.common.cache.JustWatchLocalCache
-import com.teletracker.common.db.access.{NetworksDbAccess, ThingsDbAccess}
+import com.teletracker.common.db.access.{AsyncThingsDbAccess, NetworksDbAccess}
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.justwatch.JustWatchClient
 import com.teletracker.common.external.tmdb.TmdbClient
@@ -19,9 +19,8 @@ import com.teletracker.common.process.tmdb.TmdbEntityProcessor.{
   ProcessResult,
   ProcessSuccess
 }
-import com.teletracker.common.process.tmdb.TmdbProcessMessage
 import com.teletracker.common.process.tmdb.TmdbProcessMessage.ProcessBelongsToCollections
-import com.twitter.logging.Logger
+import com.teletracker.common.util.{GenreCache, NetworkCache}
 import javax.inject.Inject
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
@@ -30,7 +29,7 @@ import scala.util.Try
 import scala.util.control.NonFatal
 
 class TmdbMovieImporter @Inject()(
-  thingsDbAccess: ThingsDbAccess,
+  thingsDbAccess: AsyncThingsDbAccess,
   networksDbAccess: NetworksDbAccess,
   tmdbClient: TmdbClient,
   justWatchClient: JustWatchClient,
@@ -41,32 +40,44 @@ class TmdbMovieImporter @Inject()(
     java.lang.Boolean
   ],
   justWatchLocalCache: JustWatchLocalCache,
-  networkCache: NetworkCache
+  networkCache: NetworkCache,
+  tmdbSynchronousProcessor: TmdbSynchronousProcessor,
+  genreCache: GenreCache
 )(implicit executionContext: ExecutionContext)
     extends TmdbImporter(thingsDbAccess) {
-  private val logger = Logger()
 
   def handleMovies(movies: List[Movie]): Future[List[ProcessResult]] = {
     Future.sequence(movies.map(handleMovie))
   }
 
-  def handleMovie(movie: Movie): Future[ProcessResult] = {
+  def saveMovie(movie: Movie) = {
     val genreIds =
       movie.genre_ids.orElse(movie.genres.map(_.map(_.id))).getOrElse(Nil).toSet
-    val genresFut = thingsDbAccess.findTmdbGenres(genreIds)
+    val genresFut = genreCache.get()
 
-    val now = OffsetDateTime.now()
     val t = ThingFactory.makeThing(movie)
 
-    val saveThingFut = Promise
-      .fromTry(t)
-      .future
-      .flatMap(thing => {
-        thingsDbAccess.saveThing(
-          thing,
-          Some(ExternalSource.TheMovieDb -> movie.id.toString)
-        )
-      })
+    (for {
+      thing <- Promise
+        .fromTry(t)
+        .future
+      genres <- genresFut
+    } yield {
+      val matchedGenres = genreIds.toList
+        .flatMap(id => {
+          genres.get(ExternalSource.TheMovieDb -> id.toString)
+        })
+        .flatMap(_.id)
+
+      thingsDbAccess.saveThingRaw(
+        thing.copy(genres = Some(matchedGenres)),
+        Some(ExternalSource.TheMovieDb -> movie.id.toString)
+      )
+    }).flatMap(identity)
+  }
+
+  def handleMovie(movie: Movie): Future[ProcessResult] = {
+    val saveThingFut = saveMovie(movie)
 
     val availability = handleMovieAvailability(movie, saveThingFut)
 
@@ -112,7 +123,12 @@ class TmdbMovieImporter @Inject()(
 
     val saveGenres = for {
       savedThing <- saveThingFut
-      genres <- genresFut
+      genres <- thingsDbAccess.findTmdbGenres(
+        movie.genre_ids
+          .orElse(movie.genres.map(_.map(_.id)))
+          .getOrElse(Nil)
+          .toSet
+      )
       _ <- Future.sequence(genres.map(g => {
         val ref = ThingGenre(savedThing.id, g.id.get)
         thingsDbAccess.saveGenreAssociation(ref)
@@ -128,12 +144,19 @@ class TmdbMovieImporter @Inject()(
       })
     })
 
+    val castAssociationFut = saveThingFut.flatMap(thingLike => {
+      movie.credits
+        .map(tmdbSynchronousProcessor.processMovieCredits(thingLike.id, _))
+        .getOrElse(Future.successful(Nil))
+    })
+
     val result = for {
       savedThing <- saveThingFut
       _ <- saveExternalIds
       _ <- saveGenres
       _ <- availability
       _ <- saveCollectionFut
+      _ <- castAssociationFut
     } yield ProcessSuccess(movie.id.toString, savedThing)
 
     result.recover {
@@ -141,7 +164,7 @@ class TmdbMovieImporter @Inject()(
     }
   }
 
-  private def handleMovieAvailability(
+  def handleMovieAvailability(
     movie: Movie,
     processedMovieFut: Future[ThingLike]
   ): Future[ThingLike] = {
@@ -161,7 +184,7 @@ class TmdbMovieImporter @Inject()(
       networksBySource <- networkCache.get()
       thing <- processedMovieFut
     } yield {
-      val matchingMovie = matchJustWatchMovie(movie, justWatchRes.items)
+      val matchingMovie = matchJustWatchItem(movie, justWatchRes.items)
 
       val availabilities = matchingMovie
         .collect {
@@ -206,29 +229,8 @@ class TmdbMovieImporter @Inject()(
       thingsDbAccess.saveAvailabilities(availabilities).map(_ => thing)
     }).flatMap(identity)
   }
-
-  private def matchJustWatchMovie(
-    movie: Movie,
-    popularItems: List[PopularItem]
-  ): Option[PopularItem] = {
-    popularItems.find(item => {
-      val idMatch = item.scoring
-        .getOrElse(Nil)
-        .exists(
-          s =>
-            s.provider_type == "tmdb:id" && s.value.toInt.toString == movie.id.toString
-        )
-      val nameMatch = item.title.exists(movie.title.contains)
-      val originalMatch =
-        movie.original_title.exists(item.original_title.contains)
-      val yearMatch = item.original_release_year.exists(year => {
-        movie.release_date
-          .filter(_.nonEmpty)
-          .map(LocalDate.parse(_).getYear)
-          .contains(year)
-      })
-
-      idMatch || (nameMatch && yearMatch) || (originalMatch && yearMatch)
-    })
-  }
 }
+
+case class TmdbMoveImportRequest(
+  movie: Movie,
+  handleExtraWorkAsync: Boolean)

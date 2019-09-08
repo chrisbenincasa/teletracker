@@ -3,7 +3,7 @@ package com.teletracker.common.db.access
 import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
-import com.teletracker.common.inject.{DbImplicits, DbProvider}
+import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
 import com.teletracker.common.util.{Field, ListFilters}
 import com.teletracker.common.util.Functions._
 import javax.inject.Inject
@@ -11,7 +11,7 @@ import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListQuery @Inject()(
-  val provider: DbProvider,
+  val provider: SyncDbProvider,
   val trackedLists: TrackedLists,
   val trackedListThings: TrackedListThings,
   val things: Things,

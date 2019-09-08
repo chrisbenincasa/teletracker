@@ -5,7 +5,7 @@ import javax.inject.Inject
 
 class RunAllSeedsTask @Inject()(
   networkSeeder: NetworkSeeder,
-  genreSeeder: GenreSeeder,
+  genreSeeder: GenreSeeder2,
   certificationSeeder: CertificationSeeder)
     extends TeletrackerCompoundTask {
 

@@ -2,13 +2,13 @@ package com.teletracker.common.db.access
 
 import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
-import com.teletracker.common.inject.DbProvider
+import com.teletracker.common.inject.SyncDbProvider
 import javax.inject.Inject
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class TvShowDbAccess @Inject()(
-  val provider: DbProvider,
+  val provider: SyncDbProvider,
   val things: Things,
   val tvShowSeasons: TvShowSeasons,
   val tvShowEpisodes: TvShowEpisodes,

@@ -6,7 +6,7 @@ import com.google.inject.util.{Modules => GuiceModules}
 import com.google.inject.{Binder, Guice, Module}
 import com.teletracker.service.TeletrackerServer
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.inject.{DbProvider, Modules}
+import com.teletracker.common.inject.{Modules, SyncDbProvider}
 import com.twitter.finatra.http.EmbeddedHttpServer
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Assertions, BeforeAndAfterAll, FlatSpec, Inside}
@@ -51,7 +51,7 @@ trait BaseSpec
             Seq(
               new Module {
                 override def configure(binder: Binder): Unit = {
-                  binder.bind(classOf[DbProvider]).toInstance(db.dbProvider)
+                  binder.bind(classOf[SyncDbProvider]).toInstance(db.dbProvider)
                 }
               }
             )
