@@ -76,6 +76,22 @@ class Cast extends Component<Props, {}> {
         >
           {person.profilePath ? null : parseInitials(person.name!, 'name')}
         </Avatar>
+        <Typography
+          variant="subtitle1"
+          color="textPrimary"
+          className={classes.actualName}
+          align="center"
+        >
+          {person.name}
+        </Typography>
+        <Typography
+          variant="subtitle2"
+          color="textPrimary"
+          className={classes.characterName}
+          align="center"
+        >
+          {person.characterName}
+        </Typography>
       </RouterLink>
     );
   }
@@ -95,22 +111,6 @@ class Cast extends Component<Props, {}> {
             {credits.map(person => (
               <div className={classes.personContainer} key={person.id}>
                 {this.renderAvatar(person)}
-                <Typography
-                  variant="subtitle1"
-                  color="inherit"
-                  className={classes.actualName}
-                  align="center"
-                >
-                  {person.name}
-                </Typography>
-                <Typography
-                  variant="subtitle2"
-                  color="inherit"
-                  className={classes.characterName}
-                  align="center"
-                >
-                  {person.characterName}
-                </Typography>
               </div>
             ))}
           </Grid>
