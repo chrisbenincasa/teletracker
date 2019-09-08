@@ -1,6 +1,6 @@
 package com.teletracker.tasks
 
-import com.teletracker.common.inject.DbProvider
+import com.teletracker.common.inject.{AsyncDbProvider, SyncDbProvider}
 
 object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
   val clazz = flag[String]("class", "The Teletracker task to run")
@@ -23,7 +23,8 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
         .asInstanceOf[TeletrackerTask]
         .run(collectArgs)
     } finally {
-      injector.instance[DbProvider].shutdown()
+      injector.instance[SyncDbProvider].shutdown()
+      injector.instance[AsyncDbProvider].shutdown()
     }
   }
 

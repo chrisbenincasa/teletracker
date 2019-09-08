@@ -183,6 +183,7 @@ trait TvShowId
   episode_run_time: Option[List[Int]],
   first_air_date: Option[String],
   genres: Option[List[Genre]],
+  genre_ids: Option[List[Int]],
   homepage: Option[String],
   id: Int,
   in_production: Option[Boolean],

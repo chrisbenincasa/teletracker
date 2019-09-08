@@ -1,6 +1,10 @@
 package com.teletracker.common.util
 
-import com.teletracker.common.db.access.{GenresDbAccess, NetworksDbAccess}
+import com.teletracker.common.db.access.{
+  GenresDbAccess,
+  NetworksDbAccess,
+  SyncGenresDbAccess
+}
 import com.teletracker.common.db.model._
 import com.teletracker.common.util.GenreCache.GenreMap
 import com.teletracker.common.util.Implicits._
@@ -16,7 +20,7 @@ object GenreCache {
 
 @Singleton
 class GenreCache @Inject()(
-  genresDbAccess: GenresDbAccess
+  genresDbAccess: SyncGenresDbAccess
 )(implicit executionContext: ExecutionContext) {
   import GenreCache._
 

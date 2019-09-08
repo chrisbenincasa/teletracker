@@ -1,7 +1,12 @@
 package com.teletracker.service.api
 
 import com.google.common.cache.{Cache, CacheBuilder}
-import com.teletracker.common.db.access.{ThingsDbAccess, UserThingDetails}
+import com.teletracker.common.db.access.{
+  SyncGenresDbAccess,
+  SyncThingsDbAccess,
+  ThingsDbAccess,
+  UserThingDetails
+}
 import com.teletracker.common.db.model.{
   ExternalSource,
   PartialThing,
@@ -26,7 +31,7 @@ import com.teletracker.service.api.model.{
   EnrichedPerson,
   PersonCredit
 }
-import com.teletracker.service.util.HasThingIdOrSlug
+import com.teletracker.service.util.{HasGenreIdOrSlug, HasThingIdOrSlug}
 import com.twitter.util.Stopwatch
 import io.circe.Json
 import javax.inject.Inject
@@ -37,12 +42,15 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.math.Ordering.OptionOrdering
 
 class ThingApi @Inject()(
-  thingsDbAccess: ThingsDbAccess,
+  thingsDbAccess: SyncThingsDbAccess,
+  genresDbAccess: SyncGenresDbAccess,
   genreCache: GenreCache
 )(implicit executionContext: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
   private val slugToIdCache: Cache[String, UUID] =
     CacheBuilder.newBuilder().maximumSize(10000).build()
+  private val genreSlugToIdCache: Cache[String, UUID] =
+    CacheBuilder.newBuilder().maximumSize(1000).build()
 
   import io.circe.optics.JsonPath._
 
@@ -330,6 +338,26 @@ class ThingApi @Inject()(
           )
         }
     }
+  }
+
+  def getPopularByGenre(genreIdOrSlug: String) = {
+    genreCache
+      .get()
+      .map(_.values)
+      .flatMap(genres => {
+        val genre = HasGenreIdOrSlug.parse(genreIdOrSlug) match {
+          case Left(id)    => genres.find(_.id.contains(id))
+          case Right(slug) => genres.find(_.slug == slug)
+        }
+
+        // TODO: Fill in user deets
+        genre.map(g => {
+          genresDbAccess
+            .findMostPopularThingsForGenre(g.id.get)
+            .map(_.map(_.toPartial))
+            .map(Some(_))
+        })
+      }.getOrElse(Future.successful(None)))
   }
 
   private def extractReleaseDate(thingRaw: ThingRaw) = {

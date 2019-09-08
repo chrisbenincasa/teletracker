@@ -1,17 +1,40 @@
 package com.teletracker.common.db.access
 
+import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
-import com.teletracker.common.inject.{DbImplicits, DbProvider}
+import com.teletracker.common.inject.{
+  BaseDbProvider,
+  DbImplicits,
+  SyncDbProvider,
+  SyncPath
+}
 import com.teletracker.common.util.Slug
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class GenresDbAccess @Inject()(
-  val provider: DbProvider,
+class SyncGenresDbAccess @Inject()(
+  @SyncPath override val provider: BaseDbProvider,
+  override val genres: Genres,
+  override val genreReferences: GenreReferences,
+  override val things: Things,
+  dbImplicits: DbImplicits,
+  dbMonitoring: DbMonitoring
+)(implicit executionContext: ExecutionContext)
+    extends GenresDbAccess(
+      provider,
+      genres,
+      genreReferences,
+      things,
+      dbImplicits,
+      dbMonitoring
+    )
+
+class GenresDbAccess(
+  val provider: BaseDbProvider,
   val genres: Genres,
   val genreReferences: GenreReferences,
-//  val thingNetworks: ThingNetworks,
+  val things: Things,
   dbImplicits: DbImplicits,
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
@@ -51,6 +74,27 @@ class GenresDbAccess @Inject()(
   def saveGenreReference(networkReference: GenreReference) = {
     run {
       genreReferences.query += networkReference
+    }
+  }
+
+  def findAllGenreReferences(
+    genreType: ExternalSource
+  ): Future[Seq[GenreReference]] = {
+    run {
+      genreReferences.query.filter(_.externalSource === genreType).result
+    }
+  }
+
+  def findMostPopularThingsForGenre(
+    genreId: Int,
+    limit: Int = 25
+  ) = {
+    run {
+      things.rawQuery
+        .filter(_.genres @> List(genreId))
+        .sortBy(_.popularity.desc.nullsLast)
+        .take(25)
+        .result
     }
   }
 

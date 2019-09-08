@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.access.{AsyncThingsDbAccess, ThingsDbAccess}
 import com.teletracker.common.db.model.{
   PersonAssociationType,
   PersonThing,
@@ -18,7 +18,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 class ImportPersonAssociations @Inject()(
-  thingsDbAccess: ThingsDbAccess
+  thingsDbAccess: AsyncThingsDbAccess
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -154,7 +154,7 @@ class ImportPersonAssociations @Inject()(
     logger.info(s"Found ${castMembers.size} members for thing ID = $thingId")
 
     thingsDbAccess
-      .findPeopleByTmdbIds(doesntContain)
+      .findPeopleIdsByTmdbIds(doesntContain)
       .map(ids => {
         ids.foreach {
           case (tmdbId, id) => personIdCache.put(tmdbId, id)

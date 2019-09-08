@@ -1,7 +1,7 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
 import com.google.cloud.storage.Storage
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.access.{AsyncThingsDbAccess, ThingsDbAccess}
 import com.teletracker.common.db.model.{
   ExternalSource,
   PersonAssociationType,
@@ -26,7 +26,7 @@ import scala.util.control.NonFatal
 
 class ImportPeopleFromDump @Inject()(
   storage: Storage,
-  thingsDbAccess: ThingsDbAccess,
+  thingsDbAccess: AsyncThingsDbAccess,
   tmdbSynchronousProcessor: TmdbSynchronousProcessor
 )(implicit executionContext: ExecutionContext)
     extends ImportTmdbDumpTask[Person](storage, thingsDbAccess) {

@@ -10,7 +10,7 @@ import com.spotify.docker.client.DockerClient.AttachParameter.{
 import com.spotify.docker.client.messages._
 import com.spotify.docker.client.{DefaultDockerClient, DockerClient}
 import com.teletracker.common.db.model._
-import com.teletracker.common.inject.DbProvider
+import com.teletracker.common.inject.SyncDbProvider
 import javax.sql.DataSource
 import net.codingwell.scalaguice.InjectorExtensions._
 import org.flywaydb.core.Flyway
@@ -108,7 +108,7 @@ class PostgresContainer(
     )
   }
 
-  lazy val dbProvider = new DbProvider(dataSource)
+  lazy val dbProvider = new SyncDbProvider(dataSource)
 
   def createAllTables(injector: Injector) = {
     val flyway = Flyway

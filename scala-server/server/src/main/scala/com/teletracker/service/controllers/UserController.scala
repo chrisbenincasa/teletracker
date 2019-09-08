@@ -4,7 +4,11 @@ import com.teletracker.service.api.{ListsApi, UsersApi}
 import com.teletracker.service.auth.RequestContext._
 import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
-import com.teletracker.common.db.access.{ThingsDbAccess, UsersDbAccess}
+import com.teletracker.common.db.access.{
+  SyncThingsDbAccess,
+  ThingsDbAccess,
+  UsersDbAccess
+}
 import com.teletracker.common.db.model.{
   Event,
   Network,
@@ -36,7 +40,7 @@ class UserController @Inject()(
   usersApi: UsersApi,
   listsApi: ListsApi,
   usersDbAccess: UsersDbAccess,
-  thingsDbAccess: ThingsDbAccess,
+  thingsDbAccess: SyncThingsDbAccess,
   jwtVendor: JwtVendor
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerController(usersDbAccess)

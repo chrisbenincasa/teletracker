@@ -2,7 +2,7 @@ package com.teletracker.tasks.tmdb
 
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.tmdb.{PagedResult, TvShow}
-import com.teletracker.common.util.TmdbShowImporter
+import com.teletracker.common.process.tmdb.TmdbShowImporter
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.tasks.TeletrackerTask
 import javax.inject.Inject

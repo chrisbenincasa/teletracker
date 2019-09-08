@@ -1,0 +1,1 @@
+CREATE INDEX "thing_genres_by_genre_id" ON "thing_genres" (genre_id);

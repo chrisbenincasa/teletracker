@@ -92,6 +92,7 @@ class TeletrackerServer(
       .add[UserController]
       .add[SearchController]
       .add[ThingController]
+      .add[GenreController]
       .add[MetadataController]
       .add[AvailabilityController]
       .add[AdminController]
@@ -117,29 +118,29 @@ object Teletracker extends com.twitter.inject.app.App {
 
     cmd match {
       case "server" => new TeletrackerServer().main(rest)
-      case "reset-db" =>
-        val location = new File(
-          s"${System.getProperty("java.io.tmpdir")}/db/migrate/postgres"
-        )
-        val gddl = new GenerateDdls()
-        gddl.main(
-          Array(
-            new File(s"${location.getAbsolutePath}/V1__create.sql").getAbsolutePath
-          )
-        )
-        Await.result(gddl)
-
-        val clean = new RunDatabaseMigration()
-        clean.main(Array("-action=clean"))
-        Await.result(clean)
-
-        val migrate = new RunDatabaseMigration()
-        migrate.main(Array("-action=migrate", s"-loc=$location"))
-        Await.result(migrate)
-
-        injector.instance[RunAllSeedsTask].run()
-
-        close()
+//      case "reset-db" =>
+//        val location = new File(
+//          s"${System.getProperty("java.io.tmpdir")}/db/migrate/postgres"
+//        )
+//        val gddl = new GenerateDdls()
+//        gddl.main(
+//          Array(
+//            new File(s"${location.getAbsolutePath}/V1__create.sql").getAbsolutePath
+//          )
+//        )
+//        Await.result(gddl)
+//
+//        val clean = new RunDatabaseMigration()
+//        clean.main(Array("-action=clean"))
+//        Await.result(clean)
+//
+//        val migrate = new RunDatabaseMigration()
+//        migrate.main(Array("-action=migrate", s"-loc=$location"))
+//        Await.result(migrate)
+//
+//        injector.instance[RunAllSeedsTask].run()
+//
+//        close()
 //      case "generate-ddl"        => new GenerateDdls().main(rest)
 //      case "db-migrate"          => new RunDatabaseMigration().main(rest)
 //      case "import-movies"       => ImportMovies.main(rest)

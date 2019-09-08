@@ -50,8 +50,9 @@ object ThingRawFactory {
     createdAt: OffsetDateTime,
     lastUpdatedAt: OffsetDateTime,
     metadata: Option[ObjectMetadata],
-    tmdbId: Option[String] = None,
-    popularity: Option[Double]
+    tmdbId: Option[String],
+    popularity: Option[Double],
+    genres: Option[List[Int]]
   ): ThingRaw = {
     ThingRaw(
       id = id,
@@ -62,7 +63,8 @@ object ThingRawFactory {
       lastUpdatedAt = lastUpdatedAt,
       metadata = metadata.map(_.asJson),
       tmdbId = tmdbId,
-      popularity = popularity
+      popularity = popularity,
+      genres = genres
     )
   }
 }
@@ -169,9 +171,7 @@ class Things @Inject()(
       )
     def metadata =
       column[Option[ObjectMetadata]]("metadata", O.SqlType("jsonb"))
-
     def tmdbId = column[Option[String]]("tmdb_id")
-
     def popularity = column[Option[Double]]("popularity")
 
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
@@ -206,10 +206,9 @@ class Things @Inject()(
         O.SqlType("timestamp with time zone")
       )
     def metadata = column[Option[Json]]("metadata", O.SqlType("jsonb"))
-
     def tmdbId = column[Option[String]]("tmdb_id")
-
     def popularity = column[Option[Double]]("popularity")
+    def genres = column[Option[List[Int]]]("genres")
 
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
@@ -224,7 +223,8 @@ class Things @Inject()(
         OffsetDateTime,
         Option[Json],
         Option[String],
-        Option[Double]
+        Option[Double],
+        Option[List[Int]]
       )
     ] =
       (
@@ -236,7 +236,8 @@ class Things @Inject()(
         lastUpdatedAt,
         if (includeMetadata) metadata else Rep.None[Json],
         tmdbId,
-        popularity
+        popularity,
+        genres
       ) <> (ThingRaw.tupled, ThingRaw.unapply)
 
     override def * =

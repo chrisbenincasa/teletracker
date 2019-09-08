@@ -22,33 +22,26 @@ const middleware = [thunk, routerMiddleware(history), sagaMiddleware];
 
 let env = process.env.NODE_ENV;
 
-const authBlacklistFilter = createWhitelistFilter(
+const authWhitelistFilter = createWhitelistFilter(
   'auth',
   ['token', 'user'],
   ['token', 'user'],
 );
 
-const getBlacklists = () => {
+const getWhitelists = () => {
   // if (env === 'development') {
   //   return [];
   // } else {
   // }
-  return [
-    'search',
-    'userSelf',
-    'lists',
-    'availability',
-    'itemDetail',
-    'popular',
-    'people',
-  ];
+  return ['auth'];
 };
 
 export const persistConfig: rp.PersistConfig = {
   key: 'root',
   storage: localforage,
-  blacklist: getBlacklists(),
-  transforms: [authBlacklistFilter],
+  whitelist: getWhitelists(),
+  // blacklist: getBlacklists(),
+  transforms: [authWhitelistFilter],
 };
 
 if (env === 'development') {

@@ -1,9 +1,9 @@
-package com.teletracker.common.util
+package com.teletracker.common.process.tmdb
 
 import com.teletracker.common.cache.JustWatchLocalCache
 import com.teletracker.common.db.access.{
+  AsyncThingsDbAccess,
   NetworksDbAccess,
-  ThingsDbAccess,
   TvShowDbAccess
 }
 import com.teletracker.common.db.model
@@ -27,8 +27,8 @@ import com.teletracker.common.process.tmdb.TmdbEntityProcessor.{
   ProcessResult,
   ProcessSuccess
 }
-import com.teletracker.common.process.tmdb.TmdbProcessMessage
 import com.teletracker.common.util.execution.SequentialFutures
+import com.teletracker.common.util.{GenreCache, NetworkCache, Slug}
 import com.twitter.logging.Logger
 import javax.inject.Inject
 import java.time.format.DateTimeFormatter
@@ -43,10 +43,11 @@ class TmdbShowImporter @Inject()(
   tvShowDbAccess: TvShowDbAccess,
   justWatchClient: JustWatchClient,
   networksDbAccess: NetworksDbAccess,
-  thingsDbAccess: ThingsDbAccess,
+  thingsDbAccess: AsyncThingsDbAccess,
   justWatchLocalCache: JustWatchLocalCache,
   processQueue: ProcessQueue[TmdbProcessMessage],
-  networkCache: NetworkCache
+  networkCache: NetworkCache,
+  genreCache: GenreCache
 )(implicit executionContext: ExecutionContext)
     extends TmdbImporter(thingsDbAccess) {
   private val logger = Logger(getClass)
@@ -105,28 +106,41 @@ class TmdbShowImporter @Inject()(
 //      .map(_.flatten)
   }
 
+  def saveShow(show: TvShow) = {
+    val genreIds =
+      show.genre_ids.orElse(show.genres.map(_.map(_.id))).getOrElse(Nil).toSet
+    val genresFut = genreCache.get()
+
+    val t = ThingFactory.makeThing(show)
+
+    (for {
+      thing <- Promise
+        .fromTry(t)
+        .future
+      genres <- genresFut
+    } yield {
+      val matchedGenres = genreIds.toList
+        .flatMap(id => {
+          genres.get(ExternalSource.TheMovieDb -> id.toString)
+        })
+        .flatMap(_.id)
+
+      thingsDbAccess.saveThingRaw(
+        thing.copy(genres = Some(matchedGenres)),
+        Some(ExternalSource.TheMovieDb -> show.id.toString)
+      )
+    }).flatMap(identity)
+  }
+
   def handleShow(
     show: TvShow,
     handleSeasons: Boolean
   ): Future[ProcessResult] = {
-    val genreIds = show.genres.getOrElse(Nil).map(_.id).toSet
-    val genresFut = thingsDbAccess.findTmdbGenres(genreIds)
-
     val networkSlugs =
       show.networks.toList.flatMap(_.map(_.name)).map(Slug.forString).toSet
     val networksFut = networksDbAccess.findNetworksBySlugs(networkSlugs)
 
-    val now = OffsetDateTime.now()
-
-    val saveThingFut = Promise
-      .fromTry(ThingFactory.makeThing(show))
-      .future
-      .flatMap(thing => {
-        thingsDbAccess.saveThingRaw(
-          thing,
-          Some(ExternalSource.TheMovieDb, show.id.toString)
-        )
-      })
+    val saveThingFut = saveShow(show)
 
     val externalIdsFut = saveThingFut.flatMap(
       t => handleExternalIds(Left(t), show.external_ids, Some(show.id.toString))
@@ -175,7 +189,6 @@ class TmdbShowImporter @Inject()(
     val result = for {
       savedThing <- saveThingFut
       _ <- networkSaves
-      _ <- genresFut
       _ <- seasonFut
       _ <- externalIdsFut
       _ <- availability
@@ -206,7 +219,7 @@ class TmdbShowImporter @Inject()(
       networksBySource <- networkCache.get()
       thing <- processedShowFut
     } yield {
-      val matchingShow = matchJustWatchShow(show, justWatchRes.items)
+      val matchingShow = matchJustWatchItem(show, justWatchRes.items)
 
       val availabilities = matchingShow
         .collect {
@@ -250,31 +263,6 @@ class TmdbShowImporter @Inject()(
 
       thingsDbAccess.saveAvailabilities(availabilities).map(_ => thing)
     }).flatMap(identity)
-  }
-
-  private def matchJustWatchShow(
-    show: TvShow,
-    popularItems: List[PopularItem]
-  ): Option[PopularItem] = {
-    popularItems.find(item => {
-      val idMatch = item.scoring
-        .getOrElse(Nil)
-        .exists(
-          s =>
-            s.provider_type == "tmdb:id" && s.value.toInt.toString == show.id.toString
-        )
-      val nameMatch = item.title.exists(show.name.equalsIgnoreCase)
-      val originalMatch =
-        show.original_name.exists(item.original_title.contains)
-      val yearMatch = item.original_release_year.exists(year => {
-        show.first_air_date
-          .filter(_.nonEmpty)
-          .map(LocalDate.parse(_).getYear)
-          .contains(year)
-      })
-
-      idMatch || (nameMatch && yearMatch) || (originalMatch && yearMatch)
-    })
   }
 
   private def saveSeasons(
@@ -375,7 +363,7 @@ class TmdbShowImporter @Inject()(
     }.toMap
 
     justWatchResFut.flatMap(justWatchRes => {
-      val availabilitiesFut = matchJustWatchShow(show, justWatchRes.items)
+      val availabilitiesFut = matchJustWatchItem(show, justWatchRes.items)
         .map {
           case matchedItem =>
             for {

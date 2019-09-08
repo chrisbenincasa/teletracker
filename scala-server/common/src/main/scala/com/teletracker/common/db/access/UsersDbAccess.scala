@@ -9,7 +9,7 @@ import com.teletracker.common.db.model.{
   TrackedLists,
   _
 }
-import com.teletracker.common.inject.{DbImplicits, DbProvider}
+import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
 import com.teletracker.common.util.{Field, ListFilters, NetworkCache, Slug}
 import javax.inject.{Inject, Provider}
 import java.time.{Instant, OffsetDateTime}
@@ -17,7 +17,7 @@ import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class UsersDbAccess @Inject()(
-  val provider: DbProvider,
+  val provider: SyncDbProvider,
   val userMetadata: UsersMetadata,
   val userNetworkPreferences: UserNetworkPreferences,
   val trackedLists: TrackedLists,

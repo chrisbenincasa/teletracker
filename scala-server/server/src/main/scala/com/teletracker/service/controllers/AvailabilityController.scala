@@ -1,6 +1,6 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.access.{SyncThingsDbAccess, ThingsDbAccess}
 import com.teletracker.common.util.CanParseFieldFilter
 import com.teletracker.common.model.DataResponse
 import com.teletracker.common.util.json.circe._
@@ -11,7 +11,7 @@ import io.circe.generic.auto._
 import scala.concurrent.ExecutionContext
 
 class AvailabilityController @Inject()(
-  thingsDbAccess: ThingsDbAccess
+  thingsDbAccess: SyncThingsDbAccess
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with CanParseFieldFilter {

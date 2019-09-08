@@ -1,45 +1,35 @@
 package com.teletracker.tasks.db
 
-import com.google.inject.Module
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.inject.Modules
-import com.twitter.inject.app.App
+import com.teletracker.common.inject.SyncPath
+import com.teletracker.tasks.TeletrackerTask
+import javax.inject.Inject
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
-import scala.concurrent.ExecutionContext.Implicits.global
 
-object RunDatabaseMigrationMain extends RunDatabaseMigration
-
-class RunDatabaseMigration extends App {
-  val action =
-    flag[String]("action", "info", "The migration action to perform")
-  val loc = flag(
-    "loc",
-    Option(System.getProperty("java.io.tmpdir")).getOrElse("/tmp"),
-    "The location to look for migration SQL"
-  )
-
-  override protected def modules: Seq[Module] = Modules()
-
-  override protected def run(): Unit = {
-    val runConfig = new RunDatabaseMigrationParser()
-      .parse(args, RunDatabaseMigrationConfig())
-      .getOrElse(throw new IllegalArgumentException)
+class RunDatabaseMigration @Inject()(
+  teletrackerConfig: TeletrackerConfig,
+  @SyncPath dataSource: DataSource)
+    extends TeletrackerTask {
+  override def run(args: Args): Unit = {
+    val action = args.valueOrDefault("action", "info")
+    val loc = args.valueOrDefault(
+      "loc",
+      Option(System.getProperty("java.io.tmpdir")).getOrElse("/tmp")
+    )
+    val color = args.valueOrDefault("color", true)
 
     def withColor(
       colorCode: String,
       text: String
     ): String = {
-      val code = if (runConfig.color) colorCode else ""
-      val reset = if (runConfig.color) Console.RESET else ""
+      val code = if (color) colorCode else ""
+      val reset = if (color) Console.RESET else ""
 
       s"$code$text$reset"
     }
 
-    val config = injector.instance[TeletrackerConfig]
-    val dataSource = injector.instance[DataSource]
-
-    val path = config.db.driver match {
+    val path = teletrackerConfig.db.driver match {
 //      case _: org.h2.Driver         => "h2"
       case _: org.postgresql.Driver => "postgres"
       case x =>
@@ -48,53 +38,25 @@ class RunDatabaseMigration extends App {
         )
     }
 
-    println(s"Looking in location = ${loc()}")
+    println(s"Looking in location = ${loc}")
 
     val flyway = Flyway
       .configure()
-      .locations(s"classpath:db/migration/$path", s"filesystem:${loc()}")
+      .locations(s"classpath:db/migration/$path", s"filesystem:${loc}")
       .dataSource(dataSource)
       .load()
 
-    println(withColor(Console.BLUE, s"About to run action: ${action()}"))
+    println(withColor(Console.BLUE, s"About to run action: ${action}"))
 
-    action() match {
+    action match {
       case "migrate" => flyway.migrate()
       case "info"    => flyway.info()
       case "clean"   => flyway.clean()
       case "repair"  => flyway.repair()
       case _ =>
         throw new IllegalArgumentException(
-          s"Unsupported action ${runConfig.action}"
+          s"Unsupported action ${action}"
         )
     }
   }
-}
-
-private case class RunDatabaseMigrationConfig(
-  color: Boolean = true,
-  action: String = "migrate")
-
-private class RunDatabaseMigrationParser
-    extends scopt.OptionParser[RunDatabaseMigrationConfig](
-      "RunDatabaseMigration"
-    ) {
-  case class Cmd(
-    action: String,
-    description: String = "")
-  val info =
-    Cmd("info", "Print information about the current database migration")
-  val migrate = Cmd("migrate", "Run migration steps for the database")
-  val clean = Cmd("clean")
-
-  help("help")
-
-  opt[Unit]("no-color").action((_, c) => c.copy(color = false))
-
-  Seq(info, migrate, clean).foreach(command => {
-    cmd(command.action)
-      .action((_, c) => c.copy(action = command.action))
-      .text(command.description)
-  })
-
 }

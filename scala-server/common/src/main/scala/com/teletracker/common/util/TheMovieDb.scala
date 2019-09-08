@@ -55,6 +55,7 @@ final class RichPersonCredits(val pc: PersonCredit) extends AnyVal {
       episode_run_time = None,
       first_air_date = None,
       genres = pc.genre_ids.map(_.map(id => Genre(id, ""))), // TODO: Is this the right thing to do
+      genre_ids = pc.genre_ids, // TODO: Is this the right thing to do
       homepage = None,
       id = pc.id,
       in_production = None,

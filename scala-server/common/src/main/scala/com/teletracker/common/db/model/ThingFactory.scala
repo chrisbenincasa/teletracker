@@ -81,7 +81,8 @@ object ThingFactory {
         now,
         metadata,
         Some(credit.id.toString),
-        credit.popularity
+        credit.popularity,
+        None
       )
     }
   }
@@ -109,7 +110,8 @@ object ThingFactory {
         now,
         Some(ObjectMetadata.withTmdbMovie(movie)),
         Some(movie.id.toString),
-        movie.popularity
+        movie.popularity,
+        None
       )
     }
   }
@@ -133,7 +135,8 @@ object ThingFactory {
         now,
         Some(ObjectMetadata.withTmdbShow(show)),
         Some(show.id.toString),
-        show.popularity
+        show.popularity,
+        None
       )
     }
   }
