@@ -68,10 +68,8 @@ import { truncateText } from '../utils/textHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
-    avatar: {
-      width: 25,
-      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
-      marginRight: 8,
+    appbar: {
+      zIndex: 99999,
     },
     root: {
       flexGrow: 1,
@@ -79,9 +77,85 @@ const styles = (theme: Theme) =>
     grow: {
       flexGrow: 1,
     },
+    inputRoot: {
+      color: 'inherit',
+      width: '100%',
+    },
+    inputInput: {
+      paddingTop: theme.spacing(1),
+      paddingRight: theme.spacing(1),
+      paddingBottom: theme.spacing(1),
+      paddingLeft: theme.spacing(10),
+      transition: theme.transitions.create('width'),
+      width: '100%',
+      [theme.breakpoints.up('md')]: {
+        width: 200,
+      },
+      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
+        '-webkit-appearance': 'none',
+      },
+      caretColor: theme.palette.common.white,
+    },
+    mainContent: {
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+      }),
+      marginLeft: 0,
+    },
+    mainContentShift: {
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      [theme.breakpoints.up('sm')]: {
+        marginLeft: DrawerWidthPx,
+      },
+    },
     menuButton: {
       marginLeft: -12,
       marginRight: 20,
+    },
+    mobileInput: {
+      padding: theme.spacing(1),
+      width: '100%',
+      [theme.breakpoints.up('md')]: {
+        width: 200,
+        '&:focus': {
+          width: 400,
+        },
+      },
+      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
+        '-webkit-appearance': 'none',
+      },
+      caretColor: theme.palette.common.white,
+    },
+    mobileSearchContainer: {
+      flexGrow: 1,
+      position: 'absolute',
+      width: '100%',
+      backgroundColor: theme.palette.primary[500],
+      zIndex: 9999,
+      padding: 'inherit',
+      left: 0,
+      right: 0,
+    },
+    noResults: {
+      margin: theme.spacing(1),
+      alignSelf: 'center',
+    },
+    poster: {
+      width: 25,
+      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+      marginRight: 8,
+    },
+    progressSpinner: {
+      margin: theme.spacing(1),
+      justifySelf: 'center',
+    },
+    searchClear: {
+      color: theme.palette.common.white,
+      opacity: 0.25,
     },
     search: {
       position: 'relative',
@@ -111,28 +185,6 @@ const styles = (theme: Theme) =>
       },
       width: '100%',
     },
-    mobileSearchContainer: {
-      flexGrow: 1,
-      position: 'absolute',
-      width: '100%',
-      backgroundColor: theme.palette.primary[500],
-      zIndex: 9999,
-      padding: 'inherit',
-      left: 0,
-      right: 0,
-    },
-    progressSpinner: {
-      margin: theme.spacing(1),
-      justifySelf: 'center',
-    },
-    noResults: {
-      margin: theme.spacing(1),
-      alignSelf: 'center',
-    },
-    searchClear: {
-      color: theme.palette.common.white,
-      opacity: 0.25,
-    },
     searchIcon: {
       width: theme.spacing(9),
       height: '100%',
@@ -141,39 +193,6 @@ const styles = (theme: Theme) =>
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    inputRoot: {
-      color: 'inherit',
-      width: '100%',
-    },
-    inputInput: {
-      paddingTop: theme.spacing(1),
-      paddingRight: theme.spacing(1),
-      paddingBottom: theme.spacing(1),
-      paddingLeft: theme.spacing(10),
-      transition: theme.transitions.create('width'),
-      width: '100%',
-      [theme.breakpoints.up('md')]: {
-        width: 200,
-      },
-      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
-        '-webkit-appearance': 'none',
-      },
-      caretColor: theme.palette.common.white,
-    },
-    mobileInput: {
-      padding: theme.spacing(1),
-      width: '100%',
-      [theme.breakpoints.up('md')]: {
-        width: 200,
-        '&:focus': {
-          width: 400,
-        },
-      },
-      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
-        '-webkit-appearance': 'none',
-      },
-      caretColor: theme.palette.common.white,
     },
     sectionDesktop: {
       display: 'none',
@@ -186,25 +205,6 @@ const styles = (theme: Theme) =>
       justifyContent: 'flex-end',
       [theme.breakpoints.up('md')]: {
         display: 'none',
-      },
-    },
-    appbar: {
-      zIndex: 99999,
-    },
-    mainContent: {
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-      }),
-      marginLeft: 0,
-    },
-    mainContentShift: {
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-      [theme.breakpoints.up('sm')]: {
-        marginLeft: DrawerWidthPx,
       },
     },
   });
@@ -286,7 +286,8 @@ class App extends Component<Props, State> {
     }
   };
 
-  handleSearchForSubmit = () => {
+  handleSearchForSubmit = event => {
+    this.resetSearchAnchor(event);
     this.execSearch(this.state.searchText);
   };
 
@@ -329,14 +330,6 @@ class App extends Component<Props, State> {
         this.mobileSearchInput.current &&
           this.mobileSearchInput.current.focus();
       },
-    );
-  };
-
-  renderLoading = () => {
-    return (
-      <div style={{ flexGrow: 1 }}>
-        <LinearProgress />
-      </div>
     );
   };
 
@@ -390,6 +383,7 @@ class App extends Component<Props, State> {
                               component={RouterLink}
                               to={`/${result.type}/${result.slug}`}
                               key={result.id}
+                              onClick={this.resetSearchAnchor}
                             >
                               <img
                                 src={
@@ -399,7 +393,7 @@ class App extends Component<Props, State> {
                                       }`
                                     : ''
                                 }
-                                className={classes.avatar}
+                                className={classes.poster}
                               />
                               {truncateText(result.name, 30)}
                             </MenuItem>
