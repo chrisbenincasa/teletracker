@@ -51,6 +51,7 @@ import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import AddToListDialog from '../components/AddToListDialog';
 import { formatRuntime } from '../utils/textHelper';
 import Thing from '../types/Thing';
+import RouterLink from '../components/RouterLink';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -77,6 +78,7 @@ const styles = (theme: Theme) =>
     },
     genre: {
       margin: 5,
+      cursor: 'pointer',
     },
     genreContainer: {
       display: 'flex',
@@ -342,7 +344,8 @@ class ItemDetails extends Component<Props, State> {
                 key={genre.id}
                 label={genre.name}
                 className={classes.genre}
-                onClick={() => {}}
+                component={RouterLink}
+                to={`/genres/${genre.name.toLowerCase()}`}
               />
             ))}
         </div>
