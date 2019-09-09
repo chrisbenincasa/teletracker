@@ -474,7 +474,6 @@ class App extends Component<Props, State> {
               inputRef={this.desktopSearchInput}
               onChange={this.handleSearchChange}
               onKeyDown={this.handleSearchForEnter}
-              // onBlur={this.resetSearchAnchor}
               onFocus={this.handleSearchFocus}
             />
           </div>
