@@ -30,7 +30,7 @@ import {
 } from './user';
 import { createBasicAction } from './utils';
 import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
-import { popularSaga } from './popular';
+import { popularSaga, genreSaga } from './popular';
 import { fetchItemDetailsBatchSaga, fetchItemDetailsSaga } from './item-detail';
 import { fetchPersonDetailsSaga } from './people/get_person';
 import {
@@ -84,6 +84,7 @@ export function* root() {
     popularSaga(),
     fetchPersonDetailsSaga(),
     loadGenresSaga(),
+    genreSaga(),
     startupSaga(),
   ]);
 }

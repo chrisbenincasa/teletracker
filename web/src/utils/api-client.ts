@@ -342,6 +342,12 @@ export class TeletrackerApi {
     });
   }
 
+  async getPopularGenre(genre: string, typeRestrict?: 'movie' | 'show') {
+    return this.api.get('/api/v1/genres/' + genre, {
+      thingType: typeRestrict,
+    });
+  }
+
   private withTokenCheck<T>(f: () => Promise<T>): Promise<T> {
     if (!this.token) {
       return Promise.reject(new Error('function requires a token to be set'));
