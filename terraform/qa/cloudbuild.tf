@@ -8,5 +8,7 @@ resource "google_cloudbuild_trigger" "push_to_master_trigger" {
 
   filename = "cloudbuild.yaml"
 
-  disabled = "true"
+  included_files = ["scala-server/*"]
+
+  disabled = "false"
 }

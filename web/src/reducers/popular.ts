@@ -4,9 +4,15 @@ import {
   POPULAR_SUCCESSFUL,
 } from '../actions/popular';
 import * as R from 'ramda';
+import {
+  GENRE_SUCCESSFUL,
+  GenreSuccessfulAction,
+  GenreSuccessfulPayload,
+} from '../actions/popular/genre';
 
 export interface State {
   popular?: string[]; // Array of popular slugs
+  genre?: string[]; // Array of slugs for the current genre view
 }
 
 const initialState: State = {};
@@ -26,4 +32,22 @@ const PopularSuccess = handleAction<PopularSuccessfulAction, State>(
   },
 );
 
-export default flattenActions<State>(initialState, PopularSuccess);
+const genreSuccess = handleAction<GenreSuccessfulAction, State>(
+  GENRE_SUCCESSFUL,
+  (state: State, { payload }: GenreSuccessfulAction) => {
+    if (payload) {
+      return {
+        ...state,
+        genre: R.map(t => t.slug, payload.genre),
+      };
+    } else {
+      return state;
+    }
+  },
+);
+
+export default flattenActions<State>(
+  initialState,
+  PopularSuccess,
+  genreSuccess,
+);

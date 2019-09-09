@@ -9,3 +9,16 @@ from (select id, jsonb_array_elements(metadata -> 'themoviedb' -> 'movie' -> 'ge
      genre_references gr
 where gr.external_id = tmdb_genre_id
 on conflict do nothing;
+
+insert into thing_genres (thing_id, genre_id)
+select show_genres.id, gr.genre_id as genre_id
+from (select id, jsonb_array_elements(metadata -> 'themoviedb' -> 'show' -> 'genres') ->> 'id' as tmdb_genre_id
+      from things
+      where type = 'show')
+         as show_genres,
+     genre_references gr
+where gr.external_id = tmdb_genre_id
+on conflict do nothing;
+
+-- update things set genres = subquery.genres from
+--    (select thing_id as id, array_agg(genre_id) as genres from thing_genres group by thing_id) as subquery where things.id = subquery.id;
