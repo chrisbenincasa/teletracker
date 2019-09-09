@@ -155,6 +155,20 @@ class TmdbShowImporter @Inject()(
       }))
     } yield {}
 
+    val saveGenres = for {
+      savedThing <- saveThingFut
+      genres <- thingsDbAccess.findTmdbGenres(
+        show.genre_ids
+          .orElse(show.genres.map(_.map(_.id)))
+          .getOrElse(Nil)
+          .toSet
+      )
+      _ <- Future.sequence(genres.map(g => {
+        val ref = ThingGenre(savedThing.id, g.id.get)
+        thingsDbAccess.saveGenreAssociation(ref)
+      }))
+    } yield {}
+
     val availability = handleShowAvailability(show, saveThingFut)
 
     val seasonFut = if (handleSeasons) {
@@ -191,6 +205,7 @@ class TmdbShowImporter @Inject()(
       _ <- networkSaves
       _ <- seasonFut
       _ <- externalIdsFut
+      _ <- saveGenres
       _ <- availability
     } yield ProcessSuccess(show.id.toString, savedThing)
 

@@ -3,6 +3,7 @@ package com.teletracker.common.db.access
 import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
+import com.teletracker.common.db.util.InhibitFilter
 import com.teletracker.common.inject.{
   BaseDbProvider,
   DbImplicits,
@@ -16,6 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class SyncGenresDbAccess @Inject()(
   @SyncPath override val provider: BaseDbProvider,
   override val genres: Genres,
+  override val thingGenres: ThingGenres,
   override val genreReferences: GenreReferences,
   override val things: Things,
   dbImplicits: DbImplicits,
@@ -24,6 +26,7 @@ class SyncGenresDbAccess @Inject()(
     extends GenresDbAccess(
       provider,
       genres,
+      thingGenres,
       genreReferences,
       things,
       dbImplicits,
@@ -33,6 +36,7 @@ class SyncGenresDbAccess @Inject()(
 class GenresDbAccess(
   val provider: BaseDbProvider,
   val genres: Genres,
+  val thingGenres: ThingGenres,
   val genreReferences: GenreReferences,
   val things: Things,
   dbImplicits: DbImplicits,
@@ -87,20 +91,25 @@ class GenresDbAccess(
 
   def findMostPopularThingsForGenre(
     genreId: Int,
+    thingType: Option[ThingType],
     limit: Int = 25
-  ) = {
+  ): Future[Seq[ThingRaw]] = {
     run {
-      things.rawQuery
-        .filter(_.genres @> List(genreId))
+      val query = for {
+        tg <- thingGenres.query
+        if tg.genreId === genreId
+        t <- things.rawQuery
+        if t.id === tg.thingId
+      } yield {
+        t
+      }
+
+      InhibitFilter(query)
+        .filter(thingType)(t => _.`type` === t)
+        .query
         .sortBy(_.popularity.desc.nullsLast)
         .take(25)
         .result
     }
   }
-
-//  def saveGenreAssociation(thingGenre: ThingNetwork) = {
-//    run {
-//      thingNetworks.query.insertOrUpdate(thingNetwork)
-//    }
-//  }
 }

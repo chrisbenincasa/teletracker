@@ -340,7 +340,10 @@ class ThingApi @Inject()(
     }
   }
 
-  def getPopularByGenre(genreIdOrSlug: String) = {
+  def getPopularByGenre(
+    genreIdOrSlug: String,
+    thingType: Option[ThingType]
+  ): Future[Option[Seq[PartialThing]]] = {
     genreCache
       .get()
       .map(_.values)
@@ -353,7 +356,7 @@ class ThingApi @Inject()(
         // TODO: Fill in user deets
         genre.map(g => {
           genresDbAccess
-            .findMostPopularThingsForGenre(g.id.get)
+            .findMostPopularThingsForGenre(g.id.get, thingType)
             .map(_.map(_.toPartial))
             .map(Some(_))
         })

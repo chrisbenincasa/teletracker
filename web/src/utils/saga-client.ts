@@ -174,6 +174,14 @@ export class SagaTeletrackerClient {
     );
   }
 
+  *getPopularGenre(genre: string, typeRestrict?: 'movie' | 'show') {
+    return yield this.apiCall(
+      client => client.getPopularGenre,
+      genre,
+      typeRestrict,
+    );
+  }
+
   *search(searchText: string) {
     return yield this.apiCall(
       client => client.search,

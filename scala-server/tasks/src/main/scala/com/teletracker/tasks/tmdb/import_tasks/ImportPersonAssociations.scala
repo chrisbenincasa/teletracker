@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.db.access.{AsyncThingsDbAccess, ThingsDbAccess}
+import com.teletracker.common.db.access.AsyncThingsDbAccess
 import com.teletracker.common.db.model.{
   PersonAssociationType,
   PersonThing,
@@ -12,8 +12,10 @@ import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.tasks.TeletrackerTask
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
@@ -40,16 +42,23 @@ class ImportPersonAssociations @Inject()(
   override def run(args: Args): Unit = {
     val offset = args.valueOrDefault[Int]("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
+    val pageSize = args.valueOrDefault("pageSize", 100)
     val specificThingId = args.value[UUID]("thingId")
     val mode = args.valueOrDefault("mode", "insert")
+    val parallelism = args.valueOrDefault("parallelism", 8)
+
+    val f = new File("output.csv")
+    val os = new PrintStream(new BufferedOutputStream(new FileOutputStream(f)))
 
     val procFunc = if (mode == "insert") {
       handleError(handleSingleThing)
     } else if (mode == "csv") {
-      handleError(handleSingleThingCsv)
+      handleError(handleSingleThingCsv(_)(synchronized(os.println)))
     } else {
       throw new IllegalArgumentException
     }
+
+    val processed = new AtomicInteger(0)
 
     if (specificThingId.isDefined) {
       thingsDbAccess
@@ -66,16 +75,25 @@ class ImportPersonAssociations @Inject()(
         .await()
     } else {
       thingsDbAccess
-        .loopThroughAllThings(offset, limit = limit) { things =>
+        .loopThroughAllThings(offset, pageSize, limit = limit) { things =>
           SequentialFutures.batchedIterator(
             things.iterator,
-            8
+            parallelism
           )(batch => {
-            Future.sequence(batch.map(procFunc)).map(_ => {})
+            Future
+              .sequence(batch.map(procFunc))
+              .map(_ => {
+                val total = processed.addAndGet(batch.size)
+                if (total % 10000 == 0) {
+                  logger.info(s"Processed ${total} items so far")
+                }
+              })
           })
         }
         .await()
     }
+
+    os.close()
   }
 
   private def handleError(
@@ -89,8 +107,12 @@ class ImportPersonAssociations @Inject()(
     }
   }
 
-  private def handleSingleThingCsv(thing: ThingRaw): Future[Unit] = {
-    logger.info(s"Handling thing id = ${thing.id}")
+  private def handleSingleThingCsv(
+    thing: ThingRaw
+  )(
+    append: String => Unit
+  ): Future[Unit] = {
+    logger.debug(s"Handling thing id = ${thing.id}")
 
     extractCastMembers(thing)
       .map(members => {
@@ -99,7 +121,7 @@ class ImportPersonAssociations @Inject()(
           members,
           PersonAssociationType.Cast
         ).map(personThings => {
-          personThings.map(personThingToCsv).foreach(println)
+          personThings.map(personThingToCsv).foreach(append)
         })
       })
       .getOrElse(Future.unit)
@@ -110,12 +132,19 @@ class ImportPersonAssociations @Inject()(
       personThing.personId,
       personThing.thingId,
       personThing.relationType,
-      personThing.characterName.getOrElse("")
-    ).map(_.toString).mkString(",")
+      personThing.characterName.getOrElse(""),
+      personThing.order.getOrElse("")
+    ).map(_.toString)
+      .map(
+        _.replaceAllLiterally("\\\"", "'")
+          .replaceAllLiterally("\"", "\"\"")
+      )
+      .map("\"" + _ + "\"")
+      .mkString(",")
   }
 
   private def handleSingleThing(thing: ThingRaw): Future[Unit] = {
-    logger.info(s"Handling thing id = ${thing.id}")
+    logger.debug(s"Handling thing id = ${thing.id}")
 
     extractCastMembers(thing)
       .map(members => {
@@ -151,7 +180,7 @@ class ImportPersonAssociations @Inject()(
     val doesntContain =
       personTmdbIds.filterNot(personIdCache.contains).toSet
 
-    logger.info(s"Found ${castMembers.size} members for thing ID = $thingId")
+    logger.debug(s"Found ${castMembers.size} members for thing ID = $thingId")
 
     thingsDbAccess
       .findPeopleIdsByTmdbIds(doesntContain)
