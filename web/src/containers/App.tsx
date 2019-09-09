@@ -1,15 +1,23 @@
 import {
   AppBar,
+  Avatar,
   Box,
   Button,
+  CircularProgress,
+  ClickAwayListener,
   createStyles,
   CssBaseline,
   Fade,
+  Grow,
   Icon,
   IconButton,
   InputBase,
+  LinearProgress,
   Menu,
+  MenuList,
   MenuItem,
+  Paper,
+  Popper,
   Slide,
   Theme,
   Toolbar,
@@ -54,18 +62,100 @@ import Drawer, { DrawerWidthPx } from '../components/Drawer';
 import RouterLink, { StdRouterLink } from '../components/RouterLink';
 import Logout from './Logout';
 import Genre from './Genre';
+import Thing from '../types/Thing';
+import _ from 'lodash';
+import { truncateText } from '../utils/textHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
+    appbar: {
+      zIndex: 99999,
+    },
     root: {
       flexGrow: 1,
     },
     grow: {
       flexGrow: 1,
     },
+    inputRoot: {
+      color: 'inherit',
+      width: '100%',
+    },
+    inputInput: {
+      paddingTop: theme.spacing(1),
+      paddingRight: theme.spacing(1),
+      paddingBottom: theme.spacing(1),
+      paddingLeft: theme.spacing(10),
+      transition: theme.transitions.create('width'),
+      width: '100%',
+      [theme.breakpoints.up('md')]: {
+        width: 200,
+      },
+      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
+        '-webkit-appearance': 'none',
+      },
+      caretColor: theme.palette.common.white,
+    },
+    mainContent: {
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+      }),
+      marginLeft: 0,
+    },
+    mainContentShift: {
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      [theme.breakpoints.up('sm')]: {
+        marginLeft: DrawerWidthPx,
+      },
+    },
     menuButton: {
       marginLeft: -12,
       marginRight: 20,
+    },
+    mobileInput: {
+      padding: theme.spacing(1),
+      width: '100%',
+      [theme.breakpoints.up('md')]: {
+        width: 200,
+        '&:focus': {
+          width: 400,
+        },
+      },
+      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
+        '-webkit-appearance': 'none',
+      },
+      caretColor: theme.palette.common.white,
+    },
+    mobileSearchContainer: {
+      flexGrow: 1,
+      position: 'absolute',
+      width: '100%',
+      backgroundColor: theme.palette.primary[500],
+      zIndex: 9999,
+      padding: 'inherit',
+      left: 0,
+      right: 0,
+    },
+    noResults: {
+      margin: theme.spacing(1),
+      alignSelf: 'center',
+    },
+    poster: {
+      width: 25,
+      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+      marginRight: 8,
+    },
+    progressSpinner: {
+      margin: theme.spacing(1),
+      justifySelf: 'center',
+    },
+    searchClear: {
+      color: theme.palette.common.white,
+      opacity: 0.25,
     },
     search: {
       position: 'relative',
@@ -95,20 +185,6 @@ const styles = (theme: Theme) =>
       },
       width: '100%',
     },
-    mobileSearchContainer: {
-      flexGrow: 1,
-      position: 'absolute',
-      width: '100%',
-      backgroundColor: theme.palette.primary[500],
-      zIndex: 9999,
-      padding: 'inherit',
-      left: 0,
-      right: 0,
-    },
-    searchClear: {
-      color: theme.palette.common.white,
-      opacity: 0.25,
-    },
     searchIcon: {
       width: theme.spacing(9),
       height: '100%',
@@ -117,42 +193,6 @@ const styles = (theme: Theme) =>
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    inputRoot: {
-      color: 'inherit',
-      width: '100%',
-    },
-    inputInput: {
-      paddingTop: theme.spacing(1),
-      paddingRight: theme.spacing(1),
-      paddingBottom: theme.spacing(1),
-      paddingLeft: theme.spacing(10),
-      transition: theme.transitions.create('width'),
-      width: '100%',
-      [theme.breakpoints.up('md')]: {
-        width: 200,
-        '&:focus': {
-          width: 400,
-        },
-      },
-      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
-        '-webkit-appearance': 'none',
-      },
-      caretColor: theme.palette.common.white,
-    },
-    mobileInput: {
-      padding: theme.spacing(1),
-      width: '100%',
-      [theme.breakpoints.up('md')]: {
-        width: 200,
-        '&:focus': {
-          width: 400,
-        },
-      },
-      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
-        '-webkit-appearance': 'none',
-      },
-      caretColor: theme.palette.common.white,
     },
     sectionDesktop: {
       display: 'none',
@@ -167,30 +207,13 @@ const styles = (theme: Theme) =>
         display: 'none',
       },
     },
-    appbar: {
-      zIndex: 99999,
-    },
-    mainContent: {
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-      }),
-      marginLeft: 0,
-    },
-    mainContentShift: {
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-      [theme.breakpoints.up('sm')]: {
-        marginLeft: DrawerWidthPx,
-      },
-    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
   currentSearchText?: string;
+  searchResults?: Thing[];
+  isSearching: boolean;
 }
 
 interface DispatchProps {
@@ -202,6 +225,7 @@ type Props = DispatchProps & OwnProps & RouteComponentProps;
 
 interface State {
   anchorEl: any;
+  searchAnchor: any;
   searchText: string;
   mobileSearchBarOpen: boolean;
   drawerOpen: boolean;
@@ -220,14 +244,18 @@ interface MenuItemProps {
 
 class App extends Component<Props, State> {
   private mobileSearchInput: React.RefObject<HTMLInputElement>;
+  private desktopSearchInput: React.RefObject<HTMLInputElement>;
+
   constructor(props) {
     super(props);
     this.mobileSearchInput = React.createRef();
+    this.desktopSearchInput = React.createRef();
   }
 
   state = {
     anchorEl: null,
     searchText: '',
+    searchAnchor: null,
     mobileSearchBarOpen: false,
     drawerOpen: false,
     isLoggedOut: true,
@@ -241,10 +269,25 @@ class App extends Component<Props, State> {
 
   handleSearchChange = event => {
     let searchText = event.currentTarget.value;
-    this.setState({ searchText });
+
+    if (this.state.searchAnchor === null) {
+      this.setState({ searchAnchor: event.currentTarget });
+    }
+
+    if (searchText.length > 0) {
+      this.setState({ searchText });
+      this.debouncedExecSearch(searchText);
+    }
   };
 
-  handleSearchForSubmit = () => {
+  handleSearchFocus = event => {
+    if (this.state.searchAnchor === null) {
+      this.setState({ searchAnchor: event.currentTarget });
+    }
+  };
+
+  handleSearchForSubmit = event => {
+    this.resetSearchAnchor(event);
     this.execSearch(this.state.searchText);
   };
 
@@ -252,6 +295,13 @@ class App extends Component<Props, State> {
     if (ev.keyCode === 13) {
       this.execSearch(this.state.searchText);
       ev.currentTarget.blur();
+    }
+  };
+
+  resetSearchAnchor = event => {
+    // If user is clicking back into search field, don't resetAnchor
+    if (event.target !== this.desktopSearchInput.current) {
+      this.setState({ searchAnchor: null });
     }
   };
 
@@ -265,6 +315,14 @@ class App extends Component<Props, State> {
     }
   };
 
+  execQuickSearch = (text: string) => {
+    if (text.length >= 1 && this.props.currentSearchText !== text) {
+      this.props.search(text);
+    }
+  };
+
+  debouncedExecSearch = _.debounce(this.execQuickSearch, 250);
+
   handleMobileSearchDisplay = () => {
     this.setState(
       state => ({ mobileSearchBarOpen: !this.state.mobileSearchBarOpen }),
@@ -274,6 +332,102 @@ class App extends Component<Props, State> {
       },
     );
   };
+
+  renderQuickSearch() {
+    let { searchText, searchAnchor } = this.state;
+    let { classes, searchResults, isSearching } = this.props;
+    searchResults = searchResults || [];
+
+    return searchAnchor && searchText.length > 0 ? (
+      <ClickAwayListener onClickAway={this.resetSearchAnchor}>
+        <Popper
+          open={!!searchAnchor}
+          anchorEl={searchAnchor}
+          placement="bottom"
+          keepMounted
+          transition
+          disablePortal
+        >
+          {({ TransitionProps, placement }) => (
+            <Grow
+              {...TransitionProps}
+              style={{
+                transformOrigin:
+                  placement === 'bottom' ? 'center top' : 'center bottom',
+              }}
+            >
+              <Paper
+                id="menu-list-grow"
+                style={{
+                  height: 'auto',
+                  overflow: 'scroll',
+                  width: 288,
+                }}
+              >
+                <MenuList
+                  style={
+                    isSearching
+                      ? { display: 'flex', justifyContent: 'center' }
+                      : {}
+                  }
+                >
+                  {isSearching ? (
+                    <CircularProgress className={classes.progressSpinner} />
+                  ) : (
+                    <React.Fragment>
+                      {searchResults!.length ? (
+                        searchResults!.slice(0, 5).map(result => {
+                          return (
+                            <MenuItem
+                              dense
+                              component={RouterLink}
+                              to={`/${result.type}/${result.slug}`}
+                              key={result.id}
+                              onClick={this.resetSearchAnchor}
+                            >
+                              <img
+                                src={
+                                  result.posterPath
+                                    ? `https://image.tmdb.org/t/p/w92/${
+                                        result.posterPath
+                                      }`
+                                    : ''
+                                }
+                                className={classes.poster}
+                              />
+                              {truncateText(result.name, 30)}
+                            </MenuItem>
+                          );
+                        })
+                      ) : (
+                        <Typography
+                          variant="body1"
+                          gutterBottom
+                          align="center"
+                          className={classes.noResults}
+                        >
+                          No results :(
+                        </Typography>
+                      )}
+                      {searchResults!.length > 5 && (
+                        <MenuItem
+                          dense
+                          style={{ justifyContent: 'center' }}
+                          onClick={this.handleSearchForSubmit}
+                        >
+                          View All Results
+                        </MenuItem>
+                      )}
+                    </React.Fragment>
+                  )}
+                </MenuList>
+              </Paper>
+            </Grow>
+          )}
+        </Popper>
+      </ClickAwayListener>
+    ) : null;
+  }
 
   handleMenu = event => {
     this.setState({ anchorEl: event.currentTarget });
@@ -317,11 +471,14 @@ class App extends Component<Props, State> {
                 'aria-label': 'search Teletracker',
                 inputMode: 'search',
               }}
+              inputRef={this.desktopSearchInput}
               onChange={this.handleSearchChange}
               onKeyDown={this.handleSearchForEnter}
+              onFocus={this.handleSearchFocus}
             />
           </div>
           <div className={classes.grow} />
+          {this.renderQuickSearch()}
         </div>
         {!mobileSearchBarOpen ? (
           <div className={classes.sectionMobile}>
@@ -588,6 +745,8 @@ const mapStateToProps = (appState: AppState) => {
       ['search', 'currentSearchText'],
       appState,
     ),
+    isSearching: appState.search.searching,
+    searchResults: appState.search.results,
   };
 };
 
