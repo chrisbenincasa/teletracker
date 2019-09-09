@@ -1,13 +1,15 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
+import cats.syntax
 import com.google.cloud.storage.{BlobId, BlobInfo, Storage}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import io.circe.Decoder
 import io.circe.parser._
+import io.circe.generic.semiauto.deriveCodec
 import org.slf4j.LoggerFactory
-import java.io.{BufferedWriter, File, FileOutputStream, PrintWriter}
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -43,13 +45,13 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
     val rotateEvery = args.valueOrDefault("rotateEvery", 1000)
 
     var output: File = null
-    var writer: BufferedWriter = null
+    var os: PrintStream = null
 
     def rotateFile(batch: Long): Unit = {
       synchronized {
-        if (writer ne null) {
-          writer.flush()
-          writer.close()
+        if (os ne null) {
+          os.flush()
+          os.close()
         }
 
         if (output ne null) {
@@ -59,8 +61,8 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
         Try(output.delete())
 
         output = new File(f"$baseFileName.$batch%03d.json")
-        writer = new BufferedWriter(
-          new PrintWriter(new FileOutputStream(output))
+        os = new PrintStream(
+          new BufferedOutputStream(new FileOutputStream(output))
         )
       }
     }
@@ -71,27 +73,30 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
 
     val processed = new AtomicLong(0)
 
-    def dec(s: String) = {
+    def dec(
+      s: String,
+      idx: Int
+    ): List[T] = {
       decode[T](s) match {
         case Left(ex) =>
-          ex.printStackTrace()
-          throw ex
-        case Right(v) => v
+          logger.error(s"Error decoding at line: $idx", ex)
+          Nil
+        case Right(v) => List(v)
       }
     }
 
     source
       .getLines()
-      .map(dec)
+      .zipWithIndex
+      .flatMap(Function.tupled(dec))
       .drop(offset)
       .safeTake(limit)
       .foreach(thing => {
         getRawJson(thing.id)
           .map(
             json =>
-              writer.synchronized {
-                writer.write(json)
-                writer.newLine()
+              os.synchronized {
+                os.println(json)
               }
           )
           .recover {
@@ -105,7 +110,7 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
 
         if (total % flushEvery == 0) {
           logger.info(s"Processed ${total} items so far.")
-          writer.flush()
+          os.flush()
         }
 
         if (total % rotateEvery == 0) {
@@ -116,8 +121,8 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
         Thread.sleep(sleepMs)
       })
 
-    writer.flush()
-    writer.close()
+    os.flush()
+    os.close()
 
     source.close()
 
@@ -173,6 +178,8 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
 trait TmdbDumpFileRow {
   def id: Int
 }
+
+case class ResultWrapperType[T <: TmdbDumpFileRow](results: List[T])
 
 case class MovieDumpFileRow(
   adult: Boolean,
