@@ -1,15 +1,23 @@
 import {
   AppBar,
+  Avatar,
   Box,
   Button,
+  CircularProgress,
+  ClickAwayListener,
   createStyles,
   CssBaseline,
   Fade,
+  Grow,
   Icon,
   IconButton,
   InputBase,
+  LinearProgress,
   Menu,
+  MenuList,
   MenuItem,
+  Paper,
+  Popper,
   Slide,
   Theme,
   Toolbar,
@@ -54,9 +62,17 @@ import Drawer, { DrawerWidthPx } from '../components/Drawer';
 import RouterLink, { StdRouterLink } from '../components/RouterLink';
 import Logout from './Logout';
 import Genre from './Genre';
+import Thing from '../types/Thing';
+import _ from 'lodash';
+import { truncateText } from '../utils/textHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
+    avatar: {
+      width: 25,
+      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+      marginRight: 8,
+    },
     root: {
       flexGrow: 1,
     },
@@ -105,6 +121,14 @@ const styles = (theme: Theme) =>
       left: 0,
       right: 0,
     },
+    progressSpinner: {
+      margin: theme.spacing(1),
+      justifySelf: 'center',
+    },
+    noResults: {
+      margin: theme.spacing(1),
+      alignSelf: 'center',
+    },
     searchClear: {
       color: theme.palette.common.white,
       opacity: 0.25,
@@ -131,9 +155,6 @@ const styles = (theme: Theme) =>
       width: '100%',
       [theme.breakpoints.up('md')]: {
         width: 200,
-        '&:focus': {
-          width: 400,
-        },
       },
       '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
         '-webkit-appearance': 'none',
@@ -191,6 +212,8 @@ const styles = (theme: Theme) =>
 interface OwnProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
   currentSearchText?: string;
+  searchResults?: Thing[];
+  isSearching: boolean;
 }
 
 interface DispatchProps {
@@ -202,6 +225,7 @@ type Props = DispatchProps & OwnProps & RouteComponentProps;
 
 interface State {
   anchorEl: any;
+  searchAnchor: any;
   searchText: string;
   mobileSearchBarOpen: boolean;
   drawerOpen: boolean;
@@ -220,14 +244,18 @@ interface MenuItemProps {
 
 class App extends Component<Props, State> {
   private mobileSearchInput: React.RefObject<HTMLInputElement>;
+  private desktopSearchInput: React.RefObject<HTMLInputElement>;
+
   constructor(props) {
     super(props);
     this.mobileSearchInput = React.createRef();
+    this.desktopSearchInput = React.createRef();
   }
 
   state = {
     anchorEl: null,
     searchText: '',
+    searchAnchor: null,
     mobileSearchBarOpen: false,
     drawerOpen: false,
     isLoggedOut: true,
@@ -241,7 +269,21 @@ class App extends Component<Props, State> {
 
   handleSearchChange = event => {
     let searchText = event.currentTarget.value;
-    this.setState({ searchText });
+
+    if (this.state.searchAnchor === null) {
+      this.setState({ searchAnchor: event.currentTarget });
+    }
+
+    if (searchText.length > 0) {
+      this.setState({ searchText });
+      this.debouncedExecSearch(searchText);
+    }
+  };
+
+  handleSearchFocus = event => {
+    if (this.state.searchAnchor === null) {
+      this.setState({ searchAnchor: event.currentTarget });
+    }
   };
 
   handleSearchForSubmit = () => {
@@ -255,6 +297,13 @@ class App extends Component<Props, State> {
     }
   };
 
+  resetSearchAnchor = event => {
+    // If user is clicking back into search field, don't resetAnchor
+    if (event.target !== this.desktopSearchInput.current) {
+      this.setState({ searchAnchor: null });
+    }
+  };
+
   execSearch = (text: string) => {
     if (this.props.location.pathname !== '/search') {
       this.props.history.push('/search');
@@ -265,6 +314,14 @@ class App extends Component<Props, State> {
     }
   };
 
+  execQuickSearch = (text: string) => {
+    if (text.length >= 1 && this.props.currentSearchText !== text) {
+      this.props.search(text);
+    }
+  };
+
+  debouncedExecSearch = _.debounce(this.execQuickSearch, 250);
+
   handleMobileSearchDisplay = () => {
     this.setState(
       state => ({ mobileSearchBarOpen: !this.state.mobileSearchBarOpen }),
@@ -274,6 +331,109 @@ class App extends Component<Props, State> {
       },
     );
   };
+
+  renderLoading = () => {
+    return (
+      <div style={{ flexGrow: 1 }}>
+        <LinearProgress />
+      </div>
+    );
+  };
+
+  renderQuickSearch() {
+    let { searchText, searchAnchor } = this.state;
+    let { classes, searchResults, isSearching } = this.props;
+    searchResults = searchResults || [];
+
+    return searchAnchor && searchText.length > 0 ? (
+      <ClickAwayListener onClickAway={this.resetSearchAnchor}>
+        <Popper
+          open={!!searchAnchor}
+          anchorEl={searchAnchor}
+          placement="bottom"
+          keepMounted
+          transition
+          disablePortal
+        >
+          {({ TransitionProps, placement }) => (
+            <Grow
+              {...TransitionProps}
+              style={{
+                transformOrigin:
+                  placement === 'bottom' ? 'center top' : 'center bottom',
+              }}
+            >
+              <Paper
+                id="menu-list-grow"
+                style={{
+                  height: 'auto',
+                  overflow: 'scroll',
+                  width: 288,
+                }}
+              >
+                <MenuList
+                  style={
+                    isSearching
+                      ? { display: 'flex', justifyContent: 'center' }
+                      : {}
+                  }
+                >
+                  {isSearching ? (
+                    <CircularProgress className={classes.progressSpinner} />
+                  ) : (
+                    <React.Fragment>
+                      {searchResults!.length ? (
+                        searchResults!.slice(0, 5).map(result => {
+                          return (
+                            <MenuItem
+                              dense
+                              component={RouterLink}
+                              to={`/${result.type}/${result.slug}`}
+                              key={result.id}
+                            >
+                              <img
+                                src={
+                                  result.posterPath
+                                    ? `https://image.tmdb.org/t/p/w92/${
+                                        result.posterPath
+                                      }`
+                                    : ''
+                                }
+                                className={classes.avatar}
+                              />
+                              {truncateText(result.name, 30)}
+                            </MenuItem>
+                          );
+                        })
+                      ) : (
+                        <Typography
+                          variant="body1"
+                          gutterBottom
+                          align="center"
+                          className={classes.noResults}
+                        >
+                          No results :(
+                        </Typography>
+                      )}
+                      {searchResults!.length > 5 && (
+                        <MenuItem
+                          dense
+                          style={{ justifyContent: 'center' }}
+                          onClick={this.handleSearchForSubmit}
+                        >
+                          View All Results
+                        </MenuItem>
+                      )}
+                    </React.Fragment>
+                  )}
+                </MenuList>
+              </Paper>
+            </Grow>
+          )}
+        </Popper>
+      </ClickAwayListener>
+    ) : null;
+  }
 
   handleMenu = event => {
     this.setState({ anchorEl: event.currentTarget });
@@ -317,11 +477,15 @@ class App extends Component<Props, State> {
                 'aria-label': 'search Teletracker',
                 inputMode: 'search',
               }}
+              inputRef={this.desktopSearchInput}
               onChange={this.handleSearchChange}
               onKeyDown={this.handleSearchForEnter}
+              // onBlur={this.resetSearchAnchor}
+              onFocus={this.handleSearchFocus}
             />
           </div>
           <div className={classes.grow} />
+          {this.renderQuickSearch()}
         </div>
         {!mobileSearchBarOpen ? (
           <div className={classes.sectionMobile}>
@@ -588,6 +752,8 @@ const mapStateToProps = (appState: AppState) => {
       ['search', 'currentSearchText'],
       appState,
     ),
+    isSearching: appState.search.searching,
+    searchResults: appState.search.results,
   };
 };
 
