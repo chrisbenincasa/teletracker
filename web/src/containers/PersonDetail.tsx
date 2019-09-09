@@ -340,20 +340,22 @@ class PersonDetail extends React.Component<Props, State> {
           <Typography color="inherit">
             {showFullBiography ? biography : biography.substr(0, 1200)}
           </Typography>
-          <Fab
-            size="small"
-            variant="extended"
-            aria-label={showFullBiography ? 'Read Less' : 'Read More'}
-            onClick={this.showFullBiography}
-            style={{ marginTop: 5, display: 'flex', alignSelf: 'center' }}
-          >
-            {showFullBiography ? (
-              <ExpandLess style={{ marginRight: 8 }} />
-            ) : (
-              <ExpandMore style={{ marginRight: 8 }} />
-            )}
-            {showFullBiography ? 'Read Less' : 'Read More'}
-          </Fab>
+          {biography.length > 1200 ? (
+            <Fab
+              size="small"
+              variant="extended"
+              aria-label={showFullBiography ? 'Read Less' : 'Read More'}
+              onClick={this.showFullBiography}
+              style={{ marginTop: 5, display: 'flex', alignSelf: 'center' }}
+            >
+              {showFullBiography ? (
+                <ExpandLess style={{ marginRight: 8 }} />
+              ) : (
+                <ExpandMore style={{ marginRight: 8 }} />
+              )}
+              {showFullBiography ? 'Read Less' : 'Read More'}
+            </Fab>
+          ) : null}
         </div>
       </div>
     );
