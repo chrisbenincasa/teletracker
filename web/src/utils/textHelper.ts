@@ -42,3 +42,14 @@ export const formatRuntime = (runtime: number | number[], type: string) => {
     return null;
   }
 };
+
+/*
+    Truncate text and append ellipsis
+*/
+export const truncateText = (text: string, lengthLimit: number) => {
+  if (text.length > lengthLimit) {
+    return `${text.substr(0, lengthLimit - 4).trim()}...`;
+  }
+
+  return text;
+};
