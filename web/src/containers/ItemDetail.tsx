@@ -137,7 +137,6 @@ const styles = (theme: Theme) =>
       width: '90%',
       display: 'flex',
       flex: '0 1 auto',
-      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
       position: 'relative',
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
@@ -510,6 +509,7 @@ class ItemDetails extends Component<Props, State> {
                     imageType="poster"
                     imageStyle={{
                       width: '100%',
+                      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                     }}
                   />
                 </div>

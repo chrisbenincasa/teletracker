@@ -39,7 +39,6 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flex: '0 1 auto',
       flexDirection: 'column',
-      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
       position: 'absolute',
       top: 20,
       left: 20,
@@ -226,6 +225,7 @@ class Popular extends Component<Props, State> {
                 imageType="poster"
                 imageStyle={{
                   width: '100%',
+                  boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                 }}
                 pictureStyle={{
                   display: 'block',
