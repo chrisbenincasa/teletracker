@@ -4,6 +4,7 @@ import com.teletracker.common.db.CustomPostgresProfile
 import com.teletracker.common.inject.DbImplicits
 import javax.inject.Inject
 import java.time.OffsetDateTime
+import java.util.UUID
 
 case class TrackedListRow(
   id: Int,
@@ -46,7 +47,7 @@ case class TrackedList(
   deletedAt: Option[OffsetDateTime] = None,
   thingCount: Option[Int] = None) {
   def withThings(things: List[PartialThing]): TrackedList = {
-    this.copy(things = Some(things), thingCount = Some(things.size))
+    this.copy(things = Some(things))
   }
 
   def withCount(count: Int): TrackedList = this.copy(thingCount = Some(count))
@@ -57,23 +58,43 @@ object DynamicListTagRule {
     DynamicListTagRule(tagType, None, Some(true))
 }
 
+sealed trait DynamicListRule {
+  def negated: Option[Boolean]
+}
+
 case class DynamicListTagRule(
   tagType: UserThingTagType,
   value: Option[Double],
-  isPresent: Option[Boolean]) {
+  isPresent: Option[Boolean],
+  negated: Option[Boolean] = None)
+    extends DynamicListRule {
   def withValue(value: Double): DynamicListTagRule =
     this.copy(value = Some(value))
+
+  def negate: DynamicListTagRule = this.copy(negated = Some(true))
 }
+
+case class DynamicListPersonRule(
+  personId: UUID,
+  negated: Option[Boolean] = None)
+    extends DynamicListRule
 
 object DynamicListRules {
   def watched =
     DynamicListRules(
-      DynamicListTagRule.ifPresent(UserThingTagType.Watched) :: Nil
+      rules = DynamicListTagRule.ifPresent(UserThingTagType.Watched) :: Nil
+    )
+
+  def person(id: UUID) =
+    DynamicListRules(
+      rules = DynamicListPersonRule(id) :: Nil
     )
 }
 
-// TODO: Insanely simple ruleset where rules are OR'd together. Expand to be more flexible.
-case class DynamicListRules(tagRules: List[DynamicListTagRule])
+// TODO: Insanely simple ruleset where rules are AND'd together. Expand to be more flexible.
+case class DynamicListRules(rules: List[DynamicListRule]) {
+  require(rules.nonEmpty)
+}
 
 class TrackedLists @Inject()(
   val driver: CustomPostgresProfile,

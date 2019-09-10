@@ -178,13 +178,13 @@ abstract class ThingsDbAccess(
       val finalQuery = (first :+ last).mkString(" & ")
 
       def mkQuery(s: Rep[String]) = {
-        toTsQuery(s, Some("english"))
+        toTsQuery(s, Some("simple"))
       }
 
       def mkVector(s: Rep[String]) = {
         toTsVector(
           s,
-          Some("english")
+          Some("simple")
         )
       }
 
@@ -231,7 +231,7 @@ abstract class ThingsDbAccess(
           .query
 
       run("search") {
-        additionalFilters
+        val q = additionalFilters
           .sortBy {
             case thing if options.rankingMode == SearchRankingMode.Popularity =>
               thing.popularity.desc.nullsLast
@@ -244,6 +244,9 @@ abstract class ThingsDbAccess(
           }
           .take(20)
           .result
+
+        q.statements.foreach()
+
       }.recover {
         case e: PSQLException =>
           println(s"Bad query: $finalQuery")

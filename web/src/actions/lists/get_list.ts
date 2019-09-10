@@ -13,6 +13,8 @@ export const LIST_RETRIEVE_FAILED = 'lists/retrieve/FAILED';
 export interface ListRetrieveInitiatedPayload {
   listId: number;
   force?: boolean;
+  sort?: 'popular' | 'recent' | 'added_time' | 'default';
+  desc?: boolean;
 }
 
 export type ListRetrieveInitiatedAction = FSA<
@@ -57,6 +59,8 @@ export const retrieveListSaga = function*() {
           let response: TeletrackerResponse<List> = yield clientEffect(
             client => client.getList,
             payload.listId,
+            payload.sort,
+            payload.desc,
           );
 
           if (response.ok && response.data) {

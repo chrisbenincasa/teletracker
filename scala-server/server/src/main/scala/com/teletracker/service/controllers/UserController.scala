@@ -1,30 +1,26 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.service.api.{ListsApi, UsersApi}
-import com.teletracker.service.auth.RequestContext._
 import com.teletracker.common.auth.jwt.JwtVendor
-import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
 import com.teletracker.common.db.access.{
+  ListQueryResult,
   SyncThingsDbAccess,
-  ThingsDbAccess,
   UsersDbAccess
 }
-import com.teletracker.common.db.model.{
-  Event,
-  Network,
-  ThingType,
-  TrackedList,
-  UserPreferences,
-  UserThingTagType
+import com.teletracker.common.db.model._
+import com.teletracker.common.db.{DefaultForListType, SortMode}
+import com.teletracker.common.model.{
+  DataResponse,
+  IllegalActionTypeError,
+  Paging
 }
-import com.teletracker.common.model.{DataResponse, IllegalActionTypeError}
+import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.{
   CanParseFieldFilter,
   CanParseListFilters,
-  HasFieldsFilter,
-  Slug
+  HasFieldsFilter
 }
-import com.teletracker.common.util.json.circe._
+import com.teletracker.service.api.{ListsApi, UsersApi}
+import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
 import com.teletracker.service.util.HasThingIdOrSlug
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.request.{QueryParam, RouteParam}
@@ -121,6 +117,12 @@ class UserController @Inject()(
         val selectFields = parseFieldsOrNone(req.fields)
         val filters = parseListFilters(req.itemTypes)
 
+        val desc = req.desc.getOrElse(true)
+        val sort = req.sort
+          .map(SortMode.fromString)
+          .getOrElse(DefaultForListType())
+          .direction(desc)
+
         usersDbAccess
           .findList(
             req.authenticatedUserId,
@@ -128,17 +130,19 @@ class UserController @Inject()(
             includeMetadata = true,
             selectFields,
             Some(filters),
-            req.isDynamic
+            req.isDynamic,
+            sort
           )
           .map {
-            case None => response.notFound
+            case ListQueryResult(None, _) => response.notFound
 
-            case Some(trackedList) =>
+            case ListQueryResult(Some(trackedList), bookmark) =>
               response.ok
                 .contentTypeJson()
                 .body(
-                  DataResponse.complex(
-                    trackedList
+                  DataResponse.forDataResponse(
+                    DataResponse(trackedList)
+                      .withPaging(Paging(bookmark.map(_.asString)))
                   )
                 )
           }
@@ -179,6 +183,12 @@ class UserController @Inject()(
         val selectFields = parseFieldsOrNone(req.fields)
         val filters = parseListFilters(req.itemTypes)
 
+        val desc = req.desc.getOrElse(true)
+        val sort = req.sort
+          .map(SortMode.fromString)
+          .getOrElse(DefaultForListType())
+          .direction(desc)
+
         usersDbAccess
           .findList(
             req.authenticatedUserId,
@@ -186,12 +196,13 @@ class UserController @Inject()(
             includeMetadata = true,
             selectFields,
             Some(filters),
-            req.isDynamic
+            req.isDynamic,
+            sort
           )
           .map {
-            case None => response.notFound
+            case ListQueryResult(None, _) => response.notFound
 
-            case Some(trackedList) =>
+            case ListQueryResult(Some(trackedList), bookmark) =>
               response.ok
                 .contentTypeJson()
                 .body(
@@ -375,6 +386,8 @@ case class GetUserAndListByIdRequest(
   @QueryParam fields: Option[String],
   @QueryParam(commaSeparatedList = true) itemTypes: Seq[String] = Seq(),
   @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
+  @QueryParam sort: Option[String],
+  @QueryParam desc: Option[Boolean],
   request: Request)
     extends HasFieldsFilter
     with InjectedRequest
@@ -401,6 +414,8 @@ case class GetListThingsRequest(
   @QueryParam fields: Option[String],
   @QueryParam(commaSeparatedList = true) itemTypes: Seq[String] = Seq(),
   @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
+  @QueryParam sort: Option[String],
+  @QueryParam desc: Option[Boolean],
   request: Request)
     extends InjectedRequest
 

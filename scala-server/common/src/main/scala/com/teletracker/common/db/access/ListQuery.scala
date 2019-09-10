@@ -1,12 +1,24 @@
 package com.teletracker.common.db.access
 
-import com.teletracker.common.db.DbMonitoring
+import com.teletracker.common.db.{
+  AddedTime,
+  Bookmark,
+  DbMonitoring,
+  DefaultForListType,
+  Popularity,
+  Recent,
+  SortMode
+}
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
 import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
 import com.teletracker.common.util.{Field, ListFilters}
 import com.teletracker.common.util.Functions._
+import com.teletracker.common.util.json.circe.Paths
 import javax.inject.Inject
+import slick.lifted.ColumnOrdered
+import java.awt.print.Book
+import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -46,23 +58,31 @@ class ListQuery @Inject()(
     includeThingMetadata: Boolean = false,
     selectThingFields: Option[List[Field]] = None
   ): Future[Seq[TrackedList]] = {
-    val listsQuery = makeListsQuery(userId)
+    val listsQuery = makeListsQuery(userId, includeDynamic = true)
 
     val (thingsAction, thingCountAction) = if (includeThings) {
-      makeThingsForListQuery(listsQuery, None).result -> DBIO
+      makeThingsForListQuery(listsQuery, None, None).result -> DBIO
         .successful(Seq.empty)
     } else {
-      val countByListIdQuery = makeThingsForListQuery(
+      val countByListIdQuery = countThingsForStandardListQuery(
         listsQuery,
         None
-      ).distinctOn(_._2.id)
-        .groupBy(_._1)
-        .map {
-          case (listId, group) => listId -> group.length
-        }
-        .result
+      ).result
 
-      DBIO.successful(Seq.empty) -> countByListIdQuery
+      val countByDynamicListQuery = listsQuery
+        .filter(_.isDynamic)
+        .map(_.id)
+        .result
+        .flatMap(ids => {
+          dynamicListBuilder.countMatchingThings(ids.toSet)
+        })
+
+      val both = for {
+        countA <- countByListIdQuery
+        countB <- countByDynamicListQuery
+      } yield countA ++ countB
+
+      DBIO.successful(Seq.empty) -> both
     }
 
     val listsF = run("findUsersLists_lists")(listsQuery.result)
@@ -75,7 +95,7 @@ class ListQuery @Inject()(
       thingCount <- thingCountF
     } yield {
       val countByListId = thingCount.toMap
-      val thingsByListId = things.groupBy(_._1).mapValues(_.map(_._2))
+      val thingsByListId = things.groupBy(_._1).mapValues(_.map(_._3))
 
       lists.map(list => {
         val count = countByListId.getOrElse(list.id, 0)
@@ -101,26 +121,62 @@ class ListQuery @Inject()(
     includeTags: Boolean = true,
     selectFields: Option[List[Field]] = None,
     filters: Option[ListFilters] = None,
-    isDynamicHint: Option[Boolean] = None
-  ): Future[Option[(TrackedListRow, Seq[(ThingRaw, Seq[UserThingTag])])]] = {
+    isDynamicHint: Option[Boolean] = None,
+    sortMode: SortMode = DefaultForListType()
+  ): Future[ListQueryResult] = {
     val typeFilters = filters.flatMap(_.itemTypes)
+
+    def buildBookmark(
+      thing: ThingRaw,
+      addedAt: OffsetDateTime,
+      owningListIsDynamic: Boolean,
+      sortMode: SortMode
+    ): Bookmark = {
+      sortMode match {
+        case _: Popularity =>
+          Bookmark(
+            sortMode.`type`,
+            sortMode.isDesc,
+            thing.popularity.getOrElse(0.0).toString
+          )
+        case _: Recent =>
+          Bookmark(
+            sortMode.`type`,
+            sortMode.isDesc,
+            thing.metadata
+              .flatMap(Paths.releaseDate)
+              .getOrElse(LocalDate.MIN.toString)
+          )
+        case _: AddedTime =>
+          Bookmark(sortMode.`type`, sortMode.isDesc, addedAt.toString)
+        case d: DefaultForListType =>
+          buildBookmark(
+            thing,
+            addedAt,
+            owningListIsDynamic,
+            d.get(owningListIsDynamic)
+          )
+      }
+    }
 
     def materialize(
       listOrQuery: Either[ListsQuery, TrackedListRow]
-    ): Future[Option[(TrackedListRow, Seq[(ThingRaw, Seq[UserThingTag])])]] = {
+    ): Future[Option[
+      (TrackedListRow, Seq[(ThingRaw, OffsetDateTime, Seq[UserThingTag])])
+    ]] = {
       val thingsQuery = listOrQuery match {
         case Left(query) =>
-          makeThingsForListQuery(query, typeFilters)
+          makeThingsForListQuery(query, typeFilters, Some(sortMode))
         case Right(list) =>
-          makeThingsForListQuery(list.id, typeFilters)
+          makeThingsForListQuery(list.id, typeFilters, Some(sortMode))
       }
 
       val thingTagsQuery =
-        makeUserThingTagQuery(userId, thingsQuery.map(_._2.id), includeTags)
+        makeUserThingTagQuery(userId, thingsQuery.map(_._3.id), includeTags)
 
       val thingsFut = run("findList_things")(thingsQuery.map {
-        case (listId, thing) =>
-          listId -> thing.projWithMetadata(includeMetadata)
+        case (listId, addedAt, thing) =>
+          (listId, addedAt, thing.projWithMetadata(includeMetadata))
       }.result)
 
       val thingTagsFut = run("findList_thingTags")(thingTagsQuery.result)
@@ -136,13 +192,17 @@ class ListQuery @Inject()(
         thingTags <- thingTagsFut
       } yield {
         listOpt.map(list => {
-          val validThings = things.collect {
-            case (listId, thing) if listId == list.id => thing
+          val validThingsAndAddedTime = things.collect {
+            case (listId, addedAt, thing) if listId == list.id =>
+              thing -> addedAt
           }
+
           val tagsByThingId = thingTags.groupBy(_._1).mapValues(_.map(_._2))
-          val thingAndActions = validThings.map(thing => {
-            thing -> tagsByThingId.getOrElse(thing.id, Seq.empty)
-          })
+          val thingAndActions = validThingsAndAddedTime.map {
+            case (thing, addedAt) => {
+              (thing, addedAt, tagsByThingId.getOrElse(thing.id, Seq.empty))
+            }
+          }
 
           list -> thingAndActions
         })
@@ -165,27 +225,41 @@ class ListQuery @Inject()(
           case Some(list) if list.isDynamic =>
             run("findList_dynamicThings")(
               dynamicListBuilder
-                .buildList(userId, list)
+                .buildList(userId, list, sortMode)
                 .map(list -> _)
                 .map(Option(_))
-            )
+            ).map(_.map {
+              case (list, things) =>
+                list -> things.map {
+                  case (thing, actions) =>
+                    (thing, OffsetDateTime.now(), actions)
+                }
+            })
 
           case Some(list) =>
             materialize(Right(list))
         }
     }
 
-    listAndThingsFut.map {
-      case Some((list, thingsAndActions)) =>
-        val newThings = thingsAndActions.map {
-          case (thing, actions) =>
-            thing.selectFields(selectFields, defaultFields) -> actions
-        }
+    listAndThingsFut
+      .map(_.map {
+        case (list, thingsActionsAddedTime) =>
+          val things = thingsActionsAddedTime.map {
+            case (thing, _, actions) =>
+              thing
+                .selectFields(selectFields, defaultFields)
+                .toPartial
+                .withUserMetadata(UserThingDetails(Seq.empty, actions))
+          }.toList
 
-        Some(list -> newThings)
+          val bookmark = thingsActionsAddedTime.lastOption
+            .map {
+              case (thing, addedAt, _) =>
+                buildBookmark(thing, addedAt, list.isDynamic, sortMode)
+            }
 
-      case listAndThings => listAndThings
-    }
+          ListQueryResult(Some(list.toFull.withThings(things)), bookmark)
+      }.getOrElse(ListQueryResult.empty))
   }
 
   private def makeListsQuery(
@@ -202,35 +276,112 @@ class ListQuery @Inject()(
 
   private def makeThingsForListQuery(
     listsQuery: ListsQuery,
+    thingTypeFilter: Option[Set[ThingType]],
+    sortMode: Option[SortMode]
+  ) = {
+    val thingQuery = InhibitFilter(things.rawQuery)
+      .filter(thingTypeFilter)(types => _.`type` inSetBind types)
+      .query
+
+    val q = (for {
+      lists <- listsQuery
+      tlt <- trackedListThings.query if lists.id === tlt.listId
+      thing <- thingQuery if thing.id === tlt.thingId
+    } yield {
+      (tlt.listId, tlt.addedAt, thing)
+    })
+
+    sortMode
+      .map(sm => {
+        q.sortBy {
+          case (_, addedAt, thing) =>
+            makeSort(thing, addedAt, sm)
+        }
+      })
+      .getOrElse(q)
+  }
+
+  private def makeSort(
+    thing: things.ThingsTableRaw,
+    addedAt: Rep[OffsetDateTime],
+    sortMode: SortMode
+  ): ColumnOrdered[
+    _ >: Option[Double] with Option[String] with OffsetDateTime <: Any
+  ] = {
+    sortMode match {
+      case Popularity(true)  => thing.popularity.desc.nullsLast
+      case Popularity(false) => thing.popularity.desc.nullsLast
+      case Recent(desc) =>
+        val movieRelease = thing.metadata
+          .+>("themoviedb")
+          .+>("movie")
+          .+>>("release_date")
+
+        val tvRelease = thing.metadata
+          .+>("themoviedb")
+          .+>("show")
+          .+>>("first_air_date")
+
+        val either = movieRelease.ifNull(tvRelease)
+        if (desc) {
+          either.desc.nullsLast
+        } else {
+          either.asc.nullsLast
+        }
+
+      case AddedTime(true) =>
+        addedAt.desc
+      case AddedTime(false) =>
+        addedAt.asc
+      case d @ DefaultForListType(_) => makeSort(thing, addedAt, d.get(true))
+    }
+  }
+
+  private def countThingsForStandardListQuery(
+    listsQuery: ListsQuery,
     thingTypeFilter: Option[Set[ThingType]]
   ) = {
     val thingQuery = InhibitFilter(things.rawQuery)
       .filter(thingTypeFilter)(types => _.`type` inSetBind types)
       .query
 
-    for {
+    (for {
       lists <- listsQuery
       tlt <- trackedListThings.query if lists.id === tlt.listId
       thing <- thingQuery if thing.id === tlt.thingId
     } yield {
       tlt.listId -> thing
-    }
+    }).distinctOn(_._2.id)
+      .groupBy(_._1)
+      .map {
+        case (listId, group) => listId -> group.length
+      }
   }
 
   private def makeThingsForListQuery(
     listId: Int,
-    thingTypeFilter: Option[Set[ThingType]]
+    thingTypeFilter: Option[Set[ThingType]],
+    sortMode: Option[SortMode]
   ) = {
     val thingQuery = InhibitFilter(things.rawQuery)
       .filter(thingTypeFilter)(types => _.`type` inSetBind types)
       .query
 
-    for {
+    val q = (for {
       tlt <- trackedListThings.query.filter(_.listId === listId)
       thing <- thingQuery if thing.id === tlt.thingId
     } yield {
-      tlt.listId -> thing
-    }
+      (tlt.listId, tlt.addedAt, thing)
+    })
+
+    sortMode
+      .map(sm => {
+        q.sortBy {
+          case (_, addedAt, thing) =>
+            makeSort(thing, addedAt, sm)
+        }
+      })
+      .getOrElse(q)
   }
 
   private def makeUserThingTagQuery(
@@ -248,4 +399,9 @@ class ListQuery @Inject()(
   }
 }
 
-object ListQuery {}
+object ListQueryResult {
+  val empty = ListQueryResult(None, None)
+}
+case class ListQueryResult(
+  trackedListRow: Option[TrackedList],
+  bookmark: Option[Bookmark])
