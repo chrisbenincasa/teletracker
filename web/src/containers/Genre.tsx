@@ -149,9 +149,9 @@ class Genre extends Component<Props, State> {
     });
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
+  componentDidUpdate(prevProps: Props) {
     const { genre, thingsBySlug } = this.props;
-    const { mainItemIndex, type } = this.state;
+    const { mainItemIndex } = this.state;
 
     // Grab random item from filtered list of popular movies
     if ((!prevProps.genre && genre) || (genre && mainItemIndex === -1)) {
@@ -357,6 +357,7 @@ class Genre extends Component<Props, State> {
         <Grid container spacing={2}>
           {genre.map((result, index) => {
             let thing = thingsBySlug[result];
+            console.log(result);
             if (thing && index !== this.state.mainItemIndex) {
               return <ItemCard key={result} userSelf={userSelf} item={thing} />;
             } else {
