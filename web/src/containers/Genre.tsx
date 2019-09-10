@@ -1,4 +1,6 @@
 import {
+  ButtonGroup,
+  Button,
   CardMedia,
   createStyles,
   Fab,
@@ -45,7 +47,6 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flex: '0 1 auto',
       flexDirection: 'column',
-      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
       position: 'absolute',
       top: 20,
       left: 20,
@@ -148,9 +149,9 @@ class Genre extends Component<Props, State> {
     });
   }
 
-  componentDidUpdate(prevProps: Props) {
+  componentDidUpdate(prevProps: Props, prevState: State) {
     const { genre, thingsBySlug } = this.props;
-    const { mainItemIndex } = this.state;
+    const { mainItemIndex, type } = this.state;
 
     // Grab random item from filtered list of popular movies
     if ((!prevProps.genre && genre) || (genre && mainItemIndex === -1)) {
@@ -168,6 +169,23 @@ class Genre extends Component<Props, State> {
 
       this.setState({
         mainItemIndex: popularItem,
+      });
+    }
+
+    if (prevProps.location.search !== this.props.location.search) {
+      let params = new URLSearchParams(location.search);
+      let type;
+      let param = params.get('type');
+      if (param === 'movie' || param === 'show' || !param) {
+        type = param;
+      }
+
+      this.setState({
+        type,
+      });
+      this.props.retrieveGenre({
+        genre: this.props.match.params.id,
+        thingRestrict: type,
       });
     }
   }
@@ -238,6 +256,7 @@ class Genre extends Component<Props, State> {
               width: '100%',
               height: '100%',
               maxHeight: 424,
+              boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
             }}
             pictureStyle={{
               display: 'block',
@@ -281,19 +300,60 @@ class Genre extends Component<Props, State> {
   };
 
   renderPopular = () => {
-    const { genre, userSelf, thingsBySlug, genres, match } = this.props;
+    const {
+      genre,
+      userSelf,
+      thingsBySlug,
+      genres,
+      location,
+      match,
+    } = this.props;
+    const { type } = this.state;
     const genreModel = R.find(g => g.slug === match.params.id, genres!)!;
 
     const capitalize = (s: string) => {
       return s.charAt(0).toUpperCase() + s.slice(1);
     };
-
+    console.log(this.props);
     return genre && genre && genre.length ? (
       <div style={{ padding: 8, margin: 20 }}>
-        <Typography color="inherit" variant="h4" style={{ marginBottom: 10 }}>
-          Popular {genreModel.name}{' '}
-          {this.state.type ? capitalize(this.state.type) + 's' : 'Items'}
-        </Typography>
+        <div
+          style={{ display: 'flex', flexDirection: 'row', marginBottom: 10 }}
+        >
+          <Typography color="inherit" variant="h4" style={{ flexGrow: 1 }}>
+            Popular {genreModel.name} {type ? capitalize(type) + 's' : 'Items'}
+          </Typography>
+          <ButtonGroup
+            variant="contained"
+            color="primary"
+            aria-label="Filter by All, Movies, or just TV Shows"
+          >
+            <Button
+              color={!type ? 'secondary' : 'primary'}
+              component={RouterLink}
+              to={{
+                pathname: location.pathname,
+                search: '',
+              }}
+            >
+              All
+            </Button>
+            <Button
+              color={type === 'movie' ? 'secondary' : 'primary'}
+              component={RouterLink}
+              to={'?type=movie'}
+            >
+              Movies
+            </Button>
+            <Button
+              color={type === 'show' ? 'secondary' : 'primary'}
+              component={RouterLink}
+              to={'?type=show'}
+            >
+              TV
+            </Button>
+          </ButtonGroup>
+        </div>
         <Grid container spacing={2}>
           {genre.map((result, index) => {
             let thing = thingsBySlug[result];
