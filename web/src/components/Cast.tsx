@@ -73,6 +73,7 @@ class Cast extends Component<Props, {}> {
               : ''
           }
           className={classes.avatar}
+          itemProp="image"
         >
           {person.profilePath ? null : parseInitials(person.name!, 'name')}
         </Avatar>
@@ -81,6 +82,7 @@ class Cast extends Component<Props, {}> {
           color="textPrimary"
           className={classes.actualName}
           align="center"
+          itemProp="name"
         >
           {person.name}
         </Typography>
@@ -89,6 +91,7 @@ class Cast extends Component<Props, {}> {
           color="textPrimary"
           className={classes.characterName}
           align="center"
+          itemProp="character"
         >
           {person.characterName}
         </Typography>
@@ -109,7 +112,13 @@ class Cast extends Component<Props, {}> {
 
           <Grid container className={classes.grid}>
             {credits.map(person => (
-              <div className={classes.personContainer} key={person.id}>
+              <div
+                className={classes.personContainer}
+                key={person.id}
+                itemProp="actor"
+                itemScope
+                itemType="http://schema.org/Person"
+              >
                 {this.renderAvatar(person)}
               </div>
             ))}
