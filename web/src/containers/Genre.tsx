@@ -314,7 +314,7 @@ class Genre extends Component<Props, State> {
     const capitalize = (s: string) => {
       return s.charAt(0).toUpperCase() + s.slice(1);
     };
-    console.log(this.props);
+
     return genre && genre && genre.length ? (
       <div style={{ padding: 8, margin: 20 }}>
         <div
@@ -357,7 +357,7 @@ class Genre extends Component<Props, State> {
         <Grid container spacing={2}>
           {genre.map((result, index) => {
             let thing = thingsBySlug[result];
-            console.log(result);
+
             if (thing && index !== this.state.mainItemIndex) {
               return <ItemCard key={result} userSelf={userSelf} item={thing} />;
             } else {
