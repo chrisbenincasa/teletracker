@@ -40,6 +40,7 @@ import Person from '../types/Person';
 import { Genre } from '../types';
 import _ from 'lodash';
 import { PersonCredit } from '../types/PersonCredit';
+import { Helmet } from 'react-helmet';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -390,11 +391,75 @@ class PersonDetail extends React.Component<Props, State> {
     }
 
     const backdrop = person!.credits![0];
-
     const profilePath = person!.profilePath || '';
 
     return (
       <React.Fragment>
+        <Helmet>
+          <title>{`${person.name} | Teletracker`}</title>
+          <meta
+            name="title"
+            property="og:title"
+            content={`${
+              person.name
+            } | Where to stream, rent, or buy. Track this person today!`}
+          />
+          <meta
+            name="description"
+            property="og:description"
+            content={`Find out where to stream, rent, or buy content featuring ${
+              person.name
+            } online. Track it to find out when it's available on one of your services.`}
+          />
+          <meta
+            name="image"
+            property="og:image"
+            content={`https://image.tmdb.org/t/p/w342${person.posterPath}`}
+          />
+          <meta property="og:type" content="video.movie" />
+          <meta property="og:image:type" content="image/jpg" />
+          <meta property="og:image:width" content="342" />
+          <meta
+            data-react-helmet="true"
+            property="og:image:height"
+            content="513"
+          />
+          <meta
+            property="og:url"
+            content={`http://teletracker.com${this.props.location.pathname}`}
+          />
+          <meta
+            data-react-helmet="true"
+            name="twitter:card"
+            content="summary"
+          />
+          <meta
+            name="twitter:title"
+            content={`${
+              person.name
+            } - Where to Stream, Rent, or Buy their content`}
+          />
+          <meta
+            name="twitter:description"
+            content={`Find out where to stream, rent, or buy content featuring ${
+              person.name
+            } online. Track it to find out when it's available on one of your services.`}
+          />
+          <meta
+            name="twitter:image"
+            content={`https://image.tmdb.org/t/p/w342${person.posterPath}`}
+          />
+          <meta
+            name="keywords"
+            content={`${person.name}, ${
+              person.type
+            }, stream, streaming, rent, buy, watch, track`}
+          />
+          <link
+            rel="canonical"
+            href={`http://teletracker.com${this.props.location.pathname}`}
+          />
+        </Helmet>
         <div className={classes.backdrop}>
           <ResponsiveImage
             item={backdrop}
