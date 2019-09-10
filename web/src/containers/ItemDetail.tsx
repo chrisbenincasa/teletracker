@@ -452,8 +452,6 @@ class ItemDetails extends Component<Props, State> {
     } else if (itemDetail && itemDetail.type && itemDetail.type === 'show') {
       itemType = 'TVSeries';
     }
-    console.log(itemDetail);
-    console.log(this.props);
 
     return isFetching || !itemDetail ? (
       this.renderLoading()
