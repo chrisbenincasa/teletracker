@@ -52,6 +52,7 @@ import AddToListDialog from '../components/AddToListDialog';
 import { formatRuntime } from '../utils/textHelper';
 import Thing from '../types/Thing';
 import RouterLink from '../components/RouterLink';
+import { Helmet } from 'react-helmet';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -304,7 +305,7 @@ class ItemDetails extends Component<Props, State> {
           marginBottom: 10,
         }}
       >
-        <Typography color="inherit" variant="h4">
+        <Typography color="inherit" variant="h4" itemProp="name">
           {`${title}`}
         </Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
@@ -317,7 +318,7 @@ class ItemDetails extends Component<Props, State> {
             {`(${voteCount})`}
           </Typography>
         </div>
-        <Typography color="inherit" variant="body1">
+        <Typography color="inherit" variant="body1" itemProp="duration">
           {`${runtime}`}
         </Typography>
       </div>
@@ -334,7 +335,9 @@ class ItemDetails extends Component<Props, State> {
           <Hidden only={['xs', 'sm']}>{this.renderTitle(thing)}</Hidden>
         </div>
         <div>
-          <Typography color="inherit">{overview}</Typography>
+          <Typography color="inherit" itemProp="about">
+            {overview}
+          </Typography>
         </div>
         <div className={classes.genreContainer}>
           {genres &&
@@ -346,6 +349,7 @@ class ItemDetails extends Component<Props, State> {
                 className={classes.genre}
                 component={RouterLink}
                 to={`/genres/${genre.slug}`}
+                itemProp="genre"
               />
             ))}
         </div>
@@ -442,11 +446,83 @@ class ItemDetails extends Component<Props, State> {
   renderItemDetails = () => {
     let { classes, isFetching, itemDetail, userSelf } = this.props;
     let { manageTrackingModalOpen } = this.state;
+    let itemType;
+    if (itemDetail && itemDetail.type && itemDetail.type === 'movie') {
+      itemType = 'Movie';
+    } else if (itemDetail && itemDetail.type && itemDetail.type === 'show') {
+      itemType = 'TVSeries';
+    }
 
     return isFetching || !itemDetail ? (
       this.renderLoading()
     ) : (
       <React.Fragment>
+        <Helmet>
+          <title>{`${itemDetail.name} | Teletracker`}</title>
+          <meta
+            name="title"
+            property="og:title"
+            content={`${
+              itemDetail.name
+            } | Where to stream, rent, or buy. Track it today!`}
+          />
+          <meta
+            name="description"
+            property="og:description"
+            content={`Find out where to stream, rent, or buy ${
+              itemDetail.name
+            } online. Track it to find out when it's available on one of your services.`}
+          />
+          <meta
+            name="image"
+            property="og:image"
+            content={`https://image.tmdb.org/t/p/w342${itemDetail.posterPath}`}
+          />
+          <meta property="og:type" content="video.movie" />
+          <meta property="og:image:type" content="image/jpg" />
+          <meta property="og:image:width" content="342" />
+          <meta
+            data-react-helmet="true"
+            property="og:image:height"
+            content="513"
+          />
+          <meta
+            property="og:url"
+            content={`http://teletracker.com${this.props.location.pathname}`}
+          />
+          <meta
+            data-react-helmet="true"
+            name="twitter:card"
+            content="summary"
+          />
+          <meta
+            name="twitter:title"
+            content={`${
+              itemDetail.name
+            } - Where to Stream, Rent, or Buy It Online`}
+          />
+          <meta
+            name="twitter:description"
+            content={`Find out where to stream, rent, or buy ${
+              itemDetail.name
+            } online. Track it to find out when it's available on one of your services.`}
+          />
+          <meta
+            name="twitter:image"
+            content={`https://image.tmdb.org/t/p/w342${itemDetail.posterPath}`}
+          />
+          <meta
+            name="keywords"
+            content={`${itemDetail.name}, ${
+              itemDetail.type
+            }, stream, streaming, rent, buy, watch, track`}
+          />
+          <link
+            rel="canonical"
+            href={`http://teletracker.com${this.props.location.pathname}`}
+          />
+        </Helmet>
+
         <div className={classes.backdrop}>
           <ResponsiveImage
             item={itemDetail}
@@ -483,7 +559,11 @@ class ItemDetails extends Component<Props, State> {
               Go Back
             </Fab>
 
-            <div className={classes.itemDetailContainer}>
+            <div
+              className={classes.itemDetailContainer}
+              itemScope
+              itemType={`http://schema.org/${itemType}`}
+            >
               <div className={classes.leftContainer}>
                 <Hidden smUp>{this.renderTitle(itemDetail)}</Hidden>
                 <div
