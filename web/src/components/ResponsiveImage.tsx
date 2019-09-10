@@ -18,14 +18,15 @@ export const ResponsiveImage: React.FC<imgProps> = ({
   pictureStyle,
 }) => {
   function generateSource(imageSpecs) {
-    for (let x = 0; x <= imageSpecs.length; x++) {
+    return imageSpecs.map(image => {
       return (
         <source
-          srcSet={generateSrcSet(imageSpecs[x].sizes)}
-          type={imageSpecs[x].type}
+          srcSet={generateSrcSet(image.sizes)}
+          type={image.type}
+          key={image.type}
         />
       );
-    }
+    });
   }
 
   function generateSrcSet(supportedSizes: number[]) {
@@ -58,11 +59,10 @@ export const ResponsiveImage: React.FC<imgProps> = ({
     },
   ];
 
-  // We also support 780 & 1280, however our current use case blurs the image so we can get away with loading a much smaller image, improving performance
   const backdropSpecs = [
     {
       type: 'image/jpeg',
-      sizes: [300, 780],
+      sizes: [300, 780, 1280],
     },
   ];
 
