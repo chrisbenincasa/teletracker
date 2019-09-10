@@ -98,6 +98,7 @@ export const ResponsiveImage: React.FC<imgProps> = ({
           decoding="async"
           {...imgProps}
           style={imageStyle}
+          itemProp="image"
         />
       </picture>
     );
