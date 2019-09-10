@@ -41,7 +41,7 @@ import {
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { ActionType } from '../types';
+import { ActionType, Genre } from '../types';
 import { getMetadataPath } from '../utils/metadata-access';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import ThingAvailability from '../components/Availability';
@@ -82,6 +82,7 @@ const styles = (theme: Theme) =>
     },
     genreContainer: {
       display: 'flex',
+      flexWrap: 'wrap',
     },
     heroContent: {
       maxWidth: 600,
@@ -173,6 +174,7 @@ interface OwnProps {
   isAuthed: boolean;
   isFetching: boolean;
   itemDetail?: Thing;
+  genres?: Genre[];
 }
 
 interface DispatchProps {
@@ -324,9 +326,8 @@ class ItemDetails extends Component<Props, State> {
   };
 
   renderDescriptiveDetails = (thing: Thing) => {
-    const { classes } = this.props;
+    const { classes, genres } = this.props;
     const overview = getMetadataPath(thing, 'overview') || '';
-    const genres = Object(getMetadataPath(thing, 'genres')) || [];
 
     return (
       <div className={classes.descriptionContainer}>
@@ -345,7 +346,7 @@ class ItemDetails extends Component<Props, State> {
                 label={genre.name}
                 className={classes.genre}
                 component={RouterLink}
-                to={`/genres/${genre.name.toLowerCase()}`}
+                to={`/genres/${genre.slug}`}
               />
             ))}
         </div>
@@ -593,6 +594,7 @@ const mapStateToProps: (
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
     itemDetail: appState.itemDetail.itemDetail,
+    genres: appState.metadata.genres,
   };
 };
 
