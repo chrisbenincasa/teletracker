@@ -1,7 +1,6 @@
 package com.teletracker.common.db.access
 
 import com.teletracker.common.auth.jwt.JwtVendor
-import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model.{
   Events,
   Things,
@@ -9,6 +8,7 @@ import com.teletracker.common.db.model.{
   TrackedLists,
   _
 }
+import com.teletracker.common.db.{DbMonitoring, DefaultForListType, SortMode}
 import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
 import com.teletracker.common.util.{Field, ListFilters, NetworkCache, Slug}
 import javax.inject.{Inject, Provider}
@@ -234,7 +234,7 @@ class UsersDbAccess @Inject()(
       idsToInsert = sourceIds.toSet -- targetIds
       _ <- run {
         trackedListThings.query ++= idsToInsert.map(thingId => {
-          TrackedListThing(targetList, thingId)
+          TrackedListThing(targetList, thingId, OffsetDateTime.now())
         })
       }
     } yield {}
@@ -267,8 +267,9 @@ class UsersDbAccess @Inject()(
     includeMetadata: Boolean = true,
     selectFields: Option[List[Field]] = None,
     filters: Option[ListFilters] = None,
-    isDynamicHint: Option[Boolean] = None
-  ): Future[Option[TrackedList]] = {
+    isDynamicHint: Option[Boolean] = None,
+    sortMode: SortMode = DefaultForListType()
+  ): Future[ListQueryResult] = {
     listQuery
       .get()
       .findList(
@@ -278,18 +279,9 @@ class UsersDbAccess @Inject()(
         includeTags = true,
         selectFields,
         filters,
-        isDynamicHint
+        isDynamicHint,
+        sortMode
       )
-      .map(_.map {
-        case (list, thingsAndActions) =>
-          val things = thingsAndActions.map {
-            case (thing, actions) =>
-              thing.toPartial
-                .withUserMetadata(UserThingDetails(Seq.empty, actions))
-          }
-
-          list.toFull.withThings(things.toList)
-      })
   }
 
   def addThingToList(
@@ -297,7 +289,10 @@ class UsersDbAccess @Inject()(
     thingId: UUID
   ): Future[Int] = {
     run {
-      trackedListThings.query.insertOrUpdate(TrackedListThing(listId, thingId))
+      // TODO is this wrong - addedTime
+      trackedListThings.query.insertOrUpdate(
+        TrackedListThing(listId, thingId, OffsetDateTime.now())
+      )
     }
   }
 

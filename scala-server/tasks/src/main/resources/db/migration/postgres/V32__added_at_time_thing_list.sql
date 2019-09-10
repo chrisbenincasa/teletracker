@@ -1,0 +1,1 @@
+ALTER TABLE "list_things" ADD COLUMN "added_at" TIMESTAMP WITH time zone DEFAULT now();
