@@ -91,13 +91,15 @@ class ThingApi @Inject()(
     people: Seq[(Person, PersonThing)])
 
   def getThing(
-    userId: String,
+    userId: Option[String],
     idOrSlug: String,
     thingType: ThingType
   ): Future[Option[PartialThing]] = {
     def queryViaId(id: UUID) = {
       val thingFut = thingsDbAccess.findThingById(id, thingType)
-      val userDetailsFut = thingsDbAccess.getThingUserDetails(userId, id)
+      val userDetailsFut = userId
+        .map(thingsDbAccess.getThingUserDetails(_, id))
+        .getOrElse(Future.successful(UserThingDetails.empty))
       val peopleFut = thingsDbAccess.findPeopleForThing(id, None)
 
       for {
@@ -117,7 +119,9 @@ class ThingApi @Inject()(
 
           val userDetailsFut =
             timed("getThingUserDetails") {
-              thingsDbAccess.getThingUserDetails(userId, thing.id)
+              userId
+                .map(thingsDbAccess.getThingUserDetails(_, thing.id))
+                .getOrElse(Future.successful(UserThingDetails.empty))
             }
           val peopleFut = timed("findPeopleForThing") {
             thingsDbAccess.findPeopleForThing(thing.id, None)
@@ -288,7 +292,7 @@ class ThingApi @Inject()(
   }
 
   def getPerson(
-    userId: String,
+    userId: Option[String],
     idOrSlug: String
   ): Future[Option[EnrichedPerson]] = {
     val personFut = HasThingIdOrSlug.parse(idOrSlug) match {

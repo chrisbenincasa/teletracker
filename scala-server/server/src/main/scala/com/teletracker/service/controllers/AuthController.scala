@@ -4,7 +4,7 @@ import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.access.UsersDbAccess
 import com.teletracker.service.api.UsersApi
-import com.teletracker.service.auth.{JwtAuthExtractor, JwtAuthFilter}
+import com.teletracker.service.auth.{AuthRequiredFilter, JwtAuthExtractor}
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import javax.inject.Inject
@@ -20,7 +20,7 @@ class AuthController @Inject()(
     extends Controller {
 
   prefix("/api/v1/auth") {
-    filter[JwtAuthFilter].get("/status") { _: Request =>
+    filter[AuthRequiredFilter].get("/status") { _: Request =>
       response.ok
     }
   }

@@ -20,7 +20,7 @@ import com.teletracker.common.util.{
   HasFieldsFilter
 }
 import com.teletracker.service.api.{ListsApi, UsersApi}
-import com.teletracker.service.auth.{JwtAuthFilter, UserSelfOnlyFilter}
+import com.teletracker.service.auth.{AuthRequiredFilter, UserSelfOnlyFilter}
 import com.teletracker.service.util.HasThingIdOrSlug
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.request.{QueryParam, RouteParam}
@@ -48,9 +48,9 @@ class UserController @Inject()(
       usersApi.registerUser(req.userId).map(_ => response.ok)
     }
 
-    filter[JwtAuthFilter].filter[UserSelfOnlyFilter].apply {
+    filter[AuthRequiredFilter].filter[UserSelfOnlyFilter] {
       get("/:userId") { request: GetUserByIdRequest =>
-        getUserOrNotFound(request.authenticatedUserId)
+        getUserOrNotFound(request.authenticatedUserId.get)
       }
 
       put("/:userId") { request: UpdateUserRequest =>
@@ -58,11 +58,11 @@ class UserController @Inject()(
           case Right(updateUserRequest) =>
             usersApi
               .updateUser(
-                request.request.authenticatedUserId,
+                request.request.authenticatedUserId.get,
                 updateUserRequest
               )
               .flatMap(_ => {
-                getUserOrNotFound(request.request.authenticatedUserId)
+                getUserOrNotFound(request.request.authenticatedUserId.get)
               })
 
           case Left(err) => throw err
@@ -80,15 +80,15 @@ class UserController @Inject()(
             )
 
         usersDbAccess
-          .findListsForUser(req.authenticatedUserId, req.includeThings)
+          .findListsForUser(req.authenticatedUserId.get, req.includeThings)
           .flatMap(result => {
             if (result.isEmpty) {
               usersApi
-                .createDefaultListsForUser(req.authenticatedUserId)
+                .createDefaultListsForUser(req.authenticatedUserId.get)
                 .flatMap(_ => {
                   usersDbAccess
                     .findListsForUser(
-                      req.authenticatedUserId,
+                      req.authenticatedUserId.get,
                       req.includeThings
                     )
                     .map(returnLists)
@@ -102,7 +102,7 @@ class UserController @Inject()(
       post("/:userId/lists") { req: CreateListRequest =>
         listsApi
           .createList(
-            req.authenticatedUserId,
+            req.authenticatedUserId.get,
             req.name,
             req.thingIds.getOrElse(Nil)
           )
@@ -125,7 +125,7 @@ class UserController @Inject()(
 
         usersDbAccess
           .findList(
-            req.authenticatedUserId,
+            req.authenticatedUserId.get,
             req.listId,
             includeMetadata = true,
             selectFields,
@@ -149,10 +149,10 @@ class UserController @Inject()(
       }
 
       delete("/:userId/lists/:listId") { req: DeleteListRequest =>
-        withList(req.authenticatedUserId, req.listId) { list =>
+        withList(req.authenticatedUserId.get, req.listId) { list =>
           listsApi
             .deleteList(
-              req.authenticatedUserId,
+              req.authenticatedUserId.get,
               list.id,
               req.mergeWithList.map(_.toInt)
             )
@@ -169,9 +169,9 @@ class UserController @Inject()(
       }
 
       put("/:userId/lists/:listId") { req: UpdateListRequest =>
-        withList(req.authenticatedUserId, req.listId) { list =>
+        withList(req.authenticatedUserId.get, req.listId) { list =>
           usersDbAccess
-            .updateList(req.authenticatedUserId, list.id, req.name)
+            .updateList(req.authenticatedUserId.get, list.id, req.name)
             .map {
               case 0 => response.notFound
               case _ => response.noContent
@@ -191,7 +191,7 @@ class UserController @Inject()(
 
         usersDbAccess
           .findList(
-            req.authenticatedUserId,
+            req.authenticatedUserId.get,
             req.listId,
             includeMetadata = true,
             selectFields,
@@ -214,7 +214,7 @@ class UserController @Inject()(
       }
 
       put("/:userId/lists/:listId/things") { req: AddThingToListRequest =>
-        withList(req.authenticatedUserId, req.listId) { list =>
+        withList(req.authenticatedUserId.get, req.listId) { list =>
           thingsDbAccess.findThingByIdOrSlug(req.idOrSlug).flatMap {
             case None => Future.successful(response.notFound)
             case Some(thing) =>
@@ -228,7 +228,7 @@ class UserController @Inject()(
       put("/:userId/lists") { req: AddThingToListsRequest =>
         usersDbAccess
           .findListsForUser(
-            req.authenticatedUserId,
+            req.authenticatedUserId.get,
             includeThings = false
           )
           .flatMap(lists => {
@@ -253,7 +253,7 @@ class UserController @Inject()(
 
       put("/:userId/things/:thingId/lists") { req: ManageShowListsRequest =>
         usersDbAccess
-          .findListsForUser(req.authenticatedUserId, includeThings = false)
+          .findListsForUser(req.authenticatedUserId.get, includeThings = false)
           .flatMap(lists => {
             val listIds = lists.map(_.id).toSet
             val validAdds = req.addToLists.filter(listIds(_))
@@ -289,7 +289,7 @@ class UserController @Inject()(
               } else {
                 usersDbAccess
                   .insertOrUpdateAction(
-                    req.request.authenticatedUserId,
+                    req.request.authenticatedUserId.get,
                     req.idOrSlug,
                     action,
                     req.value
@@ -312,7 +312,7 @@ class UserController @Inject()(
             case Success(action) =>
               usersDbAccess
                 .removeAction(
-                  req.request.authenticatedUserId,
+                  req.request.authenticatedUserId.get,
                   req.idOrSlug,
                   action
                 )
@@ -331,7 +331,7 @@ class UserController @Inject()(
 
       get("/:userId/events") { req: GetUserByIdRequest =>
         usersDbAccess
-          .getUserEvents(req.authenticatedUserId)
+          .getUserEvents(req.authenticatedUserId.get)
           .map(DataResponse(_))
       }
 
@@ -342,7 +342,7 @@ class UserController @Inject()(
           req.event.targetEntityType,
           req.event.targetEntityId,
           req.event.details,
-          req.authenticatedUserId,
+          req.authenticatedUserId.get,
           new java.sql.Timestamp(req.event.timestamp)
         )
 
