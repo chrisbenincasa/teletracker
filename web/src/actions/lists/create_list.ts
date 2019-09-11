@@ -3,11 +3,14 @@ import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect, createAction } from '../utils';
 import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
+import { ListRules } from '../../types';
 export const USER_SELF_CREATE_LIST = 'user/self/create_list/INITIATED';
 export const USER_SELF_CREATE_LIST_SUCCESS = 'user/self/create_list/SUCCESS';
 
 export interface UserCreateListPayload {
   name: string;
+  thingIds?: string[];
+  rules?: ListRules;
 }
 
 export type UserCreateListAction = FSA<
