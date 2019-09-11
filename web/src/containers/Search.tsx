@@ -10,8 +10,9 @@ import {
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { search } from '../actions/search';
 import { Redirect } from 'react-router-dom';
-import { bindActionCreators } from 'redux';
+import { bindActionCreators, Dispatch } from 'redux';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
@@ -42,14 +43,42 @@ const styles = (theme: Theme) =>
     },
   });
 
-interface Props extends WithStyles<typeof styles> {
+interface OwnProps extends WithStyles<typeof styles> {
   error: boolean;
   isAuthed: boolean;
   isSearching: boolean;
   searchResults?: Thing[];
+  currentSearchText?: string;
 }
 
-class Search extends Component<Props & WithUserProps> {
+interface DispatchProps {
+  search: (text: string) => void;
+}
+
+type Props = OwnProps & WithUserProps & DispatchProps;
+
+class Search extends Component<Props> {
+  constructor(props: Props) {
+    super(props);
+
+    let params = new URLSearchParams(location.search);
+    let query;
+    let param = params.get('q');
+
+    if (param && param.length > 0) {
+      query = decodeURIComponent(param);
+
+      this.state = {
+        ...this.state,
+        searchText: query,
+      };
+
+      if (this.props.currentSearchText !== query) {
+        this.props.search(query);
+      }
+    }
+  }
+
   renderLoading = () => {
     return (
       <div style={{ flexGrow: 1 }}>
@@ -59,7 +88,7 @@ class Search extends Component<Props & WithUserProps> {
   };
 
   renderSearchResults = () => {
-    let { classes, searchResults, userSelf } = this.props;
+    let { searchResults, userSelf } = this.props;
     let firstLoad = !searchResults;
     searchResults = searchResults || [];
 
@@ -75,6 +104,9 @@ class Search extends Component<Props & WithUserProps> {
       >
         {searchResults.length ? (
           <div style={{ margin: 24, padding: 8 }}>
+            <Typography>
+              {`Movies & TV Shows that match "${this.props.currentSearchText}"`}
+            </Typography>
             <Grid container spacing={2}>
               {searchResults.map(result => {
                 return (
@@ -84,9 +116,11 @@ class Search extends Component<Props & WithUserProps> {
             </Grid>
           </div>
         ) : firstLoad ? null : (
-          <Typography variant="h5" gutterBottom align="center">
-            No results :(
-          </Typography>
+          <div style={{ margin: 24, padding: 8 }}>
+            <Typography variant="h5" gutterBottom align="center">
+              No results :(
+            </Typography>
+          </div>
         )}
       </div>
     ) : (
@@ -121,6 +155,10 @@ class Search extends Component<Props & WithUserProps> {
 const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
+    currentSearchText: R.path<string>(
+      ['search', 'currentSearchText'],
+      appState,
+    ),
     isSearching: appState.search.searching,
     // TODO: Pass SearchResult object that either contains error or a response
     error: appState.search.error,
@@ -128,7 +166,14 @@ const mapStateToProps = (appState: AppState) => {
   };
 };
 
-const mapDispatchToProps = dispatch => bindActionCreators({}, dispatch);
+const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
+  return bindActionCreators(
+    {
+      search,
+    },
+    dispatch,
+  );
+};
 
 export default withUser(
   withStyles(styles)(
