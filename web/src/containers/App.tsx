@@ -270,18 +270,32 @@ class App extends Component<Props, State> {
   handleSearchChange = event => {
     let searchText = event.currentTarget.value;
 
-    if (this.state.searchAnchor === null) {
+    if (
+      this.state.searchAnchor === null &&
+      this.props.location.pathname !== '/search'
+    ) {
       this.setState({ searchAnchor: event.currentTarget });
+    }
+
+    if (this.props.location.pathname === '/search') {
+      this.setState({ searchAnchor: null });
     }
 
     if (searchText.length > 0) {
       this.setState({ searchText });
       this.debouncedExecSearch(searchText);
+
+      if (this.props.location.pathname === '/search') {
+        this.props.history.push(`?q=${encodeURIComponent(searchText)}`);
+      }
     }
   };
 
   handleSearchFocus = event => {
-    if (this.state.searchAnchor === null) {
+    if (
+      this.state.searchAnchor === null &&
+      this.props.location.pathname !== '/search'
+    ) {
       this.setState({ searchAnchor: event.currentTarget });
     }
   };
@@ -295,6 +309,7 @@ class App extends Component<Props, State> {
     if (ev.keyCode === 13) {
       this.execSearch(this.state.searchText);
       ev.currentTarget.blur();
+      this.setState({ searchAnchor: null });
     }
   };
 
@@ -307,7 +322,9 @@ class App extends Component<Props, State> {
 
   execSearch = (text: string) => {
     if (this.props.location.pathname !== '/search') {
-      this.props.history.push('/search');
+      this.props.history.push(`/search?q=${encodeURIComponent(text)}`);
+    } else {
+      this.props.history.push(`?q=${encodeURIComponent(text)}`);
     }
 
     if (text.length >= 1 && this.props.currentSearchText !== text) {
