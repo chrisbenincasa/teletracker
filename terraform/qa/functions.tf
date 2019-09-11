@@ -53,3 +53,16 @@ module "unogs-netflix-expiring-scraper" {
     SCRAPER        = "unogsNetflixExpiring"
   }
 }
+
+module "tmdb-changes-scraper" {
+  source = "./scraper"
+
+  trigger_name     = "tmdb-changes-scrape-trigger"
+  function_name    = "tmdb-changes"
+  entrypoint       = "tmdbChanges"
+  function_version = "1565666029"
+
+  extra_env_vars = {
+    SCRAPER = "tmdbChanges"
+  }
+}

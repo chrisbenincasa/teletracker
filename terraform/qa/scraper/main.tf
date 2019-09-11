@@ -2,6 +2,7 @@ locals {
   env_vars = {
     API_HOST          = "https://api.qa.teletracker.app"
     ADMINISTRATOR_KEY = "berglas://teletracker-secrets/administrator-key-qa"
+    TMDB_API_KEY      = "berglas://teletracker-secrets/tmdb-api-key-qa"
   }
 }
 
