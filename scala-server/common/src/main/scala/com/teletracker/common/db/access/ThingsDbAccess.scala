@@ -231,7 +231,7 @@ abstract class ThingsDbAccess(
           .query
 
       run("search") {
-        val q = additionalFilters
+        additionalFilters
           .sortBy {
             case thing if options.rankingMode == SearchRankingMode.Popularity =>
               thing.popularity.desc.nullsLast
@@ -244,9 +244,6 @@ abstract class ThingsDbAccess(
           }
           .take(20)
           .result
-
-        q.statements.foreach()
-
       }.recover {
         case e: PSQLException =>
           println(s"Bad query: $finalQuery")
