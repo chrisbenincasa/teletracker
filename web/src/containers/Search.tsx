@@ -45,7 +45,6 @@ const styles = (theme: Theme) =>
 
 interface OwnProps extends WithStyles<typeof styles> {
   error: boolean;
-  isAuthed: boolean;
   isSearching: boolean;
   searchResults?: Thing[];
   currentSearchText?: string;
@@ -142,19 +141,16 @@ class Search extends Component<Props> {
   };
 
   render() {
-    return this.props.isAuthed ? (
+    return (
       <div style={{ display: 'flex', flexGrow: 1 }}>
         {this.renderSearchResults()}
       </div>
-    ) : (
-      <Redirect to="/login" />
     );
   }
 }
 
 const mapStateToProps = (appState: AppState) => {
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     currentSearchText: R.path<string>(
       ['search', 'currentSearchText'],
       appState,

@@ -482,9 +482,9 @@ class Account extends Component<Props, State> {
   }
 
   render() {
-    let { networks, networksLoading } = this.props;
+    let { isAuthed, networks, networksLoading } = this.props;
 
-    return networksLoading || !networks ? (
+    return networksLoading || !networks || !isAuthed ? (
       <div style={{ flexGrow: 1 }}>
         <LinearProgress />
       </div>

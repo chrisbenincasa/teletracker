@@ -95,7 +95,6 @@ const styles = (theme: Theme) =>
 interface OwnProps extends WithStyles<typeof styles> {}
 
 interface InjectedProps {
-  isAuthed: boolean;
   genre?: string[];
   genres?: GenreModel[];
   thingsBySlug: { [key: string]: Thing };
@@ -383,7 +382,6 @@ class Genre extends Component<Props, State> {
 
 const mapStateToProps = (appState: AppState) => {
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     genre: appState.popular.genre,
     genres: appState.metadata.genres,
     thingsBySlug: appState.itemDetail.thingsBySlug,

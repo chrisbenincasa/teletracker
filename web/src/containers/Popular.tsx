@@ -87,7 +87,6 @@ const styles = (theme: Theme) =>
 interface OwnProps extends WithStyles<typeof styles> {}
 
 interface InjectedProps {
-  isAuthed: boolean;
   isSearching: boolean;
   popular?: string[];
   thingsBySlug: { [key: string]: Thing };
@@ -283,7 +282,6 @@ class Popular extends Component<Props, State> {
 
 const mapStateToProps = (appState: AppState) => {
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isSearching: appState.search.searching,
     popular: appState.popular.popular,
     thingsBySlug: appState.itemDetail.thingsBySlug,

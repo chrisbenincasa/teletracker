@@ -122,7 +122,6 @@ interface State {
 }
 
 interface StateProps {
-  isAuthed: boolean;
   person?: Person;
   genres?: Genre[];
 }
@@ -531,12 +530,8 @@ class PersonDetail extends React.Component<Props, State> {
   }
 
   render() {
-    let { isAuthed } = this.props;
-
-    return isAuthed ? (
+    return (
       <div style={{ display: 'flex', flexGrow: 1 }}>{this.renderPerson()}</div>
-    ) : (
-      <Redirect to="/login" />
     );
   }
 }
@@ -546,8 +541,6 @@ const mapStateToProps: (
   props: NotOwnProps,
 ) => (appState: AppState) => StateProps = (initial, props) => appState => {
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    // isFetching: appState.itemDetail.fetching,
     person:
       appState.people.peopleById[props.match.params.id] ||
       appState.people.peopleBySlug[props.match.params.id],

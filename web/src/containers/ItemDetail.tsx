@@ -171,7 +171,6 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps {
-  isAuthed: boolean;
   isFetching: boolean;
   itemDetail?: Thing;
   genres?: Genre[];
@@ -650,14 +649,10 @@ class ItemDetails extends Component<Props, State> {
   };
 
   render() {
-    let { isAuthed } = this.props;
-
-    return isAuthed ? (
+    return (
       <div style={{ display: 'flex', flexGrow: 1 }}>
         {this.renderItemDetails()}
       </div>
-    ) : (
-      <Redirect to="/login" />
     );
   }
 }
@@ -671,7 +666,6 @@ const mapStateToProps: (
   props: NotOwnProps,
 ) => (appState: AppState) => OwnProps = (initial, props) => appState => {
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
     itemDetail: appState.itemDetail.itemDetail,
     genres: appState.metadata.genres,

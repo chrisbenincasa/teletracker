@@ -40,7 +40,6 @@ const styles = (theme: Theme) =>
 interface OwnProps extends WithStyles<typeof styles> {}
 
 interface InjectedProps {
-  isAuthed: boolean;
   isSearching: boolean;
   searchResults?: Thing[];
   upcoming?: AvailabilityState;
@@ -147,41 +146,36 @@ class New extends Component<Props> {
   };
 
   render() {
-    return this.props.isAuthed ? (
-      !this.props.upcoming && !this.props.recentlyAdded ? (
-        this.renderLoading()
-      ) : (
-        <div style={{ margin: 20 }}>
-          {this.props.upcoming ? (
-            <div className={this.props.classes.cardGrid}>
-              {this.renderUpcoming(this.props.upcoming.availability)}
-            </div>
-          ) : null}
-          {this.props.recentlyAdded ? (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                flexGrow: 1,
-              }}
-            >
-              <h1 style={{ paddingLeft: 8 }}>Recently Added</h1>
-              <div className={this.props.classes.cardGrid}>
-                {this.renderUpcoming(this.props.recentlyAdded.availability)}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      )
+    return !this.props.upcoming && !this.props.recentlyAdded ? (
+      this.renderLoading()
     ) : (
-      <Redirect to="/login" />
+      <div style={{ margin: 20 }}>
+        {this.props.upcoming ? (
+          <div className={this.props.classes.cardGrid}>
+            {this.renderUpcoming(this.props.upcoming.availability)}
+          </div>
+        ) : null}
+        {this.props.recentlyAdded ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1,
+            }}
+          >
+            <h1 style={{ paddingLeft: 8 }}>Recently Added</h1>
+            <div className={this.props.classes.cardGrid}>
+              {this.renderUpcoming(this.props.recentlyAdded.availability)}
+            </div>
+          </div>
+        ) : null}
+      </div>
     );
   }
 }
 
 const mapStateToProps = (appState: AppState) => {
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isSearching: appState.search.searching,
     searchResults: appState.search.results,
     upcoming: appState.availability.upcoming,
