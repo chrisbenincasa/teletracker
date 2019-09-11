@@ -58,7 +58,9 @@ class JwtAuthExtractor @Inject()(
       .getPublicCerts()
       .map(certs => {
         if (certs.isEmpty) {
-          throw new IllegalStateException("")
+          throw new IllegalStateException(
+            "Could not retrieve public certs from googleapis.com!!!"
+          )
         }
 
         certs.values
@@ -101,8 +103,12 @@ class JwtAuthFilter @Inject()(
     request: Request,
     service: Service[Request, Response]
   ): Future[Response] = {
+    RequestContext.init(request)
+
     extractor.extractToken(request) match {
-      case None => Future.value(Response(Status.Unauthorized))
+      case None =>
+        service(request)
+
       case Some(t) =>
         val respPromise = Promise[Response]()
         extractor.parseToken(t).transform(_.flatten).andThen {

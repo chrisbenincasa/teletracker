@@ -23,47 +23,42 @@ class ThingController @Inject()(
     extends Controller
     with CanParseFieldFilter {
   prefix("/api/v1/things") {
-    filter[JwtAuthFilter] {
+    post("/batch/?") { req: BatchGetThingsRequest =>
+      val selectFields = parseFieldsOrNone(req.fields)
 
-      post("/batch/?") { req: BatchGetThingsRequest =>
-        val selectFields = parseFieldsOrNone(req.fields)
+      thingsDbAccess
+        .findThingsByIds(req.thingIds.toSet, selectFields)
+        .map(thingsById => {
+          response.ok
+            .contentTypeJson()
+            .body(DataResponse.complex(thingsById.mapValues(_.toPartial)))
+        })
+    }
 
-        thingsDbAccess
-          .findThingsByIds(req.thingIds.toSet, selectFields)
-          .map(thingsById => {
+    get("/:thingId/?") { req: GetThingRequest =>
+      thingApi
+        .getThing(req.authenticatedUserId, req.thingId, req.thingType)
+        .map {
+          case None =>
+            Future.successful(response.notFound)
+
+          case Some(found) =>
             response.ok
               .contentTypeJson()
-              .body(DataResponse.complex(thingsById.mapValues(_.toPartial)))
-          })
-      }
-
-      get("/:thingId/?") { req: GetThingRequest =>
-        thingApi
-          .getThing(req.authenticatedUserId, req.thingId, req.thingType)
-          .map {
-            case None =>
-              Future.successful(response.notFound)
-
-            case Some(found) =>
-              response.ok
-                .contentTypeJson()
-                .body(DataResponse.complex(found))
-          }
-      }
+              .body(DataResponse.complex(found))
+        }
     }
 
   }
 
   prefix("/api/v1/people") {
-    filter[JwtAuthFilter] {
-      get("/:personId") { req: GetPersonRequest =>
-        thingApi.getPerson(req.authenticatedUserId, req.personId).map {
-          case None => response.notFound
-          case Some(person) =>
-            response.ok(
-              DataResponse.complex(person)
-            )
-        }
+    get("/:personId") { req: GetPersonRequest =>
+      thingApi.getPerson(req.authenticatedUserId, req.personId).map {
+        case None => response.notFound
+        case Some(person) =>
+          response.ok(
+            DataResponse.complex(person)
+          )
       }
     }
   }
