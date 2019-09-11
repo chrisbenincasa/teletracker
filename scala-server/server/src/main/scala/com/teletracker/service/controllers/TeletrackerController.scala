@@ -63,5 +63,5 @@ abstract class TeletrackerController(
 final class RichInjectedRequest(val r: InjectedRequest) extends AnyVal {
   import com.teletracker.service.auth.RequestContext._
 
-  def authenticatedUserId: String = r.request.authContext.userId
+  def authenticatedUserId: Option[String] = r.request.authContext.map(_.userId)
 }
