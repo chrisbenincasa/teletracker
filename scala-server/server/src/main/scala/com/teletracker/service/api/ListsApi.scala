@@ -1,5 +1,6 @@
 package com.teletracker.service.api
 
+import com.teletracker.common.api.model.TrackedListRules
 import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
 import com.teletracker.common.db.model.TrackedListRow
 import javax.inject.Inject
@@ -13,19 +14,28 @@ class ListsApi @Inject()(
   def createList(
     userId: String,
     name: String,
-    thingsToAdd: List[UUID]
+    thingsToAdd: Option[List[UUID]],
+    rules: Option[TrackedListRules]
   ): Future[TrackedListRow] = {
-    usersDbAccess
-      .insertList(userId, name)
-      .flatMap(newList => {
-        if (thingsToAdd.nonEmpty) {
-          listsDbAccess
-            .addTrackedThings(newList.id, thingsToAdd.toSet)
-            .map(_ => newList)
-        } else {
-          Future.successful(newList)
-        }
-      })
+    if (thingsToAdd.isDefined && rules.isDefined) {
+      Future.failed(
+        new IllegalArgumentException(
+          "Cannot specify both thingIds and rules when creating a list"
+        )
+      )
+    } else {
+      usersDbAccess
+        .insertList(userId, name, rules.map(_.toRow))
+        .flatMap(newList => {
+          thingsToAdd
+            .map(things => {
+              listsDbAccess
+                .addTrackedThings(newList.id, things.toSet)
+                .map(_ => newList)
+            })
+            .getOrElse(Future.successful(newList))
+        })
+    }
   }
 
   def deleteList(

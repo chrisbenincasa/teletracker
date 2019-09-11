@@ -1,5 +1,6 @@
 package com.teletracker.common.db.access
 
+import com.teletracker.common.api.model.TrackedList
 import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.db.model.{
   Events,
@@ -154,7 +155,8 @@ class UsersDbAccess @Inject()(
 
   def insertList(
     userId: String,
-    name: String
+    name: String,
+    rules: Option[DynamicListRules]
   ): Future[TrackedListRow] = {
     run {
       val newList = TrackedListRow(
@@ -162,7 +164,9 @@ class UsersDbAccess @Inject()(
         name,
         isDefault = false,
         isPublic = false,
-        userId
+        userId,
+        isDynamic = rules.isDefined,
+        rules = rules
       )
 
       (trackedLists.query returning

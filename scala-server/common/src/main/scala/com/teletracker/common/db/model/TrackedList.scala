@@ -1,5 +1,6 @@
 package com.teletracker.common.db.model
 
+import com.teletracker.common.api.model.TrackedList
 import com.teletracker.common.db.CustomPostgresProfile
 import com.teletracker.common.inject.DbImplicits
 import javax.inject.Inject
@@ -16,41 +17,6 @@ case class TrackedListRow(
   rules: Option[DynamicListRules] = None,
   deletedAt: Option[OffsetDateTime] = None) {
   def toFull: TrackedList = TrackedList.fromRow(this)
-}
-
-object TrackedList {
-  def fromRow(row: TrackedListRow): TrackedList = {
-    TrackedList(
-      row.id,
-      row.name,
-      row.isDefault,
-      row.isPublic,
-      row.userId,
-      things = None,
-      isDynamic = row.isDynamic,
-      rules = row.rules,
-      deletedAt = row.deletedAt
-    )
-  }
-}
-
-case class TrackedList(
-  id: Int,
-  name: String,
-  isDefault: Boolean,
-  isPublic: Boolean,
-  userId: String,
-  things: Option[List[PartialThing]] = None,
-  isDynamic: Boolean = false,
-  rules: Option[DynamicListRules] = None,
-  isDeleted: Boolean = false,
-  deletedAt: Option[OffsetDateTime] = None,
-  thingCount: Option[Int] = None) {
-  def withThings(things: List[PartialThing]): TrackedList = {
-    this.copy(things = Some(things))
-  }
-
-  def withCount(count: Int): TrackedList = this.copy(thingCount = Some(count))
 }
 
 object DynamicListTagRule {
