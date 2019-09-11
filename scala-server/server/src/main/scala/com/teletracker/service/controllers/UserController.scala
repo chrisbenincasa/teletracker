@@ -1,5 +1,6 @@
 package com.teletracker.service.controllers
 
+import com.teletracker.common.api.model.{TrackedList, TrackedListRules}
 import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.db.access.{
   ListQueryResult,
@@ -99,18 +100,31 @@ class UserController @Inject()(
           })
       }
 
-      post("/:userId/lists") { req: CreateListRequest =>
-        listsApi
-          .createList(
-            req.authenticatedUserId.get,
-            req.name,
-            req.thingIds.getOrElse(Nil)
-          )
-          .map(newList => {
-            DataResponse(
-              CreateListResponse(newList.id)
+      post("/:userId/lists") { req: Request =>
+        parse(req.contentString).flatMap(_.as[CreateListRequest]) match {
+          case Left(err) =>
+            throw err
+
+          case Right(listCreateRequest) =>
+            require(
+              listCreateRequest.thingIds.isDefined ^ listCreateRequest.rules.isDefined,
+              "Cannot specify both thingIds and rules when creating a list"
             )
-          })
+
+            listsApi
+              .createList(
+                req.authenticatedUserId.get,
+                listCreateRequest.name,
+                listCreateRequest.thingIds,
+                listCreateRequest.rules
+              )
+              .map(newList => {
+                DataResponse(
+                  CreateListResponse(newList.id)
+                )
+              })
+        }
+
       }
 
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
@@ -392,12 +406,11 @@ case class GetUserAndListByIdRequest(
     extends HasFieldsFilter
     with InjectedRequest
 
+@JsonCodec
 case class CreateListRequest(
-  @RouteParam userId: String,
-  request: Request,
   name: String,
-  thingIds: Option[List[UUID]])
-    extends InjectedRequest
+  thingIds: Option[List[UUID]],
+  rules: Option[TrackedListRules])
 
 case class CreateListResponse(id: Int)
 
