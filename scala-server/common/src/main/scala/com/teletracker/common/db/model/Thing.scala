@@ -212,6 +212,19 @@ class Things @Inject()(
 
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
+    def allCols(includeMetadata: Boolean) = (
+      id,
+      name,
+      normalizedName,
+      `type`,
+      createdAt,
+      lastUpdatedAt,
+      if (includeMetadata) metadata else Rep.None[Json],
+      tmdbId,
+      popularity,
+      genres
+    )
+
     def projWithMetadata(includeMetadata: Boolean): MappedProjection[
       ThingRaw,
       (

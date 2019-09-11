@@ -33,11 +33,17 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *getList(id: number) {
+  *getList(
+    id: number,
+    sort?: 'popular' | 'recent' | 'added_time' | 'default',
+    desc?: boolean,
+  ) {
     return yield this.apiCall(
       client => client.getList,
       yield this.withToken(),
       id,
+      sort,
+      desc,
     );
   }
 

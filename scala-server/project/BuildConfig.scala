@@ -20,7 +20,8 @@ object BuildConfig {
       "-Ywarn-nullary-unit",
       "-Xfatal-warnings",
       "-Ywarn-dead-code",
-      "-Xfuture"
+      "-Xfuture",
+      "-Ypartial-unification"
     )
   }
 

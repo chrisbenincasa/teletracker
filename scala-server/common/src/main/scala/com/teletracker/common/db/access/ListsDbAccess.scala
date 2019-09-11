@@ -72,8 +72,9 @@ class ListsDbAccess @Inject()(
       Future.successful(None)
     } else {
       run {
+        val now = OffsetDateTime.now()
         trackedListThings.query ++= thingIds.map(thingId => {
-          TrackedListThing(listId, thingId)
+          TrackedListThing(listId, thingId, now)
         })
       }
     }

@@ -1,6 +1,7 @@
 package com.teletracker.common.db
 
 import com.github.tminglei.slickpg._
+import com.github.tminglei.slickpg.agg.PgAggFuncSupport
 import io.circe.Json
 import io.circe.parser.parse
 import slick.basic.Capability
@@ -9,6 +10,7 @@ import slick.jdbc.JdbcType
 trait CustomPostgresProfile
     extends ExPostgresProfile
     with PgArraySupport
+    with PgAggFuncSupport
     with PgDate2Support
     with PgRangeSupport
     with PgHStoreSupport
@@ -16,6 +18,10 @@ trait CustomPostgresProfile
     with PgNetSupport
     with PgCirceJsonSupport
     with PgLTreeSupport {
+
+  import slick.ast._
+  import slick.ast.Library._
+  import slick.lifted.FunctionSymbolExtensionMethods._
 
   def pgjson =
     "jsonb" // jsonb support is in postgres 9.4.0 onward; for 9.3.x use "json"
@@ -48,6 +54,16 @@ trait CustomPostgresProfile
         (v) => v.asJson.noSpaces,
         hasLiteralForm = false
       )
+
+    // Declare the name of an aggregate function:
+    val ArrayAgg = new SqlAggregateFunction("array_agg")
+
+    // Implement the aggregate function as an extension method:
+    implicit class ArrayAggColumnQueryExtensionMethods[P, C[_]](
+      val q: Query[Rep[P], _, C]) {
+      def arrayAgg[B](implicit tm: TypedType[List[B]]) =
+        ArrayAgg.column[List[B]](q.toNode)
+    }
   }
 }
 
