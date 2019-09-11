@@ -51,6 +51,7 @@ class ThingController @Inject()(
           }
       }
     }
+
   }
 
   prefix("/api/v1/people") {

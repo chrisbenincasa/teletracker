@@ -1,5 +1,6 @@
 package com.teletracker.common.model
 
+import io.circe.generic.JsonCodec
 import io.circe.{Encoder, Printer}
 import io.circe.syntax._
 import io.circe.generic.auto._
@@ -33,10 +34,25 @@ object DataResponse {
     printer.pretty(v.asJson)
   }
 
+  def forDataResponse[T](
+    response: DataResponse[T]
+  )(implicit encoder: Encoder[T]
+  ): String = {
+    pure(response)
+  }
+
   def standard[T](v: T): DataResponse[T] = DataResponse(v)
 }
 
-case class DataResponse[T](data: T)
+@JsonCodec
+case class Paging(bookmark: Option[String])
+
+case class DataResponse[T](
+  data: T,
+  paging: Option[Paging] = None) {
+  def withPaging(paging: Paging): DataResponse[T] =
+    this.copy(paging = Some(paging))
+}
 
 case class ErrorResponse(error: StandardErrorDetails)
 case class StandardErrorDetails(

@@ -1,15 +1,18 @@
 package com.teletracker.common.db.model
 
+import com.teletracker.common.db.CustomPostgresProfile
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
+import java.time.OffsetDateTime
 import java.util.UUID
 
 case class TrackedListThing(
   listId: Int,
-  thingId: UUID)
+  thingId: UUID,
+  addedAt: OffsetDateTime)
 
 class TrackedListThings @Inject()(
-  val driver: JdbcProfile,
+  val driver: CustomPostgresProfile,
   val trackedLists: TrackedLists,
   val things: Things) {
   import driver.api._
@@ -18,6 +21,12 @@ class TrackedListThings @Inject()(
       extends Table[TrackedListThing](tag, "list_things") {
     def listId = column[Int]("lists_id")
     def thingId = column[UUID]("objects_id")
+    def addedAt =
+      column[OffsetDateTime](
+        "added_at",
+        O.SqlType("timestamp with time zone"),
+        O.Default(OffsetDateTime.now())
+      )
 
     def primKey = primaryKey("list_id_thing_id", (listId, thingId))
 
@@ -27,7 +36,7 @@ class TrackedListThings @Inject()(
       foreignKey("list_things_thing_fk", thingId, things.query)(_.id)
 
     override def * =
-      (listId, thingId) <> (TrackedListThing.tupled, TrackedListThing.unapply)
+      (listId, thingId, addedAt) <> (TrackedListThing.tupled, TrackedListThing.unapply)
   }
 
   val query = TableQuery[TrackedListThingsTable]
