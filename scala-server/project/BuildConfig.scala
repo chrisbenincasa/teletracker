@@ -86,6 +86,7 @@ object BuildConfig {
     lazy val circe = Seq(
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
+      "io.circe" %% "circe-generic-extras",
       "io.circe" %% "circe-parser",
       "io.circe" %% "circe-shapes",
       "io.circe" %% "circe-optics"

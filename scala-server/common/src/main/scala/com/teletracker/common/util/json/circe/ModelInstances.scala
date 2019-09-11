@@ -1,14 +1,36 @@
 package com.teletracker.common.util.json.circe
 
+import com.teletracker.common.api.model.{
+  TrackedList,
+  TrackedListRules,
+  TrackedListTagRule
+}
 import com.teletracker.common.db.model._
 import com.teletracker.common.util.Slug
-import io.circe.shapes._
-import io.circe.generic.semiauto._
-import io.circe.generic.auto._
 import io.circe.{Codec, Decoder, DecodingFailure, Encoder, Json}
 import scala.reflect.{classTag, ClassTag}
 
-trait ModelInstances extends JodaInstances {
+trait ConfiguredModelInstances {
+  import io.circe.shapes._
+  import io.circe.generic.extras.semiauto._
+  import io.circe.generic.extras.auto._
+  import io.circe.generic.extras.Configuration
+
+  implicit val customConfig: Configuration =
+    Configuration.default.withDiscriminator("type")
+
+  implicit val trackedListRulesEncoder: Codec[TrackedListRules] =
+    deriveCodec
+
+  implicit val trackedListTagRuleEncoder: Codec[TrackedListTagRule] =
+    deriveCodec
+}
+
+trait ModelInstances extends ConfiguredModelInstances with JodaInstances {
+  import io.circe.shapes._
+  import io.circe.generic.semiauto._
+  import io.circe.generic.auto._
+
   implicit def javaEnumDecoder[A <: Enum[A]: ClassTag]: Decoder[A] =
     Decoder.instance { a =>
       a.focus match {
