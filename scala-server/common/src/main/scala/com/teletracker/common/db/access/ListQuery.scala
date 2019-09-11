@@ -1,5 +1,6 @@
 package com.teletracker.common.db.access
 
+import com.teletracker.common.api.model.TrackedList
 import com.teletracker.common.db.{
   AddedTime,
   Bookmark,

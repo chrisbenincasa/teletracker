@@ -10,6 +10,30 @@ export interface List {
   isDynamic?: boolean;
   isPublic?: boolean;
   thingCount: number;
+  configuration?: ListRules;
+}
+
+export type ListRuleTypeKeys = 'TrackedListTagRule' | 'TrackedListPersonRule';
+export type ListRuleTypes = ListTagRule | ListPersonRule;
+
+export interface ListRules {
+  rules: ListRuleTypes[];
+}
+
+export interface ListRule {
+  type: ListRuleTypeKeys;
+}
+
+export interface ListTagRule extends ListRule {
+  tagType: string;
+  value?: number;
+  isPresent?: boolean;
+  type: 'TrackedListTagRule';
+}
+
+export interface ListPersonRule extends ListRule {
+  personId: string;
+  type: 'TrackedListPersonRule';
 }
 
 export interface User {
