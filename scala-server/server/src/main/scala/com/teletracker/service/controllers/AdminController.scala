@@ -73,7 +73,7 @@ class AdminController @Inject()(
 
     thingsApi
       .getThing(
-        "admin",
+        None,
         req.getParam("thingId"),
         ThingType.fromString(req.getParam("type"))
       )

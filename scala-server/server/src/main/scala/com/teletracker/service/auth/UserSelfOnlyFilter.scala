@@ -7,6 +7,9 @@ import RequestContext._
 import javax.inject.Inject
 import scala.util.Try
 
+/**
+  * Must run after JwtAuthFilter
+  */
 class UserSelfOnlyFilter @Inject()() extends SimpleFilter[Request, Response] {
   override def apply(
     request: Request,
@@ -18,7 +21,7 @@ class UserSelfOnlyFilter @Inject()() extends SimpleFilter[Request, Response] {
     userId match {
       case Some("self") => service(request)
       case Some(id) if Try(id.toInt).isSuccess =>
-        if (request.authContext.userId == id) {
+        if (request.authContext.get.userId == id) {
           service(request)
         } else {
           Future.value(Response(Status.Unauthorized))

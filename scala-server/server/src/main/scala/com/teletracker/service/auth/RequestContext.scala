@@ -7,13 +7,20 @@ case class AuthenticatedTokenContext(token: String)
 
 object RequestContext {
   private val authUserField =
-    Request.Schema.newField[AuthenticatedUserContext]()
+    Request.Schema.newField[Option[AuthenticatedUserContext]]()
   private val authTokenField =
-    Request.Schema.newField[AuthenticatedTokenContext]()
+    Request.Schema.newField[Option[AuthenticatedTokenContext]]()
 
   implicit class RequestContextSyntax(request: Request) {
-    def authContext: AuthenticatedUserContext = request.ctx(authUserField)
-    def authToken: AuthenticatedTokenContext = request.ctx(authTokenField)
+    def authContext: Option[AuthenticatedUserContext] =
+      request.ctx(authUserField)
+    def authToken: Option[AuthenticatedTokenContext] =
+      request.ctx(authTokenField)
+  }
+
+  private[teletracker] def init(request: Request): Unit = {
+    request.ctx.update(authTokenField, None)
+    request.ctx.update(authUserField, None)
   }
 
   private[teletracker] def set(
@@ -22,13 +29,13 @@ object RequestContext {
     token: String
   ): Unit = {
     set(request, userId)
-    request.ctx.update(authTokenField, AuthenticatedTokenContext(token))
+    request.ctx.update(authTokenField, Some(AuthenticatedTokenContext(token)))
   }
 
   private[teletracker] def set(
     request: Request,
     userId: String
   ): Unit = {
-    request.ctx.update(authUserField, AuthenticatedUserContext(userId))
+    request.ctx.update(authUserField, Some(AuthenticatedUserContext(userId)))
   }
 }

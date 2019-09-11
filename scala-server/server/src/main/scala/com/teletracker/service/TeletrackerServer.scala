@@ -3,6 +3,7 @@ package com.teletracker.service
 import com.google.inject.Module
 import com.teletracker.common.process.tmdb.TmdbBackgroundProcessor
 import com.teletracker.common.util.{GenreCache, NetworkCache}
+import com.teletracker.service.auth.JwtAuthFilter
 import com.teletracker.service.controllers._
 import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
 import com.teletracker.service.filters.OpenCensusMonitoringFilter
@@ -86,6 +87,7 @@ class TeletrackerServer(
       .filter[TraceIdMDCFilter[Request, Response]]
       .filter[OpenCensusMonitoringFilter]
       .filter[StatsFilter[Request]]
+      .filter[JwtAuthFilter]
       .exceptionMapper[PassThroughExceptionMapper]
       .add[PreflightController]
       .add[AuthController]
