@@ -53,6 +53,7 @@ import { formatRuntime } from '../utils/textHelper';
 import Thing from '../types/Thing';
 import RouterLink from '../components/RouterLink';
 import { Helmet } from 'react-helmet';
+import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -327,7 +328,12 @@ class ItemDetails extends Component<Props, State> {
 
   renderDescriptiveDetails = (thing: Thing) => {
     const { classes, genres } = this.props;
+    const thingGenres = thing.genreIds || [];
     const overview = getMetadataPath(thing, 'overview') || '';
+
+    const genresToRender = _.filter(genres || [], genre => {
+      return _.includes(thingGenres, genre.id);
+    });
 
     return (
       <div className={classes.descriptionContainer}>
@@ -340,9 +346,9 @@ class ItemDetails extends Component<Props, State> {
           </Typography>
         </div>
         <div className={classes.genreContainer}>
-          {genres &&
-            genres.length &&
-            genres.map(genre => (
+          {genresToRender &&
+            genresToRender.length &&
+            genresToRender.map(genre => (
               <Chip
                 key={genre.id}
                 label={genre.name}
