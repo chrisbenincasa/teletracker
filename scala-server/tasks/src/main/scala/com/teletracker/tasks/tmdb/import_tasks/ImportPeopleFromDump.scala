@@ -1,15 +1,8 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
 import com.google.cloud.storage.Storage
-import com.teletracker.common.db.access.{AsyncThingsDbAccess, ThingsDbAccess}
-import com.teletracker.common.db.model.{
-  ExternalSource,
-  PersonAssociationType,
-  PersonThing,
-  ThingLike,
-  ThingRaw,
-  ThingType
-}
+import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.model._
 import com.teletracker.common.model.tmdb.{
   CastMember,
   MediaType,
@@ -18,15 +11,14 @@ import com.teletracker.common.model.tmdb.{
 }
 import com.teletracker.common.process.tmdb.TmdbSynchronousProcessor
 import com.teletracker.common.util.Slug
-import javax.inject.Inject
 import com.teletracker.common.util.TheMovieDb._
+import javax.inject.Inject
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 
 class ImportPeopleFromDump @Inject()(
   storage: Storage,
-  thingsDbAccess: AsyncThingsDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   tmdbSynchronousProcessor: TmdbSynchronousProcessor
 )(implicit executionContext: ExecutionContext)
     extends ImportTmdbDumpTask[Person](storage, thingsDbAccess) {

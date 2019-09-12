@@ -1,5 +1,6 @@
 package com.teletracker.common.db.access
 
+import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.api.model.TrackedList
 import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.db.model.{
@@ -9,16 +10,29 @@ import com.teletracker.common.db.model.{
   TrackedLists,
   _
 }
-import com.teletracker.common.db.{DbMonitoring, DefaultForListType, SortMode}
-import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
-import com.teletracker.common.util.{Field, ListFilters, NetworkCache, Slug}
+import com.teletracker.common.db.{
+  BaseDbProvider,
+  DbImplicits,
+  DbMonitoring,
+  DefaultForListType,
+  SortMode,
+  SyncDbProvider
+}
+import com.teletracker.common.util.{
+  FactoryImplicits,
+  Field,
+  GeneralizedDbFactory,
+  ListFilters,
+  NetworkCache,
+  Slug
+}
 import javax.inject.{Inject, Provider}
 import java.time.{Instant, OffsetDateTime}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class UsersDbAccess @Inject()(
-  val provider: SyncDbProvider,
+  val provider: BaseDbProvider,
   val userMetadata: UsersMetadata,
   val userNetworkPreferences: UserNetworkPreferences,
   val trackedLists: TrackedLists,
@@ -27,14 +41,15 @@ class UsersDbAccess @Inject()(
   val events: Events,
   val networks: Networks,
   val userThingTags: UserThingTags,
-  listQuery: Provider[ListQuery],
+  listQuery: ListQuery,
   dynamicListBuilder: DynamicListBuilder,
   jwtVendor: JwtVendor,
   dbImplicits: DbImplicits,
   networkCache: NetworkCache,
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess(dbMonitoring) {
+    extends AbstractDbAccess(dbMonitoring)
+    with FactoryImplicits {
   import dbImplicits._
   import provider.driver.api._
 
@@ -127,7 +142,7 @@ class UsersDbAccess @Inject()(
     userId: String,
     includeThings: Boolean
   ): Future[Seq[TrackedList]] = {
-    listQuery.get().findUsersLists(userId, includeThings = includeThings)
+    listQuery.findUsersLists(userId, includeThings = includeThings)
   }
 
   def findListForUser(
@@ -275,7 +290,6 @@ class UsersDbAccess @Inject()(
     sortMode: SortMode = DefaultForListType()
   ): Future[ListQueryResult] = {
     listQuery
-      .get()
       .findList(
         userId,
         listId,

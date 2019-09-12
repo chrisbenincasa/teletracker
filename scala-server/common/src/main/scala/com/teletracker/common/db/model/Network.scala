@@ -1,6 +1,6 @@
 package com.teletracker.common.db.model
 
-import com.teletracker.common.inject.DbImplicits
+import com.teletracker.common.db.DbImplicits
 import com.teletracker.common.util.Slug
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
@@ -16,8 +16,8 @@ case class Network(
 class Networks @Inject()(
   val driver: JdbcProfile,
   dbImplicits: DbImplicits) {
-  import driver.api._
   import dbImplicits._
+  import driver.api._
 
   class NetworksTable(tag: Tag) extends Table[Network](tag, "networks") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)

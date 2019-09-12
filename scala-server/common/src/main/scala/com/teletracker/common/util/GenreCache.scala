@@ -1,12 +1,7 @@
 package com.teletracker.common.util
 
-import com.teletracker.common.db.access.{
-  GenresDbAccess,
-  NetworksDbAccess,
-  SyncGenresDbAccess
-}
+import com.teletracker.common.db.access.GenresDbAccess
 import com.teletracker.common.db.model._
-import com.teletracker.common.util.GenreCache.GenreMap
 import com.teletracker.common.util.Implicits._
 import com.twitter.cache.ConcurrentMapCache
 import com.twitter.util.{Future => TFuture}
@@ -20,7 +15,7 @@ object GenreCache {
 
 @Singleton
 class GenreCache @Inject()(
-  genresDbAccess: SyncGenresDbAccess
+  genresDbAccess: GenresDbAccess
 )(implicit executionContext: ExecutionContext) {
   import GenreCache._
 

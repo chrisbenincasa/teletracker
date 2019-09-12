@@ -1,6 +1,6 @@
 package com.teletracker.common.process.tmdb
 
-import com.teletracker.common.db.access.AsyncThingsDbAccess
+import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model
 import com.teletracker.common.db.model.{ExternalId, ThingLike}
 import com.teletracker.common.model.justwatch.PopularItem
@@ -10,8 +10,9 @@ import java.time.OffsetDateTime
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class TmdbImporter(
-  thingsDbAccess: AsyncThingsDbAccess
+  thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext) {
+
   protected def handleExternalIds(
     entity: Either[ThingLike, model.TvShowEpisode],
     externalIds: Option[tmdb.ExternalIds],

@@ -89,7 +89,7 @@ lazy val consumer = project
       "com.twitter" %% "inject-app" % versions.twitter
     )
   )
-  .dependsOn(common)
+  .dependsOn(common, tasks)
 
 lazy val tasks = project
   .in(file("tasks"))
