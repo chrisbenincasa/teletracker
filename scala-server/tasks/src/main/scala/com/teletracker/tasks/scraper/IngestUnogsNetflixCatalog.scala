@@ -1,19 +1,13 @@
 package com.teletracker.tasks.scraper
 
 import com.google.cloud.storage.Storage
-import com.teletracker.common.db.access.{AsyncThingsDbAccess, ThingsDbAccess}
-import com.teletracker.common.db.model.{
-  Availability,
-  Network,
-  OfferType,
-  ThingRaw,
-  ThingType
-}
+import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
-import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.json.circe._
+import com.teletracker.common.util.execution.SequentialFutures
 import io.circe.generic.auto._
 import javax.inject.Inject
 import scala.concurrent.Future
@@ -21,7 +15,7 @@ import scala.concurrent.Future
 class IngestUnogsNetflixCatalog @Inject()(
   protected val tmdbClient: TmdbClient,
   protected val tmdbProcessor: TmdbEntityProcessor,
-  protected val thingsDb: AsyncThingsDbAccess,
+  protected val thingsDb: ThingsDbAccess,
   protected val storage: Storage,
   protected val networkCache: NetworkCache)
     extends IngestJob[UnogsNetflixCatalogItem] {

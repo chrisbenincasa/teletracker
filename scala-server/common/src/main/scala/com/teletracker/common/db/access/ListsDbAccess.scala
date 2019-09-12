@@ -1,26 +1,31 @@
 package com.teletracker.common.db.access
 
-import com.teletracker.common.db.DbMonitoring
+import com.teletracker.common.db.{
+  BaseDbProvider,
+  DbImplicits,
+  DbMonitoring,
+  SyncDbProvider
+}
 import com.teletracker.common.db.model.{
   TrackedListRow,
   TrackedListThing,
   TrackedListThings,
   TrackedLists
 }
-import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
+import com.teletracker.common.util.GeneralizedDbFactory
 import javax.inject.Inject
 import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListsDbAccess @Inject()(
-  val provider: SyncDbProvider,
+  val provider: BaseDbProvider,
   val trackedLists: TrackedLists,
   val trackedListThings: TrackedListThings,
   dbImplicits: DbImplicits,
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess(dbMonitoring) {
+    extends AbstractDbAccess(dbMonitoring) {
 
   import provider.driver.api._
 

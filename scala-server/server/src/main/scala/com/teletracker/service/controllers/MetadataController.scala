@@ -1,11 +1,9 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.access.{
-  NetworksDbAccess,
-  SyncThingsDbAccess,
-  ThingsDbAccess
-}
+import com.teletracker.common.db.BaseDbProvider
+import com.teletracker.common.db.access.{NetworksDbAccess, ThingsDbAccess}
 import com.teletracker.common.db.model.GenreType
+import com.teletracker.common.inject.SyncPath
 import com.teletracker.common.model.DataResponse
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -15,7 +13,8 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 class MetadataController @Inject()(
-  thingsDbAccess: SyncThingsDbAccess,
+  baseDbProvider: BaseDbProvider,
+  thingsDbAccess: ThingsDbAccess,
   networksDbAccess: NetworksDbAccess
 )(implicit executionContext: ExecutionContext)
     extends Controller {
@@ -23,7 +22,9 @@ class MetadataController @Inject()(
     get("/genres/?") { req: GetAllGenresRequest =>
       val parsedType =
         req.`type`.flatMap(t => Try(GenreType.fromString(t)).toOption)
-      thingsDbAccess.getAllGenres(parsedType).map(DataResponse(_))
+      thingsDbAccess
+        .getAllGenres(parsedType)
+        .map(DataResponse(_))
     }
 
     get("/networks/?") { _: Request =>

@@ -1,28 +1,24 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import cats.syntax.writer
 import com.google.api.gax.paging.Page
 import com.google.cloud.storage.Storage.BlobListOption
 import com.google.cloud.storage.{Blob, BlobId, Storage}
-import com.teletracker.common.db.access.{AsyncThingsDbAccess, ThingsDbAccess}
-import com.teletracker.common.db.model.ThingFactory
+import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.model.Thingable
 import com.teletracker.common.model.tmdb.Person
-import com.teletracker.tasks.TeletrackerTask
-import javax.inject.Inject
 import com.teletracker.common.util.Lists._
-import com.teletracker.common.util.Slug
+import com.teletracker.tasks.TeletrackerTask
 import io.circe.parser.parse
+import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import java.io.{BufferedWriter, File, FileOutputStream, PrintWriter}
 import java.net.URI
-import java.util.UUID
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.io.Source
-import scala.collection.JavaConverters._
 
 class CreatePersonImportCsv @Inject()(
-  thingsDbAccess: AsyncThingsDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   storage: Storage
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {

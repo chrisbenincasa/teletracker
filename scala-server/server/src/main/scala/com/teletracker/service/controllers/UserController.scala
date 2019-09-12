@@ -4,11 +4,12 @@ import com.teletracker.common.api.model.{TrackedList, TrackedListRules}
 import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.db.access.{
   ListQueryResult,
-  SyncThingsDbAccess,
+  ThingsDbAccess,
   UsersDbAccess
 }
 import com.teletracker.common.db.model._
-import com.teletracker.common.db.{DefaultForListType, SortMode}
+import com.teletracker.common.db.{BaseDbProvider, DefaultForListType, SortMode}
+import com.teletracker.common.inject.SyncPath
 import com.teletracker.common.model.{
   DataResponse,
   IllegalActionTypeError,
@@ -37,7 +38,7 @@ class UserController @Inject()(
   usersApi: UsersApi,
   listsApi: ListsApi,
   usersDbAccess: UsersDbAccess,
-  thingsDbAccess: SyncThingsDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   jwtVendor: JwtVendor
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerController(usersDbAccess)

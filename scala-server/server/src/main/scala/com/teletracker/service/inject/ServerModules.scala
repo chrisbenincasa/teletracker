@@ -1,7 +1,7 @@
 package com.teletracker.service.inject
 
-import com.google.inject.{Key, Module}
 import com.google.inject.assistedinject.FactoryModuleBuilder
+import com.google.inject.{Key, Module}
 import com.teletracker.common.http.{BlockingHttp, Http4sClient, HttpClient}
 import com.teletracker.common.inject.Modules
 import com.teletracker.service.http.FinagleHttpClient

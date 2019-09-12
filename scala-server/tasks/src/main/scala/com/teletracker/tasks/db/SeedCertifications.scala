@@ -1,12 +1,12 @@
 package com.teletracker.tasks.db
 
+import com.teletracker.common.db.SyncDbProvider
 import com.teletracker.common.db.model.{
   Certification,
   CertificationType,
   Certifications
 }
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.inject.SyncDbProvider
 import com.teletracker.common.model.tmdb.CertificationListResponse
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import javax.inject.Inject

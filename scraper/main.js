@@ -9,6 +9,8 @@ import { substitute } from "./common/berglas";
 const startScrape = async scraper => {
   await substitute();
 
+  console.error(process.env.TMDB_API_KEY);
+
   let scraperToRun = scraper || process.env.SCRAPER;
 
   switch (scraperToRun) {

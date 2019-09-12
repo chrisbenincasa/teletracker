@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.db.access.AsyncThingsDbAccess
+import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{
   PersonAssociationType,
   PersonThing,
@@ -20,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 class ImportPersonAssociations @Inject()(
-  thingsDbAccess: AsyncThingsDbAccess
+  thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
   private val logger = LoggerFactory.getLogger(getClass)

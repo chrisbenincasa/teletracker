@@ -1,7 +1,7 @@
 package com.teletracker.tasks.repair
 
+import com.teletracker.common.db.{DbImplicits, SyncDbProvider}
 import com.teletracker.common.db.model.{Genres, Things}
-import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
 import com.teletracker.common.util
 import com.teletracker.tasks.TeletrackerTask
 import javax.inject.Inject

@@ -4,7 +4,7 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.access.{
   SearchOptions,
   SearchRankingMode,
-  SyncThingsDbAccess,
+  ThingsDbAccess,
   UserThingDetails
 }
 import com.teletracker.common.db.model.{PartialThing, ThingType}
@@ -24,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class SearchController @Inject()(
   config: TeletrackerConfig,
-  thingsDbAccess: SyncThingsDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   tmdbClient: TmdbClient,
   tmdbSynchronousProcessor: TmdbSynchronousProcessor
 )(implicit executionContext: ExecutionContext)

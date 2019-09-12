@@ -1,8 +1,7 @@
 package com.teletracker.common.db.model
 
-import com.teletracker.common.db.CustomPostgresProfile
+import com.teletracker.common.db.{CustomPostgresProfile, DbImplicits}
 import com.teletracker.common.db.access.UserThingDetails
-import com.teletracker.common.inject.DbImplicits
 import com.teletracker.common.model.tmdb._
 import com.teletracker.common.util.Slug
 import java.time.OffsetDateTime
@@ -99,7 +98,8 @@ case class PartialThing(
   userMetadata: Option[UserThingDetails] = None,
   collections: Option[List[Collection]] = None,
   cast: Option[List[ThingCastMember]] = None,
-  recommendations: Option[List[PartialThing]] = None) {
+  recommendations: Option[List[PartialThing]] = None,
+  genreIds: Option[Set[Int]] = None) {
   def withAvailability(av: List[AvailabilityWithDetails]): PartialThing =
     this.copy(availability = Some(av))
   def withUserMetadata(userMeta: UserThingDetails): PartialThing =
@@ -113,6 +113,7 @@ case class PartialThing(
   def withRawMetadata(metadata: Json): PartialThing = {
     this.copy(metadata = Some(metadata))
   }
+  def withGenres(genreIds: Set[Int]) = this.copy(genreIds = Some(genreIds))
   def clearMetadata: PartialThing = this.copy(metadata = None)
 }
 

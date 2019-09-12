@@ -1,29 +1,13 @@
 package com.teletracker.common.process.tmdb
 
-import com.teletracker.common.db.access.AsyncThingsDbAccess
-import com.teletracker.common.db.model
-import com.teletracker.common.db.model.{
-  ExternalSource,
-  PersonAssociationType,
-  PersonThing,
-  ThingFactory
-}
-import com.teletracker.common.model.tmdb.Person
-import com.teletracker.common.process.tmdb.TmdbEntityProcessor.{
-  ProcessFailure,
-  ProcessResult,
-  ProcessSuccess
-}
-import com.teletracker.common.util.execution.SequentialFutures
+import com.google.inject.assistedinject.Assisted
+import com.teletracker.common.db.BaseDbProvider
+import com.teletracker.common.db.access.ThingsDbAccess
 import javax.inject.{Inject, Provider}
-import java.time.OffsetDateTime
-import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.concurrent.duration._
-import scala.util.control.NonFatal
+import scala.concurrent.ExecutionContext
 
 class TmdbPersonImporter @Inject()(
-  thingsDbAccess: AsyncThingsDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   tmdbEntityProcessor: Provider[TmdbEntityProcessor],
   tmdbPersonCreditProcessor: TmdbPersonCreditProcessor
 )(implicit executionContext: ExecutionContext)

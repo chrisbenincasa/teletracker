@@ -1,21 +1,27 @@
 package com.teletracker.common.db.access
 
-import com.teletracker.common.db.DbMonitoring
+import com.google.inject.assistedinject.Assisted
+import com.teletracker.common.db.{
+  AsyncDbProvider,
+  BaseDbProvider,
+  DbImplicits,
+  DbMonitoring,
+  SyncDbProvider
+}
 import com.teletracker.common.db.model._
-import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
-import com.teletracker.common.util.Slug
+import com.teletracker.common.util.{GeneralizedDbFactory, Slug}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class NetworksDbAccess @Inject()(
-  val provider: SyncDbProvider,
+  val provider: BaseDbProvider,
   val networks: Networks,
   val networkReferences: NetworkReferences,
   val thingNetworks: ThingNetworks,
   dbImplicits: DbImplicits,
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess(dbMonitoring) {
+    extends AbstractDbAccess(dbMonitoring) {
   import dbImplicits._
   import provider.driver.api._
 

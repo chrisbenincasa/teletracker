@@ -1,13 +1,13 @@
 package com.teletracker.service.api
 
+import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.auth.jwt.JwtVendor
+import com.teletracker.common.db.BaseDbProvider
 import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
 import com.teletracker.common.db.model.{TrackedListFactory, UserPreferences}
+import com.teletracker.common.util.{FactoryImplicits, GeneralizedDbFactory}
 import com.teletracker.service.api.model.UserDetails
-import com.teletracker.service.controllers.{
-  UpdateUserRequest,
-  UpdateUserRequestPayload
-}
+import com.teletracker.service.controllers.UpdateUserRequestPayload
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -16,6 +16,7 @@ class UsersApi @Inject()(
   listsDbAccess: ListsDbAccess,
   jwtVendor: JwtVendor
 )(implicit executionContext: ExecutionContext) {
+
   def getUser(userId: String): Future[UserDetails] = {
     val metadataFut = usersDbAccess.findMetadataForUser(userId)
     val networkPrefsFut = usersDbAccess.findNetworkPreferencesForUser(userId)

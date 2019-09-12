@@ -1,8 +1,8 @@
 package com.teletracker.tasks.db
 
+import com.teletracker.common.db.SyncDbProvider
 import com.teletracker.common.db.access.NetworksDbAccess
 import com.teletracker.common.db.model._
-import com.teletracker.common.inject.SyncDbProvider
 import com.teletracker.common.model.justwatch.Provider
 import com.teletracker.common.util.Slug
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}

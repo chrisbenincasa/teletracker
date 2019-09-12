@@ -1,6 +1,6 @@
 package com.teletracker.common.db.model
 
-import com.teletracker.common.inject.DbImplicits
+import com.teletracker.common.db.DbImplicits
 import javax.inject.Inject
 import slick.jdbc.JdbcProfile
 

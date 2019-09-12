@@ -2,13 +2,12 @@ package com.teletracker.common.process.tmdb
 
 import com.google.common.cache.Cache
 import com.teletracker.common.cache.JustWatchLocalCache
-import com.teletracker.common.db.access.{AsyncThingsDbAccess, NetworksDbAccess}
+import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.justwatch.JustWatchClient
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.inject.RecentlyProcessedCollections
 import com.teletracker.common.model.justwatch.{
-  PopularItem,
   PopularItemsResponse,
   PopularSearchRequest
 }
@@ -23,17 +22,15 @@ import com.teletracker.common.process.tmdb.TmdbProcessMessage.ProcessBelongsToCo
 import com.teletracker.common.util.{GenreCache, NetworkCache}
 import javax.inject.Inject
 import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
+import java.time.{LocalDate, ZoneOffset}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 import scala.util.control.NonFatal
 
 class TmdbMovieImporter @Inject()(
-  thingsDbAccess: AsyncThingsDbAccess,
-  networksDbAccess: NetworksDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   tmdbClient: TmdbClient,
   justWatchClient: JustWatchClient,
-  availabilities: Availabilities,
   processQueue: ProcessQueue[TmdbProcessMessage],
   @RecentlyProcessedCollections recentlyProcessedCollections: Cache[
     Integer,

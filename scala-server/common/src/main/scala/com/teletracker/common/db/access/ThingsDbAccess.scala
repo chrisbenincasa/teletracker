@@ -1,11 +1,12 @@
 package com.teletracker.common.db.access
 
+import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.api.model.TrackedList
-import com.teletracker.common.db.DbMonitoring
+import com.teletracker.common.db.{BaseDbProvider, DbImplicits, DbMonitoring}
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
-import com.teletracker.common.inject.{BaseDbProvider, DbImplicits}
-import com.teletracker.common.util.{Field, Slug}
+import com.teletracker.common.util.{Field, GeneralizedDbFactory, Slug}
+import javax.inject.Inject
 import org.postgresql.util.PSQLException
 import slick.jdbc.{PositionedParameters, SetParameter}
 import java.sql.JDBCType
@@ -16,8 +17,8 @@ import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-abstract class ThingsDbAccess(
-  override val provider: BaseDbProvider,
+class ThingsDbAccess @Inject()(
+  val provider: BaseDbProvider,
   val things: Things,
   val tvShowSeasons: TvShowSeasons,
   val thingNetworks: ThingNetworks,
@@ -39,7 +40,7 @@ abstract class ThingsDbAccess(
   dbImplicits: DbImplicits,
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess(dbMonitoring) {
+    extends AbstractDbAccess(dbMonitoring) {
   import dbImplicits._
   import provider.driver.api._
 

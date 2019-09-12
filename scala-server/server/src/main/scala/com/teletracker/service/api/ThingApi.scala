@@ -2,8 +2,7 @@ package com.teletracker.service.api
 
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.teletracker.common.db.access.{
-  SyncGenresDbAccess,
-  SyncThingsDbAccess,
+  GenresDbAccess,
   ThingsDbAccess,
   UserThingDetails
 }
@@ -14,6 +13,7 @@ import com.teletracker.common.db.model.{
   PersonThing,
   ThingCastMember,
   ThingFactory,
+  ThingGenre,
   ThingRaw,
   ThingType
 }
@@ -42,8 +42,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.math.Ordering.OptionOrdering
 
 class ThingApi @Inject()(
-  thingsDbAccess: SyncThingsDbAccess,
-  genresDbAccess: SyncGenresDbAccess,
+  thingsDbAccess: ThingsDbAccess,
+  genresDbAccess: GenresDbAccess,
   genreCache: GenreCache
 )(implicit executionContext: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -88,7 +88,8 @@ class ThingApi @Inject()(
   private case class GetThingIntermediate(
     thing: Option[PartialThing],
     userDetails: UserThingDetails,
-    people: Seq[(Person, PersonThing)])
+    people: Seq[(Person, PersonThing)],
+    genres: Seq[ThingGenre])
 
   def getThing(
     userId: Option[String],
@@ -101,12 +102,14 @@ class ThingApi @Inject()(
         .map(thingsDbAccess.getThingUserDetails(_, id))
         .getOrElse(Future.successful(UserThingDetails.empty))
       val peopleFut = thingsDbAccess.findPeopleForThing(id, None)
+      val genresFut = genresDbAccess.findGenresForThing(id)
 
       for {
         thing <- thingFut
         details <- userDetailsFut
         people <- peopleFut
-      } yield Some(GetThingIntermediate(thing, details, people))
+        genres <- genresFut
+      } yield Some(GetThingIntermediate(thing, details, people, genres))
     }
 
     def queryViaSlug(slug: Slug) = {
@@ -127,11 +130,14 @@ class ThingApi @Inject()(
             thingsDbAccess.findPeopleForThing(thing.id, None)
           }
 
+          val genresFut = genresDbAccess.findGenresForThing(thing.id)
+
           for {
             details <- userDetailsFut
             people <- peopleFut
+            genres <- genresFut
           } yield {
-            Some(GetThingIntermediate(Some(thing), details, people))
+            Some(GetThingIntermediate(Some(thing), details, people, genres))
           }
       }
     }
@@ -147,10 +153,10 @@ class ThingApi @Inject()(
     }
 
     thingAndDetailsFut.flatMap {
-      case None | Some(GetThingIntermediate(None, _, _)) =>
+      case None | Some(GetThingIntermediate(None, _, _, _)) =>
         Future.successful(None)
 
-      case Some(GetThingIntermediate(Some(thing), details, people)) =>
+      case Some(GetThingIntermediate(Some(thing), details, people, genres)) =>
         val cast = people.map {
           case (person, relation) =>
             ThingCastMember(
@@ -177,6 +183,7 @@ class ThingApi @Inject()(
         val sanitizedCast = sanitizeCastMembers(rawJsonMembers, cast.toList)
 
         val baseThing = thing
+          .withGenres(genres.map(_.genreId).toSet)
           .withUserMetadata(details)
           .withCast(sanitizedCast)
 
