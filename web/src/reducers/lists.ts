@@ -170,10 +170,7 @@ function setOrMergeList(
     if (!append) {
       return R.mergeDeepWithKey(mergeThingLists, existing, newList);
     } else {
-      existing.things = R.concat(
-        existing.things,
-        newList ? newList.things : [],
-      );
+      existing.items = R.concat(existing.items, newList ? newList.items : []);
       return existing;
     }
   } else if (newList) {

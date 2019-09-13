@@ -238,6 +238,15 @@ export class SagaTeletrackerClient {
     );
   }
 
+  *searchV2(searchText: string, bookmark?: string) {
+    return yield this.apiCall(
+      client => client.searchV2,
+      yield call([this, this.withToken]),
+      searchText,
+      bookmark,
+    );
+  }
+
   *getNetworks() {
     return yield this.apiCall(
       client => client.getNetworks,

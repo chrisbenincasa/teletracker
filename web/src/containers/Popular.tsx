@@ -1,6 +1,4 @@
 import {
-  Button,
-  ButtonGroup,
   createStyles,
   Grid,
   LinearProgress,
@@ -13,29 +11,24 @@ import {
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
+import ReactGA from 'react-ga';
 import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
-import {
-  Link as RouterLink,
-  RouteComponentProps,
-  withRouter,
-} from 'react-router-dom';
+import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import { retrievePopular } from '../actions/popular';
-import { getMetadataPath } from '../utils/metadata-access';
-import ItemCard from '../components/ItemCard';
+import { PopularInitiatedActionPayload } from '../actions/popular/popular';
+import Featured from '../components/Featured';
 import TypeToggle, {
   getTypeFromUrlParam,
 } from '../components/Filters/TypeToggle';
+import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
-import { PopularInitiatedActionPayload } from '../actions/popular/popular';
-import Featured from '../components/Featured';
-import Thing from '../types/Thing';
-import { ItemTypes } from '../types';
-import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
+import { ItemTypes } from '../types';
+import { Item } from '../types/v2/Item';
 
 const limit = 20;
 
@@ -50,7 +43,7 @@ interface InjectedProps {
   isAuthed: boolean;
   isSearching: boolean;
   popular?: string[];
-  thingsBySlug: { [key: string]: Thing };
+  thingsBySlug: { [key: string]: Item };
   loading: boolean;
   bookmark?: string;
 }
@@ -119,8 +112,14 @@ class Popular extends Component<Props, State> {
     if ((!prevProps.popular && popular) || (popular && mainItemIndex === -1)) {
       const highestRated = popular.filter(item => {
         const thing = thingsBySlug[item];
-        const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
-        const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
+        const voteAverage =
+          thing.ratings && thing.ratings.length
+            ? thing.ratings[0].vote_average
+            : 0;
+        const voteCount =
+          (thing.ratings && thing.ratings.length
+            ? thing.ratings[0].vote_count
+            : 0) || 0;
         return voteAverage > 7 && voteCount > 1000;
       });
 

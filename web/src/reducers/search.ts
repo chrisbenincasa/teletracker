@@ -1,19 +1,19 @@
 import {
-  SEARCH_FAILED,
-  SEARCH_INITIATED,
-  SEARCH_SUCCESSFUL,
   SearchFailedAction,
   SearchInitiatedAction,
   SearchSuccessfulAction,
+  SEARCH_FAILED,
+  SEARCH_INITIATED,
+  SEARCH_SUCCESSFUL,
 } from '../actions/search';
+import { Item } from '../types/v2/Item';
 import { flattenActions, handleAction } from './utils';
-import Thing from '../types/Thing';
 
 export interface State {
   currentSearchText: string;
   error: boolean;
   searching: boolean;
-  results?: Thing[];
+  results?: Item[];
   bookmark?: string;
 }
 

@@ -2,9 +2,13 @@ import React from 'react';
 import { Icon } from '@material-ui/core';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import HasImagery from '../types/HasImagery';
+import { ApiItem } from '../types/v2';
+import _ from 'lodash';
+import { Item } from '../types/v2/Item';
 
 interface imgProps {
-  item: HasImagery;
+  // item: HasImagery;
+  item: Item;
   imageType: 'poster' | 'backdrop' | 'profile';
   imageStyle?: object;
   pictureStyle?: object;
@@ -42,13 +46,34 @@ export const ResponsiveImage: React.FC<imgProps> = ({
   let imageName;
   switch (imageType) {
     case 'backdrop':
-      imageName = item.backdropPath;
+      var img = _.find(
+        item.images || [],
+        image => image.provider_id === 0 && image.image_type === 'backdrop',
+      );
+
+      if (img) {
+        imageName = img.id;
+      }
       break;
     case 'poster':
-      imageName = item.posterPath;
+      var img = _.find(
+        item.images || [],
+        image => image.provider_id === 0 && image.image_type === 'poster',
+      );
+
+      if (img) {
+        imageName = img.id;
+      }
       break;
     case 'profile':
-      imageName = item.profilePath;
+      var img = _.find(
+        item.images || [],
+        image => image.provider_id === 0 && image.image_type === 'profile',
+      );
+
+      if (img) {
+        imageName = img.id;
+      }
       break;
   }
 

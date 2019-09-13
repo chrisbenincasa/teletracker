@@ -18,6 +18,8 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
+import { Cancel, Check, PlaylistAdd } from '@material-ui/icons';
+import _ from 'lodash';
 import * as R from 'ramda';
 import React, { ChangeEvent, Component } from 'react';
 import { connect } from 'react-redux';
@@ -25,22 +27,21 @@ import { bindActionCreators } from 'redux';
 import {
   addToList,
   createList,
+  ListTrackingUpdatedInitiatedPayload,
   LIST_ADD_ITEM_INITIATED,
   updateListTracking,
-  ListTrackingUpdatedInitiatedPayload,
-  USER_SELF_CREATE_LIST,
   UserCreateListPayload,
+  USER_SELF_CREATE_LIST,
 } from '../actions/lists';
 import { AppState } from '../reducers';
 import { ListOperationState, ListsByIdMap } from '../reducers/lists';
-import { List } from '../types';
-import _ from 'lodash';
 import { UserSelf } from '../reducers/user';
-import { Cancel, Check, PlaylistAdd } from '@material-ui/icons';
+import { List } from '../types';
+import { ApiItem } from '../types/v2';
+import { itemBelongsToLists } from '../types/v2/Item';
 import CreateAListValidator, {
   CreateAListValidationStateObj,
 } from '../utils/validation/CreateAListValidator';
-import Thing, { ThingLikeStruct } from '../types/Thing';
 import AuthDialog from './Auth/AuthDialog';
 
 const styles = (theme: Theme) =>
@@ -67,7 +68,7 @@ interface AddToListDialogProps {
   open: boolean;
   onClose: () => void;
   userSelf?: UserSelf;
-  item: ThingLikeStruct;
+  item: ApiItem;
   listOperations: ListOperationState;
   listItemAddLoading: boolean;
   createAListLoading: boolean;
@@ -98,18 +99,13 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   constructor(props: Props) {
     super(props);
 
-    const belongsToLists =
-      props &&
-      props.item &&
-      props.item.userMetadata &&
-      props.item.userMetadata.belongsToLists
-        ? props.item.userMetadata.belongsToLists
-        : [];
+    const belongsToLists: number[] =
+      props && props.item && itemBelongsToLists(props.item);
 
     let listChanges = belongsToLists.reduce((acc, elem) => {
       return {
         ...acc,
-        [elem.id]: true,
+        [elem]: true,
       };
     }, {});
 
@@ -170,8 +166,8 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     });
   };
 
-  listContainsItem = (list: List, item: ThingLikeStruct) => {
-    return list.things ? R.any(R.propEq('id', item.id), list.things) : false;
+  listContainsItem = (list: List, item: ApiItem) => {
+    return itemBelongsToLists(item).includes(list.id);
   };
 
   handleSubmit = () => {
@@ -309,7 +305,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
           maxWidth="sm"
         >
           <DialogTitle id="update-tracking-dialog">
-            Add or Remove {this.props.item.name} from your lists
+            Add or Remove {this.props.item.original_title} from your lists
           </DialogTitle>
 
           <DialogContent className={classes.dialogContainer}>
