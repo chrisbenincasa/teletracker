@@ -35,6 +35,7 @@ object SequentialFutures {
     }
   }
 
+  // BUG HERE
   def batchedIterator[Element](
     collection: Iterator[Element],
     batchSize: Int

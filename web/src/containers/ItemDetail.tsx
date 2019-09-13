@@ -1,9 +1,9 @@
 import {
   Backdrop,
-  Badge,
   CardMedia,
   Chip,
   createStyles,
+  Dialog,
   Fab,
   Fade,
   Hidden,
@@ -14,13 +14,15 @@ import {
   Typography,
   WithStyles,
   withStyles,
-  Dialog,
 } from '@material-ui/core';
-import { Rating } from '@material-ui/lab';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { PlayArrow, ChevronLeft } from '@material-ui/icons';
+import { ChevronLeft, PlayArrow } from '@material-ui/icons';
+import { Rating } from '@material-ui/lab';
+import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
+import ReactGA from 'react-ga';
+import { Helmet } from 'react-helmet';
 import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -34,21 +36,22 @@ import { layoutStyles } from '../styles';
 import { Genre } from '../types';
 import { getMetadataPath } from '../utils/metadata-access';
 import { ResponsiveImage } from '../components/ResponsiveImage';
+import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import ThingAvailability from '../components/Availability';
 import Cast from '../components/Cast';
-import Recommendations from '../components/Recommendations';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import ManageTracking from '../components/ManageTracking';
 import MarkAsWatched from '../components/MarkAsWatched';
-import { formatRuntime } from '../utils/textHelper';
-import Thing from '../types/Thing';
+import Recommendations from '../components/Recommendations';
+import { ResponsiveImage } from '../components/ResponsiveImage';
 import RouterLink from '../components/RouterLink';
-import { Helmet } from 'react-helmet';
-import _ from 'lodash';
-import { FixedSizeList as LazyList } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
-import ReactGA from 'react-ga';
+import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants';
+import { AppState } from '../reducers';
+import { layoutStyles } from '../styles';
+import { Genre } from '../types';
+import { ApiItem } from '../types/v2';
+import { Item } from '../types/v2/Item';
+import { formatRuntime } from '../utils/textHelper';
 import Login from './Login';
 
 const styles = (theme: Theme) =>
@@ -186,7 +189,7 @@ const styles = (theme: Theme) =>
 interface OwnProps {
   isAuthed: boolean;
   isFetching: boolean;
-  itemDetail?: Thing;
+  itemDetail?: Item;
   genres?: Genre[];
 }
 
@@ -283,10 +286,15 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderTitle = (thing: Thing) => {
-    const title = thing.name;
-    const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
-    const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
+  renderTitle = (thing: ApiItem) => {
+    const title = thing.original_title;
+    // TODO make better
+    const voteAverage =
+      thing.ratings && thing.ratings.length ? thing.ratings[0].vote_average : 0;
+    const voteCount =
+      thing.ratings && thing.ratings.length
+        ? thing.ratings[0].vote_count || 0
+        : 0;
     const runtime =
       (thing.runtime && formatRuntime(thing.runtime, thing.type)) || null;
 
@@ -321,10 +329,10 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderDescriptiveDetails = (thing: Thing) => {
+  renderDescriptiveDetails = (thing: ApiItem) => {
     const { classes, genres } = this.props;
-    const thingGenres = thing.genreIds || [];
-    const overview = thing.description || '';
+    const thingGenres = (thing.genres || []).map(g => g.id);
+    const overview = thing.overview || '';
 
     const genresToRender = _.filter(genres || [], genre => {
       return _.includes(thingGenres, genre.id);
@@ -359,68 +367,69 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderSeriesDetails = (thing: Thing) => {
-    const { classes } = this.props;
-    let seasons = getMetadataPath(thing, 'seasons');
-    seasons =
-      seasons &&
-      seasons.filter(
-        season =>
-          season.episode_count > 0 &&
-          season.poster_path &&
-          season.name !== 'Specials',
-      );
-    const Season = ({ index, style }) => (
-      <div
-        className={classes.seasonContainer}
-        style={style}
-        key={seasons[index].id}
-      >
-        <Badge
-          className={classes.badge}
-          badgeContent={seasons[index].episode_count}
-          color="primary"
-        >
-          <img
-            src={`https://image.tmdb.org/t/p/w342/${
-              seasons[index].poster_path
-            }`}
-            className={classes.seasonPoster}
-          />
-        </Badge>
-        <Typography style={{ marginLeft: 8 }}>{seasons[index].name}</Typography>
-      </div>
-    );
+  // TODO: index seasons
+  // renderSeriesDetails = (thing: Item) => {
+  //   const { classes } = this.props;
+  //   let seasons = getMetadataPath(thing, 'seasons');
+  //   seasons =
+  //     seasons &&
+  //     seasons.filter(
+  //       season =>
+  //         season.episode_count > 0 &&
+  //         season.poster_path &&
+  //         season.name !== 'Specials',
+  //     );
+  //   const Season = ({ index, style }) => (
+  //     <div
+  //       className={classes.seasonContainer}
+  //       style={style}
+  //       key={seasons[index].id}
+  //     >
+  //       <Badge
+  //         className={classes.badge}
+  //         badgeContent={seasons[index].episode_count}
+  //         color="primary"
+  //       >
+  //         <img
+  //           src={`https://image.tmdb.org/t/p/w342/${
+  //             seasons[index].poster_path
+  //           }`}
+  //           className={classes.seasonPoster}
+  //         />
+  //       </Badge>
+  //       <Typography style={{ marginLeft: 8 }}>{seasons[index].name}</Typography>
+  //     </div>
+  //   );
 
-    return seasons && seasons.length > 0 ? (
-      <React.Fragment>
-        <Typography
-          color="inherit"
-          variant="h5"
-          className={classes.seasonTitle}
-        >
-          Seasons
-        </Typography>
+  //   return seasons && seasons.length > 0 ? (
+  //     <React.Fragment>
+  //       <Typography
+  //         color="inherit"
+  //         variant="h5"
+  //         className={classes.seasonTitle}
+  //       >
+  //         Seasons
+  //       </Typography>
 
-        <div className={classes.carousel}>
-          <AutoSizer>
-            {({ height, width }) => (
-              <LazyList
-                height={220}
-                itemCount={seasons.length}
-                itemSize={125}
-                layout="horizontal"
-                width={width}
-                style={{ overflowX: 'auto', overflowY: 'hidden' }}
-              >
-                {Season}
-              </LazyList>
-            )}
-          </AutoSizer>
-        </div>
-      </React.Fragment>
-    ) : null;
-  };
+  //       <div className={classes.carousel}>
+  //         <AutoSizer>
+  //           {({ height, width }) => (
+  //             <LazyList
+  //               height={220}
+  //               itemCount={seasons.length}
+  //               itemSize={125}
+  //               layout="horizontal"
+  //               width={width}
+  //               style={{ overflowX: 'auto', overflowY: 'hidden' }}
+  //             >
+  //               {Season}
+  //             </LazyList>
+  //           )}
+  //         </AutoSizer>
+  //       </div>
+  //     </React.Fragment>
+  //   ) : null;
+  // };
 
   renderItemDetails = () => {
     let { classes, isFetching, itemDetail, userSelf } = this.props;
@@ -437,26 +446,26 @@ class ItemDetails extends Component<Props, State> {
     ) : (
       <React.Fragment>
         <Helmet>
-          <title>{`${itemDetail.name} | Teletracker`}</title>
+          <title>{`${itemDetail.original_title} | Teletracker`}</title>
           <meta
             name="title"
             property="og:title"
             content={`${
-              itemDetail.name
+              itemDetail.original_title
             } | Where to stream, rent, or buy. Track it today!`}
           />
           <meta
             name="description"
             property="og:description"
             content={`Find out where to stream, rent, or buy ${
-              itemDetail.name
+              itemDetail.original_title
             } online. Track it to find out when it's available on one of your services.`}
           />
-          <meta
+          {/* TODO FIX <meta
             name="image"
             property="og:image"
             content={`https://image.tmdb.org/t/p/w342${itemDetail.posterPath}`}
-          />
+          /> */}
           <meta property="og:type" content="video.movie" />
           <meta property="og:image:type" content="image/jpg" />
           <meta property="og:image:width" content="342" />
@@ -477,22 +486,23 @@ class ItemDetails extends Component<Props, State> {
           <meta
             name="twitter:title"
             content={`${
-              itemDetail.name
+              itemDetail.original_title
             } - Where to Stream, Rent, or Buy It Online`}
           />
           <meta
             name="twitter:description"
             content={`Find out where to stream, rent, or buy ${
-              itemDetail.name
+              itemDetail.original_title
             } online. Track it to find out when it's available on one of your services.`}
           />
-          <meta
+
+          {/* TODO FIX <meta
             name="twitter:image"
             content={`https://image.tmdb.org/t/p/w342${itemDetail.posterPath}`}
-          />
+          /> */}
           <meta
             name="keywords"
-            content={`${itemDetail.name}, ${
+            content={`${itemDetail.original_title}, ${
               itemDetail.type
             }, stream, streaming, rent, buy, watch, track`}
           />
@@ -591,7 +601,7 @@ class ItemDetails extends Component<Props, State> {
                   </div>
                 </div>
                 <Cast itemDetail={itemDetail} />
-                {this.renderSeriesDetails(itemDetail)}
+                {/* {this.renderSeriesDetails(itemDetail)} */}
                 <Recommendations itemDetail={itemDetail} userSelf={userSelf} />
               </div>
             </div>

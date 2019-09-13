@@ -1,24 +1,24 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.google.api.gax.paging.Page
-import com.google.cloud.storage.Storage.BlobListOption
-import com.google.cloud.storage.{Blob, BlobId, Storage}
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{ExternalSource, ThingLike}
-import com.teletracker.common.model.Thingable
+import com.teletracker.common.elasticsearch.{ItemSearch, ItemUpdater}
 import com.teletracker.common.model.tmdb.HasTmdbId
+import com.teletracker.common.model.{Thingable, ToEsItem}
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.util.{GenreCache, TheMovieDb}
+import com.teletracker.common.util.GenreCache
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
-import io.circe.{Decoder, Encoder}
+import com.teletracker.tasks.TeletrackerTask
+import com.teletracker.tasks.util.SourceRetriever
+import diffson.lcs.Patience
 import io.circe.parser._
+import io.circe.{Decoder, Encoder, Json}
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
-import scala.collection.JavaConverters._
+import java.time.OffsetDateTime
 import scala.concurrent.{ExecutionContext, Future}
-import scala.io.Source
 import scala.util.{Failure, Success}
 
 case class ImportTmdbDumpTaskArgs(
@@ -26,14 +26,17 @@ case class ImportTmdbDumpTaskArgs(
   offset: Int = 0,
   limit: Int = -1,
   parallelism: Int = 8,
-  perFileLimit: Int = -1)
+  perFileLimit: Int = -1,
+  dryRun: Boolean = true)
 
-abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
-  storage: Storage,
+abstract class ImportTmdbDumpTask[T <: HasTmdbId](
+  s3: S3Client,
+  sourceRetriever: SourceRetriever,
   thingsDbAccess: ThingsDbAccess,
   genreCache: GenreCache
 )(implicit executionContext: ExecutionContext,
-  thingLike: Thingable[T])
+  thingLike: Thingable[T],
+  decoder: Decoder[T])
     extends TeletrackerTask {
 
   import com.teletracker.common.util.json.circe._
@@ -52,20 +55,23 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
       offset = args.valueOrDefault("offset", 0),
       limit = args.valueOrDefault("limit", -1),
       parallelism = args.valueOrDefault("parallelism", 8),
-      perFileLimit = args.valueOrDefault("perFileLimit", -1)
+      perFileLimit = args.valueOrDefault("perFileLimit", -1),
+      dryRun = args.valueOrDefault("dryRun", true)
     )
   }
 
   override def runInternal(args: Args): Unit = {
-    val file = args.value[URI]("input").get
-    val offset = args.valueOrDefault("offset", 0)
-    val limit = args.valueOrDefault("limit", -1)
-    val parallelism = args.valueOrDefault("parallelism", 8)
-    val perFileLimit = args.valueOrDefault("perFileLimit", -1)
+    val typedArgs @ ImportTmdbDumpTaskArgs(
+      file,
+      offset,
+      limit,
+      parallelism,
+      perFileLimit,
+      _
+    ) = preparseArgs(args)
 
-    val genres = genreCache.get().await()
-
-    getSourceStream(file)
+    sourceRetriever
+      .getSourceStream(file)
       .drop(offset)
       .safeTake(limit)
       .foreach(source => {
@@ -93,51 +99,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
                       Future.successful(None)
 
                     case Right(value) =>
-                      thingLike.toThing(value) match {
-                        case Success(thing) =>
-                          val genreIds = thing.metadata
-                            .flatMap(
-                              Paths.applyPaths(
-                                _,
-                                Paths.MovieGenres,
-                                Paths.ShowGenres
-                              )
-                            )
-                            .map(_.map(_.id))
-                            .map(
-                              _.flatMap(
-                                id =>
-                                  genres.get(
-                                    ExternalSource.TheMovieDb -> id.toString
-                                  )
-                              )
-                            )
-                            .map(_.map(_.id))
-                            .getOrElse(Nil)
-                            .flatten
-                            .toSet
-
-                          val fut = thingsDbAccess
-                            .saveThing(
-                              thing.withGenres(genreIds),
-                              Some(
-                                ExternalSource.TheMovieDb -> value.id.toString
-                              )
-                            )
-
-                          fut
-                            .flatMap(
-                              thing => extraWork(thing, value).map(_ => thing)
-                            )
-                            .map(Some(_))
-
-                        case Failure(exception) =>
-                          logger.error(
-                            "Encountered unexpected exception",
-                            exception
-                          )
-                          Future.successful(None)
-                      }
+                      handleItem(typedArgs, value)
                   }
                 })
               })
@@ -147,6 +109,61 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
             .await()
         } finally {
           source.close()
+        }
+      })
+  }
+
+  protected def handleItem(
+    args: ImportTmdbDumpTaskArgs,
+    item: T
+  ): Future[Unit] = {
+    genreCache
+      .get()
+      .flatMap(genres => {
+        thingLike.toThing(item) match {
+          case Success(thing) =>
+            val genreIds = thing.metadata
+              .flatMap(
+                Paths.applyPaths(
+                  _,
+                  Paths.MovieGenres,
+                  Paths.ShowGenres
+                )
+              )
+              .map(_.map(_.id))
+              .map(
+                _.flatMap(
+                  id =>
+                    genres.get(
+                      ExternalSource.TheMovieDb -> id.toString
+                    )
+                )
+              )
+              .map(_.map(_.id))
+              .getOrElse(Nil)
+              .flatten
+              .toSet
+
+            val fut = thingsDbAccess
+              .saveThing(
+                thing.withGenres(genreIds),
+                Some(
+                  ExternalSource.TheMovieDb -> item.id.toString
+                )
+              )
+
+            fut
+              .flatMap(
+                thing => extraWork(thing, item).map(_ => thing)
+              )
+              .map(Some(_))
+
+          case Failure(exception) =>
+            logger.error(
+              "Encountered unexpected exception",
+              exception
+            )
+            Future.successful(None)
         }
       })
   }
@@ -164,72 +181,22 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
       List(line)
     }
   }
+}
 
-  private def getSourceStream(uri: URI) = {
-    uri.getScheme match {
-      case "gs" =>
-        val blob = storage
-          .get(BlobId.of(uri.getHost, uri.getPath.stripPrefix("/")))
+trait ImportTmdbDumpTaskToElasticsearch[T <: HasTmdbId] {
+  self: ImportTmdbDumpTask[T] =>
 
-        val blobStream = if (blob == null) {
-          val bucket = uri.getHost
-          val folder = uri.getPath
-          getBlobStreamForGsFolder(bucket, folder)
-        } else {
-          Stream(blob)
-        }
+  implicit def toEsItem: ToEsItem[T]
 
-        blobStream.map(blob => {
-          logger.info(s"Preparing to ingest ${blob.getName}")
-          Source.fromBytes(
-            blob.getContent()
-          )
-        })
-      case "file" =>
-        Stream(Source.fromFile(uri))
-      case _ =>
-        throw new IllegalArgumentException(
-          s"Unsupported file scheme: ${uri.getScheme}"
-        )
-    }
-  }
+  implicit lazy val lcs = new Patience[Json]
+  implicit protected val executionContext: ExecutionContext
+  protected def itemSearch: ItemSearch
+  protected def itemUpdater: ItemUpdater
 
-  private def getBlobStreamForGsFolder(
-    bucket: String,
-    folder: String
-  ) = {
-    var page: Page[Blob] = null
-    var buf: Iterable[Blob] = Nil
-    def getList: Option[Blob] = {
-      if (buf.isEmpty) {
-        if (page == null) {
-          page = storage.list(
-            bucket,
-            BlobListOption.currentDirectory(),
-            BlobListOption.prefix(folder.stripPrefix("/") + "/")
-          )
-        } else {
-          page = page.getNextPage
-        }
+  override protected def handleItem(
+    args: ImportTmdbDumpTaskArgs,
+    item: T
+  ): Future[Unit]
 
-        val values = Option(page).map(_.getValues.asScala).getOrElse(Nil)
-        if (values.isEmpty) {
-          None
-        } else {
-          buf = values.tail
-          Some(values.head)
-        }
-      } else {
-        val value = buf.head
-        buf = buf.tail
-        Some(value)
-      }
-    }
-
-    Stream
-      .continually(getList)
-      .takeWhile(_.isDefined)
-      .map(_.get)
-      .filterNot(_.isDirectory)
-  }
+  protected def getNow(): OffsetDateTime = OffsetDateTime.now()
 }

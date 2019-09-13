@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum ExternalSource {
     TheMovieDb("tmdb"),
-    JustWatch("justwatch");
+    JustWatch("justwatch"),
+    Imdb("imdb");
 
     private final String name;
 
@@ -16,6 +17,16 @@ public enum ExternalSource {
         return name;
     }
 
+    public static ExternalSource fromOrdinal(final int i) {
+        for (ExternalSource src : ExternalSource.values()) {
+            if (src.ordinal() == i) {
+                return src;
+            }
+        }
+
+        throw new IllegalArgumentException("Could not find ExternalSource with ordinal " + i);
+    }
+
     @JsonCreator
     public static ExternalSource fromString(final String s) {
         for (ExternalSource src : ExternalSource.values()) {
@@ -24,7 +35,7 @@ public enum ExternalSource {
             }
         }
 
-        throw new IllegalArgumentException("Could not find CertificationType with name " + s);
+        throw new IllegalArgumentException("Could not find ExternalSource with name " + s);
     }
 
     @Override

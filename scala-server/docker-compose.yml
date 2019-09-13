@@ -1,37 +1,62 @@
 version: '3.1'
 
 services:
-  db:
-    image: postgres:11
-    restart: always
-    ports:
-      - 5432:5432
-    environment:
-      POSTGRES_USER: teletracker
-      POSTGRES_PASSWORD: teletracker
-      POSTGRES_DB: teletracker
-    networks:
-      - db
+#  db:
+#    image: postgres:11
+#    restart: always
+#    ports:
+#      - 5432:5432
+#    environment:
+#      POSTGRES_USER: teletracker
+#      POSTGRES_PASSWORD: teletracker
+#      POSTGRES_DB: teletracker
+#    networks:
+#      - db
+#
+#  adminer:
+#    image: adminer
+#    restart: always
+#    ports:
+#      - 8080:8080
+#    networks:
+#      - db
+#
+#  server:
+#    image: chrisbenincasa/teletracker:latest
+#    restart: always
+#    ports:
+#      - 3000:3000
+#    environment:
+#      - "DB_HOST=db"
+#    env_file:
+#      - .env
+#    networks:
+#      - db
 
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
-    networks:
-      - db
-
-  server:
-    image: chrisbenincasa/teletracker:latest
-    restart: always
-    ports:
-      - 3000:3000
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
     environment:
-      - "DB_HOST=db"
-    env_file:
-      - .env
+      - discovery.type=single-node
+    volumes:
+      - esdata01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
     networks:
-      - db
+      - esnet
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.4.0
+    ports:
+      - 5601:5601
+    networks:
+      - esnet
+    links:
+      - elasticsearch:elasticsearch
+
+volumes:
+  esdata01:
+    driver: local
 
 networks:
-  db:
+  esnet:
+#  db:

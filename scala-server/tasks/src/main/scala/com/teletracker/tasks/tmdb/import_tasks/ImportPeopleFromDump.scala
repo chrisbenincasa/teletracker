@@ -1,6 +1,5 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.google.cloud.storage.Storage
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.model.tmdb.{
@@ -12,17 +11,25 @@ import com.teletracker.common.model.tmdb.{
 import com.teletracker.common.process.tmdb.TmdbSynchronousProcessor
 import com.teletracker.common.util.{GenreCache, Slug}
 import com.teletracker.common.util.TheMovieDb._
+import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject
+import software.amazon.awssdk.services.s3.S3Client
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ImportPeopleFromDump @Inject()(
-  storage: Storage,
+  s3: S3Client,
+  sourceRetriever: SourceRetriever,
   thingsDbAccess: ThingsDbAccess,
   tmdbSynchronousProcessor: TmdbSynchronousProcessor,
   genreCache: GenreCache
 )(implicit executionContext: ExecutionContext)
-    extends ImportTmdbDumpTask[Person](storage, thingsDbAccess, genreCache) {
+    extends ImportTmdbDumpTask[Person](
+      s3,
+      sourceRetriever,
+      thingsDbAccess,
+      genreCache
+    ) {
 
   override protected def extraWork(
     thingLike: ThingLike,
@@ -157,10 +164,20 @@ class ImportPeopleFromDump @Inject()(
     thingId: UUID,
     personAssociationType: PersonAssociationType,
     character: Option[String],
-    order: Option[Int]
+    order: Option[Int],
+    department: Option[String],
+    job: Option[String]
   ): Future[PersonThing] = {
     thingsDbAccess.upsertPersonThing(
-      PersonThing(personId, thingId, personAssociationType, character, order)
+      PersonThing(
+        personId,
+        thingId,
+        personAssociationType,
+        character,
+        order,
+        department,
+        job
+      )
     )
   }
 }

@@ -7,7 +7,7 @@ import io.opencensus.stats.Aggregation.{Count, Distribution}
 import io.opencensus.stats.Measure.{MeasureDouble, MeasureLong}
 import io.opencensus.stats.View.Name
 import io.opencensus.stats._
-import io.opencensus.tags.{TagContextBuilder, TagKey, TagValue, Tagger, Tags}
+import io.opencensus.tags.{TagContextBuilder, TagKey, TagValue, Tagger}
 import javax.inject.Inject
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.JavaConverters._

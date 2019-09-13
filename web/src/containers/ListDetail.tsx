@@ -66,6 +66,7 @@ import { layoutStyles } from '../styles';
 import { Genre, ItemTypes, List, ListSortOptions } from '../types';
 import Thing from '../types/Thing';
 import { getOrInitListOptions } from '../utils/list-utils';
+import { Item } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -633,12 +634,14 @@ class ListDetail extends Component<Props, State> {
   };
 
   filteredFilmography(list: List) {
-    let filmography = list!.things || [];
+    let filmography = list!.items || [];
 
     return filmography.filter(
-      (item: Thing) =>
+      (item: Item) =>
         !this.state.filter ||
-        (item && item.genreIds && item.genreIds.includes(this.state.filter)),
+        (item &&
+          item.genres &&
+          item.genres.map(g => g.id).includes(this.state.filter)),
     );
   }
 
@@ -668,16 +671,16 @@ class ListDetail extends Component<Props, State> {
   renderFilters(list: List) {
     const { showFilter, itemTypes, genreAnchorEl } = this.state;
     const { classes, genres, width } = this.props;
-    let filmography = list!.things || [];
+    let filmography = list!.items || [];
     let finalGenres: Genre[] = [];
 
     if (genres) {
       finalGenres = _.chain(filmography)
-        .map((f: Thing) => f.genreIds || [])
+        .map((f: Item) => f.genres || [])
         .flatten()
         .uniq()
-        .map(id => {
-          let g = _.find(genres, g => g.id === id);
+        .map(genre => {
+          let g = _.find(genres, g => g.id === genre.id);
           if (g) {
             return [g];
           } else {
@@ -883,7 +886,7 @@ class ListDetail extends Component<Props, State> {
                 useWindow
               >
                 <Grid container spacing={2}>
-                  {(list!.things || []).map(item =>
+                  {(list!.items || []).map(item =>
                     thingsById[item.id] ? (
                       <ItemCard
                         key={item.id}

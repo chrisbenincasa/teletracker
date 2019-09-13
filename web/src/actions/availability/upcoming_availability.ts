@@ -3,6 +3,9 @@ import { clientEffect, createAction, createBasicAction } from '../utils';
 import { defaultMovieMeta } from '../lists';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import Thing, { ThingFactory } from '../../types/Thing';
+import { Item, ItemFactory } from '../../types/v2/Item';
+import { TeletrackerResponse } from '../../utils/api-client';
+import { ApiItem } from '../../types/v2';
 
 export const UPCOMING_AVAILABILITY_INITIATED =
   'availability/upcoming/INITIATED';
@@ -15,8 +18,8 @@ export type UpcomingAvailabilityInitiatedAction = FSA<
 >;
 
 export interface UpcomingAvailabilitySuccessfulPayload {
-  upcoming: Thing[];
-  expiring: Thing[];
+  upcoming: Item[];
+  expiring: Item[];
 }
 
 export type UpcomingAvailabilitySuccessfulAction = FSA<
@@ -44,7 +47,7 @@ export const upcomingAvailabilityFailed = createAction<
 export const upcomingAvailabilitySaga = function*() {
   yield takeEvery(UPCOMING_AVAILABILITY_INITIATED, function*() {
     try {
-      let response = yield clientEffect(
+      let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
         client => client.getUpcomingAvailability,
         undefined,
         defaultMovieMeta,
@@ -53,12 +56,8 @@ export const upcomingAvailabilitySaga = function*() {
       if (response.ok) {
         yield put(
           upcomingAvailabilitySuccess({
-            upcoming: response.data.data.future.upcoming.map(
-              ThingFactory.create,
-            ),
-            expiring: response.data.data.future.upcoming.map(
-              ThingFactory.create,
-            ),
+            upcoming: response.data!.data.map(ItemFactory.create),
+            expiring: [],
           }),
         );
       }

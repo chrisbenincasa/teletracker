@@ -20,6 +20,10 @@ import { Availability, Network } from '../types';
 import React from 'react';
 import Thing from '../types/Thing';
 import { UserSelf } from '../reducers/user';
+import { ApiItem, ItemAvailability } from '../types/v2';
+import { AppState } from '../reducers';
+import { connect } from 'react-redux';
+import _ from 'lodash';
 
 const useStyles = makeStyles((theme: Theme) => ({
   availabilePlatforms: {
@@ -36,29 +40,33 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  itemDetail: Thing;
+  itemDetail: ApiItem;
   userSelf?: UserSelf;
+  networks?: Network[];
 }
 
 const ThingAvailability = (props: Props) => {
   const classes = useStyles();
 
   const { itemDetail, userSelf } = props;
-  let availabilities: { [key: string]: Availability[] };
+  let availabilities: { [key: string]: ItemAvailability[] };
 
   if (itemDetail.availability) {
     availabilities = R.mapObjIndexed(
       R.pipe(
-        R.filter<Availability, 'array'>(R.propEq('isAvailable', true)),
+        // TODO: This calculation isn't exactly correct, fix it...
+        R.filter<ItemAvailability, 'array'>(
+          av => !av.start_date && !av.end_date,
+        ),
         R.sortBy(R.prop('cost')),
       ),
-      R.groupBy(R.prop('offerType'), itemDetail.availability),
+      R.groupBy(R.prop('offer_type'), itemDetail.availability || []),
     );
   } else {
     availabilities = {};
   }
 
-  let x: [Availability[], number][] = [
+  let x: [ItemAvailability[], number][] = [
     [availabilities.theater, 0],
     [availabilities.subscription, 1],
     [availabilities.rent, 2],
@@ -72,22 +80,22 @@ const ThingAvailability = (props: Props) => {
     firstAvailable ? firstAvailable[1] : 0,
   );
 
-  const renderOfferDetails = (availabilities: Availability[]) => {
+  const renderOfferDetails = (availabilities: ItemAvailability[]) => {
     let onlyShowsSubs = false;
 
     if (userSelf && userSelf.preferences && userSelf.networks) {
       onlyShowsSubs = userSelf.preferences.showOnlyNetworkSubscriptions;
     }
 
-    const includeFromPrefs = (av: Availability, network: Network) => {
+    const includeFromPrefs = (av: ItemAvailability, networkId: number) => {
       if (userSelf) {
         let showFromSubscriptions = onlyShowsSubs
-          ? R.any(R.propEq('slug', network.slug), userSelf!.networks)
+          ? R.any(R.propEq('id', networkId), userSelf!.networks)
           : true;
 
-        let hasPresentation = av.presentationType
+        let hasPresentation = av.presentation_type
           ? R.contains(
-              av.presentationType,
+              av.presentation_type,
               userSelf!.preferences.presentationTypes,
             )
           : true;
@@ -98,28 +106,33 @@ const ThingAvailability = (props: Props) => {
       }
     };
 
-    const availabilityFilter = (av: Availability) => {
-      return !R.isNil(av.network) && includeFromPrefs(av, av.network!);
+    const availabilityFilter = (av: ItemAvailability) => {
+      return !R.isNil(av.network_id) && includeFromPrefs(av, av.network_id!);
     };
 
+    console.log(props.networks);
     let groupedByNetwork = availabilities
       ? R.groupBy(
-          (av: Availability) => av.network!.slug,
+          (av: ItemAvailability) =>
+            _.find(props.networks || [], n => n.id === av.network_id)!.slug,
           R.filter(availabilityFilter, availabilities),
         )
       : {};
 
+    // TODO: Fix id - give availabilities IDs
+    let i = 0;
     return R.values(
       R.mapObjIndexed(avs => {
         let lowestCostAv = R.head(R.sortBy(R.prop('cost'))(avs))!;
-        let hasHd = R.find(R.propEq('presentationType', 'hd'), avs);
-        let has4k = R.find(R.propEq('presentationType', '4k'), avs);
-        let logoUri =
-          '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
+        let hasHd = R.find(R.propEq('presentation_type', 'hd'), avs);
+        let has4k = R.find(R.propEq('presentation_type', '4k'), avs);
+        // let logoUri =
+        //   '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
 
+        // TODO: Need logo UI
         return (
-          <div className={classes.platform} key={lowestCostAv.id}>
-            <img src={logoUri} className={classes.logo} />
+          <div className={classes.platform} key={i}>
+            {/* <img src={logoUri} className={classes.logo} /> */}
             {lowestCostAv.cost && (
               <Chip
                 size="medium"
@@ -133,7 +146,7 @@ const ThingAvailability = (props: Props) => {
     );
   };
 
-  return (
+  return props.networks ? (
     <React.Fragment>
       <Typography color="inherit" variant="h5">
         Availability
@@ -227,7 +240,9 @@ const ThingAvailability = (props: Props) => {
             <TvOff fontSize="large" style={{ margin: 10 }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <Typography variant="subtitle1">
-                {`${itemDetail.name} is not currently available to stream, rent,
+                {`${
+                  itemDetail.original_title
+                } is not currently available to stream, rent,
                       or purchase.`}
               </Typography>
               <Typography variant="subtitle1">
@@ -239,7 +254,13 @@ const ThingAvailability = (props: Props) => {
         </React.Fragment>
       )}
     </React.Fragment>
-  );
+  ) : null;
 };
 
-export default ThingAvailability;
+const mapStateToProps = (appState: AppState) => {
+  return {
+    networks: appState.metadata.networks,
+  };
+};
+
+export default connect(mapStateToProps)(ThingAvailability);
