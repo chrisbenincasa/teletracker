@@ -43,7 +43,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         width: 230,
       },
-      width: '80%',
+      width: 115,
       display: 'flex',
       flex: '0 1 auto',
       flexDirection: 'column',
@@ -57,10 +57,14 @@ const styles = (theme: Theme) =>
       },
     },
     title: {
+      [theme.breakpoints.up('sm')]: {
+        fontSize: '3em',
+      },
+      fontSize: '1em',
+      fontWeight: 700,
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
-      marginBottom: 10,
     },
     titleContainer: {
       display: 'flex',
@@ -68,8 +72,8 @@ const styles = (theme: Theme) =>
       alignItems: 'flex-start',
       position: 'absolute',
       bottom: 0,
-      right: 10,
-      marginBottom: 10,
+      right: 8,
+      marginBottom: 8,
     },
     card: {
       height: '100%',
@@ -84,9 +88,14 @@ const styles = (theme: Theme) =>
     cardContent: {
       flexGrow: 1,
     },
+    filterButtons: {
+      [theme.breakpoints.down('sm')]: {
+        fontSize: '0.575rem',
+      },
+    },
     itemCTA: {
       [theme.breakpoints.down('sm')]: {
-        width: '80%',
+        display: 'none',
       },
       width: '100%',
     },
@@ -204,7 +213,7 @@ class Genre extends Component<Props, State> {
 
     return (
       <div className={classes.titleContainer} style={{}}>
-        <Typography color="inherit" variant="h3">
+        <Typography color="inherit" variant="h3" className={classes.title}>
           {`${title}`}
         </Typography>
       </div>
@@ -301,6 +310,7 @@ class Genre extends Component<Props, State> {
 
   renderPopular = () => {
     const {
+      classes,
       genre,
       userSelf,
       thingsBySlug,
@@ -320,8 +330,14 @@ class Genre extends Component<Props, State> {
         <div
           style={{ display: 'flex', flexDirection: 'row', marginBottom: 10 }}
         >
-          <Typography color="inherit" variant="h4" style={{ flexGrow: 1 }}>
-            Popular {genreModel.name} {type ? capitalize(type) + 's' : 'Items'}
+          <Typography
+            color="inherit"
+            variant="h4"
+            style={{ flexGrow: 1 }}
+            className={classes.title}
+          >
+            Popular {genreModel.name}{' '}
+            {type ? capitalize(type) + 's' : 'Content'}
           </Typography>
           <ButtonGroup
             variant="contained"
@@ -335,6 +351,7 @@ class Genre extends Component<Props, State> {
                 pathname: location.pathname,
                 search: '',
               }}
+              className={classes.filterButtons}
             >
               All
             </Button>
@@ -342,6 +359,7 @@ class Genre extends Component<Props, State> {
               color={type === 'movie' ? 'secondary' : 'primary'}
               component={RouterLink}
               to={'?type=movie'}
+              className={classes.filterButtons}
             >
               Movies
             </Button>
@@ -349,6 +367,7 @@ class Genre extends Component<Props, State> {
               color={type === 'show' ? 'secondary' : 'primary'}
               component={RouterLink}
               to={'?type=show'}
+              className={classes.filterButtons}
             >
               TV
             </Button>
