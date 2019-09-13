@@ -103,7 +103,8 @@ case class ThingRaw(
       Some(createdAt),
       Some(lastUpdatedAt),
       popularity,
-      metadata
+      metadata,
+      genreIds = genres.map(_.toSet)
     )
   }
 }

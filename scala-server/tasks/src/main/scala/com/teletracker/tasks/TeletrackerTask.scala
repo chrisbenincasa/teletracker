@@ -1,13 +1,12 @@
 package com.teletracker.tasks
 
-import com.google.cloud.pubsub.v1.Publisher
-import com.google.protobuf.ByteString
-import com.google.pubsub.v1.PubsubMessage
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.tasks.util.Args
-import io.circe.{Encoder, Json}
 import io.circe.syntax._
+import io.circe.{Encoder, Json}
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
@@ -58,11 +57,10 @@ trait DefaultAnyArgs { self: TeletrackerTask =>
 }
 
 trait SchedulesFollowupTasks { self: TeletrackerTask =>
-  import Args._
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  protected def publisher: Publisher
+  protected def publisher: SqsClient
 
   registerCallback(
     TaskCallback((typedArgs, args) => {
@@ -72,17 +70,18 @@ trait SchedulesFollowupTasks { self: TeletrackerTask =>
           s"Scheduling ${tasks.size} follow-up tasks:\n${tasks.map(_.toString).mkString("\n")}"
         )
 
+        // TODO: Batch
         tasks.foreach(message => {
           publisher
-            .publish(
-              PubsubMessage
-                .newBuilder()
-                .setData(
-                  ByteString.copyFrom(message.asJson.noSpaces.getBytes())
+            .sendMessage(
+              SendMessageRequest
+                .builder()
+                .messageBody(message.asJson.noSpaces)
+                .queueUrl(
+                  "https://sqs.us-west-1.amazonaws.com/302782651551/teletracker-tasks-qa"
                 )
                 .build()
             )
-            .get()
         })
       } else {
         logger.info("Skipping scheduling of followup jobs")

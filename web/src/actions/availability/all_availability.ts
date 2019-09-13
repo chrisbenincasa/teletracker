@@ -8,6 +8,7 @@ import {
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import { Availability } from '../../types';
 import Thing, { ThingFactory } from '../../types/Thing';
+import { Item, ItemFactory } from '../../types/v2/Item';
 
 export const ALL_AVAILABILITY_INITIATED = 'availability/all/INITIATED';
 export const ALL_AVAILABILITY_SUCCESSFUL = 'availability/all/SUCCESSFUL';
@@ -18,7 +19,7 @@ export type AllAvailabilityInitiatedAction = FSA<
 >;
 
 export interface AllAvailabilitySuccessfulPayload {
-  recentlyAdded: Thing[];
+  recentlyAdded: Item[];
   future: UpcomingAvailabilitySuccessfulPayload;
 }
 
@@ -57,14 +58,14 @@ export const allAvailabilitySaga = function*() {
         yield put(
           allAvailabilitySuccess({
             recentlyAdded: response.data.data.recentlyAdded.map(
-              ThingFactory.create,
+              ItemFactory.create,
             ),
             future: {
               upcoming: response.data.data.future.upcoming.map(
-                ThingFactory.create,
+                ItemFactory.create,
               ),
               expiring: response.data.data.future.upcoming.map(
-                ThingFactory.create,
+                ItemFactory.create,
               ),
             },
           }),

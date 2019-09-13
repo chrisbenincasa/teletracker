@@ -1,0 +1,3 @@
+{
+  "server_image": "302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/server:elasticsearch-1"
+}

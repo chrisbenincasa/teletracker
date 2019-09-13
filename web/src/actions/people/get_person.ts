@@ -1,7 +1,7 @@
 import { ErrorFluxStandardAction, FSA } from 'flux-standard-action';
 import { clientEffect, createAction } from '../utils';
 import { put, takeEvery } from '@redux-saga/core/effects';
-import Person, { PersonFactory } from '../../types/Person';
+import { Person, PersonFactory } from '../../types/v2/Person';
 
 export const PERSON_FETCH_INITIATED = 'person/fetch/INITIATED';
 export const PERSON_FETCH_SUCCESSFUL = 'person/fetch/SUCCESSFUL';

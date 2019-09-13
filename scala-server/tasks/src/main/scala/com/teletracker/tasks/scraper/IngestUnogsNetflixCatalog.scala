@@ -1,8 +1,8 @@
 package com.teletracker.tasks.scraper
 
-import com.google.cloud.storage.Storage
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
+import com.teletracker.common.elasticsearch.{ItemSearch, ItemUpdater}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
@@ -11,15 +11,19 @@ import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
 import io.circe.generic.auto._
 import javax.inject.Inject
+import software.amazon.awssdk.services.s3.S3Client
 import scala.concurrent.Future
 
 class IngestUnogsNetflixCatalog @Inject()(
   protected val tmdbClient: TmdbClient,
   protected val tmdbProcessor: TmdbEntityProcessor,
   protected val thingsDb: ThingsDbAccess,
-  protected val storage: Storage,
-  protected val networkCache: NetworkCache)
-    extends IngestJob[UnogsNetflixCatalogItem] {
+  protected val s3: S3Client,
+  protected val networkCache: NetworkCache,
+  protected val itemSearch: ItemSearch,
+  protected val itemUpdater: ItemUpdater)
+    extends IngestJob[UnogsNetflixCatalogItem]
+    with IngestJobWithElasticsearch[UnogsNetflixCatalogItem] {
   override protected def networkNames: Set[String] = Set("netflix")
 
   override protected def parseMode: ParseMode = JsonPerLine

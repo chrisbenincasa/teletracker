@@ -1,15 +1,16 @@
 package com.teletracker.tasks.scraper
 
-import com.google.cloud.storage.Storage
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.elasticsearch.{ItemSearch, ItemUpdater}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import io.circe.generic.auto._
 import javax.inject.Inject
+import software.amazon.awssdk.services.s3.S3Client
 import java.time.{LocalDate, OffsetDateTime}
 import java.time.format.DateTimeFormatter
 
@@ -17,9 +18,12 @@ class IngestHuluCatalog @Inject()(
   protected val tmdbClient: TmdbClient,
   protected val tmdbProcessor: TmdbEntityProcessor,
   protected val thingsDb: ThingsDbAccess,
-  protected val storage: Storage,
-  protected val networkCache: NetworkCache)
-    extends IngestJob[HuluCatalogItem] {
+  protected val s3: S3Client,
+  protected val networkCache: NetworkCache,
+  protected val itemSearch: ItemSearch,
+  protected val itemUpdater: ItemUpdater)
+    extends IngestJob[HuluCatalogItem]
+    with IngestJobWithElasticsearch[HuluCatalogItem] {
 
   override protected def networkNames: Set[String] = Set("hulu")
 

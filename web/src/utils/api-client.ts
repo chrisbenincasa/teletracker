@@ -16,6 +16,7 @@ import {
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import { ApiThing } from '../types/Thing';
+import { ApiItem } from '../types/v2';
 
 export interface TeletrackerApiOptions {
   url?: string;
@@ -33,6 +34,9 @@ const DefaultTeletrackerApiOptions: TeletrackerApiOptions = {
   // url: "http://10.0.0.75:3000", //Config.TELETRACKER_API_URL,
   url: process.env.REACT_APP_TELETRACKER_URL,
 };
+
+type ApiVersions = 'v1' | 'v2';
+type SearchApiVersions = 'v2' | 'v3';
 
 export class TeletrackerApi {
   private api: apisauce.ApisauceInstance;
@@ -122,6 +126,14 @@ export class TeletrackerApi {
     });
   }
 
+  async searchV2(token: string, searchText: string, bookmark?: string) {
+    return this.api.get<ApiItem[]>('/api/v3/search', {
+      query: searchText,
+      token,
+      bookmark,
+    });
+  }
+
   async createList(token: string, name: string) {
     return this.api.post<DataResponse<{ id: number }>>(
       '/api/v1/users/self/lists',
@@ -170,7 +182,7 @@ export class TeletrackerApi {
       params['fields'] = filterString;
     }
 
-    return this.api.get<DataResponse<User>>('/api/v1/users/self/lists', params);
+    return this.api.get<DataResponse<User>>('/api/v2/users/self/lists', params);
   }
 
   private createFilter<T>(fields: KeyMap<T>): string {
@@ -198,7 +210,7 @@ export class TeletrackerApi {
     genres?: number[],
     bookmark?: string,
   ) {
-    return this.api.get<DataResponse<List>>(`/api/v1/users/self/lists/${id}`, {
+    return this.api.get<DataResponse<List>>(`/api/v2/users/self/lists/${id}`, {
       token,
       sort,
       desc,
@@ -217,7 +229,7 @@ export class TeletrackerApi {
     options?: ListOptions,
   ) {
     return this.api.put(
-      `/api/v1/users/self/lists/${id}`,
+      `/api/v2/users/self/lists/${id}`,
       {
         name,
         rules,
@@ -238,7 +250,7 @@ export class TeletrackerApi {
     removeFromLists: string[],
   ) {
     return this.api.put<any>(
-      `/api/v1/users/self/things/${thingId}/lists`,
+      `/api/v2/users/self/things/${thingId}/lists`,
       {
         addToLists,
         removeFromLists,
@@ -294,24 +306,16 @@ export class TeletrackerApi {
   }
 
   async getItem(token: string, id: string | number, type: string) {
-    return this.api.get<any>(`/api/v1/things/${id}`, {
+    return this.api.get<any>(`/api/v2/items/${id}`, {
       token,
       thingType: type,
     });
   }
 
   async getPerson(token: String, id: string) {
-    return this.api.get<any>(`/api/v1/people/${id}`, {
+    return this.api.get<any>(`/api/v2/people/${id}`, {
       token,
     });
-  }
-
-  async getShow(token: string, id: string | number) {
-    return this.api.get<any>(`/api/v1/shows/${id}`, { token });
-  }
-
-  async getMovie(token: string, id: string | number) {
-    return this.api.get<any>(`/api/v1/movies/${id}`, { token });
   }
 
   async getEvents(token: string) {
@@ -333,7 +337,7 @@ export class TeletrackerApi {
     value?: number,
   ) {
     return this.api.put(
-      `/api/v1/users/self/things/${thingId}/actions`,
+      `/api/v2/users/self/things/${thingId}/actions`,
       {
         action,
         value,
@@ -344,7 +348,7 @@ export class TeletrackerApi {
 
   async removeActions(token: string, thingId: string, action: ActionType) {
     return this.api.delete(
-      `/api/v1/users/self/things/${thingId}/actions/${action}`,
+      `/api/v2/users/self/things/${thingId}/actions/${action}`,
       { token },
     );
   }
@@ -354,7 +358,7 @@ export class TeletrackerApi {
     networkIds?: number[],
     fields?: KeyMap<ObjectMetadata>,
   ) {
-    return this.api.get('/api/v1/availability/upcoming', {
+    return this.api.get('/api/v2/availability/upcoming', {
       networkIds,
       fields: fields ? this.createFilter(fields!) : undefined,
       token,
@@ -381,7 +385,7 @@ export class TeletrackerApi {
     bookmark?: string,
     limit?: number,
   ) {
-    return this.api.get('/api/v1/popular', {
+    return this.api.get('/api/v2/popular', {
       token,
       fields: fields ? this.createFilter(fields!) : undefined,
       itemTypes:
@@ -397,7 +401,7 @@ export class TeletrackerApi {
     typeRestrict?: ItemTypes,
     bookmark?: string,
   ) {
-    return this.api.get('/api/v1/genres/' + genre, {
+    return this.api.get('/api/v2/genres/' + genre, {
       thingType:
         typeRestrict && typeRestrict.length
           ? typeRestrict.join(',')

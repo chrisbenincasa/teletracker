@@ -7,14 +7,15 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import { Link as RouterLink } from 'react-router-dom';
 import React, { Component } from 'react';
-import Thing from '../types/Thing';
+import { Link as RouterLink } from 'react-router-dom';
+import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import ManageTracking from '../components/ManageTracking';
+import { ResponsiveImage } from '../components/ResponsiveImage';
+import { ApiItem } from '../types/v2';
+import { Item } from '../types/v2/Item';
 import AddToListDialog from './AddToListDialog';
 import withUser, { WithUserProps } from './withUser';
-import { ResponsiveImage } from '../components/ResponsiveImage';
-import ManageTracking from '../components/ManageTracking';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -68,7 +69,7 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps {
-  featuredItem: Thing;
+  featuredItem: Item;
 }
 
 type Props = OwnProps & WithStyles<typeof styles> & WithUserProps;
@@ -90,9 +91,9 @@ class Featured extends Component<Props, State> {
     this.setState({ manageTrackingModalOpen: false });
   };
 
-  renderTitle = (thing: Thing) => {
+  renderTitle = (item: ApiItem) => {
     const { classes } = this.props;
-    const title = thing.name || '';
+    const title = item.original_title || '';
 
     return (
       <div className={classes.titleContainer}>
@@ -129,7 +130,7 @@ class Featured extends Component<Props, State> {
 
           <div className={classes.posterContainer}>
             <RouterLink
-              to={'/' + featuredItem.type + '/' + featuredItem.normalizedName}
+              to={'/' + featuredItem.type + '/' + featuredItem.slug}
               style={{
                 display: 'block',
                 height: '100%',

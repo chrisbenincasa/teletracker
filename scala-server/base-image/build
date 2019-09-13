@@ -3,3 +3,4 @@
 ID=$(docker build -q  .)
 echo "Build $ID"
 docker tag $ID gcr.io/teletracker/base:latest
+docker tag $ID 302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/base:latest

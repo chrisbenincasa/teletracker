@@ -7,19 +7,19 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
+import { Error as ErrorIcon } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
+import ReactGA from 'react-ga';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
+import { GA_TRACKING_ID } from '../constants';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { Error as ErrorIcon } from '@material-ui/icons';
-import Thing from '../types/Thing';
-import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants';
+import { Item } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -48,7 +48,7 @@ interface Props extends WithStyles<typeof styles> {
   error: boolean;
   isAuthed: boolean;
   isSearching: boolean;
-  searchResults?: Thing[];
+  searchResults?: Item[];
 }
 
 class Home extends Component<Props & WithUserProps> {

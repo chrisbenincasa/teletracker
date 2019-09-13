@@ -3,7 +3,7 @@ import {
   PERSON_FETCH_SUCCESSFUL,
   PersonFetchSuccessfulAction,
 } from '../actions/people/get_person';
-import Person, { PersonFactory } from '../types/Person';
+import { Person, PersonFactory } from '../types/v2/Person';
 
 export interface State {
   peopleById: { [key: string]: Person };
@@ -34,7 +34,7 @@ const personFetchSuccess = handleAction(
       },
       peopleBySlug: {
         ...state.peopleBySlug,
-        [payload!.normalizedName]: newThing,
+        [payload!.slug!]: newThing,
       },
     } as State;
   },

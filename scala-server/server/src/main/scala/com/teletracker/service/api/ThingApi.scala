@@ -12,12 +12,25 @@ import com.teletracker.common.db.model.{
   PartialThing,
   Person,
   PersonThing,
+  Thing,
   ThingCastMember,
   ThingFactory,
   ThingGenre,
   ThingRaw,
   ThingType,
-  TrackedListRow
+  TrackedListRow,
+  UserThingTagType
+}
+import com.teletracker.common.elasticsearch.{
+  ElasticsearchItemsResponse,
+  EsItem,
+  EsItemTag,
+  EsPerson,
+  ItemLookupResponse,
+  ItemSearch,
+  ItemUpdater,
+  PersonLookup,
+  PopularItemSearch
 }
 import com.teletracker.common.model.tmdb.{
   CastMember,
@@ -36,6 +49,7 @@ import com.teletracker.common.util.{
 import com.teletracker.service.api.model.{
   Converters,
   EnrichedPerson,
+  Item,
   PersonCredit
 }
 import com.twitter.util.Stopwatch
@@ -50,7 +64,11 @@ import scala.math.Ordering.OptionOrdering
 class ThingApi @Inject()(
   thingsDbAccess: ThingsDbAccess,
   genresDbAccess: GenresDbAccess,
-  genreCache: GenreCache
+  genreCache: GenreCache,
+  popularItemSearch: PopularItemSearch,
+  itemLookup: ItemSearch,
+  itemUpdater: ItemUpdater,
+  personLookup: PersonLookup
 )(implicit executionContext: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
   private val slugToIdCache: Cache[String, UUID] =
@@ -212,6 +230,78 @@ class ThingApi @Inject()(
     }
   }
 
+  def getThingViaSearch(
+    userId: Option[String],
+    idOrSlug: String,
+    thingType: Option[ThingType]
+  ): Future[Option[Item]] = {
+    getThingViaSearch(userId, HasThingIdOrSlug.parse(idOrSlug), thingType)
+  }
+
+  def getThingViaSearch(
+    userId: Option[String],
+    idOrSlug: Either[UUID, Slug],
+    thingType: Option[ThingType]
+  ): Future[Option[Item]] = {
+    itemLookup
+      .lookupItem(idOrSlug, thingType)
+      .map(_.collect {
+        case ItemLookupResponse(item, cast, recs) =>
+          Item.fromEsItem(
+            item.scopeToUser(userId),
+            recs.items
+              .map(_.scopeToUser(userId))
+              .map(Item.fromEsItem(_, Nil, Map.empty)),
+            cast.items.map(i => i.id -> i).toMap
+          )
+      })
+  }
+
+  def addTagToThing(
+    userId: String,
+    idOrSlug: Either[UUID, Slug],
+    thingType: Option[ThingType],
+    tag: UserThingTagType,
+    value: Option[Double]
+  ): Future[Option[(UUID, EsItemTag)]] = {
+    val esTag = EsItemTag.userScoped(userId, tag, value)
+    idOrSlug match {
+      case Left(value) =>
+        itemUpdater.upsertItemTag(value, esTag).map(_ => Some(value -> esTag))
+
+      case Right(value) =>
+        getThingViaSearch(Some(userId), Right(value), thingType).flatMap {
+          case None => Future.successful(None)
+          case Some(value) =>
+            itemUpdater
+              .upsertItemTag(value.id, esTag)
+              .map(_ => Some(value.id -> esTag))
+        }
+    }
+  }
+
+  def removeTagFromThing(
+    userId: String,
+    idOrSlug: Either[UUID, Slug],
+    thingType: Option[ThingType],
+    tag: UserThingTagType
+  ): Future[Option[(UUID, EsItemTag)]] = {
+    val esTag = EsItemTag.userScoped(userId, tag, None)
+    idOrSlug match {
+      case Left(value) =>
+        itemUpdater.upsertItemTag(value, esTag).map(_ => Some(value -> esTag))
+
+      case Right(value) =>
+        getThingViaSearch(Some(userId), Right(value), thingType).flatMap {
+          case None => Future.successful(None)
+          case Some(value) =>
+            itemUpdater
+              .upsertItemTag(value.id, esTag)
+              .map(_ => Some(value.id -> esTag))
+        }
+    }
+  }
+
   private def gatherRecommendations(
     thing: PartialThing,
     userId: Option[String]
@@ -367,6 +457,13 @@ class ThingApi @Inject()(
     }
   }
 
+  def getPersonViaSearch(
+    userId: Option[String],
+    idOrSlug: String
+  ): Future[Option[(EsPerson, ElasticsearchItemsResponse)]] = {
+    personLookup.lookupPerson(HasThingIdOrSlug.parse(idOrSlug))
+  }
+
   def getPopularByGenre(
     genreIdOrSlug: String,
     thingType: Option[ThingType],
@@ -405,6 +502,37 @@ class ThingApi @Inject()(
             .map(Some(_))
         })
       }.getOrElse(Future.successful(None)))
+  }
+
+  def getPopularByGenreViaSearch(
+    genreIdOrSlug: String,
+    thingType: Option[ThingType],
+    limit: Int = 20,
+    bookmark: Option[Bookmark]
+  ) = {
+    genreCache
+      .get()
+      .map(_.values)
+      .flatMap(genres => {
+        val genre = HasGenreIdOrSlug.parse(genreIdOrSlug) match {
+          case Left(id)    => genres.find(_.id.contains(id))
+          case Right(slug) => genres.find(_.slug == slug)
+        }
+
+        genre
+          .map(g => {
+            popularItemSearch
+              .getPopularItems(
+                Some(g),
+                Set.empty,
+                thingType.map(Set(_)),
+                limit,
+                bookmark
+              )
+              .map(Some(_))
+          })
+          .getOrElse(Future.successful(None))
+      })
   }
 
   private def extractReleaseDate(thingRaw: ThingRaw) = {

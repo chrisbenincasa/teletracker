@@ -7,10 +7,11 @@ import {
 } from '@material-ui/core';
 import { List as ListIcon } from '@material-ui/icons';
 import React, { Component } from 'react';
-import Thing from '../types/Thing';
 import AddToListDialog from '../components/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
 import AuthDialog from './Auth/AuthDialog';
+import { ApiItem } from '../types/v2';
+import { itemBelongsToLists } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -36,7 +37,7 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps {
-  itemDetail: Thing;
+  itemDetail: ApiItem;
   style: object;
 }
 
@@ -52,13 +53,8 @@ class ManageTracking extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    const belongsToLists =
-      props &&
-      props.itemDetail &&
-      props.itemDetail.userMetadata &&
-      props.itemDetail.userMetadata.belongsToLists
-        ? props.itemDetail.userMetadata.belongsToLists
-        : [];
+    const belongsToLists: number[] =
+      props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
 
     this.state = {
       manageTrackingModalOpen: false,

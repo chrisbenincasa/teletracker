@@ -235,7 +235,6 @@ class Drawer extends Component<Props, State> {
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
     const listPath = `/lists/${list.id}`;
-
     return (
       <ListItemLink
         index={index}
@@ -244,7 +243,7 @@ class Drawer extends Component<Props, State> {
         // TODO: Improve logic for selection
         selected={listPath === location.pathname}
         primary={list.name}
-        listLength={userList.thingCount}
+        listLength={userList.totalItems}
       />
     );
   };

@@ -1,8 +1,14 @@
 package com.teletracker.tasks.scraper
 
-import com.google.cloud.storage.{BlobId, Storage}
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
+import com.teletracker.common.elasticsearch
+import com.teletracker.common.elasticsearch.{
+  ElasticsearchExecutor,
+  EsAvailability,
+  ItemSearch,
+  ItemUpdater
+}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.Futures._
@@ -11,11 +17,13 @@ import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
+import com.teletracker.tasks.util.SourceRetriever
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.s3.S3Client
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
 import java.time.format.DateTimeFormatter
@@ -72,7 +80,7 @@ abstract class IngestJob[T <: ScrapedItem](
   protected def tmdbClient: TmdbClient
   protected def tmdbProcessor: TmdbEntityProcessor
   protected def thingsDb: ThingsDbAccess
-  protected def storage: Storage
+  protected def s3: S3Client
   protected def networkCache: NetworkCache
 
   protected def networkNames: Set[String]
@@ -113,7 +121,7 @@ abstract class IngestJob[T <: ScrapedItem](
 
     logger.info(s"Starting ingest of ${networkNames} content")
 
-    val source = getSource(parsedArgs.inputFile)
+    val source = new SourceRetriever(s3).getSource(parsedArgs.inputFile)
 
     try {
       val items = new IngestJobParser().parse[T](source.getLines(), parseMode)
@@ -175,7 +183,7 @@ abstract class IngestJob[T <: ScrapedItem](
   ): Future[Unit] = {
     matchMode
       .lookup(
-        items.map(sanitizeItem),
+        items.filter(shouldProcessItem).map(sanitizeItem),
         args
       )
       .flatMap {
@@ -214,10 +222,21 @@ abstract class IngestJob[T <: ScrapedItem](
                       })
                     } else {
                       availabilityFut.flatMap(avs => {
+                        val availabilitiesGrouped = avs
+                          .filter(_.thingId.isDefined)
+                          .groupBy(_.thingId.get)
+
                         SequentialFutures
-                          .serialize(avs.grouped(50).toList)(batch => {
-                            thingsDb.saveAvailabilities(batch)
-                          })
+                          .serialize(
+                            availabilitiesGrouped.toList.grouped(50).toList
+                          )(
+                            batch =>
+                              Future
+                                .sequence(
+                                  batch.map(Function.tupled(saveAvailabilities))
+                                )
+                                .map(_ => {})
+                          )
                       })
                     }
 
@@ -227,6 +246,15 @@ abstract class IngestJob[T <: ScrapedItem](
           })
       }
   }
+
+  protected def saveAvailabilities(
+    itemId: UUID,
+    availabilities: Seq[Availability]
+  ): Future[Unit] = {
+    thingsDb.saveAvailabilities(availabilities)
+  }
+
+  protected def shouldProcessItem(item: T): Boolean = true
 
   protected def sanitizeItem(item: T): T = identity(item)
 
@@ -246,23 +274,6 @@ abstract class IngestJob[T <: ScrapedItem](
     args: IngestJobArgs
   ): Future[Unit] = {
     processBatch(List(item), networks, args)
-  }
-
-  final protected def getSource(uri: URI): Source = {
-    uri.getScheme match {
-      case "gs" =>
-        Source.fromBytes(
-          storage
-            .get(BlobId.of(uri.getHost, uri.getPath.stripPrefix("/")))
-            .getContent()
-        )
-      case "file" =>
-        Source.fromFile(uri)
-      case _ =>
-        throw new IllegalArgumentException(
-          s"Unsupposed file scheme: ${uri.getScheme}"
-        )
-    }
   }
 
   protected def getNetworksOrExit(): Set[Network] = {
@@ -364,6 +375,88 @@ abstract class IngestJob[T <: ScrapedItem](
   sealed trait ProcessMode
   case object Serial extends ProcessMode
   case class Parallel(parallelism: Int) extends ProcessMode
+}
+
+trait IngestJobWithElasticsearch[T <: ScrapedItem] { self: IngestJob[T] =>
+  protected def itemSearch: ItemSearch
+  protected def itemUpdater: ItemUpdater
+
+  override protected def saveAvailabilities(
+    itemId: UUID,
+    availabilities: Seq[Availability]
+  ): Future[Unit] = {
+    val distinctAvailabilities = availabilities
+      .flatMap(convertToEsAvailability)
+      .map(_._2)
+      .groupBy(av => (av.network_id, av.region, av.offer_type))
+      .flatMap {
+        case (key, values) => combinePresentationTypes(values).map(key -> _)
+      }
+      .values
+
+    itemSearch
+      .lookupItem(Left(itemId), None, materializeJoins = false)
+      .flatMap {
+        case None => Future.successful(None)
+        case Some(item) =>
+          logger.info(
+            s"Updating availability for item id = ${item.rawItem.id}"
+          )
+
+          val newAvailabilities = item.rawItem.availability match {
+            case Some(value) =>
+              val duplicatesRemoved = value.filterNot(availability => {
+                distinctAvailabilities.exists(
+                  EsAvailability.availabilityEquivalent(_, availability)
+                )
+              })
+
+              duplicatesRemoved ++ distinctAvailabilities
+
+            case None =>
+              distinctAvailabilities
+          }
+
+          itemUpdater
+            .update(
+              item.rawItem
+                .copy(availability = Some(newAvailabilities.toList))
+            )
+            .map(Some(_))
+      }
+  }
+
+  protected def combinePresentationTypes(
+    availabilities: Seq[EsAvailability]
+  ): Option[EsAvailability] = {
+    if (availabilities.isEmpty) {
+      None
+    } else {
+      Some(availabilities.reduce((l, r) => {
+        val combined = l.presentation_types
+          .getOrElse(Nil) ++ r.presentation_types.getOrElse(Nil)
+        l.copy(presentation_types = Some(combined.distinct))
+      }))
+    }
+  }
+
+  protected def convertToEsAvailability(
+    availability: Availability
+  ): Option[(UUID, EsAvailability)] = {
+    availability.thingId.map(
+      _ -> elasticsearch.EsAvailability(
+        network_id = availability.networkId.get,
+        region = availability.region.getOrElse("US"),
+        start_date = availability.startDate.map(_.toLocalDate),
+        end_date = availability.endDate.map(_.toLocalDate),
+        offer_type = availability.offerType.getOrElse(OfferType.Rent).toString,
+        cost = availability.cost.map(_.toDouble),
+        currency = availability.currency,
+        presentation_types =
+          availability.presentationType.map(_.toString).map(List(_))
+      )
+    )
+  }
 }
 
 trait ScrapedItem {

@@ -1,9 +1,9 @@
 package com.teletracker.service.api.model
 
-import com.teletracker.common.db.model.Person
-
 object Converters {
-  def dbPersonToEnrichedPerson(person: Person): EnrichedPerson = {
+  def dbPersonToEnrichedPerson(
+    person: com.teletracker.common.db.model.Person
+  ): EnrichedPerson = {
     EnrichedPerson(
       id = person.id,
       name = person.name,

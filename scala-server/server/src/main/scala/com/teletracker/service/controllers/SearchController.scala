@@ -9,6 +9,7 @@ import com.teletracker.common.db.access.{
   UserThingDetails
 }
 import com.teletracker.common.db.model.{PartialThing, ThingType}
+import com.teletracker.common.elasticsearch.ItemSearch
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.model.tmdb._
@@ -29,7 +30,8 @@ class SearchController @Inject()(
   config: TeletrackerConfig,
   thingsDbAccess: ThingsDbAccess,
   tmdbClient: TmdbClient,
-  tmdbSynchronousProcessor: TmdbSynchronousProcessor
+  tmdbSynchronousProcessor: TmdbSynchronousProcessor,
+  itemSearch: ItemSearch
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with CanParseFieldFilter {
@@ -81,6 +83,48 @@ class SearchController @Inject()(
           .body(
             DataResponse.forDataResponse(
               DataResponse(allThings, Some(Paging(bookmark.map(_.asString))))
+            )
+          )
+      }
+    }
+  }
+
+  import TeletrackerController._
+
+  prefix("/api/v3") {
+    get("/search") { req: SearchRequest =>
+      val query = req.query
+      val fields = parseFieldsOrNone(req.fields)
+      val mode = req.rankingMode.getOrElse(SearchRankingMode.Popularity)
+      val bookmark = req.bookmark.map(Bookmark.parse)
+
+      val options =
+        SearchOptions(mode, req.types.map(_.toSet), req.limit, bookmark)
+
+      for {
+        result <- itemSearch.searchItems(
+          query,
+          options
+        )
+//        thingIds = things.map(_.id)
+//        thingUserDetails <- getThingUserDetails(
+//          req.request.authContext
+//            .map(_.userId),
+//          thingIds.toSet
+//        )
+
+      } yield {
+        val allThings =
+          result.items.map(_.scopeToUser(req.request.authenticatedUserId))
+
+        response.ok
+          .contentTypeJson()
+          .body(
+            DataResponse.forDataResponse(
+              DataResponse(
+                allThings,
+                Some(Paging(result.bookmark.map(_.asString)))
+              )
             )
           )
       }
