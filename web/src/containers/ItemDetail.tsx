@@ -91,9 +91,6 @@ const styles = (theme: Theme) =>
       padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
     },
     itemCTA: {
-      [theme.breakpoints.down('sm')]: {
-        width: '80%',
-      },
       width: '100%',
     },
     itemDetailContainer: {
@@ -135,7 +132,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
-      width: '90%',
+      width: '100%',
       display: 'flex',
       flex: '0 1 auto',
       position: 'relative',
@@ -301,7 +298,7 @@ class ItemDetails extends Component<Props, State> {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
-          width: '80%',
+          width: '100%',
           marginBottom: 10,
         }}
       >

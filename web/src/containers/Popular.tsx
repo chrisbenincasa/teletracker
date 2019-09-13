@@ -35,7 +35,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         width: 230,
       },
-      width: '80%',
+      width: 115,
       display: 'flex',
       flex: '0 1 auto',
       flexDirection: 'column',
@@ -49,10 +49,14 @@ const styles = (theme: Theme) =>
       },
     },
     title: {
+      [theme.breakpoints.up('sm')]: {
+        fontSize: '3em',
+      },
+      fontSize: '1em',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
-      marginBottom: 10,
+      fontWeight: 700,
     },
     titleContainer: {
       display: 'flex',
@@ -61,7 +65,7 @@ const styles = (theme: Theme) =>
       position: 'absolute',
       bottom: 0,
       right: 10,
-      marginBottom: 10,
+      marginBottom: 20,
     },
     card: {
       height: '100%',
@@ -78,7 +82,7 @@ const styles = (theme: Theme) =>
     },
     itemCTA: {
       [theme.breakpoints.down('sm')]: {
-        width: '80%',
+        display: 'none',
       },
       width: '100%',
     },
@@ -151,8 +155,8 @@ class Popular extends Component<Props, State> {
     const title = thing.name || '';
 
     return (
-      <div className={classes.titleContainer} style={{}}>
-        <Typography color="inherit" variant="h3">
+      <div className={classes.titleContainer}>
+        <Typography color="inherit" variant="h3" className={classes.title}>
           {`${title}`}
         </Typography>
       </div>
