@@ -1,4 +1,11 @@
-import { ListRuleTypes, ListPersonRule, ListTagRule, List } from '../types';
+import {
+  ListRuleTypes,
+  ListPersonRule,
+  ListTagRule,
+  List,
+  ListConfiguration,
+} from '../types';
+import * as R from 'ramda';
 
 export function isPersonRule(x: ListRuleTypes): x is ListPersonRule {
   return x.type === 'TrackedListPersonRule';
@@ -9,8 +16,8 @@ export function isTagRule(x: ListRuleTypes): x is ListTagRule {
 }
 
 export function listTracksPerson(list: List, personId: string): boolean {
-  if (list.configuration) {
-    list.configuration.rules.forEach(rule => {
+  if (list.configuration && list.configuration.ruleConfiguration) {
+    list.configuration.ruleConfiguration.rules.forEach(rule => {
       if (isPersonRule(rule) && rule.personId === personId) {
         return true;
       }
@@ -21,3 +28,26 @@ export function listTracksPerson(list: List, personId: string): boolean {
     return false;
   }
 }
+
+export function getOrInitListConfiguration(list: List) {
+  if (!list.configuration) {
+    list.configuration = {};
+  }
+
+  return list.configuration!;
+}
+
+function getOrInitListOptionsForConfiguration(
+  listConfiguration: ListConfiguration,
+) {
+  if (!listConfiguration.options) {
+    listConfiguration.options = { removeWatchedItems: false };
+  }
+
+  return listConfiguration.options!;
+}
+
+export const getOrInitListOptions = R.pipe(
+  getOrInitListConfiguration,
+  getOrInitListOptionsForConfiguration,
+);

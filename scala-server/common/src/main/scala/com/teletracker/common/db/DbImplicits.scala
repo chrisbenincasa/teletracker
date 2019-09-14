@@ -8,6 +8,7 @@ import com.teletracker.common.db.model.{
   PersonAssociationType,
   PresentationType,
   ThingType,
+  TrackedListRowOptions,
   UserPreferences,
   UserThingTagType
 }
@@ -49,4 +50,9 @@ class DbImplicits @Inject()(val profile: CustomPostgresProfile) {
     .base[UserPreferences, Json](_.asJson, _.as[UserPreferences].right.get)
   implicit val tagRulesToJson = MappedColumnType
     .base[DynamicListRules, Json](_.asJson, _.as[DynamicListRules].right.get)
+  implicit val listConfigurationToJson = MappedColumnType
+    .base[TrackedListRowOptions, Json](
+      _.asJson,
+      _.as[TrackedListRowOptions].right.get
+    )
 }

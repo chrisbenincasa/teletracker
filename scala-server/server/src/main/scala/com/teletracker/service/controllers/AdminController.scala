@@ -33,8 +33,8 @@ class AdminController @Inject()(
 
   // TODO put on admin server and open up admin server port on GCP
   filter[AdminFilter].get("/version") { _: Request =>
-    response.ok.file(
-      new File(getClass.getClassLoader.getResource("version_info.txt").getFile)
+    response.ok.body(
+      getClass.getClassLoader.getResourceAsStream("version_info.txt")
     )
   }
 

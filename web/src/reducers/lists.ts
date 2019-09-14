@@ -140,19 +140,21 @@ const mergeThingLists = (key: string, left: any, right: any) => {
     let rightList: Thing[] = right;
 
     let leftThingsById = leftList ? groupById(leftList) : {};
-    let rightThingsById = rightList ? groupById(rightList) : {};
 
-    return R.union(R.keys(leftThingsById), R.keys(rightThingsById)).map(id => {
-      let leftThing = headOption(leftThingsById[id.toString()]);
-      let rightThing = headOption(rightThingsById[id.toString()]);
+    if (rightList) {
+      return rightList.map(thing => {
+        let leftThing = headOption(leftThingsById[thing.id]);
 
-      if (leftThing && rightThing) {
-        // Perform the merge.
-        return R.mergeDeepRight(leftThing, rightThing);
-      } else {
-        return rightThing || leftThing;
-      }
-    });
+        if (leftThing) {
+          // Perform the merge.
+          return R.mergeDeepRight(leftThing, thing);
+        } else {
+          return thing;
+        }
+      });
+    } else {
+      return [];
+    }
   } else {
     return right;
   }

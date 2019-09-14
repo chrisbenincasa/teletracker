@@ -9,7 +9,8 @@ import java.util.UUID
 case class TrackedListThing(
   listId: Int,
   thingId: UUID,
-  addedAt: OffsetDateTime)
+  addedAt: OffsetDateTime,
+  removedAt: Option[OffsetDateTime])
 
 class TrackedListThings @Inject()(
   val driver: CustomPostgresProfile,
@@ -27,6 +28,11 @@ class TrackedListThings @Inject()(
         O.SqlType("timestamp with time zone"),
         O.Default(OffsetDateTime.now())
       )
+    def removedAt =
+      column[Option[OffsetDateTime]](
+        "removed_at",
+        O.SqlType("timestamp with time zone")
+      )
 
     def primKey = primaryKey("list_id_thing_id", (listId, thingId))
 
@@ -36,7 +42,7 @@ class TrackedListThings @Inject()(
       foreignKey("list_things_thing_fk", thingId, things.query)(_.id)
 
     override def * =
-      (listId, thingId, addedAt) <> (TrackedListThing.tupled, TrackedListThing.unapply)
+      (listId, thingId, addedAt, removedAt) <> (TrackedListThing.tupled, TrackedListThing.unapply)
   }
 
   val query = TableQuery[TrackedListThingsTable]
