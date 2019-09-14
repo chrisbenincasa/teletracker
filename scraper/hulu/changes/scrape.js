@@ -108,7 +108,11 @@ const scrape = async () => {
       );
     }
 
-    let [file, _] = await uploadToStorage(fileName, parsedResults);
+    let [file, _] = await uploadToStorage(
+      fileName,
+      "scrape-results/" + currentDate,
+      parsedResults
+    );
 
     return scheduleJob(file.name);
   } else {

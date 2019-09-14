@@ -4,7 +4,7 @@ module "hbo-scraper" {
   trigger_name     = "hbo-scrape-trigger"
   function_name    = "hbo-whats-new"
   entrypoint       = "hboWhatsNew"
-  function_version = "1565666029"
+  function_version = "1568494559"
 
   extra_env_vars = {
     JOB_CLASS_NAME = "com.teletracker.service.tools.IngestHboChanges"
@@ -18,7 +18,7 @@ module "hulu-scraper" {
   trigger_name     = "hulu-scrape-trigger"
   function_name    = "hulu-changes"
   entrypoint       = "huluChanges"
-  function_version = "1565666029"
+  function_version = "1568494559"
 
   extra_env_vars = {
     JOB_CLASS_NAME = "com.teletracker.service.tools.IngestHuluChanges"
@@ -32,7 +32,7 @@ module "netflix-originals-arriving-scraper" {
   trigger_name     = "netflix-originals-arriving-scrape-trigger"
   function_name    = "netflix-originals-arriving"
   entrypoint       = "netflixOriginalsArriving"
-  function_version = "1565666029"
+  function_version = "1568494559"
 
   extra_env_vars = {
     JOB_CLASS_NAME = "com.teletracker.service.tools.IngestNetflixOriginalsArrivals"
@@ -46,7 +46,7 @@ module "unogs-netflix-expiring-scraper" {
   trigger_name     = "unogs-netflix-expiring-scrape-trigger"
   function_name    = "unogs-netflix-expiring"
   entrypoint       = "unogsNetflixExpiring"
-  function_version = "1565666029"
+  function_version = "1568494559"
 
   extra_env_vars = {
     JOB_CLASS_NAME = "com.teletracker.service.tools.IngestUnogsNetflixExpiring"
@@ -60,7 +60,7 @@ module "tmdb-changes-scraper" {
   trigger_name     = "tmdb-changes-scrape-trigger"
   function_name    = "tmdb-changes"
   entrypoint       = "tmdbChanges"
-  function_version = "1568304209"
+  function_version = "1568494559"
 
   extra_env_vars = {
     SCRAPER = "tmdbChanges"
