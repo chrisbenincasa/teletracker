@@ -13,7 +13,7 @@ object TrackedList {
       row.userId,
       things = None,
       isDynamic = row.isDynamic,
-      configuration = row.rules.map(TrackedListRules.fromRow),
+      configuration = TrackedListConfiguration.fromRow(row.rules, row.options),
       deletedAt = row.deletedAt
     )
   }
@@ -25,9 +25,9 @@ case class TrackedList(
   isDefault: Boolean,
   isPublic: Boolean,
   userId: String,
+  configuration: TrackedListConfiguration,
   things: Option[List[PartialThing]] = None,
   isDynamic: Boolean = false,
-  configuration: Option[TrackedListRules] = None,
   isDeleted: Boolean = false,
   deletedAt: Option[OffsetDateTime] = None,
   thingCount: Option[Int] = None) {

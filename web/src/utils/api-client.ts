@@ -7,6 +7,8 @@ import {
   Network,
   User,
   UserPreferences,
+  ListOptions,
+  ListRules,
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import _ from 'lodash';
@@ -193,6 +195,28 @@ export class TeletrackerApi {
       sort,
       desc,
     });
+  }
+
+  async updateList(
+    token: string,
+    id: number,
+    name?: string,
+    rules?: ListRules,
+    options?: ListOptions,
+  ) {
+    return this.api.put(
+      `/api/v1/users/self/lists/${id}`,
+      {
+        name,
+        rules,
+        options,
+      },
+      {
+        params: {
+          token,
+        },
+      },
+    );
   }
 
   async updateListTracking(

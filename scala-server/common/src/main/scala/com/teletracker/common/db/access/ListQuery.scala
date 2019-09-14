@@ -347,10 +347,14 @@ class ListQuery @Inject()(
     val trackedThingsQuery = listsQueryOrId match {
       case Left(listsQuery) =>
         listsQuery.flatMap(lists => {
-          trackedListThings.query.withFilter(_.listId === lists.id)
+          trackedListThings.query
+            .withFilter(_.listId === lists.id)
+            .filter(_.removedAt.isEmpty)
         })
       case Right(listId) =>
-        trackedListThings.query.filter(_.listId === listId)
+        trackedListThings.query
+          .filter(_.listId === listId)
+          .filter(_.removedAt.isEmpty)
     }
 
     (for {
@@ -377,10 +381,14 @@ class ListQuery @Inject()(
     val trackedThingsQuery = listsQueryOrId match {
       case Left(listsQuery) =>
         listsQuery.flatMap(lists => {
-          trackedListThings.query.withFilter(_.listId === lists.id)
+          trackedListThings.query
+            .withFilter(_.listId === lists.id)
+            .filter(_.removedAt.isEmpty)
         })
       case Right(listId) =>
-        trackedListThings.query.filter(_.listId === listId)
+        trackedListThings.query
+          .filter(_.listId === listId)
+          .filter(_.removedAt.isEmpty)
 
     }
     val thingsQuery = (for {

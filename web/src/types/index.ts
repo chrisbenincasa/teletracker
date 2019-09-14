@@ -1,5 +1,4 @@
-import { ObjectMetadata } from './external/themoviedb/Movie';
-import Thing, { ApiThing } from './Thing';
+import { ApiThing } from './Thing';
 
 export interface List {
   id: number;
@@ -10,7 +9,16 @@ export interface List {
   isDynamic?: boolean;
   isPublic?: boolean;
   thingCount: number;
-  configuration?: ListRules;
+  configuration?: ListConfiguration;
+}
+
+export interface ListConfiguration {
+  ruleConfiguration?: ListRules;
+  options?: ListOptions;
+}
+
+export interface ListOptions {
+  removeWatchedItems: boolean;
 }
 
 export type ListRuleTypeKeys = 'TrackedListTagRule' | 'TrackedListPersonRule';
