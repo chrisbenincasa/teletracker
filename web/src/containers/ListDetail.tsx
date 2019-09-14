@@ -38,9 +38,9 @@ import {
 } from '../actions/lists';
 import {
   deleteList,
-  renameList,
+  updateList,
   UserDeleteListPayload,
-  UserRenameListPayload,
+  UserUpdateListPayload,
 } from '../actions/lists';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
@@ -51,6 +51,7 @@ import { List } from '../types';
 import _ from 'lodash';
 import { StdRouterLink } from '../components/RouterLink';
 import { ThingMap } from '../reducers/item-detail';
+import { getOrInitListOptions } from '../utils/list-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -100,6 +101,7 @@ interface OwnProps {
   listLoading: boolean;
   listsById: ListsByIdMap;
   thingsById: ThingMap;
+  list?: List;
 }
 
 interface DrawerProps {
@@ -119,18 +121,19 @@ interface MenuItemProps {
 interface DispatchProps {
   retrieveList: (payload: ListRetrieveInitiatedPayload) => void;
   deleteList: (payload: UserDeleteListPayload) => void;
-  renameList: (payload: UserRenameListPayload) => void;
+  updateList: (payload: UserUpdateListPayload) => void;
 }
 
 interface RouteParams {
   id: string;
 }
 
-type Props = OwnProps &
-  RouteComponentProps<RouteParams> &
+type NotOwnProps = RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
   WithUserProps;
+
+type Props = OwnProps & NotOwnProps;
 
 interface State {
   loadingList: boolean;
@@ -158,7 +161,7 @@ class ListDetail extends Component<Props, State> {
       renameDialogOpen: false,
       newListName: '',
       prevListId: listId,
-      existingList: this.props.listsById[listId],
+      existingList: props.list,
       deleteOnWatch: true,
     };
   }
@@ -175,6 +178,10 @@ class ListDetail extends Component<Props, State> {
     } else {
       return state;
     }
+  }
+
+  get listId() {
+    return Number(this.props.match.params.id);
   }
 
   componentDidMount() {
@@ -202,13 +209,33 @@ class ListDetail extends Component<Props, State> {
     ) {
       this.setState({
         loadingList: false,
-        existingList: this.props.listsById[Number(this.props.match.params.id)],
+        existingList: this.props.list,
+        deleteOnWatch: this.props.list
+          ? R.path(
+              ['list', 'configuration', 'options', 'removeWatchedItems'],
+              this.props,
+            ) || false
+          : false,
       });
     }
   }
 
   setWatchedSetting = event => {
-    this.setState({ deleteOnWatch: !this.state.deleteOnWatch });
+    let { list, updateList } = this.props;
+    if (list) {
+      let listOptions = getOrInitListOptions(list);
+      let newListOptions = {
+        ...listOptions,
+        removeWatchedItems: !this.state.deleteOnWatch,
+      };
+
+      updateList({
+        listId: this.listId,
+        options: newListOptions,
+      });
+
+      this.setState({ deleteOnWatch: !this.state.deleteOnWatch });
+    }
   };
 
   handleMigration = event => {
@@ -245,13 +272,13 @@ class ListDetail extends Component<Props, State> {
   };
 
   handleRenameList = () => {
-    let { renameList, userSelf, match } = this.props;
+    let { updateList, userSelf, match } = this.props;
     let { newListName } = this.state;
 
     if (userSelf) {
-      renameList({
+      updateList({
         listId: Number(match.params.id),
-        listName: newListName,
+        name: newListName,
       });
     }
     this.handleRenameModalClose();
@@ -486,9 +513,8 @@ class ListDetail extends Component<Props, State> {
   }
 
   render() {
-    let { listsById, match, userSelf } = this.props;
+    let { list, match, userSelf } = this.props;
     let { loadingList } = this.state;
-    let list = listsById[Number(match.params.id)];
 
     return loadingList || !list || !userSelf
       ? this.renderLoading()
@@ -496,11 +522,15 @@ class ListDetail extends Component<Props, State> {
   }
 }
 
-const mapStateToProps: (appState: AppState) => OwnProps = appState => {
+const mapStateToProps: (
+  initialState: AppState,
+  props: NotOwnProps,
+) => (appState: AppState) => OwnProps = (initial, props) => appState => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     listLoading: Boolean(appState.lists.loading[LIST_RETRIEVE_INITIATED]),
     listsById: appState.lists.listsById,
+    list: appState.lists.listsById[Number(props.match.params.id)],
     thingsById: appState.itemDetail.thingsById,
   };
 };
@@ -510,7 +540,7 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
     {
       retrieveList: ListRetrieveInitiated,
       deleteList: deleteList,
-      renameList: renameList,
+      updateList,
     },
     dispatch,
   );
