@@ -1,15 +1,11 @@
 package com.teletracker.tasks.db
 
+import com.teletracker.common.db.SyncDbProvider
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.inject.SyncDbProvider
-import com.teletracker.common.model.tmdb.GenreListResponse
 import com.teletracker.common.util.Slug
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import javax.inject.Inject
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
 import com.teletracker.common.util.Futures._
 
 object SeedGenres extends TeletrackerTaskApp[GenreSeeder2]

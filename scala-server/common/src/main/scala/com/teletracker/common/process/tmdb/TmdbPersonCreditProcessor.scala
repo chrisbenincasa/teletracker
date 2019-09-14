@@ -1,13 +1,7 @@
 package com.teletracker.common.process.tmdb
 
-import com.teletracker.common.db.access.{AsyncThingsDbAccess, ThingsDbAccess}
-import com.teletracker.common.db.model.{
-  ExternalId,
-  ExternalSource,
-  PartialThing,
-  ThingFactory,
-  ThingType
-}
+import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.model._
 import com.teletracker.common.model.tmdb.{
   MediaType,
   MovieId,
@@ -26,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 
 class TmdbPersonCreditProcessor @Inject()(
-  thingsDbAccess: AsyncThingsDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   processQueue: ProcessQueue[TmdbProcessMessage]
 )(implicit executionContext: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)

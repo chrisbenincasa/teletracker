@@ -1,6 +1,13 @@
 import request from "request-promise";
 import moment from "moment";
 import fs from "fs";
+import { substitute } from "../../common/berglas";
+import { Storage } from "@google-cloud/storage";
+import { PubSub } from "@google-cloud/pubsub";
+
+const pubsub = new PubSub({
+  projectId: "teletracker"
+});
 
 const wait = ms => {
   return new Promise(resolve => {
@@ -47,7 +54,21 @@ const writeAsLines = (fileName, data) => {
   });
 };
 
+const getTopic = async topicName => {
+  try {
+    return await pubsub.createTopic(topicName);
+  } catch (e) {
+    if (e.code === 6) {
+      return await pubsub.topic(topicName);
+    } else {
+      throw e;
+    }
+  }
+};
+
 const scrape = async () => {
+  await substitute();
+
   let now = moment();
 
   let movieChanges = await doLoop("movie");
@@ -56,25 +77,42 @@ const scrape = async () => {
   await wait(250);
   let personChanges = await doLoop("person");
 
-  const { Storage } = require("@google-cloud/storage");
-
   const storage = new Storage();
   const bucket = storage.bucket("teletracker");
 
-  let movieName = now.format("YYYY-MM-DD") + "_movie-changes" + ".json";
-  let showName = now.format("YYYY-MM-DD") + "_show-changes" + ".json";
-  let personName = now.format("YYYY-MM-DD") + "_person-changes" + ".json";
+  let prefix = process.env.NODE_ENV === "production" ? "/tmp/" : "";
 
-  await writeAsLines(movieName, movieChanges);
-  await writeAsLines(showName, tvChanges);
-  await writeAsLines(personName, personChanges);
+  let nowString = now.format("YYYY-MM-DD");
 
-  [movieName, showName, personName].forEach(async file => {
-    await bucket.upload(file, {
+  let movieName = nowString + "_movie-changes" + ".json";
+  let showName = nowString + "_show-changes" + ".json";
+  let personName = nowString + "_person-changes" + ".json";
+
+  await writeAsLines(prefix + movieName, movieChanges);
+  await writeAsLines(prefix + showName, tvChanges);
+  await writeAsLines(prefix + personName, personChanges);
+
+  [movieName, showName, personName].map(async file => {
+    await bucket.upload(prefix + file, {
       gzip: true,
       contentType: "application/json",
-      destination: "scrape-results/" + now.format("YYYY-MM-DD") + "/" + file
+      destination: "scrape-results/" + nowString + "/" + file
     });
+  });
+
+  [
+    ["ImportMoviesFromDump", movieName],
+    ["ImportTvShowsFromDump", showName],
+    ["ImportPeopleFromDump", personName]
+  ].forEach(async ([task, file]) => {
+    let payload = {
+      clazz: "com.teletracker.tasks.tmdb.import_tasks." + task,
+      args: {
+        input: "gs://teletracker/" + file
+      }
+    };
+    let topic = await getTopic("teletracker-task-queue");
+    await topic.publisher.publish(Buffer.from(JSON.stringify(payload)));
   });
 };
 

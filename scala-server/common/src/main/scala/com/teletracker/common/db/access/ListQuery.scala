@@ -1,30 +1,32 @@
 package com.teletracker.common.db.access
 
+import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.api.model.TrackedList
 import com.teletracker.common.db.{
   AddedTime,
+  BaseDbProvider,
   Bookmark,
+  DbImplicits,
   DbMonitoring,
   DefaultForListType,
   Popularity,
   Recent,
-  SortMode
+  SortMode,
+  SyncDbProvider
 }
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
-import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
-import com.teletracker.common.util.{Field, ListFilters}
+import com.teletracker.common.util.{Field, GeneralizedDbFactory, ListFilters}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.json.circe.Paths
 import javax.inject.Inject
 import slick.lifted.ColumnOrdered
-import java.awt.print.Book
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListQuery @Inject()(
-  val provider: SyncDbProvider,
+  val provider: BaseDbProvider,
   val trackedLists: TrackedLists,
   val trackedListThings: TrackedListThings,
   val things: Things,
@@ -33,7 +35,7 @@ class ListQuery @Inject()(
   dbImplicits: DbImplicits,
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess(dbMonitoring) {
+    extends AbstractDbAccess(dbMonitoring) {
   import dbImplicits._
   import provider.driver.api._
   import slick.lifted.Shape._

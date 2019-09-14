@@ -1,7 +1,7 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.cache.{JustWatchLocalCache, TmdbLocalCache}
-import com.teletracker.common.db.access.{SyncThingsDbAccess, ThingsDbAccess}
+import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.model.DataResponse
 import com.teletracker.common.model.tmdb.{MovieId, PersonId, TvShowId}
@@ -23,7 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class AdminController @Inject()(
   tmdbLocalCache: TmdbLocalCache,
   justWatchLocalCache: JustWatchLocalCache,
-  thingsDbAccess: SyncThingsDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   thingsApi: ThingApi,
   processQueue: ProcessQueue[TmdbProcessMessage]
 )(implicit executionContext: ExecutionContext)

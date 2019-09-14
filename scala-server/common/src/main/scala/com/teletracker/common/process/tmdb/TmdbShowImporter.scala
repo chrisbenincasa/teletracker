@@ -1,12 +1,13 @@
 package com.teletracker.common.process.tmdb
 
+import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.cache.JustWatchLocalCache
 import com.teletracker.common.db.access.{
-  AsyncThingsDbAccess,
   NetworksDbAccess,
+  ThingsDbAccess,
   TvShowDbAccess
 }
-import com.teletracker.common.db.model
+import com.teletracker.common.db.{model, AsyncDbProvider, BaseDbProvider}
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.justwatch.JustWatchClient
 import com.teletracker.common.external.tmdb.TmdbClient
@@ -28,7 +29,13 @@ import com.teletracker.common.process.tmdb.TmdbEntityProcessor.{
   ProcessSuccess
 }
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.common.util.{GenreCache, NetworkCache, Slug}
+import com.teletracker.common.util.{
+  FactoryImplicits,
+  GeneralizedDbFactory,
+  GenreCache,
+  NetworkCache,
+  Slug
+}
 import com.twitter.logging.Logger
 import javax.inject.Inject
 import java.time.format.DateTimeFormatter
@@ -43,13 +50,14 @@ class TmdbShowImporter @Inject()(
   tvShowDbAccess: TvShowDbAccess,
   justWatchClient: JustWatchClient,
   networksDbAccess: NetworksDbAccess,
-  thingsDbAccess: AsyncThingsDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   justWatchLocalCache: JustWatchLocalCache,
   processQueue: ProcessQueue[TmdbProcessMessage],
   networkCache: NetworkCache,
   genreCache: GenreCache
 )(implicit executionContext: ExecutionContext)
-    extends TmdbImporter(thingsDbAccess) {
+    extends TmdbImporter(thingsDbAccess)
+    with FactoryImplicits {
   private val logger = Logger(getClass)
 
   import io.circe.generic.auto._

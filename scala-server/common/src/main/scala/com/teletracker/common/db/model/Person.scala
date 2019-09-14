@@ -1,7 +1,6 @@
 package com.teletracker.common.db.model
 
-import com.teletracker.common.db.CustomPostgresProfile
-import com.teletracker.common.inject.DbImplicits
+import com.teletracker.common.db.{CustomPostgresProfile, DbImplicits}
 import com.teletracker.common.util.Slug
 import io.circe._
 import javax.inject.Inject

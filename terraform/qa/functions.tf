@@ -60,7 +60,7 @@ module "tmdb-changes-scraper" {
   trigger_name     = "tmdb-changes-scrape-trigger"
   function_name    = "tmdb-changes"
   entrypoint       = "tmdbChanges"
-  function_version = "1568243608"
+  function_version = "1568304209"
 
   extra_env_vars = {
     SCRAPER = "tmdbChanges"

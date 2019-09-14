@@ -5,18 +5,24 @@ import com.teletracker.common.db.model._
 import com.teletracker.common.util.Implicits._
 import com.twitter.cache.ConcurrentMapCache
 import com.twitter.util.{Future => TFuture}
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.{Inject, Singleton}
+import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.{ExecutionContext, Future}
+
+object NetworkCache {
+  type NetworkMap = Map[(ExternalSource, String), Network]
+
+  final private val cache = new ConcurrentMapCache[String, NetworkMap](
+    new ConcurrentHashMap[String, TFuture[NetworkMap]]()
+  )
+}
 
 @Singleton
 class NetworkCache @Inject()(
   networksDbAccess: NetworksDbAccess
 )(implicit executionContext: ExecutionContext) {
-  type NetworkMap = Map[(ExternalSource, String), Network]
-  private val cache = new ConcurrentMapCache[String, NetworkMap](
-    new ConcurrentHashMap[String, TFuture[NetworkMap]]()
-  )
+
+  import NetworkCache._
 
   def get(): Future[NetworkMap] = {
     cache.getOrElseUpdate("NETWORKS") {

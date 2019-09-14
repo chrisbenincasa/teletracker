@@ -1,14 +1,13 @@
 package com.teletracker.common.process.tmdb
-
 import com.google.common.cache.Cache
+import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.cache.{JustWatchLocalCache, TmdbLocalCache}
 import com.teletracker.common.db.access.{
-  AsyncThingsDbAccess,
   NetworksDbAccess,
   ThingsDbAccess,
   TvShowDbAccess
 }
-import com.teletracker.common.db.model
+import com.teletracker.common.db.{model, AsyncDbProvider, BaseDbProvider}
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.justwatch.JustWatchClient
 import com.teletracker.common.external.tmdb.TmdbClient
@@ -20,16 +19,13 @@ import com.teletracker.common.process.ProcessQueue
 import com.teletracker.common.process.tmdb.TmdbEntity.Entities
 import com.teletracker.common.process.tmdb.TmdbProcessMessage.ProcessMovie
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.common.util.NetworkCache
+import com.teletracker.common.util.{GeneralizedDbFactory, NetworkCache}
 import com.teletracker.common.util.json.circe._
 import javax.inject.Inject
-import shapeless.ops.coproduct.{Folder, Mapper}
 import shapeless.tag.@@
-import shapeless.{:+:, tag, CNil, Coproduct}
-import java.sql.Timestamp
-import java.time.{LocalDate, OffsetDateTime}
+import shapeless.{:+:, tag, CNil}
+import java.time.OffsetDateTime
 import java.util.UUID
-import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 
@@ -50,10 +46,9 @@ object TmdbEntityProcessor {
 
 class TmdbEntityProcessor @Inject()(
   tmdbClient: TmdbClient,
-  thingsDbAccess: AsyncThingsDbAccess,
-  networksDbAccess: NetworksDbAccess,
+  asyncDbProvider: BaseDbProvider,
+  thingsDbAccess: ThingsDbAccess,
   expander: ItemExpander,
-  tvShowDbAccess: TvShowDbAccess,
   networkCache: NetworkCache,
   justWatchClient: JustWatchClient,
   cache: TmdbLocalCache,
@@ -68,6 +63,7 @@ class TmdbEntityProcessor @Inject()(
   ],
   tmdbPersonCreditProcessor: TmdbPersonCreditProcessor
 )(implicit executionContext: ExecutionContext) {
+
   import TmdbEntityProcessor._
 
   def processSearchResults(

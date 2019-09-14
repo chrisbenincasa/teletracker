@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper
 
 import com.google.cloud.storage.Storage
-import com.teletracker.common.db.access.{AsyncThingsDbAccess, ThingsDbAccess}
+import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
@@ -13,7 +13,7 @@ import javax.inject.Inject
 class IngestUnogsNetflixExpiring @Inject()(
   protected val tmdbClient: TmdbClient,
   protected val tmdbProcessor: TmdbEntityProcessor,
-  protected val thingsDb: AsyncThingsDbAccess,
+  protected val thingsDb: ThingsDbAccess,
   protected val storage: Storage,
   protected val networkCache: NetworkCache)
     extends IngestJob[UnogsScrapeItem] {

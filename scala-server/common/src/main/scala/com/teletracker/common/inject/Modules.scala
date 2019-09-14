@@ -11,6 +11,21 @@ object Modules {
     Seq(
       new ConfigModule,
       new ExecutionContextModule,
+      new BaseDbModule,
+      new DbModule,
+      new BackgroundProcessorModule,
+      new CacheModule,
+      new GoogleModule
+    )
+  }
+}
+
+object AsyncModules {
+  def apply()(implicit executionContext: ExecutionContext): Seq[Module] = {
+    Seq(
+      new ConfigModule,
+      new ExecutionContextModule,
+      new BaseDbModule,
       new DbModule,
       new BackgroundProcessorModule,
       new CacheModule,
