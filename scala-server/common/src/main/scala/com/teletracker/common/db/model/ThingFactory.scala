@@ -15,6 +15,7 @@ import java.time.{LocalDate, OffsetDateTime}
 import com.teletracker.common.util.Movies._
 import com.teletracker.common.util.Shows._
 import com.teletracker.common.util.People._
+import com.teletracker.common.util.RequireLite._
 import io.circe.syntax._
 import java.util.UUID
 import com.teletracker.common.util.TheMovieDb._
@@ -49,7 +50,7 @@ object ThingFactory {
         .filter(_.nonEmpty)
         .map(LocalDate.parse(_).getYear)
 
-      require(
+      requireLite(
         credit.title.isDefined || credit.name.isDefined || credit.original_title.isDefined,
         s"Cannot save credit for ${thingType} id = ${credit.id} because it has no title"
       )
@@ -57,7 +58,7 @@ object ThingFactory {
       val chosenName =
         credit.name.orElse(credit.title).orElse(credit.original_title).get
 
-      require(
+      requireLite(
         releaseYear.isDefined,
         s"Cannot save credit for ${thingType} id = ${credit.id} = $chosenName because it has no release year"
       )
@@ -91,11 +92,11 @@ object ThingFactory {
     Try {
       val releaseYear = movie.releaseYear
 
-      require(
+      requireLite(
         movie.title.isDefined,
         s"Cannot save movie ${movie.id} because it has no title"
       )
-      require(
+      requireLite(
         releaseYear.isDefined,
         s"Cannot save movie ${movie.id} = ${movie.title.get} because it has no release year"
       )
@@ -121,7 +122,7 @@ object ThingFactory {
       val now = getNow()
       val releaseYear = show.releaseYear
 
-      require(
+      requireLite(
         releaseYear.isDefined,
         s"Attempted to get release year from show = ${show.id} but couldn't: (original field = ${show.first_air_date})"
       )
@@ -156,23 +157,6 @@ object ThingFactory {
       )
     }
   }
-
-//  private def makePersonFromCastMember(castMember: CastMember): Try[Thing] = {
-//    Try {
-//      val now = getNow()
-//      Thing(
-//        UUID.randomUUID(),
-//        castMember.name.get,
-//        Slug(castMember.name.get, castMember.releaseYear.get),
-//        ThingType.Person,
-//        now,
-//        now,
-//        Some(ObjectMetadata.withTmdbPerson(person)),
-//        Some(person.id.toString),
-//        person.popularity
-//      )
-//    }
-//  }
 
   object thingMaker extends Poly1 {
     implicit val atMovie: Case.Aux[Movie, Try[ThingLike]] = at(makeThing)

@@ -1,13 +1,8 @@
 package com.teletracker.tasks
 
-import com.google.inject.{Injector, TypeLiteral}
-import com.teletracker.common.db.{
-  AsyncDbProvider,
-  BaseDbProvider,
-  SyncDbProvider
-}
+import com.google.inject.Injector
+import com.teletracker.common.db.BaseDbProvider
 import javax.inject.Inject
-import scala.collection.JavaConverters._
 
 object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
   val clazz = flag[String]("class", "The Teletracker task to run")
@@ -19,13 +14,10 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
     try {
       new TeletrackerTaskRunner(injector.underlying).run(clazz(), collectArgs)
     } finally {
-      injector.underlying
-        .findBindingsByType(new TypeLiteral[BaseDbProvider]() {})
-        .asScala
-        .foreach(_.getProvider.get().shutdown())
-//      injector.instance[SyncDbProvider].shutdown()
-//      injector.instance[AsyncDbProvider].shutdown()
+      injector.instance[BaseDbProvider].shutdown()
     }
+
+    System.exit(0)
   }
 
   override protected def collectArgs: Map[String, Option[Any]] = {

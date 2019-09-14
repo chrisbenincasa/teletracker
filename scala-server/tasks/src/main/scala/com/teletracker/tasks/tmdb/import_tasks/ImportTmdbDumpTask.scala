@@ -47,15 +47,24 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
         try {
           SequentialFutures
             .batchedIterator(
-              source.getLines().safeTake(perFileLimit),
+              source
+                .getLines()
+                .zipWithIndex
+                .filter(_._1.nonEmpty)
+                .safeTake(perFileLimit),
               parallelism
             )(batch => {
-              val processedBatch = batch.flatMap(line => {
+              val processedBatch = batch.flatMap(lineAndIndex => {
+                val (line, index) = lineAndIndex
+
                 sanitizeLine(line).map(sanitizedLine => {
                   parse(sanitizedLine)
                     .flatMap(_.as[T]) match {
                     case Left(failure) =>
-                      logger.error("Unexpected parsing error", failure)
+                      logger.error(
+                        s"Unexpected parsing error on line ${index}",
+                        failure
+                      )
                       Future.successful(None)
 
                     case Right(value) =>
