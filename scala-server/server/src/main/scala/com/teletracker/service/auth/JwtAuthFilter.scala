@@ -93,7 +93,6 @@ object TokenNotFoundException extends Exception("No token found in request")
 
 class JwtAuthFilter @Inject()(
   config: TeletrackerConfig,
-  usersDbAccess: UsersDbAccess,
   extractor: JwtAuthExtractor
 )(implicit executionContext: ExecutionContext)
     extends SimpleFilter[Request, Response] {

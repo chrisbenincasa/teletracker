@@ -1,5 +1,6 @@
 package com.teletracker.tasks.tmdb
 
+import com.teletracker.common.db.BaseDbProvider
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.tmdb.{Movie, PagedResult}
 import com.teletracker.common.process.tmdb.TmdbMovieImporter
@@ -12,7 +13,8 @@ import scala.concurrent.duration.Duration
 
 class ImportMovies @Inject()(
   tmdbClient: TmdbClient,
-  movieImporter: TmdbMovieImporter)
+  movieImporter: TmdbMovieImporter
+)(implicit baseDbProvider: BaseDbProvider)
     extends TeletrackerTask {
   override def run(args: Args): Unit = {
     val endpoint = args.valueOrDefault[String]("endpoint", "popular")

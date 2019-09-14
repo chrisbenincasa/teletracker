@@ -1,17 +1,13 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.db.access.{
-  GenresDbAccess,
-  SyncThingsDbAccess,
-  ThingsDbAccess
-}
+import com.teletracker.common.db.SyncDbProvider
+import com.teletracker.common.db.access.{GenresDbAccess, ThingsDbAccess}
 import com.teletracker.common.db.model.{
   ExternalSource,
   GenreReferences,
   Genres,
   ThingType
 }
-import com.teletracker.common.inject.SyncDbProvider
 import com.teletracker.common.model.tmdb.Genre
 import com.teletracker.tasks.TeletrackerTask
 import javax.inject.Inject
@@ -24,7 +20,7 @@ class GenreIdsTest @Inject()(
   genres: Genres,
   genreReferences: GenreReferences,
   genresDbAccess: GenresDbAccess,
-  thingsDbAccess: SyncThingsDbAccess
+  thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
   private val logger = LoggerFactory.getLogger(getClass)

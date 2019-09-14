@@ -56,8 +56,11 @@ trait LowPriArgParsers {
 object ArgParser extends LowPriArgParsers {
   implicit val stringArg: ArgParser[String] = anyArg[String]
 
+  implicit val doubleArg: ArgParser[Double] =
+    anyArg[Double].or(stringArg andThen (_.toDouble))
+
   implicit val intArg: ArgParser[Int] =
-    anyArg[Int].or(stringArg andThen (_.toInt))
+    anyArg[Int].or(doubleArg andThen (_.toInt)).or(stringArg andThen (_.toInt))
 
   implicit val uriArg: ArgParser[URI] =
     stringArg.andThen(new URI(_)).or(anyArg[URI])

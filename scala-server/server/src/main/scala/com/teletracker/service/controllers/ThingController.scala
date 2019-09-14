@@ -1,13 +1,11 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.access.{SyncThingsDbAccess, ThingsDbAccess}
+import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.model.DataResponse
 import com.teletracker.common.util.CanParseFieldFilter
 import com.teletracker.common.util.json.circe._
 import com.teletracker.service.api.ThingApi
-import com.teletracker.service.api.model.Converters
-import com.teletracker.service.auth.JwtAuthFilter
 import com.teletracker.service.controllers.TeletrackerController._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -17,7 +15,7 @@ import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ThingController @Inject()(
-  thingsDbAccess: SyncThingsDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   thingApi: ThingApi
 )(implicit executionContext: ExecutionContext)
     extends Controller

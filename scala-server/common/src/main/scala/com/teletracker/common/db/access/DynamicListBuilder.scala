@@ -1,27 +1,31 @@
 package com.teletracker.common.db.access
 
+import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.db.{
   AddedTime,
+  BaseDbProvider,
+  DbImplicits,
   DefaultForListType,
   Popularity,
   Recent,
-  SortMode
+  SortMode,
+  SyncDbProvider
 }
 import com.teletracker.common.db.model._
-import com.teletracker.common.inject.{DbImplicits, SyncDbProvider}
+import com.teletracker.common.util.GeneralizedDbFactory
 import javax.inject.Inject
 import slick.lifted.ColumnOrdered
 import scala.concurrent.ExecutionContext
 
 class DynamicListBuilder @Inject()(
-  val provider: SyncDbProvider,
+  val baseDbProvider: BaseDbProvider,
   val userThingTags: UserThingTags,
   val personThing: PersonThings,
   val things: Things,
   val trackedLists: TrackedLists,
   dbImplicits: DbImplicits) {
   import dbImplicits._
-  import provider.driver.api._
+  import baseDbProvider.driver.api._
 
   def countMatchingThings(
     listIds: Set[Int]

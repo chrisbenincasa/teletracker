@@ -1,7 +1,7 @@
 package com.teletracker.common.process.tmdb
 
 import com.google.inject.Provider
-import com.teletracker.common.db.access.AsyncThingsDbAccess
+import com.teletracker.common.db.access.{ThingsDbAccess}
 import com.teletracker.common.db.model._
 import com.teletracker.common.model.tmdb.{Person => TmdbPerson, _}
 import com.teletracker.common.process.ProcessQueue
@@ -22,7 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 class TmdbSynchronousProcessor @Inject()(
-  thingsDbAccess: AsyncThingsDbAccess,
+  thingsDbAccess: ThingsDbAccess,
   processQueue: ProcessQueue[TmdbProcessMessage],
   genreCache: GenreCache,
   tmdbMovieImporter: Provider[TmdbMovieImporter],
@@ -108,12 +108,12 @@ class TmdbSynchronousProcessor @Inject()(
     // Kick off background tasks for updating the full metadata for all results
     partitionedResults.foreach {
       case (missing, existing) =>
-        val movieMessages = (missing ++ existing)
+        val movieMessages = missing
           .flatMap(_.filter[Movie])
           .flatMap(_.head)
           .map(_.id)
           .map(id => TmdbProcessMessage.make(ProcessMovie(tag[MovieId](id))))
-        val showMessages = (missing ++ existing)
+        val showMessages = existing
           .flatMap(_.filter[TvShow])
           .flatMap(_.head)
           .map(_.id)

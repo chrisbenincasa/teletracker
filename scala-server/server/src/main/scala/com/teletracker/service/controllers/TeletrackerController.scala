@@ -1,7 +1,9 @@
 package com.teletracker.service.controllers
 
+import com.teletracker.common.db.BaseDbProvider
 import com.teletracker.common.db.access.UsersDbAccess
 import com.teletracker.common.db.model.TrackedListRow
+import com.teletracker.common.util.FactoryImplicits
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.http.response.ResponseBuilder
@@ -21,7 +23,9 @@ object TeletrackerController {
 abstract class TeletrackerController(
   usersDbAccess: UsersDbAccess
 )(implicit executionContext: ExecutionContext)
-    extends Controller {
+    extends Controller
+    with FactoryImplicits {
+
   implicit def toRichInjectedRequest(re: InjectedRequest): RichInjectedRequest =
     new RichInjectedRequest(re)
 

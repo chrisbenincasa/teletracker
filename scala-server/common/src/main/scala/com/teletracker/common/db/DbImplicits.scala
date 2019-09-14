@@ -1,13 +1,22 @@
-package com.teletracker.common.db.util
+package com.teletracker.common.db
 
+import com.teletracker.common.db.model.{
+  DynamicListRules,
+  ExternalSource,
+  GenreType,
+  OfferType,
+  PersonAssociationType,
+  PresentationType,
+  ThingType,
+  UserPreferences,
+  UserThingTagType
+}
 import com.teletracker.common.util.Slug
-import com.teletracker.common.db.CustomPostgresProfile
-import com.teletracker.common.db.model._
+import com.teletracker.common.util.json.circe._
 import io.circe.Json
 import javax.inject.Inject
 
 class DbImplicits @Inject()(val profile: CustomPostgresProfile) {
-  import com.teletracker.common.util.json.circe._
   import io.circe.syntax._
   import profile.api._
 
@@ -19,12 +28,22 @@ class DbImplicits @Inject()(val profile: CustomPostgresProfile) {
     .base[PresentationType, String](_.getName, PresentationType.fromString)
   implicit val genreTypeMapper =
     MappedColumnType.base[GenreType, String](_.getName, GenreType.fromString)
+  implicit val genreListTypeMapper =
+    MappedColumnType.base[List[GenreType], List[String]](
+      _.map(_.getName),
+      _.map(GenreType.fromString)
+    )
   implicit val thingTypeMapper =
     MappedColumnType.base[ThingType, String](_.getName, ThingType.fromString)
   implicit val actionTypeMapper = MappedColumnType
     .base[UserThingTagType, String](_.getName, UserThingTagType.fromString)
   implicit val slugTypeMapper =
     MappedColumnType.base[Slug, String](_.value, Slug.raw)
+  implicit val personAssociationTypeMapper =
+    MappedColumnType.base[PersonAssociationType, String](
+      _.toString,
+      PersonAssociationType.fromString
+    )
 
   implicit val userPrefsToJson = MappedColumnType
     .base[UserPreferences, Json](_.asJson, _.as[UserPreferences].right.get)

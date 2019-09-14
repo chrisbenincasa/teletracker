@@ -1,39 +1,14 @@
 package com.teletracker.common.db.access
 
-import com.google.inject.assistedinject.Assisted
-import com.teletracker.common.db.DbMonitoring
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
-import com.teletracker.common.inject.{
-  BaseDbProvider,
-  DbImplicits,
-  SyncDbProvider,
-  SyncPath
-}
+import com.teletracker.common.db.{BaseDbProvider, DbImplicits, DbMonitoring}
 import com.teletracker.common.util.Slug
 import javax.inject.Inject
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
-class SyncGenresDbAccess @Inject()(
-  @SyncPath override val provider: BaseDbProvider,
-  override val genres: Genres,
-  override val thingGenres: ThingGenres,
-  override val genreReferences: GenreReferences,
-  override val things: Things,
-  dbImplicits: DbImplicits,
-  dbMonitoring: DbMonitoring
-)(implicit executionContext: ExecutionContext)
-    extends GenresDbAccess(
-      provider,
-      genres,
-      thingGenres,
-      genreReferences,
-      things,
-      dbImplicits,
-      dbMonitoring
-    )
-
-class GenresDbAccess(
+class GenresDbAccess @Inject()(
   val provider: BaseDbProvider,
   val genres: Genres,
   val thingGenres: ThingGenres,
@@ -42,7 +17,7 @@ class GenresDbAccess(
   dbImplicits: DbImplicits,
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess(dbMonitoring) {
+    extends AbstractDbAccess(dbMonitoring) {
   import dbImplicits._
   import provider.driver.api._
 
@@ -86,6 +61,12 @@ class GenresDbAccess(
   ): Future[Seq[GenreReference]] = {
     run {
       genreReferences.query.filter(_.externalSource === genreType).result
+    }
+  }
+
+  def findGenresForThing(thingId: UUID) = {
+    run {
+      thingGenres.query.filter(_.thingId === thingId).result
     }
   }
 

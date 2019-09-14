@@ -1,21 +1,22 @@
 package com.teletracker.common.db.access
 
-import com.teletracker.common.db.DbMonitoring
+import com.google.inject.assistedinject.Assisted
+import com.teletracker.common.db.{BaseDbProvider, DbMonitoring, SyncDbProvider}
 import com.teletracker.common.db.model._
-import com.teletracker.common.inject.SyncDbProvider
+import com.teletracker.common.util.GeneralizedDbFactory
 import javax.inject.Inject
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class TvShowDbAccess @Inject()(
-  val provider: SyncDbProvider,
+  val provider: BaseDbProvider,
   val things: Things,
   val tvShowSeasons: TvShowSeasons,
   val tvShowEpisodes: TvShowEpisodes,
   val externalIds: ExternalIds,
   dbMonitoring: DbMonitoring
 )(implicit executionContext: ExecutionContext)
-    extends DbAccess(dbMonitoring) {
+    extends AbstractDbAccess(dbMonitoring) {
   import provider.driver.api._
 
   def findAllSeasonsForShow(showId: UUID) = {

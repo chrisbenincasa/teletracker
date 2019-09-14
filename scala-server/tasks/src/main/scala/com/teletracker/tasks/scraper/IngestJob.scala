@@ -1,24 +1,21 @@
 package com.teletracker.tasks.scraper
 
-import cats.Parallel
 import com.google.cloud.storage.{BlobId, Storage}
-import com.teletracker.common.db.access.{SearchOptions, ThingsDbAccess}
+import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.model.tmdb.{Movie, TmdbWatchable, TvShow}
+import com.teletracker.common.model.tmdb.TmdbWatchable
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor.{
   ProcessFailure,
   ProcessSuccess
 }
-import com.teletracker.common.util
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.common.util.{NetworkCache, Slug}
 import com.teletracker.common.util.execution.SequentialFutures
+import com.teletracker.common.util.{NetworkCache, Slug}
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
-import com.twitter.finagle.server
-import io.circe.{Decoder, DecodingFailure}
+import io.circe.Decoder
 import io.circe.parser._
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory

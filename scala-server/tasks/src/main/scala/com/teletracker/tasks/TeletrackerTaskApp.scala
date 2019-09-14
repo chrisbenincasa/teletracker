@@ -1,7 +1,8 @@
 package com.teletracker.tasks
 
 import com.google.inject.Module
-import com.teletracker.common.inject.{Modules, SyncDbProvider}
+import com.teletracker.common.db.SyncDbProvider
+import com.teletracker.common.inject.Modules
 import com.teletracker.tasks.inject.HttpClientModule
 import com.twitter.app.Flaggable
 import java.net.URI

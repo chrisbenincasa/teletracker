@@ -1,7 +1,6 @@
 package com.teletracker.common.db.model
 
-import com.teletracker.common.db.CustomPostgresProfile
-import com.teletracker.common.inject.DbImplicits
+import com.teletracker.common.db.{CustomPostgresProfile, DbImplicits}
 import javax.inject.Inject
 import java.time.OffsetDateTime
 import com.teletracker.common.util.json.circe._
