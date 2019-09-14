@@ -86,6 +86,7 @@ export default interface Thing
   itemMarkedAsWatched: boolean;
   runtime?: number;
   recommendations?: Thing[];
+  genreIds?: number[];
 }
 
 export class ThingFactory {
