@@ -69,6 +69,7 @@ steps:
       ]
     dir: "scala-server"
 
+  # Push the new tag to git
   - name: "gcr.io/cloud-builders/git"
     entrypoint: "/bin/bash"
     args: ["-c", "git tag $(cat FULL_VERSION)"]

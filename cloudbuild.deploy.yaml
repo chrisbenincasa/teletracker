@@ -1,0 +1,11 @@
+steps:
+  - name: "gcr.io/teletracker/jq"
+      entrypoint: "/bin/bash"
+      args: ["-c", './terraform/qa/replace_version ${_VERSION}']
+
+  - name: "gcr.io/teletracker/terraform"
+    dir: "terraform/qa"
+    args: ["apply -var-file=current.json -auto-approve"]
+
+substitutions:
+  _VERSION:

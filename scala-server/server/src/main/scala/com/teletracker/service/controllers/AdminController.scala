@@ -13,11 +13,13 @@ import com.teletracker.common.process.tmdb.TmdbProcessMessage.{
   ProcessTvShow
 }
 import com.teletracker.service.api.ThingApi
+import com.teletracker.service.auth.AdminFilter
 import com.teletracker.service.util.HasThingIdOrSlug
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import javax.inject.Inject
 import shapeless.tag
+import java.io.File
 import scala.concurrent.{ExecutionContext, Future}
 
 class AdminController @Inject()(
@@ -28,6 +30,14 @@ class AdminController @Inject()(
   processQueue: ProcessQueue[TmdbProcessMessage]
 )(implicit executionContext: ExecutionContext)
     extends Controller {
+
+  // TODO put on admin server and open up admin server port on GCP
+  filter[AdminFilter].get("/version") { _: Request =>
+    response.ok.file(
+      new File(getClass.getClassLoader.getResource("version_info.txt").getFile)
+    )
+  }
+
   post("/cache/clear", admin = true) { _: Request =>
     Future.sequence(
       List(

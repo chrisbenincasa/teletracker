@@ -32,7 +32,13 @@ object BuildConfig {
     scalaVersion := Compilation.scalacVersion,
     scalacOptions ++= Compilation.scalacOpts,
     Global / concurrentRestrictions := Seq(Tags.limit(Tags.Test, 1)),
-    Test / fork := true
+    Test / fork := true,
+    Compile / resourceGenerators += Def.task {
+      VersionFileGenerate.generate(
+        resourceManaged.in(Compile).value,
+        version.in(Compile).value
+      )
+    }
   )
 
   lazy val commonAssmeblySettings = Seq(
