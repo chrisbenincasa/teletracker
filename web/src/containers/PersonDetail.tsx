@@ -12,7 +12,6 @@ import {
   Chip,
   Grid,
   LinearProgress,
-  CardMedia,
   createStyles,
   Fab,
   Hidden,
@@ -26,16 +25,10 @@ import {
 } from '@material-ui/core';
 import { layoutStyles } from '../styles';
 import { ResponsiveImage } from '../components/ResponsiveImage';
-import AddToListDialog from '../components/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
+import ManageTracking from '../components/ManageTracking';
 import ItemCard from '../components/ItemCard';
-import {
-  ChevronLeft,
-  List as ListIcon,
-  ExpandMore,
-  ExpandLess,
-} from '@material-ui/icons';
-import Thing from '../types/Thing';
+import { ChevronLeft, ExpandMore, ExpandLess } from '@material-ui/icons';
 import Person from '../types/Person';
 import { Genre } from '../types';
 import _ from 'lodash';
@@ -117,7 +110,6 @@ interface OwnProps {}
 interface State {
   sortOrder: string;
   filter: number;
-  manageTrackingModalOpen: boolean;
   showFullBiography: boolean;
 }
 
@@ -146,7 +138,6 @@ class PersonDetail extends React.Component<Props, State> {
   state: State = {
     sortOrder: 'Popularity',
     filter: -1,
-    manageTrackingModalOpen: false,
     showFullBiography: false,
   };
 
@@ -160,14 +151,6 @@ class PersonDetail extends React.Component<Props, State> {
 
   setFilter = genreId => {
     this.setState({ filter: genreId });
-  };
-
-  openManageTrackingModal = () => {
-    this.setState({ manageTrackingModalOpen: true });
-  };
-
-  closeManageTrackingModal = () => {
-    this.setState({ manageTrackingModalOpen: false });
   };
 
   showFullBiography = () => {
@@ -362,29 +345,8 @@ class PersonDetail extends React.Component<Props, State> {
     );
   };
 
-  renderTrackingToggle = () => {
-    const { classes } = this.props;
-    let trackingCTA = 'Manage Tracking';
-
-    return (
-      <div className={classes.personCTA}>
-        <Fab
-          size="small"
-          variant="extended"
-          aria-label="Add"
-          onClick={this.openManageTrackingModal}
-          style={{ marginTop: 5, width: '100%' }}
-        >
-          <ListIcon style={{ marginRight: 8 }} />
-          {trackingCTA}
-        </Fab>
-      </div>
-    );
-  };
-
   renderPerson() {
     let { classes, person, userSelf } = this.props;
-    const { manageTrackingModalOpen } = this.state;
 
     if (!person) {
       return this.renderLoading();
@@ -511,13 +473,7 @@ class PersonDetail extends React.Component<Props, State> {
                     }}
                   />
                 </div>
-                {this.renderTrackingToggle()}
-                {/*<AddToListDialog*/}
-                {/*  open={manageTrackingModalOpen}*/}
-                {/*  onClose={this.closeManageTrackingModal.bind(this)}*/}
-                {/*  userSelf={userSelf!}*/}
-                {/*  item={person}*/}
-                {/*/>*/}
+                <ManageTracking itemDetail={person} />
               </div>
               <div className={classes.personInformationContainer}>
                 {this.renderDescriptiveDetails(person)}

@@ -18,12 +18,7 @@ import {
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import {
-  Check,
-  List as ListIcon,
-  PlayArrow,
-  ChevronLeft,
-} from '@material-ui/icons';
+import { Check, PlayArrow, ChevronLeft } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -48,7 +43,7 @@ import ThingAvailability from '../components/Availability';
 import Cast from '../components/Cast';
 import Recommendations from '../components/Recommendations';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
-import AddToListDialog from '../components/AddToListDialog';
+import ManageTracking from '../components/ManageTracking';
 import { formatRuntime } from '../utils/textHelper';
 import Thing from '../types/Thing';
 import RouterLink from '../components/RouterLink';
@@ -196,7 +191,6 @@ type Props = OwnProps & NotOwnProps;
 interface State {
   currentId: string;
   currentItemType: string;
-  manageTrackingModalOpen: boolean;
   showPlayIcon: boolean;
   trailerModalOpen: boolean;
 }
@@ -205,7 +199,6 @@ class ItemDetails extends Component<Props, State> {
   state: State = {
     currentId: '',
     currentItemType: '',
-    manageTrackingModalOpen: false,
     showPlayIcon: false,
     trailerModalOpen: false,
   };
@@ -231,14 +224,6 @@ class ItemDetails extends Component<Props, State> {
     });
 
     this.props.fetchItemDetails({ id: itemId, type: itemType });
-  };
-
-  openManageTrackingModal = () => {
-    this.setState({ manageTrackingModalOpen: true });
-  };
-
-  closeManageTrackingModal = () => {
-    this.setState({ manageTrackingModalOpen: false });
   };
 
   showPlayTrailerIcon = () => {
@@ -290,7 +275,6 @@ class ItemDetails extends Component<Props, State> {
     const title = thing.name;
     const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
     const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
-    // TODO: handle undefined runtime
     const runtime = formatRuntime(thing.runtime || 0, thing.type);
 
     return (
@@ -317,7 +301,7 @@ class ItemDetails extends Component<Props, State> {
           </Typography>
         </div>
         <Typography color="inherit" variant="body1" itemProp="duration">
-          {`${runtime}`}
+          {runtime}
         </Typography>
       </div>
     );
@@ -326,7 +310,7 @@ class ItemDetails extends Component<Props, State> {
   renderDescriptiveDetails = (thing: Thing) => {
     const { classes, genres } = this.props;
     const thingGenres = thing.genreIds || [];
-    const overview = getMetadataPath(thing, 'overview') || '';
+    const overview = thing.description || '';
 
     const genresToRender = _.filter(genres || [], genre => {
       return _.includes(thingGenres, genre.id);
@@ -382,26 +366,6 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderTrackingToggle = () => {
-    const { classes } = this.props;
-    let trackingCTA = 'Manage Tracking';
-
-    return (
-      <div className={classes.itemCTA}>
-        <Fab
-          size="small"
-          variant="extended"
-          aria-label="Add"
-          onClick={this.openManageTrackingModal}
-          style={{ marginTop: 5, width: '100%' }}
-        >
-          <ListIcon style={{ marginRight: 8 }} />
-          {trackingCTA}
-        </Fab>
-      </div>
-    );
-  };
-
   renderSeriesDetails = (thing: Thing) => {
     const { classes } = this.props;
     const seasons = Object(getMetadataPath(thing, 'seasons'));
@@ -448,8 +412,8 @@ class ItemDetails extends Component<Props, State> {
 
   renderItemDetails = () => {
     let { classes, isFetching, itemDetail, userSelf } = this.props;
-    let { manageTrackingModalOpen } = this.state;
     let itemType;
+
     if (itemDetail && itemDetail.type && itemDetail.type === 'movie') {
       itemType = 'Movie';
     } else if (itemDetail && itemDetail.type && itemDetail.type === 'show') {
@@ -598,13 +562,7 @@ class ItemDetails extends Component<Props, State> {
                 </div>
 
                 {this.renderWatchedToggle()}
-                {this.renderTrackingToggle()}
-                <AddToListDialog
-                  open={manageTrackingModalOpen}
-                  onClose={this.closeManageTrackingModal.bind(this)}
-                  userSelf={userSelf!}
-                  item={itemDetail}
-                />
+                <ManageTracking itemDetail={itemDetail} userSelf={userSelf} />
               </div>
               <div className={classes.itemInformationContainer}>
                 {this.renderDescriptiveDetails(itemDetail)}
