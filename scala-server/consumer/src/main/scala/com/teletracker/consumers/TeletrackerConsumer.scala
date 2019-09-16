@@ -15,11 +15,7 @@ import com.google.pubsub.v1.{
   PubsubMessage,
   Subscription
 }
-import com.teletracker.common.inject.{
-  AsyncModules,
-  BlockingHttpClientModule,
-  Modules
-}
+import com.teletracker.common.inject.{BlockingHttpClientModule, Modules}
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskRunner}
 import com.twitter.util.{Await, Time}
