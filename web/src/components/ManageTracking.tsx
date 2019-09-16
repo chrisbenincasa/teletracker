@@ -31,12 +31,26 @@ type Props = OwnProps & WithStyles<typeof styles> & WithUserProps;
 
 interface State {
   manageTrackingModalOpen: boolean;
+  belongsToLists: boolean;
 }
 
 class ManageTracking extends Component<Props, State> {
-  state: State = {
-    manageTrackingModalOpen: false,
-  };
+  constructor(props: Props) {
+    super(props);
+
+    const belongsToLists =
+      props &&
+      props.itemDetail &&
+      props.itemDetail.userMetadata &&
+      props.itemDetail.userMetadata.belongsToLists
+        ? props.itemDetail.userMetadata.belongsToLists
+        : [];
+
+    this.state = {
+      manageTrackingModalOpen: false,
+      belongsToLists: !!belongsToLists.length,
+    };
+  }
 
   openManageTrackingModal = () => {
     this.setState({ manageTrackingModalOpen: true });
@@ -48,7 +62,9 @@ class ManageTracking extends Component<Props, State> {
 
   renderTrackingToggle = () => {
     const { classes } = this.props;
-    let trackingCTA = 'Manage Tracking';
+    const { belongsToLists } = this.state;
+
+    let trackingCTA = belongsToLists ? 'Manage Tracking' : 'Add to List';
 
     return (
       <div className={classes.itemCTA}>
@@ -69,7 +85,7 @@ class ManageTracking extends Component<Props, State> {
   render() {
     let { manageTrackingModalOpen } = this.state;
     let { itemDetail, userSelf } = this.props;
-    console.log(itemDetail);
+
     return (
       <React.Fragment>
         {this.renderTrackingToggle()}
