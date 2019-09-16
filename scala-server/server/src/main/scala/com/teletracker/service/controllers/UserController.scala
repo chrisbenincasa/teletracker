@@ -108,7 +108,7 @@ class UserController @Inject()(
 
           case Right(listCreateRequest) =>
             require(
-              listCreateRequest.thingIds.isDefined ^ listCreateRequest.rules.isDefined,
+              !(listCreateRequest.thingIds.isDefined && listCreateRequest.rules.isDefined),
               "Cannot specify both thingIds and rules when creating a list"
             )
 

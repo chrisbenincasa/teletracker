@@ -1,13 +1,9 @@
 package com.teletracker.common.inject
 
+import com.codahale.metrics.MetricRegistry
 import com.google.inject.{Provides, Singleton}
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.{
-  AsyncDbProvider,
-  BaseDbProvider,
-  CustomPostgresProfile,
-  SyncDbProvider
-}
+import com.teletracker.common.db.CustomPostgresProfile
 import com.twitter.inject.TwitterModule
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import slick.jdbc.{DriverDataSource, JdbcProfile}
@@ -17,13 +13,17 @@ import scala.concurrent.ExecutionContext
 class DbModule extends TwitterModule {
   @Provides
   @Singleton
-  def dataSource(config: TeletrackerConfig): javax.sql.DataSource = {
-    mkDataSource("DB Pool", config)
+  def dataSource(
+    config: TeletrackerConfig,
+    metricRegistry: MetricRegistry
+  ): javax.sql.DataSource = {
+    mkDataSource("DB_Pool", config, metricRegistry)
   }
 
   protected def mkDataSource(
     poolName: String,
-    config: TeletrackerConfig
+    config: TeletrackerConfig,
+    metricRegistry: MetricRegistry
   ) = {
     val props = new Properties()
 
@@ -48,6 +48,7 @@ class DbModule extends TwitterModule {
     val hikari = new HikariDataSource(conf)
     hikari.setPoolName(poolName)
     hikari.setMaximumPoolSize(5)
+    hikari.setMetricRegistry(metricRegistry)
     hikari
   }
 }

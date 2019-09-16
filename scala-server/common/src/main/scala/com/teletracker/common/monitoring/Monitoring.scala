@@ -7,17 +7,14 @@ import io.opencensus.stats.Aggregation.{Count, Distribution}
 import io.opencensus.stats.Measure.{MeasureDouble, MeasureLong}
 import io.opencensus.stats.View.Name
 import io.opencensus.stats._
-import io.opencensus.tags.{TagContextBuilder, TagKey, TagValue, Tags}
+import io.opencensus.tags.{TagContextBuilder, TagKey, TagValue, Tagger, Tags}
+import javax.inject.Inject
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.JavaConverters._
 import scala.math.Numeric
 import scala.util.Try
 
 object Monitoring {
-  private val viewManager = Stats.getViewManager
-  private val tagger = Tags.getTagger
-  private val recorder: StatsRecorder = Stats.getStatsRecorder
-
   final val DefaultHistoAggregation =
     Distribution.create(
       BucketBoundaries.create(
@@ -36,7 +33,10 @@ object Monitoring {
     new ConcurrentHashMap[(String, Option[List[TagKey]]), Measure]
 }
 
-class Monitoring {
+class Monitoring @Inject()(
+  viewManager: ViewManager,
+  tagger: Tagger,
+  recorder: StatsRecorder) {
   import Monitoring._
 
   def createStdCounter(
