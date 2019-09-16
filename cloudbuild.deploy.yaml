@@ -80,8 +80,7 @@ steps:
     dir: "teletracker"
 
   - name: "gcr.io/cloud-builders/git"
-    args:
-      ["push", "origin", "master", "git@github.com:chrisbenincasa/teletracker"]
+    args: ["push", "git@github.com:chrisbenincasa/teletracker", "master"]
     dir: "teletracker"
     volumes:
       - name: "ssh"
