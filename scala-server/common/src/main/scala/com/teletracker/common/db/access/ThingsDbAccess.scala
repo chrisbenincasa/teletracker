@@ -221,6 +221,10 @@ class ThingsDbAccess @Inject()(
           .filter(t => {
             mkQuery(finalQuery.bind) @@ mkVector(t.name)
           })
+          .filter(t => {
+            (t.metadata +> "themoviedb" +> "movie" +>> "adult")
+              .asColumnOf[Boolean] === false
+          })
 
       val additionalFilters =
         InhibitFilter(baseSearch)
