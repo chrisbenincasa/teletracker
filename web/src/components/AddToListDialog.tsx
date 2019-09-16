@@ -97,16 +97,20 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   constructor(props: Props) {
     super(props);
 
-    let listChanges = R.reduce(
-      (acc, elem) => {
-        return {
-          ...acc,
-          [elem.id]: this.listContainsItem(elem, props.item),
-        };
-      },
-      {},
-      R.values(props.listsById),
-    );
+    const belongsToLists =
+      props &&
+      props.item &&
+      props.item.userMetadata &&
+      props.item.userMetadata.belongsToLists
+        ? props.item.userMetadata.belongsToLists
+        : [];
+
+    let listChanges = belongsToLists.reduce((acc, elem) => {
+      return {
+        ...acc,
+        [elem.id]: true,
+      };
+    }, {});
 
     this.state = {
       exited: false,
