@@ -15,7 +15,11 @@ import com.google.pubsub.v1.{
   PubsubMessage,
   Subscription
 }
-import com.teletracker.common.inject.{AsyncModules, BlockingHttpClientModule}
+import com.teletracker.common.inject.{
+  AsyncModules,
+  BlockingHttpClientModule,
+  Modules
+}
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskRunner}
 import com.twitter.util.{Await, Time}
@@ -34,7 +38,7 @@ object TeletrackerConsumer extends com.twitter.inject.app.App {
   val topicName = flag("topic", "The topic name")
 
   override protected def modules: Seq[Module] =
-    AsyncModules() ++ Seq(new BlockingHttpClientModule)
+    Modules() ++ Seq(new BlockingHttpClientModule)
 
   override protected def run(): Unit = {
     val client = SubscriptionAdminClient.create()

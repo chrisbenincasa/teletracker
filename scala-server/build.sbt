@@ -39,9 +39,11 @@ lazy val common = project
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "com.google.cloud" % "google-cloud-logging-logback" % "0.102.0-alpha",
       // Monitoring
+      "io.dropwizard.metrics" % "metrics-core" % "3.1.0",
       "io.opencensus" % "opencensus-api" % "0.23.0",
       "io.opencensus" % "opencensus-impl" % "0.23.0",
       "io.opencensus" % "opencensus-exporter-stats-stackdriver" % "0.23.0",
+      "io.opencensus" % "opencensus-contrib-dropwizard" % "0.23.0",
       // Jackson
       "com.fasterxml.jackson.core" % "jackson-annotations" % versions.jackson,
       // Db

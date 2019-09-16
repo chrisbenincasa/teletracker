@@ -63,12 +63,15 @@ class ListQuery @Inject()(
   ): Future[Seq[TrackedList]] = {
     val listsQuery = makeListsQuery(userId, includeDynamic = true)
 
-    val (thingsAction, thingCountAction) = if (includeThings) {
-      makeThingsForListQuery(listsQuery, None, None).result -> DBIO
-        .successful(Seq.empty)
+    val thingsAction = if (includeThings) {
+      makeThingsForListQuery(Left(listsQuery), None, None).result
     } else {
+      DBIO.successful(Seq.empty)
+    }
+
+    val thingCountAction = {
       val countByListIdQuery = countThingsForStandardListQuery(
-        listsQuery,
+        Left(listsQuery),
         None
       ).result
 
@@ -80,12 +83,10 @@ class ListQuery @Inject()(
           dynamicListBuilder.countMatchingThings(ids.toSet)
         })
 
-      val both = for {
+      for {
         countA <- countByListIdQuery
         countB <- countByDynamicListQuery
       } yield countA ++ countB
-
-      DBIO.successful(Seq.empty) -> both
     }
 
     val listsF = run("findUsersLists_lists")(listsQuery.result)
@@ -112,7 +113,7 @@ class ListQuery @Inject()(
                 .toList
             )
           )
-          .applyIf(!includeThings)(_.withCount(count))
+          .withCount(count)
       })
     }
   }
@@ -165,14 +166,18 @@ class ListQuery @Inject()(
     def materialize(
       listOrQuery: Either[ListsQuery, TrackedListRow]
     ): Future[Option[
-      (TrackedListRow, Seq[(ThingRaw, OffsetDateTime, Seq[UserThingTag])])
+      (TrackedListRow, Int, Seq[(ThingRaw, OffsetDateTime, Seq[UserThingTag])])
     ]] = {
-      val thingsQuery = listOrQuery match {
-        case Left(query) =>
-          makeThingsForListQuery(query, typeFilters, Some(sortMode))
-        case Right(list) =>
-          makeThingsForListQuery(list.id, typeFilters, Some(sortMode))
-      }
+      val thingsQuery = makeThingsForListQuery(
+        listOrQuery.map(_.id),
+        typeFilters,
+        Some(sortMode)
+      )
+
+      val thingCountQuery = countThingsForStandardListQuery(
+        listOrQuery.map(_.id),
+        typeFilters
+      )
 
       val thingTagsQuery =
         makeUserThingTagQuery(userId, thingsQuery.map(_._3.id), includeTags)
@@ -189,10 +194,13 @@ class ListQuery @Inject()(
         case Right(list) => Future.successful(Some(list))
       }
 
+      val countThingsFut = run("findList_countThings")(thingCountQuery.result)
+
       for {
         listOpt <- listFut
         things <- thingsFut
         thingTags <- thingTagsFut
+        thingCount <- countThingsFut.map(_.toMap)
       } yield {
         listOpt.map(list => {
           val validThingsAndAddedTime = things.collect {
@@ -207,7 +215,7 @@ class ListQuery @Inject()(
             }
           }
 
-          list -> thingAndActions
+          (list, thingCount.getOrElse(list.id, 0), thingAndActions)
         })
       }
     }
@@ -226,18 +234,30 @@ class ListQuery @Inject()(
             Future.successful(None)
 
           case Some(list) if list.isDynamic =>
-            run("findList_dynamicThings")(
+            val listCountFut =
+              run(dynamicListBuilder.countMatchingThings(Set(list.id)))
+            val listAndThingsFut = run("findList_dynamicThings")(
               dynamicListBuilder
                 .buildList(userId, list, sortMode)
                 .map(list -> _)
                 .map(Option(_))
-            ).map(_.map {
-              case (list, things) =>
-                list -> things.map {
-                  case (thing, actions) =>
-                    (thing, OffsetDateTime.now(), actions)
-                }
-            })
+            )
+
+            for {
+              listAndThings <- listAndThingsFut
+              listCount <- listCountFut
+            } yield {
+              listAndThings.map {
+                case (list, things) =>
+                  val count = listCount.toMap.getOrElse(list.id, 0)
+                  val thingsAndActions = things.map {
+                    case (thing, actions) =>
+                      (thing, OffsetDateTime.now(), actions)
+                  }
+
+                  (list, count, thingsAndActions)
+              }
+            }
 
           case Some(list) =>
             materialize(Right(list))
@@ -246,7 +266,7 @@ class ListQuery @Inject()(
 
     listAndThingsFut
       .map(_.map {
-        case (list, thingsActionsAddedTime) =>
+        case (list, totalThingCount, thingsActionsAddedTime) =>
           val things = thingsActionsAddedTime.map {
             case (thing, _, actions) =>
               thing
@@ -261,7 +281,10 @@ class ListQuery @Inject()(
                 buildBookmark(thing, addedAt, list.isDynamic, sortMode)
             }
 
-          ListQueryResult(Some(list.toFull.withThings(things)), bookmark)
+          ListQueryResult(
+            Some(list.toFull.withThings(things).withCount(totalThingCount)),
+            bookmark
+          )
       }.getOrElse(ListQueryResult.empty))
   }
 
@@ -275,33 +298,6 @@ class ListQuery @Inject()(
     ).filter(listId)(id => _.id === id)
       .cond(!includeDynamic)(!_.isDynamic)
       .query
-  }
-
-  private def makeThingsForListQuery(
-    listsQuery: ListsQuery,
-    thingTypeFilter: Option[Set[ThingType]],
-    sortMode: Option[SortMode]
-  ) = {
-    val thingQuery = InhibitFilter(things.rawQuery)
-      .filter(thingTypeFilter)(types => _.`type` inSetBind types)
-      .query
-
-    val q = (for {
-      lists <- listsQuery
-      tlt <- trackedListThings.query if lists.id === tlt.listId
-      thing <- thingQuery if thing.id === tlt.thingId
-    } yield {
-      (tlt.listId, tlt.addedAt, thing)
-    })
-
-    sortMode
-      .map(sm => {
-        q.sortBy {
-          case (_, addedAt, thing) =>
-            makeSort(thing, addedAt, sm)
-        }
-      })
-      .getOrElse(q)
   }
 
   private def makeSort(
@@ -341,16 +337,24 @@ class ListQuery @Inject()(
   }
 
   private def countThingsForStandardListQuery(
-    listsQuery: ListsQuery,
+    listsQueryOrId: Either[ListsQuery, Int],
     thingTypeFilter: Option[Set[ThingType]]
   ) = {
     val thingQuery = InhibitFilter(things.rawQuery)
       .filter(thingTypeFilter)(types => _.`type` inSetBind types)
       .query
 
+    val trackedThingsQuery = listsQueryOrId match {
+      case Left(listsQuery) =>
+        listsQuery.flatMap(lists => {
+          trackedListThings.query.withFilter(_.listId === lists.id)
+        })
+      case Right(listId) =>
+        trackedListThings.query.filter(_.listId === listId)
+    }
+
     (for {
-      lists <- listsQuery
-      tlt <- trackedListThings.query if lists.id === tlt.listId
+      tlt <- trackedThingsQuery
       thing <- thingQuery if thing.id === tlt.thingId
     } yield {
       tlt.listId -> thing
@@ -362,7 +366,7 @@ class ListQuery @Inject()(
   }
 
   private def makeThingsForListQuery(
-    listId: Int,
+    listsQueryOrId: Either[ListsQuery, Int],
     thingTypeFilter: Option[Set[ThingType]],
     sortMode: Option[SortMode]
   ) = {
@@ -370,8 +374,17 @@ class ListQuery @Inject()(
       .filter(thingTypeFilter)(types => _.`type` inSetBind types)
       .query
 
-    val q = (for {
-      tlt <- trackedListThings.query.filter(_.listId === listId)
+    val trackedThingsQuery = listsQueryOrId match {
+      case Left(listsQuery) =>
+        listsQuery.flatMap(lists => {
+          trackedListThings.query.withFilter(_.listId === lists.id)
+        })
+      case Right(listId) =>
+        trackedListThings.query.filter(_.listId === listId)
+
+    }
+    val thingsQuery = (for {
+      tlt <- trackedThingsQuery
       thing <- thingQuery if thing.id === tlt.thingId
     } yield {
       (tlt.listId, tlt.addedAt, thing)
@@ -379,12 +392,12 @@ class ListQuery @Inject()(
 
     sortMode
       .map(sm => {
-        q.sortBy {
+        thingsQuery.sortBy {
           case (_, addedAt, thing) =>
             makeSort(thing, addedAt, sm)
         }
       })
-      .getOrElse(q)
+      .getOrElse(thingsQuery)
   }
 
   private def makeUserThingTagQuery(
