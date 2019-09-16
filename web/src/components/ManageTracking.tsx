@@ -69,7 +69,7 @@ class ManageTracking extends Component<Props, State> {
   render() {
     let { manageTrackingModalOpen } = this.state;
     let { itemDetail, userSelf } = this.props;
-
+    console.log(itemDetail);
     return (
       <React.Fragment>
         {this.renderTrackingToggle()}

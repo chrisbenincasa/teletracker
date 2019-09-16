@@ -562,7 +562,7 @@ class ItemDetails extends Component<Props, State> {
                 </div>
 
                 {this.renderWatchedToggle()}
-                <ManageTracking itemDetail={itemDetail} userSelf={userSelf} />
+                <ManageTracking itemDetail={itemDetail} />
               </div>
               <div className={classes.itemInformationContainer}>
                 {this.renderDescriptiveDetails(itemDetail)}
