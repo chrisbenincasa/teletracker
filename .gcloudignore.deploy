@@ -1,0 +1,8 @@
+.git/
+.github/
+frontend/
+web/
+scala-server/
+terraform/qa/.terraform/
+node_modules/
+./scraper/
