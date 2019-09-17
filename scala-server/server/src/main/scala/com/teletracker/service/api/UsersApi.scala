@@ -1,11 +1,13 @@
 package com.teletracker.service.api
 
-import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.auth.jwt.JwtVendor
-import com.teletracker.common.db.BaseDbProvider
 import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
-import com.teletracker.common.db.model.{TrackedListFactory, UserPreferences}
-import com.teletracker.common.util.{FactoryImplicits, GeneralizedDbFactory}
+import com.teletracker.common.db.model.{
+  TrackedListFactory,
+  UserPreferences,
+  UserThingTag,
+  UserThingTagType
+}
 import com.teletracker.service.api.model.UserDetails
 import com.teletracker.service.controllers.UpdateUserRequestPayload
 import javax.inject.Inject
@@ -70,7 +72,7 @@ class UsersApi @Inject()(
       })
   }
 
-  def registerUser(userId: String) = {
+  def registerUser(userId: String): Future[Seq[Int]] = {
     createDefaultListsForUser(userId)
   }
 
@@ -81,5 +83,23 @@ class UsersApi @Inject()(
         TrackedListFactory.watchedList(userId)
       )
     )
+  }
+
+  def handleTagChange(userThingTag: UserThingTag): Future[Unit] = {
+    userThingTag.action match {
+      case UserThingTagType.Watched =>
+        listsDbAccess
+          .findRemoveOnWatchedLists(userThingTag.userId)
+          .flatMap(lists => {
+            usersDbAccess.removeThingFromLists(
+              lists.filter(!_.isDynamic).map(_.id).toSet,
+              userThingTag.thingId
+            )
+          })
+          .map(_ => {})
+
+      case _ =>
+        Future.unit
+    }
   }
 }

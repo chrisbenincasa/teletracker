@@ -27,7 +27,10 @@ import Truncate from 'react-truncate';
 import AddToListDialog from './AddToListDialog';
 import { ActionType, List } from '../types';
 import { bindActionCreators, Dispatch } from 'redux';
-import { ListUpdate, ListUpdatedInitiatedPayload } from '../actions/lists';
+import {
+  updateListTracking,
+  ListTrackingUpdatedInitiatedPayload,
+} from '../actions/lists';
 import { connect } from 'react-redux';
 import { GridProps } from '@material-ui/core/Grid';
 import {
@@ -207,7 +210,7 @@ interface ItemCardProps extends WithStyles<typeof styles> {
 type RequiredThingType = ThingLikeStruct & Linkable & HasImagery;
 
 interface DispatchProps {
-  ListUpdate: (payload: ListUpdatedInitiatedPayload) => void;
+  ListUpdate: (payload: ListTrackingUpdatedInitiatedPayload) => void;
   updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
   removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
 }
@@ -607,7 +610,7 @@ class ItemCard extends Component<Props, ItemCardState> {
 const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
-      ListUpdate,
+      ListUpdate: updateListTracking,
       updateUserItemTags,
       removeUserItemTags,
     },

@@ -31,8 +31,11 @@ class TmdbSynchronousProcessor @Inject()(
 )(implicit executionContext: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def processMovies(results: List[Movie]): Future[List[PartialThing]] = {
-    processMixedTypes(results.map(Coproduct[MultiTypeXor](_)))
+  def processMovies(
+    results: List[Movie],
+    userId: Option[String]
+  ): Future[List[PartialThing]] = {
+    processMixedTypes(results.map(Coproduct[MultiTypeXor](_)), userId)
   }
 
   def processMovieCredits(
@@ -87,12 +90,13 @@ class TmdbSynchronousProcessor @Inject()(
   }
 
   def processMixedTypes(
-    results: List[MultiTypeXor]
+    results: List[MultiTypeXor],
+    userId: Option[String]
   ): Future[List[PartialThing]] = {
     val noPersonResults = results.flatMap(_.filterNot[TmdbPerson])
     val resultIds = noPersonResults.map(_.fold(FieldExtractors.extractId)).toSet
     val existingFut = thingsDbAccess
-      .findThingsByTmdbIds(ExternalSource.TheMovieDb, resultIds, None)
+      .findThingsByTmdbIds(ExternalSource.TheMovieDb, resultIds, None, userId)
 
     // Partition results by things we've already seen and saved
     val partitionedResults = for {
@@ -130,7 +134,7 @@ class TmdbSynchronousProcessor @Inject()(
         val typ = result.fold(extractType)
 
         val newOrExistingThing = existingThings.get(id -> typ) match {
-          case Some(existing) =>
+          case Some((existing, _)) =>
             Future.successful(Some(existing))
 
           case None =>

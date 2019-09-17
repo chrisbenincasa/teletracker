@@ -1,7 +1,10 @@
 package com.teletracker.common.db.access
 
-import com.google.inject.assistedinject.Assisted
-import com.teletracker.common.api.model.TrackedList
+import com.teletracker.common.api.model.{
+  TrackedList,
+  TrackedListOptions,
+  TrackedListRules
+}
 import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.db.model.{
   Events,
@@ -15,13 +18,11 @@ import com.teletracker.common.db.{
   DbImplicits,
   DbMonitoring,
   DefaultForListType,
-  SortMode,
-  SyncDbProvider
+  SortMode
 }
 import com.teletracker.common.util.{
   FactoryImplicits,
   Field,
-  GeneralizedDbFactory,
   ListFilters,
   NetworkCache,
   Slug
@@ -29,6 +30,7 @@ import com.teletracker.common.util.{
 import javax.inject.{Inject, Provider}
 import java.time.{Instant, OffsetDateTime}
 import java.util.UUID
+import com.teletracker.common.util.Functions._
 import scala.concurrent.{ExecutionContext, Future}
 
 class UsersDbAccess @Inject()(
@@ -193,13 +195,51 @@ class UsersDbAccess @Inject()(
   def updateList(
     userId: String,
     listId: Int,
-    name: String
-  ): Future[Int] = {
+    name: Option[String],
+    rules: Option[TrackedListRules],
+    options: Option[TrackedListOptions]
+  ): Future[Option[ListUpdateResult]] = {
+    val rulesDao = rules.map(_.toRow)
+    val optionsDao = options.map(_.toRow)
+
+    // TODO: Move this to API
     run {
-      trackedLists.query
-        .filter(l => l.userId === userId && l.id === listId)
-        .map(_.name)
-        .update(name)
+      trackedLists
+        .findSpecificListQuery(userId, listId)
+        .result
+        .headOption
+        .flatMap {
+          case None => DBIO.successful(None)
+          case Some(list) =>
+            val updatedList = list
+              .copy(
+                name = name.getOrElse(list.name),
+                rules = rulesDao.orElse(list.rules),
+                options = optionsDao.orElse(list.options)
+              )
+              .applyIf(options.exists(_.removeWatchedItems) && list.isDynamic)(
+                addRemoveWhenWatchedRule
+              )
+              .applyIf(options.exists(!_.removeWatchedItems) && list.isDynamic)(
+                removeRemoveWhenWatchedRule
+              )
+
+            trackedLists
+              .findSpecificListQuery(userId, listId)
+              .update(updatedList)
+              .map {
+                case 1 =>
+                  Some(
+                    ListUpdateResult(
+                      list.rules,
+                      rulesDao.orElse(list.rules),
+                      list.options,
+                      optionsDao.orElse(list.options)
+                    )
+                  )
+                case _ => None
+              }
+        }
     }
   }
 
@@ -253,7 +293,7 @@ class UsersDbAccess @Inject()(
       idsToInsert = sourceIds.toSet -- targetIds
       _ <- run {
         trackedListThings.query ++= idsToInsert.map(thingId => {
-          TrackedListThing(targetList, thingId, OffsetDateTime.now())
+          TrackedListThing(targetList, thingId, OffsetDateTime.now(), None)
         })
       }
     } yield {}
@@ -309,7 +349,7 @@ class UsersDbAccess @Inject()(
     run {
       // TODO is this wrong - addedTime
       trackedListThings.query.insertOrUpdate(
-        TrackedListThing(listId, thingId, OffsetDateTime.now())
+        TrackedListThing(listId, thingId, OffsetDateTime.now(), None)
       )
     }
   }
@@ -325,7 +365,8 @@ class UsersDbAccess @Inject()(
         trackedListThings.query
           .filter(_.listId inSetBind listIds)
           .filter(_.thingId === thingId)
-          .delete
+          .map(_.removedAt)
+          .update(Some(OffsetDateTime.now()))
       }
     }
   }
@@ -377,7 +418,7 @@ class UsersDbAccess @Inject()(
     thingId: Either[UUID, Slug],
     action: UserThingTagType,
     value: Option[Double]
-  ): Future[Int] = {
+  ): Future[Option[UserThingTag]] = {
     run {
       withThingId(thingId).flatMap {
         case None =>
@@ -394,20 +435,48 @@ class UsersDbAccess @Inject()(
             .headOption
             .flatMap {
               case Some(existing) =>
-                userThingTags.query.update(existing.copy(value = value))
+                val newTag = existing.copy(value = value)
+                userThingTags.query.update(newTag).map {
+                  case 1 => Some(newTag)
+                  case _ => None
+                }
 
               case None =>
-                userThingTags.query += UserThingTag(
+                val tag = UserThingTag(
                   -1,
                   userId,
                   id,
                   action,
                   value
                 )
+                (userThingTags.query += tag).map(_ => Some(tag))
             }
       }
     }
+  }
 
+  private def addRemoveWhenWatchedRule(list: TrackedListRow) = {
+    list.copy(
+      rules = list.rules.map(
+        rules =>
+          rules.copy(
+            rules = (rules.rules :+ DynamicListTagRule.notWatched).distinct
+          )
+      )
+    )
+  }
+
+  private def removeRemoveWhenWatchedRule(list: TrackedListRow) = {
+    list.copy(
+      rules = list.rules.map(
+        rules =>
+          rules.copy(
+            rules = (rules.rules
+              .filterNot(_ == DynamicListTagRule.notWatched))
+              .distinct
+          )
+      )
+    )
   }
 
   def removeAction(
@@ -431,3 +500,14 @@ class UsersDbAccess @Inject()(
 
 case class SlickDBNoAvailableThreadsException(message: String)
     extends Exception(message)
+
+case class ListUpdateResult(
+  preMutationRules: Option[DynamicListRules],
+  postMutationRules: Option[DynamicListRules],
+  preMutationOptions: Option[TrackedListRowOptions],
+  postMutationOptions: Option[TrackedListRowOptions]) {
+
+  def rulesChanged: Boolean = preMutationRules != postMutationRules
+  def optionsChanged: Boolean = preMutationOptions != postMutationOptions
+
+}

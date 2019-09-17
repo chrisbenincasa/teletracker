@@ -13,10 +13,10 @@ import {
   addToListSaga,
   createNewListSaga,
   deleteListSaga,
-  renameListSaga,
+  updateListSaga,
   retrieveListSaga,
   retrieveListsSaga,
-  updateListSaga,
+  updateListTrackingSaga,
 } from './lists';
 import { loadNetworksSaga } from './metadata';
 import { searchSaga } from './search';
@@ -74,7 +74,7 @@ export function* root() {
     updateUserSaga(),
     createNewListSaga(),
     deleteListSaga(),
-    renameListSaga(),
+    updateListTrackingSaga(),
     updateUserActionSaga(),
     removeUserActionSaga(),
     upcomingAvailabilitySaga(),

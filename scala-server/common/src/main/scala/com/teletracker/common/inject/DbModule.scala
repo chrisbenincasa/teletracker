@@ -68,27 +68,3 @@ class BaseDbModule extends TwitterModule {
     CustomPostgresProfile
   }
 }
-
-//class SyncDbModule extends DbModule {
-//  override protected def configure(): Unit = {
-//    bind[BaseDbProvider, SyncPath].to(classOf[SyncDbProvider])
-//  }
-//
-//  @Provides
-//  @Singleton
-//  def dataSource(config: TeletrackerConfig): javax.sql.DataSource = {
-//    mkDataSource("Sync DB Pool", config)
-//  }
-//}
-//
-//class AsyncDbModule extends DbModule {
-//  override protected def configure(): Unit = {
-//    bind[BaseDbProvider, AsyncPath].to(classOf[AsyncDbProvider])
-//  }
-//
-//  @Provides
-//  @Singleton
-//  def asyncDataSource(config: TeletrackerConfig): javax.sql.DataSource = {
-//    mkDataSource("Async DB Pool", config)
-//  }
-//}
