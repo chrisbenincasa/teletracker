@@ -97,16 +97,20 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   constructor(props: Props) {
     super(props);
 
-    let listChanges = R.reduce(
-      (acc, elem) => {
-        return {
-          ...acc,
-          [elem.id]: this.listContainsItem(elem, props.item),
-        };
-      },
-      {},
-      R.values(props.listsById),
-    );
+    const belongsToLists =
+      props &&
+      props.item &&
+      props.item.userMetadata &&
+      props.item.userMetadata.belongsToLists
+        ? props.item.userMetadata.belongsToLists
+        : [];
+
+    let listChanges = belongsToLists.reduce((acc, elem) => {
+      return {
+        ...acc,
+        [elem.id]: true,
+      };
+    }, {});
 
     this.state = {
       exited: false,
@@ -288,6 +292,11 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
 
   render() {
     const { classes } = this.props;
+    let cleanList = _.filter(
+      this.props.listsById,
+      item => !item.isDynamic && !item.isDeleted,
+    );
+
     return (
       <Dialog
         aria-labelledby="update-tracking-dialog"
@@ -303,7 +312,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
 
         <DialogContent className={classes.dialogContainer}>
           <FormGroup>
-            {_.map(this.props.listsById, list => (
+            {_.map(cleanList, list => (
               <FormControlLabel
                 key={list.id}
                 control={
