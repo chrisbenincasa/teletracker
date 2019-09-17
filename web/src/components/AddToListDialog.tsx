@@ -26,8 +26,8 @@ import {
   addToList,
   createList,
   LIST_ADD_ITEM_INITIATED,
-  ListUpdate,
-  ListUpdatedInitiatedPayload,
+  updateListTracking,
+  ListTrackingUpdatedInitiatedPayload,
   USER_SELF_CREATE_LIST,
   UserCreateListPayload,
 } from '../actions/lists';
@@ -75,7 +75,7 @@ interface AddToListDialogProps {
 
 interface AddToListDialogDispatchProps {
   addToList: (listId: string, itemId: string) => void;
-  updateLists: (payload: ListUpdatedInitiatedPayload) => void;
+  updateLists: (payload: ListTrackingUpdatedInitiatedPayload) => void;
   createList: (payload: UserCreateListPayload) => void;
 }
 
@@ -377,7 +377,7 @@ const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
       addToList,
-      updateLists: ListUpdate,
+      updateLists: updateListTracking,
       createList,
     },
     dispatch,
