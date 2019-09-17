@@ -2,22 +2,14 @@ import {
   Avatar,
   Button,
   CircularProgress,
-  colors,
   createStyles,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   Drawer as DrawerUI,
-  FormControl,
-  FormHelperText,
   List,
   ListItem,
   ListItemAvatar,
   ListItemIcon,
   ListItemText,
-  TextField,
   Theme,
   Typography,
   withStyles,
@@ -29,31 +21,22 @@ import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import {
-  Link,
-  // Link as RouterLink,
-  RouteComponentProps,
-  withRouter,
-} from 'react-router-dom';
+import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../actions/auth';
 import {
-  createList,
   LIST_RETRIEVE_ALL_INITIATED,
   ListRetrieveAllPayload,
   retrieveAllLists,
-  USER_SELF_CREATE_LIST,
-  UserCreateListPayload,
 } from '../actions/lists';
 import withUser, { WithUserProps } from '../components/withUser';
+import CreateListDialog from '../components/CreateListDialog';
 import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
 import { layoutStyles } from '../styles';
 import { List as ListType } from '../types';
 import RouterLink from './RouterLink';
-import { render } from 'react-dom';
-import CreateAListValidator from '../utils/validation/CreateAListValidator';
 
 export const DrawerWidthPx = 220;
 
@@ -109,15 +92,11 @@ interface OwnProps extends WithStyles<typeof styles> {
 
 interface DispatchProps {
   retrieveAllLists: (payload?: ListRetrieveAllPayload) => void;
-  createList: (payload?: UserCreateListPayload) => void;
   logout: () => void;
 }
 
 interface State {
   createDialogOpen: boolean;
-  listName: string;
-  nameLengthError: boolean;
-  nameDuplicateError: boolean;
   loadingLists: boolean;
 }
 
@@ -180,9 +159,6 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
 class Drawer extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
-    listName: '',
-    nameLengthError: false,
-    nameDuplicateError: false,
     loadingLists: true,
   };
 
@@ -193,13 +169,6 @@ class Drawer extends Component<Props, State> {
   }
 
   componentDidUpdate(oldProps: Props) {
-    if (
-      Boolean(oldProps.loading[USER_SELF_CREATE_LIST]) &&
-      !Boolean(this.props.loading[USER_SELF_CREATE_LIST])
-    ) {
-      this.handleModalClose();
-    }
-
     if (Boolean(oldProps.loadingLists) && !Boolean(this.props.loadingLists)) {
       this.setState({ loadingLists: false });
     }
@@ -216,35 +185,7 @@ class Drawer extends Component<Props, State> {
   handleModalClose = () => {
     this.setState({
       createDialogOpen: false,
-      nameLengthError: false,
-      nameDuplicateError: false,
     });
-  };
-
-  validateListName = () => {
-    let { listsById, userSelf } = this.props;
-    let { listName } = this.state;
-
-    // Reset error states before validation
-    if (userSelf) {
-      this.setState(CreateAListValidator.defaultState().asObject());
-
-      let validationResult = CreateAListValidator.validate(listsById, listName);
-
-      if (validationResult.hasError()) {
-        this.setState(validationResult.asObject());
-      } else {
-        this.handleCreateListSubmit();
-      }
-    }
-  };
-
-  handleCreateListSubmit = () => {
-    let { createList } = this.props;
-    let { listName } = this.state;
-
-    createList({ name: listName });
-    this.handleModalClose();
   };
 
   renderListItems = (userList: ListType, index: number) => {
@@ -316,7 +257,7 @@ class Drawer extends Component<Props, State> {
   }
 
   renderDrawer() {
-    let { classes, open, listsById } = this.props;
+    let { classes, open } = this.props;
 
     return (
       <DrawerUI
@@ -334,71 +275,14 @@ class Drawer extends Component<Props, State> {
     );
   }
 
-  renderDialog() {
-    let { loading } = this.props;
-    let {
-      createDialogOpen,
-      listName,
-      nameDuplicateError,
-      nameLengthError,
-    } = this.state;
-    let isLoading = Boolean(loading[USER_SELF_CREATE_LIST]);
-
-    return (
-      <Dialog fullWidth maxWidth="xs" open={createDialogOpen}>
-        <DialogTitle>Create New List</DialogTitle>
-        <DialogContent>
-          <FormControl style={{ width: '100%' }}>
-            <TextField
-              autoFocus
-              margin="dense"
-              id="name"
-              label="Name"
-              type="text"
-              fullWidth
-              value={listName}
-              error={nameDuplicateError || nameLengthError}
-              onChange={e => this.setState({ listName: e.target.value })}
-            />
-            <FormHelperText
-              id="component-error-text"
-              style={{
-                display:
-                  nameDuplicateError || nameLengthError ? 'block' : 'none',
-              }}
-            >
-              {nameLengthError ? 'List name cannot be blank' : null}
-              {nameDuplicateError
-                ? 'You already have a list with this name'
-                : null}
-            </FormHelperText>
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            disabled={isLoading}
-            onClick={this.handleModalClose}
-            color="primary"
-          >
-            Cancel
-          </Button>
-          <Button
-            disabled={isLoading}
-            onClick={this.validateListName}
-            color="primary"
-          >
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
-  }
-
   render() {
     return (
       <React.Fragment>
         {this.renderDrawer()}
-        {this.renderDialog()}
+        <CreateListDialog
+          open={this.state.createDialogOpen}
+          onClose={this.handleModalClose.bind(this)}
+        />
       </React.Fragment>
     );
   }
@@ -424,7 +308,6 @@ const mapStateToProps = (appState: AppState) => {
 const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
-      createList,
       logout,
       retrieveAllLists,
     },
