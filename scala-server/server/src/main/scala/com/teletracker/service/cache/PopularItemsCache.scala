@@ -31,7 +31,7 @@ class PopularItemsCache @Inject()(
             _loading = tmdbClient
               .getPopularMovies()
               .flatMap(results => {
-                tmdbSynchronousProcessor.processMovies(results.results)
+                tmdbSynchronousProcessor.processMovies(results.results, None)
               })
 
             _loading.foreach(cache.put(0, _))

@@ -101,7 +101,6 @@ interface OwnProps {
   listLoading: boolean;
   listsById: ListsByIdMap;
   thingsById: ThingMap;
-  list?: List;
 }
 
 interface DrawerProps {
@@ -144,8 +143,8 @@ interface State {
   renameDialogOpen: boolean;
   newListName: string;
   prevListId: number;
-  existingList?: List;
   deleteOnWatch: boolean;
+  list?: List;
 }
 
 class ListDetail extends Component<Props, State> {
@@ -161,7 +160,7 @@ class ListDetail extends Component<Props, State> {
       renameDialogOpen: false,
       newListName: '',
       prevListId: listId,
-      existingList: props.list,
+      list: props.listsById[listId],
       deleteOnWatch: true,
     };
   }
@@ -185,22 +184,21 @@ class ListDetail extends Component<Props, State> {
   }
 
   componentDidMount() {
-    let force = !this.state.existingList || !this.state.existingList!.things;
     this.props.retrieveList({
-      listId: Number(this.props.match.params.id),
+      listId: this.listId,
       force: true,
     });
   }
 
   componentDidUpdate(oldProps: Props, prevState: State) {
     if (
-      this.props.match.params.id !== oldProps.match.params.id ||
+      this.listId !== Number(oldProps.match.params.id) ||
       (!prevState.loadingList && this.state.loadingList)
     ) {
       this.setState({ loadingList: true });
 
       this.props.retrieveList({
-        listId: Number(this.props.match.params.id),
+        listId: this.listId,
         force: true,
       });
     } else if (
@@ -209,8 +207,8 @@ class ListDetail extends Component<Props, State> {
     ) {
       this.setState({
         loadingList: false,
-        existingList: this.props.list,
-        deleteOnWatch: this.props.list
+        list: this.props.listsById[this.listId],
+        deleteOnWatch: this.props.listsById[this.listId]
           ? R.path(
               ['list', 'configuration', 'options', 'removeWatchedItems'],
               this.props,
@@ -221,7 +219,9 @@ class ListDetail extends Component<Props, State> {
   }
 
   setWatchedSetting = event => {
-    let { list, updateList } = this.props;
+    let { updateList } = this.props;
+    let { list } = this.state;
+
     if (list) {
       let listOptions = getOrInitListOptions(list);
       let newListOptions = {
@@ -513,12 +513,12 @@ class ListDetail extends Component<Props, State> {
   }
 
   render() {
-    let { list, match, userSelf } = this.props;
-    let { loadingList } = this.state;
+    let { userSelf } = this.props;
+    let { loadingList, list } = this.state;
 
     return loadingList || !list || !userSelf
       ? this.renderLoading()
-      : this.renderListDetail(this.state.existingList!);
+      : this.renderListDetail(this.state.list!);
   }
 }
 
@@ -530,7 +530,6 @@ const mapStateToProps: (
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     listLoading: Boolean(appState.lists.loading[LIST_RETRIEVE_INITIATED]),
     listsById: appState.lists.listsById,
-    list: appState.lists.listsById[Number(props.match.params.id)],
     thingsById: appState.itemDetail.thingsById,
   };
 };

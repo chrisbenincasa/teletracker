@@ -15,7 +15,8 @@ import com.teletracker.common.db.model.{
   ThingFactory,
   ThingGenre,
   ThingRaw,
-  ThingType
+  ThingType,
+  TrackedListRow
 }
 import com.teletracker.common.model.tmdb.{
   CastMember,
@@ -178,7 +179,7 @@ class ThingApi @Inject()(
               .flatten
           })
 
-        val rawRecommendations = gatherRecommendations(thing)
+        val rawRecommendations = gatherRecommendations(thing, userId)
 
         val sanitizedCast = sanitizeCastMembers(rawJsonMembers, cast.toList)
 
@@ -191,7 +192,14 @@ class ThingApi @Inject()(
           case Some(recsFut) =>
             recsFut.map(recs => {
               // TODO: Just select the thing without metadata from the server...
-              Some(baseThing.withRecommendations(recs.map(_.toPartial)))
+              Some(baseThing.withRecommendations(recs.map {
+                case (thing, belongsToLists) =>
+                  thing.toPartial.withUserMetadata(
+                    UserThingDetails(
+                      belongsToLists = belongsToLists.map(_.toFull)
+                    )
+                  )
+              }))
             })
           case None =>
             Future.successful(Some(baseThing))
@@ -200,14 +208,15 @@ class ThingApi @Inject()(
   }
 
   private def gatherRecommendations(
-    thing: PartialThing
-  ): Option[Future[List[ThingRaw]]] = {
+    thing: PartialThing,
+    userId: Option[String]
+  ): Option[Future[List[(ThingRaw, Seq[TrackedListRow])]]] = {
     thing.metadata
       .flatMap(movieRecommendations.getOption)
       .map(movies => {
         val ids = movies.results.map(_.id.toString).take(6)
         timed("gatherThings") {
-          gatherThings(ids, ThingType.Movie)
+          gatherThings(ids, ThingType.Movie, userId)
         }
       })
       .orElse {
@@ -215,7 +224,7 @@ class ThingApi @Inject()(
           .flatMap(tvRecommendations.getOption)
           .map(shows => {
             val ids = shows.results.map(_.id.toString).take(6)
-            gatherThings(ids, ThingType.Show)
+            gatherThings(ids, ThingType.Show, userId)
           })
       }
   }
@@ -231,19 +240,21 @@ class ThingApi @Inject()(
 
   private def gatherThings(
     ids: List[String],
-    thingType: ThingType
-  ): Future[List[ThingRaw]] = {
+    thingType: ThingType,
+    userId: Option[String]
+  ): Future[List[(ThingRaw, Seq[TrackedListRow])]] = {
     val idsByOrder = ids.zipWithIndex.toMap
     thingsDbAccess
       .findThingsByTmdbIds(
         ExternalSource.TheMovieDb,
         ids.toSet,
-        Some(thingType)
+        Some(thingType),
+        userId
       )
       .map(results => {
         results.toList
           .map {
-            case ((tmdbId, _), thing) => tmdbId -> thing
+            case ((tmdbId, _), thingAndDetails) => tmdbId -> thingAndDetails
           }
           .sortBy {
             case (tmdbId, _) => idsByOrder(tmdbId)
