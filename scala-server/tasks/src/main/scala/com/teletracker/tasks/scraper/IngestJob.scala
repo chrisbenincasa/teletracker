@@ -14,6 +14,7 @@ import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.{NetworkCache, Slug}
+import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import io.circe.Decoder
 import io.circe.parser._
@@ -95,32 +96,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     val source = getSource(parsedArgs.inputFile)
 
     try {
-      val items = parseMode match {
-        case AllJson =>
-          parse(source.getLines().mkString("")).flatMap(_.as[List[T]])
-        case JsonPerLine =>
-          source
-            .getLines()
-            .zipWithIndex
-            .filter(_._1.nonEmpty)
-            .map { case (in, idx) => in.trim -> idx }
-            .map {
-              case (in, idx) =>
-                parse(in).left.map(failure => {
-                  println(s"$failure, $idx: $in")
-                  failure
-                })
-            }
-            .map(_.flatMap(_.as[T]))
-            .foldLeft(
-              Right(Nil): Either[Exception, List[T]]
-            ) {
-              case (_, e @ Left(_)) =>
-                e.asInstanceOf[Either[Exception, List[T]]]
-              case (e @ Left(_), _)       => e
-              case (Right(acc), Right(n)) => Right(acc :+ n)
-            }
-      }
+      val items = new IngestJobParser().parse[T](source.getLines(), parseMode)
 
       items match {
         case Left(value) =>
@@ -441,10 +417,6 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
         })
     }
   }
-
-  sealed trait ParseMode
-  case object JsonPerLine extends ParseMode
-  case object AllJson extends ParseMode
 
   sealed trait ProcessMode
   case object Serial extends ProcessMode
