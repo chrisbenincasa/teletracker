@@ -2,7 +2,14 @@ import { call, take } from '@redux-saga/core/effects';
 import * as firebase from 'firebase/app';
 import { TeletrackerApi } from './api-client';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
-import { ActionType, Network, User, UserPreferences } from '../types';
+import {
+  ActionType,
+  Network,
+  User,
+  UserPreferences,
+  ListRules,
+  ListOptions,
+} from '../types';
 
 export class SagaTeletrackerClient {
   static instance = new SagaTeletrackerClient();
@@ -44,6 +51,22 @@ export class SagaTeletrackerClient {
       id,
       sort,
       desc,
+    );
+  }
+
+  *updateList(
+    id: number,
+    name?: string,
+    rules?: ListRules,
+    options?: ListOptions,
+  ) {
+    return yield this.apiCall(
+      client => client.updateList,
+      yield this.withToken(),
+      id,
+      name,
+      rules,
+      options,
     );
   }
 

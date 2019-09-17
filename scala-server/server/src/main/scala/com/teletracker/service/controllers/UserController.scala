@@ -1,6 +1,10 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.api.model.{TrackedList, TrackedListRules}
+import com.teletracker.common.api.model.{
+  TrackedList,
+  TrackedListOptions,
+  TrackedListRules
+}
 import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.db.access.{
   ListQueryResult,
@@ -185,12 +189,38 @@ class UserController @Inject()(
 
       put("/:userId/lists/:listId") { req: UpdateListRequest =>
         withList(req.authenticatedUserId.get, req.listId) { list =>
-          usersDbAccess
-            .updateList(req.authenticatedUserId.get, list.id, req.name)
-            .map {
-              case 0 => response.notFound
-              case _ => response.noContent
+          for {
+            updateResult <- usersDbAccess
+              .updateList(
+                req.authenticatedUserId.get,
+                list.id,
+                req.name,
+                req.rules,
+                req.options
+              )
+            _ <- updateResult
+              .map(
+                listsApi
+                  .handleListUpdateResult(
+                    req.authenticatedUserId.get,
+                    list.id,
+                    _
+                  )
+              )
+              .getOrElse(Future.unit)
+          } yield {
+            updateResult match {
+              case None => response.notFound
+              case Some(result) =>
+                response.ok(
+                  DataResponse.complex(
+                    UpdateListResponse(
+                      result.optionsChanged || result.rulesChanged
+                    )
+                  )
+                )
             }
+          }
         }
       }
 
@@ -302,14 +332,17 @@ class UserController @Inject()(
               if (action.typeRequiresValue() && req.value.isEmpty) {
                 Future.successful(response.badRequest)
               } else {
-                usersDbAccess
+                val newOrUpdatedTag = usersDbAccess
                   .insertOrUpdateAction(
                     req.request.authenticatedUserId.get,
                     req.idOrSlug,
                     action,
                     req.value
                   )
-                  .map(_ => response.noContent)
+
+                newOrUpdatedTag.foreach(_.foreach(usersApi.handleTagChange))
+
+                newOrUpdatedTag.map(_ => response.noContent)
               }
 
             case Failure(_) =>
@@ -418,9 +451,14 @@ case class CreateListResponse(id: Int)
 case class UpdateListRequest(
   @RouteParam userId: String,
   @RouteParam listId: String,
-  name: String,
+  name: Option[String],
+  rules: Option[TrackedListRules],
+  options: Option[TrackedListOptions],
   request: Request)
     extends InjectedRequest
+
+@JsonCodec
+case class UpdateListResponse(requiresRefresh: Boolean)
 
 case class GetListThingsRequest(
   @RouteParam userId: String,

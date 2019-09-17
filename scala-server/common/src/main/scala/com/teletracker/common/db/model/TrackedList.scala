@@ -14,6 +14,7 @@ case class TrackedListRow(
   userId: String,
   isDynamic: Boolean = false,
   rules: Option[DynamicListRules] = None,
+  options: Option[TrackedListRowOptions] = None,
   deletedAt: Option[OffsetDateTime] = None) {
   def toFull: TrackedList = TrackedList.fromRow(this)
 }
@@ -21,6 +22,9 @@ case class TrackedListRow(
 object DynamicListTagRule {
   def ifPresent(tagType: UserThingTagType): DynamicListTagRule =
     DynamicListTagRule(tagType, None, Some(true))
+
+  def watched = ifPresent(UserThingTagType.Watched)
+  def notWatched = watched.negate
 }
 
 sealed trait DynamicListRule {
@@ -56,10 +60,11 @@ object DynamicListRules {
     )
 }
 
-// TODO: Insanely simple ruleset where rules are AND'd together. Expand to be more flexible.
 case class DynamicListRules(rules: List[DynamicListRule]) {
   require(rules.nonEmpty)
 }
+
+case class TrackedListRowOptions(removeWatchedItems: Boolean)
 
 class TrackedLists @Inject()(
   val driver: CustomPostgresProfile,
@@ -78,6 +83,11 @@ class TrackedLists @Inject()(
     def userId = column[String]("user_id")
     def isDynamic = column[Boolean]("is_dynamic", O.Default(false))
     def rules = column[Option[DynamicListRules]]("rules", O.SqlType("jsonb"))
+    def options =
+      column[Option[TrackedListRowOptions]](
+        "options",
+        O.SqlType("jsonb")
+      )
     def deletedAt =
       column[Option[OffsetDateTime]](
         "deleted_at",
@@ -93,6 +103,7 @@ class TrackedLists @Inject()(
         userId,
         isDynamic,
         rules,
+        options,
         deletedAt
       ) <> (TrackedListRow.tupled, TrackedListRow.unapply)
   }

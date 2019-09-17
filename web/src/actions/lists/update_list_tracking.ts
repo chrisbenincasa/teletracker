@@ -4,29 +4,29 @@ import { clientEffect, createAction } from '../utils';
 import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
 
-export const LIST_UPDATE_INITIATED = 'lists/update/INITIATED';
-export const LIST_UPDATE_SUCCESS = 'lists/update/SUCCESS';
-export const LIST_UPDATE_FAILED = 'lists/update/FAILED';
+export const LIST_UPDATE_TRACKING_INITIATED = 'lists/update_tracking/INITIATED';
+export const LIST_UPDATE_TRACKING_SUCCESS = 'lists/update_tracking/SUCCESS';
+export const LIST_UPDATE_TRACKING_FAILED = 'lists/update_tracking/FAILED';
 
-export interface ListUpdatedInitiatedPayload {
+export interface ListTrackingUpdatedInitiatedPayload {
   thingId: string;
   addToLists: string[];
   removeFromLists: string[];
 }
 
-export type ListUpdateInitiatedAction = FSA<
-  typeof LIST_UPDATE_INITIATED,
-  ListUpdatedInitiatedPayload
+export type ListTrackingUpdateInitiatedAction = FSA<
+  typeof LIST_UPDATE_TRACKING_INITIATED,
+  ListTrackingUpdatedInitiatedPayload
 >;
 
-export const ListUpdate = createAction<ListUpdateInitiatedAction>(
-  LIST_UPDATE_INITIATED,
-);
+export const updateListTracking = createAction<
+  ListTrackingUpdateInitiatedAction
+>(LIST_UPDATE_TRACKING_INITIATED);
 
-export const updateListSaga = function*() {
-  yield takeLatest(LIST_UPDATE_INITIATED, function*({
+export const updateListTrackingSaga = function*() {
+  yield takeLatest(LIST_UPDATE_TRACKING_INITIATED, function*({
     payload,
-  }: ListUpdateInitiatedAction) {
+  }: ListTrackingUpdateInitiatedAction) {
     if (payload) {
       let response: TeletrackerResponse<any> = yield clientEffect(
         client => client.updateListTracking,

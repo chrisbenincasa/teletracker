@@ -1,11 +1,12 @@
 package com.teletracker.service.api
 
-import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.api.model.TrackedListRules
-import com.teletracker.common.db.BaseDbProvider
-import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
+import com.teletracker.common.db.access.{
+  ListUpdateResult,
+  ListsDbAccess,
+  UsersDbAccess
+}
 import com.teletracker.common.db.model.TrackedListRow
-import com.teletracker.common.util.{FactoryImplicits, GeneralizedDbFactory}
 import javax.inject.Inject
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -96,5 +97,26 @@ class ListsApi @Inject()(
       idsToInsert = sourceIds.toSet -- targetIds
       _ <- listsDbAccess.addTrackedThings(targetList, idsToInsert)
     } yield {}
+  }
+
+  def handleListUpdateResult(
+    userId: String,
+    listId: Int,
+    listUpdateResult: ListUpdateResult
+  ): Future[Unit] = {
+    if (listUpdateResult.optionsChanged) {
+      (
+        listUpdateResult.preMutationOptions,
+        listUpdateResult.postMutationOptions
+      ) match {
+        case (preOpts, Some(opts))
+            if (preOpts.isEmpty || !preOpts.get.removeWatchedItems) && opts.removeWatchedItems =>
+          listsDbAccess.removeWatchedThingsFromList(listId).map(_ => {})
+
+        case _ => Future.unit
+      }
+    } else {
+      Future.unit
+    }
   }
 }

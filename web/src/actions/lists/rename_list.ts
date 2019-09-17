@@ -3,49 +3,66 @@ import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect, createAction } from '../utils';
 import { RetrieveUserSelfInitiated } from '../user';
 import { FSA } from 'flux-standard-action';
+import { ListRules, ListOptions } from '../../types';
+import { ListRetrieveInitiated } from './get_list';
 
-export const USER_SELF_RENAME_LIST = 'user/self/rename_list/INITIATED';
-export const USER_SELF_RENAME_LIST_SUCCESS = 'user/self/rename_list/SUCCESS';
+export const USER_SELF_UPDATE_LIST = 'user/self/update_list/INITIATED';
+export const USER_SELF_UPDATE_LIST_SUCCESS = 'user/self/update_list/SUCCESS';
 
-export interface UserRenameListPayload {
+export interface UserUpdateListPayload {
   listId: number;
-  listName: string;
+  name?: string;
+  rules?: ListRules;
+  options?: ListOptions;
 }
 
-export type UserRenameListAction = FSA<
-  typeof USER_SELF_RENAME_LIST,
-  UserRenameListPayload
+export type UserUpdateListAction = FSA<
+  typeof USER_SELF_UPDATE_LIST,
+  UserUpdateListPayload
 >;
 
-export type UserRenameListSuccessAction = FSA<
-  typeof USER_SELF_RENAME_LIST_SUCCESS,
-  UserRenameListPayload
+export type UserUpdateListSuccessAction = FSA<
+  typeof USER_SELF_UPDATE_LIST_SUCCESS,
+  UserUpdateListPayload
 >;
 
-export const renameList = createAction<UserRenameListAction>(
-  USER_SELF_RENAME_LIST,
+export const updateList = createAction<UserUpdateListAction>(
+  USER_SELF_UPDATE_LIST,
 );
 
-export const renameListSuccess = createAction<UserRenameListSuccessAction>(
-  USER_SELF_RENAME_LIST_SUCCESS,
+export const updateListSuccess = createAction<UserUpdateListSuccessAction>(
+  USER_SELF_UPDATE_LIST_SUCCESS,
 );
 
-export const renameListSaga = function*() {
-  yield takeEvery(USER_SELF_RENAME_LIST, function*({
+export const updateListSaga = function*() {
+  yield takeEvery(USER_SELF_UPDATE_LIST, function*({
     payload,
-  }: UserRenameListAction) {
+  }: UserUpdateListAction) {
     if (payload) {
       let response: TeletrackerResponse<any> = yield clientEffect(
-        client => client.renameList,
+        client => client.updateList,
         payload.listId,
-        payload.listName,
+        payload.name,
+        payload.rules,
+        payload.options,
       );
 
       if (response.ok) {
+        // TODO add real type
+        let requiresRefresh = response.data!.data.requiresRefresh;
+
+        if (requiresRefresh) {
+          yield put(
+            ListRetrieveInitiated({ listId: payload.listId, force: true }),
+          );
+        }
+
         yield put(
-          renameListSuccess({
+          updateListSuccess({
             listId: payload.listId,
-            listName: payload.listName,
+            name: payload.name,
+            rules: payload.rules,
+            options: payload.options,
           }),
         );
         yield put(RetrieveUserSelfInitiated({ force: true }));
