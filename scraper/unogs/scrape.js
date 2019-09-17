@@ -4,7 +4,7 @@ var moment = require("moment");
 var fs = require("fs").promises;
 const Entities = require("html-entities").AllHtmlEntities;
 const entities = new Entities();
-import { uploadToStorage } from "../common/storage";
+import { writeResultsAndUploadToStorage } from "../common/storage";
 
 /**
 
@@ -91,7 +91,7 @@ const scrape = async () => {
   let currentDate = moment().format("YYYY-MM-DD");
   let fileName = currentDate + "-netflix-expiring" + ".json";
   if (process.env.NODE_ENV == "production") {
-    let [file, _] = await uploadToStorage(
+    let [file, _] = await writeResultsAndUploadToStorage(
       fileName,
       "scrape-results/" + currentDate,
       titles

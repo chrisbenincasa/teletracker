@@ -66,3 +66,16 @@ module "tmdb-changes-scraper" {
     SCRAPER = "tmdbChanges"
   }
 }
+
+module "unogs-netflix-catalog-scraper" {
+  source = "./scraper"
+
+  trigger_name     = "unogs-netflix-catalog-scrape-trigger"
+  function_name    = "unogs-netflix-catalog"
+  entrypoint       = "unogsNetflixAll"
+  function_version = "1568682893"
+
+  extra_env_vars = {
+    SCRAPER = "unogsNetflixAll"
+  }
+}
