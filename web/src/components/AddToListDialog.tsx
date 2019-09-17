@@ -292,6 +292,11 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
 
   render() {
     const { classes } = this.props;
+    let cleanList = _.filter(
+      this.props.listsById,
+      item => !item.isDynamic && !item.isDeleted,
+    );
+
     return (
       <Dialog
         aria-labelledby="update-tracking-dialog"
@@ -307,7 +312,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
 
         <DialogContent className={classes.dialogContainer}>
           <FormGroup>
-            {_.map(this.props.listsById, list => (
+            {_.map(cleanList, list => (
               <FormControlLabel
                 key={list.id}
                 control={
