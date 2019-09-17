@@ -8,6 +8,7 @@ import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.execution.SequentialFutures
+import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
 import io.circe.generic.auto._
 import javax.inject.Inject
 import scala.concurrent.Future
