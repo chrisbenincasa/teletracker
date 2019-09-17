@@ -49,5 +49,6 @@ export {
   unogsNetflixExpiring,
   huluChanges,
   tmdbChanges,
+  unogsNetflixAll,
   startScrape
 };

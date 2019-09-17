@@ -2,7 +2,7 @@ import request from "request-promise";
 import cheerio from "cheerio";
 import moment from "moment";
 import { promises as fs } from "fs";
-import { uploadToStorage } from "../../common/storage";
+import { writeResultsAndUploadToStorage } from "../../common/storage";
 import { scheduleJob } from "../../common/api";
 import { substitute } from "../../common/berglas";
 
@@ -108,7 +108,7 @@ const scrape = async () => {
       );
     }
 
-    let [file, _] = await uploadToStorage(
+    let [file, _] = await writeResultsAndUploadToStorage(
       fileName,
       "scrape-results/" + currentDate,
       parsedResults

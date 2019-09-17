@@ -10,5 +10,5 @@ resource "google_cloudbuild_trigger" "push_to_master_trigger" {
 
   included_files = ["scala-server/**"]
 
-  disabled = "false"
+  disabled = "true"
 }

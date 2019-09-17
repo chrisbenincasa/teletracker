@@ -3,7 +3,7 @@ var cheerio = require("cheerio");
 var moment = require("moment");
 var fs = require("fs").promises;
 var _ = require("lodash");
-import { uploadToStorage } from "../../common/storage";
+import { writeResultsAndUploadToStorage } from "../../common/storage";
 
 const uaString =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36";
@@ -96,7 +96,7 @@ const scrape = async () => {
     let currentDate = moment().format("YYYY-MM-DD");
     let fileName = currentDate + "-hbo-changes" + ".json";
     if (process.env.NODE_ENV == "production") {
-      let [file, _] = await uploadToStorage(
+      let [file, _] = await writeResultsAndUploadToStorage(
         fileName,
         "scrape-results/" + currentDate,
         titles
