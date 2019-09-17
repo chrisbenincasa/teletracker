@@ -332,7 +332,7 @@ class ListQuery @Inject()(
         addedAt.desc
       case AddedTime(false) =>
         addedAt.asc
-      case d @ DefaultForListType(_) => makeSort(thing, addedAt, d.get(true))
+      case d @ DefaultForListType(_) => makeSort(thing, addedAt, d.get(false))
     }
   }
 

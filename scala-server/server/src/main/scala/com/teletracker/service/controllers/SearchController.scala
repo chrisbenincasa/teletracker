@@ -96,7 +96,8 @@ class SearchController @Inject()(
     results: List[MultiTypeXor]
   ): Future[List[PartialThing]] = {
     for {
-      popularItems <- tmdbSynchronousProcessor.processMixedTypes(results)
+      // TODO we can use the built-in thing user details here
+      popularItems <- tmdbSynchronousProcessor.processMixedTypes(results, None)
       thingIds = popularItems.map(_.id)
       thingUserDetails <- getThingUserDetails(userId, thingIds.toSet)
     } yield {

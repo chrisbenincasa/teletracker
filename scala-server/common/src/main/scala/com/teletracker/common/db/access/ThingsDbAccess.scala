@@ -522,8 +522,9 @@ class ThingsDbAccess @Inject()(
   def findThingsByTmdbIds(
     source: ExternalSource,
     ids: Set[String],
-    typ: Option[ThingType]
-  ): Future[Map[(String, ThingType), ThingRaw]] = {
+    typ: Option[ThingType],
+    userId: Option[String]
+  ): Future[Map[(String, ThingType), (ThingRaw, Seq[TrackedListRow])]] = {
     if (ids.isEmpty) {
       Future.successful(Map.empty)
     } else {
@@ -543,9 +544,43 @@ class ThingsDbAccess @Inject()(
         case None    => baseQuery
       }
 
-      run {
-        withTypeFilter.result
-      }.map(_.map(thing => (thing.tmdbId.get, thing.`type`) -> thing).toMap)
+      val userDetailsFut = userId
+        .map(uid => {
+          // Do they track it?
+          val i = withTypeFilter
+            .joinLeft(trackedListThings.query)
+            .on(_.id === _.thingId)
+            .joinLeft(trackedLists.query)
+            .on(_._2.map(_.listId) === _.id)
+            .filter {
+              case ((_, _), l) =>
+                l.map(_.userId === uid)
+            }
+            .map {
+              case ((t, _), list) => t.id -> list
+            }
+
+          run(i.result)
+            .map(_.collect {
+              case (thingId, Some(list)) => thingId -> list
+            })
+            .map(_.groupBy(_._1).mapValues(_.map(_._2)))
+        })
+        .getOrElse(Future.successful(Map.empty[UUID, Seq[TrackedListRow]]))
+
+      val thingsFut = run(withTypeFilter.result)
+
+      for {
+        userDetails <- userDetailsFut
+        things <- thingsFut
+      } yield {
+        things
+          .map(thing => {
+            val belongsToLists = userDetails.getOrElse(thing.id, Seq.empty)
+            (thing.tmdbId.get, thing.`type`) -> (thing, belongsToLists)
+          })
+          .toMap
+      }
     }
   }
 
