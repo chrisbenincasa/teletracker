@@ -376,13 +376,15 @@ class ItemDetails extends Component<Props, State> {
 
   renderSeriesDetails = (thing: Thing) => {
     const { classes } = this.props;
-    let seasons = Object(getMetadataPath(thing, 'seasons'));
-    seasons = seasons.filter(
-      season =>
-        season.episode_count > 0 &&
-        season.poster_path &&
-        season.name !== 'Specials',
-    );
+    let seasons = getMetadataPath(thing, 'seasons');
+    seasons =
+      seasons &&
+      seasons.filter(
+        season =>
+          season.episode_count > 0 &&
+          season.poster_path &&
+          season.name !== 'Specials',
+      );
     const Season = ({ index, style }) => (
       <div
         className={classes.seasonContainer}
