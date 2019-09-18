@@ -1,7 +1,6 @@
 import {
   Avatar,
   createStyles,
-  Grid,
   Theme,
   Typography,
   WithStyles,
