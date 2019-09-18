@@ -1,7 +1,6 @@
 import {
   Avatar,
   createStyles,
-  Grid,
   Theme,
   Typography,
   WithStyles,
@@ -12,6 +11,8 @@ import React, { Component } from 'react';
 import { parseInitials } from '../utils/textHelper';
 import RouterLink from './RouterLink';
 import Thing from '../types/Thing';
+import { FixedSizeList as LazyList } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -40,6 +41,7 @@ const styles = (theme: Theme) =>
         justifyContent: 'flex-start',
       },
       justifyContent: 'space-around',
+      height: 220,
     },
     personContainer: {
       display: 'flex',
@@ -56,10 +58,6 @@ interface OwnProps {
 type Props = OwnProps & WithStyles<typeof styles>;
 
 class Cast extends Component<Props, {}> {
-  constructor(props: Props) {
-    super(props);
-  }
-
   renderAvatar(person: CastMember) {
     let { classes } = this.props;
 
@@ -101,7 +99,19 @@ class Cast extends Component<Props, {}> {
 
   render() {
     const { classes, itemDetail } = this.props;
-    const credits = itemDetail.cast;
+    const credits = itemDetail.cast ? itemDetail.cast : [];
+    const Person = ({ index, style }) => (
+      <div
+        className={classes.personContainer}
+        key={credits[index].id}
+        itemProp="actor"
+        itemScope
+        itemType="http://schema.org/Person"
+        style={style}
+      >
+        {this.renderAvatar(credits[index])}
+      </div>
+    );
 
     return credits && credits.length > 0 ? (
       <React.Fragment>
@@ -110,19 +120,22 @@ class Cast extends Component<Props, {}> {
             Cast
           </Typography>
 
-          <Grid container className={classes.grid}>
-            {credits.map(person => (
-              <div
-                className={classes.personContainer}
-                key={person.id}
-                itemProp="actor"
-                itemScope
-                itemType="http://schema.org/Person"
-              >
-                {this.renderAvatar(person)}
-              </div>
-            ))}
-          </Grid>
+          <div className={classes.grid}>
+            <AutoSizer>
+              {({ height, width }) => (
+                <LazyList
+                  height={220}
+                  itemCount={credits.length}
+                  itemSize={125}
+                  layout="horizontal"
+                  width={width}
+                  style={{ overflow: 'auto hidden' }}
+                >
+                  {Person}
+                </LazyList>
+              )}
+            </AutoSizer>
+          </div>
         </div>
       </React.Fragment>
     ) : null;
