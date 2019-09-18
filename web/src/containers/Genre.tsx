@@ -1,10 +1,7 @@
 import {
   ButtonGroup,
   Button,
-  CardMedia,
   createStyles,
-  Fab,
-  Fade,
   Grid,
   LinearProgress,
   Theme,
@@ -12,7 +9,6 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { List as ListIcon } from '@material-ui/icons';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -29,33 +25,14 @@ import { retrieveGenre } from '../actions/popular';
 import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
-import { ResponsiveImage } from '../components/ResponsiveImage';
-import AddToListDialog from '../components/AddToListDialog';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import Thing from '../types/Thing';
 import { Genre as GenreModel } from '../types';
 import { GenreInitiatedActionPayload } from '../actions/popular/genre';
+import Featured from '../components/Featured';
 
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
-    posterContainer: {
-      [theme.breakpoints.up('sm')]: {
-        width: 230,
-      },
-      width: 115,
-      display: 'flex',
-      flex: '0 1 auto',
-      flexDirection: 'column',
-      position: 'absolute',
-      top: 20,
-      left: 20,
-    },
-    posterImage: {
-      '&:hover': {
-        backgroundColor: fade(theme.palette.common.white, 0.25),
-      },
-    },
     title: {
       [theme.breakpoints.up('sm')]: {
         fontSize: '3em',
@@ -66,38 +43,10 @@ const styles = (theme: Theme) =>
       overflow: 'hidden',
       textOverflow: 'ellipsis',
     },
-    titleContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-      position: 'absolute',
-      bottom: 0,
-      right: 8,
-      marginBottom: 8,
-    },
-    card: {
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    cardMedia: {
-      height: 0,
-      width: '100%',
-      paddingTop: '150%',
-    },
-    cardContent: {
-      flexGrow: 1,
-    },
     filterButtons: {
       [theme.breakpoints.down('sm')]: {
         fontSize: '0.575rem',
       },
-    },
-    itemCTA: {
-      [theme.breakpoints.down('sm')]: {
-        display: 'none',
-      },
-      width: '100%',
     },
   });
 
@@ -126,14 +75,12 @@ type Props = OwnProps &
 
 interface State {
   mainItemIndex: number;
-  manageTrackingModalOpen: boolean;
   type?: 'movie' | 'show';
 }
 
 class Genre extends Component<Props, State> {
   state: State = {
     mainItemIndex: -1,
-    manageTrackingModalOpen: false,
   };
 
   constructor(props: Props) {
@@ -207,108 +154,7 @@ class Genre extends Component<Props, State> {
     );
   };
 
-  renderTitle = (thing: Thing) => {
-    const { classes } = this.props;
-    const title = thing.name || '';
-
-    return (
-      <div className={classes.titleContainer} style={{}}>
-        <Typography color="inherit" variant="h3" className={classes.title}>
-          {`${title}`}
-        </Typography>
-      </div>
-    );
-  };
-
-  openManageTrackingModal = () => {
-    this.setState({ manageTrackingModalOpen: true });
-  };
-
-  closeManageTrackingModal = () => {
-    this.setState({ manageTrackingModalOpen: false });
-  };
-
-  renderTrackingToggle = () => {
-    const { classes } = this.props;
-    const trackingCTA = 'Add to List';
-
-    return (
-      <div className={classes.itemCTA}>
-        <Fab
-          size="small"
-          variant="extended"
-          aria-label="Add"
-          onClick={this.openManageTrackingModal}
-          style={{ marginTop: 5, width: '100%' }}
-        >
-          <ListIcon style={{ marginRight: 8 }} />
-          {trackingCTA}
-        </Fab>
-      </div>
-    );
-  };
-
-  renderMainPopularItem = () => {
-    let { classes, genre, thingsBySlug, userSelf } = this.props;
-    const { mainItemIndex, manageTrackingModalOpen } = this.state;
-    genre = genre || [];
-    const thing = thingsBySlug[genre[mainItemIndex]];
-
-    return thing ? (
-      <Fade in={true}>
-        <div style={{ position: 'relative' }}>
-          <ResponsiveImage
-            item={thing}
-            imageType="backdrop"
-            imageStyle={{
-              objectFit: 'cover',
-              width: '100%',
-              height: '100%',
-              maxHeight: 424,
-              boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
-            }}
-            pictureStyle={{
-              display: 'block',
-            }}
-          />
-          <div className={classes.posterContainer}>
-            <RouterLink
-              to={'/' + thing.type + '/' + thing.normalizedName}
-              style={{
-                display: 'block',
-                height: '100%',
-                textDecoration: 'none',
-              }}
-            >
-              <CardMedia
-                src={imagePlaceholder}
-                item={thing}
-                component={ResponsiveImage}
-                imageType="poster"
-                imageStyle={{
-                  width: '100%',
-                }}
-                pictureStyle={{
-                  display: 'block',
-                }}
-              />
-            </RouterLink>
-
-            {this.renderTrackingToggle()}
-            <AddToListDialog
-              open={manageTrackingModalOpen}
-              onClose={this.closeManageTrackingModal.bind(this)}
-              userSelf={userSelf!}
-              item={thing}
-            />
-          </div>
-          {this.renderTitle(thing)}
-        </div>
-      </Fade>
-    ) : null;
-  };
-
-  renderPopular = () => {
+  renderItems = () => {
     const {
       classes,
       genre,
@@ -389,10 +235,13 @@ class Genre extends Component<Props, State> {
   };
 
   render() {
-    return this.props.genre && this.props.genres ? (
+    const { mainItemIndex } = this.state;
+    const { genre, genres, thingsBySlug } = this.props;
+
+    return genre && genres ? (
       <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
-        {this.renderMainPopularItem()}
-        {this.renderPopular()}
+        <Featured featuredItem={thingsBySlug[genre[mainItemIndex]]} />
+        {this.renderItems()}
       </div>
     ) : (
       this.renderLoading()
