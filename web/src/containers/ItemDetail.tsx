@@ -6,7 +6,6 @@ import {
   createStyles,
   Fab,
   Fade,
-  Grid,
   Hidden,
   IconButton,
   LinearProgress,
@@ -49,6 +48,8 @@ import Thing from '../types/Thing';
 import RouterLink from '../components/RouterLink';
 import { Helmet } from 'react-helmet';
 import _ from 'lodash';
+import { FixedSizeList as LazyList } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -67,6 +68,9 @@ const styles = (theme: Theme) =>
     },
     card: {
       margin: '10px 0',
+    },
+    carousel: {
+      height: 220,
     },
     descriptionContainer: {
       display: 'flex',
@@ -138,6 +142,10 @@ const styles = (theme: Theme) =>
     },
     root: {
       flexGrow: 1,
+    },
+    seasonContainer: {
+      display: 'flex',
+      flexDirection: 'column',
     },
     seasonPoster: {
       boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
@@ -368,7 +376,34 @@ class ItemDetails extends Component<Props, State> {
 
   renderSeriesDetails = (thing: Thing) => {
     const { classes } = this.props;
-    const seasons = Object(getMetadataPath(thing, 'seasons'));
+    let seasons = Object(getMetadataPath(thing, 'seasons'));
+    seasons = seasons.filter(
+      season =>
+        season.episode_count > 0 &&
+        season.poster_path &&
+        season.name !== 'Specials',
+    );
+    const Season = ({ index, style }) => (
+      <div
+        className={classes.seasonContainer}
+        style={style}
+        key={seasons[index].id}
+      >
+        <Badge
+          className={classes.badge}
+          badgeContent={seasons[index].episode_count}
+          color="primary"
+        >
+          <img
+            src={`https://image.tmdb.org/t/p/w342/${
+              seasons[index].poster_path
+            }`}
+            className={classes.seasonPoster}
+          />
+        </Badge>
+        <Typography style={{ marginLeft: 8 }}>{seasons[index].name}</Typography>
+      </div>
+    );
 
     return seasons && seasons.length > 0 ? (
       <React.Fragment>
@@ -380,32 +415,22 @@ class ItemDetails extends Component<Props, State> {
           Seasons
         </Typography>
 
-        <Grid container>
-          {seasons.map(season =>
-            season.episode_count > 0 &&
-            season.poster_path &&
-            season.name !== 'Specials' ? (
-              <div
-                style={{ display: 'flex', flexDirection: 'column' }}
-                key={season.id}
+        <div className={classes.carousel}>
+          <AutoSizer>
+            {({ height, width }) => (
+              <LazyList
+                height={220}
+                itemCount={seasons.length}
+                itemSize={125}
+                layout="horizontal"
+                width={width}
+                style={{ overflow: 'auto hidden' }}
               >
-                <Badge
-                  className={classes.badge}
-                  badgeContent={season.episode_count}
-                  color="primary"
-                >
-                  <img
-                    src={`https://image.tmdb.org/t/p/w342/${
-                      season.poster_path
-                    }`}
-                    className={classes.seasonPoster}
-                  />
-                </Badge>
-                <Typography style={{ marginLeft: 8 }}>{season.name}</Typography>
-              </div>
-            ) : null,
-          )}
-        </Grid>
+                {Season}
+              </LazyList>
+            )}
+          </AutoSizer>
+        </div>
       </React.Fragment>
     ) : null;
   };
