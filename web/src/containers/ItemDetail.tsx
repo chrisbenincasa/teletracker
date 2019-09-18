@@ -426,7 +426,7 @@ class ItemDetails extends Component<Props, State> {
                 itemSize={125}
                 layout="horizontal"
                 width={width}
-                style={{ overflow: 'auto hidden' }}
+                style={{ overflowX: 'auto', overflowY: 'hidden' }}
               >
                 {Season}
               </LazyList>

@@ -129,7 +129,7 @@ class Cast extends Component<Props, {}> {
                   itemSize={125}
                   layout="horizontal"
                   width={width}
-                  style={{ overflow: 'auto hidden' }}
+                  style={{ overflowX: 'auto', overflowY: 'hidden' }}
                 >
                   {Person}
                 </LazyList>
