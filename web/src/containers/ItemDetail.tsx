@@ -113,7 +113,7 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      [theme.breakpoints.up('sm')]: {
+      [theme.breakpoints.up('md')]: {
         position: 'sticky',
         top: 75,
         height: 475,
@@ -319,7 +319,7 @@ class ItemDetails extends Component<Props, State> {
     return (
       <div className={classes.descriptionContainer}>
         <div className={classes.titleContainer}>
-          <Hidden only={['xs', 'sm']}>{this.renderTitle(thing)}</Hidden>
+          <Hidden smDown>{this.renderTitle(thing)}</Hidden>
         </div>
         <div>
           <Typography color="inherit" itemProp="about">
@@ -532,7 +532,7 @@ class ItemDetails extends Component<Props, State> {
               itemType={`http://schema.org/${itemType}`}
             >
               <div className={classes.leftContainer}>
-                <Hidden smUp>{this.renderTitle(itemDetail)}</Hidden>
+                <Hidden mdUp>{this.renderTitle(itemDetail)}</Hidden>
                 <div
                   className={classes.posterContainer}
                   onMouseEnter={this.showPlayTrailerIcon}
