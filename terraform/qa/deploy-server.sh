@@ -4,6 +4,6 @@ set -e
 
 VERSION=$1
 
-./replace_version $VERSIOn
+./replace_version $VERSION
 
 terraform apply -var-file=current.json
