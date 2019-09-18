@@ -9,7 +9,7 @@ import org.flywaydb.core.Flyway
 
 class RunDatabaseMigration @Inject()(
   teletrackerConfig: TeletrackerConfig,
-  @SyncPath dataSource: DataSource)
+  dataSource: DataSource)
     extends TeletrackerTask {
   override def run(args: Args): Unit = {
     val action = args.valueOrDefault("action", "info")
