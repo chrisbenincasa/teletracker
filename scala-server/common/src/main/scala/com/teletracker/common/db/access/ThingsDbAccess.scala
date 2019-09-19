@@ -155,7 +155,7 @@ class ThingsDbAccess @Inject()(
   }
 
   private val logarithm = SimpleFunction.unary[Double, Double]("log")
-  private val NonLatin = Pattern.compile("[^\\w-]")
+  private val NonLatin = Pattern.compile("[^\\w-']")
 
   def searchForThings(
     query: String,
@@ -168,10 +168,7 @@ class ThingsDbAccess @Inject()(
         query
           .split(" ")
           .map(
-            NonLatin
-              .matcher(_)
-              .replaceAll("")
-              .replaceAllLiterally("'", "")
+            _.replaceAllLiterally("'", "''")
           )
           .filter(_.nonEmpty)
 
@@ -237,7 +234,7 @@ class ThingsDbAccess @Inject()(
           .query
 
       run("search") {
-        additionalFilters
+        val q = additionalFilters
           .sortBy {
             case thing if options.rankingMode == SearchRankingMode.Popularity =>
               thing.popularity.desc.nullsLast
@@ -250,6 +247,10 @@ class ThingsDbAccess @Inject()(
           }
           .take(20)
           .result
+
+        q.statements.foreach(println)
+
+        q
       }.recover {
         case e: PSQLException =>
           println(s"Bad query: $finalQuery")
