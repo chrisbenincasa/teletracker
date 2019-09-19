@@ -1,40 +1,43 @@
-import { scrape as hboWhatsNew } from "./hbo/whats-new/scrape";
-import { scrape as netflixOriginalsArriving } from "./netflix/scrape";
-import { scrape as unogsNetflixExpiring } from "./unogs/scrape";
-import { scrape as unogsNetflixAll } from "./unogs/scrape-all";
-import { scrape as huluChanges } from "./hulu/changes/scrape";
-import { scrape as tmdbChanges } from "./tmdb/changes/scrape";
-import { substitute } from "./common/berglas";
+import { scrape as hboWhatsNew } from './hbo/whats-new/scrape';
+import { scrape as netflixOriginalsArriving } from './netflix/scrape';
+import { scrape as unogsNetflixExpiring } from './unogs/scrape';
+import { scrape as unogsNetflixAll } from './unogs/scrape-all';
+import { scrape as huluChanges } from './hulu/changes/scrape';
+import { scrape as huluCatalog } from './hulu/catalog/scrape';
+import { scrape as tmdbChanges } from './tmdb/changes/scrape';
+import { substitute } from './common/berglas';
 
 const startScrape = async scraper => {
   await substitute();
 
-  console.error(process.env.TMDB_API_KEY);
-
   let scraperToRun = scraper || process.env.SCRAPER;
 
   switch (scraperToRun) {
-    case "hboWhatsNew":
+    case 'hboWhatsNew':
       await hboWhatsNew();
       break;
 
-    case "netflixOriginalsArriving":
+    case 'netflixOriginalsArriving':
       await netflixOriginalsArriving();
       break;
 
-    case "unogsNetflixExpiring":
+    case 'unogsNetflixExpiring':
       await unogsNetflixExpiring();
       break;
 
-    case "unogsNetflixAll":
+    case 'unogsNetflixAll':
       await unogsNetflixAll();
       break;
 
-    case "huluChanges":
+    case 'huluChanges':
       await huluChanges();
       break;
 
-    case "tmdbChanges":
+    case 'huluCatalog':
+      await huluCatalog();
+      break;
+
+    case 'tmdbChanges':
       await tmdbChanges();
       break;
 
@@ -50,5 +53,6 @@ export {
   huluChanges,
   tmdbChanges,
   unogsNetflixAll,
-  startScrape
+  startScrape,
+  huluCatalog,
 };
