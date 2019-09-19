@@ -529,7 +529,6 @@ class ItemDetails extends Component<Props, State> {
             }}
             pictureStyle={{
               position: 'absolute',
-              width: '100%',
               height: 'auto',
               opacity: 0.2,
               filter: 'blur(3px)',
@@ -562,8 +561,10 @@ class ItemDetails extends Component<Props, State> {
                 <Hidden mdUp>{this.renderTitle(itemDetail)}</Hidden>
                 <div
                   className={classes.posterContainer}
-                  onMouseEnter={this.showPlayTrailerIcon}
-                  onMouseLeave={this.hidePlayTrailerIcon}
+                  // This is causing an issue with Cast re-endering on Enter/Leave
+                  // TODO: Investigate
+                  // onMouseEnter={this.showPlayTrailerIcon}
+                  // onMouseLeave={this.hidePlayTrailerIcon}
                 >
                   {this.state.showPlayIcon &&
                   itemDetail.id === '7b6dbeb1-8353-45a7-8c9b-7f9ab8b037f8' ? (
