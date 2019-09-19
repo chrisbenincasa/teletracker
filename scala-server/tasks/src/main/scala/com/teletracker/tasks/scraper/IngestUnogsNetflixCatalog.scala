@@ -27,7 +27,7 @@ class IngestUnogsNetflixCatalog @Inject()(
   override protected def processMode(args: IngestJobArgs): ProcessMode =
     Parallel(32)
 
-  override protected def updateAvailability(
+  override protected def createAvailabilities(
     networks: Set[Network],
     thing: ThingRaw,
     scrapeItem: UnogsNetflixCatalogItem
