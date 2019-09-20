@@ -124,6 +124,9 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
     os.flush()
     os.close()
 
+    val suffix = processed.get() / rotateEvery
+    rotateFile(suffix)
+
     source.close()
 
     sys.exit(0)
