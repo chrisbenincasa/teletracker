@@ -22,7 +22,7 @@ resource "google_cloudfunctions_function" "scraper-function" {
   available_memory_mb   = 256
   source_archive_bucket = "${var.bucket_name}"
   source_archive_object = "${data.google_storage_bucket_object.archive.name}"
-  timeout               = 60
+  timeout               = "${var.timeout}"
   entry_point           = "${var.entrypoint}"
 
   event_trigger {

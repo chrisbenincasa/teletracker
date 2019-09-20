@@ -74,6 +74,7 @@ module "unogs-netflix-catalog-scraper" {
   function_name    = "unogs-netflix-catalog"
   entrypoint       = "unogsNetflixAll"
   function_version = "1568682893"
+  timeout          = 120
 
   extra_env_vars = {
     SCRAPER = "unogsNetflixAll"
