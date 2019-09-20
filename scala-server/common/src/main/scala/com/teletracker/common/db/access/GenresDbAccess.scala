@@ -88,6 +88,10 @@ class GenresDbAccess @Inject()(
       InhibitFilter(query)
         .filter(thingType)(t => _.`type` === t)
         .query
+        .filter(t => {
+          val isAdult = (t.metadata +> "themoviedb" +> "movie" +>> "adult")
+          isAdult.isEmpty || isAdult.asColumnOf[Boolean] === false
+        })
         .sortBy(_.popularity.desc.nullsLast)
         .take(25)
         .result
