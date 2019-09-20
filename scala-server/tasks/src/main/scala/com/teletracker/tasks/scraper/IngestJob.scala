@@ -17,7 +17,6 @@ import com.teletracker.common.util.{NetworkCache, Slug}
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import io.circe.Decoder
-import io.circe.parser._
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -37,6 +36,14 @@ abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
   val inputFile = flag[File]("input", "The json file to parse")
   val titleMatchThreshold = flag[Int]("fuzzyThreshold", 15, "X")
   val dryRun = flag[Boolean]("dryRun", true, "X")
+}
+
+trait IngestJobArgsLike[T <: ScrapedItem] {
+  val offset: Int
+  val limit: Int
+  val titleMatchThreshold: Int
+  val dryRun: Boolean
+  val mode: MatchMode[T]
 }
 
 abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
@@ -72,7 +79,8 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     limit: Int = -1,
     titleMatchThreshold: Int = 15,
     dryRun: Boolean = true,
-    mode: MatchMode = DbLookup)
+    mode: MatchMode[T] = new DbLookup(thingsDb))
+      extends IngestJobArgsLike[T]
 
   override def preparseArgs(args: Args): Unit = parseArgs(args)
 
@@ -294,148 +302,6 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
         }
       )
       .map(_.flatten)
-  }
-
-  protected def findMatch[W](
-    tmdbItem: W,
-    item: T,
-    titleMatchThreshold: Int
-  )(implicit watchable: TmdbWatchable[W]
-  ): Boolean = {
-    val titlesEqual = watchable
-      .title(tmdbItem)
-      .exists(foundTitle => {
-        val dist =
-          LevenshteinDistance.getDefaultInstance
-            .apply(foundTitle.toLowerCase(), item.title.toLowerCase())
-
-        dist <= titleMatchThreshold
-      })
-
-    val releaseYearEqual = watchable
-      .releaseYear(tmdbItem)
-      .exists(tmdbReleaseYear => {
-        item.releaseYear
-          .exists(
-            ry => (tmdbReleaseYear - 1 to tmdbReleaseYear + 1).contains(ry)
-          )
-      })
-
-    titlesEqual && releaseYearEqual
-  }
-
-  protected def findMatch(
-    thingRaw: ThingRaw,
-    item: T,
-    titleMatchThreshold: Int
-  ) = {
-    val dist =
-      LevenshteinDistance.getDefaultInstance
-        .apply(thingRaw.name.toLowerCase(), item.title.toLowerCase())
-
-    dist <= titleMatchThreshold
-  }
-
-  protected def mutateItem(item: T): T = identity(item)
-
-  sealed trait MatchMode {
-    def lookup(
-      items: List[T],
-      args: IngestJobArgs
-    ): Future[List[(T, ThingRaw)]]
-  }
-
-  case object TmdbLookup extends MatchMode {
-    override def lookup(
-      items: List[T],
-      args: IngestJobArgs
-    ): Future[List[(T, ThingRaw)]] = {
-      SequentialFutures.serialize(items)(lookupSingle(_, args)).map(_.flatten)
-    }
-
-    private def lookupSingle(
-      item: T,
-      args: IngestJobArgs
-    ): Future[Option[(T, ThingRaw)]] = {
-      val search = if (item.isMovie) {
-        tmdbClient.searchMovies(item.title).map(_.results.map(Left(_)))
-      } else if (item.isTvShow) {
-        tmdbClient.searchTv(item.title).map(_.results.map(Right(_)))
-      } else {
-        Future.failed(new IllegalArgumentException)
-      }
-
-      search
-        .flatMap(results => {
-          results
-            .find(findMatch(_, item, args.titleMatchThreshold))
-            .map(x => tmdbProcessor.handleWatchable(x))
-            .map(_.flatMap {
-              case ProcessSuccess(_, thing: ThingRaw) =>
-                logger.info(
-                  s"Saved ${item.title} with thing ID = ${thing.id}"
-                )
-
-                Future.successful(Some(item -> thing))
-
-              case ProcessSuccess(_, _) =>
-                logger.error("Unexpected result")
-                Future.successful(None)
-
-              case ProcessFailure(error) =>
-                logger.error("Error handling movie", error)
-                Future.successful(None)
-            })
-            .getOrElse(Future.successful(None))
-        })
-    }
-  }
-
-  case object DbLookup extends MatchMode {
-    override def lookup(
-      items: List[T],
-      args: IngestJobArgs
-    ): Future[List[(T, ThingRaw)]] = {
-      val (withReleaseYear, withoutReleaseYear) =
-        items.partition(_.releaseYear.isDefined)
-
-      if (withoutReleaseYear.nonEmpty) {
-        println(s"${withoutReleaseYear.size} things without release year")
-      }
-
-      val itemsBySlug = withReleaseYear
-        .map(item => {
-          Slug(item.title, item.releaseYear.get.toInt) -> item
-        })
-        .toMap
-
-      thingsDb
-        .findThingsBySlugsRaw(itemsBySlug.keySet)
-        .map(thingBySlug => {
-          itemsBySlug.toList.sortBy(_._1.value).flatMap {
-            case (itemSlug, item) =>
-              thingBySlug
-                .get(itemSlug)
-                .flatMap(thingRaw => {
-                  val dist = LevenshteinDistance.getDefaultInstance
-                    .apply(
-                      thingRaw.name.toLowerCase().trim,
-                      item.title.toLowerCase().trim
-                    )
-
-                  if (dist > args.titleMatchThreshold) {
-                    println(
-                      s"Bad match for ${item.title} => ${thingRaw.name} - DIST: $dist"
-                    )
-
-                    None
-                  } else {
-                    Some(item -> thingRaw)
-                  }
-                })
-          }
-        })
-    }
   }
 
   sealed trait ProcessMode
