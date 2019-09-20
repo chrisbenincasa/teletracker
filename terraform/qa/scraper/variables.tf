@@ -34,3 +34,8 @@ variable "extra_env_vars" {
   type    = "map"
   default = {}
 }
+
+variable "timeout" {
+  type    = "string"
+  default = "60"
+}
