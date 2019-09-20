@@ -222,8 +222,8 @@ class ThingsDbAccess @Inject()(
             mkQuery(finalQuery.bind) @@ mkVector(t.name)
           })
           .filter(t => {
-            (t.metadata +> "themoviedb" +> "movie" +>> "adult")
-              .asColumnOf[Boolean] === false
+            val isAdult = (t.metadata +> "themoviedb" +> "movie" +>> "adult")
+            isAdult.isEmpty || isAdult.asColumnOf[Boolean] === false
           })
 
       val additionalFilters =
