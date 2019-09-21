@@ -7,7 +7,6 @@ import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import io.circe.Decoder
 import io.circe.parser._
-import io.circe.generic.semiauto.deriveCodec
 import org.slf4j.LoggerFactory
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI

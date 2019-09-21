@@ -62,9 +62,14 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def findThingBySlugRaw(slug: Slug) = {
+  def findThingBySlugRaw(
+    slug: Slug,
+    thingType: Option[ThingType]
+  ): Future[Option[ThingRaw]] = {
     run {
-      things.rawQuery
+      InhibitFilter(things.rawQuery)
+        .filter(thingType)(t => _.`type` === t)
+        .query
         .filter(_.normalizedName === slug)
         .take(1)
         .result
@@ -93,17 +98,20 @@ class ThingsDbAccess @Inject()(
     }
   }
 
+  private val lower = SimpleFunction.unary[String, String]("lower")
+
   def findThingsByNames(
-    names: Set[String]
+    names: Set[String],
+    caseInsensitive: Boolean = true
   ): Future[Map[String, Seq[ThingRaw]]] = {
     if (names.isEmpty) {
       Future.successful(Map.empty)
     } else {
       run {
         things.rawQuery
-          .filter(_.name inSetBind names)
+          .filter(x => lower(x.name) inSetBind names.map(_.toLowerCase))
           .result
-          .map(_.groupBy(_.name))
+          .map(_.groupBy(_.name.toLowerCase))
       }
     }
   }

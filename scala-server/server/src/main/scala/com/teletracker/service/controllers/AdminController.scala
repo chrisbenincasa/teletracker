@@ -70,7 +70,7 @@ class AdminController @Inject()(
 
     (HasThingIdOrSlug.parse(req.getParam("thingId")) match {
       case Left(id)    => thingsDbAccess.findThingByIdRaw(id)
-      case Right(slug) => thingsDbAccess.findThingBySlugRaw(slug)
+      case Right(slug) => thingsDbAccess.findThingBySlugRaw(slug, None)
     }).map {
       case None => response.notFound
       case Some(thing) =>
