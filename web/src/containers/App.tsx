@@ -1,18 +1,17 @@
 import {
   AppBar,
-  Avatar,
   Box,
   Button,
   CircularProgress,
   ClickAwayListener,
   createStyles,
   CssBaseline,
+  Divider,
   Fade,
   Grow,
   Icon,
   IconButton,
   InputBase,
-  LinearProgress,
   Menu,
   MenuList,
   MenuItem,
@@ -49,7 +48,6 @@ import { search } from '../actions/search';
 import { AppState } from '../reducers';
 import Search from './Search';
 import Account from './Account';
-import Home from './Home';
 import ListDetail from './ListDetail';
 import ItemDetail from './ItemDetail';
 import Lists from './Lists';
@@ -65,6 +63,7 @@ import Genre from './Genre';
 import Thing from '../types/Thing';
 import _ from 'lodash';
 import { truncateText } from '../utils/textHelper';
+import { Genre as GenreModel } from '../types';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -74,6 +73,7 @@ const styles = (theme: Theme) =>
     root: {
       flexGrow: 1,
     },
+    genreMenu: { columns: 3 },
     grow: {
       flexGrow: 1,
     },
@@ -212,6 +212,7 @@ const styles = (theme: Theme) =>
 interface OwnProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
   currentSearchText?: string;
+  genres?: GenreModel[];
   searchResults?: Thing[];
   isSearching: boolean;
 }
@@ -225,6 +226,8 @@ type Props = DispatchProps & OwnProps & RouteComponentProps;
 
 interface State {
   anchorEl: any;
+  genreAnchorEl: any;
+  genreType: 'movie' | 'tv' | null;
   searchAnchor: any;
   searchText: string;
   mobileSearchBarOpen: boolean;
@@ -245,15 +248,19 @@ interface MenuItemProps {
 class App extends Component<Props, State> {
   private mobileSearchInput: React.RefObject<HTMLInputElement>;
   private desktopSearchInput: React.RefObject<HTMLInputElement>;
+  private genreAnchorRef: React.RefObject<HTMLButtonElement>;
 
   constructor(props) {
     super(props);
     this.mobileSearchInput = React.createRef();
     this.desktopSearchInput = React.createRef();
+    this.genreAnchorRef = React.createRef();
   }
 
   state = {
     anchorEl: null,
+    genreAnchorEl: null,
+    genreType: null,
     searchText: '',
     searchAnchor: null,
     mobileSearchBarOpen: false,
@@ -454,6 +461,23 @@ class App extends Component<Props, State> {
     this.setState({ anchorEl: null });
   };
 
+  handleGenreMenu = (event, type) => {
+    this.setState({
+      genreAnchorEl: event.currentTarget,
+      genreType: type,
+    });
+  };
+
+  handleGenreMenuClose = event => {
+    if (event.target.offsetParent === this.state.genreAnchorEl) {
+      return;
+    }
+    this.setState({
+      genreAnchorEl: null,
+      genreType: null,
+    });
+  };
+
   handleLogout = () => {
     this.handleClose();
     this.props.logout();
@@ -514,6 +538,97 @@ class App extends Component<Props, State> {
             </IconButton>{' '}
           </div>
         ) : null}
+      </React.Fragment>
+    );
+  }
+  renderGenreMenu(type: 'movie' | 'tv') {
+    const { classes, genres } = this.props;
+    const { genreAnchorEl } = this.state;
+
+    const filteredGenres =
+      (genres && genres.filter(item => item.type.includes(type))) || [];
+
+    function MenuItemLink(props: MenuItemProps) {
+      const { primary, to, selected, onClick } = props;
+
+      return (
+        <MenuItem
+          button
+          component={RouterLink}
+          to={to}
+          selected={selected}
+          onClick={onClick}
+          dense
+        >
+          {primary}
+        </MenuItem>
+      );
+    }
+
+    return (
+      <React.Fragment>
+        <Button
+          aria-controls="genre-menu"
+          aria-haspopup="true"
+          onClick={event => this.handleGenreMenu(event, type)}
+          style={{
+            backgroundColor:
+              this.state.genreType === type ? '#424242' : 'inherit',
+          }}
+        >
+          {type === 'tv' ? 'TV Shows' : 'Movies'}
+        </Button>
+        <Popper
+          open={Boolean(this.state.genreType === type)}
+          anchorEl={genreAnchorEl}
+          placement="bottom-start"
+          keepMounted
+          transition
+          disablePortal
+        >
+          {({ TransitionProps, placement }) => (
+            <Grow
+              {...TransitionProps}
+              style={{
+                transformOrigin:
+                  placement === 'bottom' ? 'center top' : 'center bottom',
+              }}
+            >
+              <Paper
+                style={{
+                  position: 'absolute',
+                  zIndex: 9999999,
+                  columns: 3,
+                  marginTop: 8,
+                }}
+              >
+                <ClickAwayListener onClickAway={this.handleGenreMenuClose}>
+                  <MenuList>
+                    <MenuItemLink
+                      onClick={this.handleGenreMenuClose}
+                      key={`popular-${type}`}
+                      to={`/popular?type=${type === 'tv' ? 'show' : 'movie'}`}
+                      primary={"What's Popular?"}
+                    />
+                    <Divider />
+                    {filteredGenres.map(item => {
+                      return (
+                        <MenuItemLink
+                          onClick={this.handleGenreMenuClose}
+                          key={item.slug}
+                          to={`/genres/${item.slug}?type=${
+                            type === 'tv' ? 'show' : 'movie'
+                          }`}
+                          primary={item.name}
+                        />
+                      );
+                    })}
+                  </MenuList>
+                </ClickAwayListener>
+              </Paper>
+            </Grow>
+          )}
+        </Popper>
       </React.Fragment>
     );
   }
@@ -680,7 +795,8 @@ class App extends Component<Props, State> {
                 TT
               </Box>
             </Typography>
-
+            {this.renderGenreMenu('tv')}
+            {this.renderGenreMenu('movie')}
             <Box display={{ xs: 'none', sm: 'block' }} m={1}>
               <ButtonLink
                 color="inherit"
@@ -762,6 +878,7 @@ const mapStateToProps = (appState: AppState) => {
       ['search', 'currentSearchText'],
       appState,
     ),
+    genres: appState.metadata.genres,
     isSearching: appState.search.searching,
     searchResults: appState.search.results,
   };
