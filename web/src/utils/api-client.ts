@@ -365,11 +365,13 @@ export class TeletrackerApi {
     token: string,
     networkIds?: number[],
     fields?: KeyMap<ObjectMetadata>,
+    typeRestrict?: 'movie' | 'show',
   ) {
     return this.api.get('/api/v1/popular', {
       networkIds,
       fields: fields ? this.createFilter(fields!) : undefined,
       token,
+      thingType: typeRestrict,
     });
   }
 
