@@ -76,7 +76,9 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
   override def preparseArgs(args: Args): Unit = parseArgs(args)
 
-  private def parseArgs(args: Map[String, Option[Any]]): IngestJobArgs = {
+  final protected def parseArgs(
+    args: Map[String, Option[Any]]
+  ): IngestJobArgs = {
     IngestJobArgs(
       inputFile = args.valueOrThrow[URI]("inputFile"),
       offset = args.valueOrDefault("offset", 0),
@@ -127,7 +129,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
       case Serial =>
         SequentialFutures
           .serialize(
-            items.drop(args.offset).safeTake(args.limit),
+            items.drop(args.offset).safeTake(args.limit).map(mutateItem),
             Some(40 millis)
           )(
             processSingle(_, networks, args)
@@ -150,24 +152,41 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     items: List[T],
     networks: Set[Network],
     args: IngestJobArgs
-  ) = {
+  ): Future[Unit] = {
     args.mode
       .lookup(
         items,
         args
       )
       .flatMap {
-        case things if !args.dryRun =>
+        case things =>
           Future
             .sequence {
               things.map {
                 case (item, thing) =>
-                  updateAvailability(networks, thing, item).map(_ => {})
+                  val availabilityFut =
+                    createAvailabilities(networks, thing, item)
+
+                  if (args.dryRun) {
+                    availabilityFut.map(avs => {
+                      avs.foreach(
+                        av => logger.info(s"Would've saved availability: $av")
+                      )
+                      avs
+                    })
+                  } else {
+                    availabilityFut.flatMap(avs => {
+                      SequentialFutures
+                        .serialize(avs.grouped(50).toList)(batch => {
+                          Future
+                            .sequence(batch.map(thingsDb.insertAvailability))
+                        })
+                    })
+                  }
+
               }
             }
             .map(_ => {})
-
-        case _ => Future.unit
       }
   }
 
@@ -179,7 +198,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     processBatch(List(item), networks, args)
   }
 
-  private def getSource(uri: URI): Source = {
+  final protected def getSource(uri: URI): Source = {
     uri.getScheme match {
       case "gs" =>
         Source.fromBytes(
@@ -215,7 +234,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     foundNetworks
   }
 
-  protected def updateAvailability(
+  protected def createAvailabilities(
     networks: Set[Network],
     thing: ThingRaw,
     scrapeItem: T
@@ -230,35 +249,35 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
         network => {
           thingsDb
             .findAvailability(thing.id, network.id.get)
-            .flatMap {
+            .map {
               case Seq() =>
-                val avs =
-                  presentationTypes.toSeq.map(pres => {
-                    Availability(
-                      None,
-                      isAvailable = start.exists(_.isBefore(today)) || end
-                        .exists(_.isAfter(today)),
-                      region = Some("US"),
-                      numSeasons = None,
-                      startDate = scrapeItem.availableLocalDate
-                        .map(_.atStartOfDay().atOffset(networkTimeZone)),
-                      endDate =
-                        end.map(_.atStartOfDay().atOffset(networkTimeZone)),
-                      offerType = Some(OfferType.Subscription),
-                      cost = None,
-                      currency = None,
-                      thingId = Some(thing.id),
-                      tvShowEpisodeId = None,
-                      networkId = Some(network.id.get),
-                      presentationType = Some(pres)
-                    )
-                  })
+//                val avs =
+                presentationTypes.toSeq.map(pres => {
+                  Availability(
+                    None,
+                    isAvailable = start.exists(_.isBefore(today)) || end
+                      .exists(_.isAfter(today)),
+                    region = Some("US"),
+                    numSeasons = None,
+                    startDate = scrapeItem.availableLocalDate
+                      .map(_.atStartOfDay().atOffset(networkTimeZone)),
+                    endDate =
+                      end.map(_.atStartOfDay().atOffset(networkTimeZone)),
+                    offerType = Some(OfferType.Subscription),
+                    cost = None,
+                    currency = None,
+                    thingId = Some(thing.id),
+                    tvShowEpisodeId = None,
+                    networkId = Some(network.id.get),
+                    presentationType = Some(pres)
+                  )
+                })
 
-                thingsDb.insertAvailabilities(avs)
+//                thingsDb.insertAvailabilities(avs)
 
               case availabilities =>
                 // TODO(christian) - find missing presentation types
-                val newAvs = availabilities.map(
+                availabilities.map(
                   _.copy(
                     isAvailable = start.exists(_.isBefore(today)) || end
                       .exists(_.isAfter(today)),
@@ -270,7 +289,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
                   )
                 )
 
-                thingsDb.saveAvailabilities(newAvs).map(_ => newAvs)
+//                thingsDb.saveAvailabilities(newAvs).map(_ => newAvs)
             }
         }
       )
@@ -316,6 +335,8 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
     dist <= titleMatchThreshold
   }
+
+  protected def mutateItem(item: T): T = identity(item)
 
   sealed trait MatchMode {
     def lookup(
