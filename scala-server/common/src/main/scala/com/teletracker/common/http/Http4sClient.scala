@@ -8,6 +8,7 @@ import org.http4s.{
   DecodeFailure,
   DecodeResult,
   EntityDecoder,
+  Header,
   Request,
   Response,
   Uri
@@ -67,8 +68,8 @@ class Http4sClient @Inject()(
           getClient
             .map(_._1)
             .flatMap(client => {
-              val request = buildRequest(uri)
-              client.fetch(request)(makeResponse)
+              val builtRequest = buildRequest(uri, request)
+              client.fetch(builtRequest)(makeResponse)
             })
 //            .flatMap(_.expect[T](uri))
 //            .map(makeResponse)
@@ -77,9 +78,13 @@ class Http4sClient @Inject()(
       )
   }
 
-  private def buildRequest[T](uri: Uri)(implicit d: EntityDecoder[IO, T]) = {
+  private def buildRequest[T](
+    uri: Uri,
+    request: HttpRequest
+  )(implicit d: EntityDecoder[IO, T]
+  ) = {
     val req = Request[IO](uri = uri)
-    if (d.consumes.nonEmpty) {
+    val withAccept = if (d.consumes.nonEmpty) {
       val m = d.consumes.toList
       req.putHeaders(
         Accept(
@@ -88,6 +93,10 @@ class Http4sClient @Inject()(
         )
       )
     } else req
+
+    request.headers.foldLeft(withAccept) {
+      case (r, (key, value)) => r.putHeaders(Header(key, value))
+    }
   }
 
   private def parseResponseDefault[T](

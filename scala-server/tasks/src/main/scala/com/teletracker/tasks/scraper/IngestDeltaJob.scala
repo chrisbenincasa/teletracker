@@ -67,7 +67,7 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     val removedIds = beforeById.keySet -- afterById.keySet
 
     val newItems = newIds.flatMap(afterById.get)
-    val foundItems = parsedArgs.mode
+    val (foundItems, nonMatchedItems) = parsedArgs.mode
       .lookup(
         newItems.toList,
         parsedArgs

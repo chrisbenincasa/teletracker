@@ -25,7 +25,6 @@ class ScrapedItemMatcher {
       .releaseYear(tmdbItem)
       .exists(tmdbReleaseYear => {
         item.releaseYear
-          .map(_.trim.toInt)
           .exists(
             ry => (tmdbReleaseYear - 1 to tmdbReleaseYear + 1).contains(ry)
           )

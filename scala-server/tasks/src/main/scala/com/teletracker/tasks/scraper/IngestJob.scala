@@ -4,12 +4,7 @@ import com.google.cloud.storage.{BlobId, Storage}
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.model.tmdb.TmdbWatchable
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
-import com.teletracker.common.process.tmdb.TmdbEntityProcessor.{
-  ProcessFailure,
-  ProcessSuccess
-}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
@@ -17,7 +12,6 @@ import com.teletracker.common.util.{NetworkCache, Slug}
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import io.circe.Decoder
-import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.net.URI
@@ -137,7 +131,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
       case Serial =>
         SequentialFutures
           .serialize(
-            items.drop(args.offset).safeTake(args.limit).map(mutateItem),
+            items.drop(args.offset).safeTake(args.limit).map(sanitizeItem),
             Some(40 millis)
           )(
             processSingle(_, networks, args)
@@ -163,40 +157,53 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
   ): Future[Unit] = {
     args.mode
       .lookup(
-        items,
+        items.map(sanitizeItem),
         args
       )
       .flatMap {
-        case things =>
-          Future
-            .sequence {
-              things.map {
-                case (item, thing) =>
-                  val availabilityFut =
-                    createAvailabilities(networks, thing, item)
+        case (things, nonMatchedItems) =>
+          handleNonMatches(args, nonMatchedItems).flatMap(fallbackMatches => {
+            val allItems = (things ++ fallbackMatches)
+            logger.info(
+              s"Successfully found matches for ${allItems.size} out of ${items.size} items."
+            )
+            Future
+              .sequence {
+                allItems.map {
+                  case (item, thing) =>
+                    val availabilityFut =
+                      createAvailabilities(networks, thing, item)
 
-                  if (args.dryRun) {
-                    availabilityFut.map(avs => {
-                      avs.foreach(
-                        av => logger.info(s"Would've saved availability: $av")
-                      )
-                      avs
-                    })
-                  } else {
-                    availabilityFut.flatMap(avs => {
-                      SequentialFutures
-                        .serialize(avs.grouped(50).toList)(batch => {
-                          Future
-                            .sequence(batch.map(thingsDb.insertAvailability))
-                        })
-                    })
-                  }
+                    if (args.dryRun) {
+                      availabilityFut.map(avs => {
+                        avs.foreach(
+                          av => logger.info(s"Would've saved availability: $av")
+                        )
+                        avs
+                      })
+                    } else {
+                      availabilityFut.flatMap(avs => {
+                        SequentialFutures
+                          .serialize(avs.grouped(50).toList)(batch => {
+                            Future
+                              .sequence(batch.map(thingsDb.insertAvailability))
+                          })
+                      })
+                    }
 
+                }
               }
-            }
-            .map(_ => {})
+              .map(_ => {})
+          })
       }
   }
+
+  protected def sanitizeItem(item: T): T = identity(item)
+
+  protected def handleNonMatches(
+    args: IngestJobArgs,
+    nonMatches: List[T]
+  ): Future[List[(T, ThingRaw)]] = Future.successful(Nil)
 
   protected def processSingle(
     item: T,
@@ -325,4 +332,13 @@ trait ScrapedItem {
 
   def isMovie: Boolean
   def isTvShow: Boolean
+  def thingType = {
+    if (isMovie) {
+      ThingType.Movie
+    } else if (isTvShow) {
+      ThingType.Show
+    } else {
+      throw new IllegalArgumentException("")
+    }
+  }
 }

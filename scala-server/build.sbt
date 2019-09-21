@@ -58,6 +58,7 @@ lazy val common = project
       // Inject
       "com.google.cloud" % "google-cloud-storage" % "1.84.0",
       "com.google.cloud" % "google-cloud-pubsub" % "1.84.0",
+      "com.google.cloud" % "google-cloud-kms" % "1.28.0",
       "com.google.inject" % "guice" % versions.guice,
       "com.google.inject.extensions" % "guice-assistedinject" % versions.guice,
       "com.google.inject.extensions" % "guice-multibindings" % versions.guice,

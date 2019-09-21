@@ -12,7 +12,8 @@ case class HttpClientOptions(useTls: Boolean)
 
 case class HttpRequest(
   path: String,
-  params: List[(String, String)])
+  params: List[(String, String)] = Nil,
+  headers: List[(String, String)] = Nil)
 
 case class HttpResponse[T](
   headers: Map[String, String],

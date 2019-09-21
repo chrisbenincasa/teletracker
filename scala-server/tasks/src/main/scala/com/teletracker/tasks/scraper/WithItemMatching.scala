@@ -13,12 +13,13 @@ import com.teletracker.common.util.execution.SequentialFutures
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 
 sealed trait MatchMode[T <: ScrapedItem] {
   def lookup(
     items: List[T],
     args: IngestJobArgsLike[T]
-  ): Future[List[(T, ThingRaw)]]
+  ): Future[(List[(T, ThingRaw)], List[T])]
 }
 
 class TmdbLookup[T <: ScrapedItem](
@@ -32,14 +33,20 @@ class TmdbLookup[T <: ScrapedItem](
   override def lookup(
     items: List[T],
     args: IngestJobArgsLike[T]
-  ): Future[List[(T, ThingRaw)]] = {
-    SequentialFutures.serialize(items)(lookupSingle(_, args)).map(_.flatten)
+  ): Future[(List[(T, ThingRaw)], List[T])] = {
+    SequentialFutures
+      .serialize(items)(lookupSingle(_, args))
+      .map(_.flatten)
+      .map(results => {
+        val (x, y) = results.partition(_.isLeft)
+        x.flatMap(_.left.toOption) -> y.flatMap(_.right.toOption)
+      })
   }
 
   private def lookupSingle(
     item: T,
     args: IngestJobArgsLike[T]
-  ): Future[Option[(T, ThingRaw)]] = {
+  ): Future[Option[Either[(T, ThingRaw), T]]] = {
     val search = if (item.isMovie) {
       tmdbClient.searchMovies(item.title).map(_.results.map(Left(_)))
     } else if (item.isTvShow) {
@@ -53,25 +60,28 @@ class TmdbLookup[T <: ScrapedItem](
     search
       .flatMap(results => {
         results
-          .find(matcher.findMatch(_, item, args.titleMatchThreshold))
-          .map(x => tmdbProcessor.handleWatchable(x))
-          .map(_.flatMap {
-            case ProcessSuccess(_, thing: ThingRaw) =>
-              logger.info(
-                s"Saved ${item.title} with thing ID = ${thing.id}"
-              )
+          .find(matcher.findMatch(_, item, args.titleMatchThreshold)) match {
+          case Some(foundMatch) =>
+            tmdbProcessor.handleWatchable(foundMatch).flatMap {
+              case ProcessSuccess(_, thing: ThingRaw) =>
+                logger.info(
+                  s"Saved ${item.title} with thing ID = ${thing.id}"
+                )
 
-              Future.successful(Some(item -> thing))
+                Future.successful(Some(Left(item -> thing)))
 
-            case ProcessSuccess(_, _) =>
-              logger.error("Unexpected result")
-              Future.successful(None)
+              case ProcessSuccess(_, _) =>
+                logger.error("Unexpected result")
+                Future.successful(None)
 
-            case ProcessFailure(error) =>
-              logger.error("Error handling movie", error)
-              Future.successful(None)
-          })
-          .getOrElse(Future.successful(None))
+              case ProcessFailure(error) =>
+                logger.error("Error handling movie", error)
+                Future.successful(None)
+            }
+
+          case None =>
+            Future.successful(Some(Right(item)))
+        }
       })
   }
 }
@@ -86,23 +96,23 @@ class DbLookup[T <: ScrapedItem](
   override def lookup(
     items: List[T],
     args: IngestJobArgsLike[T]
-  ): Future[List[(T, ThingRaw)]] = {
+  ): Future[(List[(T, ThingRaw)], List[T])] = {
     val (withReleaseYear, withoutReleaseYear) =
       items.partition(_.releaseYear.isDefined)
 
     if (withoutReleaseYear.nonEmpty) {
-      println(s"${withoutReleaseYear.size} things without release year")
+      logger.info(s"${withoutReleaseYear.size} things without release year")
     }
 
     val itemsBySlug = withReleaseYear
       .map(item => {
-        Slug(item.title, item.releaseYear.get.toInt) -> item
+        Slug(item.title, item.releaseYear.get) -> item
       })
       .toMap
 
-    println(itemsBySlug)
+    val mastchThingsByName = findMatchesViaExactTitle(withoutReleaseYear)
 
-    thingsDb
+    val matchedThingsWithSlugs = thingsDb
       .findThingsBySlugsRaw(itemsBySlug.keySet)
       .flatMap(thingBySlug => {
         val missingSlugs = itemsBySlug.keySet -- thingBySlug.keySet
@@ -132,7 +142,7 @@ class DbLookup[T <: ScrapedItem](
           val allThingsBySlug = extraThings ++ thingBySlug
 
           itemsBySlug.toList.sortBy(_._1.value).flatMap {
-            case (itemSlug, item) =>
+            case (itemSlug, scrapedItem) =>
               val matchedThing = allThingsBySlug
                 .get(itemSlug)
                 .orElse {
@@ -143,29 +153,95 @@ class DbLookup[T <: ScrapedItem](
                 }
 
               if (matchedThing.isEmpty) {
-                logger.info(s"Could not match thing with slug: ${itemSlug}")
+                logger.debug(
+                  s"Could not match thing with slug: ${itemSlug}, falling back to exact title match"
+                )
+                Some(scrapedItem -> None)
+              } else {
+                matchedThing.flatMap(thingRaw => {
+                  val dist = LevenshteinDistance.getDefaultInstance
+                    .apply(
+                      thingRaw.name.toLowerCase().trim,
+                      scrapedItem.title.toLowerCase().trim
+                    )
+
+                  if (dist > args.titleMatchThreshold) {
+                    logger.info(
+                      s"Bad match for ${scrapedItem.title} => ${thingRaw.name} - DIST: $dist"
+                    )
+
+                    None
+                  } else {
+                    Some(scrapedItem -> Some(thingRaw))
+                  }
+                })
               }
-
-              matchedThing.flatMap(thingRaw => {
-                val dist = LevenshteinDistance.getDefaultInstance
-                  .apply(
-                    thingRaw.name.toLowerCase().trim,
-                    item.title.toLowerCase().trim
-                  )
-
-                if (dist > args.titleMatchThreshold) {
-                  logger.info(
-                    s"Bad match for ${item.title} => ${thingRaw.name} - DIST: $dist"
-                  )
-
-                  None
-                } else {
-                  Some(item -> thingRaw)
-                }
-              })
           }
         })
       })
+
+    val fallbackMatchesFromSlug = matchedThingsWithSlugs
+      .map(_.collect {
+        case (scrapedItem, None) => scrapedItem
+      })
+      .flatMap(findMatchesViaExactTitle)
+
+    val allMatchedItems = for {
+      match1 <- mastchThingsByName
+      match2 <- matchedThingsWithSlugs.map(_.collect {
+        case (scrapedItem, Some(thing)) => scrapedItem -> thing
+      })
+      match3 <- fallbackMatchesFromSlug
+    } yield {
+      match1 ++ match2 ++ match3
+    }
+
+    allMatchedItems.map {
+      case matches =>
+        val matchedTitles = matches.map(_._1).map(_.title).toSet
+        val missingItems = items
+          .filter(item => !matchedTitles.contains(item.title))
+
+        logger.info(
+          s"Could not find matches for items: ${missingItems.map(_.title)}. Falling back to custom lookups"
+        )
+
+        matches -> missingItems
+    }
+  }
+
+  private def findMatchesViaExactTitle(
+    scrapedItems: List[T]
+  ): Future[List[(T, ThingRaw)]] = {
+    thingsDb
+      .findThingsByNames(scrapedItems.map(_.title).toSet)
+      .map(thingsByName => {
+        scrapedItems.map(itemInQuestion => {
+          thingsByName
+            .getOrElse(itemInQuestion.title.toLowerCase, Seq()) match {
+            case Seq() => None
+
+            case Seq(one) if one.`type` == itemInQuestion.thingType =>
+              logger
+                .info(s"Matched ${itemInQuestion.title} by name to ${one.id}")
+              Some(itemInQuestion -> one)
+
+            case many =>
+              val matchingByType =
+                many.filter(_.`type` == itemInQuestion.thingType)
+              if (matchingByType.size == 1) {
+                Some(itemInQuestion -> matchingByType.head)
+              } else {
+                logger.debug(
+                  s"Found many things with the name = ${itemInQuestion.title}: ${many
+                    .map(_.id)}"
+                )
+                None
+              }
+          }
+        })
+      })
+      .map(_.flatten)
   }
 
   private def flipMap[K, V](m: Map[K, V]): Map[V, Set[K]] = {
@@ -177,7 +253,6 @@ class DbLookup[T <: ScrapedItem](
       .map {
         case (v, k) => v -> k.map(_._2).toSet
       }
-      .toMap
   }
 }
 
