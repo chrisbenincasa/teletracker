@@ -587,13 +587,7 @@ class App extends Component<Props, State> {
           disablePortal
         >
           {({ TransitionProps, placement }) => (
-            <Grow
-              {...TransitionProps}
-              style={{
-                transformOrigin:
-                  placement === 'bottom' ? 'center top' : 'center bottom',
-              }}
-            >
+            <Grow {...TransitionProps}>
               <Paper
                 style={{
                   position: 'absolute',
