@@ -59,9 +59,23 @@ const styles = (theme: Theme) =>
       height: '100%',
       display: 'flex',
       zIndex: 1,
-      background:
-        'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
       //To do: integrate with theme styling for primary
+    },
+    backdropContainer: {
+      height: 'auto',
+      overflow: 'hidden',
+      position: 'absolute',
+      top: 0,
+      width: '100%',
+    },
+    backdropGradient: {
+      position: 'absolute',
+      top: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(48, 48, 48, 0.5)',
+      backgroundImage:
+        'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
     },
     badge: {
       margin: theme.spacing(1),
@@ -518,22 +532,25 @@ class ItemDetails extends Component<Props, State> {
         </Helmet>
 
         <div className={classes.backdrop}>
-          <ResponsiveImage
-            item={itemDetail}
-            imageType="backdrop"
-            imageStyle={{
-              objectFit: 'cover',
-              objectPosition: 'center top',
-              width: '100%',
-              height: '100%',
-            }}
-            pictureStyle={{
-              position: 'absolute',
-              height: 'auto',
-              opacity: 0.2,
-              filter: 'blur(3px)',
-            }}
-          />
+          <div className={classes.backdropContainer}>
+            <ResponsiveImage
+              item={itemDetail}
+              imageType="backdrop"
+              imageStyle={{
+                objectFit: 'cover',
+                objectPosition: 'center top',
+                width: '100%',
+                height: '100%',
+              }}
+              pictureStyle={{
+                display: 'block',
+                position: 'relative',
+                height: 'auto',
+                filter: 'blur(3px)',
+              }}
+            />
+            <div className={classes.backdropGradient} />
+          </div>
           <div
             style={{
               display: 'flex',
