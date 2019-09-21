@@ -82,7 +82,7 @@ class IngestUnogsNetflixCatalog @Inject()(
 case class UnogsNetflixCatalogItem(
   availableDate: Option[String],
   title: String,
-  releaseYear: Option[String],
+  releaseYear: Option[Int],
   network: String,
   `type`: ThingType,
   externalId: Option[String])

@@ -27,7 +27,7 @@ class IngestNetflixOriginalsArrivals @Inject()(
 case class NetflixOriginalScrapeItem(
   availableDate: Option[String],
   title: String,
-  releaseYear: Option[String],
+  releaseYear: Option[Int],
   network: String,
   status: String,
   `type`: ThingType,

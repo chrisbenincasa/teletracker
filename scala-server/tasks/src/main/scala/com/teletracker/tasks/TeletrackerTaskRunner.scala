@@ -5,14 +5,31 @@ import com.teletracker.common.db.BaseDbProvider
 import javax.inject.Inject
 
 object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
-  val clazz = flag[String]("class", "The Teletracker task to run")
+  val clazz = flag[String]("class", "", "The Teletracker task class to run")
+  val taskName = flag[String]("task", "", "The Teletracker task name to run")
 
   override protected def allowUndefinedFlags: Boolean =
     true
 
   override protected def run(): Unit = {
+    require(clazz().nonEmpty || taskName().nonEmpty)
+
+    val clazzToRun = if (taskName().nonEmpty) {
+      TaskRegistry.TasksToClass
+        .getOrElse(
+          taskName(),
+          throw new IllegalArgumentException(
+            s"No task with the name ${taskName()}"
+          )
+        )
+        .getName
+    } else {
+      clazz()
+    }
+
     try {
-      new TeletrackerTaskRunner(injector.underlying).run(clazz(), collectArgs)
+      new TeletrackerTaskRunner(injector.underlying)
+        .run(clazzToRun, collectArgs)
     } finally {
       injector.instance[BaseDbProvider].shutdown()
     }

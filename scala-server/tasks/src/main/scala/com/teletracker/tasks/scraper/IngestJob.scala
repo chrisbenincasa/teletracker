@@ -297,7 +297,6 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
       .releaseYear(tmdbItem)
       .exists(tmdbReleaseYear => {
         item.releaseYear
-          .map(_.trim.toInt)
           .exists(
             ry => (tmdbReleaseYear - 1 to tmdbReleaseYear + 1).contains(ry)
           )
@@ -426,7 +425,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 trait ScrapedItem {
   def availableDate: Option[String]
   def title: String
-  def releaseYear: Option[String]
+  def releaseYear: Option[Int]
   def category: String
   def network: String
   def status: String

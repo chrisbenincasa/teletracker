@@ -80,10 +80,15 @@ const scrape = async () => {
             releaseYear = null;
           }
 
+          let parsedReleaseYear = parseInt(releaseYear);
+          parsedReleaseYear = isNaN(parsedReleaseYear)
+            ? undefined
+            : parsedReleaseYear;
+
           titles.push({
             availableDate: arrivingAt.format("YYYY-MM-DD"),
             title,
-            releaseYear,
+            parsedReleaseYear,
             category: "Film",
             status: status,
             network: "HBO"

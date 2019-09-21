@@ -28,7 +28,7 @@ class IngestHboChanges @Inject()(
 case class HboScrapeItem(
   availableDate: Option[String],
   title: String,
-  releaseYear: Option[String],
+  releaseYear: Option[Int],
   category: String,
   network: String,
   status: String,

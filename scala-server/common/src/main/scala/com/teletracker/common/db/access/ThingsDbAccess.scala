@@ -87,6 +87,27 @@ class ThingsDbAccess @Inject()(
     )
   }
 
+  def findThingsByName(name: String): Future[Seq[ThingRaw]] = {
+    run {
+      things.rawQuery.filter(_.normalizedName === Slug.forString(name)).result
+    }
+  }
+
+  def findThingsByNames(
+    names: Set[String]
+  ): Future[Map[String, Seq[ThingRaw]]] = {
+    if (names.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      run {
+        things.rawQuery
+          .filter(_.name inSetBind names)
+          .result
+          .map(_.groupBy(_.name))
+      }
+    }
+  }
+
   def findThingsByNormalizedName(name: String): Future[Seq[ThingRaw]] = {
     run {
       things.rawQuery.filter(_.normalizedName === Slug.forString(name)).result

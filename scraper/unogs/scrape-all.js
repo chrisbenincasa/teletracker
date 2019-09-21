@@ -94,9 +94,14 @@ const pullPage = async (page = 1, limit = 9999) => {
       .replace("Expires on ", "")
       .trim();
 
+    let parsedReleaseYear = parseInt(releaseYear);
+    parsedReleaseYear = isNaN(parsedReleaseYear)
+      ? undefined
+      : parsedReleaseYear;
+
     let metadata = {
       title: entities.decode(title),
-      releaseYear: releaseYear,
+      releaseYear: parsedReleaseYear,
       externalId: netflixId,
       type: seriesOrMovie === "movie" ? "movie" : "show",
       network: "Netflix"
