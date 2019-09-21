@@ -57,6 +57,10 @@ const scrape = async () => {
     } else {
       releaseYear = null;
     }
+    let parsedReleaseYear = parseInt(releaseYear);
+    parsedReleaseYear = isNaN(parsedReleaseYear)
+      ? undefined
+      : parsedReleaseYear;
 
     //Strip out the network from title
     var provider = regExp.exec(show);
@@ -86,7 +90,7 @@ const scrape = async () => {
     var metadata = {
       availableDate: availableDate,
       title: show.trim(),
-      releaseYear: releaseYear,
+      releaseYear: parsedReleaseYear,
       notes: notes,
       category: category,
       network: network,
@@ -102,11 +106,11 @@ const scrape = async () => {
   let fileName = currentDate + "-hulu-changes" + ".json";
 
   if (process.env.NODE_ENV == "production") {
-    if (!process.env.API_HOST) {
-      return Promise.reject(
-        new Error("Could not find value for API_HOST variable")
-      );
-    }
+    // if (!process.env.API_HOST) {
+    // return Promise.reject(
+    // new Error("Could not find value for API_HOST variable")
+    // );
+    // }
 
     let [file, _] = await writeResultsAndUploadToStorage(
       fileName,
@@ -114,7 +118,9 @@ const scrape = async () => {
       parsedResults
     );
 
-    return scheduleJob(file.name);
+    return;
+
+    // return scheduleJob(file.name);
   } else {
     return fs.writeFile(fileName, JSON.stringify(parsedResults), "utf8");
   }

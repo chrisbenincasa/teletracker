@@ -23,7 +23,7 @@ class IngestUnogsNetflixExpiring @Inject()(
 case class UnogsScrapeItem(
   availableDate: Option[String],
   title: String,
-  releaseYear: Option[String],
+  releaseYear: Option[Int],
   network: String,
   status: String,
   `type`: ThingType,

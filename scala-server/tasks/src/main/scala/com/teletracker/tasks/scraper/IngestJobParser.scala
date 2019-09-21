@@ -7,6 +7,7 @@ import com.teletracker.tasks.scraper.IngestJobParser.{
 }
 import io.circe.{Decoder, ParsingFailure}
 import io.circe.parser.{parse => parseJson}
+import cats.syntax.all._
 
 object IngestJobParser {
   sealed trait ParseMode
@@ -22,7 +23,9 @@ class IngestJobParser {
   ): Either[Exception, List[T]] = {
     parseMode match {
       case AllJson =>
-        parseJson(lines.mkString("")).flatMap(_.as[List[T]])
+        parseJson(lines.mkString(""))
+          .flatMap(_.as[List[T]])
+          .leftMap(x => new Exception(x.show))
       case JsonPerLine =>
         lines.zipWithIndex
           .filter(_._1.nonEmpty)

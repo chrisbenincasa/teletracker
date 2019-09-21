@@ -26,7 +26,7 @@ class IngestHuluChanges @Inject()(
 case class HuluScrapeItem(
   availableDate: Option[String],
   title: String,
-  releaseYear: Option[String],
+  releaseYear: Option[Int],
   notes: String,
   category: String,
   network: String,

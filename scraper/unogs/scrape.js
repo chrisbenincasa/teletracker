@@ -74,10 +74,15 @@ const scrape = async () => {
 
     let parsed = moment(expiration, "YYYY-MM-DD");
 
+    let parsedReleaseYear = parseInt(releaseYear);
+    parsedReleaseYear = isNaN(parsedReleaseYear)
+      ? undefined
+      : parsedReleaseYear;
+
     var metadata = {
       availableDate: parsed.format("YYYY-MM-DD"),
       title: entities.decode(title),
-      releaseYear: releaseYear,
+      releaseYear: parsedReleaseYear,
       // notes: notes,
       // category: category,
       type: seriesOrMovie === "movie" ? "movie" : "show",
