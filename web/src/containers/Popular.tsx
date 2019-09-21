@@ -12,6 +12,11 @@ import {
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+import {
+  Link as RouterLink,
+  RouteComponentProps,
+  withRouter,
+} from 'react-router-dom';
 import * as R from 'ramda';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
@@ -19,6 +24,7 @@ import { retrievePopular } from '../actions/popular';
 import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
+import { PopularInitiatedActionPayload } from '../actions/popular/popular';
 import Featured from '../components/Featured';
 import Thing from '../types/Thing';
 
@@ -41,11 +47,19 @@ interface InjectedProps {
   thingsBySlug: { [key: string]: Thing };
 }
 
-interface DispatchProps {
-  retrievePopular: () => any;
+interface RouteParams {
+  id: string;
 }
 
-type Props = OwnProps & InjectedProps & DispatchProps & WithUserProps;
+interface DispatchProps {
+  retrievePopular: (payload: PopularInitiatedActionPayload) => void;
+}
+
+type Props = OwnProps &
+  InjectedProps &
+  DispatchProps &
+  WithUserProps &
+  RouteComponentProps<RouteParams>;
 
 interface State {
   mainItemIndex: number;
@@ -100,7 +114,11 @@ class Popular extends Component<Props, State> {
         mainItemIndex: popularItem,
       });
     }
-    if (prevProps.location.search !== this.props.location.search) {
+    console.log(this.props);
+    if (
+      this.props.location &&
+      prevProps.location.search !== this.props.location.search
+    ) {
       let params = new URLSearchParams(location.search);
       let type;
       let param = params.get('type');
@@ -126,15 +144,22 @@ class Popular extends Component<Props, State> {
   };
 
   renderPopular = () => {
-    const { popular, userSelf, thingsBySlug } = this.props;
+    const { classes, location, popular, userSelf, thingsBySlug } = this.props;
+    const { type } = this.state;
 
     return popular && popular && popular.length ? (
       <div style={{ padding: 8, margin: 20 }}>
         <div
           style={{ display: 'flex', flexDirection: 'row', marginBottom: 10 }}
         >
-          <Typography color="inherit" variant="h4" style={{ marginBottom: 10 }}>
-            Popular Movies
+          <Typography
+            color="inherit"
+            variant="h4"
+            style={{ marginBottom: 10, flexGrow: 1 }}
+          >
+            {`Popular ${
+              type ? (type === 'movie' ? 'Movies' : 'TV Shows') : 'Content'
+            }`}
           </Typography>
           <ButtonGroup
             variant="contained"
@@ -219,9 +244,11 @@ const mapDispatchToProps = dispatch =>
 
 export default withUser(
   withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(Popular),
+    withRouter(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(Popular),
+    ),
   ),
 );
