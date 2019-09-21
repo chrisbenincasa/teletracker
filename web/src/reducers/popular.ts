@@ -7,7 +7,6 @@ import * as R from 'ramda';
 import {
   GENRE_SUCCESSFUL,
   GenreSuccessfulAction,
-  GenreSuccessfulPayload,
 } from '../actions/popular/genre';
 
 export interface State {
