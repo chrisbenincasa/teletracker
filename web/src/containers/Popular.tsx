@@ -1,4 +1,6 @@
 import {
+  Button,
+  ButtonGroup,
   createStyles,
   Grid,
   LinearProgress,
@@ -23,6 +25,11 @@ import Thing from '../types/Thing';
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
+    filterButtons: {
+      [theme.breakpoints.down('sm')]: {
+        fontSize: '0.575rem',
+      },
+    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {}
@@ -42,6 +49,7 @@ type Props = OwnProps & InjectedProps & DispatchProps & WithUserProps;
 
 interface State {
   mainItemIndex: number;
+  type?: 'movie' | 'show';
 }
 
 class Popular extends Component<Props, State> {
@@ -49,8 +57,25 @@ class Popular extends Component<Props, State> {
     mainItemIndex: -1,
   };
 
+  constructor(props: Props) {
+    super(props);
+    let params = new URLSearchParams(location.search);
+    let type;
+    let param = params.get('type');
+    if (param === 'movie' || param === 'show') {
+      type = param;
+    }
+
+    this.state = {
+      ...this.state,
+      type,
+    };
+  }
+
   componentDidMount() {
-    this.props.retrievePopular();
+    this.props.retrievePopular({
+      thingRestrict: this.state.type,
+    });
   }
 
   componentDidUpdate(prevProps) {
@@ -75,6 +100,21 @@ class Popular extends Component<Props, State> {
         mainItemIndex: popularItem,
       });
     }
+    if (prevProps.location.search !== this.props.location.search) {
+      let params = new URLSearchParams(location.search);
+      let type;
+      let param = params.get('type');
+      if (param === 'movie' || param === 'show' || !param) {
+        type = param;
+      }
+
+      this.setState({
+        type,
+      });
+      this.props.retrievePopular({
+        thingRestrict: this.state.type,
+      });
+    }
   }
 
   renderLoading = () => {
@@ -90,9 +130,47 @@ class Popular extends Component<Props, State> {
 
     return popular && popular && popular.length ? (
       <div style={{ padding: 8, margin: 20 }}>
-        <Typography color="inherit" variant="h4" style={{ marginBottom: 10 }}>
-          Popular Movies
-        </Typography>
+        <div
+          style={{ display: 'flex', flexDirection: 'row', marginBottom: 10 }}
+        >
+          <Typography color="inherit" variant="h4" style={{ marginBottom: 10 }}>
+            Popular Movies
+          </Typography>
+          <ButtonGroup
+            variant="contained"
+            color="primary"
+            aria-label="Filter by All, Movies, or just TV Shows"
+          >
+            <Button
+              color={!type ? 'secondary' : 'primary'}
+              component={RouterLink}
+              to={{
+                pathname: location.pathname,
+                search: '',
+              }}
+              className={classes.filterButtons}
+            >
+              All
+            </Button>
+            <Button
+              color={type === 'movie' ? 'secondary' : 'primary'}
+              component={RouterLink}
+              to={'?type=movie'}
+              className={classes.filterButtons}
+            >
+              Movies
+            </Button>
+            <Button
+              color={type === 'show' ? 'secondary' : 'primary'}
+              component={RouterLink}
+              to={'?type=show'}
+              className={classes.filterButtons}
+            >
+              TV
+            </Button>
+          </ButtonGroup>
+        </div>
+
         <Grid container spacing={2}>
           {popular.map((result, index) => {
             let thing = thingsBySlug[result];

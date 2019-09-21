@@ -1,6 +1,5 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { clientEffect, createAction, createBasicAction } from '../utils';
-import { defaultMovieMeta } from '../lists';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import Thing, { ThingFactory } from '../../types/Thing';
 
@@ -26,6 +25,7 @@ export type GenreSuccessfulAction = FSA<
   typeof GENRE_SUCCESSFUL,
   GenreSuccessfulPayload
 >;
+
 export type GenreFailedAction = ErrorFSA<Error, undefined, typeof GENRE_FAILED>;
 
 export const retrieveGenre = createAction<GenreInitiatedAction>(
