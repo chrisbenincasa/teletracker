@@ -21,6 +21,7 @@ import {
   Theme,
   Toolbar,
   Typography,
+  withWidth,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
@@ -217,12 +218,16 @@ interface OwnProps extends WithStyles<typeof styles> {
   isSearching: boolean;
 }
 
+interface WidthProps {
+  width: string;
+}
+
 interface DispatchProps {
   logout: () => void;
   search: (text: string) => void;
 }
 
-type Props = DispatchProps & OwnProps & RouteComponentProps;
+type Props = DispatchProps & OwnProps & RouteComponentProps & WidthProps;
 
 interface State {
   anchorEl: any;
@@ -542,8 +547,17 @@ class App extends Component<Props, State> {
     );
   }
   renderGenreMenu(type: 'movie' | 'tv') {
-    const { classes, genres } = this.props;
+    const { classes, genres, width } = this.props;
     const { genreAnchorEl } = this.state;
+    let columns;
+
+    if (width === 'lg') {
+      columns = 3;
+    } else if (width === 'md') {
+      columns = 2;
+    } else {
+      columns = 1;
+    }
 
     const filteredGenres =
       (genres && genres.filter(item => item.type.includes(type))) || [];
@@ -586,14 +600,14 @@ class App extends Component<Props, State> {
           transition
           disablePortal
         >
-          {({ TransitionProps, placement }) => (
+          {({ TransitionProps }) => (
             <Grow {...TransitionProps}>
               <Paper
                 style={{
                   position: 'absolute',
                   zIndex: 9999999,
-                  columns: 3,
-                  marginTop: 8,
+                  columns,
+                  marginTop: 14,
                 }}
               >
                 <ClickAwayListener onClickAway={this.handleGenreMenuClose}>
@@ -888,11 +902,13 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
   );
 };
 
-export default withRouter(
-  withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(App),
+export default withWidth()(
+  withRouter(
+    withStyles(styles)(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(App),
+    ),
   ),
 );
