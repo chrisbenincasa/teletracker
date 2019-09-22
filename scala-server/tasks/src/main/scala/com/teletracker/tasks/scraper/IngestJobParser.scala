@@ -5,8 +5,10 @@ import com.teletracker.tasks.scraper.IngestJobParser.{
   JsonPerLine,
   ParseMode
 }
-import io.circe.{Decoder, ParsingFailure}
-import io.circe.parser.{parse => parseJson}
+//import io.circe.{Decoder, ParsingFailure}
+import io.circe.parser.{parse => parseJson, decode}
+import io.circe._
+import io.circe.syntax._
 import cats.syntax.all._
 
 object IngestJobParser {
@@ -46,5 +48,20 @@ class IngestJobParser {
             case (Right(acc), Right(n)) => Right(acc :+ n)
           }
     }
+  }
+
+  def stream[T](
+    lines: Iterator[String]
+  )(implicit decoder: Decoder[T]
+  ): Stream[Either[Exception, T]] = {
+    lines.toStream.zipWithIndex
+      .filter(_._1.nonEmpty)
+      .map { case (in, idx) => in.trim -> idx }
+      .map {
+        case (in, idx) =>
+          decode[T](in).left.map(failure => {
+            new RuntimeException(s"$failure, $idx: $in", failure)
+          })
+      }
   }
 }

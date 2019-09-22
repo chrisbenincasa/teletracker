@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper
 
 import com.google.cloud.storage.Storage
+import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.util.SourceRetriever
@@ -8,27 +9,32 @@ import io.circe.Decoder
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.time.LocalDate
+import com.teletracker.common.util.Futures._
 import scala.io.Source
 import scala.util.control.NonFatal
 
 abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     extends TeletrackerTask {
 
+  implicit protected val execCtx =
+    scala.concurrent.ExecutionContext.Implicits.global
+
   case class IngestDeltaJobArgs(
     snapshotAfter: URI,
     snapshotBefore: URI,
     offset: Int = 0,
     limit: Int = -1,
-    dryRun: Boolean = true)
-
-  implicit protected val execCtx =
-    scala.concurrent.ExecutionContext.Implicits.global
+    dryRun: Boolean = true,
+    titleMatchThreshold: Int = 15,
+    mode: MatchMode[T] = new DbLookup[T](thingsDbAccess))
+      extends IngestJobArgsLike[T]
 
   protected val logger = LoggerFactory.getLogger(getClass)
 
   val today = LocalDate.now()
 
   protected def storage: Storage
+  protected def thingsDbAccess: ThingsDbAccess
 
   protected def parseMode: ParseMode = AllJson
 
@@ -59,6 +65,19 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
     val newIds = afterById.keySet -- beforeById.keySet
     val removedIds = beforeById.keySet -- afterById.keySet
+
+    val newItems = newIds.flatMap(afterById.get)
+    val (foundItems, nonMatchedItems) = parsedArgs.mode
+      .lookup(
+        newItems.toList,
+        parsedArgs
+      )
+      .await()
+
+    foundItems.foreach {
+      case (scraped, db) =>
+        logger.info(s"${scraped.title} - ${db.id}")
+    }
 
     logger.info(s"ids removed: ${removedIds}")
     logger.info(s"ids added: ${newIds}")
