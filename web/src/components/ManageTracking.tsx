@@ -20,6 +20,7 @@ const styles = (theme: Theme) =>
     buttonIcon: { marginRight: 8 },
     itemCTA: {
       width: '100%',
+      whiteSpace: 'nowrap',
     },
   });
 

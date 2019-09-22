@@ -16,7 +16,7 @@ export const parseInitials = (name: string, type: string) => {
 
 // Format Run Time
 export const formatRuntime = (runtime: number | number[], type: string) => {
-  if (type === 'movie') {
+  if (typeof runtime === 'number' && type === 'movie') {
     const hours = Math.floor(Number(runtime) / 60);
     const minutes = Number(runtime) % 60;
 
@@ -29,7 +29,11 @@ export const formatRuntime = (runtime: number | number[], type: string) => {
     } else {
       return null;
     }
-  } else if (type === 'show') {
+  } else if (typeof runtime === 'object' && type === 'show') {
+    if (runtime.length === 0) {
+      return;
+    }
+
     const max = Math.max(...runtime);
     const min = Math.min(...runtime);
 
