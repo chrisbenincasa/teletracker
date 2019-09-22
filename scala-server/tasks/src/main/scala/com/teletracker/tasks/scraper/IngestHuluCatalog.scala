@@ -25,7 +25,7 @@ class IngestHuluCatalog @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def mutateItem(item: HuluCatalogItem): HuluCatalogItem =
+  override protected def sanitizeItem(item: HuluCatalogItem): HuluCatalogItem =
     if (item.releaseYear.isDefined && item.name.endsWith(
           s"(${item.releaseYear.get})"
         )) {
@@ -42,7 +42,7 @@ case class HuluCatalogItem(
   availableOn: Option[String],
   expiresOn: Option[String],
   name: String,
-  releaseYear: Option[String],
+  releaseYear: Option[Int],
   network: String,
   `type`: ThingType,
   externalId: Option[String],

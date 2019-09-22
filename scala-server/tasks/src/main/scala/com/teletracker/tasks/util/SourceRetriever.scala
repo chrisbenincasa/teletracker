@@ -1,10 +1,11 @@
 package com.teletracker.tasks.util
 
 import com.google.cloud.storage.{BlobId, Storage}
+import javax.inject.Inject
 import java.net.URI
 import scala.io.Source
 
-class SourceRetriever(storage: Storage) {
+class SourceRetriever @Inject()(storage: Storage) {
   def getSource(uri: URI): Source = {
     uri.getScheme match {
       case "gs" =>
