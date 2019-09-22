@@ -2,14 +2,16 @@ package com.teletracker.tasks.scraper
 
 import com.google.cloud.storage.Storage
 import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.model.{Availability, Network, ThingRaw}
 import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.Decoder
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.time.LocalDate
+import java.time.{LocalDate, ZoneOffset}
 import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.NetworkCache
 import scala.io.Source
 import scala.util.control.NonFatal
 
@@ -36,6 +38,10 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
   protected def storage: Storage
   protected def thingsDbAccess: ThingsDbAccess
 
+  protected def networkNames: Set[String]
+  protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
+  protected def networkCache: NetworkCache
+
   protected def parseMode: ParseMode = AllJson
 
   override def preparseArgs(args: Args): Unit = parseArgs(args)
@@ -51,6 +57,8 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
   }
 
   override def run(args: Args): Unit = {
+    val networks = getNetworksOrExit()
+
     val parsedArgs = parseArgs(args)
     val afterSource =
       new SourceRetriever(storage).getSource(parsedArgs.snapshotAfter)
@@ -74,14 +82,73 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
       )
       .await()
 
-    foundItems.foreach {
-      case (scraped, db) =>
-        logger.info(s"${scraped.title} - ${db.id}")
+    val newAvailabilities = foundItems.flatMap {
+      case (scrapedItem, thing) =>
+        createAvailabilities(networks, thing, scrapedItem, true)
     }
 
-    logger.info(s"ids removed: ${removedIds}")
-    logger.info(s"ids added: ${newIds}")
+    logger.warn(
+      s"Could not find matches for added items: ${nonMatchedItems}"
+    )
+
+    val removedItems = removedIds.flatMap(afterById.get)
+    val (foundRemovals, nonMatchedRemovals) = parsedArgs.mode
+      .lookup(
+        removedItems.toList,
+        parsedArgs
+      )
+      .await()
+
+    val removedAvailabilities = foundRemovals.flatMap {
+      case (scrapedItem, thing) =>
+        createAvailabilities(networks, thing, scrapedItem, false)
+    }
+
+    logger.warn(
+      s"Could not find matches for added items: ${nonMatchedRemovals}"
+    )
+
+    if (!parsedArgs.dryRun) {
+      logger.info(
+        s"Saving ${(newAvailabilities ++ removedAvailabilities).size} availabilities"
+      )
+      thingsDbAccess
+        .saveAvailabilities(
+          newAvailabilities ++ removedAvailabilities
+        )
+        .await()
+    } else {
+      (newAvailabilities ++ removedAvailabilities).foreach(av => {
+        logger.info(s"Would've saved availability: $av")
+      })
+    }
   }
+
+  protected def getNetworksOrExit(): Set[Network] = {
+    val foundNetworks = networkCache
+      .get()
+      .await()
+      .collect {
+        case (_, network) if networkNames.contains(network.slug.value) =>
+          network
+      }
+      .toSet
+
+    if (networkNames.diff(foundNetworks.map(_.slug.value)).nonEmpty) {
+      throw new IllegalStateException(
+        s"""Could not find all networks "${networkNames}" network from datastore"""
+      )
+    }
+
+    foundNetworks
+  }
+
+  protected def createAvailabilities(
+    networks: Set[Network],
+    thing: ThingRaw,
+    scrapedItem: T,
+    isAvailable: Boolean
+  ): List[Availability]
 
   protected def uniqueKey(item: T): String
 

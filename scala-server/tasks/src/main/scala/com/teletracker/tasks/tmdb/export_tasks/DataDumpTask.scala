@@ -179,6 +179,7 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
 
 trait TmdbDumpFileRow {
   def id: Int
+  def popularity: Double
 }
 
 case class ResultWrapperType[T <: TmdbDumpFileRow](results: List[T])
