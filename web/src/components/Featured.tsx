@@ -18,26 +18,37 @@ import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 
 const styles = (theme: Theme) =>
   createStyles({
+    backdropContainer: {
+      height: 'auto',
+      overflow: 'hidden',
+      top: 0,
+      width: '100%',
+    },
+    backdropGradient: {
+      position: 'absolute',
+      top: 0,
+      width: '100%',
+      height: '100%',
+      backgroundImage:
+        'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
+    },
     posterContainer: {
-      [theme.breakpoints.up('sm')]: {
-        width: 230,
-      },
-      width: 115,
       display: 'flex',
       flex: '0 1 auto',
       flexDirection: 'column',
       position: 'absolute',
+      height: '90%',
       top: 20,
       left: 20,
     },
     title: {
       [theme.breakpoints.up('sm')]: {
-        fontSize: '3em',
+        fontSize: '2.5em',
       },
-      fontSize: '1em',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
+      textAlign: 'right',
+      width: '70%',
+      alignSelf: 'flex-end',
+      fontSize: '1.5em',
       fontWeight: 700,
     },
     titleContainer: {
@@ -48,6 +59,7 @@ const styles = (theme: Theme) =>
       bottom: 0,
       right: 10,
       marginBottom: 20,
+      width: '65%',
     },
   });
 
@@ -94,19 +106,23 @@ class Featured extends Component<Props, State> {
     return featuredItem ? (
       <Fade in={true}>
         <div style={{ position: 'relative' }}>
-          <ResponsiveImage
-            item={featuredItem}
-            imageType="backdrop"
-            imageStyle={{
-              objectFit: 'cover',
-              width: '100%',
-              height: '100%',
-              maxHeight: 424,
-            }}
-            pictureStyle={{
-              display: 'block',
-            }}
-          />
+          <div className={classes.backdropContainer}>
+            <ResponsiveImage
+              item={featuredItem}
+              imageType="backdrop"
+              imageStyle={{
+                objectFit: 'cover',
+                width: '100%',
+                height: '100%',
+                maxHeight: 424,
+              }}
+              pictureStyle={{
+                display: 'block',
+              }}
+            />
+            <div className={classes.backdropGradient} />
+          </div>
+
           <div className={classes.posterContainer}>
             <RouterLink
               to={'/' + featuredItem.type + '/' + featuredItem.normalizedName}
@@ -122,11 +138,13 @@ class Featured extends Component<Props, State> {
                 component={ResponsiveImage}
                 imageType="poster"
                 imageStyle={{
-                  width: '100%',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
                   boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                 }}
                 pictureStyle={{
-                  display: 'block',
+                  height: '100%',
+                  // display: 'block',
                 }}
               />
             </RouterLink>
