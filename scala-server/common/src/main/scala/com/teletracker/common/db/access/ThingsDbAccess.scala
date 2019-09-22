@@ -2,10 +2,18 @@ package com.teletracker.common.db.access
 
 import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.api.model.TrackedList
-import com.teletracker.common.db.{BaseDbProvider, DbImplicits, DbMonitoring}
+import com.teletracker.common.db.{
+  BaseDbProvider,
+  Bookmark,
+  DbImplicits,
+  DbMonitoring,
+  Popularity,
+  SortMode
+}
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
 import com.teletracker.common.util.{Field, GeneralizedDbFactory, Slug}
+import io.circe.Json
 import javax.inject.Inject
 import org.postgresql.util.PSQLException
 import slick.jdbc.{PositionedParameters, SetParameter}
@@ -247,10 +255,7 @@ class ThingsDbAccess @Inject()(
           .filter(t => {
             mkQuery(finalQuery.bind) @@ mkVector(t.name)
           })
-          .filter(t => {
-            val isAdult = (t.metadata +> "themoviedb" +> "movie" +>> "adult")
-            isAdult.isEmpty || isAdult.asColumnOf[Boolean] === false
-          })
+          .filter(removeAdultItems)
 
       val additionalFilters =
         InhibitFilter(baseSearch)
@@ -679,6 +684,29 @@ class ThingsDbAccess @Inject()(
         RETURNING (thing_id);
     """.as[String]
     }.map(_.head).map(UUID.fromString(_))
+  }
+
+  def updatePopularitiesInBatch(updates: List[(String, Double)]) = {
+    val values = updates
+      .map {
+        case (tmdbId, popularity) => s"('$tmdbId', $popularity)"
+      }
+      .mkString(",")
+
+    run {
+      val q = sqlu"""
+          UPDATE things as t SET 
+            popularity = x.popularity
+          FROM (VALUES
+            #$values
+          ) AS x(tmdb_id, popularity)
+          WHERE x.tmdb_id = t.tmdb_id;
+       """
+
+      q.statements.foreach(println)
+
+      q
+    }
   }
 
   def saveThing(
@@ -1398,6 +1426,75 @@ class ThingsDbAccess @Inject()(
         .map(_.genres)
         .update(Some(genreIds))
     }
+  }
+
+  def getMostPopularItems(
+    thingTypes: Set[ThingType],
+    networks: Set[Network],
+    bookmark: Option[Bookmark],
+    limit: Int
+  ): Future[(Seq[ThingRaw], Option[Bookmark])] = {
+    val maxPopularity = bookmark.collect {
+      case Bookmark(sortType, desc, value)
+          if sortType == SortMode.PopularityType && desc =>
+        value.toDouble
+    }
+
+    val actualThingTypes = if (thingTypes.isEmpty) {
+      Set(ThingType.Movie, ThingType.Show)
+    } else {
+      thingTypes
+    }
+
+    val thingsFut = if (networks.nonEmpty) {
+      run {
+        availabilities.query
+          .join(things.rawQuery)
+          .on(_.thingId === _.id)
+          .filter {
+            case (av, thing) =>
+              val base = av.isAvailable &&
+                (av.networkId inSetBind networks.flatMap(_.id)) &&
+                (thing.`type` inSetBind actualThingTypes) &&
+                removeAdultItems(thing)
+
+              if (maxPopularity.isDefined) {
+                base && thing.popularity < maxPopularity.get
+              } else {
+                base
+              }
+          }
+          .sortBy(_._2.popularity.desc.nullsLast)
+          .map(_._2)
+          .distinctOn(_.id)
+          .take(limit)
+          .result
+      }
+    } else {
+      run {
+        InhibitFilter(things.rawQuery)
+          .filter(maxPopularity)(p => _.popularity < p)
+          .query
+          .filter(_.`type` inSetBind actualThingTypes)
+          .filter(removeAdultItems)
+          .sortBy(_.popularity.desc.nullsLast)
+          .take(limit)
+          .result
+      }
+    }
+
+    thingsFut.map(things => {
+      val nextBookmark = things.lastOption
+        .flatMap(_.popularity)
+        .map(popularity => Bookmark(Popularity(), popularity.toString))
+
+      things -> nextBookmark
+    })
+  }
+
+  private def removeAdultItems(t: things.ThingsTableRaw) = {
+    val isAdult = (t.metadata +> "themoviedb" +> "movie" +> "adult")
+    isAdult.isEmpty || isAdult @> Json.fromBoolean(false)
   }
 }
 

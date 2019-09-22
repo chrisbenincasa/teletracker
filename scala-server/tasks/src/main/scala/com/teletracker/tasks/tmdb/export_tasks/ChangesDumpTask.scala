@@ -54,4 +54,6 @@ class PersonChangesDumpTask @Inject()(
 case class ChangesDumpFileRow(
   id: Int,
   adult: Option[Boolean])
-    extends TmdbDumpFileRow
+    extends TmdbDumpFileRow {
+  override def popularity: Double = 0.0
+}

@@ -1,0 +1,1 @@
+CREATE INDEX "availability_is_available_index" ON "availability" (network_id, is_available) WHERE is_available = TRUE;
