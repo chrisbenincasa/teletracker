@@ -366,12 +366,18 @@ export class TeletrackerApi {
     networkIds?: number[],
     fields?: KeyMap<ObjectMetadata>,
     typeRestrict?: 'movie' | 'show',
+    network?: string,
+    offset?: number,
+    limit?: number,
   ) {
     return this.api.get('/api/v1/popular', {
       networkIds,
       fields: fields ? this.createFilter(fields!) : undefined,
       token,
       thingType: typeRestrict,
+      network,
+      offset,
+      limit,
     });
   }
 
