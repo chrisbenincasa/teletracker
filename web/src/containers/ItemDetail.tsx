@@ -310,7 +310,12 @@ class ItemDetails extends Component<Props, State> {
           marginBottom: 10,
         }}
       >
-        <Typography color="inherit" variant="h4" itemProp="name">
+        <Typography
+          color="inherit"
+          variant="h4"
+          itemProp="name"
+          style={{ zIndex: 99999 }}
+        >
           {`${title}`}
         </Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>

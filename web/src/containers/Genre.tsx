@@ -35,9 +35,9 @@ const styles = (theme: Theme) =>
     layout: layoutStyles(theme),
     title: {
       [theme.breakpoints.up('sm')]: {
-        fontSize: '3em',
+        fontSize: '2.5em',
       },
-      fontSize: '1em',
+      fontSize: '1.5em',
       fontWeight: 700,
       whiteSpace: 'nowrap',
       overflow: 'hidden',
@@ -47,6 +47,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.down('sm')]: {
         fontSize: '0.575rem',
       },
+      whiteSpace: 'nowrap',
     },
   });
 
