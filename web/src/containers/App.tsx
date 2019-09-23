@@ -230,10 +230,10 @@ interface DispatchProps {
 type Props = DispatchProps & OwnProps & RouteComponentProps & WidthProps;
 
 interface State {
-  anchorEl: any;
-  genreAnchorEl: any;
+  anchorEl: HTMLInputElement | null;
+  genreAnchorEl: HTMLButtonElement | null;
   genreType: 'movie' | 'tv' | null;
-  searchAnchor: any;
+  searchAnchor: HTMLInputElement | null;
   searchText: string;
   mobileSearchBarOpen: boolean;
   drawerOpen: boolean;
@@ -241,13 +241,13 @@ interface State {
 }
 
 interface MenuItemProps {
-  to: any;
+  to: string;
   primary?: string;
-  button?: any;
-  key?: any;
-  selected?: any;
+  button?: boolean;
+  key?: string;
+  selected?: boolean;
   listLength?: number;
-  onClick?: any;
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 class App extends Component<Props, State> {

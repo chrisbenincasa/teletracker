@@ -103,20 +103,6 @@ interface OwnProps {
   thingsById: ThingMap;
 }
 
-interface DrawerProps {
-  drawerOpen: boolean;
-}
-
-interface MenuItemProps {
-  to: any;
-  primary?: string;
-  button?: any;
-  key?: any;
-  selected?: any;
-  listLength?: number;
-  onClick?: any;
-}
-
 interface DispatchProps {
   retrieveList: (payload: ListRetrieveInitiatedPayload) => void;
   deleteList: (payload: UserDeleteListPayload) => void;
@@ -138,7 +124,7 @@ interface State {
   loadingList: boolean;
   deleteConfirmationOpen: boolean;
   deleted: boolean;
-  anchorEl: any;
+  anchorEl: HTMLElement | null;
   migrateListId: number;
   renameDialogOpen: boolean;
   newListName: string;
