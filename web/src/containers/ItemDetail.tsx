@@ -297,7 +297,8 @@ class ItemDetails extends Component<Props, State> {
     const title = thing.name;
     const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
     const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
-    const runtime = formatRuntime(thing.runtime || 0, thing.type);
+    const runtime =
+      (thing.runtime && formatRuntime(thing.runtime, thing.type)) || null;
 
     return (
       <div
@@ -309,7 +310,12 @@ class ItemDetails extends Component<Props, State> {
           marginBottom: 10,
         }}
       >
-        <Typography color="inherit" variant="h4" itemProp="name">
+        <Typography
+          color="inherit"
+          variant="h4"
+          itemProp="name"
+          style={{ zIndex: 99999 }}
+        >
           {`${title}`}
         </Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
@@ -359,6 +365,7 @@ class ItemDetails extends Component<Props, State> {
                 component={RouterLink}
                 to={`/genres/${genre.slug}`}
                 itemProp="genre"
+                clickable
               />
             ))}
         </div>
