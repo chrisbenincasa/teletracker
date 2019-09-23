@@ -21,6 +21,7 @@ import * as R from 'ramda';
 import { Availability, Network } from '../types';
 import React, { Component } from 'react';
 import Thing from '../types/Thing';
+import { UserSelf } from '../reducers/user';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -39,7 +40,7 @@ const styles = (theme: Theme) =>
 
 interface Props extends WithStyles<typeof styles> {
   itemDetail: Thing;
-  userSelf: any;
+  userSelf: UserSelf;
 }
 
 interface State {
@@ -55,12 +56,8 @@ class ThingAvailability extends Component<Props, State> {
     super(props);
   }
 
-  manageAvailabilityTabs = value => {
+  manageAvailabilityTabs = (value: number) => {
     this.setState({ openTab: value });
-  };
-
-  setDefaultAvailbilityTab = () => {
-    // this.manageAvailabilityTabs();
   };
 
   renderOfferDetails = (availabilities: Availability[]) => {

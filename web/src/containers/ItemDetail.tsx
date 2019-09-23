@@ -675,10 +675,6 @@ class ItemDetails extends Component<Props, State> {
   }
 }
 
-const findThingBySlug = (things: Thing[], slug: string) => {
-  return R.find(t => t.slug === slug, things);
-};
-
 const mapStateToProps: (
   initialState: AppState,
   props: NotOwnProps,
