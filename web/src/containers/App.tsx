@@ -317,10 +317,10 @@ class App extends Component<Props, State> {
     this.execSearch(this.state.searchText);
   };
 
-  handleSearchForEnter = (ev: React.KeyboardEvent<HTMLInputElement>) => {
-    if (ev.keyCode === 13) {
+  handleSearchForEnter = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.keyCode === 13) {
       this.execSearch(this.state.searchText);
-      ev.currentTarget.blur();
+      event.currentTarget.blur();
       this.setState({ searchAnchor: null });
     }
   };
@@ -466,7 +466,7 @@ class App extends Component<Props, State> {
     this.setState({ anchorEl: null });
   };
 
-  handleGenreMenu = (event, type) => {
+  handleGenreMenu = (event, type: 'movie' | 'tv' | null) => {
     this.setState({
       genreAnchorEl: event.currentTarget,
       genreType: type,

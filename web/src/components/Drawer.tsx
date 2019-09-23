@@ -121,9 +121,9 @@ interface LinkProps {
 }
 
 interface ListItemProps {
-  to: any;
+  to: string;
   primary?: string;
-  selected?: any;
+  selected?: boolean;
 }
 
 // TODO: Get type definitions for props working
