@@ -1,5 +1,6 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
-import { clientEffect, createAction, createBasicAction } from '../utils';
+import { clientEffect, createAction } from '../utils';
+import { defaultMovieMeta } from '../lists';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import Thing, { ThingFactory } from '../../types/Thing';
 import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
@@ -13,7 +14,7 @@ export interface PopularInitiatedActionPayload {
   fields?: KeyMap<ObjectMetadata>;
   itemTypes?: string[];
   network?: string;
-  offset?: number;
+  bookmark?: string;
   limit?: number;
 }
 
@@ -55,11 +56,11 @@ export const popularSaga = function*() {
       try {
         let response = yield clientEffect(
           client => client.getPopular,
-          payload.fields,
+          defaultMovieMeta,
           payload.token,
           payload.itemTypes,
           payload.network,
-          payload.offset,
+          payload.bookmark,
           payload.limit,
         );
 
