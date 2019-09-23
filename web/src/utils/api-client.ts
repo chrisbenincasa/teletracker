@@ -366,7 +366,7 @@ export class TeletrackerApi {
     fields?: KeyMap<ObjectMetadata>,
     itemTypes?: number[],
     network?: string,
-    offset?: number,
+    bookmark?: string,
     limit?: number,
   ) {
     return this.api.get('/api/v1/popular', {
@@ -374,7 +374,7 @@ export class TeletrackerApi {
       token,
       itemTypes,
       network,
-      offset,
+      bookmark,
       limit,
     });
   }
