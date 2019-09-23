@@ -9,6 +9,10 @@ export const POPULAR_FAILED = 'popular/FAILED';
 
 export interface PopularInitiatedActionPayload {
   thingRestrict?: 'movie' | 'show';
+  itemTypes?: [];
+  offset?: number;
+  limit?: number;
+  network?: string;
 }
 
 export type PopularInitiatedAction = FSA<
@@ -52,6 +56,9 @@ export const popularSaga = function*() {
           undefined,
           undefined,
           payload.thingRestrict,
+          payload.network,
+          payload.offset,
+          payload.limit,
         );
 
         if (response.ok) {
