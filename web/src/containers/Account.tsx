@@ -133,7 +133,6 @@ type SwitchNames = 'showOnlyNetworks';
 type Switches = { [key in SwitchNames]: boolean };
 
 type State = {
-  single?: any;
   switches: Switches;
   formatSlider: number;
   networkFilter: string;
