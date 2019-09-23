@@ -26,6 +26,7 @@ const styles = (theme: Theme) =>
 
 interface OwnProps {
   itemDetail: Thing;
+  style: object;
 }
 
 type Props = OwnProps & WithStyles<typeof styles> & WithUserProps;
@@ -62,13 +63,13 @@ class ManageTracking extends Component<Props, State> {
   };
 
   renderTrackingToggle = () => {
-    const { classes } = this.props;
+    const { classes, style } = this.props;
     const { belongsToLists } = this.state;
 
     let trackingCTA = belongsToLists ? 'Manage Tracking' : 'Add to List';
 
     return (
-      <div className={classes.itemCTA}>
+      <div className={classes.itemCTA} style={{ ...style }}>
         <Fab
           size="small"
           variant="extended"

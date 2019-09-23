@@ -40,6 +40,7 @@ const styles = (theme: Theme) =>
       height: '90%',
       top: 20,
       left: 20,
+      width: '30%',
     },
     title: {
       [theme.breakpoints.up('sm')]: {
@@ -138,18 +139,29 @@ class Featured extends Component<Props, State> {
                 component={ResponsiveImage}
                 imageType="poster"
                 imageStyle={{
+                  // width: 'auto',
+                  // // height: '100%',
+                  // maxWidth: '100%',
+                  // maxHeight: '100%',
+                  // width: '100%',
+                  height: '100%',
+                  // objectFit: 'contain',
+                  boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                   maxWidth: '100%',
                   maxHeight: '100%',
-                  boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                 }}
                 pictureStyle={{
                   height: '100%',
-                  // display: 'block',
+                  width: '100%',
+                  display: 'block',
                 }}
               />
             </RouterLink>
 
-            <ManageTracking itemDetail={featuredItem} />
+            <ManageTracking
+              itemDetail={featuredItem}
+              style={{ maxWidth: 225 }}
+            />
             <AddToListDialog
               open={manageTrackingModalOpen}
               onClose={this.closeManageTrackingModal.bind(this)}
