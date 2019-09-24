@@ -91,6 +91,7 @@ class Popular extends Component<Props, State> {
   componentDidMount() {
     this.props.retrievePopular({
       itemTypes: this.state.type,
+      limit: 19,
     });
   }
 
@@ -130,12 +131,17 @@ class Popular extends Component<Props, State> {
         type = undefined;
       }
 
-      this.setState({
-        type,
-      });
-      this.props.retrievePopular({
-        itemTypes: this.state.type,
-      });
+      this.setState(
+        {
+          type,
+        },
+        () => {
+          this.props.retrievePopular({
+            itemTypes: this.state.type,
+            limit: 19,
+          });
+        },
+      );
     }
   }
 
