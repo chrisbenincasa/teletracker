@@ -77,17 +77,18 @@ class Popular extends Component<Props, State> {
     let type;
     let param = params.get('type');
     if (param === 'movie' || param === 'show') {
-      type = param;
+      type = [param];
+    } else {
+      type = undefined;
     }
 
     this.state = {
       ...this.state,
-      type: [...type],
+      type,
     };
   }
 
   componentDidMount() {
-    console.log(this.state.type);
     this.props.retrievePopular({
       itemTypes: this.state.type,
     });
@@ -115,7 +116,7 @@ class Popular extends Component<Props, State> {
         mainItemIndex: popularItem,
       });
     }
-    console.log(this.props);
+
     if (
       this.props.location &&
       prevProps.location.search !== this.props.location.search
@@ -123,12 +124,14 @@ class Popular extends Component<Props, State> {
       let params = new URLSearchParams(location.search);
       let type;
       let param = params.get('type');
-      if (param === 'movie' || param === 'show' || !param) {
-        type = param;
+      if (param === 'movie' || param === 'show') {
+        type = [param];
+      } else if (!param) {
+        type = undefined;
       }
 
       this.setState({
-        type: [...type],
+        type,
       });
       this.props.retrievePopular({
         itemTypes: this.state.type,
@@ -159,7 +162,11 @@ class Popular extends Component<Props, State> {
             style={{ marginBottom: 10, flexGrow: 1 }}
           >
             {`Popular ${
-              type ? (type && type['movie'] ? 'Movies' : 'TV Shows') : 'Content'
+              type
+                ? type.includes('movie')
+                  ? 'Movies'
+                  : 'TV Shows'
+                : 'Content'
             }`}
           </Typography>
           <ButtonGroup
@@ -179,7 +186,7 @@ class Popular extends Component<Props, State> {
               All
             </Button>
             <Button
-              color={type && type['movie'] ? 'secondary' : 'primary'}
+              color={type && type.includes('movie') ? 'secondary' : 'primary'}
               component={RouterLink}
               to={'?type=movie'}
               className={classes.filterButtons}
@@ -187,7 +194,7 @@ class Popular extends Component<Props, State> {
               Movies
             </Button>
             <Button
-              color={type && type['show'] ? 'secondary' : 'primary'}
+              color={type && type.includes('show') ? 'secondary' : 'primary'}
               component={RouterLink}
               to={'?type=show'}
               className={classes.filterButtons}
