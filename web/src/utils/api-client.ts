@@ -372,7 +372,8 @@ export class TeletrackerApi {
     return this.api.get('/api/v1/popular', {
       token,
       fields: fields ? this.createFilter(fields!) : undefined,
-      itemTypes,
+      itemTypes:
+        itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
       networks,
       bookmark,
       limit,
