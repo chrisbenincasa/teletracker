@@ -10,7 +10,6 @@ export const POPULAR_SUCCESSFUL = 'popular/SUCCESSFUL';
 export const POPULAR_FAILED = 'popular/FAILED';
 
 export interface PopularInitiatedActionPayload {
-  token?: string;
   fields?: KeyMap<ObjectMetadata>;
   itemTypes?: ('movie' | 'show')[];
   networks?: string;
