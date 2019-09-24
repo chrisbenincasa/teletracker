@@ -103,20 +103,6 @@ interface OwnProps {
   thingsById: ThingMap;
 }
 
-interface DrawerProps {
-  drawerOpen: boolean;
-}
-
-interface MenuItemProps {
-  to: any;
-  primary?: string;
-  button?: any;
-  key?: any;
-  selected?: any;
-  listLength?: number;
-  onClick?: any;
-}
-
 interface DispatchProps {
   retrieveList: (payload: ListRetrieveInitiatedPayload) => void;
   deleteList: (payload: UserDeleteListPayload) => void;
@@ -138,7 +124,7 @@ interface State {
   loadingList: boolean;
   deleteConfirmationOpen: boolean;
   deleted: boolean;
-  anchorEl: any;
+  anchorEl: HTMLElement | null;
   migrateListId: number;
   renameDialogOpen: boolean;
   newListName: string;
@@ -218,15 +204,15 @@ class ListDetail extends Component<Props, State> {
     }
   }
 
-  setWatchedSetting = event => {
+  setWatchedSetting = () => {
     let { updateList } = this.props;
-    let { list } = this.state;
+    let { deleteOnWatch, list } = this.state;
 
     if (list) {
       let listOptions = getOrInitListOptions(list);
       let newListOptions = {
         ...listOptions,
-        removeWatchedItems: !this.state.deleteOnWatch,
+        removeWatchedItems: !deleteOnWatch,
       };
 
       updateList({
@@ -234,7 +220,7 @@ class ListDetail extends Component<Props, State> {
         options: newListOptions,
       });
 
-      this.setState({ deleteOnWatch: !this.state.deleteOnWatch });
+      this.setState({ deleteOnWatch: !deleteOnWatch });
     }
   };
 
@@ -411,7 +397,7 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderRenameDialog(list: List) {
-    let { classes, userSelf, match } = this.props;
+    let { classes } = this.props;
     let { renameDialogOpen } = this.state;
 
     if (!list) {

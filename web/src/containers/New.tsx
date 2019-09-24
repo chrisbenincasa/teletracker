@@ -15,7 +15,6 @@ import { bindActionCreators } from 'redux';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { Availability } from '../types';
 import {
   retrieveUpcomingAvailability,
   retrieveAllAvailability,
