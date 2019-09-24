@@ -1,14 +1,26 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
-import { clientEffect, createAction, createBasicAction } from '../utils';
+import { clientEffect, createAction } from '../utils';
 import { defaultMovieMeta } from '../lists';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import Thing, { ThingFactory } from '../../types/Thing';
+import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
 
 export const POPULAR_INITIATED = 'popular/INITIATED';
 export const POPULAR_SUCCESSFUL = 'popular/SUCCESSFUL';
 export const POPULAR_FAILED = 'popular/FAILED';
 
-export type PopularInitiatedAction = FSA<typeof POPULAR_INITIATED>;
+export interface PopularInitiatedActionPayload {
+  fields?: KeyMap<ObjectMetadata>;
+  itemTypes?: ('movie' | 'show')[];
+  networks?: string;
+  bookmark?: string;
+  limit?: number;
+}
+
+export type PopularInitiatedAction = FSA<
+  typeof POPULAR_INITIATED,
+  PopularInitiatedActionPayload
+>;
 
 export interface PopularSuccessfulPayload {
   popular: Thing[];
@@ -18,13 +30,14 @@ export type PopularSuccessfulAction = FSA<
   typeof POPULAR_SUCCESSFUL,
   PopularSuccessfulPayload
 >;
+
 export type PopularFailedAction = ErrorFSA<
   Error,
   undefined,
   typeof POPULAR_FAILED
 >;
 
-export const retrievePopular = createBasicAction<PopularInitiatedAction>(
+export const retrievePopular = createAction<PopularInitiatedAction>(
   POPULAR_INITIATED,
 );
 
@@ -35,24 +48,31 @@ export const popularSuccess = createAction<PopularSuccessfulAction>(
 export const popularFailed = createAction<PopularFailedAction>(POPULAR_FAILED);
 
 export const popularSaga = function*() {
-  yield takeEvery(POPULAR_INITIATED, function*() {
-    try {
-      let response = yield clientEffect(
-        client => client.getPopular,
-        undefined,
-        defaultMovieMeta,
-      );
-
-      if (response.ok) {
-        yield put(
-          popularSuccess({
-            popular: response.data.data.map(ThingFactory.create),
-          }),
+  yield takeEvery(POPULAR_INITIATED, function*({
+    payload,
+  }: PopularInitiatedAction) {
+    if (payload) {
+      try {
+        let response = yield clientEffect(
+          client => client.getPopular,
+          payload.fields,
+          payload.itemTypes,
+          payload.networks,
+          payload.bookmark,
+          payload.limit,
         );
+
+        if (response.ok) {
+          yield put(
+            popularSuccess({
+              popular: response.data.data.map(ThingFactory.create),
+            }),
+          );
+        }
+      } catch (e) {
+        console.error(e);
+        yield put(popularFailed(e));
       }
-    } catch (e) {
-      console.error(e);
-      yield put(popularFailed(e));
     }
   });
 };
