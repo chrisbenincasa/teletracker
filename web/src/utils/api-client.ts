@@ -364,16 +364,16 @@ export class TeletrackerApi {
   async getPopular(
     token?: string,
     fields?: KeyMap<ObjectMetadata>,
-    itemTypes?: number[],
-    network?: string,
+    itemTypes?: ('movie' | 'show')[],
+    networks?: string,
     bookmark?: string,
     limit?: number,
   ) {
     return this.api.get('/api/v1/popular', {
-      fields: fields ? this.createFilter(fields!) : undefined,
       token,
+      fields: fields ? this.createFilter(fields!) : undefined,
       itemTypes,
-      network,
+      networks,
       bookmark,
       limit,
     });
