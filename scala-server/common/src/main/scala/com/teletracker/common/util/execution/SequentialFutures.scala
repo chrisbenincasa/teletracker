@@ -10,7 +10,7 @@ object SequentialFutures {
   def serialize[
     Element,
     OtherElement,
-    Collection[Element] <: Iterable[Element]
+    Collection[Element] <: Traversable[Element]
   ](
     collection: Collection[Element],
     perElementWait: Option[FiniteDuration] = None
