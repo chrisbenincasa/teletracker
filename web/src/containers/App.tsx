@@ -230,10 +230,10 @@ interface DispatchProps {
 type Props = DispatchProps & OwnProps & RouteComponentProps & WidthProps;
 
 interface State {
-  anchorEl: any;
-  genreAnchorEl: any;
+  anchorEl: HTMLInputElement | null;
+  genreAnchorEl: HTMLButtonElement | null;
   genreType: 'movie' | 'tv' | null;
-  searchAnchor: any;
+  searchAnchor: HTMLInputElement | null;
   searchText: string;
   mobileSearchBarOpen: boolean;
   drawerOpen: boolean;
@@ -241,13 +241,13 @@ interface State {
 }
 
 interface MenuItemProps {
-  to: any;
+  to: string;
   primary?: string;
-  button?: any;
-  key?: any;
-  selected?: any;
+  button?: boolean;
+  key?: string;
+  selected?: boolean;
   listLength?: number;
-  onClick?: any;
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 class App extends Component<Props, State> {
@@ -317,10 +317,10 @@ class App extends Component<Props, State> {
     this.execSearch(this.state.searchText);
   };
 
-  handleSearchForEnter = (ev: React.KeyboardEvent<HTMLInputElement>) => {
-    if (ev.keyCode === 13) {
+  handleSearchForEnter = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.keyCode === 13) {
       this.execSearch(this.state.searchText);
-      ev.currentTarget.blur();
+      event.currentTarget.blur();
       this.setState({ searchAnchor: null });
     }
   };
@@ -466,7 +466,7 @@ class App extends Component<Props, State> {
     this.setState({ anchorEl: null });
   };
 
-  handleGenreMenu = (event, type) => {
+  handleGenreMenu = (event, type: 'movie' | 'tv' | null) => {
     this.setState({
       genreAnchorEl: event.currentTarget,
       genreType: type,

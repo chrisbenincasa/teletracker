@@ -59,7 +59,7 @@ class Home extends Component<Props & WithUserProps> {
   };
 
   renderSearchResults = () => {
-    let { classes, searchResults, userSelf } = this.props;
+    let { searchResults, userSelf } = this.props;
     let firstLoad = !searchResults;
     searchResults = searchResults || [];
 
