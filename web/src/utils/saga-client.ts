@@ -195,16 +195,20 @@ export class SagaTeletrackerClient {
   }
 
   *getPopular(
-    networkIds?: number[],
     fields?: KeyMap<ObjectMetadata>,
-    typeRestrict?: 'movie' | 'show',
+    itemTypes?: ('movie' | 'show')[],
+    networks?: string,
+    bookmark?: string,
+    limit?: number,
   ) {
     return yield this.apiCall(
       client => client.getPopular,
       yield this.withToken(),
-      networkIds,
       fields,
-      typeRestrict,
+      itemTypes,
+      networks,
+      bookmark,
+      limit,
     );
   }
 

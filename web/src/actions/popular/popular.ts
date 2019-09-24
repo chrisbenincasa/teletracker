@@ -12,8 +12,8 @@ export const POPULAR_FAILED = 'popular/FAILED';
 export interface PopularInitiatedActionPayload {
   token?: string;
   fields?: KeyMap<ObjectMetadata>;
-  itemTypes?: string[];
-  network?: string;
+  itemTypes?: ('movie' | 'show')[];
+  networks?: string;
   bookmark?: string;
   limit?: number;
 }
@@ -56,10 +56,9 @@ export const popularSaga = function*() {
       try {
         let response = yield clientEffect(
           client => client.getPopular,
-          defaultMovieMeta,
-          payload.token,
+          payload.fields,
           payload.itemTypes,
-          payload.network,
+          payload.networks,
           payload.bookmark,
           payload.limit,
         );
