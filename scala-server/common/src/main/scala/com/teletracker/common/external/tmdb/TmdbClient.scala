@@ -8,7 +8,8 @@ import com.teletracker.common.model.tmdb.{
   MovieSearchResult,
   PagedResult,
   TmdbError,
-  TvSearchResult
+  TvSearchResult,
+  TvShow
 }
 import io.circe._
 import io.circe.generic.JsonCodec
@@ -45,6 +46,28 @@ class TmdbClient @Inject()(
 
   def getPopularMovies(): Future[PagedResult[Movie]] = {
     makeRequest[PagedResult[Movie]]("movie/popular")
+  }
+
+  def getPopularMoviesStream() = {
+    (1 to 1000).toStream.map(page => {
+      makeRequest[PagedResult[Movie]](
+        "movie/popular",
+        Seq("page" -> page.toString)
+      )
+    })
+  }
+
+  def getPopularShows(): Future[PagedResult[TvShow]] = {
+    makeRequest[PagedResult[TvShow]]("tv/popular")
+  }
+
+  def getPopularShowsStream() = {
+    (1 to 1000).toStream.map(page => {
+      makeRequest[PagedResult[TvShow]](
+        "tv/popular",
+        Seq("page" -> page.toString)
+      )
+    })
   }
 
   def makeRequest[T](
