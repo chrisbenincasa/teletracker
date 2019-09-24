@@ -63,7 +63,7 @@ type Props = OwnProps &
 
 interface State {
   mainItemIndex: number;
-  type?: 'movie' | 'show';
+  type?: ('movie' | 'show')[];
 }
 
 class Popular extends Component<Props, State> {
@@ -82,13 +82,14 @@ class Popular extends Component<Props, State> {
 
     this.state = {
       ...this.state,
-      type,
+      type: [...type],
     };
   }
 
   componentDidMount() {
+    console.log(this.state.type);
     this.props.retrievePopular({
-      thingRestrict: this.state.type,
+      itemTypes: this.state.type,
     });
   }
 
@@ -127,10 +128,10 @@ class Popular extends Component<Props, State> {
       }
 
       this.setState({
-        type,
+        type: [...type],
       });
       this.props.retrievePopular({
-        thingRestrict: this.state.type,
+        itemTypes: this.state.type,
       });
     }
   }
@@ -158,7 +159,7 @@ class Popular extends Component<Props, State> {
             style={{ marginBottom: 10, flexGrow: 1 }}
           >
             {`Popular ${
-              type ? (type === 'movie' ? 'Movies' : 'TV Shows') : 'Content'
+              type ? (type && type['movie'] ? 'Movies' : 'TV Shows') : 'Content'
             }`}
           </Typography>
           <ButtonGroup
@@ -178,7 +179,7 @@ class Popular extends Component<Props, State> {
               All
             </Button>
             <Button
-              color={type === 'movie' ? 'secondary' : 'primary'}
+              color={type && type['movie'] ? 'secondary' : 'primary'}
               component={RouterLink}
               to={'?type=movie'}
               className={classes.filterButtons}
@@ -186,7 +187,7 @@ class Popular extends Component<Props, State> {
               Movies
             </Button>
             <Button
-              color={type === 'show' ? 'secondary' : 'primary'}
+              color={type && type['show'] ? 'secondary' : 'primary'}
               component={RouterLink}
               to={'?type=show'}
               className={classes.filterButtons}

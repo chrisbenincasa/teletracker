@@ -9,7 +9,6 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { fade } from '@material-ui/core/styles/colorManipulator';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import {
