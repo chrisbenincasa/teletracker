@@ -2,7 +2,7 @@ import { put, takeEvery } from '@redux-saga/core/effects';
 import { clientEffect, createAction, createBasicAction } from '../utils';
 import { defaultMovieMeta } from '../lists';
 import { ErrorFSA, FSA } from 'flux-standard-action';
-import { Availability } from '../../types';
+import Thing, { ThingFactory } from '../../types/Thing';
 
 export const UPCOMING_AVAILABILITY_INITIATED =
   'availability/upcoming/INITIATED';
@@ -15,8 +15,8 @@ export type UpcomingAvailabilityInitiatedAction = FSA<
 >;
 
 export interface UpcomingAvailabilitySuccessfulPayload {
-  upcoming: Availability[];
-  expiring: Availability[];
+  upcoming: Thing[];
+  expiring: Thing[];
 }
 
 export type UpcomingAvailabilitySuccessfulAction = FSA<
@@ -51,7 +51,16 @@ export const upcomingAvailabilitySaga = function*() {
       );
 
       if (response.ok) {
-        yield put(upcomingAvailabilitySuccess(response.data.data));
+        yield put(
+          upcomingAvailabilitySuccess({
+            upcoming: response.data.data.future.upcoming.map(
+              ThingFactory.create,
+            ),
+            expiring: response.data.data.future.upcoming.map(
+              ThingFactory.create,
+            ),
+          }),
+        );
       }
     } catch (e) {
       yield put(upcomingAvailabilityFailed(e));

@@ -74,34 +74,32 @@ const scrapeSeriesJson = async id => {
         is_available: true,
       }).length;
 
-      let start = _.chain(availability || [])
-        .filter(av => !_.isUndefined(av.start_date))
-        .head()
-        .value();
-      let end = _.chain(availability || [])
-        .filter(av => !_.isUndefined(av.end_date))
-        .head()
-        .value();
+      // TODO: Support seasons in hulu catalog dump
+      // let start = _.chain(availability || [])
+      //   .filter(av => !_.isUndefined(av.start_date))
+      //   .head()
+      //   .value();
+      // let end = _.chain(availability || [])
+      //   .filter(av => !_.isUndefined(av.end_date))
+      //   .head()
+      //   .value();
 
       return {
         name: json.details.entity.name,
         genres: json.details.entity.genres,
         releaseYear: json.details.entity.premiere_date
-          ? moment
-              .utc(json.details.entity.premiere_date)
-              .year()
-              .toString()
+          ? moment.utc(json.details.entity.premiere_date).year()
           : null,
         externalId: json.details.entity.id,
         type: 'show',
         network: 'Hulu',
         numSeasonsAvailable,
-        availableOn: start ? moment.utc(start).format() : null,
-        expiresOn: end ? moment.utc(end).format() : null,
+        availableOn: null,
+        expiresOn: null,
       };
     }
   } catch (e) {
-    console.error(e);
+    console.error(e.message);
     return;
   }
 };
@@ -135,7 +133,10 @@ const scrapeMovieJson = async id => {
   try {
     let json = await request({
       uri: `https://discover.hulu.com/content/v4/hubs/movie/${id}?schema=9`,
-      headers,
+      headers: {
+        ...headers,
+        Cookie: process.env.HULU_COOKIE,
+      },
       gzip: true,
       json: true,
     });
@@ -153,10 +154,7 @@ const scrapeMovieJson = async id => {
       name: json.details.entity.name,
       genres: json.details.entity.genres,
       releaseYear: json.details.entity.premiere_date
-        ? moment
-            .utc(json.details.entity.premiere_date)
-            .year()
-            .toString()
+        ? moment.utc(json.details.entity.premiere_date).year()
         : null,
       externalId: json.details.entity.id,
       type: 'movie',
@@ -165,7 +163,7 @@ const scrapeMovieJson = async id => {
       expiresOn: availableEnd ? moment.utc(availableEnd).format() : null,
     };
   } catch (e) {
-    console.error(e);
+    console.error(e.message);
     return;
   }
 };
@@ -235,7 +233,7 @@ const scrape = async () => {
           stream.write(JSON.stringify(result) + '\n');
         }
 
-        await wait(250);
+        await wait(100);
         return [...last, result];
       }, Promise.resolve([]));
 

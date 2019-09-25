@@ -1,31 +1,28 @@
 import {
   createStyles,
+  Grid,
   LinearProgress,
   Theme,
+  Typography,
   WithStyles,
   withStyles,
-  Grid,
-  Typography,
 } from '@material-ui/core';
+import _ from 'lodash';
+import moment from 'moment';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
+import {
+  retrieveAllAvailability,
+  retrieveUpcomingAvailability,
+} from '../actions/availability';
+import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
+import { AvailabilityState } from '../reducers/availability';
 import { layoutStyles } from '../styles';
-import {
-  retrieveUpcomingAvailability,
-  retrieveAllAvailability,
-} from '../actions/availability';
-import {
-  AvailabilityState,
-  DerivedAvailability,
-} from '../reducers/availability';
-import _ from 'lodash';
-import ItemCard from '../components/ItemCard';
-import moment from 'moment';
 import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
@@ -40,8 +37,6 @@ interface OwnProps extends WithStyles<typeof styles> {}
 
 interface InjectedProps {
   isAuthed: boolean;
-  isSearching: boolean;
-  searchResults?: Thing[];
   upcoming?: AvailabilityState;
   expiring?: AvailabilityState;
   recentlyAdded?: AvailabilityState;
@@ -68,7 +63,7 @@ class New extends Component<Props> {
     );
   };
 
-  renderUpcoming = (upcoming: DerivedAvailability[]) => {
+  renderUpcoming = (upcoming: Thing[]) => {
     if (upcoming.length == 0) {
       return null;
     }
@@ -84,16 +79,15 @@ class New extends Component<Props> {
       }
     }
 
+    let allAvailabilties = _.chain(upcoming)
+      .map('availability')
+      .flatten()
+      .value();
+
     let max = moment(
-      _.maxBy(upcoming, av => moment(av.startDate).valueOf())!.startDate,
+      _.maxBy(allAvailabilties, av => moment(av.startDate).valueOf())!
+        .startDate,
     );
-    // let min = _.minBy(upcoming, av => moment(av.startDate).valueOf());
-    // let diff = moment(max!.startDatez/x/).diff(firstMon);
-
-    // console.log(moment.duration(diff));
-    // let dur = moment.duration(diff);
-
-    // let numDays = Math.ceil(dur.asDays());
 
     let start = firstMon;
     let end = firstMon.clone().add(1, 'weeks');
@@ -103,7 +97,7 @@ class New extends Component<Props> {
       end = end.add(1, 'weeks');
     }
 
-    return _.chain(upcoming)
+    return _.chain(allAvailabilties)
       .groupBy(av => {
         let m = moment(av.startDate);
         return m
@@ -115,13 +109,18 @@ class New extends Component<Props> {
       .sortBy(([s, _]) => s)
       .reverse()
       .map(([key, avs]) => {
-        let card = _.chain(avs)
-          .groupBy(_.property('thing.id'))
-          .map(things => {
+        let ids = _.map(avs, 'id');
+        let card = _.chain(upcoming)
+          .filter(thing => {
+            return _.some(thing.availability, av => {
+              return _.includes(ids, av.id);
+            });
+          })
+          .map(thing => {
             return (
               <ItemCard
-                key={things[0].id}
-                item={things[0].thing!}
+                key={thing.id}
+                item={thing}
                 userSelf={this.props.userSelf!}
               />
             );
@@ -164,7 +163,9 @@ class New extends Component<Props> {
                 flexGrow: 1,
               }}
             >
-              <h1 style={{ paddingLeft: 8 }}>Recently Added</h1>
+              <Typography style={{ paddingLeft: 8 }} variant="h2">
+                Recently Added
+              </Typography>
               <div className={this.props.classes.cardGrid}>
                 {this.renderUpcoming(this.props.recentlyAdded.availability)}
               </div>
@@ -181,8 +182,6 @@ class New extends Component<Props> {
 const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    isSearching: appState.search.searching,
-    searchResults: appState.search.results,
     upcoming: appState.availability.upcoming,
     expiring: appState.availability.expiring,
     recentlyAdded: appState.availability.recentlyAdded,
