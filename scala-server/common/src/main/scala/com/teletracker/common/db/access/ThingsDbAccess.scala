@@ -85,9 +85,14 @@ class ThingsDbAccess @Inject()(
     }
   }
 
-  def findThingsBySlugsRaw(slugs: Set[Slug]) = {
+  def findThingsBySlugsRaw(
+    slugs: Set[Slug],
+    thingType: Option[ThingType] = None
+  ) = {
     run {
-      things.rawQuery
+      InhibitFilter(things.rawQuery)
+        .filter(thingType)(tt => _.`type` === tt)
+        .query
         .filter(_.normalizedName inSetBind slugs)
         .result
     }.map(_.map(t => t.normalizedName -> t).toMap)
@@ -968,10 +973,11 @@ class ThingsDbAccess @Inject()(
       futureAvailability <- futureAvailabilityFut
     } yield {
       val recent = recentAvailability.map {
-        case (av, thing) =>
-          av.toDetailed.withThing(
-            thing.selectFields(selectFields, defaultFields).toPartial
-          )
+        case (thing, avs) =>
+          thing
+            .selectFields(selectFields, defaultFields)
+            .toPartial
+            .withAvailability(avs.toList.map(_.toDetailed))
       }
 
       RecentAvailability(
@@ -995,16 +1001,18 @@ class ThingsDbAccess @Inject()(
     } yield {
       FutureAvailability(
         upcoming.map {
-          case (av, thing) =>
-            av.toDetailed.withThing(
-              thing.selectFields(selectFields, defaultFields).toPartial
-            )
+          case (thing, avs) =>
+            thing
+              .selectFields(selectFields, defaultFields)
+              .toPartial
+              .withAvailability(avs.toList.map(_.toDetailed))
         },
         expiring.map {
-          case (av, thing) =>
-            av.toDetailed.withThing(
-              thing.selectFields(selectFields, defaultFields).toPartial
-            )
+          case (thing, avs) =>
+            thing
+              .selectFields(selectFields, defaultFields)
+              .toPartial
+              .withAvailability(avs.toList.map(_.toDetailed))
         }
       )
     }
@@ -1013,7 +1021,7 @@ class ThingsDbAccess @Inject()(
   def findPastAvailability(
     daysBack: Int,
     networkIds: Option[Set[Int]]
-  ): Future[Seq[(Availability, ThingRaw)]] = {
+  ): Future[Seq[(ThingRaw, Seq[Availability])]] = {
     val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
     val daysAgoDate = today.minusDays(daysBack)
 
@@ -1029,7 +1037,7 @@ class ThingsDbAccess @Inject()(
   def findUpcomingAvailability(
     daysOut: Int,
     networkIds: Option[Set[Int]]
-  ): Future[Seq[(Availability, ThingRaw)]] = {
+  ): Future[Seq[(ThingRaw, Seq[Availability])]] = {
     val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
     val daysOutDate = today.plusDays(daysOut)
 
@@ -1045,7 +1053,7 @@ class ThingsDbAccess @Inject()(
   def findExpiringAvailability(
     daysOut: Int,
     networkIds: Option[Set[Int]]
-  ): Future[Seq[(Availability, ThingRaw)]] = {
+  ): Future[Seq[(ThingRaw, Seq[Availability])]] = {
     val today = LocalDate.now().atStartOfDay().atOffset(ZoneOffset.UTC)
     val daysOutDate = today.plusDays(daysOut)
 
@@ -1091,48 +1099,63 @@ class ThingsDbAccess @Inject()(
     futureStartDate: Option[OffsetDateTime],
     futureEndDate: Option[OffsetDateTime],
     networkIds: Option[Set[Int]]
-  ): Future[Seq[(Availability, ThingRaw)]] = {
+  ): Future[Seq[(ThingRaw, Seq[Availability])]] = {
     if (futureEndDate.isEmpty) {
       require(
         pastStartDate.isDefined ^ futureStartDate.isDefined
       )
     }
 
-    val baseQuery = availabilities.query
+    val baseQuery =
+      availabilities.query.join(things.rawQuery).on(_.thingId === _.id)
 
-    val withStart = if (pastStartDate.isDefined) {
-      baseQuery.filter(av => {
-        av.startDate < today && av.startDate >= pastStartDate.get
+    val filteredQuery = InhibitFilter(baseQuery)
+      .filter(pastStartDate)(past => {
+        case (av, _) =>
+          av.startDate < today && av.startDate >= past
       })
-    } else if (futureStartDate.isDefined) {
-      baseQuery.filter(av => {
-        av.startDate > today && av.startDate <= futureStartDate.get
+      .filter(futureStartDate)(future => {
+        case (av, _) =>
+          av.startDate > today && av.startDate <= future
       })
-    } else {
-      baseQuery
-    }
+      .filter(futureEndDate)(future => {
+        case (av, _) =>
+          av.endDate > today && av.endDate <= future
+      })
+      .cond(networkIds.exists(_.nonEmpty)) {
+        case (av, _) =>
+          av.networkId inSetBind networkIds.get
+      }
+      .query
 
-    val withEnd = futureEndDate
-      .map(end => {
-        withStart.filter(av => {
-          av.endDate > today && av.endDate <= end
-        })
-      })
-      .getOrElse(withStart)
+    val finalQuery = filteredQuery
+      .filter {
+        case (_, thing) =>
+          removeAdultItems(thing)
+      }
 
-    val withNetwork = networkIds
-      .map(nids => {
-        withEnd.filter(_.networkId inSetBind nids)
-      })
-      .getOrElse(withEnd)
+    val availabilityQuery = finalQuery.map(_._1).result
 
-    run {
-      (for {
-        avs <- withNetwork
-        thing <- things.rawQuery if avs.thingId === thing.id
-      } yield {
-        avs -> thing
-      }).result
+    availabilityQuery.statements.foreach(println)
+
+    val thingsAction = finalQuery
+      .map(_._2)
+      .distinctOn(_.id)
+      .take(50)
+      .result
+
+    thingsAction.statements.foreach(println)
+
+    for {
+      availabilities <- run(availabilityQuery)
+      things <- run(thingsAction)
+    } yield {
+      val availabilitiesByThing = availabilities.groupBy(_.thingId)
+
+      things.map(
+        thing =>
+          thing -> availabilitiesByThing.getOrElse(Some(thing.id), Seq.empty)
+      )
     }
   }
 
@@ -1507,12 +1530,12 @@ case class UserThingDetails(
   tags: Seq[UserThingTag] = Seq.empty)
 
 case class RecentAvailability(
-  recentlyAdded: Seq[AvailabilityWithDetails],
+  recentlyAdded: Seq[PartialThing],
   future: FutureAvailability)
 
 case class FutureAvailability(
-  upcoming: Seq[AvailabilityWithDetails],
-  expiring: Seq[AvailabilityWithDetails])
+  upcoming: Seq[PartialThing],
+  expiring: Seq[PartialThing])
 
 case class SearchOptions(
   rankingMode: SearchRankingMode,

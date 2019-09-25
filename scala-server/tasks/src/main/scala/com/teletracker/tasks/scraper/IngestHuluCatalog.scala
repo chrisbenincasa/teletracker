@@ -23,6 +23,9 @@ class IngestHuluCatalog @Inject()(
 
   override protected def networkNames: Set[String] = Set("hulu")
 
+  override protected def processMode(args: IngestJobArgs): ProcessMode =
+    Parallel(32)
+
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
   override protected def sanitizeItem(item: HuluCatalogItem): HuluCatalogItem =
@@ -36,6 +39,13 @@ class IngestHuluCatalog @Inject()(
     } else {
       item
     }
+
+  override protected def isAvailable(
+    item: HuluCatalogItem,
+    today: LocalDate
+  ): Boolean = {
+    true
+  }
 }
 
 case class HuluCatalogItem(

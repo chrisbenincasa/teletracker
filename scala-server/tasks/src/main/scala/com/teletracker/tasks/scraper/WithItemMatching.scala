@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.access.ThingsDbAccess
-import com.teletracker.common.db.model.ThingRaw
+import com.teletracker.common.db.model.{ThingRaw, ThingType}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor.{
@@ -110,10 +110,70 @@ class DbLookup[T <: ScrapedItem](
       })
       .toMap
 
-    val mastchThingsByName = findMatchesViaExactTitle(withoutReleaseYear)
+    val matchThingsByName = findMatchesViaExactTitle(withoutReleaseYear)
 
-    val matchedThingsWithSlugs = thingsDb
-      .findThingsBySlugsRaw(itemsBySlug.keySet)
+    val foundMoviesFut = lookupThingsBySlugsAndType(
+      itemsBySlug.filter {
+        case (_, item) => item.thingType == ThingType.Movie
+      },
+      ThingType.Movie,
+      args
+    )
+
+    val foundShowsFut = lookupThingsBySlugsAndType(
+      itemsBySlug.filter {
+        case (_, item) => item.thingType == ThingType.Show
+      },
+      ThingType.Show,
+      args
+    )
+
+    val matchedThingsWithSlugs = for {
+      foundMovies <- foundMoviesFut
+      foundShow <- foundShowsFut
+    } yield {
+      foundMovies ++ foundShow
+    }
+
+    val fallbackMatchesFromSlug = matchedThingsWithSlugs
+      .map(_.collect {
+        case (scrapedItem, None) => scrapedItem
+      })
+      .flatMap(findMatchesViaExactTitle)
+
+    val allMatchedItems = for {
+      match1 <- matchThingsByName
+      match2 <- matchedThingsWithSlugs.map(_.collect {
+        case (scrapedItem, Some(thing)) => scrapedItem -> thing
+      })
+      match3 <- fallbackMatchesFromSlug
+    } yield {
+      match1 ++ match2 ++ match3
+    }
+
+    allMatchedItems.map {
+      case matches =>
+        val matchedTitles = matches.map(_._1).map(_.title).toSet
+        val missingItems = items
+          .filter(item => !matchedTitles.contains(item.title))
+
+        if (missingItems.nonEmpty) {
+          logger.info(
+            s"Could not find matches for items: ${missingItems.map(_.title)}. Falling back to custom lookups"
+          )
+        }
+
+        matches -> missingItems
+    }
+  }
+
+  private def lookupThingsBySlugsAndType(
+    itemsBySlug: Map[Slug, T],
+    thingType: ThingType,
+    args: IngestJobArgsLike[T]
+  ): Future[List[(T, Option[ThingRaw])]] = {
+    thingsDb
+      .findThingsBySlugsRaw(itemsBySlug.keySet, Some(thingType))
       .flatMap(thingBySlug => {
         val missingSlugs = itemsBySlug.keySet -- thingBySlug.keySet
 
@@ -179,35 +239,6 @@ class DbLookup[T <: ScrapedItem](
           }
         })
       })
-
-    val fallbackMatchesFromSlug = matchedThingsWithSlugs
-      .map(_.collect {
-        case (scrapedItem, None) => scrapedItem
-      })
-      .flatMap(findMatchesViaExactTitle)
-
-    val allMatchedItems = for {
-      match1 <- mastchThingsByName
-      match2 <- matchedThingsWithSlugs.map(_.collect {
-        case (scrapedItem, Some(thing)) => scrapedItem -> thing
-      })
-      match3 <- fallbackMatchesFromSlug
-    } yield {
-      match1 ++ match2 ++ match3
-    }
-
-    allMatchedItems.map {
-      case matches =>
-        val matchedTitles = matches.map(_._1).map(_.title).toSet
-        val missingItems = items
-          .filter(item => !matchedTitles.contains(item.title))
-
-        logger.info(
-          s"Could not find matches for items: ${missingItems.map(_.title)}. Falling back to custom lookups"
-        )
-
-        matches -> missingItems
-    }
   }
 
   private def findMatchesViaExactTitle(

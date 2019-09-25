@@ -5,7 +5,7 @@ import com.teletracker.common.db.access.{ThingsDbAccess, UserThingDetails}
 import com.teletracker.common.db.model.{Network, ThingType}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.{DataResponse, Paging}
-import com.teletracker.common.util.NetworkCache
+import com.teletracker.common.util.{CanParseFieldFilter, Field, NetworkCache}
 import com.teletracker.common.util.json.circe._
 import com.teletracker.service.controllers.TeletrackerController._
 import com.twitter.finagle.http.Request
@@ -22,9 +22,14 @@ class PopularItemsController @Inject()(
   thingsDbAccess: ThingsDbAccess,
   networkCache: NetworkCache
 )(implicit executionContext: ExecutionContext)
-    extends Controller {
+    extends Controller
+    with CanParseFieldFilter {
+  private val defaultFields = List(Field("id"))
+
   prefix("/api/v1") {
     get("/popular") { req: GetPopularItemsRequest =>
+      val parsedFields = parseFieldsOrNone(req.fields)
+
       val networksFut = if (req.networks.nonEmpty) {
         networkCache
           .get()
@@ -57,7 +62,10 @@ class PopularItemsController @Inject()(
         val itemsWithMeta = popularItems.map(thing => {
           val meta = thingUserDetails
             .getOrElse(thing.id, UserThingDetails.empty)
-          thing.toPartial.withUserMetadata(meta)
+          thing
+            .selectFields(parsedFields, defaultFields)
+            .toPartial
+            .withUserMetadata(meta)
         })
 
         DataResponse.forDataResponse(
