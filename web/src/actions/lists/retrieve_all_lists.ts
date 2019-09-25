@@ -12,7 +12,12 @@ export const defaultMovieMeta = {
       poster_path: true,
       overview: true,
     },
-    show: true,
+    show: {
+      name: true,
+      id: true,
+      poster_path: true,
+      overview: true,
+    },
   },
 } as KeyMap<ObjectMetadata>;
 
