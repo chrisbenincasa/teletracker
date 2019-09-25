@@ -12,7 +12,12 @@ import com.teletracker.common.db.access.{
   UsersDbAccess
 }
 import com.teletracker.common.db.model._
-import com.teletracker.common.db.{BaseDbProvider, DefaultForListType, SortMode}
+import com.teletracker.common.db.{
+  BaseDbProvider,
+  Bookmark,
+  DefaultForListType,
+  SortMode
+}
 import com.teletracker.common.inject.SyncPath
 import com.teletracker.common.model.{
   DataResponse,
@@ -29,6 +34,7 @@ import com.teletracker.service.api.{ListsApi, UsersApi}
 import com.teletracker.service.auth.{AuthRequiredFilter, UserSelfOnlyFilter}
 import com.teletracker.service.util.HasThingIdOrSlug
 import com.twitter.finagle.http.Request
+import com.twitter.finagle.http.path.->
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import io.circe.generic.JsonCodec
 import io.circe.parser._
@@ -136,11 +142,18 @@ class UserController @Inject()(
         val selectFields = parseFieldsOrNone(req.fields)
         val filters = parseListFilters(req.itemTypes)
 
-        val desc = req.desc.getOrElse(true)
-        val sort = req.sort
-          .map(SortMode.fromString)
-          .getOrElse(DefaultForListType())
-          .direction(desc)
+        val (bookmark, sort) = if (req.bookmark.isDefined) {
+          val b = Bookmark.parse(req.bookmark.get)
+          Some(b) -> b.sortMode
+        } else {
+          val desc = req.desc.getOrElse(true)
+          val sort = req.sort
+            .map(SortMode.fromString)
+            .getOrElse(DefaultForListType())
+            .direction(desc)
+
+          None -> sort
+        }
 
         usersDbAccess
           .findList(
@@ -150,7 +163,9 @@ class UserController @Inject()(
             selectFields,
             Some(filters),
             req.isDynamic,
-            sort
+            sort,
+            bookmark,
+            req.limit
           )
           .map {
             case ListQueryResult(None, _) => response.notFound
@@ -436,6 +451,8 @@ case class GetUserAndListByIdRequest(
   @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
   @QueryParam sort: Option[String],
   @QueryParam desc: Option[Boolean],
+  @QueryParam bookmark: Option[String],
+  @QueryParam limit: Int = 10,
   request: Request)
     extends HasFieldsFilter
     with InjectedRequest

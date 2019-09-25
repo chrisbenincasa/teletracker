@@ -15,6 +15,7 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.db.{
   BaseDbProvider,
+  Bookmark,
   DbImplicits,
   DbMonitoring,
   DefaultForListType,
@@ -327,7 +328,9 @@ class UsersDbAccess @Inject()(
     selectFields: Option[List[Field]] = None,
     filters: Option[ListFilters] = None,
     isDynamicHint: Option[Boolean] = None,
-    sortMode: SortMode = DefaultForListType()
+    sortMode: SortMode = DefaultForListType(),
+    bookmark: Option[Bookmark] = None,
+    limit: Int = 10
   ): Future[ListQueryResult] = {
     listQuery
       .findList(
@@ -338,7 +341,9 @@ class UsersDbAccess @Inject()(
         selectFields,
         filters,
         isDynamicHint,
-        sortMode
+        sortMode,
+        bookmark,
+        limit
       )
   }
 

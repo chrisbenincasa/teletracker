@@ -1,17 +1,22 @@
 package com.teletracker.common.db
 
+import java.util.Base64
+
 object Bookmark {
   def parse(bookmark: String): Bookmark = {
-    val Array(sort, value) = bookmark.split("\\|", 2)
+    val decoded = new String(Base64.getDecoder.decode(bookmark))
 
-    val (finalValue, refinementValue) = value.split("\\|", 2) match {
-      case Array(oneValue)             => oneValue -> None
-      case Array(oneValue, refinement) => oneValue -> Some(refinement)
-      case _                           => throw new IllegalArgumentException
+    val parts = decoded.split("\\|")
+
+    if (parts.length < 3 || parts.length > 4) {
+      throw new IllegalArgumentException(s"Invalid bookmark format: $decoded")
+    } else if (parts.length == 3) {
+      val Array(sortType, isDesc, value) = parts
+      Bookmark(sortType, isDesc.toBoolean, value, None)
+    } else {
+      val Array(sortType, isDesc, value, refinement) = parts
+      Bookmark(sortType, isDesc.toBoolean, value, Some(refinement))
     }
-
-    val Array(sortType, isDesc) = sort.split("_", 2)
-    Bookmark(sortType, isDesc.toBoolean, finalValue, refinementValue)
   }
 
   def apply(
@@ -25,6 +30,8 @@ object Bookmark {
   def unapply(arg: Bookmark): Option[(String, Boolean, String)] = {
     Some(arg.sortType, arg.desc, arg.value)
   }
+
+  final private val base64Encoder = Base64.getEncoder
 }
 
 case class Bookmark(
@@ -34,7 +41,9 @@ case class Bookmark(
   valueRefinement: Option[String]) {
 
   def asString: String = {
-    s"${sortType}_$desc|$value"
+    Bookmark.base64Encoder.encodeToString(
+      s"${sortType}|$desc|$value${valueRefinement.map("|" + _).getOrElse("")}".getBytes
+    )
   }
 
   def sortMode: SortMode = {

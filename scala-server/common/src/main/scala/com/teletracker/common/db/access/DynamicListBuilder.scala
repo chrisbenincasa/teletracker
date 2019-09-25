@@ -46,7 +46,7 @@ class DynamicListBuilder @Inject()(
       .flatMap(lists => {
 
         val i = lists.map(list => {
-          buildBase(list, list.userId)
+          buildBase(list, list.userId, None)
             .map(_._1._1.id)
             .distinct
             .map(list.id -> _)
@@ -224,30 +224,7 @@ class DynamicListBuilder @Inject()(
     InhibitFilter(withPersonQuery)
       .filter(bookmark)(b => {
         case ((thing, _), _) =>
-          b.sortMode match {
-            case Popularity(desc) =>
-            case Recent(desc) =>
-              val movieRelease = thing.metadata
-                .+>("themoviedb")
-                .+>("movie")
-                .+>>("release_date")
-
-              val tvRelease = thing.metadata
-                .+>("themoviedb")
-                .+>("show")
-                .+>>("first_air_date")
-
-              val either = movieRelease.ifNull(tvRelease)
-
-              if (desc) {
-                either < b.value
-              } else {
-                either > b.value
-              }
-
-            case AddedTime(_)             =>
-            case DefaultForListType(desc) =>
-          }
+          applyBookmarkFilter(thing, b)
       })
       .query
   }
@@ -258,9 +235,15 @@ class DynamicListBuilder @Inject()(
   ) = {
 
     @scala.annotation.tailrec
-    def applyForSortMode(sortMode: SortMode) = {
+    def applyForSortMode(sortMode: SortMode): Rep[Option[Boolean]] = {
       sortMode match {
         case Popularity(desc) =>
+          if (desc) {
+            thing.popularity < bookmark.value.toDouble
+          } else {
+            thing.popularity > bookmark.value.toDouble
+          }
+
         case Recent(desc) =>
           val movieRelease = thing.metadata
             .+>("themoviedb")
@@ -285,7 +268,12 @@ class DynamicListBuilder @Inject()(
       }
     }
 
-    applyForSortMode(bookmark.sortMode)
+    val applied = applyForSortMode(bookmark.sortMode)
+    if (bookmark.valueRefinement.isDefined) {
+      applied && thing.id > UUID.fromString(bookmark.valueRefinement.get)
+    } else {
+      applied
+    }
   }
 
   @scala.annotation.tailrec
