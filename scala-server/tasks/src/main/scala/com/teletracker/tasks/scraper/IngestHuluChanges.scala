@@ -78,58 +78,107 @@ class IngestHuluChanges @Inject()(
             decode[HuluSearchResponse](response.content) match {
               case Left(err) =>
                 logger.error("Error while paring json response", err)
-                None
+                Nil
               case Right(searchResult) =>
                 searchResult.groups
                   .flatMap(_.results)
-                  .headOption
                   .flatMap(_.entity_metadata)
-                  .flatMap(meta => {
-                    meta.premiere_date
-                      .map(OffsetDateTime.parse(_))
-                      .map(_.getYear)
-                      .map(year => {
-                        Slug(meta.target_name, year) -> nonMatch
-                      })
+                  .map(meta => {
+                    val amended = nonMatch.copy(
+                      releaseYear = meta.premiere_date
+                        .map(OffsetDateTime.parse(_))
+                        .map(_.getYear),
+                      title = sanitizeTitle(meta.target_name)
+                    )
+
+                    nonMatch -> amended
                   })
             }
           })
       })
       .map(_.flatten)
-      .flatMap(slugsAndItems => {
-        val itemBySlug = slugsAndItems.toMap
-        Future
-          .sequence(
-            slugsAndItems
-              .map(_._1)
-              .map(slug => {
-                thingsDb
-                  .findThingBySlugRaw(slug, None)
-                  .map {
-                    case Some(t) =>
-                      logger.info(
-                        s"Successfully found fallback match for ${t.name} (${t.id})"
-                      )
-                      Some(itemBySlug(slug) -> t)
+      .flatMap(nonMatchesAndAmends => {
+        val amendsByOriginal =
+          nonMatchesAndAmends.groupBy(_._1).mapValues(_.map(_._2))
 
-                    case None =>
-                      logger.info(
-                        s"Could not find fallback match for ${itemBySlug(slug).title} via search"
-                      )
-                      None
-                  }
-              })
-          )
-          .map(_.flatten)
+        val amendedItemsBySlugs = amendsByOriginal.values.flatten
+          .flatMap(amendedItem => {
+            amendedItem.releaseYear
+              .map(Slug(amendedItem.title, _))
+              .map(_ -> amendedItem)
+          })
+          .toMap
+
+        lookupBySlugs(amendedItemsBySlugs).flatMap(foundThings => {
+          val foundTitles = foundThings.map(_._1.title).toSet
+          val missingScrapedItems =
+            nonMatchesAndAmends
+              .map(_._2)
+              .filterNot(item => foundTitles.contains(item.title))
+
+          val missingItemByTitle =
+            missingScrapedItems.map(item => item.title -> item).toMap
+
+          thingsDb
+            .findThingsByNames(missingItemByTitle.keySet)
+            .map(foundThingsByTitle => {
+              foundThingsByTitle.toList.flatMap {
+                case (title, things) if things.length == 1 =>
+                  missingItemByTitle
+                    .filterKeys(_.toLowerCase == title)
+                    .headOption
+                    .map {
+                      case (_, item) => item -> things.head
+                    }
+
+                case (title, things) =>
+                  logger.info(
+                    s"Couldn't match on name: ${things.length} things on name match with ${title}"
+                  )
+
+                  None
+              }
+            })
+            .map(foundThings.toList ++ _)
+        })
       })
+  }
+
+  private def lookupBySlugs(itemBySlug: Map[Slug, HuluScrapeItem]) = {
+    Future
+      .sequence(
+        itemBySlug.keys
+          .map(slug => {
+            thingsDb
+              .findThingBySlugRaw(slug, None)
+              .map {
+                case Some(t) =>
+                  logger.info(
+                    s"Successfully found fallback match for ${t.name} (${t.id})"
+                  )
+                  Some(itemBySlug(slug) -> t)
+
+                case None =>
+                  logger.info(
+                    s"Could not find fallback match for ${itemBySlug(slug).title} via search"
+                  )
+                  None
+              }
+          })
+      )
+      .map(_.flatten)
   }
 
   private val endsWithNote = "\\([A-z0-9]+\\)$".r
 
   override protected def sanitizeItem(item: HuluScrapeItem): HuluScrapeItem =
     item.copy(
-      title = endsWithNote.replaceAllIn(item.title, "")
+      title = sanitizeTitle(item.title)
     )
+
+  private def sanitizeTitle(title: String): String = {
+    endsWithNote.replaceAllIn(title, "")
+  }
 }
 
 case class HuluScrapeItem(
