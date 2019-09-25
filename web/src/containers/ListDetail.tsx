@@ -1,5 +1,6 @@
 import {
   Button,
+  Chip,
   createStyles,
   Dialog,
   DialogActions,
@@ -23,9 +24,7 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import DeleteIcon from '@material-ui/icons/Delete';
-import EditIcon from '@material-ui/icons/Edit';
-import SettingsIcon from '@material-ui/icons/Settings';
+import { Delete, Edit, Settings, Tune } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -54,6 +53,8 @@ import { ThingMap } from '../reducers/item-detail';
 import { getOrInitListOptions } from '../utils/list-utils';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
+import { Genre } from '../types';
+import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -77,11 +78,20 @@ const styles = (theme: Theme) =>
         color: theme.palette.text.primary,
       },
     },
+    filterSortContainer: {
+      [theme.breakpoints.up('sm')]: {
+        display: 'flex',
+      },
+      marginBottom: 8,
+      flexGrow: 1,
+    },
     formControl: {
       margin: theme.spacing(1),
       minWidth: 120,
       display: 'flex',
     },
+    genre: { margin: 5 },
+    genreContainer: { display: 'flex', flexWrap: 'wrap' },
     settings: {
       display: 'flex',
       alignSelf: 'flex-end',
@@ -115,10 +125,15 @@ interface RouteParams {
   id: string;
 }
 
+interface StateProps {
+  genres?: Genre[];
+}
+
 type NotOwnProps = RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps;
+  WithUserProps &
+  StateProps;
 
 type Props = OwnProps & NotOwnProps;
 
@@ -133,6 +148,9 @@ interface State {
   prevListId: number;
   deleteOnWatch: boolean;
   list?: List;
+  showFilter: boolean;
+  sortOrder: string;
+  filter: number;
 }
 
 class ListDetail extends Component<Props, State> {
@@ -150,6 +168,9 @@ class ListDetail extends Component<Props, State> {
       prevListId: listId,
       list: props.listsById[listId],
       deleteOnWatch: true,
+      showFilter: false,
+      sortOrder: 'Popularity',
+      filter: -1,
     };
   }
 
@@ -312,7 +333,7 @@ class ListDetail extends Component<Props, State> {
           onClick={this.handleMenu}
           className={classes.settings}
         >
-          <SettingsIcon />
+          <Settings />
           <Typography variant="srOnly">Settings</Typography>
         </IconButton>
         <Menu
@@ -325,13 +346,13 @@ class ListDetail extends Component<Props, State> {
         >
           <MenuItem onClick={this.handleRenameModalOpen}>
             <ListItemIcon>
-              <EditIcon />
+              <Edit />
             </ListItemIcon>
             Rename List
           </MenuItem>
           <MenuItem onClick={this.handleDeleteModalOpen}>
             <ListItemIcon>
-              <DeleteIcon />
+              <Delete />
             </ListItemIcon>
             Delete List
           </MenuItem>
@@ -463,6 +484,132 @@ class ListDetail extends Component<Props, State> {
     );
   }
 
+  toggleFilters = () => {
+    this.setState({ showFilter: !this.state.showFilter });
+  };
+
+  setSortOrder = event => {
+    this.setState({ sortOrder: event.target.value });
+  };
+
+  setFilter = genreId => {
+    this.setState({ filter: genreId });
+  };
+
+  renderFilters(list: List) {
+    const { showFilter } = this.state;
+    const { classes, userSelf } = this.props;
+
+    let filmography = list!.things || [];
+    console.log(list);
+    let filmographyFiltered = filmography
+      .filter(
+        (item: Thing) =>
+          (item &&
+            item.genreIds &&
+            item.genreIds.includes(this.state.filter)) ||
+          this.state.filter === -1,
+      )
+      .sort((a, b) => {
+        if (this.state.sortOrder === 'Popularity') {
+          return (a.popularity || 0.0) < (b.popularity || 0.0) ? 1 : -1;
+        } else if (
+          this.state.sortOrder === 'Latest' ||
+          this.state.sortOrder === 'Oldest'
+        ) {
+          let sort;
+          if (!b.releaseDate) {
+            sort = 1;
+          } else if (!a.releaseDate) {
+            sort = -1;
+          } else {
+            sort = a.releaseDate < b.releaseDate ? 1 : -1;
+          }
+
+          return this.state.sortOrder === 'Oldest' ? -sort : sort;
+        } else {
+          return 0;
+        }
+      });
+
+    let finalGenres: Genre[] = [];
+    console.log(this.props.genres);
+
+    if (this.props.genres) {
+      finalGenres = _.chain(filmography)
+        .map((f: Thing) => f.genreIds || [])
+        .flatten()
+        .uniq()
+        .map(id => {
+          let g = _.find(this.props.genres, g => g.id === id);
+          if (g) {
+            return [g];
+          } else {
+            return [];
+          }
+        })
+        .flatten()
+        .value();
+    }
+    console.log(finalGenres);
+
+    return showFilter ? (
+      <div className={classes.genreContainer}>
+        <Typography
+          color="inherit"
+          variant="h5"
+          style={{ display: 'block', width: '100%' }}
+        >
+          Filter
+        </Typography>
+        <div className={classes.filterSortContainer}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              flexGrow: 1,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Chip
+              key={-1}
+              label="All"
+              className={classes.genre}
+              onClick={() => this.setFilter(-1)}
+              color={this.state.filter === -1 ? 'secondary' : 'default'}
+            />
+            {finalGenres.map(genre => (
+              <Chip
+                key={genre.id}
+                label={genre.name}
+                className={classes.genre}
+                onClick={() => this.setFilter(genre.id)}
+                color={this.state.filter === genre.id ? 'secondary' : 'default'}
+              />
+            ))}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <InputLabel shrink htmlFor="age-label-placeholder">
+              Sort by:
+            </InputLabel>
+            <Select
+              value={this.state.sortOrder}
+              inputProps={{
+                name: 'sortOrder',
+                id: 'sort-order',
+              }}
+              onChange={this.setSortOrder}
+            >
+              <MenuItem value="Popularity">Popularity</MenuItem>
+              <MenuItem value="Latest">Latest</MenuItem>
+              <MenuItem value="Oldest">Oldest</MenuItem>
+            </Select>
+          </div>
+        </div>
+      </div>
+    ) : null;
+  }
+
   renderListDetail(list: List) {
     let { classes, listLoading, thingsById, userSelf } = this.props;
     let { deleted } = this.state;
@@ -484,9 +631,17 @@ class ListDetail extends Component<Props, State> {
                   {list.name}
                 </Typography>
               </div>
-
+              <IconButton
+                onClick={this.toggleFilters}
+                className={classes.settings}
+                color={this.state.showFilter ? 'secondary' : 'inherit'}
+              >
+                <Tune />
+                <Typography variant="srOnly">Tune</Typography>
+              </IconButton>
               {this.renderProfileMenu()}
             </div>
+            {this.renderFilters(list)}
             <Grid container spacing={2}>
               {list.things.map(item =>
                 thingsById[item.id] ? (
@@ -528,6 +683,7 @@ const mapStateToProps: (
     listLoading: Boolean(appState.lists.loading[LIST_RETRIEVE_INITIATED]),
     listsById: appState.lists.listsById,
     thingsById: appState.itemDetail.thingsById,
+    genres: appState.metadata.genres,
   };
 };
 
