@@ -15,7 +15,7 @@ export type DerivedAvailability = Omit<Availability, 'thing'> & {
 export interface AvailabilityState {
   offset: number;
   canFetchMore: boolean;
-  availability: DerivedAvailability[];
+  availability: Thing[];
 }
 
 export interface State {
@@ -33,31 +33,17 @@ const upcomingExpiringSuccess = handleAction<
   UPCOMING_AVAILABILITY_SUCCESSFUL,
   (state: State, { payload }: UpcomingAvailabilitySuccessfulAction) => {
     if (payload) {
-      let derivedUpcoming = payload.upcoming.map(av => {
-        return {
-          ...av,
-          thing: av.thing ? ThingFactory.create(av.thing) : undefined,
-        } as DerivedAvailability;
-      });
-
-      let derivedExpiring = payload.expiring.map(av => {
-        return {
-          ...av,
-          thing: av.thing ? ThingFactory.create(av.thing) : undefined,
-        } as DerivedAvailability;
-      });
-
       return {
         ...state,
         upcoming: {
           offset: 0,
           canFetchMore: false, // TODO(christian) change this when we can page through
-          availability: derivedUpcoming,
+          availability: payload!.upcoming,
         },
         expiring: {
           offset: 0,
           canFetchMore: false,
-          availability: derivedExpiring,
+          availability: payload!.expiring,
         },
       };
     } else {
@@ -73,19 +59,12 @@ const allAvailabilitySuccess = handleAction<
   ALL_AVAILABILITY_SUCCESSFUL,
   (state: State, { payload }: AllAvailabilitySuccessfulAction) => {
     if (payload) {
-      let derivedAdded = payload.recentlyAdded.map(av => {
-        return {
-          ...av,
-          thing: av.thing ? ThingFactory.create(av.thing) : undefined,
-        } as DerivedAvailability;
-      });
-
       return {
         ...state,
         recentlyAdded: {
           offset: 0,
           canFetchMore: false,
-          availability: derivedAdded,
+          availability: payload!.recentlyAdded,
         },
       };
     } else {

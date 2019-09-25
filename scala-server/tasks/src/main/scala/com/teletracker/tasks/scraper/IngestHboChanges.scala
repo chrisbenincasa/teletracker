@@ -12,6 +12,8 @@ import java.time.{Instant, ZoneId, ZoneOffset}
 
 object IngestHboChanges extends IngestJobApp[IngestHboChanges]
 
+object HboScrapeItem
+
 class IngestHboChanges @Inject()(
   protected val tmdbClient: TmdbClient,
   protected val tmdbProcessor: TmdbEntityProcessor,
