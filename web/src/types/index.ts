@@ -1,15 +1,22 @@
-import { ApiThing } from './Thing';
+import Thing, { ApiThing } from './Thing';
 
-export interface List {
+export interface CommonList {
   id: number;
   name: string;
-  things: ApiThing[];
   isDefault?: boolean;
   isDeleted?: boolean;
   isDynamic?: boolean;
   isPublic?: boolean;
   thingCount: number;
   configuration?: ListConfiguration;
+}
+
+export interface APIList extends CommonList {
+  things: ApiThing[];
+}
+
+export interface List extends CommonList {
+  things: Thing[];
 }
 
 export interface ListConfiguration {
