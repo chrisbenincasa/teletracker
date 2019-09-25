@@ -11,9 +11,10 @@ import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.{NetworkCache, Slug}
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
-import io.circe.Decoder
+import io.circe.{Codec, Decoder, Encoder}
+import io.circe.syntax._
 import org.slf4j.LoggerFactory
-import java.io.File
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset}
@@ -40,7 +41,9 @@ trait IngestJobArgsLike[T <: ScrapedItem] {
   val mode: MatchMode[T]
 }
 
-abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
+abstract class IngestJob[T <: ScrapedItem](
+  implicit decoder: Decoder[T],
+  encoder: Encoder[T])
     extends TeletrackerTask {
 
   implicit protected val execCtx =
@@ -48,7 +51,13 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
   protected val logger = LoggerFactory.getLogger(getClass)
 
-  val today = LocalDate.now()
+  protected val today = LocalDate.now()
+  protected val missingItemsFile = new File(
+    s"${today}_${getClass.getSimpleName}-missing-items.json"
+  )
+  protected val missingItemsWriter = new PrintStream(
+    new BufferedOutputStream(new FileOutputStream(missingItemsFile))
+  )
 
   protected def tmdbClient: TmdbClient
   protected def tmdbProcessor: TmdbEntityProcessor
@@ -119,6 +128,8 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
         throw e
     } finally {
       source.close()
+      missingItemsWriter.flush()
+      missingItemsWriter.close()
     }
   }
 
@@ -163,10 +174,19 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
       .flatMap {
         case (things, nonMatchedItems) =>
           handleNonMatches(args, nonMatchedItems).flatMap(fallbackMatches => {
-            val allItems = (things ++ fallbackMatches)
+            val allItems = things ++ fallbackMatches
+            val stillMissing = items
+              .map(_.title)
+              .toSet -- allItems.map(_._1.title).toSet
+
+            writeMissingItems(
+              items.filter(item => stillMissing.contains(item.title))
+            )
+
             logger.info(
               s"Successfully found matches for ${allItems.size} out of ${items.size} items."
             )
+
             Future
               .sequence {
                 allItems.map {
@@ -185,8 +205,7 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
                       availabilityFut.flatMap(avs => {
                         SequentialFutures
                           .serialize(avs.grouped(50).toList)(batch => {
-                            Future
-                              .sequence(batch.map(thingsDb.insertAvailability))
+                            thingsDb.saveAvailabilities(batch)
                           })
                       })
                     }
@@ -266,16 +285,14 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
             .findAvailability(thing.id, network.id.get)
             .map {
               case Seq() =>
-//                val avs =
                 presentationTypes.toSeq.map(pres => {
                   Availability(
                     None,
-                    isAvailable = start.exists(_.isBefore(today)) || end
-                      .exists(_.isAfter(today)),
+                    isAvailable = isAvailable(scrapeItem, today),
                     region = Some("US"),
                     numSeasons = None,
-                    startDate = scrapeItem.availableLocalDate
-                      .map(_.atStartOfDay().atOffset(networkTimeZone)),
+                    startDate =
+                      start.map(_.atStartOfDay().atOffset(networkTimeZone)),
                     endDate =
                       end.map(_.atStartOfDay().atOffset(networkTimeZone)),
                     offerType = Some(OfferType.Subscription),
@@ -288,14 +305,11 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
                   )
                 })
 
-//                thingsDb.insertAvailabilities(avs)
-
               case availabilities =>
                 // TODO(christian) - find missing presentation types
                 availabilities.map(
                   _.copy(
-                    isAvailable = start.exists(_.isBefore(today)) || end
-                      .exists(_.isAfter(today)),
+                    isAvailable = isAvailable(scrapeItem, today),
                     numSeasons = None,
                     startDate =
                       start.map(_.atStartOfDay().atOffset(networkTimeZone)),
@@ -309,6 +323,26 @@ abstract class IngestJob[T <: ScrapedItem](implicit decoder: Decoder[T])
         }
       )
       .map(_.flatten)
+  }
+
+  protected def isAvailable(
+    item: T,
+    today: LocalDate
+  ): Boolean = {
+    val start =
+      if (item.isExpiring) None else item.availableLocalDate
+    val end =
+      if (item.isExpiring) item.availableLocalDate else None
+
+    (start.isEmpty && end.isEmpty) ||
+    start.exists(_.isBefore(today)) ||
+    end.exists(_.isAfter(today))
+  }
+
+  protected def writeMissingItems(items: List[T]): Unit = {
+    items.foreach(item => {
+      missingItemsWriter.println(item.asJson.noSpaces)
+    })
   }
 
   sealed trait ProcessMode
