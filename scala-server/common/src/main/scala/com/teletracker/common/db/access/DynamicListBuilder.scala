@@ -1,10 +1,10 @@
 package com.teletracker.common.db.access
 
-import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.db.{
   AddedTime,
   BaseDbProvider,
   DbImplicits,
+  DbMonitoring,
   DefaultForListType,
   Popularity,
   Recent,
@@ -12,20 +12,23 @@ import com.teletracker.common.db.{
   SyncDbProvider
 }
 import com.teletracker.common.db.model._
-import com.teletracker.common.util.GeneralizedDbFactory
 import javax.inject.Inject
 import slick.lifted.ColumnOrdered
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 class DynamicListBuilder @Inject()(
-  val baseDbProvider: BaseDbProvider,
+  val provider: BaseDbProvider,
   val userThingTags: UserThingTags,
   val personThing: PersonThings,
   val things: Things,
   val trackedLists: TrackedLists,
-  dbImplicits: DbImplicits) {
+  val thingGenres: ThingGenres,
+  dbImplicits: DbImplicits,
+  dbMonitoring: DbMonitoring
+)(implicit executionContext: ExecutionContext)
+    extends AbstractDbAccess(dbMonitoring) {
   import dbImplicits._
-  import baseDbProvider.driver.api._
+  import provider.driver.api._
 
   def countMatchingThings(
     listIds: Set[Int]
@@ -162,7 +165,7 @@ class DynamicListBuilder @Inject()(
     sortMode: SortMode = Popularity(),
     includeActions: Boolean = true
   )(implicit executionContext: ExecutionContext
-  ): DBIOAction[Seq[(ThingRaw, Seq[UserThingTag])], NoStream, Effect.Read] = {
+  ) = {
     require(dynamicList.isDynamic)
     require(dynamicList.rules.isDefined)
 
@@ -179,12 +182,23 @@ class DynamicListBuilder @Inject()(
         .take(20)
         .result
 
-      query1.statements.foreach(println)
-
-      query1
+      val genresQuery = query1
         .flatMap(thingIds => {
+          thingGenres.query
+            .filter(_.thingId inSetBind thingIds)
+            .map(genre => {
+              genre.thingId -> genre.genreId
+            })
+//            .groupBy(_.thingId)
+//            .flatMap {
+//              case (thingId, genre) => genre.map(g => thingId -> g.genreId)
+//            }
+            .result
+        })
 
-          val query2 = things.rawQuery
+      val thingsQuery = query1
+        .flatMap(thingIds => {
+          things.rawQuery
             .filter(_.id inSetBind thingIds.toSet)
             .joinLeft(userThingTags.query)
             .on(_.id === _.thingId)
@@ -193,22 +207,33 @@ class DynamicListBuilder @Inject()(
                 makeSort(thing, sortMode)
             }
             .result
+            .map(thingsAndActions => {
+              val (things, actionOpts) = thingsAndActions.unzip
+              val thingIds = things.map(_.id).distinct
+              val thingsById = things.groupBy(_.id).mapValues(_.head)
+              val actions = actionOpts.flatten.groupBy(_.thingId)
 
-          query2.statements.foreach(println)
-
-          query2.map(thingsAndActions => {
-            val (things, actionOpts) = thingsAndActions.unzip
-            val thingIds = things.map(_.id).distinct
-            val thingsById = things.groupBy(_.id).mapValues(_.head)
-            val actions = actionOpts.flatten.groupBy(_.thingId)
-
-            thingIds.map(id => {
-              thingsById(id) -> actions.getOrElse(id, Seq.empty)
+              thingIds.map(id => {
+                thingsById(id) -> actions.getOrElse(id, Seq.empty)
+              })
             })
-          })
         })
+
+      val thingsFut = run(thingsQuery)
+      val genreFut = run(genresQuery)
+
+      for {
+        things <- thingsFut
+        genres <- genreFut
+      } yield {
+        val genresByThingId = genres.groupBy(_._1).mapValues(_.map(_._2).toSet)
+        things.map {
+          case (thing, actions) =>
+            (thing, actions, genresByThingId.getOrElse(thing.id, Set.empty))
+        }
+      }
     } else {
-      DBIO.successful(Seq.empty)
+      Future.successful(Seq.empty)
     }
   }
 }

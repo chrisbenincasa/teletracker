@@ -31,6 +31,7 @@ class ListQuery @Inject()(
   val trackedListThings: TrackedListThings,
   val things: Things,
   val userThingTags: UserThingTags,
+  val thingGenres: ThingGenres,
   dynamicListBuilder: DynamicListBuilder,
   dbImplicits: DbImplicits,
   dbMonitoring: DbMonitoring
@@ -166,7 +167,11 @@ class ListQuery @Inject()(
     def materialize(
       listOrQuery: Either[ListsQuery, TrackedListRow]
     ): Future[Option[
-      (TrackedListRow, Int, Seq[(ThingRaw, OffsetDateTime, Seq[UserThingTag])])
+      (
+        TrackedListRow,
+        Int,
+        Seq[(ThingRaw, OffsetDateTime, Seq[UserThingTag], Set[Int])]
+      )
     ]] = {
       val thingsQuery = makeThingsForListQuery(
         listOrQuery.map(_.id),
@@ -182,10 +187,20 @@ class ListQuery @Inject()(
       val thingTagsQuery =
         makeUserThingTagQuery(userId, thingsQuery.map(_._3.id), includeTags)
 
+      val thingGenreQuery = thingsQuery
+        .map(_._3)
+        .join(thingGenres.query)
+        .on(_.id === _.thingId)
+        .map {
+          case (thing, genre) => thing.id -> genre.genreId
+        }
+
       val thingsFut = run("findList_things")(thingsQuery.map {
         case (listId, addedAt, thing) =>
           (listId, addedAt, thing.projWithMetadata(includeMetadata))
       }.result)
+
+      val thingGenresFut = run(thingGenreQuery.result)
 
       val thingTagsFut = run("findList_thingTags")(thingTagsQuery.result)
 
@@ -200,8 +215,11 @@ class ListQuery @Inject()(
         listOpt <- listFut
         things <- thingsFut
         thingTags <- thingTagsFut
+        thingGenres <- thingGenresFut
         thingCount <- countThingsFut.map(_.toMap)
       } yield {
+        val genresByThingId =
+          thingGenres.groupBy(_._1).mapValues(_.map(_._2).toSet)
         listOpt.map(list => {
           val validThingsAndAddedTime = things.collect {
             case (listId, addedAt, thing) if listId == list.id =>
@@ -211,7 +229,12 @@ class ListQuery @Inject()(
           val tagsByThingId = thingTags.groupBy(_._1).mapValues(_.map(_._2))
           val thingAndActions = validThingsAndAddedTime.map {
             case (thing, addedAt) => {
-              (thing, addedAt, tagsByThingId.getOrElse(thing.id, Seq.empty))
+              (
+                thing,
+                addedAt,
+                tagsByThingId.getOrElse(thing.id, Seq.empty),
+                genresByThingId.getOrElse(thing.id, Set.empty)
+              )
             }
           }
 
@@ -236,12 +259,10 @@ class ListQuery @Inject()(
           case Some(list) if list.isDynamic =>
             val listCountFut =
               run(dynamicListBuilder.countMatchingThings(Set(list.id)))
-            val listAndThingsFut = run("findList_dynamicThings")(
-              dynamicListBuilder
-                .buildList(userId, list, sortMode)
-                .map(list -> _)
-                .map(Option(_))
-            )
+            val listAndThingsFut = dynamicListBuilder
+              .buildList(userId, list, sortMode)
+              .map(list -> _)
+              .map(Option(_))
 
             for {
               listAndThings <- listAndThingsFut
@@ -251,8 +272,8 @@ class ListQuery @Inject()(
                 case (list, things) =>
                   val count = listCount.toMap.getOrElse(list.id, 0)
                   val thingsAndActions = things.map {
-                    case (thing, actions) =>
-                      (thing, OffsetDateTime.now(), actions)
+                    case (thing, actions, genreIds) =>
+                      (thing, OffsetDateTime.now(), actions, genreIds)
                   }
 
                   (list, count, thingsAndActions)
@@ -268,16 +289,17 @@ class ListQuery @Inject()(
       .map(_.map {
         case (list, totalThingCount, thingsActionsAddedTime) =>
           val things = thingsActionsAddedTime.map {
-            case (thing, _, actions) =>
+            case (thing, _, actions, genreIds) =>
               thing
                 .selectFields(selectFields, defaultFields)
                 .toPartial
                 .withUserMetadata(UserThingDetails(Seq.empty, actions))
+                .withGenres(genreIds)
           }.toList
 
           val bookmark = thingsActionsAddedTime.lastOption
             .map {
-              case (thing, addedAt, _) =>
+              case (thing, addedAt, _, _) =>
                 buildBookmark(thing, addedAt, list.isDynamic, sortMode)
             }
 

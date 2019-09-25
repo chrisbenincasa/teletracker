@@ -12,7 +12,7 @@ object DataResponse {
 
   def complex[T](
     v: T,
-    compact: Boolean = false
+    compact: Boolean = true
   )(implicit encoder: Encoder[T]
   ): String = {
     pure(DataResponse(v))
@@ -20,14 +20,14 @@ object DataResponse {
 
   def error[T <: BaseErrorResponse[_]](
     v: T,
-    compact: Boolean = false
+    compact: Boolean = true
   ): String = {
     pure(v.toResponse)
   }
 
   def pure[T](
     v: T,
-    compact: Boolean = false
+    compact: Boolean = true
   )(implicit encoder: Encoder[T]
   ): String = {
     val printer = if (compact) compactPrinter else indentedPrinter
