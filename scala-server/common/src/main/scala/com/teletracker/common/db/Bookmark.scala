@@ -1,19 +1,25 @@
 package com.teletracker.common.db
 
-import scala.util.Try
-
 object Bookmark {
   def parse(bookmark: String): Bookmark = {
     val Array(sort, value) = bookmark.split("\\|", 2)
+
+    val (finalValue, refinementValue) = value.split("\\|", 2) match {
+      case Array(oneValue)             => oneValue -> None
+      case Array(oneValue, refinement) => oneValue -> Some(refinement)
+      case _                           => throw new IllegalArgumentException
+    }
+
     val Array(sortType, isDesc) = sort.split("_", 2)
-    Bookmark(sortType, isDesc.toBoolean, value)
+    Bookmark(sortType, isDesc.toBoolean, finalValue, refinementValue)
   }
 
   def apply(
     sortMode: SortMode,
-    value: String
+    value: String,
+    refinement: Option[String]
   ): Bookmark = {
-    Bookmark(sortMode.`type`, sortMode.isDesc, value)
+    Bookmark(sortMode.`type`, sortMode.isDesc, value, refinement)
   }
 
   def unapply(arg: Bookmark): Option[(String, Boolean, String)] = {
@@ -24,9 +30,14 @@ object Bookmark {
 case class Bookmark(
   sortType: String,
   desc: Boolean,
-  value: String) {
+  value: String,
+  valueRefinement: Option[String]) {
 
   def asString: String = {
     s"${sortType}_$desc|$value"
+  }
+
+  def sortMode: SortMode = {
+    SortMode.fromString(sortType).direction(desc)
   }
 }

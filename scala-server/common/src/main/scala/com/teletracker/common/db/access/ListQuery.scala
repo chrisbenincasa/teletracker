@@ -23,6 +23,7 @@ import javax.inject.Inject
 import slick.lifted.ColumnOrdered
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
+import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListQuery @Inject()(
@@ -322,6 +323,7 @@ class ListQuery @Inject()(
       .query
   }
 
+  @tailrec
   private def makeSort(
     thing: things.ThingsTableRaw,
     addedAt: Rep[OffsetDateTime],
@@ -362,6 +364,36 @@ class ListQuery @Inject()(
     listsQueryOrId: Either[ListsQuery, Int],
     thingTypeFilter: Option[Set[ThingType]]
   ) = {
+    makeTrackedListThingsQuery(listsQueryOrId, thingTypeFilter)
+      .distinctOn(_._3.id)
+      .groupBy(_._1)
+      .map {
+        case (listId, group) => listId -> group.length
+      }
+  }
+
+  private def makeThingsForListQuery(
+    listsQueryOrId: Either[ListsQuery, Int],
+    thingTypeFilter: Option[Set[ThingType]],
+    sortMode: Option[SortMode]
+  ) = {
+    val thingsQuery =
+      makeTrackedListThingsQuery(listsQueryOrId, thingTypeFilter)
+
+    sortMode
+      .map(sm => {
+        thingsQuery.sortBy {
+          case (_, addedAt, thing) =>
+            makeSort(thing, addedAt, sm)
+        }
+      })
+      .getOrElse(thingsQuery)
+  }
+
+  private def makeTrackedListThingsQuery(
+    listsQueryOrId: Either[ListsQuery, Int],
+    thingTypeFilter: Option[Set[ThingType]]
+  ) = {
     val thingQuery = InhibitFilter(things.rawQuery)
       .filter(thingTypeFilter)(types => _.`type` inSetBind types)
       .query
@@ -383,51 +415,8 @@ class ListQuery @Inject()(
       tlt <- trackedThingsQuery
       thing <- thingQuery if thing.id === tlt.thingId
     } yield {
-      tlt.listId -> thing
-    }).distinctOn(_._2.id)
-      .groupBy(_._1)
-      .map {
-        case (listId, group) => listId -> group.length
-      }
-  }
-
-  private def makeThingsForListQuery(
-    listsQueryOrId: Either[ListsQuery, Int],
-    thingTypeFilter: Option[Set[ThingType]],
-    sortMode: Option[SortMode]
-  ) = {
-    val thingQuery = InhibitFilter(things.rawQuery)
-      .filter(thingTypeFilter)(types => _.`type` inSetBind types)
-      .query
-
-    val trackedThingsQuery = listsQueryOrId match {
-      case Left(listsQuery) =>
-        listsQuery.flatMap(lists => {
-          trackedListThings.query
-            .withFilter(_.listId === lists.id)
-            .filter(_.removedAt.isEmpty)
-        })
-      case Right(listId) =>
-        trackedListThings.query
-          .filter(_.listId === listId)
-          .filter(_.removedAt.isEmpty)
-
-    }
-    val thingsQuery = (for {
-      tlt <- trackedThingsQuery
-      thing <- thingQuery if thing.id === tlt.thingId
-    } yield {
       (tlt.listId, tlt.addedAt, thing)
     })
-
-    sortMode
-      .map(sm => {
-        thingsQuery.sortBy {
-          case (_, addedAt, thing) =>
-            makeSort(thing, addedAt, sm)
-        }
-      })
-      .getOrElse(thingsQuery)
   }
 
   private def makeUserThingTagQuery(

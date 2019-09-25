@@ -3,6 +3,7 @@ package com.teletracker.common.db.access
 import com.teletracker.common.db.{
   AddedTime,
   BaseDbProvider,
+  Bookmark,
   DbImplicits,
   DbMonitoring,
   DefaultForListType,
@@ -12,8 +13,10 @@ import com.teletracker.common.db.{
   SyncDbProvider
 }
 import com.teletracker.common.db.model._
+import com.teletracker.common.db.util.InhibitFilter
 import javax.inject.Inject
 import slick.lifted.ColumnOrdered
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class DynamicListBuilder @Inject()(
@@ -58,9 +61,99 @@ class DynamicListBuilder @Inject()(
       })
   }
 
+  def buildList(
+    userId: String,
+    dynamicList: TrackedListRow,
+    sortMode: SortMode = Popularity(),
+    bookmark: Option[Bookmark] = None,
+    includeActions: Boolean = true,
+    limit: Int = 20
+  )(implicit executionContext: ExecutionContext
+  ) = {
+    require(dynamicList.isDynamic)
+    require(dynamicList.rules.isDefined)
+
+    if (bookmark.isDefined) {
+      bookmark.get.sortMode match {
+        case AddedTime(_) =>
+          throw new IllegalArgumentException(
+            "Invalid bookmark for dynamic list. Cannot sort by added time on a dynamic list."
+          )
+        case _ =>
+      }
+    }
+
+    val sortToUse = if (bookmark.isDefined) {
+      bookmark.get.sortMode
+    } else {
+      sortMode
+    }
+
+    val rules = dynamicList.rules.get
+
+    if (rules.rules.nonEmpty) {
+      val query1 = buildBase(dynamicList, userId, bookmark)
+        .map(_._1._1)
+        .sortBy(makeSort(_, sortToUse))
+        .map(_.id)
+        .take(limit)
+        .result
+
+      val genresQuery = query1
+        .flatMap(thingIds => {
+          thingGenres.query
+            .filter(_.thingId inSetBind thingIds)
+            .map(genre => {
+              genre.thingId -> genre.genreId
+            })
+            .result
+        })
+
+      val thingsQuery = query1
+        .flatMap(thingIds => {
+          things.rawQuery
+            .filter(_.id inSetBind thingIds.toSet)
+            .joinLeft(userThingTags.query)
+            .on(_.id === _.thingId)
+            .sortBy {
+              case (thing, _) =>
+                makeSort(thing, sortMode)
+            }
+            .result
+            .map(thingsAndActions => {
+              val (things, actionOpts) = thingsAndActions.unzip
+              val thingIds = things.map(_.id).distinct
+              val thingsById = things.groupBy(_.id).mapValues(_.head)
+              val actions = actionOpts.flatten.groupBy(_.thingId)
+
+              thingIds.map(id => {
+                thingsById(id) -> actions.getOrElse(id, Seq.empty)
+              })
+            })
+        })
+
+      val thingsFut = run(thingsQuery)
+      val genreFut = run(genresQuery)
+
+      for {
+        things <- thingsFut
+        genres <- genreFut
+      } yield {
+        val genresByThingId = genres.groupBy(_._1).mapValues(_.map(_._2).toSet)
+        things.map {
+          case (thing, actions) =>
+            (thing, actions, genresByThingId.getOrElse(thing.id, Set.empty))
+        }
+      }
+    } else {
+      Future.successful(Seq.empty)
+    }
+  }
+
   private def buildBase(
     dynamicList: TrackedListRow,
-    userId: String
+    userId: String,
+    bookmark: Option[Bookmark]
   ) = {
     require(dynamicList.isDynamic)
     require(dynamicList.rules.isDefined)
@@ -112,7 +205,7 @@ class DynamicListBuilder @Inject()(
       }
     }
 
-    withTagRulesQuery
+    val withPersonQuery = withTagRulesQuery
       .joinLeft(personThing.query)
       .on {
         case ((thing, _), xo) if personRules.nonEmpty =>
@@ -127,15 +220,85 @@ class DynamicListBuilder @Inject()(
         case _ =>
           LiteralColumn(Option(true)).c
       }
+
+    InhibitFilter(withPersonQuery)
+      .filter(bookmark)(b => {
+        case ((thing, _), _) =>
+          b.sortMode match {
+            case Popularity(desc) =>
+            case Recent(desc) =>
+              val movieRelease = thing.metadata
+                .+>("themoviedb")
+                .+>("movie")
+                .+>>("release_date")
+
+              val tvRelease = thing.metadata
+                .+>("themoviedb")
+                .+>("show")
+                .+>>("first_air_date")
+
+              val either = movieRelease.ifNull(tvRelease)
+
+              if (desc) {
+                either < b.value
+              } else {
+                either > b.value
+              }
+
+            case AddedTime(_)             =>
+            case DefaultForListType(desc) =>
+          }
+      })
+      .query
   }
 
+  private def applyBookmarkFilter(
+    thing: things.ThingsTableRaw,
+    bookmark: Bookmark
+  ) = {
+
+    @scala.annotation.tailrec
+    def applyForSortMode(sortMode: SortMode) = {
+      sortMode match {
+        case Popularity(desc) =>
+        case Recent(desc) =>
+          val movieRelease = thing.metadata
+            .+>("themoviedb")
+            .+>("movie")
+            .+>>("release_date")
+
+          val tvRelease = thing.metadata
+            .+>("themoviedb")
+            .+>("show")
+            .+>>("first_air_date")
+
+          val either = movieRelease.ifNull(tvRelease)
+
+          if (desc) {
+            either < bookmark.value
+          } else {
+            either > bookmark.value
+          }
+
+        case AddedTime(desc)           => applyForSortMode(Recent(desc))
+        case d @ DefaultForListType(_) => applyForSortMode(d.get(true))
+      }
+    }
+
+    applyForSortMode(bookmark.sortMode)
+  }
+
+  @scala.annotation.tailrec
   private def makeSort(
     thing: things.ThingsTableRaw,
     sortMode: SortMode
-  ): ColumnOrdered[_ >: Option[Double] with Option[String] <: Option[Any]] = {
+  ): (
+    ColumnOrdered[_ >: Option[Double] with Option[String] <: Option[Any]],
+    ColumnOrdered[UUID]
+  ) = {
     sortMode match {
-      case Popularity(true)  => thing.popularity.desc.nullsLast
-      case Popularity(false) => thing.popularity.desc.nullsLast
+      case Popularity(true)  => (thing.popularity.desc.nullsLast, thing.id.asc)
+      case Popularity(false) => (thing.popularity.desc.nullsLast, thing.id.asc)
       case Recent(desc) =>
         val movieRelease = thing.metadata
           .+>("themoviedb")
@@ -148,92 +311,16 @@ class DynamicListBuilder @Inject()(
           .+>>("first_air_date")
 
         val either = movieRelease.ifNull(tvRelease)
-        if (desc) {
+        val ordered = if (desc) {
           either.desc.nullsLast
         } else {
           either.asc.nullsLast
         }
 
+        ordered -> thing.id.asc
+
       case AddedTime(desc)           => makeSort(thing, Recent(desc))
       case d @ DefaultForListType(_) => makeSort(thing, d.get(true))
-    }
-  }
-
-  def buildList(
-    userId: String,
-    dynamicList: TrackedListRow,
-    sortMode: SortMode = Popularity(),
-    includeActions: Boolean = true
-  )(implicit executionContext: ExecutionContext
-  ) = {
-    require(dynamicList.isDynamic)
-    require(dynamicList.rules.isDefined)
-
-    val rules = dynamicList.rules.get
-
-    if (rules.rules.nonEmpty) {
-      val query1 = buildBase(dynamicList, userId)
-        .map(_._1._1)
-        .sortBy {
-          case thing =>
-            makeSort(thing, sortMode)
-        }
-        .map(_.id)
-        .take(20)
-        .result
-
-      val genresQuery = query1
-        .flatMap(thingIds => {
-          thingGenres.query
-            .filter(_.thingId inSetBind thingIds)
-            .map(genre => {
-              genre.thingId -> genre.genreId
-            })
-//            .groupBy(_.thingId)
-//            .flatMap {
-//              case (thingId, genre) => genre.map(g => thingId -> g.genreId)
-//            }
-            .result
-        })
-
-      val thingsQuery = query1
-        .flatMap(thingIds => {
-          things.rawQuery
-            .filter(_.id inSetBind thingIds.toSet)
-            .joinLeft(userThingTags.query)
-            .on(_.id === _.thingId)
-            .sortBy {
-              case (thing, _) =>
-                makeSort(thing, sortMode)
-            }
-            .result
-            .map(thingsAndActions => {
-              val (things, actionOpts) = thingsAndActions.unzip
-              val thingIds = things.map(_.id).distinct
-              val thingsById = things.groupBy(_.id).mapValues(_.head)
-              val actions = actionOpts.flatten.groupBy(_.thingId)
-
-              thingIds.map(id => {
-                thingsById(id) -> actions.getOrElse(id, Seq.empty)
-              })
-            })
-        })
-
-      val thingsFut = run(thingsQuery)
-      val genreFut = run(genresQuery)
-
-      for {
-        things <- thingsFut
-        genres <- genreFut
-      } yield {
-        val genresByThingId = genres.groupBy(_._1).mapValues(_.map(_._2).toSet)
-        things.map {
-          case (thing, actions) =>
-            (thing, actions, genresByThingId.getOrElse(thing.id, Set.empty))
-        }
-      }
-    } else {
-      Future.successful(Seq.empty)
     }
   }
 }
