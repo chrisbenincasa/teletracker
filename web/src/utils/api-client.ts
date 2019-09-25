@@ -187,7 +187,7 @@ export class TeletrackerApi {
   async getList(
     token: string,
     id: string | number,
-    sort?: 'popular' | 'recent' | 'added_time' | 'default',
+    sort?: 'popularity' | 'recent' | 'added_time' | 'default',
     desc?: boolean,
   ) {
     return this.api.get<DataResponse<List>>(`/api/v1/users/self/lists/${id}`, {

@@ -13,7 +13,7 @@ export const LIST_RETRIEVE_FAILED = 'lists/retrieve/FAILED';
 export interface ListRetrieveInitiatedPayload {
   listId: number;
   force?: boolean;
-  sort?: 'popular' | 'recent' | 'added_time' | 'default';
+  sort?: 'popularity' | 'recent' | 'added_time' | 'default';
   desc?: boolean;
 }
 
