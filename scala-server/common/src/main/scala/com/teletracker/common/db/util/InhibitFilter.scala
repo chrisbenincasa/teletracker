@@ -1,6 +1,7 @@
 package com.teletracker.common.db.util
 
-import slick.lifted.{CanBeQueryCondition, Query, Rep}
+import shapeless.PolyDefns.->
+import slick.lifted.{CanBeQueryCondition, ColumnOrdered, Query, Rep}
 
 /**
   * Optionally filter on a column with a supplied predicate
@@ -20,6 +21,17 @@ case class InhibitFilter[Table, Row, C[_]](query: Query[Table, Row, C]) {
   ): InhibitFilter[Table, Row, C] = {
     data match {
       case Some(value) => InhibitFilter(query.filter(pred(value)))
+      case None        => this
+    }
+  }
+
+  def sort[Data, Result <: ColumnOrdered[_]](
+    data: Option[Data]
+  )(
+    pred: Data => Table => Result
+  ): InhibitFilter[Table, Row, C] = {
+    data match {
+      case Some(value) => InhibitFilter(query.sortBy(pred(value)))
       case None        => this
     }
   }
