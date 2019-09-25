@@ -1,5 +1,6 @@
 import {
   Button,
+  ButtonGroup,
   Chip,
   createStyles,
   Dialog,
@@ -83,6 +84,12 @@ const styles = (theme: Theme) =>
         color: theme.palette.text.primary,
       },
     },
+    filterButtons: {
+      [theme.breakpoints.down('sm')]: {
+        fontSize: '0.575rem',
+      },
+      whiteSpace: 'nowrap',
+    },
     filterSortContainer: {
       [theme.breakpoints.up('sm')]: {
         display: 'flex',
@@ -128,7 +135,7 @@ interface DispatchProps {
 
 interface RouteParams {
   id: string;
-  sort?: 'popular' | 'recent' | 'added_time' | 'default';
+  sort?: 'popularity' | 'recent' | 'added_time' | 'default';
 }
 
 interface StateProps {
@@ -158,6 +165,7 @@ interface State {
   sortOrder: string;
   filter: number;
   genre?: string;
+  type?: 'movie' | 'show';
 }
 
 class ListDetail extends Component<Props, State> {
@@ -170,7 +178,7 @@ class ListDetail extends Component<Props, State> {
     if (param === 'recent' || param === 'added_time') {
       sort = param;
     } else {
-      sort = 'popular';
+      sort = 'popularity';
     }
 
     this.state = {
@@ -184,7 +192,7 @@ class ListDetail extends Component<Props, State> {
       prevListId: listId,
       list: props.listsById[listId],
       deleteOnWatch: true,
-      showFilter: false,
+      showFilter: params.has('sort') || params.has('genre'),
       sortOrder: sort,
       filter: -1,
     };
@@ -251,12 +259,10 @@ class ListDetail extends Component<Props, State> {
         sort: (match && match.params && match.params.sort) || 'default',
         force: true,
       });
-      console.log('1');
     } else if (
       !this.props.listLoading &&
       (oldProps.listLoading || this.state.loadingList)
     ) {
-      console.log('2');
       this.setState({
         loadingList: false,
         list: this.props.listsById[this.listId],
@@ -549,8 +555,15 @@ class ListDetail extends Component<Props, State> {
   setFilter = genre => {
     const { match } = this.props;
     let params = new URLSearchParams(location.search);
-
     let paramGenre = params.get('genre');
+
+    if (genre === 'All' && paramGenre) {
+      params.delete('genre');
+      this.props.history.push(`${match.params.id}?${params}`);
+      this.setState({ filter: -1 });
+      return;
+    }
+
     if (paramGenre) {
       params.set('genre', genre.slug);
     } else {
@@ -562,18 +575,23 @@ class ListDetail extends Component<Props, State> {
     this.setState({ filter: genre.id });
   };
 
-  renderFilters(list: List) {
-    const { showFilter } = this.state;
-    const { classes } = this.props;
+  filteredFilmography(list: List) {
     let filmography = list!.things || [];
-    let filmographyFiltered = filmography.filter(
+
+    return filmography.filter(
       (item: Thing) =>
         (item && item.genreIds && item.genreIds.includes(this.state.filter)) ||
         this.state.filter === -1,
     );
+  }
 
+  renderFilters(list: List) {
+    const { showFilter, type } = this.state;
+    const { classes } = this.props;
+    let filmography = list!.things || [];
     let finalGenres: Genre[] = [];
-
+    let params = new URLSearchParams(location.search);
+    console.log(list);
     if (this.props.genres) {
       finalGenres = _.chain(filmography)
         .map((f: Thing) => f.genreIds || [])
@@ -591,6 +609,7 @@ class ListDetail extends Component<Props, State> {
         .value();
     }
 
+    // Display filtering if button was clicked or query params exist
     return showFilter ? (
       <div className={classes.genreContainer}>
         <Typography
@@ -613,11 +632,7 @@ class ListDetail extends Component<Props, State> {
               key={-1}
               label="All"
               className={classes.genre}
-              component={RouterLink}
-              to={{
-                pathname: location.pathname,
-                search: '',
-              }}
+              onClick={() => this.setFilter('All')}
               color={this.state.filter === -1 ? 'secondary' : 'default'}
               clickable
             />
@@ -632,7 +647,44 @@ class ListDetail extends Component<Props, State> {
               />
             ))}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <ButtonGroup
+            variant="contained"
+            color="primary"
+            aria-label="Filter by All, Movies, or just TV Shows"
+            size="medium"
+          >
+            <Button
+              color={!type ? 'secondary' : 'primary'}
+              component={RouterLink}
+              to={{
+                pathname: location.pathname,
+                search: '',
+              }}
+              className={classes.filterButtons}
+            >
+              All
+            </Button>
+            <Button
+              color={type === 'movie' ? 'secondary' : 'primary'}
+              component={RouterLink}
+              to={'?type=movie'}
+              className={classes.filterButtons}
+            >
+              Movies
+            </Button>
+            <Button
+              color={type === 'show' ? 'secondary' : 'primary'}
+              component={RouterLink}
+              to={'?type=show'}
+              className={classes.filterButtons}
+            >
+              TV
+            </Button>
+          </ButtonGroup>
+
+          <div
+            style={{ display: 'flex', flexDirection: 'column', marginLeft: 15 }}
+          >
             <InputLabel shrink htmlFor="age-label-placeholder">
               Sort by:
             </InputLabel>
@@ -641,7 +693,7 @@ class ListDetail extends Component<Props, State> {
                 this.state.sortOrder
                   ? this.state.sortOrder
                   : list.isDynamic
-                  ? 'popular'
+                  ? 'popularity'
                   : 'added_time'
               }
               inputProps={{
@@ -651,7 +703,7 @@ class ListDetail extends Component<Props, State> {
               onChange={this.setSortOrder}
             >
               <MenuItem value="added_time">Date Added</MenuItem>
-              <MenuItem value="popular">Popularity</MenuItem>
+              <MenuItem value="popularity">Popularity</MenuItem>
               <MenuItem value="recent">Release Date</MenuItem>
             </Select>
           </div>
@@ -663,6 +715,7 @@ class ListDetail extends Component<Props, State> {
   renderListDetail(list: List) {
     let { classes, listLoading, thingsById, userSelf } = this.props;
     let { deleted } = this.state;
+    let params = new URLSearchParams(location.search);
 
     if ((!listLoading && !list) || deleted) {
       return <Redirect to="/" />;
@@ -693,7 +746,7 @@ class ListDetail extends Component<Props, State> {
             </div>
             {this.renderFilters(list)}
             <Grid container spacing={2}>
-              {list.things.map(item =>
+              {this.filteredFilmography(list).map(item =>
                 thingsById[item.id] ? (
                   <ItemCard
                     key={item.id}

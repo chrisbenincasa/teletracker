@@ -42,7 +42,7 @@ export class SagaTeletrackerClient {
 
   *getList(
     id: number,
-    sort?: 'popular' | 'recent' | 'added_time' | 'default',
+    sort?: 'popularity' | 'recent' | 'added_time' | 'default',
     desc?: boolean,
   ) {
     return yield this.apiCall(
