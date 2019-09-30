@@ -1,6 +1,7 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { clientEffect, createAction } from '../utils';
+import ReactGA from 'react-ga';
 
 export const LIST_ADD_ITEM_INITIATED = 'lists/add_item/INITIATED';
 export const LIST_ADD_ITEM_SUCCESS = 'lists/add_item/SUCCESS';
@@ -42,6 +43,11 @@ export const addToListSaga = function*() {
         if (response.ok) {
           yield put({ type: LIST_ADD_ITEM_SUCCESS });
           // TODO: put a retrieve user action here
+
+          ReactGA.event({
+            category: 'User',
+            action: 'Added item to list',
+          });
         } else {
           yield put({ type: LIST_ADD_ITEM_FAILED });
         }

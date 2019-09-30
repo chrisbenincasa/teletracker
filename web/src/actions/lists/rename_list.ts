@@ -5,6 +5,7 @@ import { RetrieveUserSelfInitiated } from '../user';
 import { FSA } from 'flux-standard-action';
 import { ListRules, ListOptions } from '../../types';
 import { ListRetrieveInitiated } from './get_list';
+import ReactGA from 'react-ga';
 
 export const USER_SELF_UPDATE_LIST = 'user/self/update_list/INITIATED';
 export const USER_SELF_UPDATE_LIST_SUCCESS = 'user/self/update_list/SUCCESS';
@@ -66,6 +67,11 @@ export const updateListSaga = function*() {
           }),
         );
         yield put(RetrieveUserSelfInitiated({ force: true }));
+
+        ReactGA.event({
+          category: 'User',
+          action: 'Renamed list',
+        });
       } else {
         // TODO: ERROR
       }
