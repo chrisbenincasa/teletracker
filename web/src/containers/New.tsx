@@ -24,6 +24,7 @@ import { AppState } from '../reducers';
 import { AvailabilityState } from '../reducers/availability';
 import { layoutStyles } from '../styles';
 import Thing from '../types/Thing';
+import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -53,6 +54,9 @@ class New extends Component<Props> {
   componentDidMount() {
     this.props.retrieveUpcomingAvailability();
     this.props.retrieveAllAvailability();
+
+    ReactGA.initialize('UA-123012032-1');
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   renderLoading = () => {

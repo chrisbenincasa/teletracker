@@ -28,6 +28,7 @@ import Thing from '../types/Thing';
 import { Genre as GenreModel } from '../types';
 import { GenreInitiatedActionPayload } from '../actions/popular/genre';
 import Featured from '../components/Featured';
+import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -103,6 +104,9 @@ class Genre extends Component<Props, State> {
       genre: this.props.match.params.id,
       thingRestrict: this.state.type,
     });
+
+    ReactGA.initialize('UA-123012032-1');
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   componentDidUpdate(prevProps: Props) {

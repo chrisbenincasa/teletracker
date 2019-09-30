@@ -34,6 +34,7 @@ import { Genre } from '../types';
 import _ from 'lodash';
 import { PersonCredit } from '../types/PersonCredit';
 import { Helmet } from 'react-helmet';
+import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -143,6 +144,9 @@ class PersonDetail extends React.Component<Props, State> {
 
   componentDidMount() {
     this.props.personFetchInitiated({ id: this.props.match.params.id });
+
+    ReactGA.initialize('UA-123012032-1');
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   setSortOrder = event => {
