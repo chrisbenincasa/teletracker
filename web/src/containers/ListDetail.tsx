@@ -2,12 +2,14 @@ import {
   Button,
   ButtonGroup,
   Chip,
+  Collapse,
   createStyles,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Fade,
   FormControl,
   FormControlLabel,
   Grid,
@@ -89,6 +91,8 @@ const styles = (theme: Theme) =>
         fontSize: '0.575rem',
       },
       whiteSpace: 'nowrap',
+      display: 'flex',
+      flexGrow: 1,
     },
     filterSortContainer: {
       [theme.breakpoints.up('sm')]: {
@@ -103,7 +107,13 @@ const styles = (theme: Theme) =>
       display: 'flex',
     },
     genre: { margin: 5 },
-    genreContainer: { display: 'flex', flexWrap: 'wrap' },
+    genreContainer: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      margin: '0 -15px 20px',
+      padding: 15,
+      backgroundColor: '#4E4B47',
+    },
     settings: {
       display: 'flex',
       alignSelf: 'flex-end',
@@ -164,6 +174,7 @@ interface State {
   showFilter: boolean;
   sortOrder: string;
   filter: number;
+  filterType?: string;
   genre?: string;
   type?: 'movie' | 'show';
 }
@@ -552,7 +563,30 @@ class ListDetail extends Component<Props, State> {
     this.props.history.push(`${match.params.id}?${params}`);
   };
 
-  setFilter = genre => {
+  setTypeFilter = type => {
+    const { match } = this.props;
+    let params = new URLSearchParams(location.search);
+    let paramType = params.get('type');
+
+    if (type === 'all' && paramType) {
+      params.delete('type');
+      this.props.history.push(`${match.params.id}?${params}`);
+      this.setState({ filterType: undefined });
+      return;
+    }
+
+    if (paramType) {
+      params.set('type', type);
+    } else {
+      params.append('type', type);
+    }
+    params.sort();
+
+    this.props.history.push(`${match.params.id}?${params}`);
+    this.setState({ filterType: type });
+  };
+
+  setGenreFilter = genre => {
     const { match } = this.props;
     let params = new URLSearchParams(location.search);
     let paramGenre = params.get('genre');
@@ -586,12 +620,12 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderFilters(list: List) {
-    const { showFilter, type } = this.state;
+    const { showFilter, filterType } = this.state;
     const { classes } = this.props;
     let filmography = list!.things || [];
     let finalGenres: Genre[] = [];
     let params = new URLSearchParams(location.search);
-    console.log(list);
+
     if (this.props.genres) {
       finalGenres = _.chain(filmography)
         .map((f: Thing) => f.genreIds || [])
@@ -609,107 +643,112 @@ class ListDetail extends Component<Props, State> {
         .value();
     }
 
-    // Display filtering if button was clicked or query params exist
-    return showFilter ? (
-      <div className={classes.genreContainer}>
-        <Typography
-          color="inherit"
-          variant="h5"
-          style={{ display: 'block', width: '100%' }}
-        >
-          Filter
-        </Typography>
-        <div className={classes.filterSortContainer}>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              flexGrow: 1,
-              flexWrap: 'wrap',
-            }}
-          >
-            <Chip
-              key={-1}
-              label="All"
-              className={classes.genre}
-              onClick={() => this.setFilter('All')}
-              color={this.state.filter === -1 ? 'secondary' : 'default'}
-              clickable
-            />
-            {finalGenres.map(genre => (
-              <Chip
-                key={genre.id}
-                label={genre.name}
-                className={classes.genre}
-                onClick={() => this.setFilter(genre)}
-                color={this.state.filter === genre.id ? 'secondary' : 'default'}
-                clickable
-              />
-            ))}
+    return (
+      <Collapse in={showFilter}>
+        <Fade in={showFilter}>
+          <div className={classes.genreContainer}>
+            <Typography
+              color="inherit"
+              variant="h5"
+              style={{ display: 'block', width: '100%' }}
+            >
+              Filter
+            </Typography>
+            <div className={classes.filterSortContainer}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  flexGrow: 1,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Chip
+                  key={-1}
+                  label="All"
+                  className={classes.genre}
+                  onClick={() => this.setGenreFilter('All')}
+                  color={this.state.filter === -1 ? 'secondary' : 'default'}
+                  clickable
+                />
+                {finalGenres.map(genre => (
+                  <Chip
+                    key={genre.id}
+                    label={genre.name}
+                    className={classes.genre}
+                    onClick={() => this.setGenreFilter(genre)}
+                    color={
+                      this.state.filter === genre.id ? 'secondary' : 'default'
+                    }
+                    clickable
+                  />
+                ))}
+              </div>
+              <div style={{ display: 'flex', margin: '10px 0' }}>
+                <ButtonGroup
+                  variant="contained"
+                  color="primary"
+                  aria-label="Filter by All, Movies, or just TV Shows"
+                  size="medium"
+                  style={{ flexGrow: 1 }}
+                >
+                  <Button
+                    color={!filterType ? 'secondary' : 'primary'}
+                    onClick={() => this.setTypeFilter('all')}
+                    className={classes.filterButtons}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    color={filterType === 'movie' ? 'secondary' : 'primary'}
+                    onClick={() => this.setTypeFilter('movie')}
+                    className={classes.filterButtons}
+                  >
+                    Movies
+                  </Button>
+                  <Button
+                    color={filterType === 'show' ? 'secondary' : 'primary'}
+                    onClick={() => this.setTypeFilter('show')}
+                    className={classes.filterButtons}
+                  >
+                    TV
+                  </Button>
+                </ButtonGroup>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  marginLeft: 15,
+                }}
+              >
+                <InputLabel shrink htmlFor="age-label-placeholder">
+                  Sort by:
+                </InputLabel>
+                <Select
+                  value={
+                    this.state.sortOrder
+                      ? this.state.sortOrder
+                      : list.isDynamic
+                      ? 'popularity'
+                      : 'added_time'
+                  }
+                  inputProps={{
+                    name: 'sortOrder',
+                    id: 'sort-order',
+                  }}
+                  onChange={this.setSortOrder}
+                >
+                  <MenuItem value="added_time">Date Added</MenuItem>
+                  <MenuItem value="popularity">Popularity</MenuItem>
+                  <MenuItem value="recent">Release Date</MenuItem>
+                </Select>
+              </div>
+            </div>
           </div>
-          <ButtonGroup
-            variant="contained"
-            color="primary"
-            aria-label="Filter by All, Movies, or just TV Shows"
-            size="medium"
-          >
-            <Button
-              color={!type ? 'secondary' : 'primary'}
-              component={RouterLink}
-              to={{
-                pathname: location.pathname,
-                search: '',
-              }}
-              className={classes.filterButtons}
-            >
-              All
-            </Button>
-            <Button
-              color={type === 'movie' ? 'secondary' : 'primary'}
-              component={RouterLink}
-              to={'?type=movie'}
-              className={classes.filterButtons}
-            >
-              Movies
-            </Button>
-            <Button
-              color={type === 'show' ? 'secondary' : 'primary'}
-              component={RouterLink}
-              to={'?type=show'}
-              className={classes.filterButtons}
-            >
-              TV
-            </Button>
-          </ButtonGroup>
-
-          <div
-            style={{ display: 'flex', flexDirection: 'column', marginLeft: 15 }}
-          >
-            <InputLabel shrink htmlFor="age-label-placeholder">
-              Sort by:
-            </InputLabel>
-            <Select
-              value={
-                this.state.sortOrder
-                  ? this.state.sortOrder
-                  : list.isDynamic
-                  ? 'popularity'
-                  : 'added_time'
-              }
-              inputProps={{
-                name: 'sortOrder',
-                id: 'sort-order',
-              }}
-              onChange={this.setSortOrder}
-            >
-              <MenuItem value="added_time">Date Added</MenuItem>
-              <MenuItem value="popularity">Popularity</MenuItem>
-              <MenuItem value="recent">Release Date</MenuItem>
-            </Select>
-          </div>
-        </div>
-      </div>
-    ) : null;
+        </Fade>
+      </Collapse>
+    );
   }
 
   renderListDetail(list: List) {
