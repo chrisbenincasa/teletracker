@@ -28,6 +28,7 @@ import { List as ListType } from '../types';
 import _ from 'lodash';
 import Thing, { ApiThing, ThingFactory } from '../types/Thing';
 import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -90,7 +91,7 @@ class Lists extends Component<Props, State> {
   componentDidMount() {
     this.props.ListRetrieveAllInitiated();
 
-    ReactGA.initialize('UA-123012032-1');
+    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
   }
 

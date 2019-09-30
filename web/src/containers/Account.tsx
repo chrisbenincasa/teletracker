@@ -39,6 +39,7 @@ import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Network, UserPreferences } from '../types';
 import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -163,7 +164,7 @@ class Account extends Component<Props, State> {
   componentDidMount() {
     this.props.loadNetworks();
 
-    ReactGA.initialize('UA-123012032-1');
+    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
