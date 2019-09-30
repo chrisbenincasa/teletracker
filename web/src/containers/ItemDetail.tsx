@@ -51,6 +51,7 @@ import _ from 'lodash';
 import { FixedSizeList as LazyList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -229,7 +230,7 @@ class ItemDetails extends Component<Props, State> {
   componentDidMount() {
     this.loadItem();
 
-    ReactGA.initialize('UA-123012032-1');
+    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
