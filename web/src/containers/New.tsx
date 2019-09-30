@@ -25,6 +25,7 @@ import { AvailabilityState } from '../reducers/availability';
 import { layoutStyles } from '../styles';
 import Thing from '../types/Thing';
 import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -55,7 +56,7 @@ class New extends Component<Props> {
     this.props.retrieveUpcomingAvailability();
     this.props.retrieveAllAvailability();
 
-    ReactGA.initialize('UA-123012032-1');
+    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
