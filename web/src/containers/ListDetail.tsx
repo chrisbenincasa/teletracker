@@ -52,6 +52,7 @@ import _ from 'lodash';
 import { StdRouterLink } from '../components/RouterLink';
 import { ThingMap } from '../reducers/item-detail';
 import { getOrInitListOptions } from '../utils/list-utils';
+import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -174,6 +175,9 @@ class ListDetail extends Component<Props, State> {
       listId: this.listId,
       force: true,
     });
+
+    ReactGA.initialize('UA-123012032-1');
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   componentDidUpdate(oldProps: Props, prevState: State) {

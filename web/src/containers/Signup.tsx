@@ -25,6 +25,7 @@ import { Redirect } from 'react-router';
 import * as firebase from 'firebase/app';
 import { Link as RouterLink } from 'react-router-dom';
 import GoogleLoginButton from '../components/GoogleLoginButton';
+import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -96,6 +97,9 @@ class Signup extends Component<Props, State> {
         // TODO: do something with this...
       })
       .catch(console.error);
+
+    ReactGA.initialize('UA-123012032-1');
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   signUpWithGoogle = () => {
