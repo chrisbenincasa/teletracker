@@ -27,6 +27,7 @@ import { layoutStyles } from '../styles';
 import { List as ListType } from '../types';
 import _ from 'lodash';
 import Thing, { ApiThing, ThingFactory } from '../types/Thing';
+import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -88,6 +89,9 @@ class Lists extends Component<Props, State> {
 
   componentDidMount() {
     this.props.ListRetrieveAllInitiated();
+
+    ReactGA.initialize('UA-123012032-1');
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   renderLoading() {

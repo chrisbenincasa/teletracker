@@ -18,6 +18,7 @@ import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Error as ErrorIcon } from '@material-ui/icons';
 import Thing from '../types/Thing';
+import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -50,6 +51,11 @@ interface Props extends WithStyles<typeof styles> {
 }
 
 class Home extends Component<Props & WithUserProps> {
+  componentDidMount() {
+    ReactGA.initialize('UA-123012032-1');
+    ReactGA.pageview(window.location.pathname + window.location.search);
+  }
+
   renderLoading = () => {
     return (
       <div style={{ flexGrow: 1 }}>

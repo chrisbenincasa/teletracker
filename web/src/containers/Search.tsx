@@ -19,6 +19,7 @@ import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import Thing from '../types/Thing';
 import { Error as ErrorIcon } from '@material-ui/icons';
+import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -77,6 +78,11 @@ class Search extends Component<Props> {
         this.props.search(query);
       }
     }
+  }
+
+  componentDidMount() {
+    ReactGA.initialize('UA-123012032-1');
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   renderLoading = () => {

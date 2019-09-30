@@ -27,6 +27,7 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { PopularInitiatedActionPayload } from '../actions/popular/popular';
 import Featured from '../components/Featured';
 import Thing from '../types/Thing';
+import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -93,6 +94,9 @@ class Popular extends Component<Props, State> {
       itemTypes: this.state.type,
       limit: 19,
     });
+
+    ReactGA.initialize('UA-123012032-1');
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   componentDidUpdate(prevProps) {

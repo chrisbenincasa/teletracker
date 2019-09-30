@@ -38,6 +38,7 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Network, UserPreferences } from '../types';
+import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -161,6 +162,9 @@ class Account extends Component<Props, State> {
 
   componentDidMount() {
     this.props.loadNetworks();
+
+    ReactGA.initialize('UA-123012032-1');
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   componentDidUpdate(oldProps: Props) {
