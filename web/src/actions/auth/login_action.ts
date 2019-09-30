@@ -3,6 +3,7 @@ import 'firebase/auth';
 import { call, put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
+import ReactGA from 'react-ga';
 
 export const LOGIN_INITIATED = 'login/INITIATED';
 export const LOGIN_SUCCESSFUL = 'login/SUCCESSFUL';
@@ -48,6 +49,12 @@ export const loginSaga = function*() {
         );
 
         yield put(LoginSuccessful(token));
+
+        ReactGA.event({
+          category: 'User',
+          action: 'Login',
+        });
+
         // }
       } catch (e) {
         console.error(e);

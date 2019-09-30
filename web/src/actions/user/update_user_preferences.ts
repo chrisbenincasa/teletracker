@@ -5,6 +5,7 @@ import { createAction } from '../utils';
 import { updateUser } from './update_user';
 import { FSA } from 'flux-standard-action';
 import { UserPreferences } from '../../types';
+import ReactGA from 'react-ga';
 
 export const USER_SELF_UPDATE_PREFS = 'user/self/update_prefs/INITIATED';
 export const USER_SELF_UPDATE_PREFS_SUCCESS = 'user/self/update_prefs/SUCCESS';
@@ -35,6 +36,11 @@ export const updateUserPreferencesSaga = function*() {
         };
 
         yield put(updateUser(newUser));
+
+        ReactGA.event({
+          category: 'User',
+          action: 'Updated User Preferences',
+        });
       }
     }
   }
