@@ -48,7 +48,7 @@ export const updateUserSaga = function*() {
 
         ReactGA.event({
           category: 'User',
-          action: 'Updated Users',
+          action: 'Updated users',
         });
       }
     }

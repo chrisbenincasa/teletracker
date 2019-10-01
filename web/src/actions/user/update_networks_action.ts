@@ -60,7 +60,7 @@ export const updateNetworksForUserSaga = function*() {
 
         ReactGA.event({
           category: 'User',
-          action: 'Updated Networks',
+          action: 'Updated networks',
         });
       }
     }
