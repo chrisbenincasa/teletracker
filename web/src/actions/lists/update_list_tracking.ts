@@ -41,7 +41,7 @@ export const updateListTrackingSaga = function*() {
 
         ReactGA.event({
           category: 'User',
-          action: 'Update list',
+          action: 'Updated list',
         });
       }
     } else {

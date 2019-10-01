@@ -144,10 +144,16 @@ class PersonDetail extends React.Component<Props, State> {
   };
 
   componentDidMount() {
+    const { isLoggedIn, userSelf } = this.props;
+
     this.props.personFetchInitiated({ id: this.props.match.params.id });
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
+
+    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
+      ReactGA.set({ userId: userSelf.user.uid });
+    }
   }
 
   setSortOrder = event => {

@@ -162,10 +162,16 @@ class Account extends Component<Props, State> {
   }
 
   componentDidMount() {
+    const { isLoggedIn, userSelf } = this.props;
+
     this.props.loadNetworks();
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
+
+    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
+      ReactGA.set({ userId: userSelf.user.uid });
+    }
   }
 
   componentDidUpdate(oldProps: Props) {
