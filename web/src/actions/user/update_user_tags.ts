@@ -53,7 +53,7 @@ export const updateUserActionSaga = function*() {
 
       ReactGA.event({
         category: 'User',
-        action: 'Updated User Tags',
+        action: 'Updated user tags',
       });
 
       if (response.ok && payload.lazy) {
