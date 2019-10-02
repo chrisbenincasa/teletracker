@@ -29,6 +29,7 @@ export const logoutSaga = function*() {
     try {
       yield call(() => firebase.auth().signOut());
       yield put(LogoutSuccessful());
+
       ReactGA.event({
         category: 'User',
         action: 'Logout',
