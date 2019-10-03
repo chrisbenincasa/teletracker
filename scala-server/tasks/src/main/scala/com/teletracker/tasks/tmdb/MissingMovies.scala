@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb
 
-import com.teletracker.tasks.TeletrackerTask
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.MovieDumpFileRow
 import com.teletracker.tasks.util.SourceRetriever
@@ -15,11 +15,11 @@ import io.circe.syntax._
 class MissingMovies @Inject()(
   sourceRetriever: SourceRetriever,
   ingestJobParser: IngestJobParser)
-    extends TeletrackerTask {
+    extends TeletrackerTaskWithDefaultArgs {
   implicit protected val tDecoder: Codec[MovieDumpFileRow] =
     deriveCodec
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     val movieExportFile = args.value[URI]("moveExportFile").get
     val dbDumpFile = args.value[URI]("dbDumpFile").get
 
@@ -64,11 +64,11 @@ class MissingMovies @Inject()(
 class FilterToMissingMovies @Inject()(
   sourceRetriever: SourceRetriever,
   ingestJobParser: IngestJobParser)
-    extends TeletrackerTask {
+    extends TeletrackerTaskWithDefaultArgs {
   implicit protected val tDecoder: Codec[MovieDumpFileRow] =
     deriveCodec
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     val movieExportFile = args.value[URI]("movieExportFile").get
     val missingMoviesFile = args.value[URI]("missingMoviesFile").get
 

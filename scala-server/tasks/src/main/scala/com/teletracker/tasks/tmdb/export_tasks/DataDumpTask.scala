@@ -1,12 +1,20 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
 import cats.syntax
+import cats.syntax.writer
 import com.google.cloud.storage.{BlobId, BlobInfo, Storage}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
-import io.circe.Decoder
+import com.teletracker.tasks.{
+  TeletrackerTask,
+  TeletrackerTaskApp,
+  TeletrackerTaskWithDefaultArgs
+}
+import fs2.io.file
+import io.circe.{Decoder, Encoder}
 import io.circe.parser._
+import io.circe.generic.semiauto.deriveEncoder
+import com.teletracker.common.util.json.circe._
 import org.slf4j.LoggerFactory
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
@@ -26,6 +34,14 @@ trait DataDumpTaskApp[T <: DataDumpTask[_]] extends TeletrackerTaskApp[T] {
   val rotateEvery = flag[Int]("rotateEvery", 10000, "The offset to start at")
 }
 
+case class DataDumpTaskArgs(
+  input: URI,
+  offset: Int = 0,
+  limit: Int = -1,
+  sleepMs: Int = 250,
+  flushEvery: Int = 100,
+  rotateEvery: Int = 1000)
+
 abstract class DataDumpTask[T <: TmdbDumpFileRow](
   storage: Storage
 )(implicit executionContext: ExecutionContext)
@@ -33,11 +49,27 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
   private val logger = LoggerFactory.getLogger(getClass)
   private val dumpTime = Instant.now().toString
 
+  override type TypedArgs = DataDumpTaskArgs
+
+  implicit override protected def typedArgsEncoder: Encoder[DataDumpTaskArgs] =
+    deriveEncoder[DataDumpTaskArgs]
+
+  override def preparseArgs(args: Args): DataDumpTaskArgs = {
+    DataDumpTaskArgs(
+      input = args.value[URI]("input").get,
+      offset = args.valueOrDefault[Int]("offset", 0),
+      limit = args.valueOrDefault("limit", -1),
+      sleepMs = args.valueOrDefault("sleepMs", 250),
+      flushEvery = args.valueOrDefault("flushEvery", 100),
+      rotateEvery = args.valueOrDefault("rotateEvery", 1000)
+    )
+  }
+
   implicit protected def tDecoder: Decoder[T]
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     val file = args.value[URI]("input").get
-    val offset = args.value[Int]("offset").get
+    val offset = args.valueOrDefault("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
     val sleepMs = args.valueOrDefault("sleepMs", 250)
     val flushEvery = args.valueOrDefault("flushEvery", 100)
@@ -45,6 +77,10 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
 
     var output: File = null
     var os: PrintStream = null
+
+    logger.info(
+      s"Preparing to dump data to: gs://teletracker/$fullPath/$baseFileName"
+    )
 
     def rotateFile(batch: Long): Unit = {
       synchronized {
@@ -127,20 +163,22 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
     rotateFile(suffix)
 
     source.close()
-
-    sys.exit(0)
   }
 
   protected def getRawJson(currentId: Int): Future[String]
 
   protected def baseFileName: String
 
+  protected def fullPath: String = s"data-dump/$baseFileName/$dumpTime"
+
+  protected def googleStorageUri = new URI(s"gs://teletracker/$fullPath")
+
   private def uploadToGcp(file: File) = {
     val writer = storage.writer(
       BlobInfo
         .newBuilder(
           "teletracker",
-          s"data-dump/$baseFileName/$dumpTime/${file.getName}"
+          s"$fullPath/${file.getName}"
         )
         .setContentType("text/plain")
         .build()

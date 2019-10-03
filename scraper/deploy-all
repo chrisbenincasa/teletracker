@@ -6,7 +6,9 @@ STAMP=${1:-$NOW}
 zip scrapers.zip index.js main.js package.json yarn.lock
 
 zip -ur scrapers.zip hbo/whats-new -x "*.DS_Store"
+zip -ur scrapers.zip hbo/catalog.js -x "*.DS_Store"
 zip -ur scrapers.zip hulu/changes -x "*.DS_Store"
+zip -ur scrapers.zip hulu/catalog -x "*.DS_Store"
 zip -ur scrapers.zip netflix -x "*.DS_Store"
 zip -ur scrapers.zip unogs -x "*.DS_Store"
 zip -ur scrapers.zip tmdb -x "*.DS_Store"

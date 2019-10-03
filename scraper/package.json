@@ -15,7 +15,9 @@
     "lodash": "^4.17.15",
     "moment": "^2.22.2",
     "request": "^2.87.0",
-    "request-promise": "^4.2.4"
+    "request-promise": "^4.2.4",
+    "split2": "^3.1.1",
+    "stream-transform": "^2.0.1"
   },
   "devDependencies": {
     "prettier": "1.17.0"

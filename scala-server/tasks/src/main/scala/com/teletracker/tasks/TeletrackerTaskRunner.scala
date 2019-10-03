@@ -66,6 +66,6 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
     args: Map[String, Option[Any]]
   ): Unit = {
     getInstance(clazz)
-      .run(args)
+      .runInternal(args)
   }
 }

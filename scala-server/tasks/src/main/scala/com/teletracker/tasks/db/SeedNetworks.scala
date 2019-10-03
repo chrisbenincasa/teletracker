@@ -5,7 +5,11 @@ import com.teletracker.common.db.access.NetworksDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.model.justwatch.Provider
 import com.teletracker.common.util.Slug
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
+import com.teletracker.tasks.{
+  TeletrackerTask,
+  TeletrackerTaskApp,
+  TeletrackerTaskWithDefaultArgs
+}
 import javax.inject.Inject
 import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -14,7 +18,7 @@ import scala.concurrent.{Await, Future}
 
 object SeedNetworks extends TeletrackerTaskApp {
   override protected def runInternal(): Unit = {
-    injector.instance[NetworkSeeder].run()
+    injector.instance[NetworkSeeder].runInternal()
   }
 }
 
@@ -23,8 +27,8 @@ class NetworkSeeder @Inject()(
   networks: Networks,
   networkReferences: NetworkReferences,
   networksDbAccess: NetworksDbAccess)
-    extends TeletrackerTask {
-  def run(args: Args): Unit = {
+    extends TeletrackerTaskWithDefaultArgs {
+  def runInternal(args: Args): Unit = {
     import io.circe.generic.auto._
     import io.circe.parser._
     import networks.driver.api._

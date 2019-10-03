@@ -3,33 +3,36 @@ package com.teletracker.tasks.scraper
 import com.google.cloud.storage.Storage
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{Availability, Network, ThingRaw}
+import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.util.SourceRetriever
-import io.circe.Decoder
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.deriveEncoder
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.time.{LocalDate, ZoneOffset}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.NetworkCache
+import java.util.UUID
 import scala.io.Source
 import scala.util.control.NonFatal
+
+case class IngestDeltaJobArgs(
+  snapshotAfter: URI,
+  snapshotBefore: URI,
+  offset: Int = 0,
+  limit: Int = -1,
+  dryRun: Boolean = true,
+  titleMatchThreshold: Int = 15,
+  thingIdFilter: Option[UUID] = None)
+    extends IngestJobArgsLike
 
 abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     extends TeletrackerTask {
 
   implicit protected val execCtx =
     scala.concurrent.ExecutionContext.Implicits.global
-
-  case class IngestDeltaJobArgs(
-    snapshotAfter: URI,
-    snapshotBefore: URI,
-    offset: Int = 0,
-    limit: Int = -1,
-    dryRun: Boolean = true,
-    titleMatchThreshold: Int = 15,
-    mode: MatchMode[T] = new DbLookup[T](thingsDbAccess))
-      extends IngestJobArgsLike[T]
 
   protected val logger = LoggerFactory.getLogger(getClass)
 
@@ -43,8 +46,14 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
   protected def networkCache: NetworkCache
 
   protected def parseMode: ParseMode = AllJson
+  protected def matchMode: MatchMode[T] = new DbLookup[T](thingsDbAccess)
 
-  override def preparseArgs(args: Args): Unit = parseArgs(args)
+  override type TypedArgs = IngestDeltaJobArgs
+
+  implicit override protected def typedArgsEncoder
+    : Encoder[IngestDeltaJobArgs] = deriveEncoder[IngestDeltaJobArgs]
+
+  override def preparseArgs(args: Args): IngestDeltaJobArgs = parseArgs(args)
 
   private def parseArgs(args: Map[String, Option[Any]]): IngestDeltaJobArgs = {
     IngestDeltaJobArgs(
@@ -52,11 +61,12 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
       snapshotBefore = args.valueOrThrow[URI]("snapshotBefore"),
       offset = args.valueOrDefault("offset", 0),
       limit = args.valueOrDefault("limit", -1),
-      dryRun = args.valueOrDefault("dryRun", true)
+      dryRun = args.valueOrDefault("dryRun", true),
+      thingIdFilter = args.value[UUID]("thingIdFilter")
     )
   }
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     val networks = getNetworksOrExit()
 
     val parsedArgs = parseArgs(args)
@@ -75,38 +85,48 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     val removedIds = beforeById.keySet -- afterById.keySet
 
     val newItems = newIds.flatMap(afterById.get)
-    val (foundItems, nonMatchedItems) = parsedArgs.mode
+    val (foundItems, nonMatchedItems) = matchMode
       .lookup(
         newItems.toList,
         parsedArgs
       )
       .await()
 
-    val newAvailabilities = foundItems.flatMap {
-      case (scrapedItem, thing) =>
-        createAvailabilities(networks, thing, scrapedItem, true)
-    }
+    val newAvailabilities = foundItems
+      .filter {
+        case (_, thing) => parsedArgs.thingIdFilter.forall(_ == thing.id)
+      }
+      .flatMap {
+        case (scrapedItem, thing) =>
+          createAvailabilities(networks, thing, scrapedItem, true)
+      }
 
     logger.warn(
       s"Could not find matches for added items: ${nonMatchedItems}"
     )
 
-    val removedItems = removedIds.flatMap(afterById.get)
-    val (foundRemovals, nonMatchedRemovals) = parsedArgs.mode
+    val removedItems = removedIds.flatMap(beforeById.get)
+    val (foundRemovals, nonMatchedRemovals) = matchMode
       .lookup(
         removedItems.toList,
         parsedArgs
       )
       .await()
 
-    val removedAvailabilities = foundRemovals.flatMap {
-      case (scrapedItem, thing) =>
-        createAvailabilities(networks, thing, scrapedItem, false)
-    }
+    val removedAvailabilities = foundRemovals
+      .filter {
+        case (_, thing) => parsedArgs.thingIdFilter.forall(_ == thing.id)
+      }
+      .flatMap {
+        case (scrapedItem, thing) =>
+          createAvailabilities(networks, thing, scrapedItem, false)
+      }
 
     logger.warn(
       s"Could not find matches for added items: ${nonMatchedRemovals}"
     )
+
+    logger.info(s"Found ${removedAvailabilities.size} availabilities to remove")
 
     if (!parsedArgs.dryRun) {
       logger.info(

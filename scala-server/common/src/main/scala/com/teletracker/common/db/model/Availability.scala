@@ -72,7 +72,7 @@ case class Availability(
     val offerTypeEqual = (for (tid <- offerType; tid2 <- other.offerType)
       yield tid == tid2).getOrElse(false)
 
-    (idsEqual || episodeIdsEqual) && networkIdEqual && offerTypeEqual
+    (idsEqual ^ episodeIdsEqual) && networkIdEqual && offerTypeEqual
   }
 }
 

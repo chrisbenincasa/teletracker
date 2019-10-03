@@ -15,6 +15,7 @@ object TaskRegistry {
     classOf[ImportPeopleAssociationsFromCsvs],
     classOf[ImportPeopleFromDump],
     classOf[ImportPersonAssociations],
-    classOf[ImportTvShowsFromDump]
+    classOf[ImportTvShowsFromDump],
+    classOf[RemoteTask]
   ).map(clazz => clazz.getSimpleName -> clazz).toMap
 }

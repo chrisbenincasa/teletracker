@@ -7,17 +7,20 @@ import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
+import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.common.util.{NetworkCache, Slug}
+import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder}
 import org.slf4j.LoggerFactory
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset}
+import java.util.UUID
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.Source
@@ -33,13 +36,20 @@ abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
   val dryRun = flag[Boolean]("dryRun", true, "X")
 }
 
-trait IngestJobArgsLike[T <: ScrapedItem] {
+trait IngestJobArgsLike {
   val offset: Int
   val limit: Int
   val titleMatchThreshold: Int
   val dryRun: Boolean
-  val mode: MatchMode[T]
 }
+
+case class IngestJobArgs(
+  inputFile: URI,
+  offset: Int = 0,
+  limit: Int = -1,
+  titleMatchThreshold: Int = 15,
+  dryRun: Boolean = true)
+    extends IngestJobArgsLike
 
 abstract class IngestJob[T <: ScrapedItem](
   implicit decoder: Decoder[T],
@@ -73,19 +83,16 @@ abstract class IngestJob[T <: ScrapedItem](
   protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
 
   protected def parseMode: ParseMode = AllJson
+  protected def matchMode: MatchMode[T] = new DbLookup[T](thingsDb)
 
   protected def processMode(args: IngestJobArgs): ProcessMode = Serial
 
-  case class IngestJobArgs(
-    inputFile: URI,
-    offset: Int = 0,
-    limit: Int = -1,
-    titleMatchThreshold: Int = 15,
-    dryRun: Boolean = true,
-    mode: MatchMode[T] = new DbLookup(thingsDb))
-      extends IngestJobArgsLike[T]
+  override type TypedArgs = IngestJobArgs
 
-  override def preparseArgs(args: Args): Unit = parseArgs(args)
+  implicit override protected def typedArgsEncoder: Encoder[IngestJobArgs] =
+    deriveEncoder[IngestJobArgs]
+
+  override def preparseArgs(args: Args): TypedArgs = parseArgs(args)
 
   final protected def parseArgs(
     args: Map[String, Option[Any]]
@@ -99,7 +106,7 @@ abstract class IngestJob[T <: ScrapedItem](
     )
   }
 
-  override def run(args: Map[String, Option[Any]]): Unit = {
+  override def runInternal(args: Map[String, Option[Any]]): Unit = {
     val parsedArgs = parseArgs(args)
     val network = getNetworksOrExit()
     implicit val listDec = implicitly[Decoder[List[T]]]
@@ -166,7 +173,7 @@ abstract class IngestJob[T <: ScrapedItem](
     networks: Set[Network],
     args: IngestJobArgs
   ): Future[Unit] = {
-    args.mode
+    matchMode
       .lookup(
         items.map(sanitizeItem),
         args
@@ -175,9 +182,12 @@ abstract class IngestJob[T <: ScrapedItem](
         case (things, nonMatchedItems) =>
           handleNonMatches(args, nonMatchedItems).flatMap(fallbackMatches => {
             val allItems = things ++ fallbackMatches
-            val stillMissing = items
+              .map(fb => fb.amendedItem -> fb.thingRaw)
+            val stillMissing = (items
               .map(_.title)
-              .toSet -- allItems.map(_._1.title).toSet
+              .toSet -- things.map(_._1.title).toSet) -- fallbackMatches
+              .map(_.originalItem.title)
+              .toSet
 
             writeMissingItems(
               items.filter(item => stillMissing.contains(item.title))
@@ -197,7 +207,8 @@ abstract class IngestJob[T <: ScrapedItem](
                     if (args.dryRun) {
                       availabilityFut.map(avs => {
                         avs.foreach(
-                          av => logger.info(s"Would've saved availability: $av")
+                          av =>
+                            logger.debug(s"Would've saved availability: $av")
                         )
                         avs
                       })
@@ -219,10 +230,15 @@ abstract class IngestJob[T <: ScrapedItem](
 
   protected def sanitizeItem(item: T): T = identity(item)
 
+  case class NonMatchResult(
+    amendedItem: T,
+    originalItem: T,
+    thingRaw: ThingRaw)
+
   protected def handleNonMatches(
     args: IngestJobArgs,
     nonMatches: List[T]
-  ): Future[List[(T, ThingRaw)]] = Future.successful(Nil)
+  ): Future[List[NonMatchResult]] = Future.successful(Nil)
 
   protected def processSingle(
     item: T,

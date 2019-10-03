@@ -1,55 +1,82 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
+import com.google.cloud.pubsub.v1.Publisher
 import com.google.cloud.storage.Storage
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.process.tmdb.ItemExpander
+import com.teletracker.common.pubsub.{
+  TeletrackerTaskQueueMessage,
+  TeletrackerTaskQueueMessageFactory
+}
+import com.teletracker.tasks.{SchedulesFollowupTasks, TeletrackerTask}
+import com.teletracker.tasks.tmdb.import_tasks.{
+  ImportMoviesFromDump,
+  ImportTmdbDumpTaskArgs
+}
+import com.teletracker.tasks.util.TaskMessageHelper
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
 import javax.inject.Inject
+import com.teletracker.tasks.util.ArgJsonInstances._
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class ChangesDumpTask(
   thingType: ThingType,
   storage: Storage,
-  itemExpander: ItemExpander
+  itemExpander: ItemExpander,
+  protected val publisher: Publisher
 )(implicit executionContext: ExecutionContext)
-    extends DataDumpTask[ChangesDumpFileRow](storage) {
+    extends DataDumpTask[ChangesDumpFileRow](storage)
+    with SchedulesFollowupTasks {
   implicit override protected val tDecoder: Decoder[ChangesDumpFileRow] =
     deriveCodec
 
   override protected def getRawJson(currentId: Int): Future[String] = {
     val extraFields = thingType match {
       case ThingType.Movie =>
-        List("recommendations", "similar")
+        List("recommendations", "similar", "videos")
       case ThingType.Show =>
-        List("recommendations", "similar")
+        List("recommendations", "similar", "videos")
       case ThingType.Person =>
-        Nil
+        List("tagged_images")
     }
 
     itemExpander.expandRaw(thingType, currentId, extraFields).map(_.noSpaces)
   }
 
   override protected def baseFileName: String = s"$thingType-delta"
+
+  override def followupTasksToSchedule(
+    args: DataDumpTaskArgs
+  ): List[TeletrackerTaskQueueMessage] = {
+    TaskMessageHelper.forTask[ImportMoviesFromDump](
+      ImportTmdbDumpTaskArgs(
+        input = googleStorageUri
+      )
+    ) :: Nil
+  }
 }
 
 class MovieChangesDumpTask @Inject()(
   storage: Storage,
-  itemExpander: ItemExpander
+  itemExpander: ItemExpander,
+  publisher: Publisher
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ThingType.Movie, storage, itemExpander)
+    extends ChangesDumpTask(ThingType.Movie, storage, itemExpander, publisher)
 
 class TvChangesDumpTask @Inject()(
   storage: Storage,
-  itemExpander: ItemExpander
+  itemExpander: ItemExpander,
+  publisher: Publisher
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ThingType.Show, storage, itemExpander)
+    extends ChangesDumpTask(ThingType.Show, storage, itemExpander, publisher)
 
 class PersonChangesDumpTask @Inject()(
   storage: Storage,
-  itemExpander: ItemExpander
+  itemExpander: ItemExpander,
+  publisher: Publisher
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ThingType.Person, storage, itemExpander)
+    extends ChangesDumpTask(ThingType.Person, storage, itemExpander, publisher)
 
 case class ChangesDumpFileRow(
   id: Int,

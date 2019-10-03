@@ -8,7 +8,11 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.tmdb.CertificationListResponse
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
+import com.teletracker.tasks.{
+  TeletrackerTask,
+  TeletrackerTaskApp,
+  TeletrackerTaskWithDefaultArgs
+}
 import javax.inject.Inject
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -20,10 +24,10 @@ class CertificationSeeder @Inject()(
   tmdbClient: TmdbClient,
   provider: SyncDbProvider,
   certifications: Certifications)
-    extends TeletrackerTask {
+    extends TeletrackerTaskWithDefaultArgs {
   import certifications.driver.api._
 
-  def run(args: Map[String, Option[Any]]) = {
+  def runInternal(args: Map[String, Option[Any]]) = {
     val movieCerts = Await.result(
       tmdbClient
         .makeRequest[CertificationListResponse]("certification/movie/list"),

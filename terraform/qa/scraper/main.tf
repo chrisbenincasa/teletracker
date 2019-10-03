@@ -19,7 +19,7 @@ resource "google_cloudfunctions_function" "scraper-function" {
   name    = "${var.function_name}"
   runtime = "nodejs10"
 
-  available_memory_mb   = 256
+  available_memory_mb   = "${var.memory_mb}"
   source_archive_bucket = "${var.bucket_name}"
   source_archive_object = "${data.google_storage_bucket_object.archive.name}"
   timeout               = "${var.timeout}"
@@ -37,12 +37,15 @@ resource "google_cloudfunctions_function" "scraper-function" {
 }
 
 resource "google_cloud_scheduler_job" "scraper-scheduler" {
-  name        = "${var.function_name}-scheduler"
+  for_each = var.event_data
+
+  name        = "${var.function_name}-scheduler-${each.key}"
   description = "Time-based scheduler for ${var.function_name}"
   schedule    = "${var.cron_schedule}"
+  time_zone   = "${var.time_zone}"
 
   pubsub_target {
     topic_name = "${google_pubsub_topic.scraper-trigger.id}"
-    data       = "${base64encode("run")}"
+    data       = "${base64encode("${each.value}")}"
   }
 }

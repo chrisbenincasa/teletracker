@@ -7,7 +7,7 @@ import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.model.Thingable
 import com.teletracker.common.model.tmdb.Person
 import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.TeletrackerTask
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import io.circe.parser.parse
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
@@ -21,11 +21,11 @@ class CreatePersonImportCsv @Inject()(
   thingsDbAccess: ThingsDbAccess,
   storage: Storage
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTask {
+    extends TeletrackerTaskWithDefaultArgs {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     val file = args.value[URI]("input").get
     val offset = args.valueOrDefault("offset", 0)
     val limit = args.valueOrDefault("limit", -1)

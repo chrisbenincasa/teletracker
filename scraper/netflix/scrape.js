@@ -1,18 +1,18 @@
-var request = require("request-promise");
-var cheerio = require("cheerio");
-var moment = require("moment");
-var fs = require("fs").promises;
-import { uploadToStorage } from "../common/storage";
+var request = require('request-promise');
+var cheerio = require('cheerio');
+var moment = require('moment');
+var fs = require('fs').promises;
+import { uploadToStorage } from '../common/storage';
 
 const uaString =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36";
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
 
 const scrape = async () => {
   let body = await request({
-    uri: "https://media.netflix.com/gateway/v1/en/titles/upcoming",
+    uri: 'https://media.netflix.com/gateway/v1/en/titles/upcoming',
     headers: {
-      "User-Agent": uaString
-    }
+      'User-Agent': uaString,
+    },
   });
 
   let parsed = JSON.parse(body);
@@ -22,24 +22,24 @@ const scrape = async () => {
       title: item.name,
       releaseYear: 2019,
       availableDate: item.sortDate,
-      type: item.type === "series" ? "show" : "movie",
-      network: "Netflix",
-      status: "Arriving"
+      type: item.type === 'series' ? 'show' : 'movie',
+      network: 'Netflix',
+      status: 'Arriving',
     };
   });
 
   // Export data into JSON file
-  let currentDate = moment().format("YYYY-MM-DD");
-  let fileName = currentDate + "-netflix-originals-arrivals" + ".json";
+  let currentDate = moment().format('YYYY-MM-DD');
+  let fileName = currentDate + '-netflix-originals-arrivals' + '.json';
 
-  if (process.env.NODE_ENV == "production") {
+  if (process.env.NODE_ENV == 'production') {
     let [file, _] = await uploadToStorage(
       fileName,
-      "scrape-results/" + currentDate,
-      titles
+      'scrape-results/' + currentDate,
+      titles,
     );
   } else {
-    return fs.writeFile(fileName, JSON.stringify(titles), "utf8");
+    return fs.writeFile(fileName, JSON.stringify(titles), 'utf8');
   }
 };
 

@@ -10,8 +10,8 @@ import com.teletracker.common.model.tmdb.HasTmdbId
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.tasks.TeletrackerTask
-import io.circe.Decoder
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
+import io.circe.{Decoder, Encoder}
 import io.circe.parser._
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -20,15 +20,41 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.{Failure, Success}
 
+case class ImportTmdbDumpTaskArgs(
+  input: URI,
+  offset: Int = 0,
+  limit: Int = -1,
+  parallelism: Int = 8,
+  perFileLimit: Int = -1)
+
 abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
   storage: Storage,
   thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext,
   thingLike: Thingable[T])
     extends TeletrackerTask {
+
+  import com.teletracker.common.util.json.circe._
+
   protected val logger = LoggerFactory.getLogger(getClass)
 
-  override def run(args: Args): Unit = {
+  override type TypedArgs = ImportTmdbDumpTaskArgs
+
+  implicit override protected def typedArgsEncoder
+    : Encoder[ImportTmdbDumpTaskArgs] =
+    io.circe.generic.semiauto.deriveEncoder[ImportTmdbDumpTaskArgs]
+
+  override def preparseArgs(args: Args): ImportTmdbDumpTaskArgs = {
+    ImportTmdbDumpTaskArgs(
+      input = args.value[URI]("input").get,
+      offset = args.valueOrDefault("offset", 0),
+      limit = args.valueOrDefault("limit", -1),
+      parallelism = args.valueOrDefault("parallelism", 8),
+      perFileLimit = args.valueOrDefault("perFileLimit", -1)
+    )
+  }
+
+  override def runInternal(args: Args): Unit = {
     val file = args.value[URI]("input").get
     val offset = args.valueOrDefault("offset", 0)
     val limit = args.valueOrDefault("limit", -1)

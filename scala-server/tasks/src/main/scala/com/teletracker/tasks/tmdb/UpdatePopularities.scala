@@ -3,7 +3,7 @@ package com.teletracker.tasks.tmdb
 import com.teletracker.common.db.BaseDbProvider
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.ThingType
-import com.teletracker.tasks.TeletrackerTask
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.{
   MovieDumpFileRow,
@@ -62,7 +62,7 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow](
   sourceRetriever: SourceRetriever,
   ingestJobParser: IngestJobParser,
   thingsDbAccess: ThingsDbAccess)
-    extends TeletrackerTask {
+    extends TeletrackerTaskWithDefaultArgs {
   import dbProvider.driver.api._
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -71,7 +71,7 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow](
 
   protected def thingType: ThingType
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     // Input must be SORTED BY POPULARITY DESC
     val file = args.value[URI]("input").get
     val offset = args.valueOrDefault("offset", 0)

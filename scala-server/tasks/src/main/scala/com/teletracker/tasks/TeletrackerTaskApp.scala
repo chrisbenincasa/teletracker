@@ -25,7 +25,7 @@ abstract class TeletrackerTaskApp[T <: TeletrackerTask: Manifest]
 
   override protected def run(): Unit = {
     try {
-      injector.instance[T].run(collectArgs)
+      injector.instance[T].runInternal(collectArgs)
     } catch {
       case NonFatal(e) =>
         e.printStackTrace()

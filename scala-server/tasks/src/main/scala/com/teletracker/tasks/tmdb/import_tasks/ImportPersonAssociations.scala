@@ -9,7 +9,7 @@ import com.teletracker.common.db.model.{
 import com.teletracker.common.model.tmdb.CastMember
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.tasks.TeletrackerTask
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
@@ -22,7 +22,7 @@ import scala.util.control.NonFatal
 class ImportPersonAssociations @Inject()(
   thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTask {
+    extends TeletrackerTaskWithDefaultArgs {
   private val logger = LoggerFactory.getLogger(getClass)
 
   import io.circe.optics.JsonPath._
@@ -39,7 +39,7 @@ class ImportPersonAssociations @Inject()(
 
   private val personIdCache = new ConcurrentHashMap[String, UUID]()
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     val offset = args.valueOrDefault[Int]("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
     val pageSize = args.valueOrDefault("pageSize", 100)
