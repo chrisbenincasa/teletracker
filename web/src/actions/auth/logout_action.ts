@@ -4,6 +4,7 @@ import { call, put, takeLatest } from '@redux-saga/core/effects';
 
 import { FSA } from 'flux-standard-action';
 import { createBasicAction } from '../utils';
+import ReactGA from 'react-ga';
 
 export const LOGOUT_INITIATED = 'logout/INITIATED';
 export const LOGOUT_SUCCESSFUL = 'logout/SUCCESSFUL';
@@ -28,6 +29,11 @@ export const logoutSaga = function*() {
     try {
       yield call(() => firebase.auth().signOut());
       yield put(LogoutSuccessful());
+
+      ReactGA.event({
+        category: 'User',
+        action: 'Logout',
+      });
     } catch (e) {}
   });
 };

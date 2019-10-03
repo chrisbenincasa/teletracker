@@ -6,6 +6,8 @@ import { connect } from 'react-redux';
 import { LinearProgress } from '@material-ui/core';
 import { Redirect } from 'react-router';
 import _ from 'lodash';
+import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 interface Props {
   isLoggingOut: boolean;
@@ -26,6 +28,9 @@ class Logout extends React.Component<Props, State> {
 
   componentDidMount(): void {
     this.props.logout();
+
+    ReactGA.initialize(GA_TRACKING_ID);
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   componentDidUpdate(prevProps: Readonly<Props>): void {

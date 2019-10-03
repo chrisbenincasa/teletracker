@@ -3,6 +3,7 @@ import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect, createAction } from '../utils';
 import { FSA } from 'flux-standard-action';
 import { ActionType } from '../../types';
+import ReactGA from 'react-ga';
 
 export const USER_SELF_UPDATE_ITEM_TAGS =
   'user/self/update_item_tags/INITIATED';
@@ -49,6 +50,11 @@ export const updateUserActionSaga = function*() {
         payload.action,
         payload.value,
       );
+
+      ReactGA.event({
+        category: 'User',
+        action: 'Updated user tags',
+      });
 
       if (response.ok && payload.lazy) {
         yield put(updateUserItemTagsSuccess(payload));

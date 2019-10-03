@@ -50,6 +50,8 @@ import { Helmet } from 'react-helmet';
 import _ from 'lodash';
 import { FixedSizeList as LazyList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
+import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -226,7 +228,16 @@ class ItemDetails extends Component<Props, State> {
   };
 
   componentDidMount() {
+    const { isLoggedIn, userSelf } = this.props;
+
     this.loadItem();
+
+    ReactGA.initialize(GA_TRACKING_ID);
+    ReactGA.pageview(window.location.pathname + window.location.search);
+
+    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
+      ReactGA.set({ userId: userSelf.user.uid });
+    }
   }
 
   componentDidUpdate(prevProps: Readonly<Props>): void {

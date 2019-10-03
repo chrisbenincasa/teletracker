@@ -27,6 +27,8 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { PopularInitiatedActionPayload } from '../actions/popular/popular';
 import Featured from '../components/Featured';
 import Thing from '../types/Thing';
+import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -89,10 +91,19 @@ class Popular extends Component<Props, State> {
   }
 
   componentDidMount() {
+    const { isLoggedIn, userSelf } = this.props;
+
     this.props.retrievePopular({
       itemTypes: this.state.type,
       limit: 19,
     });
+
+    ReactGA.initialize(GA_TRACKING_ID);
+    ReactGA.pageview(window.location.pathname + window.location.search);
+
+    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
+      ReactGA.set({ userId: userSelf.user.uid });
+    }
   }
 
   componentDidUpdate(prevProps) {

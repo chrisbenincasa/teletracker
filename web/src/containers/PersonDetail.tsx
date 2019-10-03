@@ -34,6 +34,8 @@ import { Genre } from '../types';
 import _ from 'lodash';
 import { PersonCredit } from '../types/PersonCredit';
 import { Helmet } from 'react-helmet';
+import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -142,7 +144,16 @@ class PersonDetail extends React.Component<Props, State> {
   };
 
   componentDidMount() {
+    const { isLoggedIn, userSelf } = this.props;
+
     this.props.personFetchInitiated({ id: this.props.match.params.id });
+
+    ReactGA.initialize(GA_TRACKING_ID);
+    ReactGA.pageview(window.location.pathname + window.location.search);
+
+    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
+      ReactGA.set({ userId: userSelf.user.uid });
+    }
   }
 
   setSortOrder = event => {

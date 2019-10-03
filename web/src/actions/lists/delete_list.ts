@@ -4,6 +4,7 @@ import { clientEffect, createAction } from '../utils';
 import { RetrieveUserSelfInitiated } from '../user';
 import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
+import ReactGA from 'react-ga';
 
 export const USER_SELF_DELETE_LIST = 'user/self/delete_list/INITIATED';
 export const USER_SELF_DELETE_LIST_SUCCESS = 'user/self/delete_list/SUCCESS';
@@ -50,6 +51,11 @@ export const deleteListSaga = function*() {
           }),
         );
         yield put(retrieveAllLists({}));
+
+        ReactGA.event({
+          category: 'User',
+          action: 'Deleted list',
+        });
       } else {
         // TODO: ERROR
       }

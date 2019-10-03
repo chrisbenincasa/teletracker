@@ -3,6 +3,7 @@ import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect, createAction } from '../utils';
 import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
+import ReactGA from 'react-ga';
 
 export const LIST_UPDATE_TRACKING_INITIATED = 'lists/update_tracking/INITIATED';
 export const LIST_UPDATE_TRACKING_SUCCESS = 'lists/update_tracking/SUCCESS';
@@ -37,6 +38,11 @@ export const updateListTrackingSaga = function*() {
 
       if (response.ok) {
         yield put(retrieveAllLists({}));
+
+        ReactGA.event({
+          category: 'User',
+          action: 'Updated list',
+        });
       }
     } else {
     }
