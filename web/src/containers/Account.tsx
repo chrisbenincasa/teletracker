@@ -38,6 +38,8 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Network, UserPreferences } from '../types';
+import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -160,7 +162,16 @@ class Account extends Component<Props, State> {
   }
 
   componentDidMount() {
+    const { isLoggedIn, userSelf } = this.props;
+
     this.props.loadNetworks();
+
+    ReactGA.initialize(GA_TRACKING_ID);
+    ReactGA.pageview(window.location.pathname + window.location.search);
+
+    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
+      ReactGA.set({ userId: userSelf.user.uid });
+    }
   }
 
   componentDidUpdate(oldProps: Props) {
