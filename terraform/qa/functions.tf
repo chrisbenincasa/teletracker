@@ -33,7 +33,7 @@ module "tmdb-ids" {
   trigger_name     = "tmdb-ids-scrape-trigger"
   function_name    = "tmdb-ids"
   entrypoint       = "tmdbIds"
-  function_version = "1570050415"
+  function_version = "1570138778"
 
   extra_env_vars = {
     SCRAPER = "tmdbIds"

@@ -130,13 +130,19 @@ class Genre extends Component<Props, State> {
       });
 
       const randomItem = Math.floor(Math.random() * highestRated.length);
-      const popularItem = genre.findIndex(
-        name => name === highestRated[randomItem],
-      );
+      if (randomItem === 0) {
+        this.setState({
+          mainItemIndex: 0,
+        });
+      } else {
+        const popularItem = genre.findIndex(
+          name => name === highestRated[randomItem],
+        );
 
-      this.setState({
-        mainItemIndex: popularItem,
-      });
+        this.setState({
+          mainItemIndex: popularItem,
+        });
+      }
     }
 
     if (prevProps.location.search !== this.props.location.search) {
