@@ -25,6 +25,8 @@ import { Redirect } from 'react-router';
 import { Link as RouterLink } from 'react-router-dom';
 import * as firebase from 'firebase/app';
 import GoogleLoginButton from '../components/GoogleLoginButton';
+import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -124,6 +126,9 @@ class Login extends Component<Props, State> {
       })
 
       .catch(console.error);
+
+    ReactGA.initialize(GA_TRACKING_ID);
+    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   logInWithGoogle = () => {

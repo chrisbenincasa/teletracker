@@ -2,6 +2,7 @@ import * as firebase from 'firebase/app';
 import { call, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
+import ReactGA from 'react-ga';
 
 export const SIGNUP_INITIATED = 'signup/INITIATED';
 export const SIGNUP_SUCCESSFUL = 'signup/SUCCESSFUL';
@@ -49,6 +50,11 @@ export const signupSaga = function*() {
           payload.email,
           payload.password,
         );
+
+        ReactGA.event({
+          category: 'User',
+          action: 'Signup',
+        });
       } catch (e) {
         console.error(e);
       }

@@ -18,6 +18,8 @@ import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Error as ErrorIcon } from '@material-ui/icons';
 import Thing from '../types/Thing';
+import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -50,6 +52,17 @@ interface Props extends WithStyles<typeof styles> {
 }
 
 class Home extends Component<Props & WithUserProps> {
+  componentDidMount() {
+    const { isLoggedIn, userSelf } = this.props;
+
+    ReactGA.initialize(GA_TRACKING_ID);
+    ReactGA.pageview(window.location.pathname + window.location.search);
+
+    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
+      ReactGA.set({ userId: userSelf.user.uid });
+    }
+  }
+
   renderLoading = () => {
     return (
       <div style={{ flexGrow: 1 }}>

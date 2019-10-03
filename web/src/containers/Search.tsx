@@ -19,6 +19,8 @@ import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import Thing from '../types/Thing';
 import { Error as ErrorIcon } from '@material-ui/icons';
+import ReactGA from 'react-ga';
+import { GA_TRACKING_ID } from '../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -76,6 +78,17 @@ class Search extends Component<Props> {
       if (this.props.currentSearchText !== query) {
         this.props.search(query);
       }
+    }
+  }
+
+  componentDidMount() {
+    const { isLoggedIn, userSelf } = this.props;
+
+    ReactGA.initialize(GA_TRACKING_ID);
+    ReactGA.pageview(window.location.pathname + window.location.search);
+
+    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
+      ReactGA.set({ userId: userSelf.user.uid });
     }
   }
 
