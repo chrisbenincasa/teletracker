@@ -1,6 +1,6 @@
 package com.teletracker.tasks.db
 
-import com.teletracker.common.db.SyncDbProvider
+import com.teletracker.common.db.{BaseDbProvider, SyncDbProvider}
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.util.Slug
@@ -90,7 +90,7 @@ object SeedGenres extends TeletrackerTaskApp[GenreSeeder2]
 
 class GenreSeeder2 @Inject()(
   tmdbClient: TmdbClient,
-  provider: SyncDbProvider,
+  provider: BaseDbProvider,
   genres: Genres,
   genreReferences: GenreReferences)
     extends TeletrackerTaskWithDefaultArgs {
@@ -134,14 +134,15 @@ class GenreSeeder2 @Inject()(
     )
   })
 
-  val initialJustTv = Seq("Reality", "Soap", "Talk", "Politics").map(name => {
-    Genre(
-      None,
-      name,
-      Slug.forString(name),
-      List(GenreType.Tv)
-    )
-  })
+  val initialJustTv =
+    Seq("Reality", "Soap", "Talk", "Politics", "News").map(name => {
+      Genre(
+        None,
+        name,
+        Slug.forString(name),
+        List(GenreType.Tv)
+      )
+    })
 
   val tmdbMappings = Map(
     "Action & Adventure" -> Set(28, 12, 10759),
@@ -159,8 +160,15 @@ class GenreSeeder2 @Inject()(
     "Romance" -> Set(10749),
     "Science Fiction" -> Set(878, 10765),
     "Thriller" -> Set(53),
-    "War" -> Set(10752),
-    "Western" -> Set(37)
+    "War" -> Set(10752, 10768),
+    "Western" -> Set(37),
+    // Tv Only
+    "Made for TV" -> Set(10770),
+    "News" -> Set(10763),
+    "Reality" -> Set(10764),
+    "Soap" -> Set(10766),
+    "Talk" -> Set(10767),
+    "Politics" -> Set(10768)
   )
 
   private val initialGenres =

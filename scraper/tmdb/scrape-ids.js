@@ -18,8 +18,10 @@ function streamToPromise(stream) {
   });
 }
 
+const isProduction = () => process.env.NODE_ENV === 'production';
+
 const getFileName = name => {
-  if (process.env.NODE_ENV === 'production') {
+  if (isProduction()) {
     return '/tmp/' + name;
   } else {
     return name;
@@ -96,7 +98,7 @@ const movieToTsv = line => {
   let parsed = JSON.parse(line);
   return [
     parsed.id,
-    parsed.original_title,
+    (parsed.original_title || '').replace('\t', ' '),
     parsed.popularity,
     parsed.video,
     parsed.adult,
@@ -107,11 +109,11 @@ const movieFromTsv = line => {
   let parts = line.split('\t');
   return JSON.stringify(
     {
-      id: parts[0],
+      id: parseInt(parts[0]),
       original_title: parts[1],
-      popularity: parts[2],
-      video: parts[3],
-      adult: parts[4],
+      popularity: parseFloat(parts[2]),
+      video: parts[3] === 'true',
+      adult: parts[4] === 'true',
     },
     undefined,
     0,
@@ -120,16 +122,20 @@ const movieFromTsv = line => {
 
 const tvShowToTsv = line => {
   let parsed = JSON.parse(line);
-  return [parsed.id, parsed.original_name, parsed.popularity].join('\t');
+  return [
+    parsed.id,
+    (parsed.original_name || '').replace('\t', ' '),
+    parsed.popularity,
+  ].join('\t');
 };
 
 const tvShowFromTsv = line => {
   let parts = line.split('\t');
   return JSON.stringify(
     {
-      id: parts[0],
+      id: parseInt(parts[0]),
       original_name: parts[1],
-      popularity: parts[2],
+      popularity: parseFloat(parts[2]),
     },
     undefined,
     0,
@@ -140,7 +146,7 @@ const personToTsv = line => {
   let parsed = JSON.parse(line);
   return [
     parsed.id,
-    parsed.original_name,
+    (parsed.original_name || '').replace('\t', ' '),
     parsed.popularity,
     parsed.adult,
   ].join('\t');
@@ -150,10 +156,10 @@ const personFromTsv = line => {
   let parts = line.split('\t');
   return JSON.stringify(
     {
-      id: parts[0],
+      id: parseInt(parts[0]),
       original_name: parts[1],
-      popularity: parts[2],
-      adult: parts[3],
+      popularity: parseFloat(parts[2]),
+      adult: parts[3] === 'true',
     },
     undefined,
     0,
@@ -163,12 +169,17 @@ const personFromTsv = line => {
 const scrape = async (event, context) => {
   await substitute();
 
-  const payload = event.data
-    ? JSON.parse(Buffer.from(event.data, 'base64').toString())
-    : {};
+  const payload =
+    event && event.data
+      ? JSON.parse(Buffer.from(event.data, 'base64').toString())
+      : {};
 
   let now = payload.date ? moment(payload.date, 'YYYY-MM-DD') : moment();
   let currentDate = moment().format('YYYY-MM-DD');
+
+  if (!payload.type) {
+    payload.type = 'all';
+  }
 
   let movieUpload;
   if (payload.type === 'movie' || payload.type === 'all') {
@@ -179,7 +190,13 @@ const scrape = async (event, context) => {
         movieToTsv,
         movieFromTsv,
       );
-      movieUpload = uploadToStorage(movieFile, 'scrape-results/' + currentDate);
+
+      if (isProduction()) {
+        movieUpload = uploadToStorage(
+          movieFile,
+          'scrape-results/' + currentDate,
+        );
+      }
     } catch (e) {
       console.error(e);
     }
@@ -194,7 +211,10 @@ const scrape = async (event, context) => {
         tvShowToTsv,
         tvShowFromTsv,
       );
-      tvUpload = uploadToStorage(tvFile, 'scrape-results/' + currentDate);
+
+      if (isProduction()) {
+        tvUpload = uploadToStorage(tvFile, 'scrape-results/' + currentDate);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -209,10 +229,13 @@ const scrape = async (event, context) => {
         personToTsv,
         personFromTsv,
       );
-      personUpload = uploadToStorage(
-        personFile,
-        'scrape-results/' + currentDate,
-      );
+
+      if (isProduction()) {
+        personUpload = uploadToStorage(
+          personFile,
+          'scrape-results/' + currentDate,
+        );
+      }
     } catch (e) {
       console.error(e);
     }

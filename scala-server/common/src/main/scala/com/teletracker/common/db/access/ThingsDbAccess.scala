@@ -691,26 +691,23 @@ class ThingsDbAccess @Inject()(
     }.map(_.head).map(UUID.fromString(_))
   }
 
-  def updatePopularitiesInBatch(updates: List[(String, Double)]) = {
+  def updatePopularitiesInBatch(updates: List[(String, ThingType, Double)]) = {
     val values = updates
       .map {
-        case (tmdbId, popularity) => s"('$tmdbId', $popularity)"
+        case (tmdbId, thingType, popularity) =>
+          s"('$tmdbId', '${thingType.toString}', $popularity)"
       }
       .mkString(",")
 
     run {
-      val q = sqlu"""
+      sqlu"""
           UPDATE things as t SET 
             popularity = x.popularity
           FROM (VALUES
             #$values
-          ) AS x(tmdb_id, popularity)
-          WHERE x.tmdb_id = t.tmdb_id;
+          ) AS x(tmdb_id, thing_type, popularity)
+          WHERE x.tmdb_id = t.tmdb_id AND x.thing_type = t.type;
        """
-
-      q.statements.foreach(println)
-
-      q
     }
   }
 
