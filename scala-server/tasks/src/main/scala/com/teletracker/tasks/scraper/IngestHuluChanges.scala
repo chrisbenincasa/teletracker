@@ -59,7 +59,7 @@ class IngestHuluChanges @Inject()(
   override protected def handleNonMatches(
     args: IngestJobArgs,
     nonMatches: List[HuluScrapeItem]
-  ): Future[List[(HuluScrapeItem, ThingRaw)]] = {
+  ): Future[List[NonMatchResult]] = {
     SequentialFutures
       .serialize(nonMatches, Some(250.millis))(nonMatch => {
         val request = HttpRequest(
@@ -101,6 +101,11 @@ class IngestHuluChanges @Inject()(
         val amendsByOriginal =
           nonMatchesAndAmends.groupBy(_._1).mapValues(_.map(_._2))
 
+        val originalByAmends = nonMatchesAndAmends
+          .map(_.swap)
+          .map { case (amend, original) => amend -> original }
+          .toMap
+
         val amendedItemsBySlugs = amendsByOriginal.values.flatten
           .flatMap(amendedItem => {
             amendedItem.releaseYear
@@ -140,6 +145,10 @@ class IngestHuluChanges @Inject()(
               }
             })
             .map(foundThings.toList ++ _)
+            .map(_.map {
+              case (amended, thingRaw) =>
+                NonMatchResult(amended, originalByAmends(amended), thingRaw)
+            })
         })
       })
   }

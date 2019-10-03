@@ -1,9 +1,10 @@
-import request from 'request-promise';
-import moment from 'moment';
-import fs from 'fs';
-import { substitute } from '../../common/berglas';
-import { Storage } from '@google-cloud/storage';
 import { PubSub } from '@google-cloud/pubsub';
+import { Storage } from '@google-cloud/storage';
+import fs from 'fs';
+import moment from 'moment';
+import request from 'request-promise';
+import { substitute } from '../../common/berglas';
+import { publishTaskMessage } from '../../common/publisher';
 
 const pubsub = new PubSub({
   projectId: 'teletracker',
@@ -50,18 +51,6 @@ const writeAsLines = (fileName, data) => {
   });
 };
 
-const getTopic = async topicName => {
-  try {
-    return await pubsub.createTopic(topicName);
-  } catch (e) {
-    if (e.code === 6) {
-      return await pubsub.topic(topicName);
-    } else {
-      throw e;
-    }
-  }
-};
-
 const scrape = async () => {
   await substitute();
 
@@ -97,18 +86,17 @@ const scrape = async () => {
   });
 
   [
-    ['ImportMoviesFromDump', movieName],
-    ['ImportTvShowsFromDump', showName],
-    ['ImportPeopleFromDump', personName],
+    ['MovieChangesDumpTask', movieName],
+    ['TvChangesDumpTask', showName],
+    ['PersonChangesDumpTask', personName],
   ].forEach(async ([task, file]) => {
-    let payload = {
-      clazz: 'com.teletracker.tasks.tmdb.import_tasks.' + task,
-      args: {
-        input: 'gs://teletracker/' + file,
+    await publishTaskMessage(
+      'com.teletracker.tasks.tmdb.export_tasks.' + task,
+      {
+        input: 'gs://teletracker/scrape-results/' + nowString + '/' + file,
       },
-    };
-    let topic = await getTopic('teletracker-task-queue');
-    await topic.publisher.publish(Buffer.from(JSON.stringify(payload)));
+      ['tag/RequiresTmdbApi'],
+    );
   });
 };
 

@@ -1,10 +1,10 @@
-var request = require("request-promise");
-var cheerio = require("cheerio");
-var moment = require("moment");
-var fs = require("fs").promises;
-const Entities = require("html-entities").AllHtmlEntities;
+var request = require('request-promise');
+var cheerio = require('cheerio');
+var moment = require('moment');
+var fs = require('fs').promises;
+const Entities = require('html-entities').AllHtmlEntities;
 const entities = new Entities();
-import { writeResultsAndUploadToStorage } from "../common/storage";
+import { writeResultsAndUploadToStorage } from '../common/storage';
 
 /**
 
@@ -21,33 +21,33 @@ curl -s 'https://unogs.com/nf.cgi?u=5unogs&q=get:exp:78&t=ns&cl=21,23&st=adv&ob=
 
 const headers = {
   Cookie:
-    "cooksess=lv58tc0shun9jq3qgn1o0ft7u6; PHPSESSID=p8qbslkv9oma62ujrhrl684l45; sstring=get%3Aexp%3A78-\\u21and",
-  "Accept-Encoding": "gzip, deflate, br",
-  "User-Agent":
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
-  Accept: "application/json, text/javascript, */*; q=0.0",
-  Referer: "https://unogs.com/countrydetail/",
-  "X-Requested-With": "XMLHttpRequest"
+    'cooksess=lv58tc0shun9jq3qgn1o0ft7u6; PHPSESSID=p8qbslkv9oma62ujrhrl684l45; sstring=get%3Aexp%3A78-\\u21and',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'User-Agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
+  Accept: 'application/json, text/javascript, */*; q=0.0',
+  Referer: 'https://unogs.com/countrydetail/',
+  'X-Requested-With': 'XMLHttpRequest',
 };
 
 const query = {
-  u: "5unogs",
-  q: "get:exp:78",
-  t: "ns",
-  cl: "21",
-  st: "adv",
-  ob: "",
-  p: "0",
+  u: '5unogs',
+  q: 'get:exp:78',
+  t: 'ns',
+  cl: '21',
+  st: 'adv',
+  ob: '',
+  p: '0',
   l: 1000,
-  inc: "",
-  ao: "and"
+  inc: '',
+  ao: 'and',
 };
 
 const scrape = async () => {
   let body = await request({
-    uri: "https://unogs.com/nf.cgi",
+    uri: 'https://unogs.com/nf.cgi',
     headers,
-    qs: query
+    qs: query,
   });
 
   let parsed = JSON.parse(body);
@@ -67,12 +67,12 @@ const scrape = async () => {
 
     var $ = cheerio.load(htmlDesc);
 
-    let expiration = $("b")
+    let expiration = $('b')
       .text()
-      .replace("Expires on ", "")
+      .replace('Expires on ', '')
       .trim();
 
-    let parsed = moment(expiration, "YYYY-MM-DD");
+    let parsed = moment(expiration, 'YYYY-MM-DD');
 
     let parsedReleaseYear = parseInt(releaseYear);
     parsedReleaseYear = isNaN(parsedReleaseYear)
@@ -80,29 +80,29 @@ const scrape = async () => {
       : parsedReleaseYear;
 
     var metadata = {
-      availableDate: parsed.format("YYYY-MM-DD"),
+      availableDate: parsed.format('YYYY-MM-DD'),
       title: entities.decode(title),
       releaseYear: parsedReleaseYear,
       // notes: notes,
       // category: category,
-      type: seriesOrMovie === "movie" ? "movie" : "show",
-      network: "Netflix",
-      status: "Expiring"
+      type: seriesOrMovie === 'movie' ? 'movie' : 'show',
+      network: 'Netflix',
+      status: 'Expiring',
     };
 
     return metadata;
   });
 
-  let currentDate = moment().format("YYYY-MM-DD");
-  let fileName = currentDate + "-netflix-expiring" + ".json";
-  if (process.env.NODE_ENV == "production") {
+  let currentDate = moment().format('YYYY-MM-DD');
+  let fileName = currentDate + '-netflix-expiring' + '.json';
+  if (process.env.NODE_ENV == 'production') {
     let [file, _] = await writeResultsAndUploadToStorage(
       fileName,
-      "scrape-results/" + currentDate,
-      titles
+      'scrape-results/' + currentDate,
+      titles,
     );
   } else {
-    return fs.writeFile(fileName, JSON.stringify(titles), "utf8");
+    return fs.writeFile(fileName, JSON.stringify(titles), 'utf8');
   }
 };
 

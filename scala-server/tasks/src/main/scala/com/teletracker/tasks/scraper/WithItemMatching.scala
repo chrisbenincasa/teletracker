@@ -18,7 +18,7 @@ import scala.util.Success
 sealed trait MatchMode[T <: ScrapedItem] {
   def lookup(
     items: List[T],
-    args: IngestJobArgsLike[T]
+    args: IngestJobArgsLike
   ): Future[(List[(T, ThingRaw)], List[T])]
 }
 
@@ -32,7 +32,7 @@ class TmdbLookup[T <: ScrapedItem](
 
   override def lookup(
     items: List[T],
-    args: IngestJobArgsLike[T]
+    args: IngestJobArgsLike
   ): Future[(List[(T, ThingRaw)], List[T])] = {
     SequentialFutures
       .serialize(items)(lookupSingle(_, args))
@@ -45,7 +45,7 @@ class TmdbLookup[T <: ScrapedItem](
 
   private def lookupSingle(
     item: T,
-    args: IngestJobArgsLike[T]
+    args: IngestJobArgsLike
   ): Future[Option[Either[(T, ThingRaw), T]]] = {
     val search = if (item.isMovie) {
       tmdbClient.searchMovies(item.title).map(_.results.map(Left(_)))
@@ -95,7 +95,7 @@ class DbLookup[T <: ScrapedItem](
 
   override def lookup(
     items: List[T],
-    args: IngestJobArgsLike[T]
+    args: IngestJobArgsLike
   ): Future[(List[(T, ThingRaw)], List[T])] = {
     val (withReleaseYear, withoutReleaseYear) =
       items.partition(_.releaseYear.isDefined)
@@ -170,7 +170,7 @@ class DbLookup[T <: ScrapedItem](
   private def lookupThingsBySlugsAndType(
     itemsBySlug: Map[Slug, T],
     thingType: ThingType,
-    args: IngestJobArgsLike[T]
+    args: IngestJobArgsLike
   ): Future[List[(T, Option[ThingRaw])]] = {
     thingsDb
       .findThingsBySlugsRaw(itemsBySlug.keySet, Some(thingType))

@@ -28,3 +28,8 @@ variable "image" {
   type        = "string"
   description = "The image string of the currently deployed Teletracker server image"
 }
+
+variable "consumer_image" {
+  type        = "string"
+  description = "The image string of the currently deployed Teletracker consumer image"
+}

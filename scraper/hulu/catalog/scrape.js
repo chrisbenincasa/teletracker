@@ -106,14 +106,6 @@ const scrapeSeriesJson = async id => {
 
 const createWriteStream = fileName => {
   const stream = fs.createWriteStream(fileName, 'utf-8');
-  // return new Promise((resolve, reject) => {
-  //   stream.on('finish', () => resolve(true));
-  //   stream.on('error', reject);
-  //   data.forEach(datum => {
-  //     stream.write(JSON.stringify(datum) + '\n');
-  //   });
-  //   stream.close();
-  // });
   return stream;
 };
 
@@ -254,7 +246,7 @@ const scrape = async () => {
           stream.write(JSON.stringify(result) + '\n');
         }
 
-        await wait(250);
+        await wait(100);
         return [...last, result];
       }, Promise.resolve([]));
 

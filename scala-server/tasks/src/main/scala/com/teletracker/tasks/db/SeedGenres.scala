@@ -4,7 +4,11 @@ import com.teletracker.common.db.SyncDbProvider
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.util.Slug
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
+import com.teletracker.tasks.{
+  TeletrackerTask,
+  TeletrackerTaskApp,
+  TeletrackerTaskWithDefaultArgs
+}
 import javax.inject.Inject
 import com.teletracker.common.util.Futures._
 
@@ -89,7 +93,7 @@ class GenreSeeder2 @Inject()(
   provider: SyncDbProvider,
   genres: Genres,
   genreReferences: GenreReferences)
-    extends TeletrackerTask {
+    extends TeletrackerTaskWithDefaultArgs {
 
   import genres.driver.api._
 
@@ -162,7 +166,7 @@ class GenreSeeder2 @Inject()(
   private val initialGenres =
     (initialBoth ++ initalJustMovie ++ initialJustTv).sortBy(_.name)
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     val insertedGenres = provider.getDB
       .run {
         DBIO.sequence(

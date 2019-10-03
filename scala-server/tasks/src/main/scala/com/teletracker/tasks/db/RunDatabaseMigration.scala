@@ -2,7 +2,7 @@ package com.teletracker.tasks.db
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.inject.SyncPath
-import com.teletracker.tasks.TeletrackerTask
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import javax.inject.Inject
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
@@ -10,8 +10,8 @@ import org.flywaydb.core.Flyway
 class RunDatabaseMigration @Inject()(
   teletrackerConfig: TeletrackerConfig,
   dataSource: DataSource)
-    extends TeletrackerTask {
-  override def run(args: Args): Unit = {
+    extends TeletrackerTaskWithDefaultArgs {
+  override def runInternal(args: Args): Unit = {
     val action = args.valueOrDefault("action", "info")
     val loc = args.valueOrDefault(
       "loc",

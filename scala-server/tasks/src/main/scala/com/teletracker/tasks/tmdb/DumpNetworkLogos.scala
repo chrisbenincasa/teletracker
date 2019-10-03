@@ -4,7 +4,7 @@ import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.http.{HttpClient, HttpClientOptions}
 import com.teletracker.common.model.tmdb.Network
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.tasks.TeletrackerTask
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import javax.inject.Inject
 import java.io.{File, FileOutputStream}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -14,9 +14,9 @@ import scala.concurrent.{Await, Future}
 class DumpNetworkLogos @Inject()(
   httpClientFactory: HttpClient.Factory,
   tmdbClient: TmdbClient)
-    extends TeletrackerTask {
+    extends TeletrackerTaskWithDefaultArgs {
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     import io.circe.generic.auto._
     import io.circe.parser._
 

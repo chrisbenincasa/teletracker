@@ -11,9 +11,9 @@ import scala.concurrent.{Await, Future}
 object DumpJustWatchLogosTask extends TeletrackerTaskApp[DumpJustWatchLogosTask]
 
 class DumpJustWatchLogosTask @Inject()(httpClientFactory: HttpClient.Factory)
-    extends TeletrackerTask {
+    extends TeletrackerTaskWithDefaultArgs {
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     import io.circe.generic.auto._
     import io.circe.parser._
 

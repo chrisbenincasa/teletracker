@@ -1,24 +1,26 @@
-import { Storage } from "@google-cloud/storage";
-import { promises as fs } from "fs";
+import { Storage } from '@google-cloud/storage';
+import { promises as fs } from 'fs';
 
 const storage = new Storage();
-const bucket = storage.bucket("teletracker");
+const bucket = storage.bucket('teletracker');
 
 const writeResultsAndUploadToStorage = async (
   fileName,
   destinationDir,
-  results
+  results,
 ) => {
-  await fs.writeFile(`/tmp/${fileName}`, JSON.stringify(results), "utf8");
+  await fs.writeFile(`/tmp/${fileName}`, JSON.stringify(results), 'utf8');
 
   return uploadToStorage(fileName, destinationDir);
 };
 
 const uploadToStorage = async (fileName, destinationDir) => {
-  return bucket.upload(`/tmp/${fileName}`, {
+  let sanitized = fileName.replace(/^\/tmp\//gi, '');
+  return bucket.upload(`/tmp/${sanitized}`, {
     gzip: true,
-    contentType: "application/json",
-    destination: destinationDir + "/" + fileName
+    contentType: 'application/json',
+    destination: destinationDir + '/' + sanitized,
+    resumable: false,
   });
 };
 

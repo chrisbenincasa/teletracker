@@ -2,15 +2,15 @@ package com.teletracker.consumers
 
 import com.google.cloud.pubsub.v1.{AckReplyConsumer, MessageReceiver}
 import com.google.pubsub.v1.PubsubMessage
-import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.teletracker.common.pubsub.{JobTags, TeletrackerTaskQueueMessage}
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskRunner}
 import io.circe.Json
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
-import java.util.concurrent.Executors
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Promise
+import java.util.concurrent.{LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit}
 import scala.util.control.NonFatal
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
 
 class TeletrackerTaskQueueReceiver @Inject()(taskRunner: TeletrackerTaskRunner)
     extends MessageReceiver {
@@ -18,9 +18,18 @@ class TeletrackerTaskQueueReceiver @Inject()(taskRunner: TeletrackerTaskRunner)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  @volatile private var runningJob: TeletrackerTask = _
+  private val needsTmdbPool = new JobPool("TmdbJobs", 1)
+  private val normalPool = new JobPool("NormalJobs", 2)
 
-  private val workerPool = Executors.newSingleThreadExecutor()
+  Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
+    override def run(): Unit = {
+      (needsTmdbPool.getPending ++ normalPool.getPending).map(_.originalMessage)
+    }
+  }))
+
+  def getUnexecutedTasks: Iterable[TeletrackerTaskQueueMessage] = {
+    (needsTmdbPool.getPending ++ normalPool.getPending).map(_.originalMessage)
+  }
 
   override def receiveMessage(
     message: PubsubMessage,
@@ -33,57 +42,35 @@ class TeletrackerTaskQueueReceiver @Inject()(taskRunner: TeletrackerTaskRunner)
         consumer.ack()
 
       case Right(message) =>
-        logger.info(s"Got message: $message")
-        val reply = try {
-          synchronized {
-            if (runningJob == null) {
-              runningJob = taskRunner
-                .getInstance(message.clazz)
+        try {
+          val task = taskRunner.getInstance(message.clazz)
+          val runnable =
+            new TeletrackerTaskRunnable(
+              message,
+              task,
+              extractArgs(message.args)
+            )
 
-              val finishPromise = Promise[Unit]
+          logger.info(s"Attempting to schedule ${message.clazz}")
 
-              workerPool.submit(new Runnable {
-                override def run(): Unit = {
-                  try {
-                    runningJob.run(extractArgs(message.args))
-                  } finally {
-                    logger.info(s"Finished running ${runningJob.getClass}")
-                    finishPromise.success(Unit)
-                  }
-                }
-              })
-
-              finishPromise.future.onComplete(_ => {
-                synchronized(runningJob = null)
-              })
-
-              Ack
-            } else {
-              logger.info("Job still running, trying new message later.")
-
-              Nack
-            }
+          if (message.jobTags
+                .getOrElse(Set.empty)
+                .contains(JobTags.RequiresTmdbApi)) {
+            needsTmdbPool.submit(runnable)
+          } else {
+            normalPool.submit(runnable)
           }
         } catch {
           case NonFatal(e) =>
             logger.error(
-              s"Error while attempting to run job from message: ${messageString}",
+              s"Unexpected error while handling message: ${messageString}",
               e
             )
-
-            Ack
-        }
-
-        reply match {
-          case Ack  => consumer.ack()
-          case Nack => consumer.nack()
+        } finally {
+          consumer.ack()
         }
     }
   }
-
-  sealed private trait Reply
-  private case object Ack extends Reply
-  private case object Nack extends Reply
 
   private def extractArgs(args: Map[String, Json]): Map[String, Option[Any]] = {
     args.mapValues(extractValue)
@@ -101,4 +88,58 @@ class TeletrackerTaskQueueReceiver @Inject()(taskRunner: TeletrackerTaskRunner)
   }
 }
 
-class JobPool(size: Int) {}
+class JobPool(
+  name: String,
+  size: Int) {
+  private val logger = LoggerFactory.getLogger(getClass.getName + "#" + name)
+
+  private[this] val pool = new ThreadPoolExecutor(
+    size,
+    size,
+    0L,
+    TimeUnit.MILLISECONDS,
+    new LinkedBlockingQueue[Runnable]
+  )
+
+  def submit(runnable: TeletrackerTaskRunnable): Unit = {
+    runnable.addCallback {
+      logger.info(s"Finished executing ${runnable.originalMessage.clazz}")
+    }
+    pool.submit(runnable)
+    logger.info(s"Submitted ${runnable.originalMessage.clazz}")
+  }
+
+  def numOutstanding: Int = pool.getQueue.size()
+
+  def getPending: Iterable[TeletrackerTaskRunnable] = {
+    pool.getQueue.asScala.collect {
+      case r: TeletrackerTaskRunnable => r
+    }
+  }
+}
+
+class TeletrackerTaskRunnable(
+  val originalMessage: TeletrackerTaskQueueMessage,
+  teletrackerTask: TeletrackerTask,
+  args: Map[String, Option[Any]])
+    extends Runnable {
+
+  private val callbacks = new ListBuffer[() => Unit]()
+
+  override def run(): Unit = {
+    try {
+      teletrackerTask.runInternal(args)
+    } catch {
+      case NonFatal(e) =>
+        e.printStackTrace()
+    } finally {
+      callbacks.foreach(_())
+    }
+  }
+
+  def addCallback(cb: => Unit) = {
+    synchronized {
+      callbacks += (() => cb)
+    }
+  }
+}

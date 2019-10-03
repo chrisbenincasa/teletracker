@@ -29,7 +29,10 @@ lazy val common = project
       // Twitter
       "com.twitter" %% "util-core" % versions.twitter,
       "com.twitter" %% "inject-core" % versions.twitter,
-      "com.twitter" %% "inject-app" % versions.twitter,
+      "com.twitter" %% "inject-app" % versions.twitter exclude (
+        "org.slf4j",
+        "jcl-over-slf4j"
+      ),
       "com.twitter" %% "inject-modules" % versions.twitter,
       "com.twitter" %% "inject-utils" % versions.twitter,
       "com.twitter" %% "inject-slf4j" % versions.twitter,
@@ -88,11 +91,39 @@ lazy val consumer = project
     // Compilation
     scalaVersion := Compilation.scalacVersion,
     scalacOptions ++= Compilation.scalacOpts,
-    libraryDependencies ++= Seq(
-      "com.twitter" %% "inject-app" % versions.twitter
+    mainClass in assembly := Some(
+      "com.teletracker.consumers.TeletrackerConsumerDaemon"
+    ),
+    dockerfile in docker := {
+      // The assembly task generates a fat JAR file
+      val artifact: File = assembly.value
+      val artifactTargetPath = s"/app/bin/${artifact.name}"
+
+      new Dockerfile {
+        from(
+          s"gcr.io/teletracker/base:latest"
+        )
+        add(baseDirectory.value / "src/docker/", "/app")
+        add(artifact, artifactTargetPath)
+        runRaw("chmod +x /app/main.sh")
+        entryPoint("/app/main.sh")
+      }
+    },
+    imageNames in docker := Seq(
+      ImageName(
+        namespace = Some("gcr.io/teletracker"),
+        repository = "consumer",
+        tag = Some("latest")
+      ),
+      ImageName(
+        namespace = Some("gcr.io/teletracker"),
+        repository = "consumer",
+        tag = Some(version.value)
+      )
     )
   )
   .dependsOn(common, tasks)
+  .enablePlugins(DockerPlugin)
 
 lazy val tasks = project
   .in(file("tasks"))
@@ -106,7 +137,7 @@ lazy val tasks = project
       "com.github.scopt" %% "scopt" % "3.5.0",
       "org.scalatest" %% "scalatest" % "3.0.5" % Test
     ),
-    Compile / run / mainClass := Some(
+    Compile / mainClass := Some(
       "com.teletracker.tasks.TeletrackerTaskRunner"
     ),
     mainClass in assembly := Some(

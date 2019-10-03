@@ -5,7 +5,7 @@ import com.teletracker.common.model.tmdb.{PagedResult, Person}
 import com.teletracker.common.process.tmdb.{ItemExpander, TmdbEntityProcessor}
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.json.circe._
-import com.teletracker.tasks.TeletrackerTask
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import javax.inject.Inject
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,8 +15,8 @@ class ImportPeople @Inject()(
   tmdbClient: TmdbClient,
   processor: TmdbEntityProcessor,
   expander: ItemExpander)
-    extends TeletrackerTask {
-  override def run(args: Args): Unit = {
+    extends TeletrackerTaskWithDefaultArgs {
+  override def runInternal(args: Args): Unit = {
     val endpoint = args.valueOrDefault[String]("endpoint", "popular")
     val pages = args.valueOrDefault[Int]("pages", 5)
 

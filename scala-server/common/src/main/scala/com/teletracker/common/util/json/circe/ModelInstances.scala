@@ -8,6 +8,7 @@ import com.teletracker.common.api.model.{
 import com.teletracker.common.db.model._
 import com.teletracker.common.util.Slug
 import io.circe.{Codec, Decoder, DecodingFailure, Encoder, Json}
+import java.net.URI
 import scala.reflect.{classTag, ClassTag}
 
 trait ConfiguredModelInstances {
@@ -54,6 +55,11 @@ trait ModelInstances extends ConfiguredModelInstances with JodaInstances {
     a =>
       Json.fromString(a.toString)
   }
+
+  implicit val uriCodec = Codec.from(
+    Decoder.decodeString.map(str => new URI(str)),
+    Encoder.encodeString.contramap[URI](uri => uri.toString)
+  )
 
   implicit val slugEncoder: Encoder[Slug] =
     Encoder.encodeString.contramap(slug => slug.value)

@@ -9,7 +9,7 @@ import com.teletracker.common.db.model.{
   ThingType
 }
 import com.teletracker.common.model.tmdb.Genre
-import com.teletracker.tasks.TeletrackerTask
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import javax.inject.Inject
 import com.teletracker.common.util.Futures._
 import org.slf4j.LoggerFactory
@@ -22,10 +22,10 @@ class GenreIdsTest @Inject()(
   genresDbAccess: GenresDbAccess,
   thingsDbAccess: ThingsDbAccess
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTask {
+    extends TeletrackerTaskWithDefaultArgs {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def run(args: Args): Unit = {
+  override def runInternal(args: Args): Unit = {
     import dbProvider.driver.api._
     val limit = args.valueOrDefault("limit", -1)
 

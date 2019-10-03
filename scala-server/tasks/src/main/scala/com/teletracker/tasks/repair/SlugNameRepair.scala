@@ -3,7 +3,7 @@ package com.teletracker.tasks.repair
 import com.teletracker.common.db.{DbImplicits, SyncDbProvider}
 import com.teletracker.common.db.model.{Genres, Things}
 import com.teletracker.common.util
-import com.teletracker.tasks.TeletrackerTask
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import javax.inject.Inject
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Slug
@@ -16,8 +16,8 @@ class SlugNameRepair @Inject()(
   dbImplicits: DbImplicits,
   things: Things
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTask {
-  override def run(args: Args): Unit = {
+    extends TeletrackerTaskWithDefaultArgs {
+  override def runInternal(args: Args): Unit = {
     import dbProvider.driver.api._
     import dbImplicits._
 
@@ -66,8 +66,8 @@ class GenreSlugNameRepair @Inject()(
   dbImplicits: DbImplicits,
   genres: Genres
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTask {
-  override def run(args: Args): Unit = {
+    extends TeletrackerTaskWithDefaultArgs {
+  override def runInternal(args: Args): Unit = {
     import dbProvider.driver.api._
     import dbImplicits._
 

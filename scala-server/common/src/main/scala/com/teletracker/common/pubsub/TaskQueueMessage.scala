@@ -12,4 +12,19 @@ object JobTags {
 case class TeletrackerTaskQueueMessage(
   clazz: String,
   args: Map[String, Json],
-  jobTags: Set[String] = Set.empty)
+  jobTags: Option[Set[String]] = Some(Set.empty))
+
+object TeletrackerTaskQueueMessageFactory {
+
+  def withJsonArgs(
+    clazz: String,
+    args: Json,
+    tags: Option[Set[String]]
+  ): TeletrackerTaskQueueMessage = {
+    TeletrackerTaskQueueMessage(
+      clazz,
+      args.as[Map[String, Json]].right.get,
+      tags
+    )
+  }
+}
