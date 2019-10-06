@@ -189,11 +189,13 @@ export class TeletrackerApi {
     id: string | number,
     sort?: 'popularity' | 'recent' | 'added_time' | 'default',
     desc?: boolean,
+    type?: 'movie' | 'show',
   ) {
     return this.api.get<DataResponse<List>>(`/api/v1/users/self/lists/${id}`, {
       token,
       sort,
       desc,
+      type,
     });
   }
 
