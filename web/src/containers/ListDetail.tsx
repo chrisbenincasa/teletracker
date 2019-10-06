@@ -146,6 +146,7 @@ interface DispatchProps {
 interface RouteParams {
   id: string;
   sort?: 'popularity' | 'recent' | 'added_time' | 'default';
+  type?: 'movie' | 'show';
 }
 
 interface StateProps {
@@ -172,7 +173,7 @@ interface State {
   deleteOnWatch: boolean;
   list?: List;
   showFilter: boolean;
-  sortOrder: string;
+  sortOrder: 'popularity' | 'recent' | 'added_time' | 'default';
   filter: number;
   filterType?: string;
   genre?: string;
@@ -233,6 +234,7 @@ class ListDetail extends Component<Props, State> {
 =======
     const { match } = this.props;
     let sortBy;
+    let filterBy;
 
     if (match && match.params && match.params.sort) {
       sortBy = match.params.sort;
@@ -242,9 +244,17 @@ class ListDetail extends Component<Props, State> {
     }
 >>>>>>> 43cf990... url param work
 
+    if (match && match.params && match.params.type) {
+      filterBy = match.params.type;
+      this.setState({ filter: filterBy });
+    } else {
+      filterBy = -1;
+    }
+
     this.props.retrieveList({
       listId: this.listId,
       sort: sortBy,
+      type: filterBy,
       force: true,
     });
 
@@ -268,6 +278,7 @@ class ListDetail extends Component<Props, State> {
       this.props.retrieveList({
         listId: this.listId,
         sort: (match && match.params && match.params.sort) || 'default',
+        type: (match && match.params && match.params.type) || undefined,
         force: true,
       });
     } else if (
@@ -549,6 +560,7 @@ class ListDetail extends Component<Props, State> {
     this.props.retrieveList({
       listId: this.listId,
       sort: event.target.value || 'default',
+      type: (match && match.params && match.params.type) || undefined,
       force: true,
     });
 
@@ -574,6 +586,13 @@ class ListDetail extends Component<Props, State> {
       this.setState({ filterType: undefined });
       return;
     }
+
+    this.props.retrieveList({
+      listId: this.listId,
+      sort: this.state.sortOrder,
+      type: type,
+      force: true,
+    });
 
     if (paramType) {
       params.set('type', type);
