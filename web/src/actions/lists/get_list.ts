@@ -15,7 +15,7 @@ export interface ListRetrieveInitiatedPayload {
   force?: boolean;
   sort?: 'popularity' | 'recent' | 'added_time' | 'default';
   desc?: boolean;
-  type?: 'movie' | 'show';
+  itemTypes?: ('movie' | 'show')[];
 }
 
 export type ListRetrieveInitiatedAction = FSA<
@@ -62,7 +62,7 @@ export const retrieveListSaga = function*() {
             payload.listId,
             payload.sort,
             payload.desc,
-            payload.type,
+            payload.itemTypes,
           );
 
           if (response.ok && response.data) {

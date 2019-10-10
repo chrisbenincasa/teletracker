@@ -44,7 +44,7 @@ export class SagaTeletrackerClient {
     id: number,
     sort?: 'popularity' | 'recent' | 'added_time' | 'default',
     desc?: boolean,
-    type?: 'movie' | 'show',
+    itemTypes?: ('movie' | 'show')[],
   ) {
     return yield this.apiCall(
       client => client.getList,
@@ -52,7 +52,7 @@ export class SagaTeletrackerClient {
       id,
       sort,
       desc,
-      type,
+      itemTypes,
     );
   }
 

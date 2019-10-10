@@ -3,6 +3,7 @@ import {
   ButtonGroup,
   Chip,
   Collapse,
+  CircularProgress,
   createStyles,
   Dialog,
   DialogActions,
@@ -110,7 +111,7 @@ const styles = (theme: Theme) =>
     genreContainer: {
       display: 'flex',
       flexWrap: 'wrap',
-      margin: '0 -15px 20px',
+      margin: '0 -15px 15px',
       padding: 15,
       backgroundColor: '#4E4B47',
     },
@@ -122,6 +123,7 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       padding: `0 ${theme.spacing(2)}px`,
+      width: '100%',
     },
     textField: {
       marginLeft: theme.spacing(1),
@@ -162,22 +164,21 @@ type NotOwnProps = RouteComponentProps<RouteParams> &
 type Props = OwnProps & NotOwnProps;
 
 interface State {
-  loadingList: boolean;
-  deleteConfirmationOpen: boolean;
-  deleted: boolean;
   anchorEl: HTMLElement | null;
+  deleted: boolean;
+  deleteConfirmationOpen: boolean;
+  deleteOnWatch: boolean;
+  filter?: number;
+  genre?: string;
+  list?: List;
+  loadingList: boolean;
   migrateListId: number;
-  renameDialogOpen: boolean;
   newListName: string;
   prevListId: number;
-  deleteOnWatch: boolean;
-  list?: List;
+  renameDialogOpen: boolean;
   showFilter: boolean;
   sortOrder: 'popularity' | 'recent' | 'added_time' | 'default';
-  filter: number;
-  filterType?: string;
-  genre?: string;
-  type?: 'movie' | 'show';
+  itemTypes?: ('movie' | 'show')[];
 }
 
 class ListDetail extends Component<Props, State> {
@@ -194,19 +195,19 @@ class ListDetail extends Component<Props, State> {
     }
 
     this.state = {
-      loadingList: true,
-      deleteConfirmationOpen: false,
-      deleted: false,
       anchorEl: null,
+      deleted: false,
+      deleteConfirmationOpen: false,
+      deleteOnWatch: true,
+      filter: undefined,
+      list: props.listsById[listId],
+      loadingList: true,
       migrateListId: 0,
-      renameDialogOpen: false,
       newListName: '',
       prevListId: listId,
-      list: props.listsById[listId],
-      deleteOnWatch: true,
+      renameDialogOpen: false,
       showFilter: params.has('sort') || params.has('genre'),
       sortOrder: sort,
-      filter: -1,
     };
   }
 
@@ -233,28 +234,21 @@ class ListDetail extends Component<Props, State> {
     const { isLoggedIn, userSelf } = this.props;
 =======
     const { match } = this.props;
-    let sortBy;
-    let filterBy;
+    const { itemTypes, sortOrder } = this.state;
 
     if (match && match.params && match.params.sort) {
-      sortBy = match.params.sort;
-      this.setState({ sortOrder: sortBy });
-    } else {
-      sortBy = 'default';
+      this.setState({ sortOrder: match.params.sort });
     }
 >>>>>>> 43cf990... url param work
 
     if (match && match.params && match.params.type) {
-      filterBy = match.params.type;
-      this.setState({ filter: filterBy });
-    } else {
-      filterBy = -1;
+      this.setState({ itemTypes: [match.params.type] });
     }
-
+    this.setState({ loadingList: true });
     this.props.retrieveList({
       listId: this.listId,
-      sort: sortBy,
-      type: filterBy,
+      sort: sortOrder,
+      itemTypes,
       force: true,
     });
 
@@ -267,18 +261,17 @@ class ListDetail extends Component<Props, State> {
   }
 
   componentDidUpdate(oldProps: Props, prevState: State) {
-    const { match } = this.props;
+    const { itemTypes, sortOrder } = this.state;
 
     if (
       this.listId !== Number(oldProps.match.params.id) ||
       (!prevState.loadingList && this.state.loadingList)
     ) {
       this.setState({ loadingList: true });
-
       this.props.retrieveList({
         listId: this.listId,
-        sort: (match && match.params && match.params.sort) || 'default',
-        type: (match && match.params && match.params.type) || undefined,
+        sort: sortOrder,
+        itemTypes,
         force: true,
       });
     } else if (
@@ -546,6 +539,24 @@ class ListDetail extends Component<Props, State> {
     );
   }
 
+  renderLoadingCircle() {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 200,
+          height: '100%',
+        }}
+      >
+        <div>
+          <CircularProgress color="secondary" />
+        </div>
+      </div>
+    );
+  }
+
   toggleFilters = () => {
     this.setState({ showFilter: !this.state.showFilter });
   };
@@ -555,14 +566,7 @@ class ListDetail extends Component<Props, State> {
 
     let params = new URLSearchParams(location.search);
 
-    this.setState({ sortOrder: event.target.value });
-
-    this.props.retrieveList({
-      listId: this.listId,
-      sort: event.target.value || 'default',
-      type: (match && match.params && match.params.type) || undefined,
-      force: true,
-    });
+    this.setState({ sortOrder: event.target.value, loadingList: true });
 
     let paramSort = params.get('sort');
     if (paramSort) {
@@ -583,16 +587,9 @@ class ListDetail extends Component<Props, State> {
     if (type === 'all' && paramType) {
       params.delete('type');
       this.props.history.push(`${match.params.id}?${params}`);
-      this.setState({ filterType: undefined });
+      this.setState({ itemTypes: undefined, loadingList: true });
       return;
     }
-
-    this.props.retrieveList({
-      listId: this.listId,
-      sort: this.state.sortOrder,
-      type: type,
-      force: true,
-    });
 
     if (paramType) {
       params.set('type', type);
@@ -602,7 +599,7 @@ class ListDetail extends Component<Props, State> {
     params.sort();
 
     this.props.history.push(`${match.params.id}?${params}`);
-    this.setState({ filterType: type });
+    this.setState({ itemTypes: [type], loadingList: true });
   };
 
   setGenreFilter = genre => {
@@ -613,7 +610,7 @@ class ListDetail extends Component<Props, State> {
     if (genre === 'All' && paramGenre) {
       params.delete('genre');
       this.props.history.push(`${match.params.id}?${params}`);
-      this.setState({ filter: -1 });
+      this.setState({ filter: undefined });
       return;
     }
 
@@ -633,13 +630,13 @@ class ListDetail extends Component<Props, State> {
 
     return filmography.filter(
       (item: Thing) =>
-        (item && item.genreIds && item.genreIds.includes(this.state.filter)) ||
-        this.state.filter === -1,
+        !this.state.filter ||
+        (item && item.genreIds && item.genreIds.includes(this.state.filter)),
     );
   }
 
   renderFilters(list: List) {
-    const { showFilter, filterType } = this.state;
+    const { showFilter, itemTypes } = this.state;
     const { classes } = this.props;
     let filmography = list!.things || [];
     let finalGenres: Genre[] = [];
@@ -687,7 +684,7 @@ class ListDetail extends Component<Props, State> {
                   label="All"
                   className={classes.genre}
                   onClick={() => this.setGenreFilter('All')}
-                  color={this.state.filter === -1 ? 'secondary' : 'default'}
+                  color={!this.state.filter ? 'secondary' : 'default'}
                   clickable
                 />
                 {finalGenres.map(genre => (
@@ -712,21 +709,29 @@ class ListDetail extends Component<Props, State> {
                   style={{ flexGrow: 1 }}
                 >
                   <Button
-                    color={!filterType ? 'secondary' : 'primary'}
+                    color={!itemTypes ? 'secondary' : 'primary'}
                     onClick={() => this.setTypeFilter('all')}
                     className={classes.filterButtons}
                   >
                     All
                   </Button>
                   <Button
-                    color={filterType === 'movie' ? 'secondary' : 'primary'}
+                    color={
+                      itemTypes && itemTypes.includes('movie')
+                        ? 'secondary'
+                        : 'primary'
+                    }
                     onClick={() => this.setTypeFilter('movie')}
                     className={classes.filterButtons}
                   >
                     Movies
                   </Button>
                   <Button
-                    color={filterType === 'show' ? 'secondary' : 'primary'}
+                    color={
+                      itemTypes && itemTypes.includes('show')
+                        ? 'secondary'
+                        : 'primary'
+                    }
                     onClick={() => this.setTypeFilter('show')}
                     className={classes.filterButtons}
                   >
@@ -772,7 +777,7 @@ class ListDetail extends Component<Props, State> {
 
   renderListDetail(list: List) {
     let { classes, listLoading, thingsById, userSelf } = this.props;
-    let { deleted } = this.state;
+    let { deleted, loadingList } = this.state;
     let params = new URLSearchParams(location.search);
 
     if ((!listLoading && !list) || deleted) {
@@ -803,20 +808,24 @@ class ListDetail extends Component<Props, State> {
               {this.renderProfileMenu()}
             </div>
             {this.renderFilters(list)}
-            <Grid container spacing={2}>
-              {this.filteredFilmography(list).map(item =>
-                thingsById[item.id] ? (
-                  <ItemCard
-                    key={item.id}
-                    userSelf={userSelf}
-                    item={thingsById[item.id]}
-                    listContext={list}
-                    withActionButton
-                    hoverDelete
-                  />
-                ) : null,
-              )}
-            </Grid>
+            {!loadingList ? (
+              <Grid container spacing={2}>
+                {this.filteredFilmography(list).map(item =>
+                  thingsById[item.id] ? (
+                    <ItemCard
+                      key={item.id}
+                      userSelf={userSelf}
+                      item={thingsById[item.id]}
+                      listContext={list}
+                      withActionButton
+                      hoverDelete
+                    />
+                  ) : null,
+                )}
+              </Grid>
+            ) : (
+              this.renderLoadingCircle()
+            )}
           </div>
           {this.renderDialog()}
           {this.renderRenameDialog(list)}
@@ -827,9 +836,9 @@ class ListDetail extends Component<Props, State> {
 
   render() {
     let { userSelf } = this.props;
-    let { loadingList, list } = this.state;
+    let { list } = this.state;
 
-    return loadingList || !list || !userSelf
+    return !list || !userSelf
       ? this.renderLoading()
       : this.renderListDetail(this.state.list!);
   }
