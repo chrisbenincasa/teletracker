@@ -230,16 +230,13 @@ class ListDetail extends Component<Props, State> {
   }
 
   componentDidMount() {
-<<<<<<< HEAD
     const { isLoggedIn, userSelf } = this.props;
-=======
     const { match } = this.props;
     const { itemTypes, sortOrder } = this.state;
 
     if (match && match.params && match.params.sort) {
       this.setState({ sortOrder: match.params.sort });
     }
->>>>>>> 43cf990... url param work
 
     if (match && match.params && match.params.type) {
       this.setState({ itemTypes: [match.params.type] });
