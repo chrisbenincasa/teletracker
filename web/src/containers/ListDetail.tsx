@@ -740,7 +740,7 @@ class ListDetail extends Component<Props, State> {
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  marginLeft: theme.spacing(2),
+                  marginLeft: 16,
                 }}
               >
                 <InputLabel shrink htmlFor="age-label-placeholder">
