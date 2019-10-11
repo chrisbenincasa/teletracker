@@ -1,9 +1,9 @@
-import { ApiThing } from './Thing';
+import Thing, { ApiThing } from './Thing';
 
 export interface List {
   id: number;
   name: string;
-  things: ApiThing[];
+  things: Thing[];
   isDefault?: boolean;
   isDeleted?: boolean;
   isDynamic?: boolean;
@@ -11,6 +11,14 @@ export interface List {
   thingCount: number;
   configuration?: ListConfiguration;
 }
+
+export type ListSortOptions =
+  | 'popularity'
+  | 'recent'
+  | 'added_time'
+  | 'default';
+
+export type ItemTypes = ('movie' | 'show')[];
 
 export interface ListConfiguration {
   ruleConfiguration?: ListRules;
