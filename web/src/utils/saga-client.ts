@@ -47,14 +47,18 @@ export class SagaTeletrackerClient {
     sort?: ListSortOptions,
     desc?: boolean,
     itemTypes?: ItemTypes,
+    genres?: number[],
+    bookmark?: string,
   ) {
     return yield this.apiCall(
       client => client.getList,
-      yield this.withToken(),
+      yield this.withToken(true),
       id,
       sort,
       desc,
       itemTypes,
+      genres,
+      bookmark,
     );
   }
 
@@ -103,7 +107,7 @@ export class SagaTeletrackerClient {
   *getLists(fields?: KeyMap<ObjectMetadata>, includeThings: boolean = false) {
     return yield this.apiCall(
       client => client.getLists,
-      yield this.withToken(),
+      yield this.withToken(true),
       fields,
       includeThings,
     );
