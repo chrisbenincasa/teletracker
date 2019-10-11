@@ -37,12 +37,12 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 interface Props {
   itemDetail: Thing;
-  userSelf: UserSelf;
+  userSelf?: UserSelf;
 }
 
 const ThingAvailability = (props: Props) => {
   const classes = useStyles();
-  const [openTab, setOpenTab] = React.useState<number>(0);
+
   const { itemDetail, userSelf } = props;
   let availabilities: { [key: string]: Availability[] };
 
@@ -58,21 +58,44 @@ const ThingAvailability = (props: Props) => {
     availabilities = {};
   }
 
+  let x: [Availability[], number][] = [
+    [availabilities.theater, 0],
+    [availabilities.subscription, 1],
+    [availabilities.rent, 2],
+    [availabilities.buy, 2],
+  ];
+  let firstAvailable = R.find(([av, idx]) => {
+    return av && av.length > 0;
+  }, x);
+
+  const [openTab, setOpenTab] = React.useState<number>(
+    firstAvailable ? firstAvailable[1] : 0,
+  );
+
   const renderOfferDetails = (availabilities: Availability[]) => {
-    let preferences = userSelf.preferences;
-    let networkSubscriptions = userSelf.networks;
-    let onlyShowsSubs = preferences.showOnlyNetworkSubscriptions;
+    let onlyShowsSubs = false;
+
+    if (userSelf && userSelf.preferences && userSelf.networks) {
+      onlyShowsSubs = userSelf.preferences.showOnlyNetworkSubscriptions;
+    }
 
     const includeFromPrefs = (av: Availability, network: Network) => {
-      let showFromSubscriptions = onlyShowsSubs
-        ? R.any(R.propEq('slug', network.slug), networkSubscriptions)
-        : true;
+      if (userSelf) {
+        let showFromSubscriptions = onlyShowsSubs
+          ? R.any(R.propEq('slug', network.slug), userSelf!.networks)
+          : true;
 
-      let hasPresentation = av.presentationType
-        ? R.contains(av.presentationType, preferences.presentationTypes)
-        : true;
+        let hasPresentation = av.presentationType
+          ? R.contains(
+              av.presentationType,
+              userSelf!.preferences.presentationTypes,
+            )
+          : true;
 
-      return showFromSubscriptions && hasPresentation;
+        return showFromSubscriptions && hasPresentation;
+      } else {
+        return true;
+      }
     };
 
     const availabilityFilter = (av: Availability) => {
@@ -99,7 +122,7 @@ const ThingAvailability = (props: Props) => {
             <img src={logoUri} className={classes.logo} />
             {lowestCostAv.cost && (
               <Chip
-                size="small"
+                size="medium"
                 label={`$${lowestCostAv.cost}`}
                 className={classes.genre}
               />

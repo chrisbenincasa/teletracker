@@ -41,6 +41,7 @@ import CreateAListValidator, {
   CreateAListValidationStateObj,
 } from '../utils/validation/CreateAListValidator';
 import Thing, { ThingLikeStruct } from '../types/Thing';
+import LoginDialog from './LoginDialog';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -65,7 +66,7 @@ const styles = (theme: Theme) =>
 interface AddToListDialogProps {
   open: boolean;
   onClose: () => void;
-  userSelf: UserSelf;
+  userSelf?: UserSelf;
   item: ThingLikeStruct;
   listOperations: ListOperationState;
   listItemAddLoading: boolean;
@@ -291,72 +292,81 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   }
 
   render() {
-    const { classes } = this.props;
+    const { classes, userSelf } = this.props;
     let cleanList = _.filter(
       this.props.listsById,
       item => !item.isDynamic && !item.isDeleted,
     );
 
-    return (
-      <Dialog
-        aria-labelledby="update-tracking-dialog"
-        aria-describedby="update-tracking-dialog"
-        open={this.props.open && !this.state.exited}
-        onClose={this.handleModalClose}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle id="update-tracking-dialog">
-          Add or Remove {this.props.item.name} from your lists
-        </DialogTitle>
+    if (userSelf) {
+      return (
+        <Dialog
+          aria-labelledby="update-tracking-dialog"
+          aria-describedby="update-tracking-dialog"
+          open={this.props.open && !this.state.exited}
+          onClose={this.handleModalClose}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle id="update-tracking-dialog">
+            Add or Remove {this.props.item.name} from your lists
+          </DialogTitle>
 
-        <DialogContent className={classes.dialogContainer}>
-          <FormGroup>
-            {_.map(cleanList, list => (
-              <FormControlLabel
-                key={list.id}
-                control={
-                  <Checkbox
-                    onChange={(_, checked) =>
-                      this.handleCheckboxChange(list, checked)
-                    }
-                    checked={this.state.listChanges[list.id]}
-                  />
-                }
-                label={list.name}
-              />
-            ))}
-            {this.state.createAListEnabled
-              ? this.renderCreateNewListSection()
-              : null}
-          </FormGroup>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            variant="contained"
-            className={classes.button}
-            disabled={this.state.createAListEnabled}
-            onClick={this.toggleCreateAList}
-          >
-            <PlaylistAdd className={classes.leftIcon} />
-            New List
-          </Button>
-          <div className={classes.spacer} />
-          <Button onClick={this.handleModalClose} className={classes.button}>
-            Cancel
-          </Button>
-          <Button
-            disabled={this.hasTrackingChanged()}
-            onClick={this.handleSubmit}
-            color="secondary"
-            variant="contained"
-            className={classes.button}
-          >
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
+          <DialogContent className={classes.dialogContainer}>
+            <FormGroup>
+              {_.map(cleanList, list => (
+                <FormControlLabel
+                  key={list.id}
+                  control={
+                    <Checkbox
+                      onChange={(_, checked) =>
+                        this.handleCheckboxChange(list, checked)
+                      }
+                      checked={this.state.listChanges[list.id]}
+                    />
+                  }
+                  label={list.name}
+                />
+              ))}
+              {this.state.createAListEnabled
+                ? this.renderCreateNewListSection()
+                : null}
+            </FormGroup>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              variant="contained"
+              className={classes.button}
+              disabled={this.state.createAListEnabled}
+              onClick={this.toggleCreateAList}
+            >
+              <PlaylistAdd className={classes.leftIcon} />
+              New List
+            </Button>
+            <div className={classes.spacer} />
+            <Button onClick={this.handleModalClose} className={classes.button}>
+              Cancel
+            </Button>
+            <Button
+              disabled={this.hasTrackingChanged()}
+              onClick={this.handleSubmit}
+              color="secondary"
+              variant="contained"
+              className={classes.button}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+      );
+    } else {
+      return (
+        <LoginDialog
+          open={this.props.open && !this.state.exited}
+          onClose={this.handleModalClose}
+        />
+      );
+    }
   }
 }
 

@@ -31,7 +31,7 @@ const styles = (theme: Theme) =>
 
 interface OwnProps {
   itemDetail: Thing;
-  userSelf: UserSelf;
+  userSelf?: UserSelf;
 }
 
 type Props = OwnProps & WithStyles<typeof styles>;

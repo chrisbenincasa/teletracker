@@ -27,7 +27,6 @@ import * as firebase from 'firebase/app';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
-import LoginForm from '../components/LoginForm';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -109,7 +108,7 @@ interface State {
   password: string;
 }
 
-class Login extends Component<Props, State> {
+class LoginForm extends Component<Props, State> {
   state: State = {
     email: '',
     password: '',
@@ -155,14 +154,70 @@ class Login extends Component<Props, State> {
     let { isAuthed, classes } = this.props;
     let { email, password } = this.state;
 
-    return !isAuthed ? (
-      <main className={classes.main}>
-        <Paper className={classes.paper}>
-          <LoginForm />
-        </Paper>
-      </main>
-    ) : (
-      <Redirect to="/" />
+    return (
+      <React.Fragment>
+        {this.props.isLoggingIn ? (
+          <div className={classes.overlay}>
+            <CircularProgress className={classes.progressSpinner} />
+            <div>
+              <Typography> Logging in&hellip;</Typography>
+            </div>
+          </div>
+        ) : null}
+        <Avatar className={classes.avatar}>
+          <LockOutlinedIcon />
+        </Avatar>
+        <Typography component="h1" variant="h5">
+          Log in
+        </Typography>
+
+        <div className={classes.socialSignInContainer}>
+          <GoogleLoginButton onClick={this.logInWithGoogle} />
+        </div>
+        <div>
+          <form className={classes.form} onSubmit={ev => this.onSubmit(ev)}>
+            <FormControl margin="normal" required fullWidth>
+              <InputLabel htmlFor="email">Email</InputLabel>
+              <Input
+                id="email"
+                name="email"
+                autoComplete="email"
+                autoFocus={!this.props.isLoggingIn}
+                type="email"
+                onChange={e => this.setState({ email: e.target.value })}
+                value={email}
+              />
+            </FormControl>
+            <FormControl margin="normal" required fullWidth>
+              <InputLabel htmlFor="password">Password</InputLabel>
+              <Input
+                id="password"
+                name="password"
+                autoComplete="password"
+                type="password"
+                onChange={e => this.setState({ password: e.target.value })}
+                value={password}
+              />
+            </FormControl>
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              color="primary"
+              className={classes.submit}
+            >
+              Log in
+            </Button>
+            <Typography className={classes.signUpLinkText}>
+              Don't have an account?&nbsp;
+              <Link component={RouterLink} to="/signup">
+                Sign up now!
+              </Link>
+            </Typography>
+          </form>
+        </div>
+      </React.Fragment>
     );
   }
 }
@@ -189,5 +244,5 @@ export default withStyles(styles)(
   connect(
     mapStateToProps,
     mapDispatchToProps,
-  )(Login),
+  )(LoginForm),
 );
