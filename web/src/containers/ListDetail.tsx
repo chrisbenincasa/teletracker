@@ -62,7 +62,7 @@ import { ThingMap } from '../reducers/item-detail';
 import { getOrInitListOptions } from '../utils/list-utils';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
-import { Genre } from '../types';
+import { ItemTypes, Genre, ListSortOptions } from '../types';
 import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
@@ -99,7 +99,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         display: 'flex',
       },
-      marginBottom: 8,
+      marginBottom: theme.spacing(1),
       flexGrow: 1,
     },
     formControl: {
@@ -111,7 +111,7 @@ const styles = (theme: Theme) =>
     genreContainer: {
       display: 'flex',
       flexWrap: 'wrap',
-      margin: '0 -15px 15px',
+      margin: `0 -${theme.spacing(2)}px ${theme.spacing(2)}px`,
       padding: 15,
       backgroundColor: '#4E4B47',
     },
@@ -147,7 +147,7 @@ interface DispatchProps {
 
 interface RouteParams {
   id: string;
-  sort?: 'popularity' | 'recent' | 'added_time' | 'default';
+  sort?: ListSortOptions;
   type?: 'movie' | 'show';
 }
 
@@ -177,8 +177,8 @@ interface State {
   prevListId: number;
   renameDialogOpen: boolean;
   showFilter: boolean;
-  sortOrder: 'popularity' | 'recent' | 'added_time' | 'default';
-  itemTypes?: ('movie' | 'show')[];
+  sortOrder: ListSortOptions;
+  itemTypes?: ItemTypes;
 }
 
 class ListDetail extends Component<Props, State> {
@@ -740,7 +740,7 @@ class ListDetail extends Component<Props, State> {
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  marginLeft: 15,
+                  marginLeft: theme.spacing(2),
                 }}
               >
                 <InputLabel shrink htmlFor="age-label-placeholder">

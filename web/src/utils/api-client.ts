@@ -3,7 +3,9 @@ import { merge } from 'ramda';
 import {
   ActionType,
   Genre,
+  ItemTypes,
   List,
+  ListSortOptions,
   Network,
   User,
   UserPreferences,
@@ -187,9 +189,9 @@ export class TeletrackerApi {
   async getList(
     token: string,
     id: string | number,
-    sort?: 'popularity' | 'recent' | 'added_time' | 'default',
+    sort?: ListSortOptions,
     desc?: boolean,
-    itemTypes?: ('movie' | 'show')[],
+    itemTypes?: ItemTypes,
   ) {
     return this.api.get<DataResponse<List>>(`/api/v1/users/self/lists/${id}`, {
       token,
@@ -367,7 +369,7 @@ export class TeletrackerApi {
   async getPopular(
     token?: string,
     fields?: KeyMap<ObjectMetadata>,
-    itemTypes?: ('movie' | 'show')[],
+    itemTypes?: ItemTypes,
     networks?: string,
     bookmark?: string,
     limit?: number,

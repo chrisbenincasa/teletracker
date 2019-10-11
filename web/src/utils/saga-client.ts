@@ -4,11 +4,13 @@ import { TeletrackerApi } from './api-client';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import {
   ActionType,
+  ItemTypes,
   Network,
   User,
   UserPreferences,
   ListRules,
   ListOptions,
+  ListSortOptions,
 } from '../types';
 
 export class SagaTeletrackerClient {
@@ -42,9 +44,9 @@ export class SagaTeletrackerClient {
 
   *getList(
     id: number,
-    sort?: 'popularity' | 'recent' | 'added_time' | 'default',
+    sort?: ListSortOptions,
     desc?: boolean,
-    itemTypes?: ('movie' | 'show')[],
+    itemTypes?: ItemTypes,
   ) {
     return yield this.apiCall(
       client => client.getList,
@@ -198,7 +200,7 @@ export class SagaTeletrackerClient {
 
   *getPopular(
     fields?: KeyMap<ObjectMetadata>,
-    itemTypes?: ('movie' | 'show')[],
+    itemTypes?: ItemTypes,
     networks?: string,
     bookmark?: string,
     limit?: number,
