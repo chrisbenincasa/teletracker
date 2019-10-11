@@ -108,7 +108,7 @@ export class SagaTeletrackerClient {
   *addItemToList(listId: string, itemId: string) {
     return yield this.apiCall(
       client => client.addItemToList,
-      yield this.withToken(),
+      (yield this.withToken())!,
       listId,
       itemId,
     );
@@ -255,23 +255,25 @@ export class SagaTeletrackerClient {
     );
   }
 
-  private *withToken() {
-    let user = yield this.getUser();
-    let token: string = yield this.getTokenEffect(user!);
+  private *withToken(required: boolean = false) {
+    let user: firebase.User | undefined = yield this.getUser(required);
+    let token: string | undefined = yield this.getTokenEffect(user);
     return token;
   }
 
-  private *getUser() {
+  private *getUser(required: boolean = false) {
     let user = firebase.auth().currentUser;
-    while (!user) {
-      let { payload } = yield take('USER_STATE_CHANGE');
-      user = payload;
+    if (required) {
+      while (!user) {
+        let { payload } = yield take('USER_STATE_CHANGE');
+        user = payload;
+      }
     }
-    return user;
+    return user ? user : undefined;
   }
 
-  private getTokenEffect(user: firebase.User) {
-    return call(() => user.getIdToken());
+  private getTokenEffect(user?: firebase.User) {
+    return call(() => (user ? user.getIdToken() : undefined));
   }
 }
 

@@ -30,7 +30,7 @@ export const fetchItemDetailsBatchSaga = function*() {
     payload,
   }: ItemBatchInitiatedAction) {
     if (payload) {
-      let response = yield clientEffect(
+      let response: any = yield clientEffect(
         client => client.getThingsBatch,
         payload.ids,
         payload.fields,
