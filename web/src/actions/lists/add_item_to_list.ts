@@ -35,7 +35,7 @@ export const addToListSaga = function*() {
   }: ListAddInitiatedAction) {
     if (payload) {
       try {
-        let response = yield clientEffect(
+        let response: any = yield clientEffect(
           client => client.addItemToList,
           payload.listId,
           payload.itemId,

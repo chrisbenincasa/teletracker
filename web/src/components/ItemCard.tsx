@@ -1,7 +1,6 @@
 import {
   Button,
   Card,
-  CardContent,
   CardMedia,
   Collapse,
   createStyles,
@@ -21,17 +20,6 @@ import {
   Zoom,
 } from '@material-ui/core';
 import { green, red } from '@material-ui/core/colors';
-import { Link as RouterLink } from 'react-router-dom';
-import React, { Component } from 'react';
-import Truncate from 'react-truncate';
-import AddToListDialog from './AddToListDialog';
-import { ActionType, List } from '../types';
-import { bindActionCreators, Dispatch } from 'redux';
-import {
-  updateListTracking,
-  ListTrackingUpdatedInitiatedPayload,
-} from '../actions/lists';
-import { connect } from 'react-redux';
 import { GridProps } from '@material-ui/core/Grid';
 import {
   Check,
@@ -41,22 +29,27 @@ import {
   ThumbDown,
   ThumbUp,
 } from '@material-ui/icons';
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { Link as RouterLink } from 'react-router-dom';
+import { bindActionCreators, Dispatch } from 'redux';
+import { ACTION_ENJOYED, ACTION_WATCHED } from '../actions/item-detail';
+import {
+  ListTrackingUpdatedInitiatedPayload,
+  updateListTracking,
+} from '../actions/lists';
 import {
   removeUserItemTags,
   updateUserItemTags,
   UserUpdateItemTagsPayload,
 } from '../actions/user';
-import { ResponsiveImage } from './ResponsiveImage';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import { UserSelf } from '../reducers/user';
-import { ACTION_ENJOYED, ACTION_WATCHED } from '../actions/item-detail';
-import {
-  HasDescription,
-  itemHasTag,
-  Linkable,
-  ThingLikeStruct,
-} from '../types/Thing';
+import { ActionType, List } from '../types';
 import HasImagery from '../types/HasImagery';
+import { itemHasTag, Linkable, ThingLikeStruct } from '../types/Thing';
+import AddToListDialog from './AddToListDialog';
+import { ResponsiveImage } from './ResponsiveImage';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -193,7 +186,7 @@ const styles = (theme: Theme) =>
 interface ItemCardProps extends WithStyles<typeof styles> {
   key: string | number;
   item: RequiredThingType;
-  userSelf: UserSelf | null;
+  userSelf?: UserSelf;
 
   // display props
   hoverAddToList: boolean;
@@ -400,7 +393,13 @@ class ItemCard extends Component<Props, ItemCardState> {
   }
 
   renderHoverActions = () => {
-    let { classes, hoverAddToList, hoverDelete, hoverWatch, item } = this.props;
+    let {
+      classes,
+      hoverAddToList,
+      hoverDelete,
+      hoverWatch,
+      userSelf,
+    } = this.props;
     let { isHovering } = this.state;
     let transitionDelay = 100;
     const tooltipPlacement = 'right';
@@ -408,7 +407,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     return (
       <Collapse in={true}>
         <div className={classes.hoverActions}>
-          {hoverWatch && (
+          {userSelf && hoverWatch && (
             <Zoom in={isHovering}>
               <Tooltip
                 title={
@@ -593,14 +592,12 @@ class ItemCard extends Component<Props, ItemCardState> {
             </Card>
           </Grid>
         </Fade>
-        {hoverAddToList ? (
-          <AddToListDialog
-            open={manageTrackingModalOpen}
-            onClose={this.closeManageTrackingModal.bind(this)}
-            userSelf={userSelf!}
-            item={item}
-          />
-        ) : null}
+        <AddToListDialog
+          open={manageTrackingModalOpen}
+          onClose={this.closeManageTrackingModal.bind(this)}
+          userSelf={userSelf}
+          item={item}
+        />
         {this.renderDialog()}
       </React.Fragment>
     );
