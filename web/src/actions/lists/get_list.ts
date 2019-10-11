@@ -1,7 +1,7 @@
 import { put, select, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { AppState } from '../../reducers';
-import { List } from '../../types';
+import { ItemTypes, List, ListSortOptions } from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect } from '../utils';
 import { createAction } from '../utils';
@@ -13,9 +13,9 @@ export const LIST_RETRIEVE_FAILED = 'lists/retrieve/FAILED';
 export interface ListRetrieveInitiatedPayload {
   listId: number;
   force?: boolean;
-  sort?: 'popularity' | 'recent' | 'added_time' | 'default';
+  sort?: ListSortOptions;
   desc?: boolean;
-  itemTypes?: ('movie' | 'show')[];
+  itemTypes?: ItemTypes;
 }
 
 export type ListRetrieveInitiatedAction = FSA<
