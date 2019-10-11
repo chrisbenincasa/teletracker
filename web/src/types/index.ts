@@ -11,6 +11,14 @@ export interface CommonList {
   configuration?: ListConfiguration;
 }
 
+export type ListSortOptions =
+  | 'popularity'
+  | 'recent'
+  | 'added_time'
+  | 'default';
+
+export type ItemTypes = ('movie' | 'show')[];
+
 export interface APIList extends CommonList {
   things: ApiThing[];
 }
