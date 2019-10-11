@@ -1,8 +1,9 @@
 import Thing, { ApiThing } from './Thing';
 
-export interface CommonList {
+export interface List {
   id: number;
   name: string;
+  things: ApiThing[];
   isDefault?: boolean;
   isDeleted?: boolean;
   isDynamic?: boolean;
@@ -18,14 +19,6 @@ export type ListSortOptions =
   | 'default';
 
 export type ItemTypes = ('movie' | 'show')[];
-
-export interface APIList extends CommonList {
-  things: ApiThing[];
-}
-
-export interface List extends CommonList {
-  things: Thing[];
-}
 
 export interface ListConfiguration {
   ruleConfiguration?: ListRules;
