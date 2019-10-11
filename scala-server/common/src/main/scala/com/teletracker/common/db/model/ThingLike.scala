@@ -25,6 +25,7 @@ sealed trait ThingLike {
   def self: This
 
   def withMetadata(json: Option[Json]): This
+  def withGenres(genres: Set[Int]): This
 
   def selectFields(
     fieldsOpt: Option[List[Field]],
@@ -65,6 +66,8 @@ case class Person(
 
   override def withMetadata(json: Option[Json]): Person = copy(metadata = json)
 
+  override def withGenres(genres: Set[Int]): Person = this
+
   override def `type`: ThingType = ThingType.Person
 }
 
@@ -88,6 +91,9 @@ case class ThingRaw(
   override def withMetadata(json: Option[Json]): ThingRaw =
     copy(metadata = json)
 
+  override def withGenres(genres: Set[Int]): ThingRaw =
+    copy(genres = if (genres.isEmpty) None else Some(genres.toList))
+
   def toPartial: PartialThing = {
     PartialThing(
       id,
@@ -96,6 +102,7 @@ case class ThingRaw(
       Some(`type`),
       Some(createdAt),
       Some(lastUpdatedAt),
+      popularity,
       metadata
     )
   }

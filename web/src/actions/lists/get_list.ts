@@ -1,10 +1,11 @@
 import { put, select, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { AppState } from '../../reducers';
-import { ItemTypes, List, ListSortOptions } from '../../types';
+import { ItemTypes, List, ListSortOptions, Paging } from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect } from '../utils';
 import { createAction } from '../utils';
+import _ from 'lodash';
 
 export const LIST_RETRIEVE_INITIATED = 'lists/retrieve/INITIATED';
 export const LIST_RETRIEVE_SUCCESS = 'lists/retrieve/SUCCESS';
@@ -16,6 +17,8 @@ export interface ListRetrieveInitiatedPayload {
   sort?: ListSortOptions;
   desc?: boolean;
   itemTypes?: ItemTypes;
+  genres?: number[];
+  bookmark?: string;
 }
 
 export type ListRetrieveInitiatedAction = FSA<
@@ -23,7 +26,16 @@ export type ListRetrieveInitiatedAction = FSA<
   ListRetrieveInitiatedPayload
 >;
 
-export type ListRetrieveSuccessAction = FSA<typeof LIST_RETRIEVE_SUCCESS, List>;
+export type ListRetrieveSuccessPayload = {
+  list: List;
+  paging?: Paging;
+  append: boolean;
+};
+
+export type ListRetrieveSuccessAction = FSA<
+  typeof LIST_RETRIEVE_SUCCESS,
+  ListRetrieveSuccessPayload
+>;
 
 export type ListRetrieveFailedAction = FSA<typeof LIST_RETRIEVE_FAILED, Error>;
 
@@ -49,27 +61,27 @@ export const retrieveListSaga = function*() {
   }: ListRetrieveInitiatedAction) {
     if (payload) {
       try {
-        let currState: AppState = yield select();
+        // TODO: Type alias to make this cleaner
+        let response: TeletrackerResponse<List> = yield clientEffect(
+          client => client.getList,
+          payload.listId,
+          payload.sort,
+          payload.desc,
+          payload.itemTypes,
+          payload.genres,
+          payload.bookmark,
+        );
 
-        if (currState.lists.listsById[payload.listId] && !payload.force) {
+        if (response.ok && response.data) {
           yield put(
-            ListRetrieveSuccess(currState.lists.listsById[payload.listId]),
+            ListRetrieveSuccess({
+              list: response.data.data,
+              paging: response.data.paging,
+              append: !_.isUndefined(payload.bookmark),
+            }),
           );
         } else {
-          // TODO: Type alias to make this cleaner
-          let response: TeletrackerResponse<List> = yield clientEffect(
-            client => client.getList,
-            payload.listId,
-            payload.sort,
-            payload.desc,
-            payload.itemTypes,
-          );
-
-          if (response.ok && response.data) {
-            yield put(ListRetrieveSuccess(response.data.data));
-          } else {
-            yield put(ListRetrieveFailed(new Error('bad response')));
-          }
+          yield put(ListRetrieveFailed(new Error('bad response')));
         }
       } catch (e) {
         yield put(ListRetrieveFailed(e));

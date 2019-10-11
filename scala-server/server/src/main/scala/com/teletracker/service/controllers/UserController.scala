@@ -12,13 +12,7 @@ import com.teletracker.common.db.access.{
   UsersDbAccess
 }
 import com.teletracker.common.db.model._
-import com.teletracker.common.db.{
-  BaseDbProvider,
-  Bookmark,
-  DefaultForListType,
-  SortMode
-}
-import com.teletracker.common.inject.SyncPath
+import com.teletracker.common.db.{Bookmark, DefaultForListType, SortMode}
 import com.teletracker.common.model.{
   DataResponse,
   IllegalActionTypeError,
@@ -27,14 +21,13 @@ import com.teletracker.common.model.{
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.{
   CanParseFieldFilter,
-  CanParseListFilters,
-  HasFieldsFilter
+  HasFieldsFilter,
+  HasThingIdOrSlug,
+  ListFilterParser
 }
 import com.teletracker.service.api.{ListsApi, UsersApi}
 import com.teletracker.service.auth.{AuthRequiredFilter, UserSelfOnlyFilter}
-import com.teletracker.service.util.HasThingIdOrSlug
 import com.twitter.finagle.http.Request
-import com.twitter.finagle.http.path.->
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import io.circe.generic.JsonCodec
 import io.circe.parser._
@@ -49,11 +42,11 @@ class UserController @Inject()(
   listsApi: ListsApi,
   usersDbAccess: UsersDbAccess,
   thingsDbAccess: ThingsDbAccess,
-  jwtVendor: JwtVendor
+  jwtVendor: JwtVendor,
+  listFilterParser: ListFilterParser
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerController(usersDbAccess)
-    with CanParseFieldFilter
-    with CanParseListFilters {
+    with CanParseFieldFilter {
   prefix("/api/v1/users") {
     // Create a user
     post("/?") { req: RegisterUserRequest =>
@@ -140,7 +133,8 @@ class UserController @Inject()(
 
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
         val selectFields = parseFieldsOrNone(req.fields)
-        val filters = parseListFilters(req.itemTypes)
+        val filtersFut =
+          listFilterParser.parseListFilters(req.itemTypes, req.genres)
 
         val (bookmark, sort) = if (req.bookmark.isDefined) {
           val b = Bookmark.parse(req.bookmark.get)
@@ -155,31 +149,35 @@ class UserController @Inject()(
           None -> sort
         }
 
-        usersDbAccess
-          .findList(
-            req.authenticatedUserId.get,
-            req.listId,
-            includeMetadata = true,
-            selectFields,
-            Some(filters),
-            req.isDynamic,
-            sort,
-            bookmark,
-            req.limit
-          )
-          .map {
-            case ListQueryResult(None, _) => response.notFound
+        logger.info(s"Retrieving list with bookmark: ${bookmark}")
 
-            case ListQueryResult(Some(trackedList), bookmark) =>
-              response.ok
-                .contentTypeJson()
-                .body(
-                  DataResponse.forDataResponse(
-                    DataResponse(trackedList)
-                      .withPaging(Paging(bookmark.map(_.asString)))
+        filtersFut.flatMap(filters => {
+          usersDbAccess
+            .findList(
+              req.authenticatedUserId.get,
+              req.listId,
+              includeMetadata = true,
+              selectFields,
+              Some(filters),
+              req.isDynamic,
+              sort,
+              bookmark,
+              req.limit
+            )
+            .map {
+              case ListQueryResult(None, _) => response.notFound
+
+              case ListQueryResult(Some(trackedList), bookmark) =>
+                response.ok
+                  .contentTypeJson()
+                  .body(
+                    DataResponse.forDataResponse(
+                      DataResponse(trackedList)
+                        .withPaging(Paging(bookmark.map(_.asString)))
+                    )
                   )
-                )
-          }
+            }
+        })
       }
 
       delete("/:userId/lists/:listId") { req: DeleteListRequest =>
@@ -241,7 +239,8 @@ class UserController @Inject()(
 
       get("/:userId/lists/:listId/things") { req: GetListThingsRequest =>
         val selectFields = parseFieldsOrNone(req.fields)
-        val filters = parseListFilters(req.itemTypes)
+        val filtersFut =
+          listFilterParser.parseListFilters(req.itemTypes, req.genres)
 
         val desc = req.desc.getOrElse(true)
         val sort = req.sort
@@ -249,28 +248,30 @@ class UserController @Inject()(
           .getOrElse(DefaultForListType())
           .direction(desc)
 
-        usersDbAccess
-          .findList(
-            req.authenticatedUserId.get,
-            req.listId,
-            includeMetadata = true,
-            selectFields,
-            Some(filters),
-            req.isDynamic,
-            sort
-          )
-          .map {
-            case ListQueryResult(None, _) => response.notFound
+        filtersFut.flatMap(filters => {
+          usersDbAccess
+            .findList(
+              req.authenticatedUserId.get,
+              req.listId,
+              includeMetadata = true,
+              selectFields,
+              Some(filters),
+              req.isDynamic,
+              sort
+            )
+            .map {
+              case ListQueryResult(None, _) => response.notFound
 
-            case ListQueryResult(Some(trackedList), bookmark) =>
-              response.ok
-                .contentTypeJson()
-                .body(
-                  DataResponse.complex(
-                    trackedList.things.getOrElse(Nil)
+              case ListQueryResult(Some(trackedList), bookmark) =>
+                response.ok
+                  .contentTypeJson()
+                  .body(
+                    DataResponse.complex(
+                      trackedList.things.getOrElse(Nil)
+                    )
                   )
-                )
-          }
+            }
+        })
       }
 
       put("/:userId/lists/:listId/things") { req: AddThingToListRequest =>
@@ -448,6 +449,7 @@ case class GetUserAndListByIdRequest(
   @RouteParam listId: Int,
   @QueryParam fields: Option[String],
   @QueryParam(commaSeparatedList = true) itemTypes: Seq[String] = Seq(),
+  @QueryParam(commaSeparatedList = true) genres: Seq[String] = Seq(),
   @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
   @QueryParam sort: Option[String],
   @QueryParam desc: Option[Boolean],
@@ -482,6 +484,7 @@ case class GetListThingsRequest(
   @RouteParam listId: Int,
   @QueryParam fields: Option[String],
   @QueryParam(commaSeparatedList = true) itemTypes: Seq[String] = Seq(),
+  @QueryParam(commaSeparatedList = true) genres: Seq[String] = Seq(),
   @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
   @QueryParam sort: Option[String],
   @QueryParam desc: Option[Boolean],

@@ -35,6 +35,7 @@ export interface State {
   operation: ListOperationState;
   listsById: ListsByIdMap;
   loading: Partial<Loading>;
+  currentBookmark?: string;
 }
 
 const initialState: State = {
@@ -160,9 +161,21 @@ const mergeThingLists = (key: string, left: any, right: any) => {
   }
 };
 
-function setOrMergeList(existing: List | undefined, newList: List | undefined) {
+function setOrMergeList(
+  existing: List | undefined,
+  newList: List | undefined,
+  append: boolean,
+) {
   if (existing) {
-    return R.mergeDeepWithKey(mergeThingLists, existing, newList);
+    if (!append) {
+      return R.mergeDeepWithKey(mergeThingLists, existing, newList);
+    } else {
+      existing.things = R.concat(
+        existing.things,
+        newList ? newList.things : [],
+      );
+      return existing;
+    }
   } else if (newList) {
     return newList;
   }
@@ -172,9 +185,13 @@ const handleListRetrieveSuccess = handleAction<
   ListRetrieveSuccessAction,
   State
 >(LIST_RETRIEVE_SUCCESS, (state, action) => {
-  let listId = action.payload!!.id;
+  let listId = action.payload!!.list.id;
 
-  let newList = setOrMergeList(state.listsById[listId], action.payload);
+  let newList = setOrMergeList(
+    state.listsById[listId],
+    action.payload!!.list,
+    action.payload!!.append,
+  );
 
   return {
     ...state,
@@ -191,6 +208,9 @@ const handleListRetrieveSuccess = handleAction<
       ...state.loading,
       [LIST_RETRIEVE_INITIATED]: false,
     },
+    currentBookmark: action.payload!!.paging
+      ? action.payload!!.paging.bookmark
+      : undefined,
   };
 });
 
@@ -204,7 +224,7 @@ const handleUserRetrieve = handleAction<ListRetrieveAllSuccessAction, State>(
           (newListsById, list) => {
             return {
               ...newListsById,
-              [list.id]: setOrMergeList(state.listsById[list.id], list),
+              [list.id]: setOrMergeList(state.listsById[list.id], list, false),
             };
           },
           {} as ListsByIdMap,
