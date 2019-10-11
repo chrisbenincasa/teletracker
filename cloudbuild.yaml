@@ -65,7 +65,7 @@ steps:
     args:
       [
         "-c",
-        '/usr/bin/sbt -J-Xss8m -Dversion="$(cat FULL_VERSION)" clean compile server/assembly tasks/assembly server/docker',
+        '/usr/bin/sbt -J-Xss8m -Dversion="$(cat FULL_VERSION)" clean compile server/assembly tasks/assembly consumer/assembly server/docker consumer/docker',
       ]
     dir: "scala-server"
 
@@ -89,6 +89,7 @@ artifacts:
       [
         "scala-server/server/target/scala-2.12/server-assembly-*.jar",
         "scala-server/tasks/target/scala-2.12/tasks-assembly-*.jar",
+        "scala-server/consumer/target/scala-2.12/consumer-assembly-*.jar",
       ]
 timeout: 1800s
 substitutions:
