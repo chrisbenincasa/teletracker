@@ -14,6 +14,7 @@ import {
   Typography,
   WithStyles,
   withStyles,
+  Dialog,
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
 import { fade } from '@material-ui/core/styles/colorManipulator';
@@ -52,6 +53,7 @@ import { FixedSizeList as LazyList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
+import Login from './Login';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -217,6 +219,7 @@ interface State {
   currentItemType: string;
   showPlayIcon: boolean;
   trailerModalOpen: boolean;
+  loginModalOpen: boolean;
 }
 
 class ItemDetails extends Component<Props, State> {
@@ -225,6 +228,7 @@ class ItemDetails extends Component<Props, State> {
     currentItemType: '',
     showPlayIcon: false,
     trailerModalOpen: false,
+    loginModalOpen: false,
   };
 
   componentDidMount() {
@@ -275,16 +279,27 @@ class ItemDetails extends Component<Props, State> {
     this.setState({ trailerModalOpen: false });
   };
 
+  closeLoginModal = () => {
+    this.setState({ loginModalOpen: false });
+  };
+
   toggleItemWatched = () => {
     let payload = {
       thingId: this.state.currentId,
       action: ActionType.Watched,
     };
 
-    if (this.itemMarkedAsWatched()) {
-      this.props.removeUserItemTags(payload);
+    if (!this.props.userSelf) {
+      // this.props.history.push('/login');
+      this.setState({
+        loginModalOpen: true,
+      });
     } else {
-      this.props.updateUserItemTags(payload);
+      if (this.itemMarkedAsWatched()) {
+        this.props.removeUserItemTags(payload);
+      } else {
+        this.props.updateUserItemTags(payload);
+      }
     }
   };
 
@@ -632,18 +647,29 @@ class ItemDetails extends Component<Props, State> {
                 <div>
                   <div style={{ marginTop: 10 }}>
                     <ThingAvailability
-                      userSelf={userSelf!}
+                      userSelf={userSelf}
                       itemDetail={itemDetail}
                     />
                   </div>
                 </div>
                 <Cast itemDetail={itemDetail} />
                 {this.renderSeriesDetails(itemDetail)}
-                <Recommendations itemDetail={itemDetail} userSelf={userSelf!} />
+                <Recommendations itemDetail={itemDetail} userSelf={userSelf} />
               </div>
             </div>
           </div>
         </div>
+        <Dialog
+          open={this.state.loginModalOpen}
+          onClose={this.closeLoginModal}
+          closeAfterTransition
+          BackdropComponent={Backdrop}
+          BackdropProps={{
+            timeout: 500,
+          }}
+        >
+          <Login />
+        </Dialog>
         <Modal
           aria-labelledby="transition-modal-title"
           aria-describedby="transition-modal-description"
@@ -674,14 +700,10 @@ class ItemDetails extends Component<Props, State> {
   };
 
   render() {
-    let { isAuthed } = this.props;
-
-    return isAuthed ? (
+    return (
       <div style={{ display: 'flex', flexGrow: 1 }}>
         {this.renderItemDetails()}
       </div>
-    ) : (
-      <Redirect to="/login" />
     );
   }
 }
