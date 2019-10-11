@@ -1,23 +1,26 @@
 package com.teletracker.common.db
 
+import io.circe.Codec
 import java.util.Base64
+import io.circe.generic.semiauto._
+import io.circe._
+import io.circe.parser._
+import io.circe.syntax._
 
 object Bookmark {
+  implicit val bookmarkCodec: Codec[Bookmark] = deriveCodec
+
   def parse(bookmark: String): Bookmark = {
     val decoded = new String(Base64.getDecoder.decode(bookmark))
 
-    val parts = decoded.split("\\|")
-
-    if (parts.length < 3 || parts.length > 4) {
-      throw new IllegalArgumentException(s"Invalid bookmark format: $decoded")
-    } else if (parts.length == 3) {
-      val Array(sortType, isDesc, value) = parts
-      Bookmark(sortType, isDesc.toBoolean, value, None)
-    } else {
-      val Array(sortType, isDesc, value, refinement) = parts
-      Bookmark(sortType, isDesc.toBoolean, value, Some(refinement))
+    decode[Bookmark](decoded) match {
+      case Left(value)  => throw value
+      case Right(value) => value
     }
   }
+
+  def encode(bookmark: Bookmark): String =
+    base64Encoder.encodeToString(bookmark.asJson.noSpaces.getBytes())
 
   def apply(
     sortMode: SortMode,
@@ -40,10 +43,10 @@ case class Bookmark(
   value: String,
   valueRefinement: Option[String]) {
 
+  import Bookmark._
+
   def asString: String = {
-    Bookmark.base64Encoder.encodeToString(
-      s"${sortType}|$desc|$value${valueRefinement.map("|" + _).getOrElse("")}".getBytes
-    )
+    encode(this)
   }
 
   def sortMode: SortMode = {

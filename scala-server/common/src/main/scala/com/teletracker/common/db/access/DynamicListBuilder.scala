@@ -14,6 +14,7 @@ import com.teletracker.common.db.{
 }
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
+import com.teletracker.common.util.ListFilters
 import javax.inject.Inject
 import slick.lifted.ColumnOrdered
 import java.util.UUID
@@ -46,7 +47,8 @@ class DynamicListBuilder @Inject()(
       .flatMap(lists => {
 
         val i = lists.map(list => {
-          buildBase(list, list.userId, None)
+          // TODO pass list filters?
+          buildBase(list, list.userId, None, None)
             .map(_._1._1.id)
             .distinct
             .map(list.id -> _)
@@ -64,6 +66,7 @@ class DynamicListBuilder @Inject()(
   def buildList(
     userId: String,
     dynamicList: TrackedListRow,
+    listFilters: Option[ListFilters],
     sortMode: SortMode = Popularity(),
     bookmark: Option[Bookmark] = None,
     includeActions: Boolean = true,
@@ -92,8 +95,9 @@ class DynamicListBuilder @Inject()(
     val rules = dynamicList.rules.get
 
     if (rules.rules.nonEmpty) {
-      val query1 = buildBase(dynamicList, userId, bookmark)
+      val query1 = buildBase(dynamicList, userId, bookmark, listFilters)
         .map(_._1._1)
+        .distinctOn(_.id)
         .sortBy(makeSort(_, sortToUse))
         .map(_.id)
         .take(limit)
@@ -153,7 +157,8 @@ class DynamicListBuilder @Inject()(
   private def buildBase(
     dynamicList: TrackedListRow,
     userId: String,
-    bookmark: Option[Bookmark]
+    bookmark: Option[Bookmark],
+    listFilters: Option[ListFilters]
   ) = {
     require(dynamicList.isDynamic)
     require(dynamicList.rules.isDefined)
@@ -226,6 +231,12 @@ class DynamicListBuilder @Inject()(
         case ((thing, _), _) =>
           applyBookmarkFilter(thing, b)
       })
+      .filter(listFilters.flatMap(_.itemTypes))(types => {
+        case ((thing, _), _) => thing.`type` inSetBind types
+      })
+      .filter(listFilters.flatMap(_.genres))(genres => {
+        case ((thing, _), _) => thing.genres @> genres.toList
+      })
       .query
   }
 
@@ -238,10 +249,11 @@ class DynamicListBuilder @Inject()(
     def applyForSortMode(sortMode: SortMode): Rep[Option[Boolean]] = {
       sortMode match {
         case Popularity(desc) =>
-          if (desc) {
-            thing.popularity < bookmark.value.toDouble
-          } else {
-            thing.popularity > bookmark.value.toDouble
+          (desc, bookmark.valueRefinement) match {
+            case (true, Some(_))  => thing.popularity <= bookmark.value.toDouble
+            case (true, _)        => thing.popularity < bookmark.value.toDouble
+            case (false, Some(_)) => thing.popularity >= bookmark.value.toDouble
+            case (false, _)       => thing.popularity > bookmark.value.toDouble
           }
 
         case Recent(desc) =>
@@ -257,10 +269,11 @@ class DynamicListBuilder @Inject()(
 
           val either = movieRelease.ifNull(tvRelease)
 
-          if (desc) {
-            either < bookmark.value
-          } else {
-            either > bookmark.value
+          (desc, bookmark.valueRefinement) match {
+            case (true, Some(_))  => either <= bookmark.value
+            case (true, _)        => either < bookmark.value
+            case (false, Some(_)) => either >= bookmark.value
+            case (false, _)       => either > bookmark.value
           }
 
         case AddedTime(desc)           => applyForSortMode(Recent(desc))

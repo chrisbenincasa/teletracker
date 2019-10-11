@@ -133,6 +133,7 @@ class ListQuery @Inject()(
     limit: Int = 10
   ): Future[ListQueryResult] = {
     val typeFilters = filters.flatMap(_.itemTypes)
+    val genreFilters = filters.flatMap(_.genres)
 
     def buildBookmark(
       thing: ThingRaw,
@@ -142,27 +143,30 @@ class ListQuery @Inject()(
     ): Bookmark = {
       sortMode match {
         case _: Popularity =>
+          val value = thing.popularity.getOrElse(0.0).toString
           Bookmark(
             sortMode.`type`,
             sortMode.isDesc,
-            thing.popularity.getOrElse(0.0).toString,
-            Some(thing.id.toString)
+            value,
+            bookmark.filter(_.value == value).map(_ => thing.id.toString)
           )
         case _: Recent =>
+          val value = thing.metadata
+            .flatMap(Paths.releaseDate)
+            .getOrElse(LocalDate.MIN.toString)
           Bookmark(
             sortMode.`type`,
             sortMode.isDesc,
-            thing.metadata
-              .flatMap(Paths.releaseDate)
-              .getOrElse(LocalDate.MIN.toString),
-            Some(thing.id.toString)
+            value,
+            bookmark.filter(_.value == value).map(_ => thing.id.toString)
           )
         case _: AddedTime =>
+          val value = addedAt.toString
           Bookmark(
             sortMode.`type`,
             sortMode.isDesc,
-            addedAt.toString,
-            Some(thing.id.toString)
+            value,
+            bookmark.filter(_.value == value).map(_ => thing.id.toString)
           )
         case d: DefaultForListType =>
           buildBookmark(
@@ -185,7 +189,7 @@ class ListQuery @Inject()(
     ]] = {
       val thingsQuery = makeThingsForListQuery(
         listOrQuery.map(_.id),
-        typeFilters,
+        filters,
         Some(sortMode),
         bookmark,
         limit
@@ -193,7 +197,7 @@ class ListQuery @Inject()(
 
       val thingCountQuery = countThingsForStandardListQuery(
         listOrQuery.map(_.id),
-        typeFilters
+        filters
       )
 
       val thingTagsQuery =
@@ -272,7 +276,14 @@ class ListQuery @Inject()(
             val listCountFut =
               run(dynamicListBuilder.countMatchingThings(Set(list.id)))
             val listAndThingsFut = dynamicListBuilder
-              .buildList(userId, list, sortMode, bookmark, limit = limit)
+              .buildList(
+                userId,
+                list,
+                filters,
+                sortMode,
+                bookmark,
+                limit = limit
+              )
               .map(list -> _)
               .map(Option(_))
 
@@ -336,9 +347,9 @@ class ListQuery @Inject()(
 
   private def countThingsForStandardListQuery(
     listsQueryOrId: Either[ListsQuery, Int],
-    thingTypeFilter: Option[Set[ThingType]]
+    listFilters: Option[ListFilters]
   ) = {
-    makeTrackedListThingsQuery(listsQueryOrId, thingTypeFilter)
+    makeTrackedListThingsQuery(listsQueryOrId, listFilters)
       .distinctOn(_._3.id)
       .groupBy(_._1)
       .map {
@@ -348,13 +359,13 @@ class ListQuery @Inject()(
 
   private def makeThingsForListQuery(
     listsQueryOrId: Either[ListsQuery, Int],
-    thingTypeFilter: Option[Set[ThingType]],
+    listFilters: Option[ListFilters],
     sortMode: Option[SortMode],
     bookmark: Option[Bookmark],
     limit: Int
   ) = {
     val thingsQuery =
-      makeTrackedListThingsQuery(listsQueryOrId, thingTypeFilter)
+      makeTrackedListThingsQuery(listsQueryOrId, listFilters)
 
     val sortModeToUse = bookmark.map(_.sortMode).orElse(sortMode)
 
@@ -372,10 +383,15 @@ class ListQuery @Inject()(
 
   private def makeTrackedListThingsQuery(
     listsQueryOrId: Either[ListsQuery, Int],
-    thingTypeFilter: Option[Set[ThingType]]
+    listFilters: Option[ListFilters]
   ) = {
     val thingQuery = InhibitFilter(things.rawQuery)
-      .filter(thingTypeFilter)(types => _.`type` inSetBind types)
+      .filter(listFilters.flatMap(_.itemTypes))(
+        types => _.`type` inSetBind types
+      )
+      .filter(listFilters.flatMap(_.genres))(
+        genres => _.genres @> genres.toList
+      )
       .query
 
     val trackedThingsQuery = listsQueryOrId match {
