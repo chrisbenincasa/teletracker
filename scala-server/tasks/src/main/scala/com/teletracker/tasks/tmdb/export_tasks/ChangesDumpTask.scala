@@ -4,20 +4,19 @@ import com.google.cloud.pubsub.v1.Publisher
 import com.google.cloud.storage.Storage
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.process.tmdb.ItemExpander
-import com.teletracker.common.pubsub.{
-  TeletrackerTaskQueueMessage,
-  TeletrackerTaskQueueMessageFactory
-}
-import com.teletracker.tasks.{SchedulesFollowupTasks, TeletrackerTask}
+import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.teletracker.tasks.SchedulesFollowupTasks
 import com.teletracker.tasks.tmdb.import_tasks.{
   ImportMoviesFromDump,
-  ImportTmdbDumpTaskArgs
+  ImportPeopleFromDump,
+  ImportTmdbDumpTaskArgs,
+  ImportTvShowsFromDump
 }
+import com.teletracker.tasks.util.ArgJsonInstances._
 import com.teletracker.tasks.util.TaskMessageHelper
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
 import javax.inject.Inject
-import com.teletracker.tasks.util.ArgJsonInstances._
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class ChangesDumpTask(
@@ -45,7 +44,14 @@ abstract class ChangesDumpTask(
   }
 
   override protected def baseFileName: String = s"$thingType-delta"
+}
 
+class MovieChangesDumpTask @Inject()(
+  storage: Storage,
+  itemExpander: ItemExpander,
+  publisher: Publisher
+)(implicit executionContext: ExecutionContext)
+    extends ChangesDumpTask(ThingType.Movie, storage, itemExpander, publisher) {
   override def followupTasksToSchedule(
     args: DataDumpTaskArgs
   ): List[TeletrackerTaskQueueMessage] = {
@@ -57,26 +63,39 @@ abstract class ChangesDumpTask(
   }
 }
 
-class MovieChangesDumpTask @Inject()(
-  storage: Storage,
-  itemExpander: ItemExpander,
-  publisher: Publisher
-)(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ThingType.Movie, storage, itemExpander, publisher)
-
 class TvChangesDumpTask @Inject()(
   storage: Storage,
   itemExpander: ItemExpander,
   publisher: Publisher
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ThingType.Show, storage, itemExpander, publisher)
+    extends ChangesDumpTask(ThingType.Show, storage, itemExpander, publisher) {
+  override def followupTasksToSchedule(
+    args: DataDumpTaskArgs
+  ): List[TeletrackerTaskQueueMessage] = {
+    TaskMessageHelper.forTask[ImportTvShowsFromDump](
+      ImportTmdbDumpTaskArgs(
+        input = googleStorageUri
+      )
+    ) :: Nil
+  }
+}
 
 class PersonChangesDumpTask @Inject()(
   storage: Storage,
   itemExpander: ItemExpander,
   publisher: Publisher
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ThingType.Person, storage, itemExpander, publisher)
+    extends ChangesDumpTask(ThingType.Person, storage, itemExpander, publisher) {
+  override def followupTasksToSchedule(
+    args: DataDumpTaskArgs
+  ): List[TeletrackerTaskQueueMessage] = {
+    TaskMessageHelper.forTask[ImportPeopleFromDump](
+      ImportTmdbDumpTaskArgs(
+        input = googleStorageUri
+      )
+    ) :: Nil
+  }
+}
 
 case class ChangesDumpFileRow(
   id: Int,
