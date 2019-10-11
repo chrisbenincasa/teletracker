@@ -1,4 +1,4 @@
-import Thing, { ApiThing } from './Thing';
+import { ApiThing } from './Thing';
 
 export interface List {
   id: number;
