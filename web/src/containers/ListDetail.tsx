@@ -1,11 +1,16 @@
 import {
   Button,
+  ButtonGroup,
+  Chip,
+  Collapse,
+  CircularProgress,
   createStyles,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Fade,
   FormControl,
   FormControlLabel,
   Grid,
@@ -23,13 +28,16 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import DeleteIcon from '@material-ui/icons/Delete';
-import EditIcon from '@material-ui/icons/Edit';
-import SettingsIcon from '@material-ui/icons/Settings';
+import { Delete, Edit, Settings, Tune } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
+import {
+  Link as RouterLink,
+  Redirect,
+  RouteComponentProps,
+  withRouter,
+} from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
   LIST_RETRIEVE_INITIATED,
@@ -54,6 +62,8 @@ import { ThingMap } from '../reducers/item-detail';
 import { getOrInitListOptions } from '../utils/list-utils';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
+import { ItemTypes, Genre, ListSortOptions } from '../types';
+import Thing from '../types/Thing';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -77,10 +87,33 @@ const styles = (theme: Theme) =>
         color: theme.palette.text.primary,
       },
     },
+    filterButtons: {
+      [theme.breakpoints.down('sm')]: {
+        fontSize: '0.575rem',
+      },
+      whiteSpace: 'nowrap',
+      display: 'flex',
+      flexGrow: 1,
+    },
+    filterSortContainer: {
+      [theme.breakpoints.up('sm')]: {
+        display: 'flex',
+      },
+      marginBottom: theme.spacing(1),
+      flexGrow: 1,
+    },
     formControl: {
       margin: theme.spacing(1),
       minWidth: 120,
       display: 'flex',
+    },
+    genre: { margin: 5 },
+    genreContainer: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      margin: `0 -${theme.spacing(2)}px ${theme.spacing(2)}px`,
+      padding: 15,
+      backgroundColor: '#4E4B47',
     },
     settings: {
       display: 'flex',
@@ -90,6 +123,7 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       padding: `0 ${theme.spacing(2)}px`,
+      width: '100%',
     },
     textField: {
       marginLeft: theme.spacing(1),
@@ -113,43 +147,67 @@ interface DispatchProps {
 
 interface RouteParams {
   id: string;
+  sort?: ListSortOptions;
+  type?: 'movie' | 'show';
+}
+
+interface StateProps {
+  genres?: Genre[];
 }
 
 type NotOwnProps = RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps;
+  WithUserProps &
+  StateProps;
 
 type Props = OwnProps & NotOwnProps;
 
 interface State {
-  loadingList: boolean;
-  deleteConfirmationOpen: boolean;
-  deleted: boolean;
   anchorEl: HTMLElement | null;
+  deleted: boolean;
+  deleteConfirmationOpen: boolean;
+  deleteOnWatch: boolean;
+  filter?: number;
+  genre?: string;
+  list?: List;
+  loadingList: boolean;
   migrateListId: number;
-  renameDialogOpen: boolean;
   newListName: string;
   prevListId: number;
-  deleteOnWatch: boolean;
-  list?: List;
+  renameDialogOpen: boolean;
+  showFilter: boolean;
+  sortOrder: ListSortOptions;
+  itemTypes?: ItemTypes;
 }
 
 class ListDetail extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     let listId = Number(this.props.match.params.id);
+    let params = new URLSearchParams(location.search);
+    let sort;
+    let param = params.get('sort');
+    if (param === 'recent' || param === 'added_time') {
+      sort = param;
+    } else {
+      sort = 'popularity';
+    }
+
     this.state = {
-      loadingList: true,
-      deleteConfirmationOpen: false,
-      deleted: false,
       anchorEl: null,
+      deleted: false,
+      deleteConfirmationOpen: false,
+      deleteOnWatch: true,
+      filter: undefined,
+      list: props.listsById[listId],
+      loadingList: true,
       migrateListId: 0,
-      renameDialogOpen: false,
       newListName: '',
       prevListId: listId,
-      list: props.listsById[listId],
-      deleteOnWatch: true,
+      renameDialogOpen: false,
+      showFilter: params.has('sort') || params.has('genre'),
+      sortOrder: sort,
     };
   }
 
@@ -173,9 +231,21 @@ class ListDetail extends Component<Props, State> {
 
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
+    const { match } = this.props;
+    const { itemTypes, sortOrder } = this.state;
 
+    if (match && match.params && match.params.sort) {
+      this.setState({ sortOrder: match.params.sort });
+    }
+
+    if (match && match.params && match.params.type) {
+      this.setState({ itemTypes: [match.params.type] });
+    }
+    this.setState({ loadingList: true });
     this.props.retrieveList({
       listId: this.listId,
+      sort: sortOrder,
+      itemTypes,
       force: true,
     });
 
@@ -188,14 +258,17 @@ class ListDetail extends Component<Props, State> {
   }
 
   componentDidUpdate(oldProps: Props, prevState: State) {
+    const { itemTypes, sortOrder } = this.state;
+
     if (
       this.listId !== Number(oldProps.match.params.id) ||
       (!prevState.loadingList && this.state.loadingList)
     ) {
       this.setState({ loadingList: true });
-
       this.props.retrieveList({
         listId: this.listId,
+        sort: sortOrder,
+        itemTypes,
         force: true,
       });
     } else if (
@@ -312,7 +385,7 @@ class ListDetail extends Component<Props, State> {
           onClick={this.handleMenu}
           className={classes.settings}
         >
-          <SettingsIcon />
+          <Settings />
           <Typography variant="srOnly">Settings</Typography>
         </IconButton>
         <Menu
@@ -325,13 +398,13 @@ class ListDetail extends Component<Props, State> {
         >
           <MenuItem onClick={this.handleRenameModalOpen}>
             <ListItemIcon>
-              <EditIcon />
+              <Edit />
             </ListItemIcon>
             Rename List
           </MenuItem>
           <MenuItem onClick={this.handleDeleteModalOpen}>
             <ListItemIcon>
-              <DeleteIcon />
+              <Delete />
             </ListItemIcon>
             Delete List
           </MenuItem>
@@ -463,9 +536,246 @@ class ListDetail extends Component<Props, State> {
     );
   }
 
+  renderLoadingCircle() {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 200,
+          height: '100%',
+        }}
+      >
+        <div>
+          <CircularProgress color="secondary" />
+        </div>
+      </div>
+    );
+  }
+
+  toggleFilters = () => {
+    this.setState({ showFilter: !this.state.showFilter });
+  };
+
+  setSortOrder = event => {
+    const { match } = this.props;
+
+    let params = new URLSearchParams(location.search);
+
+    this.setState({ sortOrder: event.target.value, loadingList: true });
+
+    let paramSort = params.get('sort');
+    if (paramSort) {
+      params.set('sort', event.target.value);
+    } else {
+      params.append('sort', event.target.value);
+    }
+    params.sort();
+
+    this.props.history.push(`${match.params.id}?${params}`);
+  };
+
+  setTypeFilter = type => {
+    const { match } = this.props;
+    let params = new URLSearchParams(location.search);
+    let paramType = params.get('type');
+
+    if (type === 'all' && paramType) {
+      params.delete('type');
+      this.props.history.push(`${match.params.id}?${params}`);
+      this.setState({ itemTypes: undefined, loadingList: true });
+      return;
+    }
+
+    if (paramType) {
+      params.set('type', type);
+    } else {
+      params.append('type', type);
+    }
+    params.sort();
+
+    this.props.history.push(`${match.params.id}?${params}`);
+    this.setState({ itemTypes: [type], loadingList: true });
+  };
+
+  setGenreFilter = genre => {
+    const { match } = this.props;
+    let params = new URLSearchParams(location.search);
+    let paramGenre = params.get('genre');
+
+    if (genre === 'All' && paramGenre) {
+      params.delete('genre');
+      this.props.history.push(`${match.params.id}?${params}`);
+      this.setState({ filter: undefined });
+      return;
+    }
+
+    if (paramGenre) {
+      params.set('genre', genre.slug);
+    } else {
+      params.append('genre', genre.slug);
+    }
+    params.sort();
+
+    this.props.history.push(`${match.params.id}?${params}`);
+    this.setState({ filter: genre.id });
+  };
+
+  filteredFilmography(list: List) {
+    let filmography = list!.things || [];
+
+    return filmography.filter(
+      (item: Thing) =>
+        !this.state.filter ||
+        (item && item.genreIds && item.genreIds.includes(this.state.filter)),
+    );
+  }
+
+  renderFilters(list: List) {
+    const { showFilter, itemTypes } = this.state;
+    const { classes } = this.props;
+    let filmography = list!.things || [];
+    let finalGenres: Genre[] = [];
+    let params = new URLSearchParams(location.search);
+
+    if (this.props.genres) {
+      finalGenres = _.chain(filmography)
+        .map((f: Thing) => f.genreIds || [])
+        .flatten()
+        .uniq()
+        .map(id => {
+          let g = _.find(this.props.genres, g => g.id === id);
+          if (g) {
+            return [g];
+          } else {
+            return [];
+          }
+        })
+        .flatten()
+        .value();
+    }
+
+    return (
+      <Collapse in={showFilter}>
+        <Fade in={showFilter}>
+          <div className={classes.genreContainer}>
+            <Typography
+              color="inherit"
+              variant="h5"
+              style={{ display: 'block', width: '100%' }}
+            >
+              Filter
+            </Typography>
+            <div className={classes.filterSortContainer}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  flexGrow: 1,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Chip
+                  key={-1}
+                  label="All"
+                  className={classes.genre}
+                  onClick={() => this.setGenreFilter('All')}
+                  color={!this.state.filter ? 'secondary' : 'default'}
+                  clickable
+                />
+                {finalGenres.map(genre => (
+                  <Chip
+                    key={genre.id}
+                    label={genre.name}
+                    className={classes.genre}
+                    onClick={() => this.setGenreFilter(genre)}
+                    color={
+                      this.state.filter === genre.id ? 'secondary' : 'default'
+                    }
+                    clickable
+                  />
+                ))}
+              </div>
+              <div style={{ display: 'flex', margin: '10px 0' }}>
+                <ButtonGroup
+                  variant="contained"
+                  color="primary"
+                  aria-label="Filter by All, Movies, or just TV Shows"
+                  size="medium"
+                  style={{ flexGrow: 1 }}
+                >
+                  <Button
+                    color={!itemTypes ? 'secondary' : 'primary'}
+                    onClick={() => this.setTypeFilter('all')}
+                    className={classes.filterButtons}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    color={
+                      itemTypes && itemTypes.includes('movie')
+                        ? 'secondary'
+                        : 'primary'
+                    }
+                    onClick={() => this.setTypeFilter('movie')}
+                    className={classes.filterButtons}
+                  >
+                    Movies
+                  </Button>
+                  <Button
+                    color={
+                      itemTypes && itemTypes.includes('show')
+                        ? 'secondary'
+                        : 'primary'
+                    }
+                    onClick={() => this.setTypeFilter('show')}
+                    className={classes.filterButtons}
+                  >
+                    TV
+                  </Button>
+                </ButtonGroup>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  marginLeft: 16,
+                }}
+              >
+                <InputLabel shrink htmlFor="age-label-placeholder">
+                  Sort by:
+                </InputLabel>
+                <Select
+                  value={
+                    this.state.sortOrder
+                      ? this.state.sortOrder
+                      : list.isDynamic
+                      ? 'popularity'
+                      : 'added_time'
+                  }
+                  inputProps={{
+                    name: 'sortOrder',
+                    id: 'sort-order',
+                  }}
+                  onChange={this.setSortOrder}
+                >
+                  <MenuItem value="added_time">Date Added</MenuItem>
+                  <MenuItem value="popularity">Popularity</MenuItem>
+                  <MenuItem value="recent">Release Date</MenuItem>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </Fade>
+      </Collapse>
+    );
+  }
+
   renderListDetail(list: List) {
     let { classes, listLoading, thingsById, userSelf } = this.props;
-    let { deleted } = this.state;
+    let { deleted, loadingList } = this.state;
+    let params = new URLSearchParams(location.search);
 
     if ((!listLoading && !list) || deleted) {
       return <Redirect to="/" />;
@@ -484,23 +794,35 @@ class ListDetail extends Component<Props, State> {
                   {list.name}
                 </Typography>
               </div>
-
+              <IconButton
+                onClick={this.toggleFilters}
+                className={classes.settings}
+                color={this.state.showFilter ? 'secondary' : 'inherit'}
+              >
+                <Tune />
+                <Typography variant="srOnly">Tune</Typography>
+              </IconButton>
               {this.renderProfileMenu()}
             </div>
-            <Grid container spacing={2}>
-              {list.things.map(item =>
-                thingsById[item.id] ? (
-                  <ItemCard
-                    key={item.id}
-                    userSelf={userSelf}
-                    item={thingsById[item.id]}
-                    listContext={list}
-                    withActionButton
-                    hoverDelete
-                  />
-                ) : null,
-              )}
-            </Grid>
+            {this.renderFilters(list)}
+            {!loadingList ? (
+              <Grid container spacing={2}>
+                {this.filteredFilmography(list).map(item =>
+                  thingsById[item.id] ? (
+                    <ItemCard
+                      key={item.id}
+                      userSelf={userSelf}
+                      item={thingsById[item.id]}
+                      listContext={list}
+                      withActionButton
+                      hoverDelete
+                    />
+                  ) : null,
+                )}
+              </Grid>
+            ) : (
+              this.renderLoadingCircle()
+            )}
           </div>
           {this.renderDialog()}
           {this.renderRenameDialog(list)}
@@ -511,9 +833,9 @@ class ListDetail extends Component<Props, State> {
 
   render() {
     let { userSelf } = this.props;
-    let { loadingList, list } = this.state;
+    let { list } = this.state;
 
-    return loadingList || !list || !userSelf
+    return !list || !userSelf
       ? this.renderLoading()
       : this.renderListDetail(this.state.list!);
   }
@@ -528,6 +850,7 @@ const mapStateToProps: (
     listLoading: Boolean(appState.lists.loading[LIST_RETRIEVE_INITIATED]),
     listsById: appState.lists.listsById,
     thingsById: appState.itemDetail.thingsById,
+    genres: appState.metadata.genres,
   };
 };
 

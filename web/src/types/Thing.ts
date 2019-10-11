@@ -87,6 +87,8 @@ export default interface Thing
   runtime?: number;
   recommendations?: Thing[];
   genreIds?: number[];
+  popularity?: number;
+  releaseDate?: number;
 }
 
 export class ThingFactory {
