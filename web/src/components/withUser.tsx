@@ -11,7 +11,7 @@ export interface WithUserStateProps {
   isCheckingAuth: boolean;
   isLoggedIn: boolean;
   retrievingUser: boolean;
-  userSelf: UserSelf;
+  userSelf?: UserSelf;
 }
 
 export interface WithUserDispatchProps {
@@ -51,7 +51,7 @@ const withUser = <P extends object>(
       // the current user from the server
       let isLoading = !this.props.userSelf || !this.props.isLoggedIn;
 
-      return isLoading ? (
+      return this.props.isCheckingAuth ? (
         <div style={{ flexGrow: 1 }}>
           {loadingComponent ? loadingComponent(this.props) : <LinearProgress />}
         </div>

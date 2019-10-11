@@ -212,7 +212,7 @@ class Account extends Component<Props, State> {
 
   handleSwitchChange = (switchName: string) => event => {
     let newPrefs: UserPreferences = {
-      ...this.props.userSelf.preferences,
+      ...this.props.userSelf!.preferences,
       showOnlyNetworkSubscriptions: event.target.checked,
     };
 
@@ -232,7 +232,7 @@ class Account extends Component<Props, State> {
   handleSliderChange = (event, value) => {
     this.setState({ formatSlider: value });
 
-    let currentPref = this.props.userSelf.preferences.presentationTypes;
+    let currentPref = this.props.userSelf!.preferences.presentationTypes;
 
     switch (value) {
       case 1:
@@ -249,7 +249,7 @@ class Account extends Component<Props, State> {
     }
 
     let newPrefs: UserPreferences = {
-      ...this.props.userSelf.preferences,
+      ...this.props.userSelf!.preferences,
       presentationTypes: currentPref,
     };
 
@@ -272,7 +272,7 @@ class Account extends Component<Props, State> {
   };
 
   isSubscribedToNetwork = (network: Network) => {
-    return R.any(R.propEq('slug', network.slug), this.props.userSelf.networks);
+    return R.any(R.propEq('slug', network.slug), this.props.userSelf!.networks);
   };
 
   renderNetworkGridItem = (network: Network) => {
@@ -329,7 +329,7 @@ class Account extends Component<Props, State> {
   renderSettings() {
     let { classes, drawerOpen, theme, userSelf } = this.props;
 
-    let usersNetworks = R.map(R.prop('id'), this.props.userSelf.networks);
+    let usersNetworks = R.map(R.prop('id'), this.props.userSelf!.networks);
 
     let networks: Network[];
     if (this.state.networkFilter && this.state.networkFilter.length > 0) {
@@ -492,9 +492,9 @@ class Account extends Component<Props, State> {
   }
 
   render() {
-    let { networks, networksLoading } = this.props;
+    let { networks, networksLoading, userSelf } = this.props;
 
-    return networksLoading || !networks ? (
+    return (networksLoading || !networks) && !userSelf ? (
       <div style={{ flexGrow: 1 }}>
         <LinearProgress />
       </div>

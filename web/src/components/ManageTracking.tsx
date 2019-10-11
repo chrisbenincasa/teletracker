@@ -4,12 +4,16 @@ import {
   Theme,
   WithStyles,
   withStyles,
+  Dialog,
+  Backdrop,
 } from '@material-ui/core';
 import { List as ListIcon } from '@material-ui/icons';
 import React, { Component } from 'react';
 import Thing from '../types/Thing';
 import AddToListDialog from '../components/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
+import LoginForm from './LoginForm';
+import LoginDialog from './LoginDialog';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -34,6 +38,7 @@ type Props = OwnProps & WithStyles<typeof styles> & WithUserProps;
 interface State {
   manageTrackingModalOpen: boolean;
   belongsToLists: boolean;
+  loginModalOpen: boolean;
 }
 
 class ManageTracking extends Component<Props, State> {
@@ -51,11 +56,20 @@ class ManageTracking extends Component<Props, State> {
     this.state = {
       manageTrackingModalOpen: false,
       belongsToLists: !!belongsToLists.length,
+      loginModalOpen: false,
     };
   }
 
+  toggleLoginModal = () => {
+    this.setState({ loginModalOpen: !this.state.loginModalOpen });
+  };
+
   openManageTrackingModal = () => {
-    this.setState({ manageTrackingModalOpen: true });
+    if (this.props.userSelf) {
+      this.setState({ manageTrackingModalOpen: true });
+    } else {
+      this.toggleLoginModal();
+    }
   };
 
   closeManageTrackingModal = () => {
@@ -96,6 +110,10 @@ class ManageTracking extends Component<Props, State> {
           onClose={this.closeManageTrackingModal.bind(this)}
           userSelf={userSelf!}
           item={itemDetail}
+        />
+        <LoginDialog
+          open={this.state.loginModalOpen}
+          onClose={() => this.toggleLoginModal()}
         />
       </React.Fragment>
     );

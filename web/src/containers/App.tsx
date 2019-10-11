@@ -778,13 +778,15 @@ class App extends Component<Props, State> {
                 </IconButton>
               </div>
             </Slide>
-            <IconButton
-              focusRipple={false}
-              onClick={this.toggleDrawer}
-              color="inherit"
-            >
-              {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
-            </IconButton>
+            {isAuthed ? (
+              <IconButton
+                focusRipple={false}
+                onClick={this.toggleDrawer}
+                color="inherit"
+              >
+                {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
+              </IconButton>
+            ) : null}
             <Typography
               variant="h6"
               color="inherit"
@@ -827,7 +829,7 @@ class App extends Component<Props, State> {
         </AppBar>
         <div>
           {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
-          <Drawer open={this.state.drawerOpen} />
+          {this.props.isAuthed ? <Drawer open={this.state.drawerOpen} /> : null}
           <main
             style={{
               display: 'flex',
