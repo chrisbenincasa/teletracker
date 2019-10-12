@@ -39,15 +39,7 @@ type Props = OwnProps &
   WithStyles<typeof styles> &
   WithUserProps;
 
-interface State {}
-
-class MarkAsWatched extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-
-    this.state = {};
-  }
-
+class MarkAsWatched extends Component<Props, {}> {
   toggleItemWatched = () => {
     let payload = {
       thingId: this.props.itemDetail.id,
