@@ -1,24 +1,29 @@
-import { all, put, take } from '@redux-saga/core/effects';
+import { all, fork, put, take } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { REHYDRATE } from 'redux-persist';
 import {
+  authWithGoogleSaga,
   checkAuthSaga,
   loginSaga,
   logoutSaga,
   signupSaga,
-  authWithGoogleSaga,
   watchAuthState,
 } from './auth';
+import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
+import { fetchItemDetailsBatchSaga, fetchItemDetailsSaga } from './item-detail';
 import {
   addToListSaga,
   createNewListSaga,
   deleteListSaga,
-  updateListSaga,
   retrieveListSaga,
   retrieveListsSaga,
+  updateListSaga,
   updateListTrackingSaga,
 } from './lists';
 import { loadNetworksSaga } from './metadata';
+import { loadGenres, loadGenresSaga } from './metadata/load_genres';
+import { fetchPersonDetailsSaga } from './people/get_person';
+import { genreSaga, popularSaga } from './popular';
 import { searchSaga } from './search';
 import {
   getUserSelfSaga,
@@ -29,15 +34,6 @@ import {
   updateUserSaga,
 } from './user';
 import { createBasicAction } from './utils';
-import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
-import { popularSaga, genreSaga } from './popular';
-import { fetchItemDetailsBatchSaga, fetchItemDetailsSaga } from './item-detail';
-import { fetchPersonDetailsSaga } from './people/get_person';
-import {
-  GENRES_LOAD_SUCCESS,
-  loadGenres,
-  loadGenresSaga,
-} from './metadata/load_genres';
 
 export const STARTUP = 'startup';
 
@@ -51,12 +47,11 @@ function* startupSaga() {
 }
 
 export function* root() {
-  // Wait until persisted state is rehydrated
   yield take(REHYDRATE);
 
-  // Start all of the sagas
+  yield fork(watchAuthState);
+
   yield all([
-    watchAuthState(),
     checkAuthSaga(),
     retrieveListSaga(),
     retrieveListsSaga(),

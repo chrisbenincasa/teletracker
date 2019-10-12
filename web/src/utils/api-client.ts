@@ -114,10 +114,11 @@ export class TeletrackerApi {
     });
   }
 
-  async search(token: string, searchText: string) {
+  async search(token: string, searchText: string, bookmark?: string) {
     return this.api.get<ApiThing[]>('/api/v2/search', {
       query: searchText,
       token,
+      bookmark,
     });
   }
 

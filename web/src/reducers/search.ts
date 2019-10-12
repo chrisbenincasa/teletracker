@@ -14,6 +14,7 @@ export interface State {
   error: boolean;
   searching: boolean;
   results?: Thing[];
+  bookmark?: string;
 }
 
 const initialState: State = {
@@ -39,7 +40,7 @@ const searchInitiated = handleAction<SearchInitiatedAction, State>(
     return {
       ...state,
       searching: true,
-      currentSearchText: action.payload!.trim(),
+      currentSearchText: action.payload!.query.trim(),
     };
   },
 );
@@ -48,10 +49,18 @@ const searchSuccess = handleAction<SearchSuccessfulAction, State>(
   SEARCH_SUCCESSFUL,
   (state, { payload }) => {
     if (payload) {
+      let newResults = state.results ? state.results : [];
+      if (!payload.append) {
+        newResults = payload.results;
+      } else {
+        newResults = newResults.concat(payload.results);
+      }
+
       return {
         ...state,
         searching: false,
-        results: payload.results,
+        results: newResults,
+        bookmark: payload.paging ? payload.paging.bookmark : undefined,
       };
     } else {
       return state;
