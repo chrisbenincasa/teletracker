@@ -1,4 +1,4 @@
-import { call, take } from '@redux-saga/core/effects';
+import { call, take, select, takeMaybe } from '@redux-saga/core/effects';
 import * as firebase from 'firebase/app';
 import { TeletrackerApi } from './api-client';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
@@ -12,6 +12,7 @@ import {
   ListOptions,
   ListSortOptions,
 } from '../types';
+import { AppState } from '../reducers';
 
 export class SagaTeletrackerClient {
   static instance = new SagaTeletrackerClient();
@@ -19,14 +20,14 @@ export class SagaTeletrackerClient {
   *getAuthStatus() {
     return yield this.apiCall(
       client => client.getAuthStatus,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
     );
   }
 
   *getUserSelf() {
     return yield this.apiCall(
       client => client.getUserSelf,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
     );
   }
 
@@ -36,7 +37,7 @@ export class SagaTeletrackerClient {
   ) {
     return yield this.apiCall(
       client => client.updateUserSelf,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       networkSubscriptions,
       preferences,
     );
@@ -70,7 +71,7 @@ export class SagaTeletrackerClient {
   ) {
     return yield this.apiCall(
       client => client.updateList,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       id,
       name,
       rules,
@@ -81,7 +82,7 @@ export class SagaTeletrackerClient {
   *createList(name: string) {
     return yield this.apiCall(
       client => client.createList,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       name,
     );
   }
@@ -89,7 +90,7 @@ export class SagaTeletrackerClient {
   *deleteList(listId: number, mergeListId?: number) {
     return yield this.apiCall(
       client => client.deleteList,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       listId,
       mergeListId,
     );
@@ -98,7 +99,7 @@ export class SagaTeletrackerClient {
   *renameList(listId: number, listName: string) {
     return yield this.apiCall(
       client => client.renameList,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       listId,
       listName,
     );
@@ -116,7 +117,7 @@ export class SagaTeletrackerClient {
   *addItemToList(listId: string, itemId: string) {
     return yield this.apiCall(
       client => client.addItemToList,
-      (yield this.withToken())!,
+      (yield call([this, this.withToken]))!,
       listId,
       itemId,
     );
@@ -129,7 +130,7 @@ export class SagaTeletrackerClient {
   ) {
     return yield this.apiCall(
       client => client.updateListTracking,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       thingId,
       addToLists,
       removeFromLists,
@@ -139,7 +140,7 @@ export class SagaTeletrackerClient {
   *getItem(id: string | number, type: string) {
     return yield this.apiCall(
       client => client.getItem,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       id,
       type,
     );
@@ -148,7 +149,7 @@ export class SagaTeletrackerClient {
   *getPerson(id: string) {
     return yield this.apiCall(
       client => client.getPerson,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       id,
     );
   }
@@ -156,7 +157,7 @@ export class SagaTeletrackerClient {
   *getThingsBatch(ids: number[], fields?: KeyMap<ObjectMetadata>) {
     return yield this.apiCall(
       client => client.getThingsBatch,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       ids,
       fields,
     );
@@ -165,7 +166,7 @@ export class SagaTeletrackerClient {
   *updateActions(thingId: string, action: ActionType, value?: number) {
     return yield this.apiCall(
       client => client.updateActions,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       thingId,
       action,
       value,
@@ -175,7 +176,7 @@ export class SagaTeletrackerClient {
   *removeActions(thingId: string, action: ActionType) {
     return yield this.apiCall(
       client => client.removeActions,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       thingId,
       action,
     );
@@ -187,7 +188,7 @@ export class SagaTeletrackerClient {
   ) {
     return yield this.apiCall(
       client => client.getUpcomingAvailability,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       networkIds,
       fields,
     );
@@ -196,7 +197,7 @@ export class SagaTeletrackerClient {
   *getAllAvailability(networkIds?: number[], fields?: KeyMap<ObjectMetadata>) {
     return yield this.apiCall(
       client => client.getAllAvailability,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       networkIds,
       fields,
     );
@@ -228,25 +229,26 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *search(searchText: string) {
+  *search(searchText: string, bookmark?: string) {
     return yield this.apiCall(
       client => client.search,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
       searchText,
+      bookmark,
     );
   }
 
   *getNetworks() {
     return yield this.apiCall(
       client => client.getNetworks,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
     );
   }
 
   *getGenres() {
     return yield this.apiCall(
       client => client.getGenres,
-      yield this.withToken(),
+      yield call([this, this.withToken]),
     );
   }
 
@@ -265,18 +267,26 @@ export class SagaTeletrackerClient {
 
   private *withToken(required: boolean = false) {
     let user: firebase.User | undefined = yield this.getUser(required);
-    let token: string | undefined = yield this.getTokenEffect(user);
+    let token = yield call(() => {
+      return user ? user.getIdToken() : undefined;
+    });
     return token;
   }
 
-  private *getUser(required: boolean = false) {
+  private *getUser(required: boolean = true) {
     let user = firebase.auth().currentUser;
-    if (required) {
-      while (!user) {
-        let { payload } = yield take('USER_STATE_CHANGE');
-        user = payload;
+
+    while (!user) {
+      let event = yield take('USER_STATE_CHANGE');
+      if (event) {
+        user = event.payload;
+      }
+
+      if (!required) {
+        break;
       }
     }
+
     return user ? user : undefined;
   }
 

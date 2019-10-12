@@ -38,7 +38,7 @@ export interface State {
 }
 
 const initialState: State = {
-  checkingAuth: false,
+  checkingAuth: true,
   isLoggingIn: false,
   isLoggedIn: false,
   isLoggingOut: false,

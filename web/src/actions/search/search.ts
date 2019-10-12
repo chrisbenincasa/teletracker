@@ -2,13 +2,27 @@ import { put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { clientEffect, createAction } from '../utils';
 import Thing, { ApiThing, ThingFactory } from '../../types/Thing';
+import { TeletrackerResponse } from '../../utils/api-client';
+import _ from 'lodash';
+import { Paging } from '../../types';
 
 export const SEARCH_INITIATED = 'search/INITIATED';
 export const SEARCH_SUCCESSFUL = 'search/SUCCESSFUL';
 export const SEARCH_FAILED = 'search/FAILED';
-export type SearchInitiatedAction = FSA<typeof SEARCH_INITIATED, string>;
+
+export interface SearchInitiatedPayload {
+  query: string;
+  bookmark?: string;
+}
+
+export type SearchInitiatedAction = FSA<
+  typeof SEARCH_INITIATED,
+  SearchInitiatedPayload
+>;
 export interface SearchSuccessfulPayload {
   results: Thing[];
+  paging?: Paging;
+  append: boolean;
 }
 
 export type SearchSuccessfulAction = FSA<
@@ -33,18 +47,22 @@ export const searchSaga = function*() {
     payload,
   }: SearchInitiatedAction) {
     try {
-      let response = yield clientEffect(client => client.search, payload!);
+      let response: TeletrackerResponse<ApiThing[]> = yield clientEffect(
+        client => client.search,
+        payload!.query,
+        payload!.bookmark,
+      );
 
       if (response.ok) {
-        let payload = {
-          results: (response.data.data as ApiThing[]).map(thing =>
-            ThingFactory.create(thing),
-          ),
+        let successPayload = {
+          results: response.data!.data.map(thing => ThingFactory.create(thing)),
+          paging: response.data!.paging,
+          append: !_.isUndefined(payload!.bookmark),
         };
 
-        yield put(SearchSuccess(payload));
+        yield put(SearchSuccess(successPayload));
       } else {
-        yield put(SearchFailed(response.problem));
+        yield put(SearchFailed(new Error(response.problem)));
       }
     } catch (e) {
       yield put(SearchFailed(e));
@@ -52,6 +70,6 @@ export const searchSaga = function*() {
   });
 };
 
-export const search = (text: string) => {
-  return SearchInitiated(text);
+export const search = (payload: SearchInitiatedPayload) => {
+  return SearchInitiated(payload);
 };

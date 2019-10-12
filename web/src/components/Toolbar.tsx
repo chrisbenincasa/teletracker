@@ -39,7 +39,7 @@ import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../actions/auth';
-import { search } from '../actions/search';
+import { search, SearchInitiatedPayload } from '../actions/search';
 import { AppState } from '../reducers';
 import { DrawerWidthPx } from '../components/Drawer';
 import RouterLink, { StdRouterLink } from '../components/RouterLink';
@@ -207,7 +207,7 @@ interface WidthProps {
 
 interface DispatchProps {
   logout: () => void;
-  search: (text: string) => void;
+  search: (payload: SearchInitiatedPayload) => void;
 }
 
 type Props = DispatchProps & OwnProps & RouteComponentProps & WidthProps;
@@ -262,14 +262,12 @@ class Toolbar extends Component<Props, State> {
     this.mobileSearchInput.current && this.mobileSearchInput.current.focus();
   };
 
-  handleSearchChange = event => {
-    let searchText = event.currentTarget.value;
-
+  handleSearchChangeDebounced = _.debounce((target, searchText) => {
     if (
       this.state.searchAnchor === null &&
       this.props.location.pathname !== '/search'
     ) {
-      this.setState({ searchAnchor: event.currentTarget });
+      this.setState({ searchAnchor: target });
     }
 
     if (this.props.location.pathname === '/search') {
@@ -278,12 +276,14 @@ class Toolbar extends Component<Props, State> {
 
     if (searchText.length > 0) {
       this.setState({ searchText });
-      this.debouncedExecSearch(searchText);
-
-      if (this.props.location.pathname === '/search') {
-        this.props.history.push(`?q=${encodeURIComponent(searchText)}`);
-      }
+      this.execQuickSearch(searchText);
     }
+  }, 250);
+
+  handleSearchChange = event => {
+    let target = event.currentTarget;
+    let searchText = target.value;
+    this.handleSearchChangeDebounced(target, searchText);
   };
 
   handleSearchFocus = event => {
@@ -323,13 +323,21 @@ class Toolbar extends Component<Props, State> {
     }
 
     if (text.length >= 1 && this.props.currentSearchText !== text) {
-      this.props.search(text);
+      this.props.search({
+        query: text,
+      });
     }
   };
 
   execQuickSearch = (text: string) => {
     if (text.length >= 1 && this.props.currentSearchText !== text) {
-      this.props.search(text);
+      if (this.props.location.pathname === '/search') {
+        this.props.history.push(`?q=${encodeURIComponent(text)}`);
+      }
+
+      this.props.search({
+        query: text,
+      });
     }
   };
 

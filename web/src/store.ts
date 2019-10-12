@@ -4,10 +4,7 @@ import * as localforage from 'localforage';
 import { applyMiddleware, compose, createStore } from 'redux';
 import * as rp from 'redux-persist';
 import { persistReducer, persistStore } from 'redux-persist';
-import {
-  createBlacklistFilter,
-  createWhitelistFilter,
-} from 'redux-persist-transform-filter';
+import { createWhitelistFilter } from 'redux-persist-transform-filter';
 import createSagaMiddleware from 'redux-saga';
 import thunk from 'redux-thunk';
 import { root } from './actions';
@@ -29,10 +26,6 @@ const authWhitelistFilter = createWhitelistFilter(
 );
 
 const getWhitelists = () => {
-  // if (env === 'development') {
-  //   return [];
-  // } else {
-  // }
   return ['auth'];
 };
 
@@ -40,7 +33,6 @@ export const persistConfig: rp.PersistConfig = {
   key: 'root',
   storage: localforage,
   whitelist: getWhitelists(),
-  // blacklist: getBlacklists(),
   transforms: [authWhitelistFilter],
 };
 
