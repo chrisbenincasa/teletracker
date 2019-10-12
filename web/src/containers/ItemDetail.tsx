@@ -18,7 +18,7 @@ import {
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { Check, PlayArrow, ChevronLeft } from '@material-ui/icons';
+import { PlayArrow, ChevronLeft } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -28,11 +28,6 @@ import {
   itemFetchInitiated,
   ItemFetchInitiatedPayload,
 } from '../actions/item-detail';
-import {
-  removeUserItemTags,
-  updateUserItemTags,
-  UserUpdateItemTagsPayload,
-} from '../actions/user';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
@@ -44,6 +39,7 @@ import Cast from '../components/Cast';
 import Recommendations from '../components/Recommendations';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import ManageTracking from '../components/ManageTracking';
+import MarkAsWatched from '../components/MarkAsWatched';
 import { formatRuntime } from '../utils/textHelper';
 import Thing from '../types/Thing';
 import RouterLink from '../components/RouterLink';
@@ -64,6 +60,7 @@ const styles = (theme: Theme) =>
       display: 'flex',
       zIndex: 1,
       //To do: integrate with theme styling for primary
+      position: 'relative',
     },
     backdropContainer: {
       height: 'auto',
@@ -107,9 +104,6 @@ const styles = (theme: Theme) =>
       maxWidth: 600,
       margin: '0 auto',
       padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
-    },
-    itemCTA: {
-      width: '100%',
     },
     itemDetailContainer: {
       margin: 20,
@@ -198,8 +192,6 @@ interface OwnProps {
 
 interface DispatchProps {
   fetchItemDetails: (payload: ItemFetchInitiatedPayload) => void;
-  updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
-  removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
 }
 
 interface RouteParams {
@@ -281,34 +273,6 @@ class ItemDetails extends Component<Props, State> {
 
   closeLoginModal = () => {
     this.setState({ loginModalOpen: false });
-  };
-
-  toggleItemWatched = () => {
-    let payload = {
-      thingId: this.state.currentId,
-      action: ActionType.Watched,
-    };
-
-    if (!this.props.userSelf) {
-      // this.props.history.push('/login');
-      this.setState({
-        loginModalOpen: true,
-      });
-    } else {
-      if (this.itemMarkedAsWatched()) {
-        this.props.removeUserItemTags(payload);
-      } else {
-        this.props.updateUserItemTags(payload);
-      }
-    }
-  };
-
-  itemMarkedAsWatched = () => {
-    if (this.props.itemDetail) {
-      return this.props.itemDetail.itemMarkedAsWatched;
-    }
-
-    return false;
   };
 
   renderLoading = () => {
@@ -395,28 +359,6 @@ class ItemDetails extends Component<Props, State> {
               />
             ))}
         </div>
-      </div>
-    );
-  };
-
-  renderWatchedToggle = () => {
-    const { classes } = this.props;
-    let watchedStatus = this.itemMarkedAsWatched();
-    let watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
-
-    return (
-      <div className={classes.itemCTA}>
-        <Fab
-          size="small"
-          variant="extended"
-          aria-label="Add"
-          onClick={this.toggleItemWatched}
-          style={{ marginTop: 5, width: '100%' }}
-          color={watchedStatus ? 'primary' : undefined}
-        >
-          <Check style={{ marginRight: 8 }} />
-          {watchedCTA}
-        </Fab>
       </div>
     );
   };
@@ -639,7 +581,7 @@ class ItemDetails extends Component<Props, State> {
                   />
                 </div>
 
-                {this.renderWatchedToggle()}
+                <MarkAsWatched itemDetail={itemDetail} />
                 <ManageTracking itemDetail={itemDetail} />
               </div>
               <div className={classes.itemInformationContainer}>
@@ -724,8 +666,6 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
       fetchItemDetails: itemFetchInitiated,
-      updateUserItemTags,
-      removeUserItemTags,
     },
     dispatch,
   );
