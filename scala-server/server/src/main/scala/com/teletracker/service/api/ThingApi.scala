@@ -26,13 +26,17 @@ import com.teletracker.common.model.tmdb.{
   TvShow
 }
 import com.teletracker.common.util.GenreCache.GenreMap
-import com.teletracker.common.util.{GenreCache, Slug}
+import com.teletracker.common.util.{
+  GenreCache,
+  HasGenreIdOrSlug,
+  HasThingIdOrSlug,
+  Slug
+}
 import com.teletracker.service.api.model.{
   Converters,
   EnrichedPerson,
   PersonCredit
 }
-import com.teletracker.service.util.{HasGenreIdOrSlug, HasThingIdOrSlug}
 import com.twitter.util.Stopwatch
 import io.circe.Json
 import javax.inject.Inject

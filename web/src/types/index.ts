@@ -1,5 +1,9 @@
 import Thing, { ApiThing } from './Thing';
 
+export interface Paging {
+  bookmark?: string;
+}
+
 export interface List {
   id: number;
   name: string;
@@ -130,7 +134,7 @@ export interface Network {
 export interface Genre {
   id: number;
   name: string;
-  type: string;
+  type: ('movie' | 'tv')[];
   slug: string;
 }
 
