@@ -18,7 +18,7 @@ import {
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { Check, PlayArrow, ChevronLeft } from '@material-ui/icons';
+import { PlayArrow, ChevronLeft } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -28,11 +28,6 @@ import {
   itemFetchInitiated,
   ItemFetchInitiatedPayload,
 } from '../actions/item-detail';
-// import {
-//   removeUserItemTags,
-//   updateUserItemTags,
-//   UserUpdateItemTagsPayload,
-// } from '../actions/user';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
@@ -110,9 +105,6 @@ const styles = (theme: Theme) =>
       margin: '0 auto',
       padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
     },
-    // itemCTA: {
-    //   width: '100%',
-    // },
     itemDetailContainer: {
       margin: 20,
       display: 'flex',
@@ -200,8 +192,6 @@ interface OwnProps {
 
 interface DispatchProps {
   fetchItemDetails: (payload: ItemFetchInitiatedPayload) => void;
-  // updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
-  // removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
 }
 
 interface RouteParams {
@@ -284,34 +274,6 @@ class ItemDetails extends Component<Props, State> {
   closeLoginModal = () => {
     this.setState({ loginModalOpen: false });
   };
-
-  // toggleItemWatched = () => {
-  //   let payload = {
-  //     thingId: this.state.currentId,
-  //     action: ActionType.Watched,
-  //   };
-
-  //   if (!this.props.userSelf) {
-  //     // this.props.history.push('/login');
-  //     this.setState({
-  //       loginModalOpen: true,
-  //     });
-  //   } else {
-  //     if (this.itemMarkedAsWatched()) {
-  //       this.props.removeUserItemTags(payload);
-  //     } else {
-  //       this.props.updateUserItemTags(payload);
-  //     }
-  //   }
-  // };
-
-  // itemMarkedAsWatched = () => {
-  //   if (this.props.itemDetail) {
-  //     return this.props.itemDetail.itemMarkedAsWatched;
-  //   }
-
-  //   return false;
-  // };
 
   renderLoading = () => {
     return (
@@ -400,28 +362,6 @@ class ItemDetails extends Component<Props, State> {
       </div>
     );
   };
-
-  // renderWatchedToggle = () => {
-  //   const { classes } = this.props;
-  //   let watchedStatus = this.itemMarkedAsWatched();
-  //   let watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
-
-  //   return (
-  //     <div className={classes.itemCTA}>
-  //       <Fab
-  //         size="small"
-  //         variant="extended"
-  //         aria-label="Add"
-  //         onClick={this.toggleItemWatched}
-  //         style={{ marginTop: 5, width: '100%' }}
-  //         color={watchedStatus ? 'primary' : undefined}
-  //       >
-  //         <Check style={{ marginRight: 8 }} />
-  //         {watchedCTA}
-  //       </Fab>
-  //     </div>
-  //   );
-  // };
 
   renderSeriesDetails = (thing: Thing) => {
     const { classes } = this.props;
@@ -726,8 +666,6 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
       fetchItemDetails: itemFetchInitiated,
-      // updateUserItemTags,
-      // removeUserItemTags,
     },
     dispatch,
   );
