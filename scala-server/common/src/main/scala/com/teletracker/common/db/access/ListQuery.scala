@@ -23,6 +23,7 @@ import javax.inject.Inject
 import slick.lifted.ColumnOrdered
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
+import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListQuery @Inject()(
@@ -65,7 +66,7 @@ class ListQuery @Inject()(
     val listsQuery = makeListsQuery(userId, includeDynamic = true)
 
     val thingsAction = if (includeThings) {
-      makeThingsForListQuery(Left(listsQuery), None, None).result
+      makeThingsForListQuery(Left(listsQuery), None, None, None, 10).result
     } else {
       DBIO.successful(Seq.empty)
     }
@@ -127,9 +128,12 @@ class ListQuery @Inject()(
     selectFields: Option[List[Field]] = None,
     filters: Option[ListFilters] = None,
     isDynamicHint: Option[Boolean] = None,
-    sortMode: SortMode = DefaultForListType()
+    sortMode: SortMode = DefaultForListType(),
+    bookmark: Option[Bookmark] = None,
+    limit: Int = 10
   ): Future[ListQueryResult] = {
     val typeFilters = filters.flatMap(_.itemTypes)
+    val genreFilters = filters.flatMap(_.genres)
 
     def buildBookmark(
       thing: ThingRaw,
@@ -139,21 +143,31 @@ class ListQuery @Inject()(
     ): Bookmark = {
       sortMode match {
         case _: Popularity =>
+          val value = thing.popularity.getOrElse(0.0).toString
           Bookmark(
             sortMode.`type`,
             sortMode.isDesc,
-            thing.popularity.getOrElse(0.0).toString
+            value,
+            bookmark.filter(_.value == value).map(_ => thing.id.toString)
           )
         case _: Recent =>
+          val value = thing.metadata
+            .flatMap(Paths.releaseDate)
+            .getOrElse(LocalDate.MIN.toString)
           Bookmark(
             sortMode.`type`,
             sortMode.isDesc,
-            thing.metadata
-              .flatMap(Paths.releaseDate)
-              .getOrElse(LocalDate.MIN.toString)
+            value,
+            bookmark.filter(_.value == value).map(_ => thing.id.toString)
           )
         case _: AddedTime =>
-          Bookmark(sortMode.`type`, sortMode.isDesc, addedAt.toString)
+          val value = addedAt.toString
+          Bookmark(
+            sortMode.`type`,
+            sortMode.isDesc,
+            value,
+            bookmark.filter(_.value == value).map(_ => thing.id.toString)
+          )
         case d: DefaultForListType =>
           buildBookmark(
             thing,
@@ -175,13 +189,15 @@ class ListQuery @Inject()(
     ]] = {
       val thingsQuery = makeThingsForListQuery(
         listOrQuery.map(_.id),
-        typeFilters,
-        Some(sortMode)
+        filters,
+        Some(sortMode),
+        bookmark,
+        limit
       )
 
       val thingCountQuery = countThingsForStandardListQuery(
         listOrQuery.map(_.id),
-        typeFilters
+        filters
       )
 
       val thingTagsQuery =
@@ -260,7 +276,14 @@ class ListQuery @Inject()(
             val listCountFut =
               run(dynamicListBuilder.countMatchingThings(Set(list.id)))
             val listAndThingsFut = dynamicListBuilder
-              .buildList(userId, list, sortMode)
+              .buildList(
+                userId,
+                list,
+                filters,
+                sortMode,
+                bookmark,
+                limit = limit
+              )
               .map(list -> _)
               .map(Option(_))
 
@@ -322,6 +345,138 @@ class ListQuery @Inject()(
       .query
   }
 
+  private def countThingsForStandardListQuery(
+    listsQueryOrId: Either[ListsQuery, Int],
+    listFilters: Option[ListFilters]
+  ) = {
+    makeTrackedListThingsQuery(listsQueryOrId, listFilters)
+      .distinctOn(_._3.id)
+      .groupBy(_._1)
+      .map {
+        case (listId, group) => listId -> group.length
+      }
+  }
+
+  private def makeThingsForListQuery(
+    listsQueryOrId: Either[ListsQuery, Int],
+    listFilters: Option[ListFilters],
+    sortMode: Option[SortMode],
+    bookmark: Option[Bookmark],
+    limit: Int
+  ) = {
+    val thingsQuery =
+      makeTrackedListThingsQuery(listsQueryOrId, listFilters)
+
+    val sortModeToUse = bookmark.map(_.sortMode).orElse(sortMode)
+
+    InhibitFilter(thingsQuery)
+      .filter(bookmark)(b => {
+        case (_, _, thing) => applyBookmarkFilter(thing, b)
+      })
+      .sort(sortModeToUse)(s => {
+        case (_, addedAt, thing) =>
+          makeSort(thing, addedAt, s)
+      })
+      .query
+      .take(limit)
+  }
+
+  private def makeTrackedListThingsQuery(
+    listsQueryOrId: Either[ListsQuery, Int],
+    listFilters: Option[ListFilters]
+  ) = {
+    val thingQuery = InhibitFilter(things.rawQuery)
+      .filter(listFilters.flatMap(_.itemTypes))(
+        types => _.`type` inSetBind types
+      )
+      .filter(listFilters.flatMap(_.genres))(
+        genres => _.genres @> genres.toList
+      )
+      .query
+
+    val trackedThingsQuery = listsQueryOrId match {
+      case Left(listsQuery) =>
+        listsQuery.flatMap(lists => {
+          trackedListThings.query
+            .withFilter(_.listId === lists.id)
+            .filter(_.removedAt.isEmpty)
+        })
+      case Right(listId) =>
+        trackedListThings.query
+          .filter(_.listId === listId)
+          .filter(_.removedAt.isEmpty)
+    }
+
+    (for {
+      tlt <- trackedThingsQuery
+      thing <- thingQuery if thing.id === tlt.thingId
+    } yield {
+      (tlt.listId, tlt.addedAt, thing)
+    })
+  }
+
+  private def makeUserThingTagQuery(
+    userId: String,
+    thingQuery: Query[Rep[UUID], UUID, Seq],
+    includeTags: Boolean
+  ) = {
+    for {
+      thingId <- thingQuery
+      tags <- userThingTags.query
+      if LiteralColumn(includeTags) && (thingId === tags.thingId && tags.userId === userId)
+    } yield {
+      thingId -> tags
+    }
+  }
+
+  private def applyBookmarkFilter(
+    thing: things.ThingsTableRaw,
+    bookmark: Bookmark
+  ) = {
+
+    @scala.annotation.tailrec
+    def applyForSortMode(sortMode: SortMode): Rep[Option[Boolean]] = {
+      sortMode match {
+        case Popularity(desc) =>
+          if (desc) {
+            thing.popularity < bookmark.value.toDouble
+          } else {
+            thing.popularity > bookmark.value.toDouble
+          }
+
+        case Recent(desc) =>
+          val movieRelease = thing.metadata
+            .+>("themoviedb")
+            .+>("movie")
+            .+>>("release_date")
+
+          val tvRelease = thing.metadata
+            .+>("themoviedb")
+            .+>("show")
+            .+>>("first_air_date")
+
+          val either = movieRelease.ifNull(tvRelease)
+
+          if (desc) {
+            either < bookmark.value
+          } else {
+            either > bookmark.value
+          }
+
+        case AddedTime(desc)           => applyForSortMode(Recent(desc))
+        case d @ DefaultForListType(_) => applyForSortMode(d.get(true))
+      }
+    }
+
+    val applied = applyForSortMode(bookmark.sortMode)
+    if (bookmark.valueRefinement.isDefined) {
+      applied && thing.id > UUID.fromString(bookmark.valueRefinement.get)
+    } else {
+      applied
+    }
+  }
+
+  @tailrec
   private def makeSort(
     thing: things.ThingsTableRaw,
     addedAt: Rep[OffsetDateTime],
@@ -355,92 +510,6 @@ class ListQuery @Inject()(
       case AddedTime(false) =>
         addedAt.asc
       case d @ DefaultForListType(_) => makeSort(thing, addedAt, d.get(false))
-    }
-  }
-
-  private def countThingsForStandardListQuery(
-    listsQueryOrId: Either[ListsQuery, Int],
-    thingTypeFilter: Option[Set[ThingType]]
-  ) = {
-    val thingQuery = InhibitFilter(things.rawQuery)
-      .filter(thingTypeFilter)(types => _.`type` inSetBind types)
-      .query
-
-    val trackedThingsQuery = listsQueryOrId match {
-      case Left(listsQuery) =>
-        listsQuery.flatMap(lists => {
-          trackedListThings.query
-            .withFilter(_.listId === lists.id)
-            .filter(_.removedAt.isEmpty)
-        })
-      case Right(listId) =>
-        trackedListThings.query
-          .filter(_.listId === listId)
-          .filter(_.removedAt.isEmpty)
-    }
-
-    (for {
-      tlt <- trackedThingsQuery
-      thing <- thingQuery if thing.id === tlt.thingId
-    } yield {
-      tlt.listId -> thing
-    }).distinctOn(_._2.id)
-      .groupBy(_._1)
-      .map {
-        case (listId, group) => listId -> group.length
-      }
-  }
-
-  private def makeThingsForListQuery(
-    listsQueryOrId: Either[ListsQuery, Int],
-    thingTypeFilter: Option[Set[ThingType]],
-    sortMode: Option[SortMode]
-  ) = {
-    val thingQuery = InhibitFilter(things.rawQuery)
-      .filter(thingTypeFilter)(types => _.`type` inSetBind types)
-      .query
-
-    val trackedThingsQuery = listsQueryOrId match {
-      case Left(listsQuery) =>
-        listsQuery.flatMap(lists => {
-          trackedListThings.query
-            .withFilter(_.listId === lists.id)
-            .filter(_.removedAt.isEmpty)
-        })
-      case Right(listId) =>
-        trackedListThings.query
-          .filter(_.listId === listId)
-          .filter(_.removedAt.isEmpty)
-
-    }
-    val thingsQuery = (for {
-      tlt <- trackedThingsQuery
-      thing <- thingQuery if thing.id === tlt.thingId
-    } yield {
-      (tlt.listId, tlt.addedAt, thing)
-    })
-
-    sortMode
-      .map(sm => {
-        thingsQuery.sortBy {
-          case (_, addedAt, thing) =>
-            makeSort(thing, addedAt, sm)
-        }
-      })
-      .getOrElse(thingsQuery)
-  }
-
-  private def makeUserThingTagQuery(
-    userId: String,
-    thingQuery: Query[Rep[UUID], UUID, Seq],
-    includeTags: Boolean
-  ) = {
-    for {
-      thingId <- thingQuery
-      tags <- userThingTags.query
-      if LiteralColumn(includeTags) && (thingId === tags.thingId && tags.userId === userId)
-    } yield {
-      thingId -> tags
     }
   }
 }

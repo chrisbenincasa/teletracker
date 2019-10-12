@@ -148,7 +148,7 @@ class ThingsDbAccess @Inject()(
       Future.unit
     } else {
       run {
-        val res = InhibitFilter(things.rawQuery)
+        InhibitFilter(things.rawQuery)
           .filter(startingId)(id => _.id >= id)
           .filter(thingType)(t => _.`type` === t)
           .query
@@ -156,10 +156,6 @@ class ThingsDbAccess @Inject()(
           .drop(offset)
           .take(perPage)
           .result
-
-        println(res.statements)
-
-        res
       }.flatMap {
         case x if x.isEmpty => Future.unit
         case x =>
@@ -1455,7 +1451,7 @@ class ThingsDbAccess @Inject()(
     limit: Int
   ): Future[(Seq[ThingRaw], Option[Bookmark])] = {
     val maxPopularity = bookmark.collect {
-      case Bookmark(sortType, desc, value)
+      case Bookmark(sortType, desc, value, _)
           if sortType == SortMode.PopularityType && desc =>
         value.toDouble
     }
@@ -1505,8 +1501,14 @@ class ThingsDbAccess @Inject()(
 
     thingsFut.map(things => {
       val nextBookmark = things.lastOption
-        .flatMap(_.popularity)
-        .map(popularity => Bookmark(Popularity(), popularity.toString))
+        .map(
+          thing =>
+            Bookmark(
+              Popularity(),
+              thing.popularity.getOrElse(0.0).toString,
+              Some(thing.id.toString)
+            )
+        )
 
       things -> nextBookmark
     })

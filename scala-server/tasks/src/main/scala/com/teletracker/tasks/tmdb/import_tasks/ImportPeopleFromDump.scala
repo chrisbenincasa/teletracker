@@ -10,7 +10,7 @@ import com.teletracker.common.model.tmdb.{
   PersonCredit
 }
 import com.teletracker.common.process.tmdb.TmdbSynchronousProcessor
-import com.teletracker.common.util.Slug
+import com.teletracker.common.util.{GenreCache, Slug}
 import com.teletracker.common.util.TheMovieDb._
 import javax.inject.Inject
 import java.util.UUID
@@ -19,9 +19,10 @@ import scala.concurrent.{ExecutionContext, Future}
 class ImportPeopleFromDump @Inject()(
   storage: Storage,
   thingsDbAccess: ThingsDbAccess,
-  tmdbSynchronousProcessor: TmdbSynchronousProcessor
+  tmdbSynchronousProcessor: TmdbSynchronousProcessor,
+  genreCache: GenreCache
 )(implicit executionContext: ExecutionContext)
-    extends ImportTmdbDumpTask[Person](storage, thingsDbAccess) {
+    extends ImportTmdbDumpTask[Person](storage, thingsDbAccess, genreCache) {
 
   override protected def extraWork(
     thingLike: ThingLike,

@@ -35,6 +35,7 @@ case class Thing(
       Some(`type`),
       Some(createdAt),
       Some(lastUpdatedAt),
+      popularity,
       metadata.map(_.asJson)
     )
   }
@@ -91,6 +92,7 @@ case class PartialThing(
   `type`: Option[ThingType] = None,
   createdAt: Option[OffsetDateTime] = None,
   lastUpdatedAt: Option[OffsetDateTime] = None,
+  popularity: Option[Double] = None,
   metadata: Option[Json] = None,
   networks: Option[List[Network]] = None,
   seasons: Option[List[TvShowSeasonWithEpisodes]] = None,

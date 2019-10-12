@@ -21,22 +21,22 @@ sealed trait SortMode {
     if (isDesc) this.desc else this.asc
   def `type`: String
 }
-case class Popularity(isDesc: Boolean = true) extends SortMode {
+final case class Popularity(isDesc: Boolean = true) extends SortMode {
   override def desc: Popularity = this.copy(true)
   override def asc: Popularity = this.copy(false)
   override def `type`: String = SortMode.PopularityType
 }
-case class Recent(isDesc: Boolean = true) extends SortMode {
+final case class Recent(isDesc: Boolean = true) extends SortMode {
   override def desc: Recent = this.copy(true)
   override def asc: Recent = this.copy(false)
   override def `type`: String = SortMode.RecentType
 }
-case class AddedTime(isDesc: Boolean = true) extends SortMode {
+final case class AddedTime(isDesc: Boolean = true) extends SortMode {
   override def desc: AddedTime = this.copy(true)
   override def asc: AddedTime = this.copy(false)
   override def `type`: String = SortMode.AddedTimeType
 }
-case class DefaultForListType(isDesc: Boolean = true) extends SortMode {
+final case class DefaultForListType(isDesc: Boolean = true) extends SortMode {
   override def desc: DefaultForListType = this.copy(true)
   override def asc: DefaultForListType = this.copy(false)
   override def `type`: String = SortMode.DefaultType

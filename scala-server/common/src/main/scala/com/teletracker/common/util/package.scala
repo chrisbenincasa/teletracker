@@ -17,6 +17,9 @@ import scala.concurrent.{
 import cats.~>
 
 package object util {
+  final val UuidRegex =
+    "[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}".r
+
   object Implicits {
     implicit def scalaTwitterTryFunctionK: STry ~> TTry =
       new FunctionK[STry, TTry] {

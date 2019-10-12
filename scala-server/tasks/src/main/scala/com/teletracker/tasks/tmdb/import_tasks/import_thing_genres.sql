@@ -22,3 +22,9 @@ on conflict do nothing;
 
 -- update things set genres = subquery.genres from
 --    (select thing_id as id, array_agg(genre_id) as genres from thing_genres group by thing_id) as subquery where things.id = subquery.id;
+
+create temp table thing_genres_tmp as select thing_id as id, array_agg(genre_id) as genres from thing_genres group by thing_id;
+
+create index "thing_genres_tmp_id" ON thing_genres ("id");
+
+update things set genres = subquery.genres from (select * from thing_genres_tmp) as subquery where things.id = subquery.id;

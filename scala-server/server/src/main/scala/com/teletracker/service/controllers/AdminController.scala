@@ -12,14 +12,13 @@ import com.teletracker.common.process.tmdb.TmdbProcessMessage.{
   ProcessPerson,
   ProcessTvShow
 }
+import com.teletracker.common.util.HasThingIdOrSlug
 import com.teletracker.service.api.ThingApi
 import com.teletracker.service.auth.AdminFilter
-import com.teletracker.service.util.HasThingIdOrSlug
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import javax.inject.Inject
 import shapeless.tag
-import java.io.File
 import scala.concurrent.{ExecutionContext, Future}
 
 class AdminController @Inject()(

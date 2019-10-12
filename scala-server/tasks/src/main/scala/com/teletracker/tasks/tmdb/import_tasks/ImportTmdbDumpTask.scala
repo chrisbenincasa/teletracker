@@ -8,6 +8,7 @@ import com.teletracker.common.db.model.{ExternalSource, ThingLike}
 import com.teletracker.common.model.Thingable
 import com.teletracker.common.model.tmdb.HasTmdbId
 import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.{GenreCache, TheMovieDb}
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
@@ -29,7 +30,8 @@ case class ImportTmdbDumpTaskArgs(
 
 abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
   storage: Storage,
-  thingsDbAccess: ThingsDbAccess
+  thingsDbAccess: ThingsDbAccess,
+  genreCache: GenreCache
 )(implicit executionContext: ExecutionContext,
   thingLike: Thingable[T])
     extends TeletrackerTask {
@@ -61,10 +63,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
     val parallelism = args.valueOrDefault("parallelism", 8)
     val perFileLimit = args.valueOrDefault("perFileLimit", -1)
 
-    def sink[X](
-      x: List[Option[X]],
-      y: List[Option[X]]
-    ) = List.empty[Option[X]]
+    val genres = genreCache.get().await()
 
     getSourceStream(file)
       .drop(offset)
@@ -96,9 +95,31 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId: Decoder](
                     case Right(value) =>
                       thingLike.toThing(value) match {
                         case Success(thing) =>
+                          val genreIds = thing.metadata
+                            .flatMap(
+                              Paths.applyPaths(
+                                _,
+                                Paths.MovieGenres,
+                                Paths.ShowGenres
+                              )
+                            )
+                            .map(_.map(_.id))
+                            .map(
+                              _.flatMap(
+                                id =>
+                                  genres.get(
+                                    ExternalSource.TheMovieDb -> id.toString
+                                  )
+                              )
+                            )
+                            .map(_.map(_.id))
+                            .getOrElse(Nil)
+                            .flatten
+                            .toSet
+
                           val fut = thingsDbAccess
                             .saveThing(
-                              thing,
+                              thing.withGenres(genreIds),
                               Some(
                                 ExternalSource.TheMovieDb -> value.id.toString
                               )
