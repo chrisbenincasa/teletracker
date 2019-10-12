@@ -80,7 +80,7 @@ class MarkAsWatched extends Component<Props, State> {
     const { classes } = this.props;
     let watchedStatus = this.itemMarkedAsWatched();
     let watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
-    console.log(this.props.itemDetail);
+
     return (
       <div className={classes.itemCTA}>
         <Fab
