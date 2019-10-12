@@ -232,7 +232,7 @@ type Props = DispatchProps & OwnProps & RouteComponentProps & WidthProps;
 interface State {
   anchorEl: HTMLInputElement | null;
   genreAnchorEl: HTMLButtonElement | null;
-  genreType: 'movie' | 'tv' | null;
+  genreType?: 'movie' | 'tv';
   searchAnchor: HTMLInputElement | null;
   searchText: string;
   mobileSearchBarOpen: boolean;
@@ -260,18 +260,16 @@ class App extends Component<Props, State> {
     this.mobileSearchInput = React.createRef();
     this.desktopSearchInput = React.createRef();
     this.genreAnchorRef = React.createRef();
+    this.state = {
+      anchorEl: null,
+      genreAnchorEl: null,
+      searchText: '',
+      searchAnchor: null,
+      mobileSearchBarOpen: false,
+      drawerOpen: false,
+      isLoggedOut: true,
+    };
   }
-
-  state = {
-    anchorEl: null,
-    genreAnchorEl: null,
-    genreType: null,
-    searchText: '',
-    searchAnchor: null,
-    mobileSearchBarOpen: false,
-    drawerOpen: false,
-    isLoggedOut: true,
-  };
 
   clearSearch = () => {
     let searchText = '';
@@ -466,7 +464,7 @@ class App extends Component<Props, State> {
     this.setState({ anchorEl: null });
   };
 
-  handleGenreMenu = (event, type: 'movie' | 'tv' | null) => {
+  handleGenreMenu = (event, type?: 'movie' | 'tv') => {
     this.setState({
       genreAnchorEl: event.currentTarget,
       genreType: type,
@@ -479,7 +477,7 @@ class App extends Component<Props, State> {
     }
     this.setState({
       genreAnchorEl: null,
-      genreType: null,
+      genreType: undefined,
     });
   };
 

@@ -129,8 +129,8 @@ const handleListRetrieveSuccess = handleAction<
   ListRetrieveSuccessAction,
   State
 >(LIST_RETRIEVE_SUCCESS, (state, action) => {
-  if (action.payload && action.payload.things) {
-    let things = action.payload.things;
+  if (action.payload && action.payload.list.things) {
+    let things = action.payload.list.things;
     return updateStateWithNewThings(state, things);
   } else {
     return state;

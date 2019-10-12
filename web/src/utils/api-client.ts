@@ -11,6 +11,7 @@ import {
   UserPreferences,
   ListOptions,
   ListRules,
+  Paging,
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import _ from 'lodash';
@@ -23,6 +24,7 @@ export interface TeletrackerApiOptions {
 
 export interface DataResponse<T> {
   data: T;
+  paging?: Paging;
 }
 
 export type TeletrackerResponse<T> = apisauce.ApiResponse<DataResponse<T>>;
@@ -192,6 +194,8 @@ export class TeletrackerApi {
     sort?: ListSortOptions,
     desc?: boolean,
     itemTypes?: ItemTypes,
+    genres?: number[],
+    bookmark?: string,
   ) {
     return this.api.get<DataResponse<List>>(`/api/v1/users/self/lists/${id}`, {
       token,
@@ -199,6 +203,8 @@ export class TeletrackerApi {
       desc,
       itemTypes:
         itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
+      genres: genres && genres.length ? genres.join(',') : undefined,
+      bookmark,
     });
   }
 

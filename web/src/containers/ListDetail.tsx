@@ -2,8 +2,9 @@ import {
   Button,
   ButtonGroup,
   Chip,
-  Collapse,
   CircularProgress,
+  ClickAwayListener,
+  Collapse,
   createStyles,
   Dialog,
   DialogActions,
@@ -14,12 +15,16 @@ import {
   FormControl,
   FormControlLabel,
   Grid,
+  Grow,
   IconButton,
   InputLabel,
   LinearProgress,
   ListItemIcon,
   Menu,
   MenuItem,
+  MenuList,
+  Paper,
+  Popper,
   Select,
   Switch,
   TextField,
@@ -27,43 +32,38 @@ import {
   Typography,
   withStyles,
   WithStyles,
+  withWidth,
+  Divider,
 } from '@material-ui/core';
 import { Delete, Edit, Settings, Tune } from '@material-ui/icons';
+import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
+import ReactGA from 'react-ga';
+import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
-import {
-  Link as RouterLink,
-  Redirect,
-  RouteComponentProps,
-  withRouter,
-} from 'react-router-dom';
+import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
-  LIST_RETRIEVE_INITIATED,
+  deleteList,
   ListRetrieveInitiated,
   ListRetrieveInitiatedPayload,
-} from '../actions/lists';
-import {
-  deleteList,
+  LIST_RETRIEVE_INITIATED,
   updateList,
   UserDeleteListPayload,
   UserUpdateListPayload,
 } from '../actions/lists';
 import ItemCard from '../components/ItemCard';
+import { StdRouterLink } from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
+import { GA_TRACKING_ID } from '../constants';
 import { AppState } from '../reducers';
+import { ThingMap } from '../reducers/item-detail';
 import { ListsByIdMap } from '../reducers/lists';
 import { layoutStyles } from '../styles';
-import { List } from '../types';
-import _ from 'lodash';
-import { StdRouterLink } from '../components/RouterLink';
-import { ThingMap } from '../reducers/item-detail';
-import { getOrInitListOptions } from '../utils/list-utils';
-import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants';
-import { ItemTypes, Genre, ListSortOptions } from '../types';
+import { Genre, ItemTypes, List, ListSortOptions } from '../types';
 import Thing from '../types/Thing';
+import { getOrInitListOptions } from '../utils/list-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -99,6 +99,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         display: 'flex',
       },
+      zIndex: 1000,
       marginBottom: theme.spacing(1),
       flexGrow: 1,
     },
@@ -137,6 +138,7 @@ interface OwnProps {
   listLoading: boolean;
   listsById: ListsByIdMap;
   thingsById: ThingMap;
+  listBookmark?: string;
 }
 
 interface DispatchProps {
@@ -155,11 +157,16 @@ interface StateProps {
   genres?: Genre[];
 }
 
+interface WidthProps {
+  width: string;
+}
+
 type NotOwnProps = RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
   WithUserProps &
-  StateProps;
+  StateProps &
+  WidthProps;
 
 type Props = OwnProps & NotOwnProps;
 
@@ -179,6 +186,8 @@ interface State {
   showFilter: boolean;
   sortOrder: ListSortOptions;
   itemTypes?: ItemTypes;
+  genreAnchorEl: HTMLButtonElement | null;
+  genreMenuOpen: boolean;
 }
 
 class ListDetail extends Component<Props, State> {
@@ -208,6 +217,8 @@ class ListDetail extends Component<Props, State> {
       renameDialogOpen: false,
       showFilter: params.has('sort') || params.has('genre'),
       sortOrder: sort,
+      genreAnchorEl: null,
+      genreMenuOpen: false,
     };
   }
 
@@ -229,6 +240,18 @@ class ListDetail extends Component<Props, State> {
     return Number(this.props.match.params.id);
   }
 
+  retrieveList() {
+    const { itemTypes, sortOrder, filter } = this.state;
+
+    this.props.retrieveList({
+      listId: this.listId,
+      sort: sortOrder,
+      itemTypes,
+      genres: filter ? [filter] : undefined,
+      force: true,
+    });
+  }
+
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
     const { match } = this.props;
@@ -242,12 +265,7 @@ class ListDetail extends Component<Props, State> {
       this.setState({ itemTypes: [match.params.type] });
     }
     this.setState({ loadingList: true });
-    this.props.retrieveList({
-      listId: this.listId,
-      sort: sortOrder,
-      itemTypes,
-      force: true,
-    });
+    this.retrieveList();
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -285,6 +303,10 @@ class ListDetail extends Component<Props, State> {
             ) || false
           : false,
       });
+    }
+
+    if (this.state.filter !== prevState.filter) {
+      this.retrieveList();
     }
   }
 
@@ -599,12 +621,12 @@ class ListDetail extends Component<Props, State> {
     this.setState({ itemTypes: [type], loadingList: true });
   };
 
-  setGenreFilter = genre => {
+  setGenreFilter = (genre?: Genre) => {
     const { match } = this.props;
     let params = new URLSearchParams(location.search);
     let paramGenre = params.get('genre');
 
-    if (genre === 'All' && paramGenre) {
+    if (!genre && paramGenre) {
       params.delete('genre');
       this.props.history.push(`${match.params.id}?${params}`);
       this.setState({ filter: undefined });
@@ -612,14 +634,14 @@ class ListDetail extends Component<Props, State> {
     }
 
     if (paramGenre) {
-      params.set('genre', genre.slug);
+      params.set('genre', genre!.slug);
     } else {
-      params.append('genre', genre.slug);
+      params.append('genre', genre!.slug);
     }
     params.sort();
 
     this.props.history.push(`${match.params.id}?${params}`);
-    this.setState({ filter: genre.id });
+    this.setState({ filter: genre!.id });
   };
 
   filteredFilmography(list: List) {
@@ -632,20 +654,42 @@ class ListDetail extends Component<Props, State> {
     );
   }
 
+  handleGenreMenu = event => {
+    this.setState({
+      genreAnchorEl: event.currentTarget,
+      genreMenuOpen: true,
+    });
+  };
+
+  handleGenreMenuClose = event => {
+    if (event.target.offsetParent === this.state.genreAnchorEl) {
+      return;
+    }
+
+    this.setState({
+      genreAnchorEl: null,
+      genreMenuOpen: false,
+    });
+  };
+
+  selectGenreFilter = (event, genre?: Genre) => {
+    this.setGenreFilter(genre);
+    this.handleGenreMenuClose(event);
+  };
+
   renderFilters(list: List) {
-    const { showFilter, itemTypes } = this.state;
-    const { classes } = this.props;
+    const { showFilter, itemTypes, genreAnchorEl } = this.state;
+    const { classes, genres, width } = this.props;
     let filmography = list!.things || [];
     let finalGenres: Genre[] = [];
-    let params = new URLSearchParams(location.search);
 
-    if (this.props.genres) {
+    if (genres) {
       finalGenres = _.chain(filmography)
         .map((f: Thing) => f.genreIds || [])
         .flatten()
         .uniq()
         .map(id => {
-          let g = _.find(this.props.genres, g => g.id === id);
+          let g = _.find(genres, g => g.id === id);
           if (g) {
             return [g];
           } else {
@@ -654,6 +698,16 @@ class ListDetail extends Component<Props, State> {
         })
         .flatten()
         .value();
+    }
+
+    let columns;
+
+    if (width === 'lg') {
+      columns = 3;
+    } else if (width === 'md') {
+      columns = 2;
+    } else {
+      columns = 1;
     }
 
     return (
@@ -676,26 +730,70 @@ class ListDetail extends Component<Props, State> {
                   flexWrap: 'wrap',
                 }}
               >
-                <Chip
-                  key={-1}
-                  label="All"
-                  className={classes.genre}
-                  onClick={() => this.setGenreFilter('All')}
-                  color={!this.state.filter ? 'secondary' : 'default'}
-                  clickable
-                />
-                {finalGenres.map(genre => (
-                  <Chip
-                    key={genre.id}
-                    label={genre.name}
-                    className={classes.genre}
-                    onClick={() => this.setGenreFilter(genre)}
-                    color={
-                      this.state.filter === genre.id ? 'secondary' : 'default'
-                    }
-                    clickable
-                  />
-                ))}
+                <Button
+                  aria-controls="genre-menu"
+                  aria-haspopup="true"
+                  onClick={event => this.handleGenreMenu(event)}
+                  color="primary"
+                  variant="contained"
+                >
+                  Genres
+                </Button>
+                <Popper
+                  open={this.state.genreMenuOpen}
+                  anchorEl={genreAnchorEl}
+                  placement="bottom-start"
+                  keepMounted
+                  transition
+                  disablePortal
+                >
+                  {({ TransitionProps }) => (
+                    <Grow {...TransitionProps}>
+                      <Paper
+                        style={{
+                          position: 'absolute',
+                          zIndex: 9999999,
+                          columns,
+                          marginTop: 14,
+                        }}
+                      >
+                        <ClickAwayListener
+                          onClickAway={this.handleGenreMenuClose}
+                        >
+                          <MenuList>
+                            <MenuItem
+                              button
+                              selected={!this.state.filter}
+                              onClick={ev => this.selectGenreFilter(ev)}
+                              dense
+                            >
+                              All
+                            </MenuItem>
+                            <Divider />
+                            {(genres || []).map(item => {
+                              return (
+                                <MenuItem
+                                  key={item.id}
+                                  onClick={ev =>
+                                    this.selectGenreFilter(ev, item)
+                                  }
+                                  button
+                                  selected={
+                                    Boolean(this.state.filter) &&
+                                    this.state.filter === item.id
+                                  }
+                                  dense
+                                >
+                                  {item.name}
+                                </MenuItem>
+                              );
+                            })}
+                          </MenuList>
+                        </ClickAwayListener>
+                      </Paper>
+                    </Grow>
+                  )}
+                </Popper>
               </div>
               <div style={{ display: 'flex', margin: '10px 0' }}>
                 <ButtonGroup
@@ -772,6 +870,26 @@ class ListDetail extends Component<Props, State> {
     );
   }
 
+  loadMoreDebounced = _.debounce(() => {
+    let { sortOrder, itemTypes, filter } = this.state;
+    let { listBookmark } = this.props;
+
+    console.log('retreieving');
+    this.props.retrieveList({
+      listId: this.listId,
+      bookmark: listBookmark,
+      sort: sortOrder,
+      itemTypes,
+      genres: filter ? [filter] : undefined,
+    });
+  }, 200);
+
+  loadMoreList() {
+    if (this.props.listBookmark && !this.props.listLoading) {
+      this.loadMoreDebounced();
+    }
+  }
+
   renderListDetail(list: List) {
     let { classes, listLoading, thingsById, userSelf } = this.props;
     let { deleted, loadingList } = this.state;
@@ -806,20 +924,27 @@ class ListDetail extends Component<Props, State> {
             </div>
             {this.renderFilters(list)}
             {!loadingList ? (
-              <Grid container spacing={2}>
-                {this.filteredFilmography(list).map(item =>
-                  thingsById[item.id] ? (
-                    <ItemCard
-                      key={item.id}
-                      userSelf={userSelf}
-                      item={thingsById[item.id]}
-                      listContext={list}
-                      withActionButton
-                      hoverDelete
-                    />
-                  ) : null,
-                )}
-              </Grid>
+              <InfiniteScroll
+                pageStart={0}
+                loadMore={() => this.loadMoreList()}
+                hasMore={Boolean(this.props.listBookmark)}
+                useWindow
+              >
+                <Grid container spacing={2}>
+                  {(list!.things || []).map(item =>
+                    thingsById[item.id] ? (
+                      <ItemCard
+                        key={item.id}
+                        userSelf={userSelf}
+                        item={thingsById[item.id]}
+                        listContext={list}
+                        withActionButton
+                        hoverDelete
+                      />
+                    ) : null,
+                  )}
+                </Grid>
+              </InfiniteScroll>
             ) : (
               this.renderLoadingCircle()
             )}
@@ -851,6 +976,7 @@ const mapStateToProps: (
     listsById: appState.lists.listsById,
     thingsById: appState.itemDetail.thingsById,
     genres: appState.metadata.genres,
+    listBookmark: appState.lists.currentBookmark,
   };
 };
 
@@ -864,13 +990,15 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
     dispatch,
   );
 
-export default withUser(
-  withStyles(styles)(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(ListDetail),
+export default withWidth()(
+  withUser(
+    withStyles(styles)(
+      withRouter(
+        connect(
+          mapStateToProps,
+          mapDispatchToProps,
+        )(ListDetail),
+      ),
     ),
   ),
 );
