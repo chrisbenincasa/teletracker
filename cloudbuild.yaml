@@ -82,6 +82,7 @@ steps:
         path: /root/.ssh
 images:
   - "gcr.io/teletracker/server"
+  - "gcr.io/teletracker/consumer"
 artifacts:
   objects:
     location: "gs://teletracker-build-artifacts"

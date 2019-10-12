@@ -1,6 +1,7 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.db.Bookmark
 import com.teletracker.common.db.access.{
   SearchOptions,
   SearchRankingMode,
@@ -9,14 +10,16 @@ import com.teletracker.common.db.access.{
 }
 import com.teletracker.common.db.model.{PartialThing, ThingType}
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.model.DataResponse
+import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.model.tmdb._
 import com.teletracker.common.process.tmdb.TmdbSynchronousProcessor
+import com.teletracker.common.util.CanParseFieldFilter
 import com.teletracker.common.util.json.circe._
 import com.teletracker.service.auth.RequestContext._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.QueryParam
+import com.twitter.finatra.validation.{Max, Min}
 import io.circe.shapes._
 import javax.inject.Inject
 import java.util.UUID
@@ -28,7 +31,8 @@ class SearchController @Inject()(
   tmdbClient: TmdbClient,
   tmdbSynchronousProcessor: TmdbSynchronousProcessor
 )(implicit executionContext: ExecutionContext)
-    extends Controller {
+    extends Controller
+    with CanParseFieldFilter {
   prefix("/api/v1") {
     get("/search") { req: Request =>
       val query = req.params("query")
@@ -45,11 +49,19 @@ class SearchController @Inject()(
   prefix("/api/v2") {
     get("/search") { req: SearchRequest =>
       val query = req.query
+      val fields = parseFieldsOrNone(req.fields)
       val mode = req.rankingMode.getOrElse(SearchRankingMode.Popularity)
-      val options = SearchOptions(mode, req.types.map(_.toSet))
+      val bookmark = req.bookmark.map(Bookmark.parse)
+
+      val options =
+        SearchOptions(mode, req.types.map(_.toSet), req.limit, bookmark)
 
       for {
-        things <- thingsDbAccess.searchForThings(query, options)
+        (things, bookmark) <- thingsDbAccess.searchForThings(
+          query,
+          options,
+          fields
+        )
         thingIds = things.map(_.id)
         thingUserDetails <- getThingUserDetails(
           req.request.authContext
@@ -64,7 +76,13 @@ class SearchController @Inject()(
           thing.toPartial.withUserMetadata(meta)
         })
 
-        response.ok.contentTypeJson().body(DataResponse.complex(allThings))
+        response.ok
+          .contentTypeJson()
+          .body(
+            DataResponse.forDataResponse(
+              DataResponse(allThings, Some(Paging(bookmark.map(_.asString))))
+            )
+          )
       }
     }
   }
@@ -113,6 +131,9 @@ class SearchController @Inject()(
 case class SearchRequest(
   @QueryParam query: String,
   @QueryParam rankingMode: Option[SearchRankingMode],
+  @QueryParam fields: Option[String],
   @QueryParam(commaSeparatedList = true) types: Option[List[ThingType]],
+  @QueryParam bookmark: Option[String],
+  @QueryParam @Max(50) @Min(0) limit: Int = 20,
   request: Request)
     extends InjectedRequest

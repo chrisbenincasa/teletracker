@@ -10,7 +10,7 @@ import {
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { search } from '../actions/search';
+import { search, SearchInitiatedPayload } from '../actions/search';
 import { Redirect } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import ItemCard from '../components/ItemCard';
@@ -21,6 +21,8 @@ import Thing from '../types/Thing';
 import { Error as ErrorIcon } from '@material-ui/icons';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
+import InfiniteScroll from 'react-infinite-scroller';
+import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -51,15 +53,20 @@ interface OwnProps extends WithStyles<typeof styles> {
   isSearching: boolean;
   searchResults?: Thing[];
   currentSearchText?: string;
+  searchBookmark?: string;
 }
 
 interface DispatchProps {
-  search: (text: string) => void;
+  search: (payload: SearchInitiatedPayload) => void;
 }
 
 type Props = OwnProps & WithUserProps & DispatchProps;
 
-class Search extends Component<Props> {
+type State = {
+  searchText: string;
+};
+
+class Search extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
@@ -76,7 +83,9 @@ class Search extends Component<Props> {
       };
 
       if (this.props.currentSearchText !== query) {
-        this.props.search(query);
+        this.props.search({
+          query,
+        });
       }
     }
   }
@@ -89,6 +98,19 @@ class Search extends Component<Props> {
 
     if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
       ReactGA.set({ userId: userSelf.user.uid });
+    }
+  }
+
+  debouncedSearch = _.debounce(() => {
+    this.props.search({
+      query: this.state.searchText,
+      bookmark: this.props.searchBookmark,
+    });
+  }, 200);
+
+  loadMoreResults() {
+    if (!this.props.isSearching) {
+      this.debouncedSearch();
     }
   }
 
@@ -105,7 +127,9 @@ class Search extends Component<Props> {
     let firstLoad = !searchResults;
     searchResults = searchResults || [];
 
-    return this.props.isSearching ? (
+    return this.props.isSearching &&
+      (!this.props.searchBookmark ||
+        this.state.searchText !== this.props.currentSearchText) ? (
       this.renderLoading()
     ) : !this.props.error ? (
       <div
@@ -120,13 +144,25 @@ class Search extends Component<Props> {
             <Typography>
               {`Movies & TV Shows that match "${this.props.currentSearchText}"`}
             </Typography>
-            <Grid container spacing={2}>
-              {searchResults.map(result => {
-                return (
-                  <ItemCard key={result.id} userSelf={userSelf} item={result} />
-                );
-              })}
-            </Grid>
+            <InfiniteScroll
+              pageStart={0}
+              loadMore={() => this.loadMoreResults()}
+              hasMore={Boolean(this.props.searchBookmark)}
+              useWindow
+              threshold={300}
+            >
+              <Grid container spacing={2}>
+                {searchResults.map(result => {
+                  return (
+                    <ItemCard
+                      key={result.id}
+                      userSelf={userSelf}
+                      item={result}
+                    />
+                  );
+                })}
+              </Grid>
+            </InfiniteScroll>
           </div>
         ) : firstLoad ? null : (
           <div style={{ margin: 24, padding: 8 }}>
@@ -176,6 +212,7 @@ const mapStateToProps = (appState: AppState) => {
     // TODO: Pass SearchResult object that either contains error or a response
     error: appState.search.error,
     searchResults: appState.search.results,
+    searchBookmark: appState.search.bookmark,
   };
 };
 
