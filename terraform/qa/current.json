@@ -1,4 +1,4 @@
 {
-  "image": "gcr.io/teletracker/server:0.1-1570145724.5dfaaf6",
-  "consumer_image": "gcr.io/teletracker/consumer@sha256:b5554b0187391bf7f422f9ff614bccd498dd7fc9730e5ea50fccc166ee0da01e"
+  "image": "gcr.io/teletracker/server:0.1-1570897440.f18cd43",
+  "consumer_image": "gcr.io/teletracker/consumer:0.1-1570897440.f18cd43"
 }
