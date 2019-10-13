@@ -298,8 +298,10 @@ class DynamicListBuilder @Inject()(
     ColumnOrdered[UUID]
   ) = {
     sortMode match {
-      case Popularity(true)  => (thing.popularity.desc.nullsLast, thing.id.asc)
-      case Popularity(false) => (thing.popularity.desc.nullsLast, thing.id.asc)
+      case Popularity(true) =>
+        (thing.popularity.desc.nullsLast, thing.id.asc.nullsFirst)
+      case Popularity(false) =>
+        (thing.popularity.desc.nullsLast, thing.id.asc.nullsFirst)
       case Recent(desc) =>
         val movieRelease = thing.metadata
           .+>("themoviedb")
@@ -318,7 +320,7 @@ class DynamicListBuilder @Inject()(
           either.asc.nullsLast
         }
 
-        ordered -> thing.id.asc
+        ordered -> thing.id.asc.nullsFirst
 
       case AddedTime(desc)           => makeSort(thing, Recent(desc))
       case d @ DefaultForListType(_) => makeSort(thing, d.get(true))

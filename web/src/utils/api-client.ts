@@ -392,9 +392,14 @@ export class TeletrackerApi {
     });
   }
 
-  async getPopularGenre(genre: string, typeRestrict?: 'movie' | 'show') {
+  async getPopularGenre(
+    genre: string,
+    typeRestrict?: 'movie' | 'show',
+    bookmark?: string,
+  ) {
     return this.api.get('/api/v1/genres/' + genre, {
       thingType: typeRestrict,
+      bookmark,
     });
   }
 

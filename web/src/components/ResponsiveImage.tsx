@@ -29,9 +29,11 @@ export const ResponsiveImage: React.FC<imgProps> = ({
     });
   }
 
-  function generateSrcSet(supportedSizes: number[]) {
+  function generateSrcSet(supportedSizes: (number | string)[]) {
     const sourceSet = supportedSizes.map(size => {
-      return `${baseImageURL}w${size}${imageName} ${size}w`;
+      let sizeStr = size === 'original' ? '1600w' : `${size}w`;
+      let urlPart = size === 'original' ? size : `w${size}`;
+      return `${baseImageURL}${urlPart}${imageName} ${sizeStr}`;
     });
 
     return sourceSet.join(',');
@@ -62,7 +64,7 @@ export const ResponsiveImage: React.FC<imgProps> = ({
   const backdropSpecs = [
     {
       type: 'image/jpeg',
-      sizes: [300, 780, 1280],
+      sizes: [300, 780, 1280, 'original'],
     },
   ];
 
