@@ -32,6 +32,8 @@ import { GA_TRACKING_ID } from '../constants';
 import InfiniteScroll from 'react-infinite-scroller';
 import _ from 'lodash';
 
+const limit = 20;
+
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
@@ -94,13 +96,18 @@ class Popular extends Component<Props, State> {
     };
   }
 
+  loadPopular(passBookmark: boolean) {
+    this.props.retrievePopular({
+      itemTypes: this.state.type,
+      limit,
+      bookmark: passBookmark ? this.props.bookmark : undefined,
+    });
+  }
+
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
 
-    this.props.retrievePopular({
-      itemTypes: this.state.type,
-      limit: 20,
-    });
+    this.loadPopular(false);
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -151,10 +158,7 @@ class Popular extends Component<Props, State> {
           type,
         },
         () => {
-          this.props.retrievePopular({
-            itemTypes: this.state.type,
-            limit: 19,
-          });
+          this.loadPopular(false);
         },
       );
     }
@@ -169,11 +173,7 @@ class Popular extends Component<Props, State> {
   };
 
   debounceLoadMore = _.debounce(() => {
-    this.props.retrievePopular({
-      itemTypes: this.state.type,
-      limit: 20,
-      bookmark: this.props.bookmark,
-    });
+    this.loadPopular(true);
   }, 250);
 
   loadMoreResults = () => {

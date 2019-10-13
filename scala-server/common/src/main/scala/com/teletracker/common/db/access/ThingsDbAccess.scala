@@ -153,7 +153,7 @@ class ThingsDbAccess @Inject()(
           .filter(startingId)(id => _.id >= id)
           .filter(thingType)(t => _.`type` === t)
           .query
-          .sortBy(_.id.asc)
+          .sortBy(_.id.asc.nullsFirst)
           .drop(offset)
           .take(perPage)
           .result
@@ -267,7 +267,7 @@ class ThingsDbAccess @Inject()(
             extractPopularityAndVotes(thing).desc.nullsLast
         }
 
-        mainSort -> thing.id.asc
+        mainSort -> thing.id.asc.nullsFirst
       }
 
       def makeBookmarkFilter(
@@ -1563,7 +1563,8 @@ class ThingsDbAccess @Inject()(
           })
           .query
           .sortBy {
-            case (_, thing) => thing.popularity.desc.nullsLast -> thing.id.asc
+            case (_, thing) =>
+              thing.popularity.desc.nullsLast -> thing.id.asc.nullsFirst
           }
           .map(_._2)
           .distinctOn(_.id)
@@ -1586,7 +1587,9 @@ class ThingsDbAccess @Inject()(
           .query
           .filter(_.`type` inSetBind actualThingTypes)
           .filter(removeAdultItems)
-          .sortBy(thing => thing.popularity.desc.nullsLast -> thing.id.asc)
+          .sortBy(
+            thing => thing.popularity.desc.nullsLast -> thing.id.asc.nullsFirst
+          )
           .take(limit)
           .result
       }
@@ -1595,12 +1598,17 @@ class ThingsDbAccess @Inject()(
     thingsFut.map(things => {
       val nextBookmark = things.lastOption
         .map(
-          thing =>
+          thing => {
+            val refinement = bookmark
+              .filter(_.value == thing.popularity.getOrElse(0.0).toString)
+              .map(_ => thing.id.toString)
+
             Bookmark(
               Popularity(),
               thing.popularity.getOrElse(0.0).toString,
-              Some(thing.id.toString)
+              refinement
             )
+          }
         )
 
       things -> nextBookmark
