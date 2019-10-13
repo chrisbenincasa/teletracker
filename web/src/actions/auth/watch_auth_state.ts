@@ -18,7 +18,6 @@ export const watchAuthState = function*() {
         let token: string = yield call(() => user.getIdToken());
         yield call([TeletrackerApi, TeletrackerApi.setToken], token);
         yield put({ type: 'auth/SET_TOKEN', payload: token });
-        // yield put({ type: 'USER_SET', payload: user });
       } else {
         yield put(UnsetToken());
         yield put(LogoutSuccessful());
