@@ -8,6 +8,7 @@ import {
   createStyles,
   Divider,
   Fade,
+  Hidden,
   Icon,
   IconButton,
   InputBase,
@@ -32,6 +33,7 @@ import {
   ChevronRight,
   Close,
   Menu as MenuIcon,
+  Person,
   Search as SearchIcon,
 } from '@material-ui/icons';
 import clsx from 'clsx';
@@ -440,6 +442,7 @@ class Toolbar extends Component<Props, State> {
     // If user is on smaller device, go directly to page
     if (['xs', 'sm', 'md'].includes(this.props.width)) {
       this.props.history.push(`Popular?type=${type}`);
+      return;
     }
 
     // If Genre menu is already open and user is not navigating to submenu, close it
@@ -862,8 +865,15 @@ class Toolbar extends Component<Props, State> {
           {this.renderSearch()}
           {!isAuthed ? (
             <React.Fragment>
-              <ButtonLink primary="Login" to="/login" />
-              <ButtonLink primary="Signup" to="/signup" />
+              <Hidden lgUp>
+                <IconButton component={RouterLink} to="/login">
+                  <Person />
+                </IconButton>
+              </Hidden>
+              <Hidden mdDown>
+                <ButtonLink primary="Login" to="/login" />
+                <ButtonLink primary="Signup" to="/signup" />
+              </Hidden>
             </React.Fragment>
           ) : null}
           {this.renderProfileMenu()}
