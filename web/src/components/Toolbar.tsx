@@ -444,7 +444,6 @@ class Toolbar extends Component<Props, State> {
       this.props.history.push(`Popular?type=${type}`);
       return;
     }
-
     // If Genre menu is already open and user is not navigating to submenu, close it
     // event.relatedTarget is target element in a mouseEnter/mouseExit event
     if (
@@ -459,7 +458,6 @@ class Toolbar extends Component<Props, State> {
       });
       return;
     }
-
     this.setState({
       genreAnchorEl: event.currentTarget,
       genreType: type,
@@ -633,7 +631,10 @@ class Toolbar extends Component<Props, State> {
                     : this.genreMovieContainerRef
                 }
               >
-                <ClickAwayListener onClickAway={this.handleGenreMenuClose}>
+                <ClickAwayListener
+                  onClickAway={this.handleGenreMenuClose}
+                  touchEvent={false}
+                >
                   <MenuList
                     style={{
                       display: 'flex',
