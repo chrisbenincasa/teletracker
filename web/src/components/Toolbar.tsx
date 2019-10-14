@@ -4,10 +4,10 @@ import {
   Button,
   CircularProgress,
   ClickAwayListener,
+  Collapse,
   createStyles,
   Divider,
   Fade,
-  Grow,
   Icon,
   IconButton,
   InputBase,
@@ -27,6 +27,8 @@ import {
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
   AccountCircleOutlined,
+  ArrowDropDown,
+  ArrowDropUp,
   ChevronRight,
   Close,
   Menu as MenuIcon,
@@ -216,7 +218,7 @@ interface State {
   anchorEl: HTMLInputElement | null;
   drawerOpen: boolean;
   genreAnchorEl: HTMLButtonElement | null;
-  genreType: 'movie' | 'tv' | null;
+  genreType: 'movie' | 'show' | null;
   isLoggedOut: boolean;
   mobileSearchBarOpen: boolean;
   searchAnchor: HTMLInputElement | null;
@@ -237,12 +239,16 @@ class Toolbar extends Component<Props, State> {
   private mobileSearchInput: React.RefObject<HTMLInputElement>;
   private desktopSearchInput: React.RefObject<HTMLInputElement>;
   private genreAnchorRef: React.RefObject<HTMLButtonElement>;
+  private genreShowContainerRef: React.RefObject<HTMLElement>;
+  private genreMovieContainerRef: React.RefObject<HTMLElement>;
 
   constructor(props) {
     super(props);
     this.mobileSearchInput = React.createRef();
     this.desktopSearchInput = React.createRef();
     this.genreAnchorRef = React.createRef();
+    this.genreShowContainerRef = React.createRef();
+    this.genreMovieContainerRef = React.createRef();
   }
 
   state = {
@@ -361,12 +367,13 @@ class Toolbar extends Component<Props, State> {
           disablePortal
         >
           {({ TransitionProps, placement }) => (
-            <Grow
+            <Fade
               {...TransitionProps}
               style={{
                 transformOrigin:
                   placement === 'bottom' ? 'center top' : 'center bottom',
               }}
+              in={!!searchAnchor}
             >
               <Paper
                 id="menu-list-grow"
@@ -434,7 +441,7 @@ class Toolbar extends Component<Props, State> {
                   )}
                 </MenuList>
               </Paper>
-            </Grow>
+            </Fade>
           )}
         </Popper>
       </ClickAwayListener>
@@ -449,7 +456,27 @@ class Toolbar extends Component<Props, State> {
     this.setState({ anchorEl: null });
   };
 
-  handleGenreMenu = (event, type: 'movie' | 'tv' | null) => {
+  handleGenreMenu = (event, type: 'movie' | 'show' | null) => {
+    // If user is on smaller device, go directly to page
+    if (['xs', 'sm', 'md'].includes(this.props.width)) {
+      this.props.history.push(`Popular?type=${type}`);
+    }
+
+    // If Genre menu is already open and user is not navigating to submenu, close it
+    // event.relatedTarget is target element in a mouseEnter/mouseExit event
+    if (
+      this.state.genreType === type &&
+      event.relatedTarget !==
+        this.genreMovieContainerRef!.current!.firstChild &&
+      event.relatedTarget !== this.genreShowContainerRef!.current!.firstChild
+    ) {
+      this.setState({
+        genreAnchorEl: null,
+        genreType: null,
+      });
+      return;
+    }
+
     this.setState({
       genreAnchorEl: event.currentTarget,
       genreType: type,
@@ -457,9 +484,6 @@ class Toolbar extends Component<Props, State> {
   };
 
   handleGenreMenuClose = event => {
-    if (event.target.offsetParent === this.state.genreAnchorEl) {
-      return;
-    }
     this.setState({
       genreAnchorEl: null,
       genreType: null,
@@ -530,7 +554,8 @@ class Toolbar extends Component<Props, State> {
       </React.Fragment>
     );
   }
-  renderGenreMenu(type: 'movie' | 'tv') {
+
+  renderGenreMenu(type: 'movie' | 'show') {
     const { classes, genres, width } = this.props;
     const { genreAnchorEl } = this.state;
     let columns;
@@ -543,8 +568,13 @@ class Toolbar extends Component<Props, State> {
       columns = 1;
     }
 
+    // Todo: support 'show' in genre types
     const filteredGenres =
-      (genres && genres.filter(item => item.type.includes(type))) || [];
+      (genres &&
+        genres.filter(item =>
+          item.type.includes(type === 'show' ? 'tv' : 'movie'),
+        )) ||
+      [];
 
     function MenuItemLink(props: MenuItemProps) {
       const { primary, to, selected, onClick } = props;
@@ -569,12 +599,24 @@ class Toolbar extends Component<Props, State> {
           aria-controls="genre-menu"
           aria-haspopup="true"
           onClick={event => this.handleGenreMenu(event, type)}
+          onMouseEnter={event => this.handleGenreMenu(event, type)}
+          onMouseLeave={event => this.handleGenreMenu(event, type)}
           style={{
             backgroundColor:
               this.state.genreType === type ? '#424242' : 'inherit',
+            borderBottomLeftRadius: 0,
+            borderBottomRightRadius: 0,
           }}
+          endIcon={
+            ['xs', 'sm', 'md'].includes(this.props.width) ? null : this.state
+                .genreType === type ? (
+              <ArrowDropUp />
+            ) : (
+              <ArrowDropDown />
+            )
+          }
         >
-          {type === 'tv' ? 'TV Shows' : 'Movies'}
+          {type === 'show' ? 'TV Shows' : 'Movies'}
         </Button>
         <Popper
           open={Boolean(this.state.genreType === type)}
@@ -585,32 +627,66 @@ class Toolbar extends Component<Props, State> {
           disablePortal
         >
           {({ TransitionProps }) => (
-            <Grow {...TransitionProps}>
+            <Fade
+              {...TransitionProps}
+              in={Boolean(this.state.genreType === type)}
+              timeout={200}
+            >
               <Paper
                 style={{
                   position: 'absolute',
                   zIndex: 9999999,
-                  columns,
-                  marginTop: 14,
+                  marginTop: 0,
+                  borderTopLeftRadius: 0,
                 }}
+                onMouseLeave={this.handleGenreMenuClose}
+                ref={
+                  type === 'show'
+                    ? this.genreShowContainerRef
+                    : this.genreMovieContainerRef
+                }
               >
                 <ClickAwayListener onClickAway={this.handleGenreMenuClose}>
-                  <MenuList>
+                  <MenuList
+                    style={{
+                      display: 'flex',
+                      flexFlow: 'column wrap',
+                      height: 275,
+                      width: 475,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      style={{ fontWeight: 700, padding: '6px 16px' }}
+                    >
+                      Explore
+                    </Typography>
+                    <Divider />
                     <MenuItemLink
                       onClick={this.handleGenreMenuClose}
                       key={`popular-${type}`}
-                      to={`/popular?type=${type === 'tv' ? 'show' : 'movie'}`}
+                      to={`/popular?type=${type}`}
                       primary={"What's Popular?"}
                     />
+                    <MenuItemLink
+                      onClick={this.handleGenreMenuClose}
+                      key={`new-${type}`}
+                      to={`/new?type=${type}`}
+                      primary={"What's New?"}
+                    />
+                    <Typography
+                      variant="subtitle1"
+                      style={{ fontWeight: 700, padding: '6px 16px' }}
+                    >
+                      Genres
+                    </Typography>
                     <Divider />
                     {filteredGenres.map(item => {
                       return (
                         <MenuItemLink
                           onClick={this.handleGenreMenuClose}
                           key={item.slug}
-                          to={`/genres/${item.slug}?type=${
-                            type === 'tv' ? 'show' : 'movie'
-                          }`}
+                          to={`/genres/${item.slug}?type=${type}`}
                           primary={item.name}
                         />
                       );
@@ -618,7 +694,7 @@ class Toolbar extends Component<Props, State> {
                   </MenuList>
                 </ClickAwayListener>
               </Paper>
-            </Grow>
+            </Fade>
           )}
         </Popper>
       </React.Fragment>
@@ -772,7 +848,6 @@ class Toolbar extends Component<Props, State> {
           <Typography
             variant="h6"
             color="inherit"
-            className={classes.grow}
             component={props =>
               StdRouterLink('/', {
                 ...props,
@@ -787,7 +862,8 @@ class Toolbar extends Component<Props, State> {
               TT
             </Box>
           </Typography>
-          {this.renderGenreMenu('tv')}
+          <div className={classes.grow} />
+          {this.renderGenreMenu('show')}
           {this.renderGenreMenu('movie')}
           <Box display={{ xs: 'none', sm: 'block' }} m={1}>
             <ButtonLink
