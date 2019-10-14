@@ -8,6 +8,7 @@ import {
   Typography,
   withStyles,
   WithStyles,
+  withWidth,
 } from '@material-ui/core';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -53,6 +54,10 @@ interface RouteParams {
   id: string;
 }
 
+interface WidthProps {
+  width: string;
+}
+
 interface DispatchProps {
   retrievePopular: (payload: PopularInitiatedActionPayload) => void;
 }
@@ -61,6 +66,7 @@ type Props = OwnProps &
   InjectedProps &
   DispatchProps &
   WithUserProps &
+  WidthProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
@@ -169,14 +175,20 @@ class Popular extends Component<Props, State> {
     const { type } = this.state;
 
     return popular && popular && popular.length ? (
-      <div style={{ padding: 8, margin: 20 }}>
-        <div
-          style={{ display: 'flex', flexDirection: 'row', marginBottom: 10 }}
-        >
+      <div
+        style={{
+          padding: 8,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Typography
             color="inherit"
-            variant="h4"
-            style={{ marginBottom: 10, flexGrow: 1 }}
+            variant={
+              ['xs', 'sm', 'md'].includes(this.props.width) ? 'h6' : 'h4'
+            }
+            style={{ flexGrow: 1 }}
           >
             {`Popular ${
               type
@@ -186,6 +198,15 @@ class Popular extends Component<Props, State> {
                 : 'Content'
             }`}
           </Typography>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            marginBottom: 8,
+            justifyContent: 'flex-end',
+          }}
+        >
           <ButtonGroup
             variant="contained"
             color="primary"
@@ -267,13 +288,15 @@ const mapDispatchToProps = dispatch =>
     dispatch,
   );
 
-export default withUser(
-  withStyles(styles)(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(Popular),
+export default withWidth()(
+  withUser(
+    withStyles(styles)(
+      withRouter(
+        connect(
+          mapStateToProps,
+          mapDispatchToProps,
+        )(Popular),
+      ),
     ),
   ),
 );
