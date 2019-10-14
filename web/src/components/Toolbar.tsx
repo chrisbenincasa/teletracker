@@ -681,7 +681,7 @@ class Toolbar extends Component<Props, State> {
                       Genres
                     </Typography>
                     <Divider />
-                    {filteredGenres.map((item, index) => {
+                    {filteredGenres.map(item => {
                       return (
                         <MenuItemLink
                           onClick={this.handleGenreMenuClose}
