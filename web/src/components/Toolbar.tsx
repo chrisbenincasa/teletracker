@@ -596,7 +596,7 @@ class Toolbar extends Component<Props, State> {
             )
           }
         >
-          {type === 'tv'
+          {type === 'show'
             ? ['xs', 'sm', 'md'].includes(this.props.width)
               ? 'shows'
               : 'TV Shows'
