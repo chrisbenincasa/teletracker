@@ -439,31 +439,29 @@ class Toolbar extends Component<Props, State> {
   };
 
   handleGenreMenu = (event, type: 'movie' | 'show' | null) => {
-    // If user is on smaller device, go directly to page
-    if (['xs', 'sm', 'md'].includes(this.props.width)) {
-      this.props.history.push(`Popular?type=${type}`);
-      return;
-    }
-
-    // If Genre menu is already open and user is not navigating to submenu, close it
-    // event.relatedTarget is target element in a mouseEnter/mouseExit event
-    if (
-      this.state.genreType === type &&
-      event.relatedTarget !==
-        this.genreMovieContainerRef!.current!.firstChild &&
-      event.relatedTarget !== this.genreShowContainerRef!.current!.firstChild
-    ) {
-      this.setState({
-        genreAnchorEl: null,
-        genreType: null,
-      });
-      return;
-    }
-
-    this.setState({
-      genreAnchorEl: event.currentTarget,
-      genreType: type,
-    });
+    // // If user is on smaller device, go directly to page
+    // if (['xs', 'sm', 'md'].includes(this.props.width)) {
+    //   this.props.history.push(`Popular?type=${type}`);
+    //   return;
+    // }
+    // // If Genre menu is already open and user is not navigating to submenu, close it
+    // // event.relatedTarget is target element in a mouseEnter/mouseExit event
+    // if (
+    //   this.state.genreType === type &&
+    //   event.relatedTarget !==
+    //     this.genreMovieContainerRef!.current!.firstChild &&
+    //   event.relatedTarget !== this.genreShowContainerRef!.current!.firstChild
+    // ) {
+    //   this.setState({
+    //     genreAnchorEl: null,
+    //     genreType: null,
+    //   });
+    //   return;
+    // }
+    // this.setState({
+    //   genreAnchorEl: event.currentTarget,
+    //   genreType: type,
+    // });
   };
 
   handleGenreMenuClose = event => {
@@ -633,7 +631,7 @@ class Toolbar extends Component<Props, State> {
                     : this.genreMovieContainerRef
                 }
               >
-                <ClickAwayListener onClickAway={this.handleGenreMenuClose}>
+                <ClickAwayListener onClickAway={this.handleGenreMenuClose} touchEvent={false}>
                   <MenuList
                     style={{
                       display: 'flex',
