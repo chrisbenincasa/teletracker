@@ -81,26 +81,6 @@ const styles = (theme: Theme) =>
       },
       caretColor: theme.palette.common.white,
     },
-    mainContent: {
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-      }),
-      marginLeft: 0,
-    },
-    mainContentShift: {
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-      [theme.breakpoints.up('sm')]: {
-        marginLeft: DrawerWidthPx,
-      },
-    },
-    menuButton: {
-      marginLeft: -12,
-      marginRight: 20,
-    },
     mobileInput: {
       padding: theme.spacing(1),
       width: '100%',
@@ -616,7 +596,11 @@ class Toolbar extends Component<Props, State> {
             )
           }
         >
-          {type === 'show' ? 'TV Shows' : 'Movies'}
+          {type === 'tv'
+            ? ['xs', 'sm', 'md'].includes(this.props.width)
+              ? 'shows'
+              : 'TV Shows'
+            : 'Movies'}
         </Button>
         <Popper
           open={Boolean(this.state.genreType === type)}
@@ -775,8 +759,8 @@ class Toolbar extends Component<Props, State> {
     }
 
     return (
-      <AppBar position="sticky">
-        <MUIToolbar variant="dense">
+      <AppBar position="sticky" style={{ whiteSpace: 'nowrap' }}>
+        <MUIToolbar variant="dense" disableGutters>
           <Slide
             direction="left"
             in={this.state.mobileSearchBarOpen}
