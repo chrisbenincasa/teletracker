@@ -20,6 +20,9 @@ const styles = (theme: Theme) =>
     button: {
       marginTop: 5,
       width: '100% !important',
+      [theme.breakpoints.down('md')]: {
+        fontSize: '0.75rem',
+      },
     },
     buttonIcon: { marginRight: 8 },
     itemCTA: {

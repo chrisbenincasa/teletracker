@@ -144,7 +144,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
-      width: '100%',
+      width: '50%',
       display: 'flex',
       flex: '0 1 auto',
       position: 'relative',
@@ -298,14 +298,10 @@ class ItemDetails extends Component<Props, State> {
           alignItems: 'flex-start',
           width: '100%',
           marginBottom: 10,
+          zIndex: 99999,
         }}
       >
-        <Typography
-          color="inherit"
-          variant="h4"
-          itemProp="name"
-          style={{ zIndex: 99999 }}
-        >
+        <Typography color="inherit" variant="h4" itemProp="name">
           {`${title}`}
         </Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>

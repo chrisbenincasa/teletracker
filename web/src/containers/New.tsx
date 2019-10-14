@@ -143,7 +143,7 @@ class New extends Component<Props> {
             key={moment(avs[0].startDate).format('MM/DD')}
             style={{ marginTop: 15 }}
           >
-            <Typography variant="h4">
+            <Typography variant="h6">
               Week of {moment(avs[0].startDate).format('MM/DD')}
             </Typography>
             <Grid key={key} container spacing={2}>
@@ -174,7 +174,7 @@ class New extends Component<Props> {
                 flexGrow: 1,
               }}
             >
-              <Typography style={{ paddingLeft: 8 }} variant="h2">
+              <Typography style={{ paddingLeft: 8 }} variant="h4">
                 Recently Added
               </Typography>
               <div className={this.props.classes.cardGrid}>
