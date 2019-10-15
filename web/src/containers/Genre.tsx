@@ -30,6 +30,10 @@ import { GenreInitiatedActionPayload } from '../actions/popular/genre';
 import Featured from '../components/Featured';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
+import InfiniteScroll from 'react-infinite-scroller';
+import _ from 'lodash';
+
+const limit = 20;
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -59,6 +63,8 @@ interface InjectedProps {
   genre?: string[];
   genres?: GenreModel[];
   thingsBySlug: { [key: string]: Thing };
+  bookmark?: string;
+  loading: boolean;
 }
 
 interface RouteParams {
@@ -100,13 +106,19 @@ class Genre extends Component<Props, State> {
     };
   }
 
-  componentDidMount() {
-    const { isLoggedIn, userSelf } = this.props;
-
+  loadGenres(passBookmark: boolean) {
     this.props.retrieveGenre({
       genre: this.props.match.params.id,
       thingRestrict: this.state.type,
+      bookmark: passBookmark ? this.props.bookmark : undefined,
+      limit,
     });
+  }
+
+  componentDidMount() {
+    const { isLoggedIn, userSelf } = this.props;
+
+    this.loadGenres(false);
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -153,13 +165,14 @@ class Genre extends Component<Props, State> {
         type = param;
       }
 
-      this.setState({
-        type,
-      });
-      this.props.retrieveGenre({
-        genre: this.props.match.params.id,
-        thingRestrict: type,
-      });
+      this.setState(
+        {
+          type,
+        },
+        () => {
+          this.loadGenres(false);
+        },
+      );
     }
   }
 
@@ -169,6 +182,16 @@ class Genre extends Component<Props, State> {
         <LinearProgress />
       </div>
     );
+  };
+
+  debounceLoadMore = _.debounce(() => {
+    this.loadGenres(true);
+  }, 250);
+
+  loadMoreResults = () => {
+    if (!this.props.loading) {
+      this.debounceLoadMore();
+    }
   };
 
   renderItems = () => {
@@ -236,17 +259,28 @@ class Genre extends Component<Props, State> {
             </Button>
           </ButtonGroup>
         </div>
-        <Grid container spacing={2}>
-          {genre.map((result, index) => {
-            let thing = thingsBySlug[result];
 
-            if (thing && index !== this.state.mainItemIndex) {
-              return <ItemCard key={result} userSelf={userSelf} item={thing} />;
-            } else {
-              return null;
-            }
-          })}
-        </Grid>
+        <InfiniteScroll
+          pageStart={0}
+          loadMore={() => this.loadMoreResults()}
+          hasMore={Boolean(this.props.bookmark)}
+          useWindow
+          threshold={400}
+        >
+          <Grid container spacing={2}>
+            {genre.map((result, index) => {
+              let thing = thingsBySlug[result];
+
+              if (thing && index !== this.state.mainItemIndex) {
+                return (
+                  <ItemCard key={result} userSelf={userSelf} item={thing} />
+                );
+              } else {
+                return null;
+              }
+            })}
+          </Grid>
+        </InfiniteScroll>
       </div>
     ) : null;
   };
@@ -272,6 +306,8 @@ const mapStateToProps = (appState: AppState) => {
     genre: appState.popular.genre,
     genres: appState.metadata.genres,
     thingsBySlug: appState.itemDetail.thingsBySlug,
+    loading: appState.popular.loadingGenres,
+    bookmark: appState.popular.genreBookmark,
   };
 };
 

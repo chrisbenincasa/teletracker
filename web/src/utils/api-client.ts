@@ -114,10 +114,11 @@ export class TeletrackerApi {
     });
   }
 
-  async search(token: string, searchText: string) {
+  async search(token: string, searchText: string, bookmark?: string) {
     return this.api.get<ApiThing[]>('/api/v2/search', {
       query: searchText,
       token,
+      bookmark,
     });
   }
 
@@ -391,9 +392,14 @@ export class TeletrackerApi {
     });
   }
 
-  async getPopularGenre(genre: string, typeRestrict?: 'movie' | 'show') {
+  async getPopularGenre(
+    genre: string,
+    typeRestrict?: 'movie' | 'show',
+    bookmark?: string,
+  ) {
     return this.api.get('/api/v1/genres/' + genre, {
       thingType: typeRestrict,
+      bookmark,
     });
   }
 
