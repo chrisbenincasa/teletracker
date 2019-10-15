@@ -7,7 +7,6 @@ import {
   Input,
   InputLabel,
   Link,
-  Paper,
   Theme,
   Typography,
   WithStyles,
@@ -19,38 +18,17 @@ import * as R from 'ramda';
 import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { login, LoginSuccessful, logInWithGoogle } from '../actions/auth';
-import { AppState } from '../reducers';
+import { login, LoginSuccessful, logInWithGoogle } from '../../actions/auth';
+import { AppState } from '../../reducers';
 import { Redirect } from 'react-router';
 import { Link as RouterLink } from 'react-router-dom';
 import * as firebase from 'firebase/app';
-import GoogleLoginButton from '../components/GoogleLoginButton';
+import GoogleLoginButton from './GoogleLoginButton';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID } from '../../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
-    main: {
-      width: 'auto',
-      display: 'block', // Fix IE 11 issue.
-      marginLeft: theme.spacing(3),
-      marginRight: theme.spacing(3),
-      [theme.breakpoints.up(400 + theme.spacing(6))]: {
-        width: 400,
-        marginLeft: 'auto',
-        marginRight: 'auto',
-      },
-    },
-    paper: {
-      marginTop: theme.spacing(8),
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: `${theme.spacing(2)}px ${theme.spacing(3)}px ${theme.spacing(
-        3,
-      )}px`,
-      position: 'relative',
-    },
     avatar: {
       margin: theme.spacing(1),
       backgroundColor: theme.palette.secondary.main,
@@ -100,6 +78,7 @@ interface Props extends WithStyles<typeof styles> {
   isLoggingIn: boolean;
   logInSuccessful: (token: string) => any;
   changePage: () => void;
+  onNav?: () => void;
   redirect_uri?: string;
 }
 
@@ -211,9 +190,13 @@ class LoginForm extends Component<Props, State> {
             </Button>
             <Typography className={classes.signUpLinkText}>
               Don't have an account?&nbsp;
-              <Link component={RouterLink} to="/signup">
-                Sign up now!
-              </Link>
+              {this.props.onNav ? (
+                <Link onClick={this.props.onNav}>Signup!</Link>
+              ) : (
+                <Link component={RouterLink} to="/signup">
+                  Signup!
+                </Link>
+              )}
             </Typography>
           </form>
         </div>

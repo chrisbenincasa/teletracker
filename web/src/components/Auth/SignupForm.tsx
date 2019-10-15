@@ -1,22 +1,30 @@
 import {
+  Avatar,
+  Button,
   createStyles,
-  Paper,
+  Divider,
+  FormControl,
+  Input,
+  InputLabel,
+  Link,
   Theme,
+  Typography,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
+import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import { push } from 'connected-react-router';
 import * as R from 'ramda';
 import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { signup, signUpWithGoogle } from '../actions/auth';
-import { AppState } from '../reducers';
-import { Redirect } from 'react-router';
+import { signup, signUpWithGoogle } from '../../actions/auth';
+import { AppState } from '../../reducers';
+import { Link as RouterLink } from 'react-router-dom';
 import * as firebase from 'firebase/app';
+import GoogleLoginButton from './GoogleLoginButton';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants';
-import SignupForm from '../components/Auth/LoginForm';
+import { GA_TRACKING_ID } from '../../constants';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -65,6 +73,7 @@ interface Props extends WithStyles<typeof styles> {
   signup: (username: string, email: string, password: string) => void;
   signUpWithGoogle: () => any;
   changePage: () => void;
+  onNav?: () => void;
 }
 
 interface State {
@@ -73,7 +82,7 @@ interface State {
   password: string;
 }
 
-class Signup extends Component<Props, State> {
+class SignupForm extends Component<Props, State> {
   state: State = {
     username: '',
     email: '',
@@ -117,16 +126,70 @@ class Signup extends Component<Props, State> {
   }
 
   render() {
-    let { isAuthed, classes } = this.props;
+    let { classes } = this.props;
+    let { email, password } = this.state;
 
-    return !isAuthed ? (
-      <main className={classes.main}>
-        <Paper className={classes.paper}>
-          <SignupForm />
-        </Paper>
-      </main>
-    ) : (
-      <Redirect to="/" />
+    return (
+      <React.Fragment>
+        <Avatar className={classes.avatar}>
+          <LockOutlinedIcon />
+        </Avatar>
+        <Typography component="h1" variant="h5">
+          Sign Up
+        </Typography>
+
+        <Divider />
+
+        <div className={classes.socialSignInContainer}>
+          <GoogleLoginButton onClick={this.signUpWithGoogle} />
+        </div>
+
+        <form className={classes.form} onSubmit={ev => this.onSubmit(ev)}>
+          <FormControl margin="normal" required fullWidth>
+            <InputLabel htmlFor="email">Email</InputLabel>
+            <Input
+              id="email"
+              name="email"
+              autoComplete="email"
+              autoFocus
+              type="email"
+              onChange={e => this.setState({ email: e.target.value })}
+              value={email}
+            />
+          </FormControl>
+          <FormControl margin="normal" required fullWidth>
+            <InputLabel htmlFor="password">Password</InputLabel>
+            <Input
+              id="password"
+              name="password"
+              autoComplete="password"
+              type="password"
+              onChange={e => this.setState({ password: e.target.value })}
+              value={password}
+            />
+          </FormControl>
+
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            color="primary"
+            className={classes.submit}
+          >
+            Sign Up
+          </Button>
+          <Typography className={classes.signUpLinkText}>
+            Already have an account?&nbsp;
+            {this.props.onNav ? (
+              <Link onClick={this.props.onNav}>Login!</Link>
+            ) : (
+              <Link component={RouterLink} to="/login">
+                Login!
+              </Link>
+            )}
+          </Typography>
+        </form>
+      </React.Fragment>
     );
   }
 }
@@ -152,5 +215,5 @@ export default withStyles(styles)(
   connect(
     mapStateToProps,
     mapDispatchToProps,
-  )(Signup),
+  )(SignupForm),
 );

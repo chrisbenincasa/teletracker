@@ -4,7 +4,6 @@ import {
   Button,
   CircularProgress,
   ClickAwayListener,
-  Collapse,
   createStyles,
   Divider,
   Fade,
@@ -45,7 +44,6 @@ import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../actions/auth';
 import { search, SearchInitiatedPayload } from '../actions/search';
 import { AppState } from '../reducers';
-import { DrawerWidthPx } from '../components/Drawer';
 import RouterLink, { StdRouterLink } from '../components/RouterLink';
 import Thing from '../types/Thing';
 import _ from 'lodash';
@@ -832,15 +830,15 @@ class Toolbar extends Component<Props, State> {
               </IconButton>
             </div>
           </Slide>
-          {isAuthed ? (
-            <IconButton
-              focusRipple={false}
-              onClick={this.toggleDrawer}
-              color="inherit"
-            >
-              {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
-            </IconButton>
-          ) : null}
+
+          <IconButton
+            focusRipple={false}
+            onClick={this.toggleDrawer}
+            color="inherit"
+          >
+            {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
+          </IconButton>
+
           <Typography
             variant="h6"
             color="inherit"

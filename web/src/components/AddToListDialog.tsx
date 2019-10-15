@@ -41,7 +41,7 @@ import CreateAListValidator, {
   CreateAListValidationStateObj,
 } from '../utils/validation/CreateAListValidator';
 import Thing, { ThingLikeStruct } from '../types/Thing';
-import LoginDialog from './LoginDialog';
+import AuthDialog from './Auth/AuthDialog';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -361,7 +361,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       );
     } else {
       return (
-        <LoginDialog
+        <AuthDialog
           open={this.props.open && !this.state.exited}
           onClose={this.handleModalClose}
         />
