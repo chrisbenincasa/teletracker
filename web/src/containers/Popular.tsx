@@ -30,6 +30,10 @@ import Featured from '../components/Featured';
 import Thing from '../types/Thing';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
+import InfiniteScroll from 'react-infinite-scroller';
+import _ from 'lodash';
+
+const limit = 20;
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -48,6 +52,8 @@ interface InjectedProps {
   isSearching: boolean;
   popular?: string[];
   thingsBySlug: { [key: string]: Thing };
+  loading: boolean;
+  bookmark?: string;
 }
 
 interface RouteParams {
@@ -96,13 +102,18 @@ class Popular extends Component<Props, State> {
     };
   }
 
+  loadPopular(passBookmark: boolean) {
+    this.props.retrievePopular({
+      itemTypes: this.state.type,
+      limit,
+      bookmark: passBookmark ? this.props.bookmark : undefined,
+    });
+  }
+
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
 
-    this.props.retrievePopular({
-      itemTypes: this.state.type,
-      limit: 19,
-    });
+    this.loadPopular(false);
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -153,10 +164,7 @@ class Popular extends Component<Props, State> {
           type,
         },
         () => {
-          this.props.retrievePopular({
-            itemTypes: this.state.type,
-            limit: 19,
-          });
+          this.loadPopular(false);
         },
       );
     }
@@ -168,6 +176,16 @@ class Popular extends Component<Props, State> {
         <LinearProgress />
       </div>
     );
+  };
+
+  debounceLoadMore = _.debounce(() => {
+    this.loadPopular(true);
+  }, 250);
+
+  loadMoreResults = () => {
+    if (!this.props.loading) {
+      this.debounceLoadMore();
+    }
   };
 
   renderPopular = () => {
@@ -242,16 +260,26 @@ class Popular extends Component<Props, State> {
           </ButtonGroup>
         </div>
 
-        <Grid container spacing={2}>
-          {popular.map((result, index) => {
-            let thing = thingsBySlug[result];
-            if (thing && index !== this.state.mainItemIndex) {
-              return <ItemCard key={result} userSelf={userSelf} item={thing} />;
-            } else {
-              return null;
-            }
-          })}
-        </Grid>
+        <InfiniteScroll
+          pageStart={0}
+          loadMore={() => this.loadMoreResults()}
+          hasMore={Boolean(this.props.bookmark)}
+          useWindow
+          threshold={400}
+        >
+          <Grid container spacing={2}>
+            {popular.map((result, index) => {
+              let thing = thingsBySlug[result];
+              if (thing && index !== this.state.mainItemIndex) {
+                return (
+                  <ItemCard key={result} userSelf={userSelf} item={thing} />
+                );
+              } else {
+                return null;
+              }
+            })}
+          </Grid>
+        </InfiniteScroll>
       </div>
     ) : null;
   };
@@ -277,6 +305,8 @@ const mapStateToProps = (appState: AppState) => {
     isSearching: appState.search.searching,
     popular: appState.popular.popular,
     thingsBySlug: appState.itemDetail.thingsBySlug,
+    loading: appState.popular.loadingPopular,
+    bookmark: appState.popular.popularBookmark,
   };
 };
 
