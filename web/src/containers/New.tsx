@@ -12,7 +12,6 @@ import moment from 'moment';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import {
   retrieveAllAvailability,
