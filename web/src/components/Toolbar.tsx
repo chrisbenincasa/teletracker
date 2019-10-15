@@ -824,15 +824,15 @@ class Toolbar extends Component<Props, State> {
               </IconButton>
             </div>
           </Slide>
-          {isAuthed ? (
-            <IconButton
-              focusRipple={false}
-              onClick={this.toggleDrawer}
-              color="inherit"
-            >
-              {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
-            </IconButton>
-          ) : null}
+
+          <IconButton
+            focusRipple={false}
+            onClick={this.toggleDrawer}
+            color="inherit"
+          >
+            {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
+          </IconButton>
+
           <Typography
             variant="h6"
             color="inherit"

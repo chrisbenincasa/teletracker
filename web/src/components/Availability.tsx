@@ -157,6 +157,7 @@ const ThingAvailability = (props: Props) => {
               disabled={
                 !(availabilities.theater && availabilities.theater.length)
               }
+              style={{ whiteSpace: 'nowrap' }}
             />
             <Tab
               icon={<Cloud />}
@@ -168,18 +169,21 @@ const ThingAvailability = (props: Props) => {
                   availabilities.subscription.length
                 )
               }
+              style={{ whiteSpace: 'nowrap' }}
             />
             <Tab
               icon={<Visibility />}
               label="Rent"
               onClick={() => setOpenTab(2)}
               disabled={!(availabilities.rent && availabilities.rent.length)}
+              style={{ whiteSpace: 'nowrap' }}
             />
             <Tab
               icon={<AttachMoney />}
               label="Buy"
               onClick={() => setOpenTab(3)}
               disabled={!(availabilities.buy && availabilities.buy.length)}
+              style={{ whiteSpace: 'nowrap' }}
             />
           </Tabs>
           <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
