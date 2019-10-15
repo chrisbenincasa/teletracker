@@ -4,7 +4,6 @@ import {
   Button,
   CircularProgress,
   ClickAwayListener,
-  Collapse,
   createStyles,
   Divider,
   Fade,
@@ -45,7 +44,6 @@ import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../actions/auth';
 import { search } from '../actions/search';
 import { AppState } from '../reducers';
-import { DrawerWidthPx } from '../components/Drawer';
 import RouterLink, { StdRouterLink } from '../components/RouterLink';
 import Thing from '../types/Thing';
 import _ from 'lodash';

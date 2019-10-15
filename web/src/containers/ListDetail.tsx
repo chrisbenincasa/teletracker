@@ -1,7 +1,6 @@
 import {
   Button,
   ButtonGroup,
-  Chip,
   CircularProgress,
   ClickAwayListener,
   Collapse,
