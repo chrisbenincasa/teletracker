@@ -139,7 +139,6 @@ class Featured extends Component<Props, State> {
                 component={ResponsiveImage}
                 imageType="poster"
                 imageStyle={{
-                  // height: '100%',
                   boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                   maxWidth: '100%',
                   maxHeight: '100%',
