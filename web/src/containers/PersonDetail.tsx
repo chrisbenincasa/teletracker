@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppState } from '../reducers';
 import { bindActionCreators, Dispatch } from 'redux';
-import { Redirect, RouteComponentProps, withRouter } from 'react-router';
+import { RouteComponentProps, withRouter } from 'react-router';
 import { connect } from 'react-redux';
 import {
   personFetchInitiated,
@@ -498,12 +498,8 @@ class PersonDetail extends React.Component<Props, State> {
   }
 
   render() {
-    let { isAuthed } = this.props;
-
-    return isAuthed ? (
+    return (
       <div style={{ display: 'flex', flexGrow: 1 }}>{this.renderPerson()}</div>
-    ) : (
-      <Redirect to="/login" />
     );
   }
 }

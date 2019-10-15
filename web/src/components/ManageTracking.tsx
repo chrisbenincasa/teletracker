@@ -4,16 +4,13 @@ import {
   Theme,
   WithStyles,
   withStyles,
-  Dialog,
-  Backdrop,
 } from '@material-ui/core';
 import { List as ListIcon } from '@material-ui/icons';
 import React, { Component } from 'react';
 import Thing from '../types/Thing';
 import AddToListDialog from '../components/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
-import LoginForm from './LoginForm';
-import LoginDialog from './LoginDialog';
+import AuthDialog from './Auth/AuthDialog';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -114,7 +111,7 @@ class ManageTracking extends Component<Props, State> {
           userSelf={userSelf!}
           item={itemDetail}
         />
-        <LoginDialog
+        <AuthDialog
           open={this.state.loginModalOpen}
           onClose={() => this.toggleLoginModal()}
         />

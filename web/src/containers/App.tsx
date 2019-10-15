@@ -88,7 +88,7 @@ class App extends Component<Props, State> {
         <Toolbar drawerOpen={this.toggleDrawer.bind(this)} />
         <div>
           {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
-          {this.props.isAuthed ? <Drawer open={this.state.drawerOpen} /> : null}
+          <Drawer open={this.state.drawerOpen} />
           <main
             style={{
               display: 'flex',
