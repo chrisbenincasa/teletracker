@@ -12,6 +12,7 @@ import com.teletracker.common.db.{
 }
 import com.teletracker.common.db.model._
 import com.teletracker.common.db.util.InhibitFilter
+import com.teletracker.common.util.json.circe.Paths
 import com.teletracker.common.util.{Field, GeneralizedDbFactory, Slug}
 import io.circe.Json
 import javax.inject.Inject
@@ -152,7 +153,7 @@ class ThingsDbAccess @Inject()(
           .filter(startingId)(id => _.id >= id)
           .filter(thingType)(t => _.`type` === t)
           .query
-          .sortBy(_.id.asc)
+          .sortBy(_.id.asc.nullsFirst)
           .drop(offset)
           .take(perPage)
           .result
@@ -197,10 +198,11 @@ class ThingsDbAccess @Inject()(
 
   def searchForThings(
     query: String,
-    options: SearchOptions
-  ): Future[Seq[ThingRaw]] = {
-    if (query.isEmpty) {
-      Future.successful(Seq.empty)
+    options: SearchOptions,
+    selectFields: Option[List[Field]]
+  ): Future[(Seq[ThingRaw], Option[Bookmark])] = {
+    if (query.isEmpty || options.limit <= 0) {
+      Future.successful(Seq.empty -> None)
     } else {
       val terms =
         query
@@ -251,6 +253,47 @@ class ThingsDbAccess @Inject()(
           })
       }
 
+      def extractPopularityAndVotes(thing: things.ThingsTableRaw) = {
+        logarithm(thing.popularity.ifNull(1.0)) + ((voteCount(thing) * voteAverage(
+          thing
+        )) / 150000.0)
+      }
+
+      def mkSort(thing: things.ThingsTableRaw) = {
+        val mainSort = options.rankingMode match {
+          case SearchRankingMode.Popularity =>
+            thing.popularity.desc.nullsLast
+          case SearchRankingMode.PopularityAndVotes =>
+            extractPopularityAndVotes(thing).desc.nullsLast
+        }
+
+        mainSort -> thing.id.asc.nullsFirst
+      }
+
+      def makeBookmarkFilter(
+        bookmark: Bookmark,
+        thing: things.ThingsTableRaw
+      ) = {
+        require(bookmark.desc)
+
+        (
+          SearchRankingMode.fromString(bookmark.sortType),
+          bookmark.valueRefinement
+        ) match {
+          case (SearchRankingMode.Popularity, Some(_)) =>
+            thing.popularity <= bookmark.value.toDouble
+
+          case (SearchRankingMode.Popularity, None) =>
+            thing.popularity < bookmark.value.toDouble
+
+          case (SearchRankingMode.PopularityAndVotes, Some(_)) =>
+            extractPopularityAndVotes(thing) <= bookmark.value.toDouble
+
+          case (SearchRankingMode.PopularityAndVotes, None) =>
+            extractPopularityAndVotes(thing) < bookmark.value.toDouble
+        }
+      }
+
       val baseSearch =
         things.rawQuery
           .filter(t => {
@@ -266,31 +309,66 @@ class ThingsDbAccess @Inject()(
             case thingTypes =>
               t => t.`type` inSetBind thingTypes
           }
+          .filter(options.bookmark)(bm => makeBookmarkFilter(bm, _))
+          .filter(options.bookmark.flatMap(_.valueRefinement))(
+            id => _.id > UUID.fromString(id)
+          )
           .query
 
-      run("search") {
+      val searchResultFut = run("search") {
         val q = additionalFilters
-          .sortBy {
-            case thing if options.rankingMode == SearchRankingMode.Popularity =>
-              thing.popularity.desc.nullsLast
-
-            case thing
-                if options.rankingMode == SearchRankingMode.PopularityAndVotes =>
-              (logarithm(thing.popularity.ifNull(1.0)) + ((voteCount(thing) * voteAverage(
-                thing
-              )) / 150000.0)).desc.nullsLast
-          }
-          .take(20)
+          .sortBy(mkSort)
+          .take(options.limit)
           .result
 
         q.statements.foreach(println)
-
         q
       }.recover {
         case e: PSQLException =>
           println(s"Bad query: $finalQuery")
           throw e
       }
+
+      searchResultFut.map(searchResult => {
+        val bookmark = searchResult.lastOption.map(last => {
+          val getValueRefinement =
+            (value: String) =>
+              options.bookmark
+                .filter(_.value == value)
+                .map(_ => last.id.toString)
+
+          options.rankingMode match {
+            case SearchRankingMode.Popularity =>
+              Bookmark(
+                options.rankingMode.toString,
+                desc = true,
+                last.popularity.getOrElse(0.0).toString,
+                getValueRefinement(last.popularity.toString)
+              )
+
+            case SearchRankingMode.PopularityAndVotes =>
+              val voteCount: Long =
+                last.metadata.flatMap(Paths.voteCount).getOrElse(0)
+              val voteAverage: Double =
+                last.metadata.flatMap(Paths.voteAverage).getOrElse(0.0)
+              val voteValue = voteCount * voteAverage
+              val value = (Math
+                .log(last.popularity.getOrElse(1.0)) + voteValue) / 150000.0
+
+              Bookmark(
+                options.rankingMode.toString,
+                desc = true,
+                value.toString,
+                getValueRefinement(value.toString)
+              )
+          }
+        })
+
+        (
+          searchResult.map(_.selectFields(selectFields, defaultFields)),
+          bookmark
+        )
+      })
     }
   }
 
@@ -1450,10 +1528,8 @@ class ThingsDbAccess @Inject()(
     bookmark: Option[Bookmark],
     limit: Int
   ): Future[(Seq[ThingRaw], Option[Bookmark])] = {
-    val maxPopularity = bookmark.collect {
-      case Bookmark(sortType, desc, value, _)
-          if sortType == SortMode.PopularityType && desc =>
-        value.toDouble
+    val validBookmark = bookmark.collect {
+      case bm @ Bookmark(SortMode.PopularityType, true, _, _) => bm
     }
 
     val actualThingTypes = if (thingTypes.isEmpty) {
@@ -1464,23 +1540,32 @@ class ThingsDbAccess @Inject()(
 
     val thingsFut = if (networks.nonEmpty) {
       run {
-        availabilities.query
+        val baseQuery = availabilities.query
           .join(things.rawQuery)
           .on(_.thingId === _.id)
           .filter {
             case (av, thing) =>
-              val base = av.isAvailable &&
+              av.isAvailable &&
                 (av.networkId inSetBind networks.flatMap(_.id)) &&
                 (thing.`type` inSetBind actualThingTypes) &&
                 removeAdultItems(thing)
-
-              if (maxPopularity.isDefined) {
-                base && thing.popularity < maxPopularity.get
-              } else {
-                base
-              }
           }
-          .sortBy(_._2.popularity.desc.nullsLast)
+        InhibitFilter(baseQuery)
+          .filter(validBookmark)(bm => {
+            case (_, thing) if bm.valueRefinement.isDefined =>
+              thing.popularity <= bm.value.toDouble
+
+            case (_, thing) =>
+              thing.popularity < bm.value.toDouble
+          })
+          .filter(validBookmark.flatMap(_.valueRefinement))(refine => {
+            case (_, thing) => thing.id > UUID.fromString(refine)
+          })
+          .query
+          .sortBy {
+            case (_, thing) =>
+              thing.popularity.desc.nullsLast -> thing.id.asc.nullsFirst
+          }
           .map(_._2)
           .distinctOn(_.id)
           .take(limit)
@@ -1489,11 +1574,22 @@ class ThingsDbAccess @Inject()(
     } else {
       run {
         InhibitFilter(things.rawQuery)
-          .filter(maxPopularity)(p => _.popularity < p)
+          .filter(validBookmark)(bm => {
+            case thing if bm.valueRefinement.isDefined =>
+              thing.popularity <= bm.value.toDouble
+
+            case thing =>
+              thing.popularity < bm.value.toDouble
+          })
+          .filter(validBookmark.flatMap(_.valueRefinement))(
+            refine => _.id > UUID.fromString(refine)
+          )
           .query
           .filter(_.`type` inSetBind actualThingTypes)
           .filter(removeAdultItems)
-          .sortBy(_.popularity.desc.nullsLast)
+          .sortBy(
+            thing => thing.popularity.desc.nullsLast -> thing.id.asc.nullsFirst
+          )
           .take(limit)
           .result
       }
@@ -1502,12 +1598,17 @@ class ThingsDbAccess @Inject()(
     thingsFut.map(things => {
       val nextBookmark = things.lastOption
         .map(
-          thing =>
+          thing => {
+            val refinement = bookmark
+              .filter(_.value == thing.popularity.getOrElse(0.0).toString)
+              .map(_ => thing.id.toString)
+
             Bookmark(
               Popularity(),
               thing.popularity.getOrElse(0.0).toString,
-              Some(thing.id.toString)
+              refinement
             )
+          }
         )
 
       things -> nextBookmark
@@ -1538,7 +1639,9 @@ case class FutureAvailability(
 
 case class SearchOptions(
   rankingMode: SearchRankingMode,
-  thingTypeFilter: Option[Set[ThingType]])
+  thingTypeFilter: Option[Set[ThingType]],
+  limit: Int = 20,
+  bookmark: Option[Bookmark] = None)
 
 object SearchOptions {
   val default = SearchOptions(

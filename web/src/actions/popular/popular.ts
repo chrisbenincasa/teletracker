@@ -2,8 +2,11 @@ import { put, takeEvery } from '@redux-saga/core/effects';
 import { clientEffect, createAction } from '../utils';
 import { defaultMovieMeta } from '../lists';
 import { ErrorFSA, FSA } from 'flux-standard-action';
-import Thing, { ThingFactory } from '../../types/Thing';
+import Thing, { ThingFactory, ApiThing } from '../../types/Thing';
 import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
+import { Paging } from '../../types';
+import { TeletrackerResponse } from '../../utils/api-client';
+import _ from 'lodash';
 
 export const POPULAR_INITIATED = 'popular/INITIATED';
 export const POPULAR_SUCCESSFUL = 'popular/SUCCESSFUL';
@@ -24,6 +27,8 @@ export type PopularInitiatedAction = FSA<
 
 export interface PopularSuccessfulPayload {
   popular: Thing[];
+  paging?: Paging;
+  append: boolean;
 }
 
 export type PopularSuccessfulAction = FSA<
@@ -53,7 +58,7 @@ export const popularSaga = function*() {
   }: PopularInitiatedAction) {
     if (payload) {
       try {
-        let response = yield clientEffect(
+        let response: TeletrackerResponse<ApiThing[]> = yield clientEffect(
           client => client.getPopular,
           payload.fields,
           payload.itemTypes,
@@ -65,7 +70,9 @@ export const popularSaga = function*() {
         if (response.ok) {
           yield put(
             popularSuccess({
-              popular: response.data.data.map(ThingFactory.create),
+              popular: response.data!.data.map(ThingFactory.create),
+              paging: response.data!.paging,
+              append: !_.isUndefined(payload.bookmark),
             }),
           );
         }

@@ -1,6 +1,7 @@
 package com.teletracker.service.api
 
 import com.google.common.cache.{Cache, CacheBuilder}
+import com.teletracker.common.db.{Bookmark, Popularity, SortMode}
 import com.teletracker.common.db.access.{
   GenresDbAccess,
   ThingsDbAccess,
@@ -368,8 +369,10 @@ class ThingApi @Inject()(
 
   def getPopularByGenre(
     genreIdOrSlug: String,
-    thingType: Option[ThingType]
-  ): Future[Option[Seq[PartialThing]]] = {
+    thingType: Option[ThingType],
+    limit: Int = 20,
+    bookmark: Option[Bookmark]
+  ): Future[Option[(Seq[PartialThing], Option[Bookmark])]] = {
     genreCache
       .get()
       .map(_.values)
@@ -382,8 +385,23 @@ class ThingApi @Inject()(
         // TODO: Fill in user deets
         genre.map(g => {
           genresDbAccess
-            .findMostPopularThingsForGenre(g.id.get, thingType)
+            .findMostPopularThingsForGenre(g.id.get, thingType, limit, bookmark)
             .map(_.map(_.toPartial))
+            .map(popularThings => {
+              val nextBookmark = popularThings.lastOption.map(last => {
+                val refinement = bookmark
+                  .filter(_.value == last.popularity.getOrElse(0.0).toString)
+                  .map(_ => last.id.toString)
+
+                Bookmark(
+                  Popularity(),
+                  last.popularity.getOrElse(0.0).toString,
+                  refinement
+                )
+              })
+
+              popularThings -> nextBookmark
+            })
             .map(Some(_))
         })
       }.getOrElse(Future.successful(None)))

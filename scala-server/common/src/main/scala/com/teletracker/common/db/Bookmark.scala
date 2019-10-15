@@ -30,8 +30,10 @@ object Bookmark {
     Bookmark(sortMode.`type`, sortMode.isDesc, value, refinement)
   }
 
-  def unapply(arg: Bookmark): Option[(String, Boolean, String)] = {
-    Some(arg.sortType, arg.desc, arg.value)
+  def unapply(
+    arg: Bookmark
+  ): Option[(String, Boolean, String, Option[String])] = {
+    Some(arg.sortType, arg.desc, arg.value, arg.valueRefinement)
   }
 
   final private val base64Encoder = Base64.getEncoder
