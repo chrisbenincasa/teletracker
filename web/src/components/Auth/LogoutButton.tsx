@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router';
 import { bindActionCreators, Dispatch } from 'redux';
-import { logout } from '../actions/auth';
+import { logout } from '../../actions/auth';
 import { push } from 'connected-react-router';
 import { Button } from '@material-ui/core';
 

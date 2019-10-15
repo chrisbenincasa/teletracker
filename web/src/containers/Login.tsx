@@ -1,19 +1,10 @@
 import {
-  Avatar,
-  Button,
-  CircularProgress,
   createStyles,
-  FormControl,
-  Input,
-  InputLabel,
-  Link,
   Paper,
   Theme,
-  Typography,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import { push } from 'connected-react-router';
 import * as R from 'ramda';
 import React, { Component, FormEvent } from 'react';
@@ -22,12 +13,10 @@ import { bindActionCreators } from 'redux';
 import { login, LoginSuccessful, logInWithGoogle } from '../actions/auth';
 import { AppState } from '../reducers';
 import { Redirect } from 'react-router';
-import { Link as RouterLink } from 'react-router-dom';
 import * as firebase from 'firebase/app';
-import GoogleLoginButton from '../components/GoogleLoginButton';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
-import LoginForm from '../components/LoginForm';
+import LoginForm from '../components/Auth/LoginForm';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -153,7 +142,6 @@ class Login extends Component<Props, State> {
 
   render() {
     let { isAuthed, classes } = this.props;
-    let { email, password } = this.state;
 
     return !isAuthed ? (
       <main className={classes.main}>

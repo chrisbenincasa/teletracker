@@ -15,7 +15,13 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { AddCircle, PowerSettingsNew, Settings } from '@material-ui/icons';
+import {
+  AddCircle,
+  Lock,
+  PersonAdd,
+  PowerSettingsNew,
+  Settings,
+} from '@material-ui/icons';
 import classNames from 'classnames';
 import _ from 'lodash';
 import * as R from 'ramda';
@@ -37,6 +43,7 @@ import { Loading } from '../reducers/user';
 import { layoutStyles } from '../styles';
 import { List as ListType } from '../types';
 import RouterLink from './RouterLink';
+import AuthDialog from './Auth/AuthDialog';
 
 export const DrawerWidthPx = 220;
 
@@ -90,6 +97,10 @@ interface OwnProps extends WithStyles<typeof styles> {
   open: boolean;
 }
 
+interface InjectedProps {
+  isAuthed: boolean;
+}
+
 interface DispatchProps {
   retrieveAllLists: (payload?: ListRetrieveAllPayload) => void;
   logout: () => void;
@@ -98,6 +109,8 @@ interface DispatchProps {
 interface State {
   createDialogOpen: boolean;
   loadingLists: boolean;
+  authModalOpen: boolean;
+  authModalScreen?: 'login' | 'signup';
 }
 
 interface RouteParams {
@@ -109,6 +122,7 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
+  InjectedProps &
   WithUserProps;
 
 interface LinkProps {
@@ -160,6 +174,8 @@ class Drawer extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
     loadingLists: true,
+    authModalOpen: false,
+    authModalScreen: 'login',
   };
 
   componentDidMount() {
@@ -178,8 +194,19 @@ class Drawer extends Component<Props, State> {
     this.props.logout();
   };
 
+  toggleAuthModal = (initialForm?: 'login' | 'signup') => {
+    this.setState({
+      authModalOpen: !this.state.authModalOpen,
+      authModalScreen: initialForm || undefined,
+    });
+  };
+
   handleModalOpen = () => {
-    this.setState({ createDialogOpen: true });
+    if (this.props.userSelf) {
+      this.setState({ createDialogOpen: true });
+    } else {
+      this.toggleAuthModal('login');
+    }
   };
 
   handleModalClose = () => {
@@ -208,7 +235,8 @@ class Drawer extends Component<Props, State> {
   };
 
   renderDrawerContents() {
-    let { classes, listsById } = this.props;
+    let { classes, isAuthed, listsById } = this.props;
+
     function ListItemLink(props: ListItemProps) {
       const { primary, to, selected } = props;
 
@@ -244,20 +272,39 @@ class Drawer extends Component<Props, State> {
         <List>{_.map(listsById, this.renderListItems)}</List>
         <List>
           <Divider />
-          <ListItemLink to="/account" primary="Settings" />
-          <ListItem button onClick={this.handleLogout}>
-            <ListItemIcon>
-              <PowerSettingsNew />
-            </ListItemIcon>
-            Logout
-          </ListItem>
+          {isAuthed ? (
+            <React.Fragment>
+              <ListItemLink to="/account" primary="Settings" />
+              <ListItem button onClick={this.handleLogout}>
+                <ListItemIcon>
+                  <PowerSettingsNew />
+                </ListItemIcon>
+                Logout
+              </ListItem>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <ListItem button onClick={() => this.toggleAuthModal('login')}>
+                <ListItemIcon>
+                  <Lock />
+                </ListItemIcon>
+                Login
+              </ListItem>
+              <ListItem button onClick={() => this.toggleAuthModal('signup')}>
+                <ListItemIcon>
+                  <PersonAdd />
+                </ListItemIcon>
+                Signup
+              </ListItem>
+            </React.Fragment>
+          )}
         </List>
       </React.Fragment>
     );
   }
 
   renderDrawer() {
-    let { classes, open } = this.props;
+    let { classes, isAuthed, open } = this.props;
 
     return (
       <DrawerUI
@@ -270,7 +317,11 @@ class Drawer extends Component<Props, State> {
         }}
         style={{ width: open ? 216 : 0 }}
       >
-        {this.isLoading() ? <CircularProgress /> : this.renderDrawerContents()}
+        {this.isLoading() && isAuthed ? (
+          <CircularProgress />
+        ) : (
+          this.renderDrawerContents()
+        )}
       </DrawerUI>
     );
   }
@@ -282,6 +333,11 @@ class Drawer extends Component<Props, State> {
         <CreateListDialog
           open={this.state.createDialogOpen}
           onClose={this.handleModalClose.bind(this)}
+        />
+        <AuthDialog
+          open={this.state.authModalOpen}
+          onClose={() => this.toggleAuthModal()}
+          initialForm={this.state.authModalScreen}
         />
       </React.Fragment>
     );
