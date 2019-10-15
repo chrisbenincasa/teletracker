@@ -498,12 +498,8 @@ class PersonDetail extends React.Component<Props, State> {
   }
 
   render() {
-    let { isAuthed } = this.props;
-
-    return isAuthed ? (
+    return (
       <div style={{ display: 'flex', flexGrow: 1 }}>{this.renderPerson()}</div>
-    ) : (
-      <Redirect to="/login" />
     );
   }
 }
