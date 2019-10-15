@@ -156,36 +156,32 @@ class New extends Component<Props> {
   };
 
   render() {
-    return this.props.isAuthed ? (
-      !this.props.upcoming && !this.props.recentlyAdded ? (
-        this.renderLoading()
-      ) : (
-        <div style={{ margin: 20 }}>
-          {this.props.upcoming ? (
-            <div className={this.props.classes.cardGrid}>
-              {this.renderUpcoming(this.props.upcoming.availability)}
-            </div>
-          ) : null}
-          {this.props.recentlyAdded ? (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                flexGrow: 1,
-              }}
-            >
-              <Typography style={{ paddingLeft: 8 }} variant="h4">
-                Recently Added
-              </Typography>
-              <div className={this.props.classes.cardGrid}>
-                {this.renderUpcoming(this.props.recentlyAdded.availability)}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      )
+    return !this.props.upcoming && !this.props.recentlyAdded ? (
+      this.renderLoading()
     ) : (
-      <Redirect to="/login" />
+      <div style={{ margin: 20 }}>
+        {this.props.upcoming ? (
+          <div className={this.props.classes.cardGrid}>
+            {this.renderUpcoming(this.props.upcoming.availability)}
+          </div>
+        ) : null}
+        {this.props.recentlyAdded ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1,
+            }}
+          >
+            <Typography style={{ paddingLeft: 8 }} variant="h4">
+              Recently Added
+            </Typography>
+            <div className={this.props.classes.cardGrid}>
+              {this.renderUpcoming(this.props.recentlyAdded.availability)}
+            </div>
+          </div>
+        ) : null}
+      </div>
     );
   }
 }
