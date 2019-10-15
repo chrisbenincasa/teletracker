@@ -22,7 +22,7 @@ import { PlayArrow, ChevronLeft } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
+import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
   itemFetchInitiated,
@@ -31,7 +31,7 @@ import {
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { ActionType, Genre } from '../types';
+import { Genre } from '../types';
 import { getMetadataPath } from '../utils/metadata-access';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import ThingAvailability from '../components/Availability';

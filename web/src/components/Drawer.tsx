@@ -43,7 +43,7 @@ import { Loading } from '../reducers/user';
 import { layoutStyles } from '../styles';
 import { List as ListType } from '../types';
 import RouterLink from './RouterLink';
-import LoginDialog from './LoginDialog';
+import AuthDialog from './Auth/AuthDialog';
 
 export const DrawerWidthPx = 220;
 
@@ -109,7 +109,8 @@ interface DispatchProps {
 interface State {
   createDialogOpen: boolean;
   loadingLists: boolean;
-  loginModalOpen: boolean;
+  authModalOpen: boolean;
+  authModalScreen?: 'login' | 'signup';
 }
 
 interface RouteParams {
@@ -173,7 +174,8 @@ class Drawer extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
     loadingLists: true,
-    loginModalOpen: false,
+    authModalOpen: false,
+    authModalScreen: 'login',
   };
 
   componentDidMount() {
@@ -192,15 +194,18 @@ class Drawer extends Component<Props, State> {
     this.props.logout();
   };
 
-  toggleLoginModal = () => {
-    this.setState({ loginModalOpen: !this.state.loginModalOpen });
+  toggleAuthModal = (initialForm?: 'login' | 'signup') => {
+    this.setState({
+      authModalOpen: !this.state.authModalOpen,
+      authModalScreen: initialForm || undefined,
+    });
   };
 
   handleModalOpen = () => {
     if (this.props.userSelf) {
       this.setState({ createDialogOpen: true });
     } else {
-      this.toggleLoginModal();
+      this.toggleAuthModal('login');
     }
   };
 
@@ -279,13 +284,13 @@ class Drawer extends Component<Props, State> {
             </React.Fragment>
           ) : (
             <React.Fragment>
-              <ListItem button component={RouterLink} to="/login">
+              <ListItem button onClick={() => this.toggleAuthModal('login')}>
                 <ListItemIcon>
                   <Lock />
                 </ListItemIcon>
                 Login
               </ListItem>
-              <ListItem button component={RouterLink} to="/signup">
+              <ListItem button onClick={() => this.toggleAuthModal('signup')}>
                 <ListItemIcon>
                   <PersonAdd />
                 </ListItemIcon>
@@ -329,9 +334,10 @@ class Drawer extends Component<Props, State> {
           open={this.state.createDialogOpen}
           onClose={this.handleModalClose.bind(this)}
         />
-        <LoginDialog
-          open={this.state.loginModalOpen}
-          onClose={() => this.toggleLoginModal()}
+        <AuthDialog
+          open={this.state.authModalOpen}
+          onClose={() => this.toggleAuthModal()}
+          initialForm={this.state.authModalScreen}
         />
       </React.Fragment>
     );

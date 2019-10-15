@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppState } from '../reducers';
 import { bindActionCreators, Dispatch } from 'redux';
-import { Redirect, RouteComponentProps, withRouter } from 'react-router';
+import { RouteComponentProps, withRouter } from 'react-router';
 import { connect } from 'react-redux';
 import {
   personFetchInitiated,
