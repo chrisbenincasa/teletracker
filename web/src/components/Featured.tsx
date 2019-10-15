@@ -37,10 +37,10 @@ const styles = (theme: Theme) =>
       flex: '0 1 auto',
       flexDirection: 'column',
       position: 'absolute',
-      height: '90%',
+      height: 'auto',
       top: 20,
       left: 20,
-      width: '30%',
+      width: '25%',
     },
     title: {
       [theme.breakpoints.up('sm')]: {
@@ -139,7 +139,7 @@ class Featured extends Component<Props, State> {
                 component={ResponsiveImage}
                 imageType="poster"
                 imageStyle={{
-                  height: '100%',
+                  // height: '100%',
                   boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                   maxWidth: '100%',
                   maxHeight: '100%',
