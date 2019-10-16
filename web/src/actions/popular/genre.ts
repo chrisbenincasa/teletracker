@@ -2,7 +2,7 @@ import { put, takeEvery } from '@redux-saga/core/effects';
 import { clientEffect, createAction, createBasicAction } from '../utils';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import Thing, { ThingFactory, ApiThing } from '../../types/Thing';
-import { Paging } from '../../types';
+import { ItemTypes, Paging } from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
 import _ from 'lodash';
 
@@ -12,7 +12,7 @@ export const GENRE_FAILED = 'genre/FAILED';
 
 export interface GenreInitiatedActionPayload {
   genre: string;
-  thingRestrict?: 'movie' | 'show';
+  thingRestrict?: ItemTypes;
   bookmark?: string;
   limit?: number;
 }

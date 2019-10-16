@@ -53,6 +53,9 @@ import {
   UserUpdateListPayload,
 } from '../actions/lists';
 import ItemCard from '../components/ItemCard';
+import TypeToggle, {
+  getTypeFromUrlParam,
+} from '../components/Filters/TypeToggle';
 import { StdRouterLink } from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants';
@@ -208,6 +211,7 @@ class ListDetail extends Component<Props, State> {
       deleteConfirmationOpen: false,
       deleteOnWatch: true,
       filter: undefined,
+      itemTypes: getTypeFromUrlParam(),
       list: props.listsById[listId],
       loadingList: true,
       migrateListId: 0,
@@ -260,9 +264,6 @@ class ListDetail extends Component<Props, State> {
       this.setState({ sortOrder: match.params.sort });
     }
 
-    if (match && match.params && match.params.type) {
-      this.setState({ itemTypes: [match.params.type] });
-    }
     this.setState({ loadingList: true });
     this.retrieveList();
 
@@ -597,27 +598,15 @@ class ListDetail extends Component<Props, State> {
     this.props.history.push(`${match.params.id}?${params}`);
   };
 
-  setTypeFilter = type => {
-    const { match } = this.props;
-    let params = new URLSearchParams(location.search);
-    let paramType = params.get('type');
-
-    if (type === 'all' && paramType) {
-      params.delete('type');
-      this.props.history.push(`${match.params.id}?${params}`);
-      this.setState({ itemTypes: undefined, loadingList: true });
-      return;
-    }
-
-    if (paramType) {
-      params.set('type', type);
-    } else {
-      params.append('type', type);
-    }
-    params.sort();
-
-    this.props.history.push(`${match.params.id}?${params}`);
-    this.setState({ itemTypes: [type], loadingList: true });
+  setType = (type: ItemTypes) => {
+    this.setState(
+      {
+        itemTypes: type,
+      },
+      () => {
+        this.retrieveList();
+      },
+    );
   };
 
   setGenreFilter = (genre?: Genre) => {
@@ -795,43 +784,7 @@ class ListDetail extends Component<Props, State> {
                 </Popper>
               </div>
               <div style={{ display: 'flex', margin: '10px 0' }}>
-                <ButtonGroup
-                  variant="contained"
-                  color="primary"
-                  aria-label="Filter by All, Movies, or just TV Shows"
-                  size="medium"
-                  style={{ flexGrow: 1 }}
-                >
-                  <Button
-                    color={!itemTypes ? 'secondary' : 'primary'}
-                    onClick={() => this.setTypeFilter('all')}
-                    className={classes.filterButtons}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    color={
-                      itemTypes && itemTypes.includes('movie')
-                        ? 'secondary'
-                        : 'primary'
-                    }
-                    onClick={() => this.setTypeFilter('movie')}
-                    className={classes.filterButtons}
-                  >
-                    Movies
-                  </Button>
-                  <Button
-                    color={
-                      itemTypes && itemTypes.includes('show')
-                        ? 'secondary'
-                        : 'primary'
-                    }
-                    onClick={() => this.setTypeFilter('show')}
-                    className={classes.filterButtons}
-                  >
-                    TV
-                  </Button>
-                </ButtonGroup>
+                <TypeToggle handleChange={this.setType} />
               </div>
               <div
                 style={{
