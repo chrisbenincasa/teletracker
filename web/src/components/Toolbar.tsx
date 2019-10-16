@@ -181,7 +181,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   isSearching: boolean;
   searchResults?: Thing[];
   drawerOpen: boolean;
-  onDrawerChange: (open?: boolean) => void;
+  onDrawerChange: () => void;
 }
 
 interface WidthProps {
@@ -239,17 +239,8 @@ class Toolbar extends Component<Props, State> {
     searchText: '',
     searchAnchor: null,
     mobileSearchBarOpen: false,
-    // drawerOpen: this.props.drawerOpen,
     isLoggedOut: true,
   };
-
-  // componentDidUpdate(prevProps: OwnProps) {
-  //   if (prevProps.drawerOpen !== this.props.drawerOpen) {
-  //     this.setState({
-  //       drawerOpen: this.props.drawerOpen,
-  //     });
-  //   }
-  // }
 
   clearSearch = () => {
     let searchText = '';
@@ -495,7 +486,6 @@ class Toolbar extends Component<Props, State> {
   };
 
   toggleDrawer = () => {
-    // this.setState({ drawerOpen: !this.state.drawerOpen });
     this.props.onDrawerChange();
   };
 
@@ -875,6 +865,7 @@ class Toolbar extends Component<Props, State> {
             <ButtonLink color="inherit" primary="New" to="/new" />
           </Box>
           {this.renderSearch()}
+          {/* Todo: decide how to handle this for desktop/mobile */}
           {/* {!isAuthed ? (
             <React.Fragment>
               <Hidden lgUp>
