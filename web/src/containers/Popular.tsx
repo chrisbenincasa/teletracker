@@ -24,7 +24,9 @@ import { bindActionCreators } from 'redux';
 import { retrievePopular } from '../actions/popular';
 import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from '../components/ItemCard';
-import TypeToggle, { getType } from '../components/Filters/TypeToggle';
+import TypeToggle, {
+  getTypeFromUrlParam,
+} from '../components/Filters/TypeToggle';
 import withUser, { WithUserProps } from '../components/withUser';
 import { PopularInitiatedActionPayload } from '../actions/popular/popular';
 import Featured from '../components/Featured';
@@ -83,7 +85,7 @@ class Popular extends Component<Props, State> {
 
     this.state = {
       ...this.state,
-      type: getType(),
+      type: getTypeFromUrlParam(),
       mainItemIndex: -1,
     };
   }
