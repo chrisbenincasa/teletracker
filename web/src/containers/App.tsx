@@ -77,8 +77,24 @@ class App extends Component<Props, State> {
     drawerOpen: false,
   };
 
+  componentDidUpdate(prevProps: Props) {
+    // If user navigates on mobile with drawer open, let's close it
+    if (
+      this.props.location.pathname !== prevProps.location.pathname ||
+      this.props.location.search !== prevProps.location.search
+    ) {
+      if (['xs', 'sm', 'md'].includes(this.props.width)) {
+        this.closeDrawer();
+      }
+    }
+  }
+
   toggleDrawer = () => {
     this.setState({ drawerOpen: !this.state.drawerOpen });
+  };
+
+  closeDrawer = () => {
+    this.setState({ drawerOpen: false });
   };
 
   render() {
@@ -87,7 +103,10 @@ class App extends Component<Props, State> {
     return (
       <div className={classes.root}>
         <CssBaseline />
-        <Toolbar drawerOpen={this.toggleDrawer.bind(this)} />
+        <Toolbar
+          drawerOpen={this.state.drawerOpen}
+          onDrawerChange={() => this.toggleDrawer()}
+        />
         {!isBooting ? (
           <div>
             {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}

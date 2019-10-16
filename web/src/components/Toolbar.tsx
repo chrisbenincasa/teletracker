@@ -180,7 +180,8 @@ interface OwnProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
   isSearching: boolean;
   searchResults?: Thing[];
-  drawerOpen: () => void;
+  drawerOpen: boolean;
+  onDrawerChange: (open?: boolean) => void;
 }
 
 interface WidthProps {
@@ -196,7 +197,7 @@ type Props = DispatchProps & OwnProps & RouteComponentProps & WidthProps;
 
 interface State {
   anchorEl: HTMLInputElement | null;
-  drawerOpen: boolean;
+  // drawerOpen: boolean;
   genreAnchorEl: HTMLButtonElement | null;
   genreType: 'movie' | 'show' | null;
   isLoggedOut: boolean;
@@ -238,9 +239,17 @@ class Toolbar extends Component<Props, State> {
     searchText: '',
     searchAnchor: null,
     mobileSearchBarOpen: false,
-    drawerOpen: false,
+    // drawerOpen: this.props.drawerOpen,
     isLoggedOut: true,
   };
+
+  // componentDidUpdate(prevProps: OwnProps) {
+  //   if (prevProps.drawerOpen !== this.props.drawerOpen) {
+  //     this.setState({
+  //       drawerOpen: this.props.drawerOpen,
+  //     });
+  //   }
+  // }
 
   clearSearch = () => {
     let searchText = '';
@@ -486,8 +495,8 @@ class Toolbar extends Component<Props, State> {
   };
 
   toggleDrawer = () => {
-    this.setState({ drawerOpen: !this.state.drawerOpen });
-    this.props.drawerOpen();
+    // this.setState({ drawerOpen: !this.state.drawerOpen });
+    this.props.onDrawerChange();
   };
 
   renderSearch() {
@@ -751,12 +760,8 @@ class Toolbar extends Component<Props, State> {
   }
 
   render() {
-    let { classes, isAuthed } = this.props;
-    let { drawerOpen, searchText, isLoggedOut } = this.state;
-
-    if (isLoggedOut) {
-      // return <Redirect to={'/login'} />
-    }
+    let { classes, drawerOpen, isAuthed } = this.props;
+    let { searchText, isLoggedOut } = this.state;
 
     function ButtonLink(props) {
       const { primary, to } = props;
@@ -870,7 +875,7 @@ class Toolbar extends Component<Props, State> {
             <ButtonLink color="inherit" primary="New" to="/new" />
           </Box>
           {this.renderSearch()}
-          {!isAuthed ? (
+          {/* {!isAuthed ? (
             <React.Fragment>
               <Hidden lgUp>
                 <IconButton component={RouterLink} to="/login">
@@ -882,7 +887,7 @@ class Toolbar extends Component<Props, State> {
                 <ButtonLink primary="Signup" to="/signup" />
               </Hidden>
             </React.Fragment>
-          ) : null}
+          ) : null} */}
           {this.renderProfileMenu()}
         </MUIToolbar>
       </AppBar>
