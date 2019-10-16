@@ -23,9 +23,12 @@ import { layoutStyles } from '../styles';
 import { retrieveGenre } from '../actions/popular';
 import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from '../components/ItemCard';
+import TypeToggle, {
+  getTypeFromUrlParam,
+} from '../components/Filters/TypeToggle';
 import withUser, { WithUserProps } from '../components/withUser';
 import Thing from '../types/Thing';
-import { Genre as GenreModel } from '../types';
+import { Genre as GenreModel, ItemTypes } from '../types';
 import { GenreInitiatedActionPayload } from '../actions/popular/genre';
 import Featured from '../components/Featured';
 import ReactGA from 'react-ga';
@@ -83,7 +86,7 @@ type Props = OwnProps &
 
 interface State {
   mainItemIndex: number;
-  type?: 'movie' | 'show';
+  type?: ItemTypes;
 }
 
 class Genre extends Component<Props, State> {
@@ -93,16 +96,10 @@ class Genre extends Component<Props, State> {
 
   constructor(props: Props) {
     super(props);
-    let params = new URLSearchParams(location.search);
-    let type;
-    let param = params.get('type');
-    if (param === 'movie' || param === 'show') {
-      type = param;
-    }
 
     this.state = {
       ...this.state,
-      type,
+      type: getTypeFromUrlParam(),
     };
   }
 
@@ -156,25 +153,18 @@ class Genre extends Component<Props, State> {
         });
       }
     }
-
-    if (prevProps.location.search !== this.props.location.search) {
-      let params = new URLSearchParams(location.search);
-      let type;
-      let param = params.get('type');
-      if (param === 'movie' || param === 'show' || !param) {
-        type = param;
-      }
-
-      this.setState(
-        {
-          type,
-        },
-        () => {
-          this.loadGenres(false);
-        },
-      );
-    }
   }
+
+  setType = (type: ItemTypes) => {
+    this.setState(
+      {
+        type,
+      },
+      () => {
+        this.loadGenres(false);
+      },
+    );
+  };
 
   renderLoading = () => {
     return (
@@ -223,41 +213,15 @@ class Genre extends Component<Props, State> {
             className={classes.title}
           >
             Popular {genreModel.name}{' '}
-            {type ? capitalize(type) + 's' : 'Content'}
+            {type && type.includes('movie')
+              ? capitalize(type[0]) + 's'
+              : 'Content'}
           </Typography>
-          <ButtonGroup
-            variant="contained"
-            color="primary"
-            aria-label="Filter by All, Movies, or just TV Shows"
+          <div
+            style={{ display: 'flex', flexDirection: 'row', marginBottom: 10 }}
           >
-            <Button
-              color={!type ? 'secondary' : 'primary'}
-              component={RouterLink}
-              to={{
-                pathname: location.pathname,
-                search: '',
-              }}
-              className={classes.filterButtons}
-            >
-              All
-            </Button>
-            <Button
-              color={type === 'movie' ? 'secondary' : 'primary'}
-              component={RouterLink}
-              to={'?type=movie'}
-              className={classes.filterButtons}
-            >
-              Movies
-            </Button>
-            <Button
-              color={type === 'show' ? 'secondary' : 'primary'}
-              component={RouterLink}
-              to={'?type=show'}
-              className={classes.filterButtons}
-            >
-              TV
-            </Button>
-          </ButtonGroup>
+            <TypeToggle handleChange={this.setType} />
+          </div>
         </div>
 
         <InfiniteScroll
