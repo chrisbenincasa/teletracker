@@ -1,18 +1,16 @@
-import { call, take, select, takeMaybe } from '@redux-saga/core/effects';
+import { call } from '@redux-saga/core/effects';
 import * as firebase from 'firebase/app';
-import { TeletrackerApi } from './api-client';
-import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import {
   ActionType,
   ItemTypes,
-  Network,
-  User,
-  UserPreferences,
-  ListRules,
   ListOptions,
+  ListRules,
   ListSortOptions,
+  Network,
+  UserPreferences,
 } from '../types';
-import { AppState } from '../reducers';
+import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
+import { TeletrackerApi } from './api-client';
 
 export class SagaTeletrackerClient {
   static instance = new SagaTeletrackerClient();
@@ -53,7 +51,7 @@ export class SagaTeletrackerClient {
   ) {
     return yield this.apiCall(
       client => client.getList,
-      yield this.withToken(true),
+      yield this.withToken(),
       id,
       sort,
       desc,
@@ -108,7 +106,7 @@ export class SagaTeletrackerClient {
   *getLists(fields?: KeyMap<ObjectMetadata>, includeThings: boolean = false) {
     return yield this.apiCall(
       client => client.getLists,
-      yield this.withToken(true),
+      yield this.withToken(),
       fields,
       includeThings,
     );
@@ -210,9 +208,10 @@ export class SagaTeletrackerClient {
     bookmark?: string,
     limit?: number,
   ) {
+    let token = yield this.withToken();
     return yield this.apiCall(
       client => client.getPopular,
-      yield this.withToken(),
+      token,
       fields,
       itemTypes,
       networks,
@@ -251,10 +250,7 @@ export class SagaTeletrackerClient {
   }
 
   *getGenres() {
-    return yield this.apiCall(
-      client => client.getGenres,
-      yield call([this, this.withToken]),
-    );
+    return yield this.apiCall(client => client.getGenres);
   }
 
   private apiCall<Fn extends (this: TeletrackerApi, ...args: any[]) => any>(
@@ -270,33 +266,14 @@ export class SagaTeletrackerClient {
     );
   }
 
-  private *withToken(required: boolean = false) {
-    let user: firebase.User | undefined = yield this.getUser(required);
-    let token = yield call(() => {
-      return user ? user.getIdToken() : undefined;
-    });
-    return token;
+  private *withToken() {
+    let user: firebase.User | undefined = this.getUser();
+    return yield call(() => (user ? user.getIdToken() : undefined));
   }
 
-  private *getUser(required: boolean = true) {
+  private getUser() {
     let user = firebase.auth().currentUser;
-
-    while (!user) {
-      let event = yield take('USER_STATE_CHANGE');
-      if (event) {
-        user = event.payload;
-      }
-
-      if (!required) {
-        break;
-      }
-    }
-
     return user ? user : undefined;
-  }
-
-  private getTokenEffect(user?: firebase.User) {
-    return call(() => (user ? user.getIdToken() : undefined));
   }
 }
 
