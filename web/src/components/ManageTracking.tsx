@@ -17,15 +17,17 @@ const styles = (theme: Theme) =>
     button: {
       marginTop: 5,
       width: '100% !important',
-      [theme.breakpoints.down('md')]: {
+      [theme.breakpoints.down('xs')]: {
         fontSize: '0.55rem',
       },
+      fontSIze: '2rem',
     },
     buttonIcon: {
       marginRight: 8,
-      [theme.breakpoints.down('md')]: {
+      [theme.breakpoints.down('sm')]: {
         fontSize: '1rem',
       },
+      fontSIze: '2rem',
     },
     itemCTA: {
       width: '100%',
