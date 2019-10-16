@@ -23,7 +23,9 @@ import { layoutStyles } from '../styles';
 import { retrieveGenre } from '../actions/popular';
 import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from '../components/ItemCard';
-import TypeToggle, { getType } from '../components/Filters/TypeToggle';
+import TypeToggle, {
+  getTypeFromUrlParam,
+} from '../components/Filters/TypeToggle';
 import withUser, { WithUserProps } from '../components/withUser';
 import Thing from '../types/Thing';
 import { Genre as GenreModel, ItemTypes } from '../types';
@@ -97,7 +99,7 @@ class Genre extends Component<Props, State> {
 
     this.state = {
       ...this.state,
-      type: getType(),
+      type: getTypeFromUrlParam(),
     };
   }
 

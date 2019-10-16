@@ -40,14 +40,12 @@ interface State {
   type?: ItemTypes;
 }
 
-export const getType = () => {
+export const getTypeFromUrlParam = () => {
   let params = new URLSearchParams(location.search);
   let type;
   let param = params.get('type');
   if (param === 'movie' || param === 'show') {
     type = [param];
-  } else {
-    type = undefined;
   }
   return type;
 };
@@ -58,16 +56,16 @@ class TypeToggle extends Component<Props, State> {
 
     this.state = {
       ...this.state,
-      type: getType(),
+      type: getTypeFromUrlParam(),
     };
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     if (
       this.props.location &&
       prevProps.location.search !== this.props.location.search
     ) {
-      const type = getType();
+      const type = getTypeFromUrlParam();
       this.setState(
         {
           type,

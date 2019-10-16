@@ -53,7 +53,9 @@ import {
   UserUpdateListPayload,
 } from '../actions/lists';
 import ItemCard from '../components/ItemCard';
-import TypeToggle, { getType } from '../components/Filters/TypeToggle';
+import TypeToggle, {
+  getTypeFromUrlParam,
+} from '../components/Filters/TypeToggle';
 import { StdRouterLink } from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants';
@@ -209,7 +211,7 @@ class ListDetail extends Component<Props, State> {
       deleteConfirmationOpen: false,
       deleteOnWatch: true,
       filter: undefined,
-      itemTypes: getType(),
+      itemTypes: getTypeFromUrlParam(),
       list: props.listsById[listId],
       loadingList: true,
       migrateListId: 0,
