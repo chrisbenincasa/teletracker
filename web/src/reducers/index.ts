@@ -9,6 +9,10 @@ import availability, { State as AvailabilityState } from './availability';
 import popular, { State as PopularState } from './popular';
 import people, { State as PersonState } from './people';
 
+export interface StartupState {
+  isBooting: boolean;
+}
+
 // A type that represents the entire app state
 export interface AppState {
   auth: AuthState;
@@ -20,13 +24,29 @@ export interface AppState {
   availability: AvailabilityState;
   popular: PopularState;
   people: PersonState;
+  startup: StartupState;
 }
 
-function startupReducer(state: any | undefined, action: Action): any {
+// TODO clean this up - move to own file
+function startupReducer(
+  state: StartupState | undefined,
+  action: Action,
+): StartupState {
   if (!state) {
-    return {};
+    return {
+      isBooting: true,
+    };
   } else {
-    return state;
+    if (action.type === 'boot/DONE') {
+      return {
+        ...state,
+        isBooting: false,
+      };
+    } else {
+      return {
+        ...state,
+      };
+    }
   }
 }
 
