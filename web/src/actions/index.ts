@@ -47,10 +47,20 @@ function* startupSaga() {
 }
 
 export function* root() {
+  // Wait for any storage state rehydration to complete
   yield take(REHYDRATE);
 
+  // Start watching for auth state changes
   yield fork(watchAuthState);
 
+  // Wait for a user state change (determine whether we're logged in or out)
+  yield take('USER_STATE_CHANGE');
+
+  // Instruct the app we're finished booting
+  yield put({ type: 'boot/DONE' });
+
+  // Start all of the sagas at once
+  // TODO: fork all of these?
   yield all([
     checkAuthSaga(),
     retrieveListSaga(),

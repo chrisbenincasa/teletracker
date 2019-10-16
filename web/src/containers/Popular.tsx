@@ -10,28 +10,28 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
+import _ from 'lodash';
+import * as R from 'ramda';
 import React, { Component } from 'react';
+import ReactGA from 'react-ga';
+import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
 import {
   Link as RouterLink,
   RouteComponentProps,
   withRouter,
 } from 'react-router-dom';
-import * as R from 'ramda';
-import { AppState } from '../reducers';
-import { layoutStyles } from '../styles';
+import { bindActionCreators } from 'redux';
 import { retrievePopular } from '../actions/popular';
-import { getMetadataPath } from '../utils/metadata-access';
-import ItemCard from '../components/ItemCard';
-import withUser, { WithUserProps } from '../components/withUser';
 import { PopularInitiatedActionPayload } from '../actions/popular/popular';
 import Featured from '../components/Featured';
-import Thing from '../types/Thing';
-import ReactGA from 'react-ga';
+import ItemCard from '../components/ItemCard';
+import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants';
-import InfiniteScroll from 'react-infinite-scroller';
-import _ from 'lodash';
+import { AppState } from '../reducers';
+import { layoutStyles } from '../styles';
+import Thing from '../types/Thing';
+import { getMetadataPath } from '../utils/metadata-access';
 
 const limit = 20;
 
