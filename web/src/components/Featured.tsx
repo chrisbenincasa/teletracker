@@ -41,6 +41,9 @@ const styles = (theme: Theme) =>
       top: 20,
       left: 20,
       width: '25%',
+      [theme.breakpoints.up('md')]: {
+        width: 225,
+      },
     },
     title: {
       [theme.breakpoints.up('sm')]: {
