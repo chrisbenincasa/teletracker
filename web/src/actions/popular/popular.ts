@@ -1,12 +1,11 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
-import { clientEffect, createAction } from '../utils';
-import { defaultMovieMeta } from '../lists';
 import { ErrorFSA, FSA } from 'flux-standard-action';
-import Thing, { ThingFactory, ApiThing } from '../../types/Thing';
-import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
-import { Paging } from '../../types';
-import { TeletrackerResponse } from '../../utils/api-client';
 import _ from 'lodash';
+import { Paging } from '../../types';
+import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
+import Thing, { ApiThing, ThingFactory } from '../../types/Thing';
+import { TeletrackerResponse } from '../../utils/api-client';
+import { clientEffect, createAction } from '../utils';
 
 export const POPULAR_INITIATED = 'popular/INITIATED';
 export const POPULAR_SUCCESSFUL = 'popular/SUCCESSFUL';
