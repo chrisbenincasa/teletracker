@@ -197,7 +197,6 @@ type Props = DispatchProps & OwnProps & RouteComponentProps & WidthProps;
 
 interface State {
   anchorEl: HTMLInputElement | null;
-  // drawerOpen: boolean;
   genreAnchorEl: HTMLButtonElement | null;
   genreType: 'movie' | 'show' | null;
   isLoggedOut: boolean;

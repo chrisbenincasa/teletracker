@@ -211,7 +211,7 @@ class Drawer extends Component<Props, State> {
     } else {
       this.setState({
         authModalOpen: !this.state.authModalOpen,
-        authModalScreen: initialForm || undefined,
+        authModalScreen: initialForm,
       });
     }
   };
