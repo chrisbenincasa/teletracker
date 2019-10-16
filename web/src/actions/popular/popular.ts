@@ -56,7 +56,6 @@ export const popularSaga = function*() {
     payload,
   }: PopularInitiatedAction) {
     if (payload) {
-      console.log(payload);
       try {
         let response: TeletrackerResponse<ApiThing[]> = yield clientEffect(
           client => client.getPopular,
