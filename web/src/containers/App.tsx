@@ -5,6 +5,7 @@ import {
   withWidth,
   WithStyles,
   withStyles,
+  LinearProgress,
 } from '@material-ui/core';
 import clsx from 'clsx';
 import * as R from 'ramda';
@@ -58,6 +59,7 @@ const styles = (theme: Theme) =>
 
 interface OwnProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
+  isBooting: boolean;
 }
 
 interface WidthProps {
@@ -80,61 +82,69 @@ class App extends Component<Props, State> {
   };
 
   render() {
-    let { classes, isAuthed } = this.props;
+    let { classes, isAuthed, isBooting } = this.props;
 
     return (
       <div className={classes.root}>
         <CssBaseline />
         <Toolbar drawerOpen={this.toggleDrawer.bind(this)} />
-        <div>
-          {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
-          <Drawer open={this.state.drawerOpen} />
-          <main
-            style={{
-              display: 'flex',
-              flexDirection: isAuthed ? 'row' : 'column',
-            }}
-            className={clsx(classes.mainContent, {
-              [classes.mainContentShift]: this.state.drawerOpen,
-            })}
-          >
-            <Switch>
-              <Route exact path="/" render={props => <Popular {...props} />} />
-              <Route
-                exact
-                path="/search"
-                render={props => <Search {...props} />}
-              />
-              <Route
-                exact
-                path="/account"
-                render={props => <Account {...props} />}
-              />
-              <Route exact path="/login" component={Login} />
-              <Route exact path="/signup" component={Signup} />
-              <Route exact path="/new" render={props => <New {...props} />} />
-              <Route exact path="/popular" component={Popular} />
-              <Route exact path="/genres/:id" component={Genre} />
-              <Route exact path="/logout" component={Logout} />
-              <Route
-                exact
-                path="/lists"
-                render={props => <Lists {...props} />}
-              />
-              <Route
-                exact
-                path="/lists/:id"
-                render={props => <ListDetail {...props} />}
-              />
-              <Route exact path="/person/:id" component={PersonDetail} />
-              <Route
-                exact
-                path="/:type/:id"
-                render={props => <ItemDetail {...props} />}
-              />
-            </Switch>
-          </main>
-        </div>
+        {!isBooting ? (
+          <div>
+            {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
+            <Drawer open={this.state.drawerOpen} />
+            <main
+              style={{
+                display: 'flex',
+                flexDirection: isAuthed ? 'row' : 'column',
+              }}
+              className={clsx(classes.mainContent, {
+                [classes.mainContentShift]: this.state.drawerOpen,
+              })}
+            >
+              <Switch>
+                <Route
+                  exact
+                  path="/"
+                  render={props => <Popular {...props} />}
+                />
+                <Route
+                  exact
+                  path="/search"
+                  render={props => <Search {...props} />}
+                />
+                <Route
+                  exact
+                  path="/account"
+                  render={props => <Account {...props} />}
+                />
+                <Route exact path="/login" component={Login} />
+                <Route exact path="/signup" component={Signup} />
+                <Route exact path="/new" render={props => <New {...props} />} />
+                <Route exact path="/popular" component={Popular} />
+                <Route exact path="/genres/:id" component={Genre} />
+                <Route exact path="/logout" component={Logout} />
+                <Route
+                  exact
+                  path="/lists"
+                  render={props => <Lists {...props} />}
+                />
+                <Route
+                  exact
+                  path="/lists/:id"
+                  render={props => <ListDetail {...props} />}
+                />
+                <Route exact path="/person/:id" component={PersonDetail} />
+                <Route
+                  exact
+                  path="/:type/:id"
+                  render={props => <ItemDetail {...props} />}
+                />
+              </Switch>
+            </main>
+          </div>
+        ) : (
+          <LinearProgress />
+        )}
       </div>
     );
   }
@@ -143,6 +153,7 @@ class App extends Component<Props, State> {
 const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
+    isBooting: appState.startup.isBooting,
   };
 };
 
