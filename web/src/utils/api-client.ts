@@ -1,20 +1,20 @@
 import * as apisauce from 'apisauce';
+import _ from 'lodash';
 import { merge } from 'ramda';
 import {
   ActionType,
   Genre,
   ItemTypes,
   List,
-  ListSortOptions,
-  Network,
-  User,
-  UserPreferences,
   ListOptions,
   ListRules,
+  ListSortOptions,
+  Network,
   Paging,
+  User,
+  UserPreferences,
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
-import _ from 'lodash';
 import { ApiThing } from '../types/Thing';
 
 export interface TeletrackerApiOptions {
@@ -322,8 +322,8 @@ export class TeletrackerApi {
     return this.api.get<DataResponse<Network[]>>('/api/v1/networks', { token });
   }
 
-  async getGenres(token: string): Promise<TeletrackerResponse<Genre[]>> {
-    return this.api.get<DataResponse<Genre[]>>('/api/v1/genres', { token });
+  async getGenres(): Promise<TeletrackerResponse<Genre[]>> {
+    return this.api.get<DataResponse<Genre[]>>('/api/v1/genres');
   }
 
   async updateActions(
