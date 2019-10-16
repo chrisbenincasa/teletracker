@@ -220,11 +220,7 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *getPopularGenre(
-    genre: string,
-    typeRestrict?: 'movie' | 'show',
-    bookmark?: string,
-  ) {
+  *getPopularGenre(genre: string, typeRestrict?: ItemTypes, bookmark?: string) {
     return yield this.apiCall(
       client => client.getPopularGenre,
       genre,
