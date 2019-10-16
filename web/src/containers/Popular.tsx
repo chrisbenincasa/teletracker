@@ -179,9 +179,7 @@ class Popular extends Component<Props, State> {
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Typography
             color="inherit"
-            variant={
-              ['xs', 'sm', 'md'].includes(this.props.width) ? 'h6' : 'h4'
-            }
+            variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
             style={{ flexGrow: 1 }}
           >
             {`Popular ${

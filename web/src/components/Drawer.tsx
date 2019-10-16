@@ -14,6 +14,7 @@ import {
   Typography,
   withStyles,
   WithStyles,
+  withWidth,
 } from '@material-ui/core';
 import {
   AddCircle,
@@ -28,6 +29,7 @@ import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { Redirect } from 'react-router';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../actions/auth';
 import {
@@ -118,11 +120,16 @@ interface RouteParams {
   type: string;
 }
 
+interface WidthProps {
+  width: string;
+}
+
 type Props = OwnProps &
   RouteComponentProps<RouteParams> &
   DispatchProps &
   WithStyles<typeof styles> &
   InjectedProps &
+  WidthProps &
   WithUserProps;
 
 interface LinkProps {
@@ -195,10 +202,18 @@ class Drawer extends Component<Props, State> {
   };
 
   toggleAuthModal = (initialForm?: 'login' | 'signup') => {
-    this.setState({
-      authModalOpen: !this.state.authModalOpen,
-      authModalScreen: initialForm || undefined,
-    });
+    if (['xs', 'sm', 'md'].includes(this.props.width)) {
+      this.setState({
+        authModalOpen: false,
+        authModalScreen: undefined,
+      });
+      this.props.history.push(`/${initialForm}`);
+    } else {
+      this.setState({
+        authModalOpen: !this.state.authModalOpen,
+        authModalScreen: initialForm,
+      });
+    }
   };
 
   handleModalOpen = () => {
@@ -370,14 +385,16 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
     dispatch,
   );
 
-export default withUser(
-  withStyles(styles, { withTheme: true })(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(Drawer),
+export default withWidth()(
+  withUser(
+    withStyles(styles, { withTheme: true })(
+      withRouter(
+        connect(
+          mapStateToProps,
+          mapDispatchToProps,
+        )(Drawer),
+      ),
     ),
+    () => null,
   ),
-  () => null,
 );
