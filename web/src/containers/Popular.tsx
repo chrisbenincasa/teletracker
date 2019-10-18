@@ -1,6 +1,8 @@
 import {
+  CircularProgress,
   createStyles,
   Grid,
+  IconButton,
   LinearProgress,
   Theme,
   Typography,
@@ -8,6 +10,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
+import { Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -19,33 +22,41 @@ import { bindActionCreators } from 'redux';
 import { retrievePopular } from '../actions/popular';
 import { PopularInitiatedActionPayload } from '../actions/popular/popular';
 import Featured from '../components/Featured';
-import TypeToggle, {
-  getTypeFromUrlParam,
-} from '../components/Filters/TypeToggle';
+import AllFilters from '../components/Filters/AllFilters';
+import { getGenreFromUrlParam } from '../components/Filters/GenreSelect';
+import { getNetworkTypeFromUrlParam } from '../components/Filters/NetworkSelect';
+import { getSortFromUrlParam } from '../components/Filters/SortDropdown';
+import { getTypeFromUrlParam } from '../components/Filters/TypeToggle';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants';
 import { AppState } from '../reducers';
-import { layoutStyles } from '../styles';
-import { ItemTypes } from '../types';
+import { Genre, ItemTypes, ListSortOptions, NetworkTypes } from '../types';
 import { Item } from '../types/v2/Item';
 
 const limit = 20;
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
+    networkIcon: {
+      width: 20,
+      borderRadius: '50%',
+    },
+    settings: {
+      display: 'flex',
+      alignSelf: 'flex-end',
+    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {}
 
 interface InjectedProps {
+  bookmark?: string;
   isAuthed: boolean;
   isSearching: boolean;
+  loading: boolean;
   popular?: string[];
   thingsBySlug: { [key: string]: Item };
-  loading: boolean;
-  bookmark?: string;
 }
 
 interface RouteParams {
@@ -60,16 +71,25 @@ interface DispatchProps {
   retrievePopular: (payload: PopularInitiatedActionPayload) => void;
 }
 
+interface StateProps {
+  genres?: Genre[];
+}
+
 type Props = OwnProps &
   InjectedProps &
   DispatchProps &
   WithUserProps &
   WidthProps &
+  StateProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
+  filter?: number[];
   mainItemIndex: number;
-  type?: ItemTypes;
+  networks?: NetworkTypes[];
+  showFilter: boolean;
+  sortOrder: ListSortOptions;
+  type?: ItemTypes[];
 }
 
 class Popular extends Component<Props, State> {
@@ -78,14 +98,20 @@ class Popular extends Component<Props, State> {
 
     this.state = {
       ...this.state,
-      type: getTypeFromUrlParam(),
+      filter: getGenreFromUrlParam(),
       mainItemIndex: -1,
+      networks: getNetworkTypeFromUrlParam(),
+      showFilter: false,
+      sortOrder: getSortFromUrlParam(),
+      type: getTypeFromUrlParam(),
     };
   }
 
   loadPopular(passBookmark: boolean) {
+    // To do: add support for sorting
     this.props.retrievePopular({
       itemTypes: this.state.type,
+      networks: this.state.networks,
       limit,
       bookmark: passBookmark ? this.props.bookmark : undefined,
     });
@@ -124,25 +150,78 @@ class Popular extends Component<Props, State> {
       });
 
       const randomItem = Math.floor(Math.random() * highestRated.length);
-      const popularItem = popular.findIndex(
-        name => name === highestRated[randomItem],
-      );
+      if (randomItem === 0) {
+        this.setState({
+          mainItemIndex: 0,
+        });
+      } else {
+        const popularItem = popular.findIndex(
+          name => name === highestRated[randomItem],
+        );
 
-      this.setState({
-        mainItemIndex: popularItem,
-      });
+        this.setState({
+          mainItemIndex: popularItem,
+        });
+      }
     }
   }
 
-  setType = (type: ItemTypes) => {
+  setType = (type?: ItemTypes[]) => {
+    // Only update and hit endpoint if there is a state change
+    if (this.state.type !== type) {
+      this.setState(
+        {
+          type,
+        },
+        () => {
+          this.loadPopular(false);
+        },
+      );
+    }
+  };
+
+  setGenre = (genres?: number[]) => {
+    console.log('works!');
+    console.log({ genres });
     this.setState(
       {
-        type,
+        filter: genres,
       },
       () => {
         this.loadPopular(false);
       },
     );
+  };
+
+  setNetworks = (networks?: NetworkTypes[]) => {
+    // Only update and hit endpoint if there is a state change
+    if (this.state.networks !== networks) {
+      this.setState(
+        {
+          networks,
+        },
+        () => {
+          this.loadPopular(false);
+        },
+      );
+    }
+  };
+
+  setSortOrder = (sortOrder: ListSortOptions) => {
+    if (this.state.sortOrder !== sortOrder) {
+      this.setState(
+        {
+          sortOrder,
+        },
+        () => {
+          this.loadPopular(false);
+        },
+      );
+    }
+  };
+
+  toggleFilters = () => {
+    this.setState({ showFilter: !this.state.showFilter });
   };
 
   renderLoading = () => {
@@ -152,6 +231,24 @@ class Popular extends Component<Props, State> {
       </div>
     );
   };
+
+  renderLoadingCircle() {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 200,
+          height: '100%',
+        }}
+      >
+        <div>
+          <CircularProgress color="secondary" />
+        </div>
+      </div>
+    );
+  }
 
   debounceLoadMore = _.debounce(() => {
     this.loadPopular(true);
@@ -164,7 +261,7 @@ class Popular extends Component<Props, State> {
   };
 
   renderPopular = () => {
-    const { popular, userSelf, thingsBySlug } = this.props;
+    const { classes, genres, popular, userSelf, thingsBySlug } = this.props;
     const { type } = this.state;
 
     return popular && popular && popular.length ? (
@@ -198,8 +295,23 @@ class Popular extends Component<Props, State> {
             justifyContent: 'flex-end',
           }}
         >
-          <TypeToggle handleChange={this.setType} />
+          <IconButton
+            onClick={this.toggleFilters}
+            className={classes.settings}
+            color={this.state.showFilter ? 'secondary' : 'inherit'}
+          >
+            <Tune />
+            <Typography variant="srOnly">Tune</Typography>
+          </IconButton>
         </div>
+        <AllFilters
+          genres={genres}
+          open={this.state.showFilter}
+          handleTypeChange={this.setType}
+          handleGenreChange={this.setGenre}
+          handleNetworkChange={this.setNetworks}
+          handleSortChange={this.setSortOrder}
+        />
         <InfiniteScroll
           pageStart={0}
           loadMore={() => this.loadMoreResults()}
@@ -219,6 +331,7 @@ class Popular extends Component<Props, State> {
               }
             })}
           </Grid>
+          {this.props.loading && this.renderLoadingCircle()}
         </InfiniteScroll>
       </div>
     ) : null;
@@ -246,6 +359,7 @@ const mapStateToProps = (appState: AppState) => {
     popular: appState.popular.popular,
     thingsBySlug: appState.itemDetail.thingsBySlug,
     loading: appState.popular.loadingPopular,
+    genres: appState.metadata.genres,
     bookmark: appState.popular.popularBookmark,
   };
 };

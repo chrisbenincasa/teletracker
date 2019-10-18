@@ -1,34 +1,36 @@
 import {
-  ButtonGroup,
-  Button,
   createStyles,
   Grid,
+  IconButton,
   LinearProgress,
   Theme,
   Typography,
   withStyles,
   WithStyles,
 } from '@material-ui/core';
+import { Tune } from '@material-ui/icons';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import {
-  Link as RouterLink,
-  RouteComponentProps,
-  withRouter,
-} from 'react-router-dom';
+import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import * as R from 'ramda';
 import { AppState } from '../reducers';
-import { layoutStyles } from '../styles';
 import { retrieveGenre } from '../actions/popular';
 import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from '../components/ItemCard';
-import TypeToggle, {
-  getTypeFromUrlParam,
-} from '../components/Filters/TypeToggle';
+import { getTypeFromUrlParam } from '../components/Filters/TypeToggle';
+import { getNetworkTypeFromUrlParam } from '../components/Filters/NetworkSelect';
+import { getSortFromUrlParam } from '../components/Filters/SortDropdown';
+import AllFilters from '../components/Filters/AllFilters';
+import ActiveFilters from '../components/Filters/ActiveFilters';
 import withUser, { WithUserProps } from '../components/withUser';
 import Thing from '../types/Thing';
-import { Genre as GenreModel, ItemTypes } from '../types';
+import {
+  Genre as GenreModel,
+  ItemTypes,
+  ListSortOptions,
+  NetworkTypes,
+} from '../types';
 import { GenreInitiatedActionPayload } from '../actions/popular/genre';
 import Featured from '../components/Featured';
 import ReactGA from 'react-ga';
@@ -42,7 +44,6 @@ const limit = 20;
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
     title: {
       [theme.breakpoints.up('sm')]: {
         fontSize: '2.5em',
@@ -59,16 +60,20 @@ const styles = (theme: Theme) =>
       },
       whiteSpace: 'nowrap',
     },
+    settings: {
+      display: 'flex',
+      alignSelf: 'flex-end',
+    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {}
 
 interface InjectedProps {
-  isAuthed: boolean;
+  bookmark?: string;
   genre?: string[];
   genres?: GenreModel[];
   thingsBySlug: { [key: string]: Item };
-  bookmark?: string;
+  isAuthed: boolean;
   loading: boolean;
 }
 
@@ -87,28 +92,38 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
+  itemTypes?: ItemTypes[];
   mainItemIndex: number;
-  type?: ItemTypes;
+  networks?: NetworkTypes[];
+  showFilter: boolean;
+  sortOrder: ListSortOptions;
 }
 
 class Genre extends Component<Props, State> {
-  state: State = {
-    mainItemIndex: -1,
-  };
-
   constructor(props: Props) {
     super(props);
+    let params = new URLSearchParams(location.search);
 
     this.state = {
       ...this.state,
-      type: getTypeFromUrlParam(),
+      itemTypes: getTypeFromUrlParam(),
+      mainItemIndex: -1,
+      networks: getNetworkTypeFromUrlParam(),
+      showFilter: Boolean(
+        params.has('sort') ||
+          params.has('genres') ||
+          params.has('networks') ||
+          params.has('types'),
+      ),
+      sortOrder: getSortFromUrlParam(),
     };
   }
 
   loadGenres(passBookmark: boolean) {
     this.props.retrieveGenre({
       genre: this.props.match.params.id,
-      thingRestrict: this.state.type,
+      networks: this.state.networks,
+      thingRestrict: this.state.itemTypes,
       bookmark: passBookmark ? this.props.bookmark : undefined,
       limit,
     });
@@ -164,17 +179,6 @@ class Genre extends Component<Props, State> {
     }
   }
 
-  setType = (type: ItemTypes) => {
-    this.setState(
-      {
-        type,
-      },
-      () => {
-        this.loadGenres(false);
-      },
-    );
-  };
-
   renderLoading = () => {
     return (
       <div style={{ flexGrow: 1 }}>
@@ -193,6 +197,66 @@ class Genre extends Component<Props, State> {
     }
   };
 
+  toggleFilters = () => {
+    this.setState({ showFilter: !this.state.showFilter });
+  };
+
+  setType = (type?: ItemTypes[]) => {
+    this.setState(
+      {
+        itemTypes: type,
+      },
+      () => {
+        this.loadGenres(false);
+      },
+    );
+  };
+
+  setNetworks = (networks?: NetworkTypes[]) => {
+    // Only update and hit endpoint if there is a state change
+    if (this.state.networks !== networks) {
+      this.setState(
+        {
+          networks,
+        },
+        () => {
+          this.loadGenres(false);
+        },
+      );
+    }
+  };
+
+  setFilters = (
+    sortOrder: ListSortOptions,
+    networks?: NetworkTypes[],
+    itemTypes?: ItemTypes[],
+    genres?: number[],
+  ) => {
+    this.setState(
+      {
+        networks,
+        itemTypes,
+        sortOrder,
+      },
+      () => {
+        this.loadGenres(false);
+      },
+    );
+  };
+
+  setSortOrder = (sortOrder: ListSortOptions) => {
+    if (this.state.sortOrder !== sortOrder) {
+      this.setState(
+        {
+          sortOrder,
+        },
+        () => {
+          this.loadGenres(false);
+        },
+      );
+    }
+  };
+
   renderItems = () => {
     const {
       classes,
@@ -200,10 +264,9 @@ class Genre extends Component<Props, State> {
       userSelf,
       thingsBySlug,
       genres,
-      location,
       match,
     } = this.props;
-    const { type } = this.state;
+    const { itemTypes, networks, sortOrder } = this.state;
     const genreModel = R.find(g => g.slug === match.params.id, genres!)!;
 
     const capitalize = (s: string) => {
@@ -222,17 +285,35 @@ class Genre extends Component<Props, State> {
             className={classes.title}
           >
             Popular {genreModel.name}{' '}
-            {type && type.includes('movie')
-              ? capitalize(type[0]) + 's'
+            {itemTypes && itemTypes.includes('movie')
+              ? capitalize(itemTypes[0]) + 's'
               : 'Content'}
           </Typography>
-          <div
-            style={{ display: 'flex', flexDirection: 'row', marginBottom: 10 }}
+          <ActiveFilters
+            updateFilters={this.setFilters}
+            itemTypes={itemTypes}
+            networks={networks}
+            sortOrder={sortOrder}
+            listIsDynamic={false}
+          />
+          <IconButton
+            onClick={this.toggleFilters}
+            className={classes.settings}
+            color={this.state.showFilter ? 'secondary' : 'inherit'}
           >
-            <TypeToggle handleChange={this.setType} />
-          </div>
+            <Tune />
+            <Typography variant="srOnly">Tune</Typography>
+          </IconButton>
         </div>
-
+        <AllFilters
+          genres={genres}
+          open={this.state.showFilter}
+          handleTypeChange={this.setType}
+          handleNetworkChange={this.setNetworks}
+          handleSortChange={this.setSortOrder}
+          isListDynamic={false}
+          showGenre={false}
+        />
         <InfiniteScroll
           pageStart={0}
           loadMore={() => this.loadMoreResults()}

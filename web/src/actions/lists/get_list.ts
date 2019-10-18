@@ -1,7 +1,13 @@
 import { put, select, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { AppState } from '../../reducers';
-import { ItemTypes, List, ListSortOptions, Paging } from '../../types';
+import {
+  ItemTypes,
+  List,
+  ListSortOptions,
+  NetworkTypes,
+  Paging,
+} from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect } from '../utils';
 import { createAction } from '../utils';
@@ -16,9 +22,10 @@ export interface ListRetrieveInitiatedPayload {
   force?: boolean;
   sort?: ListSortOptions;
   desc?: boolean;
-  itemTypes?: ItemTypes;
+  itemTypes?: ItemTypes[];
   genres?: number[];
   bookmark?: string;
+  networks?: NetworkTypes[];
 }
 
 export type ListRetrieveInitiatedAction = FSA<
