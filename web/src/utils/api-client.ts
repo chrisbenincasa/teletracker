@@ -10,6 +10,7 @@ import {
   ListRules,
   ListSortOptions,
   Network,
+  NetworkTypes,
   Paging,
   User,
   UserPreferences,
@@ -206,9 +207,10 @@ export class TeletrackerApi {
     id: string | number,
     sort?: ListSortOptions,
     desc?: boolean,
-    itemTypes?: ItemTypes,
+    itemTypes?: ItemTypes[],
     genres?: number[],
     bookmark?: string,
+    networks?: NetworkTypes[],
   ) {
     return this.api.get<DataResponse<List>>(`/api/v2/users/self/lists/${id}`, {
       token,
@@ -218,6 +220,7 @@ export class TeletrackerApi {
         itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
       genres: genres && genres.length ? genres.join(',') : undefined,
       bookmark,
+      networks: networks && networks.length ? networks.join(',') : undefined,
     });
   }
 
@@ -380,8 +383,8 @@ export class TeletrackerApi {
   async getPopular(
     token?: string,
     fields?: KeyMap<ObjectMetadata>,
-    itemTypes?: ItemTypes,
-    networks?: string,
+    itemTypes?: ItemTypes[],
+    networks?: NetworkTypes[],
     bookmark?: string,
     limit?: number,
   ) {
@@ -390,7 +393,7 @@ export class TeletrackerApi {
       fields: fields ? this.createFilter(fields!) : undefined,
       itemTypes:
         itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
-      networks,
+      networks: networks && networks.length ? networks.join(',') : undefined,
       bookmark,
       limit,
     });
@@ -398,14 +401,16 @@ export class TeletrackerApi {
 
   async getPopularGenre(
     genre: string,
-    typeRestrict?: ItemTypes,
+    typeRestrict?: ItemTypes[],
     bookmark?: string,
+    networks?: NetworkTypes[],
   ) {
     return this.api.get('/api/v2/genres/' + genre, {
       thingType:
         typeRestrict && typeRestrict.length
           ? typeRestrict.join(',')
           : undefined,
+      networks: networks && networks.length ? networks.join(',') : undefined,
       bookmark,
     });
   }

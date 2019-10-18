@@ -7,6 +7,7 @@ import {
   ListRules,
   ListSortOptions,
   Network,
+  NetworkTypes,
   UserPreferences,
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
@@ -45,9 +46,10 @@ export class SagaTeletrackerClient {
     id: number,
     sort?: ListSortOptions,
     desc?: boolean,
-    itemTypes?: ItemTypes,
+    itemTypes?: ItemTypes[],
     genres?: number[],
     bookmark?: string,
+    networks?: NetworkTypes[],
   ) {
     return yield this.apiCall(
       client => client.getList,
@@ -58,6 +60,7 @@ export class SagaTeletrackerClient {
       itemTypes,
       genres,
       bookmark,
+      networks,
     );
   }
 
@@ -203,8 +206,8 @@ export class SagaTeletrackerClient {
 
   *getPopular(
     fields?: KeyMap<ObjectMetadata>,
-    itemTypes?: ItemTypes,
-    networks?: string,
+    itemTypes?: ItemTypes[],
+    networks?: NetworkTypes[],
     bookmark?: string,
     limit?: number,
   ) {
@@ -220,12 +223,18 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *getPopularGenre(genre: string, typeRestrict?: ItemTypes, bookmark?: string) {
+  *getPopularGenre(
+    genre: string,
+    typeRestrict?: ItemTypes[],
+    bookmark?: string,
+    networks?: NetworkTypes[],
+  ) {
     return yield this.apiCall(
       client => client.getPopularGenre,
       genre,
       typeRestrict,
       bookmark,
+      networks,
     );
   }
 

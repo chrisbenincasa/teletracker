@@ -7,25 +7,28 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import {
-  Link as RouterLink,
-  withRouter,
-  RouteComponentProps,
-} from 'react-router-dom';
+import { withRouter, RouteComponentProps } from 'react-router-dom';
 import { ItemTypes } from '../../types';
 import React, { Component } from 'react';
+import { updateURLParameters } from '../../utils/urlHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
+    buttonContainer: {
+      display: 'flex',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
     filterButtons: {
       [theme.breakpoints.down('sm')]: {
         fontSize: '0.575rem',
       },
     },
+    typeContainer: { display: 'flex', flexDirection: 'column' },
   });
 
 interface OwnProps {
-  handleChange: (type: ItemTypes) => void;
+  handleChange: (type?: ItemTypes[]) => void;
 }
 
 interface RouteParams {
@@ -37,15 +40,16 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
-  type?: ItemTypes;
+  type?: ItemTypes[];
 }
 
 export const getTypeFromUrlParam = () => {
   let params = new URLSearchParams(location.search);
   let type;
   let param = params.get('type');
-  if (param === 'movie' || param === 'show') {
-    type = [param];
+
+  if (param) {
+    type = decodeURIComponent(param).split(',');
   }
   return type;
 };
@@ -60,61 +64,63 @@ class TypeToggle extends Component<Props, State> {
     };
   }
 
-  componentDidUpdate(prevProps: Props) {
-    if (
-      this.props.location &&
-      prevProps.location.search !== this.props.location.search
-    ) {
-      const type = getTypeFromUrlParam();
-      this.setState(
-        {
-          type,
-        },
-        () => {
-          this.props.handleChange(type);
-        },
-      );
+  componentDidUpdate = (oldProps: Props) => {
+    if (oldProps.location.search !== this.props.location.search) {
+      this.setState({
+        type: getTypeFromUrlParam(),
+      });
     }
-  }
+  };
+
+  updateURLParam = (param: string, value?: ItemTypes[]) => {
+    updateURLParameters(this.props, param, value);
+    this.setState(
+      {
+        type: value,
+      },
+      () => {
+        this.props.handleChange(value);
+      },
+    );
+  };
 
   render() {
     const { classes } = this.props;
     const { type } = this.state;
 
     return (
-      <ButtonGroup
-        variant="contained"
-        color="primary"
-        aria-label="Filter by All, Movies, or just TV Shows"
-      >
-        <Button
-          color={!type ? 'secondary' : 'primary'}
-          component={RouterLink}
-          to={{
-            pathname: location.pathname,
-            search: '',
-          }}
-          className={classes.filterButtons}
-        >
-          All
-        </Button>
-        <Button
-          color={type && type.includes('movie') ? 'secondary' : 'primary'}
-          component={RouterLink}
-          to={'?type=movie'}
-          className={classes.filterButtons}
-        >
-          Movies
-        </Button>
-        <Button
-          color={type && type.includes('show') ? 'secondary' : 'primary'}
-          component={RouterLink}
-          to={'?type=show'}
-          className={classes.filterButtons}
-        >
-          TV
-        </Button>
-      </ButtonGroup>
+      <div className={classes.typeContainer}>
+        <Typography display="block">By Type:</Typography>
+        <div className={classes.buttonContainer}>
+          <ButtonGroup
+            variant="contained"
+            color="primary"
+            aria-label="Filter by All, Movies, or just TV Shows"
+          >
+            <Button
+              color={!type ? 'secondary' : 'primary'}
+              onClick={() => this.updateURLParam('type', undefined)}
+              className={classes.filterButtons}
+            >
+              All
+            </Button>
+            <Button
+              color={type && type.includes('movie') ? 'secondary' : 'primary'}
+              onClick={() => this.updateURLParam('type', ['movie'])}
+              className={classes.filterButtons}
+            >
+              Movies
+            </Button>
+            <Button
+              color={type && type.includes('show') ? 'secondary' : 'primary'}
+              onClick={() => this.updateURLParam('type', ['show'])}
+              className={classes.filterButtons}
+            >
+              TV
+            </Button>
+          </ButtonGroup>
+        </div>
+      </div>
     );
   }
 }
