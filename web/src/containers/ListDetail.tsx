@@ -1,29 +1,21 @@
 import {
   Button,
-  ButtonGroup,
   CircularProgress,
-  ClickAwayListener,
-  Collapse,
   createStyles,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Fade,
   FormControl,
   FormControlLabel,
   Grid,
-  Grow,
   IconButton,
   InputLabel,
   LinearProgress,
   ListItemIcon,
   Menu,
   MenuItem,
-  MenuList,
-  Paper,
-  Popper,
   Select,
   Switch,
   TextField,
@@ -32,7 +24,6 @@ import {
   withStyles,
   WithStyles,
   withWidth,
-  Divider,
 } from '@material-ui/core';
 import { Delete, Edit, Settings, Tune } from '@material-ui/icons';
 import _ from 'lodash';
@@ -53,36 +44,36 @@ import {
   UserUpdateListPayload,
 } from '../actions/lists';
 import ItemCard from '../components/ItemCard';
-import TypeToggle, {
-  getTypeFromUrlParam,
-} from '../components/Filters/TypeToggle';
+import { getTypeFromUrlParam } from '../components/Filters/TypeToggle';
+import { getNetworkTypeFromUrlParam } from '../components/Filters/NetworkSelect';
+import { getSortFromUrlParam } from '../components/Filters/SortDropdown';
+import { getGenreFromUrlParam } from '../components/Filters/GenreSelect';
+import AllFilters from '../components/Filters/AllFilters';
+import ActiveFilters from '../components/Filters/ActiveFilters';
 import { StdRouterLink } from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants';
 import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';
 import { ListsByIdMap } from '../reducers/lists';
-import { layoutStyles } from '../styles';
-import { Genre, ItemTypes, List, ListSortOptions } from '../types';
+import {
+  Genre,
+  ItemTypes,
+  List,
+  ListSortOptions,
+  NetworkTypes,
+} from '../types';
 import Thing from '../types/Thing';
 import { getOrInitListOptions } from '../utils/list-utils';
 import { Item } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
-    root: {
-      display: 'flex',
-      flexGrow: 1,
-    },
     listHeader: {
       margin: `${theme.spacing(2)}px 0`,
       display: 'flex',
       flex: '1 0 auto',
-    },
-    listNameContainer: {
-      display: 'flex',
-      flex: '1 0 auto',
+      alignItems: 'center',
     },
     listName: {
       textDecoration: 'none',
@@ -90,44 +81,28 @@ const styles = (theme: Theme) =>
         color: theme.palette.text.primary,
       },
     },
-    filterButtons: {
-      [theme.breakpoints.down('sm')]: {
-        fontSize: '0.575rem',
-      },
-      whiteSpace: 'nowrap',
+    listNameContainer: {
       display: 'flex',
-      flexGrow: 1,
-    },
-    filterSortContainer: {
-      [theme.breakpoints.up('sm')]: {
-        display: 'flex',
-      },
-      zIndex: 1000,
-      marginBottom: theme.spacing(1),
-      flexGrow: 1,
+      flex: '1 0 auto',
     },
     formControl: {
       margin: theme.spacing(1),
       minWidth: 120,
       display: 'flex',
     },
-    genre: { margin: 5 },
-    genreContainer: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      margin: `0 -${theme.spacing(2)}px ${theme.spacing(2)}px`,
-      padding: 15,
-      backgroundColor: '#4E4B47',
-    },
-    settings: {
-      display: 'flex',
-      alignSelf: 'flex-end',
-    },
     listContainer: {
       display: 'flex',
       flexDirection: 'column',
       padding: `0 ${theme.spacing(2)}px`,
       width: '100%',
+    },
+    root: {
+      display: 'flex',
+      flexGrow: 1,
+    },
+    settings: {
+      display: 'flex',
+      alignSelf: 'flex-end',
     },
     textField: {
       marginLeft: theme.spacing(1),
@@ -138,19 +113,20 @@ const styles = (theme: Theme) =>
 
 interface OwnProps {
   isAuthed?: boolean;
-  listLoading: boolean;
-  listsById: ListsByIdMap;
-  thingsById: ThingMap;
   listBookmark?: string;
+  listsById: ListsByIdMap;
+  listLoading: boolean;
+  thingsById: ThingMap;
 }
 
 interface DispatchProps {
-  retrieveList: (payload: ListRetrieveInitiatedPayload) => void;
   deleteList: (payload: UserDeleteListPayload) => void;
+  retrieveList: (payload: ListRetrieveInitiatedPayload) => void;
   updateList: (payload: UserUpdateListPayload) => void;
 }
 
 interface RouteParams {
+  genre?: any;
   id: string;
   sort?: ListSortOptions;
   type?: 'movie' | 'show';
@@ -178,19 +154,18 @@ interface State {
   deleted: boolean;
   deleteConfirmationOpen: boolean;
   deleteOnWatch: boolean;
-  filter?: number;
+  genresFilter?: number[];
   genre?: string;
+  itemTypes?: ItemTypes[];
   list?: List;
   loadingList: boolean;
   migrateListId: number;
+  networks?: NetworkTypes[];
   newListName: string;
   prevListId: number;
   renameDialogOpen: boolean;
   showFilter: boolean;
   sortOrder: ListSortOptions;
-  itemTypes?: ItemTypes;
-  genreAnchorEl: HTMLButtonElement | null;
-  genreMenuOpen: boolean;
 }
 
 class ListDetail extends Component<Props, State> {
@@ -198,31 +173,27 @@ class ListDetail extends Component<Props, State> {
     super(props);
     let listId = Number(this.props.match.params.id);
     let params = new URLSearchParams(location.search);
-    let sort;
-    let param = params.get('sort');
-    if (param === 'recent' || param === 'added_time') {
-      sort = param;
-    } else {
-      sort = 'popularity';
-    }
 
     this.state = {
       anchorEl: null,
       deleted: false,
       deleteConfirmationOpen: false,
       deleteOnWatch: true,
-      filter: undefined,
+      genresFilter: getGenreFromUrlParam(),
       itemTypes: getTypeFromUrlParam(),
       list: props.listsById[listId],
       loadingList: true,
       migrateListId: 0,
+      networks: getNetworkTypeFromUrlParam(),
       newListName: '',
       prevListId: listId,
       renameDialogOpen: false,
-      showFilter: params.has('sort') || params.has('genre'),
-      sortOrder: sort,
-      genreAnchorEl: null,
-      genreMenuOpen: false,
+      showFilter:
+        params.has('sort') ||
+        params.has('genres') ||
+        params.has('networks') ||
+        params.has('types'),
+      sortOrder: getSortFromUrlParam(),
     };
   }
 
@@ -245,13 +216,13 @@ class ListDetail extends Component<Props, State> {
   }
 
   retrieveList() {
-    const { itemTypes, sortOrder, filter } = this.state;
+    const { itemTypes, sortOrder, genresFilter } = this.state;
 
     this.props.retrieveList({
       listId: this.listId,
-      sort: sortOrder,
+      sort: sortOrder === 'default' ? undefined : sortOrder,
       itemTypes,
-      genres: filter ? [filter] : undefined,
+      genres: genresFilter ? genresFilter : undefined,
       force: true,
     });
   }
@@ -259,7 +230,6 @@ class ListDetail extends Component<Props, State> {
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
     const { match } = this.props;
-    const { itemTypes, sortOrder } = this.state;
 
     if (match && match.params && match.params.sort) {
       this.setState({ sortOrder: match.params.sort });
@@ -284,9 +254,10 @@ class ListDetail extends Component<Props, State> {
       (!prevState.loadingList && this.state.loadingList)
     ) {
       this.setState({ loadingList: true });
+
       this.props.retrieveList({
         listId: this.listId,
-        sort: sortOrder,
+        sort: sortOrder === 'default' ? undefined : sortOrder,
         itemTypes,
         force: true,
       });
@@ -306,7 +277,7 @@ class ListDetail extends Component<Props, State> {
       });
     }
 
-    if (this.state.filter !== prevState.filter) {
+    if (this.state.genresFilter !== prevState.genresFilter) {
       this.retrieveList();
     }
   }
@@ -581,25 +552,40 @@ class ListDetail extends Component<Props, State> {
     this.setState({ showFilter: !this.state.showFilter });
   };
 
-  setSortOrder = event => {
-    const { match } = this.props;
-
-    let params = new URLSearchParams(location.search);
-
-    this.setState({ sortOrder: event.target.value, loadingList: true });
-
-    let paramSort = params.get('sort');
-    if (paramSort) {
-      params.set('sort', event.target.value);
-    } else {
-      params.append('sort', event.target.value);
-    }
-    params.sort();
-
-    this.props.history.push(`${match.params.id}?${params}`);
+  setFilters = (
+    sortOrder: ListSortOptions,
+    networks?: NetworkTypes[],
+    itemTypes?: ItemTypes[],
+    genres?: number[],
+  ) => {
+    this.setState(
+      {
+        networks,
+        itemTypes,
+        sortOrder,
+        genresFilter: genres,
+      },
+      () => {
+        this.retrieveList();
+      },
+    );
   };
 
-  setType = (type: ItemTypes) => {
+  setSortOrder = (sortOrder: ListSortOptions) => {
+    if (this.state.sortOrder !== sortOrder) {
+      this.setState(
+        {
+          sortOrder,
+          loadingList: true,
+        },
+        () => {
+          this.retrieveList();
+        },
+      );
+    }
+  };
+
+  setType = (type?: ItemTypes[]) => {
     this.setState(
       {
         itemTypes: type,
@@ -610,27 +596,29 @@ class ListDetail extends Component<Props, State> {
     );
   };
 
-  setGenreFilter = (genre?: Genre) => {
-    const { match } = this.props;
-    let params = new URLSearchParams(location.search);
-    let paramGenre = params.get('genre');
+  setGenre = (genres?: number[]) => {
+    this.setState(
+      {
+        genresFilter: genres,
+      },
+      () => {
+        this.retrieveList();
+      },
+    );
+  };
 
-    if (!genre && paramGenre) {
-      params.delete('genre');
-      this.props.history.push(`${match.params.id}?${params}`);
-      this.setState({ filter: undefined });
-      return;
+  setNetworks = (networks?: NetworkTypes[]) => {
+    // Only update and hit endpoint if there is a state change
+    if (this.state.networks !== networks) {
+      this.setState(
+        {
+          networks,
+        },
+        () => {
+          this.retrieveList();
+        },
+      );
     }
-
-    if (paramGenre) {
-      params.set('genre', genre!.slug);
-    } else {
-      params.append('genre', genre!.slug);
-    }
-    params.sort();
-
-    this.props.history.push(`${match.params.id}?${params}`);
-    this.setState({ filter: genre!.id });
   };
 
   filteredFilmography(list: List) {
@@ -638,204 +626,23 @@ class ListDetail extends Component<Props, State> {
 
     return filmography.filter(
       (item: Item) =>
-        !this.state.filter ||
+        !this.state.genresFilter ||
         (item &&
           item.genres &&
-          item.genres.map(g => g.id).includes(this.state.filter)),
-    );
-  }
-
-  handleGenreMenu = event => {
-    this.setState({
-      genreAnchorEl: event.currentTarget,
-      genreMenuOpen: true,
-    });
-  };
-
-  handleGenreMenuClose = event => {
-    if (event.target.offsetParent === this.state.genreAnchorEl) {
-      return;
-    }
-
-    this.setState({
-      genreAnchorEl: null,
-      genreMenuOpen: false,
-    });
-  };
-
-  selectGenreFilter = (event, genre?: Genre) => {
-    this.setGenreFilter(genre);
-    this.handleGenreMenuClose(event);
-  };
-
-  renderFilters(list: List) {
-    const { showFilter, itemTypes, genreAnchorEl } = this.state;
-    const { classes, genres, width } = this.props;
-    let filmography = list!.items || [];
-    let finalGenres: Genre[] = [];
-
-    if (genres) {
-      finalGenres = _.chain(filmography)
-        .map((f: Item) => f.genres || [])
-        .flatten()
-        .uniq()
-        .map(genre => {
-          let g = _.find(genres, g => g.id === genre.id);
-          if (g) {
-            return [g];
-          } else {
-            return [];
-          }
-        })
-        .flatten()
-        .value();
-    }
-
-    let columns;
-
-    if (width === 'lg') {
-      columns = 3;
-    } else if (width === 'md') {
-      columns = 2;
-    } else {
-      columns = 1;
-    }
-
-    return (
-      <Collapse in={showFilter}>
-        <Fade in={showFilter}>
-          <div className={classes.genreContainer}>
-            <Typography
-              color="inherit"
-              variant="h5"
-              style={{ display: 'block', width: '100%' }}
-            >
-              Filter
-            </Typography>
-            <div className={classes.filterSortContainer}>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  flexGrow: 1,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <Button
-                  aria-controls="genre-menu"
-                  aria-haspopup="true"
-                  onClick={event => this.handleGenreMenu(event)}
-                  color="primary"
-                  variant="contained"
-                >
-                  Genres
-                </Button>
-                <Popper
-                  open={this.state.genreMenuOpen}
-                  anchorEl={genreAnchorEl}
-                  placement="bottom-start"
-                  keepMounted
-                  transition
-                  disablePortal
-                >
-                  {({ TransitionProps }) => (
-                    <Grow {...TransitionProps}>
-                      <Paper
-                        style={{
-                          position: 'absolute',
-                          zIndex: 9999999,
-                          columns,
-                          marginTop: 14,
-                        }}
-                      >
-                        <ClickAwayListener
-                          onClickAway={this.handleGenreMenuClose}
-                        >
-                          <MenuList>
-                            <MenuItem
-                              button
-                              selected={!this.state.filter}
-                              onClick={ev => this.selectGenreFilter(ev)}
-                              dense
-                            >
-                              All
-                            </MenuItem>
-                            <Divider />
-                            {(genres || []).map(item => {
-                              return (
-                                <MenuItem
-                                  key={item.id}
-                                  onClick={ev =>
-                                    this.selectGenreFilter(ev, item)
-                                  }
-                                  button
-                                  selected={
-                                    Boolean(this.state.filter) &&
-                                    this.state.filter === item.id
-                                  }
-                                  dense
-                                >
-                                  {item.name}
-                                </MenuItem>
-                              );
-                            })}
-                          </MenuList>
-                        </ClickAwayListener>
-                      </Paper>
-                    </Grow>
-                  )}
-                </Popper>
-              </div>
-              <div style={{ display: 'flex', margin: '10px 0' }}>
-                <TypeToggle handleChange={this.setType} />
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  marginLeft: 16,
-                }}
-              >
-                <InputLabel shrink htmlFor="age-label-placeholder">
-                  Sort by:
-                </InputLabel>
-                <Select
-                  value={
-                    this.state.sortOrder
-                      ? this.state.sortOrder
-                      : list.isDynamic
-                      ? 'popularity'
-                      : 'added_time'
-                  }
-                  inputProps={{
-                    name: 'sortOrder',
-                    id: 'sort-order',
-                  }}
-                  onChange={this.setSortOrder}
-                >
-                  <MenuItem value="added_time">Date Added</MenuItem>
-                  <MenuItem value="popularity">Popularity</MenuItem>
-                  <MenuItem value="recent">Release Date</MenuItem>
-                </Select>
-              </div>
-            </div>
-          </div>
-        </Fade>
-      </Collapse>
+          item.genres.map(g => g.id).includes(this.state.genresFilter[0])),
     );
   }
 
   loadMoreDebounced = _.debounce(() => {
-    let { sortOrder, itemTypes, filter } = this.state;
+    let { sortOrder, itemTypes, genresFilter } = this.state;
     let { listBookmark } = this.props;
 
-    console.log('retreieving');
     this.props.retrieveList({
       listId: this.listId,
       bookmark: listBookmark,
-      sort: sortOrder,
+      sort: sortOrder === 'default' ? undefined : sortOrder,
       itemTypes,
-      genres: filter ? [filter] : undefined,
+      genres: genresFilter ? genresFilter : undefined,
     });
   }, 200);
 
@@ -846,9 +653,15 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderListDetail(list: List) {
-    let { classes, listLoading, thingsById, userSelf } = this.props;
-    let { deleted, loadingList } = this.state;
-    let params = new URLSearchParams(location.search);
+    const { classes, genres, listLoading, thingsById, userSelf } = this.props;
+    const {
+      deleted,
+      itemTypes,
+      loadingList,
+      genresFilter,
+      networks,
+      sortOrder,
+    } = this.state;
 
     if ((!listLoading && !list) || deleted) {
       return <Redirect to="/" />;
@@ -867,6 +680,15 @@ class ListDetail extends Component<Props, State> {
                   {list.name}
                 </Typography>
               </div>
+              <ActiveFilters
+                genres={genres}
+                updateFilters={this.setFilters}
+                genresFilter={genresFilter}
+                itemTypes={itemTypes}
+                networks={networks}
+                sortOrder={sortOrder}
+                listIsDynamic={list.isDynamic}
+              />
               <IconButton
                 onClick={this.toggleFilters}
                 className={classes.settings}
@@ -877,7 +699,15 @@ class ListDetail extends Component<Props, State> {
               </IconButton>
               {this.renderProfileMenu()}
             </div>
-            {this.renderFilters(list)}
+            <AllFilters
+              genres={genres}
+              open={this.state.showFilter}
+              handleTypeChange={this.setType}
+              handleGenreChange={this.setGenre}
+              handleNetworkChange={this.setNetworks}
+              handleSortChange={this.setSortOrder}
+              isListDynamic={list.isDynamic}
+            />
             {!loadingList ? (
               <InfiniteScroll
                 pageStart={0}
