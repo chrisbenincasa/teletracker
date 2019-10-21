@@ -221,6 +221,18 @@ lazy val server = project
         namespace = Some("gcr.io/teletracker"),
         repository = "server",
         tag = Some(version.value)
+      ),
+      ImageName(
+        namespace =
+          Some("302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker"),
+        repository = "server",
+        tag = Some("latest")
+      ),
+      ImageName(
+        namespace =
+          Some("302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker"),
+        repository = "server",
+        tag = Some(version.value)
       )
     )
   )
