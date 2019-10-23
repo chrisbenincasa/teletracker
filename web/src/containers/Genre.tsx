@@ -35,6 +35,8 @@ import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
 import InfiniteScroll from 'react-infinite-scroller';
 import _ from 'lodash';
+import { ApiItem } from '../types/v2';
+import { Item } from '../types/v2/Item';
 
 const limit = 20;
 
@@ -65,7 +67,7 @@ interface InjectedProps {
   isAuthed: boolean;
   genre?: string[];
   genres?: GenreModel[];
-  thingsBySlug: { [key: string]: Thing };
+  thingsBySlug: { [key: string]: Item };
   bookmark?: string;
   loading: boolean;
 }
@@ -133,8 +135,15 @@ class Genre extends Component<Props, State> {
     if ((!prevProps.genre && genre) || (genre && mainItemIndex === -1)) {
       const highestRated = genre.filter(item => {
         const thing = thingsBySlug[item];
-        const voteAverage = Number(getMetadataPath(thing, 'vote_average')) || 0;
-        const voteCount = Number(getMetadataPath(thing, 'vote_count')) || 0;
+        // TODO make better
+        const voteAverage =
+          thing.ratings && thing.ratings.length
+            ? thing.ratings[0].vote_average
+            : 0;
+        const voteCount =
+          thing.ratings && thing.ratings.length
+            ? thing.ratings[0].vote_count || 0
+            : 0;
         return voteAverage > 7 && voteCount > 1000;
       });
 

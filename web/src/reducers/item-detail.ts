@@ -1,39 +1,38 @@
-import {
-  ITEM_FETCH_INITIATED,
-  ITEM_FETCH_SUCCESSFUL,
-  ItemFetchInitiatedAction,
-  ItemFetchSuccessfulAction,
-} from '../actions/item-detail';
-import {
-  UserUpdateItemTagsSuccessAction,
-  UserRemoveItemTagsSuccessAction,
-  UserUpdateItemTagsPayload,
-  USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
-  USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
-} from '../actions/user';
-import { UserThingTag } from '../types';
-import { flattenActions, handleAction } from './utils';
 import * as R from 'ramda';
 import {
-  LIST_RETRIEVE_SUCCESS,
+  ItemFetchInitiatedAction,
+  ItemFetchSuccessfulAction,
+  ITEM_FETCH_INITIATED,
+  ITEM_FETCH_SUCCESSFUL,
+} from '../actions/item-detail';
+import {
   ListRetrieveSuccessAction,
+  LIST_RETRIEVE_SUCCESS,
 } from '../actions/lists';
 import {
-  POPULAR_SUCCESSFUL,
-  PopularSuccessfulAction,
   GenreSuccessfulAction,
   GENRE_SUCCESSFUL,
+  PopularSuccessfulAction,
+  POPULAR_SUCCESSFUL,
 } from '../actions/popular';
-import Thing, { ApiThing, ThingFactory } from '../types/Thing';
+import {
+  UserRemoveItemTagsSuccessAction,
+  UserUpdateItemTagsPayload,
+  UserUpdateItemTagsSuccessAction,
+  USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
+  USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
+} from '../actions/user';
+import { Item, ItemFactory, ItemTag } from '../types/v2/Item';
+import { flattenActions, handleAction } from './utils';
 
 export type ThingMap = {
-  [key: string]: Thing;
+  [key: string]: Item;
 };
 
 export interface State {
   fetching: boolean;
   currentId?: number;
-  itemDetail?: Thing;
+  itemDetail?: Item;
   thingsById: ThingMap;
   thingsBySlug: ThingMap;
 }
@@ -60,11 +59,11 @@ const itemFetchSuccess = handleAction(
   ITEM_FETCH_SUCCESSFUL,
   (state: State, { payload }: ItemFetchSuccessfulAction) => {
     let thingsById = state.thingsById || {};
-    let existingThing: Thing | undefined = thingsById[payload!.id];
+    let existingThing: Item | undefined = thingsById[payload!.id];
 
-    let newThing: Thing = ThingFactory.create(payload!);
+    let newThing: Item = ItemFactory.create(payload!);
     if (existingThing) {
-      newThing = ThingFactory.merge(existingThing, newThing);
+      newThing = ItemFactory.merge(existingThing, newThing);
     }
 
     // TODO: Truncate thingsById after a certain point
@@ -78,22 +77,19 @@ const itemFetchSuccess = handleAction(
       } as ThingMap,
       thingsBySlug: {
         ...state.thingsBySlug,
-        [payload!.normalizedName]: newThing,
+        [payload!.slug]: newThing,
       } as ThingMap,
     } as State;
   },
 );
 
-const updateStateWithNewThings = (
-  existingState: State,
-  newThings: ApiThing[],
-) => {
+const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
   let thingsById = existingState.thingsById || {};
   let newThingsMerged = newThings.map(curr => {
-    let existingThing: Thing | undefined = thingsById[curr.id];
-    let newThing: Thing = ThingFactory.create(curr);
+    let existingThing: Item | undefined = thingsById[curr.id];
+    let newThing: Item = ItemFactory.create(curr);
     if (existingThing) {
-      newThing = ThingFactory.merge(existingThing, newThing);
+      newThing = ItemFactory.merge(existingThing, newThing);
     }
 
     return newThing;
@@ -129,9 +125,9 @@ const handleListRetrieveSuccess = handleAction<
   ListRetrieveSuccessAction,
   State
 >(LIST_RETRIEVE_SUCCESS, (state, action) => {
-  if (action.payload && action.payload.list.things) {
-    let things = action.payload.list.things;
-    return updateStateWithNewThings(state, things);
+  if (action.payload && action.payload.list.items) {
+    let items = action.payload.list.items;
+    return updateStateWithNewThings(state, items);
   } else {
     return state;
   }
@@ -168,14 +164,14 @@ const filterNot = <T>(fn: (x: T) => boolean, arr: T[]) => {
 // Updates the current item's tags
 const updateTagsState = (
   state: State,
-  fn: (tags: UserThingTag[]) => UserThingTag[],
+  fn: (tags: ItemTag[]) => ItemTag[],
   payload?: UserUpdateItemTagsPayload,
 ) => {
   let thingsById = state.thingsById || {};
   let thingId = payload!.thingId;
-  if (payload && thingsById[thingId] && thingsById[thingId].userMetadata) {
+  if (payload && thingsById[thingId] && thingsById[thingId].tags) {
     let thing = thingsById[thingId]!;
-    let newTagSet = fn(thing.userMetadata!.tags);
+    let newTagSet = fn(thing.tags!);
 
     return {
       ...state,
@@ -183,10 +179,7 @@ const updateTagsState = (
         ...thingsById,
         [thingId]: {
           ...thing,
-          userMetadata: {
-            ...thing.userMetadata,
-            tags: newTagSet,
-          },
+          tags: newTagSet,
         },
       },
     } as State;
@@ -204,8 +197,8 @@ const itemUpdateTagsSuccess = handleAction(
       state,
       tags => {
         return R.append(
-          { action: payload!.action, value: payload!.value },
-          filterNot(R.propEq('action', payload!.action), tags),
+          { tag: payload!.action, value: payload!.value },
+          filterNot(R.propEq('tag', payload!.action), tags),
         );
       },
       payload,

@@ -7,15 +7,16 @@ import {
   ALL_AVAILABILITY_SUCCESSFUL,
 } from '../actions/availability';
 import Thing, { ThingFactory } from '../types/Thing';
+import { Item } from '../types/v2/Item';
 
 export type DerivedAvailability = Omit<Availability, 'thing'> & {
-  thing?: Thing;
+  thing?: Item;
 };
 
 export interface AvailabilityState {
   offset: number;
   canFetchMore: boolean;
-  availability: Thing[];
+  availability: Item[];
 }
 
 export interface State {

@@ -25,6 +25,8 @@ import { layoutStyles } from '../styles';
 import Thing from '../types/Thing';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
+import { Item } from '../types/v2/Item';
+import { ItemAvailability } from '../types/v2';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -55,7 +57,7 @@ class New extends Component<Props> {
     const { isLoggedIn, userSelf } = this.props;
 
     this.props.retrieveUpcomingAvailability();
-    this.props.retrieveAllAvailability();
+    // this.props.retrieveAllAvailability();
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -73,7 +75,7 @@ class New extends Component<Props> {
     );
   };
 
-  renderUpcoming = (upcoming: Thing[]) => {
+  renderUpcoming = (upcoming: Item[]) => {
     if (upcoming.length == 0) {
       return null;
     }
@@ -90,13 +92,15 @@ class New extends Component<Props> {
     }
 
     let allAvailabilties = _.chain(upcoming)
-      .map('availability')
+      .map(i => i.availability)
+      .filter(av => !_.isUndefined(av))
+      .map(av => av!)
       .flatten()
       .value();
 
     let max = moment(
-      _.maxBy(allAvailabilties, av => moment(av.startDate).valueOf())!
-        .startDate,
+      _.maxBy(allAvailabilties, av => moment(av!.start_date).valueOf())!
+        .start_date,
     );
 
     let start = firstMon;
@@ -107,9 +111,11 @@ class New extends Component<Props> {
       end = end.add(1, 'weeks');
     }
 
+    console.log(allAvailabilties);
+
     return _.chain(allAvailabilties)
       .groupBy(av => {
-        let m = moment(av.startDate);
+        let m = moment(av!.start_date);
         return m
           .subtract(m.weekday(), 'days')
           .startOf('day')
@@ -119,11 +125,18 @@ class New extends Component<Props> {
       .sortBy(([s, _]) => s)
       .reverse()
       .map(([key, avs]) => {
+        let start = moment(key);
+        let end = moment(key)
+          .add(1, 'weeks')
+          .subtract(1, 'millisecond');
+        console.log([start, end], avs);
         let ids = _.map(avs, 'id');
         let card = _.chain(upcoming)
           .filter(thing => {
             return _.some(thing.availability, av => {
-              return _.includes(ids, av.id);
+              return av.start_date
+                ? moment(av.start_date).isBetween(start, end)
+                : false;
             });
           })
           .map(thing => {
@@ -139,11 +152,11 @@ class New extends Component<Props> {
 
         return (
           <div
-            key={moment(avs[0].startDate).format('MM/DD')}
+            key={moment(avs[0]!.start_date).format('MM/DD')}
             style={{ marginTop: 15 }}
           >
             <Typography variant="h6">
-              Week of {moment(avs[0].startDate).format('MM/DD')}
+              Week of {moment(avs[0]!.start_date).format('MM/DD')}
             </Typography>
             <Grid key={key} container spacing={2}>
               {card}
