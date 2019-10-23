@@ -80,17 +80,27 @@ class AdminController @Inject()(
   get("/admin/finatra/partial-things/:thingId", admin = true) { req: Request =>
     import com.teletracker.common.util.json.circe._
 
-    thingsApi
-      .getThing(
-        None,
-        req.getParam("thingId"),
-        ThingType.fromString(req.getParam("type"))
-      )
-      .map {
+    val thingType = ThingType.fromString(req.getParam("type"))
+
+    if (thingType == ThingType.Person) {
+      thingsApi.getPerson(None, req.getParam("thingId")).map {
         case None => response.notFound
         case Some(thing) =>
           response.ok(DataResponse.complex(thing)).contentTypeJson()
       }
+    } else {
+      thingsApi
+        .getThing(
+          None,
+          req.getParam("thingId"),
+          thingType
+        )
+        .map {
+          case None => response.notFound
+          case Some(thing) =>
+            response.ok(DataResponse.complex(thing)).contentTypeJson()
+        }
+    }
   }
 
   post("/refresh-thing", admin = true) { req: RefreshThingRequest =>

@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum UserThingTagType {
     Watched("watched", false),
-    Enjoyed("enjoyed", true);
+    Enjoyed("enjoyed", true),
+    TrackedInList("tracked_in_list", true);
 
     private final String name;
     private final boolean requiresValue;

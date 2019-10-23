@@ -1,10 +1,3 @@
-import { ObjectMetadata } from './external/themoviedb/Movie';
-import {
-  ActionType,
-  Availability,
-  CastMember,
-  ThingUserMetadata,
-} from './index';
 import * as R from 'ramda';
 import {
   getBackdropPath,
@@ -13,7 +6,14 @@ import {
   getPosterPath,
   getProfilePath,
 } from '../utils/metadata-access';
+import { ObjectMetadata } from './external/themoviedb/Movie';
 import HasImagery from './HasImagery';
+import {
+  ActionType,
+  Availability,
+  CastMember,
+  ThingUserMetadata,
+} from './index';
 
 export const itemHasTag = (thing: ThingLikeStruct, expectedTag: ActionType) => {
   if (thing.userMetadata) {
@@ -121,6 +121,12 @@ export class ThingFactory {
       ),
     };
   }
+
+  // static createV2(
+  //   item: Item
+  // ): Thing {
+
+  // }
 
   static merge(left: Thing, right: Thing): Thing {
     return R.mergeDeepRight(left, right) as Thing;

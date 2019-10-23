@@ -1,7 +1,8 @@
 import request from 'request-promise';
 import cheerio from 'cheerio';
 import moment from 'moment';
-import { promises as fs } from 'fs';
+import fs from 'fs';
+import * as _ from 'lodash';
 import { writeResultsAndUploadToStorage } from '../../common/storage';
 import { scheduleJob } from '../../common/api';
 import { substitute } from '../../common/berglas';
@@ -46,6 +47,7 @@ const scrape = async () => {
       .eq(1)
       .find('em')
       .text();
+    console.log(show);
 
     //Strip out the release year from title
     var regExp = /\(([^)]+)\)/;
@@ -122,7 +124,15 @@ const scrape = async () => {
 
     // return scheduleJob(file.name);
   } else {
-    return fs.writeFile(fileName, JSON.stringify(parsedResults), 'utf8');
+    const stream = fs.createWriteStream(fileName, 'utf-8');
+    _.chain(parsedResults)
+      .sortBy(r => r.title)
+      .each(r => {
+        stream.write(JSON.stringify(r) + '\n');
+      })
+      .value();
+
+    stream.close();
   }
 };
 

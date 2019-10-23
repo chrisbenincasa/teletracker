@@ -5,6 +5,8 @@ import Thing, { ApiThing, ThingFactory } from '../../types/Thing';
 import { TeletrackerResponse } from '../../utils/api-client';
 import _ from 'lodash';
 import { Paging } from '../../types';
+import { ApiItem } from '../../types/v2';
+import { Item, ItemFactory } from '../../types/v2/Item';
 
 export const SEARCH_INITIATED = 'search/INITIATED';
 export const SEARCH_SUCCESSFUL = 'search/SUCCESSFUL';
@@ -20,7 +22,7 @@ export type SearchInitiatedAction = FSA<
   SearchInitiatedPayload
 >;
 export interface SearchSuccessfulPayload {
-  results: Thing[];
+  results: Item[];
   paging?: Paging;
   append: boolean;
 }
@@ -47,15 +49,15 @@ export const searchSaga = function*() {
     payload,
   }: SearchInitiatedAction) {
     try {
-      let response: TeletrackerResponse<ApiThing[]> = yield clientEffect(
-        client => client.search,
+      let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
+        client => client.searchV2,
         payload!.query,
         payload!.bookmark,
       );
 
       if (response.ok) {
         let successPayload = {
-          results: response.data!.data.map(thing => ThingFactory.create(thing)),
+          results: response.data!.data.map(ItemFactory.create),
           paging: response.data!.paging,
           append: !_.isUndefined(payload!.bookmark),
         };

@@ -1,14 +1,13 @@
 package com.teletracker.tasks
 
-import com.google.cloud.pubsub.v1.Publisher
-import com.google.protobuf.ByteString
-import com.google.pubsub.v1.PubsubMessage
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessageFactory
 import io.circe.syntax._
 import javax.inject.Inject
+import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 class RemoteTask @Inject()(
-  publisher: Publisher,
+  publisher: SqsClient,
   teletrackerTaskRunner: TeletrackerTaskRunner)
     extends TeletrackerTaskWithDefaultArgs {
   override def runInternal(args: Args): Unit = {
@@ -23,12 +22,14 @@ class RemoteTask @Inject()(
     println(message.asJson)
 
     publisher
-      .publish(
-        PubsubMessage
-          .newBuilder()
-          .setData(ByteString.copyFrom(message.asJson.noSpaces.getBytes()))
+      .sendMessage(
+        SendMessageRequest
+          .builder()
+          .messageBody(message.asJson.noSpaces)
+          .queueUrl(
+            "https://sqs.us-west-1.amazonaws.com/302782651551/teletracker-tasks-qa"
+          )
           .build()
       )
-      .get()
   }
 }

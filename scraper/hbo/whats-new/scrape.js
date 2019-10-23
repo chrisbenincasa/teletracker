@@ -1,7 +1,7 @@
 var request = require('request-promise');
 var cheerio = require('cheerio');
 var moment = require('moment');
-var fs = require('fs').promises;
+var fs = require('fs');
 var _ = require('lodash');
 import { writeResultsAndUploadToStorage } from '../../common/storage';
 
@@ -49,7 +49,7 @@ const scrape = async () => {
 
       if (title.includes('Starting') || title.includes('Ending')) {
         let status = title.includes('Starting') ? 'Arriving' : 'Expiring';
-        let titleTokens = title.split(' ');
+        let titleTokens = title.split(' ').filter(s => s.length > 0);
 
         let [month, day] = titleTokens.slice(
           Math.max(titleTokens.length - 2, 1),
@@ -69,13 +69,17 @@ const scrape = async () => {
         titlesAndYears.forEach(titleAndYear => {
           //Strip out the release year from title
           let title = titleAndYear.trim();
-          let regExp = /\(([^)]+)\)/;
-          let year = regExp.exec(titleAndYear);
+          let yearRegex = /\(([0-9)]+)\)/;
+          let parensRegex = /\(([^)]+)\)/;
+          let year = yearRegex.exec(titleAndYear);
           let releaseYear;
 
           if (year) {
             releaseYear = year[1].trim();
-            title = title.replace(year[0], '').trim();
+            title = title
+              .replace(year[0], '')
+              .replace(parensRegex, '')
+              .trim();
           } else {
             releaseYear = null;
           }
@@ -107,7 +111,15 @@ const scrape = async () => {
         titles,
       );
     } else {
-      return fs.writeFile(fileName, JSON.stringify(titles), 'utf8');
+      const stream = fs.createWriteStream(fileName, 'utf-8');
+      _.chain(titles)
+        .sortBy(r => r.title)
+        .each(r => {
+          stream.write(JSON.stringify(r) + '\n');
+        })
+        .value();
+
+      stream.close();
     }
   });
 };

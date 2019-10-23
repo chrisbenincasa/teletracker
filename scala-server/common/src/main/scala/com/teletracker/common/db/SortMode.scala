@@ -1,6 +1,7 @@
 package com.teletracker.common.db
 
 object SortMode {
+  final val SearchScoreType = "search_score"
   final val PopularityType = "popularity"
   final val RecentType = "recent"
   final val AddedTimeType = "added_time"
@@ -20,6 +21,11 @@ sealed trait SortMode {
   def direction(isDesc: Boolean): SortMode =
     if (isDesc) this.desc else this.asc
   def `type`: String
+}
+final case class SearchScore(isDesc: Boolean = true) extends SortMode {
+  override def desc: SearchScore = this.copy(true)
+  override def asc: SearchScore = this.copy(false)
+  override def `type`: String = SortMode.SearchScoreType
 }
 final case class Popularity(isDesc: Boolean = true) extends SortMode {
   override def desc: Popularity = this.copy(true)

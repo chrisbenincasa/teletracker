@@ -63,7 +63,9 @@ class TmdbSynchronousProcessor @Inject()(
                 thingId,
                 PersonAssociationType.Cast,
                 castMember.character_name.orElse(castMember.character),
-                castMember.order
+                castMember.order,
+                department = None,
+                job = None
               )
             })
         })
@@ -77,7 +79,9 @@ class TmdbSynchronousProcessor @Inject()(
                 thingId,
                 PersonAssociationType.Crew,
                 None,
-                None
+                None,
+                department = castMember.department,
+                job = castMember.job
               )
             })
         })

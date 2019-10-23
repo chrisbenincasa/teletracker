@@ -1,8 +1,18 @@
 package com.teletracker.tasks.scraper
 
-import com.google.cloud.storage.Storage
 import com.teletracker.common.db.access.ThingsDbAccess
-import com.teletracker.common.db.model.{Availability, Network, ThingRaw}
+import com.teletracker.common.db.model.{
+  Availability,
+  Network,
+  OfferType,
+  ThingRaw
+}
+import com.teletracker.common.elasticsearch
+import com.teletracker.common.elasticsearch.{
+  EsAvailability,
+  ItemSearch,
+  ItemUpdater
+}
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
@@ -14,7 +24,10 @@ import java.net.URI
 import java.time.{LocalDate, ZoneOffset}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.NetworkCache
+import io.grpc.Context.Storage
+import software.amazon.awssdk.services.s3.S3Client
 import java.util.UUID
+import scala.concurrent.Future
 import scala.io.Source
 import scala.util.control.NonFatal
 
@@ -38,7 +51,7 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
   val today = LocalDate.now()
 
-  protected def storage: Storage
+  protected def s3: S3Client
   protected def thingsDbAccess: ThingsDbAccess
 
   protected def networkNames: Set[String]
@@ -71,9 +84,9 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
     val parsedArgs = parseArgs(args)
     val afterSource =
-      new SourceRetriever(storage).getSource(parsedArgs.snapshotAfter)
+      new SourceRetriever(s3).getSource(parsedArgs.snapshotAfter)
     val beforeSource =
-      new SourceRetriever(storage).getSource(parsedArgs.snapshotBefore)
+      new SourceRetriever(s3).getSource(parsedArgs.snapshotBefore)
 
     val after = parseSource(afterSource)
     val before = parseSource(beforeSource)
@@ -132,16 +145,22 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
       logger.info(
         s"Saving ${(newAvailabilities ++ removedAvailabilities).size} availabilities"
       )
-      thingsDbAccess
-        .saveAvailabilities(
-          newAvailabilities ++ removedAvailabilities
-        )
-        .await()
+      saveAvailabilities(newAvailabilities, removedAvailabilities).await()
     } else {
       (newAvailabilities ++ removedAvailabilities).foreach(av => {
         logger.info(s"Would've saved availability: $av")
       })
     }
+  }
+
+  protected def saveAvailabilities(
+    newAvailabilities: Seq[Availability],
+    availabilitiesToRemove: Seq[Availability]
+  ): Future[Unit] = {
+    thingsDbAccess
+      .saveAvailabilities(
+        newAvailabilities ++ availabilitiesToRemove
+      )
   }
 
   protected def getNetworksOrExit(): Set[Network] = {
@@ -190,5 +209,93 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     } finally {
       source.close()
     }
+  }
+}
+
+trait IngestDeltaJobWithElasticsearch[T <: ScrapedItem] {
+  self: IngestDeltaJob[T] =>
+  protected def itemSearch: ItemSearch
+  protected def itemUpdater: ItemUpdater
+
+  override protected def saveAvailabilities(
+    newAvailabilities: Seq[Availability],
+    availabilitiesToRemove: Seq[Availability]
+  ): Future[Unit] = {
+    val newAvailabilityByThingId =
+      newAvailabilities
+        .flatMap(convertToEsAvailability)
+        .groupBy(_._1)
+        .mapValues(_.map(_._2))
+
+    val removalAvailabilityByThingId =
+      availabilitiesToRemove
+        .flatMap(convertToEsAvailability)
+        .groupBy(_._1)
+        .mapValues(_.map(_._2))
+
+    val allItemIds = newAvailabilityByThingId.keySet ++ removalAvailabilityByThingId.keySet
+
+    val updates = allItemIds.toList.map(itemId => {
+      val newAvailabilities = newAvailabilityByThingId
+        .getOrElse(itemId, Seq.empty)
+        .groupBy(EsAvailability.distinctFields)
+        .values
+        .flatMap(_.headOption)
+
+      val removalAvailabilities = removalAvailabilityByThingId
+        .getOrElse(itemId, Seq.empty)
+        .groupBy(EsAvailability.distinctFields)
+        .values
+        .flatMap(_.headOption)
+
+      itemSearch
+        .lookupItem(Left(itemId), None, materializeJoins = false)
+        .flatMap {
+          case None => Future.successful(None)
+          case Some(item) =>
+            val availabilitiesToSave = item.rawItem.availability match {
+              case Some(value) =>
+                val withoutRemovalsAndDupes = value.filterNot(availability => {
+                  removalAvailabilities.exists(
+                    EsAvailability.availabilityEquivalent(_, availability)
+                  ) || newAvailabilities.exists(
+                    EsAvailability.availabilityEquivalent(_, availability)
+                  )
+                })
+
+                withoutRemovalsAndDupes ++ newAvailabilities
+
+              case None =>
+                newAvailabilities
+            }
+
+            itemUpdater
+              .update(
+                item.rawItem
+                  .copy(availability = Some(availabilitiesToSave.toList))
+              )
+              .map(Some(_))
+        }
+    })
+
+    Future.sequence(updates).map(_ => {})
+  }
+
+  protected def convertToEsAvailability(
+    availability: Availability
+  ): Option[(UUID, EsAvailability)] = {
+    availability.thingId.map(
+      _ -> elasticsearch.EsAvailability(
+        network_id = availability.networkId.get,
+        region = availability.region.getOrElse("US"),
+        start_date = availability.startDate.map(_.toLocalDate),
+        end_date = availability.endDate.map(_.toLocalDate),
+        offer_type = availability.offerType.getOrElse(OfferType.Rent).toString,
+        cost = availability.cost.map(_.toDouble),
+        currency = availability.currency,
+        presentation_types =
+          Some(availability.presentationType.map(_.toString).toList) // TODO FIX
+      )
+    )
   }
 }

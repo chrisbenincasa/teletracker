@@ -13,6 +13,8 @@ import RouterLink from './RouterLink';
 import Thing from '../types/Thing';
 import { FixedSizeList as LazyList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
+import { ApiItem } from '../types/v2';
+import { ItemCastMember, Item } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -52,28 +54,35 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps {
-  itemDetail: Thing;
+  itemDetail: Item;
 }
 
 type Props = OwnProps & WithStyles<typeof styles>;
 
 class Cast extends Component<Props, {}> {
-  renderAvatar(person: CastMember) {
+  renderAvatar(castMember: ItemCastMember) {
     let { classes } = this.props;
 
     return (
-      <RouterLink to={'/person/' + person.slug} className={classes.avatarLink}>
+      <RouterLink
+        to={'/person/' + castMember.slug}
+        className={classes.avatarLink}
+      >
         <Avatar
-          alt={person.name}
+          alt={castMember.name}
           src={
-            person.profilePath
-              ? `https://image.tmdb.org/t/p/w185/${person.profilePath}`
+            castMember.person && castMember.person.profile_path
+              ? `https://image.tmdb.org/t/p/w185/${
+                  castMember.person.profile_path
+                }`
               : ''
           }
           className={classes.avatar}
           itemProp="image"
         >
-          {person.profilePath ? null : parseInitials(person.name!, 'name')}
+          {castMember.person && castMember.person.profile_path
+            ? null
+            : parseInitials(castMember.name!, 'name')}
         </Avatar>
         <Typography
           variant="subtitle1"
@@ -82,7 +91,7 @@ class Cast extends Component<Props, {}> {
           align="center"
           itemProp="name"
         >
-          {person.name}
+          {castMember.name}
         </Typography>
         <Typography
           variant="subtitle2"
@@ -91,7 +100,7 @@ class Cast extends Component<Props, {}> {
           align="center"
           itemProp="character"
         >
-          {person.characterName}
+          {castMember.character}
         </Typography>
       </RouterLink>
     );

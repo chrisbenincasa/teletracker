@@ -25,11 +25,14 @@ import com.teletracker.common.util.{
   HasThingIdOrSlug,
   ListFilterParser
 }
-import com.teletracker.service.api.{ListsApi, UsersApi}
+import com.teletracker.service.api.model.{Item, UserList}
+import com.teletracker.service.api.{ListsApi, ThingApi, UsersApi}
 import com.teletracker.service.auth.{AuthRequiredFilter, UserSelfOnlyFilter}
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.request.{QueryParam, RouteParam}
+import io.circe.Codec
 import io.circe.generic.JsonCodec
+import io.circe.generic.semiauto.deriveCodec
 import io.circe.parser._
 import javax.inject.Inject
 import java.util.UUID
@@ -43,10 +46,12 @@ class UserController @Inject()(
   usersDbAccess: UsersDbAccess,
   thingsDbAccess: ThingsDbAccess,
   jwtVendor: JwtVendor,
-  listFilterParser: ListFilterParser
+  listFilterParser: ListFilterParser,
+  thingApi: ThingApi
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerController(usersDbAccess)
     with CanParseFieldFilter {
+
   prefix("/api/v1/users") {
     // Create a user
     post("/?") { req: RegisterUserRequest =>
@@ -418,6 +423,251 @@ class UserController @Inject()(
     }
   }
 
+  // All endpoints here use Elasticsearch
+  prefix("/api/v2/users") {
+    filter[AuthRequiredFilter].filter[UserSelfOnlyFilter] {
+      get("/:userId/lists") { req: GetUserListsRequest =>
+        def returnLists(lists: Seq[UserList]) =
+          response.ok
+            .contentTypeJson()
+            .body(
+              DataResponse.complex(
+                lists
+              )
+            )
+
+        usersApi
+          .getUserLists(req.authenticatedUserId.get)
+          .flatMap(result => {
+            if (result.isEmpty) {
+//              usersApi
+//                .createDefaultListsForUser(req.authenticatedUserId.get)
+//                .flatMap(_ => {
+//                  usersDbAccess
+//                    .findListsForUser(
+//                      req.authenticatedUserId.get,
+//                      req.includeThings
+//                    )
+//                    .map(returnLists)
+//                })
+              Future.successful(response.notFound)
+            } else {
+              Future.successful(returnLists(result))
+            }
+          })
+      }
+
+      get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
+        val selectFields = parseFieldsOrNone(req.fields)
+        val filtersFut =
+          listFilterParser.parseListFilters(req.itemTypes, req.genres)
+
+        val (bookmark, sort) = if (req.bookmark.isDefined) {
+          val b = Bookmark.parse(req.bookmark.get)
+          Some(b) -> b.sortMode
+        } else {
+          val desc = req.desc.getOrElse(true)
+          val sort = req.sort
+            .map(SortMode.fromString)
+            .getOrElse(DefaultForListType())
+            .direction(desc)
+
+          None -> sort
+        }
+
+        logger.info(s"Retrieving list with bookmark: ${bookmark}")
+
+        filtersFut.flatMap(filters => {
+          usersApi
+            .getUserList(
+              req.authenticatedUserId.get,
+              req.listId,
+              Some(filters),
+              req.isDynamic,
+              sort,
+              bookmark,
+              req.limit
+            )
+            .map {
+              case None => response.notFound
+
+              case Some((list, bookmark)) =>
+                response.ok
+                  .contentTypeJson()
+                  .body(
+                    DataResponse.forDataResponse(
+                      DataResponse(
+                        list
+                      ).withPaging(Paging(bookmark.map(_.asString)))
+                    )
+                  )
+            }
+        })
+      }
+
+      put("/:userId/lists/:listId/things") { req: AddThingToListRequest =>
+        withList(req.authenticatedUserId.get, req.listId) { list =>
+          thingsDbAccess.findThingByIdOrSlug(req.idOrSlug).flatMap {
+            case None => Future.successful(response.notFound)
+            case Some(thing) =>
+              listsApi
+                .addThingToList(req.authenticatedUserId.get, list.id, thing.id)
+                .map(updateResponse => {
+
+                  if (updateResponse.status().getStatus != 200) {
+                    updateResponse.status().getStatus match {
+                      case 404 =>
+                        response.notFound
+                      case _ =>
+                        response.internalServerError
+                    }
+                  } else {
+                    response.noContent
+                  }
+                })
+          }
+        }
+      }
+
+      put("/:userId/lists") { req: AddThingToListsRequest =>
+        usersDbAccess
+          .findListsForUser(
+            req.authenticatedUserId.get,
+            includeThings = false
+          )
+          .flatMap(lists => {
+            val listIds = lists.map(_.id).toSet
+            val (validListIds, _) = req.listIds.partition(listIds(_))
+
+            if (validListIds.isEmpty) {
+              Future.successful(response.notFound)
+            } else {
+              if (req.idOrSlug.isRight && req.thingType.isEmpty) {
+                throw new IllegalArgumentException("")
+              }
+
+              thingApi
+                .getThingViaSearch(
+                  req.authenticatedUserId,
+                  req.idOrSlug,
+                  req.thingType
+                )
+                .flatMap {
+                  case None => Future.successful(response.notFound)
+                  case Some(item) =>
+                    val futs = validListIds.map(listId => {
+                      listsApi.addThingToList(
+                        req.authenticatedUserId.get,
+                        listId,
+                        item.id
+                      )
+                    })
+
+                    Future.sequence(futs).map(_ => response.noContent)
+                }
+            }
+          })
+      }
+
+      put("/:userId/things/:thingId/lists") { req: ManageShowListsRequest =>
+        usersDbAccess
+          .findListsForUser(req.authenticatedUserId.get, includeThings = false)
+          .flatMap(lists => {
+            val listIds = lists.map(_.id).toSet
+            val validAdds = req.addToLists.filter(listIds(_))
+            val validRemoves = req.removeFromLists.filter(listIds(_))
+
+            if (validAdds.isEmpty && validRemoves.isEmpty) {
+              Future.successful(response.notFound)
+            } else {
+
+              thingsDbAccess.findThingByIdOrSlug(req.idOrSlug).flatMap {
+                case None => Future.successful(response.notFound)
+                case Some(thing) =>
+                  val futs = validAdds.map(listId => {
+                    listsApi.addThingToList(
+                      req.authenticatedUserId.get,
+                      listId,
+                      thing.id
+                    )
+                  })
+
+                  val removeFuts = validRemoves.map(listId => {
+                    listsApi.removeThingFromList(
+                      req.authenticatedUserId.get,
+                      listId,
+                      thing.id
+                    )
+                  })
+
+                  Future
+                    .sequence(futs ++ removeFuts)
+                    .map(_ => response.noContent)
+              }
+            }
+          })
+      }
+
+      put("/:userId/things/:thingId/actions") {
+        req: UpdateUserThingActionRequest =>
+          Try(UserThingTagType.fromString(req.action)) match {
+            case Success(tagType) =>
+              if (tagType.typeRequiresValue() && req.value.isEmpty) {
+                Future.successful(response.badRequest)
+              } else {
+                if (req.idOrSlug.isRight && req.thingType.isEmpty) {
+                  throw new IllegalArgumentException("")
+                }
+
+                val newOrUpdatedTag = thingApi.addTagToThing(
+                  req.request.authenticatedUserId.get,
+                  req.idOrSlug,
+                  req.thingType,
+                  tagType,
+                  req.value
+                )
+
+                newOrUpdatedTag.foreach(
+                  _.foreach(Function.tupled(usersApi.handleTagChange))
+                )
+
+                newOrUpdatedTag.map(_ => response.noContent)
+              }
+
+            case Failure(_) =>
+              Future.successful(
+                response
+                  .badRequest(new IllegalActionTypeError(req.action))
+                  .contentTypeJson()
+              )
+          }
+      }
+
+      delete("/:userId/things/:thingId/actions/:actionType") {
+        req: DeleteUserThingActionRequest =>
+          Try(UserThingTagType.fromString(req.actionType)) match {
+            case Success(action) =>
+              thingApi
+                .removeTagFromThing(
+                  req.request.authenticatedUserId.get,
+                  req.idOrSlug,
+                  req.thingType,
+                  action
+                )
+                .map(_ => response.noContent)
+
+            case Failure(_) =>
+              Future.successful(
+                response
+                  .badRequest(new IllegalActionTypeError(req.actionType))
+                  .contentTypeJson()
+              )
+          }
+      }
+    }
+
+  }
+
   private def getUserOrNotFound(userId: String): Future[String] = {
     usersApi.getUser(userId).map(DataResponse.complex(_))
   }
@@ -509,6 +759,7 @@ case class DeleteListRequest(
 case class AddThingToListsRequest(
   @RouteParam userId: String,
   thingId: String,
+  thingType: Option[ThingType], // Required if thingId is a slug...
   listIds: List[Int],
   request: Request)
     extends InjectedRequest
@@ -552,6 +803,7 @@ case class UpdateUserRequestPayload(
 case class UpdateUserThingActionRequest(
   @RouteParam userId: String,
   @RouteParam thingId: String,
+  thingType: Option[ThingType],
   action: String,
   value: Option[Double],
   request: Request)
@@ -561,5 +813,6 @@ case class DeleteUserThingActionRequest(
   @RouteParam userId: String,
   @RouteParam thingId: String,
   @RouteParam actionType: String,
+  thingType: Option[ThingType],
   request: Request)
     extends HasThingIdOrSlug

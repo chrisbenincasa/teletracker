@@ -1,20 +1,20 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
-import com.google.cloud.storage.Storage
 import com.teletracker.common.process.tmdb.ItemExpander
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 import javax.inject.Inject
+import software.amazon.awssdk.services.s3.S3Client
 import scala.concurrent.{ExecutionContext, Future}
 
 object PersonDumpTool extends DataDumpTaskApp[PersonDump]
 
 class PersonDump @Inject()(
-  storage: Storage,
+  s3: S3Client,
   itemExpander: ItemExpander
 )(implicit executionContext: ExecutionContext)
-    extends DataDumpTask[PersonDumpFileRow](storage) {
+    extends DataDumpTask[PersonDumpFileRow](s3) {
 
   implicit override protected val tDecoder: Decoder[PersonDumpFileRow] =
     deriveCodec

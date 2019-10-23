@@ -1,20 +1,21 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
-import com.google.cloud.storage.Storage
+import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.process.tmdb.ItemExpander
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 import javax.inject.Inject
+import software.amazon.awssdk.services.s3.S3Client
 import scala.concurrent.{ExecutionContext, Future}
 
 object TvShowDumpTool extends DataDumpTaskApp[TvShowDump]
 
 class TvShowDump @Inject()(
-  storage: Storage,
+  s3: S3Client,
   itemExpander: ItemExpander
 )(implicit executionContext: ExecutionContext)
-    extends DataDumpTask[TvShowDumpFileRow](storage) {
+    extends DataDumpTask[TvShowDumpFileRow](s3) {
 
   implicit override protected val tDecoder: Decoder[TvShowDumpFileRow] =
     deriveCodec
@@ -23,7 +24,11 @@ class TvShowDump @Inject()(
 
   override protected def getRawJson(currentId: Int): Future[String] = {
     itemExpander
-      .expandTvShow(currentId, List("recommendations", "similar"))
+      .expandRaw(
+        ThingType.Show,
+        currentId,
+        List("recommendations", "similar", "videos")
+      )
       .map(_.asJson.noSpaces)
   }
 }

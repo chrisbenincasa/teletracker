@@ -1,28 +1,22 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
-import cats.syntax
-import cats.syntax.writer
-import com.google.cloud.storage.{BlobId, BlobInfo, Storage}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.{
-  TeletrackerTask,
-  TeletrackerTaskApp,
-  TeletrackerTaskWithDefaultArgs
-}
-import fs2.io.file
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import io.circe.{Decoder, Encoder}
 import io.circe.parser._
 import io.circe.generic.semiauto.deriveEncoder
 import com.teletracker.common.util.json.circe._
+import com.teletracker.tasks.util.SourceRetriever
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
-import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.{ExecutionContext, Future}
-import scala.io.Source
 import scala.util.Try
 import scala.util.control.NonFatal
 
@@ -43,7 +37,7 @@ case class DataDumpTaskArgs(
   rotateEvery: Int = 1000)
 
 abstract class DataDumpTask[T <: TmdbDumpFileRow](
-  storage: Storage
+  s3: S3Client
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -104,7 +98,7 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
 
     rotateFile(0)
 
-    val source = getSource(file)
+    val source = new SourceRetriever(s3).getSource(file)
 
     val processed = new AtomicLong(0)
 
@@ -174,44 +168,15 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
   protected def googleStorageUri = new URI(s"gs://teletracker/$fullPath")
 
   private def uploadToGcp(file: File) = {
-    val writer = storage.writer(
-      BlobInfo
-        .newBuilder(
-          "teletracker",
-          s"$fullPath/${file.getName}"
-        )
-        .setContentType("text/plain")
-        .build()
+    s3.putObject(
+      PutObjectRequest
+        .builder()
+        .bucket("teletracker-data")
+        .key(s"$fullPath/${file.getName}")
+        .contentType("text/plain")
+        .build(),
+      RequestBody.fromFile(file)
     )
-
-    val source = Source.fromFile(file).getLines()
-
-    source
-      .grouped(5)
-      .foreach(lines => {
-        val finalString = lines.mkString("\n")
-        val bb = ByteBuffer.wrap(finalString.getBytes)
-        writer.write(bb)
-      })
-
-    writer.close()
-  }
-
-  private def getSource(uri: URI): Source = {
-    uri.getScheme match {
-      case "gs" =>
-        Source.fromBytes(
-          storage
-            .get(BlobId.of(uri.getHost, uri.getPath.stripPrefix("/")))
-            .getContent()
-        )
-      case "file" =>
-        Source.fromFile(uri)
-      case _ =>
-        throw new IllegalArgumentException(
-          s"Unsupported file scheme: ${uri.getScheme}"
-        )
-    }
   }
 }
 

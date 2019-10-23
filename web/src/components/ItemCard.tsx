@@ -47,9 +47,11 @@ import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import { UserSelf } from '../reducers/user';
 import { ActionType, List } from '../types';
 import HasImagery from '../types/HasImagery';
-import { itemHasTag, Linkable, ThingLikeStruct } from '../types/Thing';
+import { Linkable, ThingLikeStruct } from '../types/Thing';
 import AddToListDialog from './AddToListDialog';
 import { ResponsiveImage } from './ResponsiveImage';
+import { ApiItem } from '../types/v2';
+import { itemHasTag, Item } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -185,7 +187,7 @@ const styles = (theme: Theme) =>
 
 interface ItemCardProps extends WithStyles<typeof styles> {
   key: string | number;
-  item: RequiredThingType;
+  item: Item;
   userSelf?: UserSelf;
 
   // display props
@@ -338,7 +340,7 @@ class ItemCard extends Component<Props, ItemCardState> {
     return false;
   };
 
-  renderPoster = (thing: RequiredThingType) => {
+  renderPoster = (item: Item) => {
     let { classes } = this.props;
     let { isHovering, hoverRating } = this.state;
     return (
@@ -349,12 +351,13 @@ class ItemCard extends Component<Props, ItemCardState> {
         {isHovering && !hoverRating && this.renderHoverActions()}
 
         <RouterLink
-          to={thing.relativeUrl}
+          // TODO Fix
+          to={'/' + item.type + '/' + item.slug}
           style={{ display: 'block', height: '100%', textDecoration: 'none' }}
         >
           <CardMedia
             src={imagePlaceholder}
-            item={thing}
+            item={item}
             component={ResponsiveImage}
             imageType="poster"
             imageStyle={{ width: '100%', objectFit: 'cover', height: '100%' }}

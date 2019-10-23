@@ -5,6 +5,8 @@ import Thing, { ThingFactory, ApiThing } from '../../types/Thing';
 import { ItemTypes, Paging } from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
 import _ from 'lodash';
+import { Item, ItemFactory } from '../../types/v2/Item';
+import { ApiItem } from '../../types/v2';
 
 export const GENRE_INITIATED = 'genre/INITIATED';
 export const GENRE_SUCCESSFUL = 'genre/SUCCESSFUL';
@@ -23,7 +25,7 @@ export type GenreInitiatedAction = FSA<
 >;
 
 export interface GenreSuccessfulPayload {
-  genre: Thing[];
+  genre: Item[];
   paging?: Paging;
   append: boolean;
 }
@@ -51,7 +53,7 @@ export const genreSaga = function*() {
   }: GenreInitiatedAction) {
     if (payload) {
       try {
-        let response: TeletrackerResponse<ApiThing[]> = yield clientEffect(
+        let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
           client => client.getPopularGenre,
           payload.genre,
           payload.thingRestrict,
@@ -61,7 +63,7 @@ export const genreSaga = function*() {
         if (response.ok) {
           yield put(
             genreSuccess({
-              genre: response.data!.data.map(ThingFactory.create),
+              genre: response.data!.data.map(ItemFactory.create),
               paging: response.data!.paging,
               append: !_.isUndefined(payload.bookmark),
             }),

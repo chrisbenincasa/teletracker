@@ -1,6 +1,5 @@
 package com.teletracker.tasks.scraper
 
-import com.google.cloud.storage.Storage
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{
   Availability,
@@ -9,17 +8,22 @@ import com.teletracker.common.db.model.{
   PresentationType,
   ThingRaw
 }
+import com.teletracker.common.elasticsearch.{ItemSearch, ItemUpdater}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import io.circe.generic.auto._
 import javax.inject.Inject
+import software.amazon.awssdk.services.s3.S3Client
 
 case class NetflixCatalogDeltaIngestJob @Inject()(
-  storage: Storage,
+  s3: S3Client,
   thingsDbAccess: ThingsDbAccess,
-  networkCache: NetworkCache)
-    extends IngestDeltaJob[UnogsNetflixCatalogItem] {
+  networkCache: NetworkCache,
+  protected val itemSearch: ItemSearch,
+  protected val itemUpdater: ItemUpdater)
+    extends IngestDeltaJob[UnogsNetflixCatalogItem]
+    with IngestDeltaJobWithElasticsearch[UnogsNetflixCatalogItem] {
 
   override protected def networkNames: Set[String] = Set("netflix")
 

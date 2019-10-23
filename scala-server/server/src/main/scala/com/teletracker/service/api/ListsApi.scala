@@ -7,13 +7,16 @@ import com.teletracker.common.db.access.{
   UsersDbAccess
 }
 import com.teletracker.common.db.model.TrackedListRow
+import com.teletracker.common.elasticsearch.ItemUpdater
 import javax.inject.Inject
+import org.elasticsearch.action.update.UpdateResponse
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListsApi @Inject()(
   usersDbAccess: UsersDbAccess,
-  listsDbAccess: ListsDbAccess
+  listsDbAccess: ListsDbAccess,
+  itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext) {
   def createList(
     userId: String,
@@ -76,6 +79,24 @@ class ListsApi @Inject()(
           }
       }
 
+  }
+
+  // ES only
+  def addThingToList(
+    userId: String,
+    listId: Int,
+    thingId: UUID
+  ): Future[UpdateResponse] = {
+    itemUpdater.addListTagToItem(thingId, listId, userId)
+  }
+
+  // ES Only
+  def removeThingFromList(
+    userId: String,
+    listId: Int,
+    thingId: UUID
+  ) = {
+    itemUpdater.removeListTagFromItem(thingId, listId, userId)
   }
 
   def mergeLists(

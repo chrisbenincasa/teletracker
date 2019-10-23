@@ -29,6 +29,7 @@ import _ from 'lodash';
 import Thing, { ApiThing, ThingFactory } from '../types/Thing';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
+import { ItemFactory } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -110,11 +111,11 @@ class Lists extends Component<Props, State> {
   }
 
   renderItemPreviews = (list: ListType) => {
-    if (!list.things) {
+    if (!list.items) {
       return null;
     }
 
-    let things = list.things.slice(0, 6).map(ThingFactory.create);
+    let things = list.items.slice(0, 6);
     let { classes, userSelf } = this.props;
 
     return (
