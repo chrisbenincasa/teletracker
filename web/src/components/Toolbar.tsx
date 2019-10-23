@@ -1,6 +1,38 @@
-import { AppBar, Box, Button, CircularProgress, ClickAwayListener, createStyles, Divider, Fade, Icon, IconButton, InputBase, Menu, MenuItem, MenuList, Paper, Popper, Slide, Theme, Toolbar as MUIToolbar, Typography, WithStyles, withStyles, withWidth } from '@material-ui/core';
+import {
+  AppBar,
+  Box,
+  Button,
+  CircularProgress,
+  ClickAwayListener,
+  createStyles,
+  Divider,
+  Fade,
+  Icon,
+  IconButton,
+  InputBase,
+  Menu,
+  MenuItem,
+  MenuList,
+  Paper,
+  Popper,
+  Slide,
+  Theme,
+  Toolbar as MUIToolbar,
+  Typography,
+  WithStyles,
+  withStyles,
+  withWidth,
+} from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { AccountCircleOutlined, ArrowDropDown, ArrowDropUp, ChevronRight, Close, Menu as MenuIcon, Search as SearchIcon } from '@material-ui/icons';
+import {
+  AccountCircleOutlined,
+  ArrowDropDown,
+  ArrowDropUp,
+  ChevronRight,
+  Close,
+  Menu as MenuIcon,
+  Search as SearchIcon,
+} from '@material-ui/icons';
 import clsx from 'clsx';
 import _ from 'lodash';
 import * as R from 'ramda';
@@ -15,6 +47,7 @@ import { AppState } from '../reducers';
 import { Genre as GenreModel } from '../types';
 import { getTmdbPosterImage } from '../utils/image-helper';
 import { truncateText } from '../utils/textHelper';
+import { ApiItem } from '../types/v2';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -145,14 +178,9 @@ interface OwnProps extends WithStyles<typeof styles> {
   genres?: GenreModel[];
   isAuthed: boolean;
   isSearching: boolean;
-<<<<<<< HEAD
-  searchResults?: Thing[];
-  drawerOpen: boolean;
   onDrawerChange: () => void;
-=======
   searchResults?: ApiItem[];
-  drawerOpen: () => void;
->>>>>>> 41035d89... Elasticsearch.
+  drawerOpen: boolean;
 }
 
 interface WidthProps {
