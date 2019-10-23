@@ -7,7 +7,7 @@ LOG_PATH="/var/log/teletracker"
 
 mkdir -p ${LOG_PATH}
 
-./cloud_sql_proxy -instances="${SQL_INSTANCE}"=tcp:5432 &> ${LOG_PATH}/cloud_sql_proxy.log &
+# ./cloud_sql_proxy -instances="${SQL_INSTANCE}"=tcp:5432 &> ${LOG_PATH}/cloud_sql_proxy.log &
 
 JVM_OPTS="""-server \
     -XX:+HeapDumpOnOutOfMemoryError \
@@ -19,4 +19,4 @@ JVM_OPTS="""-server \
     -Dsun.net.inetaddr.ttl=5
 """
 
-berglas exec --local -- java ${JVM_OPTS} ${JVM_ARGS} -jar ${BIN_JAR} $@
+java ${JVM_OPTS} ${JVM_ARGS} -jar ${BIN_JAR} $@

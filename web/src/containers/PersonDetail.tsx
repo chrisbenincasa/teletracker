@@ -1,41 +1,40 @@
-import React from 'react';
-import { AppState } from '../reducers';
-import { bindActionCreators, Dispatch } from 'redux';
-import { RouteComponentProps, withRouter } from 'react-router';
-import { connect } from 'react-redux';
-import {
-  personFetchInitiated,
-  PersonFetchInitiatedPayload,
-} from '../actions/people/get_person';
-import * as R from 'ramda';
 import {
   Chip,
-  Grid,
-  LinearProgress,
   createStyles,
   Fab,
+  Grid,
   Hidden,
   InputLabel,
-  Select,
+  LinearProgress,
   MenuItem,
+  Select,
   Theme,
   Typography,
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { layoutStyles } from '../styles';
+import { ChevronLeft, ExpandLess, ExpandMore } from '@material-ui/icons';
+import _ from 'lodash';
+import * as R from 'ramda';
+import { default as React } from 'react';
+import ReactGA from 'react-ga';
+import { Helmet } from 'react-helmet';
+import { connect } from 'react-redux';
+import { RouteComponentProps, withRouter } from 'react-router';
+import { bindActionCreators, Dispatch } from 'redux';
+import {
+  personFetchInitiated,
+  PersonFetchInitiatedPayload,
+} from '../actions/people/get_person';
+import ItemCard from '../components/ItemCard';
+import ManageTracking from '../components/ManageTracking';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import withUser, { WithUserProps } from '../components/withUser';
-import ManageTracking from '../components/ManageTracking';
-import ItemCard from '../components/ItemCard';
-import { ChevronLeft, ExpandMore, ExpandLess } from '@material-ui/icons';
-import Person from '../types/Person';
-import { Genre } from '../types';
-import _ from 'lodash';
-import { PersonCredit } from '../types/PersonCredit';
-import { Helmet } from 'react-helmet';
-import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
+import { AppState } from '../reducers';
+import { layoutStyles } from '../styles';
+import { Genre } from '../types';
+import { Person } from '../types/v2/Person';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -197,30 +196,33 @@ class PersonDetail extends React.Component<Props, State> {
   renderFilmography = () => {
     const { classes, person, userSelf } = this.props;
 
-    let filmography = person!.credits || [];
+    let filmography = person!.cast_credits || [];
 
     let filmographyFiltered = filmography
       .filter(
-        item =>
-          (item &&
-            item.genreIds &&
-            item.genreIds.includes(this.state.filter)) ||
+        credit =>
+          (credit &&
+            credit.item &&
+            credit.item.genres &&
+            credit.item.genres.map(g => g.id).includes(this.state.filter)) ||
           this.state.filter === -1,
       )
       .sort((a, b) => {
         if (this.state.sortOrder === 'Popularity') {
-          return (a.popularity || 0.0) < (b.popularity || 0.0) ? 1 : -1;
+          return (a.item!.popularity || 0.0) < (b.item!.popularity || 0.0)
+            ? 1
+            : -1;
         } else if (
           this.state.sortOrder === 'Latest' ||
           this.state.sortOrder === 'Oldest'
         ) {
           let sort;
-          if (!b.releaseDate) {
+          if (!b.item!.release_date) {
             sort = 1;
-          } else if (!a.releaseDate) {
+          } else if (!a.item!.release_date) {
             sort = -1;
           } else {
-            sort = a.releaseDate < b.releaseDate ? 1 : -1;
+            sort = a.item!.release_date < b.item!.release_date ? 1 : -1;
           }
 
           return this.state.sortOrder === 'Oldest' ? -sort : sort;
@@ -233,8 +235,9 @@ class PersonDetail extends React.Component<Props, State> {
 
     if (this.props.genres) {
       finalGenres = _.chain(filmography)
-        .map((f: PersonCredit) => f.genreIds || [])
+        .map(f => f.item!.genres || [])
         .flatten()
+        .map(f => f.id)
         .uniq()
         .map(id => {
           let g = _.find(this.props.genres, g => g.id === id);
@@ -245,6 +248,7 @@ class PersonDetail extends React.Component<Props, State> {
           }
         })
         .flatten()
+        .sortBy(g => g.name)
         .value();
     }
 
@@ -302,9 +306,13 @@ class PersonDetail extends React.Component<Props, State> {
           </div>
         </div>
         <Grid container spacing={2}>
-          {filmographyFiltered.map(item =>
-            item && item.posterPath ? (
-              <ItemCard key={item.id} userSelf={userSelf} item={item} />
+          {filmographyFiltered.map(credit =>
+            credit && credit.item!.posterImage ? (
+              <ItemCard
+                key={credit.id}
+                userSelf={userSelf}
+                item={credit.item!}
+              />
             ) : null,
           )}
         </Grid>
@@ -363,8 +371,8 @@ class PersonDetail extends React.Component<Props, State> {
       return this.renderLoading();
     }
 
-    const backdrop = person!.credits![0];
-    const profilePath = person!.profilePath || '';
+    const backdrop = person!.cast_credits![0];
+    const profilePath = person!.profile_path || '';
 
     return (
       <React.Fragment>
@@ -387,7 +395,7 @@ class PersonDetail extends React.Component<Props, State> {
           <meta
             name="image"
             property="og:image"
-            content={`https://image.tmdb.org/t/p/w342${person.posterPath}`}
+            content={`https://image.tmdb.org/t/p/w342${person.profile_path}`}
           />
           <meta property="og:type" content="video.movie" />
           <meta property="og:image:type" content="image/jpg" />
@@ -420,12 +428,12 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="twitter:image"
-            content={`https://image.tmdb.org/t/p/w342${person.posterPath}`}
+            content={`https://image.tmdb.org/t/p/w342${person.profile_path}`}
           />
           <meta
             name="keywords"
-            content={`${person.name}, ${
-              person.type
+            content={`${
+              person.name
             }, stream, streaming, rent, buy, watch, track`}
           />
           <link
@@ -435,7 +443,7 @@ class PersonDetail extends React.Component<Props, State> {
         </Helmet>
         <div className={classes.backdrop}>
           <ResponsiveImage
-            item={backdrop}
+            item={backdrop.item!}
             imageType="backdrop"
             imageStyle={{
               objectFit: 'cover',

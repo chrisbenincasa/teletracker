@@ -40,13 +40,12 @@ lazy val common = project
       "com.iheart" %% "ficus" % "1.4.3",
       // Logging
       "ch.qos.logback" % "logback-classic" % "1.2.3",
-      "com.google.cloud" % "google-cloud-logging-logback" % "0.102.0-alpha",
+      // Elasticsearch
+      "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "7.4.0",
       // Monitoring
       "io.dropwizard.metrics" % "metrics-core" % "3.1.0",
       "io.opencensus" % "opencensus-api" % "0.23.0",
       "io.opencensus" % "opencensus-impl" % "0.23.0",
-      "io.opencensus" % "opencensus-exporter-stats-stackdriver" % "0.23.0",
-      "io.opencensus" % "opencensus-contrib-dropwizard" % "0.23.0",
       // Jackson
       "com.fasterxml.jackson.core" % "jackson-annotations" % versions.jackson,
       // Db
@@ -58,10 +57,12 @@ lazy val common = project
       "org.postgresql" % "postgresql" % "42.2.2",
       // Auth
       "io.jsonwebtoken" % "jjwt" % "0.9.0",
+      // AWS
+      "software.amazon.awssdk" % "kms" % "2.9.24",
+      "software.amazon.awssdk" % "s3" % "2.9.24",
+      "software.amazon.awssdk" % "sqs" % "2.9.24",
+      "software.amazon.awssdk" % "ssm" % "2.9.24",
       // Inject
-      "com.google.cloud" % "google-cloud-storage" % "1.84.0",
-      "com.google.cloud" % "google-cloud-pubsub" % "1.84.0",
-      "com.google.cloud" % "google-cloud-kms" % "1.28.0",
       "com.google.inject" % "guice" % versions.guice,
       "com.google.inject.extensions" % "guice-assistedinject" % versions.guice,
       "com.google.inject.extensions" % "guice-multibindings" % versions.guice,
@@ -78,7 +79,8 @@ lazy val common = project
       "org.apache.commons" % "commons-text" % "1.6",
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
-      )
+      ),
+      "org.scalatest" %% "scalatest" % "3.0.5" % Test
     ) ++ Dependencies.circe
   )
 
@@ -135,6 +137,10 @@ lazy val tasks = project
       "org.flywaydb" % "flyway-core" % "6.0.0-beta2",
       // Google
       "com.github.scopt" %% "scopt" % "3.5.0",
+      "org.gnieh" %% "diffson-circe" % "4.0.0",
+      compilerPlugin(
+        "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
+      ),
       "org.scalatest" %% "scalatest" % "3.0.5" % Test
     ),
     Compile / mainClass := Some(

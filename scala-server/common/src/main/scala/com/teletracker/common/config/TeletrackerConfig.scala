@@ -9,6 +9,7 @@ case class TeletrackerConfig(
   cwd: String,
   mode: String = "multi user",
   db: DbConfig,
+  elasticsearch: EsConfig,
   auth: AuthConfig,
   tmdb: TmdbConfig,
   env: String)
@@ -32,5 +33,18 @@ case class DbConfig(
   user: String,
   password: String,
   cloudSqlInstance: Option[String])
+
+case class EsConfig(
+  hosts: List[EsHostConfig],
+  creds: EsCredentials)
+
+case class EsHostConfig(
+  hostname: String,
+  port: Int,
+  scheme: String)
+
+case class EsCredentials(
+  user: Option[String],
+  password: Option[String])
 
 case class TmdbConfig(api_key: String)

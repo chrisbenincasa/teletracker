@@ -15,9 +15,11 @@ object Modules {
       new DbModule,
       new BackgroundProcessorModule,
       new CacheModule,
-      new GoogleModule,
+//      new GoogleModule,
       new OpenCensusMetricsModule,
-      new CodahaleMetricsModule
+      new CodahaleMetricsModule,
+      new ElasticsearchModule,
+      new AwsModule
     )
   }
 }

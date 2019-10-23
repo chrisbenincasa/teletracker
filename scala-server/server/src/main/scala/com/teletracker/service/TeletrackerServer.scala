@@ -9,11 +9,6 @@ import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
 import com.teletracker.service.filters.OpenCensusMonitoringFilter
 import com.teletracker.service.inject.ServerModules
 import com.teletracker.service.util.json.JsonModule
-import com.teletracker.tasks.db.{
-  GenerateDdls,
-  RunAllSeedsTask,
-  RunDatabaseMigration
-}
 import com.twitter.conversions.DurationOps._
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finatra.http.HttpServer
@@ -24,13 +19,6 @@ import com.twitter.finatra.http.filters.{
 }
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.inject.Logging
-import com.twitter.util.Await
-import io.opencensus.common.Duration
-import io.opencensus.exporter.stats.stackdriver.{
-  StackdriverStatsConfiguration,
-  StackdriverStatsExporter
-}
-import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object TeletrackerServerMain extends TeletrackerServer
@@ -41,13 +29,13 @@ class TeletrackerServer(
     with Logging {
 
   premain {
-    StackdriverStatsExporter.createAndRegister(
-      StackdriverStatsConfiguration
-        .builder()
-        .setExportInterval(Duration.fromMillis(30000))
-        .setProjectId("teletracker")
-        .build()
-    )
+//    StackdriverStatsExporter.createAndRegister(
+//      StackdriverStatsConfiguration
+//        .builder()
+//        .setExportInterval(Duration.fromMillis(30000))
+//        .setProjectId("teletracker")
+//        .build()
+//    )
   }
 
   postmain {

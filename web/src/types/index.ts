@@ -1,4 +1,6 @@
 import Thing, { ApiThing } from './Thing';
+import { ApiItem } from './v2';
+import { Item } from './v2/Item';
 
 export interface Paging {
   bookmark?: string;
@@ -7,12 +9,12 @@ export interface Paging {
 export interface List {
   id: number;
   name: string;
-  things: Thing[];
+  items: Item[];
   isDefault?: boolean;
   isDeleted?: boolean;
   isDynamic?: boolean;
   isPublic?: boolean;
-  thingCount: number;
+  totalItems: number;
   configuration?: ListConfiguration;
 }
 
@@ -141,4 +143,5 @@ export interface Genre {
 export enum ActionType {
   Watched = 'watched',
   Enjoyed = 'enjoyed',
+  TrackedInList = 'tracked_in_list',
 }

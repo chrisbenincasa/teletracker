@@ -1,8 +1,9 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.Bookmark
+import com.teletracker.common.db.{Bookmark, Popularity}
 import com.teletracker.common.db.access.{ThingsDbAccess, UserThingDetails}
 import com.teletracker.common.db.model.{Network, ThingType}
+import com.teletracker.common.elasticsearch.PopularItemSearch
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.{CanParseFieldFilter, Field, NetworkCache}
@@ -20,7 +21,8 @@ import scala.util.Try
 class PopularItemsController @Inject()(
   tmdbClient: TmdbClient,
   thingsDbAccess: ThingsDbAccess,
-  networkCache: NetworkCache
+  networkCache: NetworkCache,
+  popularItemSearch: PopularItemSearch
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with CanParseFieldFilter {
@@ -71,6 +73,46 @@ class PopularItemsController @Inject()(
         DataResponse.forDataResponse(
           DataResponse(itemsWithMeta).withPaging(
             Paging(bookmark.map(_.asString))
+          )
+        )
+      }
+    }
+  }
+
+  prefix("/api/v2") {
+    get("/popular") { req: GetPopularItemsRequest =>
+      val parsedFields = parseFieldsOrNone(req.fields)
+
+      val networksFut = if (req.networks.nonEmpty) {
+        networkCache
+          .get()
+          .map(networks => {
+            networks.values
+              .filter(network => req.networks.contains(network.slug.value))
+              .toSet
+          })
+      } else {
+        Future.successful(Set.empty[Network])
+      }
+
+      for {
+        networks <- networksFut
+        popularItems <- popularItemSearch.getPopularItems(
+          genre = None,
+          networks = networks,
+          itemTypes = Some(
+            req.itemTypes.flatMap(t => Try(ThingType.fromString(t)).toOption)
+          ),
+          limit = req.limit,
+          bookmark = req.bookmark.map(Bookmark.parse)
+        )
+      } yield {
+        val items =
+          popularItems.items.map(_.scopeToUser(req.authenticatedUserId))
+
+        DataResponse.forDataResponse(
+          DataResponse(items).withPaging(
+            Paging(popularItems.bookmark.map(_.asString))
           )
         )
       }

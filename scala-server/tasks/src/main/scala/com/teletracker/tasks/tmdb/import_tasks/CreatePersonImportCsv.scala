@@ -1,25 +1,23 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.google.api.gax.paging.Page
-import com.google.cloud.storage.Storage.BlobListOption
-import com.google.cloud.storage.{Blob, BlobId, Storage}
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.model.Thingable
 import com.teletracker.common.model.tmdb.Person
 import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
+import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.tasks.util.SourceRetriever
 import io.circe.parser.parse
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.s3.S3Client
 import java.io.{BufferedWriter, File, FileOutputStream, PrintWriter}
 import java.net.URI
-import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
-import scala.io.Source
 
 class CreatePersonImportCsv @Inject()(
   thingsDbAccess: ThingsDbAccess,
-  storage: Storage
+  storage: S3Client,
+  sourceRetriever: SourceRetriever
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {
 
@@ -37,7 +35,8 @@ class CreatePersonImportCsv @Inject()(
 
     val thingLike = implicitly[Thingable[Person]]
 
-    getSourceStream(file)
+    sourceRetriever
+      .getSourceStream(file)
       .drop(offset)
       .safeTake(limit)
       .flatMap(source => {
@@ -92,73 +91,5 @@ class CreatePersonImportCsv @Inject()(
     } else {
       List(line)
     }
-  }
-
-  private def getSourceStream(uri: URI) = {
-    uri.getScheme match {
-      case "gs" =>
-        val blob = storage
-          .get(BlobId.of(uri.getHost, uri.getPath.stripPrefix("/")))
-
-        val blobStream = if (blob == null) {
-          val bucket = uri.getHost
-          val folder = uri.getPath
-          getBlobStreamForGsFolder(bucket, folder)
-        } else {
-          Stream(blob)
-        }
-
-        blobStream.map(blob => {
-          logger.info(s"Preparing to ingest ${blob.getName}")
-          Source.fromBytes(
-            blob.getContent()
-          )
-        })
-      case "file" =>
-        Stream(Source.fromFile(uri))
-      case _ =>
-        throw new IllegalArgumentException(
-          s"Unsupported file scheme: ${uri.getScheme}"
-        )
-    }
-  }
-
-  private def getBlobStreamForGsFolder(
-    bucket: String,
-    folder: String
-  ) = {
-    var page: Page[Blob] = null
-    var buf: Iterable[Blob] = Nil
-    def getList: Option[Blob] = {
-      if (buf.isEmpty) {
-        if (page == null) {
-          page = storage.list(
-            bucket,
-            BlobListOption.currentDirectory(),
-            BlobListOption.prefix(folder.stripPrefix("/") + "/")
-          )
-        } else {
-          page = page.getNextPage
-        }
-
-        val values = Option(page).map(_.getValues.asScala).getOrElse(Nil)
-        if (values.isEmpty) {
-          None
-        } else {
-          buf = values.tail
-          Some(values.head)
-        }
-      } else {
-        val value = buf.head
-        buf = buf.tail
-        Some(value)
-      }
-    }
-
-    Stream
-      .continually(getList)
-      .takeWhile(_.isDefined)
-      .map(_.get)
-      .filterNot(_.isDirectory)
   }
 }

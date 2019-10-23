@@ -26,7 +26,8 @@ case class Thing(
   lastUpdatedAt: OffsetDateTime,
   metadata: Option[ObjectMetadata],
   tmdbId: Option[String],
-  popularity: Option[Double]) {
+  popularity: Option[Double],
+  genres: Option[List[Int]]) {
   def toPartial: PartialThing = {
     PartialThing(
       id,
@@ -36,7 +37,8 @@ case class Thing(
       Some(createdAt),
       Some(lastUpdatedAt),
       popularity,
-      metadata.map(_.asJson)
+      metadata.map(_.asJson),
+      genreIds = genres.map(_.toSet)
     )
   }
 }
@@ -138,8 +140,10 @@ case class ObjectMetadata(
   import shapeless.union._
 
   val movieWitness = Witness('movie)
+  val showWitness = Witness('show)
 
   def tmdbMovie: Option[Movie] = themoviedb.flatMap(_.get(movieWitness))
+  def tmdbShow: Option[TvShow] = themoviedb.flatMap(_.get(showWitness))
 }
 
 class Things @Inject()(
@@ -176,6 +180,7 @@ class Things @Inject()(
       column[Option[ObjectMetadata]]("metadata", O.SqlType("jsonb"))
     def tmdbId = column[Option[String]]("tmdb_id")
     def popularity = column[Option[Double]]("popularity")
+    def genres = column[Option[List[Int]]]("genres")
 
     def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
 
@@ -189,7 +194,8 @@ class Things @Inject()(
         lastUpdatedAt,
         metadata,
         tmdbId,
-        popularity
+        popularity,
+        genres
       ) <> (Thing.tupled, Thing.unapply)
   }
 

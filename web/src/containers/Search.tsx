@@ -23,6 +23,7 @@ import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants';
 import InfiniteScroll from 'react-infinite-scroller';
 import _ from 'lodash';
+import { Item } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -51,7 +52,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   error: boolean;
   isAuthed: boolean;
   isSearching: boolean;
-  searchResults?: Thing[];
+  searchResults?: Item[];
   currentSearchText?: string;
   searchBookmark?: string;
 }

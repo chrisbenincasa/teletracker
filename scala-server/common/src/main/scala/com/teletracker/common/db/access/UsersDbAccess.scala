@@ -13,6 +13,7 @@ import com.teletracker.common.db.model.{
   TrackedLists,
   _
 }
+import com.teletracker.common.db.util.InhibitFilter
 import com.teletracker.common.db.{
   BaseDbProvider,
   Bookmark,
@@ -32,6 +33,7 @@ import javax.inject.{Inject, Provider}
 import java.time.{Instant, OffsetDateTime}
 import java.util.UUID
 import com.teletracker.common.util.Functions._
+import slick.basic.DatabasePublisher
 import scala.concurrent.{ExecutionContext, Future}
 
 class UsersDbAccess @Inject()(
@@ -138,6 +140,15 @@ class UsersDbAccess @Inject()(
         networks.query on (_.networkId === _.id)).result
     } yield {
       prefsAndNetworks.flatMap(_._2)
+    }
+  }
+
+  def findListsForUserRaw(userId: String) = {
+    run {
+      trackedLists.query
+        .filter(_.userId === userId)
+        .filter(_.deletedAt.isEmpty)
+        .result
     }
   }
 
@@ -321,6 +332,22 @@ class UsersDbAccess @Inject()(
     }
   }
 
+  def getListById(listId: Int) = {
+    run {
+      trackedLists.query
+        .filter(tl => tl.id === listId)
+        .take(1)
+        .result
+        .headOption
+    }
+  }
+
+  def getAllLists() = {
+    run {
+      trackedLists.query.result
+    }
+  }
+
   def findList(
     userId: String,
     listId: Int,
@@ -415,6 +442,74 @@ class UsersDbAccess @Inject()(
           .map(_.id)
           .result
           .headOption
+    }
+  }
+
+  def loopThroughAllListTracking(
+    offset: Int = 0,
+    perPage: Int = 50,
+    limit: Int = -1,
+    startingId: Option[Int] = None
+  )(
+    process: Seq[TrackedListThing] => Future[Unit]
+  ): Future[Unit] = {
+    provider.getDB.stream(userThingTags.query.result)
+
+    if (limit > 0 && offset >= limit) {
+      Future.unit
+    } else {
+      run {
+        InhibitFilter(trackedListThings.query)
+          .filter(startingId)(id => _.listId >= id)
+          .query
+          .sortBy(_.listId.asc.nullsFirst)
+          .drop(offset)
+          .take(perPage)
+          .result
+      }.flatMap {
+        case x if x.isEmpty => Future.unit
+        case x =>
+          process(x).flatMap(
+            _ =>
+              loopThroughAllListTracking(offset + perPage, perPage, limit)(
+                process
+              )
+          )
+      }
+    }
+  }
+
+  def loopThroughAllUserActions(
+    offset: Int = 0,
+    perPage: Int = 50,
+    limit: Int = -1,
+    startingId: Option[String] = None
+  )(
+    process: Seq[UserThingTag] => Future[Unit]
+  ): Future[Unit] = {
+    provider.getDB.stream(userThingTags.query.result)
+
+    if (limit > 0 && offset >= limit) {
+      Future.unit
+    } else {
+      run {
+        InhibitFilter(userThingTags.query)
+          .filter(startingId)(id => _.userId >= id)
+          .query
+          .sortBy(_.id.asc.nullsFirst)
+          .drop(offset)
+          .take(perPage)
+          .result
+      }.flatMap {
+        case x if x.isEmpty => Future.unit
+        case x =>
+          process(x).flatMap(
+            _ =>
+              loopThroughAllUserActions(offset + perPage, perPage, limit)(
+                process
+              )
+          )
+      }
     }
   }
 

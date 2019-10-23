@@ -196,7 +196,9 @@ class ImportPersonAssociations @Inject()(
               thingId,
               relationType,
               member.character.orElse(member.character_name),
-              member.order
+              member.order,
+              None,
+              None
             )
           })
         })

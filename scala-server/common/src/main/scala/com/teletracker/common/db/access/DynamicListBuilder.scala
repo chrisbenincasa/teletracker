@@ -9,6 +9,7 @@ import com.teletracker.common.db.{
   DefaultForListType,
   Popularity,
   Recent,
+  SearchScore,
   SortMode,
   SyncDbProvider
 }
@@ -18,7 +19,7 @@ import com.teletracker.common.util.ListFilters
 import javax.inject.Inject
 import slick.lifted.ColumnOrdered
 import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class DynamicListBuilder @Inject()(
   val provider: BaseDbProvider,
@@ -248,6 +249,7 @@ class DynamicListBuilder @Inject()(
     @scala.annotation.tailrec
     def applyForSortMode(sortMode: SortMode): Rep[Option[Boolean]] = {
       sortMode match {
+        case SearchScore(isDesc) => ???
         case Popularity(desc) =>
           (desc, bookmark.valueRefinement) match {
             case (true, Some(_))  => thing.popularity <= bookmark.value.toDouble
@@ -298,6 +300,7 @@ class DynamicListBuilder @Inject()(
     ColumnOrdered[UUID]
   ) = {
     sortMode match {
+      case SearchScore(isDesc) => ???
       case Popularity(true) =>
         (thing.popularity.desc.nullsLast, thing.id.asc.nullsFirst)
       case Popularity(false) =>

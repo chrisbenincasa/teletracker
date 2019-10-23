@@ -1,12 +1,11 @@
 package com.teletracker.tasks
 
-import com.google.cloud.pubsub.v1.Publisher
-import com.google.protobuf.ByteString
-import com.google.pubsub.v1.PubsubMessage
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
-import javax.inject.Inject
 import io.circe.syntax._
+import javax.inject.Inject
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 class NoopTeletrackerTask extends TeletrackerTaskWithDefaultArgs {
   override def runInternal(args: Args): Unit = println(args)
@@ -21,7 +20,7 @@ class TimeoutTask extends TeletrackerTaskWithDefaultArgs {
   }
 }
 
-class DependantTask @Inject()(publisher: Publisher)
+class DependantTask @Inject()(publisher: SqsClient)
     extends TeletrackerTaskWithDefaultArgs {
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -31,17 +30,17 @@ class DependantTask @Inject()(publisher: Publisher)
 
     logger.info(s"Publishing: $message")
 
-    val messageId = publisher
-      .publish(
-        PubsubMessage
-          .newBuilder()
-          .setData(ByteString.copyFrom(message.asJson.noSpaces.getBytes()))
+    val response = publisher
+      .sendMessage(
+        SendMessageRequest
+          .builder()
+          .messageBody(message.asJson.noSpaces)
+          .queueUrl(
+            "https://sqs.us-west-1.amazonaws.com/302782651551/teletracker-tasks-qa"
+          )
           .build()
       )
-      .get()
 
-    logger.info(s"Published with id = $messageId")
-
-    publisher.publishAllOutstanding()
+    logger.info(s"Published with id = ${response.messageId()}")
   }
 }

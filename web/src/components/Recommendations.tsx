@@ -11,6 +11,8 @@ import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from './ItemCard';
 import { UserSelf } from '../reducers/user';
 import Thing from '../types/Thing';
+import { ApiItem } from '../types/v2';
+import { Item } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -30,7 +32,7 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps {
-  itemDetail: Thing;
+  itemDetail: Item;
   userSelf?: UserSelf;
 }
 
@@ -41,7 +43,7 @@ class Recommendations extends Component<Props, {}> {
     const { classes, itemDetail, userSelf } = this.props;
     const recommendations = itemDetail.recommendations || [];
 
-    return recommendations && recommendations && recommendations.length > 0 ? (
+    return recommendations && recommendations.length > 0 ? (
       <React.Fragment>
         <div className={classes.recommendationsContainer}>
           <Typography color="inherit" variant="h5">
@@ -50,7 +52,7 @@ class Recommendations extends Component<Props, {}> {
 
           <Grid container spacing={2} className={classes.grid}>
             {recommendations.map(item => {
-              return item && item.posterPath ? (
+              return item && item.posterImage ? (
                 <ItemCard key={item.id} userSelf={userSelf} item={item} />
               ) : null;
             })}

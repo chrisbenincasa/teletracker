@@ -11,6 +11,7 @@ import com.teletracker.common.db.{
   DefaultForListType,
   Popularity,
   Recent,
+  SearchScore,
   SortMode,
   SyncDbProvider
 }
@@ -142,6 +143,7 @@ class ListQuery @Inject()(
       sortMode: SortMode
     ): Bookmark = {
       sortMode match {
+        case SearchScore(isDesc) => ???
         case _: Popularity =>
           val value = thing.popularity.getOrElse(0.0).toString
           Bookmark(
@@ -437,6 +439,7 @@ class ListQuery @Inject()(
     @scala.annotation.tailrec
     def applyForSortMode(sortMode: SortMode): Rep[Option[Boolean]] = {
       sortMode match {
+        case SearchScore(isDesc) => ???
         case Popularity(desc) =>
           if (desc) {
             thing.popularity < bookmark.value.toDouble
@@ -485,8 +488,9 @@ class ListQuery @Inject()(
     _ >: Option[Double] with Option[String] with OffsetDateTime <: Any
   ] = {
     sortMode match {
-      case Popularity(true)  => thing.popularity.desc.nullsLast
-      case Popularity(false) => thing.popularity.desc.nullsLast
+      case SearchScore(isDesc) => ???
+      case Popularity(true)    => thing.popularity.desc.nullsLast
+      case Popularity(false)   => thing.popularity.desc.nullsLast
       case Recent(desc) =>
         val movieRelease = thing.metadata
           .+>("themoviedb")

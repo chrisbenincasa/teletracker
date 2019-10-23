@@ -132,11 +132,13 @@ class TmdbEntityProcessor @Inject()(
       thingId: UUID,
       typ: PersonAssociationType,
       character: Option[String],
-      order: Option[Int]
+      order: Option[Int],
+      department: Option[String],
+      job: Option[String]
     ): Future[PersonThing] = {
       // TODO figure out order it wrong
       thingsDbAccess.upsertPersonThing(
-        PersonThing(personId, thingId, typ, character, order)
+        PersonThing(personId, thingId, typ, character, order, department, job)
       )
     }
 
@@ -182,6 +184,8 @@ class TmdbEntityProcessor @Inject()(
                       thing.id,
                       PersonAssociationType.Cast,
                       characterName,
+                      None,
+                      None,
                       None
                     ).map(Some(_)).recover {
                       case NonFatal(ex) => None
@@ -189,14 +193,17 @@ class TmdbEntityProcessor @Inject()(
               }
 
               val crewInserts = savedCrewMemberships.map {
-                case (_, thing) =>
+                case (id, thing) =>
+                  val member = castById.get(id)
                   () =>
                     insertAssociations(
                       savedPerson.id,
                       thing.id,
                       PersonAssociationType.Crew,
                       None,
-                      None
+                      None,
+                      member.flatMap(_.department),
+                      member.flatMap(_.job)
                     ).map(Some(_)).recover {
                       case NonFatal(ex) => None
                     }

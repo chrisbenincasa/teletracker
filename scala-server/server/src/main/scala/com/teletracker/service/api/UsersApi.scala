@@ -1,22 +1,37 @@
 package com.teletracker.service.api
 
 import com.teletracker.common.auth.jwt.JwtVendor
-import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
+import com.teletracker.common.db.{Bookmark, DefaultForListType, SortMode}
+import com.teletracker.common.db.access.{
+  ElasticsearchListBuilder,
+  ListsDbAccess,
+  UsersDbAccess
+}
 import com.teletracker.common.db.model.{
   TrackedListFactory,
   UserPreferences,
   UserThingTag,
   UserThingTagType
 }
-import com.teletracker.service.api.model.UserDetails
+import com.teletracker.common.elasticsearch.{
+  ElasticsearchItemsResponse,
+  EsItemTag,
+  ItemUpdater
+}
+import com.teletracker.common.util.ListFilters
+import com.teletracker.service.api.model.{Item, UserDetails, UserList}
 import com.teletracker.service.controllers.UpdateUserRequestPayload
 import javax.inject.Inject
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class UsersApi @Inject()(
   usersDbAccess: UsersDbAccess,
   listsDbAccess: ListsDbAccess,
-  jwtVendor: JwtVendor
+  jwtVendor: JwtVendor,
+  elasticsearchDynamicListBuilder: ElasticsearchListBuilder,
+  listsApi: ListsApi,
+  itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext) {
 
   def getUser(userId: String): Future[UserDetails] = {
@@ -76,6 +91,106 @@ class UsersApi @Inject()(
     createDefaultListsForUser(userId)
   }
 
+  // ES only
+  def getUserLists(userId: String): Future[Seq[UserList]] = {
+    usersDbAccess
+      .findListsForUserRaw(userId)
+      .flatMap(lists => {
+        val (dynamicLists, regularLists) = lists.partition(_.isDynamic)
+
+        for {
+          regularListCounts <- if (regularLists.nonEmpty) {
+            elasticsearchDynamicListBuilder
+              .getRegularListsCounts(userId, regularLists.map(_.id).toList)
+              .map(_.toMap)
+          } else {
+            Future.successful(Map.empty[Int, Long])
+          }
+          dynamicListCounts <- if (dynamicLists.nonEmpty) {
+            elasticsearchDynamicListBuilder
+              .getDynamicListCounts(userId, dynamicLists.toList)
+              .map(_.toMap)
+          } else {
+            Future.successful(Map.empty[Int, Long])
+          }
+        } yield {
+
+          lists.map(list => {
+            val count =
+              if (list.isDynamic) dynamicListCounts.getOrElse(list.id, 0L).toInt
+              else regularListCounts.getOrElse(list.id, 0L).toInt
+
+            UserList
+              .fromRow(list)
+              .withCount(count)
+          })
+        }
+      })
+  }
+
+  def getUserList(
+    userId: String,
+    listId: Int,
+    filters: Option[ListFilters] = None,
+    isDynamicHint: Option[Boolean] = None,
+    sortMode: SortMode = DefaultForListType(),
+    bookmark: Option[Bookmark] = None,
+    limit: Int = 10
+  ): Future[Option[(UserList, Option[Bookmark])]] = {
+    usersDbAccess.getList(userId, listId).flatMap {
+      case None =>
+        Future.successful(None)
+
+      case Some(list) if list.isDynamic =>
+        elasticsearchDynamicListBuilder
+          .buildDynamicList(
+            userId,
+            list,
+            filters,
+            sortMode,
+            bookmark,
+            limit = limit
+          )
+          .map {
+            case (listThings, count) => {
+              UserList
+                .fromRow(list)
+                .withItems(
+                  listThings.items
+                    .map(Item.fromEsItem(_))
+                    .map(_.scopeToUser(userId))
+                )
+                .withCount(count.toInt) -> listThings.bookmark
+            }
+          }
+          .map(Some(_))
+
+      case Some(list) if !list.isDynamic =>
+        elasticsearchDynamicListBuilder
+          .buildRegularList(
+            userId,
+            list,
+            filters,
+            sortMode,
+            bookmark,
+            limit = limit
+          )
+          .map {
+            case (listThings, count) => {
+              UserList
+                .fromRow(list)
+                .withItems(
+                  listThings.items
+                    .map(Item.fromEsItem(_))
+                    .map(_.scopeToUser(userId))
+                )
+                .withCount(count.toInt) -> listThings.bookmark
+            }
+          }
+          .map(Some(_))
+    }
+  }
+
   def createDefaultListsForUser(userId: String): Future[Seq[Int]] = {
     listsDbAccess.insertLists(
       List(
@@ -100,6 +215,26 @@ class UsersApi @Inject()(
 
       case _ =>
         Future.unit
+    }
+  }
+
+  def handleTagChange(
+    itemId: UUID,
+    userThingTag: EsItemTag
+  ): Future[Unit] = {
+    userThingTag match {
+      case EsItemTag.UserScoped(userId, UserThingTagType.Watched, _) =>
+        listsDbAccess
+          .findRemoveOnWatchedLists(userId)
+          .flatMap(lists => {
+            itemUpdater.removeItemFromLists(
+              lists.filter(!_.isDynamic).map(_.id).toSet,
+              userId
+            )
+          })
+          .map(_ => {})
+
+      case _ => Future.unit
     }
   }
 }
