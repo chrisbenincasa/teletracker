@@ -30,12 +30,6 @@ import {
   itemFetchInitiated,
   ItemFetchInitiatedPayload,
 } from '../actions/item-detail';
-import withUser, { WithUserProps } from '../components/withUser';
-import { AppState } from '../reducers';
-import { layoutStyles } from '../styles';
-import { Genre } from '../types';
-import { getMetadataPath } from '../utils/metadata-access';
-import { ResponsiveImage } from '../components/ResponsiveImage';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import ThingAvailability from '../components/Availability';
 import Cast from '../components/Cast';

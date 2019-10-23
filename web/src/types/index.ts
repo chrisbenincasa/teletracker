@@ -24,7 +24,16 @@ export type ListSortOptions =
   | 'added_time'
   | 'default';
 
-export type ItemTypes = ('movie' | 'show')[];
+export type ItemTypes = 'movie' | 'show';
+
+export type NetworkTypes =
+  | 'netflix'
+  | 'netflix-kids'
+  | 'hbo-go'
+  | 'hbo-now'
+  | 'amazon-prime-video'
+  | 'amazon-video'
+  | 'hulu';
 
 export interface ListConfiguration {
   ruleConfiguration?: ListRules;
