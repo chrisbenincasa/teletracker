@@ -63,7 +63,6 @@ import {
   ListSortOptions,
   NetworkTypes,
 } from '../types';
-import Thing from '../types/Thing';
 import { getOrInitListOptions } from '../utils/list-utils';
 import { Item } from '../types/v2/Item';
 

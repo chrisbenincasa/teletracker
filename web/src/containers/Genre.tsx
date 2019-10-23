@@ -276,7 +276,12 @@ class Genre extends Component<Props, State> {
     return genre && genre && genre.length ? (
       <div style={{ padding: 8, margin: 20 }}>
         <div
-          style={{ display: 'flex', flexDirection: 'row', marginBottom: 10 }}
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            marginBottom: 10,
+            alignItems: 'center',
+          }}
         >
           <Typography
             color="inherit"
