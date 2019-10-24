@@ -23,6 +23,7 @@ import { retrievePopular } from '../actions/popular';
 import { PopularInitiatedActionPayload } from '../actions/popular/popular';
 import Featured from '../components/Featured';
 import AllFilters from '../components/Filters/AllFilters';
+import ActiveFilters from '../components/Filters/ActiveFilters';
 import { getGenreFromUrlParam } from '../components/Filters/GenreSelect';
 import { getNetworkTypeFromUrlParam } from '../components/Filters/NetworkSelect';
 import { getSortFromUrlParam } from '../components/Filters/SortDropdown';
@@ -84,12 +85,12 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
-  filter?: number[];
+  genresFilter?: number[];
   mainItemIndex: number;
   networks?: NetworkTypes[];
   showFilter: boolean;
   sortOrder: ListSortOptions;
-  type?: ItemTypes[];
+  itemTypes?: ItemTypes[];
 }
 
 class Popular extends Component<Props, State> {
@@ -98,19 +99,19 @@ class Popular extends Component<Props, State> {
 
     this.state = {
       ...this.state,
-      filter: getGenreFromUrlParam(),
+      genresFilter: getGenreFromUrlParam(),
       mainItemIndex: -1,
       networks: getNetworkTypeFromUrlParam(),
       showFilter: false,
       sortOrder: getSortFromUrlParam(),
-      type: getTypeFromUrlParam(),
+      itemTypes: getTypeFromUrlParam(),
     };
   }
 
   loadPopular(passBookmark: boolean) {
     // To do: add support for sorting
     this.props.retrievePopular({
-      itemTypes: this.state.type,
+      itemTypes: this.state.itemTypes,
       networks: this.state.networks,
       limit,
       bookmark: passBookmark ? this.props.bookmark : undefined,
@@ -166,12 +167,12 @@ class Popular extends Component<Props, State> {
     }
   }
 
-  setType = (type?: ItemTypes[]) => {
+  setType = (itemTypes?: ItemTypes[]) => {
     // Only update and hit endpoint if there is a state change
-    if (this.state.type !== type) {
+    if (this.state.itemTypes !== itemTypes) {
       this.setState(
         {
-          type,
+          itemTypes,
         },
         () => {
           this.loadPopular(false);
@@ -185,7 +186,7 @@ class Popular extends Component<Props, State> {
     console.log({ genres });
     this.setState(
       {
-        filter: genres,
+        genresFilter: genres,
       },
       () => {
         this.loadPopular(false);
@@ -260,9 +261,28 @@ class Popular extends Component<Props, State> {
     }
   };
 
+  setFilters = (
+    sortOrder: ListSortOptions,
+    networks?: NetworkTypes[],
+    itemTypes?: ItemTypes[],
+    genres?: number[],
+  ) => {
+    this.setState(
+      {
+        networks,
+        itemTypes,
+        sortOrder,
+        genresFilter: genres,
+      },
+      () => {
+        this.loadPopular(true);
+      },
+    );
+  };
+
   renderPopular = () => {
     const { classes, genres, popular, userSelf, thingsBySlug } = this.props;
-    const { type } = this.state;
+    const { genresFilter, itemTypes, networks, sortOrder } = this.state;
 
     return popular && popular && popular.length ? (
       <div
@@ -272,15 +292,20 @@ class Popular extends Component<Props, State> {
           flexDirection: 'column',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+          }}
+        >
           <Typography
             color="inherit"
             variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
             style={{ flexGrow: 1 }}
           >
             {`Popular ${
-              type
-                ? type.includes('movie')
+              itemTypes
+                ? itemTypes.includes('movie')
                   ? 'Movies'
                   : 'TV Shows'
                 : 'Content'
@@ -293,8 +318,18 @@ class Popular extends Component<Props, State> {
             flexDirection: 'row',
             marginBottom: 8,
             justifyContent: 'flex-end',
+            alignItems: 'center',
           }}
         >
+          <ActiveFilters
+            genres={genres}
+            updateFilters={this.setFilters}
+            genresFilter={genresFilter}
+            itemTypes={itemTypes}
+            networks={networks}
+            sortOrder={sortOrder}
+            isListDynamic={false}
+          />
           <IconButton
             onClick={this.toggleFilters}
             className={classes.settings}

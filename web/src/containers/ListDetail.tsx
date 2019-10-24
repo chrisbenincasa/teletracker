@@ -686,7 +686,7 @@ class ListDetail extends Component<Props, State> {
                 itemTypes={itemTypes}
                 networks={networks}
                 sortOrder={sortOrder}
-                listIsDynamic={list.isDynamic}
+                isListDynamic={list.isDynamic}
               />
               <IconButton
                 onClick={this.toggleFilters}
