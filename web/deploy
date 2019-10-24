@@ -2,4 +2,4 @@
 
 yarn run build
 
-gcloud app deploy
+aws s3 sync build/ s3://teletracker.app --acl public-read
