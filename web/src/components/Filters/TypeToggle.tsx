@@ -23,6 +23,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.down('sm')]: {
         fontSize: '0.575rem',
       },
+      whiteSpace: 'nowrap',
     },
     typeContainer: { display: 'flex', flexDirection: 'column' },
   });

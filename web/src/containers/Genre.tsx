@@ -299,7 +299,7 @@ class Genre extends Component<Props, State> {
             itemTypes={itemTypes}
             networks={networks}
             sortOrder={sortOrder}
-            listIsDynamic={false}
+            isListDynamic={false}
           />
           <IconButton
             onClick={this.toggleFilters}
@@ -317,7 +317,6 @@ class Genre extends Component<Props, State> {
           handleNetworkChange={this.setNetworks}
           handleSortChange={this.setSortOrder}
           isListDynamic={false}
-          showGenre={false}
         />
         <InfiniteScroll
           pageStart={0}

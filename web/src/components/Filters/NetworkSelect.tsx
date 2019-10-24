@@ -21,6 +21,7 @@ const styles = (theme: Theme) =>
     },
     buttonGroup: {
       marginRight: theme.spacing(1),
+      whiteSpace: 'nowrap',
     },
     filterButtons: {
       [theme.breakpoints.down('sm')]: {
