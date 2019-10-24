@@ -274,10 +274,6 @@ class PersonDetail extends React.Component<Props, State> {
     const { genresFilter, itemTypes, networks, sortOrder } = this.state;
 
     let filmography = person!.cast_credits || [];
-
-    console.log(person);
-    console.log(genresFilter);
-
     let filmographyFiltered = filmography
       .filter(
         credit =>
