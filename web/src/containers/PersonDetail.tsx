@@ -130,7 +130,6 @@ const styles = (theme: Theme) =>
 interface OwnProps {}
 
 interface State {
-  // genresFilter: number;
   showFullBiography: boolean;
   sortOrder: ListSortOptions;
   genresFilter?: number[];
