@@ -2,7 +2,7 @@
   {
     "name": "teletracker-server",
     "image": "${image}",
-    "cpu": 512,
+    "cpu": 1024,
     "memory": 768,
     "essential": true,
     "portMappings": [

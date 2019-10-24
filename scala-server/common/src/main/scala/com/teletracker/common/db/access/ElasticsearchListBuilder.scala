@@ -222,6 +222,29 @@ class ElasticsearchListBuilder @Inject()(
             TagFormatter.format(userId, UserThingTagType.TrackedInList)
           )
       )
+      .applyIf(listFilters.flatMap(_.itemTypes).exists(_.nonEmpty))(builder => {
+        builder.filter(
+          QueryBuilders.termsQuery(
+            "type",
+            listFilters
+              .flatMap(_.itemTypes)
+              .get
+              .map(_.toString)
+              .asJavaCollection
+          )
+        )
+      })
+      .applyOptional(listFilters.flatMap(_.genres).filter(_.nonEmpty))(
+        (builder, genres) => {
+          builder.filter(
+            QueryBuilders.nestedQuery(
+              "genres",
+              QueryBuilders.termsQuery("genres.id", genres.asJavaCollection),
+              ScoreMode.Avg
+            )
+          )
+        }
+      )
       .filter(QueryBuilders.termQuery("tags.value", list.id))
       .applyOptional(bookmark)(applyBookmark)
 
