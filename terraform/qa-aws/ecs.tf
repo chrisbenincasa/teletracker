@@ -15,7 +15,7 @@ resource "aws_ecs_service" "teletracker-qa-server" {
   cluster         = "${aws_ecs_cluster.teletracker-qa.id}"
   task_definition = "${aws_ecs_task_definition.teletracker-qa-server.arn}"
   desired_count   = 1
-  iam_role        = "${data.aws_iam_role.ecs-service-role.arn}"
+  iam_role        = "${data.aws_iam_role.ecs-service-role.name}"
   #   depends_on = ["${data.}"]
 
   deployment_minimum_healthy_percent = 0
@@ -54,6 +54,6 @@ resource "aws_ecs_task_definition" "teletracker-qa-server" {
   container_definitions = "${data.template_file.teletracker-qa-server-task-definition-template.rendered}"
   execution_role_arn    = "${data.aws_iam_role.ecs-task-execution-role.arn}"
 
-  cpu          = 512
+  cpu          = 1024
   network_mode = "bridge"
 }

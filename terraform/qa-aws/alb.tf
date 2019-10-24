@@ -30,7 +30,7 @@ resource "aws_lb_target_group" "teletracker-qa-server" {
     interval            = 30
     timeout             = 5
     healthy_threshold   = 5
-    unhealthy_threshold = 2
+    unhealthy_threshold = 5
     path                = "/health"
     protocol            = "HTTP"
   }

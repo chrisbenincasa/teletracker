@@ -29,7 +29,7 @@ class UsersApi @Inject()(
   usersDbAccess: UsersDbAccess,
   listsDbAccess: ListsDbAccess,
   jwtVendor: JwtVendor,
-  elasticsearchDynamicListBuilder: ElasticsearchListBuilder,
+  listBuilder: ElasticsearchListBuilder,
   listsApi: ListsApi,
   itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext) {
@@ -100,14 +100,14 @@ class UsersApi @Inject()(
 
         for {
           regularListCounts <- if (regularLists.nonEmpty) {
-            elasticsearchDynamicListBuilder
+            listBuilder
               .getRegularListsCounts(userId, regularLists.map(_.id).toList)
               .map(_.toMap)
           } else {
             Future.successful(Map.empty[Int, Long])
           }
           dynamicListCounts <- if (dynamicLists.nonEmpty) {
-            elasticsearchDynamicListBuilder
+            listBuilder
               .getDynamicListCounts(userId, dynamicLists.toList)
               .map(_.toMap)
           } else {
@@ -142,7 +142,7 @@ class UsersApi @Inject()(
         Future.successful(None)
 
       case Some(list) if list.isDynamic =>
-        elasticsearchDynamicListBuilder
+        listBuilder
           .buildDynamicList(
             userId,
             list,
@@ -166,7 +166,7 @@ class UsersApi @Inject()(
           .map(Some(_))
 
       case Some(list) if !list.isDynamic =>
-        elasticsearchDynamicListBuilder
+        listBuilder
           .buildRegularList(
             userId,
             list,
