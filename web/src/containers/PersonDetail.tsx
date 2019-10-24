@@ -181,7 +181,7 @@ class PersonDetail extends React.Component<Props, State> {
 
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
-    console.log(this.state.genresFilter);
+
     this.props.personFetchInitiated({ id: this.props.match.params.id });
 
     ReactGA.initialize(GA_TRACKING_ID);
@@ -275,15 +275,29 @@ class PersonDetail extends React.Component<Props, State> {
 
     let filmography = person!.cast_credits || [];
 
+    console.log(person);
+    console.log(genresFilter);
+
     let filmographyFiltered = filmography
       .filter(
         credit =>
-          credit &&
-          credit.item &&
-          credit.item.genres &&
-          credit.item.genres
-            .map(g => g.id)
-            .includes((genresFilter && genresFilter[0]) || 0),
+          (credit &&
+            credit.item &&
+            credit.item.genres &&
+            credit.item.genres
+              .map(g => g.id)
+              .includes(
+                (genresFilter && genresFilter.length > 0 && genresFilter[0]) ||
+                  0,
+              )) ||
+          !genresFilter,
+      )
+      .filter(
+        credit =>
+          (credit &&
+            credit.item &&
+            credit.item.type.includes((itemTypes && itemTypes[0]) || '')) ||
+          !itemTypes,
       )
       .sort((a, b) => {
         if (this.state.sortOrder === 'popularity') {
@@ -299,7 +313,6 @@ class PersonDetail extends React.Component<Props, State> {
           } else {
             sort = a.item!.release_date < b.item!.release_date ? 1 : -1;
           }
-
           return sort;
         } else {
           return 0;
@@ -362,7 +375,6 @@ class PersonDetail extends React.Component<Props, State> {
           open={this.state.showFilter}
           handleTypeChange={this.setType}
           handleGenreChange={this.setGenre}
-          handleNetworkChange={this.setNetworks}
           handleSortChange={this.setSortOrder}
           isListDynamic={false}
         />

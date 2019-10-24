@@ -68,9 +68,9 @@ const styles = (theme: Theme) =>
 
 interface OwnProps {
   handleGenreChange?: (genre?: number[]) => void;
-  handleTypeChange: (type?: ItemTypes[]) => void;
-  handleNetworkChange: (networkTypes?: NetworkTypes[]) => void;
-  handleSortChange: (sortOrder: ListSortOptions) => void;
+  handleTypeChange?: (type?: ItemTypes[]) => void;
+  handleNetworkChange?: (networkTypes?: NetworkTypes[]) => void;
+  handleSortChange?: (sortOrder: ListSortOptions) => void;
   isListDynamic?: boolean;
   genres?: Genre[];
   open: boolean;
@@ -106,47 +106,51 @@ class AllFilters extends Component<Props, State> {
 
   setGenre = (genres?: number[]) => {
     const { handleGenreChange } = this.props;
-    if (handleGenreChange) {
-      this.setState(
-        {
-          genresFilter: genres,
-        },
-        () => {
-          handleGenreChange(genres);
-        },
-      );
-    }
+
+    this.setState(
+      {
+        genresFilter: genres,
+      },
+      () => {
+        handleGenreChange && handleGenreChange(genres);
+      },
+    );
   };
 
   setType = (type?: ItemTypes[]) => {
+    const { handleTypeChange } = this.props;
     this.setState(
       {
         itemTypes: type,
       },
       () => {
-        this.props.handleTypeChange(type);
+        handleTypeChange && handleTypeChange(type);
       },
     );
   };
 
   setNetworks = (networks?: NetworkTypes[]) => {
+    const { handleNetworkChange } = this.props;
+
     this.setState(
       {
         networks,
       },
       () => {
-        this.props.handleNetworkChange(networks);
+        handleNetworkChange && handleNetworkChange(networks);
       },
     );
   };
 
   setSort = (sortOrder: ListSortOptions) => {
+    const { handleSortChange } = this.props;
+
     this.setState(
       {
         sortOrder,
       },
       () => {
-        this.props.handleSortChange(sortOrder);
+        handleSortChange && handleSortChange(sortOrder);
       },
     );
   };
