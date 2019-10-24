@@ -29,6 +29,9 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         display: 'flex',
       },
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'column',
+      },
       zIndex: 1000,
       marginBottom: theme.spacing(1),
       flexGrow: 1,
@@ -39,11 +42,21 @@ const styles = (theme: Theme) =>
       flexDirection: 'row',
       width: '50%',
       flexWrap: 'wrap',
+      [theme.breakpoints.down('sm')]: {
+        width: '100%',
+      },
     },
-    networkTypeContainer: {
+    networkContainer: {
       display: 'flex',
       margin: '10px 0',
       alignItems: 'flex-start',
+      flexGrow: 1,
+    },
+    typeContainer: {
+      display: 'flex',
+      margin: '10px 0',
+      alignItems: 'flex-start',
+      flexGrow: 1,
     },
     sortContainer: {
       display: 'flex',
@@ -55,13 +68,13 @@ const styles = (theme: Theme) =>
 
 interface OwnProps {
   handleGenreChange?: (genre?: number[]) => void;
-  handleTypeChange: (type?: ItemTypes[]) => void;
-  handleNetworkChange: (networkTypes?: NetworkTypes[]) => void;
-  handleSortChange: (sortOrder: ListSortOptions) => void;
+  handleTypeChange?: (type?: ItemTypes[]) => void;
+  handleNetworkChange?: (networkTypes?: NetworkTypes[]) => void;
+  handleSortChange?: (sortOrder: ListSortOptions) => void;
   isListDynamic?: boolean;
   genres?: Genre[];
   open: boolean;
-  showGenre?: boolean;
+  disabledGenres?: number[];
 }
 
 interface RouteParams {
@@ -93,58 +106,66 @@ class AllFilters extends Component<Props, State> {
 
   setGenre = (genres?: number[]) => {
     const { handleGenreChange } = this.props;
-    if (handleGenreChange) {
-      this.setState(
-        {
-          genresFilter: genres,
-        },
-        () => {
-          handleGenreChange(genres);
-        },
-      );
-    }
+
+    this.setState(
+      {
+        genresFilter: genres,
+      },
+      () => {
+        handleGenreChange && handleGenreChange(genres);
+      },
+    );
   };
 
   setType = (type?: ItemTypes[]) => {
+    const { handleTypeChange } = this.props;
     this.setState(
       {
         itemTypes: type,
       },
       () => {
-        this.props.handleTypeChange(type);
+        handleTypeChange && handleTypeChange(type);
       },
     );
   };
 
   setNetworks = (networks?: NetworkTypes[]) => {
+    const { handleNetworkChange } = this.props;
+
     this.setState(
       {
         networks,
       },
       () => {
-        this.props.handleNetworkChange(networks);
+        handleNetworkChange && handleNetworkChange(networks);
       },
     );
   };
 
   setSort = (sortOrder: ListSortOptions) => {
+    const { handleSortChange } = this.props;
+
     this.setState(
       {
         sortOrder,
       },
       () => {
-        this.props.handleSortChange(sortOrder);
+        handleSortChange && handleSortChange(sortOrder);
       },
     );
   };
 
   render() {
     const {
+      classes,
+      disabledGenres,
+      genres,
+      isListDynamic,
       open,
       handleGenreChange,
-      isListDynamic,
-      classes,
-      genres,
+      handleNetworkChange,
+      handleTypeChange,
+      handleSortChange,
     } = this.props;
 
     return (
@@ -161,18 +182,28 @@ class AllFilters extends Component<Props, State> {
             <div className={classes.filterSortContainer}>
               <div className={classes.genreContainer}>
                 {handleGenreChange && (
-                  <GenreSelect genres={genres} handleChange={this.setGenre} />
+                  <GenreSelect
+                    genres={genres}
+                    disabledGenres={disabledGenres}
+                    handleChange={this.setGenre}
+                  />
                 )}
               </div>
-              <div className={classes.networkTypeContainer}>
-                <NetworkSelect handleChange={this.setNetworks} />
-                <TypeToggle handleChange={this.setType} />
+              <div className={classes.networkContainer}>
+                {handleNetworkChange && (
+                  <NetworkSelect handleChange={this.setNetworks} />
+                )}
+              </div>
+              <div className={classes.typeContainer}>
+                {handleTypeChange && <TypeToggle handleChange={this.setType} />}
               </div>
               <div className={classes.sortContainer}>
-                <SortDropdown
-                  isListDynamic={!!isListDynamic}
-                  handleChange={this.setSort}
-                />
+                {handleSortChange && (
+                  <SortDropdown
+                    isListDynamic={!!isListDynamic}
+                    handleChange={this.setSort}
+                  />
+                )}
               </div>
             </div>
           </div>
