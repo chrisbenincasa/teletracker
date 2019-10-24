@@ -30,6 +30,7 @@ const styles = () =>
 interface OwnProps {
   handleChange: (genres?: number[]) => void;
   genres?: Genre[];
+  disabledGenres?: number[];
 }
 
 interface RouteParams {
@@ -118,8 +119,12 @@ class GenreSelect extends Component<Props, State> {
   };
 
   render() {
-    const { classes, genres } = this.props;
+    const { classes, disabledGenres, genres } = this.props;
     const { genresFilter } = this.state;
+    const excludeGenres =
+      disabledGenres && genresFilter
+        ? _.difference(disabledGenres, genresFilter)
+        : undefined;
 
     return (
       <div className={classes.genreContainer}>
@@ -136,6 +141,7 @@ class GenreSelect extends Component<Props, State> {
             }
             label="All"
             className={classes.chip}
+            disabled={!!excludeGenres}
           />
           {(genres || []).map(item => {
             return (
@@ -150,6 +156,7 @@ class GenreSelect extends Component<Props, State> {
                 }
                 label={item.name}
                 className={classes.chip}
+                disabled={excludeGenres && excludeGenres.includes(item.id)}
               />
             );
           })}
