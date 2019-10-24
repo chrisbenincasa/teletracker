@@ -4,6 +4,7 @@ import {
   Fab,
   Grid,
   Hidden,
+  IconButton,
   InputLabel,
   LinearProgress,
   MenuItem,
@@ -13,7 +14,7 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { ChevronLeft, ExpandLess, ExpandMore } from '@material-ui/icons';
+import { ChevronLeft, ExpandLess, ExpandMore, Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import { default as React } from 'react';
@@ -33,8 +34,14 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { Genre } from '../types';
+import { ItemTypes, Genre, ListSortOptions, NetworkTypes } from '../types';
 import { Person } from '../types/v2/Person';
+import { getTypeFromUrlParam } from '../components/Filters/TypeToggle';
+import { getNetworkTypeFromUrlParam } from '../components/Filters/NetworkSelect';
+import { getSortFromUrlParam } from '../components/Filters/SortDropdown';
+import { getGenreFromUrlParam } from '../components/Filters/GenreSelect';
+import AllFilters from '../components/Filters/AllFilters';
+import ActiveFilters from '../components/Filters/ActiveFilters';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -72,6 +79,16 @@ const styles = (theme: Theme) =>
         height: 475,
       },
     },
+    listHeader: {
+      margin: `${theme.spacing(2)}px 0`,
+      display: 'flex',
+      flex: '1 0 auto',
+      alignItems: 'center',
+    },
+    listNameContainer: {
+      display: 'flex',
+      flex: '1 0 auto',
+    },
     personCTA: {
       [theme.breakpoints.down('sm')]: {
         width: '80%',
@@ -104,14 +121,22 @@ const styles = (theme: Theme) =>
       },
       width: '90%',
     },
+    settings: {
+      display: 'flex',
+      alignSelf: 'flex-end',
+    },
   });
 
 interface OwnProps {}
 
 interface State {
-  sortOrder: string;
-  filter: number;
+  // genresFilter: number;
   showFullBiography: boolean;
+  sortOrder: ListSortOptions;
+  genresFilter?: number[];
+  itemTypes?: ItemTypes[];
+  networks?: NetworkTypes[];
+  showFilter: boolean;
 }
 
 interface StateProps {
@@ -136,15 +161,27 @@ type NotOwnProps = DispatchProps &
 type Props = OwnProps & StateProps & NotOwnProps;
 
 class PersonDetail extends React.Component<Props, State> {
-  state: State = {
-    sortOrder: 'Popularity',
-    filter: -1,
-    showFullBiography: false,
-  };
+  constructor(props: Props) {
+    super(props);
+    let params = new URLSearchParams(location.search);
+
+    this.state = {
+      genresFilter: getGenreFromUrlParam(),
+      itemTypes: getTypeFromUrlParam(),
+      networks: getNetworkTypeFromUrlParam(),
+      showFullBiography: false,
+      showFilter:
+        params.has('sort') ||
+        params.has('genres') ||
+        params.has('networks') ||
+        params.has('types'),
+      sortOrder: getSortFromUrlParam(),
+    };
+  }
 
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
-
+    console.log(this.state.genresFilter);
     this.props.personFetchInitiated({ id: this.props.match.params.id });
 
     ReactGA.initialize(GA_TRACKING_ID);
@@ -154,14 +191,6 @@ class PersonDetail extends React.Component<Props, State> {
       ReactGA.set({ userId: userSelf.user.uid });
     }
   }
-
-  setSortOrder = event => {
-    this.setState({ sortOrder: event.target.value });
-  };
-
-  setFilter = genreId => {
-    this.setState({ filter: genreId });
-  };
 
   showFullBiography = () => {
     this.setState({ showFullBiography: !this.state.showFullBiography });
@@ -193,29 +222,75 @@ class PersonDetail extends React.Component<Props, State> {
     );
   };
 
+  toggleFilters = () => {
+    this.setState({ showFilter: !this.state.showFilter });
+  };
+
+  setFilters = (
+    sortOrder: ListSortOptions,
+    networks?: NetworkTypes[],
+    itemTypes?: ItemTypes[],
+    genres?: number[],
+  ) => {
+    this.setState({
+      networks,
+      itemTypes,
+      sortOrder,
+      genresFilter: genres,
+    });
+  };
+
+  setSortOrder = (sortOrder: ListSortOptions) => {
+    if (this.state.sortOrder !== sortOrder) {
+      this.setState({
+        sortOrder,
+      });
+    }
+  };
+
+  setType = (type?: ItemTypes[]) => {
+    this.setState({
+      itemTypes: type,
+    });
+  };
+
+  setGenre = (genres?: number[]) => {
+    this.setState({
+      genresFilter: genres,
+    });
+  };
+
+  setNetworks = (networks?: NetworkTypes[]) => {
+    // Only update and hit endpoint if there is a state change
+    if (this.state.networks !== networks) {
+      this.setState({
+        networks,
+      });
+    }
+  };
+
   renderFilmography = () => {
-    const { classes, person, userSelf } = this.props;
+    const { classes, genres, person, userSelf } = this.props;
+    const { genresFilter, itemTypes, networks, sortOrder } = this.state;
 
     let filmography = person!.cast_credits || [];
 
     let filmographyFiltered = filmography
       .filter(
         credit =>
-          (credit &&
-            credit.item &&
-            credit.item.genres &&
-            credit.item.genres.map(g => g.id).includes(this.state.filter)) ||
-          this.state.filter === -1,
+          credit &&
+          credit.item &&
+          credit.item.genres &&
+          credit.item.genres
+            .map(g => g.id)
+            .includes((genresFilter && genresFilter[0]) || 0),
       )
       .sort((a, b) => {
-        if (this.state.sortOrder === 'Popularity') {
+        if (this.state.sortOrder === 'popularity') {
           return (a.item!.popularity || 0.0) < (b.item!.popularity || 0.0)
             ? 1
             : -1;
-        } else if (
-          this.state.sortOrder === 'Latest' ||
-          this.state.sortOrder === 'Oldest'
-        ) {
+        } else if (this.state.sortOrder === 'recent') {
           let sort;
           if (!b.item!.release_date) {
             sort = 1;
@@ -225,7 +300,7 @@ class PersonDetail extends React.Component<Props, State> {
             sort = a.item!.release_date < b.item!.release_date ? 1 : -1;
           }
 
-          return this.state.sortOrder === 'Oldest' ? -sort : sort;
+          return sort;
         } else {
           return 0;
         }
@@ -254,57 +329,44 @@ class PersonDetail extends React.Component<Props, State> {
 
     return (
       <div className={classes.genreContainer}>
-        <Typography
-          color="inherit"
-          variant="h5"
-          style={{ display: 'block', width: '100%' }}
-        >
-          Filmography
-        </Typography>
-        <div className={classes.filterSortContainer}>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              flexGrow: 1,
-              flexWrap: 'wrap',
-            }}
-          >
-            <Chip
-              key={-1}
-              label="All"
-              className={classes.genre}
-              onClick={() => this.setFilter(-1)}
-              color={this.state.filter === -1 ? 'secondary' : 'default'}
-            />
-            {finalGenres.map(genre => (
-              <Chip
-                key={genre.id}
-                label={genre.name}
-                className={classes.genre}
-                onClick={() => this.setFilter(genre.id)}
-                color={this.state.filter === genre.id ? 'secondary' : 'default'}
-              />
-            ))}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <InputLabel shrink htmlFor="age-label-placeholder">
-              Sort by:
-            </InputLabel>
-            <Select
-              value={this.state.sortOrder}
-              inputProps={{
-                name: 'sortOrder',
-                id: 'sort-order',
-              }}
-              onChange={this.setSortOrder}
+        <div className={classes.listHeader}>
+          <div className={classes.listNameContainer}>
+            <Typography
+              color="inherit"
+              variant="h5"
+              style={{ display: 'block', width: '100%' }}
             >
-              <MenuItem value="Popularity">Popularity</MenuItem>
-              <MenuItem value="Latest">Latest</MenuItem>
-              <MenuItem value="Oldest">Oldest</MenuItem>
-            </Select>
+              Filmography
+            </Typography>
           </div>
+          <ActiveFilters
+            genres={genres}
+            updateFilters={this.setFilters}
+            genresFilter={genresFilter}
+            itemTypes={itemTypes}
+            networks={networks}
+            sortOrder={sortOrder}
+            isListDynamic={false}
+          />
+          <IconButton
+            onClick={this.toggleFilters}
+            className={classes.settings}
+            color={this.state.showFilter ? 'secondary' : 'inherit'}
+          >
+            <Tune />
+            <Typography variant="srOnly">Tune</Typography>
+          </IconButton>
         </div>
+        <AllFilters
+          genres={genres}
+          open={this.state.showFilter}
+          handleTypeChange={this.setType}
+          handleGenreChange={this.setGenre}
+          handleNetworkChange={this.setNetworks}
+          handleSortChange={this.setSortOrder}
+          isListDynamic={false}
+        />
+
         <Grid container spacing={2}>
           {filmographyFiltered.map(credit =>
             credit && credit.item!.posterImage ? (
