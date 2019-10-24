@@ -7,8 +7,12 @@ import _ from 'lodash';
 
 const styles = () =>
   createStyles({
+    activeFiltersContainer: {
+      display: 'flex',
+      flexWrap: 'wrap',
+    },
     networkChip: {
-      margin: '0 2px',
+      margin: '2px',
     },
     networkIcon: {
       width: 20,
@@ -26,7 +30,7 @@ interface OwnProps {
   genresFilter?: number[];
   genres?: Genre[];
   itemTypes?: ItemTypes[];
-  listIsDynamic?: boolean;
+  isListDynamic?: boolean;
   networks?: NetworkTypes[];
   sortOrder: ListSortOptions;
 }
@@ -166,7 +170,7 @@ class ActiveFilters extends Component<Props, State> {
       classes,
       genresFilter,
       itemTypes,
-      listIsDynamic,
+      isListDynamic,
       networks,
       sortOrder,
     } = this.props;
@@ -182,8 +186,8 @@ class ActiveFilters extends Component<Props, State> {
     const showTypeFilters = Boolean(itemTypes && itemTypes.length > 0);
     const showSort = Boolean(
       !(
-        (listIsDynamic && sortOrder === 'popularity') ||
-        (!listIsDynamic && sortOrder === 'added_time') ||
+        (isListDynamic && sortOrder === 'popularity') ||
+        (!isListDynamic && sortOrder === 'added_time') ||
         sortOrder === 'default'
       ),
     );
@@ -192,7 +196,7 @@ class ActiveFilters extends Component<Props, State> {
     );
 
     return (
-      <React.Fragment>
+      <div className={classes.activeFiltersContainer}>
         {showGenreFilters
           ? genresFilter &&
             genresFilter.map((genre: number) => (
@@ -294,7 +298,7 @@ class ActiveFilters extends Component<Props, State> {
             }
           />
         ) : null}
-      </React.Fragment>
+      </div>
     );
   }
 }

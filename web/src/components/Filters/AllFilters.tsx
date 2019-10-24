@@ -29,6 +29,9 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         display: 'flex',
       },
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'column',
+      },
       zIndex: 1000,
       marginBottom: theme.spacing(1),
       flexGrow: 1,
@@ -39,11 +42,21 @@ const styles = (theme: Theme) =>
       flexDirection: 'row',
       width: '50%',
       flexWrap: 'wrap',
+      [theme.breakpoints.down('sm')]: {
+        width: '100%',
+      },
     },
-    networkTypeContainer: {
+    networkContainer: {
       display: 'flex',
       margin: '10px 0',
       alignItems: 'flex-start',
+      flexGrow: 1,
+    },
+    typeContainer: {
+      display: 'flex',
+      margin: '10px 0',
+      alignItems: 'flex-start',
+      flexGrow: 1,
     },
     sortContainer: {
       display: 'flex',
@@ -61,7 +74,7 @@ interface OwnProps {
   isListDynamic?: boolean;
   genres?: Genre[];
   open: boolean;
-  showGenre?: boolean;
+  disabledGenres?: number[];
 }
 
 interface RouteParams {
@@ -140,11 +153,15 @@ class AllFilters extends Component<Props, State> {
 
   render() {
     const {
+      classes,
+      disabledGenres,
+      genres,
+      isListDynamic,
       open,
       handleGenreChange,
-      isListDynamic,
-      classes,
-      genres,
+      handleNetworkChange,
+      handleTypeChange,
+      handleSortChange,
     } = this.props;
 
     return (
@@ -161,18 +178,28 @@ class AllFilters extends Component<Props, State> {
             <div className={classes.filterSortContainer}>
               <div className={classes.genreContainer}>
                 {handleGenreChange && (
-                  <GenreSelect genres={genres} handleChange={this.setGenre} />
+                  <GenreSelect
+                    genres={genres}
+                    disabledGenres={disabledGenres}
+                    handleChange={this.setGenre}
+                  />
                 )}
               </div>
-              <div className={classes.networkTypeContainer}>
-                <NetworkSelect handleChange={this.setNetworks} />
-                <TypeToggle handleChange={this.setType} />
+              <div className={classes.networkContainer}>
+                {handleNetworkChange && (
+                  <NetworkSelect handleChange={this.setNetworks} />
+                )}
+              </div>
+              <div className={classes.typeContainer}>
+                {handleTypeChange && <TypeToggle handleChange={this.setType} />}
               </div>
               <div className={classes.sortContainer}>
-                <SortDropdown
-                  isListDynamic={!!isListDynamic}
-                  handleChange={this.setSort}
-                />
+                {handleSortChange && (
+                  <SortDropdown
+                    isListDynamic={!!isListDynamic}
+                    handleChange={this.setSort}
+                  />
+                )}
               </div>
             </div>
           </div>
