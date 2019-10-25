@@ -217,7 +217,6 @@ interface MenuItemProps {
 class Toolbar extends Component<Props, State> {
   private mobileSearchInput: React.RefObject<HTMLInputElement>;
   private desktopSearchInput: React.RefObject<HTMLInputElement>;
-  private genreAnchorRef: React.RefObject<HTMLButtonElement>;
   private genreShowContainerRef: React.RefObject<HTMLElement>;
   private genreMovieContainerRef: React.RefObject<HTMLElement>;
 
@@ -225,7 +224,6 @@ class Toolbar extends Component<Props, State> {
     super(props);
     this.mobileSearchInput = React.createRef();
     this.desktopSearchInput = React.createRef();
-    this.genreAnchorRef = React.createRef();
     this.genreShowContainerRef = React.createRef();
     this.genreMovieContainerRef = React.createRef();
   }
@@ -540,17 +538,8 @@ class Toolbar extends Component<Props, State> {
   }
 
   renderGenreMenu(type: 'movie' | 'show') {
-    const { classes, genres, width } = this.props;
+    const { genres } = this.props;
     const { genreAnchorEl } = this.state;
-    let columns;
-
-    if (width === 'lg') {
-      columns = 3;
-    } else if (width === 'md') {
-      columns = 2;
-    } else {
-      columns = 1;
-    }
 
     // Todo: support 'show' in genre types
     const filteredGenres =
@@ -677,7 +666,7 @@ class Toolbar extends Component<Props, State> {
                         <MenuItemLink
                           onClick={this.handleGenreMenuClose}
                           key={item.slug}
-                          to={`/genres/${item.slug}?type=${type}`}
+                          to={`/popular?genres=${item.id}&type=${type}`}
                           primary={item.name}
                         />
                       );
@@ -748,8 +737,8 @@ class Toolbar extends Component<Props, State> {
   }
 
   render() {
-    let { classes, drawerOpen, isAuthed } = this.props;
-    let { searchText, isLoggedOut } = this.state;
+    let { classes, drawerOpen } = this.props;
+    let { searchText } = this.state;
 
     function ButtonLink(props) {
       const { primary, to } = props;

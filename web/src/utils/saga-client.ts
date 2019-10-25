@@ -223,21 +223,6 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *getPopularGenre(
-    genre: string,
-    typeRestrict?: ItemTypes[],
-    bookmark?: string,
-    networks?: NetworkTypes[],
-  ) {
-    return yield this.apiCall(
-      client => client.getPopularGenre,
-      genre,
-      typeRestrict,
-      bookmark,
-      networks,
-    );
-  }
-
   *search(searchText: string, bookmark?: string) {
     return yield this.apiCall(
       client => client.search,
