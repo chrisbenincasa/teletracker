@@ -10,8 +10,6 @@ import {
   LIST_RETRIEVE_SUCCESS,
 } from '../actions/lists';
 import {
-  GenreSuccessfulAction,
-  GENRE_SUCCESSFUL,
   PopularSuccessfulAction,
   POPULAR_SUCCESSFUL,
 } from '../actions/popular';
@@ -145,17 +143,17 @@ const handlePopularRetrieveSuccess = handleAction<
   }
 });
 
-const handleGenreRetrieveSuccess = handleAction<GenreSuccessfulAction, State>(
-  GENRE_SUCCESSFUL,
-  (state, action) => {
-    if (action.payload && action.payload.genre) {
-      let things = action.payload.genre;
-      return updateStateWithNewThings(state, things);
-    } else {
-      return state;
-    }
-  },
-);
+// const handleGenreRetrieveSuccess = handleAction<GenreSuccessfulAction, State>(
+//   GENRE_SUCCESSFUL,
+//   (state, action) => {
+//     if (action.payload && action.payload.genre) {
+//       let things = action.payload.genre;
+//       return updateStateWithNewThings(state, things);
+//     } else {
+//       return state;
+//     }
+//   },
+// );
 
 const filterNot = <T>(fn: (x: T) => boolean, arr: T[]) => {
   return R.filter(R.complement(fn), arr);
@@ -227,5 +225,4 @@ export default flattenActions(
   itemRemoveTagsSuccess,
   handleListRetrieveSuccess,
   handlePopularRetrieveSuccess,
-  handleGenreRetrieveSuccess,
 );
