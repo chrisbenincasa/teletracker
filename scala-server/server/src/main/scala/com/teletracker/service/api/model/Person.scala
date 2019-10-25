@@ -101,7 +101,7 @@ case class Person(
   name: Option[String],
   place_of_birth: Option[String],
   popularity: Option[Double],
-  slug: Slug,
+  slug: Option[Slug],
   known_for: Option[List[EsDenormalizedItem]])
 
 @JsonCodec
@@ -109,5 +109,5 @@ case class PersonCastMember(
   character: Option[String],
   id: UUID,
   title: String,
-  slug: Slug,
+  slug: Option[Slug],
   item: Option[Item])
