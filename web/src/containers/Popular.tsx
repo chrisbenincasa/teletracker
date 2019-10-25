@@ -47,6 +47,32 @@ const styles = (theme: Theme) =>
       display: 'flex',
       alignSelf: 'flex-end',
     },
+    listTitle: {
+      display: 'flex',
+      flexDirection: 'row',
+    },
+    loadingBar: {
+      flexGrow: 1,
+    },
+    loadingCircle: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 200,
+      height: '100%',
+    },
+    popularContainer: {
+      padding: 8,
+      display: 'flex',
+      flexDirection: 'column',
+    },
+    filters: {
+      display: 'flex',
+      flexDirection: 'row',
+      marginBottom: 8,
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {}
@@ -86,11 +112,11 @@ type Props = OwnProps &
 
 interface State {
   genresFilter?: number[];
+  itemTypes?: ItemTypes[];
   mainItemIndex: number;
   networks?: NetworkTypes[];
   showFilter: boolean;
   sortOrder: ListSortOptions;
-  itemTypes?: ItemTypes[];
 }
 
 class Popular extends Component<Props, State> {
@@ -100,21 +126,21 @@ class Popular extends Component<Props, State> {
     this.state = {
       ...this.state,
       genresFilter: getGenreFromUrlParam(),
+      itemTypes: getTypeFromUrlParam(),
       mainItemIndex: -1,
       networks: getNetworkTypeFromUrlParam(),
       showFilter: false,
       sortOrder: getSortFromUrlParam(),
-      itemTypes: getTypeFromUrlParam(),
     };
   }
 
   loadPopular(passBookmark: boolean) {
     // To do: add support for sorting
     this.props.retrievePopular({
-      itemTypes: this.state.itemTypes,
-      networks: this.state.networks,
-      limit,
       bookmark: passBookmark ? this.props.bookmark : undefined,
+      itemTypes: this.state.itemTypes,
+      limit,
+      networks: this.state.networks,
     });
   }
 
@@ -181,12 +207,10 @@ class Popular extends Component<Props, State> {
     }
   };
 
-  setGenre = (genres?: number[]) => {
-    console.log('works!');
-    console.log({ genres });
+  setGenre = (genresFilter?: number[]) => {
     this.setState(
       {
-        genresFilter: genres,
+        genresFilter,
       },
       () => {
         this.loadPopular(false);
@@ -225,25 +249,28 @@ class Popular extends Component<Props, State> {
     this.setState({ showFilter: !this.state.showFilter });
   };
 
+  mapGenre = (genre: number) => {
+    const { genres } = this.props;
+    const genreItem = genres && genres.find(obj => obj.id === genre);
+    const genreName = (genreItem && genreItem.name) || '';
+
+    return genreName;
+  };
+
   renderLoading = () => {
+    const { classes } = this.props;
+
     return (
-      <div style={{ flexGrow: 1 }}>
+      <div className={classes.loadingBar}>
         <LinearProgress />
       </div>
     );
   };
 
   renderLoadingCircle() {
+    const { classes } = this.props;
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: 200,
-          height: '100%',
-        }}
-      >
+      <div className={classes.loadingCircle}>
         <div>
           <CircularProgress color="secondary" />
         </div>
@@ -265,14 +292,14 @@ class Popular extends Component<Props, State> {
     sortOrder: ListSortOptions,
     networks?: NetworkTypes[],
     itemTypes?: ItemTypes[],
-    genres?: number[],
+    genresFilter?: number[],
   ) => {
     this.setState(
       {
         networks,
         itemTypes,
         sortOrder,
-        genresFilter: genres,
+        genresFilter,
       },
       () => {
         this.loadPopular(true);
@@ -285,26 +312,19 @@ class Popular extends Component<Props, State> {
     const { genresFilter, itemTypes, networks, sortOrder } = this.state;
 
     return popular && popular && popular.length ? (
-      <div
-        style={{
-          padding: 8,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-          }}
-        >
+      <div className={classes.popularContainer}>
+        <div className={classes.listTitle}>
           <Typography
             color="inherit"
             variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
             style={{ flexGrow: 1 }}
           >
             {`Popular ${
-              itemTypes
+              genresFilter && genresFilter.length === 1
+                ? this.mapGenre(genresFilter[0])
+                : ''
+            } ${
+              itemTypes && itemTypes.length === 1
                 ? itemTypes.includes('movie')
                   ? 'Movies'
                   : 'TV Shows'
@@ -312,15 +332,7 @@ class Popular extends Component<Props, State> {
             }`}
           </Typography>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            marginBottom: 8,
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-          }}
-        >
+        <div className={classes.filters}>
           <ActiveFilters
             genres={genres}
             updateFilters={this.setFilters}

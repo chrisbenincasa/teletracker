@@ -23,7 +23,7 @@ import {
 import { loadNetworksSaga } from './metadata';
 import { loadGenres, loadGenresSaga } from './metadata/load_genres';
 import { fetchPersonDetailsSaga } from './people/get_person';
-import { genreSaga, popularSaga } from './popular';
+import { popularSaga } from './popular';
 import { searchSaga } from './search';
 import {
   getUserSelfSaga,
@@ -89,7 +89,6 @@ export function* root() {
     popularSaga(),
     fetchPersonDetailsSaga(),
     loadGenresSaga(),
-    genreSaga(),
     startupSaga(),
   ]);
 }
