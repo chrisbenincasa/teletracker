@@ -399,21 +399,21 @@ export class TeletrackerApi {
     });
   }
 
-  async getPopularGenre(
-    genre: string,
-    typeRestrict?: ItemTypes[],
-    bookmark?: string,
-    networks?: NetworkTypes[],
-  ) {
-    return this.api.get('/api/v2/genres/' + genre, {
-      thingType:
-        typeRestrict && typeRestrict.length
-          ? typeRestrict.join(',')
-          : undefined,
-      networks: networks && networks.length ? networks.join(',') : undefined,
-      bookmark,
-    });
-  }
+  // async getPopularGenre(
+  //   genre: string,
+  //   typeRestrict?: ItemTypes[],
+  //   bookmark?: string,
+  //   networks?: NetworkTypes[],
+  // ) {
+  //   return this.api.get('/api/v2/genres/' + genre, {
+  //     thingType:
+  //       typeRestrict && typeRestrict.length
+  //         ? typeRestrict.join(',')
+  //         : undefined,
+  //     networks: networks && networks.length ? networks.join(',') : undefined,
+  //     bookmark,
+  //   });
+  // }
 
   private withTokenCheck<T>(f: () => Promise<T>): Promise<T> {
     if (!this.token) {

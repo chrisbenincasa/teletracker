@@ -31,7 +31,6 @@ import PersonDetail from './PersonDetail';
 import Drawer, { DrawerWidthPx } from '../components/Drawer';
 import Toolbar from '../components/Toolbar';
 import Logout from './Logout';
-import Genre from './Genre';
 import _ from 'lodash';
 
 const styles = (theme: Theme) =>
@@ -140,7 +139,6 @@ class App extends Component<Props, State> {
                 <Route exact path="/signup" component={Signup} />
                 <Route exact path="/new" render={props => <New {...props} />} />
                 <Route exact path="/popular" component={Popular} />
-                <Route exact path="/genres/:id" component={Genre} />
                 <Route exact path="/logout" component={Logout} />
                 <Route
                   exact

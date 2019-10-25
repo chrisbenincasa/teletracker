@@ -351,7 +351,7 @@ class ItemDetails extends Component<Props, State> {
                 label={genre.name}
                 className={classes.genre}
                 component={RouterLink}
-                to={`/genres/${genre.slug}`}
+                to={`/popular?genres=${genre.id}`}
                 itemProp="genre"
                 clickable
               />

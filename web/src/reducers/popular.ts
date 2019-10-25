@@ -5,12 +5,6 @@ import {
   POPULAR_INITIATED,
   POPULAR_SUCCESSFUL,
 } from '../actions/popular';
-import {
-  GenreSuccessfulAction,
-  GENRE_SUCCESSFUL,
-  GENRE_INITIATED,
-  GenreInitiatedAction,
-} from '../actions/popular/genre';
 import { flattenActions, handleAction } from './utils';
 
 export interface State {
@@ -33,16 +27,6 @@ const PopularInitiated = handleAction<PopularInitiatedAction, State>(
     return {
       ...state,
       loadingPopular: true,
-    };
-  },
-);
-
-const GenresInitiated = handleAction<GenreInitiatedAction, State>(
-  GENRE_INITIATED,
-  (state: State) => {
-    return {
-      ...state,
-      loadingGenres: true,
     };
   },
 );
@@ -73,34 +57,8 @@ const PopularSuccess = handleAction<PopularSuccessfulAction, State>(
   },
 );
 
-const genreSuccess = handleAction<GenreSuccessfulAction, State>(
-  GENRE_SUCCESSFUL,
-  (state: State, { payload }: GenreSuccessfulAction) => {
-    if (payload) {
-      let newGenre: string[];
-      if (payload.append) {
-        newGenre = (state.genre || []).concat(
-          R.map(t => t.slug, payload.genre),
-        );
-      } else {
-        newGenre = R.map(t => t.slug, payload.genre);
-      }
-
-      return {
-        ...state,
-        loadingGenres: false,
-        genre: newGenre,
-        genreBookmark: payload!.paging ? payload!.paging.bookmark : undefined,
-      };
-    } else {
-      return state;
-    }
-  },
-);
-
 export default flattenActions<State>(
   initialState,
   PopularInitiated,
   PopularSuccess,
-  genreSuccess,
 );
