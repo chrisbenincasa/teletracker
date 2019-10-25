@@ -15,6 +15,7 @@ import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
+import java.util.UUID
 
 class HuluCatalogDeltaIngestJob @Inject()(
   protected val s3: S3Client,
@@ -29,7 +30,8 @@ class HuluCatalogDeltaIngestJob @Inject()(
 
   override protected def createAvailabilities(
     networks: Set[Network],
-    thing: ThingRaw,
+    itemId: UUID,
+    title: String,
     scrapedItem: HuluCatalogItem,
     isAvailable: Boolean
   ): List[Availability] = {
@@ -47,7 +49,7 @@ class HuluCatalogDeltaIngestJob @Inject()(
         offerType = Some(OfferType.Subscription),
         cost = None,
         currency = None,
-        thingId = Some(thing.id),
+        thingId = Some(itemId),
         tvShowEpisodeId = None,
         networkId = network.id,
         presentationType = Some(presentationType)

@@ -25,8 +25,8 @@ import java.time.LocalDate
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
-abstract class ElasticsearchAccess {
-  protected val logger = LoggerFactory.getLogger(getClass)
+trait ElasticsearchAccess {
+  private val logger = LoggerFactory.getLogger(getClass)
 
   protected def searchResponseToItems(
     response: SearchResponse

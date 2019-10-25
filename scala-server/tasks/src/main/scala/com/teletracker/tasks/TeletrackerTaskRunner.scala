@@ -3,6 +3,7 @@ package com.teletracker.tasks
 import com.google.inject.Injector
 import com.teletracker.common.db.BaseDbProvider
 import javax.inject.Inject
+import scala.util.{Failure, Success, Try}
 
 object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
   val clazz = flag[String]("class", "", "The Teletracker task class to run")
@@ -49,17 +50,37 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
 
 class TeletrackerTaskRunner @Inject()(injector: Injector) {
   def getInstance(clazz: String): TeletrackerTask = {
-    val loadedClass = Class.forName(clazz)
-    if (!classOf[TeletrackerTask].isAssignableFrom(loadedClass)) {
+    val loadedClass = {
+      Try(Class.forName(clazz)) match {
+        case Failure(_: ClassNotFoundException) =>
+          attemptToLoadTaskName(clazz)
+
+        case Failure(ex) => throw ex
+
+        case Success(value)
+            if !classOf[TeletrackerTask].isAssignableFrom(value) =>
+          attemptToLoadTaskName(clazz)
+
+        case Success(value) =>
+          Some(value)
+      }
+    }
+
+    if (loadedClass.isEmpty) {
       throw new IllegalArgumentException(
         "Specified class if not a subclass of TeletrackerTask!"
       )
     }
 
     injector
-      .getInstance(loadedClass)
+      .getInstance(loadedClass.get)
       .asInstanceOf[TeletrackerTask]
   }
+
+  private def attemptToLoadTaskName(
+    taskName: String
+  ): Option[Class[_ <: TeletrackerTask]] =
+    TaskRegistry.TasksToClass.get(taskName)
 
   def run(
     clazz: String,

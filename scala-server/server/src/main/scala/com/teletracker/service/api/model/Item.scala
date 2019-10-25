@@ -87,7 +87,7 @@ case class Item(
   release_date: Option[LocalDate],
   release_dates: Option[List[EsItemReleaseDate]],
   runtime: Option[Int],
-  slug: Slug,
+  slug: Option[Slug],
   tags: Option[List[ItemTag]],
   `type`: ThingType) {
 

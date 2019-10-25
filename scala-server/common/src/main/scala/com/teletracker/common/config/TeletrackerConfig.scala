@@ -12,7 +12,8 @@ case class TeletrackerConfig(
   elasticsearch: EsConfig,
   auth: AuthConfig,
   tmdb: TmdbConfig,
-  env: String)
+  env: String,
+  async: AsyncConfig)
 
 case class AuthConfig(
   jwt: JwtConfig,
@@ -23,6 +24,10 @@ case class JwtConfig(
   audience: String,
   expiration: Option[FiniteDuration],
   secret: String)
+
+case class AsyncConfig(taskQueue: QueueConfig)
+
+case class QueueConfig(url: String)
 
 case class AdminConfig(adminKeys: Set[String])
 

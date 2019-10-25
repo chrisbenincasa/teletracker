@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 public enum ExternalSource {
     TheMovieDb("tmdb"),
     JustWatch("justwatch"),
-    Imdb("imdb");
+    Imdb("imdb"),
+    TvDb("tvdb");
 
     private final String name;
 

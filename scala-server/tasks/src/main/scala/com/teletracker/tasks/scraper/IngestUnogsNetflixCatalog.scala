@@ -2,16 +2,23 @@ package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
-import com.teletracker.common.elasticsearch.{ItemSearch, ItemUpdater}
+import com.teletracker.common.elasticsearch.{
+  ElasticsearchExecutor,
+  ItemSearch,
+  ItemUpdater
+}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
+import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
+import java.util.UUID
 import scala.concurrent.Future
 
 class IngestUnogsNetflixCatalog @Inject()(
@@ -21,9 +28,11 @@ class IngestUnogsNetflixCatalog @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemSearch: ItemSearch,
-  protected val itemUpdater: ItemUpdater)
+  protected val itemUpdater: ItemUpdater,
+  protected val elasticsearchExecutor: ElasticsearchExecutor)
     extends IngestJob[UnogsNetflixCatalogItem]
-    with IngestJobWithElasticsearch[UnogsNetflixCatalogItem] {
+    with IngestJobWithElasticsearch[UnogsNetflixCatalogItem]
+    with ElasticsearchFallbackMatcher[UnogsNetflixCatalogItem] {
   override protected def networkNames: Set[String] = Set("netflix")
 
   override protected def parseMode: ParseMode = JsonPerLine
@@ -31,19 +40,24 @@ class IngestUnogsNetflixCatalog @Inject()(
   override protected def processMode(args: IngestJobArgs): ProcessMode =
     Parallel(32)
 
+  override protected def matchMode: MatchMode[UnogsNetflixCatalogItem] =
+    new ElasticsearchLookup[UnogsNetflixCatalogItem](itemSearch)
+
   override protected def createAvailabilities(
     networks: Set[Network],
-    thing: ThingRaw,
+    itemId: UUID,
+    title: String,
     scrapeItem: UnogsNetflixCatalogItem
   ): Future[Seq[Availability]] = {
     SequentialFutures
       .serialize(networks.toSeq)(
         network => {
           thingsDb
-            .findAvailability(thing.id, network.id.get)
+            .findAvailability(itemId, network.id.get)
             .flatMap {
               case Seq() =>
-                val avs =
+                Future.successful {
+
                   presentationTypes.toSeq.map(pres => {
                     Availability(
                       None,
@@ -55,27 +69,31 @@ class IngestUnogsNetflixCatalog @Inject()(
                       offerType = Some(OfferType.Subscription),
                       cost = None,
                       currency = None,
-                      thingId = Some(thing.id),
+                      thingId = Some(itemId),
                       tvShowEpisodeId = None,
                       networkId = Some(network.id.get),
                       presentationType = Some(pres)
                     )
                   })
+                }
 
-                thingsDb.insertAvailabilities(avs)
+//                thingsDb.insertAvailabilities(avs)
 
               case availabilities =>
                 // TODO(christian) - find missing presentation types
-                val newAvs = availabilities.map(
-                  _.copy(
-                    isAvailable = true,
-                    numSeasons = None,
-                    startDate = None,
-                    endDate = None
-                  )
-                )
+                Future.successful {
 
-                thingsDb.saveAvailabilities(newAvs).map(_ => newAvs)
+                  availabilities.map(
+                    _.copy(
+                      isAvailable = true,
+                      numSeasons = None,
+                      startDate = None,
+                      endDate = None
+                    )
+                  )
+                }
+
+//                thingsDb.saveAvailabilities(newAvs).map(_ => newAvs)
             }
         }
       )
@@ -83,6 +101,7 @@ class IngestUnogsNetflixCatalog @Inject()(
   }
 }
 
+@JsonCodec
 case class UnogsNetflixCatalogItem(
   availableDate: Option[String],
   title: String,

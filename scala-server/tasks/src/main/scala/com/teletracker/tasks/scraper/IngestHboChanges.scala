@@ -7,6 +7,7 @@ import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
@@ -38,6 +39,7 @@ class IngestHboChanges @Inject()(
     ZoneId.of("US/Eastern").getRules.getOffset(Instant.now())
 }
 
+@JsonCodec
 case class HboScrapeItem(
   availableDate: Option[String],
   title: String,

@@ -8,11 +8,11 @@ import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time.{LocalDate, OffsetDateTime}
-
 import java.util.regex.Pattern
 import scala.concurrent.Future
 
@@ -50,7 +50,7 @@ class IngestHboCatalog @Inject()(
   override protected def handleNonMatches(
     args: IngestJobArgs,
     nonMatches: List[HboCatalogItem]
-  ): Future[List[NonMatchResult]] = {
+  ): Future[List[NonMatchResult[HboCatalogItem]]] = {
     val withFallback = nonMatches
       .filter(_.nameFallback.isDefined)
       .filterNot(m => m.name == m.nameFallback.get)
@@ -70,13 +70,14 @@ class IngestHboCatalog @Inject()(
       .map {
         case (matches, _) =>
           matches.map {
-            case (amended, thingRaw) =>
-              NonMatchResult(amended, originalByAmended(amended), thingRaw)
+            case MatchResult(amended, itemId, title) =>
+              NonMatchResult(amended, originalByAmended(amended), itemId, title)
           }
       }
   }
 }
 
+@JsonCodec
 case class HboCatalogItem(
   name: String,
   nameFallback: Option[String],

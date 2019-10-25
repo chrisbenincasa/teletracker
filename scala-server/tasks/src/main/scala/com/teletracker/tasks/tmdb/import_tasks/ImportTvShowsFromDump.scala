@@ -5,18 +5,14 @@ import com.teletracker.common.db.model.{ExternalSource, ThingType}
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.TvShow
-import com.teletracker.common.util.RequireLite.requireLite
 import com.teletracker.common.util.{GenreCache, Slug}
-import javax.inject.Inject
-import java.time.LocalDate
-import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Try
-import com.teletracker.common.util.GenreCache
 import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
-import scala.concurrent.ExecutionContext
+import java.time.LocalDate
+import java.util.UUID
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class ImportTvShowsFromDump @Inject()(
   s3: S3Client,
@@ -35,12 +31,11 @@ class ImportTvShowsFromDump @Inject()(
     )
     with ImportTmdbDumpTaskToElasticsearch[TvShow] {
 
-  import io.circe.syntax._
   import com.teletracker.common.util.Shows._
   import diffson._
   import diffson.circe._
-  import diffson.jsonpatch._
   import diffson.jsonpatch.lcsdiff.remembering._
+  import io.circe.syntax._
 
   implicit override def toEsItem: ToEsItem[TvShow] =
     ToEsItem.forTmdbShow
@@ -49,25 +44,12 @@ class ImportTvShowsFromDump @Inject()(
     args: ImportTmdbDumpTaskArgs,
     item: TvShow
   ): Future[Unit] = {
-    Promise
-      .fromTry {
-        Try {
-          val releaseYear = item.releaseYear
-
-          requireLite(
-            releaseYear.isDefined,
-            s"Attempted to get release year from show = ${item.id} but couldn't: (original field = ${item.first_air_date})"
-          )
-        }
-      }
-      .future
-      .flatMap(_ => {
-        itemSearch.lookupItemByExternalId(
-          ExternalSource.TheMovieDb,
-          item.id.toString,
-          ThingType.Show
-        )
-      })
+    itemSearch
+      .lookupItemByExternalId(
+        ExternalSource.TheMovieDb,
+        item.id.toString,
+        ThingType.Show
+      )
       .flatMap {
         case Some(value) =>
           val images =
@@ -94,14 +76,36 @@ class ImportTvShowsFromDump @Inject()(
             .values
             .toList
 
+          val extractedExternalIds = List(
+            toEsItem.esExternalId(item),
+            item.external_ids
+              .flatMap(_.tvdb_id)
+              .map(
+                tvDbId => EsExternalId(ExternalSource.TvDb, tvDbId.toString)
+              ),
+            item.external_ids
+              .flatMap(_.imdb_id)
+              .map(imdb => EsExternalId(ExternalSource.Imdb, imdb))
+          ).flatten
+
+          val newExternalSources = extractedExternalIds
+            .foldLeft(value.externalIdsGrouped)(
+              (acc, id) =>
+                acc.updated(ExternalSource.fromString(id.provider), id.id)
+            )
+            .toList
+            .map(Function.tupled(EsExternalId.apply))
+
           val partialUpdates = value.copy(
             adult = value.adult,
             images = Some(images.toList),
+            external_ids = Some(newExternalSources),
             original_title = item.original_name.orElse(value.original_title),
             overview = item.overview.orElse(value.overview),
             popularity = item.popularity.orElse(value.popularity),
             ratings = Some(newRatings),
             release_date = item.first_air_date
+              .filter(_.nonEmpty)
               .map(LocalDate.parse(_))
               .orElse(value.release_date)
           )
@@ -183,7 +187,20 @@ class ImportTvShowsFromDump @Inject()(
               availability = None,
               cast = cast,
               crew = crew,
-              external_ids = Some(toEsItem.esExternalId(item).toList),
+              external_ids = Some(
+                List(
+                  toEsItem.esExternalId(item),
+                  item.external_ids
+                    .flatMap(_.tvdb_id)
+                    .map(
+                      tvDbId =>
+                        EsExternalId(ExternalSource.TvDb, tvDbId.toString)
+                    ),
+                  item.external_ids
+                    .flatMap(_.imdb_id)
+                    .map(imdb => EsExternalId(ExternalSource.Imdb, imdb))
+                ).flatten
+              ),
               genres = Some(
                 itemGenres
                   .map(genre => {
@@ -213,7 +230,7 @@ class ImportTvShowsFromDump @Inject()(
                   .getOrElse(Nil)
               ),
               runtime = item.episode_run_time.flatMap(_.headOption),
-              slug = Slug(item.name, item.releaseYear.get),
+              slug = item.releaseYear.map(Slug(item.name, _)),
               tags = None,
               title = StringListOrString.forString(item.name),
               `type` = ThingType.Show
@@ -222,7 +239,7 @@ class ImportTvShowsFromDump @Inject()(
             if (args.dryRun) {
               Future.successful {
                 logger.info(
-                  s"Would've inserted new show (id = ${item.show.id}, slug = ${esItem.slug})\n:${esItem.asJson.spaces2}"
+                  s"Would've inserted new show (id = ${item.show.id}, slug = ${esItem.slug})\n:${esItem.asJson.noSpaces}"
                 )
               }
             } else {
@@ -231,6 +248,10 @@ class ImportTvShowsFromDump @Inject()(
           }
 
           updateFut.flatMap(identity).map(_ => {})
+      }
+      .recover {
+        case NonFatal(e) =>
+          logger.warn(e.getMessage)
       }
   }
 }

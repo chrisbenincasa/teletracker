@@ -73,7 +73,7 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
     var os: PrintStream = null
 
     logger.info(
-      s"Preparing to dump data to: gs://teletracker/$fullPath/$baseFileName"
+      s"Preparing to dump data to: s3://teletracker-data/$fullPath/"
     )
 
     def rotateFile(batch: Long): Unit = {

@@ -9,31 +9,14 @@ import software.amazon.awssdk.services.s3.model.{
 }
 import java.net.URI
 import java.util.zip.GZIPInputStream
-import scala.io.Source
+import scala.io.{BufferedSource, Source}
 import scala.collection.JavaConverters._
 
 class SourceRetriever @Inject()(s3: S3Client) {
   def getSource(uri: URI): Source = {
     uri.getScheme match {
       case "s3" =>
-        val stream = s3.getObject(
-          GetObjectRequest
-            .builder()
-            .bucket(uri.getHost)
-            .key(uri.getPath.stripPrefix("/"))
-            .build()
-        )
-
-        val finalStream = stream.response().contentEncoding() match {
-          case "gzip" =>
-            new GZIPInputStream(
-              stream
-            )
-
-          case _ => stream
-        }
-
-        Source.fromInputStream(finalStream)
+        getS3Object(uri.getHost, uri.getPath)
 
       case "file" =>
         Source.fromFile(uri)
@@ -44,7 +27,31 @@ class SourceRetriever @Inject()(s3: S3Client) {
     }
   }
 
-  def getSourceStream(uri: URI) = {
+  def getS3Object(
+    bucket: String,
+    key: String
+  ) = {
+    val stream = s3.getObject(
+      GetObjectRequest
+        .builder()
+        .bucket(bucket)
+        .key(key.stripPrefix("/"))
+        .build()
+    )
+
+    val finalStream = stream.response().contentEncoding() match {
+      case "gzip" =>
+        new GZIPInputStream(
+          stream
+        )
+
+      case _ => stream
+    }
+
+    Source.fromInputStream(finalStream)
+  }
+
+  def getSourceStream(uri: URI): Stream[BufferedSource] = {
     uri.getScheme match {
       case "s3" =>
         s3.listObjectsV2Paginator(
@@ -59,16 +66,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
           .toStream
           .flatMap(_.contents().asScala.toStream)
           .map(obj => {
-            Source.fromBytes(
-              s3.getObjectAsBytes(
-                  GetObjectRequest
-                    .builder()
-                    .bucket(uri.getHost)
-                    .key(obj.key())
-                    .build()
-                )
-                .asByteArray()
-            )
+            getS3Object(uri.getHost, obj.key())
           })
       case "file" =>
         Stream(Source.fromFile(uri))

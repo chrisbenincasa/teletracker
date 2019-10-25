@@ -77,6 +77,7 @@ lazy val common = project
       "com.lihaoyi" %% "fastparse" % "2.1.0",
       "org.apache.commons" % "commons-lang3" % "3.9",
       "org.apache.commons" % "commons-text" % "1.6",
+      "org.scala-lang.modules" %% "scala-java8-compat" % "0.9.0",
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
       ),
@@ -94,7 +95,10 @@ lazy val consumer = project
     scalaVersion := Compilation.scalacVersion,
     scalacOptions ++= Compilation.scalacOpts,
     mainClass in assembly := Some(
-      "com.teletracker.consumers.TeletrackerConsumerDaemon"
+      "com.teletracker.consumers.QueueConsumerDaemon"
+    ),
+    Compile / run / mainClass := Some(
+      "com.teletracker.consumers.QueueConsumerDaemon"
     ),
     dockerfile in docker := {
       // The assembly task generates a fat JAR file
@@ -150,9 +154,9 @@ lazy val tasks = project
       "com.teletracker.tasks.TeletrackerTaskRunner"
     ),
     Compile / run / fork := true,
-    Compile / run / javaOptions ++= Seq(
-      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006"
-    ),
+//    Compile / run / javaOptions ++= Seq(
+//      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006"
+//    ),
     `run-db-migrations` := runInputTask(
       Runtime,
       "com.teletracker.tasks.TeletrackerTaskRunner",

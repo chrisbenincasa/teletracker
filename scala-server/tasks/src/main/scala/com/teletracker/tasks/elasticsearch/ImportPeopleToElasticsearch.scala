@@ -132,7 +132,7 @@ class ImportPeopleToElasticsearch @Inject()(
               .flatMap(_.original_title)
               .orElse(credit.flatMap(_.title))
               .getOrElse(title),
-            slug = slug
+            slug = Some(slug)
           )
       }
     })
@@ -152,7 +152,7 @@ class ImportPeopleToElasticsearch @Inject()(
               .getOrElse(title),
             department = credit.flatMap(_.department).orElse(member.department),
             job = credit.flatMap(_.job).orElse(member.job),
-            slug = slug
+            slug = Some(slug)
           )
       }
     })
@@ -206,7 +206,7 @@ class ImportPeopleToElasticsearch @Inject()(
       name = Some(person.name),
       place_of_birth = rawPerson.flatMap(_.place_of_birth),
       popularity = person.popularity,
-      slug = person.normalizedName,
+      slug = Some(person.normalizedName),
       known_for = rawPerson
         .flatMap(_.known_for)
         .map(_.flatMap {

@@ -3,10 +3,18 @@ var cheerio = require('cheerio');
 var moment = require('moment');
 var fs = require('fs');
 var _ = require('lodash');
-import { writeResultsAndUploadToStorage } from '../../common/storage';
+import {
+  writeResultsAndUploadToStorage,
+  writeResultsAndUploadToS3,
+} from '../../common/storage';
 
 const uaString =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
+
+const createWriteStream = fileName => {
+  const stream = fs.createWriteStream(fileName, 'utf-8');
+  return stream;
+};
 
 const scrape = async () => {
   return request({
@@ -17,8 +25,11 @@ const scrape = async () => {
   }).then(async function(html) {
     var currentYear = new Date().getFullYear();
 
-    var parsedResults = [];
     var $ = cheerio.load(html);
+
+    let currentDate = moment().format('YYYY-MM-DD');
+    let fileName = currentDate + '-hbo-changes' + '.json';
+    let stream = createWriteStream(fileName);
 
     var textSections = $(
       '.components\\/Band--band[data-bi-context=\'{"band":"Text"}\'] > div > div',
@@ -55,10 +66,21 @@ const scrape = async () => {
           Math.max(titleTokens.length - 2, 1),
         );
 
+        let daysInMonth = moment(
+          `${currentYear} ${month}`,
+          'YYYY MMMM',
+        ).daysInMonth();
+
+        if (day > daysInMonth) {
+          day = daysInMonth;
+        }
+
         let arrivingAt = moment(
           `${currentYear} ${month} ${day}`,
           'YYYY MMMM DD',
         );
+
+        console.log(currentYear, month, day);
 
         let titlesAndYears = section
           .slice(1)
@@ -89,6 +111,17 @@ const scrape = async () => {
             ? undefined
             : parsedReleaseYear;
 
+          stream.write(
+            JSON.stringify({
+              availableDate: arrivingAt.format('YYYY-MM-DD'),
+              title,
+              parsedReleaseYear,
+              category: 'Film',
+              status: status,
+              network: 'HBO',
+            }) + '\n',
+          );
+
           titles.push({
             availableDate: arrivingAt.format('YYYY-MM-DD'),
             title,
@@ -101,15 +134,23 @@ const scrape = async () => {
       }
     });
 
+    stream.close();
+
     // Export data into JSON file
-    let currentDate = moment().format('YYYY-MM-DD');
-    let fileName = currentDate + '-hbo-changes' + '.json';
     if (process.env.NODE_ENV == 'production') {
-      let [file, _] = await writeResultsAndUploadToStorage(
-        fileName,
-        'scrape-results/' + currentDate,
-        titles,
-      );
+      if (process.env.BACKEND === 'aws') {
+        await writeResultsAndUploadToS3(
+          fileName,
+          'scrape-results/' + currentDate,
+          titles,
+        );
+      } else {
+        let [file, _] = await writeResultsAndUploadToStorage(
+          fileName,
+          'scrape-results/' + currentDate,
+          titles,
+        );
+      }
     } else {
       const stream = fs.createWriteStream(fileName, 'utf-8');
       _.chain(titles)

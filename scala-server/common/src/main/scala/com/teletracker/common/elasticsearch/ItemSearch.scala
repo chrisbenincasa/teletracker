@@ -12,9 +12,9 @@ import com.teletracker.common.db.model.{ExternalId, ExternalSource, ThingType}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Slug
 import javax.inject.Inject
-import org.elasticsearch.action.search.SearchRequest
+import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
 import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
-import org.elasticsearch.index.query.{Operator, QueryBuilders}
+import org.elasticsearch.index.query.{BoolQueryBuilder, Operator, QueryBuilders}
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders
 import org.elasticsearch.indices.TermsLookup
 import org.elasticsearch.search.builder.SearchSourceBuilder
@@ -102,12 +102,73 @@ class ItemSearch @Inject()(
       )
       .filter(QueryBuilders.termQuery("type", thingType.toString))
 
-    val searchSource = new SearchSourceBuilder().query(query).size(1)
+    singleItemSearch(query)
+  }
+
+  def lookupItemsByTitleExact(
+    titles: List[(String, Option[ThingType], Option[Range])] // TODO: Accept a range
+  ): Future[Map[String, EsItem]] = {
+    val searches = titles
+      .map(Function.tupled(exactTitleMatchQuery))
+      .map(query => {
+        val searchSource = new SearchSourceBuilder().query(query).size(1)
+        new SearchRequest("items").source(searchSource)
+      })
+
+    val multiReq = new MultiSearchRequest()
+    searches.foreach(multiReq.add)
 
     elasticsearchExecutor
-      .search(new SearchRequest("items").source(searchSource))
-      .map(searchResponseToItems)
-      .map(_.items.headOption)
+      .multiSearch(multiReq)
+      .map(resp => {
+        resp.getResponses.toList.zip(titles.map(_._1)).map {
+          case (response, title) =>
+            searchResponseToItems(response.getResponse).items.headOption
+              .map(title -> _)
+        }
+      })
+      .map(_.flatten.toMap)
+  }
+
+  def lookupItemByTitleExact(
+    title: String,
+    thingType: Option[ThingType],
+    releaseYear: Option[Range]
+  ): Future[Option[EsItem]] = {
+    singleItemSearch(exactTitleMatchQuery(title, thingType, releaseYear))
+  }
+
+  def lookupItemsBySlug(
+    slugs: List[(Slug, ThingType, Option[Range])]
+  ): Future[Map[Slug, EsItem]] = {
+    val searches = slugs
+      .map(Function.tupled(slugMatchQuery))
+      .map(query => {
+        val searchSource = new SearchSourceBuilder().query(query).size(1)
+        new SearchRequest("items").source(searchSource)
+      })
+
+    val multiReq = new MultiSearchRequest()
+    searches.foreach(multiReq.add)
+
+    elasticsearchExecutor
+      .multiSearch(multiReq)
+      .map(resp => {
+        resp.getResponses.toList.zip(slugs.map(_._1)).map {
+          case (response, title) =>
+            searchResponseToItems(response.getResponse).items.headOption
+              .map(title -> _)
+        }
+      })
+      .map(_.flatten.toMap)
+  }
+
+  def lookupItemBySlug(
+    slug: Slug,
+    thingType: ThingType,
+    releaseYear: Option[Range]
+  ): Future[Option[EsItem]] = {
+    singleItemSearch(slugMatchQuery(slug, thingType, releaseYear))
   }
 
   def lookupItem(
@@ -178,6 +239,69 @@ class ItemSearch @Inject()(
             )
           }
       }
+  }
+
+  private def slugMatchQuery(
+    slug: Slug,
+    thingType: ThingType,
+    releaseYear: Option[Range]
+  ) = {
+    QueryBuilders
+      .boolQuery()
+      .filter(
+        QueryBuilders
+          .termQuery("slug", slug.value)
+      )
+      .filter(QueryBuilders.termQuery("type", thingType.toString))
+      .applyOptional(releaseYear)(releaseYearRangeQuery)
+  }
+
+  private def exactTitleMatchQuery(
+    title: String,
+    thingType: Option[ThingType],
+    releaseYear: Option[Range]
+  ) = {
+    QueryBuilders
+      .boolQuery()
+      .should(
+        QueryBuilders.matchQuery("original_title", title)
+      )
+      .should(
+        QueryBuilders.matchQuery("title", title)
+      )
+      .minimumShouldMatch(1)
+      .applyOptional(thingType)(
+        (builder, typ) =>
+          builder.filter(
+            QueryBuilders
+              .termQuery("type", typ.toString)
+          )
+      )
+      .applyOptional(releaseYear)(releaseYearRangeQuery)
+  }
+
+  private def releaseYearRangeQuery(
+    builder: BoolQueryBuilder,
+    range: Range
+  ) = {
+    builder.filter(
+      QueryBuilders
+        .rangeQuery("release_date")
+        .format("yyyy")
+        .gte(s"${range.head}||/y")
+        .lte(s"${range.last}||/y")
+    )
+  }
+
+//  private def executeMultisearch()
+
+  private def singleItemSearch(query: BoolQueryBuilder) = {
+    val searchSource = new SearchSourceBuilder().query(query).size(1)
+
+    elasticsearchExecutor
+      .search(new SearchRequest("items").source(searchSource))
+      .map(searchResponseToItems)
+      .map(_.items.headOption)
   }
 
   private def materializeRecommendations(

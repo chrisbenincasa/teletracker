@@ -28,7 +28,8 @@ class PersonLookup @Inject()(elasticsearchExecutor: ElasticsearchExecutor)
             .termQuery("external_ids", EsExternalId(source, id).toString)
         )
 
-      new SearchRequest().source(new SearchSourceBuilder().query(query).size(1))
+      new SearchRequest("people")
+        .source(new SearchSourceBuilder().query(query).size(1))
     })
 
     val request = new MultiSearchRequest()
@@ -89,7 +90,7 @@ class PersonLookup @Inject()(elasticsearchExecutor: ElasticsearchExecutor)
           .filter(QueryBuilders.termQuery("slug", value.toString))
     }
 
-    val search = new SearchRequest()
+    val search = new SearchRequest("people")
       .source(new SearchSourceBuilder().query(identifierQuery).size(1))
 
     elasticsearchExecutor
