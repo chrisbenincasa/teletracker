@@ -117,7 +117,7 @@ case class ItemCastMember(
   id: UUID,
   order: Int,
   name: String,
-  slug: Slug,
+  slug: Option[Slug],
   person: Option[Person])
 
 @JsonCodec
