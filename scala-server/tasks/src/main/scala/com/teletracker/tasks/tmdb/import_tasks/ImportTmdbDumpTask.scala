@@ -3,7 +3,7 @@ package com.teletracker.tasks.tmdb.import_tasks
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{ExternalSource, ThingLike}
 import com.teletracker.common.elasticsearch.{ItemSearch, ItemUpdater}
-import com.teletracker.common.model.tmdb.HasTmdbId
+import com.teletracker.common.model.tmdb.{ErrorResponse, HasTmdbId}
 import com.teletracker.common.model.{Thingable, ToEsItem}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.GenreCache
@@ -82,35 +82,59 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
                 .getLines()
                 .zipWithIndex
                 .filter(_._1.nonEmpty)
+                .flatMap(Function.tupled(extractLine))
+                .filter(shouldHandleItem)
                 .safeTake(perFileLimit),
               parallelism
             )(batch => {
-              val processedBatch = batch.flatMap(lineAndIndex => {
-                val (line, index) = lineAndIndex
-
-                sanitizeLine(line).map(sanitizedLine => {
-                  parse(sanitizedLine)
-                    .flatMap(_.as[T]) match {
-                    case Left(failure) =>
-                      logger.error(
-                        s"Unexpected parsing error on line ${index}",
-                        failure
-                      )
-                      Future.successful(None)
-
-                    case Right(value) =>
-                      handleItem(typedArgs, value)
-                  }
-                })
-              })
-
-              Future.sequence(processedBatch).map(_ => {})
+              Future
+                .sequence(
+                  batch.map(handleItem(typedArgs, _))
+                )
+                .map(_ => {})
             })
             .await()
         } finally {
           source.close()
         }
       })
+  }
+
+  private def extractLine(
+    line: String,
+    index: Int
+  ) = {
+    sanitizeLine(line).flatMap(sanitizedLine => {
+      val parsed = parse(sanitizedLine)
+      parsed
+        .flatMap(_.as[T]) match {
+        case Left(failure) =>
+          parsed.flatMap(_.as[ErrorResponse]) match {
+            case Left(_) =>
+              logger.error(
+                s"Unexpected parsing error on line ${index}\nJSON:${sanitizedLine}",
+                failure
+              )
+              None
+
+            case Right(value)
+                if value.status_code
+                  .contains(34) && value.status_message
+                  .exists(_.contains("not be found")) =>
+              // TODO: Handle item deletion
+              None
+
+            case Right(value) =>
+              logger.error(
+                s"Got unexpected error response from TMDb: ${value}"
+              )
+              None
+          }
+
+        case Right(value) =>
+          Some(value)
+      }
+    })
   }
 
   protected def handleItem(
@@ -167,6 +191,13 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
         }
       })
   }
+
+  protected def handleItemDeletion(
+    args: ImportTmdbDumpTaskArgs,
+    id: Int
+  ): Future[Unit] = Future.unit
+
+  protected def shouldHandleItem(item: T): Boolean = true
 
   protected def extraWork(
     thingLike: ThingLike,

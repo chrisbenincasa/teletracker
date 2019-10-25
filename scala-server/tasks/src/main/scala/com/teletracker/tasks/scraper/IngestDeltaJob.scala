@@ -24,6 +24,7 @@ import java.net.URI
 import java.time.{LocalDate, ZoneOffset}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.NetworkCache
+import com.teletracker.tasks.scraper.matching.{DbLookup, MatchMode}
 import io.grpc.Context.Storage
 import software.amazon.awssdk.services.s3.S3Client
 import java.util.UUID
@@ -107,11 +108,12 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
     val newAvailabilities = foundItems
       .filter {
-        case (_, thing) => parsedArgs.thingIdFilter.forall(_ == thing.id)
+        case MatchResult(_, itemId, _) =>
+          parsedArgs.thingIdFilter.forall(_ == itemId)
       }
       .flatMap {
-        case (scrapedItem, thing) =>
-          createAvailabilities(networks, thing, scrapedItem, true)
+        case MatchResult(scrapedItem, itemId, title) =>
+          createAvailabilities(networks, itemId, title, scrapedItem, true)
       }
 
     logger.warn(
@@ -128,11 +130,12 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
     val removedAvailabilities = foundRemovals
       .filter {
-        case (_, thing) => parsedArgs.thingIdFilter.forall(_ == thing.id)
+        case MatchResult(_, itemId, _) =>
+          parsedArgs.thingIdFilter.forall(_ == itemId)
       }
       .flatMap {
-        case (scrapedItem, thing) =>
-          createAvailabilities(networks, thing, scrapedItem, false)
+        case MatchResult(scrapedItem, itemId, title) =>
+          createAvailabilities(networks, itemId, title, scrapedItem, false)
       }
 
     logger.warn(
@@ -184,7 +187,8 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
   protected def createAvailabilities(
     networks: Set[Network],
-    thing: ThingRaw,
+    itemId: UUID,
+    title: String,
     scrapedItem: T,
     isAvailable: Boolean
   ): List[Availability]

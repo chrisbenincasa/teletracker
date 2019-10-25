@@ -16,8 +16,6 @@ const wait = ms => {
 
 const doLoop = async type => {
   let now = moment();
-  let yesterday = now.subtract(1, 'day');
-
   let page = 1;
   let totalPages = 1;
   let allResults = [];
@@ -26,6 +24,9 @@ const doLoop = async type => {
       uri: `https://api.themoviedb.org/3/${type}/changes`,
       qs: {
         api_key: process.env.TMDB_API_KEY,
+        start_date: moment()
+          .subtract(1, 'days')
+          .format('YYYY-MM-DD'),
       },
       json: true,
     });

@@ -8,11 +8,24 @@ object JobTags {
   final val RequiresDbAccess = "tag/RequiresDbAccess"
 }
 
+class EventBase extends Serializable {
+  var receipt_handle: Option[String] = None
+  var queued_timestamp: Option[Long] = None
+
+  /**
+    * Defines a unique identifier for this message for use in de-duplicating messages.
+    * Note that there is no default: it must be defined for you to use it.
+    * Note: This should not exceed 2048 bytes when using a dynamodb lock manager. (http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html)
+    */
+  def getUniqueMessageId(): Option[String] = None
+}
+
 @JsonCodec
 case class TeletrackerTaskQueueMessage(
   clazz: String,
   args: Map[String, Json],
   jobTags: Option[Set[String]] = Some(Set.empty))
+    extends EventBase
 
 object TeletrackerTaskQueueMessageFactory {
 

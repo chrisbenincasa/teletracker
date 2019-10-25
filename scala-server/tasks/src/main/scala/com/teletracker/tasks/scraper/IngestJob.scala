@@ -17,11 +17,12 @@ import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
+import com.teletracker.tasks.scraper.matching.{DbLookup, MatchMode}
 import com.teletracker.tasks.util.SourceRetriever
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
-import io.circe.{Decoder, Encoder}
+import io.circe.{Codec, Decoder, Encoder}
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.s3.S3Client
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
@@ -31,7 +32,6 @@ import java.time.{LocalDate, ZoneOffset}
 import java.util.UUID
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.io.Source
 import scala.util.control.NonFatal
 
 abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
@@ -42,6 +42,19 @@ abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
   val inputFile = flag[File]("input", "The json file to parse")
   val titleMatchThreshold = flag[Int]("fuzzyThreshold", 15, "X")
   val dryRun = flag[Boolean]("dryRun", true, "X")
+}
+
+case class MatchResult[T <: ScrapedItem](
+  item: T,
+  itemId: UUID,
+  title: String)
+
+case class NonMatchResult[T <: ScrapedItem](
+  amendedItem: T,
+  originalItem: T,
+  itemId: UUID,
+  title: String) {
+  def toMatchResult: MatchResult[T] = MatchResult(amendedItem, itemId, title)
 }
 
 trait IngestJobArgsLike {
@@ -60,8 +73,7 @@ case class IngestJobArgs(
     extends IngestJobArgsLike
 
 abstract class IngestJob[T <: ScrapedItem](
-  implicit decoder: Decoder[T],
-  encoder: Encoder[T])
+  implicit protected val codec: Codec[T])
     extends TeletrackerTask {
 
   implicit protected val execCtx =
@@ -190,10 +202,11 @@ abstract class IngestJob[T <: ScrapedItem](
         case (things, nonMatchedItems) =>
           handleNonMatches(args, nonMatchedItems).flatMap(fallbackMatches => {
             val allItems = things ++ fallbackMatches
-              .map(fb => fb.amendedItem -> fb.thingRaw)
+              .map(_.toMatchResult)
+
             val stillMissing = (items
               .map(_.title)
-              .toSet -- things.map(_._1.title).toSet) -- fallbackMatches
+              .toSet -- things.map(_.title).toSet) -- fallbackMatches
               .map(_.originalItem.title)
               .toSet
 
@@ -208,9 +221,9 @@ abstract class IngestJob[T <: ScrapedItem](
             Future
               .sequence {
                 allItems.map {
-                  case (item, thing) =>
+                  case MatchResult(item, itemId, title) =>
                     val availabilityFut =
-                      createAvailabilities(networks, thing, item)
+                      createAvailabilities(networks, itemId, title, item)
 
                     if (args.dryRun) {
                       availabilityFut.map(avs => {
@@ -258,15 +271,10 @@ abstract class IngestJob[T <: ScrapedItem](
 
   protected def sanitizeItem(item: T): T = identity(item)
 
-  case class NonMatchResult(
-    amendedItem: T,
-    originalItem: T,
-    thingRaw: ThingRaw)
-
   protected def handleNonMatches(
     args: IngestJobArgs,
     nonMatches: List[T]
-  ): Future[List[NonMatchResult]] = Future.successful(Nil)
+  ): Future[List[NonMatchResult[T]]] = Future.successful(Nil)
 
   protected def processSingle(
     item: T,
@@ -297,7 +305,8 @@ abstract class IngestJob[T <: ScrapedItem](
 
   protected def createAvailabilities(
     networks: Set[Network],
-    thing: ThingRaw,
+    itemId: UUID,
+    title: String,
     scrapeItem: T
   ): Future[Seq[Availability]] = {
     val start =
@@ -309,7 +318,7 @@ abstract class IngestJob[T <: ScrapedItem](
       .serialize(networks.toSeq)(
         network => {
           thingsDb
-            .findAvailability(thing.id, network.id.get)
+            .findAvailability(itemId, network.id.get)
             .map {
               case Seq() =>
                 presentationTypes.toSeq.map(pres => {
@@ -325,7 +334,7 @@ abstract class IngestJob[T <: ScrapedItem](
                     offerType = Some(OfferType.Subscription),
                     cost = None,
                     currency = None,
-                    thingId = Some(thing.id),
+                    thingId = Some(itemId),
                     tvShowEpisodeId = None,
                     networkId = Some(network.id.get),
                     presentationType = Some(pres)

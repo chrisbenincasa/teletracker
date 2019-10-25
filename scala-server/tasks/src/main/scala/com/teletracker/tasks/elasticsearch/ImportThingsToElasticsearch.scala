@@ -361,7 +361,7 @@ class ImportThingsToElasticsearch @Inject()(
               id = cast.personId,
               order = cast.order.getOrElse(0),
               name = cast.name.getOrElse(""),
-              slug = personIdToSlug(cast.personId)
+              slug = Some(personIdToSlug(cast.personId))
             )
           })
           .toList
@@ -378,7 +378,7 @@ class ImportThingsToElasticsearch @Inject()(
               name = cast.name.getOrElse(""),
               department = cast.department,
               job = cast.job,
-              slug = personIdToSlug(cast.personId)
+              slug = Some(personIdToSlug(cast.personId))
             )
           })
           .toList
@@ -417,7 +417,7 @@ class ImportThingsToElasticsearch @Inject()(
       release_date = None,
       release_dates = None,
       runtime = None,
-      slug = thing.normalizedName,
+      slug = Some(thing.normalizedName),
       tags = None,
       title = StringListOrString.forString(thing.name),
       `type` = thing.`type`

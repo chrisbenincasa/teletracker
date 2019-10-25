@@ -88,10 +88,19 @@ case class EsItem(
   release_date: Option[LocalDate],
   release_dates: Option[List[EsItemReleaseDate]],
   runtime: Option[Int],
-  slug: Slug,
+  slug: Option[Slug],
   tags: Option[List[EsItemTag]],
   title: StringListOrString,
   `type`: ThingType) {
+
+  def externalIdsGrouped: Map[ExternalSource, String] = {
+    external_ids
+      .getOrElse(Nil)
+      .map(id => {
+        ExternalSource.fromString(id.provider) -> id.id
+      })
+      .toMap
+  }
 
   def ratingsGrouped: Map[ExternalSource, EsItemRating] = {
     ratings
@@ -145,7 +154,7 @@ case class EsPerson(
   name: Option[String],
   place_of_birth: Option[String],
   popularity: Option[Double],
-  slug: Slug,
+  slug: Option[Slug],
   known_for: Option[List[EsDenormalizedItem]])
 
 object EsItemTag {
@@ -236,7 +245,7 @@ case class EsItemCastMember(
   id: UUID,
   order: Int,
   name: String,
-  slug: Slug)
+  slug: Option[Slug])
 
 @JsonCodec
 case class EsPersonCastCredit(
@@ -244,7 +253,7 @@ case class EsPersonCastCredit(
   id: UUID,
   title: String,
   `type`: ThingType,
-  slug: Slug)
+  slug: Option[Slug])
 
 @JsonCodec
 case class EsItemCrewMember(
@@ -253,7 +262,7 @@ case class EsItemCrewMember(
   name: String,
   department: Option[String],
   job: Option[String],
-  slug: Slug)
+  slug: Option[Slug])
 
 @JsonCodec
 case class EsPersonCrewCredit(
@@ -262,7 +271,7 @@ case class EsPersonCrewCredit(
   department: Option[String],
   job: Option[String],
   `type`: ThingType,
-  slug: Slug)
+  slug: Option[Slug])
 
 @JsonCodec
 case class EsGenre(

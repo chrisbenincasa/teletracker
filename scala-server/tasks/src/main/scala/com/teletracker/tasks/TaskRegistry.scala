@@ -16,6 +16,8 @@ object TaskRegistry {
     classOf[ImportPeopleFromDump],
     classOf[ImportPersonAssociations],
     classOf[ImportTvShowsFromDump],
-    classOf[RemoteTask]
+    classOf[RemoteTask],
+    classOf[NoopTeletrackerTask],
+    classOf[TimeoutTask]
   ).map(clazz => clazz.getSimpleName -> clazz).toMap
 }

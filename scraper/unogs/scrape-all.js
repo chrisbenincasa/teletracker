@@ -105,6 +105,7 @@ const pullPage = async (page = 1, limit = 9999) => {
       externalId: netflixId,
       type: seriesOrMovie === 'movie' ? 'movie' : 'show',
       network: 'Netflix',
+      description: $('*').text(),
     };
 
     if (expiration.length) {

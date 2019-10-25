@@ -7,6 +7,7 @@ import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
+import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
@@ -28,6 +29,7 @@ class IngestNetflixOriginalsArrivals @Inject()(
     ZoneId.of("US/Pacific").getRules.getOffset(Instant.now())
 }
 
+@JsonCodec
 case class NetflixOriginalScrapeItem(
   availableDate: Option[String],
   title: String,

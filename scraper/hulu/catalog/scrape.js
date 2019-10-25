@@ -109,18 +109,6 @@ const createWriteStream = fileName => {
   return stream;
 };
 
-const writeAsLines = (fileName, data) => {
-  return new Promise((resolve, reject) => {
-    const stream = fs.createWriteStream(fileName, 'utf-8');
-    stream.on('finish', () => resolve(true));
-    stream.on('error', reject);
-    data.forEach(datum => {
-      stream.write(JSON.stringify(datum) + '\n');
-    });
-    stream.close();
-  });
-};
-
 const scrapeMovieJson = async id => {
   try {
     let json = await request({

@@ -2,36 +2,20 @@ package com.teletracker.tasks.tmdb.import_tasks
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
-import com.teletracker.common.elasticsearch.{
-  EsGenre,
-  EsItem,
-  EsItemCastMember,
-  EsItemCrewMember,
-  EsItemReleaseDate,
-  EsPerson,
-  ItemSearch,
-  ItemUpdater,
-  PersonLookup,
-  StringListOrString
-}
-import com.teletracker.common.util.Movies._
+import com.teletracker.common.elasticsearch._
 import com.teletracker.common.model.ToEsItem
-import com.teletracker.common.model.tmdb.{Movie, MovieCountryRelease, TvShow}
-import com.teletracker.common.util.RequireLite.requireLite
+import com.teletracker.common.model.tmdb.{Movie, MovieCountryRelease}
+import com.teletracker.common.util.Movies._
 import com.teletracker.common.util.{GenreCache, Slug}
-import diffson.diff
+import com.teletracker.tasks.util.SourceRetriever
 import io.circe.syntax._
 import javax.inject.Inject
+import software.amazon.awssdk.services.s3.S3Client
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
-import com.teletracker.common.model.tmdb.Movie
-import com.teletracker.common.util.GenreCache
-import com.teletracker.tasks.util.SourceRetriever
-import javax.inject.Inject
-import software.amazon.awssdk.services.s3.S3Client
-import scala.concurrent.ExecutionContext
+import scala.util.control.NonFatal
 
 class ImportMoviesFromDump @Inject()(
   s3: S3Client,
@@ -52,7 +36,6 @@ class ImportMoviesFromDump @Inject()(
 
   import diffson._
   import diffson.circe._
-  import diffson.jsonpatch._
   import diffson.jsonpatch.lcsdiff.remembering._
 
   implicit override def toEsItem: ToEsItem[Movie] =
@@ -62,25 +45,12 @@ class ImportMoviesFromDump @Inject()(
     args: ImportTmdbDumpTaskArgs,
     item: Movie
   ): Future[Unit] = {
-    Promise
-      .fromTry {
-        Try {
-          val releaseYear = item.releaseYear
-
-          requireLite(
-            releaseYear.isDefined,
-            s"Attempted to get release year from show = ${item.id} but couldn't: (original field = ${item.release_date})"
-          )
-        }
-      }
-      .future
-      .flatMap(_ => {
-        itemSearch.lookupItemByExternalId(
-          ExternalSource.TheMovieDb,
-          item.id.toString,
-          ThingType.Show
-        )
-      })
+    itemSearch
+      .lookupItemByExternalId(
+        ExternalSource.TheMovieDb,
+        item.id.toString,
+        ThingType.Movie
+      )
       .flatMap {
         case Some(value) =>
           val images =
@@ -107,14 +77,31 @@ class ImportMoviesFromDump @Inject()(
             .values
             .toList
 
+          val extractedExternalIds = List(
+            toEsItem.esExternalId(item),
+            item.external_ids
+              .flatMap(_.imdb_id)
+              .map(imdb => EsExternalId(ExternalSource.Imdb, imdb))
+          ).flatten
+
+          val newExternalSources = extractedExternalIds
+            .foldLeft(value.externalIdsGrouped)(
+              (acc, id) =>
+                acc.updated(ExternalSource.fromString(id.provider), id.id)
+            )
+            .toList
+            .map(Function.tupled(EsExternalId.apply))
+
           val partialUpdates = value.copy(
             adult = value.adult,
             images = Some(images.toList),
+            external_ids = Some(newExternalSources),
             original_title = item.original_title.orElse(value.original_title),
             overview = item.overview.orElse(value.overview),
             popularity = item.popularity.orElse(value.popularity),
             ratings = Some(newRatings),
             release_date = item.release_date
+              .filter(_.nonEmpty)
               .map(LocalDate.parse(_))
               .orElse(value.release_date)
           )
@@ -196,7 +183,14 @@ class ImportMoviesFromDump @Inject()(
               availability = None,
               cast = cast,
               crew = crew,
-              external_ids = Some(toEsItem.esExternalId(item).toList),
+              external_ids = Some(
+                List(
+                  toEsItem.esExternalId(item),
+                  item.external_ids
+                    .flatMap(_.imdb_id)
+                    .map(imdb => EsExternalId(ExternalSource.Imdb, imdb))
+                ).flatten
+              ),
               genres = Some(
                 itemGenres
                   .map(genre => {
@@ -213,7 +207,8 @@ class ImportMoviesFromDump @Inject()(
               popularity = item.popularity,
               ratings = Some(toEsItem.esItemRating(item).toList),
               recommendations = None,
-              release_date = item.release_date.map(LocalDate.parse(_)),
+              release_date =
+                item.release_date.filter(_.nonEmpty).map(LocalDate.parse(_)),
               release_dates = item.release_dates.map(_.results.map(mrd => {
                 val earliest = findEarliestReleaseDate(mrd.release_dates)
                 EsItemReleaseDate(
@@ -223,16 +218,16 @@ class ImportMoviesFromDump @Inject()(
                 )
               })),
               runtime = item.runtime,
-              slug = Slug(item.title.get, item.releaseYear.get),
+              slug = item.releaseYear.map(Slug(item.title.get, _)),
               tags = None,
               title = StringListOrString.forString(item.title.get),
-              `type` = ThingType.Show
+              `type` = ThingType.Movie
             )
 
             if (args.dryRun) {
               Future.successful {
                 logger.info(
-                  s"Would've inserted new show (id = ${item.id}, slug = ${esItem.slug})\n:${esItem.asJson.spaces2}"
+                  s"Would've inserted new movie (id = ${item.id}, slug = ${esItem.slug})\n:${esItem.asJson.spaces2}"
                 )
               }
             } else {
@@ -242,12 +237,17 @@ class ImportMoviesFromDump @Inject()(
 
           updateFut.flatMap(identity).map(_ => {})
       }
+      .recover {
+        case NonFatal(e) =>
+          logger.warn(e.getMessage)
+      }
   }
 
   private def findEarliestReleaseDate(releases: List[MovieCountryRelease]) = {
     releases
       .flatMap(release => {
         release.release_date
+          .filter(_.nonEmpty)
           .flatMap(rd => Try(OffsetDateTime.parse(rd)).toOption)
           .map(dt => dt -> release)
       })

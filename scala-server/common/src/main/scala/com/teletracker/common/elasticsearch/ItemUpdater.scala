@@ -92,18 +92,6 @@ class ItemUpdater @Inject()(
     elasticsearchExecutor.update(updateRequest)
   }
 
-  def upsert(item: EsItem): Future[DocWriteResponse] = {
-    itemSearch
-      .lookupItem(Right(item.slug), Some(item.`type`), materializeJoins = false)
-      .flatMap {
-        case None =>
-          insert(item)
-
-        case Some(found) =>
-          update(item.copy(id = found.rawItem.id))
-      }
-  }
-
   def upsertItemTag(
     itemId: UUID,
     tag: EsItemTag

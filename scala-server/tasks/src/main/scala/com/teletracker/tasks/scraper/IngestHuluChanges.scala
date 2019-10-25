@@ -10,6 +10,7 @@ import com.teletracker.common.util.{NetworkCache, Slug}
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import io.circe.parser._
 import javax.inject.Inject
@@ -61,7 +62,7 @@ class IngestHuluChanges @Inject()(
   override protected def handleNonMatches(
     args: IngestJobArgs,
     nonMatches: List[HuluScrapeItem]
-  ): Future[List[NonMatchResult]] = {
+  ): Future[List[NonMatchResult[HuluScrapeItem]]] = {
     SequentialFutures
       .serialize(nonMatches, Some(250.millis))(nonMatch => {
         logger.info("Searching hulu for " + nonMatch.title)
@@ -161,7 +162,12 @@ class IngestHuluChanges @Inject()(
                 logger.info(
                   s"Successfully found fallback match for ${thingRaw.name} (${thingRaw.id} (Original item title: ${originalItem.title}))"
                 )
-                NonMatchResult(amended, originalItem, thingRaw)
+                NonMatchResult(
+                  amended,
+                  originalItem,
+                  thingRaw.id,
+                  thingRaw.name
+                )
             })
         })
       })
@@ -231,6 +237,7 @@ class IngestHuluChanges @Inject()(
   }
 }
 
+@JsonCodec
 case class HuluScrapeItem(
   availableDate: Option[String],
   title: String,
