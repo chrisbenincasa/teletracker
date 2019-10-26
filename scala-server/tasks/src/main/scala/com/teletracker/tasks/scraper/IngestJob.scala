@@ -6,6 +6,7 @@ import com.teletracker.common.elasticsearch
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   EsAvailability,
+  EsItem,
   ItemSearch,
   ItemUpdater
 }
@@ -85,8 +86,16 @@ abstract class IngestJob[T <: ScrapedItem](
   protected val missingItemsFile = new File(
     s"${today}_${getClass.getSimpleName}-missing-items.json"
   )
+  protected val matchItemsFile = new File(
+    s"${today}_${getClass.getSimpleName}-match-items.json"
+  )
+
   protected val missingItemsWriter = new PrintStream(
     new BufferedOutputStream(new FileOutputStream(missingItemsFile))
+  )
+
+  protected val matchigItemsWriter = new PrintStream(
+    new BufferedOutputStream(new FileOutputStream(matchItemsFile))
   )
 
   protected def tmdbClient: TmdbClient
@@ -103,7 +112,7 @@ abstract class IngestJob[T <: ScrapedItem](
   protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
 
   protected def parseMode: ParseMode = AllJson
-  protected def matchMode: MatchMode[T] = new DbLookup[T](thingsDb)
+  protected def matchMode: MatchMode = new DbLookup(thingsDb)
 
   protected def processMode(args: IngestJobArgs): ProcessMode = Serial
 
@@ -157,6 +166,9 @@ abstract class IngestJob[T <: ScrapedItem](
       source.close()
       missingItemsWriter.flush()
       missingItemsWriter.close()
+
+      matchigItemsWriter.flush()
+      matchigItemsWriter.close()
     }
   }
 
@@ -193,12 +205,11 @@ abstract class IngestJob[T <: ScrapedItem](
     networks: Set[Network],
     args: IngestJobArgs
   ): Future[Unit] = {
-    val itemsToLookup = items.filter(shouldProcessItem).map(sanitizeItem)
-
-    if (itemsToLookup.nonEmpty) {
+    val filteredAndSanitized = items.filter(shouldProcessItem).map(sanitizeItem)
+    if (filteredAndSanitized.nonEmpty) {
       matchMode
         .lookup(
-          itemsToLookup,
+          filteredAndSanitized,
           args
         )
         .flatMap {
@@ -207,19 +218,24 @@ abstract class IngestJob[T <: ScrapedItem](
               val allItems = things ++ fallbackMatches
                 .map(_.toMatchResult)
 
-              val stillMissing = (itemsToLookup
+              val stillMissing = (filteredAndSanitized
                 .map(_.title)
                 .toSet -- things.map(_.title).toSet) -- fallbackMatches
                 .map(_.originalItem.title)
                 .toSet
 
               writeMissingItems(
-                itemsToLookup.filter(item => stillMissing.contains(item.title))
+                filteredAndSanitized
+                  .filter(item => stillMissing.contains(item.title))
               )
 
               logger.info(
-                s"Successfully found matches for ${allItems.size} out of ${itemsToLookup.size} items."
+                s"Successfully found matches for ${allItems.size} out of ${items.size} items."
               )
+
+              if (args.dryRun) {
+                writeMatchingItems(allItems)
+              }
 
               Future
                 .sequence {
@@ -256,7 +272,6 @@ abstract class IngestJob[T <: ScrapedItem](
                             )
                         })
                       }
-
                   }
                 }
                 .map(_ => {})
@@ -386,6 +401,21 @@ abstract class IngestJob[T <: ScrapedItem](
     items.foreach(item => {
       missingItemsWriter.println(item.asJson.noSpaces)
     })
+  }
+
+  protected def writeMatchingItems(items: List[MatchResult[T]]): Unit = {
+    items.foreach {
+      case MatchResult(item, id, title) =>
+        matchigItemsWriter.println(
+          Map(
+            "scraped" -> item.asJson,
+            "match" -> Map(
+              "id" -> id.asJson,
+              "title" -> title.asJson
+            ).asJson
+          ).asJson.noSpaces
+        )
+    }
   }
 
   sealed trait ProcessMode

@@ -111,6 +111,8 @@ trait SchedulesFollowupTasks { self: TeletrackerTask =>
     )
   )
 
+  logger.info("Successfully attached scheduleFollowupTasks callback")
+
   def followupTasksToSchedule(
     args: TypedArgs
   ): List[TeletrackerTaskQueueMessage]
