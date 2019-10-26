@@ -1,7 +1,6 @@
 import { Collapse, makeStyles, Theme, Typography } from '@material-ui/core';
 import React from 'react';
-import _ from 'lodash';
-import { Genre, ItemTypes, ListSortOptions, NetworkTypes } from '../../types';
+import { Genre, ItemType, ListSortOptions, NetworkType } from '../../types';
 import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
@@ -60,8 +59,8 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 interface Props {
   handleGenreChange?: (genre?: number[]) => void;
-  handleTypeChange?: (type?: ItemTypes[]) => void;
-  handleNetworkChange?: (networkTypes?: NetworkTypes[]) => void;
+  handleTypeChange?: (type?: ItemType[]) => void;
+  handleNetworkChange?: (networkTypes?: NetworkType[]) => void;
   handleSortChange?: (sortOrder: ListSortOptions) => void;
   isListDynamic?: boolean;
   genres?: Genre[];
@@ -89,11 +88,11 @@ const AllFilters = (props: Props) => {
     handleGenreChange && handleGenreChange(genres);
   };
 
-  const setType = (type?: ItemTypes[]) => {
+  const setType = (type?: ItemType[]) => {
     handleTypeChange && handleTypeChange(type);
   };
 
-  const setNetworks = (networks?: NetworkTypes[]) => {
+  const setNetworks = (networks?: NetworkType[]) => {
     handleNetworkChange && handleNetworkChange(networks);
   };
 

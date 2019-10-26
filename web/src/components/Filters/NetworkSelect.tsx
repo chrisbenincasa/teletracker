@@ -9,8 +9,9 @@ import {
 } from '@material-ui/core';
 import React, { Component } from 'react';
 import { withRouter, RouteComponentProps } from 'react-router-dom';
-import { NetworkTypes } from '../../types';
+import { NetworkType, isNetworkType } from '../../types';
 import { updateURLParameters } from '../../utils/urlHelper';
+import { parseFilterParamsFromQs } from '../../utils/searchFilters';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -36,7 +37,7 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps {
-  handleChange: (type?: NetworkTypes[]) => void;
+  handleChange: (type?: NetworkType[]) => void;
 }
 
 interface RouteParams {
@@ -48,19 +49,11 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
-  type?: NetworkTypes[];
+  type?: NetworkType[];
 }
 
 export const getNetworkTypeFromUrlParam = () => {
-  let params = new URLSearchParams(location.search);
-  let type;
-  let param = params.get('networks');
-
-  if (param) {
-    type = decodeURIComponent(param).split(',');
-  }
-
-  return type;
+  return parseFilterParamsFromQs(location.search).networks;
 };
 
 class NetworkSelect extends Component<Props, State> {
@@ -82,7 +75,7 @@ class NetworkSelect extends Component<Props, State> {
     }
   };
 
-  updateURLParam = (param: string, value?: NetworkTypes[]) => {
+  updateURLParam = (param: string, value?: NetworkType[]) => {
     updateURLParameters(this.props, param, value);
 
     this.setState(
