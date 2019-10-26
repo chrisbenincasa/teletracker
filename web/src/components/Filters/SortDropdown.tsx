@@ -7,10 +7,11 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { withRouter, RouteComponentProps } from 'react-router-dom';
-import { List, ListSortOptions } from '../../types';
+import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { ListSortOptions } from '../../types';
 import React, { Component } from 'react';
 import { updateURLParameters } from '../../utils/urlHelper';
+import { parseFilterParamsFromQs } from '../../utils/searchFilters';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -39,12 +40,7 @@ interface State {
 }
 
 export const getSortFromUrlParam = () => {
-  let params = new URLSearchParams(location.search);
-  let param = params.get('sort');
-
-  return param === 'popularity' || param === 'recent' || param === 'added_time'
-    ? param
-    : 'default';
+  return parseFilterParamsFromQs(location.search).sortOrder;
 };
 
 class SortDropDown extends Component<Props, State> {

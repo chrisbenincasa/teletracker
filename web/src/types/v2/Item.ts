@@ -8,9 +8,8 @@ import {
   ItemImage,
   ItemRating,
   ItemReleaseDate,
-  ItemType,
 } from '.';
-import { ActionType } from '..';
+import { ActionType, ItemType } from '..';
 import {
   getTmdbBackdropImage,
   getTmdbPosterImage,

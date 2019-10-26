@@ -91,7 +91,7 @@ class DynamicListBuilderTest extends FlatSpec {
 //            List(GenreType.Movie, GenreType.Tv)
 //          )
 //        ),
-        genre = None,
+        genres = None,
 //        Some(Set(ThingType.Movie)),
         networks = Set(
           Network(Some(1), "Netflix", Slug.raw("netflix"), "nflx", None, None)

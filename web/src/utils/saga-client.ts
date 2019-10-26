@@ -2,12 +2,12 @@ import { call } from '@redux-saga/core/effects';
 import * as firebase from 'firebase/app';
 import {
   ActionType,
-  ItemTypes,
+  ItemType,
   ListOptions,
   ListRules,
   ListSortOptions,
   Network,
-  NetworkTypes,
+  NetworkType,
   UserPreferences,
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
@@ -46,10 +46,10 @@ export class SagaTeletrackerClient {
     id: number,
     sort?: ListSortOptions,
     desc?: boolean,
-    itemTypes?: ItemTypes[],
+    itemTypes?: ItemType[],
     genres?: number[],
     bookmark?: string,
-    networks?: NetworkTypes[],
+    networks?: NetworkType[],
   ) {
     return yield this.apiCall(
       client => client.getList,
@@ -206,10 +206,11 @@ export class SagaTeletrackerClient {
 
   *getPopular(
     fields?: KeyMap<ObjectMetadata>,
-    itemTypes?: ItemTypes[],
-    networks?: NetworkTypes[],
+    itemTypes?: ItemType[],
+    networks?: NetworkType[],
     bookmark?: string,
     limit?: number,
+    genres?: number[],
   ) {
     let token = yield this.withToken();
     return yield this.apiCall(
@@ -220,6 +221,7 @@ export class SagaTeletrackerClient {
       networks,
       bookmark,
       limit,
+      genres,
     );
   }
 

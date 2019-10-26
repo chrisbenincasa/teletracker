@@ -28,16 +28,6 @@ class TeletrackerServer(
     extends HttpServer
     with Logging {
 
-  premain {
-//    StackdriverStatsExporter.createAndRegister(
-//      StackdriverStatsConfiguration
-//        .builder()
-//        .setExportInterval(Duration.fromMillis(30000))
-//        .setProjectId("teletracker")
-//        .build()
-//    )
-  }
-
   postmain {
     injector.instance[NetworkCache].get()
     injector.instance[GenreCache].get()
@@ -82,7 +72,6 @@ class TeletrackerServer(
       .add[UserController]
       .add[SearchController]
       .add[ThingController]
-      .add[GenreController]
       .add[MetadataController]
       .add[AvailabilityController]
       .add[AdminController]

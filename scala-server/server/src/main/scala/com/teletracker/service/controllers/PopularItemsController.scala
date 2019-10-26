@@ -8,6 +8,7 @@ import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.{CanParseFieldFilter, Field, NetworkCache}
 import com.teletracker.common.util.json.circe._
+import com.teletracker.service.api.ThingApi
 import com.teletracker.service.controllers.TeletrackerController._
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -22,7 +23,8 @@ class PopularItemsController @Inject()(
   tmdbClient: TmdbClient,
   thingsDbAccess: ThingsDbAccess,
   networkCache: NetworkCache,
-  popularItemSearch: PopularItemSearch
+  popularItemSearch: PopularItemSearch,
+  thingApi: ThingApi
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with CanParseFieldFilter {
@@ -81,41 +83,27 @@ class PopularItemsController @Inject()(
 
   prefix("/api/v2") {
     get("/popular") { req: GetPopularItemsRequest =>
-      val parsedFields = parseFieldsOrNone(req.fields)
-
-      val networksFut = if (req.networks.nonEmpty) {
-        networkCache
-          .get()
-          .map(networks => {
-            networks.values
-              .filter(network => req.networks.contains(network.slug.value))
-              .toSet
-          })
-      } else {
-        Future.successful(Set.empty[Network])
-      }
-
-      for {
-        networks <- networksFut
-        popularItems <- popularItemSearch.getPopularItems(
-          genre = None,
-          networks = networks,
+      thingApi
+        .search(
+          genres = Some(req.genres.map(_.toString)).filter(_.nonEmpty),
+          networks = Some(req.networks).filter(_.nonEmpty),
           itemTypes = Some(
             req.itemTypes.flatMap(t => Try(ThingType.fromString(t)).toOption)
           ),
+          sortMode = Popularity(),
           limit = req.limit,
           bookmark = req.bookmark.map(Bookmark.parse)
         )
-      } yield {
-        val items =
-          popularItems.items.map(_.scopeToUser(req.authenticatedUserId))
+        .map(popularItems => {
+          val items =
+            popularItems.items.map(_.scopeToUser(req.authenticatedUserId))
 
-        DataResponse.forDataResponse(
-          DataResponse(items).withPaging(
-            Paging(popularItems.bookmark.map(_.asString))
+          DataResponse.forDataResponse(
+            DataResponse(items).withPaging(
+              Paging(popularItems.bookmark.map(_.asString))
+            )
           )
-        )
-      }
+        })
     }
   }
 }
@@ -127,6 +115,7 @@ case class GetPopularItemsRequest(
   @QueryParam limit: Int = 10,
   @QueryParam(commaSeparatedList = true) networks: Set[String] = Set.empty,
   @QueryParam fields: Option[String] = None,
+  @QueryParam genres: Set[Int] = Set.empty,
   request: Request)
     extends InjectedRequest {
 

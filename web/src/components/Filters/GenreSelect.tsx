@@ -10,6 +10,7 @@ import { withRouter, RouteComponentProps } from 'react-router-dom';
 import { Genre } from '../../types';
 import React, { Component } from 'react';
 import { updateURLParameters } from '../../utils/urlHelper';
+import { parseFilterParamsFromQs } from '../../utils/searchFilters';
 
 const styles = () =>
   createStyles({
@@ -46,20 +47,7 @@ interface State {
 }
 
 export const getGenreFromUrlParam = () => {
-  let params = new URLSearchParams(location.search);
-  let genre;
-  let param = params.get('genres');
-
-  if (param) {
-    // converts text csv to number[]
-    genre = decodeURIComponent(param)
-      .split(',')
-      .map(item => {
-        return parseInt(item, 10);
-      });
-  }
-
-  return genre;
+  return parseFilterParamsFromQs(location.search).genresFilter;
 };
 
 class GenreSelect extends Component<Props, State> {

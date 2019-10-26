@@ -34,7 +34,7 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { ItemTypes, Genre, ListSortOptions, NetworkTypes } from '../types';
+import { ItemType, Genre, ListSortOptions, NetworkType } from '../types';
 import { Person } from '../types/v2/Person';
 import { getTypeFromUrlParam } from '../components/Filters/TypeToggle';
 import { getNetworkTypeFromUrlParam } from '../components/Filters/NetworkSelect';
@@ -133,8 +133,8 @@ interface State {
   showFullBiography: boolean;
   sortOrder: ListSortOptions;
   genresFilter?: number[];
-  itemTypes?: ItemTypes[];
-  networks?: NetworkTypes[];
+  itemTypes?: ItemType[];
+  networks?: NetworkType[];
   showFilter: boolean;
 }
 
@@ -227,8 +227,8 @@ class PersonDetail extends React.Component<Props, State> {
 
   setFilters = (
     sortOrder: ListSortOptions,
-    networks?: NetworkTypes[],
-    itemTypes?: ItemTypes[],
+    networks?: NetworkType[],
+    itemTypes?: ItemType[],
     genres?: number[],
   ) => {
     this.setState({
@@ -247,7 +247,7 @@ class PersonDetail extends React.Component<Props, State> {
     }
   };
 
-  setType = (type?: ItemTypes[]) => {
+  setType = (type?: ItemType[]) => {
     this.setState({
       itemTypes: type,
     });
@@ -259,7 +259,7 @@ class PersonDetail extends React.Component<Props, State> {
     });
   };
 
-  setNetworks = (networks?: NetworkTypes[]) => {
+  setNetworks = (networks?: NetworkType[]) => {
     // Only update and hit endpoint if there is a state change
     if (this.state.networks !== networks) {
       this.setState({

@@ -4,13 +4,13 @@ import { merge } from 'ramda';
 import {
   ActionType,
   Genre,
-  ItemTypes,
+  ItemType,
   List,
   ListOptions,
   ListRules,
   ListSortOptions,
   Network,
-  NetworkTypes,
+  NetworkType,
   Paging,
   User,
   UserPreferences,
@@ -207,10 +207,10 @@ export class TeletrackerApi {
     id: string | number,
     sort?: ListSortOptions,
     desc?: boolean,
-    itemTypes?: ItemTypes[],
+    itemTypes?: ItemType[],
     genres?: number[],
     bookmark?: string,
-    networks?: NetworkTypes[],
+    networks?: NetworkType[],
   ) {
     return this.api.get<DataResponse<List>>(`/api/v2/users/self/lists/${id}`, {
       token,
@@ -383,10 +383,11 @@ export class TeletrackerApi {
   async getPopular(
     token?: string,
     fields?: KeyMap<ObjectMetadata>,
-    itemTypes?: ItemTypes[],
-    networks?: NetworkTypes[],
+    itemTypes?: ItemType[],
+    networks?: NetworkType[],
     bookmark?: string,
     limit?: number,
+    genres?: number[],
   ) {
     return this.api.get('/api/v2/popular', {
       token,
@@ -396,6 +397,7 @@ export class TeletrackerApi {
       networks: networks && networks.length ? networks.join(',') : undefined,
       bookmark,
       limit,
+      genres: genres && genres.length ? genres.join(',') : undefined,
     });
   }
 

@@ -56,13 +56,7 @@ import { GA_TRACKING_ID } from '../constants';
 import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';
 import { ListsByIdMap } from '../reducers/lists';
-import {
-  Genre,
-  ItemTypes,
-  List,
-  ListSortOptions,
-  NetworkTypes,
-} from '../types';
+import { Genre, ItemType, List, ListSortOptions, NetworkType } from '../types';
 import { getOrInitListOptions } from '../utils/list-utils';
 import { Item } from '../types/v2/Item';
 
@@ -155,11 +149,11 @@ interface State {
   deleteOnWatch: boolean;
   genresFilter?: number[];
   genre?: string;
-  itemTypes?: ItemTypes[];
+  itemTypes?: ItemType[];
   list?: List;
   loadingList: boolean;
   migrateListId: number;
-  networks?: NetworkTypes[];
+  networks?: NetworkType[];
   newListName: string;
   prevListId: number;
   renameDialogOpen: boolean;
@@ -553,8 +547,8 @@ class ListDetail extends Component<Props, State> {
 
   setFilters = (
     sortOrder: ListSortOptions,
-    networks?: NetworkTypes[],
-    itemTypes?: ItemTypes[],
+    networks?: NetworkType[],
+    itemTypes?: ItemType[],
     genres?: number[],
   ) => {
     this.setState(
@@ -584,7 +578,7 @@ class ListDetail extends Component<Props, State> {
     }
   };
 
-  setType = (type?: ItemTypes[]) => {
+  setType = (type?: ItemType[]) => {
     this.setState(
       {
         itemTypes: type,
@@ -606,7 +600,7 @@ class ListDetail extends Component<Props, State> {
     );
   };
 
-  setNetworks = (networks?: NetworkTypes[]) => {
+  setNetworks = (networks?: NetworkType[]) => {
     // Only update and hit endpoint if there is a state change
     if (this.state.networks !== networks) {
       this.setState(
