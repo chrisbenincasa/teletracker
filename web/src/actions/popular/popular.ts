@@ -1,7 +1,7 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import _ from 'lodash';
-import { ItemTypes, NetworkTypes, Paging } from '../../types';
+import { ItemType, NetworkType, Paging } from '../../types';
 import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
 import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
@@ -14,10 +14,11 @@ export const POPULAR_FAILED = 'popular/FAILED';
 
 export interface PopularInitiatedActionPayload {
   fields?: KeyMap<ObjectMetadata>;
-  itemTypes?: ItemTypes[];
-  networks?: NetworkTypes[];
+  itemTypes?: ItemType[];
+  networks?: NetworkType[];
   bookmark?: string;
   limit?: number;
+  genres?: number[];
 }
 
 export type PopularInitiatedAction = FSA<
@@ -65,6 +66,7 @@ export const popularSaga = function*() {
           payload.networks,
           payload.bookmark,
           payload.limit,
+          payload.genres,
         );
 
         if (response.ok) {

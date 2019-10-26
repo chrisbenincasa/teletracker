@@ -7,10 +7,11 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { withRouter, RouteComponentProps } from 'react-router-dom';
-import { ItemTypes } from '../../types';
+import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { ItemType } from '../../types';
 import React, { Component } from 'react';
 import { updateURLParameters } from '../../utils/urlHelper';
+import { parseFilterParamsFromQs } from '../../utils/searchFilters';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -29,7 +30,7 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps {
-  handleChange: (type?: ItemTypes[]) => void;
+  handleChange: (type?: ItemType[]) => void;
 }
 
 interface RouteParams {
@@ -41,18 +42,11 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
-  type?: ItemTypes[];
+  type?: ItemType[];
 }
 
 export const getTypeFromUrlParam = () => {
-  let params = new URLSearchParams(location.search);
-  let type;
-  let param = params.get('type');
-
-  if (param) {
-    type = decodeURIComponent(param).split(',');
-  }
-  return type;
+  return parseFilterParamsFromQs(location.search).itemTypes;
 };
 
 class TypeToggle extends Component<Props, State> {
@@ -73,7 +67,7 @@ class TypeToggle extends Component<Props, State> {
     }
   };
 
-  updateURLParam = (param: string, value?: ItemTypes[]) => {
+  updateURLParam = (param: string, value?: ItemType[]) => {
     updateURLParameters(this.props, param, value);
     this.setState(
       {

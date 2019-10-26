@@ -9,6 +9,8 @@ import com.teletracker.common.db.access.{
 }
 import com.teletracker.common.db.model.{
   ExternalSource,
+  Genre,
+  Network,
   PartialThing,
   Person,
   PersonThing,
@@ -34,7 +36,6 @@ import com.teletracker.common.elasticsearch.{
 }
 import com.teletracker.common.model.tmdb.{
   CastMember,
-  Genre,
   Movie,
   PagedResult,
   TvShow
@@ -44,6 +45,7 @@ import com.teletracker.common.util.{
   GenreCache,
   HasGenreIdOrSlug,
   HasThingIdOrSlug,
+  NetworkCache,
   Slug
 }
 import com.teletracker.service.api.model.{
@@ -65,6 +67,7 @@ class ThingApi @Inject()(
   thingsDbAccess: ThingsDbAccess,
   genresDbAccess: GenresDbAccess,
   genreCache: GenreCache,
+  networkCache: NetworkCache,
   popularItemSearch: PopularItemSearch,
   itemLookup: ItemSearch,
   itemUpdater: ItemUpdater,
@@ -94,9 +97,11 @@ class ThingApi @Inject()(
     root.themoviedb.show.recommendations.as[PagedResult[TvShow]]
 
   private val movieGenres =
-    root.themoviedb.movie.genres.as[List[Genre]]
+    root.themoviedb.movie.genres
+      .as[List[com.teletracker.common.model.tmdb.Genre]]
   private val tvGenres =
-    root.themoviedb.show.genres.as[List[Genre]]
+    root.themoviedb.show.genres
+      .as[List[com.teletracker.common.model.tmdb.Genre]]
 
   private val posterPaths =
     Stream("movie", "show").map(tpe => {
@@ -504,35 +509,55 @@ class ThingApi @Inject()(
       }.getOrElse(Future.successful(None)))
   }
 
-  def getPopularByGenreViaSearch(
-    genreIdOrSlug: String,
-    thingType: Option[ThingType],
-    limit: Int = 20,
+  def search(
+    genres: Option[Set[String]],
+    networks: Option[Set[String]],
+    itemTypes: Option[Set[ThingType]],
+    sortMode: SortMode,
+    limit: Int,
     bookmark: Option[Bookmark]
   ) = {
-    genreCache
-      .get()
-      .map(_.values)
-      .flatMap(genres => {
-        val genre = HasGenreIdOrSlug.parse(genreIdOrSlug) match {
-          case Left(id)    => genres.find(_.id.contains(id))
-          case Right(slug) => genres.find(_.slug == slug)
-        }
+    val genresFut = if (genres.exists(_.nonEmpty)) {
+      genreCache
+        .get()
+        .map(_.values)
+        .map(cachedGenres => {
+          genres.get.map(HasGenreIdOrSlug.parse).flatMap {
+            case Left(id)    => cachedGenres.find(_.id.contains(id))
+            case Right(slug) => cachedGenres.find(_.slug == slug)
+          }
+        })
+    } else {
+      Future.successful(Set.empty[Genre])
+    }
 
-        genre
-          .map(g => {
-            popularItemSearch
-              .getPopularItems(
-                Some(g),
-                Set.empty,
-                thingType.map(Set(_)),
-                limit,
-                bookmark
-              )
-              .map(Some(_))
-          })
-          .getOrElse(Future.successful(None))
-      })
+    val networksFut = if (networks.exists(_.nonEmpty)) {
+      networkCache
+        .get()
+        .map(cachedNetworks => {
+          cachedNetworks.values
+            .filter(network => networks.get.contains(network.slug.value))
+            .toSet
+        })
+    } else {
+      Future.successful(Set.empty[Network])
+    }
+
+    for {
+      filterGenres <- genresFut
+      filterNetworks <- networksFut
+      result <- popularItemSearch
+        .getPopularItems(
+          Some(filterGenres).filter(_.nonEmpty),
+          Some(filterNetworks).filter(_.nonEmpty),
+          itemTypes,
+          sortMode,
+          limit,
+          bookmark
+        )
+    } yield {
+      result
+    }
   }
 
   private def extractReleaseDate(thingRaw: ThingRaw) = {

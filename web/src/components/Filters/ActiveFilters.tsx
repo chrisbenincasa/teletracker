@@ -1,7 +1,7 @@
 import React from 'react';
 import { Chip, createStyles, withStyles, WithStyles } from '@material-ui/core';
-import { withRouter, RouteComponentProps } from 'react-router-dom';
-import { Genre, ListSortOptions, ItemTypes, NetworkTypes } from '../../types';
+import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { Genre, ItemType, ListSortOptions, NetworkType } from '../../types';
 import { updateURLParameters } from '../../utils/urlHelper';
 import _ from 'lodash';
 
@@ -23,15 +23,15 @@ const styles = () =>
 interface OwnProps {
   updateFilters: (
     sortOrder: ListSortOptions,
-    networkTypes?: NetworkTypes[],
-    type?: ItemTypes[],
+    networkTypes?: NetworkType[],
+    type?: ItemType[],
     genres?: number[],
   ) => void;
   genresFilter?: number[];
   genres?: Genre[];
-  itemTypes?: ItemTypes[];
+  itemTypes?: ItemType[];
   isListDynamic?: boolean;
-  networks?: NetworkTypes[];
+  networks?: NetworkType[];
   sortOrder: ListSortOptions;
 }
 
@@ -43,10 +43,14 @@ type Props = OwnProps &
   WithStyles<typeof styles> &
   RouteComponentProps<RouteParams>;
 
+interface State {
+  sortOrder: ListSortOptions;
+}
+
 class ActiveFilters extends React.PureComponent<Props> {
-  deleteNetworkFilter = (network?: NetworkTypes[], reset?: boolean) => {
+  deleteNetworkFilter = (network?: NetworkType[], reset?: boolean) => {
     let { networks } = this.props;
-    let networkList: NetworkTypes[] = [
+    let networkList: NetworkType[] = [
       'hbo-go',
       'hbo-now',
       'netflix',
@@ -75,9 +79,9 @@ class ActiveFilters extends React.PureComponent<Props> {
     }
   };
 
-  deleteTypeFilter = (type?: ItemTypes[], reset?: boolean) => {
+  deleteTypeFilter = (type?: ItemType[], reset?: boolean) => {
     let { itemTypes } = this.props;
-    let typeList: ItemTypes[] = ['movie', 'show'];
+    let typeList: ItemType[] = ['movie', 'show'];
 
     if (!itemTypes) {
       itemTypes = typeList;
@@ -126,8 +130,8 @@ class ActiveFilters extends React.PureComponent<Props> {
 
   removeFilters = (
     sort: ListSortOptions,
-    network?: NetworkTypes[],
-    type?: ItemTypes[],
+    network?: NetworkType[],
+    type?: ItemType[],
     genre?: number[],
     reset?: boolean,
   ) => {
@@ -215,7 +219,7 @@ class ActiveFilters extends React.PureComponent<Props> {
           : null}
         {showNetworkFilters
           ? networks &&
-            networks.map((network: NetworkTypes) => (
+            networks.map((network: NetworkType) => (
               <Chip
                 key={network}
                 icon={
@@ -241,7 +245,7 @@ class ActiveFilters extends React.PureComponent<Props> {
           : null}
         {showTypeFilters
           ? itemTypes &&
-            itemTypes.map((type: ItemTypes) => (
+            itemTypes.map((type: ItemType) => (
               <Chip
                 key={type}
                 label={type}

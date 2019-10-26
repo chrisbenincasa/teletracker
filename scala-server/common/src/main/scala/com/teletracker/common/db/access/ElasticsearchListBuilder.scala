@@ -32,6 +32,7 @@ import org.elasticsearch.search.aggregations.support.ValueType
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
 import java.time.LocalDate
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
@@ -355,7 +356,8 @@ class ElasticsearchListBuilder @Inject()(
     previousBookmark: Option[Bookmark],
     sortMode: SortMode,
     isDynamic: Boolean
-  ) = {
+  ): ElasticsearchItemsResponse = {
+    @tailrec
     def getValueForBookmark(
       item: EsItem,
       actualSortMode: SortMode
@@ -386,8 +388,8 @@ class ElasticsearchListBuilder @Inject()(
             .map(_ => item.id.toString)
 
           Bookmark(
-            Popularity(),
-            item.popularity.getOrElse(0.0).toString,
+            sortMode,
+            value,
             refinement
           )
         }

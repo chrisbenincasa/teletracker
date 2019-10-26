@@ -76,12 +76,29 @@ type Props = OwnProps & WithStyles<typeof styles> & WithUserProps;
 
 interface State {
   manageTrackingModalOpen: boolean;
+  imageLoading: boolean;
 }
 
 class Featured extends Component<Props, State> {
   state: State = {
     manageTrackingModalOpen: false,
+    imageLoading: true,
   };
+
+  componentDidUpdate(
+    prevProps: Readonly<Props>,
+    prevState: Readonly<State>,
+  ): void {
+    console.log(prevProps, this.props);
+    if (
+      (!prevProps.featuredItem && this.props.featuredItem) ||
+      prevProps.featuredItem.id !== this.props.featuredItem.id
+    ) {
+      this.setState({
+        imageLoading: true,
+      });
+    }
+  }
 
   openManageTrackingModal = () => {
     this.setState({ manageTrackingModalOpen: true });
@@ -104,12 +121,18 @@ class Featured extends Component<Props, State> {
     );
   };
 
+  imageLoaded = () => {
+    this.setState({
+      imageLoading: false,
+    });
+  };
+
   renderFeaturedItem = () => {
     let { classes, featuredItem, userSelf } = this.props;
     const { manageTrackingModalOpen } = this.state;
 
     return featuredItem ? (
-      <Fade in={true}>
+      <Fade in={!this.state.imageLoading}>
         <div style={{ position: 'relative' }}>
           <div className={classes.backdropContainer}>
             <ResponsiveImage
@@ -124,6 +147,7 @@ class Featured extends Component<Props, State> {
               pictureStyle={{
                 display: 'block',
               }}
+              loadCallback={this.imageLoaded}
             />
             <div className={classes.backdropGradient} />
           </div>

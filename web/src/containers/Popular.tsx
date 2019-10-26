@@ -32,8 +32,10 @@ import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants';
 import { AppState } from '../reducers';
-import { Genre, ItemTypes, ListSortOptions, NetworkTypes } from '../types';
+import { Genre, ItemType, ListSortOptions, NetworkType } from '../types';
 import { Item } from '../types/v2/Item';
+import { filterParamsEqual } from '../utils/changeDetection';
+import { parseFilterParamsFromQs } from '../utils/searchFilters';
 
 const limit = 20;
 
@@ -112,9 +114,9 @@ type Props = OwnProps &
 
 interface State {
   genresFilter?: number[];
-  itemTypes?: ItemTypes[];
+  itemTypes?: ItemType[];
   mainItemIndex: number;
-  networks?: NetworkTypes[];
+  networks?: NetworkType[];
   showFilter: boolean;
   sortOrder: ListSortOptions;
 }
@@ -136,12 +138,15 @@ class Popular extends Component<Props, State> {
 
   loadPopular(passBookmark: boolean) {
     // To do: add support for sorting
-    this.props.retrievePopular({
-      bookmark: passBookmark ? this.props.bookmark : undefined,
-      itemTypes: this.state.itemTypes,
-      limit,
-      networks: this.state.networks,
-    });
+    if (!this.props.loading) {
+      this.props.retrievePopular({
+        bookmark: passBookmark ? this.props.bookmark : undefined,
+        itemTypes: this.state.itemTypes,
+        limit,
+        networks: this.state.networks,
+        genres: this.state.genresFilter,
+      });
+    }
   }
 
   componentDidMount() {
@@ -157,7 +162,7 @@ class Popular extends Component<Props, State> {
     }
   }
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate(prevProps: Props, prevState: State) {
     const { popular, thingsBySlug } = this.props;
     const { mainItemIndex } = this.state;
 
@@ -191,9 +196,19 @@ class Popular extends Component<Props, State> {
         });
       }
     }
+
+    if (this.props.location.search !== prevProps.location.search) {
+      let filters = parseFilterParamsFromQs(this.props.location.search);
+      this.setFilters(
+        filters.sortOrder,
+        filters.networks,
+        filters.itemTypes,
+        filters.genresFilter,
+      );
+    }
   }
 
-  setType = (itemTypes?: ItemTypes[]) => {
+  setType = (itemTypes?: ItemType[]) => {
     // Only update and hit endpoint if there is a state change
     if (this.state.itemTypes !== itemTypes) {
       this.setState(
@@ -218,7 +233,7 @@ class Popular extends Component<Props, State> {
     );
   };
 
-  setNetworks = (networks?: NetworkTypes[]) => {
+  setNetworks = (networks?: NetworkType[]) => {
     // Only update and hit endpoint if there is a state change
     if (this.state.networks !== networks) {
       this.setState(
@@ -290,8 +305,8 @@ class Popular extends Component<Props, State> {
 
   setFilters = (
     sortOrder: ListSortOptions,
-    networks?: NetworkTypes[],
-    itemTypes?: ItemTypes[],
+    networks?: NetworkType[],
+    itemTypes?: ItemType[],
     genresFilter?: number[],
   ) => {
     this.setState(
@@ -302,7 +317,7 @@ class Popular extends Component<Props, State> {
         genresFilter,
       },
       () => {
-        this.loadPopular(true);
+        this.loadPopular(false);
       },
     );
   };
