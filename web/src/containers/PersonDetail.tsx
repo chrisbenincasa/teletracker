@@ -27,7 +27,7 @@ import ItemCard from '../components/ItemCard';
 import ManageTracking from '../components/ManageTracking';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Genre, ItemType, ListSortOptions, NetworkType } from '../types';
