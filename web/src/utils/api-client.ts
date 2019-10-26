@@ -212,6 +212,7 @@ export class TeletrackerApi {
     genres?: number[],
     bookmark?: string,
     networks?: NetworkType[],
+    limit?: number,
   ) {
     return this.api.get<DataResponse<List>>(`/api/v2/users/self/lists/${id}`, {
       token,
@@ -222,6 +223,7 @@ export class TeletrackerApi {
       genres: genres && genres.length ? genres.join(',') : undefined,
       bookmark,
       networks: networks && networks.length ? networks.join(',') : undefined,
+      limit,
     });
   }
 
@@ -387,6 +389,7 @@ export class TeletrackerApi {
     itemTypes?: ItemType[],
     networks?: NetworkType[],
     bookmark?: string,
+    sort?: ListSortOptions,
     limit?: number,
     genres?: number[],
     releaseYearRange?: OpenRange,
@@ -398,6 +401,7 @@ export class TeletrackerApi {
         itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
       networks: networks && networks.length ? networks.join(',') : undefined,
       bookmark,
+      sort,
       limit,
       genres: genres && genres.length ? genres.join(',') : undefined,
       minReleaseYear:

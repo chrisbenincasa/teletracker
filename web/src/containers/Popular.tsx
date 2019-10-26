@@ -133,19 +133,24 @@ class Popular extends Component<Props, State> {
   }
 
   loadPopular(passBookmark: boolean, firstRun?: boolean) {
+    const {
+      filters: { itemTypes, sortOrder, genresFilter, networks, sliders },
+    } = this.state;
+    const { bookmark, retrievePopular, width } = this.props;
+
     // To do: add support for sorting
     if (!this.props.loading) {
-      this.props.retrievePopular({
-        bookmark: passBookmark ? this.props.bookmark : undefined,
-        itemTypes: this.state.filters.itemTypes,
-        limit: calculateLimit(this.props.width, 2, firstRun ? 1 : 0),
-        networks: this.state.filters.networks,
-        genres: this.state.filters.genresFilter,
+      retrievePopular({
+        bookmark: passBookmark ? bookmark : undefined,
+        itemTypes,
+        limit: calculateLimit(width, 2, firstRun ? 1 : 0),
+        networks,
+        genres: genresFilter,
         releaseYearRange:
-          this.state.filters.sliders && this.state.filters.sliders.releaseYear
+          sliders && sliders.releaseYear
             ? {
-                min: this.state.filters.sliders.releaseYear.min,
-                max: this.state.filters.sliders.releaseYear.max,
+                min: sliders.releaseYear.min,
+                max: sliders.releaseYear.max,
               }
             : undefined,
       });
