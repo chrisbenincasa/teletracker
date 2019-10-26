@@ -1,7 +1,7 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import _ from 'lodash';
-import { ItemType, NetworkType, OpenRange, Paging } from '../../types';
+import { ItemType, ListSortOptions, NetworkType, OpenRange, Paging } from '../../types';
 import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
 import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
@@ -17,6 +17,7 @@ export interface PopularInitiatedActionPayload {
   itemTypes?: ItemType[];
   networks?: NetworkType[];
   bookmark?: string;
+  sort?: ListSortOptions;
   limit?: number;
   genres?: number[];
   releaseYearRange?: OpenRange;
@@ -66,6 +67,7 @@ export const popularSaga = function*() {
           payload.itemTypes,
           payload.networks,
           payload.bookmark,
+          payload.sort,
           payload.limit,
           payload.genres,
           payload.releaseYearRange,

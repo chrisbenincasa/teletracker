@@ -26,6 +26,7 @@ export interface ListRetrieveInitiatedPayload {
   genres?: number[];
   bookmark?: string;
   networks?: NetworkType[];
+  limit?: number;
 }
 
 export type ListRetrieveInitiatedAction = FSA<
@@ -77,6 +78,8 @@ export const retrieveListSaga = function*() {
           payload.itemTypes,
           payload.genres,
           payload.bookmark,
+          payload.networks,
+          payload.limit,
         );
 
         if (response.ok && response.data) {
