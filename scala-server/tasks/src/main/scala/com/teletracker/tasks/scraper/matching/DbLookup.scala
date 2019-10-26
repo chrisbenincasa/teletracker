@@ -12,14 +12,14 @@ import org.apache.commons.text.similarity.LevenshteinDistance
 import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
 
-class DbLookup[T <: ScrapedItem](
+class DbLookup(
   thingsDb: ThingsDbAccess
 )(implicit executionContext: ExecutionContext)
-    extends MatchMode[T] {
+    extends MatchMode {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def lookup(
+  override def lookup[T <: ScrapedItem](
     items: List[T],
     args: IngestJobArgsLike
   ): Future[(List[MatchResult[T]], List[T])] = {
@@ -96,7 +96,7 @@ class DbLookup[T <: ScrapedItem](
     }
   }
 
-  private def lookupThingsBySlugsAndType(
+  private def lookupThingsBySlugsAndType[T <: ScrapedItem](
     itemsBySlug: Map[Slug, T],
     thingType: ThingType,
     args: IngestJobArgsLike
@@ -170,7 +170,7 @@ class DbLookup[T <: ScrapedItem](
       })
   }
 
-  private def findMatchesViaExactTitle(
+  private def findMatchesViaExactTitle[T <: ScrapedItem](
     scrapedItems: List[T]
   ): Future[List[(T, ThingRaw)]] = {
     thingsDb

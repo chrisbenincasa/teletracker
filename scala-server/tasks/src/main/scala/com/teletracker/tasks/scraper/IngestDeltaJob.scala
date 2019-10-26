@@ -60,7 +60,7 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
   protected def networkCache: NetworkCache
 
   protected def parseMode: ParseMode = AllJson
-  protected def matchMode: MatchMode[T] = new DbLookup[T](thingsDbAccess)
+  protected def matchMode: MatchMode = new DbLookup(thingsDbAccess)
 
   override type TypedArgs = IngestDeltaJobArgs
 

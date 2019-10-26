@@ -1,6 +1,5 @@
 package com.teletracker.tasks.scraper.matching
 
-import com.teletracker.common.db.model.ThingRaw
 import com.teletracker.tasks.scraper.{
   IngestJobArgsLike,
   MatchResult,
@@ -8,8 +7,8 @@ import com.teletracker.tasks.scraper.{
 }
 import scala.concurrent.Future
 
-trait MatchMode[T <: ScrapedItem] {
-  def lookup(
+trait MatchMode {
+  def lookup[T <: ScrapedItem](
     items: List[T],
     args: IngestJobArgsLike
   ): Future[(List[MatchResult[T]], List[T])]

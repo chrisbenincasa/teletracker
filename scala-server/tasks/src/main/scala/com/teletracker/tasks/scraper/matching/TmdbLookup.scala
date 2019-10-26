@@ -17,15 +17,15 @@ import com.teletracker.tasks.scraper.{
 import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
 
-class TmdbLookup[T <: ScrapedItem](
+class TmdbLookup(
   tmdbClient: TmdbClient,
   tmdbProcessor: TmdbEntityProcessor
 )(implicit executionContext: ExecutionContext)
-    extends MatchMode[T] {
+    extends MatchMode {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def lookup(
+  override def lookup[T <: ScrapedItem](
     items: List[T],
     args: IngestJobArgsLike
   ): Future[(List[MatchResult[T]], List[T])] = {
@@ -38,7 +38,7 @@ class TmdbLookup[T <: ScrapedItem](
       })
   }
 
-  private def lookupSingle(
+  private def lookupSingle[T <: ScrapedItem](
     item: T,
     args: IngestJobArgsLike
   ): Future[Option[Either[MatchResult[T], T]]] = {

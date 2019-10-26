@@ -10,16 +10,19 @@ import com.teletracker.common.util.{NetworkCache, Slug}
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import io.circe.parser._
 import javax.inject.Inject
-import org.apache.commons.text.similarity.LevenshteinDistance
 import software.amazon.awssdk.services.s3.S3Client
+import java.io.ByteArrayInputStream
 import java.net.URLEncoder
 import java.time.{Instant, OffsetDateTime, ZoneId, ZoneOffset}
+import java.util.zip.GZIPInputStream
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.io.Source
 
 class IngestHuluChanges @Inject()(
   protected val tmdbClient: TmdbClient,
@@ -30,7 +33,8 @@ class IngestHuluChanges @Inject()(
   protected val itemSearch: ItemSearch,
   protected val itemUpdater: ItemUpdater,
   httpClient: HttpClient.Factory,
-  berglasDecoder: BerglasDecoder)
+  berglasDecoder: BerglasDecoder,
+  elasticsearchLookup: ElasticsearchLookup)
     extends IngestJob[HuluScrapeItem]
     with IngestJobWithElasticsearch[HuluScrapeItem] {
 
@@ -40,7 +44,8 @@ class IngestHuluChanges @Inject()(
     httpClient.create("discover.hulu.com", HttpClientOptions.withTls)
 
   private val params = List(
-    "language" -> "en"
+    "language" -> "en",
+    "schema" -> "9"
   )
 
   private val userAgent =
@@ -58,6 +63,9 @@ class IngestHuluChanges @Inject()(
 
   override protected def processMode(args: IngestJobArgs): ProcessMode =
     Parallel(32)
+
+  override protected def matchMode: MatchMode =
+    elasticsearchLookup
 
   override protected def handleNonMatches(
     args: IngestJobArgs,
@@ -77,23 +85,38 @@ class IngestHuluChanges @Inject()(
         )
 
         client
-          .get(request)
+          .getBytes(request)
           .map(response => {
-            decode[HuluSearchResponse](response.content) match {
+            val content =
+              if (response.headers
+                    .get("Content-Encoding")
+                    .exists(_.contains("gzip"))) {
+                Source
+                  .fromInputStream(
+                    new GZIPInputStream(
+                      new ByteArrayInputStream(response.content)
+                    )
+                  )
+                  .getLines()
+                  .mkString("\n")
+              } else {
+                new String(response.content)
+              }
+
+            decode[HuluSearchResponse](content) match {
               case Left(err) =>
-                logger.error("Error while paring json response", err)
+                logger.error(
+                  s"Error while paring json response \nRequest: (${request.path}, ${request.params})\nResponse: ${response.headers}\nRaw response: ${content}",
+                  err
+                )
+
                 None
               case Right(searchResult) =>
                 val allResults = searchResult.groups
                   .flatMap(_.results)
                   .flatMap(_.entity_metadata)
 
-                allResults
-                  .sortBy(result => {
-                    LevenshteinDistance.getDefaultInstance
-                      .apply(sanitizeTitle(result.target_name), nonMatch.title)
-                  })
-                  .headOption
+                allResults.headOption
                   .map(meta => {
                     val amended = nonMatch.copy(
                       releaseYear = meta.premiere_date
@@ -135,64 +158,71 @@ class IngestHuluChanges @Inject()(
           val missingItemByTitle =
             missingScrapedItems.map(item => item.title -> item).toMap
 
-          thingsDb
-            .findThingsByNames(missingItemByTitle.keySet)
+          lookupByNames(missingItemByTitle)
             .map(foundThingsByTitle => {
-              foundThingsByTitle.toList.flatMap {
-                case (title, things) if things.length == 1 =>
-                  missingItemByTitle
-                    .filterKeys(_.toLowerCase == title)
-                    .headOption
-                    .map {
-                      case (_, item) => item -> things.head
-                    }
-
-                case (title, things) =>
-                  logger.info(
-                    s"Couldn't match on name: ${things.length} things on name match with ${title}"
-                  )
-
-                  None
-              }
+              foundThingsByTitle.toList
             })
             .map(foundThings.toList ++ _)
             .map(_.map {
               case (amended, thingRaw) =>
                 val originalItem = originalByAmends(amended)
                 logger.info(
-                  s"Successfully found fallback match for ${thingRaw.name} (${thingRaw.id} (Original item title: ${originalItem.title}))"
+                  s"Successfully found fallback match for ${thingRaw.title.get.head} (${thingRaw.id} (Original item title: ${originalItem.title}))"
                 )
                 NonMatchResult(
                   amended,
                   originalItem,
                   thingRaw.id,
-                  thingRaw.name
+                  thingRaw.title.get.head
                 )
             })
         })
       })
   }
 
-  private def lookupBySlugs(itemBySlug: Map[Slug, HuluScrapeItem]) = {
-    Future
-      .sequence(
-        itemBySlug.keys
-          .map(slug => {
-            thingsDb
-              .findThingBySlugRaw(slug, None)
-              .map {
-                case Some(t) =>
-                  Some(itemBySlug(slug) -> t)
+  private def lookupByNames(itemsByTitle: Map[String, HuluScrapeItem]) = {
+    val titleTriples = itemsByTitle.map {
+      case (title, item) =>
+        (
+          title,
+          Some(item.thingType),
+          item.releaseYear.map(ry => (ry - 1) to (ry + 1))
+        )
+    }.toList
 
-                case None =>
-                  logger.info(
-                    s"Could not find fallback match for ${itemBySlug(slug).title} via search"
-                  )
-                  None
-              }
-          })
+    itemSearch
+      .lookupItemsByTitleMatch(titleTriples)
+      .map(matchesByTitle => {
+        matchesByTitle.collect {
+          case (title, esItem)
+              if title.equalsIgnoreCase(
+                esItem.original_title.getOrElse("")
+              ) || title.equalsIgnoreCase(esItem.title.get.head) =>
+            itemsByTitle
+              .get(title)
+              .map(_ -> esItem)
+        }.flatten
+      })
+  }
+
+  private def lookupBySlugs(itemBySlug: Map[Slug, HuluScrapeItem]) = {
+    itemSearch
+      .lookupItemsBySlug(
+        itemBySlug.map {
+          case (slug, item) =>
+            (
+              slug,
+              item.thingType,
+              item.releaseYear.map(ry => (ry - 1) to (ry + 1))
+            )
+        }.toList
       )
-      .map(_.flatten)
+      .map(foundBySlug => {
+        foundBySlug.flatMap {
+          case (slug, esItem) =>
+            itemBySlug.get(slug).map(_ -> esItem)
+        }
+      })
   }
 
   private val endsWithNote = "\\([A-z0-9]+\\)$".r
@@ -210,10 +240,6 @@ class IngestHuluChanges @Inject()(
       }
     } else {
       true
-    }
-
-    if (!shouldInclude) {
-      logger.warn(s"Not including item: ${item.title}")
     }
 
     shouldInclude
