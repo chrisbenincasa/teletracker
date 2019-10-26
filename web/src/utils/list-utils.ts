@@ -6,6 +6,7 @@ import {
   ListConfiguration,
 } from '../types';
 import * as R from 'ramda';
+import { GRID_COLUMNS } from '../constants/';
 
 export function isPersonRule(x: ListRuleTypes): x is ListPersonRule {
   return x.type === 'TrackedListPersonRule';
@@ -51,3 +52,15 @@ export const getOrInitListOptions = R.pipe(
   getOrInitListConfiguration,
   getOrInitListOptionsForConfiguration,
 );
+
+export function calculateLimit(
+  screenWidth,
+  numRows?: number,
+  offsetNum?: number,
+) {
+  const columns = 12 / GRID_COLUMNS[screenWidth];
+  const rows = numRows || 3;
+  const offset = offsetNum || 0;
+
+  return columns * rows + offset;
+}

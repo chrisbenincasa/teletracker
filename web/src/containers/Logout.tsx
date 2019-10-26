@@ -7,7 +7,7 @@ import { LinearProgress } from '@material-ui/core';
 import { Redirect } from 'react-router';
 import _ from 'lodash';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID } from '../constants/';
 
 interface Props {
   isLoggingOut: boolean;
