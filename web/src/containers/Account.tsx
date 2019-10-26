@@ -39,7 +39,7 @@ import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Network, UserPreferences } from '../types';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID } from '../constants/';
 
 const styles = (theme: Theme) =>
   createStyles({
