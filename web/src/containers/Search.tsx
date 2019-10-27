@@ -20,7 +20,7 @@ import { layoutStyles } from '../styles';
 import Thing from '../types/Thing';
 import { Error as ErrorIcon } from '@material-ui/icons';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID } from '../constants/';
 import InfiniteScroll from 'react-infinite-scroller';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';

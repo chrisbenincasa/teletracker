@@ -16,7 +16,7 @@ import { Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Item } from '../types/v2/Item';
