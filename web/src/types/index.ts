@@ -46,6 +46,16 @@ export type NetworkType =
   | 'amazon-video'
   | 'hulu';
 
+export const ALL_NETWORK_TYPES: NetworkType[] = [
+  'hbo-go',
+  'hbo-now',
+  'netflix',
+  'netflix-kids',
+  'amazon-prime-video',
+  'amazon-video',
+  'hulu',
+];
+
 export function isNetworkType(s: string): s is NetworkType {
   const allowed = [
     'netflix',
@@ -161,7 +171,7 @@ export interface Availability {
 export interface Network {
   id: number;
   name: string;
-  slug: string;
+  slug: NetworkType;
   shortname?: string;
   homepage?: string;
   origin?: string;

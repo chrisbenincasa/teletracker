@@ -1,7 +1,14 @@
 import React from 'react';
 import { Chip, createStyles, withStyles, WithStyles } from '@material-ui/core';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
-import { Genre, ItemType, ListSortOptions, NetworkType } from '../../types';
+import {
+  ALL_NETWORK_TYPES,
+  Genre,
+  ItemType,
+  ListSortOptions,
+  Network,
+  NetworkType,
+} from '../../types';
 import { updateMultipleUrlParams } from '../../utils/urlHelper';
 import _ from 'lodash';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../../utils/searchFilters';
@@ -25,6 +32,7 @@ const styles = () =>
 interface OwnProps {
   updateFilters: (FilterParams) => void;
   genres?: Genre[];
+  networks?: Network[];
   isListDynamic?: boolean;
   filters: FilterParams;
 }
@@ -43,8 +51,8 @@ interface State {
 
 class ActiveFilters extends React.PureComponent<Props> {
   deleteNetworkFilter = (
-    network?: NetworkType[],
-  ): [NetworkType[] | undefined, boolean] => {
+    network?: Network[],
+  ): [Network[] | undefined, boolean] => {
     let {
       filters: { networks },
     } = this.props;
@@ -52,17 +60,8 @@ class ActiveFilters extends React.PureComponent<Props> {
       return [networks, false];
     }
 
-    // TODO: Put somewhere constant/common
-    let networkList: NetworkType[] = [
-      'hbo-go',
-      'hbo-now',
-      'netflix',
-      'netflix-kids',
-      'hulu',
-    ];
-
     if (!networks) {
-      networks = networkList;
+      networks = this.props.networks;
     }
 
     let networkDiff = _.difference(networks, network);
