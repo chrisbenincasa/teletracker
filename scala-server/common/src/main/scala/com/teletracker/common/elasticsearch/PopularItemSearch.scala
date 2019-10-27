@@ -46,7 +46,7 @@ class PopularItemSearch @Inject()(
       .applyOptional(networks.filter(_.nonEmpty))(availabilityByNetworksOr)
       .applyOptional(releaseYear.filter(_.isFinite))(openDateRangeFilter)
       .applyOptional(itemTypes.filter(_.nonEmpty))(itemTypesFilter)
-      .applyOptional(bookmark)(applyBookmark)
+      .applyOptional(bookmark)(applyBookmark(_, _, list = None))
 
     val searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
