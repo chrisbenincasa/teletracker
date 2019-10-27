@@ -659,6 +659,7 @@ class ListDetail extends Component<Props, State> {
       loadingList,
       genresFilter,
       networks,
+      showFilter,
       sortOrder,
     } = this.state;
 
@@ -691,7 +692,7 @@ class ListDetail extends Component<Props, State> {
               <IconButton
                 onClick={this.toggleFilters}
                 className={classes.settings}
-                color={this.state.showFilter ? 'secondary' : 'inherit'}
+                color={showFilter ? 'secondary' : 'inherit'}
               >
                 <Tune />
                 <Typography variant="srOnly">Tune</Typography>
@@ -700,7 +701,7 @@ class ListDetail extends Component<Props, State> {
             </div>
             <AllFilters
               genres={genres}
-              open={this.state.showFilter}
+              open={showFilter}
               handleTypeChange={this.setType}
               handleGenreChange={this.setGenre}
               handleNetworkChange={this.setNetworks}
