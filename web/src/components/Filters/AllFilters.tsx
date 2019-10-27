@@ -71,7 +71,9 @@ interface Props {
 
 const AllFilters = (props: Props) => {
   const classes = useStyles();
-
+  const TIMEOUT_APPEAR = 600;
+  const TIMEOUT_ENTER = 600;
+  const TIMEOUT_EXIT = 300;
   const {
     disabledGenres,
     genres,
@@ -103,11 +105,12 @@ const AllFilters = (props: Props) => {
     <Collapse
       in={open}
       timeout={{
-        appear: 600,
-        enter: 600,
-        exit: 300,
+        appear: TIMEOUT_APPEAR,
+        enter: TIMEOUT_ENTER,
+        exit: TIMEOUT_EXIT,
       }}
       className={classes.toEdgeWrapper}
+      appear
     >
       <div className={classes.allFiltersContainer}>
         <Typography
