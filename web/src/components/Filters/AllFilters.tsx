@@ -17,8 +17,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
     display: 'flex',
     flexWrap: 'wrap',
-    margin: `0 -${theme.spacing(2)}px ${theme.spacing(2)}px`,
-    padding: 15,
+    padding: theme.spacing(2),
     backgroundColor: `${theme.palette.grey[800]}`,
   },
   filterSortContainer: {
@@ -44,13 +43,16 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   networkContainer: {
     display: 'flex',
-    margin: '10px 0',
+    margin: `${theme.spacing(1)}px 0`,
     alignItems: 'flex-start',
     flexGrow: 1,
   },
+  toEdgeWrapper: {
+    margin: `0 -${theme.spacing(2)}px ${theme.spacing(2)}px`,
+  },
   typeContainer: {
     display: 'flex',
-    margin: '10px 0',
+    margin: `${theme.spacing(1)}px 0`,
     alignItems: 'flex-start',
     flexGrow: 1,
   },
@@ -111,6 +113,7 @@ const AllFilters = (props: Props) => {
         enter: 600,
         exit: 300,
       }}
+      className={classes.toEdgeWrapper}
     >
       <div className={classes.allFiltersContainer}>
         <Typography
