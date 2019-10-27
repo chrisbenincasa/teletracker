@@ -35,7 +35,8 @@ import { AppState } from '../reducers';
 import { Genre, ItemType, ListSortOptions, NetworkType } from '../types';
 import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
-import { parseFilterParamsFromQs } from '../utils/searchFilters';
+import { FilterParams, SlidersState } from '../utils/searchFilters';
+import { parseFilterParamsFromQs } from '../utils/urlHelper';
 
 const limit = 20;
 
@@ -113,26 +114,22 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
-  genresFilter?: number[];
-  itemTypes?: ItemType[];
   mainItemIndex: number;
-  networks?: NetworkType[];
   showFilter: boolean;
-  sortOrder: ListSortOptions;
+  filters: FilterParams;
 }
 
 class Popular extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
+    let filterParams = parseFilterParamsFromQs(props.location.search);
+
     this.state = {
       ...this.state,
-      genresFilter: getGenreFromUrlParam(),
-      itemTypes: getTypeFromUrlParam(),
       mainItemIndex: -1,
-      networks: getNetworkTypeFromUrlParam(),
       showFilter: false,
-      sortOrder: getSortFromUrlParam(),
+      filters: filterParams,
     };
   }
 
@@ -141,10 +138,17 @@ class Popular extends Component<Props, State> {
     if (!this.props.loading) {
       this.props.retrievePopular({
         bookmark: passBookmark ? this.props.bookmark : undefined,
-        itemTypes: this.state.itemTypes,
+        itemTypes: this.state.filters.itemTypes,
         limit,
-        networks: this.state.networks,
-        genres: this.state.genresFilter,
+        networks: this.state.filters.networks,
+        genres: this.state.filters.genresFilter,
+        releaseYearRange:
+          this.state.filters.sliders && this.state.filters.sliders.releaseYear
+            ? {
+                min: this.state.filters.sliders.releaseYear.min,
+                max: this.state.filters.sliders.releaseYear.max,
+              }
+            : undefined,
       });
     }
   }
@@ -199,21 +203,23 @@ class Popular extends Component<Props, State> {
 
     if (this.props.location.search !== prevProps.location.search) {
       let filters = parseFilterParamsFromQs(this.props.location.search);
-      this.setFilters(
-        filters.sortOrder,
-        filters.networks,
-        filters.itemTypes,
-        filters.genresFilter,
-      );
+      if (!filterParamsEqual(filters, this.state.filters)) {
+        this.setFilters(filters);
+      }
     }
   }
 
   setType = (itemTypes?: ItemType[]) => {
     // Only update and hit endpoint if there is a state change
-    if (this.state.itemTypes !== itemTypes) {
+    if (
+      _.xor(this.state.filters.itemTypes || [], itemTypes || []).length !== 0
+    ) {
       this.setState(
         {
-          itemTypes,
+          filters: {
+            ...this.state.filters,
+            itemTypes,
+          },
         },
         () => {
           this.loadPopular(false);
@@ -225,7 +231,10 @@ class Popular extends Component<Props, State> {
   setGenre = (genresFilter?: number[]) => {
     this.setState(
       {
-        genresFilter,
+        filters: {
+          ...this.state.filters,
+          genresFilter,
+        },
       },
       () => {
         this.loadPopular(false);
@@ -235,10 +244,13 @@ class Popular extends Component<Props, State> {
 
   setNetworks = (networks?: NetworkType[]) => {
     // Only update and hit endpoint if there is a state change
-    if (this.state.networks !== networks) {
+    if (this.state.filters.networks !== networks) {
       this.setState(
         {
-          networks,
+          filters: {
+            ...this.state.filters,
+            networks,
+          },
         },
         () => {
           this.loadPopular(false);
@@ -248,10 +260,13 @@ class Popular extends Component<Props, State> {
   };
 
   setSortOrder = (sortOrder: ListSortOptions) => {
-    if (this.state.sortOrder !== sortOrder) {
+    if (this.state.filters.sortOrder !== sortOrder) {
       this.setState(
         {
-          sortOrder,
+          filters: {
+            ...this.state.filters,
+            sortOrder,
+          },
         },
         () => {
           this.loadPopular(false);
@@ -303,18 +318,10 @@ class Popular extends Component<Props, State> {
     }
   };
 
-  setFilters = (
-    sortOrder: ListSortOptions,
-    networks?: NetworkType[],
-    itemTypes?: ItemType[],
-    genresFilter?: number[],
-  ) => {
+  setFilters = (filterParams: FilterParams) => {
     this.setState(
       {
-        networks,
-        itemTypes,
-        sortOrder,
-        genresFilter,
+        filters: filterParams,
       },
       () => {
         this.loadPopular(false);
@@ -324,7 +331,9 @@ class Popular extends Component<Props, State> {
 
   renderPopular = () => {
     const { classes, genres, popular, userSelf, thingsBySlug } = this.props;
-    const { genresFilter, itemTypes, networks, sortOrder } = this.state;
+    const {
+      filters: { genresFilter, itemTypes, networks, sortOrder },
+    } = this.state;
 
     return popular && popular && popular.length ? (
       <div className={classes.popularContainer}>
@@ -351,11 +360,8 @@ class Popular extends Component<Props, State> {
           <ActiveFilters
             genres={genres}
             updateFilters={this.setFilters}
-            genresFilter={genresFilter}
-            itemTypes={itemTypes}
-            networks={networks}
-            sortOrder={sortOrder}
             isListDynamic={false}
+            filters={this.state.filters}
           />
           <IconButton
             onClick={this.toggleFilters}

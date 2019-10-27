@@ -5,6 +5,7 @@ import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
 import SortDropdown from './SortDropdown';
+import Sliders from './Sliders';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
@@ -33,6 +34,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
+  },
+  slidersContainer: {
+    display: 'flex',
+    flexGrow: 1,
+    margin: '10px 0',
+    alignItems: 'flex-start',
+    flexDirection: 'column',
   },
   networkContainer: {
     display: 'flex',
@@ -128,6 +136,9 @@ const AllFilters = (props: Props) => {
                 handleChange={setGenre}
               />
             )}
+          </div>
+          <div className={classes.slidersContainer}>
+            <Sliders />
           </div>
           <div className={classes.networkContainer}>
             {handleNetworkChange && (
