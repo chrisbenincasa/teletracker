@@ -1,6 +1,5 @@
 import { Person } from './Person';
-
-export type ItemType = 'movie' | 'show';
+import { ItemType } from '..';
 
 export interface ApiItem {
   adult?: boolean;

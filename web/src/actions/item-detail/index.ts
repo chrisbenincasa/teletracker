@@ -5,7 +5,6 @@ import {
 } from './get_item_details';
 
 export * from './get_item_details';
-export * from './get_items_batch';
 
 export const ACTION_WATCHED = 'Watched';
 export const ACTION_ENJOYED = 'Enjoyed';

@@ -1,14 +1,10 @@
 import {
-  Chip,
   createStyles,
   Fab,
   Grid,
   Hidden,
   IconButton,
-  InputLabel,
   LinearProgress,
-  MenuItem,
-  Select,
   Theme,
   Typography,
   withStyles,
@@ -34,14 +30,12 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { ItemTypes, Genre, ListSortOptions, NetworkTypes } from '../types';
+import { Genre, ItemType, ListSortOptions, NetworkType } from '../types';
 import { Person } from '../types/v2/Person';
-import { getTypeFromUrlParam } from '../components/Filters/TypeToggle';
-import { getNetworkTypeFromUrlParam } from '../components/Filters/NetworkSelect';
-import { getSortFromUrlParam } from '../components/Filters/SortDropdown';
-import { getGenreFromUrlParam } from '../components/Filters/GenreSelect';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
+import { FilterParams } from '../utils/searchFilters';
+import { parseFilterParamsFromQs } from '../utils/urlHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -131,11 +125,8 @@ interface OwnProps {}
 
 interface State {
   showFullBiography: boolean;
-  sortOrder: ListSortOptions;
-  genresFilter?: number[];
-  itemTypes?: ItemTypes[];
-  networks?: NetworkTypes[];
   showFilter: boolean;
+  filters: FilterParams;
 }
 
 interface StateProps {
@@ -165,16 +156,13 @@ class PersonDetail extends React.Component<Props, State> {
     let params = new URLSearchParams(location.search);
 
     this.state = {
-      genresFilter: getGenreFromUrlParam(),
-      itemTypes: getTypeFromUrlParam(),
-      networks: getNetworkTypeFromUrlParam(),
       showFullBiography: false,
       showFilter:
         params.has('sort') ||
         params.has('genres') ||
         params.has('networks') ||
         params.has('types'),
-      sortOrder: getSortFromUrlParam(),
+      filters: parseFilterParamsFromQs(this.props.location.search),
     };
   }
 
@@ -225,52 +213,56 @@ class PersonDetail extends React.Component<Props, State> {
     this.setState({ showFilter: !this.state.showFilter });
   };
 
-  setFilters = (
-    sortOrder: ListSortOptions,
-    networks?: NetworkTypes[],
-    itemTypes?: ItemTypes[],
-    genres?: number[],
-  ) => {
-    this.setState({
-      networks,
-      itemTypes,
-      sortOrder,
-      genresFilter: genres,
-    });
+  setFilters = (filters: FilterParams) => {
+    this.setState({ filters });
   };
 
   setSortOrder = (sortOrder: ListSortOptions) => {
-    if (this.state.sortOrder !== sortOrder) {
+    if (this.state.filters.sortOrder !== sortOrder) {
       this.setState({
-        sortOrder,
+        filters: {
+          ...this.state.filters,
+          sortOrder,
+        },
       });
     }
   };
 
-  setType = (type?: ItemTypes[]) => {
+  setType = (type?: ItemType[]) => {
     this.setState({
-      itemTypes: type,
+      filters: {
+        ...this.state.filters,
+        itemTypes: type,
+      },
     });
   };
 
   setGenre = (genres?: number[]) => {
     this.setState({
-      genresFilter: genres,
+      filters: {
+        ...this.state.filters,
+        genresFilter: genres,
+      },
     });
   };
 
-  setNetworks = (networks?: NetworkTypes[]) => {
+  setNetworks = (networks?: NetworkType[]) => {
     // Only update and hit endpoint if there is a state change
-    if (this.state.networks !== networks) {
+    if (this.state.filters.networks !== networks) {
       this.setState({
-        networks,
+        filters: {
+          ...this.state.filters,
+          networks,
+        },
       });
     }
   };
 
   renderFilmography = () => {
     const { classes, genres, person, userSelf } = this.props;
-    const { genresFilter, itemTypes, networks, sortOrder } = this.state;
+    const {
+      filters: { genresFilter, itemTypes, networks, sortOrder },
+    } = this.state;
 
     let filmography = person!.cast_credits || [];
     let filmographyFiltered = filmography
@@ -295,11 +287,11 @@ class PersonDetail extends React.Component<Props, State> {
           !itemTypes,
       )
       .sort((a, b) => {
-        if (this.state.sortOrder === 'popularity') {
+        if (this.state.filters.sortOrder === 'popularity') {
           return (a.item!.popularity || 0.0) < (b.item!.popularity || 0.0)
             ? 1
             : -1;
-        } else if (this.state.sortOrder === 'recent') {
+        } else if (this.state.filters.sortOrder === 'recent') {
           let sort;
           if (!b.item!.release_date) {
             sort = 1;
@@ -350,10 +342,7 @@ class PersonDetail extends React.Component<Props, State> {
           <ActiveFilters
             genres={genres}
             updateFilters={this.setFilters}
-            genresFilter={genresFilter}
-            itemTypes={itemTypes}
-            networks={networks}
-            sortOrder={sortOrder}
+            filters={this.state.filters}
             isListDynamic={false}
           />
           <IconButton
