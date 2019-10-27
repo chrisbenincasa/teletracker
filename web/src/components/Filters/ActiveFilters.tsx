@@ -1,7 +1,7 @@
+import React from 'react';
 import { Chip, createStyles, withStyles, WithStyles } from '@material-ui/core';
 import { withRouter, RouteComponentProps } from 'react-router-dom';
 import { Genre, ListSortOptions, ItemTypes, NetworkTypes } from '../../types';
-import React, { Component } from 'react';
 import { updateURLParameters } from '../../utils/urlHelper';
 import _ from 'lodash';
 
@@ -43,11 +43,7 @@ type Props = OwnProps &
   WithStyles<typeof styles> &
   RouteComponentProps<RouteParams>;
 
-interface State {
-  sortOrder: ListSortOptions;
-}
-
-class ActiveFilters extends Component<Props, State> {
+class ActiveFilters extends React.PureComponent<Props> {
   deleteNetworkFilter = (network?: NetworkTypes[], reset?: boolean) => {
     let { networks } = this.props;
     let networkList: NetworkTypes[] = [
