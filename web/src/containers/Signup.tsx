@@ -15,7 +15,7 @@ import { AppState } from '../reducers';
 import { Redirect } from 'react-router';
 import * as firebase from 'firebase/app';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID } from '../constants/';
 import SignupForm from '../components/Auth/SignupForm';
 
 const styles = (theme: Theme) =>

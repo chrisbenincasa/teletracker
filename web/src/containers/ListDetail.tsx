@@ -52,7 +52,7 @@ import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import { StdRouterLink } from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';
 import { ListsByIdMap } from '../reducers/lists';
@@ -61,6 +61,7 @@ import { getOrInitListOptions } from '../utils/list-utils';
 import { Item } from '../types/v2/Item';
 import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
+import { calculateLimit } from '../utils/list-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -207,8 +208,9 @@ class ListDetail extends Component<Props, State> {
 
   retrieveList() {
     const {
-      filters: { itemTypes, sortOrder, genresFilter },
+      filters: { itemTypes, sortOrder, genresFilter, networks },
     } = this.state;
+    const { width } = this.props;
 
     this.props.retrieveList({
       listId: this.listId,
@@ -216,6 +218,8 @@ class ListDetail extends Component<Props, State> {
       itemTypes,
       genres: genresFilter ? genresFilter : undefined,
       force: true,
+      networks: networks ? networks : undefined,
+      limit: calculateLimit(width, 2),
     });
   }
 
@@ -640,9 +644,9 @@ class ListDetail extends Component<Props, State> {
 
   loadMoreDebounced = _.debounce(() => {
     let {
-      filters: { sortOrder, itemTypes, genresFilter },
+      filters: { sortOrder, itemTypes, genresFilter, networks },
     } = this.state;
-    let { listBookmark } = this.props;
+    let { listBookmark, width } = this.props;
 
     this.props.retrieveList({
       listId: this.listId,
@@ -650,6 +654,8 @@ class ListDetail extends Component<Props, State> {
       sort: sortOrder === 'default' ? undefined : sortOrder,
       itemTypes,
       genres: genresFilter ? genresFilter : undefined,
+      networks: networks ? networks : undefined,
+      limit: calculateLimit(width, 2),
     });
   }, 200);
 

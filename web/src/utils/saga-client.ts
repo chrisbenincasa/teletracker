@@ -51,6 +51,7 @@ export class SagaTeletrackerClient {
     genres?: number[],
     bookmark?: string,
     networks?: NetworkType[],
+    limit?: number,
   ) {
     return yield this.apiCall(
       client => client.getList,
@@ -62,6 +63,7 @@ export class SagaTeletrackerClient {
       genres,
       bookmark,
       networks,
+      limit,
     );
   }
 
@@ -210,6 +212,7 @@ export class SagaTeletrackerClient {
     itemTypes?: ItemType[],
     networks?: NetworkType[],
     bookmark?: string,
+    sort?: ListSortOptions,
     limit?: number,
     genres?: number[],
     releaseYearRange?: OpenRange,
@@ -222,6 +225,7 @@ export class SagaTeletrackerClient {
       itemTypes,
       networks,
       bookmark,
+      sort,
       limit,
       genres,
       releaseYearRange,

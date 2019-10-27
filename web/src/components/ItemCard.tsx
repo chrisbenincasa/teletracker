@@ -43,6 +43,7 @@ import {
   updateUserItemTags,
   UserUpdateItemTagsPayload,
 } from '../actions/user';
+import { GRID_COLUMNS } from '../constants/';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import { UserSelf } from '../reducers/user';
 import { ActionType, List } from '../types';
@@ -573,19 +574,16 @@ class ItemCard extends Component<Props, ItemCardState> {
     let { classes, hoverAddToList, item, userSelf } = this.props;
     let { deleted, manageTrackingModalOpen } = this.state;
 
-    let gridProps: Partial<GridProps> = {
+    let gridProps: GridProps = {
       item: true,
-      xs: 4,
-      sm: 4,
-      md: 3,
-      lg: 2,
+      ...GRID_COLUMNS,
       ...this.props.gridProps,
     };
 
     return (
       <React.Fragment>
         <Fade in={true} timeout={1000}>
-          <Grid key={!deleted ? item.id : 'deleted'} {...gridProps}>
+          <Grid key={!deleted ? item.id : `${item.id}-deleted`} {...gridProps}>
             <Card
               className={classes.card}
               onMouseEnter={this.handleHoverEnter}

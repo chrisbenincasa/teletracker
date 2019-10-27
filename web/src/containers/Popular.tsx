@@ -30,15 +30,14 @@ import { getSortFromUrlParam } from '../components/Filters/SortDropdown';
 import { getTypeFromUrlParam } from '../components/Filters/TypeToggle';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID, GRID_COLUMNS } from '../constants/';
 import { AppState } from '../reducers';
 import { Genre, ItemType, ListSortOptions, NetworkType } from '../types';
 import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { FilterParams, SlidersState } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
-
-const limit = 20;
+import { calculateLimit } from '../utils/list-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -133,20 +132,25 @@ class Popular extends Component<Props, State> {
     };
   }
 
-  loadPopular(passBookmark: boolean) {
+  loadPopular(passBookmark: boolean, firstRun?: boolean) {
+    const {
+      filters: { itemTypes, sortOrder, genresFilter, networks, sliders },
+    } = this.state;
+    const { bookmark, retrievePopular, width } = this.props;
+
     // To do: add support for sorting
     if (!this.props.loading) {
-      this.props.retrievePopular({
-        bookmark: passBookmark ? this.props.bookmark : undefined,
-        itemTypes: this.state.filters.itemTypes,
-        limit,
-        networks: this.state.filters.networks,
-        genres: this.state.filters.genresFilter,
+      retrievePopular({
+        bookmark: passBookmark ? bookmark : undefined,
+        itemTypes,
+        limit: calculateLimit(width, 2, firstRun ? 1 : 0),
+        networks,
+        genres: genresFilter,
         releaseYearRange:
-          this.state.filters.sliders && this.state.filters.sliders.releaseYear
+          sliders && sliders.releaseYear
             ? {
-                min: this.state.filters.sliders.releaseYear.min,
-                max: this.state.filters.sliders.releaseYear.max,
+                min: sliders.releaseYear.min,
+                max: sliders.releaseYear.max,
               }
             : undefined,
       });
@@ -156,7 +160,7 @@ class Popular extends Component<Props, State> {
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
 
-    this.loadPopular(false);
+    this.loadPopular(false, true);
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
