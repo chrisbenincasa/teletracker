@@ -1,10 +1,4 @@
-import {
-  Collapse,
-  Fade,
-  makeStyles,
-  Theme,
-  Typography,
-} from '@material-ui/core';
+import { Collapse, makeStyles, Theme, Typography } from '@material-ui/core';
 import React from 'react';
 import _ from 'lodash';
 import { Genre, ItemTypes, ListSortOptions, NetworkTypes } from '../../types';
