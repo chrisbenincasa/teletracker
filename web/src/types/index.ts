@@ -24,9 +24,20 @@ export type ListSortOptions =
   | 'added_time'
   | 'default';
 
-export type ItemTypes = 'movie' | 'show';
+export function isListSortOption(s: string): s is ListSortOptions {
+  const allowed = ['popularity', 'recent', 'added_time', 'default'];
+  return allowed.includes(s);
+}
 
-export type NetworkTypes =
+export type ItemType = 'movie' | 'show';
+
+// TODO: There are better ways to do this... explore them.
+export function isItemType(s: string): s is ItemType {
+  const allowed = ['movie', 'show']; // Must match above
+  return allowed.includes(s);
+}
+
+export type NetworkType =
   | 'netflix'
   | 'netflix-kids'
   | 'hbo-go'
@@ -34,6 +45,20 @@ export type NetworkTypes =
   | 'amazon-prime-video'
   | 'amazon-video'
   | 'hulu';
+
+export function isNetworkType(s: string): s is NetworkType {
+  const allowed = [
+    'netflix',
+    'netflix-kids',
+    'hbo-go',
+    'hbo-now',
+    'amazon-prime-video',
+    'amazon-video',
+    'hulu',
+  ];
+
+  return allowed.includes(s);
+}
 
 export interface ListConfiguration {
   ruleConfiguration?: ListRules;
@@ -153,4 +178,9 @@ export enum ActionType {
   Watched = 'watched',
   Enjoyed = 'enjoyed',
   TrackedInList = 'tracked_in_list',
+}
+
+export interface OpenRange {
+  min?: number;
+  max?: number;
 }

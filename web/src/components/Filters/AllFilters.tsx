@@ -1,11 +1,11 @@
 import { Collapse, makeStyles, Theme, Typography } from '@material-ui/core';
 import React from 'react';
-import _ from 'lodash';
-import { Genre, ItemTypes, ListSortOptions, NetworkTypes } from '../../types';
+import { Genre, ItemType, ListSortOptions, NetworkType } from '../../types';
 import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
 import SortDropdown from './SortDropdown';
+import Sliders from './Sliders';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
@@ -35,6 +35,13 @@ const useStyles = makeStyles((theme: Theme) => ({
       width: '100%',
     },
   },
+  slidersContainer: {
+    display: 'flex',
+    flexGrow: 1,
+    margin: '10px 0',
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+  },
   networkContainer: {
     display: 'flex',
     margin: `${theme.spacing(1)}px 0`,
@@ -60,8 +67,8 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 interface Props {
   handleGenreChange?: (genre?: number[]) => void;
-  handleTypeChange?: (type?: ItemTypes[]) => void;
-  handleNetworkChange?: (networkTypes?: NetworkTypes[]) => void;
+  handleTypeChange?: (type?: ItemType[]) => void;
+  handleNetworkChange?: (networkTypes?: NetworkType[]) => void;
   handleSortChange?: (sortOrder: ListSortOptions) => void;
   isListDynamic?: boolean;
   genres?: Genre[];
@@ -89,11 +96,11 @@ const AllFilters = (props: Props) => {
     handleGenreChange && handleGenreChange(genres);
   };
 
-  const setType = (type?: ItemTypes[]) => {
+  const setType = (type?: ItemType[]) => {
     handleTypeChange && handleTypeChange(type);
   };
 
-  const setNetworks = (networks?: NetworkTypes[]) => {
+  const setNetworks = (networks?: NetworkType[]) => {
     handleNetworkChange && handleNetworkChange(networks);
   };
 
@@ -129,6 +136,9 @@ const AllFilters = (props: Props) => {
                 handleChange={setGenre}
               />
             )}
+          </div>
+          <div className={classes.slidersContainer}>
+            <Sliders />
           </div>
           <div className={classes.networkContainer}>
             {handleNetworkChange && (

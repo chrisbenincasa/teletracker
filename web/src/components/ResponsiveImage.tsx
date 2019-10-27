@@ -1,8 +1,6 @@
 import React from 'react';
 import { Icon } from '@material-ui/core';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
-import HasImagery from '../types/HasImagery';
-import { ApiItem } from '../types/v2';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';
 
@@ -12,6 +10,7 @@ interface imgProps {
   imageType: 'poster' | 'backdrop' | 'profile';
   imageStyle?: object;
   pictureStyle?: object;
+  loadCallback?: () => void;
 }
 
 // TODO: Refactor this entire thing to support more than just backdrop and poster
@@ -20,6 +19,7 @@ export const ResponsiveImage: React.FC<imgProps> = ({
   imageType,
   imageStyle,
   pictureStyle,
+  loadCallback,
 }) => {
   function generateSource(imageSpecs) {
     return imageSpecs.map(image => {
@@ -114,6 +114,12 @@ export const ResponsiveImage: React.FC<imgProps> = ({
     loading: 'lazy',
   };
 
+  const handleOnLoad = () => {
+    if (loadCallback) {
+      loadCallback();
+    }
+  };
+
   if (imageName) {
     return (
       <picture style={pictureStyle}>
@@ -126,6 +132,7 @@ export const ResponsiveImage: React.FC<imgProps> = ({
           {...imgProps}
           style={imageStyle}
           itemProp="image"
+          onLoad={handleOnLoad}
         />
       </picture>
     );

@@ -1,6 +1,6 @@
 package com.teletracker.common.elasticsearch
 
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.{Genre, ThingType}
 import com.teletracker.common.db.{
   AddedTime,
   Bookmark,
@@ -18,10 +18,11 @@ import org.elasticsearch.index.query.{
   RangeQueryBuilder
 }
 import com.teletracker.common.util.Functions._
+import com.teletracker.common.util.OpenDateRange
 import io.circe.Decoder
+import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
@@ -95,6 +96,64 @@ trait ElasticsearchAccess {
             .must(QueryBuilders.termQuery("adult", false))
         )
         .minimumShouldMatch(1)
+    )
+  }
+
+  protected def posterImageFilter(
+    builder: BoolQueryBuilder
+  ): BoolQueryBuilder = {
+    builder.filter(
+      QueryBuilders.termQuery("images.image_type", "poster")
+    )
+  }
+
+  protected def genresFilter(
+    builder: BoolQueryBuilder,
+    genres: Set[Genre]
+  ): BoolQueryBuilder = {
+    require(genres.nonEmpty)
+    builder.filter(
+      genres
+        .foldLeft(QueryBuilders.boolQuery())(
+          (builder, genre) =>
+            builder.should(
+              QueryBuilders.nestedQuery(
+                "genres",
+                QueryBuilders.termQuery("genres.id", genre.id.get),
+                ScoreMode.Avg
+              )
+            )
+        )
+        .minimumShouldMatch(1)
+    )
+  }
+
+  protected def openDateRangeFilter(
+    builder: BoolQueryBuilder,
+    openDateRange: OpenDateRange
+  ): BoolQueryBuilder = {
+    require(openDateRange.isFinite)
+
+    builder.filter(
+      QueryBuilders
+        .rangeQuery("release_date")
+        .format("yyyy-MM-dd")
+        .applyOptional(openDateRange.start)(
+          (range, start) => range.gte(start.toString)
+        )
+        .applyOptional(openDateRange.end)(
+          (range, end) => range.lte(end.toString)
+        )
+    )
+  }
+
+  protected def itemTypesFilter(
+    builder: BoolQueryBuilder,
+    itemTypes: Set[ThingType]
+  ): BoolQueryBuilder = {
+    require(itemTypes.nonEmpty)
+    builder.filter(
+      itemTypes.foldLeft(QueryBuilders.boolQuery())(itemTypeFilter)
     )
   }
 
