@@ -2,8 +2,10 @@ import React from 'react';
 import { Chip, createStyles, withStyles, WithStyles } from '@material-ui/core';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { Genre, ItemType, ListSortOptions, NetworkType } from '../../types';
-import { updateURLParameters } from '../../utils/urlHelper';
+import { updateMultipleUrlParams } from '../../utils/urlHelper';
 import _ from 'lodash';
+import { DEFAULT_FILTER_PARAMS, FilterParams } from '../../utils/searchFilters';
+import { setsEqual } from '../../utils/sets';
 
 const styles = () =>
   createStyles({
@@ -21,18 +23,10 @@ const styles = () =>
   });
 
 interface OwnProps {
-  updateFilters: (
-    sortOrder: ListSortOptions,
-    networkTypes?: NetworkType[],
-    type?: ItemType[],
-    genres?: number[],
-  ) => void;
-  genresFilter?: number[];
+  updateFilters: (FilterParams) => void;
   genres?: Genre[];
-  itemTypes?: ItemType[];
   isListDynamic?: boolean;
-  networks?: NetworkType[];
-  sortOrder: ListSortOptions;
+  filters: FilterParams;
 }
 
 interface RouteParams {
@@ -48,8 +42,17 @@ interface State {
 }
 
 class ActiveFilters extends React.PureComponent<Props> {
-  deleteNetworkFilter = (network?: NetworkType[], reset?: boolean) => {
-    let { networks } = this.props;
+  deleteNetworkFilter = (
+    network?: NetworkType[],
+  ): [NetworkType[] | undefined, boolean] => {
+    let {
+      filters: { networks },
+    } = this.props;
+    if (!network) {
+      return [networks, false];
+    }
+
+    // TODO: Put somewhere constant/common
     let networkList: NetworkType[] = [
       'hbo-go',
       'hbo-now',
@@ -62,118 +65,183 @@ class ActiveFilters extends React.PureComponent<Props> {
       networks = networkList;
     }
 
-    if (reset) {
-      updateURLParameters(this.props, 'networks', undefined);
-    }
-
-    if (network && network === networks) {
-      return network;
-    } else if (network && network !== networks) {
-      const networkDiff = _.difference(networks, network);
-
-      updateURLParameters(this.props, 'networks', networkDiff);
-      return networkDiff;
-    } else {
-      updateURLParameters(this.props, 'networks', undefined);
-      return undefined;
-    }
+    let networkDiff = _.difference(networks, network);
+    return [
+      networkDiff.length === 0 ? undefined : networkDiff,
+      setsEqual(networkDiff, networks),
+    ];
   };
 
-  deleteTypeFilter = (type?: ItemType[], reset?: boolean) => {
-    let { itemTypes } = this.props;
+  deleteTypeFilter = (type?: ItemType[]): [ItemType[] | undefined, boolean] => {
+    let {
+      filters: { itemTypes },
+    } = this.props;
     let typeList: ItemType[] = ['movie', 'show'];
+
+    if (!type) {
+      return [itemTypes, false];
+    }
 
     if (!itemTypes) {
       itemTypes = typeList;
     }
 
-    if (reset) {
-      return undefined;
-    }
+    const typeDiff = _.difference(itemTypes, type);
 
-    if (type && type === itemTypes) {
-      return type;
-    } else if (type && type !== itemTypes) {
-      const typeDiff = _.difference(itemTypes, type);
-      updateURLParameters(this.props, 'type', typeDiff);
-      return typeDiff;
-    } else {
-      updateURLParameters(this.props, 'type', undefined);
-      return undefined;
-    }
+    return [
+      typeDiff.length === 0 ? undefined : typeDiff,
+      !setsEqual(typeDiff, itemTypes),
+    ];
   };
 
-  deleteGenreFilter = (genre: number[], reset?: boolean) => {
-    const { genresFilter } = this.props;
+  deleteGenreFilter = (
+    genresToRemove: number[],
+  ): [number[] | undefined, boolean] => {
+    const {
+      filters: { genresFilter },
+    } = this.props;
 
-    if (genre === genresFilter) {
-      return genre;
+    // If there are set genres, remove them. Then return the new set.
+    if (genresFilter && genresFilter.length > 0) {
+      let diff = _.difference(genresFilter, genresToRemove);
+      return [diff, !setsEqual(diff, genresFilter)];
     }
 
-    if (!reset && genresFilter && genresFilter.length > 0) {
-      const genreDiff = _.difference(genresFilter, genre);
-      updateURLParameters(this.props, 'genres', genreDiff);
-      return genreDiff;
-    }
-    return genre;
+    // Nothing changed.
+    return [undefined, false];
   };
 
-  deleteSort = (sort: ListSortOptions, reset?: boolean) => {
-    const { sortOrder } = this.props;
+  deleteSort = (
+    sort: ListSortOptions,
+  ): [ListSortOptions | undefined, boolean] => {
+    const {
+      filters: { sortOrder },
+    } = this.props;
+
     const cleanSort = sort === 'default' ? undefined : sort;
 
-    if (!reset && sort !== sortOrder) {
-      updateURLParameters(this.props, 'sort', cleanSort);
+    if (sort !== sortOrder) {
+      return [cleanSort, true];
     }
-    return sort;
+
+    return [sort, false];
   };
 
-  removeFilters = (
-    sort: ListSortOptions,
-    network?: NetworkType[],
-    type?: ItemType[],
-    genre?: number[],
-    reset?: boolean,
-  ) => {
-    const { location } = this.props;
-    const newSort = sort && this.deleteSort(sort, reset);
-    const newNetworks = network && this.deleteNetworkFilter(network, reset);
-    const newType = type && this.deleteTypeFilter(type, reset);
-    const newGenre = genre && this.deleteGenreFilter(genre, reset);
-    console.log(sort, network, type, genre);
-    /*
-    The reset parameter is a temporary workaround to a larger problem.  updateURLParameters helper does not currently support updating the history concurrently.  So when the above three functions run, only the last one actually applies the new parameter updates to the URL.
-    */
-    if (reset) {
-      let params = new URLSearchParams(location.search);
-      params.delete('sort');
-      params.delete('type');
-      params.delete('networks');
-      params.delete('genres');
+  applyDiffer = <T extends unknown>(
+    value: T | undefined,
+    fn: (v: T) => [T | undefined, boolean],
+  ): [T | undefined, boolean] => {
+    return value ? fn(value) : [undefined, false];
+  };
 
-      this.props.history.replace(`?${params}`);
+  resetFilters = () => {
+    updateMultipleUrlParams(this.props, [
+      ['genres', undefined],
+      ['networks', undefined],
+      ['sort', undefined],
+      ['type', undefined],
+      ['ry_min', undefined],
+      ['ry_max', undefined],
+    ]);
+
+    this.props.updateFilters(DEFAULT_FILTER_PARAMS);
+  };
+
+  removeFilters = (filters: {
+    sort?: ListSortOptions;
+    network?: NetworkType[];
+    type?: ItemType[];
+    genre?: number[];
+    releaseYearMin?: true;
+    releaseYearMax?: true;
+  }) => {
+    const [newSort, sortChanged] = this.applyDiffer(
+      filters.sort,
+      this.deleteSort,
+    );
+    const [newNetworks, networksChanged] = this.applyDiffer(
+      filters.network,
+      this.deleteNetworkFilter,
+    );
+    const [newType, typesChanged] = this.applyDiffer(
+      filters.type,
+      this.deleteTypeFilter,
+    );
+    const [newGenre, genreChanged] = this.applyDiffer(
+      filters.genre,
+      this.deleteGenreFilter,
+    );
+
+    let paramUpdates: [string, any | undefined][] = [];
+    // Specified a genre to remove and actually changed the value.
+    if (genreChanged) {
+      paramUpdates.push(['genres', newGenre]);
     }
 
-    this.props.updateFilters(newSort, newNetworks, newType, newGenre);
+    if (networksChanged) {
+      paramUpdates.push(['networks', newNetworks]);
+    }
+
+    if (sortChanged) {
+      paramUpdates.push(['sort', newSort]);
+    }
+
+    if (typesChanged) {
+      paramUpdates.push(['type', newType]);
+    }
+
+    if (filters.releaseYearMin) {
+      paramUpdates.push(['ry_min', undefined]);
+    }
+
+    if (filters.releaseYearMin) {
+      paramUpdates.push(['ry_max', undefined]);
+    }
+
+    updateMultipleUrlParams(this.props, paramUpdates);
+
+    let releaseYearStateNew = this.props.filters.sliders
+      ? this.props.filters.sliders.releaseYear || {}
+      : {};
+    if (filters.releaseYearMin) {
+      delete releaseYearStateNew.min;
+    }
+
+    if (filters.releaseYearMax) {
+      delete releaseYearStateNew.max;
+    }
+
+    let filterParams: FilterParams = {
+      sortOrder: newSort as ListSortOptions,
+      networks: newNetworks as NetworkType[],
+      itemTypes: newType as ItemType[],
+      genresFilter: newGenre as number[],
+      sliders: {
+        ...this.props.filters.sliders,
+        releaseYear: releaseYearStateNew,
+      },
+    };
+
+    this.props.updateFilters(filterParams);
   };
 
   mapGenre = (genre: number) => {
     const { genres } = this.props;
     const genreItem = genres && genres.find(obj => obj.id === genre);
-    const genreName = (genreItem && genreItem.name) || '';
-
-    return genreName;
+    return (genreItem && genreItem.name) || '';
   };
 
   render() {
     const {
       classes,
-      genresFilter,
-      itemTypes,
       isListDynamic,
-      networks,
-      sortOrder,
+      filters: { genresFilter, itemTypes, networks, sortOrder, sliders },
     } = this.props;
+
+    let releaseYearMin =
+      sliders && sliders.releaseYear ? sliders.releaseYear.min : undefined;
+    let releaseYearMax =
+      sliders && sliders.releaseYear ? sliders.releaseYear.max : undefined;
 
     const sortLabels = {
       added_time: 'Date Added',
@@ -191,6 +259,12 @@ class ActiveFilters extends React.PureComponent<Props> {
         sortOrder === 'default'
       ),
     );
+    const showReleaseYearSlider = Boolean(
+      sliders &&
+        sliders.releaseYear &&
+        (sliders.releaseYear.min || sliders.releaseYear.max),
+    );
+
     const showReset = Boolean(
       showSort || showGenreFilters || showNetworkFilters || showTypeFilters,
     );
@@ -204,15 +278,7 @@ class ActiveFilters extends React.PureComponent<Props> {
                 key={genre}
                 className={classes.networkChip}
                 label={this.mapGenre(Number(genre))}
-                onDelete={() =>
-                  this.removeFilters(
-                    sortOrder,
-                    networks,
-                    itemTypes,
-                    [genre],
-                    false,
-                  )
-                }
+                onDelete={() => this.removeFilters({ genre: [genre] })}
                 variant="outlined"
               />
             ))
@@ -230,15 +296,7 @@ class ActiveFilters extends React.PureComponent<Props> {
                 }
                 className={classes.networkChip}
                 label={network}
-                onDelete={() =>
-                  this.removeFilters(
-                    sortOrder,
-                    [network],
-                    itemTypes,
-                    genresFilter,
-                    false,
-                  )
-                }
+                onDelete={() => this.removeFilters({ network: [network] })}
                 variant="outlined"
               />
             ))
@@ -250,15 +308,7 @@ class ActiveFilters extends React.PureComponent<Props> {
                 key={type}
                 label={type}
                 className={classes.networkChip}
-                onDelete={() =>
-                  this.removeFilters(
-                    sortOrder,
-                    networks,
-                    [type],
-                    genresFilter,
-                    false,
-                  )
-                }
+                onDelete={() => this.removeFilters({ type: [type] })}
                 variant="outlined"
               />
             ))
@@ -268,17 +318,31 @@ class ActiveFilters extends React.PureComponent<Props> {
             key={sortOrder}
             label={`Sort by: ${sortLabels[sortOrder]}`}
             className={classes.networkChip}
-            onDelete={() =>
-              this.removeFilters(
-                'default',
-                networks,
-                itemTypes,
-                genresFilter,
-                false,
-              )
-            }
+            onDelete={() => this.removeFilters({ sort: 'default' })}
             variant="outlined"
           />
+        ) : null}
+        {showReleaseYearSlider ? (
+          <React.Fragment>
+            {releaseYearMin ? (
+              <Chip
+                key={releaseYearMin}
+                label={'Released since: ' + releaseYearMin}
+                className={classes.networkChip}
+                onDelete={() => this.removeFilters({ releaseYearMin: true })}
+                variant="outlined"
+              />
+            ) : null}
+            {releaseYearMax ? (
+              <Chip
+                key={releaseYearMax}
+                label={'Released before: ' + (releaseYearMax + 1)}
+                onDelete={() => this.removeFilters({ releaseYearMax: true })}
+                className={classes.networkChip}
+                variant="outlined"
+              />
+            ) : null}
+          </React.Fragment>
         ) : null}
         {showReset ? (
           <Chip
@@ -287,15 +351,7 @@ class ActiveFilters extends React.PureComponent<Props> {
             label="Reset All"
             variant="outlined"
             color="secondary"
-            onClick={() =>
-              this.removeFilters(
-                'default',
-                undefined,
-                undefined,
-                undefined,
-                true,
-              )
-            }
+            onClick={this.resetFilters}
           />
         ) : null}
       </div>

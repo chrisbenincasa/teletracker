@@ -59,6 +59,8 @@ import { ListsByIdMap } from '../reducers/lists';
 import { Genre, ItemType, List, ListSortOptions, NetworkType } from '../types';
 import { getOrInitListOptions } from '../utils/list-utils';
 import { Item } from '../types/v2/Item';
+import { FilterParams } from '../utils/searchFilters';
+import { parseFilterParamsFromQs } from '../utils/urlHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -147,18 +149,15 @@ interface State {
   deleted: boolean;
   deleteConfirmationOpen: boolean;
   deleteOnWatch: boolean;
-  genresFilter?: number[];
   genre?: string;
-  itemTypes?: ItemType[];
   list?: List;
   loadingList: boolean;
   migrateListId: number;
-  networks?: NetworkType[];
   newListName: string;
   prevListId: number;
   renameDialogOpen: boolean;
   showFilter: boolean;
-  sortOrder: ListSortOptions;
+  filters: FilterParams;
 }
 
 class ListDetail extends Component<Props, State> {
@@ -172,21 +171,19 @@ class ListDetail extends Component<Props, State> {
       deleted: false,
       deleteConfirmationOpen: false,
       deleteOnWatch: true,
-      genresFilter: getGenreFromUrlParam(),
-      itemTypes: getTypeFromUrlParam(),
       list: props.listsById[listId],
       loadingList: true,
       migrateListId: 0,
-      networks: getNetworkTypeFromUrlParam(),
       newListName: '',
       prevListId: listId,
       renameDialogOpen: false,
+      // TODO: Support sliders
       showFilter:
         params.has('sort') ||
         params.has('genres') ||
         params.has('networks') ||
         params.has('types'),
-      sortOrder: getSortFromUrlParam(),
+      filters: parseFilterParamsFromQs(this.props.location.search),
     };
   }
 
@@ -209,7 +206,9 @@ class ListDetail extends Component<Props, State> {
   }
 
   retrieveList() {
-    const { itemTypes, sortOrder, genresFilter } = this.state;
+    const {
+      filters: { itemTypes, sortOrder, genresFilter },
+    } = this.state;
 
     this.props.retrieveList({
       listId: this.listId,
@@ -225,7 +224,12 @@ class ListDetail extends Component<Props, State> {
     const { match } = this.props;
 
     if (match && match.params && match.params.sort) {
-      this.setState({ sortOrder: match.params.sort });
+      this.setState({
+        filters: {
+          ...this.state.filters,
+          sortOrder: match.params.sort,
+        },
+      });
     }
 
     this.setState({ loadingList: true });
@@ -240,7 +244,9 @@ class ListDetail extends Component<Props, State> {
   }
 
   componentDidUpdate(oldProps: Props, prevState: State) {
-    const { itemTypes, sortOrder } = this.state;
+    const {
+      filters: { itemTypes, sortOrder },
+    } = this.state;
 
     if (
       this.listId !== Number(oldProps.match.params.id) ||
@@ -270,7 +276,7 @@ class ListDetail extends Component<Props, State> {
       });
     }
 
-    if (this.state.genresFilter !== prevState.genresFilter) {
+    if (this.state.filters.genresFilter !== prevState.filters.genresFilter) {
       this.retrieveList();
     }
   }
@@ -545,18 +551,10 @@ class ListDetail extends Component<Props, State> {
     this.setState({ showFilter: !this.state.showFilter });
   };
 
-  setFilters = (
-    sortOrder: ListSortOptions,
-    networks?: NetworkType[],
-    itemTypes?: ItemType[],
-    genres?: number[],
-  ) => {
+  setFilters = (filters: FilterParams) => {
     this.setState(
       {
-        networks,
-        itemTypes,
-        sortOrder,
-        genresFilter: genres,
+        filters,
       },
       () => {
         this.retrieveList();
@@ -565,10 +563,13 @@ class ListDetail extends Component<Props, State> {
   };
 
   setSortOrder = (sortOrder: ListSortOptions) => {
-    if (this.state.sortOrder !== sortOrder) {
+    if (this.state.filters.sortOrder !== sortOrder) {
       this.setState(
         {
-          sortOrder,
+          filters: {
+            ...this.state.filters,
+            sortOrder,
+          },
           loadingList: true,
         },
         () => {
@@ -581,7 +582,10 @@ class ListDetail extends Component<Props, State> {
   setType = (type?: ItemType[]) => {
     this.setState(
       {
-        itemTypes: type,
+        filters: {
+          ...this.state.filters,
+          itemTypes: type,
+        },
       },
       () => {
         this.retrieveList();
@@ -592,7 +596,10 @@ class ListDetail extends Component<Props, State> {
   setGenre = (genres?: number[]) => {
     this.setState(
       {
-        genresFilter: genres,
+        filters: {
+          ...this.state.filters,
+          genresFilter: genres,
+        },
       },
       () => {
         this.retrieveList();
@@ -602,10 +609,13 @@ class ListDetail extends Component<Props, State> {
 
   setNetworks = (networks?: NetworkType[]) => {
     // Only update and hit endpoint if there is a state change
-    if (this.state.networks !== networks) {
+    if (this.state.filters.networks !== networks) {
       this.setState(
         {
-          networks,
+          filters: {
+            ...this.state.filters,
+            networks,
+          },
         },
         () => {
           this.retrieveList();
@@ -619,15 +629,19 @@ class ListDetail extends Component<Props, State> {
 
     return filmography.filter(
       (item: Item) =>
-        !this.state.genresFilter ||
+        !this.state.filters.genresFilter ||
         (item &&
           item.genres &&
-          item.genres.map(g => g.id).includes(this.state.genresFilter[0])),
+          item.genres
+            .map(g => g.id)
+            .includes(this.state.filters.genresFilter[0])),
     );
   }
 
   loadMoreDebounced = _.debounce(() => {
-    let { sortOrder, itemTypes, genresFilter } = this.state;
+    let {
+      filters: { sortOrder, itemTypes, genresFilter },
+    } = this.state;
     let { listBookmark } = this.props;
 
     this.props.retrieveList({
@@ -649,12 +663,9 @@ class ListDetail extends Component<Props, State> {
     const { classes, genres, listLoading, thingsById, userSelf } = this.props;
     const {
       deleted,
-      itemTypes,
       loadingList,
-      genresFilter,
-      networks,
       showFilter,
-      sortOrder,
+      filters: { itemTypes, genresFilter, networks, sortOrder },
     } = this.state;
 
     if ((!listLoading && !list) || deleted) {
@@ -677,11 +688,8 @@ class ListDetail extends Component<Props, State> {
               <ActiveFilters
                 genres={genres}
                 updateFilters={this.setFilters}
-                genresFilter={genresFilter}
-                itemTypes={itemTypes}
-                networks={networks}
-                sortOrder={sortOrder}
                 isListDynamic={list.isDynamic}
+                filters={this.state.filters}
               />
               <IconButton
                 onClick={this.toggleFilters}
