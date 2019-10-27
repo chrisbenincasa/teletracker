@@ -247,7 +247,7 @@ class ElasticsearchListBuilder @Inject()(
         }
       )
       .filter(QueryBuilders.termQuery("tags.value", list.id))
-      .applyOptional(bookmark)(applyBookmark)
+      .applyOptional(bookmark)(applyBookmark(_, _, Some(list)))
 
     new SearchSourceBuilder()
       .query(baseBoolQuery)
@@ -335,7 +335,7 @@ class ElasticsearchListBuilder @Inject()(
           )
         }
       )
-      .applyOptional(bookmark)(applyBookmark)
+      .applyOptional(bookmark)(applyBookmark(_, _, Some(dynamicList)))
 
     sourceBuilder
       .query(baseBoolQuery)

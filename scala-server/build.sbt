@@ -199,7 +199,7 @@ lazy val server = project
     ),
     Revolver.enableDebugging(port = 5005, suspend = false),
     envVars in reStart := Map(
-      "API_KEY" -> System.getenv("API_KEY"),
+      "TMDB_API_KEY" -> System.getenv("TMDB_API_KEY"),
       "JWT_SECRET" -> System.getenv("JWT_SECRET")
     ),
     // Assmebly JAR

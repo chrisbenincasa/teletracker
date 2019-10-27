@@ -1,6 +1,6 @@
 package com.teletracker.common.elasticsearch
 
-import com.teletracker.common.db.model.{Genre, ThingType}
+import com.teletracker.common.db.model.{Genre, ThingType, TrackedListRow}
 import com.teletracker.common.db.{
   AddedTime,
   Bookmark,
@@ -168,7 +168,9 @@ trait ElasticsearchAccess {
 
   protected def applyBookmark(
     builder: BoolQueryBuilder,
-    bookmark: Bookmark
+    bookmark: Bookmark,
+    list: Option[TrackedListRow],
+    defaultSort: SortMode = Popularity() // Used when a bookmark passes in a "default" sort. Decided upon by the caller
   ): BoolQueryBuilder = {
     def applyRange(
       rangeBuilder: RangeQueryBuilder,
@@ -217,8 +219,12 @@ trait ElasticsearchAccess {
 
           applyRange(baseQuery, desc, releaseDate)
 
-        case AddedTime(desc)           => applyForSortMode(Recent(desc))
-        case d @ DefaultForListType(_) => applyForSortMode(d.get(true))
+        case AddedTime(desc) => applyForSortMode(Recent(desc))
+
+        case d @ DefaultForListType(_) if list.isDefined =>
+          applyForSortMode(d.get(list.get.isDynamic))
+
+        case DefaultForListType(_) => applyForSortMode(defaultSort)
       }
     }
 
