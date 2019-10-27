@@ -24,7 +24,7 @@ import { AvailabilityState } from '../reducers/availability';
 import { layoutStyles } from '../styles';
 import Thing from '../types/Thing';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID } from '../constants/';
 import { Item } from '../types/v2/Item';
 import { ItemAvailability } from '../types/v2';
 

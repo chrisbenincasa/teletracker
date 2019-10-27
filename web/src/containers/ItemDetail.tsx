@@ -39,7 +39,7 @@ import Recommendations from '../components/Recommendations';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import RouterLink from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID } from '../constants';
+import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Genre } from '../types';
