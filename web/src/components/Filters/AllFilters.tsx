@@ -104,45 +104,50 @@ const AllFilters = (props: Props) => {
   };
 
   return (
-    <Collapse in={open}>
-      <Fade in={open}>
-        <div className={classes.allFiltersContainer}>
-          <Typography
-            color="inherit"
-            variant="h5"
-            className={classes.filterTitle}
-          >
-            Filter
-          </Typography>
-          <div className={classes.filterSortContainer}>
-            <div className={classes.genreContainer}>
-              {handleGenreChange && (
-                <GenreSelect
-                  genres={genres}
-                  disabledGenres={disabledGenres}
-                  handleChange={setGenre}
-                />
-              )}
-            </div>
-            <div className={classes.networkContainer}>
-              {handleNetworkChange && (
-                <NetworkSelect handleChange={setNetworks} />
-              )}
-            </div>
-            <div className={classes.typeContainer}>
-              {handleTypeChange && <TypeToggle handleChange={setType} />}
-            </div>
-            <div className={classes.sortContainer}>
-              {handleSortChange && (
-                <SortDropdown
-                  isListDynamic={!!isListDynamic}
-                  handleChange={setSort}
-                />
-              )}
-            </div>
+    <Collapse
+      in={open}
+      timeout={{
+        appear: 600,
+        enter: 600,
+        exit: 300,
+      }}
+    >
+      <div className={classes.allFiltersContainer}>
+        <Typography
+          color="inherit"
+          variant="h5"
+          className={classes.filterTitle}
+        >
+          Filter
+        </Typography>
+        <div className={classes.filterSortContainer}>
+          <div className={classes.genreContainer}>
+            {handleGenreChange && (
+              <GenreSelect
+                genres={genres}
+                disabledGenres={disabledGenres}
+                handleChange={setGenre}
+              />
+            )}
+          </div>
+          <div className={classes.networkContainer}>
+            {handleNetworkChange && (
+              <NetworkSelect handleChange={setNetworks} />
+            )}
+          </div>
+          <div className={classes.typeContainer}>
+            {handleTypeChange && <TypeToggle handleChange={setType} />}
+          </div>
+          <div className={classes.sortContainer}>
+            {handleSortChange && (
+              <SortDropdown
+                isListDynamic={!!isListDynamic}
+                handleChange={setSort}
+              />
+            )}
           </div>
         </div>
-      </Fade>
+      </div>
     </Collapse>
   );
 };
