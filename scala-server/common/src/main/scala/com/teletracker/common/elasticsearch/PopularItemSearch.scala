@@ -11,6 +11,7 @@ import com.teletracker.common.db.{
   SortMode
 }
 import com.teletracker.common.util.Functions._
+import com.teletracker.common.util.{OpenDateRange, OpenRange}
 import javax.inject.Inject
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.action.search.SearchRequest
@@ -32,7 +33,8 @@ class PopularItemSearch @Inject()(
     itemTypes: Option[Set[ThingType]],
     sortMode: SortMode,
     limit: Int,
-    bookmark: Option[Bookmark]
+    bookmark: Option[Bookmark],
+    releaseYear: Option[OpenDateRange]
   ): Future[ElasticsearchItemsResponse] = {
     val actualSortMode = bookmark.map(_.sortMode).getOrElse(sortMode)
 
@@ -41,9 +43,8 @@ class PopularItemSearch @Inject()(
       .applyOptional(genres.filter(_.nonEmpty))(genresFilter)
       .through(removeAdultItems)
       .through(posterImageFilter)
-      .applyOptional(networks.filter(_.nonEmpty))(
-        (builder, networks) => networks.foldLeft(builder)(availabilityByNetwork)
-      )
+      .applyOptional(networks.filter(_.nonEmpty))(availabilityByNetworksOr)
+      .applyOptional(releaseYear.filter(_.isFinite))(openDateRangeFilter)
       .applyOptional(itemTypes.filter(_.nonEmpty))(itemTypesFilter)
       .applyOptional(bookmark)(applyBookmark)
 
@@ -63,17 +64,28 @@ class PopularItemSearch @Inject()(
       .map(applyNextBookmark(_, bookmark, sortMode))
   }
 
+  private def availabilityByNetworksOr(
+    builder: BoolQueryBuilder,
+    networks: Set[Network]
+  ) = {
+    builder.filter(
+      networks.foldLeft(QueryBuilders.boolQuery())(availabilityByNetwork)
+    )
+  }
+
   private def availabilityByNetwork(
     builder: BoolQueryBuilder,
     network: Network
   ) = {
-    builder.filter(
-      QueryBuilders.nestedQuery(
-        "availability",
-        QueryBuilders.termQuery("availability.network_id", network.id.get),
-        ScoreMode.Avg
+    builder
+      .should(
+        QueryBuilders.nestedQuery(
+          "availability",
+          QueryBuilders.termQuery("availability.network_id", network.id.get),
+          ScoreMode.Avg
+        )
       )
-    )
+      .minimumShouldMatch(1)
   }
 
   private def applyNextBookmark(

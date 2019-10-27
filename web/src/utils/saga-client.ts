@@ -8,6 +8,7 @@ import {
   ListSortOptions,
   Network,
   NetworkType,
+  OpenRange,
   UserPreferences,
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
@@ -211,6 +212,7 @@ export class SagaTeletrackerClient {
     bookmark?: string,
     limit?: number,
     genres?: number[],
+    releaseYearRange?: OpenRange,
   ) {
     let token = yield this.withToken();
     return yield this.apiCall(
@@ -222,6 +224,7 @@ export class SagaTeletrackerClient {
       bookmark,
       limit,
       genres,
+      releaseYearRange,
     );
   }
 

@@ -179,3 +179,8 @@ export enum ActionType {
   Enjoyed = 'enjoyed',
   TrackedInList = 'tracked_in_list',
 }
+
+export interface OpenRange {
+  min?: number;
+  max?: number;
+}

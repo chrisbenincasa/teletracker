@@ -46,6 +46,8 @@ import com.teletracker.common.util.{
   HasGenreIdOrSlug,
   HasThingIdOrSlug,
   NetworkCache,
+  OpenDateRange,
+  OpenRange,
   Slug
 }
 import com.teletracker.service.api.model.{
@@ -509,20 +511,13 @@ class ThingApi @Inject()(
       }.getOrElse(Future.successful(None)))
   }
 
-  def search(
-    genres: Option[Set[String]],
-    networks: Option[Set[String]],
-    itemTypes: Option[Set[ThingType]],
-    sortMode: SortMode,
-    limit: Int,
-    bookmark: Option[Bookmark]
-  ) = {
-    val genresFut = if (genres.exists(_.nonEmpty)) {
+  def search(request: ItemSearchRequest): Future[ElasticsearchItemsResponse] = {
+    val genresFut = if (request.genres.exists(_.nonEmpty)) {
       genreCache
         .get()
         .map(_.values)
         .map(cachedGenres => {
-          genres.get.map(HasGenreIdOrSlug.parse).flatMap {
+          request.genres.get.map(HasGenreIdOrSlug.parse).flatMap {
             case Left(id)    => cachedGenres.find(_.id.contains(id))
             case Right(slug) => cachedGenres.find(_.slug == slug)
           }
@@ -531,12 +526,14 @@ class ThingApi @Inject()(
       Future.successful(Set.empty[Genre])
     }
 
-    val networksFut = if (networks.exists(_.nonEmpty)) {
+    val networksFut = if (request.networks.exists(_.nonEmpty)) {
       networkCache
         .get()
         .map(cachedNetworks => {
           cachedNetworks.values
-            .filter(network => networks.get.contains(network.slug.value))
+            .filter(
+              network => request.networks.get.contains(network.slug.value)
+            )
             .toSet
         })
     } else {
@@ -550,10 +547,11 @@ class ThingApi @Inject()(
         .getPopularItems(
           Some(filterGenres).filter(_.nonEmpty),
           Some(filterNetworks).filter(_.nonEmpty),
-          itemTypes,
-          sortMode,
-          limit,
-          bookmark
+          request.itemTypes,
+          request.sortMode,
+          request.limit,
+          request.bookmark,
+          request.releaseYear
         )
     } yield {
       result
@@ -591,3 +589,12 @@ class ThingApi @Inject()(
       })
   }
 }
+
+case class ItemSearchRequest(
+  genres: Option[Set[String]],
+  networks: Option[Set[String]],
+  itemTypes: Option[Set[ThingType]],
+  sortMode: SortMode,
+  limit: Int,
+  bookmark: Option[Bookmark],
+  releaseYear: Option[OpenDateRange])

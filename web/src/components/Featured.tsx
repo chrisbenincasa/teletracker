@@ -89,10 +89,10 @@ class Featured extends Component<Props, State> {
     prevProps: Readonly<Props>,
     prevState: Readonly<State>,
   ): void {
-    console.log(prevProps, this.props);
     if (
       (!prevProps.featuredItem && this.props.featuredItem) ||
-      prevProps.featuredItem.id !== this.props.featuredItem.id
+      (this.props.featuredItem &&
+        prevProps.featuredItem.id !== this.props.featuredItem.id)
     ) {
       this.setState({
         imageLoading: true,

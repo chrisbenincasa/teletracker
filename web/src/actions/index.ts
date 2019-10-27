@@ -10,7 +10,7 @@ import {
   watchAuthState,
 } from './auth';
 import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
-import { fetchItemDetailsBatchSaga, fetchItemDetailsSaga } from './item-detail';
+import { fetchItemDetailsSaga } from './item-detail';
 import {
   addToListSaga,
   createNewListSaga,
@@ -84,7 +84,6 @@ export function* root() {
     removeUserActionSaga(),
     upcomingAvailabilitySaga(),
     fetchItemDetailsSaga(),
-    fetchItemDetailsBatchSaga(),
     allAvailabilitySaga(),
     popularSaga(),
     fetchPersonDetailsSaga(),

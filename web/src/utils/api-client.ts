@@ -11,6 +11,7 @@ import {
   ListSortOptions,
   Network,
   NetworkType,
+  OpenRange,
   Paging,
   User,
   UserPreferences,
@@ -388,6 +389,7 @@ export class TeletrackerApi {
     bookmark?: string,
     limit?: number,
     genres?: number[],
+    releaseYearRange?: OpenRange,
   ) {
     return this.api.get('/api/v2/popular', {
       token,
@@ -398,6 +400,14 @@ export class TeletrackerApi {
       bookmark,
       limit,
       genres: genres && genres.length ? genres.join(',') : undefined,
+      minReleaseYear:
+        releaseYearRange && releaseYearRange.min
+          ? releaseYearRange.min
+          : undefined,
+      maxReleaseYear:
+        releaseYearRange && releaseYearRange.max
+          ? releaseYearRange.max
+          : undefined,
     });
   }
 

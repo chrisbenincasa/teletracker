@@ -18,6 +18,7 @@ import org.elasticsearch.index.query.{
   RangeQueryBuilder
 }
 import com.teletracker.common.util.Functions._
+import com.teletracker.common.util.OpenDateRange
 import io.circe.Decoder
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
@@ -124,6 +125,25 @@ trait ElasticsearchAccess {
             )
         )
         .minimumShouldMatch(1)
+    )
+  }
+
+  protected def openDateRangeFilter(
+    builder: BoolQueryBuilder,
+    openDateRange: OpenDateRange
+  ): BoolQueryBuilder = {
+    require(openDateRange.isFinite)
+
+    builder.filter(
+      QueryBuilders
+        .rangeQuery("release_date")
+        .format("yyyy-MM-dd")
+        .applyOptional(openDateRange.start)(
+          (range, start) => range.gte(start.toString)
+        )
+        .applyOptional(openDateRange.end)(
+          (range, end) => range.lte(end.toString)
+        )
     )
   }
 
