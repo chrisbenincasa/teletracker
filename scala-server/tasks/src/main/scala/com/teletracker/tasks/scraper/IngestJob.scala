@@ -193,71 +193,78 @@ abstract class IngestJob[T <: ScrapedItem](
     networks: Set[Network],
     args: IngestJobArgs
   ): Future[Unit] = {
-    matchMode
-      .lookup(
-        items.filter(shouldProcessItem).map(sanitizeItem),
-        args
-      )
-      .flatMap {
-        case (things, nonMatchedItems) =>
-          handleNonMatches(args, nonMatchedItems).flatMap(fallbackMatches => {
-            val allItems = things ++ fallbackMatches
-              .map(_.toMatchResult)
+    val itemsToLookup = items.filter(shouldProcessItem).map(sanitizeItem)
 
-            val stillMissing = (items
-              .map(_.title)
-              .toSet -- things.map(_.title).toSet) -- fallbackMatches
-              .map(_.originalItem.title)
-              .toSet
+    if (itemsToLookup.nonEmpty) {
+      matchMode
+        .lookup(
+          itemsToLookup,
+          args
+        )
+        .flatMap {
+          case (things, nonMatchedItems) =>
+            handleNonMatches(args, nonMatchedItems).flatMap(fallbackMatches => {
+              val allItems = things ++ fallbackMatches
+                .map(_.toMatchResult)
 
-            writeMissingItems(
-              items.filter(item => stillMissing.contains(item.title))
-            )
+              val stillMissing = (itemsToLookup
+                .map(_.title)
+                .toSet -- things.map(_.title).toSet) -- fallbackMatches
+                .map(_.originalItem.title)
+                .toSet
 
-            logger.info(
-              s"Successfully found matches for ${allItems.size} out of ${items.size} items."
-            )
+              writeMissingItems(
+                itemsToLookup.filter(item => stillMissing.contains(item.title))
+              )
 
-            Future
-              .sequence {
-                allItems.map {
-                  case MatchResult(item, itemId, title) =>
-                    val availabilityFut =
-                      createAvailabilities(networks, itemId, title, item)
+              logger.info(
+                s"Successfully found matches for ${allItems.size} out of ${itemsToLookup.size} items."
+              )
 
-                    if (args.dryRun) {
-                      availabilityFut.map(avs => {
-                        avs.foreach(
-                          av =>
-                            logger.debug(s"Would've saved availability: $av")
-                        )
-                        avs
-                      })
-                    } else {
-                      availabilityFut.flatMap(avs => {
-                        val availabilitiesGrouped = avs
-                          .filter(_.thingId.isDefined)
-                          .groupBy(_.thingId.get)
+              Future
+                .sequence {
+                  allItems.map {
+                    case MatchResult(item, itemId, title) =>
+                      val availabilityFut =
+                        createAvailabilities(networks, itemId, title, item)
 
-                        SequentialFutures
-                          .serialize(
-                            availabilitiesGrouped.toList.grouped(50).toList
-                          )(
-                            batch =>
-                              Future
-                                .sequence(
-                                  batch.map(Function.tupled(saveAvailabilities))
-                                )
-                                .map(_ => {})
+                      if (args.dryRun) {
+                        availabilityFut.map(avs => {
+                          avs.foreach(
+                            av =>
+                              logger.debug(s"Would've saved availability: $av")
                           )
-                      })
-                    }
+                          avs
+                        })
+                      } else {
+                        availabilityFut.flatMap(avs => {
+                          val availabilitiesGrouped = avs
+                            .filter(_.thingId.isDefined)
+                            .groupBy(_.thingId.get)
 
+                          SequentialFutures
+                            .serialize(
+                              availabilitiesGrouped.toList.grouped(50).toList
+                            )(
+                              batch =>
+                                Future
+                                  .sequence(
+                                    batch
+                                      .map(Function.tupled(saveAvailabilities))
+                                  )
+                                  .map(_ => {})
+                            )
+                        })
+                      }
+
+                  }
                 }
-              }
-              .map(_ => {})
-          })
-      }
+                .map(_ => {})
+            })
+        }
+    } else {
+      Future.unit
+    }
   }
 
   protected def saveAvailabilities(

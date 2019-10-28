@@ -1,14 +1,18 @@
 package com.teletracker.tasks
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessageFactory
+import com.teletracker.tasks.annotations.TaskTags
 import io.circe.syntax._
 import javax.inject.Inject
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import scala.util.control.NonFatal
 
 class RemoteTask @Inject()(
   publisher: SqsClient,
-  teletrackerTaskRunner: TeletrackerTaskRunner)
+  teletrackerTaskRunner: TeletrackerTaskRunner,
+  teletrackerConfig: TeletrackerConfig)
     extends TeletrackerTaskWithDefaultArgs {
   override def runInternal(args: Args): Unit = {
     val clazz = args.value[String]("classToRun").get
@@ -17,8 +21,25 @@ class RemoteTask @Inject()(
 
     val jsonArgs = instance.argsAsJson(args)
 
+    val tags = try {
+      Class
+        .forName(
+          clazz
+        )
+        .getAnnotation(classOf[TaskTags])
+        .tags()
+        .toSet
+    } catch {
+      case NonFatal(e: NullPointerException) => Set.empty[String]
+    }
+
     val message =
-      TeletrackerTaskQueueMessageFactory.withJsonArgs(clazz, jsonArgs, None)
+      TeletrackerTaskQueueMessageFactory.withJsonArgs(
+        clazz,
+        jsonArgs,
+        Some(tags)
+      )
+
     println(message.asJson)
 
     publisher
@@ -27,7 +48,7 @@ class RemoteTask @Inject()(
           .builder()
           .messageBody(message.asJson.noSpaces)
           .queueUrl(
-            "https://sqs.us-west-1.amazonaws.com/302782651551/teletracker-tasks-qa"
+            teletrackerConfig.async.taskQueue.url
           )
           .build()
       )

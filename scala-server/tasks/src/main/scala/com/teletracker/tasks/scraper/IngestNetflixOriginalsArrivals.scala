@@ -11,7 +11,7 @@ import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
-import java.time.{Instant, ZoneId, ZoneOffset}
+import java.time.{Instant, LocalDate, ZoneId, ZoneOffset}
 
 class IngestNetflixOriginalsArrivals @Inject()(
   protected val tmdbClient: TmdbClient,
@@ -23,10 +23,22 @@ class IngestNetflixOriginalsArrivals @Inject()(
   protected val itemUpdater: ItemUpdater)
     extends IngestJob[NetflixOriginalScrapeItem]
     with IngestJobWithElasticsearch[NetflixOriginalScrapeItem] {
+
+  private val farIntoTheFuture = LocalDate.now().plusYears(1)
+
+  override protected def processMode(args: IngestJobArgs): ProcessMode =
+    Parallel(32)
+
   override protected def networkNames: Set[String] = Set("netflix")
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Pacific").getRules.getOffset(Instant.now())
+
+  override protected def shouldProcessItem(
+    item: NetflixOriginalScrapeItem
+  ): Boolean = {
+    item.availableLocalDate.exists(_.isBefore(farIntoTheFuture))
+  }
 }
 
 @JsonCodec

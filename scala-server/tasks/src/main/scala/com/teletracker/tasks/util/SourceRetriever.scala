@@ -1,6 +1,7 @@
 package com.teletracker.tasks.util
 
 import javax.inject.Inject
+import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.sync.ResponseTransformer
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{
@@ -11,8 +12,11 @@ import java.net.URI
 import java.util.zip.GZIPInputStream
 import scala.io.{BufferedSource, Source}
 import scala.collection.JavaConverters._
+import scala.util.control.NonFatal
 
 class SourceRetriever @Inject()(s3: S3Client) {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   def getSource(uri: URI): Source = {
     uri.getScheme match {
       case "s3" =>
@@ -31,13 +35,21 @@ class SourceRetriever @Inject()(s3: S3Client) {
     bucket: String,
     key: String
   ) = {
-    val stream = s3.getObject(
-      GetObjectRequest
-        .builder()
-        .bucket(bucket)
-        .key(key.stripPrefix("/"))
-        .build()
-    )
+    val stream = try {
+      s3.getObject(
+        GetObjectRequest
+          .builder()
+          .bucket(bucket)
+          .key(key.stripPrefix("/"))
+          .build()
+      )
+    } catch {
+      case NonFatal(e) =>
+        logger.error(
+          s"Failed to get object: s3://${bucket}/${key.stripPrefix("/")}"
+        )
+        throw e
+    }
 
     val finalStream = stream.response().contentEncoding() match {
       case "gzip" =>

@@ -1,17 +1,10 @@
 [
   {
-    "name": "teletracker-server",
+    "name": "teletracker-consumer",
     "image": "${image}",
-    "cpu": 1024,
-    "memory": 786,
+    "cpu": 512,
+    "memory": 768,
     "essential": true,
-    "portMappings": [
-      {
-        "containerPort": 3001,
-        "hostPort": 0,
-        "protocol": "tcp"
-      }
-    ],
     "environment": [
       {
         "name": "ES_SCHEME",

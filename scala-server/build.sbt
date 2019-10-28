@@ -87,6 +87,8 @@ lazy val common = project
 
 lazy val consumer = project
   .in(file("consumer"))
+  .settings(BuildConfig.commonSettings)
+  .settings(BuildConfig.commonAssmeblySettings)
   .settings(
     organization := "com.teletracker",
     name := "consumer",
@@ -123,6 +125,18 @@ lazy val consumer = project
       ),
       ImageName(
         namespace = Some("gcr.io/teletracker"),
+        repository = "consumer",
+        tag = Some(version.value)
+      ),
+      ImageName(
+        namespace =
+          Some("302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker"),
+        repository = "consumer",
+        tag = Some("latest")
+      ),
+      ImageName(
+        namespace =
+          Some("302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker"),
         repository = "consumer",
         tag = Some(version.value)
       )
