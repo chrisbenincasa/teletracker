@@ -12,6 +12,8 @@ import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
 
 trait TeletrackerTask extends Args {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   type Args = Map[String, Option[Any]]
   type TypedArgs
 
@@ -27,11 +29,27 @@ trait TeletrackerTask extends Args {
   def runInternal(args: Args): Unit
 
   def run(args: Args): Unit = {
-    try {
+    val parsedArgs = preparseArgs(args)
+
+    val success = try {
       runInternal(args)
+      true
     } catch {
       case NonFatal(e) =>
+        logger.error("Task ended unexpectedly", e)
+        false
     }
+
+    callbacks.foreach(cb => {
+      if (success || cb.runOnFailure) {
+        try {
+          cb.cb(parsedArgs, args)
+        } catch {
+          case NonFatal(e) =>
+            logger.error(s"""Callback "${cb.name}" failed.""", e)
+        }
+      }
+    })
   }
 
   def registerCallback(cb: TaskCallback): Unit = {
@@ -39,6 +57,7 @@ trait TeletrackerTask extends Args {
   }
 
   case class TaskCallback(
+    name: String,
     cb: (TypedArgs, Args) => Unit,
     runOnFailure: Boolean = false)
 }
@@ -63,30 +82,33 @@ trait SchedulesFollowupTasks { self: TeletrackerTask =>
   protected def publisher: SqsClient
 
   registerCallback(
-    TaskCallback((typedArgs, args) => {
-      if (args.valueOrDefault("scheduleFollowups", true)) {
-        val tasks = followupTasksToSchedule(typedArgs)
-        logger.info(
-          s"Scheduling ${tasks.size} follow-up tasks:\n${tasks.map(_.toString).mkString("\n")}"
-        )
+    TaskCallback(
+      "scheduleFollowupTasks",
+      (typedArgs, args) => {
+        if (args.valueOrDefault("scheduleFollowups", true)) {
+          val tasks = followupTasksToSchedule(typedArgs)
+          logger.info(
+            s"Scheduling ${tasks.size} follow-up tasks:\n${tasks.map(_.toString).mkString("\n")}"
+          )
 
-        // TODO: Batch
-        tasks.foreach(message => {
-          publisher
-            .sendMessage(
-              SendMessageRequest
-                .builder()
-                .messageBody(message.asJson.noSpaces)
-                .queueUrl(
-                  "https://sqs.us-west-1.amazonaws.com/302782651551/teletracker-tasks-qa"
-                )
-                .build()
-            )
-        })
-      } else {
-        logger.info("Skipping scheduling of followup jobs")
+          // TODO: Batch
+          tasks.foreach(message => {
+            publisher
+              .sendMessage(
+                SendMessageRequest
+                  .builder()
+                  .messageBody(message.asJson.noSpaces)
+                  .queueUrl(
+                    "https://sqs.us-west-1.amazonaws.com/302782651551/teletracker-tasks-qa"
+                  )
+                  .build()
+              )
+          })
+        } else {
+          logger.info("Skipping scheduling of followup jobs")
+        }
       }
-    })
+    )
   )
 
   def followupTasksToSchedule(

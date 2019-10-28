@@ -10,50 +10,43 @@ resource "aws_ecs_cluster" "teletracker-qa" {
   name = "teletracker-qa"
 }
 
-resource "aws_ecs_service" "teletracker-qa-server" {
-  name            = "teletracker-qa-server_v2"
-  cluster         = "${aws_ecs_cluster.teletracker-qa.id}"
-  task_definition = "${aws_ecs_task_definition.teletracker-qa-server.arn}"
-  desired_count   = 1
-  iam_role        = "${data.aws_iam_role.ecs-service-role.name}"
-  #   depends_on = ["${data.}"]
+// TODO: Import this later
+data "aws_launch_template" "teletracker-ecs-launch-template" {
+  name = "Teletracker-QA-t3a"
+}
 
-  deployment_minimum_healthy_percent = 0
-  deployment_maximum_percent         = 100
+data "aws_launch_template" "teletracker-ecs-launch-template-t2" {
+  name = "teletracker-ecs-t2"
+}
 
-  ordered_placement_strategy {
-    field = "attribute:ecs.availability-zone"
-    type  = "spread"
-  }
+data "aws_subnet_ids" "teletracker-subnet-ids" {
+  vpc_id = "vpc-95a65cfd"
+}
 
-  ordered_placement_strategy {
-    field = "instanceId"
-    type  = "spread"
-  }
+resource "aws_autoscaling_group" "teletracker-ecs-asg" {
+  availability_zones = ["us-west-1a", "us-west-1c"]
+  desired_capacity   = 2
+  max_size           = 2
+  min_size           = 2
 
-  load_balancer {
-    target_group_arn = "${aws_lb_target_group.teletracker-qa-server.arn}"
-    container_name   = "teletracker-server"
-    container_port   = 3001
-  }
+  vpc_zone_identifier = "${data.aws_subnet_ids.teletracker-subnet-ids.ids}"
 
-  lifecycle {
-    ignore_changes = ["desired_count"]
+  launch_template {
+    id      = "${data.aws_launch_template.teletracker-ecs-launch-template.id}"
+    version = "$Latest"
   }
 }
 
-data "template_file" "teletracker-qa-server-task-definition-template" {
-  template = "${file("${path.module}/task-definitions/teletracker-qa-server-task-definition.json")}"
-  vars = {
-    image = "${var.server_image}"
+resource "aws_autoscaling_group" "teletracker-ecs-asg-t2" {
+  availability_zones = ["us-west-1a", "us-west-1c"]
+  desired_capacity   = 0
+  max_size           = 0
+  min_size           = 0
+
+  vpc_zone_identifier = "${data.aws_subnet_ids.teletracker-subnet-ids.ids}"
+
+  launch_template {
+    id      = "${data.aws_launch_template.teletracker-ecs-launch-template-t2.id}"
+    version = "$Latest"
   }
-}
-
-resource "aws_ecs_task_definition" "teletracker-qa-server" {
-  family                = "teletracker-qa-1"
-  container_definitions = "${data.template_file.teletracker-qa-server-task-definition-template.rendered}"
-  execution_role_arn    = "${data.aws_iam_role.ecs-task-execution-role.arn}"
-
-  cpu          = 1024
-  network_mode = "bridge"
 }
