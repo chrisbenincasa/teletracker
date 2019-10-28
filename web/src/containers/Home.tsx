@@ -1,59 +1,147 @@
 import {
   createStyles,
+  Fab,
   Grid,
-  LinearProgress,
   Theme,
   Typography,
   WithStyles,
   withStyles,
+  withWidth,
 } from '@material-ui/core';
-import { Error as ErrorIcon } from '@material-ui/icons';
+import { ExitToApp, PersonAdd } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import ReactGA from 'react-ga';
 import { connect } from 'react-redux';
-import { Redirect } from 'react-router-dom';
+import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Item } from '../types/v2/Item';
+import Odometer from 'react-odometerjs';
+import 'odometer/themes/odometer-theme-default.css';
+import AuthDialog from '../components/Auth/AuthDialog';
+import { retrievePopular } from '../actions/popular';
+import { PopularInitiatedActionPayload } from '../actions/popular/popular';
+import ItemCard from '../components/ItemCard';
 
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
-    title: {
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
+    buttonContainer: {
+      display: 'flex',
+      flexGrow: 1,
+      flexDirection: 'row',
     },
-    card: {
-      height: '100%',
+    buttonIcon: {
+      marginRight: 8,
+    },
+    container: {
+      display: 'flex',
+      flexDirection: 'row',
+      margin: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'column-reverse',
+        margin: 5,
+      },
+    },
+    ctaContainer: {
       display: 'flex',
       flexDirection: 'column',
+      margin: 100,
+      [theme.breakpoints.down('sm')]: {
+        margin: 0,
+        alignItems: 'center',
+        textAlign: 'center',
+      },
     },
-    cardMedia: {
-      height: 0,
-      width: '100%',
-      paddingTop: '150%',
+    gridContainer: {
+      width: '20%',
+      [theme.breakpoints.down('sm')]: {
+        width: '100%',
+      },
     },
-    cardContent: {
-      flexGrow: 1,
+    movieCount: {
+      marginRight: 15,
+      whiteSpace: 'nowrap',
+    },
+    movieCountContainer: {
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'column',
+        alignItems: 'flex-center',
+      },
     },
   });
 
-interface Props extends WithStyles<typeof styles> {
-  error: boolean;
+interface OwnProps extends WithStyles<typeof styles> {}
+
+interface InjectedProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
-  isSearching: boolean;
-  searchResults?: Item[];
+  loading: boolean;
+  thingsBySlug: { [key: string]: Item };
+  popular?: string[];
 }
 
-class Home extends Component<Props & WithUserProps> {
+interface WidthProps {
+  width: string;
+}
+
+interface RouteParams {
+  id: string;
+  type: string;
+}
+
+interface DispatchProps {
+  retrievePopular: (payload: PopularInitiatedActionPayload) => void;
+}
+
+type Props = OwnProps &
+  InjectedProps &
+  WidthProps &
+  WithUserProps &
+  RouteComponentProps<RouteParams> &
+  DispatchProps;
+
+interface State {
+  numberMovies: number;
+  authModalOpen: boolean;
+  authModalScreen?: 'login' | 'signup';
+}
+
+class Home extends Component<Props, State> {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      numberMovies: 0,
+      authModalOpen: false,
+      authModalScreen: 'login',
+    };
+  }
+
+  loadPopular() {
+    const { retrievePopular } = this.props;
+
+    // To do: add support for sorting
+    if (!this.props.loading) {
+      retrievePopular({
+        itemTypes: ['movie'],
+        limit: 4,
+      });
+    }
+  }
+
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
+    this.loadPopular();
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -61,72 +149,113 @@ class Home extends Component<Props & WithUserProps> {
     if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
       ReactGA.set({ userId: userSelf.user.uid });
     }
+
+    this.setState({ numberMovies: 488689 });
   }
 
-  renderLoading = () => {
-    return (
-      <div style={{ flexGrow: 1 }}>
-        <LinearProgress />
-      </div>
-    );
-  };
-
-  renderSearchResults = () => {
-    let { searchResults, userSelf } = this.props;
-    let firstLoad = !searchResults;
-    searchResults = searchResults || [];
-
-    return this.props.isSearching ? (
-      this.renderLoading()
-    ) : !this.props.error ? (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          flexGrow: 1,
-        }}
-      >
-        {searchResults.length ? (
-          <div style={{ margin: 24, padding: 8 }}>
-            <Grid container spacing={2}>
-              {searchResults.map(result => {
-                return (
-                  <ItemCard key={result.id} userSelf={userSelf} item={result} />
-                );
-              })}
-            </Grid>
-          </div>
-        ) : firstLoad ? null : (
-          <Typography variant="h5" gutterBottom align="center">
-            No results :(
-          </Typography>
-        )}
-      </div>
-    ) : (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          flexGrow: 1,
-          alignItems: 'center',
-          marginTop: 25,
-        }}
-      >
-        <ErrorIcon color="inherit" fontSize="large" />
-        <Typography variant="h5" gutterBottom align="center">
-          Something went wrong :(
-        </Typography>
-      </div>
-    );
+  toggleAuthModal = (initialForm?: 'login' | 'signup') => {
+    if (['xs', 'sm', 'md'].includes(this.props.width)) {
+      this.setState({
+        authModalOpen: false,
+        authModalScreen: undefined,
+      });
+      this.props.history.push(`/${initialForm}`);
+    } else {
+      this.setState({
+        authModalOpen: !this.state.authModalOpen,
+        authModalScreen: initialForm,
+      });
+    }
   };
 
   render() {
-    return this.props.isAuthed ? (
-      <div style={{ display: 'flex', flexGrow: 1 }}>
-        {this.renderSearchResults()}
-      </div>
+    const { classes, popular, userSelf, thingsBySlug } = this.props;
+
+    return !this.props.isAuthed ? (
+      <React.Fragment>
+        <div className={classes.container}>
+          <div className={classes.gridContainer}>
+            <Grid container spacing={1}>
+              {popular &&
+                popular.map(result => {
+                  let thing = thingsBySlug[result];
+                  return (
+                    <ItemCard
+                      key={result}
+                      userSelf={userSelf}
+                      item={thing}
+                      gridProps={{ xs: 6, sm: 6, md: 6, lg: 6 }}
+                      hoverAddToList={false}
+                      hoverDelete={false}
+                      hoverWatch={false}
+                    />
+                  );
+                })}
+            </Grid>
+          </div>
+          <div className={classes.ctaContainer}>
+            <div className={classes.movieCountContainer}>
+              <Typography
+                color="secondary"
+                variant="h2"
+                className={classes.movieCount}
+              >
+                <Odometer
+                  value={this.state.numberMovies}
+                  format="(,ddd)"
+                  theme="default"
+                  duration={5000}
+                  animation="count"
+                />
+              </Typography>
+              <Typography variant="h2"> movies &amp; counting.</Typography>
+            </div>
+            <Typography variant="h4" color="textSecondary">
+              Discover what you're not watching.
+            </Typography>
+            <div className={classes.buttonContainer}>
+              <Fab
+                size="small"
+                variant="extended"
+                aria-label="Signup"
+                onClick={() => this.toggleAuthModal('signup')}
+                color="secondary"
+                style={{
+                  margin: '16px 8px 16px 0',
+                  width: '100%',
+                  maxWidth: 200,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <PersonAdd className={classes.buttonIcon} />
+                Signup
+              </Fab>
+              <Fab
+                size="small"
+                variant="extended"
+                aria-label="Login"
+                onClick={() => this.toggleAuthModal('login')}
+                style={{
+                  margin: '16px 16px 16px 8px',
+                  width: '100%',
+                  maxWidth: 200,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <ExitToApp className={classes.buttonIcon} />
+                Login
+              </Fab>
+            </div>
+          </div>
+        </div>
+        <AuthDialog
+          open={this.state.authModalOpen}
+          onClose={() => this.toggleAuthModal()}
+          initialForm={this.state.authModalScreen}
+        />
+      </React.Fragment>
     ) : (
-      <Redirect to="/login" />
+      <Redirect to="/" />
     );
   }
 }
@@ -134,20 +263,30 @@ class Home extends Component<Props & WithUserProps> {
 const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    isSearching: appState.search.searching,
-    // TODO: Pass SearchResult object that either contains error or a response
-    error: appState.search.error,
-    searchResults: appState.search.results,
+    loading: appState.popular.loadingPopular,
+    popular: appState.popular.popular,
+    thingsBySlug: appState.itemDetail.thingsBySlug,
   };
 };
 
-const mapDispatchToProps = dispatch => bindActionCreators({}, dispatch);
+const mapDispatchToProps = dispatch =>
+  bindActionCreators(
+    {
+      retrievePopular,
+    },
+    dispatch,
+  );
 
-export default withUser(
-  withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(Home),
+export default withWidth()(
+  withUser(
+    withStyles(styles, { withTheme: true })(
+      withRouter(
+        connect(
+          mapStateToProps,
+          mapDispatchToProps,
+        )(Home),
+      ),
+    ),
+    () => null,
   ),
 );

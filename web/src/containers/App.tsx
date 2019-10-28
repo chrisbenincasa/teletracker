@@ -20,6 +20,7 @@ import {
 import { AppState } from '../reducers';
 import Search from './Search';
 import Account from './Account';
+import Home from './Home';
 import ListDetail from './ListDetail';
 import ItemDetail from './ItemDetail';
 import Lists from './Lists';
@@ -123,7 +124,9 @@ class App extends Component<Props, State> {
                 <Route
                   exact
                   path="/"
-                  render={props => <Popular {...props} />}
+                  render={props =>
+                    isAuthed ? <Popular {...props} /> : <Home {...props} />
+                  }
                 />
                 <Route
                   exact
@@ -135,6 +138,8 @@ class App extends Component<Props, State> {
                   path="/account"
                   render={props => <Account {...props} />}
                 />
+                {/* This is here just to allow for easy testing without logging in/out.  Need to remove at some point */}
+                <Route exact path="/home" component={Home} />
                 <Route exact path="/login" component={Login} />
                 <Route exact path="/signup" component={Signup} />
                 <Route exact path="/new" render={props => <New {...props} />} />
