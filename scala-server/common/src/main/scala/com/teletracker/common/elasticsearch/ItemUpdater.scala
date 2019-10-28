@@ -10,7 +10,7 @@ import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.reindex.UpdateByQueryRequest
 import org.elasticsearch.script.{Script, ScriptType}
 import org.slf4j.LoggerFactory
-import shapeless.PolyDefns.->
+import java.time.Instant
 import java.util.UUID
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,6 +24,9 @@ object ItemUpdater {
       |   ctx._source.tags = [params.tag]
       |} else if (ctx._source.tags.find(tag -> tag.tag.equals(params.tag.tag)) == null) { 
       |   ctx._source.tags.add(params.tag) 
+      |} else {
+      |   ctx._source.tags.removeIf(tag -> tag.tag.equals(params.tag.tag))
+      |   ctx._source.tags.add(params.tag)
       |}
       |""".stripMargin
 
@@ -118,7 +121,12 @@ class ItemUpdater @Inject()(
     userId: String
   ): Future[UpdateResponse] = {
     val tag =
-      EsItemTag.userScoped(userId, UserThingTagType.TrackedInList, Some(listId))
+      EsItemTag.userScoped(
+        userId,
+        UserThingTagType.TrackedInList,
+        Some(listId),
+        Some(Instant.now())
+      )
     upsertItemTag(itemId, tag)
   }
 
@@ -128,7 +136,12 @@ class ItemUpdater @Inject()(
     userId: String
   ): Future[UpdateResponse] = {
     val tag =
-      EsItemTag.userScoped(userId, UserThingTagType.TrackedInList, Some(listId))
+      EsItemTag.userScoped(
+        userId,
+        UserThingTagType.TrackedInList,
+        Some(listId),
+        Some(Instant.now())
+      )
 
     removeItemTag(itemId, tag)
   }
@@ -141,7 +154,12 @@ class ItemUpdater @Inject()(
     val responses = listIds.toList.map(listId => {
       val tag =
         EsItemTag
-          .userScoped(userId, UserThingTagType.TrackedInList, Some(listId))
+          .userScoped(
+            userId,
+            UserThingTagType.TrackedInList,
+            Some(listId),
+            Some(Instant.now())
+          )
 
       val query = QueryBuilders
         .boolQuery()

@@ -15,6 +15,7 @@ import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.update.UpdateRequest
 import org.elasticsearch.common.xcontent.XContentType
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 class ImportUserTagsToElasticsearch @Inject()(
@@ -42,7 +43,8 @@ class ImportUserTagsToElasticsearch @Inject()(
                             EsItemTag.userScoped(
                               tag.userId,
                               tag.action,
-                              tag.value
+                              tag.value,
+                              Some(Instant.now())
                             )
                         )
                         .distinct
