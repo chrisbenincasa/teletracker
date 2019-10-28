@@ -1,95 +1,39 @@
-package com.teletracker.common.db.access
+package com.teletracker.common.elasticsearch
 
-import com.teletracker.common.db._
+import com.teletracker.common.db.{
+  AddedTime,
+  Bookmark,
+  DefaultForListType,
+  Popularity,
+  Recent,
+  SearchScore,
+  SortMode
+}
 import com.teletracker.common.db.model.{
   DynamicListPersonRule,
   DynamicListTagRule,
-  TrackedListRow,
-  UserThingTagType
+  TrackedListRow
 }
 import com.teletracker.common.elasticsearch.EsItemTag.TagFormatter
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchAccess,
-  ElasticsearchExecutor,
-  ElasticsearchItemsResponse,
-  EsItem,
-  EsItemTag
-}
-import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.ListFilters
 import javax.inject.Inject
+import com.teletracker.common.util.Functions._
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
 import org.elasticsearch.client.core.CountRequest
 import org.elasticsearch.index.query.QueryBuilders
-import org.elasticsearch.search.aggregations.Aggregations
-import org.elasticsearch.search.aggregations.bucket.terms.{
-  DoubleTerms,
-  Terms,
-  TermsAggregationBuilder
-}
-import org.elasticsearch.search.aggregations.support.ValueType
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
 import java.time.LocalDate
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
+import scala.collection.JavaConverters._
 
-class ElasticsearchListBuilder @Inject()(
+class DynamicListBuilder @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
-
-  def getRegularListItemCount(
-    userId: String,
-    list: TrackedListRow
-  ): Future[Long] = {
-    val listQuery =
-      getRegularListQuery(userId, list, None, None, None, None)
-
-    val countRequest = new CountRequest("items").source(listQuery)
-
-    elasticsearchExecutor
-      .count(countRequest)
-      .map(response => response.getCount)
-  }
-
-  def getRegularListsCounts(
-    userId: String,
-    listIds: List[Int]
-  ): Future[List[(Int, Long)]] = {
-    val tag = EsItemTag.userScoped(userId, UserThingTagType.TrackedInList, None)
-    val termQuery = QueryBuilders.termQuery("tags.tag", tag.tag)
-
-    val agg =
-      new TermsAggregationBuilder("regular_list_counts", ValueType.DOUBLE)
-        .field("tags.value")
-
-    val source = new SearchSourceBuilder()
-      .aggregation(agg)
-      .query(termQuery)
-      .fetchSource(false)
-    println(source)
-
-    val searchRequest = new SearchRequest().source(source)
-
-    elasticsearchExecutor
-      .search(searchRequest)
-      .map(response => {
-        response.getAggregations.getAsMap.asScala
-          .get("regular_list_counts")
-          .collect {
-            case agg: Terms =>
-              agg.getBuckets.asScala.toList.map(bucket => {
-                bucket.getKeyAsNumber.intValue() -> bucket.getDocCount
-              })
-          }
-          .getOrElse(Nil)
-      })
-  }
-
   def getDynamicListCounts(
     userId: String,
     lists: List[TrackedListRow]
@@ -123,39 +67,6 @@ class ElasticsearchListBuilder @Inject()(
               .toList
           })
       })
-  }
-
-  def buildRegularList(
-    userId: String,
-    list: TrackedListRow,
-    listFilters: Option[ListFilters],
-    sortMode: SortMode = Popularity(),
-    bookmark: Option[Bookmark] = None,
-    includeActions: Boolean = true,
-    limit: Int = 20
-  ): Future[(ElasticsearchItemsResponse, Long)] = {
-    val sourceBuilder = getRegularListQuery(
-      userId,
-      list,
-      listFilters,
-      Some(sortMode),
-      bookmark,
-      Some(limit)
-    )
-
-    val itemsFut = elasticsearchExecutor
-      .search(new SearchRequest().source(sourceBuilder))
-      .map(searchResponseToItems)
-      .map(applyNextBookmark(_, bookmark, sortMode, isDynamic = false))
-
-    val countFut = getRegularListItemCount(userId, list)
-
-    for {
-      items <- itemsFut
-      count <- countFut
-    } yield {
-      items -> count
-    }
   }
 
   def getDynamicListItemCount(
@@ -204,63 +115,6 @@ class ElasticsearchListBuilder @Inject()(
     } yield {
       items -> count
     }
-  }
-
-  private def getRegularListQuery(
-    userId: String,
-    list: TrackedListRow,
-    listFilters: Option[ListFilters],
-    sortMode: Option[SortMode],
-    bookmark: Option[Bookmark],
-    limit: Option[Int]
-  ) = {
-    val baseBoolQuery = QueryBuilders
-      .boolQuery()
-      .filter(
-        QueryBuilders
-          .termQuery(
-            "tags.tag",
-            TagFormatter.format(userId, UserThingTagType.TrackedInList)
-          )
-      )
-      .applyIf(listFilters.flatMap(_.itemTypes).exists(_.nonEmpty))(builder => {
-        builder.filter(
-          QueryBuilders.termsQuery(
-            "type",
-            listFilters
-              .flatMap(_.itemTypes)
-              .get
-              .map(_.toString)
-              .asJavaCollection
-          )
-        )
-      })
-      .applyOptional(listFilters.flatMap(_.genres).filter(_.nonEmpty))(
-        (builder, genres) => {
-          builder.filter(
-            QueryBuilders.nestedQuery(
-              "genres",
-              QueryBuilders.termsQuery("genres.id", genres.asJavaCollection),
-              ScoreMode.Avg
-            )
-          )
-        }
-      )
-      .filter(QueryBuilders.termQuery("tags.value", list.id))
-      .applyOptional(bookmark)(applyBookmark(_, _, Some(list)))
-
-    new SearchSourceBuilder()
-      .query(baseBoolQuery)
-      .applyOptional(bookmark.map(_.sortMode).orElse(sortMode))(
-        (builder, sort) => {
-          builder
-            .applyOptional(makeSort(sort))(_.sort(_))
-            .sort(
-              new FieldSortBuilder("id").order(SortOrder.ASC)
-            )
-        }
-      )
-      .applyOptional(limit)(_.size(_))
   }
 
   private def getDynamicListQuery(

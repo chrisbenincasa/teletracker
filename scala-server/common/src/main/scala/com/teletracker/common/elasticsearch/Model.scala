@@ -10,10 +10,16 @@ import com.teletracker.common.util.Slug
 import com.teletracker.common.util.json.circe._
 import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.JsonCodec
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 import scala.util.Try
 import scala.xml.parsing.ExternalSources
+
+object Indices {
+  final val ItemsIndex = "items"
+  final val PeopleIndex = "people"
+  final val UserItemIndex = "user_items"
+}
 
 object StringListOrString {
   def forString(value: String): StringListOrString = new StringListOrString {
@@ -175,19 +181,20 @@ object EsItemTag {
   def userScoped(
     userId: String,
     tag: UserThingTagType,
-    value: Option[Double]
+    value: Option[Double],
+    lastUpdated: Option[Instant]
   ): EsItemTag = {
-    EsItemTag(TagFormatter.format(userId, tag), value)
+    EsItemTag(TagFormatter.format(userId, tag), value, lastUpdated)
   }
 
   object UserScoped {
     def unapply(
       arg: EsItemTag
-    ): Option[(String, UserThingTagType, Option[Double])] = {
+    ): Option[(String, UserThingTagType, Option[Double], Option[Instant])] = {
       arg.tag.split(SEPARATOR, 2) match {
         case Array(userId, tag) =>
           Try(UserThingTagType.fromString(tag)).toOption
-            .map(tagType => (userId, tagType, arg.value))
+            .map(tagType => (userId, tagType, arg.value, arg.last_updated))
         case _ => None
       }
     }
@@ -196,7 +203,8 @@ object EsItemTag {
 
 case class EsItemTag(
   tag: String,
-  value: Option[Double])
+  value: Option[Double],
+  last_updated: Option[Instant])
 
 @JsonCodec
 case class EsItemReleaseDate(
@@ -317,3 +325,30 @@ case class EsItemRating(
   provider_shortname: String,
   vote_average: Double,
   vote_count: Option[Int])
+
+@JsonCodec
+case class EsUserItem(
+  id: String,
+  item_id: UUID,
+  user_id: String,
+  tags: List[EsUserItemTag],
+  item: Option[EsUserDenormalizedItem])
+
+@JsonCodec
+case class EsUserItemTag(
+  tag: String,
+  int_value: Option[Int] = None,
+  double_value: Option[Double] = None,
+  date_value: Option[Instant] = None,
+  string_value: Option[String] = None,
+  last_updated: Option[Instant])
+
+@JsonCodec
+case class EsUserDenormalizedItem(
+  id: UUID,
+  release_date: Option[LocalDate],
+  genres: Option[List[EsGenre]],
+  original_title: Option[String],
+  popularity: Option[Double],
+  slug: Option[Slug],
+  `type`: ThingType)

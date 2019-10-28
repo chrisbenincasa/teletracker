@@ -60,7 +60,7 @@ import com.twitter.util.Stopwatch
 import io.circe.Json
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.math.Ordering.OptionOrdering
@@ -271,7 +271,7 @@ class ThingApi @Inject()(
     tag: UserThingTagType,
     value: Option[Double]
   ): Future[Option[(UUID, EsItemTag)]] = {
-    val esTag = EsItemTag.userScoped(userId, tag, value)
+    val esTag = EsItemTag.userScoped(userId, tag, value, Some(Instant.now()))
     idOrSlug match {
       case Left(value) =>
         itemUpdater.upsertItemTag(value, esTag).map(_ => Some(value -> esTag))
@@ -293,7 +293,7 @@ class ThingApi @Inject()(
     thingType: Option[ThingType],
     tag: UserThingTagType
   ): Future[Option[(UUID, EsItemTag)]] = {
-    val esTag = EsItemTag.userScoped(userId, tag, None)
+    val esTag = EsItemTag.userScoped(userId, tag, None, Some(Instant.now()))
     idOrSlug match {
       case Left(value) =>
         itemUpdater.upsertItemTag(value, esTag).map(_ => Some(value -> esTag))
