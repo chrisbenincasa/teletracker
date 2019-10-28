@@ -25,3 +25,11 @@ case class ElasticsearchPeopleResponse(
   def withBookmark(bookmark: Option[Bookmark]): ElasticsearchPeopleResponse =
     this.copy(bookmark = bookmark)
 }
+
+case class ElasticsearchUserItemsResponse(
+  items: List[EsUserItem],
+  totalHits: Long,
+  bookmark: Option[Bookmark] = None) {
+  def withBookmark(bookmark: Option[Bookmark]): ElasticsearchUserItemsResponse =
+    this.copy(bookmark = bookmark)
+}

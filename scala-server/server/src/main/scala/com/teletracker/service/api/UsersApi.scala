@@ -1,22 +1,19 @@
 package com.teletracker.service.api
 
 import com.teletracker.common.auth.jwt.JwtVendor
-import com.teletracker.common.db.{Bookmark, DefaultForListType, SortMode}
-import com.teletracker.common.db.access.{
-  ElasticsearchListBuilder,
-  ListsDbAccess,
-  UsersDbAccess
-}
+import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
 import com.teletracker.common.db.model.{
   TrackedListFactory,
   UserPreferences,
   UserThingTag,
   UserThingTagType
 }
+import com.teletracker.common.db.{Bookmark, DefaultForListType, SortMode}
 import com.teletracker.common.elasticsearch.{
-  ElasticsearchItemsResponse,
+  DynamicListBuilder,
   EsItemTag,
-  ItemUpdater
+  ItemUpdater,
+  ListBuilder
 }
 import com.teletracker.common.util.ListFilters
 import com.teletracker.service.api.model.{Item, UserDetails, UserList}
@@ -29,7 +26,8 @@ class UsersApi @Inject()(
   usersDbAccess: UsersDbAccess,
   listsDbAccess: ListsDbAccess,
   jwtVendor: JwtVendor,
-  listBuilder: ElasticsearchListBuilder,
+  listBuilder: ListBuilder,
+  dynamicListBuilder: DynamicListBuilder,
   listsApi: ListsApi,
   itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext) {
@@ -107,7 +105,7 @@ class UsersApi @Inject()(
             Future.successful(Map.empty[Int, Long])
           }
           dynamicListCounts <- if (dynamicLists.nonEmpty) {
-            listBuilder
+            dynamicListBuilder
               .getDynamicListCounts(userId, dynamicLists.toList)
               .map(_.toMap)
           } else {
@@ -142,7 +140,7 @@ class UsersApi @Inject()(
         Future.successful(None)
 
       case Some(list) if list.isDynamic =>
-        listBuilder
+        dynamicListBuilder
           .buildDynamicList(
             userId,
             list,
@@ -223,7 +221,7 @@ class UsersApi @Inject()(
     userThingTag: EsItemTag
   ): Future[Unit] = {
     userThingTag match {
-      case EsItemTag.UserScoped(userId, UserThingTagType.Watched, _) =>
+      case EsItemTag.UserScoped(userId, UserThingTagType.Watched, _, _) =>
         listsDbAccess
           .findRemoveOnWatchedLists(userId)
           .flatMap(lists => {

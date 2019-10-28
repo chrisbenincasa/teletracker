@@ -16,7 +16,7 @@ import com.teletracker.common.elasticsearch.{
 import com.teletracker.common.util.Slug
 import io.circe.Codec
 import io.circe.generic.JsonCodec
-import java.time.LocalDate
+import java.time.{Instant, LocalDate}
 import java.util.UUID
 import com.teletracker.common.util.json.circe._
 
@@ -61,8 +61,8 @@ object Item {
       runtime = esItem.runtime,
       slug = esItem.slug,
       tags = esItem.tags.map(_.collect {
-        case EsItemTag.UserScoped(userId, typ, value) =>
-          ItemTag(Some(userId), typ, value)
+        case EsItemTag.UserScoped(userId, typ, value, lastUpdated) =>
+          ItemTag(Some(userId), typ, value, lastUpdated)
       }),
       `type` = esItem.`type`
     )
@@ -124,4 +124,5 @@ case class ItemCastMember(
 case class ItemTag(
   userId: Option[String],
   tag: UserThingTagType,
-  value: Option[Double])
+  value: Option[Double],
+  lastUpdated: Option[Instant])

@@ -1,31 +1,16 @@
 package com.teletracker.common.db.access
 
-import com.teletracker.common.db.Bookmark
-import com.teletracker.common.db.model.{
-  DynamicListPersonRule,
-  DynamicListRules,
-  DynamicListTagRule,
-  Genre,
-  GenreType,
-  Network,
-  ThingType,
-  TrackedListRow,
-  UserThingTagType
-}
+import com.teletracker.common.db.model._
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
-  EsItem,
   PopularItemSearch
 }
-import com.teletracker.common.model.justwatch.PopularItem
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.{ListFilters, Slug}
-import org.scalatest.FlatSpec
-import java.util.UUID
-import io.circe.syntax._
-import io.circe.parser._
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
+import org.scalatest.FlatSpec
+import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DynamicListBuilderTest extends FlatSpec {
@@ -38,7 +23,8 @@ class DynamicListBuilderTest extends FlatSpec {
   val executor = new ElasticsearchExecutor(client)
 
   "dynamic lists" should "work" in {
-    val builder = new ElasticsearchListBuilder(executor)
+    val builder =
+      new com.teletracker.common.elasticsearch.DynamicListBuilder(executor)
     val list = TrackedListRow(
       1,
       "Default",
@@ -62,7 +48,7 @@ class DynamicListBuilderTest extends FlatSpec {
       )
     )
 
-    val result = builder
+    val (result, _) = builder
       .buildDynamicList(
         "123",
         list,
