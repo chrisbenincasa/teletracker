@@ -51,6 +51,17 @@ trait ElasticsearchAccess {
     )
   }
 
+  protected def searchResponseToUserItems(
+    response: SearchResponse
+  ): ElasticsearchUserItemsResponse = {
+    val hits = response.getHits
+
+    ElasticsearchUserItemsResponse(
+      decodeSearchResponse[EsUserItem](response),
+      hits.getTotalHits.value
+    )
+  }
+
   protected def decodeSearchResponse[T: Decoder: ClassTag](
     response: SearchResponse
   ): List[T] = {
@@ -255,7 +266,11 @@ trait ElasticsearchAccess {
             .missing("_last")
         )
 
-      case AddedTime(desc)           => makeSort(Recent(desc)) // TODO: Wrong for lists
+      case AddedTime(desc) =>
+        Some(
+          new FieldSortBuilder("")
+        )
+
       case d @ DefaultForListType(_) => makeSort(d.get(true))
     }
   }

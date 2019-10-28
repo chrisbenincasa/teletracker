@@ -154,9 +154,9 @@ lazy val tasks = project
       "com.teletracker.tasks.TeletrackerTaskRunner"
     ),
     Compile / run / fork := true,
-//    Compile / run / javaOptions ++= Seq(
-//      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006"
-//    ),
+    Compile / run / javaOptions ++= Seq(
+      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006"
+    ),
     `run-db-migrations` := runInputTask(
       Runtime,
       "com.teletracker.tasks.TeletrackerTaskRunner",

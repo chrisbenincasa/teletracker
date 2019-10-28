@@ -2,7 +2,12 @@ package com.teletracker.common.elasticsearch
 
 import javax.inject.Inject
 import org.elasticsearch.action.ActionListener
-import org.elasticsearch.action.get.{GetRequest, GetResponse}
+import org.elasticsearch.action.get.{
+  GetRequest,
+  GetResponse,
+  MultiGetRequest,
+  MultiGetResponse
+}
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{
   MultiSearchRequest,
@@ -22,6 +27,10 @@ import scala.concurrent.{Future, Promise}
 class ElasticsearchExecutor @Inject()(client: RestHighLevelClient) {
   def get(request: GetRequest): Future[GetResponse] = {
     withListener(client.getAsync(request, RequestOptions.DEFAULT, _))
+  }
+
+  def multiGet(request: MultiGetRequest): Future[MultiGetResponse] = {
+    withListener(client.mgetAsync(request, RequestOptions.DEFAULT, _))
   }
 
   def index(request: IndexRequest): Future[IndexResponse] = {
