@@ -514,13 +514,8 @@ class UserController @Inject()(
                 .addThingToList(req.authenticatedUserId.get, list.id, thing.id)
                 .map(updateResponse => {
 
-                  if (updateResponse.status().getStatus != 200) {
-                    updateResponse.status().getStatus match {
-                      case 404 =>
-                        response.notFound
-                      case _ =>
-                        response.internalServerError
-                    }
+                  if (updateResponse.error) {
+                    response.internalServerError
                   } else {
                     response.noContent
                   }
