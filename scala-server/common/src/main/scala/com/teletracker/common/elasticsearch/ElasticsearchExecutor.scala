@@ -2,6 +2,7 @@ package com.teletracker.common.elasticsearch
 
 import javax.inject.Inject
 import org.elasticsearch.action.ActionListener
+import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
 import org.elasticsearch.action.get.{
   GetRequest,
   GetResponse,
@@ -39,6 +40,10 @@ class ElasticsearchExecutor @Inject()(client: RestHighLevelClient) {
 
   def update(request: UpdateRequest): Future[UpdateResponse] = {
     withListener(client.updateAsync(request, RequestOptions.DEFAULT, _))
+  }
+
+  def bulk(request: BulkRequest): Future[BulkResponse] = {
+    withListener(client.bulkAsync(request, RequestOptions.DEFAULT, _))
   }
 
   def updateByQuery(

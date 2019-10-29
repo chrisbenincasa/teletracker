@@ -28,6 +28,7 @@ import com.teletracker.common.elasticsearch.{
   EsItem,
   EsItemTag,
   EsPerson,
+  EsUserItemTag,
   ItemLookupResponse,
   ItemSearch,
   ItemUpdater,
@@ -272,16 +273,19 @@ class ThingApi @Inject()(
     value: Option[Double]
   ): Future[Option[(UUID, EsItemTag)]] = {
     val esTag = EsItemTag.userScoped(userId, tag, value, Some(Instant.now()))
+    val userTag = EsUserItemTag.noValue(tag)
     idOrSlug match {
       case Left(value) =>
-        itemUpdater.upsertItemTag(value, esTag).map(_ => Some(value -> esTag))
+        itemUpdater
+          .upsertItemTag(value, esTag, Some(userId -> userTag))
+          .map(_ => Some(value -> esTag))
 
       case Right(value) =>
         getThingViaSearch(Some(userId), Right(value), thingType).flatMap {
           case None => Future.successful(None)
           case Some(value) =>
             itemUpdater
-              .upsertItemTag(value.id, esTag)
+              .upsertItemTag(value.id, esTag, Some(userId -> userTag))
               .map(_ => Some(value.id -> esTag))
         }
     }
@@ -294,16 +298,20 @@ class ThingApi @Inject()(
     tag: UserThingTagType
   ): Future[Option[(UUID, EsItemTag)]] = {
     val esTag = EsItemTag.userScoped(userId, tag, None, Some(Instant.now()))
+    val userTag = EsUserItemTag.noValue(tag)
+
     idOrSlug match {
       case Left(value) =>
-        itemUpdater.upsertItemTag(value, esTag).map(_ => Some(value -> esTag))
+        itemUpdater
+          .upsertItemTag(value, esTag, Some(userId -> userTag))
+          .map(_ => Some(value -> esTag))
 
       case Right(value) =>
         getThingViaSearch(Some(userId), Right(value), thingType).flatMap {
           case None => Future.successful(None)
           case Some(value) =>
             itemUpdater
-              .upsertItemTag(value.id, esTag)
+              .upsertItemTag(value.id, esTag, Some(userId -> userTag))
               .map(_ => Some(value.id -> esTag))
         }
     }

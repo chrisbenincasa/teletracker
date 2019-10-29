@@ -76,7 +76,7 @@ export const itemHasTag = (thing: ApiItem, expectedTag: ActionType) => {
 
 export const itemBelongsToLists = (item: ApiItem | Item) => {
   return (item.tags || [])
-    .filter(tag => tag.tag === ActionType.TrackedInList)
+    .filter(tag => tag.tag.indexOf(ActionType.TrackedInList) !== -1)
     .map(tag => tag.value!);
 };
 
