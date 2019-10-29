@@ -1,7 +1,13 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import _ from 'lodash';
-import { ItemType, ListSortOptions, NetworkType, OpenRange, Paging } from '../../types';
+import {
+  ItemType,
+  ListSortOptions,
+  NetworkType,
+  OpenRange,
+  Paging,
+} from '../../types';
 import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
 import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
