@@ -105,32 +105,37 @@ class ItemSearch @Inject()(
     singleItemSearch(query)
   }
 
-  def lookupItemsByTitleExact(
+  def lookupItemsByTitleMatch(
     titles: List[(String, Option[ThingType], Option[Range])] // TODO: Accept a range
   ): Future[Map[String, EsItem]] = {
-    val searches = titles
-      .map(Function.tupled(exactTitleMatchQuery))
-      .map(query => {
-        val searchSource = new SearchSourceBuilder().query(query).size(1)
-        new SearchRequest("items").source(searchSource)
-      })
+    if (titles.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      val searches = titles
+        .map(Function.tupled(exactTitleMatchQuery))
+        .map(query => {
+          val searchSource = new SearchSourceBuilder().query(query).size(1)
+          new SearchRequest("items").source(searchSource)
+        })
 
-    val multiReq = new MultiSearchRequest()
-    searches.foreach(multiReq.add)
+      val multiReq = new MultiSearchRequest()
+      searches.foreach(multiReq.add)
 
-    elasticsearchExecutor
-      .multiSearch(multiReq)
-      .map(resp => {
-        resp.getResponses.toList.zip(titles.map(_._1)).map {
-          case (response, title) =>
-            searchResponseToItems(response.getResponse).items.headOption
-              .map(title -> _)
-        }
-      })
-      .map(_.flatten.toMap)
+      elasticsearchExecutor
+        .multiSearch(multiReq)
+        .map(resp => {
+          resp.getResponses.toList.zip(titles.map(_._1)).map {
+            case (response, title) =>
+              searchResponseToItems(response.getResponse).items.headOption
+                .map(title -> _)
+          }
+        })
+        .map(_.flatten.toMap)
+    }
+
   }
 
-  def lookupItemByTitleExact(
+  def lookupItemByTitleMatch(
     title: String,
     thingType: Option[ThingType],
     releaseYear: Option[Range]
@@ -141,26 +146,30 @@ class ItemSearch @Inject()(
   def lookupItemsBySlug(
     slugs: List[(Slug, ThingType, Option[Range])]
   ): Future[Map[Slug, EsItem]] = {
-    val searches = slugs
-      .map(Function.tupled(slugMatchQuery))
-      .map(query => {
-        val searchSource = new SearchSourceBuilder().query(query).size(1)
-        new SearchRequest("items").source(searchSource)
-      })
+    if (slugs.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      val searches = slugs
+        .map(Function.tupled(slugMatchQuery))
+        .map(query => {
+          val searchSource = new SearchSourceBuilder().query(query).size(1)
+          new SearchRequest("items").source(searchSource)
+        })
 
-    val multiReq = new MultiSearchRequest()
-    searches.foreach(multiReq.add)
+      val multiReq = new MultiSearchRequest()
+      searches.foreach(multiReq.add)
 
-    elasticsearchExecutor
-      .multiSearch(multiReq)
-      .map(resp => {
-        resp.getResponses.toList.zip(slugs.map(_._1)).map {
-          case (response, title) =>
-            searchResponseToItems(response.getResponse).items.headOption
-              .map(title -> _)
-        }
-      })
-      .map(_.flatten.toMap)
+      elasticsearchExecutor
+        .multiSearch(multiReq)
+        .map(resp => {
+          resp.getResponses.toList.zip(slugs.map(_._1)).map {
+            case (response, title) =>
+              searchResponseToItems(response.getResponse).items.headOption
+                .map(title -> _)
+          }
+        })
+        .map(_.flatten.toMap)
+    }
   }
 
   def lookupItemBySlug(
