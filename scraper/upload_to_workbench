@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+rsync -av -e "ssh -i ~/.ssh/teletracker-qa.pem" \
+    --exclude='.vscode/*' \
+    --exclude="node_modules" \
+    --exclude=".build" \
+    --exclude=".idea" \
+    --exclude="*.tsv" \
+    --exclude="*.iml" \
+    --exclude="*.zip" \
+    --exclude="*.gz" \
+    ./ ubuntu@ec2-52-53-244-135.us-west-1.compute.amazonaws.com:~/scraper

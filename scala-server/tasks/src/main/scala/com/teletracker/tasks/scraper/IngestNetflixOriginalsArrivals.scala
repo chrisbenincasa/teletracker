@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import cats.Parallel
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.elasticsearch.{ItemSearch, ItemUpdater}
@@ -7,6 +8,7 @@ import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
+import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
@@ -20,7 +22,8 @@ class IngestNetflixOriginalsArrivals @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemSearch: ItemSearch,
-  protected val itemUpdater: ItemUpdater)
+  protected val itemUpdater: ItemUpdater,
+  elasticsearchLookup: ElasticsearchLookup)
     extends IngestJob[NetflixOriginalScrapeItem]
     with IngestJobWithElasticsearch[NetflixOriginalScrapeItem] {
 
@@ -28,6 +31,8 @@ class IngestNetflixOriginalsArrivals @Inject()(
 
   override protected def processMode(args: IngestJobArgs): ProcessMode =
     Parallel(32)
+
+  override protected def matchMode: MatchMode = elasticsearchLookup
 
   override protected def networkNames: Set[String] = Set("netflix")
 

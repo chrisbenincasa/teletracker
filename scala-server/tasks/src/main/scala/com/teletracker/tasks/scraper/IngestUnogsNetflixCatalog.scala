@@ -29,7 +29,8 @@ class IngestUnogsNetflixCatalog @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemSearch: ItemSearch,
   protected val itemUpdater: ItemUpdater,
-  protected val elasticsearchExecutor: ElasticsearchExecutor)
+  protected val elasticsearchExecutor: ElasticsearchExecutor,
+  elasticsearchLookup: ElasticsearchLookup)
     extends IngestJob[UnogsNetflixCatalogItem]
     with IngestJobWithElasticsearch[UnogsNetflixCatalogItem]
     with ElasticsearchFallbackMatcher[UnogsNetflixCatalogItem] {
@@ -40,8 +41,8 @@ class IngestUnogsNetflixCatalog @Inject()(
   override protected def processMode(args: IngestJobArgs): ProcessMode =
     Parallel(32)
 
-  override protected def matchMode: MatchMode[UnogsNetflixCatalogItem] =
-    new ElasticsearchLookup[UnogsNetflixCatalogItem](itemSearch)
+  override protected def matchMode: MatchMode =
+    elasticsearchLookup
 
   override protected def createAvailabilities(
     networks: Set[Network],
