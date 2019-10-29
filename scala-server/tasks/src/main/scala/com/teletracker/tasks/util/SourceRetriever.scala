@@ -11,6 +11,7 @@ import software.amazon.awssdk.services.s3.model.{
   GetObjectResponse,
   ListObjectsV2Request
 }
+import software.amazon.awssdk.utils.IoUtils
 import java.net.URI
 import java.util.zip.GZIPInputStream
 import scala.annotation.tailrec
@@ -39,7 +40,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
   def getS3Object(
     bucket: String,
     key: String
-  ): BufferedSource = {
+  ): Source = {
     val stream = withRetries(5) {
       s3.getObject(
         GetObjectRequest
@@ -70,10 +71,12 @@ class SourceRetriever @Inject()(s3: S3Client) {
       case _ => stream
     }
 
-    Source.fromInputStream(finalStream)
+    // not ideal to suck this all into memory but we keep getting SocketExceptions with Connection rest
+    // an hour into jobs sooooo what are we supposed to do???
+    Source.fromBytes(IoUtils.toByteArray(finalStream))
   }
 
-  def getSourceStream(uri: URI): Stream[BufferedSource] = {
+  def getSourceStream(uri: URI): Stream[Source] = {
     uri.getScheme match {
       case "s3" =>
         val allEntries = withRetries(5) {
@@ -101,7 +104,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
           .toList
 
         allEntries.toStream.map {
-          case (bucket, key) => getS3Object(uri.getHost, key)
+          case (bucket, key) => getS3Object(bucket, key)
         }
       case "file" =>
         Stream(Source.fromFile(uri))
