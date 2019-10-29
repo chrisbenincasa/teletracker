@@ -16,6 +16,7 @@ import java.util.zip.GZIPInputStream
 import scala.annotation.tailrec
 import scala.io.{BufferedSource, Source}
 import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
 class SourceRetriever @Inject()(s3: S3Client) {
@@ -113,7 +114,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
   )(
     f: => T
   )(
-    onError: PartialFunction[Throwable, Boolean] = { case NonFatal(e) => true }
+    onError: PartialFunction[Throwable, Boolean] = { case NonFatal(_) => true }
   ): T = {
     @tailrec
     def withRetriesInternal(
@@ -127,16 +128,14 @@ class SourceRetriever @Inject()(s3: S3Client) {
         )
       }
 
-      try {
-        f
-      } catch {
-        case e if onError.isDefinedAt(e) =>
-          if (onError(e)) {
-            withRetriesInternal(attempt + 1, Some(e))
-          } else {
-            throw e
-          }
-        case NonFatal(e) => throw e
+      Try(f) match {
+        case Failure(exception) if onError.isDefinedAt(exception) =>
+          withRetriesInternal(attempt + 1, Some(exception))
+
+        case Failure(exception) => throw exception
+
+        case Success(value) =>
+          value
       }
     }
 
