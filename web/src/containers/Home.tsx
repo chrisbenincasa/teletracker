@@ -1,6 +1,6 @@
 import {
+  Button,
   createStyles,
-  Fab,
   Grid,
   Theme,
   Typography,
@@ -65,6 +65,14 @@ const styles = (theme: Theme) =>
         width: '100%',
       },
     },
+    loginButton: {
+      margin: `${theme.spacing(2)}px ${theme.spacing(2)}px ${theme.spacing(
+        2,
+      )}px ${theme.spacing(1)}px`,
+      width: '100%',
+      maxWidth: 200,
+      whiteSpace: 'nowrap',
+    },
     movieCount: {
       marginRight: 15,
       whiteSpace: 'nowrap',
@@ -78,6 +86,14 @@ const styles = (theme: Theme) =>
         flexDirection: 'column',
         alignItems: 'flex-center',
       },
+    },
+    signupButton: {
+      margin: `${theme.spacing(2)}px ${theme.spacing(1)}px ${theme.spacing(
+        2,
+      )}px 0`,
+      width: '100%',
+      maxWidth: 200,
+      whiteSpace: 'nowrap',
     },
   });
 
@@ -214,37 +230,27 @@ class Home extends Component<Props, State> {
               Discover what you're not watching.
             </Typography>
             <div className={classes.buttonContainer}>
-              <Fab
+              <Button
                 size="small"
-                variant="extended"
+                variant="outlined"
                 aria-label="Signup"
                 onClick={() => this.toggleAuthModal('signup')}
                 color="secondary"
-                style={{
-                  margin: '16px 8px 16px 0',
-                  width: '100%',
-                  maxWidth: 200,
-                  whiteSpace: 'nowrap',
-                }}
+                className={classes.signupButton}
               >
                 <PersonAdd className={classes.buttonIcon} />
                 Signup
-              </Fab>
-              <Fab
+              </Button>
+              <Button
                 size="small"
-                variant="extended"
+                variant="outlined"
                 aria-label="Login"
                 onClick={() => this.toggleAuthModal('login')}
-                style={{
-                  margin: '16px 16px 16px 8px',
-                  width: '100%',
-                  maxWidth: 200,
-                  whiteSpace: 'nowrap',
-                }}
+                className={classes.loginButton}
               >
                 <ExitToApp className={classes.buttonIcon} />
                 Login
-              </Fab>
+              </Button>
             </div>
           </div>
         </div>
