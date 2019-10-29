@@ -207,6 +207,17 @@ export class SagaTeletrackerClient {
     );
   }
 
+  *getNetworkAvailability(
+    networkIds: number[],
+    fields?: KeyMap<ObjectMetadata>,
+  ) {
+    return yield this.apiCall(
+      client => client.getNetworkAvailability,
+      networkIds,
+      yield call([this, this.withToken]),
+    );
+  }
+
   *getPopular(
     fields?: KeyMap<ObjectMetadata>,
     itemTypes?: ItemType[],

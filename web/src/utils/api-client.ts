@@ -383,6 +383,13 @@ export class TeletrackerApi {
     });
   }
 
+  async getNetworkAvailability(networkIds: number[], token?: string) {
+    return this.api.get('/api/v2/availability/networks', {
+      networkIds: networkIds.join(','),
+      token,
+    });
+  }
+
   async getPopular(
     token?: string,
     fields?: KeyMap<ObjectMetadata>,

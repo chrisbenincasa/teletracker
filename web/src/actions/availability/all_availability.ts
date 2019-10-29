@@ -46,7 +46,7 @@ export const allAvailabilityFailed = createAction<AllAvailabilityFailedAction>(
 );
 
 export const allAvailabilitySaga = function*() {
-  yield takeEvery(UPCOMING_AVAILABILITY_INITIATED, function*() {
+  yield takeEvery(ALL_AVAILABILITY_INITIATED, function*() {
     try {
       let response = yield clientEffect(
         client => client.getAllAvailability,

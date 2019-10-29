@@ -9,7 +9,11 @@ import {
   signupSaga,
   watchAuthState,
 } from './auth';
-import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
+import {
+  allAvailabilitySaga,
+  networkAvailabilitySaga,
+  upcomingAvailabilitySaga,
+} from './availability';
 import { fetchItemDetailsSaga } from './item-detail';
 import {
   addToListSaga,
@@ -20,7 +24,7 @@ import {
   updateListSaga,
   updateListTrackingSaga,
 } from './lists';
-import { loadNetworksSaga } from './metadata';
+import { loadNetworks, loadNetworksSaga } from './metadata';
 import { loadGenres, loadGenresSaga } from './metadata/load_genres';
 import { fetchPersonDetailsSaga } from './people/get_person';
 import { popularSaga } from './popular';
@@ -44,6 +48,7 @@ const StartupAction = createBasicAction<StartupAction>(STARTUP);
 function* startupSaga() {
   yield put(StartupAction());
   yield put(loadGenres());
+  yield put(loadNetworks());
 }
 
 export function* root() {
@@ -89,5 +94,6 @@ export function* root() {
     fetchPersonDetailsSaga(),
     loadGenresSaga(),
     startupSaga(),
+    networkAvailabilitySaga(),
   ]);
 }

@@ -14,7 +14,9 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import {
+  NetworkAvailabilityInitiatedPayload,
   retrieveAllAvailability,
+  retrieveNetworkAvailability,
   retrieveUpcomingAvailability,
 } from '../actions/availability';
 import ItemCard from '../components/ItemCard';
@@ -27,6 +29,7 @@ import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants/';
 import { Item } from '../types/v2/Item';
 import { ItemAvailability } from '../types/v2';
+import { isSupportedNetwork, Network } from '../types';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -43,11 +46,14 @@ interface InjectedProps {
   upcoming?: AvailabilityState;
   expiring?: AvailabilityState;
   recentlyAdded?: AvailabilityState;
+  networks?: Network[];
+  networksLoading: boolean;
 }
 
 interface DispatchProps {
   retrieveUpcomingAvailability: () => any;
   retrieveAllAvailability: () => any;
+  retrieveNetworkAvailability: (NetworkAvailabilityInitiatedPayload) => any;
 }
 
 type Props = OwnProps & InjectedProps & DispatchProps & WithUserProps;
@@ -56,7 +62,7 @@ class New extends Component<Props> {
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
 
-    this.props.retrieveUpcomingAvailability();
+    // this.props.retrieveUpcomingAvailability();
     // this.props.retrieveAllAvailability();
 
     ReactGA.initialize(GA_TRACKING_ID);
@@ -64,6 +70,25 @@ class New extends Component<Props> {
 
     if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
       ReactGA.set({ userId: userSelf.user.uid });
+    }
+  }
+
+  componentDidUpdate(
+    prevProps: Readonly<Props>,
+    prevState: Readonly<{}>,
+    snapshot?: any,
+  ): void {
+    if (
+      (prevProps.networksLoading &&
+        !this.props.networksLoading &&
+        this.props.networks) ||
+      (!prevProps.networks && this.props.networks)
+    ) {
+      let networkIds: number[] = _.chain(this.props.networks)
+        .filter(isSupportedNetwork)
+        .map('id')
+        .value();
+      this.props.retrieveNetworkAvailability({ networks: networkIds });
     }
   }
 
@@ -168,7 +193,8 @@ class New extends Component<Props> {
   };
 
   render() {
-    return !this.props.upcoming && !this.props.recentlyAdded ? (
+    return (!this.props.upcoming && !this.props.recentlyAdded) ||
+      (this.props.networksLoading && !this.props.networks) ? (
       this.renderLoading()
     ) : (
       <div style={{ margin: 20 }}>
@@ -204,6 +230,8 @@ const mapStateToProps = (appState: AppState) => {
     upcoming: appState.availability.upcoming,
     expiring: appState.availability.expiring,
     recentlyAdded: appState.availability.recentlyAdded,
+    networks: appState.metadata.networks,
+    networksLoading: appState.metadata.networksLoading,
   };
 };
 
@@ -212,6 +240,7 @@ const mapDispatchToProps = dispatch =>
     {
       retrieveUpcomingAvailability,
       retrieveAllAvailability,
+      retrieveNetworkAvailability,
     },
     dispatch,
   );

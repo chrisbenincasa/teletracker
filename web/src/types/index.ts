@@ -46,18 +46,22 @@ export type NetworkType =
   | 'amazon-video'
   | 'hulu';
 
-export function isNetworkType(s: string): s is NetworkType {
-  const allowed = [
-    'netflix',
-    'netflix-kids',
-    'hbo-go',
-    'hbo-now',
-    'amazon-prime-video',
-    'amazon-video',
-    'hulu',
-  ];
+const SUPPORTED_NETWORKS = [
+  'netflix',
+  'netflix-kids',
+  'hbo-go',
+  'hbo-now',
+  'amazon-prime-video',
+  'amazon-video',
+  'hulu',
+];
 
-  return allowed.includes(s);
+export function isNetworkType(s: string): s is NetworkType {
+  return SUPPORTED_NETWORKS.includes(s);
+}
+
+export function isSupportedNetwork(s: Network): boolean {
+  return SUPPORTED_NETWORKS.includes(s.slug);
 }
 
 export interface ListConfiguration {
