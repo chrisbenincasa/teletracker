@@ -124,8 +124,8 @@ class ImportListTrackingToElasticsearch @Inject()(
 
               val doc = EsUserItem(
                 id = s"${userId}_${itemId}",
-                item_id = itemId,
-                user_id = userId,
+                item_id = Some(itemId),
+                user_id = Some(userId),
                 tags = docTags.toList,
                 item = Some(
                   EsUserDenormalizedItem(
@@ -171,8 +171,8 @@ class ImportListTrackingToElasticsearch @Inject()(
                     .filterNot(tag => uniqueNewTags.contains(tag.tag)) ++ newTags.toList
 
                   val newDoc = value.copy(
-                    item_id = itemId,
-                    user_id = userId,
+                    item_id = Some(itemId),
+                    user_id = Some(userId),
                     tags = finalTags,
                     item = Some(
                       EsUserDenormalizedItem(

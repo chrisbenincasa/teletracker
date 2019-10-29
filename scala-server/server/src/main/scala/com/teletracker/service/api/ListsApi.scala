@@ -7,7 +7,10 @@ import com.teletracker.common.db.access.{
   UsersDbAccess
 }
 import com.teletracker.common.db.model.TrackedListRow
-import com.teletracker.common.elasticsearch.ItemUpdater
+import com.teletracker.common.elasticsearch.{
+  ItemUpdater,
+  UpdateMultipleDocResponse
+}
 import javax.inject.Inject
 import org.elasticsearch.action.update.UpdateResponse
 import java.util.UUID
@@ -86,7 +89,7 @@ class ListsApi @Inject()(
     userId: String,
     listId: Int,
     thingId: UUID
-  ): Future[UpdateResponse] = {
+  ): Future[UpdateMultipleDocResponse] = {
     itemUpdater.addListTagToItem(thingId, listId, userId)
   }
 
@@ -95,7 +98,7 @@ class ListsApi @Inject()(
     userId: String,
     listId: Int,
     thingId: UUID
-  ) = {
+  ): Future[UpdateMultipleDocResponse] = {
     itemUpdater.removeListTagFromItem(thingId, listId, userId)
   }
 

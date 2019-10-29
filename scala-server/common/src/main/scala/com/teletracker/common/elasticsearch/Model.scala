@@ -143,6 +143,16 @@ case class EsItem(
   def clearUserScopedData: EsItem = {
     copy(tags = None)
   }
+
+  def toDenormalizedUserItem: EsUserDenormalizedItem = EsUserDenormalizedItem(
+    id = id,
+    release_date = release_date,
+    genres = genres,
+    original_title = original_title,
+    popularity = popularity,
+    slug = slug,
+    `type` = `type`
+  )
 }
 
 @JsonCodec
@@ -329,10 +339,37 @@ case class EsItemRating(
 @JsonCodec
 case class EsUserItem(
   id: String,
-  item_id: UUID,
-  user_id: String,
+  item_id: Option[UUID],
+  user_id: Option[String],
   tags: List[EsUserItemTag],
   item: Option[EsUserDenormalizedItem])
+
+object EsUserItemTag {
+  implicit val codec: Codec[EsUserItemTag] =
+    io.circe.generic.semiauto.deriveCodec
+
+  def noValue(tag: UserThingTagType): EsUserItemTag = {
+    EsUserItemTag(tag = tag.toString, last_updated = Some(Instant.now()))
+  }
+
+  def forInt(
+    tag: UserThingTagType,
+    value: Int
+  ): EsUserItemTag = EsUserItemTag(
+    tag = tag.toString,
+    int_value = Some(value),
+    last_updated = Some(Instant.now())
+  )
+
+  def forDouble(
+    tag: UserThingTagType,
+    value: Double
+  ): EsUserItemTag = EsUserItemTag(
+    tag = tag.toString,
+    double_value = Some(value),
+    last_updated = Some(Instant.now())
+  )
+}
 
 @JsonCodec
 case class EsUserItemTag(
