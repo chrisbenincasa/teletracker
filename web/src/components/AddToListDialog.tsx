@@ -100,14 +100,18 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     super(props);
 
     const belongsToLists: number[] =
-      props && props.item && itemBelongsToLists(props.item);
+      props && props.item ? itemBelongsToLists(props.item) : [];
 
-    let listChanges = belongsToLists.reduce((acc, elem) => {
-      return {
-        ...acc,
-        [elem]: true,
-      };
-    }, {});
+    let listChanges = _.reduce(
+      Object.keys(props.listsById),
+      (acc, elem) => {
+        return {
+          ...acc,
+          [elem]: belongsToLists.includes(Number(elem)),
+        };
+      },
+      {},
+    );
 
     this.state = {
       exited: false,
