@@ -76,7 +76,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
   def getSourceStream(uri: URI): Stream[BufferedSource] = {
     uri.getScheme match {
       case "s3" =>
-        withRetries(5) {
+        val allEntries = withRetries(5) {
           s3.listObjectsV2Paginator(
             ListObjectsV2Request
               .builder()
@@ -97,9 +97,12 @@ class SourceRetriever @Inject()(s3: S3Client) {
           .asScala
           .toStream
           .flatMap(_.contents().asScala.toStream)
-          .map(obj => {
-            getS3Object(uri.getHost, obj.key())
-          })
+          .map(obj => uri.getHost -> obj.key())
+          .toList
+
+        allEntries.toStream.map {
+          case (bucket, key) => getS3Object(uri.getHost, key)
+        }
       case "file" =>
         Stream(Source.fromFile(uri))
       case _ =>
