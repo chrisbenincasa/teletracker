@@ -344,7 +344,7 @@ class Home extends Component<Props, State> {
               variant="h2"
               className={classes.movieCount}
             >
-              Search
+              Discovery
             </Typography>
             <Typography variant="h2"> made easy.</Typography>
           </div>
