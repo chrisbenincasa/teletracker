@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.ResponseInputStream
 import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.core.sync.ResponseTransformer
+import software.amazon.awssdk.http.AbortableInputStream
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{
   GetObjectRequest,
@@ -12,6 +13,7 @@ import software.amazon.awssdk.services.s3.model.{
   ListObjectsV2Request
 }
 import software.amazon.awssdk.utils.IoUtils
+import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.URI
 import java.util.zip.GZIPInputStream
 import scala.annotation.tailrec
@@ -41,6 +43,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
     bucket: String,
     key: String
   ): Source = {
+    val tmpFile = File.createTempFile(s"${bucket}_${key}", ".tmp.txt")
     val stream = withRetries(5) {
       s3.getObject(
         GetObjectRequest
@@ -71,15 +74,21 @@ class SourceRetriever @Inject()(s3: S3Client) {
       case _ => stream
     }
 
-    // not ideal to suck this all into memory but we keep getting SocketExceptions with Connection rest
-    // an hour into jobs sooooo what are we supposed to do???
-    Source.fromBytes(IoUtils.toByteArray(finalStream))
+    val fos = new FileOutputStream(tmpFile)
+    try {
+      IoUtils.copy(finalStream, fos)
+    } finally {
+      fos.flush()
+      fos.close()
+    }
+
+    Source.fromInputStream(new FileInputStream(tmpFile))
   }
 
   def getSourceStream(uri: URI): Stream[Source] = {
     uri.getScheme match {
       case "s3" =>
-        val allEntries = withRetries(5) {
+        withRetries(5) {
           s3.listObjectsV2Paginator(
             ListObjectsV2Request
               .builder()
@@ -100,12 +109,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
           .asScala
           .toStream
           .flatMap(_.contents().asScala.toStream)
-          .map(obj => uri.getHost -> obj.key())
-          .toList
-
-        allEntries.toStream.map {
-          case (bucket, key) => getS3Object(bucket, key)
-        }
+          .map(obj => getS3Object(uri.getHost, obj.key()))
       case "file" =>
         Stream(Source.fromFile(uri))
       case _ =>
