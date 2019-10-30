@@ -44,6 +44,9 @@ const styles = (theme: Theme) =>
       }),
       marginLeft: 0,
       paddingBottom: '9rem',
+      [theme.breakpoints.down('sm')]: {
+        paddingBottom: '2rem',
+      },
     },
     mainContentShift: {
       transition: theme.transitions.create('margin', {
