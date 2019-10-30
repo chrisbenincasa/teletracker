@@ -31,6 +31,7 @@ import Popular from './Popular';
 import PersonDetail from './PersonDetail';
 import Drawer, { DrawerWidthPx } from '../components/Drawer';
 import Toolbar from '../components/Toolbar';
+import Footer from '../components/Footer';
 import Logout from './Logout';
 import _ from 'lodash';
 
@@ -42,6 +43,10 @@ const styles = (theme: Theme) =>
         duration: theme.transitions.duration.leavingScreen,
       }),
       marginLeft: 0,
+      paddingBottom: '9rem',
+      [theme.breakpoints.down('sm')]: {
+        paddingBottom: '2rem',
+      },
     },
     mainContentShift: {
       transition: theme.transitions.create('margin', {
@@ -54,6 +59,8 @@ const styles = (theme: Theme) =>
     },
     root: {
       flexGrow: 1,
+      minHeight: '100vh',
+      position: 'relative',
     },
   });
 
@@ -163,6 +170,7 @@ class App extends Component<Props, State> {
                 />
               </Switch>
             </main>
+            <Footer />
           </div>
         ) : (
           <LinearProgress />
