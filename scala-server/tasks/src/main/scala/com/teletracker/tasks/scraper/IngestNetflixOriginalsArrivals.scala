@@ -8,6 +8,7 @@ import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
+import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
@@ -31,6 +32,8 @@ class IngestNetflixOriginalsArrivals @Inject()(
 
   override protected def processMode(args: IngestJobArgs): ProcessMode =
     Parallel(32)
+
+  override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
   override protected def matchMode: MatchMode = elasticsearchLookup
 
