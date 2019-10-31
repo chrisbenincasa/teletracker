@@ -118,7 +118,7 @@ class ListBuilder @Inject()(
         if (response.items.isEmpty) {
           Future.successful(ElasticsearchItemsResponse.empty)
         } else {
-          val ids = response.items.map(_.item_id.toString)
+          val ids = response.items.flatMap(_.item_id).map(_.toString)
 
           val mGetBuilder = new MultiGetRequest()
           ids.map(mGetBuilder.add(Indices.ItemsIndex, _))
