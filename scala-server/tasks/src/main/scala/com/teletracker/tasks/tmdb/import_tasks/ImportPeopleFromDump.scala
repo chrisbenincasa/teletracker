@@ -2,6 +2,15 @@ package com.teletracker.tasks.tmdb.import_tasks
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
+import com.teletracker.common.elasticsearch.{
+  EsPerson,
+  EsPersonCastCredit,
+  EsPersonCrewCredit,
+  ItemSearch,
+  ItemUpdater,
+  PersonLookup
+}
+import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.{
   CastMember,
   MediaType,
@@ -14,6 +23,7 @@ import com.teletracker.common.util.TheMovieDb._
 import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
+import java.time.LocalDate
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -22,14 +32,128 @@ class ImportPeopleFromDump @Inject()(
   sourceRetriever: SourceRetriever,
   thingsDbAccess: ThingsDbAccess,
   tmdbSynchronousProcessor: TmdbSynchronousProcessor,
-  genreCache: GenreCache
-)(implicit executionContext: ExecutionContext)
+  genreCache: GenreCache,
+  personLookup: PersonLookup,
+  itemSearch: ItemSearch
+)(implicit protected val executionContext: ExecutionContext)
     extends ImportTmdbDumpTask[Person](
       s3,
       sourceRetriever,
       thingsDbAccess,
       genreCache
-    ) {
+    )
+    with ImportTmdbDumpTaskToElasticsearch[Person] {
+
+  implicit override def toEsItem: ToEsItem[Person] = ToEsItem.forTmdbPerson
+
+  override protected def shouldHandleItem(item: Person): Boolean =
+    item.name.exists(_.nonEmpty)
+
+  override protected def handleItem(
+    args: ImportTmdbDumpTaskArgs,
+    person: Person
+  ): Future[Unit] = {
+    personLookup
+      .lookupPersonByExternalId(ExternalSource.TheMovieDb, person.id.toString)
+      .map {
+        case Some(value) =>
+        case None =>
+          person.combined_credits
+            .map(credits => {
+              val castIds = credits.cast.flatMap(castMember => {
+                castMember.media_type.map(typ => {
+                  castMember.id.toString -> typ.toThingType
+                })
+              })
+
+              val crewIds = credits.crew.flatMap(crewMember => {
+                crewMember.media_type.map(typ => {
+                  crewMember.id.toString -> typ.toThingType
+                })
+              })
+
+              val lookupTriples = (castIds ++ crewIds).map {
+                case (id, typ) => (ExternalSource.TheMovieDb, id, typ)
+              }
+
+              itemSearch.lookupItemsByExternalIds(lookupTriples)
+            })
+            .getOrElse(Future.successful(Map.empty))
+            .map(castAndCrewById => {
+              val cast =
+                person.combined_credits.map(_.cast.flatMap(castCredit => {
+                  castAndCrewById
+                    .get(ExternalSource.TheMovieDb -> castCredit.id.toString)
+                    .filter(
+                      matchingItem =>
+                        castCredit.media_type
+                          .map(_.toThingType)
+                          .contains(matchingItem.`type`)
+                    )
+                    .map(matchingItem => {
+                      EsPersonCastCredit(
+                        id = matchingItem.id,
+                        title = matchingItem.original_title.getOrElse(""),
+                        character = castCredit.character,
+                        `type` = matchingItem.`type`,
+                        slug = matchingItem.slug
+                      )
+                    })
+                }))
+
+              val crew =
+                person.combined_credits.map(_.crew.flatMap(crewCredit => {
+                  castAndCrewById
+                    .get(ExternalSource.TheMovieDb -> crewCredit.id.toString)
+                    .filter(
+                      matchingItem =>
+                        crewCredit.media_type
+                          .map(_.toThingType)
+                          .contains(matchingItem.`type`)
+                    )
+                    .map(matchingItem => {
+                      EsPersonCrewCredit(
+                        id = matchingItem.id,
+                        title = matchingItem.original_title.getOrElse(""),
+                        department = crewCredit.department,
+                        job = crewCredit.job,
+                        `type` = matchingItem.`type`,
+                        slug = matchingItem.slug
+                      )
+                    })
+                }))
+
+              EsPerson(
+                adult = person.adult,
+                biography = person.biography,
+                birthday =
+                  person.birthday.filter(_.nonEmpty).map(LocalDate.parse(_)),
+                cast_credits = cast,
+                crew_credits = crew,
+                external_ids = Some(toEsItem.esExternalId(person).toList),
+                deathday =
+                  person.deathday.filter(_.nonEmpty).map(LocalDate.parse(_)),
+                homepage = person.homepage,
+                id = UUID.randomUUID(),
+                images = Some(toEsItem.esItemImages(person)),
+                name = person.name,
+                place_of_birth = person.place_of_birth,
+                popularity = person.popularity,
+                slug = Some(
+                  Slug(
+                    person.name.get,
+                    person.birthday
+                      .filter(_.nonEmpty)
+                      .map(LocalDate.parse(_))
+                      .map(_.getYear)
+                  )
+                ),
+                known_for = None
+              )
+            })
+
+      }
+  }
 
   override protected def extraWork(
     thingLike: ThingLike,

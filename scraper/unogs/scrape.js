@@ -5,6 +5,7 @@ var fs = require('fs').promises;
 const Entities = require('html-entities').AllHtmlEntities;
 const entities = new Entities();
 import { writeResultsAndUploadToStorage } from '../common/storage';
+import requestUnogs from './utils';
 
 /**
 
@@ -44,11 +45,8 @@ const query = {
 };
 
 const scrape = async () => {
-  let body = await request({
-    uri: 'https://unogs.com/nf.cgi',
-    headers,
-    qs: query,
-  });
+  let body = await requestUnogs('https://unogs.com/nf.cgi', query);
+  console.log(body);
 
   let parsed = JSON.parse(body);
 

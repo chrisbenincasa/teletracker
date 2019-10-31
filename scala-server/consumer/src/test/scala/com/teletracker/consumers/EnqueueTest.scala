@@ -1,18 +1,37 @@
 package com.teletracker.consumers
 
-import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
-import com.teletracker.tasks.{DependantTask, TimeoutTask}
-import io.circe.Json
-import io.circe.syntax._
+import com.google.inject.Module
+import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.inject.Modules
+import com.teletracker.tasks.{DependantTask, TeletrackerTaskRunner}
+import scala.concurrent.ExecutionContext.Implicits.global
 
-object EnqueueTest extends App {
-//  val publisher = Publisher.newBuilder("teletracker-task-queue").build()
+object EnqueueTest extends com.twitter.inject.app.App {
+  override protected def modules: Seq[Module] = Modules()
 
-  val message = TeletrackerTaskQueueMessage(
-    classOf[DependantTask].getName,
-    Map(
-      )
-  )
+  override protected def run(): Unit = {
 
-  println(message.asJson.spaces4)
+    val config = injector.instance[TeletrackerConfig]
+
+//    val queue =
+//      new SqsQueue[TeletrackerTaskQueueMessage](
+//        SqsAsyncClient.create(),
+//        config.async.taskQueue.url
+//      )
+//
+//    val message = TeletrackerTaskQueueMessage(
+//      classOf[DependantTask].getName,
+//      Map(
+//        )
+//    )
+
+    val instance = injector
+      .instance[TeletrackerTaskRunner]
+      .getInstance(classOf[DependantTask].getName)
+    instance.run(Map())
+
+//    queue.queue(message).await()
+//
+//    println(message.asJson.spaces4)
+  }
 }

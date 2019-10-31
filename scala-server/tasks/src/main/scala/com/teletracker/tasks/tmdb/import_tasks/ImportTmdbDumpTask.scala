@@ -221,8 +221,6 @@ trait ImportTmdbDumpTaskToElasticsearch[T <: HasTmdbId] {
 
   implicit lazy val lcs = new Patience[Json]
   implicit protected val executionContext: ExecutionContext
-  protected def itemSearch: ItemSearch
-  protected def itemUpdater: ItemUpdater
 
   override protected def handleItem(
     args: ImportTmdbDumpTaskArgs,

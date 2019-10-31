@@ -187,12 +187,24 @@
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-1.0.0.tgz#4f475ff3f32b0a309b7faffd33328e93d7953330"
   integrity sha512-3rlOB53XCVO7LfjXFx4bCGrZPPjkgYD7pP0E/yo4d57H32aYqD/QNmeXcVnx7CM5SxGScwl2P0b1kCDYZgNWqw==
 
+"@types/cheerio@^0.22.13":
+  version "0.22.13"
+  resolved "https://registry.yarnpkg.com/@types/cheerio/-/cheerio-0.22.13.tgz#5eecda091a24514185dcba99eda77e62bf6523e6"
+  integrity sha512-OZd7dCUOUkiTorf97vJKwZnSja/DmHfuBAroe1kREZZTCf/tlFecwHhsOos3uVHxeKGZDwzolIrCUApClkdLuA==
+  dependencies:
+    "@types/node" "*"
+
 "@types/duplexify@^3.6.0":
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/@types/duplexify/-/duplexify-3.6.0.tgz#dfc82b64bd3a2168f5bd26444af165bf0237dcd8"
   integrity sha512-5zOA53RUlzN74bvrSGwjudssD9F3a797sDZQkiYpUOxW+WHaXTCPz4/d5Dgi6FKnOqZ2CpaTo0DhgIfsXAOE/A==
   dependencies:
     "@types/node" "*"
+
+"@types/lodash@^4.14.144":
+  version "4.14.144"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.144.tgz#12e57fc99064bce45e5ab3c8bc4783feb75eab8e"
+  integrity sha512-ogI4g9W5qIQQUhXAclq6zhqgqNUr7UlFaqDHbch7WLSLeeM/7d3CRaw7GLajxvyFvhJqw4Rpcz5bhoaYtIx6Tg==
 
 "@types/long@^4.0.0":
   version "4.0.0"

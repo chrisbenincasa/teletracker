@@ -21,6 +21,8 @@
     "stream-transform": "^2.0.1"
   },
   "devDependencies": {
+    "@types/cheerio": "^0.22.13",
+    "@types/lodash": "^4.14.144",
     "prettier": "1.17.0",
     "typescript": "^3.6.4"
   },

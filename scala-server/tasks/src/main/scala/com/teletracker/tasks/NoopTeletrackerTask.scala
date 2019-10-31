@@ -1,5 +1,6 @@
 package com.teletracker.tasks
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import io.circe.syntax._
 import javax.inject.Inject
@@ -20,27 +21,20 @@ class TimeoutTask extends TeletrackerTaskWithDefaultArgs {
   }
 }
 
-class DependantTask @Inject()(publisher: SqsClient)
-    extends TeletrackerTaskWithDefaultArgs {
+class DependantTask @Inject()(
+  teletrackerConfig: TeletrackerConfig,
+  protected val publisher: SqsClient)
+    extends TeletrackerTaskWithDefaultArgs
+    with SchedulesFollowupTasks {
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def runInternal(args: Args): Unit = {
-    val message =
-      TeletrackerTaskQueueMessage(classOf[TimeoutTask].getName, Map(), None)
+    logger.info("Running task and then going to schedule a follow-up")
+  }
 
-    logger.info(s"Publishing: $message")
-
-    val response = publisher
-      .sendMessage(
-        SendMessageRequest
-          .builder()
-          .messageBody(message.asJson.noSpaces)
-          .queueUrl(
-            "https://sqs.us-west-1.amazonaws.com/302782651551/teletracker-tasks-qa"
-          )
-          .build()
-      )
-
-    logger.info(s"Published with id = ${response.messageId()}")
+  override def followupTasksToSchedule(
+    args: TypedArgs
+  ): List[TeletrackerTaskQueueMessage] = {
+    List(TeletrackerTaskQueueMessage(classOf[TimeoutTask].getName, Map(), None))
   }
 }

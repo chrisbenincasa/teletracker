@@ -219,14 +219,18 @@ abstract class IngestJob[T <: ScrapedItem](
                 .map(_.toMatchResult)
 
               val stillMissing = (filteredAndSanitized
-                .map(_.title)
-                .toSet -- things.map(_.title).toSet) -- fallbackMatches
-                .map(_.originalItem.title)
+                .map(_.title.toLowerCase())
+                .toSet -- things
+                .map(_.title.toLowerCase())
+                .toSet) -- fallbackMatches
+                .map(_.originalItem.title.toLowerCase())
                 .toSet
 
               writeMissingItems(
                 filteredAndSanitized
-                  .filter(item => stillMissing.contains(item.title))
+                  .filter(
+                    item => stillMissing.contains(item.title.toLowerCase())
+                  )
               )
 
               logger.info(
