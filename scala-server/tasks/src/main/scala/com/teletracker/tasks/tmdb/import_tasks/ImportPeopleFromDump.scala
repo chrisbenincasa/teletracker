@@ -3,6 +3,7 @@ package com.teletracker.tasks.tmdb.import_tasks
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.elasticsearch.{
+  EsItem,
   EsPerson,
   EsPersonCastCredit,
   EsPersonCrewCredit,
@@ -78,7 +79,9 @@ class ImportPeopleFromDump @Inject()(
 
               itemSearch.lookupItemsByExternalIds(lookupTriples)
             })
-            .getOrElse(Future.successful(Map.empty))
+            .getOrElse(
+              Future.successful(Map.empty[(ExternalSource, String), EsItem])
+            )
             .map(castAndCrewById => {
               val cast =
                 person.combined_credits.map(_.cast.flatMap(castCredit => {
