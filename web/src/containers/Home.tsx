@@ -9,7 +9,7 @@ import {
   withStyles,
   withWidth,
 } from '@material-ui/core';
-import { ExitToApp, PersonAdd } from '@material-ui/icons';
+import { ExitToApp, List, PersonAdd } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import ReactGA from 'react-ga';
@@ -35,7 +35,6 @@ const styles = (theme: Theme) =>
     layout: layoutStyles(theme),
     buttonContainer: {
       display: 'flex',
-      flexGrow: 1,
       flexDirection: 'row',
     },
     buttonIcon: {
@@ -44,19 +43,7 @@ const styles = (theme: Theme) =>
     container: {
       display: 'flex',
       flexDirection: 'row',
-      margin: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
-      [theme.breakpoints.down('sm')]: {
-        flexDirection: 'column-reverse',
-        margin: 5,
-      },
-    },
-    searchContainer: {
-      display: 'flex',
-      flexGrow: 1,
-      flexDirection: 'row',
-      margin: 20,
+      margin: `${theme.spacing(3)}px`,
       alignItems: 'center',
       justifyContent: 'center',
       [theme.breakpoints.down('sm')]: {
@@ -74,22 +61,40 @@ const styles = (theme: Theme) =>
         textAlign: 'center',
       },
     },
-    searchCtaContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      margin: 100,
-      [theme.breakpoints.down('sm')]: {
-        margin: 0,
-        alignItems: 'center',
-        textAlign: 'center',
-      },
-      alignItems: 'center',
-    },
     gridContainer: {
       width: '20%',
       [theme.breakpoints.down('sm')]: {
         width: '100%',
       },
+    },
+    listCtaContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'absolute',
+      zIndex: 99,
+      top: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(48, 48, 48, 0.5)',
+      backgroundImage:
+        'linear-gradient(to top, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
+    },
+    listContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
+      margin: `${theme.spacing(4)}px 0px`,
+    },
+    listTitleContainer: {
+      display: 'flex',
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      zIndex: 999,
+      width: '100%',
+      margin: `${theme.spacing(2)}px 0px`,
     },
     loginButton: {
       margin: `${theme.spacing(2)}px ${theme.spacing(2)}px ${theme.spacing(
@@ -99,7 +104,7 @@ const styles = (theme: Theme) =>
       maxWidth: 200,
       whiteSpace: 'nowrap',
     },
-    movieCount: {
+    highlightText: {
       marginRight: 15,
       whiteSpace: 'nowrap',
     },
@@ -111,6 +116,35 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.down('sm')]: {
         flexDirection: 'column',
         alignItems: 'flex-center',
+      },
+    },
+    posterContainer: {
+      display: 'flex',
+      flexDirection: 'row',
+      flexWrap: 'nowrap',
+      margin: `${theme.spacing(3)}px`,
+      filter: 'blur(3px)',
+    },
+    searchContainer: {
+      display: 'flex',
+      flexGrow: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: `${theme.spacing(3)}px`,
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'column-reverse',
+        margin: 5,
+      },
+    },
+    searchCtaContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      margin: 100,
+      [theme.breakpoints.down('sm')]: {
+        margin: 0,
+        textAlign: 'center',
       },
     },
     signupButton: {
@@ -184,7 +218,7 @@ class Home extends Component<Props, State> {
     if (!this.props.loading) {
       retrievePopular({
         itemTypes: ['movie'],
-        limit: 4,
+        limit: 10,
       });
     }
   }
@@ -226,7 +260,7 @@ class Home extends Component<Props, State> {
         <div className={classes.gridContainer}>
           <Grid container spacing={1}>
             {popular &&
-              popular.map(result => {
+              popular.slice(0, 4).map(result => {
                 let thing = thingsBySlug[result];
                 return (
                   <ItemCard
@@ -247,7 +281,7 @@ class Home extends Component<Props, State> {
             <Typography
               color="secondary"
               variant="h2"
-              className={classes.movieCount}
+              className={classes.highlightText}
             >
               <Odometer
                 value={this.state.numberMovies}
@@ -342,7 +376,7 @@ class Home extends Component<Props, State> {
             <Typography
               color="secondary"
               variant="h2"
-              className={classes.movieCount}
+              className={classes.highlightText}
             >
               Discovery
             </Typography>
@@ -389,6 +423,59 @@ class Home extends Component<Props, State> {
     );
   };
 
+  renderListSection = () => {
+    const { classes, popular, thingsBySlug, userSelf } = this.props;
+
+    return (
+      <div className={classes.listContainer}>
+        <div className={classes.posterContainer}>
+          <Grid container spacing={2}>
+            {popular &&
+              popular.slice(4, 10).map(result => {
+                let thing = thingsBySlug[result];
+                return (
+                  <ItemCard
+                    key={result}
+                    userSelf={userSelf}
+                    item={thing}
+                    gridProps={{ xs: 4, sm: 4, md: 2, lg: 2 }}
+                    hoverAddToList={false}
+                    hoverDelete={false}
+                    hoverWatch={false}
+                  />
+                );
+              })}
+          </Grid>
+        </div>
+        <div className={classes.listCtaContainer}>
+          <div className={classes.listTitleContainer}>
+            <Typography
+              color="secondary"
+              variant="h2"
+              className={classes.highlightText}
+            >
+              Lists
+            </Typography>
+            <Typography variant="h2"> have never been so fun.</Typography>
+          </div>
+          <div className={classes.buttonContainer}>
+            <Button
+              size="large"
+              variant="outlined"
+              aria-label="Signup"
+              onClick={() => this.toggleAuthModal('signup')}
+              // color="default"
+              className={classes.signupButton}
+            >
+              <List className={classes.buttonIcon} />
+              Create a List
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   render() {
     const { classes } = this.props;
 
@@ -397,7 +484,10 @@ class Home extends Component<Props, State> {
         <div className={classes.wrapper}>
           {this.renderTotalMoviesSection()}
           <Divider />
+          {this.renderListSection()}
+          <Divider />
           {this.renderSearchSection()}
+
           <Divider />
         </div>
         <AuthDialog
