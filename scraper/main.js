@@ -1,6 +1,6 @@
 import { scrape as hboWhatsNew } from './hbo/whats-new/scrape';
 import { scrape as hboCatalog } from './hbo/catalog';
-import { scrape as netflixOriginalsArriving } from './netflix/scrape';
+import { scrape as netflixOriginalsArriving, testPage } from './netflix/scrape';
 import { scrape as unogsNetflixExpiring } from './unogs/scrape';
 import { scrape as unogsNetflixAll } from './unogs/scrape-all';
 import { scrape as huluChanges } from './hulu/changes/scrape';

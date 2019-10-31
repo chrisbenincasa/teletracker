@@ -8,7 +8,7 @@ import com.teletracker.common.elasticsearch.{
   EsItemImage,
   EsItemRating
 }
-import com.teletracker.common.model.tmdb.{Movie, TvShow}
+import com.teletracker.common.model.tmdb.{Movie, Person, TvShow}
 import scala.util.Try
 
 trait ToEsItem[T] {
@@ -94,5 +94,24 @@ object ToEsItem {
     override def esExternalId(t: TvShow): Option[EsExternalId] = {
       Some(EsExternalId(ExternalSource.TheMovieDb, t.id.toString))
     }
+  }
+
+  implicit val forTmdbPerson: ToEsItem[Person] = new ToEsItem[Person] {
+    override def esItemRating(t: Person): Option[EsItemRating] = None
+
+    override def esItemImages(t: Person): List[EsItemImage] =
+      List(
+        t.profile_path.map(backdrop => {
+          EsItemImage(
+            provider_id = ExternalSource.TheMovieDb.ordinal(), // TMDb, for now
+            provider_shortname = ExternalSource.TheMovieDb.getName,
+            id = backdrop,
+            image_type = EsImageType.Backdrop
+          )
+        })
+      ).flatten
+
+    override def esExternalId(t: Person): Option[EsExternalId] =
+      Some(EsExternalId(ExternalSource.TheMovieDb, t.id.toString))
   }
 }

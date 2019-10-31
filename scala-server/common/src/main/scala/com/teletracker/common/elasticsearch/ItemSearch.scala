@@ -63,8 +63,6 @@ class ItemSearch @Inject()(
         builder.from(bookmark.value.toInt)
       })
 
-    println(searchSource)
-
     val search = new SearchRequest()
       .source(
         searchSource
@@ -103,6 +101,44 @@ class ItemSearch @Inject()(
       .filter(QueryBuilders.termQuery("type", thingType.toString))
 
     singleItemSearch(query)
+  }
+
+  def lookupItemsByExternalIds(
+    items: List[(ExternalSource, String, ThingType)]
+  ): Future[Map[(ExternalSource, String), EsItem]] = {
+    if (items.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      val searches = items.map {
+        case (source, id, typ) =>
+          val query = QueryBuilders
+            .boolQuery()
+            .filter(
+              QueryBuilders
+                .termQuery("external_ids", EsExternalId(source, id).toString)
+            )
+            .filter(QueryBuilders.termQuery("type", typ.toString))
+
+          new SearchRequest("items")
+            .source(new SearchSourceBuilder().query(query).size(1))
+      }
+
+      val multiReq = new MultiSearchRequest()
+      searches.foreach(multiReq.add)
+
+      elasticsearchExecutor
+        .multiSearch(multiReq)
+        .map(resp => {
+          resp.getResponses.toList
+            .zip(items.map(item => item._1 -> item._2))
+            .map {
+              case (response, sourceAndId) =>
+                searchResponseToItems(response.getResponse).items.headOption
+                  .map(sourceAndId -> _)
+            }
+        })
+        .map(_.flatten.toMap)
+    }
   }
 
   def lookupItemsByTitleMatch(
