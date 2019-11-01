@@ -1,18 +1,15 @@
 import {
   Button,
-  createStyles,
   Divider,
   Grid,
   makeStyles,
   Theme,
   Typography,
-  WithStyles,
-  withStyles,
   withWidth,
 } from '@material-ui/core';
 import { ExitToApp, List, PersonAdd } from '@material-ui/icons';
 import * as R from 'ramda';
-import React, { useEffect, useState, useLayoutEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactGA from 'react-ga';
 import { connect } from 'react-redux';
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
