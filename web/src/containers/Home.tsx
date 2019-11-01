@@ -84,6 +84,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexDirection: 'column',
     position: 'relative',
     margin: `${theme.spacing(4)}px 0px`,
+    [theme.breakpoints.down('sm')]: {
+      margin: `${theme.spacing(6)}px 0px`,
+    },
   },
   listTitleContainer: {
     display: 'flex',
@@ -93,6 +96,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     zIndex: 999,
     width: '100%',
     margin: `${theme.spacing(2)}px 0px`,
+    [theme.breakpoints.down('sm')]: {
+      flexDirection: 'column',
+      textAlign: 'center',
+    },
   },
   loginButton: {
     margin: `${theme.spacing(2)}px ${theme.spacing(2)}px ${theme.spacing(
@@ -132,7 +139,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     margin: `${theme.spacing(3)}px`,
     [theme.breakpoints.down('sm')]: {
       flexDirection: 'column-reverse',
-      margin: 5,
+      margin: `${theme.spacing(3)}px 0px`,
     },
   },
   searchCtaContainer: {
@@ -284,7 +291,7 @@ function Home(props: Props) {
                     key={result}
                     userSelf={userSelf}
                     item={thing}
-                    gridProps={{ xs: 6, sm: 6, md: 6, lg: 6 }}
+                    gridProps={{ xs: 3, sm: 3, md: 6, lg: 6 }}
                     hoverAddToList={false}
                     hoverDelete={false}
                     hoverWatch={false}
