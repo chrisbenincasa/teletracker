@@ -1,9 +1,8 @@
-import request from 'request-promise';
 import cheerio from 'cheerio';
-import moment from 'moment';
 import fs from 'fs';
-import { substitute } from '../../common/berglas';
 import * as _ from 'lodash';
+import moment from 'moment';
+import request from 'request-promise';
 
 /*
 curl 'https://discover.hulu.com/content/v4/hubs/series/3944ff02-8772-43eb-bacc-10923d83f140?schema=9' 
@@ -179,8 +178,6 @@ const loadSiteMap = async sitemap => {
 };
 
 const scrape = async () => {
-  await substitute();
-
   let sitemaps = await getAllSiteMaps();
 
   let prefix = process.env.NODE_ENV === 'production' ? '/tmp/' : '';
