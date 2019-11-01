@@ -1,20 +1,14 @@
-import { PubSub } from '@google-cloud/pubsub';
-import { Storage } from '@google-cloud/storage';
 import fs from 'fs';
 import moment from 'moment';
 import request from 'request-promise';
-import { substitute } from '../../common/berglas';
-import { publishTaskMessage } from '../../common/publisher';
-
-const pubsub = new PubSub({
-  projectId: 'teletracker',
-});
+import { uploadToS3 } from '../../common/storage';
+import AWS from 'aws-sdk';
 
 const wait = ms => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
-const doLoop = async type => {
+const doLoop = async (apiKey, type) => {
   let now = moment();
   let page = 1;
   let totalPages = 1;
@@ -23,7 +17,7 @@ const doLoop = async type => {
     let res = await request({
       uri: `https://api.themoviedb.org/3/${type}/changes`,
       qs: {
-        api_key: process.env.TMDB_API_KEY,
+        api_key: apiKey,
         start_date: moment()
           .subtract(1, 'days')
           .format('YYYY-MM-DD'),
@@ -53,18 +47,25 @@ const writeAsLines = (fileName, data) => {
 };
 
 const scrape = async () => {
-  await substitute();
+  let ssm = new AWS.SSM();
+
+  let apiKey = await ssm
+    .getParameter({
+      Name: 'tmdb-api-key-qa',
+      WithDecryption: true,
+    })
+    .promise()
+    .then(param => param.Parameter.Value);
+
+  console.log('got api key ' + apiKey);
 
   let now = moment();
 
-  let movieChanges = await doLoop('movie');
+  let movieChanges = await doLoop(apiKey, 'movie');
   await wait(250);
-  let tvChanges = await doLoop('tv');
+  let tvChanges = await doLoop(apiKey, 'tv');
   await wait(250);
-  let personChanges = await doLoop('person');
-
-  const storage = new Storage();
-  const bucket = storage.bucket('teletracker');
+  let personChanges = await doLoop(apiKey, 'person');
 
   let prefix = process.env.NODE_ENV === 'production' ? '/tmp/' : '';
 
@@ -78,27 +79,37 @@ const scrape = async () => {
   await writeAsLines(prefix + showName, tvChanges);
   await writeAsLines(prefix + personName, personChanges);
 
-  [movieName, showName, personName].map(async file => {
-    await bucket.upload(prefix + file, {
-      gzip: true,
-      contentType: 'application/json',
-      destination: 'scrape-results/' + nowString + '/' + file,
-    });
-  });
-
-  [
-    ['MovieChangesDumpTask', movieName],
-    ['TvChangesDumpTask', showName],
-    ['PersonChangesDumpTask', personName],
-  ].forEach(async ([task, file]) => {
-    await publishTaskMessage(
-      'com.teletracker.tasks.tmdb.export_tasks.' + task,
-      {
-        input: 'gs://teletracker/scrape-results/' + nowString + '/' + file,
-      },
-      ['tag/RequiresTmdbApi'],
+  let allUploads = [movieName, showName, personName].map(async file => {
+    await uploadToS3(
+      'teletracker-data',
+      `scrape-results/${nowString}/${file}`,
+      file,
     );
   });
+
+  await Promise.all(allUploads);
+
+  // [movieName, showName, personName].map(async file => {
+  //   await bucket.upload(prefix + file, {
+  //     gzip: true,
+  //     contentType: 'application/json',
+  //     destination: 'scrape-results/' + nowString + '/' + file,
+  //   });
+  // });
+
+  // [
+  //   ['MovieChangesDumpTask', movieName],
+  //   ['TvChangesDumpTask', showName],
+  //   ['PersonChangesDumpTask', personName],
+  // ].forEach(async ([task, file]) => {
+  //   await publishTaskMessage(
+  //     'com.teletracker.tasks.tmdb.export_tasks.' + task,
+  //     {
+  //       input: 'gs://teletracker/scrape-results/' + nowString + '/' + file,
+  //     },
+  //     ['tag/RequiresTmdbApi'],
+  //   );
+  // });
 };
 
 export { scrape };

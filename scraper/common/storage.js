@@ -1,43 +1,28 @@
-import { Storage } from '@google-cloud/storage';
 import { promises as fsPromises } from 'fs';
 import fs from 'fs';
 import AWS from 'aws-sdk';
 import _ from 'lodash';
 
-const storage = new Storage();
 const s3 = new AWS.S3();
-const bucket = storage.bucket('teletracker');
 
 const writeResultsAndUploadToStorage = async (
   fileName,
   destinationDir,
   results,
 ) => {
-  await fsPromises.writeFile(
-    `/tmp/${fileName}`,
-    JSON.stringify(results),
-    'utf8',
-  );
-
-  return uploadToStorage(fileName, destinationDir);
+  return writeResultsAndUploadToS3(fileName, destinationDir, results);
 };
 
 const uploadToStorage = async (fileName, destinationDir) => {
-  let sanitized = fileName.replace(/^\/tmp\//gi, '');
-  return bucket.upload(`/tmp/${sanitized}`, {
-    gzip: true,
-    contentType: 'application/json',
-    destination: destinationDir + '/' + sanitized,
-    resumable: false,
-  });
+  return uploadToStorage(
+    'teletracker-data',
+    destinationDir + '/' + sanitized,
+    fileName,
+  );
 };
 
 const writeResultsAndUploadToS3 = async (fileName, destinationDir, results) => {
-  await fsPromises.writeFile(
-    `/tmp/${fileName}`,
-    JSON.stringify(results),
-    'utf8',
-  );
+  await fsPromises.writeFile(fileName, JSON.stringify(results), 'utf8');
 
   return uploadToS3(
     'teletracker-data',

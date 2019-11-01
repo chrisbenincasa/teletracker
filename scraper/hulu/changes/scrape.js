@@ -4,15 +4,11 @@ import moment from 'moment';
 import fs from 'fs';
 import * as _ from 'lodash';
 import { writeResultsAndUploadToStorage } from '../../common/storage';
-import { scheduleJob } from '../../common/api';
-import { substitute } from '../../common/berglas';
 
 const uaString =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
 
 const scrape = async () => {
-  await substitute();
-
   let html = await request({
     uri: 'https://www.hulu.com/press/new-this-month/',
     headers: {

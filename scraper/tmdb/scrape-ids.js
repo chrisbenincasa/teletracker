@@ -5,7 +5,6 @@ import request from 'request';
 import split2 from 'split2';
 import transform from 'stream-transform';
 import zlib from 'zlib';
-import { substitute } from '../common/berglas';
 import { uploadToStorage } from '../common/storage';
 
 function streamToPromise(stream) {
@@ -167,8 +166,6 @@ const personFromTsv = line => {
 };
 
 const scrape = async (event, context) => {
-  await substitute();
-
   const payload =
     event && event.data
       ? JSON.parse(Buffer.from(event.data, 'base64').toString())

@@ -29,6 +29,10 @@ const scrape = async () => {
 
     let currentDate = moment().format('YYYY-MM-DD');
     let fileName = currentDate + '-hbo-changes' + '.json';
+    if (process.env.NODE_ENV === 'production') {
+      fileName = '/tmp/' + fileName;
+    }
+
     let stream = createWriteStream(fileName);
 
     var textSections = $(

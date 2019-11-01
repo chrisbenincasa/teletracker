@@ -1,11 +1,11 @@
 import * as cheerio from 'cheerio';
-import request from 'request-promise';
-import { substitute } from '../common/berglas';
 import * as fs from 'fs';
 import * as _ from 'lodash';
 import moment from 'moment';
+import request from 'request-promise';
 import { uploadToStorage } from '../common/storage';
 import { getFilePath } from '../common/tmp_files';
+import { getObjectS3 } from '../build/common/storage';
 
 const uaString =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
@@ -18,6 +18,9 @@ const wait = ms => {
 };
 
 const scrapeMovie = async url => {
+  let key = 'scraping ' + url;
+
+  console.time(key);
   let html = await request({
     uri: url,
     headers: {
@@ -53,6 +56,7 @@ const scrapeMovie = async url => {
       }
 
       if (movie) {
+        console.timeEnd(key);
         let release = movie.dateCreated ? moment(movie.dateCreated) : null;
         return {
           name: movie.name,
@@ -64,6 +68,8 @@ const scrapeMovie = async url => {
       }
     }
   }
+
+  console.timeEnd(key);
 };
 
 const fallbackTvShowReleaeDate = async firstEpisodeUrl => {
@@ -117,7 +123,8 @@ const fallbackTvShowReleaeDate = async firstEpisodeUrl => {
 };
 
 const scrapeTvShow = async firstEpisodeUrl => {
-  console.log('scraping ' + firstEpisodeUrl);
+  let key = 'scraping ' + firstEpisodeUrl;
+  console.time(key);
   let html = await request({
     uri: firstEpisodeUrl,
     headers: {
@@ -157,6 +164,8 @@ const scrapeTvShow = async firstEpisodeUrl => {
           release = await fallbackTvShowReleaeDate(firstEpisodeUrl);
         }
 
+        console.timeEnd(key);
+
         return {
           name: show.partOfSeason.partOfSeries.name,
           releaseYear: release ? release.year() : null,
@@ -166,21 +175,29 @@ const scrapeTvShow = async firstEpisodeUrl => {
       }
     }
   }
+
+  console.timeEnd(key);
 };
 
-const loadSitemapEntries = async () => {
-  let sitemap = await request({
-    uri: `https://www.hbo.com/sitemap.xml`,
-    headers: {
-      'User-Agent': uaString,
-    },
+const loadSitemapEntries = async date => {
+  // let sitemap = await request({
+  //   uri: `https://www.hbo.com/sitemap.xml`,
+  //   headers: {
+  //     'User-Agent': uaString,
+  //   },
+  // });
+  //
+  // let $ = cheerio.load(sitemap);
+  //
+  // return $('urlset > url > loc')
+  //   .map((idx, el) => $(el).text())
+  //   .get();
+  return getObjectS3(
+    'teletracker-data',
+    `scrape-results/${date}/hbo-sitemap-urls.txt`,
+  ).then(body => {
+    return body.toString('utf-8').split('\n');
   });
-
-  let $ = cheerio.load(sitemap);
-
-  return $('urlset > url > loc')
-    .map((idx, el) => $(el).text())
-    .get();
 };
 
 const createWriteStream = fileName => {
@@ -188,20 +205,29 @@ const createWriteStream = fileName => {
   return stream;
 };
 
-const scrape = async () => {
-  await substitute();
+const scrape = async (event, context) => {
+  console.log(event);
 
-  let entries = await loadSitemapEntries();
+  if (!event.mod || !event.band) {
+    console.error('requires mod and band specified');
+    return;
+  }
 
   let now = moment();
   let nowString = now.format('YYYY-MM-DD');
-  let fileName = nowString + '_hbo-catalog' + '.json';
+
+  console.time('loadSitemapEntries');
+  let entries = await loadSitemapEntries(nowString);
+  console.timeEnd('loadSitemapEntries');
+
+  let fileName = nowString + '_hbo-catalog.' + event.band + '.json';
   let filePath = getFilePath(fileName);
 
   let stream = createWriteStream(filePath);
 
   let endMovies = _.chain(entries)
     .filter(entry => movieRegex.test(entry))
+    .filter((_, idx) => idx % event.mod === event.band)
     .chunk(5)
     .reduce(async (prev, entries) => {
       await prev;
@@ -223,6 +249,7 @@ const scrape = async () => {
 
   let endShows = _.chain(entries)
     .filter(entry => showFirstEpisodeRegex.test(entry))
+    .filter((_, idx) => idx % event.mod === event.band)
     .chunk(5)
     .reduce(async (prev, entries) => {
       await prev;
