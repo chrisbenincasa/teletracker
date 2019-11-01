@@ -8,7 +8,7 @@ rm -rf build/
 
 mkdir build
 
-rsync -avq . build \
+rsync -avq src/* build \
   --exclude=build/ \
   --exclude=node_modules/ \
   --exclude=.idea \
