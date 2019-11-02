@@ -9,7 +9,7 @@ import {
 } from '@material-ui/core';
 import { ExitToApp, List, PersonAdd } from '@material-ui/icons';
 import * as R from 'ramda';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import ReactGA from 'react-ga';
 import { connect } from 'react-redux';
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
@@ -28,6 +28,7 @@ import { retrievePopular } from '../actions/popular';
 import { PopularInitiatedActionPayload } from '../actions/popular/popular';
 import ItemCard from '../components/ItemCard';
 import _ from 'lodash';
+import useIntersectionObserver from '../hooks/useIntersectionObserver';
 
 const useStyles = makeStyles((theme: Theme) => ({
   layout: layoutStyles(theme),
@@ -211,6 +212,16 @@ function Home(props: Props) {
   const [unusedSearchText, setUnusedSearchText] = useState<string[]>(
     defaultStrings,
   );
+  const loadWrapperRef = useRef(null);
+  const isInViewport = useIntersectionObserver({
+    lazyLoadOptions: {
+      root: null,
+      rootMargin: '50px',
+      threshold: 0,
+    },
+    targetRef: loadWrapperRef,
+    useLazyLoad: true,
+  });
 
   const loadPopular = () => {
     const { retrievePopular } = props;
@@ -463,8 +474,10 @@ function Home(props: Props) {
         {renderTotalMoviesSection()}
         <Divider />
         {renderListSection()}
-        <Divider />
-        {renderSearchSection()}
+        <div ref={loadWrapperRef}>
+          <Divider />
+          {isInViewport && renderSearchSection()}
+        </div>
         <Divider />
       </div>
       <AuthDialog
