@@ -3,17 +3,17 @@ import createIntersectionObserver from '../utils/createIntersectionObserver';
 import isIntersectionObserverSupported from '../utils/isIntersectionObserverSupported';
 
 interface IUseIntersectionObserver {
-  hasHistoryStateChanged?: boolean;
+  hasLocationChanged?: boolean;
   lazyLoadOptions: IntersectionObserverInit;
   targetRef: React.RefObject<HTMLElement>;
   useLazyLoad: boolean;
 }
 
 export default function useIntersectionObserver({
-  hasHistoryStateChanged = false,
+  hasLocationChanged = false,
   lazyLoadOptions,
   targetRef,
-  useLazyLoad,
+  useLazyLoad = true,
 }: IUseIntersectionObserver) {
   const [isIntersecting, setIntersecting] = useState(false);
   const intersectionObserverRef = useRef<IntersectionObserver | null>();
@@ -29,6 +29,7 @@ export default function useIntersectionObserver({
     handleObserverDisconnect();
   };
 
+  // Check if the users browser supports Intersection Observer
   const isIOSupported = isIntersectionObserverSupported();
 
   /*
@@ -36,10 +37,10 @@ export default function useIntersectionObserver({
     this effect cleans up the observer on 'popstate'
   */
   useEffect(() => {
-    if (hasHistoryStateChanged) {
+    if (hasLocationChanged) {
       handleObserverDisconnect();
     }
-  }, [hasHistoryStateChanged]);
+  }, [hasLocationChanged]);
 
   useEffect(() => {
     if (!useLazyLoad || !isIOSupported) {
