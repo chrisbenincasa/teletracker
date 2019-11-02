@@ -11,6 +11,11 @@ variable "timeout" {
   default = 60
 }
 
+variable "memory" {
+  type    = number
+  default = 128
+}
+
 variable "extra_env_vars" {
   type    = map
   default = {}

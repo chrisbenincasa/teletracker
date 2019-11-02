@@ -1,38 +1,19 @@
-var request = require('request-promise');
-import * as cheerio from 'cheerio';
-var moment = require('moment');
-var fsPromises = require('fs').promises;
-import fs from 'fs';
-import { uploadToStorage, getObjectS3 } from '../common/storage';
-import requestUnogs, { unogsHeaders } from '../unogs/utils';
+import { DATA_BUCKET, USER_AGENT_STRING } from '../common/constants';
+import { getObjectS3, uploadToS3 } from '../common/storage';
 import _ from 'lodash';
+import request from 'request-promise';
+import moment from 'moment';
+import { createWriteStream } from '../common/stream_utils';
+import { isProduction } from '../common/env';
 
-const uaString =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
-
-const unogsQuery = {
-  u: '5unogs',
-  t: 'loadvideo',
-  cl: '78',
-};
-
-const wait = ms => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-};
-
-const createWriteStream = fileName => {
-  const stream = fs.createWriteStream(fileName, 'utf-8');
-  return stream;
-};
-
-const scrape = async () => {
+export const scrape = async () => {
   let currentDate = moment().format('YYYY-MM-DD');
-  let fileName = currentDate + '-netflix-originals-arrivals' + '.json';
-  let stream = createWriteStream(fileName);
+  let fileName = currentDate + '-netflix-originals-arrivals.json';
+  let [filePath, stream, flush] = createWriteStream(fileName);
 
   let allNetflixOriginals = await getObjectS3(
-    'teletracker-data',
-    'scrape-results/netflix/whats-on-netflix/2019-10-29/netflix-originals-catalog.json',
+    DATA_BUCKET,
+    `scrape-results/netflix/whats-on-netflix/${currentDate}/netflix-originals-catalog.json`,
   ).then(buf => {
     return JSON.parse(buf.toString('utf-8'));
   });
@@ -42,7 +23,7 @@ const scrape = async () => {
   let body = await request({
     uri: 'https://media.netflix.com/gateway/v1/en/titles/upcoming',
     headers: {
-      'User-Agent': uaString,
+      'User-Agent': USER_AGENT_STRING,
     },
   });
 
@@ -144,38 +125,20 @@ const scrape = async () => {
 
       stream.write(JSON.stringify(result) + '\n');
 
-      // await wait(100);
-
       return [...last, result];
     }, Promise.resolve([]));
 
-  // Export data into JSON file
+  await Promise.all(titles);
 
-  if (process.env.NODE_ENV == 'production') {
-    let [file, _] = await uploadToStorage(
-      fileName,
-      'scrape-results/' + currentDate,
-      titles,
+  stream.close();
+
+  await flush;
+
+  if (isProduction()) {
+    await uploadToS3(
+      DATA_BUCKET,
+      `scrape-results/${currentDate}/${fileName}`,
+      filePath,
     );
-  } else {
-    stream.close();
   }
 };
-
-const testPage = async () => {
-  let contents = await fsPromises.readFile(
-    '/Users/christianbenincasa/Desktop/Seis Manos _ Netflix Official Site.htm',
-  );
-
-  let $ = cheerio.load(contents);
-
-  console.log(
-    JSON.parse(
-      $('head > script[type="application/ld+json"]')
-        .contents()
-        .text(),
-    ),
-  );
-};
-
-export { scrape, testPage };

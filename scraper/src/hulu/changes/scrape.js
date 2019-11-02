@@ -4,41 +4,40 @@ import moment from 'moment';
 import fs from 'fs';
 import * as _ from 'lodash';
 import { writeResultsAndUploadToStorage } from '../../common/storage';
-
-const uaString =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
+import { USER_AGENT_STRING } from '../../common/constants';
+import { isProduction } from '../../common/env';
 
 const scrape = async () => {
   let html = await request({
     uri: 'https://www.hulu.com/press/new-this-month/',
     headers: {
-      'User-Agent': uaString,
+      'User-Agent': USER_AGENT_STRING,
     },
   });
 
-  var parsedResults = [];
-  var $ = cheerio.load(html);
-  var currentYear = new Date().getFullYear();
+  let parsedResults = [];
+  let $ = cheerio.load(html);
+  let currentYear = new Date().getFullYear();
 
   $('.new-this-month__table-content.table-content tbody tr').each(function(
     i,
     element,
   ) {
     //Process date of availability
-    var date = $(this)
+    let date = $(this)
       .children()
       .eq(0)
       .text()
       .split(' ');
 
-    var m = moment(
+    let m = moment(
       '' + currentYear + ' ' + date[0] + ' ' + date[1],
       'YYYY MMMM DD',
     );
 
-    var availableDate = m.format('YYYY-MM-DD');
+    let availableDate = m.format('YYYY-MM-DD');
 
-    var show = $(this)
+    let show = $(this)
       .children()
       .eq(1)
       .find('em')
@@ -46,9 +45,9 @@ const scrape = async () => {
     console.log(show);
 
     //Strip out the release year from title
-    var regExp = /\(([^)]+)\)/;
-    var year = regExp.exec(show);
-    var releaseYear;
+    let regExp = /\(([^)]+)\)/;
+    let year = regExp.exec(show);
+    let releaseYear;
     if (year) {
       releaseYear = year[1];
       show = show.replace(year[0], '');
@@ -61,8 +60,8 @@ const scrape = async () => {
       : parsedReleaseYear;
 
     //Strip out the network from title
-    var provider = regExp.exec(show);
-    var network;
+    let provider = regExp.exec(show);
+    let network;
     if (provider) {
       network = provider[1];
       network = network.replace('*', '');
@@ -71,21 +70,21 @@ const scrape = async () => {
       network = 'Hulu';
     }
 
-    var notes = $(this)
+    let notes = $(this)
       .children()
       .eq(1)
       .find('span')
       .text();
-    var category = $(this)
+    let category = $(this)
       .children()
       .eq(2)
       .text();
-    var status = $(this)
+    let status = $(this)
       .children()
       .eq(3)
       .text();
 
-    var metadata = {
+    let metadata = {
       availableDate: availableDate,
       title: show.trim(),
       releaseYear: parsedReleaseYear,
@@ -100,10 +99,10 @@ const scrape = async () => {
   });
 
   // Export data into JSON file
-  var currentDate = moment().format('YYYY-MM-DD');
+  let currentDate = moment().format('YYYY-MM-DD');
   let fileName = currentDate + '-hulu-changes' + '.json';
 
-  if (process.env.NODE_ENV == 'production') {
+  if (isProduction()) {
     // if (!process.env.API_HOST) {
     // return Promise.reject(
     // new Error("Could not find value for API_HOST variable")
@@ -115,9 +114,6 @@ const scrape = async () => {
       'scrape-results/' + currentDate,
       parsedResults,
     );
-
-    return;
-
     // return scheduleJob(file.name);
   } else {
     const stream = fs.createWriteStream(fileName, 'utf-8');

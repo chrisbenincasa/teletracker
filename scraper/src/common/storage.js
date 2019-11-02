@@ -2,6 +2,7 @@ import { promises as fsPromises } from 'fs';
 import fs from 'fs';
 import AWS from 'aws-sdk';
 import _ from 'lodash';
+import zlib from 'zlib';
 
 const s3 = new AWS.S3();
 
@@ -14,6 +15,7 @@ const writeResultsAndUploadToStorage = async (
 };
 
 const uploadToStorage = async (fileName, destinationDir) => {
+  let sanitized = fileName.replace(/^\/tmp\//gi, '');
   return uploadToS3(
     'teletracker-data',
     destinationDir + '/' + sanitized,
@@ -31,13 +33,38 @@ const writeResultsAndUploadToS3 = async (fileName, destinationDir, results) => {
   );
 };
 
-const uploadToS3 = async (bucket, key, fileName) => {
+const uploadToS3 = async (
+  bucket,
+  key,
+  fileName,
+  contentType = 'text/plain',
+  gzip = false,
+) => {
   let sanitized = fileName.replace(/^\/tmp\//gi, '');
+  let stream = fs.createReadStream(`/tmp/${sanitized}`);
+  if (gzip) {
+    stream = stream.pipe(zlib.createGzip());
+  }
+
+  return uploadStreamToS3(bucket, key, stream, contentType, gzip);
+};
+
+export const uploadStreamToS3 = async (
+  bucket,
+  key,
+  stream,
+  contentType = 'text/plain',
+  gzip = false,
+) => {
+  console.log(`Uploading to s3://${bucket}/${key}`);
+
   return s3
-    .putObject({
+    .upload({
       Bucket: bucket,
       Key: key,
-      Body: fs.createReadStream(`/tmp/${sanitized}`),
+      Body: stream,
+      ContentType: contentType,
+      ContentEncoding: gzip ? 'gzip' : undefined,
     })
     .promise();
 };

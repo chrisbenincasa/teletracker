@@ -19,3 +19,12 @@ resource "aws_iam_role_policy_attachment" "tmdb-changes-scraper-kms-encrypt-atta
   policy_arn = aws_iam_policy.kms_encrypt_decrypt_policy.arn
   role       = module.tmdb-changes-scraper.lambda_role_name
 }
+
+module "tmdb-ids-scraper" {
+  source = "./scraper-lambda"
+
+  handler_function = "index.tmdbIds"
+  function_name    = "tmdb-ids"
+
+  create_default_trigger = false
+}

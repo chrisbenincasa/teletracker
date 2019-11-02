@@ -20,6 +20,27 @@ resource "aws_iam_policy" "kms_encrypt_decrypt_policy" {
 EOF
 }
 
+resource "aws_iam_policy" "lambda_execute" {
+  name        = "Lambda_Execute"
+  path        = "/"
+  description = "Ability to trigger Lambdas"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": {
+    "Effect": "Allow",
+    "Action": [
+      "lambda:InvokeFunction"
+    ],
+    "Resource": [
+      "arn:aws:lambda:*:302782651551:function:*"
+    ]
+  }
+}
+EOF
+}
+
 data "aws_iam_policy" "ssm_read_only_policy" {
   arn = "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"
 }

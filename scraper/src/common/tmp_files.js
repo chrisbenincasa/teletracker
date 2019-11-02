@@ -1,14 +1,13 @@
-import * as fs from 'fs'
+import * as fs from 'fs';
+import { isProduction } from './env';
 
 export function getFilePath(path) {
-  if (process.env.NODE_ENV === 'production') {
+  if (isProduction()) {
     return '/tmp/' + path;
   } else {
     try {
       fs.mkdirSync('out');
-    } catch (e) {
-
-    }
+    } catch (e) {}
 
     return 'out/' + path;
   }

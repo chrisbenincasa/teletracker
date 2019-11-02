@@ -24,6 +24,6 @@
   },
   "scripts": {
     "build": "tsc",
-    "main": "node -r esm runner.js"
+    "main": "node --no-warnings -r esm runner.js"
   }
 }
