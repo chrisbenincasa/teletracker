@@ -180,18 +180,6 @@ const scrapeTvShow = async firstEpisodeUrl => {
 };
 
 const loadSitemapEntries = async date => {
-  // let sitemap = await request({
-  //   uri: `https://www.hbo.com/sitemap.xml`,
-  //   headers: {
-  //     'User-Agent': uaString,
-  //   },
-  // });
-  //
-  // let $ = cheerio.load(sitemap);
-  //
-  // return $('urlset > url > loc')
-  //   .map((idx, el) => $(el).text())
-  //   .get();
   return getObjectS3(
     'teletracker-data',
     `scrape-results/${date}/hbo-sitemap-urls.txt`,
@@ -201,8 +189,7 @@ const loadSitemapEntries = async date => {
 };
 
 const createWriteStream = fileName => {
-  const stream = fs.createWriteStream(fileName, 'utf-8');
-  return stream;
+  return fs.createWriteStream(fileName, 'utf-8');
 };
 
 const scrape = async (event, context) => {

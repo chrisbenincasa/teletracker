@@ -60,6 +60,7 @@ resource "aws_lambda_function" "scraper_lambda" {
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = var.handler_function
   timeout       = var.timeout
+  memory_size   = var.memory
 
   source_code_hash = filebase64sha256("${path.module}/../../../scraper/build/scrapers.zip")
 

@@ -1,41 +1,38 @@
 import { spawn } from 'child_process';
-import fs from 'fs';
 import moment from 'moment';
 import request from 'request';
 import split2 from 'split2';
 import transform from 'stream-transform';
 import zlib from 'zlib';
-import { uploadToStorage } from '../common/storage';
+import { uploadToS3 } from '../common/storage';
+import { createWriteStream } from '../common/stream_utils';
+import { DATA_BUCKET } from '../common/constants';
+import { getFilePath } from '../common/tmp_files';
 
 function streamToPromise(stream) {
   return new Promise(function(resolve, reject) {
-    stream.on('close', () => {
-      console.log('stream is over..');
-      resolve();
-    });
+    stream.on('close', resolve);
     stream.on('error', e => reject(e));
   });
 }
 
 const isProduction = () => process.env.NODE_ENV === 'production';
 
-const getFileName = name => {
-  if (isProduction()) {
-    return '/tmp/' + name;
-  } else {
-    return name;
-  }
-};
-
 const scrapeTypeIds = async (typePrefix, todayMoment, toTsv, fromTsv) => {
+  let currentDate = moment().format('YYYY-MM-DD');
   let underscoreFmt = todayMoment.format('MM_DD_YYYY');
-
-  let outTsv = getFileName(`${typePrefix}_ids-${underscoreFmt}.tsv`);
-  let tmp = fs.createWriteStream(outTsv);
 
   let uri = `http://files.tmdb.org/p/exports/${typePrefix}_ids_${underscoreFmt}.json.gz`;
 
-  let s = request(uri, {
+  let sortStream = spawn(
+    'sort',
+    ['-k3,3', '--field-separator=\t', '-n', '-r'],
+    {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    },
+  );
+
+  request(uri, {
     gzip: true,
     headers: { 'Accept-Encoding': 'gzip, deflate' },
   })
@@ -46,26 +43,13 @@ const scrapeTypeIds = async (typePrefix, todayMoment, toTsv, fromTsv) => {
         return toTsv(line) + '\n';
       }),
     )
-    .pipe(tmp);
+    .pipe(sortStream.stdin);
 
-  await streamToPromise(s);
+  let sortedFileName = `${todayMoment.format(
+    'YYYY-MM-DD',
+  )}_${typePrefix}-ids-sorted.json`;
 
-  let sortedFileName = getFileName(
-    `${todayMoment.format('YYYY-MM-DD')}_${typePrefix}-ids-sorted.json`,
-  );
-  let outStream = fs.createWriteStream(sortedFileName, {
-    encoding: 'utf8',
-  });
-
-  console.log('finished downloading, spawning sort');
-
-  let sortStream = spawn('sort', [
-    '-k3,3',
-    '--field-separator=\t',
-    '-n',
-    '-r',
-    outTsv,
-  ]);
+  let [_1, outStream, _2] = createWriteStream(sortedFileName);
 
   sortStream.stdout
     .pipe(split2())
@@ -84,13 +68,19 @@ const scrapeTypeIds = async (typePrefix, todayMoment, toTsv, fromTsv) => {
     if (code) {
       console.error('exited with code ' + code);
     }
-
-    console.log('Done');
   });
 
   await streamToPromise(sortStream);
 
-  return sortedFileName;
+  if (isProduction()) {
+    await uploadToS3(
+      DATA_BUCKET,
+      `scrape-results/${currentDate}/${sortedFileName}.gz`,
+      getFilePath(sortedFileName),
+      'text/plain',
+      true,
+    );
+  }
 };
 
 const movieToTsv = line => {
@@ -166,79 +156,41 @@ const personFromTsv = line => {
 };
 
 const scrape = async (event, context) => {
-  const payload =
-    event && event.data
-      ? JSON.parse(Buffer.from(event.data, 'base64').toString())
-      : {};
-
-  let now = payload.date ? moment(payload.date, 'YYYY-MM-DD') : moment();
+  let now = event.date ? moment(event.date, 'YYYY-MM-DD') : moment();
   let currentDate = moment().format('YYYY-MM-DD');
 
-  if (!payload.type) {
-    payload.type = 'all';
+  if (!event.type) {
+    event.type = 'all';
   }
 
   let movieUpload;
-  if (payload.type === 'movie' || payload.type === 'all') {
+  if (event.type === 'movie' || event.type === 'all') {
     try {
-      let movieFile = await scrapeTypeIds(
-        'movie',
-        now,
-        movieToTsv,
-        movieFromTsv,
-      );
-
-      if (isProduction()) {
-        movieUpload = uploadToStorage(
-          movieFile,
-          'scrape-results/' + currentDate,
-        );
-      }
+      movieUpload = scrapeTypeIds('movie', now, movieToTsv, movieFromTsv);
     } catch (e) {
       console.error(e);
     }
   }
 
   let tvUpload;
-  if (payload.type === 'show' || payload.type === 'all') {
+  if (event.type === 'show' || event.type === 'all') {
     try {
-      let tvFile = await scrapeTypeIds(
-        'tv_series',
-        now,
-        tvShowToTsv,
-        tvShowFromTsv,
-      );
-
-      if (isProduction()) {
-        tvUpload = uploadToStorage(tvFile, 'scrape-results/' + currentDate);
-      }
+      tvUpload = scrapeTypeIds('tv_series', now, tvShowToTsv, tvShowFromTsv);
     } catch (e) {
       console.error(e);
     }
   }
 
   let personUpload;
-  if (payload.type === 'person' || payload.type === 'all') {
+  if (event.type === 'person' || event.type === 'all') {
     try {
-      let personFile = await scrapeTypeIds(
-        'person',
-        now,
-        personToTsv,
-        personFromTsv,
-      );
-
-      if (isProduction()) {
-        personUpload = uploadToStorage(
-          personFile,
-          'scrape-results/' + currentDate,
-        );
-      }
+      personUpload = scrapeTypeIds('person', now, personToTsv, personFromTsv);
     } catch (e) {
       console.error(e);
     }
   }
 
-  if (process.env.NODE_ENV === 'production') {
+  if (isProduction()) {
     if (movieUpload) await movieUpload;
     if (tvUpload) await tvUpload;
     if (personUpload) await personUpload;

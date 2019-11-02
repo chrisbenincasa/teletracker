@@ -1,15 +1,11 @@
-import fs from 'fs';
 import moment from 'moment';
 import request from 'request-promise';
 import { uploadToS3 } from '../../common/storage';
-import AWS from 'aws-sdk';
-
-const wait = ms => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-};
+import { resolveSecret } from '../../common/aws_utils';
+import { wait } from '../../common/promise_utils';
+import { createWriteStream } from '../../common/stream_utils';
 
 const doLoop = async (apiKey, type) => {
-  let now = moment();
   let page = 1;
   let totalPages = 1;
   let allResults = [];
@@ -35,29 +31,17 @@ const doLoop = async (apiKey, type) => {
 };
 
 const writeAsLines = (fileName, data) => {
-  return new Promise((resolve, reject) => {
-    const stream = fs.createWriteStream(fileName, 'utf-8');
-    stream.on('finish', () => resolve(true));
-    stream.on('error', reject);
-    data.forEach(datum => {
-      stream.write(JSON.stringify(datum) + '\n');
-    });
-    stream.close();
+  let [_, stream, flush] = createWriteStream(fileName);
+  data.forEach(datum => {
+    stream.write(JSON.stringify(datum) + '\n');
   });
+  stream.close();
+
+  return flush;
 };
 
 const scrape = async () => {
-  let ssm = new AWS.SSM();
-
-  let apiKey = await ssm
-    .getParameter({
-      Name: 'tmdb-api-key-qa',
-      WithDecryption: true,
-    })
-    .promise()
-    .then(param => param.Parameter.Value);
-
-  console.log('got api key ' + apiKey);
+  let apiKey = await resolveSecret('tmdb-api-key-qa');
 
   let now = moment();
 
@@ -67,17 +51,17 @@ const scrape = async () => {
   await wait(250);
   let personChanges = await doLoop(apiKey, 'person');
 
-  let prefix = process.env.NODE_ENV === 'production' ? '/tmp/' : '';
-
   let nowString = now.format('YYYY-MM-DD');
 
-  let movieName = nowString + '_movie-changes' + '.json';
-  let showName = nowString + '_show-changes' + '.json';
-  let personName = nowString + '_person-changes' + '.json';
+  let movieName = nowString + '_movie-changes.json';
+  let showName = nowString + '_show-changes.json';
+  let personName = nowString + '_person-changes.json';
 
-  await writeAsLines(prefix + movieName, movieChanges);
-  await writeAsLines(prefix + showName, tvChanges);
-  await writeAsLines(prefix + personName, personChanges);
+  await Promise.all([
+    writeAsLines(movieName, movieChanges),
+    writeAsLines(showName, tvChanges),
+    writeAsLines(personName, personChanges),
+  ]);
 
   let allUploads = [movieName, showName, personName].map(async file => {
     await uploadToS3(

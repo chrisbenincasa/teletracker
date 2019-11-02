@@ -1,18 +1,18 @@
 import request from 'request-promise';
 import * as cheerio from 'cheerio';
-import {getFilePath} from "../common/tmp_files";
-import * as fs from "fs";
-import {uploadToS3} from "../common/storage";
-import moment from "moment";
+import { uploadToS3 } from '../common/storage';
+import moment from 'moment';
+import { isProduction } from '../common/env';
+import { DATA_BUCKET, USER_AGENT_STRING } from '../common/constants';
+import { createWriteStream } from '../common/stream_utils';
 
-const uaString =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
+const OUTPUT_FILE_NAME = 'hbo-catalog-urls.txt';
 
 export const scrape = async (event, context) => {
   let sitemap = await request({
     uri: `https://www.hbo.com/sitemap.xml`,
     headers: {
-      'User-Agent': uaString,
+      'User-Agent': USER_AGENT_STRING,
     },
   });
 
@@ -22,9 +22,7 @@ export const scrape = async (event, context) => {
     .map((idx, el) => $(el).text())
     .get();
 
-  let filePath = getFilePath("hbo-catalog-urls.txt");
-
-  let stream = fs.createWriteStream(filePath, 'utf-8');
+  let [filePath, stream, flush] = createWriteStream(OUTPUT_FILE_NAME);
 
   urls.forEach(url => {
     stream.write(url + '\n');
@@ -32,10 +30,16 @@ export const scrape = async (event, context) => {
 
   stream.close();
 
+  await flush;
+
   let now = moment();
   let formatted = now.format('YYYY-MM-DD');
 
-  if (process.env.NODE_ENV === 'production') {
-    return uploadToS3('teletracker-data', `scraper-results/${formatted}/hbo-catalog-urls.txt`, filePath);
+  if (isProduction()) {
+    return await uploadToS3(
+      DATA_BUCKET,
+      `scrape-results/${formatted}/${OUTPUT_FILE_NAME}`,
+      filePath,
+    );
   }
 };
