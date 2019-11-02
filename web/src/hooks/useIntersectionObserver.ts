@@ -3,14 +3,12 @@ import createIntersectionObserver from '../utils/createIntersectionObserver';
 import isIntersectionObserverSupported from '../utils/isIntersectionObserverSupported';
 
 interface IUseIntersectionObserver {
-  hasLocationChanged?: boolean;
   lazyLoadOptions: IntersectionObserverInit;
   targetRef: React.RefObject<HTMLElement>;
   useLazyLoad: boolean;
 }
 
 export default function useIntersectionObserver({
-  hasLocationChanged = false,
   lazyLoadOptions,
   targetRef,
   useLazyLoad = true,
@@ -32,18 +30,9 @@ export default function useIntersectionObserver({
   // Check if the users browser supports Intersection Observer
   const isIOSupported = isIntersectionObserverSupported();
 
-  /*
-    on 'popstate' the intersection observer causes a memory leak because the observer is still connected
-    this effect cleans up the observer on 'popstate'
-  */
-  useEffect(() => {
-    if (hasLocationChanged) {
-      handleObserverDisconnect();
-    }
-  }, [hasLocationChanged]);
-
   useEffect(() => {
     if (!useLazyLoad || !isIOSupported) {
+      // If component wants to bypass IO or if IO is not supported
       setIntersecting(true);
     } else if (useLazyLoad && isIOSupported && targetRef.current) {
       intersectionObserverRef.current = createIntersectionObserver({
