@@ -1,0 +1,30 @@
+{
+  "name": "teletracker-scrapers",
+  "version": "0.0.1",
+  "description": "All Teletracker scrapers",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.555.0",
+    "cheerio": "^1.0.0-rc.2",
+    "esm": "^3.2.25",
+    "html-entities": "^1.2.1",
+    "lodash": "^4.17.15",
+    "moment": "^2.22.2",
+    "request": "^2.87.0",
+    "request-promise": "^4.2.4",
+    "split2": "^3.1.1",
+    "stream-transform": "^2.0.1",
+    "wikibase-sdk": "^7.1.5"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.13",
+    "@types/lodash": "^4.14.144",
+    "prettier": "1.17.0",
+    "typescript": "^3.6.4",
+    "yargs": "^14.2.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "main": "node --no-warnings -r esm runner.js"
+  }
+}
