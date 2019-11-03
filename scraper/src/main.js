@@ -16,3 +16,5 @@ export {
   schedule as scheduleHboCatalog,
   scheduleFromS3 as scheduleHboCatalogS3,
 } from './hbo/catalog-scheduler';
+export { scrape as wikibaseIdDump } from './wikidata/id-dump';
+export { dataDump as wikibaseDataDump } from './wikidata/data-dump';

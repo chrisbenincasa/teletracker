@@ -19,7 +19,7 @@ resource "aws_ecs_service" "teletracker-qa-consumer" {
   name            = "teletracker-qa-consumer_v2"
   cluster         = aws_ecs_cluster.teletracker-qa.id
   task_definition = aws_ecs_task_definition.teletracker-qa-consumer.arn
-  desired_count   = 1
+  desired_count   = 0
 
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100

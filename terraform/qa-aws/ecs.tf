@@ -25,9 +25,9 @@ data "aws_subnet_ids" "teletracker-subnet-ids" {
 
 resource "aws_autoscaling_group" "teletracker-ecs-asg" {
   availability_zones = ["us-west-1a", "us-west-1c"]
-  desired_capacity   = 2
-  max_size           = 2
-  min_size           = 2
+  desired_capacity   = 1
+  max_size           = 1
+  min_size           = 1
 
   vpc_zone_identifier = data.aws_subnet_ids.teletracker-subnet-ids.ids
 
