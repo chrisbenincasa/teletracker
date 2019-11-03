@@ -186,9 +186,9 @@ class Drawer extends Component<Props, State> {
   };
 
   componentDidMount() {
-    if (!Boolean(this.props.loading)) {
+    if (this.props.isAuthed) {
+      this.props.retrieveAllLists({ includeThings: false });
     }
-    this.props.retrieveAllLists({ includeThings: false });
   }
 
   componentDidUpdate(oldProps: Props) {
