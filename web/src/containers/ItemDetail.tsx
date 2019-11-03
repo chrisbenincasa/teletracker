@@ -20,7 +20,7 @@ import { ChevronLeft, PlayArrow } from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import * as R from 'ramda';
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactGA from 'react-ga';
 import { Helmet } from 'react-helmet';
 import { connect } from 'react-redux';
@@ -203,27 +203,15 @@ type NotOwnProps = RouteComponentProps<RouteParams> &
 
 type Props = OwnProps & NotOwnProps;
 
-interface State {
-  currentId: string;
-  currentItemType: string;
-  showPlayIcon: boolean;
-  trailerModalOpen: boolean;
-  loginModalOpen: boolean;
-}
+function ItemDetails(props: Props) {
+  const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
+  const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
+  const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
 
-class ItemDetails extends Component<Props, State> {
-  state: State = {
-    currentId: '',
-    currentItemType: '',
-    showPlayIcon: false,
-    trailerModalOpen: false,
-    loginModalOpen: false,
-  };
+  useEffect(() => {
+    const { isLoggedIn, userSelf } = props;
 
-  componentDidMount() {
-    const { isLoggedIn, userSelf } = this.props;
-
-    this.loadItem();
+    loadItem();
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -231,48 +219,33 @@ class ItemDetails extends Component<Props, State> {
     if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
       ReactGA.set({ userId: userSelf.user.uid });
     }
-  }
+  }, []);
 
-  componentDidUpdate(prevProps: Readonly<Props>): void {
-    if (prevProps.match.params.id != this.props.match.params.id) {
-      this.loadItem();
-    }
-  }
+  useEffect(() => {
+    loadItem();
+  }, [props.match.params]);
 
-  loadItem = () => {
-    let { match } = this.props;
+  const loadItem = () => {
+    let { match } = props;
     let itemId = match.params.id;
     let itemType = match.params.type;
 
-    this.setState({
-      currentId: itemId,
-      currentItemType: itemType,
-    });
-
-    this.props.fetchItemDetails({ id: itemId, type: itemType });
+    props.fetchItemDetails({ id: itemId, type: itemType });
   };
 
-  showPlayTrailerIcon = () => {
-    this.setState({ showPlayIcon: true });
+  const setPlayTrailerIcon = () => {
+    setShowPlayIcon(!showPlayIcon);
   };
 
-  hidePlayTrailerIcon = () => {
-    this.setState({ showPlayIcon: false });
+  const setTrailerModal = () => {
+    setTrailerModalOpen(!trailerModalOpen);
   };
 
-  openTrailerModal = () => {
-    this.setState({ trailerModalOpen: true });
+  const closeLoginModal = () => {
+    setLoginModalOpen(false);
   };
 
-  closeTrailerModal = () => {
-    this.setState({ trailerModalOpen: false });
-  };
-
-  closeLoginModal = () => {
-    this.setState({ loginModalOpen: false });
-  };
-
-  renderLoading = () => {
+  const renderLoading = () => {
     return (
       <div style={{ flexGrow: 1 }}>
         <LinearProgress />
@@ -280,7 +253,7 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderTitle = (thing: ApiItem) => {
+  const renderTitle = (thing: ApiItem) => {
     const title = thing.original_title;
     // TODO make better
     const voteAverage =
@@ -323,8 +296,8 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  renderDescriptiveDetails = (thing: ApiItem) => {
-    const { classes, genres } = this.props;
+  const renderDescriptiveDetails = (thing: ApiItem) => {
+    const { classes, genres } = props;
     const thingGenres = (thing.genres || []).map(g => g.id);
     const overview = thing.overview || '';
 
@@ -335,7 +308,7 @@ class ItemDetails extends Component<Props, State> {
     return (
       <div className={classes.descriptionContainer}>
         <div className={classes.titleContainer}>
-          <Hidden smDown>{this.renderTitle(thing)}</Hidden>
+          <Hidden smDown>{renderTitle(thing)}</Hidden>
         </div>
         <div>
           <Typography color="inherit" itemProp="about">
@@ -425,8 +398,8 @@ class ItemDetails extends Component<Props, State> {
   //   ) : null;
   // };
 
-  renderItemDetails = () => {
-    let { classes, isFetching, itemDetail, userSelf } = this.props;
+  const renderItemDetails = () => {
+    let { classes, isFetching, itemDetail, userSelf } = props;
     let itemType;
 
     if (itemDetail && itemDetail.type && itemDetail.type === 'movie') {
@@ -436,7 +409,7 @@ class ItemDetails extends Component<Props, State> {
     }
 
     return isFetching || !itemDetail ? (
-      this.renderLoading()
+      renderLoading()
     ) : (
       <React.Fragment>
         <Helmet>
@@ -470,7 +443,7 @@ class ItemDetails extends Component<Props, State> {
           />
           <meta
             property="og:url"
-            content={`http://teletracker.com${this.props.location.pathname}`}
+            content={`http://teletracker.com${props.location.pathname}`}
           />
           <meta
             data-react-helmet="true"
@@ -502,7 +475,7 @@ class ItemDetails extends Component<Props, State> {
           />
           <link
             rel="canonical"
-            href={`http://teletracker.com${this.props.location.pathname}`}
+            href={`http://teletracker.com${props.location.pathname}`}
           />
         </Helmet>
 
@@ -535,7 +508,7 @@ class ItemDetails extends Component<Props, State> {
           >
             <Fab
               size="small"
-              onClick={this.props.history.goBack}
+              onClick={props.history.goBack}
               variant="extended"
               aria-label="Go Back"
               style={{ marginTop: 20, marginLeft: 20 }}
@@ -550,21 +523,21 @@ class ItemDetails extends Component<Props, State> {
               itemType={`http://schema.org/${itemType}`}
             >
               <div className={classes.leftContainer}>
-                <Hidden mdUp>{this.renderTitle(itemDetail)}</Hidden>
+                <Hidden mdUp>{renderTitle(itemDetail)}</Hidden>
                 <div
                   className={classes.posterContainer}
                   // This is causing an issue with Cast re-endering on Enter/Leave
                   // TODO: Investigate
-                  // onMouseEnter={this.showPlayTrailerIcon}
-                  // onMouseLeave={this.hidePlayTrailerIcon}
+                  // onMouseEnter={setPlayTrailerIcon}
+                  // onMouseLeave={setPlayTrailerIcon}
                 >
-                  {this.state.showPlayIcon &&
+                  {showPlayIcon &&
                   itemDetail.id === '7b6dbeb1-8353-45a7-8c9b-7f9ab8b037f8' ? (
                     <IconButton
                       aria-haspopup="true"
                       color="inherit"
                       style={{ position: 'absolute' }}
-                      onClick={this.openTrailerModal}
+                      onClick={setTrailerModal}
                     >
                       <PlayArrow fontSize="large" />
                     </IconButton>
@@ -585,7 +558,7 @@ class ItemDetails extends Component<Props, State> {
                 <ManageTracking itemDetail={itemDetail} />
               </div>
               <div className={classes.itemInformationContainer}>
-                {this.renderDescriptiveDetails(itemDetail)}
+                {renderDescriptiveDetails(itemDetail)}
                 <div>
                   <div style={{ marginTop: 10 }}>
                     <ThingAvailability
@@ -595,15 +568,15 @@ class ItemDetails extends Component<Props, State> {
                   </div>
                 </div>
                 <Cast itemDetail={itemDetail} />
-                {/* {this.renderSeriesDetails(itemDetail)} */}
+                {/* {renderSeriesDetails(itemDetail)} */}
                 <Recommendations itemDetail={itemDetail} userSelf={userSelf} />
               </div>
             </div>
           </div>
         </div>
         <Dialog
-          open={this.state.loginModalOpen}
-          onClose={this.closeLoginModal}
+          open={loginModalOpen}
+          onClose={closeLoginModal}
           closeAfterTransition
           BackdropComponent={Backdrop}
           BackdropProps={{
@@ -616,8 +589,8 @@ class ItemDetails extends Component<Props, State> {
           aria-labelledby="transition-modal-title"
           aria-describedby="transition-modal-description"
           className={classes.modal}
-          open={this.state.trailerModalOpen}
-          onClose={this.closeTrailerModal}
+          open={trailerModalOpen}
+          onClose={setTrailerModal}
           closeAfterTransition
           BackdropComponent={Backdrop}
           BackdropProps={{
@@ -625,7 +598,7 @@ class ItemDetails extends Component<Props, State> {
           }}
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
         >
-          <Fade in={this.state.trailerModalOpen}>
+          <Fade in={trailerModalOpen}>
             <iframe
               width="600"
               height="338"
@@ -641,13 +614,9 @@ class ItemDetails extends Component<Props, State> {
     );
   };
 
-  render() {
-    return (
-      <div style={{ display: 'flex', flexGrow: 1 }}>
-        {this.renderItemDetails()}
-      </div>
-    );
-  }
+  return (
+    <div style={{ display: 'flex', flexGrow: 1 }}>{renderItemDetails()}</div>
+  );
 }
 
 const mapStateToProps: (
