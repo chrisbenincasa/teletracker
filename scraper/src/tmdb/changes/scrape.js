@@ -72,28 +72,6 @@ const scrape = async () => {
   });
 
   await Promise.all(allUploads);
-
-  // [movieName, showName, personName].map(async file => {
-  //   await bucket.upload(prefix + file, {
-  //     gzip: true,
-  //     contentType: 'application/json',
-  //     destination: 'scrape-results/' + nowString + '/' + file,
-  //   });
-  // });
-
-  // [
-  //   ['MovieChangesDumpTask', movieName],
-  //   ['TvChangesDumpTask', showName],
-  //   ['PersonChangesDumpTask', personName],
-  // ].forEach(async ([task, file]) => {
-  //   await publishTaskMessage(
-  //     'com.teletracker.tasks.tmdb.export_tasks.' + task,
-  //     {
-  //       input: 'gs://teletracker/scrape-results/' + nowString + '/' + file,
-  //     },
-  //     ['tag/RequiresTmdbApi'],
-  //   );
-  // });
 };
 
 export { scrape };
