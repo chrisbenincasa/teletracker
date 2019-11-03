@@ -27,7 +27,7 @@ import {
   ThumbDown,
   ThumbUp,
 } from '@material-ui/icons';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { connect } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -51,6 +51,7 @@ import AddToListDialog from './AddToListDialog';
 import { ResponsiveImage } from './ResponsiveImage';
 import { ApiItem } from '../types/v2';
 import { itemHasTag, Item } from '../types/v2/Item';
+import useIntersectionObserver from '../hooks/useIntersectionObserver';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -242,6 +243,17 @@ function ItemCard(props: Props) {
     ...GRID_COLUMNS,
     ...props.gridProps,
   };
+
+  const loadWrapperRef = useRef(null);
+  const isInViewport = useIntersectionObserver({
+    lazyLoadOptions: {
+      root: null,
+      rootMargin: '50px',
+      threshold: 0,
+    },
+    targetRef: loadWrapperRef,
+    useLazyLoad: true,
+  });
 
   const handleRemoveFromList = () => {
     props.ListUpdate({
@@ -511,7 +523,7 @@ function ItemCard(props: Props) {
 
   return (
     <React.Fragment>
-      <Fade in={true} timeout={1000}>
+      <Fade in={isInViewport} timeout={1000} ref={loadWrapperRef}>
         <Grid
           key={!deleted ? props.item.id : `${props.item.id}-deleted`}
           {...gridProps}
