@@ -3,7 +3,6 @@ import {
   Card,
   CardMedia,
   Collapse,
-  createStyles,
   Dialog,
   DialogActions,
   DialogContent,
@@ -12,11 +11,10 @@ import {
   Fade,
   Grid,
   IconButton,
+  makeStyles,
   Theme,
   Tooltip,
   Typography,
-  WithStyles,
-  withStyles,
   Zoom,
 } from '@material-ui/core';
 import { green, red } from '@material-ui/core/colors';
@@ -29,7 +27,7 @@ import {
   ThumbDown,
   ThumbUp,
 } from '@material-ui/icons';
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -54,139 +52,138 @@ import { ResponsiveImage } from './ResponsiveImage';
 import { ApiItem } from '../types/v2';
 import { itemHasTag, Item } from '../types/v2/Item';
 
-const styles = (theme: Theme) =>
-  createStyles({
-    title: {
-      flex: 1,
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
+const useStyles = makeStyles((theme: Theme) => ({
+  title: {
+    flex: 1,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  card: {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+  },
+  cardContent: {
+    flexGrow: 1,
+  },
+  cardHoverEnter: {
+    overflow: 'hidden',
+    width: '100%',
+    height: '100%',
+    background: 'rgba(0, 0, 0, 0.9)',
+    display: 'block',
+    zIndex: 1,
+  },
+  cardHoverExit: {
+    display: 'block',
+    width: '100%',
+    height: '100%',
+    opacity: 1,
+    overflow: 'hidden',
+    zIndex: 1,
+  },
+  hoverActions: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 1,
+    background: 'rgba(0, 0, 0, 0.5)',
+  },
+  hoverDelete: {
+    color: '#fff',
+    '&:hover': {
+      color: red[300],
     },
-    card: {
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-    },
-    cardContent: {
-      flexGrow: 1,
-    },
-    cardHoverEnter: {
-      overflow: 'hidden',
-      width: '100%',
-      height: '100%',
-      background: 'rgba(0, 0, 0, 0.9)',
-      display: 'block',
-      zIndex: 1,
-    },
-    cardHoverExit: {
-      display: 'block',
-      width: '100%',
-      height: '100%',
-      opacity: 1,
-      overflow: 'hidden',
-      zIndex: 1,
-    },
-    hoverActions: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      zIndex: 1,
-      background: 'rgba(0, 0, 0, 0.5)',
-    },
-    hoverDelete: {
-      color: '#fff',
-      '&:hover': {
-        color: red[300],
-      },
-    },
-    hoverWatch: {
-      color: '#fff',
-      '&:hover': {
-        color: green[300],
-      },
-    },
-    hoverWatchInvert: {
+  },
+  hoverWatch: {
+    color: '#fff',
+    '&:hover': {
       color: green[300],
-      '&:hover': {
-        color: '#fff',
-      },
     },
-    hoverRatingThumbsDown: {
+  },
+  hoverWatchInvert: {
+    color: green[300],
+    '&:hover': {
       color: '#fff',
-      '&:hover': {
-        color: red[300],
-      },
     },
-    hoverRatingThumbsUp: {
-      color: '#fff',
-      '&:hover': {
-        color: green[300],
-      },
+  },
+  hoverRatingThumbsDown: {
+    color: '#fff',
+    '&:hover': {
+      color: red[300],
     },
-    ratingHover: {
-      display: 'flex',
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      flex: '1 0 auto',
-      alignItems: 'center',
-      overflow: 'hidden',
-      position: 'absolute',
-      top: 0,
-      zIndex: 1,
-      height: '100%',
-      width: '100%',
-      background: 'rgba(0, 0, 0, 0.75)',
+  },
+  hoverRatingThumbsUp: {
+    color: '#fff',
+    '&:hover': {
+      color: green[300],
     },
-    ratingTitle: {
-      color: '#fff',
-      fontWeight: 'bold',
+  },
+  ratingHover: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    flex: '1 0 auto',
+    alignItems: 'center',
+    overflow: 'hidden',
+    position: 'absolute',
+    top: 0,
+    zIndex: 1,
+    height: '100%',
+    width: '100%',
+    background: 'rgba(0, 0, 0, 0.75)',
+  },
+  ratingTitle: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  ratingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  ratingContainerSmall: {
+    display: 'flex',
+    flexDirection: 'row',
+    zIndex: 1,
+    position: 'relative',
+  },
+  ratingActions: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  ratingVoteDown: {
+    color: '#fff',
+    '&:hover': {
+      color: red[300],
     },
-    ratingContainer: {
-      display: 'flex',
-      flexDirection: 'column',
+  },
+  ratingVoteUp: {
+    color: '#fff',
+    '&:hover': {
+      color: green[300],
     },
-    ratingContainerSmall: {
-      display: 'flex',
-      flexDirection: 'row',
-      zIndex: 1,
-      position: 'relative',
-    },
-    ratingActions: {
-      display: 'flex',
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-    },
-    ratingVoteDown: {
-      color: '#fff',
-      '&:hover': {
-        color: red[300],
-      },
-    },
-    ratingVoteUp: {
-      color: '#fff',
-      '&:hover': {
-        color: green[300],
-      },
-    },
-    missingMedia: {
-      height: '100%',
-      color: theme.palette.grey[500],
-      display: 'flex',
-      backgroundColor: theme.palette.grey[300],
-      fontSize: '10em',
-    },
-    missingMediaIcon: {
-      alignSelf: 'center',
-      margin: '0 auto',
-      display: 'inline-block',
-    },
-  });
+  },
+  missingMedia: {
+    height: '100%',
+    color: theme.palette.grey[500],
+    display: 'flex',
+    backgroundColor: theme.palette.grey[300],
+    fontSize: '10em',
+  },
+  missingMediaIcon: {
+    alignSelf: 'center',
+    margin: '0 auto',
+    display: 'inline-block',
+  },
+}));
 
-interface ItemCardProps extends WithStyles<typeof styles> {
+interface ItemCardProps {
   key: string | number;
   item: Item;
   userSelf?: UserSelf;
@@ -211,40 +208,26 @@ interface DispatchProps {
   removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
 }
 
-interface ItemCardState {
-  manageTrackingModalOpen: boolean;
-  isHovering: boolean;
-  hoverRating: boolean;
-  deleteConfirmationOpen: boolean;
-  deleted: boolean;
-  currentId: string;
-  currentType: string;
-  imageLoaded: boolean;
-}
-
 type Props = ItemCardProps & DispatchProps;
 
-class ItemCard extends Component<Props, ItemCardState> {
-  static defaultProps = {
-    withActionButton: false,
-    hoverDelete: false,
-    hoverWatch: true,
-    hoverAddToList: true,
-  };
+function ItemCard(props: Props) {
+  const classes = useStyles();
+  const [manageTrackingModalOpen, setManageTrackingModalOpen] = useState<
+    boolean
+  >(false);
+  const [isHovering, setIsHovering] = useState<boolean>(false);
+  const [hoverRating, setHoverRating] = useState<boolean>(false);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState<boolean>(
+    false,
+  );
+  const [deleted, setDeleted] = useState<boolean>(false);
+  const [currentId, setCurrentId] = useState<string>('');
 
-  state: ItemCardState = {
-    manageTrackingModalOpen: false,
-    isHovering: false,
-    hoverRating: false,
-    deleteConfirmationOpen: false,
-    deleted: false,
-    currentId: '',
-    currentType: '',
-    imageLoaded: false,
-  };
+  useEffect(() => {
+    let { item } = props;
+    let itemId = item.id;
+    setCurrentId(itemId);
 
-  constructor(props: Props) {
-    super(props);
     if (
       !props.listContext &&
       props.withActionButton &&
@@ -252,104 +235,67 @@ class ItemCard extends Component<Props, ItemCardState> {
     ) {
       console.warn('withActionButton=true without listContext will not work.');
     }
-  }
+  }, []);
 
-  componentDidMount() {
-    let { item } = this.props;
-    let itemId = item.id;
-
-    this.setState({
-      currentId: itemId,
-    });
-  }
-
-  openManageTrackingModal = () => {
-    this.setState({ manageTrackingModalOpen: true });
+  let gridProps: GridProps = {
+    item: true,
+    ...GRID_COLUMNS,
+    ...props.gridProps,
   };
 
-  closeManageTrackingModal = () => {
-    this.setState({ manageTrackingModalOpen: false });
-  };
-
-  handleDeleteModalOpen = () => {
-    this.setState({ deleteConfirmationOpen: true });
-  };
-
-  handleDeleteModalClose = () => {
-    this.setState({ deleteConfirmationOpen: false });
-  };
-
-  handleHoverEnter = () => {
-    this.setState({ isHovering: true });
-  };
-
-  handleHoverExit = () => {
-    this.setState({ isHovering: false });
-  };
-
-  handleHoverRatingOpen = () => {
-    this.setState({ hoverRating: true });
-  };
-
-  handleHoverRatingClose = () => {
-    this.setState({ hoverRating: false });
-  };
-
-  handleRemoveFromList = () => {
-    this.props.ListUpdate({
-      thingId: this.props.item.id,
+  const handleRemoveFromList = () => {
+    props.ListUpdate({
+      thingId: props.item.id,
       addToLists: [],
-      removeFromLists: [this.props.listContext!.id.toString()],
+      removeFromLists: [props.listContext!.id.toString()],
     });
-    this.setState({ deleted: true });
-    this.handleDeleteModalClose();
+    setDeleted(true);
+    setDeleteConfirmationOpen(false);
   };
 
-  toggleItemWatched = () => {
+  const toggleItemWatched = () => {
     let payload = {
-      thingId: this.state.currentId,
+      thingId: currentId,
       action: ActionType.Watched,
     };
 
-    if (this.itemHasTag(ACTION_WATCHED)) {
-      this.props.removeUserItemTags(payload);
+    if (checkItemHasTag(ACTION_WATCHED)) {
+      props.removeUserItemTags(payload);
     } else {
-      this.props.updateUserItemTags(payload);
-      this.setState({ hoverRating: true });
-      this.handleHoverRatingOpen();
+      props.updateUserItemTags(payload);
+      setHoverRating(true);
     }
   };
 
-  toggleItemRating = (rating: number) => {
+  const toggleItemRating = (rating: number) => {
     let payload = {
-      thingId: this.state.currentId,
+      thingId: currentId,
       action: ActionType.Enjoyed,
       value: rating,
     };
 
     // Currently no way to 'unrate' an item so no need to remove UserItemTags like we do for 'watched'
-    this.props.updateUserItemTags(payload);
+    props.updateUserItemTags(payload);
 
-    this.setState({ isHovering: false, hoverRating: false });
+    setIsHovering(false);
+    setHoverRating(false);
   };
 
-  itemHasTag = (tagName: string) => {
-    if (this.props.item) {
-      return itemHasTag(this.props.item, ActionType[tagName]);
+  const checkItemHasTag = (tagName: string) => {
+    if (props.item) {
+      return itemHasTag(props.item, ActionType[tagName]);
     }
 
     return false;
   };
 
-  renderPoster = (item: Item) => {
-    let { classes } = this.props;
-    let { isHovering, hoverRating } = this.state;
+  const renderPoster = (item: Item) => {
     return (
       <div
         className={isHovering ? classes.cardHoverEnter : classes.cardHoverExit}
       >
-        {isHovering && hoverRating && this.renderRatingHover()}
-        {isHovering && !hoverRating && this.renderHoverActions()}
+        {isHovering && hoverRating && renderRatingHover()}
+        {isHovering && !hoverRating && renderHoverActions()}
 
         <RouterLink
           // TODO Fix
@@ -368,13 +314,11 @@ class ItemCard extends Component<Props, ItemCardState> {
     );
   };
 
-  renderDialog() {
-    let { deleteConfirmationOpen } = this.state;
-
+  const renderDialog = () => {
     return (
       <Dialog
         open={deleteConfirmationOpen}
-        onClose={this.handleDeleteModalClose}
+        onClose={() => setDeleteConfirmationOpen(false)}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
@@ -385,26 +329,23 @@ class ItemCard extends Component<Props, ItemCardState> {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={this.handleDeleteModalClose} color="primary">
+          <Button
+            onClick={() => setDeleteConfirmationOpen(false)}
+            color="primary"
+          >
             Cancel
           </Button>
-          <Button onClick={this.handleRemoveFromList} color="primary" autoFocus>
+          <Button onClick={handleRemoveFromList} color="primary" autoFocus>
             Remove
           </Button>
         </DialogActions>
       </Dialog>
     );
-  }
+  };
 
-  renderHoverActions = () => {
-    let {
-      classes,
-      hoverAddToList,
-      hoverDelete,
-      hoverWatch,
-      userSelf,
-    } = this.props;
-    let { isHovering } = this.state;
+  const renderHoverActions = () => {
+    let { hoverAddToList, hoverDelete, hoverWatch, userSelf } = props;
+
     let transitionDelay = 100;
     const tooltipPlacement = 'right';
 
@@ -415,7 +356,7 @@ class ItemCard extends Component<Props, ItemCardState> {
             <Zoom in={isHovering}>
               <Tooltip
                 title={
-                  this.itemHasTag(ACTION_WATCHED)
+                  checkItemHasTag(ACTION_WATCHED)
                     ? 'Mark as not watched'
                     : 'Mark as watched'
                 }
@@ -423,18 +364,18 @@ class ItemCard extends Component<Props, ItemCardState> {
               >
                 <IconButton
                   aria-label="Watched"
-                  onClick={this.toggleItemWatched}
+                  onClick={toggleItemWatched}
                   disableRipple
                 >
                   <Check
                     className={
-                      this.itemHasTag(ACTION_WATCHED)
+                      checkItemHasTag(ACTION_WATCHED)
                         ? classes.hoverWatchInvert
                         : classes.hoverWatch
                     }
                   />
                   <Typography variant="srOnly">
-                    {this.itemHasTag(ACTION_WATCHED)
+                    {checkItemHasTag(ACTION_WATCHED)
                       ? 'Mark as not watched'
                       : 'Mark as watched'}
                   </Typography>
@@ -453,7 +394,7 @@ class ItemCard extends Component<Props, ItemCardState> {
               <Tooltip title="Manage Lists" placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Manage Lists"
-                  onClick={this.openManageTrackingModal}
+                  onClick={() => setManageTrackingModalOpen(true)}
                   disableRipple
                 >
                   <PlaylistAdd className={classes.hoverWatch} />
@@ -463,7 +404,7 @@ class ItemCard extends Component<Props, ItemCardState> {
             </Zoom>
           )}
 
-          {isHovering && this.itemHasTag(ACTION_WATCHED) && (
+          {isHovering && checkItemHasTag(ACTION_WATCHED) && (
             <Zoom
               in={isHovering}
               style={{
@@ -475,9 +416,9 @@ class ItemCard extends Component<Props, ItemCardState> {
               <Tooltip title={'Rate it!'} placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Rate it!"
-                  onClick={this.handleHoverRatingOpen}
+                  onClick={() => setHoverRating(true)}
                 >
-                  {this.itemHasTag(ACTION_ENJOYED) ? (
+                  {checkItemHasTag(ACTION_ENJOYED) ? (
                     <ThumbUp className={classes.hoverRatingThumbsUp} />
                   ) : (
                     <ThumbDown className={classes.hoverRatingThumbsDown} />
@@ -501,7 +442,7 @@ class ItemCard extends Component<Props, ItemCardState> {
                 <IconButton
                   aria-label="Delete"
                   className={classes.hoverDelete}
-                  onClick={this.handleDeleteModalOpen}
+                  onClick={() => setDeleteConfirmationOpen(true)}
                   disableRipple
                 >
                   <DeleteIcon />
@@ -515,15 +456,13 @@ class ItemCard extends Component<Props, ItemCardState> {
     );
   };
 
-  renderRatingHover = () => {
-    let { classes } = this.props;
-    let { hoverRating } = this.state;
+  const renderRatingHover = () => {
     const tooltipPlacement = 'bottom';
 
     return (
       <div className={classes.ratingHover}>
         <IconButton
-          onClick={() => this.setState({ hoverRating: false })}
+          onClick={() => setHoverRating(false)}
           style={{
             position: 'absolute',
             top: 0,
@@ -546,7 +485,7 @@ class ItemCard extends Component<Props, ItemCardState> {
               <Tooltip title={'Meh'} placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Didn't Like It"
-                  onClick={() => this.toggleItemRating(0)}
+                  onClick={() => toggleItemRating(0)}
                 >
                   <ThumbDown className={classes.ratingVoteDown} />
                   <Typography variant="srOnly">Mark as disliked</Typography>
@@ -557,7 +496,7 @@ class ItemCard extends Component<Props, ItemCardState> {
               <Tooltip title={'Liked it!'} placement={tooltipPlacement}>
                 <IconButton
                   aria-label="Liked It"
-                  onClick={() => this.toggleItemRating(1)}
+                  onClick={() => toggleItemRating(1)}
                 >
                   <ThumbUp className={classes.ratingVoteUp} />
                   <Typography variant="srOnly">Mark as liked</Typography>
@@ -570,40 +509,39 @@ class ItemCard extends Component<Props, ItemCardState> {
     );
   };
 
-  render() {
-    let { classes, hoverAddToList, item, userSelf } = this.props;
-    let { deleted, manageTrackingModalOpen } = this.state;
-
-    let gridProps: GridProps = {
-      item: true,
-      ...GRID_COLUMNS,
-      ...this.props.gridProps,
-    };
-
-    return (
-      <React.Fragment>
-        <Fade in={true} timeout={1000}>
-          <Grid key={!deleted ? item.id : `${item.id}-deleted`} {...gridProps}>
-            <Card
-              className={classes.card}
-              onMouseEnter={this.handleHoverEnter}
-              onMouseLeave={this.handleHoverExit}
-            >
-              {this.renderPoster(item)}
-            </Card>
-          </Grid>
-        </Fade>
-        <AddToListDialog
-          open={manageTrackingModalOpen}
-          onClose={this.closeManageTrackingModal.bind(this)}
-          userSelf={userSelf}
-          item={item}
-        />
-        {this.renderDialog()}
-      </React.Fragment>
-    );
-  }
+  return (
+    <React.Fragment>
+      <Fade in={true} timeout={1000}>
+        <Grid
+          key={!deleted ? props.item.id : `${props.item.id}-deleted`}
+          {...gridProps}
+        >
+          <Card
+            className={classes.card}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+          >
+            {renderPoster(props.item)}
+          </Card>
+        </Grid>
+      </Fade>
+      <AddToListDialog
+        open={manageTrackingModalOpen}
+        onClose={() => setManageTrackingModalOpen(false)}
+        userSelf={props.userSelf}
+        item={props.item}
+      />
+      {renderDialog()}
+    </React.Fragment>
+  );
 }
+
+ItemCard.defaultProps = {
+  withActionButton: false,
+  hoverDelete: false,
+  hoverWatch: true,
+  hoverAddToList: true,
+};
 
 const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
@@ -615,9 +553,7 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
     dispatch,
   );
 
-export default withStyles(styles)(
-  connect(
-    null,
-    mapDispatchToProps,
-  )(ItemCard),
-);
+export default connect(
+  null,
+  mapDispatchToProps,
+)(ItemCard);
