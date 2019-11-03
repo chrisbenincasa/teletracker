@@ -12,7 +12,11 @@ const startScrape = async scraper => {
 };
 
 const run = async () => {
-  await startScrape(process.argv[2]);
+  try {
+    await startScrape(process.argv[2]);
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 run();

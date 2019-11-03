@@ -81,6 +81,33 @@ const getObjectS3 = async (bucket, key) => {
     });
 };
 
+export const getDirectoryS3 = async (bucket, prefix) => {
+  const getDirectoryS3Inner = async (bucket, prefix, token, acc) => {
+    return s3
+      .listObjectsV2({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: token,
+      })
+      .promise()
+      .then(res => {
+        let nextAcc = acc.concat(res.Contents);
+        if (res.IsTruncated) {
+          return getDirectoryS3Inner(
+            bucket,
+            prefix,
+            res.NextContinuationToken,
+            nextAcc,
+          );
+        } else {
+          return nextAcc;
+        }
+      });
+  };
+
+  return getDirectoryS3Inner(bucket, prefix, null, []);
+};
+
 const fetchMostRecentFromS3 = async (bucket, key) => {
   let results = [];
   let continuationToken;

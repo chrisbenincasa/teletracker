@@ -28,6 +28,7 @@ zip -urq scrapers.zip netflix -x "*.DS_Store"
 zip -urq scrapers.zip unogs -x "*.DS_Store"
 zip -urq scrapers.zip tmdb -x "*.DS_Store"
 zip -urq scrapers.zip common -x "*.DS_Store"
+zip -urq scrapers.zip wikidata -x "*.DS_Store"
 zip -urq scrapers.zip node_modules -x "*.DS_Store"
 
 aws s3 cp scrapers.zip s3://teletracker-artifacts/scrapers/scrapers.zip

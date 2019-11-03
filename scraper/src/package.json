@@ -13,7 +13,8 @@
     "request": "^2.87.0",
     "request-promise": "^4.2.4",
     "split2": "^3.1.1",
-    "stream-transform": "^2.0.1"
+    "stream-transform": "^2.0.1",
+    "wikibase-sdk": "^7.1.5"
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.13",

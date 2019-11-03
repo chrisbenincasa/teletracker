@@ -779,6 +779,11 @@ which-module@^2.0.0:
   resolved "https://registry.yarnpkg.com/which-module/-/which-module-2.0.0.tgz#d9ef07dce77b9902b8a3a8fa4b31c3e3f7e6e87a"
   integrity sha1-2e8H3Od7mQK4o6j6SzHD4/fm6Ho=
 
+wikibase-sdk@^7.1.5:
+  version "7.1.5"
+  resolved "https://registry.yarnpkg.com/wikibase-sdk/-/wikibase-sdk-7.1.5.tgz#e56031fc628f5660e5a4e9cfae8733c3e50cfa1f"
+  integrity sha512-zBf3SnOQHbPDdNedf6uOvTl9T1LTO66R2PdFSIO+4IgzIeR6koTI88WnhfpMU34No0bbqbXFgl3LAV5XdCNHXQ==
+
 wrap-ansi@^5.1.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-5.1.0.tgz#1fd1f67235d5b6d0fee781056001bfb694c03b09"
