@@ -3,17 +3,36 @@
 NOW=$(date +%s)
 STAMP=${1:-$NOW}
 
-zip scrapers.zip index.js main.js package.json yarn.lock
+echo "Cleaning staging area"
+rm -rf build/
 
-zip -ur scrapers.zip hbo/whats-new -x "*.DS_Store"
-zip -ur scrapers.zip hbo/catalog.js -x "*.DS_Store"
-zip -ur scrapers.zip hulu/changes -x "*.DS_Store"
-zip -ur scrapers.zip hulu/catalog -x "*.DS_Store"
-zip -ur scrapers.zip netflix -x "*.DS_Store"
-zip -ur scrapers.zip unogs -x "*.DS_Store"
-zip -ur scrapers.zip tmdb -x "*.DS_Store"
-zip -ur scrapers.zip common -x "*.DS_Store"
+mkdir build
 
-gsutil cp scrapers.zip gs://teletracker-build-artifacts/scrapers/scrapers-${STAMP}.zip
+rsync -avq src/* build \
+  --exclude=build/ \
+  --exclude=node_modules/ \
+  --exclude=.idea \
+  --exclude=.vscode \
+  --exclude=*.zip
+
+pushd build || exit
+yarn --prod
+
+zip -q scrapers.zip index.js main.js package.json yarn.lock
+
+zip -urq scrapers.zip hbo/whats-new -x "*.DS_Store"
+zip -urq scrapers.zip hbo/catalog* -x "*.DS_Store"
+zip -urq scrapers.zip hulu/changes -x "*.DS_Store"
+zip -urq scrapers.zip hulu/catalog -x "*.DS_Store"
+zip -urq scrapers.zip netflix -x "*.DS_Store"
+zip -urq scrapers.zip unogs -x "*.DS_Store"
+zip -urq scrapers.zip tmdb -x "*.DS_Store"
+zip -urq scrapers.zip common -x "*.DS_Store"
+zip -urq scrapers.zip wikidata -x "*.DS_Store"
+zip -urq scrapers.zip node_modules -x "*.DS_Store"
+
+aws s3 cp scrapers.zip s3://teletracker-artifacts/scrapers/scrapers.zip
+
+popd || exit
 
 echo "Pushed new version: ${STAMP}"
