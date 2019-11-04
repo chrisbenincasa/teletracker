@@ -11,3 +11,5 @@ export const GRID_COLUMNS: Partial<GridProps> = {
 
 // Material Design’s responsive UI is based on a 12-column grid layout.
 export const TOTAL_COLUMNS: number = 12;
+
+export const BASE_IMAGE_URL = 'https://image.tmdb.org/t/p/';

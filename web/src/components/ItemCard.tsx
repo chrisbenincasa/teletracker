@@ -223,6 +223,7 @@ function ItemCard(props: Props) {
   );
   const [deleted, setDeleted] = useState<boolean>(false);
   const [currentId, setCurrentId] = useState<string>('');
+  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     let { item } = props;
@@ -320,6 +321,7 @@ function ItemCard(props: Props) {
             component={ResponsiveImage}
             imageType="poster"
             imageStyle={{ width: '100%', objectFit: 'cover', height: '100%' }}
+            loadCallback={() => setImageLoaded(true)}
           />
         </RouterLink>
       </div>
@@ -523,7 +525,16 @@ function ItemCard(props: Props) {
 
   return (
     <React.Fragment>
-      <Fade in={isInViewport} timeout={1000} ref={loadWrapperRef}>
+      <Fade
+        /*
+        The fade will not start until the image container is
+        entering the viewport & image has successfuly loaded in,
+        ensuring the fade is visible to user.
+      */
+        in={isInViewport && imageLoaded}
+        timeout={1000}
+        ref={loadWrapperRef}
+      >
         <Grid
           key={!deleted ? props.item.id : `${props.item.id}-deleted`}
           {...gridProps}
@@ -533,7 +544,8 @@ function ItemCard(props: Props) {
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
           >
-            {renderPoster(props.item)}
+            {/* No network call is made until container is entering the viewport. */}
+            {isInViewport && renderPoster(props.item)}
           </Card>
         </Grid>
       </Fade>
