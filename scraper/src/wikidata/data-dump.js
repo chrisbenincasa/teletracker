@@ -74,7 +74,7 @@ const getAndProcessObject = async (bucket, object, type, offset, limit) => {
   if (isProduction()) {
     await uploadToS3(
       DATA_BUCKET,
-      `data-dump/wikidata/movies/${fileName}`,
+      `data-dump/wikidata/${type}/${fileName}`,
       path,
       'text/plain',
       true,
