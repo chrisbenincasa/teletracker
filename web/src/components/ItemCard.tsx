@@ -249,7 +249,16 @@ function ItemCard(props: Props) {
   const isInViewport = useIntersectionObserver({
     lazyLoadOptions: {
       root: null,
-      rootMargin: '50px',
+      rootMargin: '0px',
+      threshold: 0,
+    },
+    targetRef: loadWrapperRef,
+    useLazyLoad: true,
+  });
+  const isNearViewport = useIntersectionObserver({
+    lazyLoadOptions: {
+      root: null,
+      rootMargin: '200px',
       threshold: 0,
     },
     targetRef: loadWrapperRef,
@@ -545,7 +554,7 @@ function ItemCard(props: Props) {
             onMouseLeave={() => setIsHovering(false)}
           >
             {/* No network call is made until container is entering the viewport. */}
-            {isInViewport && renderPoster(props.item)}
+            {isNearViewport && renderPoster(props.item)}
           </Card>
         </Grid>
       </Fade>
