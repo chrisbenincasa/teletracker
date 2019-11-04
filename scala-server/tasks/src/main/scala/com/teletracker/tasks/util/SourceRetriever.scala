@@ -109,7 +109,10 @@ class SourceRetriever @Inject()(s3: S3Client) {
           .asScala
           .toStream
           .flatMap(_.contents().asScala.toStream)
-          .map(obj => getS3Object(uri.getHost, obj.key()))
+          .map(obj => {
+            logger.info(s"Pulling s3://${uri.getHost}/${obj.key()}")
+            getS3Object(uri.getHost, obj.key())
+          })
       case "file" =>
         Stream(Source.fromFile(uri))
       case _ =>
