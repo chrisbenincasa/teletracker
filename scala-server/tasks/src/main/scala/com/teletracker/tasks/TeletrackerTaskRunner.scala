@@ -53,13 +53,27 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
     val loadedClass = {
       Try(Class.forName(clazz)) match {
         case Failure(_: ClassNotFoundException) =>
-          attemptToLoadTaskName(clazz)
+          val shorthand = attemptToLoadTaskName(clazz)
+          if (shorthand.isEmpty) {
+            throw new IllegalArgumentException(
+              s"$clazz is either not a class that exists or not a shorthand task name"
+            )
+          } else {
+            shorthand
+          }
 
         case Failure(ex) => throw ex
 
         case Success(value)
             if !classOf[TeletrackerTask].isAssignableFrom(value) =>
-          attemptToLoadTaskName(clazz)
+          val shorthand = attemptToLoadTaskName(clazz)
+          if (shorthand.isEmpty) {
+            throw new IllegalArgumentException(
+              s"$clazz is either not a TeletrackerTask subclass, or not a shorthand task name"
+            )
+          } else {
+            shorthand
+          }
 
         case Success(value) =>
           Some(value)
@@ -67,8 +81,8 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
     }
 
     if (loadedClass.isEmpty) {
-      throw new IllegalArgumentException(
-        "Specified class if not a subclass of TeletrackerTask!"
+      throw new RuntimeException(
+        s"Could not load class with name: ${clazz}"
       )
     }
 

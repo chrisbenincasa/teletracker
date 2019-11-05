@@ -3,7 +3,7 @@
 NOW=$(date +%s)
 STAMP=${1:-$NOW}
 
-./build
+./build-scrapers
 
 aws s3 cp build/scrapers.zip s3://teletracker-artifacts/scrapers/scrapers.zip
 

@@ -6,7 +6,10 @@ import com.teletracker.common.inject.Modules
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.consumers.impl.TaskQueueWorker
 import com.teletracker.consumers.inject.HttpClientModule
-import com.teletracker.consumers.worker.SqsQueueWorkerConfig
+import com.teletracker.consumers.worker.{
+  SqsQueueThroughputWorkerConfig,
+  SqsQueueWorkerConfig
+}
 import com.teletracker.tasks.TeletrackerTaskRunner
 import com.twitter.util.Await
 import com.teletracker.common.util.Futures._
@@ -28,7 +31,7 @@ object QueueConsumerDaemon extends com.twitter.inject.app.App {
 
     val worker = new TaskQueueWorker(
       queue,
-      new SqsQueueWorkerConfig(batchSize = 1),
+      new SqsQueueThroughputWorkerConfig(maxOutstandingItems = 2),
       injector.instance[TeletrackerTaskRunner]
     )
 

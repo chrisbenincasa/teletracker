@@ -5,7 +5,12 @@
 package com.teletracker.consumers.worker
 
 import com.teletracker.common.pubsub.EventBase
+import com.teletracker.common.util.execution.{
+  ExecutionContextProvider,
+  ProvidedSchedulerService
+}
 import com.teletracker.consumers.SqsQueue
+import com.teletracker.consumers.worker.poll.Heartbeats
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec
@@ -17,7 +22,7 @@ sealed trait Process
 
 object SqsQueueThroughputWorker {
   def apply[T <: EventBase: Manifest](
-    queue: QueueReader[T],
+    queue: SqsQueue[T],
     config: SqsQueueThroughputWorkerConfig
   )(
     processFunc: T => Future[Option[String]]
@@ -59,7 +64,7 @@ object SqsQueueThroughputWorker {
 }
 
 abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
-  queue: QueueReader[T],
+  protected val queue: SqsQueue[T],
   reloadableConfig: SqsQueueThroughputWorkerConfig
 )(implicit
   executionContext: ExecutionContext)
@@ -67,54 +72,22 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
       T,
       SqsQueueWorkerBase.Id,
       SqsQueueWorkerBase.FutureOption
-    ](queue, reloadableConfig) {
+    ](queue, reloadableConfig)
+    with Heartbeats[T] {
 
   private val outstanding = new AtomicInteger(0)
 
-//  private val heartbeatRegistry = new ConcurrentHashMap[String, Heartbeat[T]]()
+  override protected def getConfig: SqsQueueWorkerConfig = reloadableConfig
 
   def currentlyRunningTasks: Int = outstanding.get()
 
   override protected def runInternal(): Unit = runInternalFinal()
 
-//  // create a heartbeat pool matching the max outstanding items. Its ok if this doesnt match as the pool isn't used very heavily
-//  // so even if the outstanding items changes at runtime it will be fine
-//  protected lazy val heartbeatPool = ExecutionContextProvider.provider.of(
-//    Executors.newScheduledThreadPool(
-//      reloadableConfig.currentValue().maxOutstandingItems
-//    )
-//  )
-//
-//  protected def registerHeartbeat(item: T): Unit = {
-//    val heartbeat =
-//      reloadableConfig
-//        .currentValue()
-//        .heartbeat
-//        .map(
-//          _ =>
-//            new Heartbeat[T](
-//              item,
-//              queue,
-//              reloadableConfig.map(_.heartbeat.get),
-//              scheduler = heartbeatPool
-//            )
-//        )
-//
-//    heartbeat.foreach(h => {
-//      // if one existed already, stop it
-//      unregisterHeartbeat(item.receipt_handle.get)
-//
-//      logger.debug("Registering and starting heartbeat")
-//
-//      h.start()
-//
-//      heartbeatRegistry.put(item.receipt_handle.get, h)
-//    })
-//  }
-//
-//  private def unregisterHeartbeat(recieptHandle: String): Unit = {
-//    Option(heartbeatRegistry.remove(recieptHandle)).foreach(_.complete())
-//  }
+  protected lazy val heartbeatPool = ExecutionContextProvider.provider.of(
+    Executors.newScheduledThreadPool(
+      reloadableConfig.maxOutstandingItems
+    )
+  )
 
   @tailrec
   private def runInternalFinal(): Unit = {
@@ -174,7 +147,7 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
 
       val eventProcessingFuture = process(item)
 
-//      registerHeartbeat(item)
+      registerHeartbeat(item)
 
       eventProcessingFuture
         .flatMap(handle => {
@@ -190,7 +163,7 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
         .recover(errorHandler)
         .andThen {
           case _ =>
-//            unregisterHeartbeat(item.receipt_handle.get)
+            unregisterHeartbeat(item.receipt_handle.get)
 
             outstanding.decrementAndGet()
         }
@@ -199,7 +172,7 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
         // always make sure to clean ourselves ups
         logger.error("Exception leaked into throughput worker loop!", ex)
 
-//        unregisterHeartbeat(item.receipt_handle.get)
+        unregisterHeartbeat(item.receipt_handle.get)
 
         errorHandler(ex)
 
