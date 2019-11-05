@@ -4,10 +4,8 @@ import com.teletracker.common.pubsub.{JobTags, TeletrackerTaskQueueMessage}
 import com.teletracker.consumers.SqsQueue
 import com.teletracker.consumers.worker.{
   JobPool,
-  SqsQueueBatchWorker,
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig,
-  SqsQueueWorkerConfig,
   TeletrackerTaskRunnable
 }
 import com.teletracker.tasks.TeletrackerTaskRunner
@@ -55,15 +53,20 @@ class TaskQueueWorker(
 
       logger.info(s"Attempting to schedule ${message.clazz}")
 
-      if (message.jobTags
-            .getOrElse(Set.empty)
-            .contains(JobTags.RequiresTmdbApi)) {
-        needsTmdbPool.submit(runnable)
-      } else {
-        normalPool.submit(runnable)
-      }
+      val submitted =
+        if (message.jobTags
+              .getOrElse(Set.empty)
+              .contains(JobTags.RequiresTmdbApi)) {
+          needsTmdbPool.submit(runnable)
+        } else {
+          normalPool.submit(runnable)
+        }
 
-      completionPromise.future
+      if (!submitted) {
+        Future.successful(None)
+      } else {
+        completionPromise.future
+      }
     } catch {
       case NonFatal(e) =>
         logger.error(
