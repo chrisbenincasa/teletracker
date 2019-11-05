@@ -11,22 +11,22 @@ class TeletrackerTaskRunnable(
   args: Map[String, Option[Any]])
     extends Runnable {
 
-  private val callbacks = new ListBuffer[() => Unit]()
+  private val callbacks = new ListBuffer[(Option[Throwable]) => Unit]()
 
   override def run(): Unit = {
     try {
       teletrackerTask.runInternal(args)
+      callbacks.foreach(_(None))
     } catch {
       case NonFatal(e) =>
         e.printStackTrace()
-    } finally {
-      callbacks.foreach(_())
+        callbacks.foreach(_(Some(e)))
     }
   }
 
-  def addCallback(cb: => Unit) = {
+  def addCallback(cb: Option[Throwable] => Unit) = {
     synchronized {
-      callbacks += (() => cb)
+      callbacks += cb
     }
   }
 }

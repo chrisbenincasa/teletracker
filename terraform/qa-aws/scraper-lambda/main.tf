@@ -90,12 +90,12 @@ resource "aws_cloudwatch_event_target" "scraper_lambda_event_target" {
 }
 
 resource "aws_lambda_permission" "scraper_lambda_event_permission" {
-  count               = var.create_default_trigger ? 1 : 0
+  count = var.create_default_trigger ? 1 : 0
 
-  action = "lambda:InvokeFunction"
+  action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.scraper_lambda.function_name
-  principal = "events.amazonaws.com"
-  source_arn = element(aws_cloudwatch_event_rule.scraper_lambda_event_rule, count.index).arn
+  principal     = "events.amazonaws.com"
+  source_arn    = element(aws_cloudwatch_event_rule.scraper_lambda_event_rule, count.index).arn
 }
 
 output "lambda_role_name" {

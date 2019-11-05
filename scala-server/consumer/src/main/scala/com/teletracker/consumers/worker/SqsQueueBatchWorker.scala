@@ -5,8 +5,10 @@
 package com.teletracker.consumers.worker
 
 import com.teletracker.common.pubsub.EventBase
+import com.teletracker.common.util.execution.ExecutionContextProvider
 import com.teletracker.consumers.SqsQueue
-import java.util.concurrent.Semaphore
+import com.teletracker.consumers.worker.poll.Heartbeats
+import java.util.concurrent.{Executors, Semaphore}
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -28,15 +30,24 @@ object SqsQueueBatchWorker {
 }
 
 abstract class SqsQueueBatchWorker[T <: EventBase: Manifest](
-  queue: SqsQueue[T],
+  protected val queue: SqsQueue[T],
   config: SqsQueueWorkerConfig
 )(implicit
   executionContext: ExecutionContext)
-    extends SqsQueueWorkerBase[T, Seq, SqsQueueWorkerBase.Id](queue, config) {
+    extends SqsQueueWorkerBase[T, Seq, SqsQueueWorkerBase.Id](queue, config)
+    with Heartbeats[T] {
 
   override protected def runInternal(): Unit = runInternalFinal()
 
   private val batchSemaphore = new Semaphore(1)
+
+  override protected def getConfig: SqsQueueWorkerConfig = config
+
+  protected lazy val heartbeatPool = ExecutionContextProvider.provider.of(
+    Executors.newScheduledThreadPool(
+      config.batchSize
+    )
+  )
 
   @tailrec
   private def runInternalFinal(): Unit = {
@@ -53,12 +64,18 @@ abstract class SqsQueueBatchWorker[T <: EventBase: Manifest](
         logger.debug("No items found. Taking a nap...")
         sleepOnEmpty()
       } else {
+        items.foreach(registerHeartbeat)
+
         val handlesToRemove = process(items)
+
+        handlesToRemove.foreach(unregisterHeartbeat)
 
         ack(handlesToRemove.toList)
       }
     } catch {
-      errorHandler
+      errorHandler andThen { _ =>
+        clearAllHeartbeats()
+      }
     } finally {
       batchSemaphore.release()
     }

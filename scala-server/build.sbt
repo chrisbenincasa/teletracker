@@ -102,6 +102,7 @@ lazy val consumer = project
     Compile / run / mainClass := Some(
       "com.teletracker.consumers.QueueConsumerDaemon"
     ),
+    Revolver.enableDebugging(port = 5005, suspend = false),
     dockerfile in docker := {
       // The assembly task generates a fat JAR file
       val artifact: File = assembly.value

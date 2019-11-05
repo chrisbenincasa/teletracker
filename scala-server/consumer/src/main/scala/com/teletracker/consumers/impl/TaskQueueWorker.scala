@@ -5,20 +5,22 @@ import com.teletracker.consumers.SqsQueue
 import com.teletracker.consumers.worker.{
   JobPool,
   SqsQueueBatchWorker,
+  SqsQueueThroughputWorker,
+  SqsQueueThroughputWorkerConfig,
   SqsQueueWorkerConfig,
   TeletrackerTaskRunnable
 }
 import com.teletracker.tasks.TeletrackerTaskRunner
 import io.circe.Json
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 
 class TaskQueueWorker(
   queue: SqsQueue[TeletrackerTaskQueueMessage],
-  config: SqsQueueWorkerConfig,
+  config: SqsQueueThroughputWorkerConfig,
   taskRunner: TeletrackerTaskRunner
 )(implicit executionContext: ExecutionContext)
-    extends SqsQueueBatchWorker[TeletrackerTaskQueueMessage](queue, config) {
+    extends SqsQueueThroughputWorker[TeletrackerTaskQueueMessage](queue, config) {
 
   private val needsTmdbPool = new JobPool("TmdbJobs", 1)
   private val normalPool = new JobPool("NormalJobs", 2)
@@ -34,39 +36,43 @@ class TaskQueueWorker(
   }
 
   override protected def process(
-    messages: Seq[TeletrackerTaskQueueMessage]
-  ): Seq[String] = {
-    messages.flatMap(message => {
-      try {
-        val task = taskRunner.getInstance(message.clazz)
-        val runnable =
-          new TeletrackerTaskRunnable(
-            message,
-            task,
-            extractArgs(message.args)
-          )
+    message: TeletrackerTaskQueueMessage
+  ): Future[Option[String]] = {
+    try {
+      val task = taskRunner.getInstance(message.clazz)
+      val completionPromise = Promise[Option[String]]
+      val runnable =
+        new TeletrackerTaskRunnable(
+          message,
+          task,
+          extractArgs(message.args)
+        )
 
-        logger.info(s"Attempting to schedule ${message.clazz}")
+      runnable.addCallback({
+        case Some(e) => completionPromise.tryFailure(e)
+        case None    => completionPromise.success(message.receipt_handle)
+      })
 
-        if (message.jobTags
-              .getOrElse(Set.empty)
-              .contains(JobTags.RequiresTmdbApi)) {
-          needsTmdbPool.submit(runnable)
-        } else {
-          normalPool.submit(runnable)
-        }
+      logger.info(s"Attempting to schedule ${message.clazz}")
 
-        message.receipt_handle
-      } catch {
-        case NonFatal(e) =>
-          logger.error(
-            s"Unexpected error while handling message: ${message.toString}",
-            e
-          )
-
-          None
+      if (message.jobTags
+            .getOrElse(Set.empty)
+            .contains(JobTags.RequiresTmdbApi)) {
+        needsTmdbPool.submit(runnable)
+      } else {
+        normalPool.submit(runnable)
       }
-    })
+
+      completionPromise.future
+    } catch {
+      case NonFatal(e) =>
+        logger.error(
+          s"Unexpected error while handling message: ${message.toString}",
+          e
+        )
+
+        Future.failed(e)
+    }
   }
 
   private def extractArgs(args: Map[String, Json]): Map[String, Option[Any]] = {

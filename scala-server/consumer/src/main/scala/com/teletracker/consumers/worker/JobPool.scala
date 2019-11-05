@@ -18,7 +18,7 @@ class JobPool(
   )
 
   def submit(runnable: TeletrackerTaskRunnable): Unit = {
-    runnable.addCallback {
+    runnable.addCallback { _ =>
       logger.info(s"Finished executing ${runnable.originalMessage.clazz}")
     }
     pool.submit(runnable)
