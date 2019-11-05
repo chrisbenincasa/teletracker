@@ -10,7 +10,7 @@ import com.teletracker.common.util.execution.{
   ProvidedSchedulerService
 }
 import com.teletracker.consumers.SqsQueue
-import com.teletracker.consumers.worker.poll.Heartbeats
+import com.teletracker.consumers.worker.poll.{HeartbeatConfig, Heartbeats}
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec
@@ -221,10 +221,11 @@ class SqsQueueThroughputWorkerConfig(
   override val sleepDurationBetweenFailures: Duration = 30 seconds,
   override val sleepDurationBetweenEmptyBatches: Duration = 1 second,
   val sleepDurationWhenQueueFull: Duration = 1 second,
-  val maxOutstandingItems: Int = 10)
-//  val heartbeat: Option[HeartbeatConfig] = None)
+  val maxOutstandingItems: Int = 10,
+  override val heartbeat: Option[HeartbeatConfig] = None)
     extends SqsQueueWorkerConfig(
       batchSize = maxOutstandingItems,
       sleepDurationBetweenFailures = sleepDurationBetweenFailures,
-      sleepDurationBetweenEmptyBatches = sleepDurationBetweenEmptyBatches
+      sleepDurationBetweenEmptyBatches = sleepDurationBetweenEmptyBatches,
+      heartbeat = heartbeat
     )

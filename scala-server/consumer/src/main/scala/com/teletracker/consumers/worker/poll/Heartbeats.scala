@@ -32,7 +32,7 @@ trait Heartbeats[T <: EventBase] {
       // if one existed already, stop it
       unregisterHeartbeat(item.receipt_handle.get)
 
-      logger.debug("Registering and starting heartbeat")
+      logger.info("Registering and starting heartbeat")
 
       h.start()
 

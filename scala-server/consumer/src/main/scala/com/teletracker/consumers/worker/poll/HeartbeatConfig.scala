@@ -39,7 +39,7 @@ class Heartbeat[T <: EventBase](
         new Runnable {
           override def run() = {
             Try {
-              logger.debug(
+              logger.info(
                 s"Heartbeating ${item.receipt_handle.get} to add another ${config.visibility_timeout.toSeconds} seconds"
               )
 
