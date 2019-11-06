@@ -36,7 +36,7 @@ object TeletrackerTaskQueueMessageFactory {
   ): TeletrackerTaskQueueMessage = {
     TeletrackerTaskQueueMessage(
       clazz,
-      args.as[Map[String, Json]].right.get,
+      args.as[Option[Map[String, Json]]].right.get.getOrElse(Map.empty),
       tags
     )
   }

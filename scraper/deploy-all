@@ -3,36 +3,8 @@
 NOW=$(date +%s)
 STAMP=${1:-$NOW}
 
-echo "Cleaning staging area"
-rm -rf build/
+./build-scrapers
 
-mkdir build
-
-rsync -avq src/* build \
-  --exclude=build/ \
-  --exclude=node_modules/ \
-  --exclude=.idea \
-  --exclude=.vscode \
-  --exclude=*.zip
-
-pushd build || exit
-yarn --prod
-
-zip -q scrapers.zip index.js main.js package.json yarn.lock
-
-zip -urq scrapers.zip hbo/whats-new -x "*.DS_Store"
-zip -urq scrapers.zip hbo/catalog* -x "*.DS_Store"
-zip -urq scrapers.zip hulu/changes -x "*.DS_Store"
-zip -urq scrapers.zip hulu/catalog -x "*.DS_Store"
-zip -urq scrapers.zip netflix -x "*.DS_Store"
-zip -urq scrapers.zip unogs -x "*.DS_Store"
-zip -urq scrapers.zip tmdb -x "*.DS_Store"
-zip -urq scrapers.zip common -x "*.DS_Store"
-zip -urq scrapers.zip wikidata -x "*.DS_Store"
-zip -urq scrapers.zip node_modules -x "*.DS_Store"
-
-aws s3 cp scrapers.zip s3://teletracker-artifacts/scrapers/scrapers.zip
-
-popd || exit
+aws s3 cp build/scrapers.zip s3://teletracker-artifacts/scrapers/scrapers.zip
 
 echo "Pushed new version: ${STAMP}"

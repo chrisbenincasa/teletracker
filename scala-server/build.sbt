@@ -102,6 +102,7 @@ lazy val consumer = project
     Compile / run / mainClass := Some(
       "com.teletracker.consumers.QueueConsumerDaemon"
     ),
+    Revolver.enableDebugging(port = 5005, suspend = false),
     dockerfile in docker := {
       // The assembly task generates a fat JAR file
       val artifact: File = assembly.value
@@ -109,7 +110,7 @@ lazy val consumer = project
 
       new Dockerfile {
         from(
-          s"gcr.io/teletracker/base:latest"
+          s"302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/base:latest"
         )
         add(baseDirectory.value / "src/docker/", "/app")
         add(artifact, artifactTargetPath)
@@ -118,16 +119,6 @@ lazy val consumer = project
       }
     },
     imageNames in docker := Seq(
-      ImageName(
-        namespace = Some("gcr.io/teletracker"),
-        repository = "consumer",
-        tag = Some("latest")
-      ),
-      ImageName(
-        namespace = Some("gcr.io/teletracker"),
-        repository = "consumer",
-        tag = Some(version.value)
-      ),
       ImageName(
         namespace =
           Some("302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker"),
@@ -226,7 +217,7 @@ lazy val server = project
 
       new Dockerfile {
         from(
-          s"gcr.io/teletracker/base:latest"
+          s"302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/base:latest"
         )
         add(baseDirectory.value / "src/docker/", "/app")
         add(baseDirectory.value / "data", "/data")
@@ -236,16 +227,6 @@ lazy val server = project
       }
     },
     imageNames in docker := Seq(
-      ImageName(
-        namespace = Some("gcr.io/teletracker"),
-        repository = "server",
-        tag = Some("latest")
-      ),
-      ImageName(
-        namespace = Some("gcr.io/teletracker"),
-        repository = "server",
-        tag = Some(version.value)
-      ),
       ImageName(
         namespace =
           Some("302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker"),

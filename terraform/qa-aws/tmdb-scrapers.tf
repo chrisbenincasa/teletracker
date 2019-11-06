@@ -3,6 +3,10 @@ module "tmdb-changes-scraper" {
 
   handler_function = "index.tmdbChanges"
   function_name    = "tmdb-changes"
+
+  extra_env_vars = {
+    TASK_QUEUE_URL = data.aws_sqs_queue.teletracker-task-queue-data.url
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "tmdb-changes-scraper-ssm-attachment" {

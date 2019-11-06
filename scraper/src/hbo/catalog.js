@@ -182,7 +182,7 @@ const scrapeTvShow = async firstEpisodeUrl => {
 const loadSitemapEntries = async date => {
   return getObjectS3(
     'teletracker-data',
-    `scrape-results/${date}/hbo-sitemap-urls.txt`,
+    `scrape-results/${date}/hbo-catalog-urls.txt`,
   ).then(body => {
     return body.toString('utf-8').split('\n');
   });

@@ -6,7 +6,8 @@ public enum ExternalSource {
     TheMovieDb("tmdb"),
     JustWatch("justwatch"),
     Imdb("imdb"),
-    TvDb("tvdb");
+    TvDb("tvdb"),
+    Wikidata("wikidata");
 
     private final String name;
 

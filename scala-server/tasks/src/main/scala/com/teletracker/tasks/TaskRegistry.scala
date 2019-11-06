@@ -1,6 +1,11 @@
 package com.teletracker.tasks
 
 import com.teletracker.tasks.scraper._
+import com.teletracker.tasks.tmdb.export_tasks.{
+  MovieChangesDumpTask,
+  PersonChangesDumpTask,
+  TvChangesDumpTask
+}
 import com.teletracker.tasks.tmdb.import_tasks._
 
 object TaskRegistry {
@@ -18,6 +23,9 @@ object TaskRegistry {
     classOf[ImportTvShowsFromDump],
     classOf[RemoteTask],
     classOf[NoopTeletrackerTask],
-    classOf[TimeoutTask]
+    classOf[TimeoutTask],
+    classOf[MovieChangesDumpTask],
+    classOf[TvChangesDumpTask],
+    classOf[PersonChangesDumpTask]
   ).map(clazz => clazz.getSimpleName -> clazz).toMap
 }

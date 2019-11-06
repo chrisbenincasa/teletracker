@@ -4,6 +4,10 @@ import { uploadToS3 } from '../../common/storage';
 import { resolveSecret } from '../../common/aws_utils';
 import { wait } from '../../common/promise_utils';
 import { createWriteStream } from '../../common/stream_utils';
+import { isProduction } from '../../common/env';
+import _ from 'lodash';
+import { DATA_BUCKET } from '../../common/constants';
+import { scheduleTask } from '../../common/task_publisher';
 
 const doLoop = async (apiKey, type) => {
   let page = 1;
@@ -40,7 +44,7 @@ const writeAsLines = (fileName, data) => {
   return flush;
 };
 
-const scrape = async () => {
+const scrape = async event => {
   let apiKey = await resolveSecret('tmdb-api-key-qa');
 
   let now = moment();
@@ -63,15 +67,31 @@ const scrape = async () => {
     writeAsLines(personName, personChanges),
   ]);
 
-  let allUploads = [movieName, showName, personName].map(async file => {
-    await uploadToS3(
-      'teletracker-data',
-      `scrape-results/${nowString}/${file}`,
-      file,
-    );
-  });
+  if (isProduction()) {
+    let allUploads = [
+      [movieName, 'MovieChangesDumpTask'],
+      [showName, 'TvChangesDumpTask'],
+      [personName, 'PersonChangesDumpTask'],
+    ].map(async ([file, taskName]) => {
+      let key = `scrape-results/${nowString}/${file}`;
+      await uploadToS3(DATA_BUCKET, key, file);
 
-  await Promise.all(allUploads);
+      if (_.isUndefined(event.scheduleTasks) || Boolean(event.scheduleTasks)) {
+        let payload = {
+          clazz: taskName,
+          args: {
+            input: `s3://${DATA_BUCKET}/${key}`,
+            dryRun: false,
+          },
+          jobTags: ['tag/RequiresTmdbApi'],
+        };
+
+        await scheduleTask(payload);
+      }
+    });
+
+    await Promise.all(allUploads);
+  }
 };
 
 export { scrape };
