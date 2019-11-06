@@ -144,6 +144,7 @@ const scrapeMovieJson = async (cookie, id) => {
 };
 
 const scrape = async event => {
+  console.log(`Got event: `, event);
   try {
     let huluCookie = await resolveSecret('hulu-cookie');
 
@@ -249,7 +250,7 @@ const scrape = async event => {
           FunctionName: 'hulu-catalog',
           InvocationType: 'Event',
           Payload: Buffer.from(
-            JSON.stringify({ mod, band: band + band }),
+            JSON.stringify({ mod, band: band + band, scheduleNext }),
             'utf-8',
           ),
         })
