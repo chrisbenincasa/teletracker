@@ -7,6 +7,7 @@ package com.teletracker.consumers.worker
 import com.teletracker.common.pubsub.EventBase
 import com.teletracker.common.util.Futures._
 import com.teletracker.consumers.ProcessingFailedException
+import com.teletracker.consumers.worker.poll.HeartbeatConfig
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -144,4 +145,5 @@ class SqsQueueWorkerConfig(
   val batchSize: Int = 10,
   val sleepDurationBetweenFailures: Duration = 30 seconds,
   val waitForMessageTime: Duration = 1 second,
-  val sleepDurationBetweenEmptyBatches: Duration = 1 second)
+  val sleepDurationBetweenEmptyBatches: Duration = 1 second,
+  val heartbeat: Option[HeartbeatConfig] = None)

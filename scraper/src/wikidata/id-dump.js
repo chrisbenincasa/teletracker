@@ -11,6 +11,7 @@ import moment from 'moment';
 const TMDB_MOVIE_ID_PROP = 'P4947';
 const TMDB_SERIES_ID_PROP = 'P4983';
 const TMDB_PERSON_ID_PROP = 'P4985';
+const IMDB_ID_PROP = 'P345';
 
 const sanitizeProp = uri => uri.replace(/^https?:\/\/.*\/entity\//, '');
 
@@ -33,6 +34,8 @@ export const scrape = async event => {
       prop = TMDB_SERIES_ID_PROP;
     } else if (type === 'person') {
       prop = TMDB_PERSON_ID_PROP;
+    } else if (type === 'imdb_movie') {
+      prop = IMDB_ID_PROP;
     } else {
       console.error('Unrecognized type = ' + type);
       return;

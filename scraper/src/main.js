@@ -3,6 +3,11 @@ export { scrape as hboCatalog } from './hbo/catalog';
 export { scrape as hboWhatsNew } from './hbo/whats-new/scrape';
 export { scrape as huluCatalog } from './hulu/catalog/scrape';
 export { scrape as huluChanges } from './hulu/changes/scrape';
+export { scrape as huluCatalogDump } from './hulu/catalog/dump';
+export {
+  schedule as scheduleHuluCatalog,
+  scheduleFromS3 as scheduleHuluCatalogS3,
+} from './hulu/catalog/scheduler';
 export { scrape as netflixOriginalsArriving } from './netflix/scrape';
 export {
   scrape as whatsOnNetflixCatalog,
