@@ -13,6 +13,13 @@ resource "aws_s3_bucket_notification" "hbo-catalog-dump-pushed" {
   }
 
   lambda_function {
+    lambda_function_arn = module.hulu-catalog-scheduler.lambda_arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "scrape-results"
+    filter_suffix       = "hulu-catalog-urls.txt"
+  }
+
+  lambda_function {
     lambda_function_arn = module.netflix-originals-arriving.lambda_arn
     events              = ["s3:ObjectCreated:*"]
     filter_prefix       = "scrape-results/netflix/whats-on-netflix"

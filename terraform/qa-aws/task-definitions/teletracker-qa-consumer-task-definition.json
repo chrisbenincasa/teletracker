@@ -5,6 +5,14 @@
     "cpu": 512,
     "memory": 768,
     "essential": true,
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "teletracker-consumer",
+        "awslogs-region": "us-west-1",
+        "awslogs-stream-prefix": "consumer"
+      }
+    },
     "environment": [
       {
         "name": "ES_SCHEME",

@@ -85,7 +85,10 @@ resource "aws_cloudwatch_metric_alarm" "teletracker-qa-cluster-scale-up-alarm" {
     }
   }
 
-  alarm_actions = [aws_autoscaling_policy.teletracker-qa-cluster-scale-up.arn, aws_appautoscaling_policy.consumer-ecs-scale-up-policy.arn]
+  alarm_actions = [
+    //    aws_autoscaling_policy.teletracker-qa-cluster-scale-up.arn,
+    aws_appautoscaling_policy.consumer-ecs-scale-up-policy.arn
+  ]
 }
 
 resource "aws_cloudwatch_metric_alarm" "teletracker-qa-cluster-scale-down-alarm" {
@@ -131,5 +134,8 @@ resource "aws_cloudwatch_metric_alarm" "teletracker-qa-cluster-scale-down-alarm"
     }
   }
 
-  alarm_actions = [aws_autoscaling_policy.teletracker-qa-cluster-scale-down.arn, aws_appautoscaling_policy.consumer-ecs-scale-down-policy.arn]
+  alarm_actions = [
+    //    aws_autoscaling_policy.teletracker-qa-cluster-scale-down.arn,
+    aws_appautoscaling_policy.consumer-ecs-scale-down-policy.arn
+  ]
 }

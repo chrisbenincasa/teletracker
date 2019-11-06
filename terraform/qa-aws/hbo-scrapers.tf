@@ -30,6 +30,8 @@ module "hbo-catalog-scheduler" {
 
   handler_function = "index.scheduleHboCatalogS3"
   function_name    = "hbo-catalog-scheduler"
+
+  create_default_trigger = false
 }
 
 resource "aws_lambda_permission" "hbo-catalog-dump-allow-teletracker-data" {

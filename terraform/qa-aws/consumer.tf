@@ -9,10 +9,13 @@ resource "aws_ecs_task_definition" "teletracker-qa-consumer" {
   family                = "teletracker-consumer"
   container_definitions = data.template_file.teletracker-qa-consumer-task-definition-template.rendered
   execution_role_arn    = data.aws_iam_role.ecs-task-execution-role.arn
-  #   task_role_arn         = "arn:aws:iam::302782651551:role/ecsServiceRole"
+  task_role_arn         = data.aws_iam_role.ecs-fargate-task-role.arn
 
-  cpu          = 1024
-  network_mode = "bridge"
+  cpu    = 512
+  memory = 1024
+  //  network_mode             = "bridge"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
 }
 
 resource "aws_ecs_service" "teletracker-qa-consumer" {
@@ -20,28 +23,35 @@ resource "aws_ecs_service" "teletracker-qa-consumer" {
   cluster         = aws_ecs_cluster.teletracker-qa.id
   task_definition = aws_ecs_task_definition.teletracker-qa-consumer.arn
   desired_count   = 0
+  launch_type     = "FARGATE"
 
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100
 
-  ordered_placement_strategy {
-    field = "attribute:ecs.availability-zone"
-    type  = "spread"
+  network_configuration {
+    subnets          = data.aws_subnet_ids.teletracker-subnet-ids.ids
+    assign_public_ip = true
+    security_groups  = ["sg-01310de0b78845ffc"]
   }
 
-  ordered_placement_strategy {
-    field = "instanceId"
-    type  = "spread"
-  }
+  //  ordered_placement_strategy {
+  //    field = "attribute:ecs.availability-zone"
+  //    type  = "spread"
+  //  }
+  //
+  //  ordered_placement_strategy {
+  //    field = "instanceId"
+  //    type  = "spread"
+  //  }
 
   lifecycle {
     ignore_changes = ["desired_count"]
   }
 
-  placement_constraints {
-    expression = "attribute:ecs.instance-type =~ t3a.*"
-    type       = "memberOf"
-  }
+  //  placement_constraints {
+  //    expression = "attribute:ecs.instance-type =~ t3a.*"
+  //    type       = "memberOf"
+  //  }
 }
 
 resource "aws_appautoscaling_target" "consumer-ecs-scale-down-target" {
