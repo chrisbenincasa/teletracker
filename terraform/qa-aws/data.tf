@@ -18,3 +18,11 @@ data "aws_iam_role" "ecs-service-role" {
 data "aws_iam_role" "ecs-task-execution-role" {
   name = "ecsTaskExecutionRole"
 }
+
+data "aws_iam_role" "ecs-instance-role" {
+  name = "ecsInstanceRole"
+}
+
+data "aws_iam_role" "ecs-fargate-task-role" {
+  name = "ecsFargateTaskRole"
+}

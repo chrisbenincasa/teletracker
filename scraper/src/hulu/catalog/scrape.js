@@ -1,8 +1,12 @@
-import cheerio from 'cheerio';
-import fs from 'fs';
 import * as _ from 'lodash';
 import moment from 'moment';
 import request from 'request-promise';
+import { createWriteStream } from '../../common/stream_utils';
+import { resolveSecret } from '../../common/aws_utils';
+import { DATA_BUCKET, USER_AGENT_STRING } from '../../common/constants';
+import { getObjectS3, uploadToS3 } from '../../common/storage';
+import { isProduction } from '../../common/env';
+import AWS from 'aws-sdk';
 
 /*
 curl 'https://discover.hulu.com/content/v4/hubs/series/3944ff02-8772-43eb-bacc-10923d83f140?schema=9' 
@@ -32,28 +36,25 @@ const genresRegex = /\/genre\/([A-z\-]+)-?([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a
 const seriesRegex = new RegExp('/series/([A-z-0-9]+)-(' + uuidRegex + ')$');
 const moviesRegex = new RegExp('/movie/([A-z-0-9]+)-(' + uuidRegex + ')$');
 
-const uaString =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
-
 const headers = {
   Connection: 'keep-alive',
   Pragma: 'no-cache',
   'Cache-Control': 'no-cache',
   'Upgrade-Insecure-Requests': 1,
-  'User-Agent': uaString,
+  'User-Agent': USER_AGENT_STRING,
   DNT: 1,
   Accept:
     'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
   'Accept-Encoding': 'gzip, deflate, br',
 };
 
-const scrapeSeriesJson = async id => {
+const scrapeSeriesJson = async (cookie, id) => {
   try {
     let json = await request({
       uri: `https://discover.hulu.com/content/v4/hubs/series/${id}?schema=9`,
       headers: {
         ...headers,
-        Cookie: process.env.HULU_COOKIE,
+        Cookie: cookie,
       },
       gzip: true,
       json: true,
@@ -103,18 +104,13 @@ const scrapeSeriesJson = async id => {
   }
 };
 
-const createWriteStream = fileName => {
-  const stream = fs.createWriteStream(fileName, 'utf-8');
-  return stream;
-};
-
-const scrapeMovieJson = async id => {
+const scrapeMovieJson = async (cookie, id) => {
   try {
     let json = await request({
       uri: `https://discover.hulu.com/content/v4/hubs/movie/${id}?schema=9`,
       headers: {
         ...headers,
-        Cookie: process.env.HULU_COOKIE,
+        Cookie: cookie,
       },
       gzip: true,
       json: true,
@@ -147,55 +143,41 @@ const scrapeMovieJson = async id => {
   }
 };
 
-const getAllSiteMaps = async () => {
-  let html = await request({
-    uri: 'https://www.hulu.com/sitemap_index.xml',
-    headers: {
-      'User-Agent': uaString,
-    },
-  });
+const scrape = async event => {
+  try {
+    let huluCookie = await resolveSecret('hulu-cookie');
 
-  let $ = cheerio.load(html);
+    let offset = event.offset || 0;
+    let limit = event.limit || 50;
 
-  return $('sitemap > loc')
-    .map((idx, el) => $(el).text())
-    .get();
-};
+    let mod = event.mod;
+    let band = event.band;
+    let scheduleNext = event.scheduleNext;
 
-const loadSiteMap = async sitemap => {
-  let html = await request({
-    uri: sitemap,
-    headers: {
-      'User-Agent': uaString,
-    },
-  });
+    let now = moment();
 
-  let $ = cheerio.load(html);
+    let nowString = now.format('YYYY-MM-DD');
+    let fileName = nowString + '_hulu-catalog' + '.json';
+    if (mod && band) {
+      fileName = `${nowString}_hulu-catalog.${band}.json`;
+    }
 
-  return $('urlset > url > loc')
-    .map((idx, el) => $(el).text())
-    .get();
-};
+    let urls = await getObjectS3(
+      DATA_BUCKET,
+      `scrape-results/hulu/${nowString}/hulu-catalog-urls.txt`,
+    ).then(body => body.toString('utf-8').split('\n'));
 
-const scrape = async () => {
-  let sitemaps = await getAllSiteMaps();
+    let [path, stream, flush] = createWriteStream(fileName);
 
-  let prefix = process.env.NODE_ENV === 'production' ? '/tmp/' : '';
-
-  let now = moment();
-  let nowString = now.format('YYYY-MM-DD');
-  let fileName = nowString + '_hulu-catalog' + '.json';
-
-  // await writeAsLines(fileName, final);
-
-  let stream = createWriteStream(fileName);
-
-  let results = sitemaps.map(async sitemap => {
-    let loadedSitemap = await loadSiteMap(sitemap);
-
-    let allResults = [];
-
-    let seriesResults = loadedSitemap
+    let seriesResults = urls
+      .filter((_, idx) => {
+        if (mod && band) {
+          return idx % mod === band;
+        } else {
+          return true;
+        }
+      })
+      .slice(offset, limit === -1 ? urls.length : limit)
       .filter(text => text.includes('/series/'))
       .reduce(async (prev, url) => {
         let last = await prev;
@@ -203,7 +185,7 @@ const scrape = async () => {
         let matches = seriesRegex.exec(url);
         let result;
         if (matches && matches.length > 0) {
-          result = await scrapeSeriesJson(matches[2]);
+          result = await scrapeSeriesJson(huluCookie, matches[2]);
         }
 
         if (result) {
@@ -214,9 +196,15 @@ const scrape = async () => {
         return [...last, result];
       }, Promise.resolve([]));
 
-    allResults = allResults.concat(await seriesResults);
-
-    let movieResults = loadedSitemap
+    let movieResults = urls
+      .slice(offset, limit === -1 ? urls.length : limit)
+      .filter((_, idx) => {
+        if (mod && band) {
+          return idx % mod === band;
+        } else {
+          return true;
+        }
+      })
       .filter(text => text.includes('/movie/'))
       .reduce(async (prev, url) => {
         let last = await prev;
@@ -224,7 +212,7 @@ const scrape = async () => {
         let matches = moviesRegex.exec(url);
         let result;
         if (matches && matches.length > 0) {
-          result = await scrapeMovieJson(matches[2]);
+          result = await scrapeMovieJson(huluCookie, matches[2]);
         }
 
         if (result) {
@@ -235,13 +223,41 @@ const scrape = async () => {
         return [...last, result];
       }, Promise.resolve([]));
 
-    allResults = allResults.concat(await movieResults);
+    let allResults = [...(await seriesResults), ...(await movieResults)];
 
-    return _.filter(allResults, _.negate(_.isUndefined));
-  });
+    allResults = _.filter(allResults, _.negate(_.isUndefined));
 
-  await Promise.all(results);
-  stream.close();
+    await Promise.all(allResults);
+    stream.close();
+    await flush;
+
+    if (isProduction()) {
+      await uploadToS3(
+        DATA_BUCKET,
+        `scrape-results/hulu/${nowString}/catalog/${fileName}`,
+        path,
+      );
+    }
+
+    if (Boolean(scheduleNext) && mod && band && band + band <= mod) {
+      const lambda = new AWS.Lambda({
+        region: 'us-west-1',
+      });
+
+      await lambda
+        .invoke({
+          FunctionName: 'hulu-catalog',
+          InvocationType: 'Event',
+          Payload: Buffer.from(
+            JSON.stringify({ mod, band: band + band }),
+            'utf-8',
+          ),
+        })
+        .promise();
+    }
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export { scrape };
