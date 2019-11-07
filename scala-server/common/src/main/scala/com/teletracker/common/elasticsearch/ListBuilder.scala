@@ -206,8 +206,8 @@ class ListBuilder @Inject()(
             QueryBuilders.nestedQuery(
               "item",
               QueryBuilders.termsQuery(
-                "item.genres",
-                QueryBuilders.termsQuery("genres.id", genres.asJavaCollection)
+                "item.genres.id",
+                genres.asJavaCollection
               ),
               ScoreMode.Avg
             )
@@ -432,10 +432,12 @@ class ListBuilder @Inject()(
                     t.tag == UserThingTagType.TrackedInList.toString && t.int_value
                       .contains(listId)
                 )
-                .map(tag => {
-                  userItem.item_id.toString -> tag.last_updated
-                    .getOrElse(if (t.isDesc) LocalDate.MIN else LocalDate.MAX)
-                    .toString
+                .flatMap(tag => {
+                  userItem.item_id.map(itemId => {
+                    itemId.toString -> tag.last_updated
+                      .getOrElse(if (t.isDesc) LocalDate.MIN else LocalDate.MAX)
+                      .toString
+                  })
                 })
           )
 
