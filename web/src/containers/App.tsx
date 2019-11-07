@@ -171,7 +171,10 @@ class App extends Component<Props, State> {
                 />
               </Switch>
             </main>
-            {location.pathname !== '/Popular' && <Footer />}
+            {location.pathname.toLowerCase() === '/popular' ||
+            (isAuthed && location.pathname === '/') ? null : (
+              <Footer />
+            )}
           </div>
         ) : (
           <LinearProgress />
