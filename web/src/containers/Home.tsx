@@ -236,7 +236,7 @@ function Home(props: Props) {
 
   useEffect(() => {
     const { isLoggedIn, userSelf } = props;
-    console.log('tesstttt');
+
     loadPopular();
 
     ReactGA.initialize(GA_TRACKING_ID);
