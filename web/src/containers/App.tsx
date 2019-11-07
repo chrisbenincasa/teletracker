@@ -47,7 +47,6 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.down('sm')]: {
         paddingBottom: '2rem',
       },
-      overflowX: 'hidden',
     },
     mainContentShift: {
       transition: theme.transitions.create('margin', {
