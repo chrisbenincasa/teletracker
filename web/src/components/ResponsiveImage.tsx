@@ -3,11 +3,13 @@ import { Icon } from '@material-ui/core';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';
+import { BASE_IMAGE_URL } from '../constants/';
+import { ImageType } from '../types/';
 
 interface imgProps {
   // item: HasImagery;
   item: Item;
-  imageType: 'poster' | 'backdrop' | 'profile';
+  imageType: ImageType;
   imageStyle?: object;
   pictureStyle?: object;
   loadCallback?: () => void;
@@ -37,7 +39,7 @@ export const ResponsiveImage: React.FC<imgProps> = ({
     const sourceSet = supportedSizes.map(size => {
       let sizeStr = size === 'original' ? '1600w' : `${size}w`;
       let urlPart = size === 'original' ? size : `w${size}`;
-      return `${baseImageURL}${urlPart}${imageName} ${sizeStr}`;
+      return `${BASE_IMAGE_URL}${urlPart}${imageName} ${sizeStr}`;
     });
 
     return sourceSet.join(',');
@@ -77,7 +79,6 @@ export const ResponsiveImage: React.FC<imgProps> = ({
       break;
   }
 
-  const baseImageURL = 'https://image.tmdb.org/t/p/';
   /* TODO: Figure out image/webp story and add here */
   const posterSpecs = [
     {

@@ -29,6 +29,8 @@ export function isListSortOption(s: string): s is ListSortOptions {
   return allowed.includes(s);
 }
 
+export type ImageType = 'poster' | 'backdrop' | 'profile';
+
 export type ItemType = 'movie' | 'show';
 
 // TODO: There are better ways to do this... explore them.
