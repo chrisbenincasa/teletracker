@@ -60,12 +60,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
   },
-  card: {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    position: 'relative',
-  },
   cardContent: {
     flexGrow: 1,
   },
@@ -199,6 +193,7 @@ interface ItemCardProps {
   // If defined, we're viewing this item within the context of _this_ list
   // This is probably not scalable, but it'll work for now.
   listContext?: List;
+  hasLoaded?: () => void;
 }
 
 type RequiredThingType = ThingLikeStruct & Linkable & HasImagery;
@@ -239,13 +234,31 @@ function ItemCard(props: Props) {
     }
   }, []);
 
+  useEffect(() => {
+    if (props.hasLoaded && imageLoaded) {
+      props.hasLoaded();
+    }
+  }, [imageLoaded]);
+
   let gridProps: GridProps = {
     item: true,
     ...GRID_COLUMNS,
     ...props.gridProps,
   };
+  const itemRef = useRef<HTMLDivElement>(null);
+  const loadWrapperRef = useRef<HTMLDivElement>(null);
 
-  const loadWrapperRef = useRef(null);
+  const getPlaceholderHeight = (): number => {
+    if (itemRef && itemRef.current) {
+      // Using aspect ratio height calculation from here:
+      // https://www.themoviedb.org/bible/image/59f7582c9251416e7100005f
+      const posterAspectRatio = 1.5;
+      return Number(itemRef.current.offsetWidth * posterAspectRatio);
+    } else {
+      return 250;
+    }
+  };
+
   const isInViewport = useIntersectionObserver({
     lazyLoadOptions: {
       root: null,
@@ -258,7 +271,7 @@ function ItemCard(props: Props) {
   const isNearViewport = useIntersectionObserver({
     lazyLoadOptions: {
       root: null,
-      rootMargin: '200px',
+      rootMargin: `${getPlaceholderHeight() / 2}px`,
       threshold: 0,
     },
     targetRef: loadWrapperRef,
@@ -549,9 +562,15 @@ function ItemCard(props: Props) {
           {...gridProps}
         >
           <Card
-            className={classes.card}
+            style={{
+              height: imageLoaded ? '100%' : getPlaceholderHeight(),
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'relative',
+            }}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
+            ref={itemRef}
           >
             {/* No network call is made until container is entering the viewport. */}
             {isNearViewport && renderPoster(props.item)}

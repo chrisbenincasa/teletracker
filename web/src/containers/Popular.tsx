@@ -24,10 +24,6 @@ import { PopularInitiatedActionPayload } from '../actions/popular/popular';
 import Featured from '../components/Featured';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
-import { getGenreFromUrlParam } from '../components/Filters/GenreSelect';
-import { getNetworkTypeFromUrlParam } from '../components/Filters/NetworkSelect';
-import { getSortFromUrlParam } from '../components/Filters/SortDropdown';
-import { getTypeFromUrlParam } from '../components/Filters/TypeToggle';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID, GRID_COLUMNS } from '../constants/';
@@ -37,7 +33,7 @@ import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { FilterParams, SlidersState } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
-import { calculateLimit } from '../utils/list-utils';
+import { calculateLimit, getNumColumns } from '../utils/list-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -116,6 +112,7 @@ interface State {
   mainItemIndex: number;
   showFilter: boolean;
   filters: FilterParams;
+  totalLoadedImages: number;
 }
 
 class Popular extends Component<Props, State> {
@@ -129,6 +126,7 @@ class Popular extends Component<Props, State> {
       mainItemIndex: -1,
       showFilter: false,
       filters: filterParams,
+      totalLoadedImages: 0,
     };
   }
 
@@ -143,7 +141,7 @@ class Popular extends Component<Props, State> {
       retrievePopular({
         bookmark: passBookmark ? bookmark : undefined,
         itemTypes,
-        limit: calculateLimit(width, 2, firstRun ? 1 : 0),
+        limit: calculateLimit(width, 3, firstRun ? 1 : 0),
         networks,
         genres: genresFilter,
         releaseYearRange:
@@ -317,7 +315,17 @@ class Popular extends Component<Props, State> {
   }, 250);
 
   loadMoreResults = () => {
-    if (!this.props.loading) {
+    const { mainItemIndex, totalLoadedImages } = this.state;
+    const { loading, popular, width } = this.props;
+    const numColumns = getNumColumns(width);
+
+    // If an item is featured, update total items accordingly
+    const mainItem = mainItemIndex === -1 ? 0 : 1;
+    const totalFetchedItems = (popular && popular.length - mainItem) || 0;
+    const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
+    const loadMore = totalNonLoadedImages <= numColumns;
+
+    if (!loading && loadMore) {
       this.debounceLoadMore();
     }
   };
@@ -331,6 +339,12 @@ class Popular extends Component<Props, State> {
         this.loadPopular(false);
       },
     );
+  };
+
+  setVisibleItems = () => {
+    this.setState({
+      totalLoadedImages: this.state.totalLoadedImages + 1,
+    });
   };
 
   renderPopular = () => {
@@ -389,14 +403,19 @@ class Popular extends Component<Props, State> {
           loadMore={() => this.loadMoreResults()}
           hasMore={Boolean(this.props.bookmark)}
           useWindow
-          threshold={400}
+          threshold={300}
         >
           <Grid container spacing={2}>
             {popular.map((result, index) => {
               let thing = thingsBySlug[result];
               if (thing && index !== this.state.mainItemIndex) {
                 return (
-                  <ItemCard key={result} userSelf={userSelf} item={thing} />
+                  <ItemCard
+                    key={result}
+                    userSelf={userSelf}
+                    item={thing}
+                    hasLoaded={this.setVisibleItems}
+                  />
                 );
               } else {
                 return null;

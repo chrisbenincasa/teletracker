@@ -47,6 +47,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.down('sm')]: {
         paddingBottom: '2rem',
       },
+      overflowX: 'hidden',
     },
     mainContentShift: {
       transition: theme.transitions.create('margin', {
@@ -105,7 +106,7 @@ class App extends Component<Props, State> {
   };
 
   render() {
-    let { classes, isAuthed, isBooting } = this.props;
+    let { classes, isAuthed, isBooting, location } = this.props;
 
     return (
       <div className={classes.root}>
@@ -170,7 +171,7 @@ class App extends Component<Props, State> {
                 />
               </Switch>
             </main>
-            <Footer />
+            {location.pathname !== '/Popular' && <Footer />}
           </div>
         ) : (
           <LinearProgress />
