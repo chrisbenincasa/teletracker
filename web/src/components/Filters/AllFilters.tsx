@@ -49,7 +49,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexGrow: 1,
   },
   toEdgeWrapper: {
-    margin: `0 -${theme.spacing(2)}px ${theme.spacing(2)}px`,
+    margin: `0 0 ${theme.spacing(2)}px`,
   },
   typeContainer: {
     display: 'flex',
