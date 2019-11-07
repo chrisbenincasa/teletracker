@@ -60,12 +60,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
   },
-  card: {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    position: 'relative',
-  },
   cardContent: {
     flexGrow: 1,
   },
@@ -199,6 +193,7 @@ interface ItemCardProps {
   // If defined, we're viewing this item within the context of _this_ list
   // This is probably not scalable, but it'll work for now.
   listContext?: List;
+  hasLoaded?: () => void;
 }
 
 type RequiredThingType = ThingLikeStruct & Linkable & HasImagery;
@@ -223,6 +218,7 @@ function ItemCard(props: Props) {
   );
   const [deleted, setDeleted] = useState<boolean>(false);
   const [currentId, setCurrentId] = useState<string>('');
+  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     let { item } = props;
@@ -238,17 +234,44 @@ function ItemCard(props: Props) {
     }
   }, []);
 
+  useEffect(() => {
+    if (props.hasLoaded && imageLoaded) {
+      props.hasLoaded();
+    }
+  }, [imageLoaded]);
+
   let gridProps: GridProps = {
     item: true,
     ...GRID_COLUMNS,
     ...props.gridProps,
   };
+  const itemRef = useRef<HTMLDivElement>(null);
+  const loadWrapperRef = useRef<HTMLDivElement>(null);
 
-  const loadWrapperRef = useRef(null);
+  const getPlaceholderHeight = (): number => {
+    if (itemRef && itemRef.current) {
+      // Using aspect ratio height calculation from here:
+      // https://www.themoviedb.org/bible/image/59f7582c9251416e7100005f
+      const posterAspectRatio = 1.5;
+      return Number(itemRef.current.offsetWidth * posterAspectRatio);
+    } else {
+      return 250;
+    }
+  };
+
   const isInViewport = useIntersectionObserver({
     lazyLoadOptions: {
       root: null,
-      rootMargin: '50px',
+      rootMargin: '0px',
+      threshold: 0,
+    },
+    targetRef: loadWrapperRef,
+    useLazyLoad: true,
+  });
+  const isNearViewport = useIntersectionObserver({
+    lazyLoadOptions: {
+      root: null,
+      rootMargin: `${getPlaceholderHeight() / 2}px`,
       threshold: 0,
     },
     targetRef: loadWrapperRef,
@@ -320,6 +343,7 @@ function ItemCard(props: Props) {
             component={ResponsiveImage}
             imageType="poster"
             imageStyle={{ width: '100%', objectFit: 'cover', height: '100%' }}
+            loadCallback={() => setImageLoaded(true)}
           />
         </RouterLink>
       </div>
@@ -523,17 +547,33 @@ function ItemCard(props: Props) {
 
   return (
     <React.Fragment>
-      <Fade in={isInViewport} timeout={1000} ref={loadWrapperRef}>
+      <Fade
+        /*
+        The fade will not start until the image container is
+        entering the viewport & image has successfuly loaded in,
+        ensuring the fade is visible to user.
+      */
+        in={isInViewport && imageLoaded}
+        timeout={1000}
+        ref={loadWrapperRef}
+      >
         <Grid
           key={!deleted ? props.item.id : `${props.item.id}-deleted`}
           {...gridProps}
         >
           <Card
-            className={classes.card}
+            style={{
+              height: imageLoaded ? '100%' : getPlaceholderHeight(),
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'relative',
+            }}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
+            ref={itemRef}
           >
-            {renderPoster(props.item)}
+            {/* No network call is made until container is entering the viewport. */}
+            {isNearViewport && renderPoster(props.item)}
           </Card>
         </Grid>
       </Fade>

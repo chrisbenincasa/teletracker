@@ -64,3 +64,7 @@ export function calculateLimit(
 
   return columns * rows + offset;
 }
+
+export function getNumColumns(screenWidth: string) {
+  return TOTAL_COLUMNS / GRID_COLUMNS[screenWidth];
+}
