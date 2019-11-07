@@ -138,6 +138,7 @@ class Popular extends Component<Props, State> {
 
     // To do: add support for sorting
     if (!this.props.loading) {
+      console.log(width);
       retrievePopular({
         bookmark: passBookmark ? bookmark : undefined,
         itemTypes,
