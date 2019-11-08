@@ -221,10 +221,6 @@ function ItemDetails(props: Props) {
     }
   }, []);
 
-  useEffect(() => {
-    loadItem();
-  }, [props.match.params]);
-
   const loadItem = () => {
     let { match } = props;
     let itemId = match.params.id;
@@ -407,6 +403,8 @@ function ItemDetails(props: Props) {
     } else if (itemDetail && itemDetail.type && itemDetail.type === 'show') {
       itemType = 'TVSeries';
     }
+
+    console.log(isFetching, ' ', itemDetail);
 
     return isFetching || !itemDetail ? (
       renderLoading()
