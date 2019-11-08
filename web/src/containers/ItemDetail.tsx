@@ -404,8 +404,6 @@ function ItemDetails(props: Props) {
       itemType = 'TVSeries';
     }
 
-    console.log(isFetching, ' ', itemDetail);
-
     return isFetching || !itemDetail ? (
       renderLoading()
     ) : (
