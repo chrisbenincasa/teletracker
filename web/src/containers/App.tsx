@@ -91,17 +91,18 @@ class App extends Component<Props, State> {
       this.props.location.search !== prevProps.location.search
     ) {
       if (['xs', 'sm', 'md'].includes(this.props.width)) {
-        this.closeDrawer();
+        this.toggleDrawer(true);
       }
     }
   }
 
-  toggleDrawer = () => {
-    this.setState({ drawerOpen: !this.state.drawerOpen });
-  };
-
-  closeDrawer = () => {
-    this.setState({ drawerOpen: false });
+  toggleDrawer = (close?: boolean) => {
+    // If close is provided, close the drawer, otherwise flip it
+    if (close) {
+      this.setState({ drawerOpen: false });
+    } else {
+      this.setState({ drawerOpen: !this.state.drawerOpen });
+    }
   };
 
   render() {
