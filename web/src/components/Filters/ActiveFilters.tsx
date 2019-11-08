@@ -62,9 +62,10 @@ function ActiveFilters(props: Props) {
     }
 
     let networkDiff = _.difference(networks, network);
+
     return [
       networkDiff.length === 0 ? undefined : networkDiff,
-      setsEqual(networkDiff, networks),
+      !setsEqual(networkDiff, networks),
     ];
   };
 
@@ -115,7 +116,6 @@ function ActiveFilters(props: Props) {
     const {
       filters: { sortOrder },
     } = props;
-
     const cleanSort = sort === 'default' ? undefined : sort;
 
     if (sort !== sortOrder) {
@@ -204,10 +204,18 @@ function ActiveFilters(props: Props) {
     }
 
     let filterParams: FilterParams = {
-      sortOrder: newSort as ListSortOptions,
-      networks: newNetworks as NetworkType[],
-      itemTypes: newType as ItemType[],
-      genresFilter: newGenre as number[],
+      sortOrder: (sortChanged
+        ? newSort
+        : props.filters.sortOrder) as ListSortOptions,
+      networks: (networksChanged
+        ? newNetworks
+        : props.filters.networks) as NetworkType[],
+      itemTypes: (typesChanged
+        ? newType
+        : props.filters.itemTypes) as ItemType[],
+      genresFilter: (genreChanged
+        ? newGenre
+        : props.filters.genresFilter) as number[],
       sliders: {
         ...props.filters.sliders,
         releaseYear: releaseYearStateNew,
@@ -247,9 +255,11 @@ function ActiveFilters(props: Props) {
     !(
       (isListDynamic && sortOrder === 'popularity') ||
       (!isListDynamic && sortOrder === 'added_time') ||
-      sortOrder === 'default'
+      sortOrder === 'default' ||
+      sortOrder === undefined
     ),
   );
+
   const showReleaseYearSlider = Boolean(
     sliders &&
       sliders.releaseYear &&
