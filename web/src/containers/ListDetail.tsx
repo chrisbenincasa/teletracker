@@ -61,7 +61,7 @@ import { getOrInitListOptions } from '../utils/list-utils';
 import { Item } from '../types/v2/Item';
 import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
-import { calculateLimit } from '../utils/list-utils';
+import { calculateLimit, getNumColumns } from '../utils/list-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -80,6 +80,13 @@ const styles = (theme: Theme) =>
     listNameContainer: {
       display: 'flex',
       flex: '1 0 auto',
+    },
+    loadingCircle: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 200,
+      height: '100%',
     },
     formControl: {
       margin: theme.spacing(1),
@@ -159,6 +166,7 @@ interface State {
   renameDialogOpen: boolean;
   showFilter: boolean;
   filters: FilterParams;
+  totalLoadedImages: number;
 }
 
 class ListDetail extends Component<Props, State> {
@@ -185,6 +193,7 @@ class ListDetail extends Component<Props, State> {
         params.has('networks') ||
         params.has('types'),
       filters: parseFilterParamsFromQs(this.props.location.search),
+      totalLoadedImages: 0,
     };
   }
 
@@ -219,7 +228,7 @@ class ListDetail extends Component<Props, State> {
       genres: genresFilter ? genresFilter : undefined,
       force: true,
       networks: networks ? networks : undefined,
-      limit: calculateLimit(width, 2),
+      limit: calculateLimit(width, 3),
     });
   }
 
@@ -284,6 +293,12 @@ class ListDetail extends Component<Props, State> {
       this.retrieveList();
     }
   }
+
+  setVisibleItems = () => {
+    this.setState({
+      totalLoadedImages: this.state.totalLoadedImages + 1,
+    });
+  };
 
   setWatchedSetting = () => {
     let { updateList } = this.props;
@@ -533,24 +548,6 @@ class ListDetail extends Component<Props, State> {
     );
   }
 
-  renderLoadingCircle() {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: 200,
-          height: '100%',
-        }}
-      >
-        <div>
-          <CircularProgress color="secondary" />
-        </div>
-      </div>
-    );
-  }
-
   toggleFilters = () => {
     this.setState({ showFilter: !this.state.showFilter });
   };
@@ -655,14 +652,32 @@ class ListDetail extends Component<Props, State> {
       itemTypes,
       genres: genresFilter ? genresFilter : undefined,
       networks: networks ? networks : undefined,
-      limit: calculateLimit(width, 2),
+      limit: calculateLimit(width, 3),
     });
   }, 200);
 
   loadMoreList() {
-    if (this.props.listBookmark && !this.props.listLoading) {
+    const { list, totalLoadedImages } = this.state;
+    const { listBookmark, listLoading, width } = this.props;
+    const numColumns = getNumColumns(width);
+    const totalFetchedItems = (list && list.items && list.items.length) || 0;
+    const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
+    const loadMore = totalNonLoadedImages <= numColumns;
+
+    if (listBookmark && !listLoading && loadMore) {
       this.loadMoreDebounced();
     }
+  }
+
+  renderLoadingCircle() {
+    const { classes } = this.props;
+    return (
+      <div className={classes.loadingCircle}>
+        <div>
+          <CircularProgress color="secondary" />
+        </div>
+      </div>
+    );
   }
 
   renderListDetail(list: List) {
@@ -716,31 +731,30 @@ class ListDetail extends Component<Props, State> {
               handleSortChange={this.setSortOrder}
               isListDynamic={list.isDynamic}
             />
-            {!loadingList ? (
-              <InfiniteScroll
-                pageStart={0}
-                loadMore={() => this.loadMoreList()}
-                hasMore={Boolean(this.props.listBookmark)}
-                useWindow
-              >
-                <Grid container spacing={2}>
-                  {(list!.items || []).map(item =>
-                    thingsById[item.id] ? (
-                      <ItemCard
-                        key={item.id}
-                        userSelf={userSelf}
-                        item={thingsById[item.id]}
-                        listContext={list}
-                        withActionButton
-                        hoverDelete
-                      />
-                    ) : null,
-                  )}
-                </Grid>
-              </InfiniteScroll>
-            ) : (
-              this.renderLoadingCircle()
-            )}
+            <InfiniteScroll
+              pageStart={0}
+              loadMore={() => this.loadMoreList()}
+              hasMore={Boolean(this.props.listBookmark)}
+              useWindow
+              threshold={300}
+            >
+              <Grid container spacing={2}>
+                {(list!.items || []).map(item =>
+                  thingsById[item.id] ? (
+                    <ItemCard
+                      key={item.id}
+                      userSelf={userSelf}
+                      item={thingsById[item.id]}
+                      listContext={list}
+                      withActionButton
+                      hoverDelete
+                      hasLoaded={this.setVisibleItems}
+                    />
+                  ) : null,
+                )}
+              </Grid>
+              {this.props.listLoading && this.renderLoadingCircle()}
+            </InfiniteScroll>
           </div>
           {this.renderDialog()}
           {this.renderRenameDialog(list)}
