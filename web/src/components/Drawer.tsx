@@ -110,7 +110,6 @@ interface DispatchProps {
 
 interface State {
   createDialogOpen: boolean;
-  loadingLists: boolean;
   authModalOpen: boolean;
   authModalScreen?: 'login' | 'signup';
 }
@@ -180,7 +179,6 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
 class Drawer extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
-    loadingLists: true,
     authModalOpen: false,
     authModalScreen: 'login',
   };
@@ -188,12 +186,6 @@ class Drawer extends Component<Props, State> {
   componentDidMount() {
     if (this.props.isAuthed) {
       this.props.retrieveAllLists({ includeThings: false });
-    }
-  }
-
-  componentDidUpdate(oldProps: Props) {
-    if (Boolean(oldProps.loadingLists) && !Boolean(this.props.loadingLists)) {
-      this.setState({ loadingLists: false });
     }
   }
 
@@ -340,6 +332,10 @@ class Drawer extends Component<Props, State> {
     );
   }
 
+  isLoading() {
+    return this.props.loadingLists || !this.props.userSelf;
+  }
+
   render() {
     return (
       <React.Fragment>
@@ -354,12 +350,6 @@ class Drawer extends Component<Props, State> {
           initialForm={this.state.authModalScreen}
         />
       </React.Fragment>
-    );
-  }
-
-  isLoading() {
-    return (
-      this.state.loadingLists || this.props.loadingLists || !this.props.userSelf
     );
   }
 }
