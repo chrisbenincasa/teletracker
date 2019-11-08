@@ -341,6 +341,7 @@ class Drawer extends Component<Props, State> {
   }
 
   render() {
+    console.log(this.props);
     return (
       <React.Fragment>
         {this.renderDrawer()}
