@@ -37,17 +37,13 @@ type Props = OwnProps &
   WithStyles<typeof styles> &
   RouteComponentProps<RouteParams>;
 
-interface State {
-  sortOrder: ListSortOptions;
-}
-
-class ActiveFilters extends React.PureComponent<Props> {
-  deleteNetworkFilter = (
+function ActiveFilters(props: Props) {
+  const deleteNetworkFilter = (
     network?: NetworkType[],
   ): [NetworkType[] | undefined, boolean] => {
     let {
       filters: { networks },
-    } = this.props;
+    } = props;
     if (!network) {
       return [networks, false];
     }
@@ -72,10 +68,12 @@ class ActiveFilters extends React.PureComponent<Props> {
     ];
   };
 
-  deleteTypeFilter = (type?: ItemType[]): [ItemType[] | undefined, boolean] => {
+  const deleteTypeFilter = (
+    type?: ItemType[],
+  ): [ItemType[] | undefined, boolean] => {
     let {
       filters: { itemTypes },
-    } = this.props;
+    } = props;
     let typeList: ItemType[] = ['movie', 'show'];
 
     if (!type) {
@@ -94,12 +92,12 @@ class ActiveFilters extends React.PureComponent<Props> {
     ];
   };
 
-  deleteGenreFilter = (
+  const deleteGenreFilter = (
     genresToRemove: number[],
   ): [number[] | undefined, boolean] => {
     const {
       filters: { genresFilter },
-    } = this.props;
+    } = props;
 
     // If there are set genres, remove them. Then return the new set.
     if (genresFilter && genresFilter.length > 0) {
@@ -111,12 +109,12 @@ class ActiveFilters extends React.PureComponent<Props> {
     return [undefined, false];
   };
 
-  deleteSort = (
+  const deleteSort = (
     sort: ListSortOptions,
   ): [ListSortOptions | undefined, boolean] => {
     const {
       filters: { sortOrder },
-    } = this.props;
+    } = props;
 
     const cleanSort = sort === 'default' ? undefined : sort;
 
@@ -127,15 +125,15 @@ class ActiveFilters extends React.PureComponent<Props> {
     return [sort, false];
   };
 
-  applyDiffer = <T extends unknown>(
+  const applyDiffer = <T extends unknown>(
     value: T | undefined,
     fn: (v: T) => [T | undefined, boolean],
   ): [T | undefined, boolean] => {
     return value ? fn(value) : [undefined, false];
   };
 
-  resetFilters = () => {
-    updateMultipleUrlParams(this.props, [
+  const resetFilters = () => {
+    updateMultipleUrlParams(props, [
       ['genres', undefined],
       ['networks', undefined],
       ['sort', undefined],
@@ -144,10 +142,10 @@ class ActiveFilters extends React.PureComponent<Props> {
       ['ry_max', undefined],
     ]);
 
-    this.props.updateFilters(DEFAULT_FILTER_PARAMS);
+    props.updateFilters(DEFAULT_FILTER_PARAMS);
   };
 
-  removeFilters = (filters: {
+  const removeFilters = (filters: {
     sort?: ListSortOptions;
     network?: NetworkType[];
     type?: ItemType[];
@@ -155,21 +153,15 @@ class ActiveFilters extends React.PureComponent<Props> {
     releaseYearMin?: true;
     releaseYearMax?: true;
   }) => {
-    const [newSort, sortChanged] = this.applyDiffer(
-      filters.sort,
-      this.deleteSort,
-    );
-    const [newNetworks, networksChanged] = this.applyDiffer(
+    const [newSort, sortChanged] = applyDiffer(filters.sort, deleteSort);
+    const [newNetworks, networksChanged] = applyDiffer(
       filters.network,
-      this.deleteNetworkFilter,
+      deleteNetworkFilter,
     );
-    const [newType, typesChanged] = this.applyDiffer(
-      filters.type,
-      this.deleteTypeFilter,
-    );
-    const [newGenre, genreChanged] = this.applyDiffer(
+    const [newType, typesChanged] = applyDiffer(filters.type, deleteTypeFilter);
+    const [newGenre, genreChanged] = applyDiffer(
       filters.genre,
-      this.deleteGenreFilter,
+      deleteGenreFilter,
     );
 
     let paramUpdates: [string, any | undefined][] = [];
@@ -198,10 +190,10 @@ class ActiveFilters extends React.PureComponent<Props> {
       paramUpdates.push(['ry_max', undefined]);
     }
 
-    updateMultipleUrlParams(this.props, paramUpdates);
+    updateMultipleUrlParams(props, paramUpdates);
 
-    let releaseYearStateNew = this.props.filters.sliders
-      ? this.props.filters.sliders.releaseYear || {}
+    let releaseYearStateNew = props.filters.sliders
+      ? props.filters.sliders.releaseYear || {}
       : {};
     if (filters.releaseYearMin) {
       delete releaseYearStateNew.min;
@@ -217,146 +209,144 @@ class ActiveFilters extends React.PureComponent<Props> {
       itemTypes: newType as ItemType[],
       genresFilter: newGenre as number[],
       sliders: {
-        ...this.props.filters.sliders,
+        ...props.filters.sliders,
         releaseYear: releaseYearStateNew,
       },
     };
 
-    this.props.updateFilters(filterParams);
+    props.updateFilters(filterParams);
   };
 
-  mapGenre = (genre: number) => {
-    const { genres } = this.props;
+  const mapGenre = (genre: number) => {
+    const { genres } = props;
     const genreItem = genres && genres.find(obj => obj.id === genre);
     return (genreItem && genreItem.name) || '';
   };
 
-  render() {
-    const {
-      classes,
-      isListDynamic,
-      filters: { genresFilter, itemTypes, networks, sortOrder, sliders },
-    } = this.props;
+  const {
+    classes,
+    isListDynamic,
+    filters: { genresFilter, itemTypes, networks, sortOrder, sliders },
+  } = props;
 
-    let releaseYearMin =
-      sliders && sliders.releaseYear ? sliders.releaseYear.min : undefined;
-    let releaseYearMax =
-      sliders && sliders.releaseYear ? sliders.releaseYear.max : undefined;
+  let releaseYearMin =
+    sliders && sliders.releaseYear ? sliders.releaseYear.min : undefined;
+  let releaseYearMax =
+    sliders && sliders.releaseYear ? sliders.releaseYear.max : undefined;
 
-    const sortLabels = {
-      added_time: 'Date Added',
-      popularity: 'Popularity',
-      recent: 'Release Date',
-    };
+  const sortLabels = {
+    added_time: 'Date Added',
+    popularity: 'Popularity',
+    recent: 'Release Date',
+  };
 
-    const showGenreFilters = Boolean(genresFilter && genresFilter.length > 0);
-    const showNetworkFilters = Boolean(networks && networks.length > 0);
-    const showTypeFilters = Boolean(itemTypes && itemTypes.length > 0);
-    const showSort = Boolean(
-      !(
-        (isListDynamic && sortOrder === 'popularity') ||
-        (!isListDynamic && sortOrder === 'added_time') ||
-        sortOrder === 'default'
-      ),
-    );
-    const showReleaseYearSlider = Boolean(
-      sliders &&
-        sliders.releaseYear &&
-        (sliders.releaseYear.min || sliders.releaseYear.max),
-    );
+  const showGenreFilters = Boolean(genresFilter && genresFilter.length > 0);
+  const showNetworkFilters = Boolean(networks && networks.length > 0);
+  const showTypeFilters = Boolean(itemTypes && itemTypes.length > 0);
+  const showSort = Boolean(
+    !(
+      (isListDynamic && sortOrder === 'popularity') ||
+      (!isListDynamic && sortOrder === 'added_time') ||
+      sortOrder === 'default'
+    ),
+  );
+  const showReleaseYearSlider = Boolean(
+    sliders &&
+      sliders.releaseYear &&
+      (sliders.releaseYear.min || sliders.releaseYear.max),
+  );
 
-    const showReset = Boolean(
-      showSort || showGenreFilters || showNetworkFilters || showTypeFilters,
-    );
+  const showReset = Boolean(
+    showSort || showGenreFilters || showNetworkFilters || showTypeFilters,
+  );
 
-    return (
-      <div className={classes.activeFiltersContainer}>
-        {showGenreFilters
-          ? genresFilter &&
-            genresFilter.map((genre: number) => (
-              <Chip
-                key={genre}
-                className={classes.networkChip}
-                label={this.mapGenre(Number(genre))}
-                onDelete={() => this.removeFilters({ genre: [genre] })}
-                variant="outlined"
-              />
-            ))
-          : null}
-        {showNetworkFilters
-          ? networks &&
-            networks.map((network: NetworkType) => (
-              <Chip
-                key={network}
-                icon={
-                  <img
-                    className={classes.networkIcon}
-                    src={`/images/logos/${network}/icon.jpg`}
-                  />
-                }
-                className={classes.networkChip}
-                label={network}
-                onDelete={() => this.removeFilters({ network: [network] })}
-                variant="outlined"
-              />
-            ))
-          : null}
-        {showTypeFilters
-          ? itemTypes &&
-            itemTypes.map((type: ItemType) => (
-              <Chip
-                key={type}
-                label={type}
-                className={classes.networkChip}
-                onDelete={() => this.removeFilters({ type: [type] })}
-                variant="outlined"
-              />
-            ))
-          : null}
-        {showSort ? (
-          <Chip
-            key={sortOrder}
-            label={`Sort by: ${sortLabels[sortOrder]}`}
-            className={classes.networkChip}
-            onDelete={() => this.removeFilters({ sort: 'default' })}
-            variant="outlined"
-          />
-        ) : null}
-        {showReleaseYearSlider ? (
-          <React.Fragment>
-            {releaseYearMin ? (
-              <Chip
-                key={releaseYearMin}
-                label={'Released since: ' + releaseYearMin}
-                className={classes.networkChip}
-                onDelete={() => this.removeFilters({ releaseYearMin: true })}
-                variant="outlined"
-              />
-            ) : null}
-            {releaseYearMax ? (
-              <Chip
-                key={releaseYearMax}
-                label={'Released before: ' + (releaseYearMax + 1)}
-                onDelete={() => this.removeFilters({ releaseYearMax: true })}
-                className={classes.networkChip}
-                variant="outlined"
-              />
-            ) : null}
-          </React.Fragment>
-        ) : null}
-        {showReset ? (
-          <Chip
-            key="Reset"
-            className={classes.networkChip}
-            label="Reset All"
-            variant="outlined"
-            color="secondary"
-            onClick={this.resetFilters}
-          />
-        ) : null}
-      </div>
-    );
-  }
+  return (
+    <div className={classes.activeFiltersContainer}>
+      {showGenreFilters
+        ? genresFilter &&
+          genresFilter.map((genre: number) => (
+            <Chip
+              key={genre}
+              className={classes.networkChip}
+              label={mapGenre(Number(genre))}
+              onDelete={() => removeFilters({ genre: [genre] })}
+              variant="outlined"
+            />
+          ))
+        : null}
+      {showNetworkFilters
+        ? networks &&
+          networks.map((network: NetworkType) => (
+            <Chip
+              key={network}
+              icon={
+                <img
+                  className={classes.networkIcon}
+                  src={`/images/logos/${network}/icon.jpg`}
+                />
+              }
+              className={classes.networkChip}
+              label={network}
+              onDelete={() => removeFilters({ network: [network] })}
+              variant="outlined"
+            />
+          ))
+        : null}
+      {showTypeFilters
+        ? itemTypes &&
+          itemTypes.map((type: ItemType) => (
+            <Chip
+              key={type}
+              label={type}
+              className={classes.networkChip}
+              onDelete={() => removeFilters({ type: [type] })}
+              variant="outlined"
+            />
+          ))
+        : null}
+      {showSort ? (
+        <Chip
+          key={sortOrder}
+          label={`Sort by: ${sortLabels[sortOrder]}`}
+          className={classes.networkChip}
+          onDelete={() => removeFilters({ sort: 'default' })}
+          variant="outlined"
+        />
+      ) : null}
+      {showReleaseYearSlider ? (
+        <React.Fragment>
+          {releaseYearMin ? (
+            <Chip
+              key={releaseYearMin}
+              label={'Released since: ' + releaseYearMin}
+              className={classes.networkChip}
+              onDelete={() => removeFilters({ releaseYearMin: true })}
+              variant="outlined"
+            />
+          ) : null}
+          {releaseYearMax ? (
+            <Chip
+              key={releaseYearMax}
+              label={'Released before: ' + (releaseYearMax + 1)}
+              onDelete={() => removeFilters({ releaseYearMax: true })}
+              className={classes.networkChip}
+              variant="outlined"
+            />
+          ) : null}
+        </React.Fragment>
+      ) : null}
+      {showReset ? (
+        <Chip
+          key="Reset"
+          className={classes.networkChip}
+          label="Reset All"
+          variant="outlined"
+          color="secondary"
+          onClick={resetFilters}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 export default withStyles(styles)(withRouter(ActiveFilters));
