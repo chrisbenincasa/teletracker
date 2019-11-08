@@ -178,7 +178,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   genres?: GenreModel[];
   isAuthed: boolean;
   isSearching: boolean;
-  onDrawerChange: () => void;
+  onDrawerChange: (close?: boolean) => void;
   searchResults?: ApiItem[];
   drawerOpen: boolean;
 }
@@ -475,14 +475,15 @@ class Toolbar extends Component<Props, State> {
 
   handleLogout = () => {
     this.handleClose();
+    this.toggleDrawer(true);
     this.props.logout();
     this.setState({
       isLoggedOut: true,
     });
   };
 
-  toggleDrawer = () => {
-    this.props.onDrawerChange();
+  toggleDrawer = (close?: boolean) => {
+    this.props.onDrawerChange(close);
   };
 
   renderSearch() {
@@ -815,7 +816,7 @@ class Toolbar extends Component<Props, State> {
 
           <IconButton
             focusRipple={false}
-            onClick={this.toggleDrawer}
+            onClick={() => this.toggleDrawer()}
             color="inherit"
           >
             {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
