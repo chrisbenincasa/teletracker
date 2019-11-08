@@ -7,6 +7,7 @@ import {
   createStyles,
   Divider,
   Fade,
+  Hidden,
   Icon,
   IconButton,
   InputBase,
@@ -25,12 +26,12 @@ import {
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
-  AccountCircleOutlined,
   ArrowDropDown,
   ArrowDropUp,
   ChevronRight,
   Close,
   Menu as MenuIcon,
+  Person,
   Search as SearchIcon,
 } from '@material-ui/icons';
 import clsx from 'clsx';
@@ -79,6 +80,9 @@ const styles = (theme: Theme) =>
         '-webkit-appearance': 'none',
       },
       caretColor: theme.palette.common.white,
+    },
+    loginButton: {
+      margin: `0 ${theme.spacing(1)}px`,
     },
     mobileInput: {
       padding: theme.spacing(1),
@@ -195,7 +199,6 @@ interface DispatchProps {
 type Props = DispatchProps & OwnProps & RouteComponentProps & WidthProps;
 
 interface State {
-  anchorEl: HTMLInputElement | null;
   genreAnchorEl: HTMLButtonElement | null;
   genreType: 'movie' | 'show' | null;
   isLoggedOut: boolean;
@@ -229,7 +232,6 @@ class Toolbar extends Component<Props, State> {
   }
 
   state = {
-    anchorEl: null,
     genreAnchorEl: null,
     genreType: null,
     searchText: '',
@@ -432,14 +434,6 @@ class Toolbar extends Component<Props, State> {
     ) : null;
   }
 
-  handleMenu = event => {
-    this.setState({ anchorEl: event.currentTarget });
-  };
-
-  handleClose = () => {
-    this.setState({ anchorEl: null });
-  };
-
   handleGenreMenu = (event, type: 'movie' | 'show' | null) => {
     // If user is on smaller device, go directly to page
     if (['xs', 'sm', 'md'].includes(this.props.width)) {
@@ -474,7 +468,6 @@ class Toolbar extends Component<Props, State> {
   };
 
   handleLogout = () => {
-    this.handleClose();
     this.toggleDrawer(true);
     this.props.logout();
     this.setState({
@@ -682,63 +675,8 @@ class Toolbar extends Component<Props, State> {
     );
   }
 
-  renderProfileMenu() {
-    if (!this.props.isAuthed) {
-      return null;
-    }
-
-    let { anchorEl } = this.state;
-    let { classes } = this.props;
-    let isMenuOpen = !!anchorEl;
-
-    function MenuItemLink(props: MenuItemProps) {
-      const { primary, to, selected, onClick } = props;
-
-      return (
-        <MenuItem
-          button
-          component={RouterLink}
-          to={to}
-          selected={selected}
-          onClick={onClick}
-        >
-          {primary}
-        </MenuItem>
-      );
-    }
-
-    return (
-      <div className={classes.sectionDesktop}>
-        <IconButton
-          aria-owns={isMenuOpen ? 'material-appbar' : undefined}
-          aria-haspopup="true"
-          onClick={this.handleMenu}
-          color="inherit"
-        >
-          <AccountCircleOutlined />
-        </IconButton>
-        <Menu
-          anchorEl={anchorEl}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          open={!!this.state.anchorEl}
-          onClose={this.handleClose}
-          disableAutoFocusItem
-        >
-          <MenuItem onClick={this.handleClose}>Profile</MenuItem>
-          <MenuItemLink
-            to="/account"
-            onClick={this.handleClose}
-            primary="My account"
-          />
-          <MenuItem onClick={this.handleLogout}>Logout</MenuItem>
-        </Menu>
-      </div>
-    );
-  }
-
   render() {
-    let { classes, drawerOpen } = this.props;
+    let { classes, drawerOpen, isAuthed } = this.props;
     let { searchText } = this.state;
 
     function ButtonLink(props) {
@@ -853,21 +791,18 @@ class Toolbar extends Component<Props, State> {
             <ButtonLink color="inherit" primary="New" to="/new" />
           </Box>
           {this.renderSearch()}
-          {/* Todo: decide how to handle this for desktop/mobile */}
-          {/* {!isAuthed ? (
-            <React.Fragment>
-              <Hidden lgUp>
-                <IconButton component={RouterLink} to="/login">
-                  <Person />
-                </IconButton>
-              </Hidden>
-              <Hidden mdDown>
-                <ButtonLink primary="Login" to="/login" />
-                <ButtonLink primary="Signup" to="/signup" />
-              </Hidden>
-            </React.Fragment>
-          ) : null} */}
-          {this.renderProfileMenu()}
+          {!isAuthed && (
+            <Button
+              component={RouterLink}
+              to="/login"
+              startIcon={
+                ['xs', 'sm'].includes(this.props.width) ? null : <Person />
+              }
+              className={classes.loginButton}
+            >
+              Login
+            </Button>
+          )}
         </MUIToolbar>
       </AppBar>
     );
