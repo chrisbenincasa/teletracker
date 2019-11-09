@@ -46,7 +46,7 @@ export const signupSaga = function*() {
   }: SignupInitiatedAction) {
     if (payload) {
       try {
-        let signUpResult: ISignUpResult = yield call(
+        yield call(
           (email: string, password: string) => {
             return Auth.signUp({
               username: email,
@@ -65,11 +65,6 @@ export const signupSaga = function*() {
           action: 'Signup',
         });
 
-        console.log(
-          signUpResult.user,
-          signUpResult.user.getSignInUserSession(),
-        );
-
         let user: CognitoUser = yield call(
           (email: string, password: string) =>
             Auth.signIn({
@@ -80,10 +75,6 @@ export const signupSaga = function*() {
           payload.password,
         );
 
-        // let session = yield call(() => Auth.currentSession());
-        //
-        // console.log(session);
-        //
         yield put(
           SignupSuccessful(
             user
