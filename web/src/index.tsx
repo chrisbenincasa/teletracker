@@ -14,16 +14,16 @@ import { launchUri } from '@aws-amplify/auth/lib/OAuth/urlOpener';
 
 Amplify.configure({
   Auth: {
-    region: 'us-west-2',
-    userPoolId: 'us-west-2_K6E5m6v90', // TODO: Make variable
-    userPoolWebClientId: '3e5t3s3ddfci044230p3f3ki29',
+    region: process.env.REACT_APP_AUTH_REGION,
+    userPoolId: process.env.REACT_APP_USER_POOL_ID,
+    userPoolWebClientId: process.env.REACT_APP_USER_POOL_CLIENT_ID,
     mandatorySignIn: false,
 
     oauth: {
-      domain: 'auth.qa.teletracker.tv', // TODO config
+      domain: process.env.REACT_APP_AUTH_DOMAIN,
       scope: ['email', 'openid'],
-      redirectSignIn: 'http://localhost:3000/login', // TODO: config,
-      redirectSignOut: 'http://localhost:3000', // TODO: config,
+      redirectSignIn: process.env.REACT_APP_AUTH_REDIRECT_URI,
+      redirectSignOut: process.env.REACT_APP_AUTH_REDIRECT_SIGNOUT_URI,
       responseType: 'code',
       urlOpener: async (url, redirectUrl) => {
         if (url.includes('logout')) {
