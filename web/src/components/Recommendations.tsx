@@ -13,6 +13,8 @@ import { UserSelf } from '../reducers/user';
 import Thing from '../types/Thing';
 import { ApiItem } from '../types/v2';
 import { Item } from '../types/v2/Item';
+import { calculateLimit } from '../utils/list-utils';
+import { useWidth } from '../hooks/useWidth';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -38,29 +40,29 @@ interface OwnProps {
 
 type Props = OwnProps & WithStyles<typeof styles>;
 
-class Recommendations extends Component<Props, {}> {
-  render() {
-    const { classes, itemDetail, userSelf } = this.props;
-    const recommendations = itemDetail.recommendations || [];
+function Recommendations(props: Props) {
+  const { classes, itemDetail, userSelf } = props;
+  let recommendations = itemDetail.recommendations || [];
+  // Pre-filter all recs that don't include a poster
+  recommendations = recommendations.filter(item => item && item.posterImage);
 
-    return recommendations && recommendations.length > 0 ? (
-      <React.Fragment>
-        <div className={classes.recommendationsContainer}>
-          <Typography color="inherit" variant="h5">
-            Recommendations:
-          </Typography>
+  const width = useWidth();
+  let limit = Math.min(calculateLimit(width, 2), recommendations.length);
 
-          <Grid container spacing={2} className={classes.grid}>
-            {recommendations.map(item => {
-              return item && item.posterImage ? (
-                <ItemCard key={item.id} userSelf={userSelf} item={item} />
-              ) : null;
-            })}
-          </Grid>
-        </div>
-      </React.Fragment>
-    ) : null;
-  }
+  return recommendations && recommendations.length > 0 ? (
+    <React.Fragment>
+      <div className={classes.recommendationsContainer}>
+        <Typography color="inherit" variant="h5">
+          Recommendations:
+        </Typography>
+        <Grid container spacing={2} className={classes.grid}>
+          {recommendations.slice(0, limit).map(item => {
+            return <ItemCard key={item.id} userSelf={userSelf} item={item} />;
+          })}
+        </Grid>
+      </div>
+    </React.Fragment>
+  ) : null;
 }
 
 export default withStyles(styles)(Recommendations);
