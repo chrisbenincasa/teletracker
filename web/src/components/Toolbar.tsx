@@ -217,6 +217,23 @@ interface MenuItemProps {
   onClick?: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
+const MenuItemLink = (props: MenuItemProps) => {
+  const { primary, to, selected, onClick } = props;
+
+  return (
+    <MenuItem
+      button
+      component={RouterLink}
+      to={to}
+      selected={selected}
+      onClick={onClick}
+      dense
+    >
+      {primary}
+    </MenuItem>
+  );
+};
+
 class Toolbar extends Component<Props, State> {
   private mobileSearchInput: React.RefObject<HTMLInputElement>;
   private desktopSearchInput: React.RefObject<HTMLInputElement>;
@@ -434,10 +451,14 @@ class Toolbar extends Component<Props, State> {
     ) : null;
   }
 
+  get isSmallDevice() {
+    return ['xs', 'sm', 'md'].includes(this.props.width);
+  }
+
   handleGenreMenu = (event, type: 'movie' | 'show' | null) => {
     // If user is on smaller device, go directly to page
-    if (['xs', 'sm', 'md'].includes(this.props.width)) {
-      this.props.history.push(`Popular?type=${type}`);
+    if (this.isSmallDevice) {
+      this.props.history.push(`popular?type=${type}`);
       return;
     }
     // If Genre menu is already open and user is not navigating to submenu, close it
@@ -543,23 +564,6 @@ class Toolbar extends Component<Props, State> {
         )) ||
       [];
 
-    function MenuItemLink(props: MenuItemProps) {
-      const { primary, to, selected, onClick } = props;
-
-      return (
-        <MenuItem
-          button
-          component={RouterLink}
-          to={to}
-          selected={selected}
-          onClick={onClick}
-          dense
-        >
-          {primary}
-        </MenuItem>
-      );
-    }
-
     return (
       <React.Fragment>
         <Button
@@ -575,8 +579,7 @@ class Toolbar extends Component<Props, State> {
             borderBottomRightRadius: 0,
           }}
           endIcon={
-            ['xs', 'sm', 'md'].includes(this.props.width) ? null : this.state
-                .genreType === type ? (
+            this.isSmallDevice ? null : this.state.genreType === type ? (
               <ArrowDropUp />
             ) : (
               <ArrowDropDown />
@@ -584,8 +587,8 @@ class Toolbar extends Component<Props, State> {
           }
         >
           {type === 'show'
-            ? ['xs', 'sm', 'md'].includes(this.props.width)
-              ? 'shows'
+            ? this.isSmallDevice
+              ? 'Shows'
               : 'TV Shows'
             : 'Movies'}
         </Button>
@@ -778,8 +781,13 @@ class Toolbar extends Component<Props, State> {
             </Box>
           </Typography>
           <div className={classes.grow} />
-          {this.renderGenreMenu('show')}
-          {this.renderGenreMenu('movie')}
+          <Hidden mdDown>
+            {this.renderGenreMenu('show')}
+            {this.renderGenreMenu('movie')}
+          </Hidden>
+          <Hidden lgUp>
+            <ButtonLink color="inherit" primary="Popular" to="/popular" />
+          </Hidden>
           <Box display={{ xs: 'none', sm: 'block' }} m={1}>
             <ButtonLink
               color="inherit"

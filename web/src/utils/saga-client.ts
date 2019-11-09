@@ -1,5 +1,4 @@
 import { call } from '@redux-saga/core/effects';
-import * as firebase from 'firebase/app';
 import {
   ActionType,
   ItemType,
@@ -13,6 +12,8 @@ import {
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import { TeletrackerApi } from './api-client';
+import { CognitoUser } from 'amazon-cognito-identity-js';
+import Auth from '@aws-amplify/auth';
 
 export class SagaTeletrackerClient {
   static instance = new SagaTeletrackerClient();
@@ -275,13 +276,23 @@ export class SagaTeletrackerClient {
   }
 
   private *withToken() {
-    let user: firebase.User | undefined = this.getUser();
-    return yield call(() => (user ? user.getIdToken() : undefined));
-  }
+    let user: CognitoUser | null;
+    try {
+      user = yield call([Auth, Auth.currentAuthenticatedUser], {
+        bypassCache: false,
+      });
+    } catch (e) {
+      user = null;
+    }
 
-  private getUser() {
-    let user = firebase.auth().currentUser;
-    return user ? user : undefined;
+    return yield call(() =>
+      user && user.getSignInUserSession()
+        ? user
+            .getSignInUserSession()!
+            .getAccessToken()
+            .getJwtToken()
+        : undefined,
+    );
   }
 }
 

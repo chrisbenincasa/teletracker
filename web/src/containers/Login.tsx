@@ -7,13 +7,12 @@ import {
 } from '@material-ui/core';
 import { push } from 'connected-react-router';
 import * as R from 'ramda';
-import React, { Component, FormEvent } from 'react';
+import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { login, LoginSuccessful, logInWithGoogle } from '../actions/auth';
 import { AppState } from '../reducers';
 import { Redirect } from 'react-router';
-import * as firebase from 'firebase/app';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants/';
 import LoginForm from '../components/Auth/LoginForm';
@@ -105,39 +104,8 @@ class Login extends Component<Props, State> {
   };
 
   componentDidMount(): void {
-    firebase
-      .auth()
-      .getRedirectResult()
-      .then(result => {
-        if (result.user) {
-          result.user.getIdToken().then(token => {
-            this.props.logInSuccessful(token);
-          });
-        }
-      })
-
-      .catch(console.error);
-
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
-  }
-
-  logInWithGoogle = () => {
-    this.props.logInWithGoogle();
-  };
-
-  onSubmit(ev: FormEvent<HTMLFormElement>) {
-    ev.preventDefault();
-
-    this.props.login(this.state.email, this.state.password);
-
-    this.setState({
-      email: '',
-      password: '',
-    });
-
-    // TODO: Protect this with some state.
-    push('/');
   }
 
   render() {

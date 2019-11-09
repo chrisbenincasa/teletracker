@@ -2,12 +2,13 @@ import { all, fork, put, take } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { REHYDRATE } from 'redux-persist';
 import {
+  authStateWatcher,
   authWithGoogleSaga,
-  checkAuthSaga,
+  initialAuthState,
   loginSaga,
   logoutSaga,
   signupSaga,
-  watchAuthState,
+  USER_STATE_CHANGE,
 } from './auth';
 import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
 import { fetchItemDetailsSaga } from './item-detail';
@@ -36,6 +37,7 @@ import {
 import { createBasicAction } from './utils';
 
 export const STARTUP = 'startup';
+export const BOOT_DONE = 'boot/DONE';
 
 type StartupAction = FSA<typeof STARTUP>;
 
@@ -51,18 +53,18 @@ export function* root() {
   yield take(REHYDRATE);
 
   // Start watching for auth state changes
-  yield fork(watchAuthState);
+  yield fork(initialAuthState);
+  yield fork(authStateWatcher);
 
   // Wait for a user state change (determine whether we're logged in or out)
-  yield take('USER_STATE_CHANGE');
+  yield take(USER_STATE_CHANGE);
 
   // Instruct the app we're finished booting
-  yield put({ type: 'boot/DONE' });
+  yield put({ type: BOOT_DONE });
 
   // Start all of the sagas at once
   // TODO: fork all of these?
   yield all([
-    checkAuthSaga(),
     retrieveListSaga(),
     retrieveListsSaga(),
     addToListSaga(),

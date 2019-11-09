@@ -26,12 +26,12 @@ import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID, GRID_COLUMNS } from '../constants/';
+import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { Genre, ItemType, ListSortOptions, NetworkType } from '../types';
 import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
-import { FilterParams, SlidersState } from '../utils/searchFilters';
+import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 
@@ -163,8 +163,13 @@ class Popular extends Component<Props, State> {
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
 
-    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
-      ReactGA.set({ userId: userSelf.user.uid });
+    if (
+      isLoggedIn &&
+      userSelf &&
+      userSelf.user &&
+      userSelf.user.getUsername()
+    ) {
+      ReactGA.set({ userId: userSelf.user.getUsername() });
     }
   }
 

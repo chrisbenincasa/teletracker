@@ -18,6 +18,7 @@ const styles = (theme: Theme) =>
 
 type OwnProps = {
   open: boolean;
+  onActionInitiated?: () => void;
   onClose: () => void;
   initialForm?: 'login' | 'signup';
 };
@@ -58,6 +59,12 @@ class AuthDialog extends Component<Props, State> {
     });
   };
 
+  handleAction = () => {
+    if (this.props.onActionInitiated) {
+      this.props.onActionInitiated();
+    }
+  };
+
   render() {
     const { classes, open } = this.props;
     const { show } = this.state;
@@ -75,7 +82,11 @@ class AuthDialog extends Component<Props, State> {
         }}
       >
         {show === 'login' ? (
-          <LoginForm onNav={() => this.switchForm()} />
+          <LoginForm
+            onSubmitted={this.handleAction}
+            onLogin={this.close}
+            onNav={() => this.switchForm()}
+          />
         ) : (
           <SignupForm onNav={() => this.switchForm()} />
         )}

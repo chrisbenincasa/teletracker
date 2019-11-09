@@ -1,8 +1,10 @@
-import * as firebase from 'firebase/app';
-import { call, takeLatest } from '@redux-saga/core/effects';
+import { call, takeLatest, put } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
 import ReactGA from 'react-ga';
+import Auth, { CognitoUser } from '@aws-amplify/auth';
+import { ISignUpResult } from 'amazon-cognito-identity-js';
+import { LoginInitiated } from './login_action';
 
 export const SIGNUP_INITIATED = 'signup/INITIATED';
 export const SIGNUP_SUCCESSFUL = 'signup/SUCCESSFUL';
@@ -44,9 +46,16 @@ export const signupSaga = function*() {
   }: SignupInitiatedAction) {
     if (payload) {
       try {
-        yield call(
-          (email: string, password: string) =>
-            firebase.auth().createUserWithEmailAndPassword(email, password),
+        let signUpResult: ISignUpResult = yield call(
+          (email: string, password: string) => {
+            return Auth.signUp({
+              username: email,
+              password,
+              attributes: {
+                email,
+              },
+            });
+          },
           payload.email,
           payload.password,
         );
@@ -55,6 +64,34 @@ export const signupSaga = function*() {
           category: 'User',
           action: 'Signup',
         });
+
+        console.log(
+          signUpResult.user,
+          signUpResult.user.getSignInUserSession(),
+        );
+
+        let user: CognitoUser = yield call(
+          (email: string, password: string) =>
+            Auth.signIn({
+              username: email,
+              password,
+            }),
+          payload.email,
+          payload.password,
+        );
+
+        // let session = yield call(() => Auth.currentSession());
+        //
+        // console.log(session);
+        //
+        yield put(
+          SignupSuccessful(
+            user
+              .getSignInUserSession()!
+              .getAccessToken()
+              .getJwtToken(),
+          ),
+        );
       } catch (e) {
         console.error(e);
       }

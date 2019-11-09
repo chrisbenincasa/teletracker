@@ -174,8 +174,13 @@ class PersonDetail extends React.Component<Props, State> {
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
 
-    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
-      ReactGA.set({ userId: userSelf.user.uid });
+    if (
+      isLoggedIn &&
+      userSelf &&
+      userSelf.user &&
+      userSelf.user.getUsername()
+    ) {
+      ReactGA.set({ userId: userSelf.user.getUsername() });
     }
   }
 
