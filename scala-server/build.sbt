@@ -56,7 +56,11 @@ lazy val common = project
       "com.github.tminglei" %% "slick-pg_joda-time" % "0.16.2",
       "org.postgresql" % "postgresql" % "42.2.2",
       // Auth
-      "io.jsonwebtoken" % "jjwt" % "0.9.0",
+      "io.jsonwebtoken" % "jjwt-api" % "0.10.7",
+      "io.jsonwebtoken" % "jjwt-impl" % "0.10.7",
+      "com.auth0" % "jwks-rsa" % "0.9.0" excludeAll (ExclusionRule(
+        organization = "com.fasterxml.jackson.core"
+      )),
       // AWS
       "software.amazon.awssdk" % "kms" % "2.9.24",
       "software.amazon.awssdk" % "s3" % "2.9.24",
