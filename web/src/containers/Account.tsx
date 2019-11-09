@@ -368,10 +368,7 @@ class Account extends Component<Props, State> {
                   </ListItemSecondaryAction>
                 </ListItem> */}
                 <ListItem divider>
-                  <ListItemText
-                    primary="Email"
-                    // secondary={this.props.userSelf!.user.email}
-                  />
+                  <ListItemText primary="Email" />
                   <ListItemSecondaryAction>
                     <Icon style={{ verticalAlign: 'middle' }}>arrow_right</Icon>
                   </ListItemSecondaryAction>

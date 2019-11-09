@@ -3,7 +3,6 @@ import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
 import ReactGA from 'react-ga';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
-import { getUserSelf, RetrieveUserSelfInitiated } from '../user';
 
 export const LOGIN_INITIATED = 'login/INITIATED';
 export const LOGIN_SUCCESSFUL = 'login/SUCCESSFUL';
@@ -56,8 +55,6 @@ export const loginSaga = function*() {
           category: 'User',
           action: 'Login',
         });
-
-        // yield put(getUserSelf());
       } catch (e) {
         console.error(e);
       }
