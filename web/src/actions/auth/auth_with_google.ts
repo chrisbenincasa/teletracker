@@ -1,7 +1,7 @@
 import { call, takeLatest } from '@redux-saga/core/effects';
-import * as firebase from 'firebase/app';
 import { createBasicAction } from '../utils';
 import { FSA } from 'flux-standard-action';
+import Auth, { CognitoHostedUIIdentityProvider } from '@aws-amplify/auth';
 
 export const SIGNUP_GOOGLE_INITIATED = 'signup/google/INITIATED';
 export const LOGIN_GOOGLE_INITIATED = 'login/google/INITIATED';
@@ -28,12 +28,14 @@ export const authWithGoogleSaga = function*() {
   yield takeLatest(
     [SIGNUP_GOOGLE_INITIATED, LOGIN_GOOGLE_INITIATED],
     function*() {
-      let googleAuthProvider = new firebase.auth.GoogleAuthProvider();
-
       try {
-        yield call(() =>
-          firebase.auth().signInWithRedirect(googleAuthProvider),
-        );
+        let creds = yield call(() => {
+          return Auth.federatedSignIn({
+            provider: CognitoHostedUIIdentityProvider.Google,
+          });
+        });
+
+        console.log(creds);
       } catch (e) {
         console.error(e);
       }

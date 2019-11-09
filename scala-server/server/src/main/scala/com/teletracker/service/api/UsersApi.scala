@@ -1,6 +1,5 @@
 package com.teletracker.service.api
 
-import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
 import com.teletracker.common.db.model.{
   TrackedListFactory,
@@ -25,7 +24,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class UsersApi @Inject()(
   usersDbAccess: UsersDbAccess,
   listsDbAccess: ListsDbAccess,
-  jwtVendor: JwtVendor,
   listBuilder: ListBuilder,
   dynamicListBuilder: DynamicListBuilder,
   listsApi: ListsApi,

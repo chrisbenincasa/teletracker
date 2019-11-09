@@ -16,14 +16,12 @@ case class TeletrackerConfig(
   async: AsyncConfig)
 
 case class AuthConfig(
-  jwt: JwtConfig,
-  admin: AdminConfig)
+  admin: AdminConfig,
+  cognito: CognitoConfig)
 
-case class JwtConfig(
-  issuer: String,
-  audience: String,
-  expiration: Option[FiniteDuration],
-  secret: String)
+case class CognitoConfig(
+  region: String,
+  poolId: String)
 
 case class AsyncConfig(taskQueue: QueueConfig)
 

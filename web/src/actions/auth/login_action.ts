@@ -1,9 +1,8 @@
-import * as firebase from 'firebase/app';
-import 'firebase/auth';
 import { call, put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
 import ReactGA from 'react-ga';
+import Auth, { CognitoUser } from '@aws-amplify/auth';
 
 export const LOGIN_INITIATED = 'login/INITIATED';
 export const LOGIN_SUCCESSFUL = 'login/SUCCESSFUL';
@@ -33,29 +32,29 @@ export const loginSaga = function*() {
   }: LoginInitiatedAction) {
     if (payload) {
       try {
-        yield call(() =>
-          firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL),
-        );
-
-        yield call(
+        let user: CognitoUser = yield call(
           (email: string, password: string) =>
-            firebase.auth().signInWithEmailAndPassword(email, password),
+            Auth.signIn({
+              username: email,
+              password,
+            }),
           payload.email,
           payload.password,
         );
 
-        let token: string = yield call(() =>
-          firebase.auth().currentUser!.getIdToken(),
+        yield put(
+          LoginSuccessful(
+            user
+              .getSignInUserSession()!
+              .getAccessToken()
+              .getJwtToken(),
+          ),
         );
-
-        yield put(LoginSuccessful(token));
 
         ReactGA.event({
           category: 'User',
           action: 'Login',
         });
-
-        // }
       } catch (e) {
         console.error(e);
       }

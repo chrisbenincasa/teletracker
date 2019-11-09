@@ -1,6 +1,5 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.util.FactoryImplicits
 import com.teletracker.service.auth.{AuthRequiredFilter, JwtAuthExtractor}
@@ -11,7 +10,6 @@ import scala.concurrent.ExecutionContext
 
 class AuthController @Inject()(
   config: TeletrackerConfig,
-  jwtVendor: JwtVendor,
   jwtAuthExtractor: JwtAuthExtractor
 )(implicit executionContext: ExecutionContext)
     extends Controller

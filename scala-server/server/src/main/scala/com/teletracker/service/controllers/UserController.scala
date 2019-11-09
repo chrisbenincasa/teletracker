@@ -5,7 +5,6 @@ import com.teletracker.common.api.model.{
   TrackedListOptions,
   TrackedListRules
 }
-import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.db.access.{
   ListQueryResult,
   ThingsDbAccess,
@@ -45,7 +44,6 @@ class UserController @Inject()(
   listsApi: ListsApi,
   usersDbAccess: UsersDbAccess,
   thingsDbAccess: ThingsDbAccess,
-  jwtVendor: JwtVendor,
   listFilterParser: ListFilterParser,
   thingApi: ThingApi
 )(implicit executionContext: ExecutionContext)
@@ -440,17 +438,15 @@ class UserController @Inject()(
           .getUserLists(req.authenticatedUserId.get)
           .flatMap(result => {
             if (result.isEmpty) {
-//              usersApi
-//                .createDefaultListsForUser(req.authenticatedUserId.get)
-//                .flatMap(_ => {
-//                  usersDbAccess
-//                    .findListsForUser(
-//                      req.authenticatedUserId.get,
-//                      req.includeThings
-//                    )
-//                    .map(returnLists)
-//                })
-              Future.successful(response.notFound)
+              usersApi
+                .createDefaultListsForUser(req.authenticatedUserId.get)
+                .flatMap(_ => {
+                  usersApi
+                    .getUserLists(
+                      req.authenticatedUserId.get
+                    )
+                    .map(returnLists)
+                })
             } else {
               Future.successful(returnLists(result))
             }

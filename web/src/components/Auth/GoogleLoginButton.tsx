@@ -22,7 +22,7 @@ const GoogleLoginButton: FunctionComponent<Props> = (props: Props) => {
   const { classes } = props;
 
   return (
-    <Button variant="outlined" color="primary" onClick={() => props.onClick()}>
+    <Button variant="outlined" onClick={() => props.onClick()}>
       <img
         className={classes.googleButtonIcon}
         src="/images/google_signin/Google__G__Logo.svg"

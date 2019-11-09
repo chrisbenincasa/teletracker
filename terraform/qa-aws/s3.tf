@@ -2,6 +2,13 @@ data "aws_s3_bucket" "teletracker-data-bucket" {
   bucket = "teletracker-data"
 }
 
+resource "aws_s3_bucket" "teletracker-artifacts-us-west-2" {
+  provider = "aws.us-west-2"
+
+  bucket = "us-west-2-teletracker-artifacts"
+  region = "us-west-2"
+}
+
 resource "aws_s3_bucket_notification" "hbo-catalog-dump-pushed" {
   bucket = data.aws_s3_bucket.teletracker-data-bucket.id
 
