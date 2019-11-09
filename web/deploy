@@ -2,4 +2,4 @@
 
 yarn run build
 
-aws s3 sync build/ s3://qa.teletracker.tv --acl public-read
+aws s3 sync build/ s3://qa.teletracker.tv --acl public-read --delete
