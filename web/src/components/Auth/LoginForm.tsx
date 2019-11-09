@@ -128,11 +128,7 @@ class LoginForm extends Component<Props, State> {
     }
   }
 
-  componentDidUpdate(
-    prevProps: Readonly<Props>,
-    prevState: Readonly<State>,
-    snapshot?: any,
-  ): void {
+  componentDidUpdate(prevProps: Readonly<Props>): void {
     if (!this.props.isLoggingIn && prevProps.isLoggingIn) {
       if (this.props.onLogin) {
         this.props.onLogin();
