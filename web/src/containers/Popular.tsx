@@ -48,6 +48,7 @@ const styles = (theme: Theme) =>
     listTitle: {
       display: 'flex',
       flexDirection: 'row',
+      alignItems: 'center',
     },
     loadingBar: {
       flexGrow: 1,
@@ -60,7 +61,7 @@ const styles = (theme: Theme) =>
       height: '100%',
     },
     popularContainer: {
-      padding: 8,
+      padding: theme.spacing(3),
       display: 'flex',
       flexDirection: 'column',
     },
@@ -378,14 +379,6 @@ class Popular extends Component<Props, State> {
                 : 'Content'
             }`}
           </Typography>
-        </div>
-        <div className={classes.filters}>
-          <ActiveFilters
-            genres={genres}
-            updateFilters={this.setFilters}
-            isListDynamic={false}
-            filters={this.state.filters}
-          />
           <IconButton
             onClick={this.toggleFilters}
             className={classes.settings}
@@ -394,6 +387,14 @@ class Popular extends Component<Props, State> {
             <Tune />
             <Typography variant="srOnly">Tune</Typography>
           </IconButton>
+        </div>
+        <div className={classes.filters}>
+          <ActiveFilters
+            genres={genres}
+            updateFilters={this.setFilters}
+            isListDynamic={false}
+            filters={this.state.filters}
+          />
         </div>
         <AllFilters
           genres={genres}

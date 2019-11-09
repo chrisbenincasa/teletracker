@@ -18,7 +18,7 @@ const styles = makeStyles((theme: Theme) => ({
 
 const MIN_YEAR = 1900;
 const MIN_RATING = 0;
-const MAX_RATING = 0;
+const MAX_RATING = 10;
 const RATING_STEP = 0.5;
 
 interface OwnProps {}
@@ -82,7 +82,7 @@ const SliderFilters = (props: Props) => {
   return (
     <React.Fragment>
       <div className={classes.sliderContainer}>
-        <Typography>Release Year:</Typography>
+        <Typography>Release Year</Typography>
         <Slider
           value={yearValue}
           min={MIN_YEAR}
@@ -93,7 +93,7 @@ const SliderFilters = (props: Props) => {
         />
       </div>
       <div className={classes.sliderContainer}>
-        <Typography>IMDB Score:</Typography>
+        <Typography>IMDb Score</Typography>
         <Slider
           value={imdbRatingValue}
           min={MIN_RATING}

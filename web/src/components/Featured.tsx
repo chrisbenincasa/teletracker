@@ -39,8 +39,8 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       position: 'absolute',
       height: 'auto',
-      top: 20,
-      left: 20,
+      top: theme.spacing(3),
+      left: theme.spacing(3),
       width: '25%',
       [theme.breakpoints.up('md')]: {
         width: 225,
@@ -62,8 +62,8 @@ const styles = (theme: Theme) =>
       alignItems: 'flex-start',
       position: 'absolute',
       bottom: 0,
-      right: 10,
-      marginBottom: 20,
+      right: theme.spacing(3),
+      marginBottom: theme.spacing(3),
       width: '65%',
     },
   });
