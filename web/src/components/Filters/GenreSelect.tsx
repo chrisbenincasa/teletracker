@@ -17,7 +17,7 @@ import {
 const styles = () =>
   createStyles({
     chip: {
-      margin: 2,
+      margin: 4,
     },
     chipContainer: {
       display: 'flex',
@@ -118,12 +118,12 @@ class GenreSelect extends Component<Props, State> {
 
     return (
       <div className={classes.genreContainer}>
-        <Typography display="block">By Genre:</Typography>
+        <Typography display="block">Genre</Typography>
         <div className={classes.chipContainer}>
           <Chip
             key={0}
             onClick={() => this.updateURLParam('genres', undefined)}
-            size="small"
+            size="medium"
             color={
               !genresFilter || genresFilter.length === 0
                 ? 'secondary'
@@ -138,7 +138,7 @@ class GenreSelect extends Component<Props, State> {
               <Chip
                 key={item.id}
                 onClick={() => this.updateURLParam('genres', item.id)}
-                size="small"
+                size="medium"
                 color={
                   genresFilter && genresFilter.includes(item.id)
                     ? 'secondary'
