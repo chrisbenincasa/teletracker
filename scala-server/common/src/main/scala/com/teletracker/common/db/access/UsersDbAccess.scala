@@ -5,7 +5,6 @@ import com.teletracker.common.api.model.{
   TrackedListOptions,
   TrackedListRules
 }
-import com.teletracker.common.auth.jwt.JwtVendor
 import com.teletracker.common.db.model.{
   Events,
   Things,
@@ -48,7 +47,6 @@ class UsersDbAccess @Inject()(
   val userThingTags: UserThingTags,
   listQuery: ListQuery,
   dynamicListBuilder: DynamicListBuilder,
-  jwtVendor: JwtVendor,
   dbImplicits: DbImplicits,
   networkCache: NetworkCache,
   dbMonitoring: DbMonitoring
