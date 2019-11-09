@@ -26,6 +26,9 @@ const styles = (theme: Theme) =>
       marginRight: theme.spacing(1),
       whiteSpace: 'nowrap',
     },
+    filterLabel: {
+      paddingBottom: theme.spacing() / 2,
+    },
     filterButtons: {
       [theme.breakpoints.down('sm')]: {
         fontSize: '0.575rem',
@@ -96,7 +99,9 @@ class NetworkSelect extends Component<Props, State> {
 
     return (
       <div className={classes.networkContainer}>
-        <Typography display="block">By Network:</Typography>
+        <Typography className={classes.filterLabel} display="block">
+          Network
+        </Typography>
         <div className={classes.buttonContainer}>
           <ButtonGroup
             variant="contained"
