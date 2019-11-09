@@ -47,8 +47,7 @@ function Recommendations(props: Props) {
   recommendations = recommendations.filter(item => item && item.posterImage);
 
   const width = useWidth();
-  let limit = calculateLimit(width, 2);
-  limit = limit > recommendations.length ? recommendations.length : limit;
+  let limit = Math.min(calculateLimit(width, 2), recommendations.length);
 
   return recommendations && recommendations.length > 0 ? (
     <React.Fragment>
