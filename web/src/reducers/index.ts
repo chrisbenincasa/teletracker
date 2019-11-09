@@ -8,6 +8,7 @@ import metadata, { State as MetadataState } from './metadata';
 import availability, { State as AvailabilityState } from './availability';
 import popular, { State as PopularState } from './popular';
 import people, { State as PersonState } from './people';
+import { BOOT_DONE } from '../actions';
 
 export interface StartupState {
   isBooting: boolean;
@@ -37,7 +38,7 @@ function startupReducer(
       isBooting: true,
     };
   } else {
-    if (action.type === 'boot/DONE') {
+    if (action.type === BOOT_DONE) {
       return {
         ...state,
         isBooting: false,

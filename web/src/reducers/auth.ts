@@ -1,10 +1,5 @@
 import { FSA } from 'flux-standard-action';
 import {
-  AUTH_CHECK_AUTHORIZED,
-  AUTH_CHECK_FAILED,
-  AUTH_CHECK_INITIATED,
-  AUTH_CHECK_UNAUTH,
-  AuthCheckInitiatedAction,
   LOGIN_GOOGLE_INITIATED,
   LOGIN_INITIATED,
   LOGIN_SUCCESSFUL,
@@ -15,6 +10,10 @@ import {
   LogoutSuccessfulAction,
   SET_TOKEN,
   SetTokenAction,
+  SIGNUP_INITIATED,
+  SIGNUP_SUCCESSFUL,
+  SignupInitiatedAction,
+  SignupSuccessfulAction,
   UNSET_TOKEN,
   UnsetTokenAction,
 } from '../actions/auth';
@@ -33,6 +32,7 @@ export interface State {
   isLoggingIn: boolean;
   isLoggedIn: boolean;
   isLoggingOut: boolean;
+  isSigningUp: boolean;
   token?: string;
   user?: UserState;
 }
@@ -42,39 +42,30 @@ const initialState: State = {
   isLoggingIn: false,
   isLoggedIn: false,
   isLoggingOut: false,
+  isSigningUp: false,
 };
 
-const authInitiated = handleAction<AuthCheckInitiatedAction, State>(
-  AUTH_CHECK_INITIATED,
+const signupInitiated = handleAction<SignupInitiatedAction, State>(
+  SIGNUP_INITIATED,
   state => {
     return {
       ...state,
-      checkingAuth: true,
+      isSigningUp: true,
     };
   },
 );
 
-const unsetCheckingAuth = (state: State) => {
-  return {
-    ...state,
-    checkingAuth: false,
-  };
-};
-
-const unsetCheckingAuthReducers = [
-  AUTH_CHECK_AUTHORIZED,
-  AUTH_CHECK_FAILED,
-  AUTH_CHECK_UNAUTH,
-].map(actionType => {
-  return handleAction<FSA<typeof actionType>, State>(actionType, state => {
-    let isAuthed = actionType == AUTH_CHECK_AUTHORIZED;
+const signupSuccessful = handleAction<SignupSuccessfulAction, State>(
+  SIGNUP_SUCCESSFUL,
+  (state, action) => {
     return {
       ...state,
-      ...unsetCheckingAuth(state),
-      isLoggedIn: isAuthed,
+      isSigningUp: false,
+      isLoggingIn: true,
+      token: action.payload,
     };
-  });
-});
+  },
+);
 
 const loginInitiated = [LOGIN_INITIATED, LOGIN_GOOGLE_INITIATED].map(
   actionType => {
@@ -164,12 +155,12 @@ const purge: (initialState: State) => AnyFSAReducer<any> = initialState => {
 export default flattenActions(
   initialState,
   ...[
-    authInitiated,
-    ...unsetCheckingAuthReducers,
     ...loginInitiated,
     loginSuccess,
     logoutSuccess,
     setToken,
     unsetToken,
+    signupInitiated,
+    signupSuccessful,
   ],
 );
