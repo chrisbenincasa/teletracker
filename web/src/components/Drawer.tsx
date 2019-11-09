@@ -25,11 +25,9 @@ import {
 } from '@material-ui/icons';
 import classNames from 'classnames';
 import _ from 'lodash';
-import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
-import { Redirect } from 'react-router';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../actions/auth';
 import {
@@ -37,7 +35,6 @@ import {
   ListRetrieveAllPayload,
   retrieveAllLists,
 } from '../actions/lists';
-import withUser, { WithUserProps } from '../components/withUser';
 import CreateListDialog from '../components/CreateListDialog';
 import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
@@ -97,6 +94,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   loadingLists: boolean;
   loading: Partial<Loading>;
   open: boolean;
+  isLoggingIn: boolean;
 }
 
 interface InjectedProps {
@@ -128,8 +126,7 @@ type Props = OwnProps &
   DispatchProps &
   WithStyles<typeof styles> &
   InjectedProps &
-  WidthProps &
-  WithUserProps;
+  WidthProps;
 
 interface LinkProps {
   index?: number;
@@ -189,6 +186,16 @@ class Drawer extends Component<Props, State> {
     }
   }
 
+  componentDidUpdate(oldProps: Props) {
+    if (oldProps.isLoggingIn && !this.props.isLoggingIn) {
+      this.toggleAuthModal('login');
+    }
+
+    if (!oldProps.isAuthed && this.props.isAuthed) {
+      this.props.retrieveAllLists({ includeThings: false });
+    }
+  }
+
   handleLogout = () => {
     this.props.logout();
   };
@@ -209,7 +216,7 @@ class Drawer extends Component<Props, State> {
   };
 
   handleModalOpen = () => {
-    if (this.props.userSelf) {
+    if (this.props.isAuthed) {
       this.setState({ createDialogOpen: true });
     } else {
       this.toggleAuthModal('login');
@@ -259,25 +266,29 @@ class Drawer extends Component<Props, State> {
     return (
       <React.Fragment>
         <div className={classes.toolbar} />
-        <Typography component="h6" variant="h6" className={classes.margin}>
-          My Lists
-        </Typography>
-        <Divider />
-        <Button
-          variant="contained"
-          color="primary"
-          size="small"
-          className={classes.button}
-          onClick={this.handleModalOpen}
-        >
-          <AddCircle
-            className={classNames(classes.leftIcon, classes.iconSmall)}
-          />
-          Create List
-        </Button>
-        <List>{_.map(listsById, this.renderListItems)}</List>
+        {isAuthed ? (
+          <React.Fragment>
+            <Typography component="h6" variant="h6" className={classes.margin}>
+              My Lists
+            </Typography>
+            <Divider />
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              className={classes.button}
+              onClick={this.handleModalOpen}
+            >
+              <AddCircle
+                className={classNames(classes.leftIcon, classes.iconSmall)}
+              />
+              Create List
+            </Button>
+            <List>{_.map(listsById, this.renderListItems)}</List>
+            <Divider />
+          </React.Fragment>
+        ) : null}
         <List>
-          <Divider />
           {isAuthed ? (
             <React.Fragment>
               <ListItemLink to="/account" primary="Settings" />
@@ -323,17 +334,13 @@ class Drawer extends Component<Props, State> {
         }}
         style={{ width: open ? 216 : 0 }}
       >
-        {this.isLoading() && isAuthed ? (
-          <CircularProgress />
-        ) : (
-          this.renderDrawerContents()
-        )}
+        {this.isLoading() ? <CircularProgress /> : this.renderDrawerContents()}
       </DrawerUI>
     );
   }
 
   isLoading() {
-    return this.props.loadingLists || !this.props.userSelf;
+    return this.props.loadingLists;
   }
 
   render() {
@@ -356,12 +363,13 @@ class Drawer extends Component<Props, State> {
 
 const mapStateToProps = (appState: AppState) => {
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
+    isAuthed: !!appState.auth.token,
     loadingLists:
       appState.lists.operation.inProgress &&
       appState.lists.operation.operationType == LIST_RETRIEVE_ALL_INITIATED,
     listsById: appState.lists.listsById,
     loading: appState.userSelf.loading,
+    isLoggingIn: appState.auth.isLoggingIn,
   };
 };
 
@@ -375,15 +383,12 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   );
 
 export default withWidth()(
-  withUser(
-    withStyles(styles, { withTheme: true })(
-      withRouter(
-        connect(
-          mapStateToProps,
-          mapDispatchToProps,
-        )(Drawer),
-      ),
+  withStyles(styles, { withTheme: true })(
+    withRouter(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(Drawer),
     ),
-    () => null,
   ),
 );

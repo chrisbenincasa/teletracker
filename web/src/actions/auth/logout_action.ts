@@ -1,10 +1,9 @@
-import * as firebase from 'firebase/app';
-import 'firebase/auth';
 import { call, put, takeLatest } from '@redux-saga/core/effects';
 
 import { FSA } from 'flux-standard-action';
 import { createBasicAction } from '../utils';
 import ReactGA from 'react-ga';
+import Auth from '@aws-amplify/auth';
 
 export const LOGOUT_INITIATED = 'logout/INITIATED';
 export const LOGOUT_SUCCESSFUL = 'logout/SUCCESSFUL';
@@ -27,7 +26,7 @@ export const LogoutSuccessful = createBasicAction<LogoutSuccessfulAction>(
 export const logoutSaga = function*() {
   yield takeLatest(LOGOUT_INITIATED, function*() {
     try {
-      yield call(() => firebase.auth().signOut());
+      yield call([Auth, Auth.signOut]);
       yield put(LogoutSuccessful());
 
       ReactGA.event({

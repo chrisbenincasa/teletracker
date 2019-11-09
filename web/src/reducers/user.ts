@@ -18,12 +18,18 @@ import {
   USER_SELF_UPDATE_LIST,
   USER_SELF_UPDATE_LIST_SUCCESS,
 } from '../actions/lists';
-import { LOGOUT_SUCCESSFUL } from '../actions/auth';
+import {
+  LOGOUT_SUCCESSFUL,
+  SIGNUP_SUCCESSFUL,
+  SignupSuccessful,
+  SignupSuccessfulAction,
+} from '../actions/auth';
+import { CognitoUser } from '@aws-amplify/auth';
 
 export type Loading = { [X in UserActionTypes['type']]: boolean };
 
 export interface UserSelf {
-  user: firebase.User;
+  user: CognitoUser;
   preferences: UserPreferences;
   networks: Network[];
 }

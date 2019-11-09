@@ -20,12 +20,11 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { login, LoginSuccessful, logInWithGoogle } from '../../actions/auth';
 import { AppState } from '../../reducers';
-import { Redirect } from 'react-router';
+import { RouteComponentProps, withRouter } from 'react-router';
 import { Link as RouterLink } from 'react-router-dom';
-import * as firebase from 'firebase/app';
 import GoogleLoginButton from './GoogleLoginButton';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../../constants/';
+import { GA_TRACKING_ID, GOOGLE_ACCOUNT_MERGE } from '../../constants/';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -50,7 +49,7 @@ const styles = (theme: Theme) =>
       left: 0,
       width: '100%',
       height: '100%',
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
       zIndex: 1000,
     },
     socialSignInContainer: {
@@ -71,71 +70,98 @@ const styles = (theme: Theme) =>
     },
   });
 
-interface Props extends WithStyles<typeof styles> {
+interface OwnProps {
   isAuthed: boolean;
   login: (email: string, password: string) => void;
   logInWithGoogle: () => any;
   isLoggingIn: boolean;
   logInSuccessful: (token: string) => any;
   changePage: () => void;
-  onNav?: () => void;
   redirect_uri?: string;
+  // Events
+  onSubmitted?: () => void;
+  onNav?: () => void;
+  onLogin?: () => void;
 }
+
+type Props = OwnProps & WithStyles<typeof styles> & RouteComponentProps<{}>;
 
 interface State {
   email: string;
   password: string;
+  cameFromOAuth: boolean;
+  mergedFederatedAccount: boolean;
 }
 
 class LoginForm extends Component<Props, State> {
-  state: State = {
-    email: '',
-    password: '',
-  };
+  constructor(props: Readonly<Props>) {
+    super(props);
+    const params = new URLSearchParams(props.location.search);
+
+    // If a user already has an account with email X and then attempts to sign
+    // in with a federated identity (e.g. Google) our pre-signup lambda will
+    // intercept and throw an error to indicate that it merged the federated
+    // identity with the cognito user. This is returned in the form of an error
+    // in the URL and indicates we should retry the federated login (because
+    // with Cognito, the first attempt at a federated login with a matching
+    // email causes an error)
+    let error = params.get('error_description');
+
+    this.state = {
+      email: '',
+      password: '',
+      cameFromOAuth: params.get('code') !== null,
+      mergedFederatedAccount: error
+        ? error.includes(GOOGLE_ACCOUNT_MERGE)
+        : false,
+    };
+  }
 
   componentDidMount(): void {
-    firebase
-      .auth()
-      .getRedirectResult()
-      .then(result => {
-        if (result.user) {
-          result.user.getIdToken().then(token => {
-            this.props.logInSuccessful(token);
-          });
-        }
-      })
+    if (!this.state.cameFromOAuth) {
+      ReactGA.initialize(GA_TRACKING_ID);
+      ReactGA.pageview(window.location.pathname + window.location.search);
+    }
 
-      .catch(console.error);
+    if (this.state.mergedFederatedAccount) {
+      this.logInWithGoogle();
+    }
+  }
 
-    ReactGA.initialize(GA_TRACKING_ID);
-    ReactGA.pageview(window.location.pathname + window.location.search);
+  componentDidUpdate(prevProps: Readonly<Props>): void {
+    if (!this.props.isLoggingIn && prevProps.isLoggingIn) {
+      if (this.props.onLogin) {
+        this.props.onLogin();
+      }
+    }
   }
 
   logInWithGoogle = () => {
     this.props.logInWithGoogle();
   };
 
-  onSubmit(ev: FormEvent<HTMLFormElement>) {
+  onSubmit = (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
+
+    if (this.props.onSubmitted) {
+      this.props.onSubmitted();
+    }
 
     this.props.login(this.state.email, this.state.password);
 
-    this.setState({
-      email: '',
-      password: '',
-    });
-
     // TODO: Protect this with some state.
     push('/');
-  }
+  };
 
   render() {
-    let { isAuthed, classes } = this.props;
+    let { isAuthed, classes, isLoggingIn } = this.props;
     let { email, password } = this.state;
 
     return (
       <React.Fragment>
-        {this.props.isLoggingIn ? (
+        {this.props.isLoggingIn ||
+        this.state.cameFromOAuth ||
+        this.state.mergedFederatedAccount ? (
           <div className={classes.overlay}>
             <CircularProgress className={classes.progressSpinner} />
             <div>
@@ -154,7 +180,7 @@ class LoginForm extends Component<Props, State> {
           <GoogleLoginButton onClick={this.logInWithGoogle} />
         </div>
         <div>
-          <form className={classes.form} onSubmit={ev => this.onSubmit(ev)}>
+          <form className={classes.form} onSubmit={this.onSubmit}>
             <FormControl margin="normal" required fullWidth>
               <InputLabel htmlFor="email">Email</InputLabel>
               <Input
@@ -164,6 +190,7 @@ class LoginForm extends Component<Props, State> {
                 autoFocus={!this.props.isLoggingIn}
                 type="email"
                 onChange={e => this.setState({ email: e.target.value })}
+                disabled={isLoggingIn}
                 value={email}
               />
             </FormControl>
@@ -175,6 +202,7 @@ class LoginForm extends Component<Props, State> {
                 autoComplete="password"
                 type="password"
                 onChange={e => this.setState({ password: e.target.value })}
+                disabled={isLoggingIn}
                 value={password}
               />
             </FormControl>
@@ -223,9 +251,11 @@ const mapDispatchToProps = dispatch =>
     dispatch,
   );
 
-export default withStyles(styles)(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(LoginForm),
+export default withRouter(
+  withStyles(styles)(
+    connect(
+      mapStateToProps,
+      mapDispatchToProps,
+    )(LoginForm),
+  ),
 );

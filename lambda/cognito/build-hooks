@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+echo "Cleaning staging area"
+
+if [ -d "build/" ]; then rm -rf "build/"; fi
+
+mkdir build
+
+rsync -avq src/* build \
+  --exclude=build/ \
+  --exclude=node_modules/ \
+  --exclude=.idea \
+  --exclude=.vscode \
+  --exclude=*.zip
+
+pushd build || exit
+yarn --prod
+
+zip -q hooks.zip index.js main.js package.json yarn.lock
+
+zip -urq hooks.zip signup/
+zip -urq hooks.zip node_modules -x "*.DS_Store"
+
+popd || exit

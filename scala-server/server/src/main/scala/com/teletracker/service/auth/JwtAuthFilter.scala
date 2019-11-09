@@ -1,24 +1,13 @@
 package com.teletracker.service.auth
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.access.UsersDbAccess
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, SimpleFilter}
 import com.twitter.util.logging.Logger
 import com.twitter.util.{Future, Promise}
-import io.jsonwebtoken.{
-  Claims,
-  ExpiredJwtException,
-  Jws,
-  Jwts,
-  MalformedJwtException,
-  SignatureException,
-  UnsupportedJwtException
-}
+import io.jsonwebtoken._
 import javax.inject.Inject
-import java.io.ByteArrayInputStream
-import java.security.cert.CertificateFactory
-import scala.concurrent.{ExecutionContext, Future => SFuture}
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 object JwtAuthFilter {
@@ -37,11 +26,10 @@ object JwtAuthFilter {
 
 class JwtAuthExtractor @Inject()(
   config: TeletrackerConfig,
-  googlePublicKeyRetriever: GooglePublicKeyRetriever
+  googlePublicKeyRetriever: GooglePublicKeyRetriever,
+  jwkKeyResolver: JwkKeyResolver
 )(implicit executionContext: ExecutionContext) {
   import com.teletracker.service.auth.JwtAuthFilter.extractAuthHeaderValue
-
-  private val certificateFactory = CertificateFactory.getInstance("X.509")
 
   def extractToken(request: Request): Option[String] = {
     request.params
@@ -53,38 +41,20 @@ class JwtAuthExtractor @Inject()(
       )
   }
 
-  def parseToken(token: String): SFuture[Try[Jws[Claims]]] = {
-    googlePublicKeyRetriever
-      .getPublicCerts()
-      .map(certs => {
-        if (certs.isEmpty) {
-          throw new IllegalStateException(
-            "Could not retrieve public certs from googleapis.com!!!"
-          )
-        }
-
-        certs.values
-          .map(cert => {
-            val certificate = certificateFactory
-              .generateCertificate(new ByteArrayInputStream(cert.getBytes()))
-
-            () =>
-              Try(
-                Jwts
-                  .parser()
-                  .setSigningKey(certificate.getPublicKey)
-                  .parseClaimsJws(token)
-              )
-          })
-          .reduce((l, r) => () => l().orElse(r()))
-      })
-      .map(_())
+  def parseToken(token: String): Try[Jws[Claims]] = {
+    Try {
+      Jwts
+        .parser()
+        .deserializeJsonWith(CirceJwtClaimsDeserializer)
+        .setSigningKeyResolver(jwkKeyResolver)
+        .parseClaimsJws(token)
+    }
   }
 
-  def extractAndParse(request: Request): SFuture[Try[Jws[Claims]]] = {
+  def extractAndParse(request: Request): Try[Jws[Claims]] = {
     extractToken(request) match {
       case Some(token) => parseToken(token)
-      case None        => SFuture.successful(Failure(TokenNotFoundException))
+      case None        => Failure(TokenNotFoundException)
     }
   }
 }
@@ -110,7 +80,7 @@ class JwtAuthFilter @Inject()(
 
       case Some(t) =>
         val respPromise = Promise[Response]()
-        extractor.parseToken(t).transform(_.flatten).andThen {
+        extractor.parseToken(t) match {
           case Success(parsed) =>
             RequestContext.set(request, parsed.getBody.getSubject, t)
             respPromise.become(service(request))
