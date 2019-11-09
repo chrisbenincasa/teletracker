@@ -169,8 +169,13 @@ class Account extends Component<Props, State> {
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
 
-    if (isLoggedIn && userSelf && userSelf.user && userSelf.user.uid) {
-      ReactGA.set({ userId: userSelf.user.uid });
+    if (
+      isLoggedIn &&
+      userSelf &&
+      userSelf.user &&
+      userSelf.user.getUsername()
+    ) {
+      ReactGA.set({ userId: userSelf.user.getUsername() });
     }
   }
 
@@ -365,7 +370,7 @@ class Account extends Component<Props, State> {
                 <ListItem divider>
                   <ListItemText
                     primary="Email"
-                    secondary={this.props.userSelf!.user.email}
+                    // secondary={this.props.userSelf!.user.email}
                   />
                   <ListItemSecondaryAction>
                     <Icon style={{ verticalAlign: 'middle' }}>arrow_right</Icon>
