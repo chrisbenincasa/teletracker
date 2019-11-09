@@ -1,0 +1,17 @@
+{
+  "name": "cognito-hooks",
+  "version": "1.0.0",
+  "description": "Hooks for Cognito auth",
+  "private": true,
+  "dependencies": {
+    "aws-sdk": "^2.567.0",
+    "esm": "^3.2.25"
+  },
+  "devDependencies": {
+    "prettier": "^1.18.2",
+    "yargs": "^14.2.0"
+  },
+  "scripts": {
+    "main": "node --no-warnings -r esm runner.js"
+  }
+}
