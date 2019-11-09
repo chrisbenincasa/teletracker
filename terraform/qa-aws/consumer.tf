@@ -56,20 +56,20 @@ resource "aws_ecs_service" "teletracker-qa-consumer" {
   //  }
 }
 
-resource "aws_appautoscaling_target" "consumer-ecs-scale-down-target" {
+resource "aws_appautoscaling_target" "consumer-ecs-scale-target" {
   max_capacity       = 1
   min_capacity       = 0
   resource_id        = "service/${aws_ecs_cluster.teletracker-qa.name}/${aws_ecs_service.teletracker-qa-consumer.name}"
-  role_arn           = data.aws_iam_role.ecs-service-role.arn
+  role_arn           = data.aws_iam_role.ecs-autoscalng-role.arn
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
 
 resource "aws_appautoscaling_policy" "consumer-ecs-scale-up-policy" {
   name               = "Scale-up-consumer"
-  resource_id        = aws_appautoscaling_target.consumer-ecs-scale-down-target.resource_id
-  scalable_dimension = aws_appautoscaling_target.consumer-ecs-scale-down-target.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.consumer-ecs-scale-down-target.service_namespace
+  resource_id        = aws_appautoscaling_target.consumer-ecs-scale-target.resource_id
+  scalable_dimension = aws_appautoscaling_target.consumer-ecs-scale-target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.consumer-ecs-scale-target.service_namespace
 
   step_scaling_policy_configuration {
     adjustment_type         = "ChangeInCapacity"
@@ -85,9 +85,9 @@ resource "aws_appautoscaling_policy" "consumer-ecs-scale-up-policy" {
 
 resource "aws_appautoscaling_policy" "consumer-ecs-scale-down-policy" {
   name               = "Scale-down-consumer"
-  resource_id        = aws_appautoscaling_target.consumer-ecs-scale-down-target.resource_id
-  scalable_dimension = aws_appautoscaling_target.consumer-ecs-scale-down-target.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.consumer-ecs-scale-down-target.service_namespace
+  resource_id        = aws_appautoscaling_target.consumer-ecs-scale-target.resource_id
+  scalable_dimension = aws_appautoscaling_target.consumer-ecs-scale-target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.consumer-ecs-scale-target.service_namespace
 
   step_scaling_policy_configuration {
     adjustment_type         = "ChangeInCapacity"

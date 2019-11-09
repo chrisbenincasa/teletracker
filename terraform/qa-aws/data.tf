@@ -15,6 +15,10 @@ data "aws_iam_role" "ecs-service-role" {
   name = "ecsServiceRole"
 }
 
+data "aws_iam_role" "ecs-autoscalng-role" {
+  name = "AWSServiceRoleForApplicationAutoScaling_ECSService"
+}
+
 data "aws_iam_role" "ecs-task-execution-role" {
   name = "ecsTaskExecutionRole"
 }
