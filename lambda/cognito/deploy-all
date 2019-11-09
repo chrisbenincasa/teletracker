@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+NOW=$(date +%s)
+STAMP=${1:-$NOW}
+
+./build-hooks
+
+aws --region us-west-2 s3 cp build/hooks.zip s3://us-west-2-teletracker-artifacts/cognito-hooks/hooks.zip
+
+echo "Pushed new version: ${STAMP}"
