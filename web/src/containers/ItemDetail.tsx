@@ -221,10 +221,6 @@ function ItemDetails(props: Props) {
     }
   }, []);
 
-  useEffect(() => {
-    loadItem();
-  }, [props.match.params]);
-
   const loadItem = () => {
     let { match } = props;
     let itemId = match.params.id;
