@@ -187,10 +187,6 @@ class Drawer extends Component<Props, State> {
   }
 
   componentDidUpdate(oldProps: Props) {
-    if (Boolean(oldProps.loadingLists) && !Boolean(this.props.loadingLists)) {
-      this.setState({ loadingLists: false });
-    }
-
     if (oldProps.isLoggingIn && !this.props.isLoggingIn) {
       this.toggleAuthModal('login');
     }
