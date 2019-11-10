@@ -630,20 +630,6 @@ class ListDetail extends Component<Props, State> {
     }
   };
 
-  filteredFilmography(list: List) {
-    let filmography = list!.items || [];
-
-    return filmography.filter(
-      (item: Item) =>
-        !this.state.filters.genresFilter ||
-        (item &&
-          item.genres &&
-          item.genres
-            .map(g => g.id)
-            .includes(this.state.filters.genresFilter[0])),
-    );
-  }
-
   loadMoreDebounced = _.debounce(() => {
     let {
       filters: { sortOrder, itemTypes, genresFilter, networks },
@@ -805,12 +791,7 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 export default withWidth()(
   withUser(
     withStyles(styles)(
-      withRouter(
-        connect(
-          mapStateToProps,
-          mapDispatchToProps,
-        )(ListDetail),
-      ),
+      withRouter(connect(mapStateToProps, mapDispatchToProps)(ListDetail)),
     ),
   ),
 );
