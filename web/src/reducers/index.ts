@@ -9,6 +9,7 @@ import availability, { State as AvailabilityState } from './availability';
 import popular, { State as PopularState } from './popular';
 import people, { State as PersonState } from './people';
 import { BOOT_DONE } from '../actions';
+import { connectRouter } from 'connected-react-router';
 
 export interface StartupState {
   isBooting: boolean;
@@ -51,15 +52,17 @@ function startupReducer(
   }
 }
 
-export default combineReducers({
-  auth,
-  itemDetail,
-  search,
-  userSelf,
-  lists,
-  startup: startupReducer,
-  metadata,
-  availability,
-  popular,
-  people,
-});
+export default history =>
+  combineReducers({
+    auth,
+    availability,
+    itemDetail,
+    lists,
+    metadata,
+    people,
+    popular,
+    router: connectRouter(history),
+    search,
+    startup: startupReducer,
+    userSelf,
+  });

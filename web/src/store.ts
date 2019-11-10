@@ -1,4 +1,4 @@
-import { connectRouter, routerMiddleware } from 'connected-react-router';
+import { routerMiddleware } from 'connected-react-router';
 import { createBrowserHistory } from 'history';
 import * as localforage from 'localforage';
 import { applyMiddleware, compose, createStore } from 'redux';
@@ -8,7 +8,7 @@ import { createWhitelistFilter } from 'redux-persist-transform-filter';
 import createSagaMiddleware from 'redux-saga';
 import thunk from 'redux-thunk';
 import { root } from './actions';
-import rootReducer from './reducers/';
+import createRootReducer from './reducers/';
 
 export const history = createBrowserHistory();
 
@@ -49,7 +49,7 @@ const composedEnhancers = compose(
   ...enhancers,
 );
 
-const reducerWithHistory = connectRouter(history)(rootReducer);
+const reducerWithHistory = createRootReducer(history);
 
 const persistedReducer = persistReducer(persistConfig, reducerWithHistory);
 
