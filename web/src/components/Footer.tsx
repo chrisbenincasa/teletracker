@@ -25,6 +25,7 @@ const useStyles = makeStyles((theme: Theme) => ({
       height: '2rem',
     },
     width: '100%',
+    marginTop: theme.spacing(2),
   },
   section: {
     display: 'flex',
