@@ -110,6 +110,7 @@ interface State {
   createDialogOpen: boolean;
   authModalOpen: boolean;
   authModalScreen?: 'login' | 'signup';
+  listsLoadedOnce: boolean;
 }
 
 interface RouteParams {
@@ -178,6 +179,7 @@ class Drawer extends Component<Props, State> {
     createDialogOpen: false,
     authModalOpen: false,
     authModalScreen: 'login',
+    listsLoadedOnce: false,
   };
 
   componentDidMount() {
@@ -193,6 +195,16 @@ class Drawer extends Component<Props, State> {
 
     if (!oldProps.isAuthed && this.props.isAuthed) {
       this.props.retrieveAllLists({ includeThings: false });
+    }
+
+    if (
+      !this.state.listsLoadedOnce &&
+      oldProps.loadingLists &&
+      !this.props.loadingLists
+    ) {
+      this.setState({
+        listsLoadedOnce: true,
+      });
     }
   }
 
@@ -240,7 +252,7 @@ class Drawer extends Component<Props, State> {
         key={userList.id}
         to={`/lists/${list.id}`}
         // TODO: Improve logic for selection
-        selected={listPath === location.pathname}
+        selected={listPath === this.props.location.pathname}
         primary={list.name}
         listLength={userList.totalItems}
       />
@@ -321,14 +333,13 @@ class Drawer extends Component<Props, State> {
   }
 
   renderDrawer() {
-    let { classes, isAuthed, open } = this.props;
+    let { classes, open } = this.props;
 
     return (
       <DrawerUI
         open={open}
         anchor="left"
         className={classes.drawer}
-        variant="persistent"
         classes={{
           paper: classes.drawerPaper,
         }}
@@ -340,7 +351,7 @@ class Drawer extends Component<Props, State> {
   }
 
   isLoading() {
-    return this.props.loadingLists;
+    return this.props.loadingLists && !this.state.listsLoadedOnce;
   }
 
   render() {
@@ -384,11 +395,6 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 
 export default withWidth()(
   withStyles(styles, { withTheme: true })(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(Drawer),
-    ),
+    withRouter(connect(mapStateToProps, mapDispatchToProps)(Drawer)),
   ),
 );

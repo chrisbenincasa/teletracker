@@ -28,6 +28,9 @@ const styles = (theme: Theme) =>
       },
       whiteSpace: 'nowrap',
     },
+    filterLabel: {
+      paddingBottom: theme.spacing() / 2,
+    },
     typeContainer: { display: 'flex', flexDirection: 'column' },
   });
 
@@ -48,7 +51,7 @@ interface State {
 }
 
 export const getTypeFromUrlParam = () => {
-  return parseFilterParamsFromQs(location.search).itemTypes;
+  return parseFilterParamsFromQs(window.location.search).itemTypes;
 };
 
 class TypeToggle extends Component<Props, State> {
@@ -87,7 +90,9 @@ class TypeToggle extends Component<Props, State> {
 
     return (
       <div className={classes.typeContainer}>
-        <Typography display="block">By Type:</Typography>
+        <Typography className={classes.filterLabel} display="block">
+          Type
+        </Typography>
         <div className={classes.buttonContainer}>
           <ButtonGroup
             variant="contained"
