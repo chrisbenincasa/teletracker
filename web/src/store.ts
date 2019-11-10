@@ -44,10 +44,7 @@ if (env === 'development') {
   }
 }
 
-const composedEnhancers = compose(
-  applyMiddleware(...middleware),
-  ...enhancers,
-);
+const composedEnhancers = compose(applyMiddleware(...middleware), ...enhancers);
 
 const reducerWithHistory = createRootReducer(history);
 

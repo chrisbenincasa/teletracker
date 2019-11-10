@@ -491,12 +491,7 @@ const mapDispatchToProps = dispatch =>
 export default withWidth()(
   withUser(
     withStyles(styles)(
-      withRouter(
-        connect(
-          mapStateToProps,
-          mapDispatchToProps,
-        )(Popular),
-      ),
+      withRouter(connect(mapStateToProps, mapDispatchToProps)(Popular)),
     ),
   ),
 );
