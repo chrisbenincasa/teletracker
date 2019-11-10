@@ -66,6 +66,7 @@ export const updateListSaga = function*() {
             options: payload.options,
           }),
         );
+
         yield put(RetrieveUserSelfInitiated({ force: true }));
 
         ReactGA.event({
