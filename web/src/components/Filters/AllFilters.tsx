@@ -5,7 +5,7 @@ import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
 import SortDropdown from './SortDropdown';
-import Sliders from './Sliders';
+import Sliders, { SliderChange } from './Sliders';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
@@ -77,6 +77,7 @@ interface Props {
   handleTypeChange?: (type?: ItemType[]) => void;
   handleNetworkChange?: (networkTypes?: NetworkType[]) => void;
   handleSortChange?: (sortOrder: ListSortOptions) => void;
+  handleSliderChange?: (sliderChange: SliderChange) => void;
   isListDynamic?: boolean;
   genres?: Genre[];
   open: boolean;
@@ -97,6 +98,7 @@ const AllFilters = (props: Props) => {
     handleNetworkChange,
     handleTypeChange,
     handleSortChange,
+    handleSliderChange,
   } = props;
 
   const setGenre = (genres?: number[]) => {
@@ -137,9 +139,11 @@ const AllFilters = (props: Props) => {
               />
             )}
           </div>
-          <div className={classes.slidersContainer}>
-            <Sliders />
-          </div>
+          {handleSliderChange ? (
+            <div className={classes.slidersContainer}>
+              <Sliders handleChange={handleSliderChange} />
+            </div>
+          ) : null}
           <div className={classes.networkContainer}>
             {handleNetworkChange && (
               <NetworkSelect handleChange={setNetworks} />

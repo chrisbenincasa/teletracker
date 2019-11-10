@@ -186,7 +186,7 @@ function ActiveFilters(props: Props) {
       paramUpdates.push(['ry_min', undefined]);
     }
 
-    if (filters.releaseYearMin) {
+    if (filters.releaseYearMax) {
       paramUpdates.push(['ry_max', undefined]);
     }
 
