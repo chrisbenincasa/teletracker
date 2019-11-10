@@ -15,7 +15,6 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   wrapper: {
     display: 'flex',
-    flexGrow: 1,
     flexDirection: 'row',
     backgroundColor: `${theme.palette.grey[800]}`,
     position: 'absolute',
@@ -25,6 +24,8 @@ const useStyles = makeStyles((theme: Theme) => ({
       height: '2rem',
     },
     width: '100%',
+    marginTop: theme.spacing(2),
+    alignSelf: 'flex-end',
   },
   section: {
     display: 'flex',

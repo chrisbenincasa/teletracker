@@ -22,6 +22,9 @@ const styles = (theme: Theme) =>
         fontSize: '0.575rem',
       },
     },
+    filterLabel: {
+      paddingBottom: theme.spacing() / 2,
+    },
   });
 
 interface OwnProps {
@@ -42,7 +45,7 @@ interface State {
 }
 
 export const getSortFromUrlParam = () => {
-  return parseFilterParamsFromQs(location.search).sortOrder;
+  return parseFilterParamsFromQs(window.location.search).sortOrder;
 };
 
 class SortDropDown extends Component<Props, State> {
@@ -102,12 +105,14 @@ class SortDropDown extends Component<Props, State> {
   };
 
   render() {
-    const { isListDynamic } = this.props;
+    const { isListDynamic, classes } = this.props;
     const { sortOrder } = this.state;
 
     return (
-      <React.Fragment>
-        <Typography display="block">Sort By:</Typography>
+      <div>
+        <Typography className={classes.filterLabel} display="block">
+          Sort
+        </Typography>
         <Select
           value={
             this.state.sortOrder && !this.isDefaultSort(sortOrder)
@@ -126,7 +131,7 @@ class SortDropDown extends Component<Props, State> {
           <MenuItem value="popularity">Popularity</MenuItem>
           <MenuItem value="recent">Release Date</MenuItem>
         </Select>
-      </React.Fragment>
+      </div>
     );
   }
 }

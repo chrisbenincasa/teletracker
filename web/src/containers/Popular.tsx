@@ -34,6 +34,7 @@ import { filterParamsEqual } from '../utils/changeDetection';
 import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
+import { SliderChange } from '../components/Filters/Sliders';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -48,6 +49,7 @@ const styles = (theme: Theme) =>
     listTitle: {
       display: 'flex',
       flexDirection: 'row',
+      alignItems: 'center',
     },
     loadingBar: {
       flexGrow: 1,
@@ -60,7 +62,7 @@ const styles = (theme: Theme) =>
       height: '100%',
     },
     popularContainer: {
-      padding: 8,
+      padding: theme.spacing(3),
       display: 'flex',
       flexDirection: 'column',
     },
@@ -282,6 +284,23 @@ class Popular extends Component<Props, State> {
     }
   };
 
+  setSliderState = (sliderChange: SliderChange) => {
+    this.setState(
+      {
+        filters: {
+          ...this.state.filters,
+          sliders: {
+            ...(this.state.filters.sliders || {}),
+            releaseYear: sliderChange.releaseYear,
+          },
+        },
+      },
+      () => {
+        this.loadPopular(false);
+      },
+    );
+  };
+
   toggleFilters = () => {
     this.setState({ showFilter: !this.state.showFilter });
   };
@@ -378,14 +397,6 @@ class Popular extends Component<Props, State> {
                 : 'Content'
             }`}
           </Typography>
-        </div>
-        <div className={classes.filters}>
-          <ActiveFilters
-            genres={genres}
-            updateFilters={this.setFilters}
-            isListDynamic={false}
-            filters={this.state.filters}
-          />
           <IconButton
             onClick={this.toggleFilters}
             className={classes.settings}
@@ -395,6 +406,14 @@ class Popular extends Component<Props, State> {
             <Typography variant="srOnly">Tune</Typography>
           </IconButton>
         </div>
+        <div className={classes.filters}>
+          <ActiveFilters
+            genres={genres}
+            updateFilters={this.setFilters}
+            isListDynamic={false}
+            filters={this.state.filters}
+          />
+        </div>
         <AllFilters
           genres={genres}
           open={this.state.showFilter}
@@ -402,6 +421,7 @@ class Popular extends Component<Props, State> {
           handleGenreChange={this.setGenre}
           handleNetworkChange={this.setNetworks}
           handleSortChange={this.setSortOrder}
+          handleSliderChange={this.setSliderState}
         />
         <InfiniteScroll
           pageStart={0}

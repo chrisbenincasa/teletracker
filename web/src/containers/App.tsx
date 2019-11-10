@@ -43,7 +43,7 @@ const styles = (theme: Theme) =>
         duration: theme.transitions.duration.leavingScreen,
       }),
       marginLeft: 0,
-      paddingBottom: '9rem',
+      paddingBottom: '10rem',
       [theme.breakpoints.down('sm')]: {
         paddingBottom: '2rem',
       },
@@ -61,6 +61,8 @@ const styles = (theme: Theme) =>
       flexGrow: 1,
       minHeight: '100vh',
       position: 'relative',
+      display: 'flex',
+      flexDirection: 'column',
     },
   });
 
@@ -116,66 +118,70 @@ class App extends Component<Props, State> {
           onDrawerChange={() => this.toggleDrawer()}
         />
         {!isBooting ? (
-          <div>
-            {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
-            <Drawer open={this.state.drawerOpen} />
-            <main
-              style={{
-                display: 'flex',
-                flexDirection: isAuthed ? 'row' : 'column',
-              }}
-              className={clsx(classes.mainContent, {
-                [classes.mainContentShift]: this.state.drawerOpen,
-              })}
-            >
-              <Switch>
-                <Route
-                  exact
-                  path="/"
-                  render={props =>
-                    isAuthed ? <Popular {...props} /> : <Home {...props} />
-                  }
-                />
-                <Route
-                  exact
-                  path="/search"
-                  render={props => <Search {...props} />}
-                />
-                <Route
-                  exact
-                  path="/account"
-                  render={props => <Account {...props} />}
-                />
-                {/* This is here just to allow for easy testing without logging in/out.  Need to remove at some point */}
-                <Route exact path="/home" component={Home} />
-                <Route exact path="/login" component={Login} />
-                <Route exact path="/signup" component={Signup} />
-                <Route exact path="/new" render={props => <New {...props} />} />
-                <Route exact path="/popular" component={Popular} />
-                <Route exact path="/logout" component={Logout} />
-                <Route
-                  exact
-                  path="/lists"
-                  render={props => <Lists {...props} />}
-                />
-                <Route
-                  exact
-                  path="/lists/:id"
-                  render={props => <ListDetail {...props} />}
-                />
-                <Route exact path="/person/:id" component={PersonDetail} />
-                <Route
-                  exact
-                  path="/:type/:id"
-                  render={props => <ItemDetail {...props} />}
-                />
-              </Switch>
-            </main>
+          <React.Fragment>
+            <div style={{ flexGrow: 1 }}>
+              {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
+              <Drawer open={this.state.drawerOpen} />
+              <main
+                style={{
+                  display: 'flex',
+                  flexDirection: isAuthed ? 'row' : 'column',
+                }}
+                className={classes.mainContent}
+              >
+                <Switch>
+                  <Route
+                    exact
+                    path="/"
+                    render={props =>
+                      isAuthed ? <Popular {...props} /> : <Home {...props} />
+                    }
+                  />
+                  <Route
+                    exact
+                    path="/search"
+                    render={props => <Search {...props} />}
+                  />
+                  <Route
+                    exact
+                    path="/account"
+                    render={props => <Account {...props} />}
+                  />
+                  {/* This is here just to allow for easy testing without logging in/out.  Need to remove at some point */}
+                  <Route exact path="/home" component={Home} />
+                  <Route exact path="/login" component={Login} />
+                  <Route exact path="/signup" component={Signup} />
+                  <Route
+                    exact
+                    path="/new"
+                    render={props => <New {...props} />}
+                  />
+                  <Route exact path="/popular" component={Popular} />
+                  <Route exact path="/logout" component={Logout} />
+                  <Route
+                    exact
+                    path="/lists"
+                    render={props => <Lists {...props} />}
+                  />
+                  <Route
+                    exact
+                    path="/lists/:id"
+                    render={props => <ListDetail {...props} />}
+                  />
+                  <Route exact path="/person/:id" component={PersonDetail} />
+                  <Route
+                    exact
+                    path="/:type/:id"
+                    render={props => <ItemDetail {...props} />}
+                  />
+                </Switch>
+              </main>
+            </div>
             {location.pathname.toLowerCase() === '/popular' ||
             (isAuthed && location.pathname === '/') ? null : (
               <Footer />
             )}
-          </div>
+          </React.Fragment>
         ) : (
           <LinearProgress />
         )}

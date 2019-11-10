@@ -5,7 +5,7 @@ import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
 import SortDropdown from './SortDropdown';
-import Sliders from './Sliders';
+import Sliders, { SliderChange } from './Sliders';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
@@ -29,8 +29,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   genreContainer: {
     display: 'flex',
     flexDirection: 'row',
-    width: '50%',
+    width: '40%',
     flexWrap: 'wrap',
+    margin: `${theme.spacing(1)}px 0`,
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
@@ -38,15 +39,21 @@ const useStyles = makeStyles((theme: Theme) => ({
   slidersContainer: {
     display: 'flex',
     flexGrow: 1,
-    margin: '10px 0',
+    margin: `${theme.spacing(1)}px 0`,
     alignItems: 'flex-start',
     flexDirection: 'column',
+    width: '30%',
   },
   networkContainer: {
     display: 'flex',
     margin: `${theme.spacing(1)}px 0`,
     alignItems: 'flex-start',
     flexGrow: 1,
+    flexDirection: 'column',
+    width: '30%',
+    '& > div': {
+      marginBottom: theme.spacing(1),
+    },
   },
   toEdgeWrapper: {
     margin: `0 0 ${theme.spacing(2)}px`,
@@ -60,7 +67,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   sortContainer: {
     display: 'flex',
     flexDirection: 'column',
-    margin: `${theme.spacing(1)}px`,
+    margin: theme.spacing(1),
     alignItems: 'flex-start',
   },
 }));
@@ -70,6 +77,7 @@ interface Props {
   handleTypeChange?: (type?: ItemType[]) => void;
   handleNetworkChange?: (networkTypes?: NetworkType[]) => void;
   handleSortChange?: (sortOrder: ListSortOptions) => void;
+  handleSliderChange?: (sliderChange: SliderChange) => void;
   isListDynamic?: boolean;
   genres?: Genre[];
   open: boolean;
@@ -90,6 +98,7 @@ const AllFilters = (props: Props) => {
     handleNetworkChange,
     handleTypeChange,
     handleSortChange,
+    handleSliderChange,
   } = props;
 
   const setGenre = (genres?: number[]) => {
@@ -120,13 +129,6 @@ const AllFilters = (props: Props) => {
       appear
     >
       <div className={classes.allFiltersContainer}>
-        <Typography
-          color="inherit"
-          variant="h5"
-          className={classes.filterTitle}
-        >
-          Filter
-        </Typography>
         <div className={classes.filterSortContainer}>
           <div className={classes.genreContainer}>
             {handleGenreChange && (
@@ -137,18 +139,16 @@ const AllFilters = (props: Props) => {
               />
             )}
           </div>
-          <div className={classes.slidersContainer}>
-            <Sliders />
-          </div>
+          {handleSliderChange ? (
+            <div className={classes.slidersContainer}>
+              <Sliders handleChange={handleSliderChange} />
+            </div>
+          ) : null}
           <div className={classes.networkContainer}>
             {handleNetworkChange && (
               <NetworkSelect handleChange={setNetworks} />
             )}
-          </div>
-          <div className={classes.typeContainer}>
             {handleTypeChange && <TypeToggle handleChange={setType} />}
-          </div>
-          <div className={classes.sortContainer}>
             {handleSortChange && (
               <SortDropdown
                 isListDynamic={!!isListDynamic}

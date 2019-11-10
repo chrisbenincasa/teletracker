@@ -2,7 +2,6 @@ import { put, select, takeEvery } from '@redux-saga/core/effects';
 import { UserSelf } from '../../reducers/user';
 import { AppState } from '../../reducers';
 import * as R from 'ramda';
-import { UserUpdateNetworksAction } from '../user';
 import { Network } from '../../types';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';

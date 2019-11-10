@@ -173,7 +173,7 @@ class ListDetail extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     let listId = Number(this.props.match.params.id);
-    let params = new URLSearchParams(location.search);
+    let params = new URLSearchParams(props.location.search);
 
     this.state = {
       anchorEl: null,
@@ -192,7 +192,7 @@ class ListDetail extends Component<Props, State> {
         params.has('genres') ||
         params.has('networks') ||
         params.has('types'),
-      filters: parseFilterParamsFromQs(this.props.location.search),
+      filters: parseFilterParamsFromQs(props.location.search),
       totalLoadedImages: 0,
     };
   }
@@ -630,20 +630,6 @@ class ListDetail extends Component<Props, State> {
     }
   };
 
-  filteredFilmography(list: List) {
-    let filmography = list!.items || [];
-
-    return filmography.filter(
-      (item: Item) =>
-        !this.state.filters.genresFilter ||
-        (item &&
-          item.genres &&
-          item.genres
-            .map(g => g.id)
-            .includes(this.state.filters.genresFilter[0])),
-    );
-  }
-
   loadMoreDebounced = _.debounce(() => {
     let {
       filters: { sortOrder, itemTypes, genresFilter, networks },
@@ -805,12 +791,7 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 export default withWidth()(
   withUser(
     withStyles(styles)(
-      withRouter(
-        connect(
-          mapStateToProps,
-          mapDispatchToProps,
-        )(ListDetail),
-      ),
+      withRouter(connect(mapStateToProps, mapDispatchToProps)(ListDetail)),
     ),
   ),
 );
