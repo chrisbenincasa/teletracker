@@ -1,13 +1,12 @@
 import {
   createStyles,
   CssBaseline,
-  Theme,
-  withWidth,
-  WithStyles,
-  withStyles,
   LinearProgress,
+  Theme,
+  withStyles,
+  WithStyles,
+  withWidth,
 } from '@material-ui/core';
-import clsx from 'clsx';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -33,7 +32,6 @@ import Drawer, { DrawerWidthPx } from '../components/Drawer';
 import Toolbar from '../components/Toolbar';
 import Footer from '../components/Footer';
 import Logout from './Logout';
-import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({

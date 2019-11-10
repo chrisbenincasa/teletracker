@@ -11,7 +11,6 @@ import {
   Icon,
   IconButton,
   InputBase,
-  Menu,
   MenuItem,
   MenuList,
   Paper,

@@ -27,7 +27,7 @@ import {
   ThumbDown,
   ThumbUp,
 } from '@material-ui/icons';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { connect } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -49,8 +49,7 @@ import HasImagery from '../types/HasImagery';
 import { Linkable, ThingLikeStruct } from '../types/Thing';
 import AddToListDialog from './AddToListDialog';
 import { ResponsiveImage } from './ResponsiveImage';
-import { ApiItem } from '../types/v2';
-import { itemHasTag, Item } from '../types/v2/Item';
+import { Item, itemHasTag } from '../types/v2/Item';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
 
 const useStyles = makeStyles((theme: Theme) => ({

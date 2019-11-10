@@ -2,7 +2,6 @@ import { put, takeEvery } from '@redux-saga/core/effects';
 import { clientEffect, createAction, createBasicAction } from '../utils';
 import { defaultMovieMeta } from '../lists';
 import { ErrorFSA, FSA } from 'flux-standard-action';
-import Thing, { ThingFactory } from '../../types/Thing';
 import { Item, ItemFactory } from '../../types/v2/Item';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { ApiItem } from '../../types/v2';

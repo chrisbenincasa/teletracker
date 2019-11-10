@@ -308,9 +308,7 @@ class Popular extends Component<Props, State> {
   mapGenre = (genre: number) => {
     const { genres } = this.props;
     const genreItem = genres && genres.find(obj => obj.id === genre);
-    const genreName = (genreItem && genreItem.name) || '';
-
-    return genreName;
+    return (genreItem && genreItem.name) || '';
   };
 
   renderLoading = () => {
@@ -374,7 +372,7 @@ class Popular extends Component<Props, State> {
   renderPopular = () => {
     const { classes, genres, popular, userSelf, thingsBySlug } = this.props;
     const {
-      filters: { genresFilter, itemTypes, networks, sortOrder },
+      filters: { genresFilter, itemTypes },
     } = this.state;
 
     return popular && popular && popular.length ? (
