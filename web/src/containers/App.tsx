@@ -121,7 +121,10 @@ class App extends Component<Props, State> {
           <React.Fragment>
             <div style={{ flexGrow: 1 }}>
               {/* TODO: investigate better solution for flexDirection issue as it relates to the LinearProgress bar display */}
-              <Drawer open={this.state.drawerOpen} />
+              <Drawer
+                open={this.state.drawerOpen}
+                closeRequested={() => this.toggleDrawer()}
+              />
               <main
                 style={{
                   display: 'flex',
