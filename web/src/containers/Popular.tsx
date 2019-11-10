@@ -34,6 +34,7 @@ import { filterParamsEqual } from '../utils/changeDetection';
 import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
+import { SliderChange } from '../components/Filters/Sliders';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -283,6 +284,23 @@ class Popular extends Component<Props, State> {
     }
   };
 
+  setSliderState = (sliderChange: SliderChange) => {
+    this.setState(
+      {
+        filters: {
+          ...this.state.filters,
+          sliders: {
+            ...(this.state.filters.sliders || {}),
+            releaseYear: sliderChange.releaseYear,
+          },
+        },
+      },
+      () => {
+        this.loadPopular(false);
+      },
+    );
+  };
+
   toggleFilters = () => {
     this.setState({ showFilter: !this.state.showFilter });
   };
@@ -403,6 +421,7 @@ class Popular extends Component<Props, State> {
           handleGenreChange={this.setGenre}
           handleNetworkChange={this.setNetworks}
           handleSortChange={this.setSortOrder}
+          handleSliderChange={this.setSliderState}
         />
         <InfiniteScroll
           pageStart={0}
