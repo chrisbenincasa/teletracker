@@ -6,8 +6,7 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import React, { Component, useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React from 'react';
 import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from './ItemCard';
 import { UserSelf } from '../reducers/user';
