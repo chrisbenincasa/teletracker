@@ -45,7 +45,7 @@ interface State {
 }
 
 export const getSortFromUrlParam = () => {
-  return parseFilterParamsFromQs(location.search).sortOrder;
+  return parseFilterParamsFromQs(window.location.search).sortOrder;
 };
 
 class SortDropDown extends Component<Props, State> {

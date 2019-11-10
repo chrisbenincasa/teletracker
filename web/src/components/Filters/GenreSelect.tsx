@@ -49,7 +49,7 @@ interface State {
 }
 
 export const getGenreFromUrlParam = () => {
-  return parseFilterParamsFromQs(location.search).genresFilter;
+  return parseFilterParamsFromQs(window.location.search).genresFilter;
 };
 
 class GenreSelect extends Component<Props, State> {

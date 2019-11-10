@@ -71,7 +71,7 @@ class Search extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    let params = new URLSearchParams(location.search);
+    let params = new URLSearchParams(window.location.search);
     let query;
     let param = params.get('q');
 
@@ -232,10 +232,5 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
 };
 
 export default withUser(
-  withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(Search),
-  ),
+  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Search)),
 );

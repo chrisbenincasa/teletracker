@@ -252,7 +252,7 @@ class Drawer extends Component<Props, State> {
         key={userList.id}
         to={`/lists/${list.id}`}
         // TODO: Improve logic for selection
-        selected={listPath === location.pathname}
+        selected={listPath === this.props.location.pathname}
         primary={list.name}
         listLength={userList.totalItems}
       />
@@ -333,14 +333,13 @@ class Drawer extends Component<Props, State> {
   }
 
   renderDrawer() {
-    let { classes, isAuthed, open } = this.props;
+    let { classes, open } = this.props;
 
     return (
       <DrawerUI
         open={open}
         anchor="left"
         className={classes.drawer}
-        // variant="persistent"
         classes={{
           paper: classes.drawerPaper,
         }}

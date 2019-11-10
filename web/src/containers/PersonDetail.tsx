@@ -153,7 +153,7 @@ type Props = OwnProps & StateProps & NotOwnProps;
 class PersonDetail extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    let params = new URLSearchParams(location.search);
+    let params = new URLSearchParams(window.location.search);
 
     this.state = {
       showFullBiography: false,
@@ -424,16 +424,12 @@ class PersonDetail extends React.Component<Props, State> {
           <meta
             name="title"
             property="og:title"
-            content={`${
-              person.name
-            } | Where to stream, rent, or buy. Track this person today!`}
+            content={`${person.name} | Where to stream, rent, or buy. Track this person today!`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy content featuring ${
-              person.name
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="image"
@@ -459,15 +455,11 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="twitter:title"
-            content={`${
-              person.name
-            } - Where to Stream, Rent, or Buy their content`}
+            content={`${person.name} - Where to Stream, Rent, or Buy their content`}
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy content featuring ${
-              person.name
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="twitter:image"
@@ -475,9 +467,7 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="keywords"
-            content={`${
-              person.name
-            }, stream, streaming, rent, buy, watch, track`}
+            content={`${person.name}, stream, streaming, rent, buy, watch, track`}
           />
           <link
             rel="canonical"
@@ -579,11 +569,6 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch =>
 
 export default withUser(
   withStyles(styles)(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(PersonDetail),
-    ),
+    withRouter(connect(mapStateToProps, mapDispatchToProps)(PersonDetail)),
   ),
 );

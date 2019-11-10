@@ -20,7 +20,6 @@ export function getTmdbImage(
   item: ApiItem | ApiPerson,
   imageType: string,
 ): ItemImage | undefined {
-  _.find;
   return _.find(
     item.images || [],
     image => image.provider_id === 0 && image.image_type === imageType,

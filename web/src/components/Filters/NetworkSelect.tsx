@@ -58,7 +58,7 @@ interface State {
 }
 
 export const getNetworkTypeFromUrlParam = () => {
-  return parseFilterParamsFromQs(location.search).networks;
+  return parseFilterParamsFromQs(window.location.search).networks;
 };
 
 class NetworkSelect extends Component<Props, State> {
