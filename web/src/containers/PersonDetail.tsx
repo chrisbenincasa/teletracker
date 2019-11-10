@@ -282,7 +282,8 @@ class PersonDetail extends React.Component<Props, State> {
                 (genresFilter && genresFilter.length > 0 && genresFilter[0]) ||
                   0,
               )) ||
-          !genresFilter,
+          !genresFilter ||
+          genresFilter.length === 0,
       )
       .filter(
         credit =>
@@ -292,11 +293,11 @@ class PersonDetail extends React.Component<Props, State> {
           !itemTypes,
       )
       .sort((a, b) => {
-        if (this.state.filters.sortOrder === 'popularity') {
+        if (sortOrder === 'popularity') {
           return (a.item!.popularity || 0.0) < (b.item!.popularity || 0.0)
             ? 1
             : -1;
-        } else if (this.state.filters.sortOrder === 'recent') {
+        } else if (sortOrder === 'recent') {
           let sort;
           if (!b.item!.release_date) {
             sort = 1;
@@ -310,27 +311,6 @@ class PersonDetail extends React.Component<Props, State> {
           return 0;
         }
       });
-
-    let finalGenres: Genre[] = [];
-
-    if (this.props.genres) {
-      finalGenres = _.chain(filmography)
-        .map(f => f.item!.genres || [])
-        .flatten()
-        .map(f => f.id)
-        .uniq()
-        .map(id => {
-          let g = _.find(this.props.genres, g => g.id === id);
-          if (g) {
-            return [g];
-          } else {
-            return [];
-          }
-        })
-        .flatten()
-        .sortBy(g => g.name)
-        .value();
-    }
 
     return (
       <div className={classes.genreContainer}>
