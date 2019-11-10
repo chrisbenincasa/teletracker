@@ -217,8 +217,10 @@ function ItemDetails(props: Props) {
   let history = useHistory();
   let params = useParams();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const { isLoggedIn, userSelf } = props;
+
+    loadItem();
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -231,10 +233,6 @@ function ItemDetails(props: Props) {
     ) {
       ReactGA.set({ userId: userSelf.user.getUsername() });
     }
-  }, []);
-
-  React.useEffect(() => {
-    loadItem();
   }, [location]);
 
   const loadItem = () => {
