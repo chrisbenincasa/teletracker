@@ -24,7 +24,13 @@ import React, { useEffect, useState } from 'react';
 import ReactGA from 'react-ga';
 import { Helmet } from 'react-helmet';
 import { connect } from 'react-redux';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
+import {
+  RouteComponentProps,
+  useHistory,
+  useLocation,
+  useParams,
+  withRouter,
+} from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
   itemFetchInitiated,
@@ -207,11 +213,14 @@ function ItemDetails(props: Props) {
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
+  const [test, setTest] = useState<boolean>(false);
+
+  let location = useLocation();
+  let history = useHistory();
+  let params = useParams();
 
   useEffect(() => {
     const { isLoggedIn, userSelf } = props;
-
-    loadItem();
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -226,10 +235,13 @@ function ItemDetails(props: Props) {
     }
   }, []);
 
+  React.useEffect(() => {
+    loadItem();
+  }, [location]);
+
   const loadItem = () => {
-    let { match } = props;
-    let itemId = match.params.id;
-    let itemType = match.params.type;
+    let itemId = params.id;
+    let itemType = params.type;
 
     props.fetchItemDetails({ id: itemId, type: itemType });
   };
@@ -444,7 +456,7 @@ function ItemDetails(props: Props) {
           />
           <meta
             property="og:url"
-            content={`http://teletracker.com${props.location.pathname}`}
+            content={`http://teletracker.com${location.pathname}`}
           />
           <meta
             data-react-helmet="true"
@@ -476,7 +488,7 @@ function ItemDetails(props: Props) {
           />
           <link
             rel="canonical"
-            href={`http://teletracker.com${props.location.pathname}`}
+            href={`http://teletracker.com${location.pathname}`}
           />
         </Helmet>
 
@@ -509,7 +521,7 @@ function ItemDetails(props: Props) {
           >
             <Fab
               size="small"
-              onClick={props.history.goBack}
+              onClick={history.goBack}
               variant="extended"
               aria-label="Go Back"
               style={{ marginTop: 20, marginLeft: 20 }}
@@ -642,11 +654,9 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 
 export default withUser(
   withStyles(styles)(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(ItemDetails),
-    ),
+    connect(
+      mapStateToProps,
+      mapDispatchToProps,
+    )(ItemDetails),
   ),
 );
