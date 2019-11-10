@@ -2,7 +2,7 @@ import BuildConfig._
 
 Global / cancelable := true
 
-lazy val `teletracker-repo` = Project("teletracker-repo", file("."))
+lazy val `teletracker` = Project("teletracker", file("."))
   .settings(
     version := BuildConfig.Revision.wholeVersion,
     publish := {},

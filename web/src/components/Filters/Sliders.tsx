@@ -123,7 +123,10 @@ const SliderFilters = (props: Props) => {
   const handleYearChange = (event, newValue) => {
     setYearValue(newValue);
     let [min, max] = extractValues(newValue, MIN_YEAR, nextYear);
-    debounceUrlUpdate(props, [['ry_min', min], ['ry_max', max]]);
+    debounceUrlUpdate(props, [
+      ['ry_min', min],
+      ['ry_max', max],
+    ]);
   };
 
   const handleYearCommitted = (event, newValue) => {
@@ -139,7 +142,10 @@ const SliderFilters = (props: Props) => {
   const handleImdbChange = (event, newValue) => {
     setImdbRatingValue(newValue);
     let [min, max] = extractValues(newValue, MIN_RATING, MAX_RATING);
-    debounceUrlUpdate(props, [['imdb_min', min], ['imdb_max', max]]);
+    debounceUrlUpdate(props, [
+      ['imdb_min', min],
+      ['imdb_max', max],
+    ]);
   };
 
   return (

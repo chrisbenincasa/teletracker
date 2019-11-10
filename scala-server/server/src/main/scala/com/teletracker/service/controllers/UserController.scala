@@ -501,6 +501,43 @@ class UserController @Inject()(
         })
       }
 
+      put("/:userId/lists/:listId") { req: UpdateListRequest =>
+        withList(req.authenticatedUserId.get, req.listId) { list =>
+          for {
+            updateResult <- usersDbAccess
+              .updateList(
+                req.authenticatedUserId.get,
+                list.id,
+                req.name,
+                req.rules,
+                req.options
+              )
+            _ <- updateResult
+              .map(
+                listsApi
+                  .handleListUpdateResult(
+                    req.authenticatedUserId.get,
+                    list.id,
+                    _
+                  )
+              )
+              .getOrElse(Future.unit)
+          } yield {
+            updateResult match {
+              case None => response.notFound
+              case Some(result) =>
+                response.ok(
+                  DataResponse.complex(
+                    UpdateListResponse(
+                      result.optionsChanged || result.rulesChanged
+                    )
+                  )
+                )
+            }
+          }
+        }
+      }
+
       put("/:userId/lists/:listId/things") { req: AddThingToListRequest =>
         withList(req.authenticatedUserId.get, req.listId) { list =>
           thingsDbAccess.findThingByIdOrSlug(req.idOrSlug).flatMap {
@@ -656,7 +693,6 @@ class UserController @Inject()(
           }
       }
     }
-
   }
 
   private def getUserOrNotFound(userId: String): Future[String] = {
