@@ -3,22 +3,21 @@ import {
   Chip,
   Collapse,
   makeStyles,
-  Tabs,
   Tab,
+  Tabs,
   Theme,
   Typography,
 } from '@material-ui/core';
 import {
   AttachMoney,
   Cloud,
-  Visibility,
-  TvOff,
   Theaters,
+  TvOff,
+  Visibility,
 } from '@material-ui/icons';
 import * as R from 'ramda';
-import { Availability, Network } from '../types';
+import { Network } from '../types';
 import React from 'react';
-import Thing from '../types/Thing';
 import { UserSelf } from '../reducers/user';
 import { ApiItem, ItemAvailability } from '../types/v2';
 import { AppState } from '../reducers';
@@ -124,8 +123,6 @@ const ThingAvailability = (props: Props) => {
     return R.values(
       R.mapObjIndexed(avs => {
         let lowestCostAv = R.head(R.sortBy(R.prop('cost'))(avs))!;
-        let hasHd = R.find(R.propEq('presentation_type', 'hd'), avs);
-        let has4k = R.find(R.propEq('presentation_type', '4k'), avs);
         // let logoUri =
         //   '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
 
@@ -240,9 +237,7 @@ const ThingAvailability = (props: Props) => {
             <TvOff fontSize="large" style={{ margin: 10 }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <Typography variant="subtitle1">
-                {`${
-                  itemDetail.original_title
-                } is not currently available to stream, rent,
+                {`${itemDetail.original_title} is not currently available to stream, rent,
                       or purchase.`}
               </Typography>
               <Typography variant="subtitle1">

@@ -46,9 +46,10 @@ export const ResponsiveImage: React.FC<imgProps> = ({
   }
 
   let imageName;
+  let img;
   switch (imageType) {
     case 'backdrop':
-      var img = _.find(
+      img = _.find(
         item.images || [],
         image => image.provider_id === 0 && image.image_type === 'backdrop',
       );
@@ -58,7 +59,7 @@ export const ResponsiveImage: React.FC<imgProps> = ({
       }
       break;
     case 'poster':
-      var img = _.find(
+      img = _.find(
         item.images || [],
         image => image.provider_id === 0 && image.image_type === 'poster',
       );
@@ -68,7 +69,7 @@ export const ResponsiveImage: React.FC<imgProps> = ({
       }
       break;
     case 'profile':
-      var img = _.find(
+      img = _.find(
         item.images || [],
         image => image.provider_id === 0 && image.image_type === 'profile',
       );

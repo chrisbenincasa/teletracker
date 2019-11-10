@@ -8,7 +8,7 @@ import {
 } from '../../utils/urlHelper';
 import _ from 'lodash';
 import * as R from 'ramda';
-import { NetworkType, OpenRange } from '../../types';
+import { OpenRange } from '../../types';
 
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {

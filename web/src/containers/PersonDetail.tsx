@@ -11,7 +11,6 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import { ChevronLeft, ExpandLess, ExpandMore, Tune } from '@material-ui/icons';
-import _ from 'lodash';
 import * as R from 'ramda';
 import { default as React } from 'react';
 import ReactGA from 'react-ga';
