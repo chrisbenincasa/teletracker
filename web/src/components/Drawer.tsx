@@ -340,7 +340,7 @@ class Drawer extends Component<Props, State> {
         open={open}
         anchor="left"
         className={classes.drawer}
-        variant="persistent"
+        // variant="persistent"
         classes={{
           paper: classes.drawerPaper,
         }}
