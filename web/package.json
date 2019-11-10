@@ -32,9 +32,9 @@
     "@types/redux-saga": "^0.10.5",
     "@types/redux-thunk": "^2.1.0",
     "fsevents": "^2.0.6",
-    "prettier": "1.17.0",
-    "react-scripts": "2.1.8",
-    "typescript": "3.6.2"
+    "prettier": "1.19.0",
+    "react-scripts": "3.2.0",
+    "typescript": "3.7.2"
   },
   "dependencies": {
     "@aws-amplify/auth": "^1.5.0",
