@@ -29,7 +29,6 @@ import {
   useHistory,
   useLocation,
   useParams,
-  withRouter,
 } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
@@ -213,7 +212,6 @@ function ItemDetails(props: Props) {
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
-  const [test, setTest] = useState<boolean>(false);
 
   let location = useLocation();
   let history = useHistory();
