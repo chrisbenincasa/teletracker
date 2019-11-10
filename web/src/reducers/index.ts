@@ -54,15 +54,15 @@ function startupReducer(
 
 export default history =>
   combineReducers({
-    router: connectRouter(history),
     auth,
-    itemDetail,
-    search,
-    userSelf,
-    lists,
-    startup: startupReducer,
-    metadata,
     availability,
-    popular,
+    itemDetail,
+    lists,
+    metadata,
     people,
+    popular,
+    router: connectRouter(history),
+    search,
+    startup: startupReducer,
+    userSelf,
   });
