@@ -6,7 +6,7 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import React, { Component } from 'react';
+import React from 'react';
 import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from './ItemCard';
 import { UserSelf } from '../reducers/user';
