@@ -51,7 +51,7 @@ interface State {
 }
 
 export const getTypeFromUrlParam = () => {
-  return parseFilterParamsFromQs(location.search).itemTypes;
+  return parseFilterParamsFromQs(window.location.search).itemTypes;
 };
 
 class TypeToggle extends Component<Props, State> {

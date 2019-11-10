@@ -173,7 +173,7 @@ class ListDetail extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     let listId = Number(this.props.match.params.id);
-    let params = new URLSearchParams(location.search);
+    let params = new URLSearchParams(props.location.search);
 
     this.state = {
       anchorEl: null,
@@ -192,7 +192,7 @@ class ListDetail extends Component<Props, State> {
         params.has('genres') ||
         params.has('networks') ||
         params.has('types'),
-      filters: parseFilterParamsFromQs(this.props.location.search),
+      filters: parseFilterParamsFromQs(props.location.search),
       totalLoadedImages: 0,
     };
   }
