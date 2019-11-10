@@ -693,7 +693,7 @@ class Toolbar extends Component<Props, State> {
     }
 
     return (
-      <AppBar position="sticky" style={{ whiteSpace: 'nowrap' }}>
+      <AppBar position="sticky" style={{ whiteSpace: 'nowrap', zIndex: 10000 }}>
         <MUIToolbar variant="dense" disableGutters>
           <Slide
             direction="left"
@@ -842,11 +842,6 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
 
 export default withWidth()(
   withRouter(
-    withStyles(styles)(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(Toolbar),
-    ),
+    withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Toolbar)),
   ),
 );

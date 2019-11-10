@@ -427,14 +427,14 @@ function ItemCard(props: Props) {
                 transitionDelay: isHovering ? `${transitionDelay}ms` : '0ms',
               }}
             >
-              <Tooltip title="Manage Lists" placement={tooltipPlacement}>
+              <Tooltip title="Manage Tracking" placement={tooltipPlacement}>
                 <IconButton
-                  aria-label="Manage Lists"
+                  aria-label="Manage Tracking"
                   onClick={() => setManageTrackingModalOpen(true)}
                   disableRipple
                 >
                   <PlaylistAdd className={classes.hoverWatch} />
-                  <Typography variant="srOnly">Manage Lists</Typography>
+                  <Typography variant="srOnly">Manage Tracking</Typography>
                 </IconButton>
               </Tooltip>
             </Zoom>
@@ -605,7 +605,4 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
     dispatch,
   );
 
-export default connect(
-  null,
-  mapDispatchToProps,
-)(ItemCard);
+export default connect(null, mapDispatchToProps)(ItemCard);
