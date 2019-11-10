@@ -244,10 +244,5 @@ const mapDispatchToProps = dispatch =>
   );
 
 export default withRouter(
-  withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(SignupForm),
-  ),
+  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(SignupForm)),
 );

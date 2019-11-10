@@ -6,7 +6,7 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import _ from 'lodash';
-import { withRouter, RouteComponentProps } from 'react-router-dom';
+import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { Genre } from '../../types';
 import React, { Component } from 'react';
 import {

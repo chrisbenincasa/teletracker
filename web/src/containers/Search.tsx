@@ -17,7 +17,6 @@ import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import Thing from '../types/Thing';
 import { Error as ErrorIcon } from '@material-ui/icons';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants/';

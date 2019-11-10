@@ -7,7 +7,7 @@ import {
 } from '@material-ui/core';
 import { push } from 'connected-react-router';
 import * as R from 'ramda';
-import React, { Component, FormEvent } from 'react';
+import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { signup, signUpWithGoogle } from '../actions/auth';
@@ -117,8 +117,5 @@ const mapDispatchToProps = dispatch =>
   );
 
 export default withStyles(styles)(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(Signup),
+  connect(mapStateToProps, mapDispatchToProps)(Signup),
 );

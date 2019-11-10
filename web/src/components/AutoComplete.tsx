@@ -1,7 +1,6 @@
 import {
   createStyles,
   MenuItem,
-  NoSsr,
   Paper,
   TextField,
   Theme,

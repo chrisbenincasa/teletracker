@@ -6,15 +6,12 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import { CastMember } from '../types';
 import React, { Component } from 'react';
 import { parseInitials } from '../utils/textHelper';
 import RouterLink from './RouterLink';
-import Thing from '../types/Thing';
 import { FixedSizeList as LazyList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { ApiItem } from '../types/v2';
-import { ItemCastMember, Item } from '../types/v2/Item';
+import { Item, ItemCastMember } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -72,9 +69,7 @@ class Cast extends Component<Props, {}> {
           alt={castMember.name}
           src={
             castMember.person && castMember.person.profile_path
-              ? `https://image.tmdb.org/t/p/w185/${
-                  castMember.person.profile_path
-                }`
+              ? `https://image.tmdb.org/t/p/w185/${castMember.person.profile_path}`
               : ''
           }
           className={classes.avatar}

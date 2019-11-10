@@ -9,7 +9,7 @@ import {
 } from '@material-ui/core';
 import { ExitToApp, List, PersonAdd } from '@material-ui/icons';
 import * as R from 'ramda';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactGA from 'react-ga';
 import { connect } from 'react-redux';
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
@@ -515,12 +515,7 @@ const mapDispatchToProps = dispatch =>
 
 export default withWidth()(
   withUser(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(Home),
-    ),
+    withRouter(connect(mapStateToProps, mapDispatchToProps)(Home)),
     () => null,
   ),
 );

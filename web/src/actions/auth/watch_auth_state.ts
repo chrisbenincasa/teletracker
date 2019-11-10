@@ -69,7 +69,7 @@ export const authStateWatcher = function*() {
   }
 };
 
-export const authStateChannelMaker = function*() {
+export const authStateChannelMaker = function() {
   return eventChannel(emitter => {
     // Listen to auth events from Amplify and forward them to a saga.
     Hub.listen('auth', ({ payload: { event, data } }) => {

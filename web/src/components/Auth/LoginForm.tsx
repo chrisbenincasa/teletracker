@@ -154,7 +154,7 @@ class LoginForm extends Component<Props, State> {
   };
 
   render() {
-    let { isAuthed, classes, isLoggingIn } = this.props;
+    let { classes, isLoggingIn } = this.props;
     let { email, password } = this.state;
 
     return (
@@ -252,10 +252,5 @@ const mapDispatchToProps = dispatch =>
   );
 
 export default withRouter(
-  withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(LoginForm),
-  ),
+  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(LoginForm)),
 );

@@ -20,7 +20,7 @@ import { ChevronLeft, PlayArrow } from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import * as R from 'ramda';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import ReactGA from 'react-ga';
 import { Helmet } from 'react-helmet';
 import { connect } from 'react-redux';
