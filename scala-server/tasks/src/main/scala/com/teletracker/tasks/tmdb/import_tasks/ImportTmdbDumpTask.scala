@@ -2,7 +2,7 @@ package com.teletracker.tasks.tmdb.import_tasks
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{ExternalSource, ThingLike}
-import com.teletracker.common.elasticsearch.{ItemSearch, ItemUpdater}
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.tmdb.{ErrorResponse, HasTmdbId}
 import com.teletracker.common.model.{Thingable, ToEsItem}
 import com.teletracker.common.util.Futures._

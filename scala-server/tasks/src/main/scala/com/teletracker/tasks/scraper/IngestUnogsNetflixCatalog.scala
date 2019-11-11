@@ -4,7 +4,7 @@ import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
-  ItemSearch,
+  ItemLookup,
   ItemUpdater
 }
 import com.teletracker.common.external.tmdb.TmdbClient
@@ -27,7 +27,7 @@ class IngestUnogsNetflixCatalog @Inject()(
   protected val thingsDb: ThingsDbAccess,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
-  protected val itemSearch: ItemSearch,
+  protected val itemSearch: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   protected val elasticsearchExecutor: ElasticsearchExecutor,
   elasticsearchLookup: ElasticsearchLookup)

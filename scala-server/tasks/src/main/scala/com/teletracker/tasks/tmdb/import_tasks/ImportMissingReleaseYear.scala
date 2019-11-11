@@ -2,7 +2,7 @@ package com.teletracker.tasks.tmdb.import_tasks
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.elasticsearch.{
-  ItemSearch,
+  ItemLookup,
   ItemUpdater,
   PersonLookup
 }
@@ -19,7 +19,7 @@ class ImportMoviesMissingReleaseYear @Inject()(
   sourceRetriever: SourceRetriever,
   thingsDbAccess: ThingsDbAccess,
   genreCache: GenreCache,
-  override protected val itemSearch: ItemSearch,
+  override protected val itemSearch: ItemLookup,
   override protected val itemUpdater: ItemUpdater,
   override protected val personLookup: PersonLookup
 )(implicit override protected val executionContext: ExecutionContext)
@@ -63,7 +63,7 @@ class ImportTvMissingReleaseYear @Inject()(
   sourceRetriever: SourceRetriever,
   thingsDbAccess: ThingsDbAccess,
   genreCache: GenreCache,
-  override protected val itemSearch: ItemSearch,
+  override protected val itemSearch: ItemLookup,
   override protected val itemUpdater: ItemUpdater,
   override protected val personLookup: PersonLookup
 )(implicit override protected val executionContext: ExecutionContext)

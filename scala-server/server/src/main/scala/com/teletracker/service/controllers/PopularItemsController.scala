@@ -3,7 +3,13 @@ package com.teletracker.service.controllers
 import com.teletracker.common.db.{Bookmark, Popularity}
 import com.teletracker.common.db.access.{ThingsDbAccess, UserThingDetails}
 import com.teletracker.common.db.model.{Network, ThingType}
-import com.teletracker.common.elasticsearch.PopularItemSearch
+import com.teletracker.common.elasticsearch
+import com.teletracker.common.elasticsearch.{
+  BinaryOperator,
+  ItemSearch,
+  PeopleCreditSearch,
+  PersonCreditSearch
+}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.{
@@ -14,7 +20,11 @@ import com.teletracker.common.util.{
 }
 import com.teletracker.common.util.json.circe._
 import com.teletracker.service.api
-import com.teletracker.service.api.{ItemSearchRequest, ThingApi}
+import com.teletracker.service.api.{
+  ItemSearchRequest,
+  PeopleCreditsFilter,
+  ThingApi
+}
 import com.teletracker.service.controllers.TeletrackerController._
 import com.teletracker.service.controllers.annotations.ItemReleaseYear
 import com.twitter.finagle.http.Request
@@ -36,7 +46,7 @@ class PopularItemsController @Inject()(
   tmdbClient: TmdbClient,
   thingsDbAccess: ThingsDbAccess,
   networkCache: NetworkCache,
-  popularItemSearch: PopularItemSearch,
+  popularItemSearch: ItemSearch,
   thingApi: ThingApi
 )(implicit executionContext: ExecutionContext)
     extends Controller
@@ -110,7 +120,17 @@ class PopularItemsController @Inject()(
             req.minReleaseYear.map(localDateAtYear),
             req.maxReleaseYear.map(localDateAtYear)
           )
-        )
+        ),
+        peopleCredits =
+          if (req.cast.nonEmpty || req.crew.nonEmpty)
+            Some(
+              api.PeopleCreditsFilter(
+                req.cast.toSeq,
+                req.crew.toSeq,
+                BinaryOperator.And
+              )
+            )
+          else None
       )
 
       thingApi
@@ -136,7 +156,6 @@ class PopularItemsController @Inject()(
 object GetPopularItemsRequest {
   final val DefaultLimit = 10
   final val MaxYear = LocalDate.now().getYear + 5
-
 }
 
 case class GetPopularItemsRequest(
@@ -149,6 +168,8 @@ case class GetPopularItemsRequest(
   @QueryParam genres: Set[Int] = Set.empty,
   @QueryParam @ItemReleaseYear minReleaseYear: Option[Int],
   @QueryParam @ItemReleaseYear maxReleaseYear: Option[Int],
+  @QueryParam(commaSeparatedList = true) cast: Set[String] = Set.empty,
+  @QueryParam(commaSeparatedList = true) crew: Set[String] = Set.empty,
   request: Request)
     extends InjectedRequest {
 
