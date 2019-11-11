@@ -27,11 +27,11 @@ import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
   ArrowDropDown,
   ArrowDropUp,
-  ChevronRight,
   Close,
   Menu as MenuIcon,
   Person,
   Search as SearchIcon,
+  KeyboardArrowUp,
 } from '@material-ui/icons';
 import clsx from 'clsx';
 import _ from 'lodash';
@@ -106,6 +106,9 @@ const styles = (theme: Theme) =>
       padding: 'inherit',
       left: 0,
       right: 0,
+    },
+    mobileSearchIcon: {
+      padding: `4px ${theme.spacing(1)}px`,
     },
     noResults: {
       margin: theme.spacing(1),
@@ -530,23 +533,19 @@ class Toolbar extends Component<Props, State> {
           <div className={classes.grow} />
           {this.renderQuickSearch()}
         </div>
-        {!mobileSearchBarOpen ? (
+
           <div className={classes.sectionMobile}>
             <IconButton
-              aria-owns={mobileSearchBarOpen ? 'material-appbar' : undefined}
+              aria-owns={'Search Teletracker'}
               aria-haspopup="true"
               onClick={this.handleMobileSearchDisplay}
               color="inherit"
-              style={
-                mobileSearchBarOpen
-                  ? { backgroundColor: 'rgba(250,250,250, 0.15)' }
-                  : undefined
-              }
+              disableRipple
             >
               <SearchIcon />
-            </IconButton>{' '}
+            </IconButton>
           </div>
-        ) : null}
+
       </React.Fragment>
     );
   }
@@ -677,9 +676,73 @@ class Toolbar extends Component<Props, State> {
     );
   }
 
+  renderMobileSearchBar = () => {
+    let { classes } = this.props;
+    let { searchText } = this.state;
+
+    return (
+      <Slide
+        direction="down"
+        in={this.state.mobileSearchBarOpen}
+        timeout={350}
+        mountOnEnter
+      >
+        <div
+          className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
+        >
+          <IconButton
+            onClick={this.handleMobileSearchDisplay}
+            color="inherit"
+            size="small"
+            className={classes.mobileSearchIcon}
+          >
+            <KeyboardArrowUp />
+          </IconButton>
+          <div className={classes.searchMobile}>
+            <InputBase
+              placeholder="Search&hellip;"
+              inputProps={{
+                'aria-label': 'search Teletracker',
+                inputmode: 'search',
+              }}
+              classes={{
+                root: classes.inputRoot,
+                input: classes.mobileInput,
+              }}
+              onChange={this.handleSearchChange}
+              onKeyDown={this.handleSearchForEnter}
+              inputRef={this.mobileSearchInput}
+              type="search"
+              value={searchText}
+            />
+            {searchText.length > 0 ? (
+              <Fade in={true}>
+                <IconButton
+                  onClick={this.clearSearch}
+                  color="inherit"
+                  size="small"
+                >
+                  <Close className={classes.searchClear} />
+                </IconButton>
+              </Fade>
+            ) : null}
+          </div>
+          <div className={classes.searchIcon} />
+          <IconButton
+            onClick={this.handleSearchForSubmit}
+            color="inherit"
+            size="small"
+            className={classes.mobileSearchIcon}
+          >
+            <SearchIcon />
+          </IconButton>
+        </div>
+      </Slide>
+    );
+  };
+
   render() {
     let { classes, drawerOpen, isAuthed } = this.props;
-    let { searchText } = this.state;
 
     function ButtonLink(props) {
       const { primary, to } = props;
@@ -694,66 +757,6 @@ class Toolbar extends Component<Props, State> {
     return (
       <AppBar position="sticky" style={{ whiteSpace: 'nowrap', zIndex: 10000 }}>
         <MUIToolbar variant="dense" disableGutters>
-          <Slide
-            direction="left"
-            in={this.state.mobileSearchBarOpen}
-            timeout={350}
-            mountOnEnter
-            unmountOnExit
-          >
-            <div
-              className={clsx(
-                classes.sectionMobile,
-                classes.mobileSearchContainer,
-              )}
-            >
-              <IconButton
-                onClick={this.handleMobileSearchDisplay}
-                color="inherit"
-                size="small"
-              >
-                <ChevronRight />
-              </IconButton>
-              <div className={classes.searchMobile}>
-                <InputBase
-                  placeholder="Search&hellip;"
-                  inputProps={{
-                    'aria-label': 'search Teletracker',
-                    inputmode: 'search',
-                  }}
-                  classes={{
-                    root: classes.inputRoot,
-                    input: classes.mobileInput,
-                  }}
-                  onChange={this.handleSearchChange}
-                  onKeyDown={this.handleSearchForEnter}
-                  inputRef={this.mobileSearchInput}
-                  type="search"
-                  value={searchText}
-                />
-                {searchText.length > 0 ? (
-                  <Fade in={true}>
-                    <IconButton
-                      onClick={this.clearSearch}
-                      color="inherit"
-                      size="small"
-                    >
-                      <Close className={classes.searchClear} />
-                    </IconButton>
-                  </Fade>
-                ) : null}
-              </div>
-              <div className={classes.searchIcon} />
-              <IconButton
-                onClick={this.handleSearchForSubmit}
-                color="inherit"
-                size="small"
-              >
-                <SearchIcon />
-              </IconButton>
-            </div>
-          </Slide>
-
           <IconButton
             focusRipple={false}
             onClick={() => this.toggleDrawer()}
@@ -761,7 +764,6 @@ class Toolbar extends Component<Props, State> {
           >
             {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
           </IconButton>
-
           <Typography
             variant="h6"
             color="inherit"
@@ -797,7 +799,6 @@ class Toolbar extends Component<Props, State> {
           <Box display={{ xs: 'block', sm: 'none' }} m={1}>
             <ButtonLink color="inherit" primary="New" to="/new" />
           </Box>
-          {this.renderSearch()}
           {!isAuthed && (
             <Button
               component={RouterLink}
@@ -810,6 +811,8 @@ class Toolbar extends Component<Props, State> {
               Login
             </Button>
           )}
+          {this.renderSearch()}
+          {this.renderMobileSearchBar()}
         </MUIToolbar>
       </AppBar>
     );
@@ -841,6 +844,11 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
 
 export default withWidth()(
   withRouter(
-    withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Toolbar)),
+    withStyles(styles)(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(Toolbar),
+    ),
   ),
 );
