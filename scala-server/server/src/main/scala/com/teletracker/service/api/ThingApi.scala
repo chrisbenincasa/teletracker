@@ -13,10 +13,9 @@ import com.teletracker.common.db.model.{
   Network,
   PartialThing,
   Person,
+  PersonAssociationType,
   PersonThing,
-  Thing,
   ThingCastMember,
-  ThingFactory,
   ThingGenre,
   ThingRaw,
   ThingType,
@@ -24,16 +23,18 @@ import com.teletracker.common.db.model.{
   UserThingTagType
 }
 import com.teletracker.common.elasticsearch.{
+  BinaryOperator,
   ElasticsearchItemsResponse,
-  EsItem,
   EsItemTag,
   EsPerson,
   EsUserItemTag,
+  ItemLookup,
   ItemLookupResponse,
   ItemSearch,
   ItemUpdater,
-  PersonLookup,
-  PopularItemSearch
+  PeopleCreditSearch,
+  PersonCreditSearch,
+  PersonLookup
 }
 import com.teletracker.common.model.tmdb.{
   CastMember,
@@ -48,7 +49,6 @@ import com.teletracker.common.util.{
   HasThingIdOrSlug,
   NetworkCache,
   OpenDateRange,
-  OpenRange,
   Slug
 }
 import com.teletracker.service.api.model.{
@@ -71,8 +71,8 @@ class ThingApi @Inject()(
   genresDbAccess: GenresDbAccess,
   genreCache: GenreCache,
   networkCache: NetworkCache,
-  popularItemSearch: PopularItemSearch,
-  itemLookup: ItemSearch,
+  popularItemSearch: ItemSearch,
+  itemLookup: ItemLookup,
   itemUpdater: ItemUpdater,
   personLookup: PersonLookup
 )(implicit executionContext: ExecutionContext) {
@@ -479,6 +479,35 @@ class ThingApi @Inject()(
     personLookup.lookupPerson(HasThingIdOrSlug.parse(idOrSlug))
   }
 
+  def getPersonCredits(
+    userId: Option[String],
+    idOrSlug: String,
+    request: PersonCreditsRequest
+  ): Future[ElasticsearchItemsResponse] = {
+    search(
+      ItemSearchRequest(
+        genres = request.genres,
+        networks = request.networks,
+        itemTypes = request.itemTypes,
+        sortMode = request.sortMode,
+        limit = request.limit,
+        bookmark = request.bookmark,
+        releaseYear = request.releaseYear,
+        peopleCredits = Some(
+          PeopleCreditsFilter(
+            if (request.creditTypes
+                  .forall(_.contains(PersonAssociationType.Cast))) Seq(idOrSlug)
+            else Seq(),
+            if (request.creditTypes
+                  .forall(_.contains(PersonAssociationType.Crew))) Seq(idOrSlug)
+            else Seq(),
+            BinaryOperator.Or
+          )
+        )
+      )
+    )
+  }
+
   def getPopularByGenre(
     genreIdOrSlug: String,
     thingType: Option[ThingType],
@@ -548,18 +577,37 @@ class ThingApi @Inject()(
       Future.successful(Set.empty[Network])
     }
 
+    val peopleCreditFilter = if (request.peopleCredits.exists(_.nonEmpty)) {
+      val cast = request.peopleCredits.get.cast
+        .map(HasThingIdOrSlug.parseIdOrSlug)
+        .map(PersonCreditSearch(_, PersonAssociationType.Cast))
+      val crew = request.peopleCredits.get.crew
+        .map(HasThingIdOrSlug.parseIdOrSlug)
+        .map(PersonCreditSearch(_, PersonAssociationType.Crew))
+
+      Some(
+        PeopleCreditSearch(
+          cast ++ crew,
+          request.peopleCredits.get.operator
+        )
+      )
+    } else {
+      None
+    }
+
     for {
       filterGenres <- genresFut
       filterNetworks <- networksFut
       result <- popularItemSearch
-        .getPopularItems(
+        .searchItems(
           Some(filterGenres).filter(_.nonEmpty),
           Some(filterNetworks).filter(_.nonEmpty),
           request.itemTypes,
           request.sortMode,
           request.limit,
           request.bookmark,
-          request.releaseYear
+          request.releaseYear,
+          peopleCreditFilter
         )
     } yield {
       result
@@ -598,10 +646,28 @@ class ThingApi @Inject()(
   }
 }
 
+case class PeopleCreditsFilter(
+  cast: Seq[String],
+  crew: Seq[String],
+  operator: BinaryOperator) {
+  def nonEmpty: Boolean = cast.nonEmpty || crew.nonEmpty
+}
+
 case class ItemSearchRequest(
   genres: Option[Set[String]],
   networks: Option[Set[String]],
   itemTypes: Option[Set[ThingType]],
+  sortMode: SortMode,
+  limit: Int,
+  bookmark: Option[Bookmark],
+  releaseYear: Option[OpenDateRange],
+  peopleCredits: Option[PeopleCreditsFilter])
+
+case class PersonCreditsRequest(
+  genres: Option[Set[String]],
+  networks: Option[Set[String]],
+  itemTypes: Option[Set[ThingType]],
+  creditTypes: Option[Set[PersonAssociationType]],
   sortMode: SortMode,
   limit: Int,
   bookmark: Option[Bookmark],

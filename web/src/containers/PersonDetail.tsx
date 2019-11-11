@@ -268,7 +268,7 @@ class PersonDetail extends React.Component<Props, State> {
       filters: { genresFilter, itemTypes, networks, sortOrder },
     } = this.state;
 
-    let filmography = person!.cast_credits || [];
+    let filmography = person!.cast_credits ? person!.cast_credits.data : [];
     let filmographyFiltered = filmography
       .filter(
         credit =>
@@ -309,7 +309,8 @@ class PersonDetail extends React.Component<Props, State> {
         } else {
           return 0;
         }
-      });
+      })
+      .filter(item => !!item.item); // Will filter out items w/o details... figure out why we need to do this.
 
     return (
       <div className={classes.genreContainer}>
@@ -413,7 +414,7 @@ class PersonDetail extends React.Component<Props, State> {
       return this.renderLoading();
     }
 
-    const backdrop = person!.cast_credits![0];
+    const backdrop = person!.cast_credits!.data[0];
     const profilePath = person!.profile_path || '';
 
     return (

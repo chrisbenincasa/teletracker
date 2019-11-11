@@ -2,7 +2,7 @@ package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.ThingType
-import com.teletracker.common.elasticsearch.{ItemSearch, ItemUpdater}
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
@@ -18,7 +18,7 @@ class IngestUnogsNetflixExpiring @Inject()(
   protected val thingsDb: ThingsDbAccess,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
-  protected val itemSearch: ItemSearch,
+  protected val itemSearch: ItemLookup,
   protected val itemUpdater: ItemUpdater)
     extends IngestJob[UnogsScrapeItem]
     with IngestJobWithElasticsearch[UnogsScrapeItem] {

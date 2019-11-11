@@ -10,7 +10,7 @@ import com.teletracker.common.db.model.{
 import com.teletracker.common.elasticsearch
 import com.teletracker.common.elasticsearch.{
   EsAvailability,
-  ItemSearch,
+  ItemLookup,
   ItemUpdater
 }
 import com.teletracker.common.util.json.circe._
@@ -218,7 +218,7 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
 trait IngestDeltaJobWithElasticsearch[T <: ScrapedItem] {
   self: IngestDeltaJob[T] =>
-  protected def itemSearch: ItemSearch
+  protected def itemSearch: ItemLookup
   protected def itemUpdater: ItemUpdater
 
   override protected def saveAvailabilities(
