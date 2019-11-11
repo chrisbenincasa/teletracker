@@ -3,8 +3,8 @@ import {
   createStyles,
   Dialog,
   DialogActions,
-  DialogTitle,
   DialogContent,
+  DialogTitle,
   FormControl,
   FormHelperText,
   TextField,
@@ -183,9 +183,6 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 
 export default withUser(
   withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(CreateListDialog),
+    connect(mapStateToProps, mapDispatchToProps)(CreateListDialog),
   ),
 );

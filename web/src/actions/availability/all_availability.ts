@@ -6,8 +6,6 @@ import {
   UpcomingAvailabilitySuccessfulPayload,
 } from './upcoming_availability';
 import { ErrorFSA, FSA } from 'flux-standard-action';
-import { Availability } from '../../types';
-import Thing, { ThingFactory } from '../../types/Thing';
 import { Item, ItemFactory } from '../../types/v2/Item';
 
 export const ALL_AVAILABILITY_INITIATED = 'availability/all/INITIATED';

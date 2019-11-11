@@ -8,8 +8,8 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import React, { Component } from 'react';
-import { withRouter, RouteComponentProps } from 'react-router-dom';
-import { NetworkType, isNetworkType } from '../../types';
+import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { NetworkType } from '../../types';
 import {
   parseFilterParamsFromQs,
   updateURLParameters,

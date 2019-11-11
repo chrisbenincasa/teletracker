@@ -8,7 +8,7 @@ import {
   UserSelfRetrieveSuccessAction,
   UserUpdateSuccessAction,
 } from '../actions/user';
-import { User, UserPreferences, Network } from '../types';
+import { Network, UserPreferences } from '../types';
 import { flattenActions, handleAction } from './utils';
 import {
   USER_SELF_CREATE_LIST,
@@ -18,12 +18,7 @@ import {
   USER_SELF_UPDATE_LIST,
   USER_SELF_UPDATE_LIST_SUCCESS,
 } from '../actions/lists';
-import {
-  LOGOUT_SUCCESSFUL,
-  SIGNUP_SUCCESSFUL,
-  SignupSuccessful,
-  SignupSuccessfulAction,
-} from '../actions/auth';
+import { LOGOUT_SUCCESSFUL } from '../actions/auth';
 import { CognitoUser } from '@aws-amplify/auth';
 
 export type Loading = { [X in UserActionTypes['type']]: boolean };

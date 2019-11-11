@@ -526,9 +526,6 @@ const mapDispatchToProps = dispatch =>
 
 export default withUser(
   withStyles(styles, { withTheme: true })(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(Account),
+    connect(mapStateToProps, mapDispatchToProps)(Account),
   ),
 );

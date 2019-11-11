@@ -101,10 +101,5 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   );
 
 export default withUser(
-  withStyles(styles)(
-    connect(
-      null,
-      mapDispatchToProps,
-    )(MarkAsWatched),
-  ),
+  withStyles(styles)(connect(null, mapDispatchToProps)(MarkAsWatched)),
 );

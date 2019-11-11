@@ -1,12 +1,11 @@
 import { Availability } from '../types';
-import { handleAction, flattenActions } from './utils';
+import { flattenActions, handleAction } from './utils';
 import {
-  UpcomingAvailabilitySuccessfulAction,
+  ALL_AVAILABILITY_SUCCESSFUL,
   AllAvailabilitySuccessfulAction,
   UPCOMING_AVAILABILITY_SUCCESSFUL,
-  ALL_AVAILABILITY_SUCCESSFUL,
+  UpcomingAvailabilitySuccessfulAction,
 } from '../actions/availability';
-import Thing, { ThingFactory } from '../types/Thing';
 import { Item } from '../types/v2/Item';
 
 export type DerivedAvailability = Omit<Availability, 'thing'> & {

@@ -15,10 +15,12 @@ import {
   LIST_ADD_ITEM_SUCCESS,
   LIST_RETRIEVE_SUCCESS,
   LIST_RETRIEVE_ALL_SUCCESS,
+  USER_SELF_UPDATE_LIST_SUCCESS,
 } from '../actions/lists';
 import { List } from '../types';
 import { flattenActions, handleAction } from './utils';
 import Thing from '../types/Thing';
+import { UserUpdateListSuccessAction } from '../actions/lists/update_list';
 
 export type Loading = { [X in ListActions['type']]: boolean };
 
@@ -125,13 +127,7 @@ const handleListRetrieveAllInitiated = handleAction<
 });
 
 const groupById = (things: Thing[]) =>
-  R.groupBy(
-    R.pipe(
-      R.prop('id'),
-      R.toString,
-    ),
-    things,
-  );
+  R.groupBy(R.pipe(R.prop('id'), R.toString), things);
 
 const headOption = R.ifElse(R.isNil, R.always(undefined), R.head);
 
@@ -251,6 +247,20 @@ const handleUserRetrieve = handleAction<ListRetrieveAllSuccessAction, State>(
   },
 );
 
+const handleListUpdate = handleAction<UserUpdateListSuccessAction, State>(
+  USER_SELF_UPDATE_LIST_SUCCESS,
+  (state, action) => {
+    if (action.payload && state.listsById[action.payload.listId]) {
+      let list = state.listsById[action.payload.listId];
+      if (action.payload.name) {
+        list.name = action.payload.name;
+      }
+    }
+
+    return state;
+  },
+);
+
 export default flattenActions<State>(
   initialState,
   handleListAddInitiated,
@@ -260,4 +270,5 @@ export default flattenActions<State>(
   handleListRetrieveSuccess,
   handleUserRetrieve,
   handleListRetrieveAllInitiated,
+  handleListUpdate,
 );

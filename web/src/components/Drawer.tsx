@@ -95,6 +95,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   loading: Partial<Loading>;
   open: boolean;
   isLoggingIn: boolean;
+  closeRequested: () => void;
 }
 
 interface InjectedProps {
@@ -136,6 +137,7 @@ interface LinkProps {
   primary: string;
   selected: boolean;
   to: string;
+  onClick?: () => void;
 }
 
 interface ListItemProps {
@@ -154,8 +156,20 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
         index ? (index < 9 ? `${9 - index}00` : 100) : 900
       ];
 
+    const handleClick = () => {
+      if (props.onClick) {
+        props.onClick();
+      }
+    };
+
     return (
-      <ListItem button to={props.to} component={RouterLink} selected={selected}>
+      <ListItem
+        button
+        onClick={handleClick}
+        to={props.to}
+        component={RouterLink}
+        selected={selected}
+      >
         <ListItemAvatar>
           <Avatar
             style={{
@@ -255,6 +269,7 @@ class Drawer extends Component<Props, State> {
         selected={listPath === this.props.location.pathname}
         primary={list.name}
         listLength={userList.totalItems}
+        onClick={this.props.closeRequested}
       />
     );
   };

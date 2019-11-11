@@ -20,7 +20,7 @@ import { ChevronLeft, PlayArrow } from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import * as R from 'ramda';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import ReactGA from 'react-ga';
 import { Helmet } from 'react-helmet';
 import { connect } from 'react-redux';
@@ -426,16 +426,12 @@ function ItemDetails(props: Props) {
           <meta
             name="title"
             property="og:title"
-            content={`${
-              itemDetail.original_title
-            } | Where to stream, rent, or buy. Track it today!`}
+            content={`${itemDetail.original_title} | Where to stream, rent, or buy. Track it today!`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy ${
-              itemDetail.original_title
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy ${itemDetail.original_title} online. Track it to find out when it's available on one of your services.`}
           />
           {/* TODO FIX <meta
             name="image"
@@ -461,15 +457,11 @@ function ItemDetails(props: Props) {
           />
           <meta
             name="twitter:title"
-            content={`${
-              itemDetail.original_title
-            } - Where to Stream, Rent, or Buy It Online`}
+            content={`${itemDetail.original_title} - Where to Stream, Rent, or Buy It Online`}
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy ${
-              itemDetail.original_title
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy ${itemDetail.original_title} online. Track it to find out when it's available on one of your services.`}
           />
 
           {/* TODO FIX <meta
@@ -478,9 +470,7 @@ function ItemDetails(props: Props) {
           /> */}
           <meta
             name="keywords"
-            content={`${itemDetail.original_title}, ${
-              itemDetail.type
-            }, stream, streaming, rent, buy, watch, track`}
+            content={`${itemDetail.original_title}, ${itemDetail.type}, stream, streaming, rent, buy, watch, track`}
           />
           <link
             rel="canonical"
@@ -649,10 +639,5 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   );
 
 export default withUser(
-  withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(ItemDetails),
-  ),
+  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(ItemDetails)),
 );
