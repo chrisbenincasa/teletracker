@@ -9,7 +9,7 @@ import com.teletracker.common.db.access.{
   UserThingDetails
 }
 import com.teletracker.common.db.model.{PartialThing, ThingType}
-import com.teletracker.common.elasticsearch.ItemSearch
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemSearch}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.model.tmdb._
@@ -102,7 +102,7 @@ class SearchController @Inject()(
         SearchOptions(mode, req.types.map(_.toSet), req.limit, bookmark)
 
       for {
-        result <- itemSearch.searchItems(
+        result <- itemSearch.fullTextSearch(
           query,
           options
         )

@@ -1,32 +1,47 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.db.access.SearchOptions
+import com.teletracker.common.db.model.{
+  Genre,
+  Network,
+  PersonAssociationType,
+  ThingType
+}
 import com.teletracker.common.db.{
+  AddedTime,
   Bookmark,
+  DefaultForListType,
   Popularity,
   Recent,
   SearchScore,
   SortMode
 }
-import com.teletracker.common.db.access.SearchOptions
-import com.teletracker.common.db.model.{ExternalId, ExternalSource, ThingType}
 import com.teletracker.common.util.Functions._
-import com.teletracker.common.util.Slug
+import com.teletracker.common.util.{IdOrSlug, OpenDateRange, OpenRange}
 import javax.inject.Inject
-import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
+import org.apache.lucene.search.join.ScoreMode
+import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
-import org.elasticsearch.index.query.{BoolQueryBuilder, Operator, QueryBuilders}
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders
-import org.elasticsearch.indices.TermsLookup
+import org.elasticsearch.index.query.{
+  BoolQueryBuilder,
+  Operator,
+  QueryBuilders,
+  TermQueryBuilder
+}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
-import java.util.UUID
+import java.time.LocalDate
+import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.JavaConverters._
 
 class ItemSearch @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
-  def searchItems(
+
+  def fullTextSearch(
     textQuery: String,
     searchOptions: SearchOptions
   ): Future[ElasticsearchItemsResponse] = {
@@ -34,6 +49,7 @@ class ItemSearch @Inject()(
       require(searchOptions.bookmark.get.sortType == SortMode.SearchScoreType)
     }
 
+    // TODO: Support all of the filters that regular search does
     val searchQuery = QueryBuilders
       .boolQuery()
       .must(
@@ -45,7 +61,6 @@ class ItemSearch @Inject()(
       .applyOptional(searchOptions.thingTypeFilter.filter(_.nonEmpty))(
         (builder, types) => types.foldLeft(builder)(itemTypeFilter)
       )
-//      .applyOptional(searchOptions.bookmark)(applyBookmark)
 
     val query = QueryBuilders.functionScoreQuery(
       searchQuery,
@@ -87,320 +102,230 @@ class ItemSearch @Inject()(
       })
   }
 
-  def lookupItemByExternalId(
-    source: ExternalSource,
-    id: String,
-    thingType: ThingType
-  ): Future[Option[EsItem]] = {
+  def searchItems(
+    genres: Option[Set[Genre]],
+    networks: Option[Set[Network]],
+    itemTypes: Option[Set[ThingType]],
+    sortMode: SortMode,
+    limit: Int,
+    bookmark: Option[Bookmark],
+    releaseYear: Option[OpenDateRange],
+    peopleCreditSearch: Option[PeopleCreditSearch]
+  ): Future[ElasticsearchItemsResponse] = {
+    val actualSortMode = bookmark.map(_.sortMode).getOrElse(sortMode)
+
     val query = QueryBuilders
       .boolQuery()
-      .filter(
-        QueryBuilders
-          .termQuery("external_ids", EsExternalId(source, id).toString)
+      .applyOptional(genres.filter(_.nonEmpty))(genresFilter)
+      .through(removeAdultItems)
+      .through(posterImageFilter)
+      .applyOptional(networks.filter(_.nonEmpty))(availabilityByNetworksOr)
+      .applyOptional(releaseYear.filter(_.isFinite))(openDateRangeFilter)
+      .applyOptional(itemTypes.filter(_.nonEmpty))(itemTypesFilter)
+      .applyOptional(bookmark)(applyBookmark(_, _, list = None))
+      .applyOptional(peopleCreditSearch.filter(_.people.nonEmpty))(
+        peopleCreditSearchQuery
       )
-      .filter(QueryBuilders.termQuery("type", thingType.toString))
 
-    singleItemSearch(query)
-  }
-
-  def lookupItemsByExternalIds(
-    items: List[(ExternalSource, String, ThingType)]
-  ): Future[Map[(ExternalSource, String), EsItem]] = {
-    if (items.isEmpty) {
-      Future.successful(Map.empty)
-    } else {
-      val searches = items.map {
-        case (source, id, typ) =>
-          val query = QueryBuilders
-            .boolQuery()
-            .filter(
-              QueryBuilders
-                .termQuery("external_ids", EsExternalId(source, id).toString)
-            )
-            .filter(QueryBuilders.termQuery("type", typ.toString))
-
-          new SearchRequest("items")
-            .source(new SearchSourceBuilder().query(query).size(1))
-      }
-
-      val multiReq = new MultiSearchRequest()
-      searches.foreach(multiReq.add)
-
-      elasticsearchExecutor
-        .multiSearch(multiReq)
-        .map(resp => {
-          resp.getResponses.toList
-            .zip(items.map(item => item._1 -> item._2))
-            .map {
-              case (response, sourceAndId) =>
-                searchResponseToItems(response.getResponse).items.headOption
-                  .map(sourceAndId -> _)
-            }
-        })
-        .map(_.flatten.toMap)
-    }
-  }
-
-  def lookupItemsByTitleMatch(
-    titles: List[(String, Option[ThingType], Option[Range])] // TODO: Accept a range
-  ): Future[Map[String, EsItem]] = {
-    if (titles.isEmpty) {
-      Future.successful(Map.empty)
-    } else {
-      val searches = titles
-        .map(Function.tupled(exactTitleMatchQuery))
-        .map(query => {
-          val searchSource = new SearchSourceBuilder().query(query).size(1)
-          new SearchRequest("items").source(searchSource)
-        })
-
-      val multiReq = new MultiSearchRequest()
-      searches.foreach(multiReq.add)
-
-      elasticsearchExecutor
-        .multiSearch(multiReq)
-        .map(resp => {
-          resp.getResponses.toList.zip(titles.map(_._1)).map {
-            case (response, title) =>
-              searchResponseToItems(response.getResponse).items.headOption
-                .map(title -> _)
-          }
-        })
-        .map(_.flatten.toMap)
-    }
-
-  }
-
-  def lookupItemByTitleMatch(
-    title: String,
-    thingType: Option[ThingType],
-    releaseYear: Option[Range]
-  ): Future[Option[EsItem]] = {
-    singleItemSearch(exactTitleMatchQuery(title, thingType, releaseYear))
-  }
-
-  def lookupItemsBySlug(
-    slugs: List[(Slug, ThingType, Option[Range])]
-  ): Future[Map[Slug, EsItem]] = {
-    if (slugs.isEmpty) {
-      Future.successful(Map.empty)
-    } else {
-      val searches = slugs
-        .map(Function.tupled(slugMatchQuery))
-        .map(query => {
-          val searchSource = new SearchSourceBuilder().query(query).size(1)
-          new SearchRequest("items").source(searchSource)
-        })
-
-      val multiReq = new MultiSearchRequest()
-      searches.foreach(multiReq.add)
-
-      elasticsearchExecutor
-        .multiSearch(multiReq)
-        .map(resp => {
-          resp.getResponses.toList.zip(slugs.map(_._1)).map {
-            case (response, title) =>
-              searchResponseToItems(response.getResponse).items.headOption
-                .map(title -> _)
-          }
-        })
-        .map(_.flatten.toMap)
-    }
-  }
-
-  def lookupItemBySlug(
-    slug: Slug,
-    thingType: ThingType,
-    releaseYear: Option[Range]
-  ): Future[Option[EsItem]] = {
-    singleItemSearch(slugMatchQuery(slug, thingType, releaseYear))
-  }
-
-  def lookupItem(
-    identifier: Either[UUID, Slug],
-    thingType: Option[ThingType],
-    materializeJoins: Boolean = true
-  ): Future[Option[ItemLookupResponse]] = {
-    val identifierQuery = identifier match {
-      case Left(value) =>
-        QueryBuilders
-          .boolQuery()
-          .filter(QueryBuilders.termQuery("id", value.toString))
-
-      case Right(value) =>
-        require(thingType.isDefined)
-
-        QueryBuilders
-          .boolQuery()
-          .filter(QueryBuilders.termQuery("slug", value.toString))
-    }
-
-    val query = identifierQuery.applyOptional(thingType)(
-      (builder, typ) =>
-        builder.filter(
-          QueryBuilders.termQuery("type", typ.toString)
-        )
-    )
-
-    val search = new SearchRequest()
-      .source(new SearchSourceBuilder().query(query).size(1))
+    val searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(limit)
+      .applyOptional(makeDefaultSort(actualSortMode))(_.sort(_))
+      .sort(
+        new FieldSortBuilder("id").order(SortOrder.ASC)
+      )
 
     elasticsearchExecutor
-      .search(search)
+      .search(
+        new SearchRequest().source(searchSourceBuilder)
+      )
       .map(searchResponseToItems)
-      .map(response => {
-        response.items.headOption
-      })
-      .flatMap {
-        case None =>
-          Future.successful(None)
-        case Some(item) =>
-          val recommendationsOrder =
-            item.recommendations.getOrElse(Nil).map(_.id).zipWithIndex.toMap
-
-          val recsFut =
-            if (materializeJoins) materializeRecommendations(item.id)
-            else Future.successful(ElasticsearchItemsResponse.empty)
-
-          val castFut =
-            if (materializeJoins)
-              lookupItemCredits(item.id, item.cast.getOrElse(Nil).size)
-            else Future.successful(ElasticsearchPeopleResponse.empty)
-
-          for {
-            recs <- recsFut
-            cast <- castFut
-          } yield {
-            Some(
-              ItemLookupResponse(
-                item,
-                cast,
-                recs.copy(
-                  items = recs.items.sortBy(
-                    i => recommendationsOrder.getOrElse(i.id, Int.MaxValue)
-                  )
-                )
-              )
-            )
-          }
-      }
+      .map(applyNextBookmark(_, bookmark, sortMode))
   }
 
-  private def slugMatchQuery(
-    slug: Slug,
-    thingType: ThingType,
-    releaseYear: Option[Range]
-  ) = {
-    QueryBuilders
-      .boolQuery()
-      .filter(
-        QueryBuilders
-          .termQuery("slug", slug.value)
-      )
-      .filter(QueryBuilders.termQuery("type", thingType.toString))
-      .applyOptional(releaseYear)(releaseYearRangeQuery)
-  }
-
-  private def exactTitleMatchQuery(
-    title: String,
-    thingType: Option[ThingType],
-    releaseYear: Option[Range]
-  ) = {
-    QueryBuilders
-      .boolQuery()
-      .should(
-        QueryBuilders.matchQuery("original_title", title)
-      )
-      .should(
-        QueryBuilders.matchQuery("title", title)
-      )
-      .minimumShouldMatch(1)
-      .applyOptional(thingType)(
-        (builder, typ) =>
-          builder.filter(
-            QueryBuilders
-              .termQuery("type", typ.toString)
-          )
-      )
-      .applyOptional(releaseYear)(releaseYearRangeQuery)
-  }
-
-  private def releaseYearRangeQuery(
+  private def peopleCreditSearchQuery(
     builder: BoolQueryBuilder,
-    range: Range
+    peopleCreditSearch: PeopleCreditSearch
+  ) = {
+    val cast = peopleCreditSearch.people.filter(
+      _.associationType == PersonAssociationType.Cast
+    )
+    val crew = peopleCreditSearch.people.filter(
+      _.associationType == PersonAssociationType.Crew
+    )
+
+    if (cast.isEmpty && crew.isEmpty) {
+      builder
+    } else {
+      peopleCreditSearch.operator match {
+        case BinaryOperator.Or =>
+          builder.must(
+            QueryBuilders
+              .boolQuery()
+              .minimumShouldMatch(1)
+              .applyIf(cast.nonEmpty)(
+                termsQueryForHasIdOrSlug(_, cast.map(_.personId), "cast")
+              )
+              .applyIf(crew.nonEmpty)(
+                termsQueryForHasIdOrSlug(_, crew.map(_.personId), "crew")
+              )
+          )
+
+        case BinaryOperator.And =>
+          builder
+            .through(b => {
+              cast.foldLeft(b)(
+                (currBuilder, credit) =>
+                  currBuilder.filter(
+                    QueryBuilders.nestedQuery(
+                      "cast",
+                      termQueryForHasIdOrSlug(credit.personId, "cast"),
+                      ScoreMode.Avg
+                    )
+                  )
+              )
+            })
+            .through(b => {
+              crew.foldLeft(b)(
+                (currBuilder, credit) =>
+                  currBuilder.filter(
+                    QueryBuilders.nestedQuery(
+                      "crew",
+                      termQueryForHasIdOrSlug(credit.personId, "crew"),
+                      ScoreMode.Avg
+                    )
+                  )
+              )
+            })
+      }
+    }
+  }
+
+  private def termsQueryForHasIdOrSlug(
+    builder: BoolQueryBuilder,
+    idOrSlugs: Seq[IdOrSlug],
+    field: String
+  ) = {
+    val ids = idOrSlugs.flatMap(_.id)
+    val slugs = idOrSlugs.flatMap(_.slug)
+    builder
+      .applyIf(ids.nonEmpty)(
+        _.should(
+          QueryBuilders.nestedQuery(
+            field,
+            QueryBuilders
+              .termsQuery(
+                s"$field.id",
+                ids.map(_.toString).asJavaCollection
+              ),
+            ScoreMode.Avg
+          )
+        )
+      )
+      .applyIf(slugs.nonEmpty)(
+        _.should(
+          QueryBuilders.nestedQuery(
+            field,
+            QueryBuilders
+              .termsQuery(
+                s"$field.slug",
+                slugs.map(_.value).asJavaCollection
+              ),
+            ScoreMode.Avg
+          )
+        )
+      )
+  }
+
+  private def termQueryForHasIdOrSlug(
+    idOrSlug: IdOrSlug,
+    field: String
+  ): TermQueryBuilder = {
+    idOrSlug match {
+      case IdOrSlug(Left(id)) =>
+        QueryBuilders
+          .termQuery(
+            s"$field.id",
+            id.toString
+          )
+      case IdOrSlug(Right(slug)) =>
+        QueryBuilders
+          .termQuery(
+            s"$field.slug",
+            slug.value
+          )
+    }
+  }
+
+  private def availabilityByNetworksOr(
+    builder: BoolQueryBuilder,
+    networks: Set[Network]
   ) = {
     builder.filter(
-      QueryBuilders
-        .rangeQuery("release_date")
-        .format("yyyy")
-        .gte(s"${range.head}||/y")
-        .lte(s"${range.last}||/y")
+      networks.foldLeft(QueryBuilders.boolQuery())(availabilityByNetwork)
     )
   }
 
-//  private def executeMultisearch()
-
-  private def singleItemSearch(query: BoolQueryBuilder) = {
-    val searchSource = new SearchSourceBuilder().query(query).size(1)
-
-    elasticsearchExecutor
-      .search(new SearchRequest("items").source(searchSource))
-      .map(searchResponseToItems)
-      .map(_.items.headOption)
+  private def availabilityByNetwork(
+    builder: BoolQueryBuilder,
+    network: Network
+  ) = {
+    builder
+      .should(
+        QueryBuilders.nestedQuery(
+          "availability",
+          QueryBuilders.termQuery("availability.network_id", network.id.get),
+          ScoreMode.Avg
+        )
+      )
+      .minimumShouldMatch(1)
   }
 
-  private def materializeRecommendations(
-    id: UUID
-  ): Future[ElasticsearchItemsResponse] = {
-    val query = QueryBuilders
-      .boolQuery()
-      .must(
-        QueryBuilders
-          .termsLookupQuery(
-            "id",
-            new TermsLookup("items", id.toString, "recommendations.id")
+  private def applyNextBookmark(
+    response: ElasticsearchItemsResponse,
+    previousBookmark: Option[Bookmark],
+    sortMode: SortMode
+  ): ElasticsearchItemsResponse = {
+    @tailrec
+    def getValueForBookmark(
+      item: EsItem,
+      actualSortMode: SortMode
+    ): String = {
+      actualSortMode match {
+        case SearchScore(_) => throw new IllegalStateException("")
+
+        case Popularity(_) => item.popularity.getOrElse(0.0).toString
+
+        case Recent(desc) =>
+          item.release_date
+            .getOrElse(if (desc) LocalDate.MIN else LocalDate.MAX)
+            .toString
+
+        case AddedTime(desc) =>
+          getValueForBookmark(item, Recent(desc))
+
+        case DefaultForListType(_) =>
+          getValueForBookmark(item, Popularity())
+      }
+    }
+
+    val nextBookmark = response.items.lastOption
+      .map(
+        item => {
+          val value = getValueForBookmark(item, sortMode)
+
+          val refinement = previousBookmark
+            .filter(_.value == value)
+            .map(_ => item.id.toString)
+
+          Bookmark(
+            sortMode,
+            value,
+            refinement
           )
+        }
       )
 
-    val search = new SearchRequest("items")
-      .source(
-        new SearchSourceBuilder()
-          .query(query)
-          .size(
-            20
-          )
-      )
-
-    elasticsearchExecutor.search(search).map(searchResponseToItems)
-  }
-
-  private def lookupItemCredits(
-    id: UUID,
-    limit: Int
-  )(implicit executionContext: ExecutionContext
-  ): Future[ElasticsearchPeopleResponse] = {
-    val query = QueryBuilders
-      .boolQuery()
-      .must(
-        QueryBuilders
-          .termsLookupQuery(
-            "id",
-            new TermsLookup("items", id.toString, "cast.id")
-          )
-      )
-
-    val search = new SearchRequest("people")
-      .source(
-        new SearchSourceBuilder()
-          .query(query)
-          .size(limit)
-      )
-
-    elasticsearchExecutor.search(search).map(searchResponseToPeople)
+    response.withBookmark(nextBookmark)
   }
 }
-
-case class ItemLookupResponse(
-  rawItem: EsItem,
-  materializedCast: ElasticsearchPeopleResponse,
-  materializedRecommendations: ElasticsearchItemsResponse)

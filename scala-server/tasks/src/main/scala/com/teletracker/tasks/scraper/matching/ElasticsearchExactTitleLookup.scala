@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.matching
 
-import com.teletracker.common.elasticsearch.{EsItem, ItemSearch}
+import com.teletracker.common.elasticsearch.{EsItem, ItemLookup}
 import com.teletracker.tasks.scraper.{
   IngestJobArgsLike,
   MatchResult,
@@ -10,7 +10,7 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class ElasticsearchExactTitleLookup @Inject()(
-  itemSearch: ItemSearch
+  itemSearch: ItemLookup
 )(implicit executionContext: ExecutionContext)
     extends LookupMethod.Agnostic { self =>
   override def toMethod[T <: ScrapedItem]: LookupMethod[T] =

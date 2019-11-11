@@ -7,7 +7,7 @@ import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   EsAvailability,
   EsItem,
-  ItemSearch,
+  ItemLookup,
   ItemUpdater
 }
 import com.teletracker.common.external.tmdb.TmdbClient
@@ -428,7 +428,7 @@ abstract class IngestJob[T <: ScrapedItem](
 }
 
 trait IngestJobWithElasticsearch[T <: ScrapedItem] { self: IngestJob[T] =>
-  protected def itemSearch: ItemSearch
+  protected def itemSearch: ItemLookup
   protected def itemUpdater: ItemUpdater
 
   override protected def saveAvailabilities(

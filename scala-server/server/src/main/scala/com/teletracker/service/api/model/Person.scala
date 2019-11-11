@@ -2,6 +2,7 @@ package com.teletracker.service.api.model
 
 import com.teletracker.common.db.model.{PersonAssociationType, ThingType}
 import com.teletracker.common.elasticsearch.{
+  ElasticsearchItemsResponse,
   EsDenormalizedItem,
   EsExternalId,
   EsItem,
@@ -10,6 +11,7 @@ import com.teletracker.common.elasticsearch.{
   EsPersonCastCredit,
   EsPersonCrewCredit
 }
+import com.teletracker.common.model.Paging
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.json.circe._
 import io.circe.{Codec, Json}
@@ -55,23 +57,37 @@ object Person {
 
   def fromEsPerson(
     esPerson: EsPerson,
-    additionalItems: Map[UUID, EsItem]
+    materializedCastCredits: Option[ElasticsearchItemsResponse]
   ): Person = {
+    val materializedCreditById = materializedCastCredits
+      .map(_.items)
+      .getOrElse(Nil)
+      .map(item => item.id -> item)
+      .toMap
+    val castCredits = esPerson.cast_credits.map(castCredits => {
+      PagedResponse(
+        data = castCredits.map(credit => {
+          PersonCastMember(
+            character = credit.character,
+            id = credit.id,
+            title = credit.title,
+            slug = credit.slug,
+            item = materializedCreditById
+              .get(credit.id)
+              .map(Item.fromEsItem(_, Nil, Map.empty))
+          )
+        }),
+        paging = materializedCastCredits
+          .flatMap(_.bookmark)
+          .map(bm => Paging(Some(bm.toString)))
+      )
+    })
+
     Person(
       adult = esPerson.adult,
       biography = esPerson.biography,
       birthday = esPerson.birthday,
-      cast_credits = esPerson.cast_credits.map(_.map(credit => {
-        PersonCastMember(
-          character = credit.character,
-          id = credit.id,
-          title = credit.title,
-          slug = credit.slug,
-          item = additionalItems
-            .get(credit.id)
-            .map(Item.fromEsItem(_, Nil, Map.empty))
-        )
-      })),
+      cast_credits = castCredits,
       crew_credits = esPerson.crew_credits,
       external_ids = esPerson.external_ids,
       deathday = esPerson.deathday,
@@ -91,7 +107,7 @@ case class Person(
   adult: Option[Boolean],
   biography: Option[String],
   birthday: Option[LocalDate],
-  cast_credits: Option[List[PersonCastMember]],
+  cast_credits: Option[PagedResponse[PersonCastMember]],
   crew_credits: Option[List[EsPersonCrewCredit]],
   external_ids: Option[List[EsExternalId]],
   deathday: Option[LocalDate],

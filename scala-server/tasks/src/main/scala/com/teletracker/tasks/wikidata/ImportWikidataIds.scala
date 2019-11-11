@@ -1,7 +1,7 @@
 package com.teletracker.tasks.wikidata
 
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
-import com.teletracker.common.elasticsearch.{EsExternalId, ItemSearch}
+import com.teletracker.common.elasticsearch.{EsExternalId, ItemLookup}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext
 
 class ImportWikidataIds @Inject()(
   sourceRetriever: SourceRetriever,
-  itemSearch: ItemSearch
+  itemSearch: ItemLookup
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {
 
