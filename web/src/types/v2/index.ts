@@ -1,5 +1,5 @@
-import { Person } from './Person';
 import { ItemType } from '..';
+import PagedResponse from './PagedResponse';
 
 export interface ApiItem {
   adult?: boolean;
@@ -28,7 +28,7 @@ export interface ApiPerson {
   adult?: boolean;
   biography?: string;
   birthday?: string;
-  cast_credits?: ApiPersonCastCredit[];
+  cast_credits?: PagedResponse<ApiPersonCastCredit>;
   crew_credits?: ApiPersonCrewCredit[];
   external_ids?: ItemExternalId[];
   deathday?: string;
