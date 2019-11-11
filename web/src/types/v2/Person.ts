@@ -1,11 +1,5 @@
 import * as R from 'ramda';
-import {
-  ApiPerson,
-  ItemExternalId,
-  ItemImage,
-  ApiPersonCastCredit,
-  ApiPersonCrewCredit,
-} from '.';
+import { ApiPerson, ApiPersonCrewCredit, ItemExternalId, ItemImage } from '.';
 import { getTmdbProfileImage } from '../../utils/image-helper';
 import { Item, ItemFactory } from './Item';
 

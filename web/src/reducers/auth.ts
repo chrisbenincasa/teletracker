@@ -4,9 +4,7 @@ import {
   LOGIN_INITIATED,
   LOGIN_SUCCESSFUL,
   LoginSuccessfulAction,
-  LOGOUT_INITIATED,
   LOGOUT_SUCCESSFUL,
-  LogoutInitiatedAction,
   LogoutSuccessfulAction,
   SET_TOKEN,
   SetTokenAction,
@@ -18,8 +16,7 @@ import {
   UnsetTokenAction,
 } from '../actions/auth';
 import { User } from '../types';
-import { AnyFSAReducer, flattenActions, handleAction } from './utils';
-import { PURGE } from 'redux-persist';
+import { flattenActions, handleAction } from './utils';
 
 export interface UserState extends Partial<User> {
   fetching: boolean;
@@ -90,16 +87,6 @@ const loginSuccess = handleAction<LoginSuccessfulAction, State>(
   },
 );
 
-const logoutInitiated = handleAction<LogoutInitiatedAction, State>(
-  LOGOUT_INITIATED,
-  state => {
-    return {
-      ...state,
-      isLoggingOut: true,
-    };
-  },
-);
-
 const logoutSuccess = handleAction<LogoutSuccessfulAction, State>(
   LOGOUT_SUCCESSFUL,
   state => {
@@ -141,16 +128,6 @@ const unsetToken = handleAction<UnsetTokenAction, State>(
     }
   },
 );
-
-const purge: (initialState: State) => AnyFSAReducer<any> = initialState => {
-  return (state: State = initialState, action: FSA<any>) => {
-    if (action.type === PURGE) {
-      return initialState;
-    } else {
-      return state;
-    }
-  };
-};
 
 export default flattenActions(
   initialState,

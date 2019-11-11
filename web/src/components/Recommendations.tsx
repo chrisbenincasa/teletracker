@@ -7,11 +7,8 @@ import {
   withStyles,
 } from '@material-ui/core';
 import React from 'react';
-import { getMetadataPath } from '../utils/metadata-access';
 import ItemCard from './ItemCard';
 import { UserSelf } from '../reducers/user';
-import Thing from '../types/Thing';
-import { ApiItem } from '../types/v2';
 import { Item } from '../types/v2/Item';
 import { calculateLimit } from '../utils/list-utils';
 import { useWidth } from '../hooks/useWidth';

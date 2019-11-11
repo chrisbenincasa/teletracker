@@ -1,4 +1,4 @@
-import { Collapse, makeStyles, Theme, Typography } from '@material-ui/core';
+import { Collapse, makeStyles, Theme } from '@material-ui/core';
 import React from 'react';
 import { Genre, ItemType, ListSortOptions, NetworkType } from '../../types';
 import TypeToggle from './TypeToggle';

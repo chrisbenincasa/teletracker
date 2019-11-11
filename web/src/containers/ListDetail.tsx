@@ -36,18 +36,14 @@ import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
   deleteList,
+  LIST_RETRIEVE_INITIATED,
   ListRetrieveInitiated,
   ListRetrieveInitiatedPayload,
-  LIST_RETRIEVE_INITIATED,
   updateList,
   UserDeleteListPayload,
   UserUpdateListPayload,
 } from '../actions/lists';
 import ItemCard from '../components/ItemCard';
-import { getTypeFromUrlParam } from '../components/Filters/TypeToggle';
-import { getNetworkTypeFromUrlParam } from '../components/Filters/NetworkSelect';
-import { getSortFromUrlParam } from '../components/Filters/SortDropdown';
-import { getGenreFromUrlParam } from '../components/Filters/GenreSelect';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import { StdRouterLink } from '../components/RouterLink';
@@ -57,11 +53,13 @@ import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';
 import { ListsByIdMap } from '../reducers/lists';
 import { Genre, ItemType, List, ListSortOptions, NetworkType } from '../types';
-import { getOrInitListOptions } from '../utils/list-utils';
-import { Item } from '../types/v2/Item';
+import {
+  calculateLimit,
+  getNumColumns,
+  getOrInitListOptions,
+} from '../utils/list-utils';
 import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
-import { calculateLimit, getNumColumns } from '../utils/list-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -262,9 +260,7 @@ class ListDetail extends Component<Props, State> {
   }
 
   componentDidUpdate(oldProps: Props, prevState: State) {
-    const {
-      filters: { itemTypes, sortOrder },
-    } = this.state;
+    const { filters, list } = this.state;
 
     if (
       this.listId !== Number(oldProps.match.params.id) ||
@@ -272,12 +268,7 @@ class ListDetail extends Component<Props, State> {
     ) {
       this.setState({ loadingList: true });
 
-      this.props.retrieveList({
-        listId: this.listId,
-        sort: sortOrder === 'default' ? undefined : sortOrder,
-        itemTypes,
-        force: true,
-      });
+      this.retrieveList();
     } else if (
       !this.props.listLoading &&
       (oldProps.listLoading || this.state.loadingList)
@@ -292,9 +283,12 @@ class ListDetail extends Component<Props, State> {
             ) || false
           : false,
       });
+    } else if (!_.isEqual(list, prevState.list)) {
+      // Detect deep object inequality
+      this.setState({ list: list });
     }
 
-    if (this.state.filters.genresFilter !== prevState.filters.genresFilter) {
+    if (filters.genresFilter !== prevState.filters.genresFilter) {
       this.retrieveList();
     }
   }
@@ -531,10 +525,8 @@ class ListDetail extends Component<Props, State> {
             </FormControl>
           </DialogContent>
           <DialogActions>
-            <Button onClick={this.handleRenameModalClose} color="primary">
-              Cancel
-            </Button>
-            <Button onClick={this.handleRenameList} color="primary" autoFocus>
+            <Button onClick={this.handleRenameModalClose}>Cancel</Button>
+            <Button onClick={this.handleRenameList} autoFocus>
               Update
             </Button>
           </DialogActions>
@@ -673,12 +665,7 @@ class ListDetail extends Component<Props, State> {
 
   renderListDetail(list: List) {
     const { classes, genres, listLoading, thingsById, userSelf } = this.props;
-    const {
-      deleted,
-      loadingList,
-      showFilter,
-      filters: { itemTypes, genresFilter, networks, sortOrder },
-    } = this.state;
+    const { deleted, showFilter, filters } = this.state;
 
     if ((!listLoading && !list) || deleted) {
       return <Redirect to="/" />;
@@ -701,7 +688,7 @@ class ListDetail extends Component<Props, State> {
                 genres={genres}
                 updateFilters={this.setFilters}
                 isListDynamic={list.isDynamic}
-                filters={this.state.filters}
+                filters={filters}
               />
               <IconButton
                 onClick={this.toggleFilters}
