@@ -22,11 +22,9 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { AvailabilityState } from '../reducers/availability';
 import { layoutStyles } from '../styles';
-import Thing from '../types/Thing';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants/';
 import { Item } from '../types/v2/Item';
-import { ItemAvailability } from '../types/v2';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -222,10 +220,5 @@ const mapDispatchToProps = dispatch =>
   );
 
 export default withUser(
-  withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(New),
-  ),
+  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(New)),
 );

@@ -1,10 +1,8 @@
-import { call, takeLatest, put } from '@redux-saga/core/effects';
+import { call, put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
 import ReactGA from 'react-ga';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
-import { ISignUpResult } from 'amazon-cognito-identity-js';
-import { LoginInitiated } from './login_action';
 
 export const SIGNUP_INITIATED = 'signup/INITIATED';
 export const SIGNUP_SUCCESSFUL = 'signup/SUCCESSFUL';

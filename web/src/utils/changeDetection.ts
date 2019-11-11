@@ -41,7 +41,3 @@ export function filterParamsEqual(left: FilterParams, right: FilterParams) {
 
   return true;
 }
-
-function xor(a, b) {
-  return (a ? 1 : 0) ^ (b ? 1 : 0);
-}

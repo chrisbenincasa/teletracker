@@ -142,8 +142,5 @@ const mapDispatchToProps = dispatch =>
   );
 
 export default withStyles(styles)(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(Login),
+  connect(mapStateToProps, mapDispatchToProps)(Login),
 );

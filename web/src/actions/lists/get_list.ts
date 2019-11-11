@@ -1,6 +1,5 @@
-import { put, select, takeEvery } from '@redux-saga/core/effects';
+import { put, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import { AppState } from '../../reducers';
 import {
   ItemType,
   List,
@@ -9,8 +8,7 @@ import {
   Paging,
 } from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
-import { clientEffect } from '../utils';
-import { createAction } from '../utils';
+import { clientEffect, createAction } from '../utils';
 import _ from 'lodash';
 
 export const LIST_RETRIEVE_INITIATED = 'lists/retrieve/INITIATED';

@@ -27,11 +27,11 @@ import { bindActionCreators } from 'redux';
 import {
   addToList,
   createList,
-  ListTrackingUpdatedInitiatedPayload,
   LIST_ADD_ITEM_INITIATED,
+  ListTrackingUpdatedInitiatedPayload,
   updateListTracking,
-  UserCreateListPayload,
   USER_SELF_CREATE_LIST,
+  UserCreateListPayload,
 } from '../actions/lists';
 import { AppState } from '../reducers';
 import { ListOperationState, ListsByIdMap } from '../reducers/lists';
@@ -189,12 +189,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       );
     }, R.values(this.props.listsById));
 
-    const extractIds = R.map<List, string>(
-      R.compose(
-        R.toString,
-        R.prop('id'),
-      ),
-    );
+    const extractIds = R.map<List, string>(R.compose(R.toString, R.prop('id')));
 
     this.props.updateLists({
       thingId: this.props.item.id,
@@ -394,8 +389,5 @@ const mapDispatchToProps = dispatch =>
   );
 
 export default withStyles(styles)(
-  connect(
-    mapStateToProps,
-    mapDispatchToProps,
-  )(AddToListDialog),
+  connect(mapStateToProps, mapDispatchToProps)(AddToListDialog),
 );

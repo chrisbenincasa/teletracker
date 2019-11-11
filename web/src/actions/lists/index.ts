@@ -11,7 +11,7 @@ import {
 
 export * from './create_list';
 export * from './delete_list';
-export * from './rename_list';
+export * from './update_list';
 export * from './add_item_to_list';
 export * from './get_list';
 export * from './retrieve_all_lists';
