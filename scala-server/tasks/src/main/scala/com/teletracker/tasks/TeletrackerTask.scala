@@ -17,8 +17,10 @@ trait TeletrackerTask extends Args {
   type Args = Map[String, Option[Any]]
   type TypedArgs
 
-  protected lazy val callbacks: mutable.ListBuffer[TaskCallback] =
-    new ListBuffer()
+  protected lazy val callbacks: mutable.Buffer[TaskCallback] =
+    mutable.Buffer.empty
+
+  private val preruns: mutable.Buffer[() => Unit] = mutable.Buffer.empty
 
   implicit protected def typedArgsEncoder: Encoder[TypedArgs]
 
@@ -28,7 +30,13 @@ trait TeletrackerTask extends Args {
   def runInternal(): Unit = runInternal(Map.empty)
   def runInternal(args: Args): Unit
 
-  def run(args: Args): Unit = {
+  protected def prerun(f: => Unit): Unit = {
+    preruns += (() => f)
+  }
+
+  final def run(args: Args): Unit = {
+    preruns.foreach(_())
+
     val parsedArgs = preparseArgs(args)
 
     val success = try {
@@ -40,8 +48,11 @@ trait TeletrackerTask extends Args {
         false
     }
 
+    logger.info("Task completed. Checking for callbacks to run.")
+
     callbacks.foreach(cb => {
       if (success || cb.runOnFailure) {
+        logger.info(s"Running callback: ${cb.name}")
         try {
           cb.cb(parsedArgs, args)
         } catch {
@@ -54,6 +65,7 @@ trait TeletrackerTask extends Args {
 
   def registerCallback(cb: TaskCallback): Unit = {
     callbacks += cb
+    logger.info(s"Successfully attached ${cb.name} callback")
   }
 
   case class TaskCallback(
@@ -110,8 +122,6 @@ trait SchedulesFollowupTasks { self: TeletrackerTask =>
       }
     )
   )
-
-  logger.info("Successfully attached scheduleFollowupTasks callback")
 
   def followupTasksToSchedule(
     args: TypedArgs

@@ -248,30 +248,32 @@ trait ElasticsearchAccess {
   }
 
   @tailrec
-  final protected def makeSort(sortMode: SortMode): Option[FieldSortBuilder] = {
+  final protected def makeDefaultSort(
+    sortMode: SortMode
+  ): Option[FieldSortBuilder] = {
     sortMode match {
       case SearchScore(_) => None
 
       case Popularity(desc) =>
-        Some(
-          new FieldSortBuilder("popularity")
-            .order(if (desc) SortOrder.DESC else SortOrder.ASC)
-            .missing("_last")
-        )
+        Some(makeDefaultFieldSort("popularity", desc))
 
       case Recent(desc) =>
-        Some(
-          new FieldSortBuilder("release_date")
-            .order(if (desc) SortOrder.DESC else SortOrder.ASC)
-            .missing("_last")
-        )
+        Some(makeDefaultFieldSort("release_date", desc))
 
       case AddedTime(desc) =>
-        Some(
-          new FieldSortBuilder("")
-        )
+        makeDefaultSort(Recent(desc))
 
-      case d @ DefaultForListType(_) => makeSort(d.get(true))
+      case DefaultForListType(desc) =>
+        makeDefaultSort(Popularity(desc))
     }
+  }
+
+  protected def makeDefaultFieldSort(
+    field: String,
+    desc: Boolean
+  ): FieldSortBuilder = {
+    new FieldSortBuilder("popularity")
+      .order(if (desc) SortOrder.DESC else SortOrder.ASC)
+      .missing("_last")
   }
 }

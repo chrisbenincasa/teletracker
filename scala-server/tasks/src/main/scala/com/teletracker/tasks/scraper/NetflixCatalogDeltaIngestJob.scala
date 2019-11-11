@@ -8,7 +8,7 @@ import com.teletracker.common.db.model.{
   PresentationType,
   ThingRaw
 }
-import com.teletracker.common.elasticsearch.{ItemSearch, ItemUpdater}
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
@@ -21,7 +21,7 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   s3: S3Client,
   thingsDbAccess: ThingsDbAccess,
   networkCache: NetworkCache,
-  protected val itemSearch: ItemSearch,
+  protected val itemSearch: ItemLookup,
   protected val itemUpdater: ItemUpdater)
     extends IngestDeltaJob[UnogsNetflixCatalogItem]
     with IngestDeltaJobWithElasticsearch[UnogsNetflixCatalogItem] {

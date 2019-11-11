@@ -43,7 +43,7 @@ object Item {
           slug = member.slug,
           person = additionalPeople
             .get(member.id)
-            .map(Person.fromEsPerson(_, Map.empty))
+            .map(Person.fromEsPerson(_, None))
         )
       }).sortBy(_.order)),
       crew = esItem.crew,

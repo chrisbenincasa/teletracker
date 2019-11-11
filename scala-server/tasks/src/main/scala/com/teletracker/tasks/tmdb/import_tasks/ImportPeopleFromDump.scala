@@ -7,7 +7,7 @@ import com.teletracker.common.elasticsearch.{
   EsPerson,
   EsPersonCastCredit,
   EsPersonCrewCredit,
-  ItemSearch,
+  ItemLookup,
   ItemUpdater,
   PersonLookup
 }
@@ -35,7 +35,7 @@ class ImportPeopleFromDump @Inject()(
   tmdbSynchronousProcessor: TmdbSynchronousProcessor,
   genreCache: GenreCache,
   personLookup: PersonLookup,
-  itemSearch: ItemSearch
+  itemSearch: ItemLookup
 )(implicit protected val executionContext: ExecutionContext)
     extends ImportTmdbDumpTask[Person](
       s3,

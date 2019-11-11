@@ -22,7 +22,7 @@ class ImportMoviesFromDump @Inject()(
   sourceRetriever: SourceRetriever,
   thingsDbAccess: ThingsDbAccess,
   genreCache: GenreCache,
-  protected val itemSearch: ItemSearch,
+  protected val itemSearch: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   protected val personLookup: PersonLookup
 )(implicit protected val executionContext: ExecutionContext)

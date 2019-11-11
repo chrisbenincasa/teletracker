@@ -117,7 +117,7 @@ object ItemUpdater {
 }
 
 class ItemUpdater @Inject()(
-  itemSearch: ItemSearch,
+  itemSearch: ItemLookup,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext) {
   import ItemUpdater._

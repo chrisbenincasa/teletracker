@@ -196,7 +196,7 @@ class DynamicListBuilder @Inject()(
       .applyOptional(bookmark.map(_.sortMode).orElse(sortMode))(
         (builder, sort) => {
           builder
-            .applyOptional(makeSort(sort))(_.sort(_))
+            .applyOptional(makeDefaultSort(sort))(_.sort(_))
             .sort(
               new FieldSortBuilder("id").order(SortOrder.ASC)
             )
