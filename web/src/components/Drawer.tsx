@@ -224,6 +224,7 @@ class Drawer extends Component<Props, State> {
 
   handleLogout = () => {
     this.props.logout();
+    this.props.closeRequested();
   };
 
   toggleAuthModal = (initialForm?: 'login' | 'signup') => {
@@ -410,6 +411,11 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 
 export default withWidth()(
   withStyles(styles, { withTheme: true })(
-    withRouter(connect(mapStateToProps, mapDispatchToProps)(Drawer)),
+    withRouter(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(Drawer),
+    ),
   ),
 );
