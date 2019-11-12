@@ -40,14 +40,14 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
-import { logout } from '../actions/auth';
-import { search, SearchInitiatedPayload } from '../actions/search';
-import RouterLink, { StdRouterLink } from '../components/RouterLink';
-import { AppState } from '../reducers';
-import { Genre as GenreModel } from '../types';
-import { getTmdbPosterImage } from '../utils/image-helper';
-import { truncateText } from '../utils/textHelper';
-import { ApiItem } from '../types/v2';
+import { logout } from '../../actions/auth';
+import { search, SearchInitiatedPayload } from '../../actions/search';
+import RouterLink, { StdRouterLink } from '../RouterLink';
+import { AppState } from '../../reducers';
+import { Genre as GenreModel } from '../../types';
+import { getTmdbPosterImage } from '../../utils/image-helper';
+import { truncateText } from '../../utils/textHelper';
+import { ApiItem } from '../../types/v2';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -108,7 +108,7 @@ const styles = (theme: Theme) =>
       right: 0,
     },
     mobileSearchIcon: {
-      padding: `4px ${theme.spacing(1)}px`,
+      padding: `${theme.spacing(1)/2}px ${theme.spacing(1)}px`,
     },
     noResults: {
       margin: theme.spacing(1),
@@ -117,7 +117,7 @@ const styles = (theme: Theme) =>
     poster: {
       width: 25,
       boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
-      marginRight: 8,
+      marginRight: `${theme.spacing(1)}`,
     },
     progressSpinner: {
       margin: theme.spacing(1),
