@@ -1,6 +1,12 @@
 package com.teletracker.common.elasticsearch
 
-import com.teletracker.common.db.model.{Genre, ThingType, TrackedListRow}
+import com.teletracker.common.db.model.{
+  Genre,
+  Network,
+  PersonAssociationType,
+  ThingType,
+  TrackedListRow
+}
 import com.teletracker.common.db.{
   AddedTime,
   Bookmark,
@@ -15,16 +21,18 @@ import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.index.query.{
   BoolQueryBuilder,
   QueryBuilders,
-  RangeQueryBuilder
+  RangeQueryBuilder,
+  TermQueryBuilder
 }
 import com.teletracker.common.util.Functions._
-import com.teletracker.common.util.OpenDateRange
+import com.teletracker.common.util.{IdOrSlug, OpenDateRange}
 import io.circe.Decoder
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
 import org.slf4j.LoggerFactory
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
+import scala.collection.JavaConverters._
 
 trait ElasticsearchAccess {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -122,15 +130,22 @@ trait ElasticsearchAccess {
     builder: BoolQueryBuilder,
     genres: Set[Genre]
   ): BoolQueryBuilder = {
-    require(genres.nonEmpty)
+    genreIdsFilter(builder, genres.flatMap(_.id))
+  }
+
+  protected def genreIdsFilter(
+    builder: BoolQueryBuilder,
+    genreIds: Set[Int]
+  ): BoolQueryBuilder = {
+    require(genreIds.nonEmpty)
     builder.filter(
-      genres
+      genreIds
         .foldLeft(QueryBuilders.boolQuery())(
-          (builder, genre) =>
+          (builder, genreId) =>
             builder.should(
               QueryBuilders.nestedQuery(
                 "genres",
-                QueryBuilders.termQuery("genres.id", genre.id.get),
+                QueryBuilders.termQuery("genres.id", genreId),
                 ScoreMode.Avg
               )
             )
@@ -275,5 +290,150 @@ trait ElasticsearchAccess {
     new FieldSortBuilder(field)
       .order(if (desc) SortOrder.DESC else SortOrder.ASC)
       .missing("_last")
+  }
+
+  protected def peopleCreditSearchQuery(
+    builder: BoolQueryBuilder,
+    peopleCreditSearch: PeopleCreditSearch
+  ): BoolQueryBuilder = {
+    val cast = peopleCreditSearch.people.filter(
+      _.associationType == PersonAssociationType.Cast
+    )
+    val crew = peopleCreditSearch.people.filter(
+      _.associationType == PersonAssociationType.Crew
+    )
+
+    if (cast.isEmpty && crew.isEmpty) {
+      builder
+    } else {
+      peopleCreditSearch.operator match {
+        case BinaryOperator.Or =>
+          builder.must(
+            QueryBuilders
+              .boolQuery()
+              .minimumShouldMatch(1)
+              .applyIf(cast.nonEmpty)(
+                termsQueryForHasIdOrSlug(_, cast.map(_.personId), "cast")
+              )
+              .applyIf(crew.nonEmpty)(
+                termsQueryForHasIdOrSlug(_, crew.map(_.personId), "crew")
+              )
+          )
+
+        case BinaryOperator.And =>
+          builder
+            .through(b => {
+              cast.foldLeft(b)(
+                (currBuilder, credit) =>
+                  currBuilder.filter(
+                    QueryBuilders.nestedQuery(
+                      "cast",
+                      termQueryForHasIdOrSlug(credit.personId, "cast"),
+                      ScoreMode.Avg
+                    )
+                  )
+              )
+            })
+            .through(b => {
+              crew.foldLeft(b)(
+                (currBuilder, credit) =>
+                  currBuilder.filter(
+                    QueryBuilders.nestedQuery(
+                      "crew",
+                      termQueryForHasIdOrSlug(credit.personId, "crew"),
+                      ScoreMode.Avg
+                    )
+                  )
+              )
+            })
+      }
+    }
+  }
+
+  protected def termsQueryForHasIdOrSlug(
+    builder: BoolQueryBuilder,
+    idOrSlugs: Seq[IdOrSlug],
+    field: String
+  ) = {
+    val ids = idOrSlugs.flatMap(_.id)
+    val slugs = idOrSlugs.flatMap(_.slug)
+    builder
+      .applyIf(ids.nonEmpty)(
+        _.should(
+          QueryBuilders.nestedQuery(
+            field,
+            QueryBuilders
+              .termsQuery(
+                s"$field.id",
+                ids.map(_.toString).asJavaCollection
+              ),
+            ScoreMode.Avg
+          )
+        )
+      )
+      .applyIf(slugs.nonEmpty)(
+        _.should(
+          QueryBuilders.nestedQuery(
+            field,
+            QueryBuilders
+              .termsQuery(
+                s"$field.slug",
+                slugs.map(_.value).asJavaCollection
+              ),
+            ScoreMode.Avg
+          )
+        )
+      )
+  }
+
+  protected def termQueryForHasIdOrSlug(
+    idOrSlug: IdOrSlug,
+    field: String
+  ): TermQueryBuilder = {
+    idOrSlug match {
+      case IdOrSlug(Left(id)) =>
+        QueryBuilders
+          .termQuery(
+            s"$field.id",
+            id.toString
+          )
+      case IdOrSlug(Right(slug)) =>
+        QueryBuilders
+          .termQuery(
+            s"$field.slug",
+            slug.value
+          )
+    }
+  }
+
+  protected def availabilityByNetworksOr(
+    builder: BoolQueryBuilder,
+    networks: Set[Network]
+  ) = {
+    availabilityByNetworkIdsOr(builder, networks.flatMap(_.id))
+  }
+
+  protected def availabilityByNetworkIdsOr(
+    builder: BoolQueryBuilder,
+    networks: Set[Int]
+  ) = {
+    builder.filter(
+      networks.foldLeft(QueryBuilders.boolQuery())(availabilityByNetworkId)
+    )
+  }
+
+  private def availabilityByNetworkId(
+    builder: BoolQueryBuilder,
+    networkId: Int
+  ) = {
+    builder
+      .should(
+        QueryBuilders.nestedQuery(
+          "availability",
+          QueryBuilders.termQuery("availability.network_id", networkId),
+          ScoreMode.Avg
+        )
+      )
+      .minimumShouldMatch(1)
   }
 }

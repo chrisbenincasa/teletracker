@@ -72,7 +72,6 @@ class ListBuilder @Inject()(
       .aggregation(agg)
       .query(termQuery)
       .fetchSource(false)
-    println(source)
 
     val searchRequest = new SearchRequest().source(source)
 

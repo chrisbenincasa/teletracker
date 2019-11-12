@@ -10,7 +10,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Tune } from '@material-ui/icons';
+import { Add, Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -29,7 +29,14 @@ import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
-import { Genre, ItemType } from '../types';
+import {
+  Genre,
+  ItemType,
+  ListNetworkRule,
+  ListReleaseYearRule,
+  ListRule,
+  Network,
+} from '../types';
 import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
@@ -38,6 +45,11 @@ import {
   updateUrlParamsForFilter,
 } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
+import CreateDynamicListDialog from '../components/CreateDynamicListDialog';
+import {
+  peopleFetchInitiated,
+  PeopleFetchInitiatedPayload,
+} from '../actions/people/get_people';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -85,10 +97,12 @@ interface OwnProps {
 interface InjectedProps {
   bookmark?: string;
   isAuthed: boolean;
-  isSearching: boolean;
   loading: boolean;
   items?: string[];
   thingsBySlug: { [key: string]: Item };
+  personNameByCanonicalId: { [key: string]: string };
+  genres?: Genre[];
+  networks?: Network[];
 }
 
 interface RouteParams {
@@ -101,10 +115,7 @@ interface WidthProps {
 
 interface DispatchProps {
   retrieveItems: (payload: ExploreInitiatedActionPayload) => void;
-}
-
-interface StateProps {
-  genres?: Genre[];
+  retrievePeople: (payload: PeopleFetchInitiatedPayload) => void;
 }
 
 type Props = OwnProps &
@@ -113,7 +124,6 @@ type Props = OwnProps &
   DispatchProps &
   WithUserProps &
   WidthProps &
-  StateProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
@@ -121,6 +131,7 @@ interface State {
   filters: FilterParams;
   defaultFilterState: FilterParams;
   totalLoadedImages: number;
+  createDynamicListDialogOpen: boolean;
 }
 
 class Explore extends Component<Props, State> {
@@ -146,12 +157,20 @@ class Explore extends Component<Props, State> {
       defaultFilterState: defaultFilterParams,
       filters: filterParams,
       totalLoadedImages: 0,
+      createDynamicListDialogOpen: false,
     };
   }
 
   loadItems(passBookmark: boolean, firstRun?: boolean) {
     const {
-      filters: { itemTypes, sortOrder, genresFilter, networks, sliders },
+      filters: {
+        itemTypes,
+        sortOrder,
+        genresFilter,
+        networks,
+        sliders,
+        people,
+      },
     } = this.state;
     const { bookmark, retrieveItems, width } = this.props;
 
@@ -171,12 +190,24 @@ class Explore extends Component<Props, State> {
                 max: sliders.releaseYear.max,
               }
             : undefined,
+        cast: people,
       });
     }
   }
 
   componentDidMount() {
-    const { isLoggedIn, userSelf } = this.props;
+    const { isLoggedIn, userSelf, personNameByCanonicalId } = this.props;
+    const { filters } = this.state;
+
+    if (filters.people) {
+      let missingPeople = _.filter(filters.people, person =>
+        _.isUndefined(personNameByCanonicalId[person]),
+      );
+
+      if (missingPeople.length > 0) {
+        this.props.retrievePeople({ ids: missingPeople });
+      }
+    }
 
     this.loadItems(false, true);
 
@@ -226,6 +257,12 @@ class Explore extends Component<Props, State> {
     }
   };
 
+  createListFromFilters = () => {
+    this.setState({
+      createDynamicListDialogOpen: true,
+    });
+  };
+
   toggleFilters = () => {
     this.setState({ showFilter: !this.state.showFilter });
   };
@@ -234,16 +271,6 @@ class Explore extends Component<Props, State> {
     const { genres } = this.props;
     const genreItem = genres && genres.find(obj => obj.id === genre);
     return (genreItem && genreItem.name) || '';
-  };
-
-  renderLoading = () => {
-    const { classes } = this.props;
-
-    return (
-      <div className={classes.loadingBar}>
-        <LinearProgress />
-      </div>
-    );
   };
 
   renderLoadingCircle() {
@@ -276,30 +303,31 @@ class Explore extends Component<Props, State> {
     }
   };
 
-  setFilters = (filterParams: FilterParams) => {
-    this.setState(
-      {
-        filters: filterParams,
-      },
-      () => {
-        this.loadItems(false);
-      },
-    );
-  };
-
   setVisibleItems = () => {
     this.setState({
       totalLoadedImages: this.state.totalLoadedImages + 1,
     });
   };
 
+  handleCreateDynamicModalClose = () => {
+    this.setState({ createDynamicListDialogOpen: false });
+  };
+
   renderPopular = () => {
-    const { classes, genres, items, userSelf, thingsBySlug } = this.props;
+    const {
+      classes,
+      genres,
+      items,
+      userSelf,
+      thingsBySlug,
+      loading,
+    } = this.props;
     const {
       filters: { genresFilter, itemTypes },
+      createDynamicListDialogOpen,
     } = this.state;
 
-    return items && items.length ? (
+    return items ? (
       <div className={classes.popularContainer}>
         <div className={classes.listTitle}>
           <Typography
@@ -328,6 +356,10 @@ class Explore extends Component<Props, State> {
             <Tune />
             <Typography variant="srOnly">Tune</Typography>
           </IconButton>
+          <IconButton onClick={this.createListFromFilters}>
+            <Add />
+            <Typography variant="srOnly">Save as List</Typography>
+          </IconButton>
         </div>
         <div className={classes.filters}>
           <ActiveFilters
@@ -343,45 +375,56 @@ class Explore extends Component<Props, State> {
           filters={this.state.filters}
           updateFilters={this.handleFilterParamsChange}
         />
-        <InfiniteScroll
-          pageStart={0}
-          loadMore={() => this.loadMoreResults()}
-          hasMore={Boolean(this.props.bookmark)}
-          useWindow
-          threshold={300}
-        >
-          <Grid container spacing={2}>
-            {items.map((result, index) => {
-              let thing = thingsBySlug[result];
-              if (thing) {
-                return (
-                  <ItemCard
-                    key={result}
-                    userSelf={userSelf}
-                    item={thing}
-                    hasLoaded={this.setVisibleItems}
-                  />
-                );
-              } else {
-                return null;
-              }
-            })}
-          </Grid>
-          {this.props.loading && this.renderLoadingCircle()}
-        </InfiniteScroll>
+        {!loading && items ? (
+          <InfiniteScroll
+            pageStart={0}
+            loadMore={() => this.loadMoreResults()}
+            hasMore={Boolean(this.props.bookmark)}
+            useWindow
+            threshold={300}
+          >
+            <Grid container spacing={2}>
+              {items.map((result, index) => {
+                let thing = thingsBySlug[result];
+                if (thing) {
+                  return (
+                    <ItemCard
+                      key={result}
+                      userSelf={userSelf}
+                      item={thing}
+                      hasLoaded={this.setVisibleItems}
+                    />
+                  );
+                } else {
+                  return null;
+                }
+              })}
+            </Grid>
+            {this.props.loading && this.renderLoadingCircle()}
+          </InfiniteScroll>
+        ) : null}
+
+        <CreateDynamicListDialog
+          filters={this.state.filters}
+          open={createDynamicListDialogOpen}
+          onClose={this.handleCreateDynamicModalClose}
+          networks={this.props.networks || []}
+          genres={this.props.genres || []}
+        />
       </div>
     ) : null;
   };
 
   render() {
-    const { items } = this.props;
+    const { items, loading } = this.props;
 
-    return items ? (
+    return (
       <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
+        <LinearProgress
+          style={{ visibility: loading || !items ? 'visible' : 'hidden' }}
+        />
         {this.renderPopular()}
       </div>
-    ) : (
-      this.renderLoading()
     );
   }
 }
@@ -389,11 +432,15 @@ class Explore extends Component<Props, State> {
 const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    isSearching: appState.search.searching,
     items: appState.explore.items,
     thingsBySlug: appState.itemDetail.thingsBySlug,
-    loading: appState.explore.loadingExplore,
+    personNameByCanonicalId: appState.people.nameByIdOrSlug,
+    loading:
+      appState.explore.loadingExplore ||
+      appState.metadata.metadataLoading ||
+      appState.people.loadingPeople,
     genres: appState.metadata.genres,
+    networks: appState.metadata.networks,
     bookmark: appState.explore.exploreBookmark,
   };
 };
@@ -402,6 +449,7 @@ const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
       retrieveItems: retrieveExplore,
+      retrievePeople: peopleFetchInitiated,
     },
     dispatch,
   );

@@ -106,13 +106,6 @@ class SearchController @Inject()(
           query,
           options
         )
-//        thingIds = things.map(_.id)
-//        thingUserDetails <- getThingUserDetails(
-//          req.request.authContext
-//            .map(_.userId),
-//          thingIds.toSet
-//        )
-
       } yield {
         val allThings =
           result.items.map(_.scopeToUser(req.request.authenticatedUserId))

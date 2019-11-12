@@ -25,15 +25,21 @@ const authWhitelistFilter = createWhitelistFilter(
   ['token', 'user'],
 );
 
+const personNameCacheFilter = createWhitelistFilter(
+  'people',
+  ['nameByIdOrSlug'],
+  ['nameByIdOrSlug'],
+);
+
 const getWhitelists = () => {
-  return ['auth'];
+  return ['auth', 'people'];
 };
 
 export const persistConfig: rp.PersistConfig = {
   key: 'root',
   storage: localforage,
   whitelist: getWhitelists(),
-  transforms: [authWhitelistFilter],
+  transforms: [authWhitelistFilter, personNameCacheFilter],
 };
 
 if (env === 'development') {

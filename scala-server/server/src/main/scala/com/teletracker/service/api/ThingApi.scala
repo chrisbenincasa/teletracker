@@ -479,6 +479,17 @@ class ThingApi @Inject()(
     personLookup.lookupPerson(HasThingIdOrSlug.parse(idOrSlug))
   }
 
+  def getPeopleViaSearch(
+    userId: Option[String],
+    idOrSlugs: List[String]
+  ): Future[List[EsPerson]] = {
+    personLookup
+      .lookupPeople(idOrSlugs.map(HasThingIdOrSlug.parseIdOrSlug))
+      .map(people => {
+        people.groupBy(_.id).mapValues(_.head).values.toList
+      })
+  }
+
   def getPersonCredits(
     userId: Option[String],
     idOrSlug: String,

@@ -1,9 +1,13 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.db.{Bookmark, Popularity, Recent, SortMode}
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.access.{
+  SearchOptions,
+  SearchRankingMode,
+  ThingsDbAccess
+}
 import com.teletracker.common.db.model.{PersonAssociationType, ThingType}
-import com.teletracker.common.elasticsearch.{EsItem, EsPerson}
+import com.teletracker.common.elasticsearch.{EsItem, EsPerson, PersonLookup}
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
 import com.teletracker.common.util.json.circe._
@@ -30,7 +34,8 @@ import scala.util.Try
 
 class ItemsController @Inject()(
   thingsDbAccess: ThingsDbAccess,
-  thingApi: ThingApi
+  thingApi: ThingApi,
+  personLookup: PersonLookup
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with CanParseFieldFilter {
@@ -95,6 +100,51 @@ class ItemsController @Inject()(
   }
 
   prefix("/api/v2/people") {
+    get("/search") { req: SearchRequest =>
+      val query = req.query
+      val fields = parseFieldsOrNone(req.fields)
+      val mode = req.rankingMode.getOrElse(SearchRankingMode.Popularity)
+      val bookmark = req.bookmark.map(Bookmark.parse)
+
+      val options =
+        SearchOptions(mode, None, req.limit, bookmark)
+
+      for {
+        result <- personLookup.fullTextSearch(
+          query,
+          options
+        )
+      } yield {
+        response.ok
+          .contentTypeJson()
+          .body(
+            DataResponse.forDataResponse(
+              DataResponse(
+                result.items.map(Person.fromEsPerson(_, None)),
+                Some(Paging(result.bookmark.map(_.asString)))
+              )
+            )
+          )
+      }
+    }
+
+    get("/batch") { req: GetPersonBatchRequest =>
+      thingApi
+        .getPeopleViaSearch(req.authenticatedUserId, req.personIds)
+        .map(results => {
+          response.ok(
+            DataResponse.complex(
+              results.map(
+                Person.fromEsPerson(
+                  _,
+                  None
+                )
+              )
+            )
+          )
+        })
+    }
+
     get("/:personId") { req: GetPersonRequest =>
       thingApi.getPersonViaSearch(req.authenticatedUserId, req.personId).map {
         case None => response.notFound
@@ -170,6 +220,11 @@ case class BatchGetThingsRequest(
 case class GetPersonRequest(
   @RouteParam personId: String,
   @QueryParam fields: Option[String],
+  request: Request)
+    extends InjectedRequest
+
+case class GetPersonBatchRequest(
+  @QueryParam(commaSeparatedList = true) personIds: List[String],
   request: Request)
     extends InjectedRequest
 

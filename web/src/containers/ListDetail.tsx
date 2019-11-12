@@ -25,7 +25,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Delete, Edit, Settings, Tune } from '@material-ui/icons';
+import { Delete, Edit, Save, Settings, Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -52,18 +52,28 @@ import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';
 import { ListsByIdMap } from '../reducers/lists';
-import { Genre, ItemType, List, SortOptions, NetworkType } from '../types';
+import {
+  Genre,
+  ItemType,
+  List,
+  SortOptions,
+  NetworkType,
+  Network,
+  ListGenreRule,
+  ListNetworkRule,
+} from '../types';
 import {
   calculateLimit,
   getNumColumns,
   getOrInitListOptions,
 } from '../utils/list-utils';
-import { FilterParams } from '../utils/searchFilters';
+import { FilterParams, isDefaultFilter } from '../utils/searchFilters';
 import {
   parseFilterParamsFromQs,
   updateUrlParamsForFilter,
 } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
+import { collect } from '../utils/collection-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -139,6 +149,8 @@ interface RouteParams {
 
 interface StateProps {
   genres?: Genre[];
+  networks?: Network[];
+  loading: boolean;
 }
 
 interface WidthProps {
@@ -168,6 +180,7 @@ interface State {
   renameDialogOpen: boolean;
   showFilter: boolean;
   filters: FilterParams;
+  listFilters?: FilterParams; // The default state of filters based on list rules.
   totalLoadedImages: number;
 }
 
@@ -177,12 +190,16 @@ class ListDetail extends Component<Props, State> {
     let listId = Number(this.props.match.params.id);
     let params = new URLSearchParams(props.location.search);
 
+    let list = props.listsById[listId];
+
+    let filters = parseFilterParamsFromQs(props.location.search);
+
     this.state = {
       anchorEl: null,
       deleted: false,
       deleteConfirmationOpen: false,
       deleteOnWatch: true,
-      list: props.listsById[listId],
+      list,
       loadingList: true,
       migrateListId: 0,
       newListName: '',
@@ -194,7 +211,7 @@ class ListDetail extends Component<Props, State> {
         params.has('genres') ||
         params.has('networks') ||
         params.has('types'),
-      filters: parseFilterParamsFromQs(props.location.search),
+      filters: filters,
       totalLoadedImages: 0,
     };
   }
@@ -236,16 +253,6 @@ class ListDetail extends Component<Props, State> {
 
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
-    const { match } = this.props;
-
-    if (match && match.params && match.params.sort) {
-      this.setState({
-        filters: {
-          ...this.state.filters,
-          sortOrder: match.params.sort,
-        },
-      });
-    }
 
     this.setState({ loadingList: true });
     this.retrieveList();
@@ -263,6 +270,43 @@ class ListDetail extends Component<Props, State> {
     }
   }
 
+  extractFiltersFromList = (list: List): FilterParams | undefined => {
+    const { networks } = this.props;
+
+    if (
+      list.isDynamic &&
+      list.configuration &&
+      list.configuration.ruleConfiguration
+    ) {
+      let groupedRules = _.groupBy(
+        list.configuration.ruleConfiguration.rules,
+        'type',
+      );
+
+      let genreRules = groupedRules.UserListGenreRule
+        ? groupedRules.UserListGenreRule.map(
+            rule => (rule as ListGenreRule).genreId,
+          )
+        : undefined;
+
+      let networkRules = groupedRules.UserListNetworkRule
+        ? collect(groupedRules.UserListNetworkRule, rule => {
+            let networkId = (rule as ListNetworkRule).networkId;
+            let foundNetwork = _.find(networks, n => n.id === networkId);
+            return foundNetwork ? foundNetwork.slug : undefined;
+          })
+        : undefined;
+
+      return {
+        genresFilter: genreRules,
+        networks: networkRules,
+        sortOrder: list.configuration.ruleConfiguration.sort
+          ? list.configuration.ruleConfiguration.sort.sort
+          : 'default',
+      };
+    }
+  };
+
   componentDidUpdate(oldProps: Props, prevState: State) {
     const { filters, list } = this.state;
 
@@ -277,15 +321,19 @@ class ListDetail extends Component<Props, State> {
       !this.props.listLoading &&
       (oldProps.listLoading || this.state.loadingList)
     ) {
+      let list = this.props.listsById[this.listId];
+      let listFilters = this.extractFiltersFromList(list);
+
       this.setState({
         loadingList: false,
-        list: this.props.listsById[this.listId],
+        list: list,
         deleteOnWatch: this.props.listsById[this.listId]
           ? R.path(
               ['list', 'configuration', 'options', 'removeWatchedItems'],
               this.props,
             ) || false
           : false,
+        listFilters,
       });
     } else if (!_.isEqual(list, prevState.list)) {
       // Detect deep object inequality
@@ -606,7 +654,7 @@ class ListDetail extends Component<Props, State> {
 
   renderListDetail(list: List) {
     const { classes, genres, listLoading, thingsById, userSelf } = this.props;
-    const { deleted, showFilter, filters } = this.state;
+    const { deleted, showFilter, filters, listFilters } = this.state;
 
     if ((!listLoading && !list) || deleted) {
       return <Redirect to="/" />;
@@ -629,7 +677,12 @@ class ListDetail extends Component<Props, State> {
                 genres={genres}
                 updateFilters={this.handleFilterParamsChange}
                 isListDynamic={list.isDynamic}
-                filters={filters}
+                filters={
+                  isDefaultFilter(filters) && listFilters
+                    ? listFilters
+                    : filters
+                }
+                initialState={listFilters}
               />
               <IconButton
                 onClick={this.toggleFilters}
@@ -640,6 +693,19 @@ class ListDetail extends Component<Props, State> {
                 <Typography variant="srOnly">Tune</Typography>
               </IconButton>
               {this.renderProfileMenu()}
+              {list.isDynamic && listFilters ? (
+                <IconButton
+                  className={classes.settings}
+                  color={showFilter ? 'secondary' : 'inherit'}
+                  disabled={
+                    isDefaultFilter(filters) ||
+                    filterParamsEqual(listFilters!, filters)
+                  }
+                >
+                  <Save />
+                  <Typography variant="srOnly">Save</Typography>
+                </IconButton>
+              ) : null}
             </div>
             <AllFilters
               genres={genres}
@@ -681,10 +747,10 @@ class ListDetail extends Component<Props, State> {
   }
 
   render() {
-    let { userSelf } = this.props;
+    let { userSelf, loading } = this.props;
     let { list } = this.state;
 
-    return !list || !userSelf
+    return !list || !userSelf || loading
       ? this.renderLoading()
       : this.renderListDetail(this.state.list!);
   }
@@ -700,6 +766,8 @@ const mapStateToProps: (
     listsById: appState.lists.listsById,
     thingsById: appState.itemDetail.thingsById,
     genres: appState.metadata.genres,
+    networks: appState.metadata.networks,
+    loading: appState.metadata.metadataLoading,
     listBookmark: appState.lists.currentBookmark,
   };
 };

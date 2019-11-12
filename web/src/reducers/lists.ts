@@ -1,5 +1,13 @@
 import * as R from 'ramda';
 import {
+  LIST_ADD_ITEM_FAILED,
+  LIST_ADD_ITEM_INITIATED,
+  LIST_ADD_ITEM_SUCCESS,
+  LIST_RETRIEVE_ALL_INITIATED,
+  LIST_RETRIEVE_ALL_SUCCESS,
+  LIST_RETRIEVE_INITIATED,
+  LIST_RETRIEVE_SUCCESS,
+  ListActions,
   ListAddFailedAction,
   ListAddInitiatedAction,
   ListAddSuccessAction,
@@ -7,14 +15,6 @@ import {
   ListRetrieveAllSuccessAction,
   ListRetrieveInitiatedAction,
   ListRetrieveSuccessAction,
-  ListActions,
-  LIST_ADD_ITEM_INITIATED,
-  LIST_RETRIEVE_ALL_INITIATED,
-  LIST_RETRIEVE_INITIATED,
-  LIST_ADD_ITEM_FAILED,
-  LIST_ADD_ITEM_SUCCESS,
-  LIST_RETRIEVE_SUCCESS,
-  LIST_RETRIEVE_ALL_SUCCESS,
   USER_SELF_UPDATE_LIST_SUCCESS,
 } from '../actions/lists';
 import { List } from '../types';

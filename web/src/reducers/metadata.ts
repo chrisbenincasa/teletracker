@@ -13,8 +13,15 @@ import {
   GenresLoadAction,
   GenresLoadSuccessAction,
 } from '../actions/metadata/load_genres';
+import {
+  METADATA_LOAD,
+  METADATA_LOAD_SUCCESS,
+  MetadataLoadAction,
+  MetadataLoadSuccessAction,
+} from '../actions/metadata/load_metadata';
 
 export interface State {
+  metadataLoading: boolean;
   networksLoading: boolean;
   genresLoading: boolean;
   networks?: Network[];
@@ -22,6 +29,7 @@ export interface State {
 }
 
 const initialState: State = {
+  metadataLoading: false,
   networksLoading: false,
   genresLoading: false,
 };
@@ -60,10 +68,30 @@ const handleGenresSuccess = handleAction<GenresLoadSuccessAction, State>(
   }),
 );
 
+const handleMetadataInitiated = handleAction<MetadataLoadAction, State>(
+  METADATA_LOAD,
+  state => ({
+    ...state,
+    metadataLoading: true,
+  }),
+);
+
+const handleMetadataSuccess = handleAction<MetadataLoadSuccessAction, State>(
+  METADATA_LOAD_SUCCESS,
+  (state, { payload }) => ({
+    ...state,
+    metadataLoading: false,
+    genres: payload!.genres,
+    networks: payload!.networks,
+  }),
+);
+
 export default flattenActions<State>(
   initialState,
   handleNetworksInitiated,
   handleNetworksSuccess,
   handleGenresInitiated,
   handleGenresSuccess,
+  handleMetadataInitiated,
+  handleMetadataSuccess,
 );
