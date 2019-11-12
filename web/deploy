@@ -3,3 +3,4 @@
 yarn run build
 
 aws s3 sync build/ s3://qa.teletracker.tv --acl public-read --delete
+aws cloudfront create-invalidation --distribution-id E3RALH1PAOX3BP --paths '/index.html'
