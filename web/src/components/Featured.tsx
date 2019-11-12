@@ -44,13 +44,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
   },
   title: {
-    [theme.breakpoints.up('sm')]: {
-      fontSize: '2.5em',
-    },
     textAlign: 'right',
     width: '70%',
     alignSelf: 'flex-end',
-    fontSize: '1.5em',
+    fontSize: theme.typography.h5.fontSize,
     fontWeight: 700,
   },
   titleContainer: {
@@ -123,7 +120,7 @@ function Featured(props: Props) {
 
         <div className={classes.posterContainer}>
           <RouterLink
-            to={'/' + featuredItem.type + '/' + featuredItem.slug}
+            to={featuredItem.relativeUrl}
             style={{
               display: 'block',
               height: '100%',
