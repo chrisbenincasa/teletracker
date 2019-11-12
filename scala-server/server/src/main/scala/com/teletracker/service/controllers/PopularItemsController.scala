@@ -1,6 +1,6 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.{Bookmark, Popularity}
+import com.teletracker.common.db.{Bookmark, Popularity, Recent, SortMode}
 import com.teletracker.common.db.access.{ThingsDbAccess, UserThingDetails}
 import com.teletracker.common.db.model.{Network, ThingType}
 import com.teletracker.common.elasticsearch
@@ -54,7 +54,7 @@ class PopularItemsController @Inject()(
   private val defaultFields = List(Field("id"))
 
   prefix("/api/v1") {
-    get("/popular") { req: GetPopularItemsRequest =>
+    get("/popular") { req: GetItemsRequest =>
       val parsedFields = parseFieldsOrNone(req.fields)
 
       val networksFut = if (req.networks.nonEmpty) {
@@ -105,67 +105,83 @@ class PopularItemsController @Inject()(
   }
 
   prefix("/api/v2") {
-    get("/popular") { req: GetPopularItemsRequest =>
-      val searchRequest = api.ItemSearchRequest(
-        genres = Some(req.genres.map(_.toString)).filter(_.nonEmpty),
-        networks = Some(req.networks).filter(_.nonEmpty),
-        itemTypes = Some(
-          req.itemTypes.flatMap(t => Try(ThingType.fromString(t)).toOption)
-        ),
-        sortMode = Popularity(),
-        limit = req.limit,
-        bookmark = req.bookmark.map(Bookmark.parse),
-        releaseYear = Some(
-          OpenDateRange(
-            req.minReleaseYear.map(localDateAtYear),
-            req.maxReleaseYear.map(localDateAtYear)
-          )
-        ),
-        peopleCredits =
-          if (req.cast.nonEmpty || req.crew.nonEmpty)
-            Some(
-              api.PeopleCreditsFilter(
-                req.cast.toSeq,
-                req.crew.toSeq,
-                BinaryOperator.And
-              )
-            )
-          else None
-      )
-
-      thingApi
-        .search(
-          searchRequest
-        )
-        .map(popularItems => {
-          val items =
-            popularItems.items.map(_.scopeToUser(req.authenticatedUserId))
-
-          DataResponse.forDataResponse(
-            DataResponse(items).withPaging(
-              Paging(popularItems.bookmark.map(_.asString))
-            )
-          )
-        })
+    get("/explore") { req: GetItemsRequest =>
+      val searchRequest = makeSearchRequest(req)
+      executeRequest(req.authenticatedUserId, searchRequest)
     }
+
+    get("/popular") { req: GetItemsRequest =>
+      val searchRequest = makeSearchRequest(req).copy(sortMode = Popularity())
+      executeRequest(req.authenticatedUserId, searchRequest)
+    }
+  }
+
+  private def executeRequest(
+    userId: Option[String],
+    searchRequest: ItemSearchRequest
+  ) = {
+    thingApi
+      .search(
+        searchRequest
+      )
+      .map(popularItems => {
+        val items =
+          popularItems.items.map(_.scopeToUser(userId))
+
+        DataResponse.forDataResponse(
+          DataResponse(items).withPaging(
+            Paging(popularItems.bookmark.map(_.asString))
+          )
+        )
+      })
+  }
+
+  private def makeSearchRequest(req: GetItemsRequest) = {
+    api.ItemSearchRequest(
+      genres = Some(req.genres.map(_.toString)).filter(_.nonEmpty),
+      networks = Some(req.networks).filter(_.nonEmpty),
+      itemTypes = Some(
+        req.itemTypes.flatMap(t => Try(ThingType.fromString(t)).toOption)
+      ),
+      sortMode = req.sort.map(SortMode.fromString).getOrElse(Recent()),
+      limit = req.limit,
+      bookmark = req.bookmark.map(Bookmark.parse),
+      releaseYear = Some(
+        OpenDateRange(
+          req.minReleaseYear.map(localDateAtYear),
+          req.maxReleaseYear.map(localDateAtYear)
+        )
+      ),
+      peopleCredits =
+        if (req.cast.nonEmpty || req.crew.nonEmpty)
+          Some(
+            api.PeopleCreditsFilter(
+              req.cast.toSeq,
+              req.crew.toSeq,
+              BinaryOperator.And
+            )
+          )
+        else None
+    )
   }
 
   private def localDateAtYear(year: Int): LocalDate = LocalDate.of(year, 1, 1)
 }
 
-object GetPopularItemsRequest {
+object GetItemsRequest {
   final val DefaultLimit = 10
   final val MaxYear = LocalDate.now().getYear + 5
 }
 
-case class GetPopularItemsRequest(
+case class GetItemsRequest(
   @QueryParam(commaSeparatedList = true) itemTypes: Set[String] =
     Set(ThingType.Movie, ThingType.Show).map(_.toString),
   @QueryParam bookmark: Option[String],
-  @Min(0) @Max(50) @QueryParam limit: Int = GetPopularItemsRequest.DefaultLimit,
+  @QueryParam sort: Option[String],
+  @Min(0) @Max(50) @QueryParam limit: Int = GetItemsRequest.DefaultLimit,
   @QueryParam(commaSeparatedList = true) networks: Set[String] = Set.empty,
   @QueryParam fields: Option[String] = None,
-  @QueryParam genres: Set[Int] = Set.empty,
+  @QueryParam(commaSeparatedList = true) genres: Set[Int] = Set.empty,
   @QueryParam @ItemReleaseYear minReleaseYear: Option[Int],
   @QueryParam @ItemReleaseYear maxReleaseYear: Option[Int],
   @QueryParam(commaSeparatedList = true) cast: Set[String] = Set.empty,

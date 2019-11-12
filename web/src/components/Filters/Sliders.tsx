@@ -13,7 +13,7 @@ import { OpenRange } from '../../types';
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {
     width: '100%',
-    padding: theme.spacing(3),
+    padding: `0 ${theme.spacing(3)}px`,
   },
 }));
 
@@ -156,6 +156,10 @@ const SliderFilters = (props: Props) => {
           value={yearValue}
           min={MIN_YEAR}
           max={nextYear}
+          marks={[
+            { value: MIN_YEAR, label: MIN_YEAR },
+            { value: nextYear, label: nextYear },
+          ]}
           onChange={handleYearChange}
           onChangeCommitted={handleYearCommitted}
           valueLabelDisplay="auto"

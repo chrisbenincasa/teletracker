@@ -19,16 +19,17 @@ import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
-import { retrievePopular } from '../actions/popular';
-import { PopularInitiatedActionPayload } from '../actions/popular/popular';
-import Featured from '../components/Featured';
+import {
+  ExploreInitiatedActionPayload,
+  retrieveExplore,
+} from '../actions/explore';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
-import { Genre, ItemType, SortOptions, NetworkType } from '../types';
+import { Genre, ItemType } from '../types';
 import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
@@ -37,7 +38,6 @@ import {
   updateUrlParamsForFilter,
 } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
-import { SliderChange } from '../components/Filters/Sliders';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -78,14 +78,16 @@ const styles = (theme: Theme) =>
     },
   });
 
-interface OwnProps extends WithStyles<typeof styles> {}
+interface OwnProps {
+  initialType?: ItemType;
+}
 
 interface InjectedProps {
   bookmark?: string;
   isAuthed: boolean;
   isSearching: boolean;
   loading: boolean;
-  popular?: string[];
+  items?: string[];
   thingsBySlug: { [key: string]: Item };
 }
 
@@ -98,7 +100,7 @@ interface WidthProps {
 }
 
 interface DispatchProps {
-  retrievePopular: (payload: PopularInitiatedActionPayload) => void;
+  retrieveItems: (payload: ExploreInitiatedActionPayload) => void;
 }
 
 interface StateProps {
@@ -106,6 +108,7 @@ interface StateProps {
 }
 
 type Props = OwnProps &
+  WithStyles<typeof styles> &
   InjectedProps &
   DispatchProps &
   WithUserProps &
@@ -114,52 +117,53 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
-  mainItemIndex: number;
   showFilter: boolean;
   filters: FilterParams;
+  defaultFilterState: FilterParams;
   totalLoadedImages: number;
 }
 
-class Popular extends Component<Props, State> {
+class Explore extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    let filterParams = DEFAULT_FILTER_PARAMS;
+    let defaultFilterParams = DEFAULT_FILTER_PARAMS;
 
-    let paramsFromQuery = parseFilterParamsFromQs(props.location.search);
-
-    if (paramsFromQuery.sortOrder === 'default') {
-      paramsFromQuery.sortOrder = 'popularity';
+    if (props.initialType) {
+      defaultFilterParams.itemTypes = [props.initialType];
     }
 
-    filterParams = {
-      ...filterParams,
-      ...paramsFromQuery,
-    };
+    let filterParams = R.mergeDeepRight(
+      defaultFilterParams,
+      R.filter(R.compose(R.not, R.isNil))(
+        parseFilterParamsFromQs(props.location.search),
+      ),
+    ) as FilterParams;
 
     this.state = {
       ...this.state,
-      mainItemIndex: -1,
       showFilter: false,
+      defaultFilterState: defaultFilterParams,
       filters: filterParams,
       totalLoadedImages: 0,
     };
   }
 
-  loadPopular(passBookmark: boolean, firstRun?: boolean) {
+  loadItems(passBookmark: boolean, firstRun?: boolean) {
     const {
       filters: { itemTypes, sortOrder, genresFilter, networks, sliders },
     } = this.state;
-    const { bookmark, retrievePopular, width } = this.props;
+    const { bookmark, retrieveItems, width } = this.props;
 
     // To do: add support for sorting
     if (!this.props.loading) {
-      retrievePopular({
+      retrieveItems({
         bookmark: passBookmark ? bookmark : undefined,
         itemTypes,
         limit: calculateLimit(width, 3, firstRun ? 1 : 0),
         networks,
         genres: genresFilter,
+        sort: sortOrder === 'default' ? 'recent' : sortOrder,
         releaseYearRange:
           sliders && sliders.releaseYear
             ? {
@@ -174,7 +178,7 @@ class Popular extends Component<Props, State> {
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
 
-    this.loadPopular(false, true);
+    this.loadItems(false, true);
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -190,53 +194,42 @@ class Popular extends Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    const { loading, popular, thingsBySlug } = this.props;
-    const { mainItemIndex } = this.state;
-
-    // Grab random item from filtered list of popular movies
-    if (
-      (!prevProps.popular && popular && !loading) ||
-      (popular && mainItemIndex === -1 && !loading)
-    ) {
-      const highestRated = popular.filter(item => {
-        const thing = thingsBySlug[item];
-        const voteAverage =
-          thing.ratings && thing.ratings.length
-            ? thing.ratings[0].vote_average
-            : 0;
-        const voteCount =
-          (thing.ratings && thing.ratings.length
-            ? thing.ratings[0].vote_count
-            : 0) || 0;
-        return voteAverage > 7 && voteCount > 1000;
-      });
-
-      const randomItem = Math.floor(Math.random() * highestRated.length);
-      if (randomItem === 0) {
-        this.setState({
-          mainItemIndex: 0,
-        });
-      } else {
-        const popularItem = popular.findIndex(
-          name => name === highestRated[randomItem],
-        );
-
-        this.setState({
-          mainItemIndex: popularItem,
-        });
+    if (this.props.location.search !== prevProps.location.search) {
+      let filters = parseFilterParamsFromQs(this.props.location.search);
+      if (!filterParamsEqual(filters, this.state.filters)) {
+        this.setFilters(filters);
       }
     }
   }
 
   handleFilterParamsChange = (filterParams: FilterParams) => {
     if (!filterParamsEqual(this.state.filters, filterParams)) {
+      if (
+        _.xor(this.state.filters.itemTypes || [], filterParams.itemTypes || [])
+          .length !== 0
+      ) {
+        let newPath;
+        if (!filterParams.itemTypes || filterParams.itemTypes.length > 1) {
+          newPath = 'all';
+        } else if (filterParams.itemTypes[0] === 'movie') {
+          newPath = 'movies';
+        } else {
+          newPath = 'shows';
+        }
+
+        this.props.history.replace({
+          pathname: `/${newPath}`,
+          search: this.props.location.search,
+        });
+      }
+
       this.setState(
         {
           filters: filterParams,
         },
         () => {
-          updateUrlParamsForFilter(this.props, filterParams);
-          this.loadPopular(false);
+          updateUrlParamsForFilter(this.props, filterParams, ['type']);
+          this.loadItems(false);
         },
       );
     }
@@ -274,23 +267,33 @@ class Popular extends Component<Props, State> {
   }
 
   debounceLoadMore = _.debounce(() => {
-    this.loadPopular(true);
+    this.loadItems(true);
   }, 250);
 
   loadMoreResults = () => {
-    const { mainItemIndex, totalLoadedImages } = this.state;
-    const { loading, popular, width } = this.props;
+    const { totalLoadedImages } = this.state;
+    const { loading, items, width } = this.props;
     const numColumns = getNumColumns(width);
 
     // If an item is featured, update total items accordingly
-    const mainItem = mainItemIndex === -1 ? 0 : 1;
-    const totalFetchedItems = (popular && popular.length - mainItem) || 0;
+    const totalFetchedItems = (items && items.length - 1) || 0;
     const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
     const loadMore = totalNonLoadedImages <= numColumns;
 
     if (!loading && loadMore) {
       this.debounceLoadMore();
     }
+  };
+
+  setFilters = (filterParams: FilterParams) => {
+    this.setState(
+      {
+        filters: filterParams,
+      },
+      () => {
+        this.loadItems(false);
+      },
+    );
   };
 
   setVisibleItems = () => {
@@ -300,12 +303,12 @@ class Popular extends Component<Props, State> {
   };
 
   renderPopular = () => {
-    const { classes, genres, popular, userSelf, thingsBySlug } = this.props;
+    const { classes, genres, items, userSelf, thingsBySlug } = this.props;
     const {
       filters: { genresFilter, itemTypes },
     } = this.state;
 
-    return popular && popular && popular.length ? (
+    return items && items.length ? (
       <div className={classes.popularContainer}>
         <div className={classes.listTitle}>
           <Typography
@@ -313,7 +316,7 @@ class Popular extends Component<Props, State> {
             variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
             style={{ flexGrow: 1 }}
           >
-            {`Popular ${
+            {`Explore ${
               genresFilter && genresFilter.length === 1
                 ? this.mapGenre(genresFilter[0])
                 : ''
@@ -325,6 +328,7 @@ class Popular extends Component<Props, State> {
                 : 'Content'
             }`}
           </Typography>
+          {/* TODO: put some copy here explaining what the Explore page is */}
           <IconButton
             onClick={this.toggleFilters}
             className={classes.settings}
@@ -347,7 +351,6 @@ class Popular extends Component<Props, State> {
           open={this.state.showFilter}
           filters={this.state.filters}
           updateFilters={this.handleFilterParamsChange}
-          sortOptions={['popularity', 'recent']}
         />
         <InfiniteScroll
           pageStart={0}
@@ -357,9 +360,9 @@ class Popular extends Component<Props, State> {
           threshold={300}
         >
           <Grid container spacing={2}>
-            {popular.map((result, index) => {
+            {items.map((result, index) => {
               let thing = thingsBySlug[result];
-              if (thing && index !== this.state.mainItemIndex) {
+              if (thing) {
                 return (
                   <ItemCard
                     key={result}
@@ -380,12 +383,10 @@ class Popular extends Component<Props, State> {
   };
 
   render() {
-    const { mainItemIndex } = this.state;
-    const { popular, thingsBySlug } = this.props;
+    const { items } = this.props;
 
-    return popular ? (
+    return items ? (
       <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
-        <Featured featuredItem={thingsBySlug[popular[mainItemIndex]]} />
         {this.renderPopular()}
       </div>
     ) : (
@@ -398,18 +399,18 @@ const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isSearching: appState.search.searching,
-    popular: appState.popular.popular,
+    items: appState.explore.items,
     thingsBySlug: appState.itemDetail.thingsBySlug,
-    loading: appState.popular.loadingPopular,
+    loading: appState.explore.loadingExplore,
     genres: appState.metadata.genres,
-    bookmark: appState.popular.popularBookmark,
+    bookmark: appState.explore.exploreBookmark,
   };
 };
 
 const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
-      retrievePopular,
+      retrieveItems: retrieveExplore,
     },
     dispatch,
   );
@@ -417,7 +418,7 @@ const mapDispatchToProps = dispatch =>
 export default withWidth()(
   withUser(
     withStyles(styles)(
-      withRouter(connect(mapStateToProps, mapDispatchToProps)(Popular)),
+      withRouter(connect(mapStateToProps, mapDispatchToProps)(Explore)),
     ),
   ),
 );

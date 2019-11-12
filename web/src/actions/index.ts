@@ -35,6 +35,8 @@ import {
   updateUserSaga,
 } from './user';
 import { createBasicAction } from './utils';
+import { exploreSaga } from './explore';
+import { filtersChangedSaga } from './filters';
 
 export const STARTUP = 'startup';
 export const BOOT_DONE = 'boot/DONE';
@@ -91,5 +93,7 @@ export function* root() {
     fetchPersonDetailsSaga(),
     loadGenresSaga(),
     startupSaga(),
+    exploreSaga(),
+    filtersChangedSaga(),
   ]);
 }

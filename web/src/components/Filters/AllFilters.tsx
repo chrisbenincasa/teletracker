@@ -1,11 +1,13 @@
 import { Collapse, makeStyles, Theme } from '@material-ui/core';
 import React from 'react';
-import { Genre, ItemType, ListSortOptions, NetworkType } from '../../types';
+import { Genre, ItemType, SortOptions, NetworkType } from '../../types';
 import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
 import SortDropdown from './SortDropdown';
 import Sliders, { SliderChange } from './Sliders';
+import { FilterParams } from '../../utils/searchFilters';
+import { filterParamsEqual } from '../../utils/changeDetection';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
@@ -73,15 +75,18 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  handleGenreChange?: (genre?: number[]) => void;
-  handleTypeChange?: (type?: ItemType[]) => void;
-  handleNetworkChange?: (networkTypes?: NetworkType[]) => void;
-  handleSortChange?: (sortOrder: ListSortOptions) => void;
-  handleSliderChange?: (sliderChange: SliderChange) => void;
+  disableSliders?: boolean;
+  disableSortOptions?: boolean;
+  disableNetworks?: boolean;
+  disableTypeChange?: boolean;
+  disableGenres?: boolean;
+  updateFilters: (filterParams: FilterParams) => void;
+  filters: FilterParams;
   isListDynamic?: boolean;
   genres?: Genre[];
   open: boolean;
   disabledGenres?: number[];
+  sortOptions?: SortOptions[];
 }
 
 const AllFilters = (props: Props) => {
@@ -94,27 +99,48 @@ const AllFilters = (props: Props) => {
     genres,
     isListDynamic,
     open,
-    handleGenreChange,
-    handleNetworkChange,
-    handleTypeChange,
-    handleSortChange,
-    handleSliderChange,
+    disableSliders,
+    disableSortOptions,
+    disableNetworks,
+    disableTypeChange,
+    disableGenres,
+    updateFilters,
+    filters,
+    sortOptions,
   } = props;
 
+  const handleFilterUpdate = (newFilter: FilterParams) => {
+    if (!filterParamsEqual(filters, newFilter)) {
+      updateFilters(newFilter);
+    }
+  };
+
   const setGenre = (genres?: number[]) => {
-    handleGenreChange && handleGenreChange(genres);
+    handleFilterUpdate({ ...filters, genresFilter: genres });
   };
 
   const setType = (type?: ItemType[]) => {
-    handleTypeChange && handleTypeChange(type);
+    handleFilterUpdate({ ...filters, itemTypes: type });
   };
 
   const setNetworks = (networks?: NetworkType[]) => {
-    handleNetworkChange && handleNetworkChange(networks);
+    handleFilterUpdate({ ...filters, networks });
   };
 
-  const setSort = (sortOrder: ListSortOptions) => {
-    handleSortChange && handleSortChange(sortOrder);
+  const setSort = (sortOrder: SortOptions) => {
+    handleFilterUpdate({ ...filters, sortOrder });
+  };
+
+  const setSliders = (sliderChange: SliderChange) => {
+    let newFilters = {
+      ...filters,
+      sliders: {
+        ...(filters.sliders || {}),
+        releaseYear: sliderChange.releaseYear,
+      },
+    };
+
+    handleFilterUpdate(newFilters);
   };
 
   return (
@@ -131,28 +157,39 @@ const AllFilters = (props: Props) => {
       <div className={classes.allFiltersContainer}>
         <div className={classes.filterSortContainer}>
           <div className={classes.genreContainer}>
-            {handleGenreChange && (
+            {!disableGenres && (
               <GenreSelect
                 genres={genres}
                 disabledGenres={disabledGenres}
                 handleChange={setGenre}
+                selectedGenres={filters.genresFilter || []}
               />
             )}
           </div>
-          {handleSliderChange ? (
+          {!disableSliders ? (
             <div className={classes.slidersContainer}>
-              <Sliders handleChange={handleSliderChange} />
+              <Sliders handleChange={setSliders} />
             </div>
           ) : null}
           <div className={classes.networkContainer}>
-            {handleNetworkChange && (
-              <NetworkSelect handleChange={setNetworks} />
+            {!disableNetworks && (
+              <NetworkSelect
+                selectedNetworks={filters.networks}
+                handleChange={setNetworks}
+              />
             )}
-            {handleTypeChange && <TypeToggle handleChange={setType} />}
-            {handleSortChange && (
+            {!disableTypeChange && (
+              <TypeToggle
+                selectedTypes={filters.itemTypes}
+                handleChange={setType}
+              />
+            )}
+            {!disableSortOptions && (
               <SortDropdown
                 isListDynamic={!!isListDynamic}
                 handleChange={setSort}
+                selectedSort={filters.sortOrder}
+                validSortOptions={sortOptions}
               />
             )}
           </div>
