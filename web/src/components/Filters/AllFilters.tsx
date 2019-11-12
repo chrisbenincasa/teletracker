@@ -8,6 +8,8 @@ import SortDropdown from './SortDropdown';
 import Sliders, { SliderChange } from './Sliders';
 import { FilterParams } from '../../utils/searchFilters';
 import { filterParamsEqual } from '../../utils/changeDetection';
+import PersonFilter from './PersonFilter';
+import { Person } from '../../types/v2/Person';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
@@ -143,6 +145,13 @@ const AllFilters = (props: Props) => {
     handleFilterUpdate(newFilters);
   };
 
+  const setPeople = (people: string[]) => {
+    handleFilterUpdate({
+      ...filters,
+      people,
+    });
+  };
+
   return (
     <Collapse
       in={open}
@@ -166,11 +175,17 @@ const AllFilters = (props: Props) => {
               />
             )}
           </div>
-          {!disableSliders ? (
-            <div className={classes.slidersContainer}>
-              <Sliders handleChange={setSliders} />
-            </div>
-          ) : null}
+
+          <div className={classes.slidersContainer}>
+            {!disableSliders ? (
+              <Sliders handleChange={setSliders} sliders={filters.sliders} />
+            ) : null}
+            <PersonFilter
+              handleChange={setPeople}
+              selectedCast={filters.people}
+            />
+          </div>
+
           <div className={classes.networkContainer}>
             {!disableNetworks && (
               <NetworkSelect

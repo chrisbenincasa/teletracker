@@ -14,6 +14,7 @@ import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import { TeletrackerApi } from './api-client';
 import { CognitoUser } from 'amazon-cognito-identity-js';
 import Auth from '@aws-amplify/auth';
+import { Id, Slug } from '../types/v2';
 
 export class SagaTeletrackerClient {
   static instance = new SagaTeletrackerClient();
@@ -84,11 +85,13 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *createList(name: string) {
+  *createList(name: string, thingIds?: string[], rules?: ListRules) {
     return yield this.apiCall(
       client => client.createList,
       yield call([this, this.withToken]),
       name,
+      thingIds,
+      rules,
     );
   }
 
@@ -156,6 +159,14 @@ export class SagaTeletrackerClient {
       client => client.getPerson,
       yield call([this, this.withToken]),
       id,
+    );
+  }
+
+  *getPeople(ids: (Id | Slug)[]) {
+    return yield this.apiCall(
+      client => client.getPeople,
+      yield call([this, this.withToken]),
+      ids,
     );
   }
 
@@ -241,6 +252,7 @@ export class SagaTeletrackerClient {
     limit?: number,
     genres?: number[],
     releaseYearRange?: OpenRange,
+    cast?: string[],
   ) {
     let token = yield this.withToken();
     return yield this.apiCall(
@@ -253,6 +265,7 @@ export class SagaTeletrackerClient {
       limit,
       genres,
       releaseYearRange,
+      cast,
     );
   }
 
@@ -274,6 +287,16 @@ export class SagaTeletrackerClient {
     );
   }
 
+  *searchPeople(searchText: string, limit?: number, bookmark?: string) {
+    return yield this.apiCall(
+      client => client.searchPeople,
+      yield call([this, this.withToken]),
+      searchText,
+      limit,
+      bookmark,
+    );
+  }
+
   *getNetworks() {
     return yield this.apiCall(
       client => client.getNetworks,
@@ -283,6 +306,10 @@ export class SagaTeletrackerClient {
 
   *getGenres() {
     return yield this.apiCall(client => client.getGenres);
+  }
+
+  *getMetadata() {
+    return yield this.apiCall(client => client.getMetadata);
   }
 
   private apiCall<Fn extends (this: TeletrackerApi, ...args: any[]) => any>(

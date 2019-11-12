@@ -25,6 +25,7 @@ export interface ExploreInitiatedActionPayload {
   limit?: number;
   genres?: number[];
   releaseYearRange?: OpenRange;
+  cast?: string[];
 }
 
 export type ExploreInitiatedAction = FSA<
@@ -74,6 +75,7 @@ export const exploreSaga = function*() {
           payload.limit,
           payload.genres,
           payload.releaseYearRange,
+          payload.cast,
         );
 
         if (response.ok) {
