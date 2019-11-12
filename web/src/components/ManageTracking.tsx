@@ -1,6 +1,6 @@
 import {
+  Button,
   createStyles,
-  Fab,
   Theme,
   WithStyles,
   withStyles,
@@ -16,7 +16,7 @@ import { itemBelongsToLists } from '../types/v2/Item';
 const styles = (theme: Theme) =>
   createStyles({
     button: {
-      marginTop: 5,
+      marginTop: theme.spacing(1),
       width: '100% !important',
       [theme.breakpoints.down('xs')]: {
         fontSize: '0.55rem',
@@ -24,7 +24,7 @@ const styles = (theme: Theme) =>
       fontSIze: '2rem',
     },
     buttonIcon: {
-      marginRight: 8,
+      marginRight: theme.spacing(1),
       [theme.breakpoints.down('sm')]: {
         fontSize: '1rem',
       },
@@ -63,11 +63,11 @@ class ManageTracking extends Component<Props, State> {
     };
   }
 
-  toggleLoginModal = () => {
+  toggleLoginModal = (): void => {
     this.setState({ loginModalOpen: !this.state.loginModalOpen });
   };
 
-  openManageTrackingModal = () => {
+  openManageTrackingModal = (): void => {
     if (this.props.userSelf) {
       this.setState({ manageTrackingModalOpen: true });
     } else {
@@ -75,7 +75,7 @@ class ManageTracking extends Component<Props, State> {
     }
   };
 
-  closeManageTrackingModal = () => {
+  closeManageTrackingModal = (): void => {
     this.setState({ manageTrackingModalOpen: false });
   };
 
@@ -87,16 +87,16 @@ class ManageTracking extends Component<Props, State> {
 
     return (
       <div className={classes.itemCTA} style={{ ...style }}>
-        <Fab
+        <Button
           size="small"
-          variant="extended"
-          aria-label="Add"
+          variant="contained"
+          aria-label="Add to List"
           onClick={this.openManageTrackingModal}
           className={classes.button}
+          startIcon={<ListIcon className={classes.buttonIcon} />}
         >
-          <ListIcon className={classes.buttonIcon} />
           {trackingCTA}
-        </Fab>
+        </Button>
       </div>
     );
   };
@@ -110,13 +110,13 @@ class ManageTracking extends Component<Props, State> {
         {this.renderTrackingToggle()}
         <AddToListDialog
           open={manageTrackingModalOpen}
-          onClose={this.closeManageTrackingModal.bind(this)}
+          onClose={this.closeManageTrackingModal}
           userSelf={userSelf!}
           item={itemDetail}
         />
         <AuthDialog
           open={this.state.loginModalOpen}
-          onClose={() => this.toggleLoginModal()}
+          onClose={this.toggleLoginModal}
         />
       </React.Fragment>
     );

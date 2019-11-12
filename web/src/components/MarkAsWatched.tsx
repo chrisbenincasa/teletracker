@@ -1,7 +1,8 @@
 import {
+  Button,
   createStyles,
-  Fab,
   Theme,
+  Tooltip,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
@@ -15,13 +16,21 @@ import {
   updateUserItemTags,
   UserUpdateItemTagsPayload,
 } from '../actions/user';
+import AuthDialog from './Auth/AuthDialog';
 import { ActionType } from '../types';
 import Thing from '../types/Thing';
+import moment from 'moment';
 
 const styles = (theme: Theme) =>
   createStyles({
     itemCTA: {
       width: '100%',
+    },
+    button: {
+      marginTop: theme.spacing(1),
+    },
+    buttonIcon: {
+      marginRight: theme.spacing(1),
     },
   });
 
@@ -39,18 +48,27 @@ type Props = OwnProps &
   WithStyles<typeof styles> &
   WithUserProps;
 
-class MarkAsWatched extends Component<Props, {}> {
-  toggleItemWatched = () => {
+interface State {
+  loginModalOpen: boolean;
+}
+
+class MarkAsWatched extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+
+    this.state = {
+      loginModalOpen: false,
+    };
+  }
+
+  toggleItemWatched = (): void => {
     let payload = {
       thingId: this.props.itemDetail.id,
       action: ActionType.Watched,
     };
 
     if (!this.props.userSelf) {
-      // this.props.history.push('/login');
-      this.setState({
-        loginModalOpen: true,
-      });
+      this.toggleLoginModal();
     } else {
       if (this.itemMarkedAsWatched()) {
         this.props.removeUserItemTags(payload);
@@ -60,7 +78,7 @@ class MarkAsWatched extends Component<Props, {}> {
     }
   };
 
-  itemMarkedAsWatched = () => {
+  itemMarkedAsWatched = (): boolean => {
     if (this.props.itemDetail) {
       return this.props.itemDetail.itemMarkedAsWatched;
     }
@@ -68,25 +86,54 @@ class MarkAsWatched extends Component<Props, {}> {
     return false;
   };
 
-  render() {
+  watchedButton = (isReleased: boolean) => {
     const { classes } = this.props;
-    let watchedStatus = this.itemMarkedAsWatched();
-    let watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
+    const watchedStatus = this.itemMarkedAsWatched();
+    const watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
 
     return (
-      <div className={classes.itemCTA}>
-        <Fab
-          size="small"
-          variant="extended"
-          aria-label="Add"
-          onClick={this.toggleItemWatched}
-          style={{ marginTop: 5, width: '100%' }}
-          color={watchedStatus ? 'primary' : undefined}
-        >
-          <Check style={{ marginRight: 8 }} />
-          {watchedCTA}
-        </Fab>
-      </div>
+      <Button
+        size="small"
+        variant="contained"
+        aria-label={watchedCTA}
+        onClick={this.toggleItemWatched}
+        fullWidth
+        disabled={!isReleased}
+        className={classes.button}
+        color={watchedStatus ? 'primary' : undefined}
+        startIcon={<Check className={classes.buttonIcon} />}
+      >
+        {watchedCTA}
+      </Button>
+    );
+  };
+
+  toggleLoginModal = (): void => {
+    this.setState({ loginModalOpen: !this.state.loginModalOpen });
+  };
+
+  render() {
+    const { classes } = this.props;
+    const currentDate = moment();
+    const releaseDate = moment(this.props.itemDetail.release_date);
+    const isReleased = currentDate.diff(releaseDate, 'days') >= 0;
+
+    return (
+      <React.Fragment>
+        <div className={classes.itemCTA}>
+          {!isReleased ? (
+            <Tooltip title={`This is currently unreleased.`} placement="top">
+              <span>{this.watchedButton(isReleased)}</span>
+            </Tooltip>
+          ) : (
+            this.watchedButton(isReleased)
+          )}
+        </div>
+        <AuthDialog
+          open={this.state.loginModalOpen}
+          onClose={this.toggleLoginModal}
+        />
+      </React.Fragment>
     );
   }
 }

@@ -1,6 +1,6 @@
 import {
+  Button,
   createStyles,
-  Fab,
   Grid,
   Hidden,
   IconButton,
@@ -35,6 +35,7 @@ import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
+import classes from '*.module.css';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -118,6 +119,13 @@ const styles = (theme: Theme) =>
       display: 'flex',
       alignSelf: 'flex-end',
     },
+    titleContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      width: '80%',
+      marginBottom: 10,
+    },
   });
 
 interface OwnProps {}
@@ -196,16 +204,9 @@ class PersonDetail extends React.Component<Props, State> {
   };
 
   renderTitle = (person: Person) => {
+    const { classes } = this.props;
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          width: '80%',
-          marginBottom: 10,
-        }}
-      >
+      <div className={classes.titleContainer}>
         <Typography color="inherit" variant="h4">
           {`${person.name}`}
         </Typography>
@@ -265,7 +266,7 @@ class PersonDetail extends React.Component<Props, State> {
   renderFilmography = () => {
     const { classes, genres, person, userSelf } = this.props;
     const {
-      filters: { genresFilter, itemTypes, networks, sortOrder },
+      filters: { genresFilter, itemTypes, sortOrder },
     } = this.state;
 
     let filmography = person!.cast_credits ? person!.cast_credits.data : [];
@@ -387,9 +388,9 @@ class PersonDetail extends React.Component<Props, State> {
             {showFullBiography ? biography : biography.substr(0, 1200)}
           </Typography>
           {biography.length > 1200 ? (
-            <Fab
+            <Button
               size="small"
-              variant="extended"
+              variant="contained"
               aria-label={showFullBiography ? 'Read Less' : 'Read More'}
               onClick={this.showFullBiography}
               style={{ marginTop: 5, display: 'flex', alignSelf: 'center' }}
@@ -400,7 +401,7 @@ class PersonDetail extends React.Component<Props, State> {
                 <ExpandMore style={{ marginRight: 8 }} />
               )}
               {showFullBiography ? 'Read Less' : 'Read More'}
-            </Fab>
+            </Button>
           ) : null}
         </div>
       </div>
@@ -408,7 +409,7 @@ class PersonDetail extends React.Component<Props, State> {
   };
 
   renderPerson() {
-    let { classes, person, userSelf } = this.props;
+    let { classes, person } = this.props;
 
     if (!person) {
       return this.renderLoading();
@@ -424,12 +425,16 @@ class PersonDetail extends React.Component<Props, State> {
           <meta
             name="title"
             property="og:title"
-            content={`${person.name} | Where to stream, rent, or buy. Track this person today!`}
+            content={`${
+              person.name
+            } | Where to stream, rent, or buy. Track this person today!`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${
+              person.name
+            } online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="image"
@@ -455,11 +460,15 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="twitter:title"
-            content={`${person.name} - Where to Stream, Rent, or Buy their content`}
+            content={`${
+              person.name
+            } - Where to Stream, Rent, or Buy their content`}
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${
+              person.name
+            } online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="twitter:image"
@@ -467,7 +476,9 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="keywords"
-            content={`${person.name}, stream, streaming, rent, buy, watch, track`}
+            content={`${
+              person.name
+            }, stream, streaming, rent, buy, watch, track`}
           />
           <link
             rel="canonical"
@@ -499,16 +510,16 @@ class PersonDetail extends React.Component<Props, State> {
               alignItems: 'flex-start',
             }}
           >
-            <Fab
+            <Button
               size="small"
               onClick={this.props.history.goBack}
-              variant="extended"
+              variant="contained"
               aria-label="Go Back"
               style={{ marginTop: 20, marginLeft: 20 }}
             >
               <ChevronLeft style={{ marginRight: 8 }} />
               Go Back
-            </Fab>
+            </Button>
 
             <div className={classes.personDetailContainer}>
               <div className={classes.leftContainer}>
@@ -569,6 +580,11 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch =>
 
 export default withUser(
   withStyles(styles)(
-    withRouter(connect(mapStateToProps, mapDispatchToProps)(PersonDetail)),
+    withRouter(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(PersonDetail),
+    ),
   ),
 );
