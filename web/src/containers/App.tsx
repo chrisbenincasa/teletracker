@@ -29,7 +29,7 @@ import New from './New';
 import Popular from './Popular';
 import PersonDetail from './PersonDetail';
 import Drawer, { DrawerWidthPx } from '../components/Drawer';
-import Toolbar from '../components/Toolbar';
+import Toolbar from '../components/Toolbar/Toolbar';
 import Footer from '../components/Footer';
 import Logout from './Logout';
 
