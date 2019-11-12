@@ -1,7 +1,15 @@
 import React from 'react';
 import { Chip, createStyles, withStyles, WithStyles } from '@material-ui/core';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
-import { Genre, ItemType, ListSortOptions, NetworkType } from '../../types';
+import {
+  Genre,
+  ItemType,
+  SortOptions,
+  NetworkType,
+  toItemTypeEnum,
+  ItemTypeEnum,
+  networkToPrettyName,
+} from '../../types';
 import { updateMultipleUrlParams } from '../../utils/urlHelper';
 import _ from 'lodash';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../../utils/searchFilters';
@@ -36,6 +44,15 @@ interface RouteParams {
 type Props = OwnProps &
   WithStyles<typeof styles> &
   RouteComponentProps<RouteParams>;
+
+const prettyItemType = (itemType: ItemType) => {
+  switch (toItemTypeEnum(itemType)) {
+    case ItemTypeEnum.Movie:
+      return 'Movie';
+    case ItemTypeEnum.Show:
+      return 'Show';
+  }
+};
 
 function ActiveFilters(props: Props) {
   const deleteNetworkFilter = (
@@ -111,8 +128,8 @@ function ActiveFilters(props: Props) {
   };
 
   const deleteSort = (
-    sort: ListSortOptions,
-  ): [ListSortOptions | undefined, boolean] => {
+    sort: SortOptions,
+  ): [SortOptions | undefined, boolean] => {
     const {
       filters: { sortOrder },
     } = props;
@@ -146,7 +163,7 @@ function ActiveFilters(props: Props) {
   };
 
   const removeFilters = (filters: {
-    sort?: ListSortOptions;
+    sort?: SortOptions;
     network?: NetworkType[];
     type?: ItemType[];
     genre?: number[];
@@ -164,34 +181,6 @@ function ActiveFilters(props: Props) {
       deleteGenreFilter,
     );
 
-    let paramUpdates: [string, any | undefined][] = [];
-    // Specified a genre to remove and actually changed the value.
-    if (genreChanged) {
-      paramUpdates.push(['genres', newGenre]);
-    }
-
-    if (networksChanged) {
-      paramUpdates.push(['networks', newNetworks]);
-    }
-
-    if (sortChanged) {
-      paramUpdates.push(['sort', newSort]);
-    }
-
-    if (typesChanged) {
-      paramUpdates.push(['type', newType]);
-    }
-
-    if (filters.releaseYearMin) {
-      paramUpdates.push(['ry_min', undefined]);
-    }
-
-    if (filters.releaseYearMax) {
-      paramUpdates.push(['ry_max', undefined]);
-    }
-
-    updateMultipleUrlParams(props, paramUpdates);
-
     let releaseYearStateNew = props.filters.sliders
       ? props.filters.sliders.releaseYear || {}
       : {};
@@ -206,7 +195,7 @@ function ActiveFilters(props: Props) {
     let filterParams: FilterParams = {
       sortOrder: (sortChanged
         ? newSort
-        : props.filters.sortOrder) as ListSortOptions,
+        : props.filters.sortOrder) as SortOptions,
       networks: (networksChanged
         ? newNetworks
         : props.filters.networks) as NetworkType[],
@@ -296,7 +285,7 @@ function ActiveFilters(props: Props) {
                 />
               }
               className={classes.networkChip}
-              label={network}
+              label={networkToPrettyName[network]}
               onDelete={() => removeFilters({ network: [network] })}
               variant="outlined"
             />
@@ -307,7 +296,7 @@ function ActiveFilters(props: Props) {
           itemTypes.map((type: ItemType) => (
             <Chip
               key={type}
-              label={type}
+              label={`Type: ${prettyItemType(type)}`}
               className={classes.networkChip}
               onDelete={() => removeFilters({ type: [type] })}
               variant="outlined"

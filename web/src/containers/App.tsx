@@ -32,6 +32,7 @@ import Drawer, { DrawerWidthPx } from '../components/Drawer';
 import Toolbar from '../components/Toolbar/Toolbar';
 import Footer from '../components/Footer';
 import Logout from './Logout';
+import Explore from './Explore';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -158,6 +159,21 @@ class App extends Component<Props, State> {
                     render={props => <New {...props} />}
                   />
                   <Route exact path="/popular" component={Popular} />
+                  <Route
+                    exact
+                    path="/movies"
+                    render={props => <Explore initialType="movie" {...props} />}
+                  />
+                  <Route
+                    exact
+                    path="/shows"
+                    render={props => <Explore initialType="shows" {...props} />}
+                  />
+                  <Route
+                    exact
+                    path="/all"
+                    render={props => <Explore {...props} />}
+                  />
                   <Route exact path="/logout" component={Logout} />
                   <Route
                     exact

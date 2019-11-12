@@ -9,10 +9,6 @@ import _ from 'lodash';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { Genre } from '../../types';
 import React, { Component } from 'react';
-import {
-  parseFilterParamsFromQs,
-  updateURLParameters,
-} from '../../utils/urlHelper';
 
 const styles = () =>
   createStyles({
@@ -34,6 +30,7 @@ interface OwnProps {
   handleChange: (genres?: number[]) => void;
   genres?: Genre[];
   disabledGenres?: number[];
+  selectedGenres: number[];
 }
 
 interface RouteParams {
@@ -44,76 +41,33 @@ type Props = OwnProps &
   WithStyles<typeof styles> &
   RouteComponentProps<RouteParams>;
 
-interface State {
-  genresFilter?: number[];
-}
+class GenreSelect extends Component<Props> {
+  updateSelectedGenres = (param: string, value?: number) => {
+    const { selectedGenres } = this.props;
+    let newSelectedGenres: number[];
 
-export const getGenreFromUrlParam = () => {
-  return parseFilterParamsFromQs(window.location.search).genresFilter;
-};
-
-class GenreSelect extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-
-    this.state = {
-      ...this.state,
-      genresFilter: getGenreFromUrlParam(),
-    };
-  }
-
-  componentDidUpdate = oldProps => {
-    if (oldProps.location.search !== this.props.location.search) {
-      // To do, only update this when genre params changed
-      this.setState({
-        genresFilter: getGenreFromUrlParam(),
-      });
-    }
-  };
-
-  updateURLParam = (param: string, value?: number) => {
-    const { genresFilter } = this.state;
-    let newValue;
-
-    if (
-      value &&
-      genresFilter &&
-      genresFilter.length > 0 &&
-      !genresFilter.includes(value)
-    ) {
+    if (value) {
       // If genre isn't filtered yet, add it to current filter
-      newValue = [...genresFilter, value];
-    } else if (
-      value &&
-      genresFilter &&
-      genresFilter.length > 0 &&
-      genresFilter.includes(value)
-    ) {
-      // If genre is already filtered, remove it
-      newValue = genresFilter.filter(genreId => genreId !== value);
+      if (!selectedGenres.includes(value)) {
+        newSelectedGenres = [...selectedGenres, value];
+      } else {
+        newSelectedGenres = selectedGenres.filter(genreId => genreId !== value);
+      }
     } else {
       // User selected 'All', reset genre filter
-      newValue = value ? [value] : [];
+      newSelectedGenres = value ? [value] : [];
     }
 
-    updateURLParameters(this.props, param, newValue);
-
-    this.setState(
-      {
-        genresFilter: newValue,
-      },
-      () => {
-        this.props.handleChange(newValue);
-      },
-    );
+    if (_.xor(selectedGenres, newSelectedGenres).length !== 0) {
+      this.props.handleChange(newSelectedGenres);
+    }
   };
 
   render() {
-    const { classes, disabledGenres, genres } = this.props;
-    const { genresFilter } = this.state;
+    const { classes, disabledGenres, genres, selectedGenres } = this.props;
     const excludeGenres =
-      disabledGenres && genresFilter
-        ? _.difference(disabledGenres, genresFilter)
+      disabledGenres && selectedGenres
+        ? _.difference(disabledGenres, selectedGenres)
         : undefined;
 
     return (
@@ -122,10 +76,10 @@ class GenreSelect extends Component<Props, State> {
         <div className={classes.chipContainer}>
           <Chip
             key={0}
-            onClick={() => this.updateURLParam('genres', undefined)}
+            onClick={() => this.updateSelectedGenres('genres', undefined)}
             size="medium"
             color={
-              !genresFilter || genresFilter.length === 0
+              !selectedGenres || selectedGenres.length === 0
                 ? 'secondary'
                 : 'primary'
             }
@@ -137,10 +91,10 @@ class GenreSelect extends Component<Props, State> {
             return (
               <Chip
                 key={item.id}
-                onClick={() => this.updateURLParam('genres', item.id)}
+                onClick={() => this.updateSelectedGenres('genres', item.id)}
                 size="medium"
                 color={
-                  genresFilter && genresFilter.includes(item.id)
+                  selectedGenres && selectedGenres.includes(item.id)
                     ? 'secondary'
                     : 'primary'
                 }

@@ -8,6 +8,8 @@ import metadata, { State as MetadataState } from './metadata';
 import availability, { State as AvailabilityState } from './availability';
 import popular, { State as PopularState } from './popular';
 import people, { State as PersonState } from './people';
+import explore, { State as ExploreState } from './explore';
+import filters, { State as FilterState } from './filters';
 import { BOOT_DONE } from '../actions';
 import { connectRouter } from 'connected-react-router';
 
@@ -25,8 +27,10 @@ export interface AppState {
   metadata: MetadataState;
   availability: AvailabilityState;
   popular: PopularState;
+  explore: ExploreState;
   people: PersonState;
   startup: StartupState;
+  filters: FilterState;
 }
 
 // TODO clean this up - move to own file
@@ -65,4 +69,6 @@ export default history =>
     search,
     startup: startupReducer,
     userSelf,
+    explore,
+    filters,
   });

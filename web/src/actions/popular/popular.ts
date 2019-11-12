@@ -3,7 +3,7 @@ import { ErrorFSA, FSA } from 'flux-standard-action';
 import _ from 'lodash';
 import {
   ItemType,
-  ListSortOptions,
+  SortOptions,
   NetworkType,
   OpenRange,
   Paging,
@@ -23,7 +23,7 @@ export interface PopularInitiatedActionPayload {
   itemTypes?: ItemType[];
   networks?: NetworkType[];
   bookmark?: string;
-  sort?: ListSortOptions;
+  sort?: SortOptions;
   limit?: number;
   genres?: number[];
   releaseYearRange?: OpenRange;

@@ -8,7 +8,7 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
-import { ListSortOptions } from '../../types';
+import { SortOptions } from '../../types';
 import React, { Component } from 'react';
 import {
   parseFilterParamsFromQs,
@@ -28,47 +28,29 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps {
-  handleChange: (sortOrder: ListSortOptions) => void;
+  handleChange: (sortOrder: SortOptions) => void;
   isListDynamic?: boolean;
+  validSortOptions?: SortOptions[];
+  selectedSort: SortOptions;
 }
 
 interface RouteParams {
   id: string;
 }
 
+const sortOptionToName: { [K in SortOptions]?: string } = {
+  popularity: 'Popularity',
+  added_time: 'Date Added',
+  recent: 'Release Date',
+};
+
+const defaultSortOptions = ['popularity', 'added_time', 'recent'];
+
 type Props = OwnProps &
   WithStyles<typeof styles> &
   RouteComponentProps<RouteParams>;
 
-interface State {
-  sortOrder: ListSortOptions;
-}
-
-export const getSortFromUrlParam = () => {
-  return parseFilterParamsFromQs(window.location.search).sortOrder;
-};
-
-class SortDropDown extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-
-    this.state = {
-      ...this.state,
-      sortOrder: getSortFromUrlParam(),
-    };
-  }
-
-  componentDidUpdate = (oldProps: Props, oldState: State) => {
-    if (
-      oldProps.location.search !== this.props.location.search ||
-      oldState.sortOrder !== this.state.sortOrder
-    ) {
-      this.setState({
-        sortOrder: getSortFromUrlParam(),
-      });
-    }
-  };
-
+class SortDropDown extends Component<Props> {
   isDefaultSort = newSort => {
     const { isListDynamic } = this.props;
 
@@ -81,32 +63,29 @@ class SortDropDown extends Component<Props, State> {
 
   updateURLParam = (param, event) => {
     const isNewSortDefault = this.isDefaultSort(event.target.value);
-    const isPrevSortDefault = this.isDefaultSort(this.state.sortOrder);
+    const isPrevSortDefault = this.isDefaultSort(this.props.selectedSort);
     const newSort = isNewSortDefault ? undefined : event.target.value;
 
-    updateURLParameters(this.props, param, newSort);
-
-    /*
-    Only re-fetch data if the sort is actually changing.  Slightly more complicated because of use of additional `default` sort param
-    */
     if (
-      event.target.value !== this.state.sortOrder &&
+      event.target.value !== this.props.selectedSort &&
       !(isNewSortDefault && isPrevSortDefault)
     ) {
-      this.setState(
-        {
-          sortOrder: event.target.value,
-        },
-        () => {
-          this.props.handleChange(event.target.value);
-        },
-      );
+      this.props.handleChange(newSort);
     }
   };
 
   render() {
-    const { isListDynamic, classes } = this.props;
-    const { sortOrder } = this.state;
+    const {
+      isListDynamic,
+      classes,
+      selectedSort,
+      validSortOptions,
+    } = this.props;
+
+    let sorts = validSortOptions || defaultSortOptions;
+    let menuItems = sorts.map(sort => (
+      <MenuItem value={sort}>{sortOptionToName[sort]!}</MenuItem>
+    ));
 
     return (
       <div>
@@ -115,8 +94,8 @@ class SortDropDown extends Component<Props, State> {
         </Typography>
         <Select
           value={
-            this.state.sortOrder && !this.isDefaultSort(sortOrder)
-              ? this.state.sortOrder
+            selectedSort && !this.isDefaultSort(selectedSort)
+              ? selectedSort
               : isListDynamic
               ? 'popularity'
               : 'added_time'
@@ -127,9 +106,7 @@ class SortDropDown extends Component<Props, State> {
           }}
           onChange={event => this.updateURLParam('sort', event)}
         >
-          <MenuItem value="added_time">Date Added</MenuItem>
-          <MenuItem value="popularity">Popularity</MenuItem>
-          <MenuItem value="recent">Release Date</MenuItem>
+          {menuItems}
         </Select>
       </div>
     );
