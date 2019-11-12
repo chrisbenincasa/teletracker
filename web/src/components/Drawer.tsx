@@ -50,8 +50,8 @@ const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
     avatar: {
-      width: 25,
-      height: 25,
+      width: 30,
+      height: 30,
       fontSize: '1em',
     },
     button: {
@@ -174,12 +174,12 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
           <Avatar
             style={{
               backgroundColor,
-              width: 25,
-              height: 25,
+              width: 30,
+              height: 30,
               fontSize: '1em',
             }}
           >
-            {listLength}
+            {listLength >= 100 ? '99+' : listLength}
           </Avatar>
         </ListItemAvatar>
         <ListItemText primary={primary} />

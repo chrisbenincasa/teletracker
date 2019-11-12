@@ -30,10 +30,9 @@ data "template_file" "ecs-t3a-user-data" {
   template = file("${path.module}/files/t3a-template-user-data.txt")
 }
 
-
 resource "aws_launch_template" "ecs-t3a-launch-template" {
   key_name      = "teletracker-qa"
-  image_id      = "ami-00303cd65a37d033b"
+  image_id      = "ami-03d7632ea0ab75eaa"
   instance_type = "t3a.micro"
 
   instance_initiated_shutdown_behavior = "stop"
@@ -47,8 +46,8 @@ resource "aws_launch_template" "ecs-t3a-launch-template" {
     ebs {
       delete_on_termination = true
       encrypted             = false
-      snapshot_id           = "snap-089c5c5a00e83a014"
-      volume_size           = 8
+      snapshot_id           = "snap-09d1ff831ea649413"
+      volume_size           = 30
       volume_type           = "gp2"
     }
   }

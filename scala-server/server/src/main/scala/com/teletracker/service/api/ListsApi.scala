@@ -11,6 +11,7 @@ import com.teletracker.common.elasticsearch.{
   ItemUpdater,
   UpdateMultipleDocResponse
 }
+import com.teletracker.service.api.model.UserListRules
 import javax.inject.Inject
 import org.elasticsearch.action.update.UpdateResponse
 import java.util.UUID
@@ -26,6 +27,33 @@ class ListsApi @Inject()(
     name: String,
     thingsToAdd: Option[List[UUID]],
     rules: Option[TrackedListRules]
+  ): Future[TrackedListRow] = {
+    if (thingsToAdd.isDefined && rules.isDefined) {
+      Future.failed(
+        new IllegalArgumentException(
+          "Cannot specify both thingIds and rules when creating a list"
+        )
+      )
+    } else {
+      usersDbAccess
+        .insertList(userId, name, rules.map(_.toRow))
+        .flatMap(newList => {
+          thingsToAdd
+            .map(things => {
+              listsDbAccess
+                .addTrackedThings(newList.id, things.toSet)
+                .map(_ => newList)
+            })
+            .getOrElse(Future.successful(newList))
+        })
+    }
+  }
+
+  def createList2(
+    userId: String,
+    name: String,
+    thingsToAdd: Option[List[UUID]],
+    rules: Option[UserListRules]
   ): Future[TrackedListRow] = {
     if (thingsToAdd.isDefined && rules.isDefined) {
       Future.failed(

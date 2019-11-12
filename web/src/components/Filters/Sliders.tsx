@@ -9,6 +9,7 @@ import {
 import _ from 'lodash';
 import * as R from 'ramda';
 import { OpenRange } from '../../types';
+import { FilterParams, SlidersState } from '../../utils/searchFilters';
 
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {
@@ -24,6 +25,7 @@ const RATING_STEP = 0.5;
 
 interface OwnProps {
   handleChange: (change: SliderChange) => void;
+  sliders?: SlidersState;
 }
 
 type Props = OwnProps & RouteComponentProps<{}>;
@@ -31,13 +33,6 @@ type Props = OwnProps & RouteComponentProps<{}>;
 export interface SliderChange {
   releaseYear?: OpenRange;
 }
-
-const debounceUrlUpdate = _.debounce(
-  (props: Props, kvPairs: [string, any | undefined][]) => {
-    updateMultipleUrlParams(props, kvPairs);
-  },
-  250,
-);
 
 const ensureNumberInRange = (num: number, lo: number, hi: number) => {
   return Math.max(Math.min(num, hi), lo);
@@ -47,12 +42,12 @@ const SliderFilters = (props: Props) => {
   const classes = styles();
   let nextYear = new Date().getFullYear() + 1;
 
-  let filterParams = parseFilterParamsFromQs(props.history.location.search);
-
   const [yearValue, setYearValue] = React.useState([
     ensureNumberInRange(
       R.or(
-        R.path(['sliders', 'releaseYear', 'min'], filterParams),
+        props.sliders && props.sliders.releaseYear
+          ? props.sliders.releaseYear.min
+          : undefined,
         MIN_YEAR,
       ) as number,
       MIN_YEAR,
@@ -60,7 +55,9 @@ const SliderFilters = (props: Props) => {
     ),
     ensureNumberInRange(
       R.or(
-        R.path(['sliders', 'releaseYear', 'max'], filterParams),
+        props.sliders && props.sliders.releaseYear
+          ? props.sliders.releaseYear.max
+          : undefined,
         nextYear,
       ) as number,
       MIN_YEAR,
@@ -69,33 +66,26 @@ const SliderFilters = (props: Props) => {
   ]);
 
   useEffect(() => {
-    let sliderState = parseFilterParamsFromQs(props.location.search).sliders;
+    if (props.sliders && props.sliders.releaseYear) {
+      let currMin = yearValue[0];
+      let newMin: number | undefined = currMin;
 
-    let newMin;
-    if (
-      sliderState &&
-      sliderState.releaseYear &&
-      sliderState.releaseYear.min !== yearValue[0]
-    ) {
-      newMin = sliderState.releaseYear.min || MIN_YEAR;
-    }
+      let currMax = yearValue[1];
+      let newMax: number | undefined = currMax;
 
-    let newMax;
-    if (
-      sliderState &&
-      sliderState.releaseYear &&
-      sliderState.releaseYear.max !== yearValue[1]
-    ) {
-      newMax = sliderState.releaseYear.max || nextYear;
-    }
+      if (props.sliders.releaseYear.min !== currMin) {
+        newMin = props.sliders.releaseYear.min;
+      }
 
-    if (newMin || newMax) {
-      setYearValue(([currMin, currMax]) => [
-        newMin || currMin,
-        newMax || currMax,
-      ]);
+      if (props.sliders.releaseYear.max !== currMax) {
+        newMax = props.sliders.releaseYear.max;
+      }
+
+      if (newMin !== currMin || newMax !== currMax) {
+        setYearValue([newMin || MIN_YEAR, newMax || nextYear]);
+      }
     }
-  }, [props.location.search]);
+  }, [props.sliders, props.sliders ? props.sliders.releaseYear : undefined]);
 
   const [imdbRatingValue, setImdbRatingValue] = React.useState([
     MIN_RATING,
@@ -122,11 +112,6 @@ const SliderFilters = (props: Props) => {
 
   const handleYearChange = (event, newValue) => {
     setYearValue(newValue);
-    let [min, max] = extractValues(newValue, MIN_YEAR, nextYear);
-    debounceUrlUpdate(props, [
-      ['ry_min', min],
-      ['ry_max', max],
-    ]);
   };
 
   const handleYearCommitted = (event, newValue) => {
@@ -141,11 +126,6 @@ const SliderFilters = (props: Props) => {
 
   const handleImdbChange = (event, newValue) => {
     setImdbRatingValue(newValue);
-    let [min, max] = extractValues(newValue, MIN_RATING, MAX_RATING);
-    debounceUrlUpdate(props, [
-      ['imdb_min', min],
-      ['imdb_max', max],
-    ]);
   };
 
   return (

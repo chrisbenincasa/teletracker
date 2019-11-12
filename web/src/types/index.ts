@@ -90,11 +90,37 @@ export interface ListOptions {
   removeWatchedItems: boolean;
 }
 
-export type ListRuleTypeKeys = 'TrackedListTagRule' | 'TrackedListPersonRule';
-export type ListRuleTypes = ListTagRule | ListPersonRule;
+export enum ListRuleType {
+  UserListTagRule = 'UserListTagRule',
+  UserListPersonRule = 'UserListPersonRule',
+  UserListGenreRule = 'UserListGenreRule',
+  UserListItemTypeRule = 'UserListItemTypeRule',
+  UserListNetworkRule = 'UserListNetworkRule',
+  UserListReleaseYearRule = 'UserListReleaseYearRule',
+}
+
+export type ListRuleTypeKeys =
+  | 'UserListTagRule'
+  | 'UserListPersonRule'
+  | 'UserListGenreRule'
+  | 'UserListItemTypeRule'
+  | 'UserListNetworkRule'
+  | 'UserListReleaseYearRule';
+
+export type ListRuleTypes =
+  | ListTagRule
+  | ListPersonRule
+  | ListGenreRule
+  | ListItemTypeRule
+  | ListNetworkRule;
 
 export interface ListRules {
-  rules: ListRuleTypes[];
+  rules: ListRule[];
+  sort?: ListDefaultSort;
+}
+
+export interface ListDefaultSort {
+  sort: SortOptions;
 }
 
 export interface ListRule {
@@ -105,12 +131,44 @@ export interface ListTagRule extends ListRule {
   tagType: string;
   value?: number;
   isPresent?: boolean;
-  type: 'TrackedListTagRule';
+  type: 'UserListTagRule';
 }
 
 export interface ListPersonRule extends ListRule {
   personId: string;
-  type: 'TrackedListPersonRule';
+  type: 'UserListPersonRule';
+}
+
+export interface ListGenreRule extends ListRule {
+  genreId: number;
+  type: 'UserListGenreRule';
+}
+
+export interface ListItemTypeRule extends ListRule {
+  itemType: ItemType;
+  type: 'UserListItemTypeRule';
+}
+
+export interface ListNetworkRule extends ListRule {
+  networkId: number;
+  type: 'UserListNetworkRule';
+}
+
+export interface ListReleaseYearRule extends ListRule {
+  minimum?: number;
+  maximum?: number;
+  type: 'UserListReleaseYearRule';
+}
+
+export function ruleIsType<T extends ListRule>(
+  rule: ListRule,
+  type: ListRuleTypeKeys,
+): rule is T {
+  return rule.type === type;
+}
+
+export function isGenreRule(rule: ListRule): rule is ListGenreRule {
+  return ruleIsType(rule, 'UserListGenreRule');
 }
 
 export interface User {
@@ -182,7 +240,7 @@ export interface Availability {
 export interface Network {
   id: number;
   name: string;
-  slug: string;
+  slug: NetworkType;
   shortname?: string;
   homepage?: string;
   origin?: string;
@@ -204,4 +262,9 @@ export enum ActionType {
 export interface OpenRange {
   min?: number;
   max?: number;
+}
+
+export interface MetadataResponse {
+  genres: Genre[];
+  networks: Network[];
 }

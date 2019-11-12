@@ -15,7 +15,7 @@ class TeletrackerTaskRunnable(
 
   override def run(): Unit = {
     try {
-      teletrackerTask.runInternal(args)
+      teletrackerTask.run(args)
       callbacks.foreach(_(None))
     } catch {
       case NonFatal(e) =>
