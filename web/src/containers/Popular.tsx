@@ -176,11 +176,14 @@ class Popular extends Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    const { popular, thingsBySlug } = this.props;
+    const { loading, popular, thingsBySlug } = this.props;
     const { mainItemIndex } = this.state;
 
     // Grab random item from filtered list of popular movies
-    if ((!prevProps.popular && popular) || (popular && mainItemIndex === -1)) {
+    if (
+      (!prevProps.popular && popular && !loading) ||
+      (popular && mainItemIndex === -1 && !loading)
+    ) {
       const highestRated = popular.filter(item => {
         const thing = thingsBySlug[item];
         const voteAverage =
@@ -489,7 +492,12 @@ const mapDispatchToProps = dispatch =>
 export default withWidth()(
   withUser(
     withStyles(styles)(
-      withRouter(connect(mapStateToProps, mapDispatchToProps)(Popular)),
+      withRouter(
+        connect(
+          mapStateToProps,
+          mapDispatchToProps,
+        )(Popular),
+      ),
     ),
   ),
 );
