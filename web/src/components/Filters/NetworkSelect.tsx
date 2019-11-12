@@ -9,7 +9,7 @@ import {
 } from '@material-ui/core';
 import React, { Component } from 'react';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
-import { NetworkType } from '../../types';
+import { Network, NetworkType } from '../../types';
 import {
   parseFilterParamsFromQs,
   updateURLParameters,
@@ -43,6 +43,7 @@ const styles = (theme: Theme) =>
 
 interface OwnProps {
   handleChange: (type?: NetworkType[]) => void;
+  selectedNetworks?: NetworkType[];
 }
 
 interface RouteParams {
@@ -53,24 +54,11 @@ type Props = OwnProps &
   WithStyles<typeof styles> &
   RouteComponentProps<RouteParams>;
 
-interface State {
-  type?: NetworkType[];
-}
-
 export const getNetworkTypeFromUrlParam = () => {
   return parseFilterParamsFromQs(window.location.search).networks;
 };
 
-class NetworkSelect extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-
-    this.state = {
-      ...this.state,
-      type: getNetworkTypeFromUrlParam(),
-    };
-  }
-
+class NetworkSelect extends Component<Props> {
   componentDidUpdate = oldProps => {
     if (oldProps.location.search !== this.props.location.search) {
       // To do, only update this when these params changed
@@ -80,22 +68,12 @@ class NetworkSelect extends Component<Props, State> {
     }
   };
 
-  updateURLParam = (param: string, value?: NetworkType[]) => {
-    updateURLParameters(this.props, param, value);
-
-    this.setState(
-      {
-        type: value,
-      },
-      () => {
-        this.props.handleChange(value);
-      },
-    );
+  updateNetworks = (param: string, value?: NetworkType[]) => {
+    this.props.handleChange(value);
   };
 
   render() {
-    const { classes } = this.props;
-    const { type } = this.state;
+    const { classes, selectedNetworks } = this.props;
 
     return (
       <div className={classes.networkContainer}>
@@ -110,21 +88,21 @@ class NetworkSelect extends Component<Props, State> {
             className={classes.buttonGroup}
           >
             <Button
-              color={!type ? 'secondary' : 'primary'}
-              onClick={() => this.updateURLParam('networks', undefined)}
+              color={!selectedNetworks ? 'secondary' : 'primary'}
+              onClick={() => this.updateNetworks('networks', undefined)}
               className={classes.filterButtons}
             >
               All
             </Button>
             <Button
               color={
-                (type && type.includes('netflix')) ||
-                (type && type.includes('netflix-kids'))
+                (selectedNetworks && selectedNetworks.includes('netflix')) ||
+                (selectedNetworks && selectedNetworks.includes('netflix-kids'))
                   ? 'secondary'
                   : 'primary'
               }
               onClick={() =>
-                this.updateURLParam('networks', ['netflix', 'netflix-kids'])
+                this.updateNetworks('networks', ['netflix', 'netflix-kids'])
               }
               startIcon={
                 <img
@@ -137,8 +115,12 @@ class NetworkSelect extends Component<Props, State> {
               Netflix
             </Button>
             <Button
-              color={type && type.includes('hulu') ? 'secondary' : 'primary'}
-              onClick={() => this.updateURLParam('networks', ['hulu'])}
+              color={
+                selectedNetworks && selectedNetworks.includes('hulu')
+                  ? 'secondary'
+                  : 'primary'
+              }
+              onClick={() => this.updateNetworks('networks', ['hulu'])}
               className={classes.filterButtons}
               startIcon={
                 <img
@@ -151,13 +133,13 @@ class NetworkSelect extends Component<Props, State> {
             </Button>
             <Button
               color={
-                (type && type.includes('hbo-go')) ||
-                (type && type.includes('hbo-now'))
+                (selectedNetworks && selectedNetworks.includes('hbo-go')) ||
+                (selectedNetworks && selectedNetworks.includes('hbo-now'))
                   ? 'secondary'
                   : 'primary'
               }
               onClick={() =>
-                this.updateURLParam('networks', ['hbo-go', 'hbo-now'])
+                this.updateNetworks('networks', ['hbo-go', 'hbo-now'])
               }
               className={classes.filterButtons}
               startIcon={

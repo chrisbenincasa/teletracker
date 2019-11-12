@@ -29,13 +29,13 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { Genre, ItemType, ListSortOptions, NetworkType } from '../types';
+import { Genre } from '../types';
 import { Person } from '../types/v2/Person';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
-import classes from '*.module.css';
+import { filterParamsEqual } from '../utils/changeDetection';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -218,47 +218,10 @@ class PersonDetail extends React.Component<Props, State> {
     this.setState({ showFilter: !this.state.showFilter });
   };
 
-  setFilters = (filters: FilterParams) => {
-    this.setState({ filters });
-  };
-
-  setSortOrder = (sortOrder: ListSortOptions) => {
-    if (this.state.filters.sortOrder !== sortOrder) {
+  handleFilterParamsChange = (filterParams: FilterParams) => {
+    if (!filterParamsEqual(this.state.filters, filterParams)) {
       this.setState({
-        filters: {
-          ...this.state.filters,
-          sortOrder,
-        },
-      });
-    }
-  };
-
-  setType = (type?: ItemType[]) => {
-    this.setState({
-      filters: {
-        ...this.state.filters,
-        itemTypes: type,
-      },
-    });
-  };
-
-  setGenre = (genres?: number[]) => {
-    this.setState({
-      filters: {
-        ...this.state.filters,
-        genresFilter: genres,
-      },
-    });
-  };
-
-  setNetworks = (networks?: NetworkType[]) => {
-    // Only update and hit endpoint if there is a state change
-    if (this.state.filters.networks !== networks) {
-      this.setState({
-        filters: {
-          ...this.state.filters,
-          networks,
-        },
+        filters: filterParams,
       });
     }
   };
@@ -327,7 +290,7 @@ class PersonDetail extends React.Component<Props, State> {
           </div>
           <ActiveFilters
             genres={genres}
-            updateFilters={this.setFilters}
+            updateFilters={this.handleFilterParamsChange}
             filters={this.state.filters}
             isListDynamic={false}
           />
@@ -343,9 +306,9 @@ class PersonDetail extends React.Component<Props, State> {
         <AllFilters
           genres={genres}
           open={this.state.showFilter}
-          handleTypeChange={this.setType}
-          handleGenreChange={this.setGenre}
-          handleSortChange={this.setSortOrder}
+          filters={this.state.filters}
+          updateFilters={this.handleFilterParamsChange}
+          disableNetworks
           isListDynamic={false}
         />
 
@@ -425,16 +388,12 @@ class PersonDetail extends React.Component<Props, State> {
           <meta
             name="title"
             property="og:title"
-            content={`${
-              person.name
-            } | Where to stream, rent, or buy. Track this person today!`}
+            content={`${person.name} | Where to stream, rent, or buy. Track this person today!`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy content featuring ${
-              person.name
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="image"
@@ -460,15 +419,11 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="twitter:title"
-            content={`${
-              person.name
-            } - Where to Stream, Rent, or Buy their content`}
+            content={`${person.name} - Where to Stream, Rent, or Buy their content`}
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy content featuring ${
-              person.name
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="twitter:image"
@@ -476,9 +431,7 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="keywords"
-            content={`${
-              person.name
-            }, stream, streaming, rent, buy, watch, track`}
+            content={`${person.name}, stream, streaming, rent, buy, watch, track`}
           />
           <link
             rel="canonical"
@@ -580,11 +533,6 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch =>
 
 export default withUser(
   withStyles(styles)(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(PersonDetail),
-    ),
+    withRouter(connect(mapStateToProps, mapDispatchToProps)(PersonDetail)),
   ),
 );

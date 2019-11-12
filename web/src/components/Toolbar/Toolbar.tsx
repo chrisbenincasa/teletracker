@@ -108,7 +108,7 @@ const styles = (theme: Theme) =>
       right: 0,
     },
     mobileSearchIcon: {
-      padding: `${theme.spacing(1)/2}px ${theme.spacing(1)}px`,
+      padding: `${theme.spacing(1) / 2}px ${theme.spacing(1)}px`,
     },
     noResults: {
       margin: theme.spacing(1),
@@ -534,18 +534,17 @@ class Toolbar extends Component<Props, State> {
           {this.renderQuickSearch()}
         </div>
 
-          <div className={classes.sectionMobile}>
-            <IconButton
-              aria-owns={'Search Teletracker'}
-              aria-haspopup="true"
-              onClick={this.handleMobileSearchDisplay}
-              color="inherit"
-              disableRipple
-            >
-              <SearchIcon />
-            </IconButton>
-          </div>
-
+        <div className={classes.sectionMobile}>
+          <IconButton
+            aria-owns={'Search Teletracker'}
+            aria-haspopup="true"
+            onClick={this.handleMobileSearchDisplay}
+            color="inherit"
+            disableRipple
+          >
+            <SearchIcon />
+          </IconButton>
+        </div>
       </React.Fragment>
     );
   }
@@ -637,6 +636,11 @@ class Toolbar extends Component<Props, State> {
                       Explore
                     </Typography>
                     <Divider />
+                    <MenuItemLink
+                      to={`/${type}s`}
+                      key={`explore-${type}`}
+                      primary={'All'}
+                    />
                     <MenuItemLink
                       onClick={this.handleGenreMenuClose}
                       key={`popular-${type}`}
@@ -844,11 +848,6 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
 
 export default withWidth()(
   withRouter(
-    withStyles(styles)(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(Toolbar),
-    ),
+    withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Toolbar)),
   ),
 );

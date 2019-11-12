@@ -36,6 +36,7 @@ const styles = (theme: Theme) =>
 
 interface OwnProps {
   handleChange: (type?: ItemType[]) => void;
+  selectedTypes?: ItemType[];
 }
 
 interface RouteParams {
@@ -46,24 +47,11 @@ type Props = OwnProps &
   WithStyles<typeof styles> &
   RouteComponentProps<RouteParams>;
 
-interface State {
-  type?: ItemType[];
-}
-
 export const getTypeFromUrlParam = () => {
   return parseFilterParamsFromQs(window.location.search).itemTypes;
 };
 
-class TypeToggle extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-
-    this.state = {
-      ...this.state,
-      type: getTypeFromUrlParam(),
-    };
-  }
-
+class TypeToggle extends Component<Props> {
   componentDidUpdate = (oldProps: Props) => {
     if (oldProps.location.search !== this.props.location.search) {
       this.setState({
@@ -72,21 +60,12 @@ class TypeToggle extends Component<Props, State> {
     }
   };
 
-  updateURLParam = (param: string, value?: ItemType[]) => {
-    updateURLParameters(this.props, param, value);
-    this.setState(
-      {
-        type: value,
-      },
-      () => {
-        this.props.handleChange(value);
-      },
-    );
+  updateTypes = (param: string, value?: ItemType[]) => {
+    this.props.handleChange(value);
   };
 
   render() {
-    const { classes } = this.props;
-    const { type } = this.state;
+    const { classes, selectedTypes } = this.props;
 
     return (
       <div className={classes.typeContainer}>
@@ -100,22 +79,30 @@ class TypeToggle extends Component<Props, State> {
             aria-label="Filter by All, Movies, or just TV Shows"
           >
             <Button
-              color={!type ? 'secondary' : 'primary'}
-              onClick={() => this.updateURLParam('type', undefined)}
+              color={!selectedTypes ? 'secondary' : 'primary'}
+              onClick={() => this.updateTypes('type', undefined)}
               className={classes.filterButtons}
             >
               All
             </Button>
             <Button
-              color={type && type.includes('movie') ? 'secondary' : 'primary'}
-              onClick={() => this.updateURLParam('type', ['movie'])}
+              color={
+                selectedTypes && selectedTypes.includes('movie')
+                  ? 'secondary'
+                  : 'primary'
+              }
+              onClick={() => this.updateTypes('type', ['movie'])}
               className={classes.filterButtons}
             >
               Movies
             </Button>
             <Button
-              color={type && type.includes('show') ? 'secondary' : 'primary'}
-              onClick={() => this.updateURLParam('type', ['show'])}
+              color={
+                selectedTypes && selectedTypes.includes('show')
+                  ? 'secondary'
+                  : 'primary'
+              }
+              onClick={() => this.updateTypes('type', ['show'])}
               className={classes.filterButtons}
             >
               TV
