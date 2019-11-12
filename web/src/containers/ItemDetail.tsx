@@ -1,10 +1,10 @@
 import {
   Backdrop,
+  Button,
   CardMedia,
   Chip,
   createStyles,
   Dialog,
-  Fab,
   Fade,
   Hidden,
   IconButton,
@@ -505,16 +505,16 @@ function ItemDetails(props: Props) {
               alignItems: 'flex-start',
             }}
           >
-            <Fab
+            <Button
               size="small"
               onClick={history.goBack}
-              variant="extended"
+              variant="contained"
               aria-label="Go Back"
               style={{ marginTop: 20, marginLeft: 20 }}
+              startIcon={<ChevronLeft style={{ marginRight: 8 }} />}
             >
-              <ChevronLeft style={{ marginRight: 8 }} />
               Go Back
-            </Fab>
+            </Button>
 
             <div
               className={classes.itemDetailContainer}
