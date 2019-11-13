@@ -1,27 +1,31 @@
 import * as R from 'ramda';
 import {
-  ItemFetchInitiatedAction,
-  ItemFetchSuccessfulAction,
   ITEM_FETCH_INITIATED,
   ITEM_FETCH_SUCCESSFUL,
+  ItemFetchInitiatedAction,
+  ItemFetchSuccessfulAction,
 } from '../actions/item-detail';
 import {
-  ListRetrieveSuccessAction,
   LIST_RETRIEVE_SUCCESS,
+  ListRetrieveSuccessAction,
 } from '../actions/lists';
 import {
-  PopularSuccessfulAction,
   POPULAR_SUCCESSFUL,
+  PopularSuccessfulAction,
 } from '../actions/popular';
 import {
+  USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
+  USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
   UserRemoveItemTagsSuccessAction,
   UserUpdateItemTagsPayload,
   UserUpdateItemTagsSuccessAction,
-  USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
-  USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
 } from '../actions/user';
 import { Item, ItemFactory, ItemTag } from '../types/v2/Item';
 import { flattenActions, handleAction } from './utils';
+import {
+  EXPLORE_SUCCESSFUL,
+  ExploreSuccessfulAction,
+} from '../actions/explore';
 
 export type ThingMap = {
   [key: string]: Item;
@@ -143,6 +147,18 @@ const handlePopularRetrieveSuccess = handleAction<
   }
 });
 
+const handleExploreRetrieveSuccess = handleAction<
+  ExploreSuccessfulAction,
+  State
+>(EXPLORE_SUCCESSFUL, (state, action) => {
+  if (action.payload && action.payload.items) {
+    let things = action.payload.items;
+    return updateStateWithNewThings(state, things);
+  } else {
+    return state;
+  }
+});
+
 const filterNot = <T>(fn: (x: T) => boolean, arr: T[]) => {
   return R.filter(R.complement(fn), arr);
 };
@@ -213,4 +229,5 @@ export default flattenActions(
   itemRemoveTagsSuccess,
   handleListRetrieveSuccess,
   handlePopularRetrieveSuccess,
+  handleExploreRetrieveSuccess,
 );

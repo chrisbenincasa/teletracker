@@ -71,7 +71,7 @@ class TeletrackerServer(
       .add[AuthController]
       .add[UserController]
       .add[SearchController]
-      .add[ThingController]
+      .add[ItemsController]
       .add[MetadataController]
       .add[AvailabilityController]
       .add[AdminController]

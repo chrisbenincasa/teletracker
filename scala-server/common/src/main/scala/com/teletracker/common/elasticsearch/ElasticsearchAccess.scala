@@ -272,7 +272,7 @@ trait ElasticsearchAccess {
     field: String,
     desc: Boolean
   ): FieldSortBuilder = {
-    new FieldSortBuilder("popularity")
+    new FieldSortBuilder(field)
       .order(if (desc) SortOrder.DESC else SortOrder.ASC)
       .missing("_last")
   }

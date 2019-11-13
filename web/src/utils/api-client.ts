@@ -8,7 +8,7 @@ import {
   List,
   ListOptions,
   ListRules,
-  ListSortOptions,
+  SortOptions,
   Network,
   NetworkType,
   OpenRange,
@@ -206,7 +206,7 @@ export class TeletrackerApi {
   async getList(
     token: string,
     id: string | number,
-    sort?: ListSortOptions,
+    sort?: SortOptions,
     desc?: boolean,
     itemTypes?: ItemType[],
     genres?: number[],
@@ -389,7 +389,7 @@ export class TeletrackerApi {
     itemTypes?: ItemType[],
     networks?: NetworkType[],
     bookmark?: string,
-    sort?: ListSortOptions,
+    sort?: SortOptions,
     limit?: number,
     genres?: number[],
     releaseYearRange?: OpenRange,
@@ -397,6 +397,36 @@ export class TeletrackerApi {
     return this.api.get('/api/v2/popular', {
       token,
       fields: fields ? this.createFilter(fields!) : undefined,
+      itemTypes:
+        itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
+      networks: networks && networks.length ? networks.join(',') : undefined,
+      bookmark,
+      sort,
+      limit,
+      genres: genres && genres.length ? genres.join(',') : undefined,
+      minReleaseYear:
+        releaseYearRange && releaseYearRange.min
+          ? releaseYearRange.min
+          : undefined,
+      maxReleaseYear:
+        releaseYearRange && releaseYearRange.max
+          ? releaseYearRange.max
+          : undefined,
+    });
+  }
+
+  async getItems(
+    token?: string,
+    itemTypes?: ItemType[],
+    networks?: NetworkType[],
+    bookmark?: string,
+    sort?: SortOptions,
+    limit?: number,
+    genres?: number[],
+    releaseYearRange?: OpenRange,
+  ) {
+    return this.api.get('/api/v2/explore', {
+      token,
       itemTypes:
         itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
       networks: networks && networks.length ? networks.join(',') : undefined,

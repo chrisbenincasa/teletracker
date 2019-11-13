@@ -1,12 +1,6 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import {
-  ItemType,
-  List,
-  ListSortOptions,
-  NetworkType,
-  Paging,
-} from '../../types';
+import { ItemType, List, SortOptions, NetworkType, Paging } from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect, createAction } from '../utils';
 import _ from 'lodash';
@@ -18,7 +12,7 @@ export const LIST_RETRIEVE_FAILED = 'lists/retrieve/FAILED';
 export interface ListRetrieveInitiatedPayload {
   listId: number;
   force?: boolean;
-  sort?: ListSortOptions;
+  sort?: SortOptions;
   desc?: boolean;
   itemTypes?: ItemType[];
   genres?: number[];
