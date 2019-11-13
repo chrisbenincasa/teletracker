@@ -84,7 +84,9 @@ class SortDropDown extends Component<Props> {
 
     let sorts = validSortOptions || defaultSortOptions;
     let menuItems = sorts.map(sort => (
-      <MenuItem value={sort}>{sortOptionToName[sort]!}</MenuItem>
+      <MenuItem key={sort} value={sort}>
+        {sortOptionToName[sort]!}
+      </MenuItem>
     ));
 
     return (
