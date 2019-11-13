@@ -4,7 +4,7 @@ import {
   ItemType,
   ListOptions,
   ListRules,
-  ListSortOptions,
+  SortOptions,
   Network,
   NetworkType,
   OpenRange,
@@ -46,7 +46,7 @@ export class SagaTeletrackerClient {
 
   *getList(
     id: number,
-    sort?: ListSortOptions,
+    sort?: SortOptions,
     desc?: boolean,
     itemTypes?: ItemType[],
     genres?: number[],
@@ -213,7 +213,7 @@ export class SagaTeletrackerClient {
     itemTypes?: ItemType[],
     networks?: NetworkType[],
     bookmark?: string,
-    sort?: ListSortOptions,
+    sort?: SortOptions,
     limit?: number,
     genres?: number[],
     releaseYearRange?: OpenRange,
@@ -223,6 +223,29 @@ export class SagaTeletrackerClient {
       client => client.getPopular,
       token,
       fields,
+      itemTypes,
+      networks,
+      bookmark,
+      sort,
+      limit,
+      genres,
+      releaseYearRange,
+    );
+  }
+
+  *getItems(
+    itemTypes?: ItemType[],
+    networks?: NetworkType[],
+    bookmark?: string,
+    sort?: SortOptions,
+    limit?: number,
+    genres?: number[],
+    releaseYearRange?: OpenRange,
+  ) {
+    let token = yield this.withToken();
+    return yield this.apiCall(
+      client => client.getItems,
+      token,
       itemTypes,
       networks,
       bookmark,

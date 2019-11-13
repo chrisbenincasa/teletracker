@@ -18,13 +18,9 @@ export interface List {
   configuration?: ListConfiguration;
 }
 
-export type ListSortOptions =
-  | 'popularity'
-  | 'recent'
-  | 'added_time'
-  | 'default';
+export type SortOptions = 'popularity' | 'recent' | 'added_time' | 'default';
 
-export function isListSortOption(s: string): s is ListSortOptions {
+export function isListSortOption(s: string): s is SortOptions {
   const allowed = ['popularity', 'recent', 'added_time', 'default'];
   return allowed.includes(s);
 }
@@ -33,10 +29,23 @@ export type ImageType = 'poster' | 'backdrop' | 'profile';
 
 export type ItemType = 'movie' | 'show';
 
+export enum ItemTypeEnum {
+  Movie = 'movie',
+  Show = 'show',
+}
+
 // TODO: There are better ways to do this... explore them.
 export function isItemType(s: string): s is ItemType {
   const allowed = ['movie', 'show']; // Must match above
   return allowed.includes(s);
+}
+
+export function toItemTypeEnum(itemType: ItemType): ItemTypeEnum {
+  if (itemType === 'movie') {
+    return ItemTypeEnum.Movie;
+  } else {
+    return ItemTypeEnum.Show;
+  }
 }
 
 export type NetworkType =
@@ -61,6 +70,16 @@ export function isNetworkType(s: string): s is NetworkType {
 
   return allowed.includes(s);
 }
+
+export const networkToPrettyName: { [K in NetworkType]?: string } = {
+  netflix: 'Netflix',
+  'netflix-kids': 'Netflix Kids',
+  'hbo-go': 'HBO Go',
+  'hbo-now': 'HBO Now',
+  'amazon-prime-video': 'Prime Video',
+  'amazon-video': 'Amazon Video',
+  hulu: 'Hulu',
+};
 
 export interface ListConfiguration {
   ruleConfiguration?: ListRules;

@@ -52,6 +52,7 @@ import { ApiItem } from '../types/v2';
 import { Item } from '../types/v2/Item';
 import { formatRuntime } from '../utils/textHelper';
 import Login from './Login';
+import moment from 'moment';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -286,7 +287,7 @@ function ItemDetails(props: Props) {
         }}
       >
         <Typography color="inherit" variant="h4" itemProp="name">
-          {`${title}`}
+          {`${title} (${moment(thing.release_date).format('YYYY')})`}
         </Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Rating value={voteAverage / 2} precision={0.1} readOnly />
