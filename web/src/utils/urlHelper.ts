@@ -4,9 +4,10 @@ import {
   isItemType,
   isListSortOption,
   isNetworkType,
-  ListSortOptions,
+  SortOptions,
 } from '../types';
 import { FilterParams } from './searchFilters';
+import { filterParamsEqual } from './changeDetection';
 
 /**
  * Updates or adds URL parameters
@@ -20,6 +21,40 @@ export const updateURLParameters = (
   value?: any,
 ) => {
   updateMultipleUrlParams(props, [[param, value]]);
+};
+
+export const updateUrlParamsForFilter = (
+  props: RouteComponentProps<any>,
+  filterParams: FilterParams,
+  excludedParams?: string[],
+): void => {
+  let paramUpdates: [string, any | undefined][] = [
+    ['genres', filterParams.genresFilter],
+    ['networks', filterParams.networks],
+    [
+      'sort',
+      filterParams.sortOrder === 'default' ? undefined : filterParams.sortOrder,
+    ],
+    ['type', filterParams.itemTypes],
+    [
+      'ry_min',
+      filterParams.sliders && filterParams.sliders.releaseYear
+        ? filterParams.sliders.releaseYear.min
+        : undefined,
+    ],
+    [
+      'ry_max',
+      filterParams.sliders && filterParams.sliders.releaseYear
+        ? filterParams.sliders.releaseYear.max
+        : undefined,
+    ],
+  ];
+
+  paramUpdates = paramUpdates.filter(
+    ([key, _]) => !excludedParams || !excludedParams.includes(key),
+  );
+
+  updateMultipleUrlParams(props, paramUpdates);
 };
 
 export const updateMultipleUrlParams = (
@@ -68,37 +103,57 @@ export function parseFilterParamsFromQs(qs: string): FilterParams {
   let ryMin = params.get('ry_min');
   let ryMax = params.get('ry_max');
 
-  return {
+  let filters: FilterParams = {
     sortOrder:
       sortParam && isListSortOption(sortParam)
-        ? (sortParam as ListSortOptions)
+        ? (sortParam as SortOptions)
         : 'default',
-
-    itemTypes: itemTypeParam
-      ? decodeURIComponent(itemTypeParam)
-          .split(',')
-          .filter(isItemType)
-      : undefined,
-
-    networks: networkParam
-      ? decodeURIComponent(networkParam)
-          .split(',')
-          .filter(isNetworkType)
-      : undefined,
-
-    genresFilter: genresParam
-      ? decodeURIComponent(genresParam)
-          .split(',')
-          .map(item => {
-            return parseInt(item, 10);
-          })
-      : undefined,
-
-    sliders: {
-      releaseYear: {
-        min: ryMin ? _.parseInt(ryMin, 10) : undefined,
-        max: ryMax ? _.parseInt(ryMax, 10) : undefined,
-      },
-    },
   };
+
+  let itemTypes = itemTypeParam
+    ? decodeURIComponent(itemTypeParam)
+        .split(',')
+        .filter(isItemType)
+    : undefined;
+
+  let networks = networkParam
+    ? decodeURIComponent(networkParam)
+        .split(',')
+        .filter(isNetworkType)
+    : undefined;
+
+  let genres = genresParam
+    ? decodeURIComponent(genresParam)
+        .split(',')
+        .map(item => {
+          return parseInt(item, 10);
+        })
+    : undefined;
+
+  if (itemTypes) {
+    filters.itemTypes = itemTypes;
+  }
+
+  if (networks) {
+    filters.networks = networks;
+  }
+
+  if (genres) {
+    filters.genresFilter = genres;
+  }
+
+  let releaseYearMin = ryMin ? _.parseInt(ryMin, 10) : undefined;
+  let releaseYearMax = ryMax ? _.parseInt(ryMax, 10) : undefined;
+
+  if (releaseYearMin || releaseYearMax) {
+    filters.sliders = {
+      ...(filters.sliders || {}),
+      releaseYear: {
+        min: releaseYearMin,
+        max: releaseYearMax,
+      },
+    };
+  }
+
+  return filters;
 }

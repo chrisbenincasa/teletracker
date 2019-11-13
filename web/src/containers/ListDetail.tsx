@@ -52,14 +52,18 @@ import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';
 import { ListsByIdMap } from '../reducers/lists';
-import { Genre, ItemType, List, ListSortOptions, NetworkType } from '../types';
+import { Genre, ItemType, List, SortOptions, NetworkType } from '../types';
 import {
   calculateLimit,
   getNumColumns,
   getOrInitListOptions,
 } from '../utils/list-utils';
 import { FilterParams } from '../utils/searchFilters';
-import { parseFilterParamsFromQs } from '../utils/urlHelper';
+import {
+  parseFilterParamsFromQs,
+  updateUrlParamsForFilter,
+} from '../utils/urlHelper';
+import { filterParamsEqual } from '../utils/changeDetection';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -129,7 +133,7 @@ interface DispatchProps {
 interface RouteParams {
   genre?: any;
   id: string;
-  sort?: ListSortOptions;
+  sort?: SortOptions;
   type?: 'movie' | 'show';
 }
 
@@ -286,10 +290,6 @@ class ListDetail extends Component<Props, State> {
     } else if (!_.isEqual(list, prevState.list)) {
       // Detect deep object inequality
       this.setState({ list: list });
-    }
-
-    if (filters.genresFilter !== prevState.filters.genresFilter) {
-      this.retrieveList();
     }
   }
 
@@ -549,73 +549,14 @@ class ListDetail extends Component<Props, State> {
     this.setState({ showFilter: !this.state.showFilter });
   };
 
-  setFilters = (filters: FilterParams) => {
-    this.setState(
-      {
-        filters,
-      },
-      () => {
-        this.retrieveList();
-      },
-    );
-  };
-
-  setSortOrder = (sortOrder: ListSortOptions) => {
-    if (this.state.filters.sortOrder !== sortOrder) {
+  handleFilterParamsChange = (filterParams: FilterParams) => {
+    if (!filterParamsEqual(this.state.filters, filterParams)) {
       this.setState(
         {
-          filters: {
-            ...this.state.filters,
-            sortOrder,
-          },
-          loadingList: true,
+          filters: filterParams,
         },
         () => {
-          this.retrieveList();
-        },
-      );
-    }
-  };
-
-  setType = (type?: ItemType[]) => {
-    this.setState(
-      {
-        filters: {
-          ...this.state.filters,
-          itemTypes: type,
-        },
-      },
-      () => {
-        this.retrieveList();
-      },
-    );
-  };
-
-  setGenre = (genres?: number[]) => {
-    this.setState(
-      {
-        filters: {
-          ...this.state.filters,
-          genresFilter: genres,
-        },
-      },
-      () => {
-        this.retrieveList();
-      },
-    );
-  };
-
-  setNetworks = (networks?: NetworkType[]) => {
-    // Only update and hit endpoint if there is a state change
-    if (this.state.filters.networks !== networks) {
-      this.setState(
-        {
-          filters: {
-            ...this.state.filters,
-            networks,
-          },
-        },
-        () => {
+          updateUrlParamsForFilter(this.props, filterParams);
           this.retrieveList();
         },
       );
@@ -686,7 +627,7 @@ class ListDetail extends Component<Props, State> {
               </div>
               <ActiveFilters
                 genres={genres}
-                updateFilters={this.setFilters}
+                updateFilters={this.handleFilterParamsChange}
                 isListDynamic={list.isDynamic}
                 filters={filters}
               />
@@ -702,11 +643,9 @@ class ListDetail extends Component<Props, State> {
             </div>
             <AllFilters
               genres={genres}
+              filters={this.state.filters}
+              updateFilters={this.handleFilterParamsChange}
               open={showFilter}
-              handleTypeChange={this.setType}
-              handleGenreChange={this.setGenre}
-              handleNetworkChange={this.setNetworks}
-              handleSortChange={this.setSortOrder}
               isListDynamic={list.isDynamic}
             />
             <InfiniteScroll

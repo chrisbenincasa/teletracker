@@ -28,7 +28,7 @@ import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-class ThingController @Inject()(
+class ItemsController @Inject()(
   thingsDbAccess: ThingsDbAccess,
   thingApi: ThingApi
 )(implicit executionContext: ExecutionContext)
@@ -184,7 +184,7 @@ case class GetPersonCreditsRequest(
   @QueryParam(commaSeparatedList = true) genres: Set[String] = Set.empty,
   @QueryParam sort: Option[String],
   @QueryParam desc: Option[Boolean],
-  @Min(0) @Max(50) @QueryParam limit: Int = GetPopularItemsRequest.DefaultLimit,
+  @Min(0) @Max(50) @QueryParam limit: Int = GetItemsRequest.DefaultLimit,
   @QueryParam @ItemReleaseYear minReleaseYear: Option[Int],
   @QueryParam @ItemReleaseYear maxReleaseYear: Option[Int],
   request: Request)

@@ -1,4 +1,4 @@
-import { ItemType, ListSortOptions, NetworkType } from '../types';
+import { ItemType, SortOptions, NetworkType } from '../types';
 
 export interface SliderParamState {
   min?: number;
@@ -17,6 +17,6 @@ export interface FilterParams {
   genresFilter?: number[];
   itemTypes?: ItemType[];
   networks?: NetworkType[];
-  sortOrder: ListSortOptions;
+  sortOrder: SortOptions;
   sliders?: SlidersState;
 }
