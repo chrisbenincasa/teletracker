@@ -193,15 +193,6 @@ class Explore extends Component<Props, State> {
     }
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
-    if (this.props.location.search !== prevProps.location.search) {
-      let filters = parseFilterParamsFromQs(this.props.location.search);
-      if (!filterParamsEqual(filters, this.state.filters)) {
-        this.setFilters(filters);
-      }
-    }
-  }
-
   handleFilterParamsChange = (filterParams: FilterParams) => {
     if (!filterParamsEqual(this.state.filters, filterParams)) {
       if (
