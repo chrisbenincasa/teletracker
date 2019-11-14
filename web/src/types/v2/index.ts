@@ -15,6 +15,7 @@ export interface ApiItem {
   popularity?: number;
   ratings?: ItemRating[];
   recommendations?: ApiItem[];
+  relativeUrl: string;
   release_date?: string;
   release_dates?: ItemReleaseDate[];
   runtime?: number;
