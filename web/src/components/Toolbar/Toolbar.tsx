@@ -2,7 +2,6 @@ import {
   AppBar,
   Box,
   Button,
-  CircularProgress,
   ClickAwayListener,
   createStyles,
   Divider,
@@ -48,6 +47,7 @@ import { Genre as GenreModel } from '../../types';
 import { getTmdbPosterImage } from '../../utils/image-helper';
 import { truncateText } from '../../utils/textHelper';
 import { ApiItem } from '../../types/v2';
+import QuickSearch from './QuickSearch';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -356,103 +356,6 @@ class Toolbar extends Component<Props, State> {
     );
   };
 
-  renderQuickSearch() {
-    let { searchText, searchAnchor } = this.state;
-    let { classes, searchResults, isSearching } = this.props;
-    searchResults = searchResults || [];
-
-    return searchAnchor && searchText.length > 0 ? (
-      <ClickAwayListener onClickAway={this.resetSearchAnchor}>
-        <Popper
-          open={!!searchAnchor}
-          anchorEl={searchAnchor}
-          placement="bottom"
-          keepMounted
-          transition
-          disablePortal
-        >
-          {({ TransitionProps, placement }) => (
-            <Fade
-              {...TransitionProps}
-              style={{
-                transformOrigin:
-                  placement === 'bottom' ? 'center top' : 'center bottom',
-              }}
-              in={!!searchAnchor}
-            >
-              <Paper
-                id="menu-list-grow"
-                style={{
-                  height: 'auto',
-                  overflow: 'scroll',
-                  width: 288,
-                }}
-              >
-                <MenuList
-                  style={
-                    isSearching
-                      ? { display: 'flex', justifyContent: 'center' }
-                      : {}
-                  }
-                >
-                  {isSearching ? (
-                    <CircularProgress className={classes.progressSpinner} />
-                  ) : (
-                    <React.Fragment>
-                      {searchResults!.length ? (
-                        searchResults!.slice(0, 5).map(result => {
-                          return (
-                            <MenuItem
-                              dense
-                              component={RouterLink}
-                              to={`/${result.type}/${result.slug}`}
-                              key={result.id}
-                              onClick={this.resetSearchAnchor}
-                            >
-                              <img
-                                src={
-                                  getTmdbPosterImage(result)
-                                    ? `https://image.tmdb.org/t/p/w92/${
-                                        getTmdbPosterImage(result)!.id
-                                      }`
-                                    : ''
-                                }
-                                className={classes.poster}
-                              />
-                              {truncateText(result.original_title, 30)}
-                            </MenuItem>
-                          );
-                        })
-                      ) : (
-                        <Typography
-                          variant="body1"
-                          gutterBottom
-                          align="center"
-                          className={classes.noResults}
-                        >
-                          No results :(
-                        </Typography>
-                      )}
-                      {searchResults!.length > 5 && (
-                        <MenuItem
-                          dense
-                          style={{ justifyContent: 'center' }}
-                          onClick={this.handleSearchForSubmit}
-                        >
-                          View All Results
-                        </MenuItem>
-                      )}
-                    </React.Fragment>
-                  )}
-                </MenuList>
-              </Paper>
-            </Fade>
-          )}
-        </Popper>
-      </ClickAwayListener>
-    ) : null;
-  }
-
   get isSmallDevice() {
     return ['xs', 'sm', 'md'].includes(this.props.width);
   }
@@ -503,8 +406,8 @@ class Toolbar extends Component<Props, State> {
   };
 
   renderSearch() {
-    let { classes } = this.props;
-    let { mobileSearchBarOpen } = this.state;
+    let { classes, isSearching, searchResults } = this.props;
+    let { searchText, searchAnchor } = this.state;
 
     return (
       <React.Fragment>
@@ -531,7 +434,14 @@ class Toolbar extends Component<Props, State> {
             />
           </div>
           <div className={classes.grow} />
-          {this.renderQuickSearch()}
+          <QuickSearch
+            searchText={searchText}
+            isSearching={isSearching}
+            searchResults={searchResults}
+            searchAnchor={searchAnchor}
+            handleResetSearchAnchor={this.resetSearchAnchor}
+            handleSearchForSubmit={this.handleSearchForSubmit}
+          />
         </div>
 
         <div className={classes.sectionMobile}>
@@ -848,6 +758,11 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
 
 export default withWidth()(
   withRouter(
-    withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Toolbar)),
+    withStyles(styles)(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(Toolbar),
+    ),
   ),
 );
