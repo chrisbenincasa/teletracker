@@ -27,6 +27,10 @@ data "aws_iam_role" "ecs-instance-role" {
   name = "ecsInstanceRole"
 }
 
+data "aws_iam_instance_profile" "ecs-instance-profile" {
+  name = "ecsInstanceRole"
+}
+
 data "aws_iam_role" "ecs-fargate-task-role" {
   name = "ecsFargateTaskRole"
 }

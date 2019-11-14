@@ -5,7 +5,7 @@ module "tmdb-changes-scraper" {
   function_name    = "tmdb-changes"
 
   extra_env_vars = {
-    TASK_QUEUE_URL = data.aws_sqs_queue.teletracker-task-queue-data.url
+    TASK_QUEUE_URL = aws_sqs_queue.teletracker-task-queue.id
   }
 }
 
