@@ -114,7 +114,7 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
-  mainItemIndex: number;
+  mainItemIndex: number[];
   showFilter: boolean;
   filters: FilterParams;
   totalLoadedImages: number;
@@ -139,7 +139,7 @@ class Popular extends Component<Props, State> {
 
     this.state = {
       ...this.state,
-      mainItemIndex: -1,
+      mainItemIndex: [],
       showFilter: false,
       filters: filterParams,
       totalLoadedImages: 0,
@@ -189,6 +189,25 @@ class Popular extends Component<Props, State> {
     }
   }
 
+  getHighestRated = () => {
+    const { popular, thingsBySlug } = this.props;
+
+    return popular
+      ? popular.filter(item => {
+          const thing = thingsBySlug[item];
+          const voteAverage =
+            thing.ratings && thing.ratings.length
+              ? thing.ratings[0].vote_average
+              : 0;
+          const voteCount =
+            (thing.ratings && thing.ratings.length
+              ? thing.ratings[0].vote_count
+              : 0) || 0;
+          return voteAverage > 7 && voteCount > 1000;
+        })
+      : [];
+  };
+
   componentDidUpdate(prevProps: Props, prevState: State) {
     const { loading, popular, thingsBySlug } = this.props;
     const { mainItemIndex } = this.state;
@@ -196,34 +215,44 @@ class Popular extends Component<Props, State> {
     // Grab random item from filtered list of popular movies
     if (
       (!prevProps.popular && popular && !loading) ||
-      (popular && mainItemIndex === -1 && !loading)
+      (popular && mainItemIndex.length === 0 && !loading) ||
+      (popular &&
+        ['xs', 'sm'].includes(prevProps.width) !==
+          ['xs', 'sm'].includes(this.props.width))
     ) {
-      const highestRated = popular.filter(item => {
-        const thing = thingsBySlug[item];
-        const voteAverage =
-          thing.ratings && thing.ratings.length
-            ? thing.ratings[0].vote_average
-            : 0;
-        const voteCount =
-          (thing.ratings && thing.ratings.length
-            ? thing.ratings[0].vote_count
-            : 0) || 0;
-        return voteAverage > 7 && voteCount > 1000;
-      });
+      const highestRated = this.getHighestRated();
+      const randomItemOne = Math.floor(Math.random() * highestRated.length);
+      let randomItemTwo = Math.floor(Math.random() * highestRated.length);
+      // In the event these two id's match
+      do {
+        randomItemTwo = Math.floor(Math.random() * highestRated.length);
+      } while (randomItemOne === randomItemTwo);
 
-      const randomItem = Math.floor(Math.random() * highestRated.length);
-      if (randomItem === 0) {
-        this.setState({
-          mainItemIndex: 0,
-        });
+      // I have no idea what this was for lol
+      if (randomItemOne === 0 || randomItemTwo === 0) {
+        if (this.state.mainItemIndex.length > 0) {
+          this.setState({
+            mainItemIndex: [],
+          });
+        }
       } else {
-        const popularItem = popular.findIndex(
-          name => name === highestRated[randomItem],
+        const popularItemOne = popular.findIndex(
+          name => name === highestRated[randomItemOne],
         );
 
-        this.setState({
-          mainItemIndex: popularItem,
-        });
+        if (['xs', 'sm'].includes(this.props.width)) {
+          this.setState({
+            mainItemIndex: [popularItemOne],
+          });
+        } else {
+          const popularItemTwo = popular.findIndex(
+            name => name === highestRated[randomItemTwo],
+          );
+
+          this.setState({
+            mainItemIndex: [popularItemOne, popularItemTwo],
+          });
+        }
       }
     }
   }
@@ -283,8 +312,8 @@ class Popular extends Component<Props, State> {
     const numColumns = getNumColumns(width);
 
     // If an item is featured, update total items accordingly
-    const mainItem = mainItemIndex === -1 ? 0 : 1;
-    const totalFetchedItems = (popular && popular.length - mainItem) || 0;
+    const totalFetchedItems =
+      (popular && popular.length - mainItemIndex.length) || 0;
     const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
     const loadMore = totalNonLoadedImages <= numColumns;
 
@@ -359,7 +388,7 @@ class Popular extends Component<Props, State> {
           <Grid container spacing={2}>
             {popular.map((result, index) => {
               let thing = thingsBySlug[result];
-              if (thing && index !== this.state.mainItemIndex) {
+              if (thing && !this.state.mainItemIndex.includes(index)) {
                 return (
                   <ItemCard
                     key={result}
@@ -385,7 +414,11 @@ class Popular extends Component<Props, State> {
 
     return popular ? (
       <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
-        <Featured featuredItem={thingsBySlug[popular[mainItemIndex]]} />
+        <Featured
+          featuredItems={mainItemIndex.map(
+            index => thingsBySlug[popular[index]],
+          )}
+        />
         {this.renderPopular()}
       </div>
     ) : (
