@@ -278,7 +278,6 @@ class Toolbar extends Component<Props, State> {
     }
 
     if (searchText.length > 0) {
-      this.setState({ searchText });
       this.execQuickSearch(searchText);
     }
   }, 250);
@@ -286,7 +285,9 @@ class Toolbar extends Component<Props, State> {
   handleSearchChange = event => {
     let target = event.currentTarget;
     let searchText = target.value;
-    this.handleSearchChangeDebounced(target, searchText);
+    this.setState({ searchText }, () =>
+      this.handleSearchChangeDebounced(target, searchText),
+    );
   };
 
   handleSearchFocus = event => {
@@ -758,11 +759,6 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
 
 export default withWidth()(
   withRouter(
-    withStyles(styles)(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(Toolbar),
-    ),
+    withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Toolbar)),
   ),
 );
