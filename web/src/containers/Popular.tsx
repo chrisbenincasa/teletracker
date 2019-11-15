@@ -415,11 +415,11 @@ class Popular extends Component<Props, State> {
 
   render() {
     const { featuredItems } = this.state;
-    const { popular, thingsBySlug } = this.props;
+    const { popular } = this.props;
 
     return popular ? (
       <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
-        <Featured featuredItems={this.state.featuredItems} />
+        <Featured featuredItems={featuredItems} />
         {this.renderPopular()}
       </div>
     ) : (
