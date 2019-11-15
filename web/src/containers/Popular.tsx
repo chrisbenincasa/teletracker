@@ -235,6 +235,7 @@ class Popular extends Component<Props, State> {
         if (this.state.featuredItemsIndex.length > 0) {
           this.setState({
             featuredItemsIndex: [],
+            featuredItems: [],
           });
         }
       } else {
@@ -245,6 +246,9 @@ class Popular extends Component<Props, State> {
         if (['xs', 'sm'].includes(this.props.width)) {
           this.setState({
             featuredItemsIndex: [popularItemOne],
+            featuredItems: [popularItemOne].map(
+              index => thingsBySlug[popular[index]],
+            ),
           });
         } else {
           const popularItemTwo = popular.findIndex(
