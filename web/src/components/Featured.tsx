@@ -88,6 +88,8 @@ function Featured(props: Props) {
   }, [featuredItems]);
 
   const renderTitle = (item: ApiItem) => {
+    console.log('render');
+
     const title = item.original_title || '';
     const voteAverage =
       item.ratings && item.ratings.length ? item.ratings[0].vote_average : 0;
@@ -197,7 +199,6 @@ function Featured(props: Props) {
         })
       : null;
   };
-
   return featuredItems && featuredItems.length > 0 ? (
     <div className={classes.wrapper}>{renderFeaturedItems()}</div>
   ) : null;

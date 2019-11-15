@@ -114,7 +114,8 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 interface State {
-  mainItemIndex: number[];
+  featuredItemsIndex: number[];
+  featuredItems: Item[];
   showFilter: boolean;
   filters: FilterParams;
   totalLoadedImages: number;
@@ -139,7 +140,8 @@ class Popular extends Component<Props, State> {
 
     this.state = {
       ...this.state,
-      mainItemIndex: [],
+      featuredItemsIndex: [],
+      featuredItems: [],
       showFilter: false,
       filters: filterParams,
       totalLoadedImages: 0,
@@ -210,12 +212,12 @@ class Popular extends Component<Props, State> {
 
   componentDidUpdate(prevProps: Props, prevState: State) {
     const { loading, popular, thingsBySlug } = this.props;
-    const { mainItemIndex } = this.state;
+    const { featuredItemsIndex } = this.state;
 
     // Grab random item from filtered list of popular movies
     if (
       (!prevProps.popular && popular && !loading) ||
-      (popular && mainItemIndex.length === 0 && !loading) ||
+      (popular && featuredItemsIndex.length === 0 && !loading) ||
       (popular &&
         ['xs', 'sm'].includes(prevProps.width) !==
           ['xs', 'sm'].includes(this.props.width))
@@ -230,9 +232,9 @@ class Popular extends Component<Props, State> {
 
       // I have no idea what this was for lol
       if (randomItemOne === 0 || randomItemTwo === 0) {
-        if (this.state.mainItemIndex.length > 0) {
+        if (this.state.featuredItemsIndex.length > 0) {
           this.setState({
-            mainItemIndex: [],
+            featuredItemsIndex: [],
           });
         }
       } else {
@@ -242,7 +244,7 @@ class Popular extends Component<Props, State> {
 
         if (['xs', 'sm'].includes(this.props.width)) {
           this.setState({
-            mainItemIndex: [popularItemOne],
+            featuredItemsIndex: [popularItemOne],
           });
         } else {
           const popularItemTwo = popular.findIndex(
@@ -250,7 +252,10 @@ class Popular extends Component<Props, State> {
           );
 
           this.setState({
-            mainItemIndex: [popularItemOne, popularItemTwo],
+            featuredItemsIndex: [popularItemOne, popularItemTwo],
+            featuredItems: [popularItemOne, popularItemTwo].map(
+              index => thingsBySlug[popular[index]],
+            ),
           });
         }
       }
@@ -307,13 +312,13 @@ class Popular extends Component<Props, State> {
   }, 250);
 
   loadMoreResults = () => {
-    const { mainItemIndex, totalLoadedImages } = this.state;
+    const { featuredItemsIndex, totalLoadedImages } = this.state;
     const { loading, popular, width } = this.props;
     const numColumns = getNumColumns(width);
 
     // If an item is featured, update total items accordingly
     const totalFetchedItems =
-      (popular && popular.length - mainItemIndex.length) || 0;
+      (popular && popular.length - featuredItemsIndex.length) || 0;
     const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
     const loadMore = totalNonLoadedImages <= numColumns;
 
@@ -388,7 +393,7 @@ class Popular extends Component<Props, State> {
           <Grid container spacing={2}>
             {popular.map((result, index) => {
               let thing = thingsBySlug[result];
-              if (thing && !this.state.mainItemIndex.includes(index)) {
+              if (thing && !this.state.featuredItemsIndex.includes(index)) {
                 return (
                   <ItemCard
                     key={result}
@@ -409,16 +414,12 @@ class Popular extends Component<Props, State> {
   };
 
   render() {
-    const { mainItemIndex } = this.state;
+    const { featuredItems } = this.state;
     const { popular, thingsBySlug } = this.props;
 
     return popular ? (
       <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
-        <Featured
-          featuredItems={mainItemIndex.map(
-            index => thingsBySlug[popular[index]],
-          )}
-        />
+        <Featured featuredItems={this.state.featuredItems} />
         {this.renderPopular()}
       </div>
     ) : (
