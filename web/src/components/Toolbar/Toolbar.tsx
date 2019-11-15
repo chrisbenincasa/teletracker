@@ -73,7 +73,7 @@ const styles = (theme: Theme) =>
       transition: theme.transitions.create('width'),
       width: '100%',
       [theme.breakpoints.up('md')]: {
-        width: 200,
+        width: 250,
       },
       '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
         '-webkit-appearance': 'none',
@@ -134,7 +134,7 @@ const styles = (theme: Theme) =>
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
       },
-      marginRight: theme.spacing(2),
+      marginRight: theme.spacing(3),
       marginLeft: 0,
       width: '100%',
       [theme.breakpoints.up('sm')]: {
@@ -758,11 +758,6 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
 
 export default withWidth()(
   withRouter(
-    withStyles(styles)(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(Toolbar),
-    ),
+    withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Toolbar)),
   ),
 );
