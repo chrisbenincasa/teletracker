@@ -23,6 +23,7 @@ export interface Item {
   adult?: boolean;
   availability?: ItemAvailability[];
   cast?: ItemCastMember[];
+  canonicalId: string;
   crew?: ItemCrewMember[];
   external_ids?: ItemExternalId[];
   genres?: ItemGenre[];
@@ -93,8 +94,9 @@ export class ItemFactory {
         } as ItemCastMember;
       }),
       // Calculated fields
+      canonicalId: item.slug || item.id,
       slug: item.slug,
-      relativeUrl: `/${item.type}/${item.slug}`,
+      relativeUrl: `/${item.type}/${item.slug || item.id}`,
       // description: getDescription(item),
       itemMarkedAsWatched: itemHasTag(item, ActionType.Watched),
 

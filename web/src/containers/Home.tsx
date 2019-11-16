@@ -170,7 +170,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 interface InjectedProps {
   isAuthed: boolean;
   loading: boolean;
-  thingsBySlug: { [key: string]: Item };
+  thingsById: { [key: string]: Item };
   popular?: string[];
 }
 
@@ -293,7 +293,7 @@ function Home(props: Props) {
   };
 
   const renderTotalMoviesSection = () => {
-    const { popular, userSelf, thingsBySlug } = props;
+    const { popular, userSelf, thingsById } = props;
 
     return (
       <div className={classes.container}>
@@ -301,7 +301,7 @@ function Home(props: Props) {
           <Grid container spacing={1}>
             {popular &&
               popular.slice(0, 4).map(result => {
-                let thing = thingsBySlug[result];
+                let thing = thingsById[result];
                 return (
                   <ItemCard
                     key={result}
@@ -422,7 +422,7 @@ function Home(props: Props) {
   };
 
   const renderListSection = () => {
-    const { popular, thingsBySlug, userSelf } = props;
+    const { popular, thingsById, userSelf } = props;
 
     return (
       <div className={classes.listContainer}>
@@ -430,7 +430,7 @@ function Home(props: Props) {
           <Grid container spacing={2}>
             {popular &&
               popular.slice(4, 10).map(result => {
-                let thing = thingsBySlug[result];
+                let thing = thingsById[result];
                 return (
                   <ItemCard
                     key={result}
@@ -501,7 +501,7 @@ const mapStateToProps = (appState: AppState) => {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     loading: appState.popular.loadingPopular,
     popular: appState.popular.popular,
-    thingsBySlug: appState.itemDetail.thingsBySlug,
+    thingsById: appState.itemDetail.thingsById,
   };
 };
 
