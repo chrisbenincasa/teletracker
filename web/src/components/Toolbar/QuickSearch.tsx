@@ -12,8 +12,7 @@ import {
   Typography,
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
-import _ from 'lodash';
-import { ApiItem } from '../../types/v2';
+import { Item } from '../../types/v2/Item';
 import React from 'react';
 import { truncateText } from '../../utils/textHelper';
 import RouterLink from '../RouterLink';
@@ -59,7 +58,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 interface Props {
   isSearching: boolean;
   searchAnchor?: HTMLInputElement | null;
-  searchResults?: ApiItem[];
+  searchResults?: Item[];
   searchText: string;
   handleResetSearchAnchor: (event) => void;
   handleSearchForSubmit: (event) => void;
@@ -140,6 +139,7 @@ function QuickSearch(props: Props) {
                             }
                           >
                             <img
+                              alt={`Movie poster for ${result.original_title}`}
                               src={
                                 getTmdbPosterImage(result)
                                   ? `https://image.tmdb.org/t/p/w92/${

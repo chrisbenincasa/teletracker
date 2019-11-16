@@ -44,9 +44,7 @@ import { search, SearchInitiatedPayload } from '../../actions/search';
 import RouterLink, { StdRouterLink } from '../RouterLink';
 import { AppState } from '../../reducers';
 import { Genre as GenreModel } from '../../types';
-import { getTmdbPosterImage } from '../../utils/image-helper';
-import { truncateText } from '../../utils/textHelper';
-import { ApiItem } from '../../types/v2';
+import { Item } from '../../types/v2/Item';
 import QuickSearch from './QuickSearch';
 
 const styles = (theme: Theme) =>
@@ -185,7 +183,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
   isSearching: boolean;
   onDrawerChange: (close?: boolean) => void;
-  searchResults?: ApiItem[];
+  searchResults?: Item[];
   drawerOpen: boolean;
 }
 
