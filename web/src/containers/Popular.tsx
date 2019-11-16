@@ -225,6 +225,7 @@ class Popular extends Component<Props, State> {
     // Grab random item from filtered list of popular movies
     if (
       (!prevProps.popular && popular && !loading) ||
+      (prevProps.loading && popular && !loading) ||
       (popular && featuredItemsIndex.length === 0 && !loading) ||
       (popular &&
         ['xs', 'sm'].includes(prevProps.width) !==
