@@ -205,7 +205,15 @@ class Popular extends Component<Props, State> {
             (thing.ratings && thing.ratings.length
               ? thing.ratings[0].vote_count
               : 0) || 0;
-          return voteAverage > 7 && voteCount > 1000;
+          const hasBackdropImage =
+            thing.backdropImage && thing.backdropImage.id;
+          const hasPosterImage = thing.posterImage && thing.posterImage.id;
+          return (
+            voteAverage > 7 &&
+            voteCount > 1000 &&
+            hasBackdropImage &&
+            hasPosterImage
+          );
         })
       : [];
   };
