@@ -65,7 +65,7 @@ const styles = (theme: Theme) =>
       height: '100%',
     },
     popularContainer: {
-      padding: theme.spacing(3),
+      padding: `0 ${theme.spacing(3)}px`,
       display: 'flex',
       flexDirection: 'column',
     },
