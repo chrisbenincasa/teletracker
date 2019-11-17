@@ -37,6 +37,9 @@ import {
 import { createBasicAction } from './utils';
 import { exploreSaga } from './explore';
 import { filtersChangedSaga } from './filters';
+import { loadMetadata, loadMetadataSaga } from './metadata/load_metadata';
+import { peopleSearchSaga } from './search/person_search';
+import { fetchPeopleDetailsSaga } from './people/get_people';
 
 export const STARTUP = 'startup';
 export const BOOT_DONE = 'boot/DONE';
@@ -47,7 +50,7 @@ const StartupAction = createBasicAction<StartupAction>(STARTUP);
 
 function* startupSaga() {
   yield put(StartupAction());
-  yield put(loadGenres());
+  yield put(loadMetadata());
 }
 
 export function* root() {
@@ -91,9 +94,12 @@ export function* root() {
     allAvailabilitySaga(),
     popularSaga(),
     fetchPersonDetailsSaga(),
+    fetchPeopleDetailsSaga(),
     loadGenresSaga(),
     startupSaga(),
     exploreSaga(),
     filtersChangedSaga(),
+    loadMetadataSaga(),
+    peopleSearchSaga(),
   ]);
 }

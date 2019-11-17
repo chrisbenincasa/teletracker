@@ -41,6 +41,8 @@ export const createNewListSaga = function*() {
       let response: TeletrackerResponse<any> = yield clientEffect(
         client => client.createList,
         payload.name,
+        payload.thingIds,
+        payload.rules,
       );
 
       if (response.ok) {

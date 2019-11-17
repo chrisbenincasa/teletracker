@@ -1,6 +1,13 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import { ItemType, List, SortOptions, NetworkType, Paging } from '../../types';
+import {
+  ItemType,
+  List,
+  SortOptions,
+  NetworkType,
+  Paging,
+  ListFactory,
+} from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect, createAction } from '../utils';
 import _ from 'lodash';
@@ -77,7 +84,7 @@ export const retrieveListSaga = function*() {
         if (response.ok && response.data) {
           yield put(
             ListRetrieveSuccess({
-              list: response.data.data,
+              list: ListFactory.create(response.data.data),
               paging: response.data.paging,
               append: !_.isUndefined(payload.bookmark),
             }),

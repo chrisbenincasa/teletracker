@@ -26,6 +26,7 @@ import {
   EXPLORE_SUCCESSFUL,
   ExploreSuccessfulAction,
 } from '../actions/explore';
+import { SEARCH_SUCCESSFUL, SearchSuccessfulAction } from '../actions/search';
 
 export type ThingMap = {
   [key: string]: Item;
@@ -112,6 +113,7 @@ const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
 
   return {
     ...existingState,
+    fetching: false,
     thingsById: {
       ...existingState.thingsById,
       ...newThingsById,
@@ -159,6 +161,18 @@ const handleExploreRetrieveSuccess = handleAction<
   }
 });
 
+const handleSearchRetrieveSuccess = handleAction<SearchSuccessfulAction, State>(
+  SEARCH_SUCCESSFUL,
+  (state, action) => {
+    if (action.payload && action.payload.results) {
+      let things = action.payload.results;
+      return updateStateWithNewThings(state, things);
+    } else {
+      return state;
+    }
+  },
+);
+
 const filterNot = <T>(fn: (x: T) => boolean, arr: T[]) => {
   return R.filter(R.complement(fn), arr);
 };
@@ -193,8 +207,6 @@ const updateTagsState = (
 const itemUpdateTagsSuccess = handleAction(
   USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
   (state: State, { payload }: UserUpdateItemTagsSuccessAction) => {
-    console.log(payload);
-
     return updateTagsState(
       state,
       tags => {
@@ -230,4 +242,5 @@ export default flattenActions(
   handleListRetrieveSuccess,
   handlePopularRetrieveSuccess,
   handleExploreRetrieveSuccess,
+  handleSearchRetrieveSuccess,
 );

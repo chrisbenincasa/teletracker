@@ -1,51 +1,46 @@
 import React from 'react';
-import { Chip, createStyles, withStyles, WithStyles } from '@material-ui/core';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { Chip } from '@material-ui/core';
+import { useHistory } from 'react-router-dom';
 import {
   Genre,
   ItemType,
-  SortOptions,
-  NetworkType,
-  toItemTypeEnum,
   ItemTypeEnum,
   networkToPrettyName,
+  NetworkType,
+  SortOptions,
+  toItemTypeEnum,
 } from '../../types';
-import { updateMultipleUrlParams } from '../../utils/urlHelper';
 import _ from 'lodash';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../../utils/searchFilters';
 import { setsEqual } from '../../utils/sets';
+import { useSelector } from 'react-redux';
+import { AppState } from '../../reducers';
+import { filterParamsEqual } from '../../utils/changeDetection';
+import makeStyles from '@material-ui/core/styles/makeStyles';
 
-const styles = () =>
-  createStyles({
-    activeFiltersContainer: {
-      display: 'flex',
-      flexWrap: 'wrap',
-    },
-    networkChip: {
-      margin: '2px',
-    },
-    networkIcon: {
-      width: 20,
-      borderRadius: '50%',
-    },
-  });
+const useStyles = makeStyles({
+  activeFiltersContainer: {
+    display: 'flex',
+    flexWrap: 'wrap',
+  },
+  networkChip: {
+    margin: '2px',
+  },
+  networkIcon: {
+    width: 20,
+    borderRadius: '50%',
+  },
+});
 
-interface OwnProps {
+interface Props {
   updateFilters: (FilterParams) => void;
   genres?: Genre[];
   isListDynamic?: boolean;
   filters: FilterParams;
+  initialState?: FilterParams;
 }
 
-interface RouteParams {
-  id: string;
-}
-
-type Props = OwnProps &
-  WithStyles<typeof styles> &
-  RouteComponentProps<RouteParams>;
-
-const prettyItemType = (itemType: ItemType) => {
+export const prettyItemType = (itemType: ItemType) => {
   switch (toItemTypeEnum(itemType)) {
     case ItemTypeEnum.Movie:
       return 'Movie';
@@ -54,7 +49,27 @@ const prettyItemType = (itemType: ItemType) => {
   }
 };
 
-function ActiveFilters(props: Props) {
+export const prettySort = (sortOption: SortOptions) => {
+  switch (sortOption) {
+    case 'added_time':
+      return 'Added Time';
+    case 'popularity':
+      return 'Popularity';
+    case 'default':
+      return 'Default';
+    case 'recent':
+      return 'Release Date';
+  }
+};
+
+export default function ActiveFilters(props: Props) {
+  const classes = useStyles();
+  const history = useHistory();
+
+  let personNameBySlugOrId = useSelector(
+    (state: AppState) => state.people.nameByIdOrSlug,
+  );
+
   const deleteNetworkFilter = (
     network?: NetworkType[],
   ): [NetworkType[] | undefined, boolean] => {
@@ -104,10 +119,27 @@ function ActiveFilters(props: Props) {
 
     const typeDiff = _.difference(itemTypes, type);
 
-    return [
-      typeDiff.length === 0 ? undefined : typeDiff,
-      !setsEqual(typeDiff, itemTypes),
-    ];
+    return [typeDiff, !setsEqual(typeDiff, itemTypes)];
+  };
+
+  const deletePersonFilter = (
+    newPeople?: string[],
+  ): [string[] | undefined, boolean] => {
+    let {
+      filters: { people },
+    } = props;
+
+    if (!newPeople) {
+      return [people, false];
+    }
+
+    if (!people) {
+      people = [];
+    }
+
+    const diff = _.difference(people, newPeople);
+
+    return [diff.length === 0 ? undefined : diff, !setsEqual(diff, people)];
   };
 
   const deleteGenreFilter = (
@@ -150,16 +182,11 @@ function ActiveFilters(props: Props) {
   };
 
   const resetFilters = () => {
-    updateMultipleUrlParams(props, [
-      ['genres', undefined],
-      ['networks', undefined],
-      ['sort', undefined],
-      ['type', undefined],
-      ['ry_min', undefined],
-      ['ry_max', undefined],
-    ]);
-
     props.updateFilters(DEFAULT_FILTER_PARAMS);
+  };
+
+  const resetToDefaults = () => {
+    props.updateFilters(props.initialState!);
   };
 
   const removeFilters = (filters: {
@@ -169,6 +196,7 @@ function ActiveFilters(props: Props) {
     genre?: number[];
     releaseYearMin?: true;
     releaseYearMax?: true;
+    people?: string[];
   }) => {
     const [newSort, sortChanged] = applyDiffer(filters.sort, deleteSort);
     const [newNetworks, networksChanged] = applyDiffer(
@@ -180,16 +208,21 @@ function ActiveFilters(props: Props) {
       filters.genre,
       deleteGenreFilter,
     );
+    const [newPeople, peopleChanged] = applyDiffer(
+      filters.people,
+      deletePersonFilter,
+    );
 
     let releaseYearStateNew = props.filters.sliders
-      ? props.filters.sliders.releaseYear || {}
+      ? { ...props.filters.sliders.releaseYear } || {}
       : {};
+
     if (filters.releaseYearMin) {
-      delete releaseYearStateNew.min;
+      releaseYearStateNew.min = undefined;
     }
 
     if (filters.releaseYearMax) {
-      delete releaseYearStateNew.max;
+      releaseYearStateNew.max = undefined;
     }
 
     let filterParams: FilterParams = {
@@ -209,6 +242,7 @@ function ActiveFilters(props: Props) {
         ...props.filters.sliders,
         releaseYear: releaseYearStateNew,
       },
+      people: peopleChanged ? newPeople : props.filters.people,
     };
 
     props.updateFilters(filterParams);
@@ -221,9 +255,9 @@ function ActiveFilters(props: Props) {
   };
 
   const {
-    classes,
     isListDynamic,
-    filters: { genresFilter, itemTypes, networks, sortOrder, sliders },
+    filters: { genresFilter, itemTypes, networks, sortOrder, sliders, people },
+    initialState,
   } = props;
 
   let releaseYearMin =
@@ -249,6 +283,8 @@ function ActiveFilters(props: Props) {
     ),
   );
 
+  const showPersonFilters = Boolean(people && people.length > 0);
+
   const showReleaseYearSlider = Boolean(
     sliders &&
       sliders.releaseYear &&
@@ -257,6 +293,10 @@ function ActiveFilters(props: Props) {
 
   const showReset = Boolean(
     showSort || showGenreFilters || showNetworkFilters || showTypeFilters,
+  );
+
+  const showResetDefaults = Boolean(
+    initialState && !filterParamsEqual(initialState, props.filters),
   );
 
   return (
@@ -282,6 +322,7 @@ function ActiveFilters(props: Props) {
                 <img
                   className={classes.networkIcon}
                   src={`/images/logos/${network}/icon.jpg`}
+                  alt={network}
                 />
               }
               className={classes.networkChip}
@@ -334,6 +375,22 @@ function ActiveFilters(props: Props) {
           ) : null}
         </React.Fragment>
       ) : null}
+      {showPersonFilters
+        ? people &&
+          people.map((person: string) =>
+            personNameBySlugOrId[person] ? (
+              <Chip
+                key={person}
+                label={`Starring: ${personNameBySlugOrId[person]}`}
+                className={classes.networkChip}
+                clickable
+                onClick={() => history.push(`/person/${person}`)}
+                onDelete={() => removeFilters({ people: [person] })}
+                variant="outlined"
+              />
+            ) : null,
+          )
+        : null}
       {showReset ? (
         <Chip
           key="Reset"
@@ -344,8 +401,16 @@ function ActiveFilters(props: Props) {
           onClick={resetFilters}
         />
       ) : null}
+      {showResetDefaults ? (
+        <Chip
+          key="Reset_default"
+          className={classes.networkChip}
+          label="Reset to Default"
+          variant="outlined"
+          color="secondary"
+          onClick={resetToDefaults}
+        />
+      ) : null}
     </div>
   );
 }
-
-export default withStyles(styles)(withRouter(ActiveFilters));
