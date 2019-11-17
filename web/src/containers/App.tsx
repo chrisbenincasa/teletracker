@@ -33,6 +33,7 @@ import Toolbar from '../components/Toolbar/Toolbar';
 import Footer from '../components/Footer';
 import Logout from './Logout';
 import Explore from './Explore';
+import NoMatch404 from './NoMatch404';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -191,6 +192,7 @@ class App extends Component<Props, State> {
                     path="/:type/:id"
                     render={props => <ItemDetail {...props} />}
                   />
+                  <Route component={NoMatch404} />
                 </Switch>
               </main>
             </div>
