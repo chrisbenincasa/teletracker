@@ -1,5 +1,6 @@
 import {
   Button,
+  CardMedia,
   createStyles,
   Grid,
   Hidden,
@@ -10,6 +11,7 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
+import { fade } from '@material-ui/core/styles/colorManipulator';
 import { ChevronLeft, ExpandLess, ExpandMore, Tune } from '@material-ui/icons';
 import * as R from 'ramda';
 import { default as React } from 'react';
@@ -36,7 +38,7 @@ import ActiveFilters from '../components/Filters/ActiveFilters';
 import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
-import _ from 'lodash';
+import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -114,7 +116,13 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
-      width: '90%',
+      width: '50%',
+      display: 'flex',
+      flex: '0 1 auto',
+      position: 'relative',
+      '&:hover': {
+        backgroundColor: fade(theme.palette.common.white, 0.25),
+      },
     },
     settings: {
       display: 'flex',
@@ -411,8 +419,17 @@ class PersonDetail extends React.Component<Props, State> {
       return this.renderLoading();
     }
 
-    const backdrop = person!.cast_credits!.data[0];
-    const profilePath = person!.profile_path || '';
+    const backdrop =
+      person &&
+      person.cast_credits &&
+      person.cast_credits.data
+        .map(character => character.item)
+        .filter(item => {
+          if (item && item.backdropImage) {
+            return item;
+          }
+        })
+        .slice(0, 1)[0];
 
     return (
       <React.Fragment>
@@ -472,23 +489,25 @@ class PersonDetail extends React.Component<Props, State> {
           />
         </Helmet>
         <div className={classes.backdrop}>
-          <ResponsiveImage
-            item={backdrop.item!}
-            imageType="backdrop"
-            imageStyle={{
-              objectFit: 'cover',
-              objectPosition: 'center top',
-              width: '100%',
-              height: '100%',
-            }}
-            pictureStyle={{
-              position: 'absolute',
-              width: '100%',
-              height: 'auto',
-              opacity: 0.2,
-              filter: 'blur(3px)',
-            }}
-          />
+          {backdrop && (
+            <ResponsiveImage
+              item={backdrop}
+              imageType="backdrop"
+              imageStyle={{
+                objectFit: 'cover',
+                objectPosition: 'center top',
+                width: '100%',
+                height: '100%',
+              }}
+              pictureStyle={{
+                position: 'absolute',
+                width: '100%',
+                height: 'auto',
+                opacity: 0.2,
+                filter: 'blur(3px)',
+              }}
+            />
+          )}
           <div
             style={{
               display: 'flex',
@@ -511,7 +530,17 @@ class PersonDetail extends React.Component<Props, State> {
               <div className={classes.leftContainer}>
                 <Hidden smUp>{this.renderTitle(person)}</Hidden>
                 <div className={classes.posterContainer}>
-                  <img
+                  <CardMedia
+                    src={imagePlaceholder}
+                    item={person}
+                    component={ResponsiveImage}
+                    imageType="profile"
+                    imageStyle={{
+                      width: '100%',
+                      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+                    }}
+                  />
+                  {/* <img
                     src={
                       profilePath
                         ? `https://image.tmdb.org/t/p/w185/${profilePath}`
@@ -520,7 +549,7 @@ class PersonDetail extends React.Component<Props, State> {
                     style={{
                       width: '100%',
                     }}
-                  />
+                  /> */}
                 </div>
                 <ManageTracking itemDetail={person} />
               </div>

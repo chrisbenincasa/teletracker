@@ -3,12 +3,13 @@ import { Icon } from '@material-ui/core';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';
+import { Person } from '../types/v2/Person';
 import { BASE_IMAGE_URL } from '../constants/';
 import { ImageType } from '../types/';
 
 interface imgProps {
   // item: HasImagery;
-  item: Item;
+  item: Item | Person;
   imageType: ImageType;
   imageStyle?: object;
   pictureStyle?: object;
@@ -98,7 +99,7 @@ export const ResponsiveImage: React.FC<imgProps> = ({
   const profileSpecs = [
     {
       type: 'image/jpeg',
-      sizes: [45, 185, 632],
+      sizes: [45, 185, 632, 'original'],
     },
   ];
 
