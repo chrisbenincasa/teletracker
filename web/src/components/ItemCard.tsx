@@ -332,8 +332,7 @@ function ItemCard(props: Props) {
         {isHovering && !hoverRating && renderHoverActions()}
 
         <RouterLink
-          // TODO Fix
-          to={'/' + item.type + '/' + item.slug}
+          to={item.relativeUrl}
           style={{ display: 'block', height: '100%', textDecoration: 'none' }}
         >
           <CardMedia

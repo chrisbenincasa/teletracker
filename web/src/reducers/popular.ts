@@ -39,10 +39,10 @@ const PopularSuccess = handleAction<PopularSuccessfulAction, State>(
       let newPopular: string[];
       if (payload.append) {
         newPopular = (state.popular || []).concat(
-          R.map(t => t.slug, payload.popular),
+          R.map(t => t.id, payload.popular),
         );
       } else {
-        newPopular = R.map(t => t.slug, payload.popular);
+        newPopular = R.map(t => t.id, payload.popular);
       }
 
       return {
