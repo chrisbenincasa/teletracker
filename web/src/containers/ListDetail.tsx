@@ -61,19 +61,28 @@ import {
   Network,
   ListGenreRule,
   ListNetworkRule,
+  ListPersonRule,
+  ListItemTypeRule,
+  ListReleaseYearRule,
 } from '../types';
 import {
   calculateLimit,
   getNumColumns,
   getOrInitListOptions,
 } from '../utils/list-utils';
-import { FilterParams, isDefaultFilter } from '../utils/searchFilters';
+import {
+  FilterParams,
+  isDefaultFilter,
+  SlidersState,
+} from '../utils/searchFilters';
 import {
   parseFilterParamsFromQs,
   updateUrlParamsForFilter,
 } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
-import { collect } from '../utils/collection-utils';
+import { collect, headOption } from '../utils/collection-utils';
+import { optionalSetsEqual, setsEqual } from '../utils/sets';
+import { Person } from '../types/v2/Person';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -132,6 +141,7 @@ interface OwnProps {
   listsById: ListsByIdMap;
   listLoading: boolean;
   thingsById: ThingMap;
+  personById: { [key: string]: Person };
 }
 
 interface DispatchProps {
@@ -234,7 +244,51 @@ class ListDetail extends Component<Props, State> {
     return Number(this.props.match.params.id);
   }
 
-  retrieveList() {
+  makeListFilters = (
+    initialLoad: boolean,
+    currentFilters: FilterParams,
+    initialFilters?: FilterParams,
+  ): Partial<ListRetrieveInitiatedPayload> => {
+    if (initialLoad) {
+      return {};
+    } else if (initialFilters) {
+      let genres =
+        currentFilters.genresFilter &&
+        !optionalSetsEqual(
+          currentFilters.genresFilter,
+          initialFilters.genresFilter,
+        )
+          ? currentFilters.genresFilter || []
+          : initialFilters.genresFilter;
+
+      let networks =
+        currentFilters.networks &&
+        !optionalSetsEqual(currentFilters.networks, initialFilters.networks)
+          ? currentFilters.networks
+          : initialFilters.networks;
+
+      let itemTypes = !optionalSetsEqual(
+        currentFilters.itemTypes,
+        initialFilters.itemTypes,
+      )
+        ? currentFilters.itemTypes
+        : initialFilters.itemTypes;
+
+      console.log(currentFilters, initialFilters);
+
+      return {
+        genres,
+        networks,
+        itemTypes,
+      };
+    } else {
+      return {
+        genres: currentFilters.genresFilter,
+      };
+    }
+  };
+
+  retrieveList(initialLoad: boolean) {
     const {
       filters: { itemTypes, sortOrder, genresFilter, networks },
     } = this.state;
@@ -242,12 +296,17 @@ class ListDetail extends Component<Props, State> {
 
     this.props.retrieveList({
       listId: this.listId,
-      sort: sortOrder === 'default' ? undefined : sortOrder,
-      itemTypes,
-      genres: genresFilter ? genresFilter : undefined,
       force: true,
-      networks: networks ? networks : undefined,
       limit: calculateLimit(width, 3),
+      ...this.makeListFilters(
+        initialLoad,
+        this.state.filters,
+        this.state.listFilters,
+      ),
+      // sort: sortOrder === 'default' ? undefined : sortOrder,
+      // itemTypes,
+      // genres: genresFilter ? genresFilter : undefined,
+      // networks: networks ? networks : undefined,
     });
   }
 
@@ -255,7 +314,7 @@ class ListDetail extends Component<Props, State> {
     const { isLoggedIn, userSelf } = this.props;
 
     this.setState({ loadingList: true });
-    this.retrieveList();
+    this.retrieveList(true);
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -297,9 +356,49 @@ class ListDetail extends Component<Props, State> {
           })
         : undefined;
 
+      let itemTypeRules = groupedRules.UserListItemTypeRule
+        ? collect(
+            groupedRules.UserListItemTypeRule,
+            rule => (rule as ListItemTypeRule).itemType,
+          )
+        : undefined;
+
+      let releaseYearRule = groupedRules.UserListReleaseYearRule
+        ? headOption(
+            collect(groupedRules.UserListReleaseYearRule, rule => {
+              let typedRule = rule as ListReleaseYearRule;
+              if (typedRule.minimum || typedRule.maximum) {
+                return {
+                  releaseYear: {
+                    min: typedRule.minimum,
+                    max: typedRule.maximum,
+                  },
+                } as SlidersState;
+              }
+            }),
+          )
+        : undefined;
+
+      let personRules = groupedRules.UserListPersonRule
+        ? collect(groupedRules.UserListPersonRule, rule => {
+            let personId = (rule as ListPersonRule).personId;
+            let person = this.props.personById[personId];
+            return person ? person.canonical_id : undefined;
+          })
+        : undefined;
+
+      console.log(
+        groupedRules.UserListPersonRule,
+        personRules,
+        this.props.personById,
+      );
+
       return {
         genresFilter: genreRules,
         networks: networkRules,
+        itemTypes: itemTypeRules,
+        sliders: releaseYearRule,
+        people: personRules,
         sortOrder: list.configuration.ruleConfiguration.sort
           ? list.configuration.ruleConfiguration.sort.sort
           : 'default',
@@ -316,7 +415,7 @@ class ListDetail extends Component<Props, State> {
     ) {
       this.setState({ loadingList: true });
 
-      this.retrieveList();
+      this.retrieveList(true);
     } else if (
       !this.props.listLoading &&
       (oldProps.listLoading || this.state.loadingList)
@@ -605,7 +704,7 @@ class ListDetail extends Component<Props, State> {
         },
         () => {
           updateUrlParamsForFilter(this.props, filterParams);
-          this.retrieveList();
+          this.retrieveList(false);
         },
       );
     }
@@ -620,11 +719,11 @@ class ListDetail extends Component<Props, State> {
     this.props.retrieveList({
       listId: this.listId,
       bookmark: listBookmark,
+      limit: calculateLimit(width, 3),
       sort: sortOrder === 'default' ? undefined : sortOrder,
       itemTypes,
       genres: genresFilter ? genresFilter : undefined,
       networks: networks ? networks : undefined,
-      limit: calculateLimit(width, 3),
     });
   }, 200);
 
@@ -709,7 +808,9 @@ class ListDetail extends Component<Props, State> {
             </div>
             <AllFilters
               genres={genres}
-              filters={this.state.filters}
+              filters={
+                isDefaultFilter(filters) && listFilters ? listFilters : filters
+              }
               updateFilters={this.handleFilterParamsChange}
               open={showFilter}
               isListDynamic={list.isDynamic}
@@ -769,6 +870,7 @@ const mapStateToProps: (
     networks: appState.metadata.networks,
     loading: appState.metadata.metadataLoading,
     listBookmark: appState.lists.currentBookmark,
+    personById: appState.people.peopleById,
   };
 };
 

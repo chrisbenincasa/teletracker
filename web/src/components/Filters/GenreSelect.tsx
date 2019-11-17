@@ -55,7 +55,7 @@ class GenreSelect extends Component<Props> {
       }
     } else {
       // User selected 'All', reset genre filter
-      newSelectedGenres = value ? [value] : [];
+      newSelectedGenres = [];
     }
 
     if (_.xor(selectedGenres, newSelectedGenres).length !== 0) {

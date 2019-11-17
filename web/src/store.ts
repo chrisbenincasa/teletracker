@@ -3,12 +3,16 @@ import { createBrowserHistory } from 'history';
 import * as localforage from 'localforage';
 import { applyMiddleware, compose, createStore } from 'redux';
 import * as rp from 'redux-persist';
-import { persistReducer, persistStore } from 'redux-persist';
+import { persistReducer, persistStore, createTransform } from 'redux-persist';
 import { createWhitelistFilter } from 'redux-persist-transform-filter';
 import createSagaMiddleware from 'redux-saga';
 import thunk from 'redux-thunk';
 import { root } from './actions';
 import createRootReducer from './reducers/';
+import {
+  State as PeopleState,
+  initialState as defaultPeopleState,
+} from './reducers/people';
 
 export const history = createBrowserHistory();
 
@@ -25,10 +29,20 @@ const authWhitelistFilter = createWhitelistFilter(
   ['token', 'user'],
 );
 
-const personNameCacheFilter = createWhitelistFilter(
-  'people',
-  ['nameByIdOrSlug'],
-  ['nameByIdOrSlug'],
+// Persis just nameByIdOrSlug on the people state. When rehydrating, initialize everything else to empty
+const personNameCache = createTransform<PeopleState, Partial<PeopleState>>(
+  (inbound, key) => {
+    return {
+      nameByIdOrSlug: inbound.nameByIdOrSlug,
+    };
+  },
+  (outbound, key) => {
+    return {
+      ...outbound,
+      ...defaultPeopleState,
+    };
+  },
+  { whitelist: ['people'] },
 );
 
 const getWhitelists = () => {
@@ -39,7 +53,7 @@ export const persistConfig: rp.PersistConfig = {
   key: 'root',
   storage: localforage,
   whitelist: getWhitelists(),
-  transforms: [authWhitelistFilter, personNameCacheFilter],
+  transforms: [authWhitelistFilter, personNameCache],
 };
 
 if (env === 'development') {

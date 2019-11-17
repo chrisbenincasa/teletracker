@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import * as R from 'ramda';
 
 // This is basically a flatMap for list => option
 export function collect<T, U>(
@@ -11,3 +12,5 @@ export function collect<T, U>(
     .map(u => u!)
     .value();
 }
+
+export const headOption = R.ifElse(R.isNil, R.always(undefined), R.head);
