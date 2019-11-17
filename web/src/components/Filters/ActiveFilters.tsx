@@ -1,6 +1,6 @@
 import React from 'react';
-import { Chip, createStyles, withStyles, WithStyles } from '@material-ui/core';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { Chip } from '@material-ui/core';
+import { useHistory } from 'react-router-dom';
 import {
   Genre,
   ItemType,
@@ -10,44 +10,35 @@ import {
   SortOptions,
   toItemTypeEnum,
 } from '../../types';
-import { updateMultipleUrlParams } from '../../utils/urlHelper';
 import _ from 'lodash';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../../utils/searchFilters';
 import { setsEqual } from '../../utils/sets';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../reducers';
 import { filterParamsEqual } from '../../utils/changeDetection';
+import makeStyles from '@material-ui/core/styles/makeStyles';
 
-const styles = () =>
-  createStyles({
-    activeFiltersContainer: {
-      display: 'flex',
-      flexWrap: 'wrap',
-    },
-    networkChip: {
-      margin: '2px',
-    },
-    networkIcon: {
-      width: 20,
-      borderRadius: '50%',
-    },
-  });
+const useStyles = makeStyles({
+  activeFiltersContainer: {
+    display: 'flex',
+    flexWrap: 'wrap',
+  },
+  networkChip: {
+    margin: '2px',
+  },
+  networkIcon: {
+    width: 20,
+    borderRadius: '50%',
+  },
+});
 
-interface OwnProps {
+interface Props {
   updateFilters: (FilterParams) => void;
   genres?: Genre[];
   isListDynamic?: boolean;
   filters: FilterParams;
   initialState?: FilterParams;
 }
-
-interface RouteParams {
-  id: string;
-}
-
-type Props = OwnProps &
-  WithStyles<typeof styles> &
-  RouteComponentProps<RouteParams>;
 
 export const prettyItemType = (itemType: ItemType) => {
   switch (toItemTypeEnum(itemType)) {
@@ -71,7 +62,10 @@ export const prettySort = (sortOption: SortOptions) => {
   }
 };
 
-function ActiveFilters(props: Props) {
+export default function ActiveFilters(props: Props) {
+  const classes = useStyles();
+  const history = useHistory();
+
   let personNameBySlugOrId = useSelector(
     (state: AppState) => state.people.nameByIdOrSlug,
   );
@@ -125,10 +119,7 @@ function ActiveFilters(props: Props) {
 
     const typeDiff = _.difference(itemTypes, type);
 
-    return [
-      typeDiff.length === 0 ? undefined : typeDiff,
-      !setsEqual(typeDiff, itemTypes),
-    ];
+    return [typeDiff, !setsEqual(typeDiff, itemTypes)];
   };
 
   const deletePersonFilter = (
@@ -191,15 +182,6 @@ function ActiveFilters(props: Props) {
   };
 
   const resetFilters = () => {
-    updateMultipleUrlParams(props, [
-      ['genres', undefined],
-      ['networks', undefined],
-      ['sort', undefined],
-      ['type', undefined],
-      ['ry_min', undefined],
-      ['ry_max', undefined],
-    ]);
-
     props.updateFilters(DEFAULT_FILTER_PARAMS);
   };
 
@@ -273,7 +255,6 @@ function ActiveFilters(props: Props) {
   };
 
   const {
-    classes,
     isListDynamic,
     filters: { genresFilter, itemTypes, networks, sortOrder, sliders, people },
     initialState,
@@ -341,6 +322,7 @@ function ActiveFilters(props: Props) {
                 <img
                   className={classes.networkIcon}
                   src={`/images/logos/${network}/icon.jpg`}
+                  alt={network}
                 />
               }
               className={classes.networkChip}
@@ -401,6 +383,8 @@ function ActiveFilters(props: Props) {
                 key={person}
                 label={`Starring: ${personNameBySlugOrId[person]}`}
                 className={classes.networkChip}
+                clickable
+                onClick={() => history.push(`/person/${person}`)}
                 onDelete={() => removeFilters({ people: [person] })}
                 variant="outlined"
               />
@@ -424,11 +408,9 @@ function ActiveFilters(props: Props) {
           label="Reset to Default"
           variant="outlined"
           color="secondary"
-          onClick={resetFilters}
+          onClick={resetToDefaults}
         />
       ) : null}
     </div>
   );
 }
-
-export default withStyles(styles)(withRouter(ActiveFilters));

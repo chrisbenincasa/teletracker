@@ -14,7 +14,11 @@ import {
   Typography,
 } from '@material-ui/core';
 import React, { useEffect, useState } from 'react';
-import { FilterParams } from '../utils/searchFilters';
+import {
+  FilterParams,
+  SliderParamState,
+  SlidersState,
+} from '../utils/searchFilters';
 import {
   Genre,
   ItemType,
@@ -133,7 +137,7 @@ export default function CreateDynamicListDialog(props: Props) {
       rules = rules.concat(
         filters.people.map(person => {
           return {
-            personId: person,
+            personSlug: person,
             type: ListRuleType.UserListPersonRule,
           };
         }),
@@ -233,6 +237,32 @@ export default function CreateDynamicListDialog(props: Props) {
     );
   };
 
+  const renderReleaseDates = (releaseState: SliderParamState) => {
+    if (!releaseState.min && !releaseState.max) {
+      return null;
+    } else if (releaseState.min && !releaseState.max) {
+      return (
+        <ListItem key={'release_date_rule'}>
+          <ListItemText primary={`Released After: ${releaseState.min}`} />
+        </ListItem>
+      );
+    } else if (!releaseState.min && releaseState.max) {
+      return (
+        <ListItem key={'release_date_rule'}>
+          <ListItemText primary={`Released Before: ${releaseState.max}`} />
+        </ListItem>
+      );
+    } else {
+      return (
+        <ListItem key={'release_date_rule'}>
+          <ListItemText
+            primary={`Released Between: ${releaseState.min} and ${releaseState.max}`}
+          />
+        </ListItem>
+      );
+    }
+  };
+
   const defaultSort: ListDefaultSort | undefined =
     filters.sortOrder !== 'default' ? { sort: filters.sortOrder } : undefined;
 
@@ -259,6 +289,8 @@ export default function CreateDynamicListDialog(props: Props) {
           },
         }),
       );
+
+      handleModalClose();
     }
   };
 
@@ -285,7 +317,7 @@ export default function CreateDynamicListDialog(props: Props) {
             fullWidth
             value={listName}
             error={nameDuplicateError || nameLengthError}
-            onChange={e => setListName(e.target.value.trim())}
+            onChange={e => setListName(e.target.value)}
           />
           <FormHelperText
             id="component-error-text"
@@ -309,6 +341,9 @@ export default function CreateDynamicListDialog(props: Props) {
             {filters.networks ? renderNetworkRules(filters.networks) : null}
             {filters.itemTypes ? renderItemTypes(filters.itemTypes) : null}
             {filters.people ? renderPersonRules(filters.people) : null}
+            {filters.sliders && filters.sliders.releaseYear
+              ? renderReleaseDates(filters.sliders.releaseYear)
+              : null}
             {defaultSort ? renderSortRule(defaultSort) : null}
           </List>
         </div>

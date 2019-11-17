@@ -59,24 +59,59 @@ object Person {
     esPerson: EsPerson,
     materializedCastCredits: Option[ElasticsearchItemsResponse]
   ): Person = {
-    val materializedCreditById = materializedCastCredits
-      .map(_.items)
-      .getOrElse(Nil)
-      .map(item => item.id -> item)
-      .toMap
-    val castCredits = esPerson.cast_credits.map(castCredits => {
-      PagedResponse(
-        data = castCredits.map(credit => {
+    val castCreditsList = materializedCastCredits match {
+      // Retain the specified sort
+      case Some(castCredits) =>
+        val creditsById = esPerson.cast_credits
+          .getOrElse(Nil)
+          .map(credit => credit.id -> credit)
+          .toMap
+        val itemsNotPresent = creditsById.keySet -- castCredits.items.map(_.id)
+
+        val sortedCredits = for {
+          item <- castCredits.items
+          credit <- creditsById.get(item.id).toList
+        } yield {
           PersonCastMember(
             character = credit.character,
             id = credit.id,
             title = credit.title,
             slug = credit.slug,
-            item = materializedCreditById
-              .get(credit.id)
-              .map(Item.fromEsItem(_, Nil, Map.empty))
+            item = Some(Item.fromEsItem(item, Nil, Map.empty))
           )
-        }),
+        }
+
+        val leftoverCredits = itemsNotPresent.toList
+          .flatMap(creditsById.get)
+          .map(credit => {
+            PersonCastMember(
+              character = credit.character,
+              id = credit.id,
+              title = credit.title,
+              slug = credit.slug,
+              item = None
+            )
+          })
+
+        sortedCredits ++ leftoverCredits
+
+      case None =>
+        esPerson.cast_credits
+          .getOrElse(Nil)
+          .map(credit => {
+            PersonCastMember(
+              character = credit.character,
+              id = credit.id,
+              title = credit.title,
+              slug = credit.slug,
+              item = None
+            )
+          })
+    }
+
+    val castCredits = esPerson.cast_credits.map(castCredits => {
+      PagedResponse(
+        data = castCreditsList,
         paging = materializedCastCredits
           .flatMap(_.bookmark)
           .map(bm => Paging(Some(bm.toString)))

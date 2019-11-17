@@ -7,22 +7,23 @@ import scala.util.Try
 
 case class ListFilters(
   itemTypes: Option[Set[ThingType]],
-  genres: Option[Set[Int]])
+  genres: Option[Set[Int]],
+  networks: Option[Set[Int]],
+  personIdentifiers: Option[Set[String]])
 
 class ListFilterParser @Inject()(genreCache: GenreCache) {
   def parseListFilters(
-    itemTypes: Seq[String],
+    itemTypes: Option[Seq[String]],
     genres: Option[Seq[String]]
   )(implicit executionContext: ExecutionContext
   ): Future[ListFilters] = {
-    val types = if (itemTypes.nonEmpty) {
-      Some(
-        itemTypes
-          .flatMap(typ => Try(ThingType.fromString(typ)).toOption)
-          .toSet
-      )
-    } else {
-      None
+    val types = itemTypes match {
+      case Some(Seq()) => Some(Set.empty[ThingType])
+      case Some(value) =>
+        Some(
+          value.flatMap(typ => Try(ThingType.fromString(typ)).toOption).toSet
+        )
+      case None => None
     }
 
     val filteredGenreIdsFut = genres.map(_.map(HasGenreIdOrSlug.parse)) match {
@@ -49,7 +50,9 @@ class ListFilterParser @Inject()(genreCache: GenreCache) {
     filteredGenreIdsFut.map(filteredGenreIds => {
       ListFilters(
         itemTypes = types,
-        genres = filteredGenreIds
+        genres = filteredGenreIds,
+        networks = None,
+        personIdentifiers = None
       )
     })
   }

@@ -61,6 +61,7 @@ class TypeToggle extends Component<Props> {
   };
 
   updateTypes = (param: string, value?: ItemType[]) => {
+    console.log(value);
     this.props.handleChange(value);
   };
 
@@ -80,7 +81,7 @@ class TypeToggle extends Component<Props> {
           >
             <Button
               color={!selectedTypes ? 'secondary' : 'primary'}
-              onClick={() => this.updateTypes('type', undefined)}
+              onClick={() => this.updateTypes('type', [])}
               className={classes.filterButtons}
             >
               All

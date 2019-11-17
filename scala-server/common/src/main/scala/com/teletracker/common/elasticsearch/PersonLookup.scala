@@ -258,31 +258,35 @@ class PersonLookup @Inject()(
   }
 
   def lookupPeopleBySlugs(slugs: List[Slug]): Future[Map[Slug, EsPerson]] = {
-    val multiSearchRequest = new MultiSearchRequest()
-    val searches = slugs.map(slug => {
-      val slugQuery = QueryBuilders
-        .boolQuery()
-        .filter(QueryBuilders.termQuery("slug", slug.toString))
+    if (slugs.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      val multiSearchRequest = new MultiSearchRequest()
+      val searches = slugs.map(slug => {
+        val slugQuery = QueryBuilders
+          .boolQuery()
+          .filter(QueryBuilders.termQuery("slug", slug.toString))
 
-      new SearchRequest("people")
-        .source(new SearchSourceBuilder().query(slugQuery).size(1))
-    })
-
-    searches.foreach(multiSearchRequest.add)
-
-    elasticsearchExecutor
-      .multiSearch(multiSearchRequest)
-      .map(response => {
-        response.getResponses
-          .zip(slugs)
-          .flatMap {
-            case (response, slug) =>
-              // TODO: Properly handle failures
-              searchResponseToPeople(response.getResponse).items.headOption
-                .map(slug -> _)
-          }
-          .toMap
+        new SearchRequest("people")
+          .source(new SearchSourceBuilder().query(slugQuery).size(1))
       })
+
+      searches.foreach(multiSearchRequest.add)
+
+      elasticsearchExecutor
+        .multiSearch(multiSearchRequest)
+        .map(response => {
+          response.getResponses
+            .zip(slugs)
+            .flatMap {
+              case (response, slug) =>
+                // TODO: Properly handle failures
+                searchResponseToPeople(response.getResponse).items.headOption
+                  .map(slug -> _)
+            }
+            .toMap
+        })
+    }
   }
 
   private def lookupPersonCastCredits(
