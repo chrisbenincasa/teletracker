@@ -266,12 +266,12 @@ function ItemDetails(props: Props) {
     );
   };
 
-  const renderTitle = (Item: Item) => {
-    const title = Item.original_title;
-    const voteAverage = getVoteAverage(Item);
-    const voteCount = getVoteCount(Item);
+  const renderTitle = (item: Item) => {
+    const title = item.original_title;
+    const voteAverage = getVoteAverage(item);
+    const voteCount = getVoteCount(item);
     const runtime =
-      (Item.runtime && formatRuntime(Item.runtime, Item.type)) || null;
+      (item.runtime && formatRuntime(item.runtime, item.type)) || null;
 
     return (
       <div
@@ -285,7 +285,7 @@ function ItemDetails(props: Props) {
         }}
       >
         <Typography color="inherit" variant="h4" itemProp="name">
-          {`${title} (${moment(Item.release_date).format('YYYY')})`}
+          {`${title} (${moment(item.release_date).format('YYYY')})`}
         </Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Rating value={voteAverage} precision={0.1} readOnly />
@@ -304,19 +304,19 @@ function ItemDetails(props: Props) {
     );
   };
 
-  const renderDescriptiveDetails = (Item: Item) => {
+  const renderDescriptiveDetails = (item: Item) => {
     const { classes, genres } = props;
-    const ItemGenres = (Item.genres || []).map(g => g.id);
-    const overview = Item.overview || '';
+    const itemGenres = (item.genres || []).map(g => g.id);
+    const overview = item.overview || '';
 
     const genresToRender = _.filter(genres || [], genre => {
-      return _.includes(ItemGenres, genre.id);
+      return _.includes(itemGenres, genre.id);
     });
 
     return (
       <div className={classes.descriptionContainer}>
         <div className={classes.titleContainer}>
-          <Hidden smDown>{renderTitle(Item)}</Hidden>
+          <Hidden smDown>{renderTitle(item)}</Hidden>
         </div>
         <div>
           <Typography color="inherit" itemProp="about">
