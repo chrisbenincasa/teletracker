@@ -10,7 +10,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Tune } from '@material-ui/icons';
+import { Add, Bookmarks, Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -332,6 +332,10 @@ class Popular extends Component<Props, State> {
           >
             <Tune />
             <Typography variant="srOnly">Tune</Typography>
+          </IconButton>
+          <IconButton>
+            <Add />
+            <Typography variant="srOnly">Save as List</Typography>
           </IconButton>
         </div>
         <div className={classes.filters}>

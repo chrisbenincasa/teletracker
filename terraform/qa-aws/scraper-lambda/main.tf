@@ -78,7 +78,7 @@ resource "aws_cloudwatch_event_rule" "scraper_lambda_event_rule" {
   count               = var.create_default_trigger ? 1 : 0
   name                = "${aws_lambda_function.scraper_lambda.function_name}-trigger"
   description         = "Run ${aws_lambda_function.scraper_lambda.function_name}"
-  schedule_expression = "cron(0 5 * * ? *)"
+  schedule_expression = "cron(0 8 * * ? *)"
 }
 
 resource "aws_cloudwatch_event_target" "scraper_lambda_event_target" {

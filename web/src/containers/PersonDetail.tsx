@@ -36,6 +36,7 @@ import ActiveFilters from '../components/Filters/ActiveFilters';
 import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
+import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -134,12 +135,16 @@ interface State {
   showFullBiography: boolean;
   showFilter: boolean;
   filters: FilterParams;
+  // Indicates that the current person in state doesn't have the necessary info to show the full detail
+  // page, so we need a full fetch.
+  needsFetch: boolean;
 }
 
 interface StateProps {
   isAuthed: boolean;
   person?: Person;
   genres?: Genre[];
+  loadingPerson: boolean;
 }
 
 interface DispatchProps {
@@ -162,6 +167,19 @@ class PersonDetail extends React.Component<Props, State> {
     super(props);
     let params = new URLSearchParams(window.location.search);
 
+    let needsFetch;
+
+    if (props.person) {
+      needsFetch =
+        _.isUndefined(props.person.cast_credits) ||
+        props.person.cast_credits.data.length === 0 ||
+        _.some(props.person.cast_credits.data, credit =>
+          _.isUndefined(credit.item),
+        );
+    } else {
+      needsFetch = true;
+    }
+
     this.state = {
       showFullBiography: false,
       showFilter:
@@ -170,13 +188,16 @@ class PersonDetail extends React.Component<Props, State> {
         params.has('networks') ||
         params.has('types'),
       filters: parseFilterParamsFromQs(this.props.location.search),
+      needsFetch,
     };
   }
 
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
 
-    this.props.personFetchInitiated({ id: this.props.match.params.id });
+    if (this.state.needsFetch) {
+      this.props.personFetchInitiated({ id: this.props.match.params.id });
+    }
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -188,6 +209,17 @@ class PersonDetail extends React.Component<Props, State> {
       userSelf.user.getUsername()
     ) {
       ReactGA.set({ userId: userSelf.user.getUsername() });
+    }
+  }
+
+  componentDidUpdate(prevProps: Readonly<Props>): void {
+    if (
+      (!prevProps.person && this.props.person) ||
+      (prevProps.loadingPerson && !this.props.loadingPerson)
+    ) {
+      this.setState({
+        needsFetch: false,
+      });
     }
   }
 
@@ -372,9 +404,10 @@ class PersonDetail extends React.Component<Props, State> {
   };
 
   renderPerson() {
-    let { classes, person } = this.props;
+    let { classes, person, loadingPerson } = this.props;
+    let { needsFetch } = this.state;
 
-    if (!person) {
+    if (!person || loadingPerson || needsFetch) {
       return this.renderLoading();
     }
 
@@ -519,6 +552,7 @@ const mapStateToProps: (
     person:
       appState.people.peopleById[props.match.params.id] ||
       appState.people.peopleBySlug[props.match.params.id],
+    loadingPerson: appState.people.loadingPeople,
     genres: appState.metadata.genres,
   };
 };

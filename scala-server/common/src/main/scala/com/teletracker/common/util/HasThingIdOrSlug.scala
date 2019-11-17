@@ -12,6 +12,13 @@ object IdOrSlug {
       override def idOrSlug: Either[UUID, Slug] = Left(uuid)
     }
   }
+
+  def apply(identifier: String): IdOrSlug = {
+    new IdOrSlug {
+      override lazy val idOrSlug: Either[UUID, Slug] =
+        HasThingIdOrSlug.parse(identifier)
+    }
+  }
 }
 
 trait IdOrSlug {

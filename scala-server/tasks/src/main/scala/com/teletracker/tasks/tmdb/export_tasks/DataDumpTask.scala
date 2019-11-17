@@ -84,7 +84,7 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
         }
 
         if (output ne null) {
-          uploadToGcp(output)
+          uploadToS3(output)
         }
 
         Try(output.delete())
@@ -165,9 +165,9 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
 
   protected def fullPath: String = s"data-dump/$baseFileName/$dumpTime"
 
-  protected def googleStorageUri = new URI(s"gs://teletracker/$fullPath")
+  protected def s3Uri = new URI(s"s3://teletracker-data/$fullPath")
 
-  private def uploadToGcp(file: File) = {
+  private def uploadToS3(file: File) = {
     s3.putObject(
       PutObjectRequest
         .builder()

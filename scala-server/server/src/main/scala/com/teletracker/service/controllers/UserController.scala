@@ -24,7 +24,7 @@ import com.teletracker.common.util.{
   HasThingIdOrSlug,
   ListFilterParser
 }
-import com.teletracker.service.api.model.{Item, UserList}
+import com.teletracker.service.api.model.{Item, UserList, UserListRules}
 import com.teletracker.service.api.{ListsApi, ThingApi, UsersApi}
 import com.teletracker.service.auth.{AuthRequiredFilter, UserSelfOnlyFilter}
 import com.twitter.finagle.http.Request
@@ -136,8 +136,15 @@ class UserController @Inject()(
 
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
         val selectFields = parseFieldsOrNone(req.fields)
+        val genres = req.request.params
+          .get("genres")
+          .map(_.split(",").filterNot(_.isEmpty).toSeq)
+
         val filtersFut =
-          listFilterParser.parseListFilters(req.itemTypes, req.genres)
+          listFilterParser.parseListFilters(
+            Some(req.itemTypes),
+            genres
+          )
 
         val (bookmark, sort) = if (req.bookmark.isDefined) {
           val b = Bookmark.parse(req.bookmark.get)
@@ -243,7 +250,10 @@ class UserController @Inject()(
       get("/:userId/lists/:listId/things") { req: GetListThingsRequest =>
         val selectFields = parseFieldsOrNone(req.fields)
         val filtersFut =
-          listFilterParser.parseListFilters(req.itemTypes, req.genres)
+          listFilterParser.parseListFilters(
+            Some(req.itemTypes),
+            Some(req.genres)
+          )
 
         val desc = req.desc.getOrElse(true)
         val sort = req.sort
@@ -453,10 +463,45 @@ class UserController @Inject()(
           })
       }
 
+      post("/:userId/lists") { req: Request =>
+        parse(req.contentString).flatMap(_.as[CreateUserListRequest]) match {
+          case Left(err) =>
+            throw err
+
+          case Right(listCreateRequest) =>
+            require(
+              !(listCreateRequest.thingIds.isDefined && listCreateRequest.rules.isDefined),
+              "Cannot specify both thingIds and rules when creating a list"
+            )
+
+            listsApi
+              .createList2(
+                req.authenticatedUserId.get,
+                listCreateRequest.name,
+                listCreateRequest.thingIds,
+                listCreateRequest.rules
+              )
+              .map(newList => {
+                DataResponse(
+                  CreateListResponse(newList.id)
+                )
+              })
+        }
+      }
+
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
-        val selectFields = parseFieldsOrNone(req.fields)
+        val genres =
+          ParamExtractor.extractOptSeqParam(req.request.params, "genres")
+        val networks =
+          ParamExtractor.extractOptSeqParam(req.request.params, "networks")
+        val itemTypes =
+          ParamExtractor.extractOptSeqParam(req.request.params, "itemTypes")
+
         val filtersFut =
-          listFilterParser.parseListFilters(req.itemTypes, req.genres)
+          listFilterParser.parseListFilters(
+            itemTypes,
+            genres
+          )
 
         val (bookmark, sort) = if (req.bookmark.isDefined) {
           val b = Bookmark.parse(req.bookmark.get)
@@ -726,7 +771,7 @@ case class GetUserAndListByIdRequest(
   @RouteParam listId: Int,
   @QueryParam fields: Option[String],
   @QueryParam(commaSeparatedList = true) itemTypes: Seq[String] = Seq(),
-  @QueryParam(commaSeparatedList = true) genres: Seq[String] = Seq(),
+//  @QueryParam(commaSeparatedList = true) genres: Option[Seq[String]] = None,
   @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
   @QueryParam sort: Option[String],
   @QueryParam desc: Option[Boolean],
@@ -741,6 +786,12 @@ case class CreateListRequest(
   name: String,
   thingIds: Option[List[UUID]],
   rules: Option[TrackedListRules])
+
+@JsonCodec
+case class CreateUserListRequest(
+  name: String,
+  thingIds: Option[List[UUID]],
+  rules: Option[UserListRules])
 
 case class CreateListResponse(id: Int)
 

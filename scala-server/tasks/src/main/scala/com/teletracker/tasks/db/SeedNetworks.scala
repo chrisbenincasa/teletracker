@@ -16,12 +16,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-object SeedNetworks extends TeletrackerTaskApp {
-  override protected def runInternal(): Unit = {
-    injector.instance[NetworkSeeder].runInternal()
-  }
-}
-
 class NetworkSeeder @Inject()(
   dbProvider: SyncDbProvider,
   networks: Networks,
