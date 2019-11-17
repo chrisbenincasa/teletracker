@@ -1,5 +1,6 @@
 import {
   CircularProgress,
+  Chip,
   ClickAwayListener,
   Fade,
   makeStyles,
@@ -10,16 +11,31 @@ import {
   Theme,
   Typography,
 } from '@material-ui/core';
-import _ from 'lodash';
-import { ApiItem } from '../../types/v2';
+import { Rating } from '@material-ui/lab';
+import { Item } from '../../types/v2/Item';
 import React from 'react';
 import { truncateText } from '../../utils/textHelper';
 import RouterLink from '../RouterLink';
 import { getTmdbPosterImage } from '../../utils/image-helper';
+import { formatRuntime } from '../../utils/textHelper';
+import moment from 'moment';
 
 const useStyles = makeStyles((theme: Theme) => ({
+  chip: {
+    margin: `${theme.spacing(1) / 2}px ${theme.spacing(1) /
+      2}px ${theme.spacing(1) / 2}px 0`,
+  },
+  chipWrapper: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemDetails: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
   noResults: {
-    margin: theme.spacing(1),
+    padding: theme.spacing(1),
     alignSelf: 'center',
   },
   progressSpinner: {
@@ -27,16 +43,22 @@ const useStyles = makeStyles((theme: Theme) => ({
     justifySelf: 'center',
   },
   poster: {
-    width: 25,
-    boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
-    marginRight: `${theme.spacing(1)}`,
+    width: 50,
+    marginRight: theme.spacing(1),
   },
+  searchWrapper: {
+    height: 'auto',
+    overflow: 'scroll',
+    width: 338,
+    backgroundColor: theme.palette.primary.main,
+  },
+  viewAllResults: { justifyContent: 'center', padding: theme.spacing(1) },
 }));
 
 interface Props {
   isSearching: boolean;
   searchAnchor?: HTMLInputElement | null;
-  searchResults?: ApiItem[];
+  searchResults?: Item[];
   searchText: string;
   handleResetSearchAnchor: (event) => void;
   handleSearchForSubmit: (event) => void;
@@ -69,36 +91,55 @@ function QuickSearch(props: Props) {
           >
             <Paper
               id="menu-list-grow"
-              style={{
-                height: 'auto',
-                overflow: 'scroll',
-                width: 288,
-              }}
+              className={classes.searchWrapper}
+              elevation={5}
             >
               <MenuList
                 style={
                   isSearching
-                    ? { display: 'flex', justifyContent: 'center' }
-                    : {}
+                    ? { display: 'flex', justifyContent: 'center', padding: 0 }
+                    : { padding: 0 }
                 }
               >
                 {isSearching ? (
                   <CircularProgress className={classes.progressSpinner} />
                 ) : (
-                  <React.Fragment>
+                  <div>
                     {searchResults && searchResults.length > 0 ? (
-                      searchResults.slice(0, 5).map(result => {
+                      searchResults.slice(0, 4).map(result => {
+                        const voteAverage =
+                          result.ratings && result.ratings.length
+                            ? result.ratings[0].vote_average
+                            : 0;
+                        const runtime =
+                          (result.runtime &&
+                            formatRuntime(result.runtime, result.type)) ||
+                          null;
+                        const rating =
+                          result.release_dates &&
+                          result.release_dates.find(item => {
+                            if (
+                              item.country_code === 'US' &&
+                              item.certification !== 'NR'
+                            ) {
+                              return item.certification;
+                            } else {
+                              return null;
+                            }
+                          });
+
                         return (
                           <MenuItem
                             dense
                             component={RouterLink}
-                            to={`/${result.type}/${result.slug}`}
+                            to={result.relativeUrl}
                             key={result.id}
                             onClick={event =>
                               props.handleResetSearchAnchor(event)
                             }
                           >
                             <img
+                              alt={`Movie poster for ${result.original_title}`}
                               src={
                                 getTmdbPosterImage(result)
                                   ? `https://image.tmdb.org/t/p/w92/${
@@ -108,30 +149,73 @@ function QuickSearch(props: Props) {
                               }
                               className={classes.poster}
                             />
-                            {truncateText(result.original_title, 30)}
+                            <div className={classes.itemDetails}>
+                              <Typography variant="subtitle1">
+                                {truncateText(result.original_title, 32)}
+                              </Typography>
+                              <Rating
+                                value={voteAverage / 2}
+                                precision={0.1}
+                                size="small"
+                                readOnly
+                              />
+                              <div className={classes.chipWrapper}>
+                                <Chip
+                                  label={result.type}
+                                  clickable
+                                  size="small"
+                                  className={classes.chip}
+                                />
+                                {rating && rating.certification && (
+                                  <Chip
+                                    label={rating.certification}
+                                    clickable
+                                    size="small"
+                                    className={classes.chip}
+                                  />
+                                )}
+                                {result.release_date && (
+                                  <Chip
+                                    label={moment(result.release_date).format(
+                                      'YYYY',
+                                    )}
+                                    clickable
+                                    size="small"
+                                    className={classes.chip}
+                                  />
+                                )}
+                                {runtime && (
+                                  <Chip
+                                    label={runtime}
+                                    clickable
+                                    size="small"
+                                    className={classes.chip}
+                                  />
+                                )}
+                              </div>
+                            </div>
                           </MenuItem>
                         );
                       })
                     ) : (
                       <Typography
                         variant="body1"
-                        gutterBottom
                         align="center"
                         className={classes.noResults}
                       >
-                        No results :(
+                        No results matching that search
                       </Typography>
                     )}
-                    {searchResults && searchResults.length > 5 && (
+                    {searchResults && searchResults.length > 4 && (
                       <MenuItem
                         dense
-                        style={{ justifyContent: 'center' }}
+                        className={classes.viewAllResults}
                         onClick={props.handleSearchForSubmit}
                       >
                         View All Results
                       </MenuItem>
                     )}
-                  </React.Fragment>
+                  </div>
                 )}
               </MenuList>
             </Paper>

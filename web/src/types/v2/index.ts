@@ -124,5 +124,5 @@ export interface ItemRating {
 export interface ItemReleaseDate {
   country_code: string;
   release_date?: string;
-  cerficiation?: string;
+  certification?: string;
 }
