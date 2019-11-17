@@ -9,9 +9,11 @@ import com.teletracker.common.db.access.{
 import com.teletracker.common.db.model.TrackedListRow
 import com.teletracker.common.elasticsearch.{
   ItemUpdater,
+  PersonLookup,
   UpdateMultipleDocResponse
 }
-import com.teletracker.service.api.model.UserListRules
+import com.teletracker.common.util.Slug
+import com.teletracker.service.api.model.{UserListPersonRule, UserListRules}
 import javax.inject.Inject
 import org.elasticsearch.action.update.UpdateResponse
 import java.util.UUID
@@ -20,7 +22,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class ListsApi @Inject()(
   usersDbAccess: UsersDbAccess,
   listsDbAccess: ListsDbAccess,
-  itemUpdater: ItemUpdater
+  itemUpdater: ItemUpdater,
+  personLookup: PersonLookup
 )(implicit executionContext: ExecutionContext) {
   def createList(
     userId: String,
@@ -62,17 +65,67 @@ class ListsApi @Inject()(
         )
       )
     } else {
-      usersDbAccess
-        .insertList(userId, name, rules.map(_.toRow))
-        .flatMap(newList => {
-          thingsToAdd
-            .map(things => {
-              listsDbAccess
-                .addTrackedThings(newList.id, things.toSet)
-                .map(_ => newList)
-            })
-            .getOrElse(Future.successful(newList))
+      val personSlugRulesToId = rules
+        .map(_.rules)
+        .map(listRules => {
+          // TODO: Use cache first
+          val slugsToResolve = listRules.collect {
+            case UserListPersonRule(None, Some(personSlug), _) => personSlug
+          }.toSet
+
+          if (slugsToResolve.nonEmpty) {
+            personLookup
+              .lookupPeopleBySlugs(slugsToResolve.toList)
+              .map(found => {
+                if (slugsToResolve.size != found.keySet.size) {
+                  throw new IllegalArgumentException(
+                    s"Could not find people with slugs: ${slugsToResolve -- found.keySet}"
+                  )
+                }
+
+                slugsToResolve.toList
+                  .flatMap(slug => found.get(slug).map(slug -> _.id))
+                  .toMap
+              })
+          } else {
+            Future.successful(Map.empty[Slug, UUID])
+          }
         })
+        .getOrElse {
+          Future.successful(Map.empty[Slug, UUID])
+        }
+
+      personSlugRulesToId.flatMap(slugToId => {
+        val sanitizedRules = rules
+          .map(_.rules)
+          .map(listRules => {
+            listRules.map {
+              case listRule @ UserListPersonRule(None, Some(personSlug), _) =>
+                listRule.copy(
+                  personId = Some(slugToId.apply(personSlug)),
+                  personSlug = None
+                )
+
+              case listRule => listRule
+            }
+          })
+          .getOrElse(Nil)
+
+        val newRules = rules.map(_.copy(rules = sanitizedRules))
+
+        usersDbAccess
+          .insertList(userId, name, newRules.map(_.toRow))
+          .flatMap(newList => {
+            thingsToAdd
+              .map(things => {
+                listsDbAccess
+                  .addTrackedThings(newList.id, things.toSet)
+                  .map(_ => newList)
+              })
+              .getOrElse(Future.successful(newList))
+          })
+      })
+
     }
   }
 

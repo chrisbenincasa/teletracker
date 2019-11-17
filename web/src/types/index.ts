@@ -1,9 +1,24 @@
 import Thing, { ApiThing } from './Thing';
-import { ApiItem } from './v2';
-import { Item } from './v2/Item';
+import { ApiItem, ApiPerson } from './v2';
+import { Item, ItemFactory } from './v2/Item';
+import { Person, PersonFactory } from './v2/Person';
+import lists from '../reducers/lists';
 
 export interface Paging {
   bookmark?: string;
+}
+
+export interface ApiList {
+  id: number;
+  name: string;
+  items: ApiItem[];
+  isDefault?: boolean;
+  isDeleted?: boolean;
+  isDynamic?: boolean;
+  isPublic?: boolean;
+  totalItems: number;
+  configuration?: ListConfiguration;
+  relevantPeople?: ApiPerson[];
 }
 
 export interface List {
@@ -16,6 +31,19 @@ export interface List {
   isPublic?: boolean;
   totalItems: number;
   configuration?: ListConfiguration;
+  relevantPeople?: Person[];
+}
+
+export class ListFactory {
+  static create(list: ApiList): List {
+    return {
+      ...list,
+      items: list.items.map(ItemFactory.create),
+      relevantPeople: list.relevantPeople
+        ? list.relevantPeople.map(PersonFactory.create)
+        : undefined,
+    };
+  }
 }
 
 export type SortOptions = 'popularity' | 'recent' | 'added_time' | 'default';

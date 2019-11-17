@@ -127,6 +127,7 @@ export default function PersonFilter(props: Props) {
         renderOption={renderSelectOption}
         disablePortal
         renderInput={renderInput}
+        defaultValue={props.selectedCast}
       />
     </div>
   );

@@ -29,14 +29,7 @@ import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
-import {
-  Genre,
-  ItemType,
-  ListNetworkRule,
-  ListReleaseYearRule,
-  ListRule,
-  Network,
-} from '../types';
+import { Genre, ItemType, Network } from '../types';
 import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';

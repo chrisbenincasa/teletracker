@@ -1,6 +1,7 @@
 package com.teletracker.service.api.model
 
 import com.teletracker.common.db.model._
+import com.teletracker.common.util.Slug
 import com.teletracker.common.util.json.circe._
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
@@ -28,7 +29,7 @@ object UserListRules {
   private def convertRule(dynamicListRule: DynamicListRule): UserListRule = {
     dynamicListRule match {
       case DynamicListPersonRule(personId, associationType, _) =>
-        UserListPersonRule(personId, associationType)
+        UserListPersonRule(Some(personId), None, associationType)
 
       case DynamicListTagRule(tagType, value, isPresent, _) =>
         UserListTagRule(tagType, value, isPresent)
@@ -49,8 +50,9 @@ object UserListRules {
 
   private def convertRule(trackedListRule: UserListRule): DynamicListRule = {
     trackedListRule match {
-      case UserListPersonRule(personId, associationType) =>
-        DynamicListPersonRule(personId, associationType)
+      case UserListPersonRule(personId, _, associationType) =>
+        require(personId.isDefined)
+        DynamicListPersonRule(personId.get, associationType)
 
       case UserListTagRule(tagType, value, isPresent) =>
         DynamicListTagRule(tagType, value, isPresent)
@@ -105,7 +107,8 @@ case class UserListTagRule(
     extends UserListRule
 
 case class UserListPersonRule(
-  personId: UUID,
+  personId: Option[UUID],
+  personSlug: Option[Slug],
   associationType: Option[PersonAssociationType])
     extends UserListRule
 

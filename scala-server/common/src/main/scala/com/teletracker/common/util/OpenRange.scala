@@ -10,6 +10,17 @@ trait OpenRange[T] {
   def isFinite: Boolean = start.isDefined || end.isDefined
 }
 
+object OpenDateRange {
+  def forYearRange(
+    start: Option[Int],
+    end: Option[Int]
+  ): OpenDateRange = {
+    OpenDateRange(start.map(localDateAtYear), end.map(localDateAtYear))
+  }
+
+  private def localDateAtYear(year: Int): LocalDate = LocalDate.of(year, 1, 1)
+}
+
 case class OpenDateRange(
   start: Option[LocalDate],
   end: Option[LocalDate],

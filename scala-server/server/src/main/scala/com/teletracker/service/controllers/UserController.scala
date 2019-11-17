@@ -136,8 +136,15 @@ class UserController @Inject()(
 
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
         val selectFields = parseFieldsOrNone(req.fields)
+        val genres = req.request.params
+          .get("genres")
+          .map(_.split(",").filterNot(_.isEmpty).toSeq)
+
         val filtersFut =
-          listFilterParser.parseListFilters(req.itemTypes, req.genres)
+          listFilterParser.parseListFilters(
+            Some(req.itemTypes),
+            genres
+          )
 
         val (bookmark, sort) = if (req.bookmark.isDefined) {
           val b = Bookmark.parse(req.bookmark.get)
@@ -243,7 +250,10 @@ class UserController @Inject()(
       get("/:userId/lists/:listId/things") { req: GetListThingsRequest =>
         val selectFields = parseFieldsOrNone(req.fields)
         val filtersFut =
-          listFilterParser.parseListFilters(req.itemTypes, req.genres)
+          listFilterParser.parseListFilters(
+            Some(req.itemTypes),
+            Some(req.genres)
+          )
 
         val desc = req.desc.getOrElse(true)
         val sort = req.sort
@@ -480,16 +490,18 @@ class UserController @Inject()(
       }
 
       get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
-        val hasGenresParam = req.request.params.isDefinedAt("genres")
-
-        val sanitizedGenres = (hasGenresParam, req.genres) match {
-          case (true, genres) if genres.isEmpty => Some(Seq())
-          case (true, genres)                   => genres
-          case (false, _)                       => None
-        }
+        val genres =
+          ParamExtractor.extractOptSeqParam(req.request.params, "genres")
+        val networks =
+          ParamExtractor.extractOptSeqParam(req.request.params, "networks")
+        val itemTypes =
+          ParamExtractor.extractOptSeqParam(req.request.params, "itemTypes")
 
         val filtersFut =
-          listFilterParser.parseListFilters(req.itemTypes, sanitizedGenres)
+          listFilterParser.parseListFilters(
+            itemTypes,
+            genres
+          )
 
         val (bookmark, sort) = if (req.bookmark.isDefined) {
           val b = Bookmark.parse(req.bookmark.get)
@@ -759,7 +771,7 @@ case class GetUserAndListByIdRequest(
   @RouteParam listId: Int,
   @QueryParam fields: Option[String],
   @QueryParam(commaSeparatedList = true) itemTypes: Seq[String] = Seq(),
-  @QueryParam(commaSeparatedList = true) genres: Option[Seq[String]] = None,
+//  @QueryParam(commaSeparatedList = true) genres: Option[Seq[String]] = None,
   @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
   @QueryParam sort: Option[String],
   @QueryParam desc: Option[Boolean],
@@ -800,7 +812,7 @@ case class GetListThingsRequest(
   @RouteParam listId: Int,
   @QueryParam fields: Option[String],
   @QueryParam(commaSeparatedList = true) itemTypes: Seq[String] = Seq(),
-  @QueryParam(commaSeparatedList = true) genres: Option[Seq[String]] = None,
+  @QueryParam(commaSeparatedList = true) genres: Seq[String] = Seq(),
   @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
   @QueryParam sort: Option[String],
   @QueryParam desc: Option[Boolean],

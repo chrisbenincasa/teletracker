@@ -15,7 +15,7 @@ import com.teletracker.common.elasticsearch.{
   ListBuilder
 }
 import com.teletracker.common.util.ListFilters
-import com.teletracker.service.api.model.{Item, UserDetails, UserList}
+import com.teletracker.service.api.model.{Item, Person, UserDetails, UserList}
 import com.teletracker.service.controllers.UpdateUserRequestPayload
 import javax.inject.Inject
 import java.util.UUID
@@ -148,7 +148,7 @@ class UsersApi @Inject()(
             limit = limit
           )
           .map {
-            case (listThings, count) => {
+            case (listThings, count, peopleFromRules) => {
               UserList
                 .fromRow(list)
                 .withItems(
@@ -156,6 +156,7 @@ class UsersApi @Inject()(
                     .map(Item.fromEsItem(_))
                     .map(_.scopeToUser(userId))
                 )
+                .withPeople(peopleFromRules.map(Person.fromEsPerson(_, None)))
                 .withCount(count.toInt) -> listThings.bookmark
             }
           }

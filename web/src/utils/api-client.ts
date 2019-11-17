@@ -240,11 +240,10 @@ export class TeletrackerApi {
       token,
       sort,
       desc,
-      itemTypes:
-        itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
+      itemTypes: itemTypes ? itemTypes.join(',') : undefined,
       genres: genres ? genres.join(',') : undefined,
       bookmark,
-      networks: networks && networks.length ? networks.join(',') : undefined,
+      networks: networks ? networks.join(',') : undefined,
       limit,
     });
   }

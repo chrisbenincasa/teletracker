@@ -16,6 +16,10 @@ import {
   PeopleFetchSuccessfulAction,
 } from '../actions/people/get_people';
 import { FSA } from 'flux-standard-action';
+import {
+  LIST_RETRIEVE_SUCCESS,
+  ListRetrieveSuccessAction,
+} from '../actions/lists';
 
 export interface State {
   loadingPeople: boolean;
@@ -24,7 +28,7 @@ export interface State {
   nameByIdOrSlug: { [key: string]: string };
 }
 
-const initialState: State = {
+export const initialState: State = {
   loadingPeople: false,
   peopleById: {},
   peopleBySlug: {},
@@ -120,6 +124,18 @@ const peopleFetchSuccess = handleAction(
   },
 );
 
+const handleListRetrieveSuccess = handleAction<
+  ListRetrieveSuccessAction,
+  State
+>(LIST_RETRIEVE_SUCCESS, (state, action) => {
+  if (action.payload && action.payload.list.relevantPeople) {
+    let items = action.payload.list.relevantPeople;
+    return updateStateWithNewPeople(state, items);
+  } else {
+    return state;
+  }
+});
+
 const loadingPeople = [
   PERSON_FETCH_INITIATED,
   PEOPLE_FETCH_INITIATED,
@@ -128,7 +144,7 @@ const loadingPeople = [
   return handleAction<FSA<typeof actionType>, State>(actionType, state => {
     return {
       ...state,
-      fetchingPeople: true,
+      loadingPeople: true,
     };
   });
 });
@@ -138,5 +154,6 @@ export default flattenActions(
   personFetchSuccess,
   personSearchSuccess,
   peopleFetchSuccess,
+  handleListRetrieveSuccess,
   ...loadingPeople,
 );

@@ -14,12 +14,13 @@ import com.teletracker.common.db.model.{
   DynamicListItemTypeRule,
   DynamicListNetworkRule,
   DynamicListPersonRule,
+  DynamicListReleaseYearRule,
   DynamicListTagRule,
   PersonAssociationType,
   TrackedListRow
 }
 import com.teletracker.common.elasticsearch.EsItemTag.TagFormatter
-import com.teletracker.common.util.{IdOrSlug, ListFilters}
+import com.teletracker.common.util.{IdOrSlug, ListFilters, OpenDateRange}
 import javax.inject.Inject
 import com.teletracker.common.util.Functions._
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
@@ -33,7 +34,8 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
 class DynamicListBuilder @Inject()(
-  elasticsearchExecutor: ElasticsearchExecutor
+  elasticsearchExecutor: ElasticsearchExecutor,
+  personLookup: PersonLookup
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
   def getDynamicListCounts(
@@ -92,7 +94,7 @@ class DynamicListBuilder @Inject()(
     sortMode: SortMode = Popularity(),
     bookmark: Option[Bookmark] = None,
     limit: Int = 20
-  ): Future[(ElasticsearchItemsResponse, Long)] = {
+  ): Future[(ElasticsearchItemsResponse, Long, List[EsPerson])] = {
     val listQuery = getDynamicListQuery(
       userId,
       list,
@@ -101,6 +103,16 @@ class DynamicListBuilder @Inject()(
       bookmark,
       Some(limit)
     )
+
+    val peopleToFetch = list.rules.toList.flatMap(_.rules).collect {
+      case personRule: DynamicListPersonRule => personRule.personId
+    }
+
+    val peopleForRulesFut = if (peopleToFetch.nonEmpty) {
+      personLookup.lookupPeople(peopleToFetch.map(IdOrSlug.fromUUID))
+    } else {
+      Future.successful(Nil)
+    }
 
     val searchRequest = new SearchRequest("items").source(listQuery)
 
@@ -114,8 +126,16 @@ class DynamicListBuilder @Inject()(
     for {
       items <- itemsFut
       count <- countFut
+      people <- peopleForRulesFut
     } yield {
-      items -> count
+      (
+        items,
+        count,
+        // TODO: gnarly hack to appease the frontend... think about this later
+        // This is a preemptive fetch to get some light details on a person, but returning credits makes
+        // future full fetches difficult because cast_credits here would overwrite frontend state...
+        people.map(_.copy(cast_credits = None, crew_credits = None))
+      )
     }
   }
 
@@ -140,30 +160,62 @@ class DynamicListBuilder @Inject()(
       case personRule: DynamicListPersonRule => personRule
     }
 
-    val genreRules = rules.rules.collect {
-      case genreRule: DynamicListGenreRule => genreRule
+    val releaseYearRules = rules.rules.collect {
+      case releaseYearRule: DynamicListReleaseYearRule => releaseYearRule
     }
 
-    val itemTypeRules = rules.rules.collect {
-      case itemTypeRule: DynamicListItemTypeRule => itemTypeRule
+    require(
+      releaseYearRules.size < 2,
+      "Cannot have multiple release year rules!"
+    )
+
+    val releaseYearRule =
+      releaseYearRules.headOption.map(
+        rule => OpenDateRange.forYearRange(rule.minimum, rule.maximum)
+      )
+
+    val genreIdsToUse = listFilters.flatMap(_.genres).orElse {
+      Some(
+        rules.rules
+          .collect {
+            case genreRule: DynamicListGenreRule => genreRule
+          }
+          .map(_.genreId)
+      ).filter(_.nonEmpty)
     }
 
-    val clientSpecifiedGenres = listFilters.flatMap(_.genres)
-
-    val genreIdsToUse = clientSpecifiedGenres.orElse {
-      Some(genreRules.map(_.genreId)).filter(_.nonEmpty)
+    val itemTypesToUse = listFilters.flatMap(_.itemTypes).orElse {
+      Some(
+        rules.rules
+          .collect {
+            case itemTypeRule: DynamicListItemTypeRule => itemTypeRule
+          }
+          .map(_.itemType)
+          .toSet
+      ).filter(_.nonEmpty)
     }
 
-    val clientSpecifiedItemTypes =
-      listFilters.flatMap(_.itemTypes).filter(_.nonEmpty)
-
-    val itemTypesToUse = clientSpecifiedItemTypes.orElse {
-      Some(itemTypeRules.map(_.itemType).toSet).filter(_.nonEmpty)
+    val networkIdsToUse = listFilters.flatMap(_.networks).orElse {
+      Some(
+        rules.rules
+          .collect {
+            case networkRule: DynamicListNetworkRule => networkRule
+          }
+          .map(_.networkId)
+          .toSet
+      ).filter(_.nonEmpty)
     }
 
-    val networkRules = rules.rules.collect {
-      case networkRule: DynamicListNetworkRule => networkRule
-    }
+    val peopleIdsToUse = listFilters
+      .flatMap(_.personIdentifiers)
+      .map(ids => personIdentifiersToSearch(ids.toList))
+      .orElse {
+        Some(
+          rules.rules.collect {
+            case personRule: DynamicListPersonRule => personRule
+          }.distinct
+        ).filter(_.nonEmpty).map(personRulesToSearch)
+      }
 
     val sourceBuilder = new SearchSourceBuilder()
     val baseBoolQuery = QueryBuilders.boolQuery()
@@ -181,18 +233,21 @@ class DynamicListBuilder @Inject()(
             )
           })
       )
-      .applyIf(personRules.nonEmpty)(
-        peopleCreditSearchQuery(_, personRulesToSearch(personRules))
+      .applyOptional(peopleIdsToUse)(
+        peopleCreditSearchQuery
       )
       .applyOptional(itemTypesToUse.filter(_.nonEmpty))(
         itemTypesFilter
       )
-      .applyOptional(genreIdsToUse.map(_.toSet))(genreIdsFilter)
+      .applyOptional(genreIdsToUse.map(_.toSet).filter(_.nonEmpty))(
+        genreIdsFilter
+      )
       .applyOptional(
-        Some(networkRules.map(_.networkId)).filter(_.nonEmpty).map(_.toSet)
+        networkIdsToUse.filter(_.nonEmpty)
       )(
         availabilityByNetworkIdsOr
       )
+      .applyOptional(releaseYearRule.filter(_.isFinite))(openDateRangeFilter)
       .applyOptional(bookmark)(applyBookmark(_, _, Some(dynamicList)))
 
     val defaultSort =
@@ -236,6 +291,23 @@ class DynamicListBuilder @Inject()(
           )
         else None
       ).flatten
+    })
+
+    PeopleCreditSearch(creditSearches, BinaryOperator.Or)
+  }
+
+  private def personIdentifiersToSearch(personIds: List[String]) = {
+    val creditSearches = personIds.flatMap(id => {
+      List(
+        PersonCreditSearch(
+          IdOrSlug(id),
+          PersonAssociationType.Cast
+        ),
+        PersonCreditSearch(
+          IdOrSlug(id),
+          PersonAssociationType.Crew
+        )
+      )
     })
 
     PeopleCreditSearch(creditSearches, BinaryOperator.Or)
