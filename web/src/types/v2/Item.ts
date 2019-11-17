@@ -15,7 +15,6 @@ import {
   getTmdbPosterImage,
   getTmdbProfileImage,
 } from '../../utils/image-helper';
-import { ThingFactory } from '../Thing';
 import { PersonFactory } from './Person';
 import { Person } from './Person';
 
@@ -23,6 +22,7 @@ export interface Item {
   adult?: boolean;
   availability?: ItemAvailability[];
   cast?: ItemCastMember[];
+  canonicalId: string;
   crew?: ItemCrewMember[];
   external_ids?: ItemExternalId[];
   genres?: ItemGenre[];
@@ -82,6 +82,7 @@ export const itemBelongsToLists = (item: ApiItem | Item) => {
 
 export class ItemFactory {
   static create(item: ApiItem): Item {
+    const CANONICAL_ID = item.slug || item.id;
     return {
       ...item,
       cast: (item.cast || []).map(castMember => {
@@ -93,8 +94,9 @@ export class ItemFactory {
         } as ItemCastMember;
       }),
       // Calculated fields
+      canonicalId: CANONICAL_ID,
       slug: item.slug,
-      relativeUrl: `/${item.type}/${item.slug}`,
+      relativeUrl: `/${item.type}/${CANONICAL_ID}`,
       // description: getDescription(item),
       itemMarkedAsWatched: itemHasTag(item, ActionType.Watched),
 

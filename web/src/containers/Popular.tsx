@@ -86,7 +86,7 @@ interface InjectedProps {
   isSearching: boolean;
   loading: boolean;
   popular?: string[];
-  thingsBySlug: { [key: string]: Item };
+  thingsById: { [key: string]: Item };
 }
 
 interface RouteParams {
@@ -192,11 +192,11 @@ class Popular extends Component<Props, State> {
   }
 
   getHighestRated = () => {
-    const { popular, thingsBySlug } = this.props;
+    const { popular, thingsById } = this.props;
 
     return popular
       ? popular.filter(id => {
-          const item = thingsBySlug[id];
+          const item = thingsById[id];
           const voteAverage = getVoteAverage(item);
           const voteCount = getVoteCount(item);
           const hasBackdropImage = item.backdropImage && item.backdropImage.id;
@@ -212,7 +212,7 @@ class Popular extends Component<Props, State> {
   };
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    const { loading, popular, thingsBySlug } = this.props;
+    const { loading, popular, thingsById } = this.props;
     const { featuredItemsIndex } = this.state;
 
     // Grab random item from filtered list of popular movies
@@ -249,7 +249,7 @@ class Popular extends Component<Props, State> {
           this.setState({
             featuredItemsIndex: [popularItemOne],
             featuredItems: [popularItemOne].map(
-              index => thingsBySlug[popular[index]],
+              index => thingsById[popular[index]],
             ),
           });
         } else {
@@ -260,7 +260,7 @@ class Popular extends Component<Props, State> {
           this.setState({
             featuredItemsIndex: [popularItemOne, popularItemTwo],
             featuredItems: [popularItemOne, popularItemTwo].map(
-              index => thingsBySlug[popular[index]],
+              index => thingsById[popular[index]],
             ),
           });
         }
@@ -340,7 +340,7 @@ class Popular extends Component<Props, State> {
   };
 
   renderPopular = () => {
-    const { classes, genres, popular, userSelf, thingsBySlug } = this.props;
+    const { classes, genres, popular, userSelf, thingsById } = this.props;
     const {
       filters: { genresFilter, itemTypes },
     } = this.state;
@@ -402,7 +402,7 @@ class Popular extends Component<Props, State> {
         >
           <Grid container spacing={2}>
             {popular.map((result, index) => {
-              let thing = thingsBySlug[result];
+              let thing = thingsById[result];
               if (thing && !this.state.featuredItemsIndex.includes(index)) {
                 return (
                   <ItemCard
@@ -425,7 +425,7 @@ class Popular extends Component<Props, State> {
 
   render() {
     const { featuredItems } = this.state;
-    const { popular } = this.props;
+    const { popular, thingsById } = this.props;
 
     return popular ? (
       <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
@@ -443,7 +443,7 @@ const mapStateToProps = (appState: AppState) => {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isSearching: appState.search.searching,
     popular: appState.popular.popular,
-    thingsBySlug: appState.itemDetail.thingsBySlug,
+    thingsById: appState.itemDetail.thingsById,
     loading: appState.popular.loadingPopular,
     genres: appState.metadata.genres,
     bookmark: appState.popular.popularBookmark,
