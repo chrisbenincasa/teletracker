@@ -25,7 +25,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Delete, Edit, Settings, Tune } from '@material-ui/icons';
+import { Delete, Edit, Save, Settings, Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -52,18 +52,37 @@ import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';
 import { ListsByIdMap } from '../reducers/lists';
-import { Genre, ItemType, List, SortOptions, NetworkType } from '../types';
+import {
+  Genre,
+  ItemType,
+  List,
+  SortOptions,
+  NetworkType,
+  Network,
+  ListGenreRule,
+  ListNetworkRule,
+  ListPersonRule,
+  ListItemTypeRule,
+  ListReleaseYearRule,
+} from '../types';
 import {
   calculateLimit,
   getNumColumns,
   getOrInitListOptions,
 } from '../utils/list-utils';
-import { FilterParams } from '../utils/searchFilters';
+import {
+  FilterParams,
+  isDefaultFilter,
+  SlidersState,
+} from '../utils/searchFilters';
 import {
   parseFilterParamsFromQs,
   updateUrlParamsForFilter,
 } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
+import { collect, headOption } from '../utils/collection-utils';
+import { optionalSetsEqual, setsEqual } from '../utils/sets';
+import { Person } from '../types/v2/Person';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -122,6 +141,7 @@ interface OwnProps {
   listsById: ListsByIdMap;
   listLoading: boolean;
   thingsById: ThingMap;
+  personById: { [key: string]: Person };
 }
 
 interface DispatchProps {
@@ -139,6 +159,8 @@ interface RouteParams {
 
 interface StateProps {
   genres?: Genre[];
+  networks?: Network[];
+  loading: boolean;
 }
 
 interface WidthProps {
@@ -168,6 +190,7 @@ interface State {
   renameDialogOpen: boolean;
   showFilter: boolean;
   filters: FilterParams;
+  listFilters?: FilterParams; // The default state of filters based on list rules.
   totalLoadedImages: number;
 }
 
@@ -177,12 +200,16 @@ class ListDetail extends Component<Props, State> {
     let listId = Number(this.props.match.params.id);
     let params = new URLSearchParams(props.location.search);
 
+    let list = props.listsById[listId];
+
+    let filters = parseFilterParamsFromQs(props.location.search);
+
     this.state = {
       anchorEl: null,
       deleted: false,
       deleteConfirmationOpen: false,
       deleteOnWatch: true,
-      list: props.listsById[listId],
+      list,
       loadingList: true,
       migrateListId: 0,
       newListName: '',
@@ -194,7 +221,7 @@ class ListDetail extends Component<Props, State> {
         params.has('genres') ||
         params.has('networks') ||
         params.has('types'),
-      filters: parseFilterParamsFromQs(props.location.search),
+      filters: filters,
       totalLoadedImages: 0,
     };
   }
@@ -217,7 +244,51 @@ class ListDetail extends Component<Props, State> {
     return Number(this.props.match.params.id);
   }
 
-  retrieveList() {
+  makeListFilters = (
+    initialLoad: boolean,
+    currentFilters: FilterParams,
+    initialFilters?: FilterParams,
+  ): Partial<ListRetrieveInitiatedPayload> => {
+    if (initialLoad) {
+      return {};
+    } else if (initialFilters) {
+      let genres =
+        currentFilters.genresFilter &&
+        !optionalSetsEqual(
+          currentFilters.genresFilter,
+          initialFilters.genresFilter,
+        )
+          ? currentFilters.genresFilter || []
+          : initialFilters.genresFilter;
+
+      let networks =
+        currentFilters.networks &&
+        !optionalSetsEqual(currentFilters.networks, initialFilters.networks)
+          ? currentFilters.networks
+          : initialFilters.networks;
+
+      let itemTypes = !optionalSetsEqual(
+        currentFilters.itemTypes,
+        initialFilters.itemTypes,
+      )
+        ? currentFilters.itemTypes
+        : initialFilters.itemTypes;
+
+      console.log(currentFilters, initialFilters);
+
+      return {
+        genres,
+        networks,
+        itemTypes,
+      };
+    } else {
+      return {
+        genres: currentFilters.genresFilter,
+      };
+    }
+  };
+
+  retrieveList(initialLoad: boolean) {
     const {
       filters: { itemTypes, sortOrder, genresFilter, networks },
     } = this.state;
@@ -225,30 +296,25 @@ class ListDetail extends Component<Props, State> {
 
     this.props.retrieveList({
       listId: this.listId,
-      sort: sortOrder === 'default' ? undefined : sortOrder,
-      itemTypes,
-      genres: genresFilter ? genresFilter : undefined,
       force: true,
-      networks: networks ? networks : undefined,
       limit: calculateLimit(width, 3),
+      ...this.makeListFilters(
+        initialLoad,
+        this.state.filters,
+        this.state.listFilters,
+      ),
+      // sort: sortOrder === 'default' ? undefined : sortOrder,
+      // itemTypes,
+      // genres: genresFilter ? genresFilter : undefined,
+      // networks: networks ? networks : undefined,
     });
   }
 
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
-    const { match } = this.props;
-
-    if (match && match.params && match.params.sort) {
-      this.setState({
-        filters: {
-          ...this.state.filters,
-          sortOrder: match.params.sort,
-        },
-      });
-    }
 
     this.setState({ loadingList: true });
-    this.retrieveList();
+    this.retrieveList(true);
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -263,6 +329,83 @@ class ListDetail extends Component<Props, State> {
     }
   }
 
+  extractFiltersFromList = (list: List): FilterParams | undefined => {
+    const { networks } = this.props;
+
+    if (
+      list.isDynamic &&
+      list.configuration &&
+      list.configuration.ruleConfiguration
+    ) {
+      let groupedRules = _.groupBy(
+        list.configuration.ruleConfiguration.rules,
+        'type',
+      );
+
+      let genreRules = groupedRules.UserListGenreRule
+        ? groupedRules.UserListGenreRule.map(
+            rule => (rule as ListGenreRule).genreId,
+          )
+        : undefined;
+
+      let networkRules = groupedRules.UserListNetworkRule
+        ? collect(groupedRules.UserListNetworkRule, rule => {
+            let networkId = (rule as ListNetworkRule).networkId;
+            let foundNetwork = _.find(networks, n => n.id === networkId);
+            return foundNetwork ? foundNetwork.slug : undefined;
+          })
+        : undefined;
+
+      let itemTypeRules = groupedRules.UserListItemTypeRule
+        ? collect(
+            groupedRules.UserListItemTypeRule,
+            rule => (rule as ListItemTypeRule).itemType,
+          )
+        : undefined;
+
+      let releaseYearRule = groupedRules.UserListReleaseYearRule
+        ? headOption(
+            collect(groupedRules.UserListReleaseYearRule, rule => {
+              let typedRule = rule as ListReleaseYearRule;
+              if (typedRule.minimum || typedRule.maximum) {
+                return {
+                  releaseYear: {
+                    min: typedRule.minimum,
+                    max: typedRule.maximum,
+                  },
+                } as SlidersState;
+              }
+            }),
+          )
+        : undefined;
+
+      let personRules = groupedRules.UserListPersonRule
+        ? collect(groupedRules.UserListPersonRule, rule => {
+            let personId = (rule as ListPersonRule).personId;
+            let person = this.props.personById[personId];
+            return person ? person.canonical_id : undefined;
+          })
+        : undefined;
+
+      console.log(
+        groupedRules.UserListPersonRule,
+        personRules,
+        this.props.personById,
+      );
+
+      return {
+        genresFilter: genreRules,
+        networks: networkRules,
+        itemTypes: itemTypeRules,
+        sliders: releaseYearRule,
+        people: personRules,
+        sortOrder: list.configuration.ruleConfiguration.sort
+          ? list.configuration.ruleConfiguration.sort.sort
+          : 'default',
+      };
+    }
+  };
+
   componentDidUpdate(oldProps: Props, prevState: State) {
     const { filters, list } = this.state;
 
@@ -272,20 +415,24 @@ class ListDetail extends Component<Props, State> {
     ) {
       this.setState({ loadingList: true });
 
-      this.retrieveList();
+      this.retrieveList(true);
     } else if (
       !this.props.listLoading &&
       (oldProps.listLoading || this.state.loadingList)
     ) {
+      let list = this.props.listsById[this.listId];
+      let listFilters = this.extractFiltersFromList(list);
+
       this.setState({
         loadingList: false,
-        list: this.props.listsById[this.listId],
+        list: list,
         deleteOnWatch: this.props.listsById[this.listId]
           ? R.path(
               ['list', 'configuration', 'options', 'removeWatchedItems'],
               this.props,
             ) || false
           : false,
+        listFilters,
       });
     } else if (!_.isEqual(list, prevState.list)) {
       // Detect deep object inequality
@@ -557,7 +704,7 @@ class ListDetail extends Component<Props, State> {
         },
         () => {
           updateUrlParamsForFilter(this.props, filterParams);
-          this.retrieveList();
+          this.retrieveList(false);
         },
       );
     }
@@ -572,11 +719,11 @@ class ListDetail extends Component<Props, State> {
     this.props.retrieveList({
       listId: this.listId,
       bookmark: listBookmark,
+      limit: calculateLimit(width, 3),
       sort: sortOrder === 'default' ? undefined : sortOrder,
       itemTypes,
       genres: genresFilter ? genresFilter : undefined,
       networks: networks ? networks : undefined,
-      limit: calculateLimit(width, 3),
     });
   }, 200);
 
@@ -606,7 +753,7 @@ class ListDetail extends Component<Props, State> {
 
   renderListDetail(list: List) {
     const { classes, genres, listLoading, thingsById, userSelf } = this.props;
-    const { deleted, showFilter, filters } = this.state;
+    const { deleted, showFilter, filters, listFilters } = this.state;
 
     if ((!listLoading && !list) || deleted) {
       return <Redirect to="/" />;
@@ -629,7 +776,12 @@ class ListDetail extends Component<Props, State> {
                 genres={genres}
                 updateFilters={this.handleFilterParamsChange}
                 isListDynamic={list.isDynamic}
-                filters={filters}
+                filters={
+                  isDefaultFilter(filters) && listFilters
+                    ? listFilters
+                    : filters
+                }
+                initialState={listFilters}
               />
               <IconButton
                 onClick={this.toggleFilters}
@@ -640,10 +792,25 @@ class ListDetail extends Component<Props, State> {
                 <Typography variant="srOnly">Tune</Typography>
               </IconButton>
               {this.renderProfileMenu()}
+              {list.isDynamic && listFilters ? (
+                <IconButton
+                  className={classes.settings}
+                  color={showFilter ? 'secondary' : 'inherit'}
+                  disabled={
+                    isDefaultFilter(filters) ||
+                    filterParamsEqual(listFilters!, filters)
+                  }
+                >
+                  <Save />
+                  <Typography variant="srOnly">Save</Typography>
+                </IconButton>
+              ) : null}
             </div>
             <AllFilters
               genres={genres}
-              filters={this.state.filters}
+              filters={
+                isDefaultFilter(filters) && listFilters ? listFilters : filters
+              }
               updateFilters={this.handleFilterParamsChange}
               open={showFilter}
               isListDynamic={list.isDynamic}
@@ -681,10 +848,10 @@ class ListDetail extends Component<Props, State> {
   }
 
   render() {
-    let { userSelf } = this.props;
+    let { userSelf, loading } = this.props;
     let { list } = this.state;
 
-    return !list || !userSelf
+    return !list || !userSelf || loading
       ? this.renderLoading()
       : this.renderListDetail(this.state.list!);
   }
@@ -700,7 +867,10 @@ const mapStateToProps: (
     listsById: appState.lists.listsById,
     thingsById: appState.itemDetail.thingsById,
     genres: appState.metadata.genres,
+    networks: appState.metadata.networks,
+    loading: appState.metadata.metadataLoading,
     listBookmark: appState.lists.currentBookmark,
+    personById: appState.people.peopleById,
   };
 };
 

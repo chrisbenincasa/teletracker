@@ -34,9 +34,14 @@ case class UserList(
   isDynamic: Boolean = false,
   isDeleted: Boolean = false,
   deletedAt: Option[OffsetDateTime] = None,
-  totalItems: Option[Int] = None) {
+  totalItems: Option[Int] = None,
+  relevantPeople: Option[List[Person]] = None) {
   def withItems(items: List[Item]): UserList = {
     this.copy(items = Some(items))
+  }
+
+  def withPeople(people: List[Person]): UserList = {
+    this.copy(relevantPeople = Some(people))
   }
 
   def withCount(count: Int): UserList = this.copy(totalItems = Some(count))

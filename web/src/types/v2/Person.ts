@@ -1,5 +1,13 @@
 import * as R from 'ramda';
-import { ApiPerson, ApiPersonCrewCredit, ItemExternalId, ItemImage } from '.';
+import {
+  ApiPerson,
+  ApiPersonCrewCredit,
+  CanonicalId,
+  Id,
+  ItemExternalId,
+  ItemImage,
+  Slug,
+} from '.';
 import { getTmdbProfileImage } from '../../utils/image-helper';
 import { Item, ItemFactory } from './Item';
 import PagedResponse from './PagedResponse';
@@ -13,15 +21,16 @@ export interface Person {
   external_ids?: ItemExternalId[];
   deathday?: string;
   homepage?: string;
-  id: string;
+  id: Id;
   images?: ItemImage[];
   name: string;
   place_of_birth?: string;
   popularity?: number;
-  slug?: string;
+  slug?: Slug;
 
   // Compute fields
   profile_path?: string;
+  canonical_id: CanonicalId;
 }
 
 export interface PersonCastCredit {
@@ -51,6 +60,7 @@ export class PersonFactory {
       profile_path: getTmdbProfileImage(apiPerson as ApiPerson),
       backdrop_path: undefined,
       poster_path: undefined,
+      canonical_id: apiPerson.slug || apiPerson.id,
     } as Person;
   }
 

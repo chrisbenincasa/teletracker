@@ -19,51 +19,6 @@ case class TrackedListRow(
   def toFull: TrackedList = TrackedList.fromRow(this)
 }
 
-object DynamicListTagRule {
-  def ifPresent(tagType: UserThingTagType): DynamicListTagRule =
-    DynamicListTagRule(tagType, None, Some(true))
-
-  def watched = ifPresent(UserThingTagType.Watched)
-  def notWatched = watched.negate
-}
-
-sealed trait DynamicListRule {
-  def negated: Option[Boolean]
-}
-
-case class DynamicListTagRule(
-  tagType: UserThingTagType,
-  value: Option[Double],
-  isPresent: Option[Boolean],
-  negated: Option[Boolean] = None)
-    extends DynamicListRule {
-  def withValue(value: Double): DynamicListTagRule =
-    this.copy(value = Some(value))
-
-  def negate: DynamicListTagRule = this.copy(negated = Some(true))
-}
-
-case class DynamicListPersonRule(
-  personId: UUID,
-  negated: Option[Boolean] = None)
-    extends DynamicListRule
-
-object DynamicListRules {
-  def watched =
-    DynamicListRules(
-      rules = DynamicListTagRule.ifPresent(UserThingTagType.Watched) :: Nil
-    )
-
-  def person(id: UUID) =
-    DynamicListRules(
-      rules = DynamicListPersonRule(id) :: Nil
-    )
-}
-
-case class DynamicListRules(rules: List[DynamicListRule]) {
-  require(rules.nonEmpty)
-}
-
 case class TrackedListRowOptions(removeWatchedItems: Boolean)
 
 class TrackedLists @Inject()(

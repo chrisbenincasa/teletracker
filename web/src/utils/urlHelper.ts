@@ -48,6 +48,7 @@ export const updateUrlParamsForFilter = (
         ? filterParams.sliders.releaseYear.max
         : undefined,
     ],
+    ['cast', filterParams.people],
   ];
 
   paramUpdates = paramUpdates.filter(
@@ -99,6 +100,7 @@ export function parseFilterParamsFromQs(qs: string): FilterParams {
   let itemTypeParam = params.get('type');
   let networkParam = params.get('networks');
   let genresParam = params.get('genres');
+  let peopleParam = params.get('cast');
 
   let ryMin = params.get('ry_min');
   let ryMax = params.get('ry_max');
@@ -130,6 +132,13 @@ export function parseFilterParamsFromQs(qs: string): FilterParams {
         })
     : undefined;
 
+  let people = peopleParam
+    ? decodeURIComponent(peopleParam)
+        .split(',')
+        .map(item => item.trim())
+        .filter(item => item.length > 0)
+    : undefined;
+
   if (itemTypes) {
     filters.itemTypes = itemTypes;
   }
@@ -140,6 +149,10 @@ export function parseFilterParamsFromQs(qs: string): FilterParams {
 
   if (genres) {
     filters.genresFilter = genres;
+  }
+
+  if (people) {
+    filters.people = people;
   }
 
   let releaseYearMin = ryMin ? _.parseInt(ryMin, 10) : undefined;

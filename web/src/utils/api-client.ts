@@ -15,10 +15,11 @@ import {
   Paging,
   User,
   UserPreferences,
+  MetadataResponse,
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import { ApiThing } from '../types/Thing';
-import { ApiItem } from '../types/v2';
+import { ApiItem, ApiPerson, Id, Slug } from '../types/v2';
 
 export interface TeletrackerApiOptions {
   url?: string;
@@ -136,11 +137,32 @@ export class TeletrackerApi {
     });
   }
 
-  async createList(token: string, name: string) {
+  async searchPeople(
+    token: string,
+    searchText: string,
+    limit?: number,
+    bookmark?: string,
+  ) {
+    return this.api.get<ApiPerson[]>('/api/v2/people/search', {
+      query: searchText,
+      token,
+      limit,
+      bookmark,
+    });
+  }
+
+  async createList(
+    token: string,
+    name: string,
+    thingIds?: string[],
+    rules?: ListRules,
+  ) {
     return this.api.post<DataResponse<{ id: number }>>(
-      '/api/v1/users/self/lists',
+      '/api/v2/users/self/lists',
       {
         name,
+        thingIds,
+        rules,
       },
       { params: { token } },
     );
@@ -218,11 +240,10 @@ export class TeletrackerApi {
       token,
       sort,
       desc,
-      itemTypes:
-        itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
-      genres: genres && genres.length ? genres.join(',') : undefined,
+      itemTypes: itemTypes ? itemTypes.join(',') : undefined,
+      genres: genres ? genres.join(',') : undefined,
       bookmark,
-      networks: networks && networks.length ? networks.join(',') : undefined,
+      networks: networks ? networks.join(',') : undefined,
       limit,
     });
   }
@@ -324,6 +345,16 @@ export class TeletrackerApi {
     });
   }
 
+  async getPeople(
+    token: String,
+    ids: (Id | Slug)[],
+  ): Promise<TeletrackerResponse<ApiPerson[]>> {
+    return this.api.get<any>(`/api/v2/people/batch`, {
+      token,
+      personIds: ids.join(','),
+    });
+  }
+
   async getEvents(token: string) {
     return this.api.get<any>('/api/v1/users/self/events', { token });
   }
@@ -334,6 +365,10 @@ export class TeletrackerApi {
 
   async getGenres(): Promise<TeletrackerResponse<Genre[]>> {
     return this.api.get<DataResponse<Genre[]>>('/api/v1/genres');
+  }
+
+  async getMetadata(): Promise<TeletrackerResponse<MetadataResponse>> {
+    return this.api.get<DataResponse<MetadataResponse>>('/api/v1/metadata');
   }
 
   async updateActions(
@@ -424,6 +459,7 @@ export class TeletrackerApi {
     limit?: number,
     genres?: number[],
     releaseYearRange?: OpenRange,
+    cast?: string[],
   ) {
     return this.api.get('/api/v2/explore', {
       token,
@@ -434,6 +470,7 @@ export class TeletrackerApi {
       sort,
       limit,
       genres: genres && genres.length ? genres.join(',') : undefined,
+      cast: cast && cast.length ? cast.join(',') : undefined,
       minReleaseYear:
         releaseYearRange && releaseYearRange.min
           ? releaseYearRange.min

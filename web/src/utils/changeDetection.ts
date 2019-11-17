@@ -1,12 +1,14 @@
 import _ from 'lodash';
-import { FilterParams } from './searchFilters';
+import { FilterParams, SliderParamState } from './searchFilters';
 
 export function filterParamsEqual(left: FilterParams, right: FilterParams) {
   if (
     _.isUndefined(left.genresFilter) !== _.isUndefined(right.genresFilter) ||
     _.isUndefined(left.itemTypes) !== _.isUndefined(right.itemTypes) ||
     _.isUndefined(left.networks) !== _.isUndefined(right.networks) ||
-    _.isUndefined(left.sortOrder) !== _.isUndefined(right.sortOrder)
+    _.isUndefined(left.sortOrder) !== _.isUndefined(right.sortOrder) ||
+    _.isUndefined(left.sliders) !== _.isUndefined(right.sliders) ||
+    _.isUndefined(left.people) !== _.isUndefined(right.people)
   ) {
     return false;
   }
@@ -39,5 +41,29 @@ export function filterParamsEqual(left: FilterParams, right: FilterParams) {
     return false;
   }
 
+  if (left.sliders && right.sliders) {
+    if (sliderChanged(left.sliders.releaseYear, right.sliders.releaseYear)) {
+      return false;
+    }
+  }
+
+  if (
+    left.people &&
+    right.people &&
+    _.xor(left.people, right.people).length !== 0
+  ) {
+    return false;
+  }
+
   return true;
+}
+
+function sliderChanged(left?: SliderParamState, right?: SliderParamState) {
+  if ((!left && right) || (left && !right)) {
+    return true;
+  } else if (left && right) {
+    return left.min !== right.min || left.max !== right.max;
+  } else {
+    return false;
+  }
 }

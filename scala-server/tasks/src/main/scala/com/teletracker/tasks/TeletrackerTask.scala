@@ -27,8 +27,8 @@ trait TeletrackerTask extends Args {
   def preparseArgs(args: Args): TypedArgs
   def argsAsJson(args: Args): Json = preparseArgs(args).asJson
 
-  def runInternal(): Unit = runInternal(Map.empty)
-  def runInternal(args: Args): Unit
+  protected def runInternal(): Unit = runInternal(Map.empty)
+  protected def runInternal(args: Args): Unit
 
   protected def prerun(f: => Unit): Unit = {
     preruns += (() => f)

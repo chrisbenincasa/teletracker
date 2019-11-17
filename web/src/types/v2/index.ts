@@ -1,6 +1,10 @@
 import { ItemType } from '..';
 import PagedResponse from './PagedResponse';
 
+export type Slug = string;
+export type Id = string;
+export type CanonicalId = string;
+
 export interface ApiItem {
   adult?: boolean;
   availability?: ItemAvailability[];
@@ -8,7 +12,7 @@ export interface ApiItem {
   crew?: ItemCrewMember[];
   external_ids?: ItemExternalId[];
   genres?: ItemGenre[];
-  id: string;
+  id: Id;
   images?: ItemImage[];
   original_title: string;
   overview?: string;
@@ -18,7 +22,7 @@ export interface ApiItem {
   release_date?: string;
   release_dates?: ItemReleaseDate[];
   runtime?: number;
-  slug: string;
+  slug: Slug;
   tags?: ApiItemTag[];
   title: string[];
   type: ItemType;
@@ -33,12 +37,12 @@ export interface ApiPerson {
   external_ids?: ItemExternalId[];
   deathday?: string;
   homepage?: string;
-  id: string;
+  id: Id;
   images?: ItemImage[];
   name: string;
   place_of_birth?: string;
   popularity?: number;
-  slug?: string;
+  slug?: Slug;
 }
 
 export interface ItemAvailability {
@@ -54,10 +58,10 @@ export interface ItemAvailability {
 
 export interface ApiItemCastMember {
   character?: string;
-  id: string;
+  id: Id;
   order: number;
   name: string;
-  slug: string;
+  slug: Slug;
   person?: ApiPerson;
 }
 
@@ -71,21 +75,21 @@ export interface ApiPersonCastCredit {
 }
 
 export interface ItemCrewMember {
-  id: string;
+  id: Id;
   order?: number;
   name: string;
   department?: string;
   job?: string;
-  slug: string;
+  slug?: Slug;
 }
 
 export interface ApiPersonCrewCredit {
-  id: string;
+  id: Id;
   title: string;
   department?: string;
   job?: string;
   type: string;
-  slug: string;
+  slug?: Slug;
 }
 
 export interface ItemExternalId {

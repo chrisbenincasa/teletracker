@@ -32,7 +32,7 @@ class InternalController @Inject()(
           job.preparseArgs(args)
 
           asyncTaskPool.submit(new Runnable {
-            override def run(): Unit = job.runInternal(args)
+            override def run(): Unit = job.run(args)
           })
         } else {
           response.badRequest("Not a teletracker job")

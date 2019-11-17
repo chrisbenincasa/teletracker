@@ -59,7 +59,8 @@ class MovieChangesDumpTask @Inject()(
   ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[ImportMoviesFromDump](
       ImportTmdbDumpTaskArgs(
-        input = googleStorageUri
+        input = s3Uri,
+        dryRun = false
       )
     ) :: Nil
   }
@@ -77,7 +78,8 @@ class TvChangesDumpTask @Inject()(
   ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[ImportTvShowsFromDump](
       ImportTmdbDumpTaskArgs(
-        input = googleStorageUri
+        input = s3Uri,
+        dryRun = false
       )
     ) :: Nil
   }
@@ -94,7 +96,8 @@ class PersonChangesDumpTask @Inject()(
   ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[ImportPeopleFromDump](
       ImportTmdbDumpTaskArgs(
-        input = googleStorageUri
+        input = s3Uri,
+        dryRun = false
       )
     ) :: Nil
   }
