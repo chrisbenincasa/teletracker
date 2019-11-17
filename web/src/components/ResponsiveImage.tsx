@@ -8,7 +8,6 @@ import { BASE_IMAGE_URL } from '../constants/';
 import { ImageType } from '../types/';
 
 interface imgProps {
-  // item: HasImagery;
   item: Item | Person;
   imageType: ImageType;
   imageStyle?: object;
