@@ -1,3 +1,5 @@
+import { Item } from '../Types/v2/Item';
+
 /*
     Parse initials from multi-word string
     Example 1: "Season 12" becomes "S12"
@@ -56,4 +58,24 @@ export const truncateText = (text: string, lengthLimit: number) => {
   }
 
   return text;
+};
+
+/*
+    Get Vote Average
+    This currently uses [0] which is TMDB
+*/
+export const getVoteAverage = (item: Item) => {
+  return item.ratings && item.ratings.length > 0 && item.ratings[0].vote_average
+    ? item.ratings[0].vote_average / 2
+    : 0;
+};
+
+/*
+    Get Vote Count
+    This currently uses [0] which is TMDB
+*/
+export const getVoteCount = (item: Item) => {
+  return item.ratings && item.ratings.length > 0 && item.ratings[0].vote_count
+    ? item.ratings[0].vote_count
+    : 0;
 };
