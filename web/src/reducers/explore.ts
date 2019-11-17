@@ -34,11 +34,9 @@ const exploreSuccess = handleAction<ExploreSuccessfulAction, State>(
     if (payload) {
       let newItems: string[];
       if (payload.append) {
-        newItems = (state.items || []).concat(
-          R.map(t => t.slug, payload.items),
-        );
+        newItems = (state.items || []).concat(R.map(t => t.id, payload.items));
       } else {
-        newItems = R.map(t => t.slug, payload.items);
+        newItems = R.map(t => t.id, payload.items);
       }
 
       return {
