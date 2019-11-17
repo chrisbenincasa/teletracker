@@ -39,6 +39,7 @@ import { FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
