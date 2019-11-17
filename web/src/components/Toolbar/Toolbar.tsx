@@ -44,9 +44,7 @@ import { search, SearchInitiatedPayload } from '../../actions/search';
 import RouterLink, { StdRouterLink } from '../RouterLink';
 import { AppState } from '../../reducers';
 import { Genre as GenreModel } from '../../types';
-import { getTmdbPosterImage } from '../../utils/image-helper';
-import { truncateText } from '../../utils/textHelper';
-import { ApiItem } from '../../types/v2';
+import { Item } from '../../types/v2/Item';
 import QuickSearch from './QuickSearch';
 
 const styles = (theme: Theme) =>
@@ -73,7 +71,7 @@ const styles = (theme: Theme) =>
       transition: theme.transitions.create('width'),
       width: '100%',
       [theme.breakpoints.up('md')]: {
-        width: 200,
+        width: 250,
       },
       '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
         '-webkit-appearance': 'none',
@@ -134,7 +132,7 @@ const styles = (theme: Theme) =>
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
       },
-      marginRight: theme.spacing(2),
+      marginRight: theme.spacing(3),
       marginLeft: 0,
       width: '100%',
       [theme.breakpoints.up('sm')]: {
@@ -185,7 +183,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
   isSearching: boolean;
   onDrawerChange: (close?: boolean) => void;
-  searchResults?: ApiItem[];
+  searchResults?: Item[];
   drawerOpen: boolean;
 }
 
