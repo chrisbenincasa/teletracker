@@ -12,11 +12,14 @@ import { Link as RouterLink } from 'react-router-dom';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import ManageTracking from '../components/ManageTracking';
 import { ResponsiveImage } from '../components/ResponsiveImage';
-import { ApiItem } from '../types/v2';
 import { Item } from '../types/v2/Item';
 import AddToListDialog from './AddToListDialog';
 import withUser, { WithUserProps } from './withUser';
-import { formatRuntime } from '../utils/textHelper';
+import {
+  formatRuntime,
+  getVoteAverage,
+  getVoteCount,
+} from '../utils/textHelper';
 
 const useStyles = makeStyles((theme: Theme) => ({
   backdropContainer: {
@@ -87,12 +90,10 @@ function Featured(props: Props) {
     return setImageLoading(false);
   }, [featuredItems]);
 
-  const renderTitle = (item: ApiItem) => {
+  const renderTitle = (item: Item) => {
     const title = item.original_title || '';
-    const voteAverage =
-      item.ratings && item.ratings.length ? item.ratings[0].vote_average : 0;
-    const voteCount =
-      item.ratings && item.ratings.length ? item.ratings[0].vote_count || 0 : 0;
+    const voteAverage = getVoteAverage(item);
+    const voteCount = getVoteCount(item);
     const runtime =
       (item.runtime && formatRuntime(item.runtime, item.type)) || null;
 
@@ -102,7 +103,7 @@ function Featured(props: Props) {
           {title}
         </Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
-          <Rating value={voteAverage / 2} precision={0.1} readOnly />
+          <Rating value={voteAverage} precision={0.1} readOnly />
           <Typography
             color="inherit"
             variant="body1"

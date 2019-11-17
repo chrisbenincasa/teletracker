@@ -37,7 +37,7 @@ import {
   updateUrlParamsForFilter,
 } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
-import { SliderChange } from '../components/Filters/Sliders';
+import { getVoteAverage, getVoteCount } from '../utils/textHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -195,21 +195,14 @@ class Popular extends Component<Props, State> {
     const { popular, thingsBySlug } = this.props;
 
     return popular
-      ? popular.filter(item => {
-          const thing = thingsBySlug[item];
-          const voteAverage =
-            thing.ratings && thing.ratings.length
-              ? thing.ratings[0].vote_average
-              : 0;
-          const voteCount =
-            (thing.ratings && thing.ratings.length
-              ? thing.ratings[0].vote_count
-              : 0) || 0;
-          const hasBackdropImage =
-            thing.backdropImage && thing.backdropImage.id;
-          const hasPosterImage = thing.posterImage && thing.posterImage.id;
+      ? popular.filter(id => {
+          const item = thingsBySlug[id];
+          const voteAverage = getVoteAverage(item);
+          const voteCount = getVoteCount(item);
+          const hasBackdropImage = item.backdropImage && item.backdropImage.id;
+          const hasPosterImage = item.posterImage && item.posterImage.id;
           return (
-            voteAverage > 7 &&
+            voteAverage > 3.5 &&
             voteCount > 1000 &&
             hasBackdropImage &&
             hasPosterImage

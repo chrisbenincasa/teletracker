@@ -48,9 +48,12 @@ import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Genre } from '../types';
-import { ApiItem } from '../types/v2';
 import { Item } from '../types/v2/Item';
-import { formatRuntime } from '../utils/textHelper';
+import {
+  formatRuntime,
+  getVoteAverage,
+  getVoteCount,
+} from '../utils/textHelper';
 import Login from './Login';
 import moment from 'moment';
 
@@ -263,17 +266,12 @@ function ItemDetails(props: Props) {
     );
   };
 
-  const renderTitle = (thing: ApiItem) => {
-    const title = thing.original_title;
-    // TODO make better
-    const voteAverage =
-      thing.ratings && thing.ratings.length ? thing.ratings[0].vote_average : 0;
-    const voteCount =
-      thing.ratings && thing.ratings.length
-        ? thing.ratings[0].vote_count || 0
-        : 0;
+  const renderTitle = (Item: Item) => {
+    const title = Item.original_title;
+    const voteAverage = getVoteAverage(Item);
+    const voteCount = getVoteCount(Item);
     const runtime =
-      (thing.runtime && formatRuntime(thing.runtime, thing.type)) || null;
+      (Item.runtime && formatRuntime(Item.runtime, Item.type)) || null;
 
     return (
       <div
@@ -287,10 +285,10 @@ function ItemDetails(props: Props) {
         }}
       >
         <Typography color="inherit" variant="h4" itemProp="name">
-          {`${title} (${moment(thing.release_date).format('YYYY')})`}
+          {`${title} (${moment(Item.release_date).format('YYYY')})`}
         </Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
-          <Rating value={voteAverage / 2} precision={0.1} readOnly />
+          <Rating value={voteAverage} precision={0.1} readOnly />
           <Typography
             color="inherit"
             variant="body1"
@@ -306,19 +304,19 @@ function ItemDetails(props: Props) {
     );
   };
 
-  const renderDescriptiveDetails = (thing: ApiItem) => {
+  const renderDescriptiveDetails = (Item: Item) => {
     const { classes, genres } = props;
-    const thingGenres = (thing.genres || []).map(g => g.id);
-    const overview = thing.overview || '';
+    const ItemGenres = (Item.genres || []).map(g => g.id);
+    const overview = Item.overview || '';
 
     const genresToRender = _.filter(genres || [], genre => {
-      return _.includes(thingGenres, genre.id);
+      return _.includes(ItemGenres, genre.id);
     });
 
     return (
       <div className={classes.descriptionContainer}>
         <div className={classes.titleContainer}>
-          <Hidden smDown>{renderTitle(thing)}</Hidden>
+          <Hidden smDown>{renderTitle(Item)}</Hidden>
         </div>
         <div>
           <Typography color="inherit" itemProp="about">
