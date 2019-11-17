@@ -92,7 +92,7 @@ interface InjectedProps {
   isAuthed: boolean;
   loading: boolean;
   items?: string[];
-  thingsBySlug: { [key: string]: Item };
+  itemsById: { [key: string]: Item };
   personNameByCanonicalId: { [key: string]: string };
   genres?: Genre[];
   networks?: Network[];
@@ -307,14 +307,7 @@ class Explore extends Component<Props, State> {
   };
 
   renderPopular = () => {
-    const {
-      classes,
-      genres,
-      items,
-      userSelf,
-      thingsBySlug,
-      loading,
-    } = this.props;
+    const { classes, genres, items, userSelf, itemsById, loading } = this.props;
     const {
       filters: { genresFilter, itemTypes },
       createDynamicListDialogOpen,
@@ -368,34 +361,32 @@ class Explore extends Component<Props, State> {
           filters={this.state.filters}
           updateFilters={this.handleFilterParamsChange}
         />
-        {!loading && items ? (
-          <InfiniteScroll
-            pageStart={0}
-            loadMore={() => this.loadMoreResults()}
-            hasMore={Boolean(this.props.bookmark)}
-            useWindow
-            threshold={300}
-          >
-            <Grid container spacing={2}>
-              {items.map((result, index) => {
-                let thing = thingsBySlug[result];
-                if (thing) {
-                  return (
-                    <ItemCard
-                      key={result}
-                      userSelf={userSelf}
-                      item={thing}
-                      hasLoaded={this.setVisibleItems}
-                    />
-                  );
-                } else {
-                  return null;
-                }
-              })}
-            </Grid>
-            {this.props.loading && this.renderLoadingCircle()}
-          </InfiniteScroll>
-        ) : null}
+        <InfiniteScroll
+          pageStart={0}
+          loadMore={this.loadMoreResults}
+          hasMore={Boolean(this.props.bookmark)}
+          useWindow
+          threshold={300}
+        >
+          <Grid container spacing={2}>
+            {items.map(result => {
+              let thing = itemsById[result];
+              if (thing) {
+                return (
+                  <ItemCard
+                    key={result}
+                    userSelf={userSelf}
+                    item={thing}
+                    hasLoaded={this.setVisibleItems}
+                  />
+                );
+              } else {
+                return null;
+              }
+            })}
+          </Grid>
+          {this.props.loading && this.renderLoadingCircle()}
+        </InfiniteScroll>
 
         <CreateDynamicListDialog
           filters={this.state.filters}
@@ -426,7 +417,7 @@ const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     items: appState.explore.items,
-    thingsBySlug: appState.itemDetail.thingsBySlug,
+    itemsById: appState.itemDetail.thingsById,
     personNameByCanonicalId: appState.people.nameByIdOrSlug,
     loading:
       appState.explore.loadingExplore ||

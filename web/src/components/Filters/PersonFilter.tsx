@@ -11,7 +11,7 @@ import { truncateText } from '../../utils/textHelper';
 const useStyles = makeStyles(theme => ({
   poster: {
     width: 25,
-    boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+    boxShadow: theme.shadows[1],
     marginRight: `${theme.spacing(1)}`,
   },
 }));
@@ -39,13 +39,17 @@ export default function PersonFilter(props: Props) {
 
   const loading = open && inputValue.length > 0 && peopleSearch.searching;
 
-  const debouncedChange = _.debounce((event, value) => {
+  const debouncedChange = _.debounce(value => {
+    dispatch(searchPeople({ query: value, limit: 5 }));
+  }, 150);
+
+  const onInputUpdate = (event, value) => {
     let trimmed = value.trim();
     if (trimmed.length > 0) {
       setInputValue(trimmed);
-      dispatch(searchPeople({ query: trimmed, limit: 5 }));
+      debouncedChange(trimmed);
     }
-  }, 150);
+  };
 
   const personSelected = (event, people: string[]) => {
     props.handleChange(people);
@@ -107,7 +111,7 @@ export default function PersonFilter(props: Props) {
   return (
     <div>
       <Autocomplete
-        id="asynchronous-demo"
+        id="person-filter-autocomplete"
         style={{ width: 300 }}
         open={open}
         onOpen={() => {
@@ -117,7 +121,7 @@ export default function PersonFilter(props: Props) {
           setOpen(false);
         }}
         onChange={personSelected}
-        onInputChange={debouncedChange}
+        onInputChange={onInputUpdate}
         getOptionLabel={option => nameBySlugOrId[option]}
         options={slugz}
         filterOptions={opts => opts}
