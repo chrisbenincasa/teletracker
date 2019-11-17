@@ -540,16 +540,6 @@ class PersonDetail extends React.Component<Props, State> {
                       boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                     }}
                   />
-                  {/* <img
-                    src={
-                      profilePath
-                        ? `https://image.tmdb.org/t/p/w185/${profilePath}`
-                        : ''
-                    }
-                    style={{
-                      width: '100%',
-                    }}
-                  /> */}
                 </div>
                 <ManageTracking itemDetail={person} />
               </div>
