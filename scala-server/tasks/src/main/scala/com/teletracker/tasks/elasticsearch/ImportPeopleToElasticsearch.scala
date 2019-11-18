@@ -36,7 +36,7 @@ class ImportPeopleToElasticsearch @Inject()(
       args.valueOrDefault("outputPath", System.getProperty("user.dir"))
 
     val fileRotator =
-      new FileRotator(
+      FileRotator.everyNBytes(
         "people_output",
         StorageUnit.fromMegabytes(90),
         Some(outputPath)

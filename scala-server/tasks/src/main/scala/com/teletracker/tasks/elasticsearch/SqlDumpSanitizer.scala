@@ -3,6 +3,8 @@ package com.teletracker.tasks.elasticsearch
 import com.teletracker.common.db.model.{
   ObjectMetadata,
   Person,
+  PersonAssociationType,
+  PersonThing,
   Thing,
   ThingType
 }
@@ -16,6 +18,7 @@ import io.circe.parser._
 import io.circe.shapes._
 import io.circe.generic.auto._
 import io.circe.syntax._
+import scala.util.{Failure, Success, Try}
 
 object SqlDumpSanitizer {
   def extractPersonFromLine(
@@ -109,6 +112,47 @@ object SqlDumpSanitizer {
         )
       })
       .toOption
+  }
+
+  def extractPersonMappingFromLine(
+    line: String,
+    idx: Option[Int]
+  ): Option[PersonThing] = {
+    Try {
+      val Array(
+        personId,
+        thingId,
+        relationType,
+        character,
+        order,
+        department,
+        job
+      ) = line.split("\t", 7)
+      PersonThing(
+        personId = UUID.fromString(personId),
+        thingId = UUID.fromString(thingId),
+        relationType = PersonAssociationType.fromString(relationType),
+        characterName =
+          if (character.isEmpty || character == "\\N") None
+          else Some(character),
+        order =
+          if (order.isEmpty || order == "\\N") None
+          else Some(order.toInt),
+        department =
+          if (department.isEmpty || department == "\\N") None
+          else Some(department),
+        job =
+          if (job.isEmpty || job == "\\N") None
+          else Some(job)
+      )
+    } match {
+      case Failure(exception) =>
+        println(s"line ${idx} has error ${exception.getMessage}")
+        None
+
+      case Success(value) =>
+        Some(value)
+    }
   }
 
   def sanitizeJson(string: String): String = {

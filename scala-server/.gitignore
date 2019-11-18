@@ -47,3 +47,4 @@ FULL_VERSION
 *.csv
 *.txt
 *.json
+out/

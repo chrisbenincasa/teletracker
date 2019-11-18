@@ -1,6 +1,10 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.db.model.{PersonAssociationType, PersonThing}
+import com.teletracker.common.db.model.{
+  PersonAssociationType,
+  PersonThing,
+  ThingType
+}
 import com.teletracker.common.model.tmdb.{CastMember, CrewMember}
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
@@ -8,6 +12,7 @@ import java.net.URI
 import java.util.UUID
 import scala.io.Source
 import com.teletracker.common.util.Lists._
+import com.teletracker.tasks.elasticsearch.SqlDumpSanitizer
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
@@ -15,6 +20,9 @@ import scala.collection.mutable
 
 /*
   Queries used to generate inputs:
+
+  To generate the inputs for these jobs:
+  \copy (select * from things) to '/Users/christianbenincasa/Desktop/things_dump_full.tsv';
 
   To import the output:
   \copy person_things from 'movie_crew_mappings.tsv';
@@ -43,55 +51,72 @@ class ImportPeopleAssociationsFromCsvs extends TeletrackerTaskWithDefaultArgs {
         .getLines()
         .drop(offset)
         .safeTake(limit)
-        .foreach(line => {
-          val Array(id, castJson) = line.split(actualsep.toString, 2)
-          val thingId = UUID.fromString(id)
-          val sanitizedCastJson =
-            castJson.replaceAll("^\"|\"$", "").replaceAll("\"\"", "\"")
+        .zipWithIndex
+        .foreach {
+          case (line, idx) =>
+            val thingOpt = SqlDumpSanitizer
+              .extractThingFromLine(line, Some(idx))
 
-          parse(sanitizedCastJson)
-            .foreach(json => {
-              if (memberType == "crew") {
-                val crew = json
-                  .as[List[CrewMember]]
-                crew
-                  .foreach(members => {
-                    val set = mutable.Set[(UUID, UUID)]()
-                    members.foreach(member => {
-                      peopleByTmdbId
-                        .get(member.id.toString)
-                        .foreach(personId => {
-                          if (!set.contains(personId -> thingId)) {
-                            val pt = PersonThing(
-                              personId,
-                              thingId,
-                              PersonAssociationType.Crew,
-                              None,
-                              None,
-                              member.department,
-                              member.job
-                            )
+            thingOpt.foreach(thing => {
+              val crew = thing.metadata.flatMap(meta => {
+                thing.`type` match {
+                  case ThingType.Movie =>
+                    meta.tmdbMovie.flatMap(_.credits.flatMap(_.crew))
+                  case ThingType.Show =>
+                    meta.tmdbShow.flatMap(_.credits.flatMap(_.crew))
+                  case ThingType.Person => None
+                }
+              })
 
-                            set += (personId -> thingId)
+              val cast = thing.metadata.flatMap(meta => {
+                thing.`type` match {
+                  case ThingType.Movie =>
+                    meta.tmdbMovie.flatMap(_.credits.flatMap(_.cast))
+                  case ThingType.Show =>
+                    meta.tmdbShow.flatMap(_.credits.flatMap(_.cast))
+                  case ThingType.Person => None
+                }
+              })
 
-                            synchronized(os.println(personThingToCsv(pt)))
-                          }
-                        })
+              memberType match {
+                case "crew" =>
+                  crew
+                    .foreach(members => {
+                      val set = mutable.Set[(UUID, UUID)]()
+                      members.foreach(member => {
+                        peopleByTmdbId
+                          .get(member.id.toString)
+                          .foreach(personId => {
+                            if (!set.contains(personId -> thing.id)) {
+                              val pt = PersonThing(
+                                personId,
+                                thing.id,
+                                PersonAssociationType.Crew,
+                                None,
+                                None,
+                                member.department,
+                                member.job
+                              )
+
+                              set += (personId -> thing.id)
+
+                              synchronized(os.println(personThingToCsv(pt)))
+                            }
+                          })
+                      })
                     })
-                  })
-              } else if (memberType == "cast") {
-                json
-                  .as[List[CastMember]]
-                  .foreach(members => {
+
+                case "cast" =>
+                  cast.foreach(members => {
                     val set = mutable.Set[(UUID, UUID)]()
                     members.foreach(member => {
                       peopleByTmdbId
                         .get(member.id.toString)
                         .foreach(personId => {
-                          if (!set.contains(personId -> thingId)) {
+                          if (!set.contains(personId -> thing.id)) {
                             val pt = PersonThing(
                               personId,
-                              thingId,
+                              thing.id,
                               PersonAssociationType.Cast,
                               member.character.orElse(member.character_name),
                               member.order,
@@ -99,18 +124,18 @@ class ImportPeopleAssociationsFromCsvs extends TeletrackerTaskWithDefaultArgs {
                               None
                             )
 
-                            set += (personId -> thingId)
+                            set += (personId -> thing.id)
 
                             synchronized(os.println(personThingToCsv(pt)))
                           }
                         })
                     })
                   })
-              } else {
-                throw new IllegalArgumentException
+
+                case _ => throw new IllegalArgumentException
               }
             })
-        })
+        }
     } finally {
       src.close()
     }
@@ -138,10 +163,10 @@ class ImportPeopleAssociationsFromCsvs extends TeletrackerTaskWithDefaultArgs {
       personThing.personId,
       personThing.thingId,
       personThing.relationType,
-      personThing.characterName.getOrElse("\\N"),
+      personThing.characterName.map(_.trim).filter(_.nonEmpty).getOrElse("\\N"),
       personThing.order.getOrElse("\\N"),
-      personThing.department.getOrElse("\\N"),
-      personThing.job.getOrElse("\\N")
+      personThing.department.map(_.trim).filter(_.nonEmpty).getOrElse("\\N"),
+      personThing.job.map(_.trim).filter(_.nonEmpty).getOrElse("\\N")
     ).map(_.toString)
       .map(
         _.replaceAllLiterally("\\\"", "'")

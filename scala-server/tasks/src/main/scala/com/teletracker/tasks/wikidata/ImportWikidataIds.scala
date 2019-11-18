@@ -54,7 +54,11 @@ class ImportWikidataIds @Inject()(
     val perFileLimit = args.valueOrDefault("perFileLimit", -1)
 
     val rotator =
-      new FileRotator("wikidata_import", StorageUnit.fromMegabytes(90), None)
+      FileRotator.everyNBytes(
+        "wikidata_import",
+        StorageUnit.fromMegabytes(90),
+        None
+      )
 
     sourceRetriever
       .getSourceStream(input)
