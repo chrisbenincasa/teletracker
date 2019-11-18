@@ -76,6 +76,11 @@ const styles = (theme: Theme) =>
       justifyContent: 'flex-end',
       alignItems: 'center',
     },
+    fin: {
+      fontStyle: 'italic',
+      textAlign: 'center',
+      margin: theme.spacing(6),
+    },
     popularWrapper: {
       display: 'flex',
       flexGrow: 1,
@@ -240,17 +245,22 @@ class Popular extends Component<Props, State> {
   componentDidUpdate(prevProps: Props, prevState: State) {
     const { loading, popular, thingsById, width } = this.props;
     const { featuredItemsIndex, needsNewFeatured } = this.state;
-    const isInitialLoad = !prevProps.popular && popular && !loading;
+    const isInitialLoad = popular && !prevProps.popular && !loading;
+    const didNavigateBack = popular && prevProps.loading && !loading;
     const didScreenResize =
       popular &&
       ['xs', 'sm'].includes(prevProps.width) !==
         ['xs', 'sm'].includes(this.props.width);
     const didFilterChange =
-      prevProps.loading && popular && !loading && needsNewFeatured;
+      popular && prevProps.loading && !loading && needsNewFeatured;
 
-    if (isInitialLoad || didFilterChange || didScreenResize) {
+    if (
+      isInitialLoad ||
+      didFilterChange ||
+      didScreenResize ||
+      didNavigateBack
+    ) {
       let numberFeaturedItems: number = this.getNumberFeaturedItems();
-
       const featuredItems: string[] = this.getFeaturedItems(
         numberFeaturedItems,
       );
@@ -350,9 +360,9 @@ class Popular extends Component<Props, State> {
     const totalFetchedItems =
       (popular && popular.length - featuredItemsIndex.length) || 0;
     const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
-    const loadMore = totalNonLoadedImages <= numColumns;
+    const shouldLoadMore = totalNonLoadedImages <= numColumns;
 
-    if (!loading && loadMore) {
+    if (!loading && shouldLoadMore) {
       this.debounceLoadMore();
     }
   };
@@ -443,6 +453,9 @@ class Popular extends Component<Props, State> {
               })}
             </Grid>
             {this.props.loading && this.renderLoadingCircle()}
+            {!Boolean(this.props.bookmark) && (
+              <Typography className={classes.fin}>fin.</Typography>
+            )}
           </InfiniteScroll>
         ) : (
           <Typography>Sorry, nothing matches your filter.</Typography>
