@@ -155,23 +155,30 @@ class Popular extends Component<Props, State> {
     };
   }
 
+  getNumberFeaturedItems = () => {
+    if (['xs', 'sm'].includes(this.props.width)) {
+      return 1;
+    } else {
+      return 2;
+    }
+  };
+
   loadPopular(passBookmark: boolean, firstRun?: boolean) {
     const {
       featuredItemsIndex,
+      featuredItems,
       filters: { itemTypes, sortOrder, genresFilter, networks, sliders },
     } = this.state;
     const { bookmark, retrievePopular, width } = this.props;
 
     // To do: add support for sorting
     if (!this.props.loading) {
+      let numberFeaturedItems: number = this.getNumberFeaturedItems();
+
       retrievePopular({
         bookmark: passBookmark ? bookmark : undefined,
         itemTypes,
-        limit: calculateLimit(
-          width,
-          3,
-          firstRun ? featuredItemsIndex.length : 0,
-        ),
+        limit: calculateLimit(width, 3, firstRun ? numberFeaturedItems : 0),
         networks,
         genres: genresFilter,
         releaseYearRange:
@@ -242,13 +249,7 @@ class Popular extends Component<Props, State> {
       prevProps.loading && popular && !loading && needsNewFeatured;
 
     if (isInitialLoad || didFilterChange || didScreenResize) {
-      let numberFeaturedItems: number;
-
-      if (['xs', 'sm'].includes(this.props.width)) {
-        numberFeaturedItems = 1;
-      } else {
-        numberFeaturedItems = 2;
-      }
+      let numberFeaturedItems: number = this.getNumberFeaturedItems();
 
       const featuredItems: string[] = this.getFeaturedItems(
         numberFeaturedItems,
@@ -258,7 +259,7 @@ class Popular extends Component<Props, State> {
       const featuredRequiredItems = calculateLimit(
         width,
         2,
-        featuredItems.length,
+        numberFeaturedItems,
       );
 
       // If we don't have enough content to fill featured items, don't show any
