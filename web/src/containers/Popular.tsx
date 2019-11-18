@@ -76,6 +76,11 @@ const styles = (theme: Theme) =>
       justifyContent: 'flex-end',
       alignItems: 'center',
     },
+    popularWrapper: {
+      display: 'flex',
+      flexGrow: 1,
+      flexDirection: 'column',
+    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {}
@@ -118,6 +123,7 @@ interface State {
   featuredItems: Item[];
   showFilter: boolean;
   filters: FilterParams;
+  needsNewFeatured: boolean;
   totalLoadedImages: number;
 }
 
@@ -144,12 +150,14 @@ class Popular extends Component<Props, State> {
       featuredItems: [],
       showFilter: false,
       filters: filterParams,
+      needsNewFeatured: false,
       totalLoadedImages: 0,
     };
   }
 
   loadPopular(passBookmark: boolean, firstRun?: boolean) {
     const {
+      featuredItemsIndex,
       filters: { itemTypes, sortOrder, genresFilter, networks, sliders },
     } = this.state;
     const { bookmark, retrievePopular, width } = this.props;
@@ -159,7 +167,11 @@ class Popular extends Component<Props, State> {
       retrievePopular({
         bookmark: passBookmark ? bookmark : undefined,
         itemTypes,
-        limit: calculateLimit(width, 3, firstRun ? 1 : 0),
+        limit: calculateLimit(
+          width,
+          3,
+          firstRun ? featuredItemsIndex.length : 0,
+        ),
         networks,
         genres: genresFilter,
         releaseYearRange:
@@ -191,79 +203,89 @@ class Popular extends Component<Props, State> {
     }
   }
 
-  getHighestRated = () => {
+  getFeaturedItems = numberFeaturedItems => {
     const { popular, thingsById } = this.props;
 
-    return popular
-      ? popular.filter(id => {
-          const item = thingsById[id];
-          const voteAverage = getVoteAverage(item);
-          const voteCount = getVoteCount(item);
-          const hasBackdropImage = item.backdropImage && item.backdropImage.id;
-          const hasPosterImage = item.posterImage && item.posterImage.id;
-          return (
-            voteAverage > 3.5 &&
-            voteCount > 1000 &&
-            hasBackdropImage &&
-            hasPosterImage
-          );
-        })
+    // We only want Featured items that have a background and poster image
+    // and we want them sorted by average score && vote count
+    return popular && popular.length > 2
+      ? popular
+          .filter(id => {
+            const item = thingsById[id];
+            const hasBackdropImage =
+              item.backdropImage && item.backdropImage.id;
+            const hasPosterImage = item.posterImage && item.posterImage.id;
+            return hasBackdropImage && hasPosterImage;
+          })
+          .sort((a, b) => {
+            const itemA = thingsById[a];
+            const itemB = thingsById[b];
+            const voteAverageA = getVoteAverage(itemA);
+            const voteAverageB = getVoteAverage(itemB);
+            const voteCountA = getVoteCount(itemA);
+            const voteCountB = getVoteCount(itemB);
+            return voteAverageB - voteAverageA || voteCountB - voteCountA;
+          })
+          .slice(0, numberFeaturedItems)
       : [];
   };
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    const { loading, popular, thingsById } = this.props;
-    const { featuredItemsIndex } = this.state;
+    const { loading, popular, thingsById, width } = this.props;
+    const { featuredItemsIndex, needsNewFeatured } = this.state;
+    const isInitialLoad = !prevProps.popular && popular && !loading;
+    const didScreenResize =
+      popular &&
+      ['xs', 'sm'].includes(prevProps.width) !==
+        ['xs', 'sm'].includes(this.props.width);
+    const didFilterChange =
+      prevProps.loading && popular && !loading && needsNewFeatured;
 
-    // Grab random item from filtered list of popular movies
-    if (
-      (!prevProps.popular && popular && !loading) ||
-      (prevProps.loading && popular && !loading) ||
-      (popular && featuredItemsIndex.length === 0 && !loading) ||
-      (popular &&
-        ['xs', 'sm'].includes(prevProps.width) !==
-          ['xs', 'sm'].includes(this.props.width))
-    ) {
-      const highestRated = this.getHighestRated();
-      const randomItemOne = Math.floor(Math.random() * highestRated.length);
-      let randomItemTwo = Math.floor(Math.random() * highestRated.length);
-      // In the event these two id's match
-      do {
-        randomItemTwo = Math.floor(Math.random() * highestRated.length);
-      } while (randomItemOne === randomItemTwo);
+    if (isInitialLoad || didFilterChange || didScreenResize) {
+      let numberFeaturedItems: number;
 
-      // I have no idea what this was for lol
-      if (randomItemOne === 0 || randomItemTwo === 0) {
-        if (this.state.featuredItemsIndex.length > 0) {
+      if (['xs', 'sm'].includes(this.props.width)) {
+        numberFeaturedItems = 1;
+      } else {
+        numberFeaturedItems = 2;
+      }
+
+      const featuredItems: string[] = this.getFeaturedItems(
+        numberFeaturedItems,
+      );
+
+      // Require that there be at least 2 full rows before displaying Featured items.
+      const featuredRequiredItems = calculateLimit(
+        width,
+        2,
+        featuredItems.length,
+      );
+
+      // If we don't have enough content to fill featured items, don't show any
+      if (
+        featuredItems.length < numberFeaturedItems ||
+        popular!.length < featuredRequiredItems
+      ) {
+        // Prevent re-setting state if it's already been reset
+        if (featuredItemsIndex.length > 0) {
           this.setState({
             featuredItemsIndex: [],
             featuredItems: [],
+            needsNewFeatured: false,
           });
         }
       } else {
-        const popularItemOne = popular.findIndex(
-          name => name === highestRated[randomItemOne],
+        const featuredIndexes = featuredItems.map(item =>
+          popular!.findIndex(id => item === id),
         );
 
-        if (['xs', 'sm'].includes(this.props.width)) {
-          this.setState({
-            featuredItemsIndex: [popularItemOne],
-            featuredItems: [popularItemOne].map(
-              index => thingsById[popular[index]],
-            ),
-          });
-        } else {
-          const popularItemTwo = popular.findIndex(
-            name => name === highestRated[randomItemTwo],
-          );
-
-          this.setState({
-            featuredItemsIndex: [popularItemOne, popularItemTwo],
-            featuredItems: [popularItemOne, popularItemTwo].map(
-              index => thingsById[popular[index]],
-            ),
-          });
-        }
+        this.setState({
+          featuredItemsIndex: featuredIndexes,
+          featuredItems: featuredIndexes.map(
+            index => thingsById[popular![index]],
+          ),
+          needsNewFeatured: false,
+        });
       }
     }
   }
@@ -273,6 +295,7 @@ class Popular extends Component<Props, State> {
       this.setState(
         {
           filters: filterParams,
+          needsNewFeatured: true,
         },
         () => {
           updateUrlParamsForFilter(this.props, filterParams);
@@ -345,7 +368,7 @@ class Popular extends Component<Props, State> {
       filters: { genresFilter, itemTypes },
     } = this.state;
 
-    return popular && popular && popular.length ? (
+    return popular ? (
       <div className={classes.popularContainer}>
         <div className={classes.listTitle}>
           <Typography
@@ -393,42 +416,46 @@ class Popular extends Component<Props, State> {
           updateFilters={this.handleFilterParamsChange}
           sortOptions={['popularity', 'recent']}
         />
-        <InfiniteScroll
-          pageStart={0}
-          loadMore={() => this.loadMoreResults()}
-          hasMore={Boolean(this.props.bookmark)}
-          useWindow
-          threshold={300}
-        >
-          <Grid container spacing={2}>
-            {popular.map((result, index) => {
-              let thing = thingsById[result];
-              if (thing && !this.state.featuredItemsIndex.includes(index)) {
-                return (
-                  <ItemCard
-                    key={result}
-                    userSelf={userSelf}
-                    item={thing}
-                    hasLoaded={this.setVisibleItems}
-                  />
-                );
-              } else {
-                return null;
-              }
-            })}
-          </Grid>
-          {this.props.loading && this.renderLoadingCircle()}
-        </InfiniteScroll>
+        {popular.length > 0 ? (
+          <InfiniteScroll
+            pageStart={0}
+            loadMore={() => this.loadMoreResults()}
+            hasMore={Boolean(this.props.bookmark)}
+            useWindow
+            threshold={300}
+          >
+            <Grid container spacing={2}>
+              {popular.map((result, index) => {
+                let thing = thingsById[result];
+                if (thing && !this.state.featuredItemsIndex.includes(index)) {
+                  return (
+                    <ItemCard
+                      key={result}
+                      userSelf={userSelf}
+                      item={thing}
+                      hasLoaded={this.setVisibleItems}
+                    />
+                  );
+                } else {
+                  return null;
+                }
+              })}
+            </Grid>
+            {this.props.loading && this.renderLoadingCircle()}
+          </InfiniteScroll>
+        ) : (
+          <Typography>Sorry, nothing matches your filter.</Typography>
+        )}
       </div>
     ) : null;
   };
 
   render() {
     const { featuredItems } = this.state;
-    const { popular, thingsById } = this.props;
+    const { classes, popular } = this.props;
 
     return popular ? (
-      <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
+      <div className={classes.popularWrapper}>
         <Featured featuredItems={featuredItems} />
         {this.renderPopular()}
       </div>
@@ -461,7 +488,12 @@ const mapDispatchToProps = dispatch =>
 export default withWidth()(
   withUser(
     withStyles(styles)(
-      withRouter(connect(mapStateToProps, mapDispatchToProps)(Popular)),
+      withRouter(
+        connect(
+          mapStateToProps,
+          mapDispatchToProps,
+        )(Popular),
+      ),
     ),
   ),
 );
