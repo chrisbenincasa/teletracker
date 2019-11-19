@@ -125,8 +125,7 @@ interface Props {
 
 const AllFilters = (props: Props) => {
   const classes = useStyles();
-  const TIMEOUT_APPEAR = 600;
-  const TIMEOUT_ENTER = 600;
+  const TIMEOUT_ENTER = 300;
   const TIMEOUT_EXIT = 300;
   const {
     disabledGenres,
@@ -188,7 +187,6 @@ const AllFilters = (props: Props) => {
     <Collapse
       in={open}
       timeout={{
-        appear: TIMEOUT_APPEAR,
         enter: TIMEOUT_ENTER,
         exit: TIMEOUT_EXIT,
       }}

@@ -20,12 +20,28 @@ import {
   LIST_RETRIEVE_SUCCESS,
   ListRetrieveSuccessAction,
 } from '../actions/lists';
+import { Id, Slug } from '../types/v2';
+import {
+  PERSON_CREDITS_FETCH_INITIATED,
+  PERSON_CREDITS_FETCH_SUCCESSFUL,
+  PersonCreditsFetchInitiatedAction,
+  PersonCreditsFetchSuccessfulAction,
+} from '../actions/people/get_credits';
+import * as R from 'ramda';
+
+interface PersonDetailState {
+  current?: Id | Slug;
+  credits?: string[]; // Array of popular slugs
+  loading: boolean;
+  bookmark?: string;
+}
 
 export interface State {
   loadingPeople: boolean;
   peopleById: { [key: string]: Person };
   peopleBySlug: { [key: string]: Person };
   nameByIdOrSlug: { [key: string]: string };
+  detail?: PersonDetailState;
 }
 
 export const initialState: State = {
@@ -124,6 +140,46 @@ const peopleFetchSuccess = handleAction(
   },
 );
 
+const peopleCreditsFetchInitiated = handleAction(
+  PERSON_CREDITS_FETCH_INITIATED,
+  (state: State, { payload }: PersonCreditsFetchInitiatedAction) => {
+    return {
+      ...state,
+      detail: {
+        ...state.detail,
+        loading: true,
+      },
+    };
+  },
+);
+
+const peopleCreditsFetchSuccess = handleAction(
+  PERSON_CREDITS_FETCH_SUCCESSFUL,
+  (state: State, { payload }: PersonCreditsFetchSuccessfulAction) => {
+    if (payload) {
+      let newCredits: string[];
+      if (payload.append) {
+        let existing = state.detail ? state.detail.credits || [] : [];
+        newCredits = existing.concat(R.map(t => t.id, payload.credits));
+      } else {
+        newCredits = R.map(t => t.id, payload.credits);
+      }
+
+      return {
+        ...state,
+        detail: {
+          ...state.detail,
+          loading: false,
+          credits: newCredits,
+          bookmark: payload.paging ? payload.paging.bookmark : undefined,
+        },
+      };
+    } else {
+      return state;
+    }
+  },
+);
+
 const handleListRetrieveSuccess = handleAction<
   ListRetrieveSuccessAction,
   State
@@ -156,4 +212,6 @@ export default flattenActions(
   peopleFetchSuccess,
   handleListRetrieveSuccess,
   ...loadingPeople,
+  peopleCreditsFetchInitiated,
+  peopleCreditsFetchSuccess,
 );
