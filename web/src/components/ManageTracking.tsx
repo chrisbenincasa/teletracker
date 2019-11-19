@@ -11,7 +11,8 @@ import AddToListDialog from '../components/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
 import AuthDialog from './Auth/AuthDialog';
 import { ApiItem } from '../types/v2';
-import { itemBelongsToLists } from '../types/v2/Item';
+import { Item, itemBelongsToLists } from '../types/v2/Item';
+import ManageTrackingButton from './ManageTrackingButton';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -37,7 +38,7 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps {
-  itemDetail: ApiItem;
+  itemDetail: Item;
   style: object;
 }
 
@@ -103,11 +104,15 @@ class ManageTracking extends Component<Props, State> {
 
   render() {
     let { manageTrackingModalOpen } = this.state;
-    let { itemDetail, userSelf } = this.props;
+    let { itemDetail, userSelf, style } = this.props;
 
     return (
       <React.Fragment>
-        {this.renderTrackingToggle()}
+        <ManageTrackingButton
+          itemDetail={itemDetail}
+          onClick={this.openManageTrackingModal}
+          style={style}
+        />
         <AddToListDialog
           open={manageTrackingModalOpen}
           onClose={this.closeManageTrackingModal}
