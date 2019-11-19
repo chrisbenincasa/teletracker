@@ -139,6 +139,9 @@ export const ResponsiveImage: React.FC<imgProps> = ({
       </picture>
     );
   } else if (!imageName && imageType === 'poster') {
+    // Override intersection observer to ensure content with no onLoad event displays
+    handleOnLoad();
+
     return (
       <div
         style={{
