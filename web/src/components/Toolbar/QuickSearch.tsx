@@ -3,6 +3,7 @@ import {
   Chip,
   ClickAwayListener,
   Fade,
+  Icon,
   makeStyles,
   MenuList,
   MenuItem,
@@ -33,6 +34,20 @@ const useStyles = makeStyles((theme: Theme) => ({
   itemDetails: {
     display: 'flex',
     flexDirection: 'column',
+  },
+  missingPoster: {
+    display: 'flex',
+    width: 50,
+    marginRight: theme.spacing(1),
+    height: 75,
+    color: '#9e9e9e',
+    backgroundColor: '#e0e0e0',
+    fontSize: '3em',
+  },
+  missingPosterIcon: {
+    alignSelf: 'center',
+    margin: '0 auto',
+    display: 'inline-block',
   },
   noResults: {
     padding: theme.spacing(1),
@@ -138,17 +153,24 @@ function QuickSearch(props: Props) {
                               props.handleResetSearchAnchor(event)
                             }
                           >
-                            <img
-                              alt={`Movie poster for ${result.original_title}`}
-                              src={
-                                getTmdbPosterImage(result)
-                                  ? `https://image.tmdb.org/t/p/w92/${
-                                      getTmdbPosterImage(result)!.id
-                                    }`
-                                  : ''
-                              }
-                              className={classes.poster}
-                            />
+                            {getTmdbPosterImage(result) ? (
+                              <img
+                                alt={`Movie poster for ${result.original_title}`}
+                                src={`https://image.tmdb.org/t/p/w92${
+                                  getTmdbPosterImage(result)!.id
+                                }`}
+                                className={classes.poster}
+                              />
+                            ) : (
+                              <div className={classes.missingPoster}>
+                                <Icon
+                                  className={classes.missingPosterIcon}
+                                  fontSize="inherit"
+                                >
+                                  broken_image
+                                </Icon>
+                              </div>
+                            )}
                             <div className={classes.itemDetails}>
                               <Typography variant="subtitle1">
                                 {truncateText(result.original_title, 32)}
