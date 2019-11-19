@@ -1,11 +1,27 @@
 import React from 'react';
-import { Icon } from '@material-ui/core';
+import { Icon, makeStyles, Theme } from '@material-ui/core';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';
 import { Person } from '../types/v2/Person';
 import { BASE_IMAGE_URL } from '../constants/';
 import { ImageType } from '../types/';
+
+const useStyles = makeStyles((theme: Theme) => ({
+  fallbackImageWrapper: {
+    display: 'flex',
+    width: '100%',
+    height: '100%',
+    color: '#9e9e9e',
+    backgroundColor: '#e0e0e0',
+    fontSize: '10em',
+  },
+  fallbackImageIcon: {
+    alignSelf: 'center',
+    margin: '0 auto',
+    display: 'inline-block',
+  },
+}));
 
 interface imgProps {
   item: Item | Person;
@@ -23,6 +39,8 @@ export const ResponsiveImage: React.FC<imgProps> = ({
   pictureStyle,
   loadCallback,
 }) => {
+  const classes = useStyles();
+
   function generateSource(imageSpecs) {
     return imageSpecs.map(image => {
       return (
@@ -138,30 +156,17 @@ export const ResponsiveImage: React.FC<imgProps> = ({
         />
       </picture>
     );
-  } else if (!imageName && imageType === 'poster') {
+  } else if (
+    !imageName &&
+    (imageType === 'poster' || imageType === 'profile')
+  ) {
     // Override intersection observer to ensure content with no onLoad event displays
     handleOnLoad();
 
     return (
-      <div
-        style={{
-          display: 'flex',
-          width: '100%',
-          height: '100%',
-          color: '#9e9e9e',
-          backgroundColor: '#e0e0e0',
-          fontSize: '10em',
-        }}
-      >
-        <Icon
-          style={{
-            alignSelf: 'center',
-            margin: '0 auto',
-            display: 'inline-block',
-          }}
-          fontSize="inherit"
-        >
-          broken_image
+      <div className={classes.fallbackImageWrapper}>
+        <Icon className={classes.fallbackImageIcon} fontSize="inherit">
+          {imageType === 'profile' ? 'person' : 'broken_image'}
         </Icon>
       </div>
     );
