@@ -1,7 +1,6 @@
+import { IconButton, Typography, Tooltip } from '@material-ui/core';
 import { AddCircle } from '@material-ui/icons';
-import { IconButton, Typography } from '@material-ui/core';
-import { default as React } from 'react';
-import Tooltip from '@material-ui/core/Tooltip';
+import React from 'react';
 
 interface Props {
   onClick: () => void;
