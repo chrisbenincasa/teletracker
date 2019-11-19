@@ -81,7 +81,7 @@ const Footer = (props: Props) => {
             Comedy
           </RouterLink>
           <RouterLink to={'/popular?genres=88'} className={classes.link}>
-            Horror
+            Drama
           </RouterLink>
           <RouterLink to={'/popular?genres=92'} className={classes.link}>
             Horror
