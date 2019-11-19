@@ -79,7 +79,7 @@ class New extends Component<Props> {
   };
 
   renderUpcoming = (upcoming: Item[]) => {
-    if (upcoming.length == 0) {
+    if (upcoming.length === 0) {
       return null;
     }
 
@@ -133,7 +133,6 @@ class New extends Component<Props> {
           .add(1, 'weeks')
           .subtract(1, 'millisecond');
         console.log([start, end], avs);
-        let ids = _.map(avs, 'id');
         let card = _.chain(upcoming)
           .filter(thing => {
             return _.some(thing.availability, av => {
@@ -220,5 +219,10 @@ const mapDispatchToProps = dispatch =>
   );
 
 export default withUser(
-  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(New)),
+  withStyles(styles)(
+    connect(
+      mapStateToProps,
+      mapDispatchToProps,
+    )(New),
+  ),
 );

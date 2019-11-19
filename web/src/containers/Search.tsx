@@ -11,7 +11,6 @@ import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { search, SearchInitiatedPayload } from '../actions/search';
-import { Redirect } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
@@ -212,5 +211,10 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
 };
 
 export default withUser(
-  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Search)),
+  withStyles(styles)(
+    connect(
+      mapStateToProps,
+      mapDispatchToProps,
+    )(Search),
+  ),
 );

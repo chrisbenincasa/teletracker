@@ -10,10 +10,7 @@ import {
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { ItemType } from '../../types';
 import React, { Component } from 'react';
-import {
-  parseFilterParamsFromQs,
-  updateURLParameters,
-} from '../../utils/urlHelper';
+import { parseFilterParamsFromQs } from '../../utils/urlHelper';
 
 const styles = (theme: Theme) =>
   createStyles({

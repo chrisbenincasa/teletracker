@@ -10,7 +10,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Add, Bookmarks, Tune } from '@material-ui/icons';
+import { Add, Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -28,7 +28,7 @@ import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
-import { Genre, ItemType, SortOptions, NetworkType } from '../types';
+import { Genre } from '../types';
 import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
@@ -170,8 +170,6 @@ class Popular extends Component<Props, State> {
 
   loadPopular(passBookmark: boolean, firstRun?: boolean) {
     const {
-      featuredItemsIndex,
-      featuredItems,
       filters: { itemTypes, sortOrder, genresFilter, networks, sliders },
     } = this.state;
     const { bookmark, retrievePopular, width } = this.props;
