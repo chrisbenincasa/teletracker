@@ -1,7 +1,6 @@
-import { Button } from '@material-ui/core';
+import { Button, makeStyles } from '@material-ui/core';
 import { List as ListIcon } from '@material-ui/icons';
 import React from 'react';
-import makeStyles from '@material-ui/core/styles/makeStyles';
 import { Item, itemBelongsToLists } from '../types/v2/Item';
 
 const useStyles = makeStyles(theme => ({
@@ -46,7 +45,7 @@ export default function ManageTrackingButton(props: Props) {
       <Button
         size="small"
         variant="contained"
-        aria-label="Add to List"
+        aria-label={props.cta || trackingCTA}
         onClick={props.onClick}
         className={classes.button}
         startIcon={<ListIcon className={classes.buttonIcon} />}
