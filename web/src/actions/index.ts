@@ -40,6 +40,7 @@ import { filtersChangedSaga } from './filters';
 import { loadMetadata, loadMetadataSaga } from './metadata/load_metadata';
 import { peopleSearchSaga } from './search/person_search';
 import { fetchPeopleDetailsSaga } from './people/get_people';
+import { fetchPersonCreditsDetailsSaga } from './people/get_credits';
 
 export const STARTUP = 'startup';
 export const BOOT_DONE = 'boot/DONE';
@@ -101,5 +102,6 @@ export function* root() {
     filtersChangedSaga(),
     loadMetadataSaga(),
     peopleSearchSaga(),
+    fetchPersonCreditsDetailsSaga(),
   ]);
 }

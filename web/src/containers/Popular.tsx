@@ -28,7 +28,7 @@ import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
-import { Genre } from '../types';
+import { Genre, Network } from '../types';
 import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
@@ -38,6 +38,8 @@ import {
 } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import { getVoteAverage, getVoteCount } from '../utils/textHelper';
+import CreateDynamicListDialog from '../components/CreateDynamicListDialog';
+import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -113,6 +115,7 @@ interface DispatchProps {
 
 interface StateProps {
   genres?: Genre[];
+  networks?: Network[];
 }
 
 type Props = OwnProps &
@@ -130,6 +133,7 @@ interface State {
   filters: FilterParams;
   needsNewFeatured: boolean;
   totalLoadedImages: number;
+  createDynamicListDialogOpen: boolean;
 }
 
 class Popular extends Component<Props, State> {
@@ -157,6 +161,7 @@ class Popular extends Component<Props, State> {
       filters: filterParams,
       needsNewFeatured: false,
       totalLoadedImages: 0,
+      createDynamicListDialogOpen: false,
     };
   }
 
@@ -365,6 +370,18 @@ class Popular extends Component<Props, State> {
     }
   };
 
+  createListFromFilters = () => {
+    this.setState({
+      createDynamicListDialogOpen: true,
+    });
+  };
+
+  handleCreateDynamicModalClose = () => {
+    this.setState({
+      createDynamicListDialogOpen: false,
+    });
+  };
+
   setVisibleItems = () => {
     this.setState({
       totalLoadedImages: this.state.totalLoadedImages + 1,
@@ -375,6 +392,7 @@ class Popular extends Component<Props, State> {
     const { classes, genres, popular, userSelf, thingsById } = this.props;
     const {
       filters: { genresFilter, itemTypes },
+      createDynamicListDialogOpen,
     } = this.state;
 
     return popular ? (
@@ -405,10 +423,7 @@ class Popular extends Component<Props, State> {
             <Tune />
             <Typography variant="srOnly">Tune</Typography>
           </IconButton>
-          <IconButton>
-            <Add />
-            <Typography variant="srOnly">Save as List</Typography>
-          </IconButton>
+          <CreateSmartListButton onClick={this.createListFromFilters} />
         </div>
         <div className={classes.filters}>
           <ActiveFilters
@@ -458,6 +473,13 @@ class Popular extends Component<Props, State> {
         ) : (
           <Typography>Sorry, nothing matches your filter.</Typography>
         )}
+        <CreateDynamicListDialog
+          filters={this.state.filters}
+          open={createDynamicListDialogOpen}
+          onClose={this.handleCreateDynamicModalClose}
+          networks={this.props.networks || []}
+          genres={this.props.genres || []}
+        />
       </div>
     ) : null;
   };
@@ -485,6 +507,7 @@ const mapStateToProps = (appState: AppState) => {
     thingsById: appState.itemDetail.thingsById,
     loading: appState.popular.loadingPopular,
     genres: appState.metadata.genres,
+    networks: appState.metadata.networks,
     bookmark: appState.popular.popularBookmark,
   };
 };
@@ -500,12 +523,7 @@ const mapDispatchToProps = dispatch =>
 export default withWidth()(
   withUser(
     withStyles(styles)(
-      withRouter(
-        connect(
-          mapStateToProps,
-          mapDispatchToProps,
-        )(Popular),
-      ),
+      withRouter(connect(mapStateToProps, mapDispatchToProps)(Popular)),
     ),
   ),
 );

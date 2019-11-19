@@ -12,7 +12,14 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { ChevronLeft, ExpandLess, ExpandMore, Tune } from '@material-ui/icons';
+import {
+  Add,
+  AddCircle,
+  ChevronLeft,
+  ExpandLess,
+  ExpandMore,
+  Tune,
+} from '@material-ui/icons';
 import * as R from 'ramda';
 import { default as React } from 'react';
 import ReactGA from 'react-ga';
@@ -31,15 +38,25 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
-import { Genre } from '../types';
+import { Genre, Network } from '../types';
 import { Person } from '../types/v2/Person';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
-import { FilterParams } from '../utils/searchFilters';
+import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import _ from 'lodash';
+import {
+  personCreditsFetchInitiated,
+  PersonCreditsFetchInitiatedPayload,
+} from '../actions/people/get_credits';
+import { Item } from '../types/v2/Item';
+import { collect } from '../utils/collection-utils';
+import InfiniteScroll from 'react-infinite-scroller';
+import CreateDynamicListDialog from '../components/CreateDynamicListDialog';
+import ManageTrackingButton from '../components/ManageTrackingButton';
+import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -147,17 +164,26 @@ interface State {
   // Indicates that the current person in state doesn't have the necessary info to show the full detail
   // page, so we need a full fetch.
   needsFetch: boolean;
+  loadingCredits: boolean;
+  createDynamicListDialogOpen: boolean;
+  createPersonListDialogOpen: boolean;
 }
 
 interface StateProps {
   isAuthed: boolean;
   person?: Person;
   genres?: Genre[];
+  networks?: Network[];
   loadingPerson: boolean;
+  loadingCredits: boolean;
+  creditsBookmark?: string;
+  credits?: string[];
+  itemById: { [key: string]: Item };
 }
 
 interface DispatchProps {
   personFetchInitiated: (id: PersonFetchInitiatedPayload) => void;
+  fetchPersonCredits: (payload: PersonCreditsFetchInitiatedPayload) => void;
 }
 
 interface RouteProps {
@@ -189,6 +215,18 @@ class PersonDetail extends React.Component<Props, State> {
       needsFetch = true;
     }
 
+    let defaultFilterParams = {
+      ...DEFAULT_FILTER_PARAMS,
+      sortOrder: 'recent',
+    };
+
+    let filterParams = R.mergeDeepRight(
+      defaultFilterParams,
+      R.filter(R.compose(R.not, R.isNil))(
+        parseFilterParamsFromQs(props.location.search),
+      ),
+    ) as FilterParams;
+
     this.state = {
       showFullBiography: false,
       showFilter:
@@ -196,8 +234,11 @@ class PersonDetail extends React.Component<Props, State> {
         params.has('genres') ||
         params.has('networks') ||
         params.has('types'),
-      filters: parseFilterParamsFromQs(this.props.location.search),
+      filters: filterParams,
       needsFetch,
+      loadingCredits: false,
+      createDynamicListDialogOpen: false,
+      createPersonListDialogOpen: false,
     };
   }
 
@@ -230,6 +271,12 @@ class PersonDetail extends React.Component<Props, State> {
         needsFetch: false,
       });
     }
+
+    if (prevProps.loadingCredits && !this.props.loadingCredits) {
+      this.setState({
+        loadingCredits: false,
+      });
+    }
   }
 
   showFullBiography = () => {
@@ -259,63 +306,95 @@ class PersonDetail extends React.Component<Props, State> {
     this.setState({ showFilter: !this.state.showFilter });
   };
 
-  handleFilterParamsChange = (filterParams: FilterParams) => {
-    if (!filterParamsEqual(this.state.filters, filterParams)) {
-      this.setState({
-        filters: filterParams,
-      });
+  loadCredits = () => {
+    this.setState(
+      {
+        loadingCredits: true,
+      },
+      () => {
+        this.props.fetchPersonCredits({
+          personId: this.props.person!.id,
+          filterParams: this.state.filters,
+          limit: 18, // Use calculateLimit
+          bookmark: this.props.creditsBookmark,
+        });
+      },
+    );
+  };
+
+  loadMoreResults = () => {
+    if (
+      Boolean(this.props.credits) &&
+      !this.props.loadingCredits &&
+      !this.state.loadingCredits
+    ) {
+      this.loadCredits();
     }
   };
 
+  handleFilterParamsChange = (filterParams: FilterParams) => {
+    if (!filterParamsEqual(this.state.filters, filterParams)) {
+      this.setState(
+        {
+          filters: filterParams,
+        },
+        () => {
+          this.loadCredits();
+        },
+      );
+    }
+  };
+
+  personFiltersForCreateDialog = (): FilterParams => {
+    return {
+      ...DEFAULT_FILTER_PARAMS,
+      people: [this.props.person!.canonical_id],
+    };
+  };
+
+  creditFiltersForCreateDialog = (): FilterParams => {
+    return {
+      ...this.state.filters,
+      people: [
+        ...(this.state.filters.people || []),
+        this.props.person!.canonical_id,
+      ],
+    };
+  };
+
+  createListFromFilters = () => {
+    this.setState({
+      createDynamicListDialogOpen: true,
+    });
+  };
+
+  createListForPerson = () => {
+    this.setState({
+      createPersonListDialogOpen: true,
+    });
+  };
+
+  handleCreateDynamicModalClose = () => {
+    this.setState({
+      createDynamicListDialogOpen: false,
+      createPersonListDialogOpen: false,
+    });
+  };
+
   renderFilmography = () => {
-    const { classes, genres, person, userSelf } = this.props;
+    const { classes, genres, person, userSelf, credits, itemById } = this.props;
     const {
       filters: { genresFilter, itemTypes, sortOrder },
     } = this.state;
 
-    let filmography = person!.cast_credits ? person!.cast_credits.data : [];
-    let filmographyFiltered = filmography
-      .filter(
-        credit =>
-          (credit &&
-            credit.item &&
-            credit.item.genres &&
-            credit.item.genres
-              .map(g => g.id)
-              .includes(
-                (genresFilter && genresFilter.length > 0 && genresFilter[0]) ||
-                  0,
-              )) ||
-          !genresFilter ||
-          genresFilter.length === 0,
-      )
-      .filter(
-        credit =>
-          (credit &&
-            credit.item &&
-            credit.item.type.includes((itemTypes && itemTypes[0]) || '')) ||
-          !itemTypes,
-      )
-      .sort((a, b) => {
-        if (sortOrder === 'popularity') {
-          return (a.item!.popularity || 0.0) < (b.item!.popularity || 0.0)
-            ? 1
-            : -1;
-        } else if (sortOrder === 'recent') {
-          let sort;
-          if (!b.item!.release_date) {
-            sort = 1;
-          } else if (!a.item!.release_date) {
-            sort = -1;
-          } else {
-            sort = a.item!.release_date < b.item!.release_date ? 1 : -1;
-          }
-          return sort;
-        } else {
-          return 0;
-        }
-      })
-      .filter(item => !!item.item); // Will filter out items w/o details... figure out why we need to do this.
+    let filmography: Item[];
+    if (credits) {
+      filmography = collect(credits, id => itemById[id]);
+    } else {
+      filmography = person!.cast_credits
+        ? collect(person!.cast_credits.data, credit => credit.item)
+        : [];
+    }
 
     return (
       <div className={classes.genreContainer}>
@@ -343,6 +422,7 @@ class PersonDetail extends React.Component<Props, State> {
             <Tune />
             <Typography variant="srOnly">Tune</Typography>
           </IconButton>
+          <CreateSmartListButton onClick={this.createListFromFilters} />
         </div>
         <AllFilters
           genres={genres}
@@ -353,17 +433,23 @@ class PersonDetail extends React.Component<Props, State> {
           isListDynamic={false}
         />
 
-        <Grid container spacing={2}>
-          {filmographyFiltered.map(credit =>
-            credit && credit.item!.posterImage ? (
-              <ItemCard
-                key={credit.id}
-                userSelf={userSelf}
-                item={credit.item!}
-              />
-            ) : null,
-          )}
-        </Grid>
+        <InfiniteScroll
+          pageStart={0}
+          loadMore={this.loadMoreResults}
+          hasMore={
+            !Boolean(this.props.credits) || Boolean(this.props.creditsBookmark)
+          }
+          useWindow
+          threshold={300}
+        >
+          <Grid container spacing={2}>
+            {filmography.map(item =>
+              item && item.posterImage ? (
+                <ItemCard key={item.id} userSelf={userSelf} item={item} />
+              ) : null,
+            )}
+          </Grid>
+        </InfiniteScroll>
       </div>
     );
   };
@@ -414,7 +500,11 @@ class PersonDetail extends React.Component<Props, State> {
 
   renderPerson() {
     let { classes, person, loadingPerson } = this.props;
-    let { needsFetch } = this.state;
+    let {
+      needsFetch,
+      createDynamicListDialogOpen,
+      createPersonListDialogOpen,
+    } = this.state;
 
     if (!person || loadingPerson || needsFetch) {
       return this.renderLoading();
@@ -542,7 +632,10 @@ class PersonDetail extends React.Component<Props, State> {
                     }}
                   />
                 </div>
-                <ManageTracking itemDetail={person} />
+                <ManageTrackingButton
+                  cta={'Track Actor'}
+                  onClick={this.createListForPerson}
+                />
               </div>
               <div className={classes.personInformationContainer}>
                 {this.renderDescriptiveDetails(person)}
@@ -550,6 +643,21 @@ class PersonDetail extends React.Component<Props, State> {
               </div>
             </div>
           </div>
+          <CreateDynamicListDialog
+            filters={this.creditFiltersForCreateDialog()}
+            open={createDynamicListDialogOpen}
+            onClose={this.handleCreateDynamicModalClose}
+            networks={this.props.networks || []}
+            genres={this.props.genres || []}
+          />
+          <CreateDynamicListDialog
+            filters={this.personFiltersForCreateDialog()}
+            open={createPersonListDialogOpen}
+            onClose={this.handleCreateDynamicModalClose}
+            networks={this.props.networks || []}
+            genres={this.props.genres || []}
+            prefilledName={this.props.person!.name}
+          />
         </div>
       </React.Fragment>
     );
@@ -572,8 +680,20 @@ const mapStateToProps: (
     person:
       appState.people.peopleById[props.match.params.id] ||
       appState.people.peopleBySlug[props.match.params.id],
+    lists: appState.lists.listsById,
     loadingPerson: appState.people.loadingPeople,
     genres: appState.metadata.genres,
+    networks: appState.metadata.networks,
+    itemById: appState.itemDetail.thingsById,
+    credits: appState.people.detail
+      ? appState.people.detail.credits
+      : undefined,
+    creditsBookmark: appState.people.detail
+      ? appState.people.detail.bookmark
+      : undefined,
+    loadingCredits: appState.people.detail
+      ? appState.people.detail.loading
+      : false,
   };
 };
 
@@ -581,6 +701,7 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch =>
   bindActionCreators(
     {
       personFetchInitiated,
+      fetchPersonCredits: personCreditsFetchInitiated,
     },
     dispatch,
   );
