@@ -1,6 +1,7 @@
 import {
   Button,
   CardMedia,
+  CircularProgress,
   createStyles,
   Grid,
   Hidden,
@@ -12,51 +13,43 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import {
-  Add,
-  AddCircle,
-  ChevronLeft,
-  ExpandLess,
-  ExpandMore,
-  Tune,
-} from '@material-ui/icons';
+import { ChevronLeft, ExpandLess, ExpandMore, Tune } from '@material-ui/icons';
+import _ from 'lodash';
 import * as R from 'ramda';
 import { default as React } from 'react';
 import ReactGA from 'react-ga';
 import { Helmet } from 'react-helmet';
+import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
+  personCreditsFetchInitiated,
+  PersonCreditsFetchInitiatedPayload,
+} from '../actions/people/get_credits';
+import {
   personFetchInitiated,
   PersonFetchInitiatedPayload,
 } from '../actions/people/get_person';
+import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
+import CreateDynamicListDialog from '../components/CreateDynamicListDialog';
+import ActiveFilters from '../components/Filters/ActiveFilters';
+import AllFilters from '../components/Filters/AllFilters';
 import ItemCard from '../components/ItemCard';
-import ManageTracking from '../components/ManageTracking';
+import ManageTrackingButton from '../components/ManageTrackingButton';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { layoutStyles } from '../styles';
 import { Genre, Network } from '../types';
+import { Item } from '../types/v2/Item';
 import { Person } from '../types/v2/Person';
-import AllFilters from '../components/Filters/AllFilters';
-import ActiveFilters from '../components/Filters/ActiveFilters';
+import { filterParamsEqual } from '../utils/changeDetection';
+import { collect } from '../utils/collection-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
-import { filterParamsEqual } from '../utils/changeDetection';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
-import _ from 'lodash';
-import {
-  personCreditsFetchInitiated,
-  PersonCreditsFetchInitiatedPayload,
-} from '../actions/people/get_credits';
-import { Item } from '../types/v2/Item';
-import { collect } from '../utils/collection-utils';
-import InfiniteScroll from 'react-infinite-scroller';
-import CreateDynamicListDialog from '../components/CreateDynamicListDialog';
-import ManageTrackingButton from '../components/ManageTrackingButton';
-import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -152,6 +145,18 @@ const styles = (theme: Theme) =>
       alignItems: 'flex-start',
       width: '80%',
       marginBottom: 10,
+    },
+    loadingCircle: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 200,
+      height: '100%',
+    },
+    fin: {
+      fontStyle: 'italic',
+      textAlign: 'center',
+      margin: theme.spacing(6),
     },
   });
 
@@ -381,6 +386,17 @@ class PersonDetail extends React.Component<Props, State> {
     });
   };
 
+  renderLoadingCircle() {
+    const { classes } = this.props;
+    return (
+      <div className={classes.loadingCircle}>
+        <div>
+          <CircularProgress color="secondary" />
+        </div>
+      </div>
+    );
+  }
+
   renderFilmography = () => {
     const { classes, genres, person, userSelf, credits, itemById } = this.props;
     const {
@@ -449,6 +465,11 @@ class PersonDetail extends React.Component<Props, State> {
               ) : null,
             )}
           </Grid>
+          {this.props.loadingCredits && this.renderLoadingCircle()}
+          {!this.props.credits ||
+            (!Boolean(this.props.creditsBookmark) && (
+              <Typography className={classes.fin}>fin.</Typography>
+            ))}
         </InfiniteScroll>
       </div>
     );
