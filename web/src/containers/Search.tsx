@@ -27,23 +27,23 @@ import { Item } from '../types/v2/Item';
 const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
-    title: {
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    },
-    card: {
-      height: '100%',
+    searchError: {
       display: 'flex',
       flexDirection: 'column',
-    },
-    cardMedia: {
-      height: 0,
-      width: '100%',
-      paddingTop: '150%',
-    },
-    cardContent: {
       flexGrow: 1,
+      alignItems: 'center',
+      marginTop: theme.spacing(3),
+    },
+    searchNoResults: {
+      display: 'flex',
+      flexGrow: 1,
+      justifyContent: 'center',
+      margin: theme.spacing(3),
+      padding: theme.spacing(1),
+    },
+    searchResultsContainer: {
+      margin: theme.spacing(3),
+      padding: theme.spacing(1),
     },
   });
 
@@ -127,32 +127,31 @@ class Search extends Component<Props, State> {
     );
   };
 
-  renderSearchResults = () => {
-    let { searchResults, userSelf } = this.props;
+  render() {
+    let {
+      classes,
+      currentSearchText,
+      searchBookmark,
+      searchResults,
+      userSelf,
+    } = this.props;
     let firstLoad = !searchResults;
     searchResults = searchResults || [];
 
     return this.props.isSearching &&
-      (!this.props.searchBookmark ||
-        this.state.searchText !== this.props.currentSearchText) ? (
+      (!searchBookmark || this.state.searchText !== currentSearchText) ? (
       this.renderLoading()
     ) : !this.props.error ? (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          flexGrow: 1,
-        }}
-      >
+      <React.Fragment>
         {searchResults.length ? (
-          <div style={{ margin: 24, padding: 8 }}>
+          <div className={classes.searchResultsContainer}>
             <Typography>
-              {`Movies & TV Shows that match "${this.props.currentSearchText}"`}
+              {`Movies & TV Shows that match "${currentSearchText}"`}
             </Typography>
             <InfiniteScroll
               pageStart={0}
               loadMore={() => this.loadMoreResults()}
-              hasMore={Boolean(this.props.searchBookmark)}
+              hasMore={Boolean(searchBookmark)}
               useWindow
               threshold={300}
             >
@@ -170,38 +169,20 @@ class Search extends Component<Props, State> {
             </InfiniteScroll>
           </div>
         ) : firstLoad ? null : (
-          <div style={{ margin: 24, padding: 8 }}>
+          <div className={classes.searchNoResults}>
             <Typography variant="h5" gutterBottom align="center">
               No results :(
             </Typography>
           </div>
         )}
-      </div>
+      </React.Fragment>
     ) : (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          flexGrow: 1,
-          alignItems: 'center',
-          marginTop: 25,
-        }}
-      >
+      <div className={classes.searchError}>
         <ErrorIcon color="inherit" fontSize="large" />
         <Typography variant="h5" gutterBottom align="center">
           Something went wrong :(
         </Typography>
       </div>
-    );
-  };
-
-  render() {
-    return this.props.isAuthed ? (
-      <div style={{ display: 'flex', flexGrow: 1 }}>
-        {this.renderSearchResults()}
-      </div>
-    ) : (
-      <Redirect to="/login" />
     );
   }
 }
