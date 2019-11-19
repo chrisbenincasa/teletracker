@@ -20,6 +20,7 @@ import {
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import { ApiThing } from '../types/Thing';
 import { ApiItem, ApiPerson, Id, Slug } from '../types/v2';
+import { FilterParams } from './searchFilters';
 
 export interface TeletrackerApiOptions {
   url?: string;
@@ -342,6 +343,39 @@ export class TeletrackerApi {
   async getPerson(token: String, id: string) {
     return this.api.get<any>(`/api/v2/people/${id}`, {
       token,
+    });
+  }
+
+  async getPersonCredits(
+    token: String,
+    id: Id | Slug,
+    filterParams?: FilterParams,
+    limit?: number,
+    bookmark?: string,
+  ) {
+    const { itemTypes, networks, sortOrder, genresFilter, sliders } =
+      filterParams || {};
+
+    return this.api.get<any>(`/api/v2/people/${id}/credits`, {
+      token,
+      itemTypes:
+        itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
+      networks: networks && networks.length ? networks.join(',') : undefined,
+      bookmark,
+      sort: sortOrder,
+      limit,
+      genres:
+        genresFilter && genresFilter.length
+          ? genresFilter.join(',')
+          : undefined,
+      minReleaseYear:
+        sliders && sliders.releaseYear && sliders.releaseYear.min
+          ? sliders.releaseYear.min
+          : undefined,
+      maxReleaseYear:
+        sliders && sliders.releaseYear && sliders.releaseYear.max
+          ? sliders.releaseYear.max
+          : undefined,
     });
   }
 

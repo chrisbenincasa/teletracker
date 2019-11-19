@@ -57,6 +57,7 @@ interface OwnProps {
   filters: FilterParams;
   genres: Genre[];
   networks: Network[];
+  prefilledName?: string;
 }
 
 type Props = OwnProps;
@@ -67,7 +68,7 @@ export default function CreateDynamicListDialog(props: Props) {
     (state: AppState) => state.people.nameByIdOrSlug,
   );
   let [exited, setExited] = useState(false);
-  let [listName, setListName] = useState('');
+  let [listName, setListName] = useState(props.prefilledName || '');
   let [nameDuplicateError, setNameDuplicateError] = useState(false);
   let [nameLengthError, setNameLengthError] = useState(false);
   let existingLists = useSelector((state: AppState) => state.lists.listsById);

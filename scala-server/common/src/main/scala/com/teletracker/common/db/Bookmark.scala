@@ -45,10 +45,8 @@ case class Bookmark(
   value: String,
   valueRefinement: Option[String]) {
 
-  import Bookmark._
-
-  def asString: String = {
-    encode(this)
+  def encode: String = {
+    Bookmark.encode(this)
   }
 
   def sortMode: SortMode = {

@@ -121,7 +121,7 @@ class ItemsController @Inject()(
             DataResponse.forDataResponse(
               DataResponse(
                 result.items.map(Person.fromEsPerson(_, None)),
-                Some(Paging(result.bookmark.map(_.asString)))
+                Some(Paging(result.bookmark.map(_.encode)))
               )
             )
           )
@@ -189,7 +189,7 @@ class ItemsController @Inject()(
 
           DataResponse.forDataResponse(
             DataResponse(items).withPaging(
-              Paging(result.bookmark.map(_.asString))
+              Paging(result.bookmark.map(_.encode))
             )
           )
         })
