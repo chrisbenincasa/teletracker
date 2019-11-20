@@ -25,6 +25,7 @@ import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders
 import org.elasticsearch.index.query.{
   BoolQueryBuilder,
+  MultiMatchQueryBuilder,
   Operator,
   QueryBuilders,
   TermQueryBuilder
@@ -54,9 +55,16 @@ class ItemSearch @Inject()(
       .boolQuery()
       .must(
         QueryBuilders
-          .matchQuery("original_title", textQuery)
+          .multiMatchQuery(
+            textQuery,
+            "title",
+            "title._2gram",
+            "title._3gram"
+          )
+          .`type`(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
           .operator(Operator.AND)
       )
+      .through(posterImageFilter)
       .through(removeAdultItems)
       .applyOptional(searchOptions.thingTypeFilter.filter(_.nonEmpty))(
         (builder, types) => types.foldLeft(builder)(itemTypeFilter)
