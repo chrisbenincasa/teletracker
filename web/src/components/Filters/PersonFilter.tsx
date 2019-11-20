@@ -9,6 +9,12 @@ import { getTmdbProfileImage } from '../../utils/image-helper';
 import { truncateText } from '../../utils/textHelper';
 
 const useStyles = makeStyles(theme => ({
+  autocompleteField: {
+    width: 300,
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
+  },
   poster: {
     width: 25,
     boxShadow: theme.shadows[1],
@@ -109,30 +115,28 @@ export default function PersonFilter(props: Props) {
   );
 
   return (
-    <div>
-      <Autocomplete
-        id="person-filter-autocomplete"
-        style={{ width: 300 }}
-        open={open}
-        onOpen={() => {
-          setOpen(true);
-        }}
-        onClose={() => {
-          setOpen(false);
-        }}
-        onChange={personSelected}
-        onInputChange={onInputUpdate}
-        getOptionLabel={option => nameBySlugOrId[option]}
-        options={slugz}
-        filterOptions={opts => opts}
-        filterSelectedOptions={false}
-        loading={loading}
-        multiple
-        renderOption={renderSelectOption}
-        disablePortal
-        renderInput={renderInput}
-        defaultValue={props.selectedCast}
-      />
-    </div>
+    <Autocomplete
+      id="person-filter-autocomplete"
+      className={classes.autocompleteField}
+      open={open}
+      onOpen={() => {
+        setOpen(true);
+      }}
+      onClose={() => {
+        setOpen(false);
+      }}
+      onChange={personSelected}
+      onInputChange={onInputUpdate}
+      getOptionLabel={option => nameBySlugOrId[option]}
+      options={slugz}
+      filterOptions={opts => opts}
+      filterSelectedOptions={false}
+      loading={loading}
+      multiple
+      renderOption={renderSelectOption}
+      disablePortal
+      renderInput={renderInput}
+      defaultValue={props.selectedCast}
+    />
   );
 }

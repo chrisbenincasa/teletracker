@@ -17,18 +17,15 @@ const styles = (theme: Theme) =>
   createStyles({
     button: {
       marginTop: theme.spacing(1),
-      width: '100% !important',
-      [theme.breakpoints.down('xs')]: {
-        fontSize: '0.55rem',
+      [theme.breakpoints.down('sm')]: {
+        padding: theme.spacing(1) / 4,
       },
-      fontSIze: '2rem',
     },
     buttonIcon: {
       marginRight: theme.spacing(1),
       [theme.breakpoints.down('sm')]: {
-        fontSize: '1rem',
+        display: 'none',
       },
-      fontSIze: '2rem',
     },
     itemCTA: {
       width: '100%',
@@ -92,6 +89,7 @@ class ManageTracking extends Component<Props, State> {
           variant="contained"
           aria-label="Add to List"
           onClick={this.openManageTrackingModal}
+          fullWidth
           className={classes.button}
           startIcon={<ListIcon className={classes.buttonIcon} />}
         >
