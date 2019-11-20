@@ -267,7 +267,6 @@ function ItemDetails(props: Props) {
   };
 
   const renderTitle = (item: Item) => {
-    const title = item.original_title;
     const voteAverage = getVoteAverage(item);
     const voteCount = getVoteCount(item);
     const runtime =
@@ -285,7 +284,9 @@ function ItemDetails(props: Props) {
         }}
       >
         <Typography color="inherit" variant="h4" itemProp="name">
-          {`${title} (${moment(item.release_date).format('YYYY')})`}
+          {`${item.canonicalTitle} (${moment(item.release_date).format(
+            'YYYY',
+          )})`}
         </Typography>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Rating value={voteAverage} precision={0.1} readOnly />
@@ -421,16 +422,16 @@ function ItemDetails(props: Props) {
     ) : (
       <React.Fragment>
         <Helmet>
-          <title>{`${itemDetail.original_title} | Teletracker`}</title>
+          <title>{`${itemDetail.canonicalTitle} | Teletracker`}</title>
           <meta
             name="title"
             property="og:title"
-            content={`${itemDetail.original_title} | Where to stream, rent, or buy. Track it today!`}
+            content={`${itemDetail.canonicalTitle} | Where to stream, rent, or buy. Track it today!`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy ${itemDetail.original_title} online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy ${itemDetail.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
           />
           {/* TODO FIX <meta
             name="image"
@@ -456,11 +457,11 @@ function ItemDetails(props: Props) {
           />
           <meta
             name="twitter:title"
-            content={`${itemDetail.original_title} - Where to Stream, Rent, or Buy It Online`}
+            content={`${itemDetail.canonicalTitle} - Where to Stream, Rent, or Buy It Online`}
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy ${itemDetail.original_title} online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy ${itemDetail.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
           />
 
           {/* TODO FIX <meta
@@ -469,7 +470,7 @@ function ItemDetails(props: Props) {
           /> */}
           <meta
             name="keywords"
-            content={`${itemDetail.original_title}, ${itemDetail.type}, stream, streaming, rent, buy, watch, track`}
+            content={`${itemDetail.canonicalTitle}, ${itemDetail.type}, stream, streaming, rent, buy, watch, track`}
           />
           <link
             rel="canonical"

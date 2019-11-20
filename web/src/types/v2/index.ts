@@ -6,6 +6,8 @@ export type Id = string;
 export type CanonicalId = string;
 
 export interface ApiItem {
+  alternate_titles?: string[];
+  title?: string[]; // Back-compat so we don't break during deploy. Can remove later
   adult?: boolean;
   availability?: ItemAvailability[];
   cast?: ApiItemCastMember[];
@@ -24,7 +26,6 @@ export interface ApiItem {
   runtime?: number;
   slug: Slug;
   tags?: ApiItemTag[];
-  title: string[];
   type: ItemType;
 }
 
