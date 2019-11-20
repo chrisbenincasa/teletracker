@@ -39,6 +39,17 @@ const useStyles = makeStyles((theme: Theme) => ({
       width: '100%',
     },
   },
+  peopleContainer: {
+    display: 'flex',
+    flexGrow: 1,
+    margin: `${theme.spacing(1)}px 0`,
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+    width: '30%',
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
+  },
   slidersContainer: {
     display: 'flex',
     flexGrow: 1,
@@ -46,6 +57,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     alignItems: 'flex-start',
     flexDirection: 'column',
     width: '30%',
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
   },
   networkContainer: {
     display: 'flex',
@@ -179,6 +193,8 @@ const AllFilters = (props: Props) => {
             {!disableSliders ? (
               <Sliders handleChange={setSliders} sliders={filters.sliders} />
             ) : null}
+          </div>
+          <div className={classes.peopleContainer}>
             <PersonFilter
               handleChange={setPeople}
               selectedCast={filters.people}

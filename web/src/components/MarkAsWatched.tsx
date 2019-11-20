@@ -23,19 +23,21 @@ import moment from 'moment';
 
 const styles = (theme: Theme) =>
   createStyles({
-    itemCTA: {
-      width: '100%',
-    },
     button: {
       marginTop: theme.spacing(1),
     },
     buttonIcon: {
       marginRight: theme.spacing(1),
     },
+    itemCTA: {
+      width: '100%',
+      whiteSpace: 'nowrap',
+    },
   });
 
 interface OwnProps {
   itemDetail: Thing;
+  style: object;
 }
 
 interface DispatchProps {
@@ -113,14 +115,14 @@ class MarkAsWatched extends Component<Props, State> {
   };
 
   render() {
-    const { classes } = this.props;
+    const { classes, style } = this.props;
     const currentDate = moment();
     const releaseDate = moment(this.props.itemDetail.release_date);
     const isReleased = currentDate.diff(releaseDate, 'days') >= 0;
 
     return (
       <React.Fragment>
-        <div className={classes.itemCTA}>
+        <div className={classes.itemCTA} style={{ ...style }}>
           {!isReleased ? (
             <Tooltip title={`This is currently unreleased.`} placement="top">
               <span>{this.watchedButton(isReleased)}</span>
@@ -148,5 +150,10 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   );
 
 export default withUser(
-  withStyles(styles)(connect(null, mapDispatchToProps)(MarkAsWatched)),
+  withStyles(styles)(
+    connect(
+      null,
+      mapDispatchToProps,
+    )(MarkAsWatched),
+  ),
 );

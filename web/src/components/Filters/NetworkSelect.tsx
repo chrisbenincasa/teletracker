@@ -26,11 +26,6 @@ const styles = (theme: Theme) =>
     filterLabel: {
       paddingBottom: theme.spacing() / 2,
     },
-    filterButtons: {
-      [theme.breakpoints.down('sm')]: {
-        fontSize: '0.575rem',
-      },
-    },
     networkIcon: {
       width: 20,
       borderRadius: '10%',
@@ -87,7 +82,6 @@ class NetworkSelect extends Component<Props> {
             <Button
               color={!selectedNetworks ? 'secondary' : 'primary'}
               onClick={() => this.updateNetworks('networks', undefined)}
-              className={classes.filterButtons}
             >
               All
             </Button>
@@ -108,7 +102,6 @@ class NetworkSelect extends Component<Props> {
                   alt="Netflix logo"
                 />
               }
-              className={classes.filterButtons}
             >
               Netflix
             </Button>
@@ -119,7 +112,6 @@ class NetworkSelect extends Component<Props> {
                   : 'primary'
               }
               onClick={() => this.updateNetworks('networks', ['hulu'])}
-              className={classes.filterButtons}
               startIcon={
                 <img
                   className={classes.networkIcon}
@@ -140,7 +132,6 @@ class NetworkSelect extends Component<Props> {
               onClick={() =>
                 this.updateNetworks('networks', ['hbo-go', 'hbo-now'])
               }
-              className={classes.filterButtons}
               startIcon={
                 <img
                   className={classes.networkIcon}
