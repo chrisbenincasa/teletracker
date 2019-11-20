@@ -8,6 +8,8 @@ import {
   ItemImage,
   ItemRating,
   ItemReleaseDate,
+  Slug,
+  Id,
 } from '.';
 import { ActionType, ItemType } from '..';
 import {
@@ -22,7 +24,6 @@ export interface Item {
   adult?: boolean;
   availability?: ItemAvailability[];
   cast?: ItemCastMember[];
-  canonicalId: string;
   crew?: ItemCrewMember[];
   external_ids?: ItemExternalId[];
   genres?: ItemGenre[];
@@ -38,10 +39,12 @@ export interface Item {
   runtime?: number;
   slug: string;
   tags?: ItemTag[];
-  title: string[];
+  title?: string[];
   type: ItemType;
 
   // computed fields
+  canonicalId: Id | Slug;
+  canonicalTitle: string;
   relativeUrl: string;
   itemMarkedAsWatched: boolean;
   posterImage?: ItemImage;
@@ -64,7 +67,7 @@ export interface ItemTag {
   userId?: string;
 }
 
-export const itemHasTag = (thing: ApiItem, expectedTag: ActionType) => {
+export const itemHasTag = (thing: ApiItem | Item, expectedTag: ActionType) => {
   if (thing.tags) {
     return R.any((tag: ItemTag) => {
       return tag.tag === expectedTag;
@@ -83,6 +86,14 @@ export const itemBelongsToLists = (item: ApiItem | Item) => {
 export class ItemFactory {
   static create(item: ApiItem): Item {
     const CANONICAL_ID = item.slug || item.id;
+
+    const canonicalTitle =
+      item.title && item.title.length
+        ? item.title[0]
+        : item.alternate_titles && item.alternate_titles.length
+        ? item.alternate_titles[0]
+        : item.original_title;
+
     return {
       ...item,
       cast: (item.cast || []).map(castMember => {
@@ -95,6 +106,8 @@ export class ItemFactory {
       }),
       // Calculated fields
       canonicalId: CANONICAL_ID,
+      // This will have to change if we ever expand to more regions
+      canonicalTitle,
       slug: item.slug,
       relativeUrl: `/${item.type}/${CANONICAL_ID}`,
       // description: getDescription(item),

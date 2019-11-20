@@ -155,7 +155,7 @@ function QuickSearch(props: Props) {
                           >
                             {getTmdbPosterImage(result) ? (
                               <img
-                                alt={`Movie poster for ${result.original_title}`}
+                                alt={`Movie poster for ${result.canonicalTitle}`}
                                 src={`https://image.tmdb.org/t/p/w92${
                                   getTmdbPosterImage(result)!.id
                                 }`}
@@ -173,7 +173,7 @@ function QuickSearch(props: Props) {
                             )}
                             <div className={classes.itemDetails}>
                               <Typography variant="subtitle1">
-                                {truncateText(result.original_title, 32)}
+                                {truncateText(result.canonicalTitle, 32)}
                               </Typography>
                               <Rating
                                 value={voteAverage / 2}
