@@ -20,17 +20,26 @@ const styles = (theme: Theme) =>
       flexWrap: 'wrap',
     },
     buttonGroup: {
-      marginRight: theme.spacing(1),
       whiteSpace: 'nowrap',
     },
     filterLabel: {
       paddingBottom: theme.spacing() / 2,
     },
+    filterButtons: {
+      [theme.breakpoints.down('sm')]: {
+        fontSize: '0.575rem',
+      },
+    },
     networkIcon: {
       width: 20,
+      height: 20,
       borderRadius: '10%',
     },
-    networkContainer: { display: 'flex', flexDirection: 'column' },
+    networkContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100%',
+    },
   });
 
 interface OwnProps {
@@ -77,11 +86,13 @@ class NetworkSelect extends Component<Props> {
             variant="contained"
             color="primary"
             aria-label="Filter by Netflix, Hulu, HBO, or All"
+            fullWidth
             className={classes.buttonGroup}
           >
             <Button
               color={!selectedNetworks ? 'secondary' : 'primary'}
               onClick={() => this.updateNetworks('networks', undefined)}
+              className={classes.filterButtons}
             >
               All
             </Button>
@@ -102,6 +113,7 @@ class NetworkSelect extends Component<Props> {
                   alt="Netflix logo"
                 />
               }
+              className={classes.filterButtons}
             >
               Netflix
             </Button>
@@ -112,6 +124,7 @@ class NetworkSelect extends Component<Props> {
                   : 'primary'
               }
               onClick={() => this.updateNetworks('networks', ['hulu'])}
+              className={classes.filterButtons}
               startIcon={
                 <img
                   className={classes.networkIcon}
@@ -132,6 +145,7 @@ class NetworkSelect extends Component<Props> {
               onClick={() =>
                 this.updateNetworks('networks', ['hbo-go', 'hbo-now'])
               }
+              className={classes.filterButtons}
               startIcon={
                 <img
                   className={classes.networkIcon}
