@@ -15,14 +15,15 @@ import {
   TvOff,
   Visibility,
 } from '@material-ui/icons';
-import * as R from 'ramda';
-import { Network } from '../types';
-import React from 'react';
-import { UserSelf } from '../reducers/user';
-import { ApiItem, ItemAvailability } from '../types/v2';
-import { AppState } from '../reducers';
-import { connect } from 'react-redux';
 import _ from 'lodash';
+import * as R from 'ramda';
+import React from 'react';
+import { connect } from 'react-redux';
+import { AppState } from '../reducers';
+import { UserSelf } from '../reducers/user';
+import { Network } from '../types';
+import { ItemAvailability } from '../types/v2';
+import { Item } from '../types/v2/Item';
 
 const useStyles = makeStyles((theme: Theme) => ({
   availabilePlatforms: {
@@ -39,7 +40,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  itemDetail: ApiItem;
+  itemDetail: Item;
   userSelf?: UserSelf;
   networks?: Network[];
 }
@@ -237,7 +238,7 @@ const ThingAvailability = (props: Props) => {
             <TvOff fontSize="large" style={{ margin: 10 }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <Typography variant="subtitle1">
-                {`${itemDetail.original_title} is not currently available to stream, rent,
+                {`${itemDetail.canonicalTitle} is not currently available to stream, rent,
                       or purchase.`}
               </Typography>
               <Typography variant="subtitle1">

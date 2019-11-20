@@ -7,6 +7,7 @@ import {
   NetworkType,
   Paging,
   ListFactory,
+  ApiList,
 } from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { clientEffect, createAction } from '../utils';
@@ -69,7 +70,7 @@ export const retrieveListSaga = function*() {
     if (payload) {
       try {
         // TODO: Type alias to make this cleaner
-        let response: TeletrackerResponse<List> = yield clientEffect(
+        let response: TeletrackerResponse<ApiList> = yield clientEffect(
           client => client.getList,
           payload.listId,
           payload.sort,

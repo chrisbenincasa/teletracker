@@ -102,7 +102,6 @@ function Featured(props: Props) {
   }, [featuredItems]);
 
   const renderTitle = (item: Item) => {
-    const title = item.original_title || '';
     const voteAverage = getVoteAverage(item);
     const voteCount = getVoteCount(item);
     const runtime =
@@ -111,7 +110,7 @@ function Featured(props: Props) {
     return (
       <div className={classes.titleContainer}>
         <Typography color="inherit" variant="h4" itemProp="name">
-          {truncateText(title, 200)}
+          {truncateText(item.canonicalTitle, 200)}
         </Typography>
         <div className={classes.ratingContainer}>
           <Rating value={voteAverage} precision={0.1} readOnly />
