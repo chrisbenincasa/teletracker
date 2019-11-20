@@ -307,7 +307,7 @@ class Explore extends Component<Props, State> {
   };
 
   renderPopular = () => {
-    const { classes, genres, items, userSelf, itemsById, loading } = this.props;
+    const { classes, genres, items, userSelf, itemsById } = this.props;
     const {
       filters: { genresFilter, itemTypes },
       createDynamicListDialogOpen,

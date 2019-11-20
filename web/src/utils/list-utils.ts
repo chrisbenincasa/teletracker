@@ -1,5 +1,4 @@
 import {
-  ListRuleTypes,
   ListPersonRule,
   ListTagRule,
   List,

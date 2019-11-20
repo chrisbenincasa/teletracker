@@ -26,6 +26,7 @@ const GoogleLoginButton: FunctionComponent<Props> = (props: Props) => {
       <img
         className={classes.googleButtonIcon}
         src="/images/google_signin/Google__G__Logo.svg"
+        alt="Google Logo"
       />
       <span className={classes.googleButtonText}>Sign In with Google</span>
     </Button>

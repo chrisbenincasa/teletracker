@@ -129,11 +129,6 @@ export const ResponsiveImage: React.FC<imgProps> = ({
     imageSpecs = posterSpecs;
   }
 
-  // This is a workaround because loading prop is not currently typed
-  const imgProps = {
-    loading: 'lazy',
-  };
-
   const handleOnLoad = () => {
     if (loadCallback) {
       loadCallback();
@@ -149,7 +144,6 @@ export const ResponsiveImage: React.FC<imgProps> = ({
           src={imagePlaceholder}
           alt=""
           decoding="async"
-          {...imgProps}
           style={imageStyle}
           itemProp="image"
           onLoad={handleOnLoad}
