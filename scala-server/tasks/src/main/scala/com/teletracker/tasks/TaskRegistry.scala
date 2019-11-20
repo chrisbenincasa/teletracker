@@ -13,7 +13,7 @@ object TaskRegistry {
     classOf[IngestNetflixOriginalsArrivals],
     classOf[IngestHuluChanges],
     classOf[IngestHboChanges],
-    classOf[IngestUnogsNetflixCatalog],
+    classOf[IngestNetflixCatalog],
     classOf[IngestUnogsNetflixExpiring],
     classOf[NetflixCatalogDeltaIngestJob],
     classOf[ImportMoviesFromDump],
