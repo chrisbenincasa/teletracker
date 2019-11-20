@@ -23,8 +23,8 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   networkCache: NetworkCache,
   protected val itemSearch: ItemLookup,
   protected val itemUpdater: ItemUpdater)
-    extends IngestDeltaJob[UnogsNetflixCatalogItem]
-    with IngestDeltaJobWithElasticsearch[UnogsNetflixCatalogItem] {
+    extends IngestDeltaJob[NetflixCatalogItem]
+    with IngestDeltaJobWithElasticsearch[NetflixCatalogItem] {
 
   override protected def networkNames: Set[String] = Set("netflix")
 
@@ -32,7 +32,7 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
     networks: Set[Network],
     itemId: UUID,
     title: String,
-    scrapedItem: UnogsNetflixCatalogItem,
+    scrapedItem: NetflixCatalogItem,
     isAvailable: Boolean
   ): List[Availability] = {
     for {
@@ -59,6 +59,6 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def uniqueKey(item: UnogsNetflixCatalogItem): String =
+  override protected def uniqueKey(item: NetflixCatalogItem): String =
     item.externalId.get
 }

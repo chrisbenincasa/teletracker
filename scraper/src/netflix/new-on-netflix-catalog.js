@@ -4,6 +4,8 @@ import { createWriteStream } from '../common/stream_utils';
 import { isProduction } from '../common/env';
 import * as cheerio from 'cheerio';
 import request from 'request-promise';
+import { wait } from '../common/promise_utils';
+import _ from 'lodash';
 
 const nameAndYearRegex = /^(.*)\s\((\d+)\)$/i;
 
@@ -12,6 +14,11 @@ let totalCountRegex = /\[(\d+) titles]\s*-\s*Showing\s*(\d+)\s*to\s*(\d+)/i;
 
 const scrapeType = async letter => {
   try {
+    let pathLetter = letter;
+    if (letter === 'all') {
+      pathLetter = '';
+    }
+
     let [path, stream, flush] = createWriteStream(
       `netflix-catalog-${letter}.json`,
     );
@@ -22,7 +29,7 @@ const scrapeType = async letter => {
       console.log('Fetching offset = ' + (offset || 0));
 
       let $ = await request
-        .get(`https://usa.newonnetflix.info/catalog/a2z/all/${letter}`, {
+        .get(`https://usa.newonnetflix.info/catalog/a2z/all/${pathLetter}`, {
           headers: {
             'User-Agent': USER_AGENT_STRING,
           },
@@ -90,7 +97,7 @@ const scrapeType = async letter => {
             matchResult[2].trim().length
           ) {
             let obj = {
-              name: matchResult[1].trim(),
+              title: matchResult[1].trim(),
               type,
               releaseYear: parseInt(matchResult[2].trim()),
               network: 'Netflix',
@@ -105,6 +112,10 @@ const scrapeType = async letter => {
       } else {
         console.warn('Unexpected shit');
         fetchMore = false;
+      }
+
+      if (fetchMore) {
+        await wait(500);
       }
     } while (fetchMore);
 
@@ -125,17 +136,23 @@ const scrapeType = async letter => {
 };
 
 export const scrape = async event => {
-  let letter = event.letter;
+  try {
+    let letter = event.letter;
 
-  if (!letter) {
-    let aToZ = _.chain(['all'])
-      .concat(_.range(97, 123).map(i => String.fromCharCode(i)))
-      .value();
+    if (!letter) {
+      let aToZ = _.chain(['all'])
+        .concat(_.range(97, 123).map(i => String.fromCharCode(i)))
+        .value();
 
-    for (let i = 0; i < aToZ.length; i++) {
-      await scrapeType(aToZ[i]);
+      for (let i = 0; i < aToZ.length; i++) {
+        console.log('Fetching titles from page: "' + aToZ[i] + '"');
+        await scrapeType(aToZ[i]);
+        await wait(1000);
+      }
+    } else {
+      return scrapeType(letter);
     }
-  } else {
-    return scrapeType(letter);
+  } catch (e) {
+    console.error(e);
   }
 };
