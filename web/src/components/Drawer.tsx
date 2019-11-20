@@ -257,7 +257,7 @@ class Drawer extends Component<Props, State> {
   };
 
   renderListItems = (userList: ListType, index: number) => {
-    let { listsById, match } = this.props;
+    let { listsById } = this.props;
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
     const listPath = `/lists/${list.id}`;
@@ -393,7 +393,7 @@ const mapStateToProps = (appState: AppState) => {
     isAuthed: !!appState.auth.token,
     loadingLists:
       appState.lists.operation.inProgress &&
-      appState.lists.operation.operationType == LIST_RETRIEVE_ALL_INITIATED,
+      appState.lists.operation.operationType === LIST_RETRIEVE_ALL_INITIATED,
     listsById: appState.lists.listsById,
     loading: appState.userSelf.loading,
     isLoggingIn: appState.auth.isLoggingIn,
@@ -411,6 +411,11 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 
 export default withWidth()(
   withStyles(styles, { withTheme: true })(
-    withRouter(connect(mapStateToProps, mapDispatchToProps)(Drawer)),
+    withRouter(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(Drawer),
+    ),
   ),
 );

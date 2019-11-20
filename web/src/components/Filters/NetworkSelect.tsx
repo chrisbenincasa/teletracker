@@ -9,11 +9,8 @@ import {
 } from '@material-ui/core';
 import React, { Component } from 'react';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
-import { Network, NetworkType } from '../../types';
-import {
-  parseFilterParamsFromQs,
-  updateURLParameters,
-} from '../../utils/urlHelper';
+import { NetworkType } from '../../types';
+import { parseFilterParamsFromQs } from '../../utils/urlHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -108,6 +105,7 @@ class NetworkSelect extends Component<Props> {
                 <img
                   className={classes.networkIcon}
                   src={`/images/logos/netflix/icon.jpg`}
+                  alt="Netflix logo"
                 />
               }
               className={classes.filterButtons}
@@ -126,6 +124,7 @@ class NetworkSelect extends Component<Props> {
                 <img
                   className={classes.networkIcon}
                   src={`/images/logos/hulu/icon.jpg`}
+                  alt="Hulu logo"
                 />
               }
             >
@@ -146,6 +145,7 @@ class NetworkSelect extends Component<Props> {
                 <img
                   className={classes.networkIcon}
                   src={`/images/logos/hbo-now/icon.jpg`}
+                  alt="HBO logo"
                 />
               }
             >
