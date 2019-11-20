@@ -14,6 +14,7 @@ const styles = () =>
   createStyles({
     chip: {
       margin: 4,
+      flexGrow: 1,
     },
     chipContainer: {
       display: 'flex',

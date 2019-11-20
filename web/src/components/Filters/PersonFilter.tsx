@@ -10,10 +10,7 @@ import { truncateText } from '../../utils/textHelper';
 
 const useStyles = makeStyles(theme => ({
   autocompleteField: {
-    width: 300,
-    [theme.breakpoints.down('sm')]: {
-      width: '100%',
-    },
+    width: '100%',
   },
   poster: {
     width: 25,
