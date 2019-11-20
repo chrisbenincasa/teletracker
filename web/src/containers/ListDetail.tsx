@@ -54,10 +54,8 @@ import { ThingMap } from '../reducers/item-detail';
 import { ListsByIdMap } from '../reducers/lists';
 import {
   Genre,
-  ItemType,
   List,
   SortOptions,
-  NetworkType,
   Network,
   ListGenreRule,
   ListNetworkRule,
@@ -81,7 +79,7 @@ import {
 } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { collect, headOption } from '../utils/collection-utils';
-import { optionalSetsEqual, setsEqual } from '../utils/sets';
+import { optionalSetsEqual } from '../utils/sets';
 import { Person } from '../types/v2/Person';
 
 const styles = (theme: Theme) =>
@@ -887,7 +885,12 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 export default withWidth()(
   withUser(
     withStyles(styles)(
-      withRouter(connect(mapStateToProps, mapDispatchToProps)(ListDetail)),
+      withRouter(
+        connect(
+          mapStateToProps,
+          mapDispatchToProps,
+        )(ListDetail),
+      ),
     ),
   ),
 );

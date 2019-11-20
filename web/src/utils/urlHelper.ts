@@ -7,7 +7,6 @@ import {
   SortOptions,
 } from '../types';
 import { FilterParams } from './searchFilters';
-import { filterParamsEqual } from './changeDetection';
 
 /**
  * Updates or adds URL parameters

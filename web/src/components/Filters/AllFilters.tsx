@@ -9,7 +9,6 @@ import Sliders, { SliderChange } from './Sliders';
 import { FilterParams } from '../../utils/searchFilters';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import PersonFilter from './PersonFilter';
-import { Person } from '../../types/v2/Person';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {

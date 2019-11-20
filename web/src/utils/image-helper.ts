@@ -1,6 +1,6 @@
 import { ApiItem, ItemImage, ApiPerson } from '../types/v2';
 import _ from 'lodash';
-import { Person, PersonCastCredit } from '../types/v2/Person';
+import { Person } from '../types/v2/Person';
 
 export function getTmdbPosterImage(item: ApiItem): ItemImage | undefined {
   return getTmdbImage(item, 'poster');
