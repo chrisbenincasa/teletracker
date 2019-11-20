@@ -37,11 +37,11 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexGrow: 1,
       justifyContent: 'center',
-      margin: theme.spacing(3),
+      margin: theme.spacing(1),
       padding: theme.spacing(1),
     },
     searchResultsContainer: {
-      margin: theme.spacing(3),
+      margin: theme.spacing(1),
       padding: theme.spacing(1),
     },
   });
