@@ -114,7 +114,7 @@ object Person {
         data = castCreditsList,
         paging = materializedCastCredits
           .flatMap(_.bookmark)
-          .map(bm => Paging(Some(bm.toString)))
+          .map(bm => Paging(Some(bm.encode)))
       )
     })
 

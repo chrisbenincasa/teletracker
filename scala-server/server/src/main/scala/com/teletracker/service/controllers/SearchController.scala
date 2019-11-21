@@ -82,7 +82,7 @@ class SearchController @Inject()(
           .contentTypeJson()
           .body(
             DataResponse.forDataResponse(
-              DataResponse(allThings, Some(Paging(bookmark.map(_.asString))))
+              DataResponse(allThings, Some(Paging(bookmark.map(_.encode))))
             )
           )
       }
@@ -116,7 +116,7 @@ class SearchController @Inject()(
             DataResponse.forDataResponse(
               DataResponse(
                 allThings,
-                Some(Paging(result.bookmark.map(_.asString)))
+                Some(Paging(result.bookmark.map(_.encode)))
               )
             )
           )

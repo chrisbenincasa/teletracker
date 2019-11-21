@@ -97,7 +97,7 @@ class PopularItemsController @Inject()(
 
         DataResponse.forDataResponse(
           DataResponse(itemsWithMeta).withPaging(
-            Paging(bookmark.map(_.asString))
+            Paging(bookmark.map(_.encode))
           )
         )
       }
@@ -130,7 +130,7 @@ class PopularItemsController @Inject()(
 
         DataResponse.forDataResponse(
           DataResponse(items).withPaging(
-            Paging(popularItems.bookmark.map(_.asString))
+            Paging(popularItems.bookmark.map(_.encode))
           )
         )
       })
