@@ -5,21 +5,13 @@ import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   EsItem
 }
-import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
-import io.circe.{Decoder, Encoder}
-import org.elasticsearch.action.search.{
-  MultiSearchRequest,
-  MultiSearchRequestBuilder,
-  SearchRequest
-}
-import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
-import org.elasticsearch.index.query.functionscore.{
-  FunctionScoreQueryBuilder,
-  ScoreFunctionBuilders
-}
 import io.circe.syntax._
+import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
+import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
+import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders
+import org.elasticsearch.index.query.{Operator, QueryBuilders}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import scala.concurrent.Future
@@ -27,6 +19,8 @@ import scala.concurrent.Future
 trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
     extends ElasticsearchAccess {
   self: IngestJob[T] with IngestJobWithElasticsearch[T] =>
+
+  protected def requireTypeMatch: Boolean = true
 
   protected def elasticsearchExecutor: ElasticsearchExecutor
 
@@ -70,8 +64,9 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
         group
           .map(nonMatch => {
             val query = exactTitleMatchQuery(nonMatch)
-            new SearchRequest("items")
+            val src = new SearchRequest("items")
               .source(new SearchSourceBuilder().query(query))
+            src
           })
           .foreach(exactMatchMultiSearch.add)
 
@@ -217,15 +212,20 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
   private def exactTitleMatchQuery(nonMatch: T) = {
     QueryBuilders
       .boolQuery()
-      .must(
-        QueryBuilders.termQuery("original_title", nonMatch.title)
-      )
-      .must(
-        QueryBuilders.termQuery("title", nonMatch.title)
-      )
-      .filter(
+      .should(
         QueryBuilders
-          .termQuery("type", nonMatch.thingType.getName.toLowerCase())
+          .matchQuery("original_title", nonMatch.title)
+          .operator(Operator.AND)
+      )
+      .should(
+        QueryBuilders.matchQuery("title", nonMatch.title).operator(Operator.AND)
+      )
+      .minimumShouldMatch(1)
+      .applyIf(requireTypeMatch)(
+        _.filter(
+          QueryBuilders
+            .termQuery("type", nonMatch.thingType.getName.toLowerCase())
+        )
       )
       .applyOptional(nonMatch.releaseYear)(
         (builder, ry) =>
@@ -234,7 +234,7 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
               .rangeQuery("release_date")
               .format("yyyy")
               .gte(s"${ry}||/y")
-              .lte(s"${ry}||/y")
+              .lte(s"${ry - 1}||/y")
           )
       )
   }
@@ -243,15 +243,22 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
     QueryBuilders.functionScoreQuery(
       QueryBuilders
         .boolQuery()
-        .must(
-          QueryBuilders.matchQuery("original_title", nonMatch.title)
-        )
-        .must(
-          QueryBuilders.matchQuery("title", nonMatch.title)
-        )
-        .filter(
+        .should(
           QueryBuilders
-            .termQuery("type", nonMatch.thingType.getName.toLowerCase())
+            .matchQuery("original_title", nonMatch.title)
+            .operator(Operator.AND)
+        )
+        .should(
+          QueryBuilders
+            .matchQuery("title", nonMatch.title)
+            .operator(Operator.AND)
+        )
+        .minimumShouldMatch(1)
+        .applyIf(requireTypeMatch)(
+          _.filter(
+            QueryBuilders
+              .termQuery("type", nonMatch.thingType.getName.toLowerCase())
+          )
         )
         .applyOptional(nonMatch.releaseYear)(
           (builder, ry) =>

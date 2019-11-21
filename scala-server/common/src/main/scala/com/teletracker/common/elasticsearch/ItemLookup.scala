@@ -5,7 +5,7 @@ import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Slug
 import javax.inject.Inject
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
-import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
+import org.elasticsearch.index.query.{BoolQueryBuilder, Operator, QueryBuilders}
 import org.elasticsearch.indices.TermsLookup
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import java.util.UUID
@@ -237,10 +237,10 @@ class ItemLookup @Inject()(
     QueryBuilders
       .boolQuery()
       .should(
-        QueryBuilders.matchQuery("original_title", title)
+        QueryBuilders.matchQuery("original_title", title).operator(Operator.AND)
       )
       .should(
-        QueryBuilders.matchQuery("title", title)
+        QueryBuilders.matchQuery("title", title).operator(Operator.AND)
       )
       .minimumShouldMatch(1)
       .applyOptional(thingType)(

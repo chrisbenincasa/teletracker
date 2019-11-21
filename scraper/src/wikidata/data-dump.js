@@ -13,6 +13,11 @@ const wbk = require('wikibase-sdk')({
 });
 
 const getAndProcessObject = async (bucket, object, type, offset, limit) => {
+  let accessKey = 'tmdb_id';
+  if (type === 'imdb_movie' || type === 'imdb_show') {
+    accessKey = 'imdb_id';
+  }
+
   console.log(`Preparing to process: s3://${bucket}/${object.Key}`);
   console.time(object.Key);
 
@@ -22,7 +27,11 @@ const getAndProcessObject = async (bucket, object, type, offset, limit) => {
       .map(s => s.trim())
       .filter(s => s.length > 0)
       .map(line => JSON.parse(line))
-      .sortBy(i => Number(i.tmdb_id))
+      .sortBy(i => {
+        let value = i[accessKey];
+        let number = parseInt(value);
+        return isNaN(number) ? value : number;
+      })
       .slice(offset, limit === -1 ? undefined : offset + limit)
       .value();
   });
@@ -36,8 +45,8 @@ const getAndProcessObject = async (bucket, object, type, offset, limit) => {
 
   let urls = wbk.getManyEntities({ ids: wikiIds });
 
-  let minId = _.minBy(objs, o => Number(o.tmdb_id)).tmdb_id;
-  let maxId = _.maxBy(objs, o => Number(o.tmdb_id)).tmdb_id;
+  let minId = _.first(objs)[accessKey];
+  let maxId = _.last(objs)[accessKey];
   let fileName = `${type}-${minId}_${maxId}-wikidata-dump.json`;
   let [path, stream, flush] = createWriteStream(fileName);
 
@@ -55,7 +64,7 @@ const getAndProcessObject = async (bucket, object, type, offset, limit) => {
       Object.keys(body.entities)
         .map(id => {
           return {
-            tmdb_id: byId[id].tmdb_id,
+            [accessKey]: byId[id][accessKey],
             entity: body.entities[id],
           };
         })
