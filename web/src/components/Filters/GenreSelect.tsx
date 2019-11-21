@@ -70,7 +70,7 @@ class GenreSelect extends Component<Props> {
       disabledGenres && selectedGenres
         ? _.difference(disabledGenres, selectedGenres)
         : undefined;
-    console.log(genres || []);
+
     return (
       <div className={classes.genreContainer}>
         <Typography display="block">Genre</Typography>
