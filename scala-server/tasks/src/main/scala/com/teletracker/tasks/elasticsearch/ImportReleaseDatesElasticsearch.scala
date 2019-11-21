@@ -21,7 +21,11 @@ class ImportReleaseDatesElasticsearch @Inject()()
     val limit = args.valueOrDefault("limit", -1)
 
     val fileRotator =
-      new FileRotator("release_dates", StorageUnit.fromMegabytes(99), None)
+      FileRotator.everyNBytes(
+        "release_dates",
+        StorageUnit.fromMegabytes(99),
+        None
+      )
 
     val src = Source.fromURI(thingInput)
     try {
