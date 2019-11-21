@@ -1,11 +1,13 @@
 import * as cheerio from 'cheerio';
-import * as fs from 'fs';
 import * as _ from 'lodash';
 import moment from 'moment';
 import request from 'request-promise';
-import { uploadToStorage } from '../common/storage';
-import { getFilePath } from '../common/tmp_files';
-import { getObjectS3 } from '../common/storage';
+import {getObjectS3, uploadToS3} from '../common/storage';
+import {getFilePath} from '../common/tmp_files';
+import {catalogSitemapS3Key} from "./catalog-sitemap";
+import {DATA_BUCKET} from "../common/constants";
+import {isProduction} from "../common/env";
+import {createWriteStream} from "../common/stream_utils";
 
 const uaString =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
@@ -181,15 +183,11 @@ const scrapeTvShow = async firstEpisodeUrl => {
 
 const loadSitemapEntries = async date => {
   return getObjectS3(
-    'teletracker-data',
-    `scrape-results/${date}/hbo-catalog-urls.txt`,
+    DATA_BUCKET,
+    catalogSitemapS3Key(date),
   ).then(body => {
     return body.toString('utf-8').split('\n');
   });
-};
-
-const createWriteStream = fileName => {
-  return fs.createWriteStream(fileName, 'utf-8');
 };
 
 const scrape = async (event, context) => {
@@ -210,7 +208,7 @@ const scrape = async (event, context) => {
   let fileName = nowString + '_hbo-catalog.' + event.band + '.json';
   let filePath = getFilePath(fileName);
 
-  let stream = createWriteStream(filePath);
+  let [path, stream, flush] = createWriteStream(filePath);
 
   let endMovies = _.chain(entries)
     .filter(entry => movieRegex.test(entry))
@@ -257,9 +255,11 @@ const scrape = async (event, context) => {
 
   stream.close();
 
+  await flush;
+
   let currentDate = moment().format('YYYY-MM-DD');
-  if (process.env.NODE_ENV === 'production') {
-    await uploadToStorage(fileName, 'scrape-results/' + currentDate);
+  if (isProduction()) {
+    await uploadToS3(DATA_BUCKET, path, `scrape-results/hbo/${currentDate}/${fileName}`);
   }
 };
 

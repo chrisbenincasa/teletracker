@@ -106,6 +106,9 @@ lazy val consumer = project
     Compile / run / mainClass := Some(
       "com.teletracker.consumers.QueueConsumerDaemon"
     ),
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % "3.0.5" % Test
+    ),
     Revolver.enableDebugging(port = 5005, suspend = false),
     dockerfile in docker := {
       // The assembly task generates a fat JAR file

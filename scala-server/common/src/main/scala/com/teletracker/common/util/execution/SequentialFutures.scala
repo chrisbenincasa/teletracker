@@ -38,19 +38,19 @@ object SequentialFutures {
   // BUG HERE
   def batchedIterator[Element](
     collection: Iterator[Element],
-    batchSize: Int
+    batchSize: Int,
+    perElementWait: Option[FiniteDuration] = None
   )(
     fn: Iterable[Element] => Future[Unit]
   )(implicit ec: ExecutionContext
   ): Future[Unit] = {
     def process(curr: List[Element]): Future[Unit] = {
-      fn(curr).flatMap(result => {
-        if (collection.isEmpty) {
-          Future.unit
-        } else {
-          process(collection.take(batchSize).toList)
-        }
-      })
+      for {
+        _ <- fn(curr)
+        _ <- perElementWait.map(makeWaitFuture).getOrElse(Future.unit)
+        _ <- if (collection.isEmpty) Future.unit
+        else process(collection.take(batchSize).toList)
+      } yield {}
     }
 
     process(collection.take(batchSize).toList)

@@ -6,7 +6,10 @@ import { isProduction } from '../common/env';
 import { DATA_BUCKET, USER_AGENT_STRING } from '../common/constants';
 import { createWriteStream } from '../common/stream_utils';
 
-const OUTPUT_FILE_NAME = 'hbo-catalog-urls.txt';
+export const OUTPUT_FILE_NAME = 'hbo-catalog-urls.txt';
+export function catalogSitemapS3Key(date) {
+  return `scrape-results/hbo/${date}/catalog/${OUTPUT_FILE_NAME}`
+}
 
 export const scrape = async (event, context) => {
   let sitemap = await request({
@@ -38,7 +41,7 @@ export const scrape = async (event, context) => {
   if (isProduction()) {
     return await uploadToS3(
       DATA_BUCKET,
-      `scrape-results/${formatted}/${OUTPUT_FILE_NAME}`,
+      catalogSitemapS3Key(formatted),
       filePath,
     );
   }

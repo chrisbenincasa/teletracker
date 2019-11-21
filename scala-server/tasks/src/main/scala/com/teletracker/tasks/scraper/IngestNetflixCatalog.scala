@@ -38,9 +38,6 @@ class IngestNetflixCatalog @Inject()(
 
   override protected def parseMode: ParseMode = JsonPerLine
 
-  override protected def processMode(args: IngestJobArgs): ProcessMode =
-    Parallel(32)
-
   override protected def matchMode: MatchMode =
     elasticsearchLookup
 

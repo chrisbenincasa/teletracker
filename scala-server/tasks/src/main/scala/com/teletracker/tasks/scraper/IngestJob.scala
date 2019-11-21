@@ -70,7 +70,8 @@ case class IngestJobArgs(
   offset: Int = 0,
   limit: Int = -1,
   titleMatchThreshold: Int = 15,
-  dryRun: Boolean = true)
+  dryRun: Boolean = true,
+  parallelism: Int = 32)
     extends IngestJobArgsLike
 
 abstract class IngestJob[T <: ScrapedItem](
@@ -114,7 +115,8 @@ abstract class IngestJob[T <: ScrapedItem](
   protected def parseMode: ParseMode = AllJson
   protected def matchMode: MatchMode = new DbLookup(thingsDb)
 
-  protected def processMode(args: IngestJobArgs): ProcessMode = Serial
+  protected def processMode(args: IngestJobArgs): ProcessMode =
+    Parallel(args.parallelism)
 
   override type TypedArgs = IngestJobArgs
 
@@ -131,7 +133,8 @@ abstract class IngestJob[T <: ScrapedItem](
       offset = args.valueOrDefault("offset", 0),
       limit = args.valueOrDefault("limit", -1),
       titleMatchThreshold = args.valueOrDefault("fuzzyThreshold", 15),
-      dryRun = args.valueOrDefault("dryRun", true)
+      dryRun = args.valueOrDefault("dryRun", true),
+      parallelism = args.valueOrDefault("parallelism", 32)
     )
   }
 
