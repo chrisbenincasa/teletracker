@@ -27,18 +27,17 @@ import { bindActionCreators } from 'redux';
 import {
   addToList,
   createList,
-  LIST_ADD_ITEM_INITIATED,
   ListTrackingUpdatedInitiatedPayload,
+  LIST_ADD_ITEM_INITIATED,
   updateListTracking,
-  USER_SELF_CREATE_LIST,
   UserCreateListPayload,
+  USER_SELF_CREATE_LIST,
 } from '../actions/lists';
 import { AppState } from '../reducers';
 import { ListOperationState, ListsByIdMap } from '../reducers/lists';
 import { UserSelf } from '../reducers/user';
 import { List } from '../types';
-import { ApiItem } from '../types/v2';
-import { itemBelongsToLists } from '../types/v2/Item';
+import { Item, itemBelongsToLists } from '../types/v2/Item';
 import CreateAListValidator, {
   CreateAListValidationStateObj,
 } from '../utils/validation/CreateAListValidator';
@@ -68,7 +67,7 @@ interface AddToListDialogProps {
   open: boolean;
   onClose: () => void;
   userSelf?: UserSelf;
-  item: ApiItem;
+  item: Item;
   listOperations: ListOperationState;
   listItemAddLoading: boolean;
   createAListLoading: boolean;
@@ -170,7 +169,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     });
   };
 
-  listContainsItem = (list: List, item: ApiItem) => {
+  listContainsItem = (list: List, item: Item) => {
     return itemBelongsToLists(item).includes(list.id);
   };
 
@@ -304,7 +303,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
           maxWidth="sm"
         >
           <DialogTitle id="update-tracking-dialog">
-            Add or Remove {this.props.item.original_title} from your lists
+            Add or Remove {this.props.item.canonicalTitle} from your lists
           </DialogTitle>
 
           <DialogContent className={classes.dialogContainer}>
