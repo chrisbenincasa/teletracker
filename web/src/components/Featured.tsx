@@ -19,6 +19,7 @@ import {
   formatRuntime,
   getVoteAverage,
   getVoteCount,
+  truncateText,
 } from '../utils/textHelper';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -43,6 +44,16 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: '25%',
     [theme.breakpoints.up('md')]: {
       width: '30%',
+    },
+  },
+  ratingContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+  },
+  ratingVoteCount: {
+    marginRight: 10,
+    [theme.breakpoints.down('sm')]: {
+      display: 'none',
     },
   },
   title: {
@@ -100,14 +111,14 @@ function Featured(props: Props) {
     return (
       <div className={classes.titleContainer}>
         <Typography color="inherit" variant="h4" itemProp="name">
-          {title}
+          {truncateText(title, 200)}
         </Typography>
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
+        <div className={classes.ratingContainer}>
           <Rating value={voteAverage} precision={0.1} readOnly />
           <Typography
             color="inherit"
             variant="body1"
-            style={{ marginRight: 10 }}
+            className={classes.ratingVoteCount}
           >
             {`(${voteCount})`}
           </Typography>
@@ -177,10 +188,7 @@ function Featured(props: Props) {
                       }}
                     />
                   </RouterLink>
-                  <ManageTracking
-                    itemDetail={item}
-                    style={{ maxWidth: 225, width: '100%' }}
-                  />
+                  <ManageTracking itemDetail={item} style={{ maxWidth: 225 }} />
 
                   <AddToListDialog
                     open={manageTrackingModalOpen}

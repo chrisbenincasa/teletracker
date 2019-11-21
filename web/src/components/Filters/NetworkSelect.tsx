@@ -20,7 +20,6 @@ const styles = (theme: Theme) =>
       flexWrap: 'wrap',
     },
     buttonGroup: {
-      marginRight: theme.spacing(1),
       whiteSpace: 'nowrap',
     },
     filterLabel: {
@@ -33,9 +32,14 @@ const styles = (theme: Theme) =>
     },
     networkIcon: {
       width: 20,
+      height: 20,
       borderRadius: '10%',
     },
-    networkContainer: { display: 'flex', flexDirection: 'column' },
+    networkContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100%',
+    },
   });
 
 interface OwnProps {
@@ -82,6 +86,7 @@ class NetworkSelect extends Component<Props> {
             variant="contained"
             color="primary"
             aria-label="Filter by Netflix, Hulu, HBO, or All"
+            fullWidth
             className={classes.buttonGroup}
           >
             <Button

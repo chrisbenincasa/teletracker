@@ -22,13 +22,17 @@ const useStyles = makeStyles((theme: Theme) => ({
       display: 'flex',
     },
     [theme.breakpoints.down('sm')]: {
+      display: 'flex',
       flexDirection: 'column',
     },
     zIndex: 1000,
     marginBottom: theme.spacing(1),
     flexGrow: 1,
   },
-  filterTitle: { display: 'block', width: '100%' },
+  filterTitle: {
+    display: 'block',
+    width: '100%',
+  },
   genreContainer: {
     display: 'flex',
     flexDirection: 'row',
@@ -39,13 +43,39 @@ const useStyles = makeStyles((theme: Theme) => ({
       width: '100%',
     },
   },
-  slidersContainer: {
+  peopleContainer: {
     display: 'flex',
     flexGrow: 1,
     margin: `${theme.spacing(1)}px 0`,
     alignItems: 'flex-start',
+    width: '100%',
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
+  },
+  slidersContainer: {
+    display: 'flex',
+    flexGrow: 1,
+    margin: `0 ${theme.spacing(3)}px`,
+    [theme.breakpoints.down('md')]: {
+      margin: 0,
+    },
+    alignItems: 'flex-start',
     flexDirection: 'column',
-    width: '30%',
+    width: '20%',
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
+  },
+  sliderContainer: {
+    display: 'flex',
+    flexGrow: 1,
+    margin: `${theme.spacing(1)}px 0`,
+    alignItems: 'flex-start',
+    width: '100%',
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
   },
   networkContainer: {
     display: 'flex',
@@ -53,7 +83,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     alignItems: 'flex-start',
     flexGrow: 1,
     flexDirection: 'column',
-    width: '30%',
+    width: '40%',
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
     '& > div': {
       marginBottom: theme.spacing(1),
     },
@@ -176,13 +209,17 @@ const AllFilters = (props: Props) => {
           </div>
 
           <div className={classes.slidersContainer}>
-            {!disableSliders ? (
-              <Sliders handleChange={setSliders} sliders={filters.sliders} />
-            ) : null}
-            <PersonFilter
-              handleChange={setPeople}
-              selectedCast={filters.people}
-            />
+            <div className={classes.sliderContainer}>
+              {!disableSliders ? (
+                <Sliders handleChange={setSliders} sliders={filters.sliders} />
+              ) : null}
+            </div>
+            <div className={classes.peopleContainer}>
+              <PersonFilter
+                handleChange={setPeople}
+                selectedCast={filters.people}
+              />
+            </div>
           </div>
 
           <div className={classes.networkContainer}>
