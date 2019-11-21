@@ -71,9 +71,9 @@ const styles = (theme: Theme) =>
     backdropContainer: {
       height: 'auto',
       overflow: 'hidden',
-      position: 'absolute',
       top: 0,
       width: '100%',
+      position: 'fixed',
     },
     backdropGradient: {
       position: 'absolute',
@@ -493,7 +493,6 @@ function ItemDetails(props: Props) {
                 display: 'block',
                 position: 'relative',
                 height: 'auto',
-                filter: 'blur(3px)',
               }}
             />
             <div className={classes.backdropGradient} />
