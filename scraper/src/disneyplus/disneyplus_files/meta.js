@@ -1,0 +1,10 @@
+window.meta=(function($){var SERVER=base_path+'/meta';var onsuccess=null;var onerror=null;var descriptionLength=200;var httpsOnly=false;function init(options){options=options||{};descriptionLength=options.descriptionLength||descriptionLength;httpsOnly=options.httpsOnly||httpsOnly;}
+function addEvent(name,callback){if(name==="success")onsuccess=callback;if(name==="error")onerror=callback;}
+function firstIfNotString(e){return(typeof e==="string")?e:e[0];}
+function parseData(data){if(!data.title||!data.image)return null;var parsed={};parsed.title=firstIfNotString(data.title);parsed.image=data.image;if(data.image_secure_url){parsed.image=data.image_secure_url;}
+parsed.image=firstIfNotString(parsed.image);if(httpsOnly&&!RegExp("^https://","i").test(parsed.image))return null;if(data.description){parsed.description=firstIfNotString(data.description);}
+if(parsed.description&&parsed.description.length>descriptionLength-1){parsed.description=parsed.description.substr(0,descriptionLength-1)+"…";}
+return parsed;}
+function replaceLink(link,parsedData){var url=link.getAttribute("href");var template=document.querySelector("#meta-template").cloneNode(true);var optionHide=template.dataset.optionHide==="true";var html=template.innerHTML;html=html.replace(/replace-description/g,parsedData.description?'':'no-description');html=html.replace(/\${title}/g,parsedData.title);html=html.replace(/\${url}/g,url);html=html.replace(/\${description}/g,parsedData.description||"");html=html.replace(/\${image}/g,parsedData.image);var wrap=document.createElement("div");wrap.innerHTML=html;link.parentNode.insertBefore(wrap,link);if(optionHide){link.style.display="none";}}
+function main(selector){var links=document.querySelectorAll(selector);var i=0,max=links.length;for(;i<max;i++){(function(link){var url=link.getAttribute('href');$.ajax({url:SERVER+'?url='+url,success:function(data,textStatus,jqXHR){parsedData=parseData(data);if(parsedData){replaceLink(link,parsedData);if(onsuccess)onsuccess(link,parseData);}else{if(onerror)onerror(link);}}});})(links[i]);}}
+return{init:init,start:main,addEventListener:addEvent}})(jQuery);
