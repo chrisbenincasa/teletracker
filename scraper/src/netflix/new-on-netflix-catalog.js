@@ -6,7 +6,10 @@ import * as cheerio from 'cheerio';
 import request from 'request-promise';
 import { wait } from '../common/promise_utils';
 import _ from 'lodash';
+import moment from 'moment';
+import AWS from 'aws-sdk';
 
+const FunctionName = 'new-on-netflix-catalog';
 const nameAndYearRegex = /^(.*)\s\((\d+)\)$/i;
 
 // Format: [384 titles] - Showing 1 to 120
@@ -124,9 +127,11 @@ const scrapeType = async letter => {
     await flush;
 
     if (isProduction()) {
+      let currentDate = moment().format('YYYY-MM-DD');
+
       await uploadToS3(
         DATA_BUCKET,
-        `scrape-results/netflix/whats-on-netflix/${currentDate}/netflix-${typ}-catalog.json`,
+        `scrape-results/netflix/new-on-netflix/${currentDate}/netflix-catalog-${letter}.json.json`,
         path,
       );
     }
@@ -135,14 +140,40 @@ const scrapeType = async letter => {
   }
 };
 
+const A_CHAR_CODE = 97;
+const Z_CHAR_CODE = 122;
+
+function getLetterRange(start, limit) {
+  if (start === 'all') {
+    let max;
+    if (!limit || limit === -1) {
+      max = Z_CHAR_CODE + 1;
+    } else {
+      max = Math.min(A_CHAR_CODE + limit - 1, Z_CHAR_CODE + 1);
+    }
+
+    return _.chain(['all'])
+      .concat(_.range(A_CHAR_CODE, max).map(i => String.fromCharCode(i)))
+      .value();
+  } else if (start >= A_CHAR_CODE && start <= Z_CHAR_CODE) {
+    if (limit === -1) {
+      return _.range(start, Z_CHAR_CODE + 1).map(i => String.fromCharCode(i));
+    } else {
+      // Pick the range up to 'z'
+      let maxLetter = Math.min(Z_CHAR_CODE + 1, start + limit);
+      return _.range(start, maxLetter).map(i => String.fromCharCode(i));
+    }
+  } else {
+    return [];
+  }
+}
+
 export const scrape = async event => {
   try {
     let letter = event.letter;
 
     if (!letter) {
-      let aToZ = _.chain(['all'])
-        .concat(_.range(97, 123).map(i => String.fromCharCode(i)))
-        .value();
+      let aToZ = getLetterRange('all');
 
       for (let i = 0; i < aToZ.length; i++) {
         console.log('Fetching titles from page: "' + aToZ[i] + '"');
@@ -150,7 +181,55 @@ export const scrape = async event => {
         await wait(1000);
       }
     } else {
-      return scrapeType(letter);
+      let limit = event.limit || -1;
+
+      let nextLetter;
+      let range = getLetterRange(letter, limit);
+
+      let maxLetter = _.max(range);
+      if (maxLetter) {
+        if (maxLetter === 'all') {
+          nextLetter = 'a';
+        } else if (maxLetter.charCodeAt(0) < Z_CHAR_CODE) {
+          nextLetter = maxLetter;
+        }
+      }
+
+      if (range.length) {
+        console.log(`Scraping from ${_.head(range)} to ${_.last(range)}`);
+
+        for (let i = 0; i < range.length; i++) {
+          console.log('Fetching titles from page: "' + range[i] + '"');
+          await scrapeType(range[i]);
+          await wait(1000);
+        }
+
+        // Either we didn't pass "scheduleNext", which is an implicit true, or we did and we use that value
+        let scheduleNext;
+        if (_.isUndefined(event.scheduleNext)) {
+          scheduleNext = true;
+        } else {
+          scheduleNext = Boolean(event.scheduleNext);
+        }
+
+        // If we want to schedule and have more to do, do it.
+        if (Boolean(scheduleNext) && nextLetter) {
+          const lambda = new AWS.Lambda({
+            region: 'us-west-1',
+          });
+
+          await lambda
+            .invoke({
+              FunctionName,
+              InvocationType: 'Event',
+              Payload: Buffer.from(
+                JSON.stringify({ scheduleNext, letter: nextLetter }),
+                'utf-8',
+              ),
+            })
+            .promise();
+        }
+      }
     }
   } catch (e) {
     console.error(e);
