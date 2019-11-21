@@ -15,6 +15,7 @@ import { TeletrackerApi } from './api-client';
 import { CognitoUser } from 'amazon-cognito-identity-js';
 import Auth from '@aws-amplify/auth';
 import { Id, Slug } from '../types/v2';
+import { FilterParams } from './searchFilters';
 
 export class SagaTeletrackerClient {
   static instance = new SagaTeletrackerClient();
@@ -159,6 +160,22 @@ export class SagaTeletrackerClient {
       client => client.getPerson,
       yield call([this, this.withToken]),
       id,
+    );
+  }
+
+  *getPersonCredits(
+    personId: Id | Slug,
+    filterParams?: FilterParams,
+    limit?: number,
+    bookmark?: string,
+  ) {
+    return yield this.apiCall(
+      client => client.getPersonCredits,
+      yield call([this, this.withToken]),
+      personId,
+      filterParams,
+      limit,
+      bookmark,
     );
   }
 

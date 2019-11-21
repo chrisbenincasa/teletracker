@@ -183,7 +183,7 @@ class UserController @Inject()(
                   .body(
                     DataResponse.forDataResponse(
                       DataResponse(trackedList)
-                        .withPaging(Paging(bookmark.map(_.asString)))
+                        .withPaging(Paging(bookmark.map(_.encode)))
                     )
                   )
             }
@@ -539,7 +539,7 @@ class UserController @Inject()(
                     DataResponse.forDataResponse(
                       DataResponse(
                         list
-                      ).withPaging(Paging(bookmark.map(_.asString)))
+                      ).withPaging(Paging(bookmark.map(_.encode)))
                     )
                   )
             }

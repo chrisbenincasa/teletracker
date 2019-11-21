@@ -10,7 +10,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Add, Tune } from '@material-ui/icons';
+import { Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -43,6 +43,7 @@ import {
   peopleFetchInitiated,
   PeopleFetchInitiatedPayload,
 } from '../actions/people/get_people';
+import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -342,10 +343,7 @@ class Explore extends Component<Props, State> {
             <Tune />
             <Typography variant="srOnly">Tune</Typography>
           </IconButton>
-          <IconButton onClick={this.createListFromFilters}>
-            <Add />
-            <Typography variant="srOnly">Save as List</Typography>
-          </IconButton>
+          <CreateSmartListButton onClick={this.createListFromFilters} />
         </div>
         <div className={classes.filters}>
           <ActiveFilters
