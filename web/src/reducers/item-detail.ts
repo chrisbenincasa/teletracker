@@ -27,6 +27,10 @@ import {
   ExploreSuccessfulAction,
 } from '../actions/explore';
 import { SEARCH_SUCCESSFUL, SearchSuccessfulAction } from '../actions/search';
+import {
+  PERSON_CREDITS_FETCH_SUCCESSFUL,
+  PersonCreditsFetchSuccessfulAction,
+} from '../actions/people/get_credits';
 
 export type ThingMap = {
   [key: string]: Item;
@@ -161,6 +165,18 @@ const handleExploreRetrieveSuccess = handleAction<
   }
 });
 
+const peopleCreditsFetchSuccess = handleAction(
+  PERSON_CREDITS_FETCH_SUCCESSFUL,
+  (state: State, { payload }: PersonCreditsFetchSuccessfulAction) => {
+    if (payload && payload.credits) {
+      let things = payload.credits;
+      return updateStateWithNewThings(state, things);
+    } else {
+      return state;
+    }
+  },
+);
+
 const handleSearchRetrieveSuccess = handleAction<SearchSuccessfulAction, State>(
   SEARCH_SUCCESSFUL,
   (state, action) => {
@@ -243,4 +259,5 @@ export default flattenActions(
   handlePopularRetrieveSuccess,
   handleExploreRetrieveSuccess,
   handleSearchRetrieveSuccess,
+  peopleCreditsFetchSuccess,
 );
