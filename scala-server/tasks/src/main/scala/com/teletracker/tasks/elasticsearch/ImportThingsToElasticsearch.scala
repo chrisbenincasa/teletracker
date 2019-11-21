@@ -65,11 +65,12 @@ class ImportThingsToElasticsearch @Inject()(
     val personIdToSlugInput = args.value[URI]("personSlugMapping").get
     val offset = args.valueOrDefault[Int]("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
+    val thingIdFilter = args.value[UUID]("thingIdFilter")
     val outputPath =
       args.valueOrDefault("outputPath", System.getProperty("user.dir"))
 
     val fileRotator =
-      new FileRotator(
+      FileRotator.everyNBytes(
         "item_output",
         StorageUnit.fromMegabytes(90),
         Some(outputPath)
@@ -119,6 +120,10 @@ class ImportThingsToElasticsearch @Inject()(
           case (line, idx) => {
             SqlDumpSanitizer
               .extractThingFromLine(line, Some(idx))
+              .filter(
+                mapped =>
+                  thingIdFilter.isEmpty || mapped.id == thingIdFilter.get
+              )
               .foreach(thing => {
                 val esThing = if (thing.`type` == ThingType.Movie) {
                   handleMovie(
