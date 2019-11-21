@@ -14,7 +14,7 @@ import { FilterParams, SlidersState } from '../../utils/searchFilters';
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {
     width: '100%',
-    padding: `0 ${theme.spacing(3)}px`,
+    padding: `0 ${theme.spacing(2)}px`,
   },
 }));
 

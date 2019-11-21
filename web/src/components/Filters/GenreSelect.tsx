@@ -14,6 +14,7 @@ const styles = () =>
   createStyles({
     chip: {
       margin: 4,
+      flexGrow: 1,
     },
     chipContainer: {
       display: 'flex',
@@ -87,23 +88,25 @@ class GenreSelect extends Component<Props> {
             className={classes.chip}
             disabled={!!excludeGenres}
           />
-          {(genres || []).map(item => {
-            return (
-              <Chip
-                key={item.id}
-                onClick={() => this.updateSelectedGenres('genres', item.id)}
-                size="medium"
-                color={
-                  selectedGenres && selectedGenres.includes(item.id)
-                    ? 'secondary'
-                    : 'primary'
-                }
-                label={item.name}
-                className={classes.chip}
-                disabled={excludeGenres && excludeGenres.includes(item.id)}
-              />
-            );
-          })}
+          {(genres || [])
+            .sort((a, b) => (a.name > b.name ? 1 : -1))
+            .map(item => {
+              return (
+                <Chip
+                  key={item.id}
+                  onClick={() => this.updateSelectedGenres('genres', item.id)}
+                  size="medium"
+                  color={
+                    selectedGenres && selectedGenres.includes(item.id)
+                      ? 'secondary'
+                      : 'primary'
+                  }
+                  label={item.name}
+                  className={classes.chip}
+                  disabled={excludeGenres && excludeGenres.includes(item.id)}
+                />
+              );
+            })}
         </div>
       </div>
     );

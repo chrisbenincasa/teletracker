@@ -7,7 +7,11 @@ import 'sanitize.css/sanitize.css';
 import App from './containers/App';
 import './index.css';
 import createStore, { history } from './store';
-import { createMuiTheme, MuiThemeProvider } from '@material-ui/core';
+import {
+  createMuiTheme,
+  MuiThemeProvider,
+  responsiveFontSizes,
+} from '@material-ui/core';
 import { blueGrey } from '@material-ui/core/colors';
 import Amplify from '@aws-amplify/core';
 import { launchUri } from '@aws-amplify/auth/lib/OAuth/urlOpener';
@@ -52,12 +56,15 @@ const target = document.querySelector('#root');
 
 export const { store, persistor } = createStore();
 
-const theme = createMuiTheme({
+let theme = createMuiTheme({
   palette: {
     primary: blueGrey,
     type: 'dark',
   },
 });
+
+// https://material-ui.com/customization/typography/#responsive-font-sizes
+theme = responsiveFontSizes(theme, { factor: 3 });
 
 render(
   <Provider store={store}>
