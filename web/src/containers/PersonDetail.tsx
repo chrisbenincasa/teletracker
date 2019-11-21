@@ -59,9 +59,22 @@ const styles = (theme: Theme) =>
       height: '100%',
       display: 'flex',
       zIndex: 1,
-      background:
+    },
+    backdropContainer: {
+      height: 'auto',
+      overflow: 'hidden',
+      top: 0,
+      width: '100%',
+      position: 'fixed',
+    },
+    backdropGradient: {
+      position: 'absolute',
+      top: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'rgba(48, 48, 48, 0.5)',
+      backgroundImage:
         'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
-      //To do: integrate with theme styling for primary
     },
     descriptionContainer: {
       display: 'flex',
@@ -227,9 +240,12 @@ class PersonDetail extends React.Component<Props, State> {
 
     let filterParams = R.mergeDeepRight(
       defaultFilterParams,
-      R.filter(R.compose(R.not, R.isNil))(
-        parseFilterParamsFromQs(props.location.search),
-      ),
+      R.filter(
+        R.compose(
+          R.not,
+          R.isNil,
+        ),
+      )(parseFilterParamsFromQs(props.location.search)),
     ) as FilterParams;
 
     this.state = {
@@ -550,12 +566,16 @@ class PersonDetail extends React.Component<Props, State> {
           <meta
             name="title"
             property="og:title"
-            content={`${person.name} | Where to stream, rent, or buy. Track this person today!`}
+            content={`${
+              person.name
+            } | Where to stream, rent, or buy. Track this person today!`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${
+              person.name
+            } online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="image"
@@ -581,11 +601,15 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="twitter:title"
-            content={`${person.name} - Where to Stream, Rent, or Buy their content`}
+            content={`${
+              person.name
+            } - Where to Stream, Rent, or Buy their content`}
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${
+              person.name
+            } online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="twitter:image"
@@ -593,7 +617,9 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="keywords"
-            content={`${person.name}, stream, streaming, rent, buy, watch, track`}
+            content={`${
+              person.name
+            }, stream, streaming, rent, buy, watch, track`}
           />
           <link
             rel="canonical"
@@ -602,83 +628,86 @@ class PersonDetail extends React.Component<Props, State> {
         </Helmet>
         <div className={classes.backdrop}>
           {backdrop && (
-            <ResponsiveImage
-              item={backdrop}
-              imageType="backdrop"
-              imageStyle={{
-                objectFit: 'cover',
-                objectPosition: 'center top',
-                width: '100%',
-                height: '100%',
-              }}
-              pictureStyle={{
-                position: 'absolute',
-                width: '100%',
-                height: 'auto',
-                opacity: 0.2,
-                filter: 'blur(3px)',
-              }}
-            />
-          )}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-            }}
-          >
-            <Button
-              size="small"
-              onClick={this.props.history.goBack}
-              variant="contained"
-              aria-label="Go Back"
-              style={{ marginTop: 20, marginLeft: 20 }}
-            >
-              <ChevronLeft style={{ marginRight: 8 }} />
-              Go Back
-            </Button>
-
-            <div className={classes.personDetailContainer}>
-              <div className={classes.leftContainer}>
-                <Hidden smUp>{this.renderTitle(person)}</Hidden>
-                <div className={classes.posterContainer}>
-                  <CardMedia
-                    src={imagePlaceholder}
-                    item={person}
-                    component={ResponsiveImage}
-                    imageType="profile"
-                    imageStyle={{
-                      width: '100%',
-                      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
-                    }}
-                  />
-                </div>
-                <ManageTrackingButton
-                  cta={'Track Actor'}
-                  onClick={this.createListForPerson}
+            <React.Fragment>
+              <div className={classes.backdropContainer}>
+                <ResponsiveImage
+                  item={backdrop}
+                  imageType="backdrop"
+                  imageStyle={{
+                    objectFit: 'cover',
+                    objectPosition: 'center top',
+                    width: '100%',
+                    height: '100%',
+                  }}
+                  pictureStyle={{
+                    display: 'block',
+                    position: 'relative',
+                    height: 'auto',
+                  }}
                 />
+                <div className={classes.backdropGradient} />
               </div>
-              <div className={classes.personInformationContainer}>
-                {this.renderDescriptiveDetails(person)}
-                {this.renderFilmography()}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                }}
+              >
+                <Button
+                  size="small"
+                  onClick={this.props.history.goBack}
+                  variant="contained"
+                  aria-label="Go Back"
+                  style={{ marginTop: 20, marginLeft: 20 }}
+                >
+                  <ChevronLeft style={{ marginRight: 8 }} />
+                  Go Back
+                </Button>
+
+                <div className={classes.personDetailContainer}>
+                  <div className={classes.leftContainer}>
+                    <Hidden smUp>{this.renderTitle(person)}</Hidden>
+                    <div className={classes.posterContainer}>
+                      <CardMedia
+                        src={imagePlaceholder}
+                        item={person}
+                        component={ResponsiveImage}
+                        imageType="profile"
+                        imageStyle={{
+                          width: '100%',
+                          boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+                        }}
+                      />
+                    </div>
+                    <ManageTrackingButton
+                      cta={'Track Actor'}
+                      onClick={this.createListForPerson}
+                    />
+                  </div>
+                  <div className={classes.personInformationContainer}>
+                    {this.renderDescriptiveDetails(person)}
+                    {this.renderFilmography()}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <CreateDynamicListDialog
-            filters={this.creditFiltersForCreateDialog()}
-            open={createDynamicListDialogOpen}
-            onClose={this.handleCreateDynamicModalClose}
-            networks={this.props.networks || []}
-            genres={this.props.genres || []}
-          />
-          <CreateDynamicListDialog
-            filters={this.personFiltersForCreateDialog()}
-            open={createPersonListDialogOpen}
-            onClose={this.handleCreateDynamicModalClose}
-            networks={this.props.networks || []}
-            genres={this.props.genres || []}
-            prefilledName={this.props.person!.name}
-          />
+              <CreateDynamicListDialog
+                filters={this.creditFiltersForCreateDialog()}
+                open={createDynamicListDialogOpen}
+                onClose={this.handleCreateDynamicModalClose}
+                networks={this.props.networks || []}
+                genres={this.props.genres || []}
+              />
+              <CreateDynamicListDialog
+                filters={this.personFiltersForCreateDialog()}
+                open={createPersonListDialogOpen}
+                onClose={this.handleCreateDynamicModalClose}
+                networks={this.props.networks || []}
+                genres={this.props.genres || []}
+                prefilledName={this.props.person!.name}
+              />
+            </React.Fragment>
+          )}
         </div>
       </React.Fragment>
     );
@@ -729,6 +758,11 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch =>
 
 export default withUser(
   withStyles(styles)(
-    withRouter(connect(mapStateToProps, mapDispatchToProps)(PersonDetail)),
+    withRouter(
+      connect(
+        mapStateToProps,
+        mapDispatchToProps,
+      )(PersonDetail),
+    ),
   ),
 );
