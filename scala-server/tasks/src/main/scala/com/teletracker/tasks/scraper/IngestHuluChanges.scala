@@ -61,9 +61,6 @@ class IngestHuluChanges @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def processMode(args: IngestJobArgs): ProcessMode =
-    Parallel(32)
-
   override protected def matchMode: MatchMode =
     elasticsearchLookup
 

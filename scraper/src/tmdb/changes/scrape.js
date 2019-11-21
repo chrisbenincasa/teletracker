@@ -82,6 +82,8 @@ const scrape = async event => {
           args: {
             input: `s3://${DATA_BUCKET}/${key}`,
             dryRun: false,
+            parallelism: 4,
+            perBatchSleepMs: 500
           },
           jobTags: ['tag/RequiresTmdbApi'],
         };

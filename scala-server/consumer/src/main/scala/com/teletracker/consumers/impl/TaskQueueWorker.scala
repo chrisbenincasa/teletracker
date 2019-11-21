@@ -2,6 +2,7 @@ package com.teletracker.consumers.impl
 
 import com.teletracker.common.pubsub.{JobTags, TeletrackerTaskQueueMessage}
 import com.teletracker.consumers.SqsQueue
+import com.teletracker.consumers.config.ConsumerConfig
 import com.teletracker.consumers.worker.{
   JobPool,
   SqsQueueThroughputWorker,
@@ -16,12 +17,16 @@ import scala.util.control.NonFatal
 class TaskQueueWorker(
   queue: SqsQueue[TeletrackerTaskQueueMessage],
   config: SqsQueueThroughputWorkerConfig,
-  taskRunner: TeletrackerTaskRunner
+  taskRunner: TeletrackerTaskRunner,
+  consumerConfig: ConsumerConfig
 )(implicit executionContext: ExecutionContext)
     extends SqsQueueThroughputWorker[TeletrackerTaskQueueMessage](queue, config) {
 
-  private val needsTmdbPool = new JobPool("TmdbJobs", 1)
-  private val normalPool = new JobPool("NormalJobs", 2)
+  private val needsTmdbPool =
+    new JobPool("TmdbJobs", consumerConfig.max_tmdb_concurrent_jobs)
+
+  private val normalPool =
+    new JobPool("NormalJobs", consumerConfig.max_regular_concurrent_jobs)
 
   Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
     override def run(): Unit = {

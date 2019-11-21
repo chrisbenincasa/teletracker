@@ -2,7 +2,6 @@ package com.teletracker.tasks.tmdb.import_tasks
 
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{ExternalSource, ThingLike}
-import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.tmdb.{ErrorResponse, HasTmdbId}
 import com.teletracker.common.model.{Thingable, ToEsItem}
 import com.teletracker.common.util.Futures._
@@ -18,6 +17,8 @@ import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
 import java.time.OffsetDateTime
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -25,8 +26,9 @@ case class ImportTmdbDumpTaskArgs(
   input: URI,
   offset: Int = 0,
   limit: Int = -1,
-  parallelism: Int = 8,
+  parallelism: Int = 4,
   perFileLimit: Int = -1,
+  perBatchSleepMs: Option[Int] = None,
   dryRun: Boolean = true)
 
 abstract class ImportTmdbDumpTask[T <: HasTmdbId](
@@ -42,6 +44,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
   import com.teletracker.common.util.json.circe._
 
   protected val logger = LoggerFactory.getLogger(getClass)
+  private val processedCounter = new AtomicInteger()
 
   override type TypedArgs = ImportTmdbDumpTaskArgs
 
@@ -54,8 +57,9 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
       input = args.value[URI]("input").get,
       offset = args.valueOrDefault("offset", 0),
       limit = args.valueOrDefault("limit", -1),
-      parallelism = args.valueOrDefault("parallelism", 8),
+      parallelism = args.valueOrDefault("parallelism", 4),
       perFileLimit = args.valueOrDefault("perFileLimit", -1),
+      perBatchSleepMs = args.value[Int]("perBatchSleepMs"),
       dryRun = args.valueOrDefault("dryRun", true)
     )
   }
@@ -67,6 +71,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
       limit,
       parallelism,
       perFileLimit,
+      perBatchSleepMs,
       _
     ) = preparseArgs(args)
 
@@ -85,19 +90,28 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
                 .flatMap(Function.tupled(extractLine))
                 .filter(shouldHandleItem)
                 .safeTake(perFileLimit),
-              parallelism
+              parallelism,
+              perElementWait = perBatchSleepMs.map(_ millis)
             )(batch => {
               Future
                 .sequence(
                   batch.map(handleItem(typedArgs, _))
                 )
-                .map(_ => {})
+                .map(processes => {
+                  val numProcessed = processes.size
+                  val totalProcessed = processedCounter.addAndGet(numProcessed)
+                  if (totalProcessed % 500 == 0) {
+                    logger.info(s"Processed $totalProcessed items so far.")
+                  }
+                })
             })
             .await()
         } finally {
           source.close()
         }
       })
+
+    logger.info(s"Successfully processed: ${processedCounter.get()} items.")
   }
 
   private def extractLine(

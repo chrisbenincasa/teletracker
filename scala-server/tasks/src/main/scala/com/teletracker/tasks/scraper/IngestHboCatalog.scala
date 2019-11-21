@@ -29,9 +29,6 @@ class IngestHboCatalog @Inject()(
 
   override protected def networkNames: Set[String] = Set("hbo-now", "hbo-go")
 
-  override protected def processMode(args: IngestJobArgs): ProcessMode =
-    Parallel(32)
-
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
   override protected def isAvailable(

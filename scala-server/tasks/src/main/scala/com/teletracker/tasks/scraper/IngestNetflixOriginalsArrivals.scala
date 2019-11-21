@@ -30,9 +30,6 @@ class IngestNetflixOriginalsArrivals @Inject()(
 
   private val farIntoTheFuture = LocalDate.now().plusYears(1)
 
-  override protected def processMode(args: IngestJobArgs): ProcessMode =
-    Parallel(32)
-
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
   override protected def matchMode: MatchMode = elasticsearchLookup

@@ -72,6 +72,9 @@ object BuildConfig {
       case PathList(ps @ _*) if Assembly.isSystemJunkFile(ps.last) =>
         MergeStrategy.discard
 
+      case PathList(ps @ _*) if Assembly.isConfigFile(ps.last) =>
+        MergeStrategy.concat
+
       case _ => MergeStrategy.first
     }
   )
