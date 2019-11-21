@@ -20,6 +20,7 @@ import com.teletracker.common.util.{
 }
 import com.teletracker.common.util.json.circe._
 import com.teletracker.service.api
+import com.teletracker.service.api.model.Item
 import com.teletracker.service.api.{
   ItemSearchRequest,
   PeopleCreditsFilter,
@@ -126,7 +127,9 @@ class PopularItemsController @Inject()(
       )
       .map(popularItems => {
         val items =
-          popularItems.items.map(_.scopeToUser(userId))
+          popularItems.items
+            .map(_.scopeToUser(userId))
+            .map(Item.fromEsItem(_, Nil))
 
         DataResponse.forDataResponse(
           DataResponse(items).withPaging(
