@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import java.util.UUID
 import scala.concurrent.Future
 
-class IngestUnogsNetflixCatalog @Inject()(
+class IngestNetflixCatalog @Inject()(
   protected val tmdbClient: TmdbClient,
   protected val tmdbProcessor: TmdbEntityProcessor,
   protected val thingsDb: ThingsDbAccess,
@@ -31,9 +31,9 @@ class IngestUnogsNetflixCatalog @Inject()(
   protected val itemUpdater: ItemUpdater,
   protected val elasticsearchExecutor: ElasticsearchExecutor,
   elasticsearchLookup: ElasticsearchLookup)
-    extends IngestJob[UnogsNetflixCatalogItem]
-    with IngestJobWithElasticsearch[UnogsNetflixCatalogItem]
-    with ElasticsearchFallbackMatcher[UnogsNetflixCatalogItem] {
+    extends IngestJob[NetflixCatalogItem]
+    with IngestJobWithElasticsearch[NetflixCatalogItem]
+    with ElasticsearchFallbackMatcher[NetflixCatalogItem] {
   override protected def networkNames: Set[String] = Set("netflix")
 
   override protected def parseMode: ParseMode = JsonPerLine
@@ -44,11 +44,13 @@ class IngestUnogsNetflixCatalog @Inject()(
   override protected def matchMode: MatchMode =
     elasticsearchLookup
 
+  override protected def requireTypeMatch: Boolean = false
+
   override protected def createAvailabilities(
     networks: Set[Network],
     itemId: UUID,
     title: String,
-    scrapeItem: UnogsNetflixCatalogItem
+    scrapeItem: NetflixCatalogItem
   ): Future[Seq[Availability]] = {
     SequentialFutures
       .serialize(networks.toSeq)(
@@ -103,7 +105,7 @@ class IngestUnogsNetflixCatalog @Inject()(
 }
 
 @JsonCodec
-case class UnogsNetflixCatalogItem(
+case class NetflixCatalogItem(
   availableDate: Option[String],
   title: String,
   releaseYear: Option[Int],

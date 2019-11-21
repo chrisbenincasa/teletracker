@@ -25,12 +25,24 @@ class ElasticsearchExactTitleLookup @Inject()(
     items: List[T],
     args: IngestJobArgsLike
   ): Future[(List[MatchResult[T]], List[T])] = {
+    for {
+      (exactMatches, nonMatchesFromExact) <- getMatches(items, true)
+      (nonTypeMatches, nonMatches) <- getMatches(nonMatchesFromExact, false)
+    } yield {
+      exactMatches ++ nonTypeMatches -> nonMatches
+    }
+  }
+
+  private def getMatches[T <: ScrapedItem](
+    items: List[T],
+    includeType: Boolean
+  ) = {
     val itemsByTitle = items.map(item => item.title -> item).toMap
 
     val titleTriples = items.map(item => {
       (
         item.title,
-        Some(item.thingType),
+        Some(item.thingType).filter(_ => includeType),
         item.releaseYear.map(ry => (ry - 1) to (ry + 1))
       )
     })
@@ -41,10 +53,11 @@ class ElasticsearchExactTitleLookup @Inject()(
         val (actualMatchesByTitle, nonMatches) = matchesByTitle.foldLeft(
           (List.empty[(T, EsItem)] -> List.empty[(T, EsItem)])
         ) {
+          // If we've found a case-insensitive title match then add it to the positive match set
           case ((matches, nonMatches), (title, esItem))
               if title.equalsIgnoreCase(
                 esItem.original_title.getOrElse("")
-              ) || title.equalsIgnoreCase(esItem.title.get.head) =>
+              ) || esItem.title.get.exists(title.equalsIgnoreCase) =>
             val newMatches = matches ++ (itemsByTitle
               .get(title)
               .map(_ -> esItem))
@@ -52,6 +65,7 @@ class ElasticsearchExactTitleLookup @Inject()(
 
             newMatches -> nonMatches
 
+          // Add non matches to the fallback set
           case ((matches, nonMatches), (title, esItem)) =>
             val newNonMatches = nonMatches ++ (itemsByTitle
               .get(title)
