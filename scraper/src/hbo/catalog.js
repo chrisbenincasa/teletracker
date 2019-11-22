@@ -206,9 +206,8 @@ const scrape = async (event, context) => {
   console.timeEnd('loadSitemapEntries');
 
   let fileName = nowString + '_hbo-catalog.' + event.band + '.json';
-  let filePath = getFilePath(fileName);
 
-  let [path, stream, flush] = createWriteStream(filePath);
+  let [path, stream, flush] = createWriteStream(fileName);
 
   let endMovies = _.chain(entries)
     .filter(entry => movieRegex.test(entry))
