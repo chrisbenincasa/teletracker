@@ -51,6 +51,7 @@ import AddToListDialog from './AddToListDialog';
 import { ResponsiveImage } from './ResponsiveImage';
 import { Item, itemHasTag } from '../types/v2/Item';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
+import { useWidth } from '../hooks/useWidth';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -207,6 +208,8 @@ type Props = ItemCardProps & DispatchProps;
 
 function ItemCard(props: Props) {
   const classes = useStyles();
+  const width = useWidth();
+  const isMobile = ['xs', 'sm'].includes(width);
   const [manageTrackingModalOpen, setManageTrackingModalOpen] = useState<
     boolean
   >(false);
@@ -566,8 +569,8 @@ function ItemCard(props: Props) {
               flexDirection: 'column',
               position: 'relative',
             }}
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
+            onMouseEnter={isMobile ? () => false : () => setIsHovering(true)}
+            onMouseLeave={isMobile ? () => false : () => setIsHovering(false)}
             ref={itemRef}
           >
             {/* No network call is made until container is entering the viewport. */}
