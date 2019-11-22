@@ -23,6 +23,6 @@ class ConsumerConfigModule extends TwitterModule {
   @Provides
   @Singleton
   def config: ConsumerConfig = {
-    new ConfigLoader().load[ConsumerConfig]("teletrcker.consumer")
+    new ConfigLoader().load[ConsumerConfig]("teletracker.consumer")
   }
 }
