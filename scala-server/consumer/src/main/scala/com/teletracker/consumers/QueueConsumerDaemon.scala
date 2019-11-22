@@ -13,6 +13,7 @@ import com.teletracker.consumers.worker.{
 import com.teletracker.tasks.TeletrackerTaskRunner
 import com.twitter.util.Await
 import com.teletracker.common.util.Futures._
+import com.teletracker.consumers.config.ConsumerConfig
 import com.teletracker.consumers.worker.poll.HeartbeatConfig
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -42,7 +43,8 @@ object QueueConsumerDaemon extends com.twitter.inject.app.App {
           )
         )
       ),
-      injector.instance[TeletrackerTaskRunner]
+      injector.instance[TeletrackerTaskRunner],
+      injector.instance[ConsumerConfig]
     )
 
     val listener = new SqsQueueListener(
