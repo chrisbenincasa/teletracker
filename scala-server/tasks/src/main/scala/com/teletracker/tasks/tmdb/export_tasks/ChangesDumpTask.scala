@@ -58,10 +58,7 @@ class MovieChangesDumpTask @Inject()(
     args: DataDumpTaskArgs
   ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[ImportMoviesFromDump](
-      ImportTmdbDumpTaskArgs(
-        input = s3Uri,
-        dryRun = false
-      )
+      ImportTmdbDumpTaskArgs.default(s3Uri)
     ) :: Nil
   }
 }
@@ -77,10 +74,7 @@ class TvChangesDumpTask @Inject()(
     args: DataDumpTaskArgs
   ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[ImportTvShowsFromDump](
-      ImportTmdbDumpTaskArgs(
-        input = s3Uri,
-        dryRun = false
-      )
+      ImportTmdbDumpTaskArgs.default(s3Uri)
     ) :: Nil
   }
 }
@@ -95,10 +89,7 @@ class PersonChangesDumpTask @Inject()(
     args: DataDumpTaskArgs
   ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[ImportPeopleFromDump](
-      ImportTmdbDumpTaskArgs(
-        input = s3Uri,
-        dryRun = false
-      )
+      ImportTmdbDumpTaskArgs.default(s3Uri)
     ) :: Nil
   }
 }

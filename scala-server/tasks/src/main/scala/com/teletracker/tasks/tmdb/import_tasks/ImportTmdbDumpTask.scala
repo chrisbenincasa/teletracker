@@ -22,6 +22,14 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
+object ImportTmdbDumpTaskArgs {
+  def default(input: URI) = ImportTmdbDumpTaskArgs(
+    input = input,
+    dryRun = false,
+    perBatchSleepMs = Some((500 millis).toMillis.toInt)
+  )
+}
+
 case class ImportTmdbDumpTaskArgs(
   input: URI,
   offset: Int = 0,
