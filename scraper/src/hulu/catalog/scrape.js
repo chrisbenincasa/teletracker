@@ -7,6 +7,7 @@ import { DATA_BUCKET, USER_AGENT_STRING } from '../../common/constants';
 import { getObjectS3, uploadToS3 } from '../../common/storage';
 import { isProduction } from '../../common/env';
 import AWS from 'aws-sdk';
+import { DEFAULT_BANDS, DEFAULT_PARALLELISM } from './scheduler';
 
 /*
 curl 'https://discover.hulu.com/content/v4/hubs/series/3944ff02-8772-43eb-bacc-10923d83f140?schema=9' 
@@ -151,8 +152,10 @@ const scrape = async event => {
     let offset = event.offset || 0;
     let limit = event.limit || 50;
 
-    let mod = event.mod;
     let band = event.band;
+    let mod = event.mod || DEFAULT_BANDS;
+    let parallelism = event.parallelism || DEFAULT_PARALLELISM;
+
     let scheduleNext = event.scheduleNext;
 
     let now = moment();
@@ -240,7 +243,13 @@ const scrape = async event => {
       );
     }
 
-    if (Boolean(scheduleNext) && mod && band && band + band <= mod) {
+    if (
+      Boolean(scheduleNext) &&
+      _.isNumber(mod) &&
+      _.isNumber(band) &&
+      _.isNumber(parallelism) &&
+      band + parallelism <= mod
+    ) {
       const lambda = new AWS.Lambda({
         region: 'us-west-1',
       });
@@ -250,7 +259,12 @@ const scrape = async event => {
           FunctionName: 'hulu-catalog',
           InvocationType: 'Event',
           Payload: Buffer.from(
-            JSON.stringify({ mod, band: band + band, scheduleNext }),
+            JSON.stringify({
+              mod,
+              band: band + parallelism,
+              parallelism,
+              scheduleNext,
+            }),
             'utf-8',
           ),
         })
