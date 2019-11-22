@@ -69,6 +69,9 @@ const styles = (theme: Theme) =>
       position: 'relative',
     },
     backdropContainer: {
+      [theme.breakpoints.down('sm')]: {
+        height: '100%',
+      },
       height: 'auto',
       overflow: 'hidden',
       top: 0,
@@ -426,12 +429,16 @@ function ItemDetails(props: Props) {
           <meta
             name="title"
             property="og:title"
-            content={`${itemDetail.canonicalTitle} | Where to stream, rent, or buy. Track it today!`}
+            content={`${
+              itemDetail.canonicalTitle
+            } | Where to stream, rent, or buy. Track it today!`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy ${itemDetail.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy ${
+              itemDetail.canonicalTitle
+            } online. Track it to find out when it's available on one of your services.`}
           />
           {/* TODO FIX <meta
             name="image"
@@ -457,11 +464,15 @@ function ItemDetails(props: Props) {
           />
           <meta
             name="twitter:title"
-            content={`${itemDetail.canonicalTitle} - Where to Stream, Rent, or Buy It Online`}
+            content={`${
+              itemDetail.canonicalTitle
+            } - Where to Stream, Rent, or Buy It Online`}
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy ${itemDetail.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy ${
+              itemDetail.canonicalTitle
+            } online. Track it to find out when it's available on one of your services.`}
           />
 
           {/* TODO FIX <meta
@@ -470,7 +481,9 @@ function ItemDetails(props: Props) {
           /> */}
           <meta
             name="keywords"
-            content={`${itemDetail.canonicalTitle}, ${itemDetail.type}, stream, streaming, rent, buy, watch, track`}
+            content={`${itemDetail.canonicalTitle}, ${
+              itemDetail.type
+            }, stream, streaming, rent, buy, watch, track`}
           />
           <link
             rel="canonical"
@@ -492,7 +505,7 @@ function ItemDetails(props: Props) {
               pictureStyle={{
                 display: 'block',
                 position: 'relative',
-                height: 'auto',
+                height: '100%',
               }}
             />
             <div className={classes.backdropGradient} />
@@ -638,5 +651,10 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   );
 
 export default withUser(
-  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(ItemDetails)),
+  withStyles(styles)(
+    connect(
+      mapStateToProps,
+      mapDispatchToProps,
+    )(ItemDetails),
+  ),
 );
