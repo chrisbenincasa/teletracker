@@ -7,11 +7,6 @@ import { useWidth } from '../hooks/useWidth';
 const useStyles = makeStyles(theme => ({
   button: {
     marginTop: theme.spacing(1),
-    width: '100% !important',
-    [theme.breakpoints.down('xs')]: {
-      fontSize: '0.55rem',
-    },
-    fontSIze: '2rem',
   },
   buttonIcon: {
     marginRight: theme.spacing(1),
@@ -49,6 +44,7 @@ export default function ManageTrackingButton(props: Props) {
       <Button
         size="small"
         variant="contained"
+        fullWidth
         aria-label={props.cta || trackingCTA}
         onClick={props.onClick}
         className={classes.button}

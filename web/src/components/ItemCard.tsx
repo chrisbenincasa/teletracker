@@ -569,8 +569,8 @@ function ItemCard(props: Props) {
               flexDirection: 'column',
               position: 'relative',
             }}
-            onMouseEnter={isMobile ? () => false : () => setIsHovering(true)}
-            onMouseLeave={isMobile ? () => false : () => setIsHovering(false)}
+            onMouseEnter={isMobile ? undefined : () => setIsHovering(true)}
+            onMouseLeave={isMobile ? undefined : () => setIsHovering(false)}
             ref={itemRef}
           >
             {/* No network call is made until container is entering the viewport. */}

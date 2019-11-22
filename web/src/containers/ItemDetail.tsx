@@ -56,6 +56,7 @@ import {
 } from '../utils/textHelper';
 import Login from './Login';
 import moment from 'moment';
+import { useWidth } from '../hooks/useWidth';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -219,7 +220,8 @@ function ItemDetails(props: Props) {
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
-
+  const width = useWidth();
+  const isMobile = ['xs', 'sm'].includes(width);
   let location = useLocation();
   let history = useHistory();
   let params = useParams();
@@ -429,16 +431,12 @@ function ItemDetails(props: Props) {
           <meta
             name="title"
             property="og:title"
-            content={`${
-              itemDetail.canonicalTitle
-            } | Where to stream, rent, or buy. Track it today!`}
+            content={`${itemDetail.canonicalTitle} | Where to stream, rent, or buy. Track it today!`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy ${
-              itemDetail.canonicalTitle
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy ${itemDetail.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
           />
           {/* TODO FIX <meta
             name="image"
@@ -464,15 +462,11 @@ function ItemDetails(props: Props) {
           />
           <meta
             name="twitter:title"
-            content={`${
-              itemDetail.canonicalTitle
-            } - Where to Stream, Rent, or Buy It Online`}
+            content={`${itemDetail.canonicalTitle} - Where to Stream, Rent, or Buy It Online`}
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy ${
-              itemDetail.canonicalTitle
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy ${itemDetail.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
           />
 
           {/* TODO FIX <meta
@@ -481,9 +475,7 @@ function ItemDetails(props: Props) {
           /> */}
           <meta
             name="keywords"
-            content={`${itemDetail.canonicalTitle}, ${
-              itemDetail.type
-            }, stream, streaming, rent, buy, watch, track`}
+            content={`${itemDetail.canonicalTitle}, ${itemDetail.type}, stream, streaming, rent, buy, watch, track`}
           />
           <link
             rel="canonical"
@@ -517,16 +509,18 @@ function ItemDetails(props: Props) {
               alignItems: 'flex-start',
             }}
           >
-            <Button
-              size="small"
-              onClick={history.goBack}
-              variant="contained"
-              aria-label="Go Back"
-              style={{ marginTop: 20, marginLeft: 20 }}
-              startIcon={<ChevronLeft style={{ marginRight: 8 }} />}
-            >
-              Go Back
-            </Button>
+            {!isMobile && (
+              <Button
+                size="small"
+                onClick={history.goBack}
+                variant="contained"
+                aria-label="Go Back"
+                style={{ marginTop: 20, marginLeft: 20 }}
+                startIcon={<ChevronLeft style={{ marginRight: 8 }} />}
+              >
+                Go Back
+              </Button>
+            )}
 
             <div
               className={classes.itemDetailContainer}
@@ -651,10 +645,5 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   );
 
 export default withUser(
-  withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(ItemDetails),
-  ),
+  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(ItemDetails)),
 );
