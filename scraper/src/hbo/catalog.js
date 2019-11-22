@@ -258,7 +258,7 @@ const scrape = async (event, context) => {
 
   let currentDate = moment().format('YYYY-MM-DD');
   if (isProduction()) {
-    await uploadToS3(DATA_BUCKET, path, `scrape-results/hbo/${currentDate}/${fileName}`);
+    await uploadToS3(DATA_BUCKET, `scrape-results/hbo/catalog/${currentDate}/${fileName}`, path);
   }
 };
 
