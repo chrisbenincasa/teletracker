@@ -2,7 +2,7 @@ package com.teletracker.consumers
 
 import com.google.inject.Module
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.inject.Modules
+import com.teletracker.consumers.inject.Modules
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.consumers.impl.TaskQueueWorker
 import com.teletracker.consumers.inject.HttpClientModule
