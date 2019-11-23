@@ -32,6 +32,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   featuredItem: {
     position: 'relative',
     margin: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: {
+      margin: 0,
+    },
   },
   posterContainer: {
     display: 'flex',
@@ -79,6 +82,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexGrow: 1,
     flexDirection: 'row',
     margin: theme.spacing(2),
+    [theme.breakpoints.down('sm')]: {
+      margin: theme.spacing(1),
+    },
   },
 }));
 

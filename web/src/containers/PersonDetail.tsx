@@ -11,6 +11,7 @@ import {
   Typography,
   withStyles,
   WithStyles,
+  withWidth,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import { ChevronLeft, ExpandLess, ExpandMore, Tune } from '@material-ui/icons';
@@ -62,6 +63,9 @@ const styles = (theme: Theme) =>
     },
     backdropContainer: {
       height: 'auto',
+      [theme.breakpoints.down('sm')]: {
+        height: '100%',
+      },
       overflow: 'hidden',
       top: 0,
       width: '100%',
@@ -79,13 +83,20 @@ const styles = (theme: Theme) =>
     descriptionContainer: {
       display: 'flex',
       flexDirection: 'column',
-      marginBottom: 10,
+      marginBottom: theme.spacing(1),
+    },
+    filters: {
+      display: 'flex',
+      flexDirection: 'row',
+      marginBottom: theme.spacing(1),
+      justifyContent: 'flex-end',
+      alignItems: 'center',
     },
     filterSortContainer: {
       [theme.breakpoints.up('sm')]: {
         display: 'flex',
       },
-      marginBottom: 8,
+      marginBottom: theme.spacing(1),
       flexGrow: 1,
     },
     genre: { margin: 5 },
@@ -93,7 +104,7 @@ const styles = (theme: Theme) =>
     leftContainer: {
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
+
       [theme.breakpoints.up('sm')]: {
         position: 'sticky',
         top: 75,
@@ -118,7 +129,7 @@ const styles = (theme: Theme) =>
     },
     personInformationContainer: {
       [theme.breakpoints.up('sm')]: {
-        marginLeft: 20,
+        marginLeft: theme.spacing(3),
       },
       display: 'flex',
       flex: '1 1 auto',
@@ -128,21 +139,21 @@ const styles = (theme: Theme) =>
       position: 'relative',
     },
     personDetailContainer: {
-      margin: 20,
+      margin: theme.spacing(3),
       display: 'flex',
       flex: '1 1 auto',
       color: '#fff',
       [theme.breakpoints.down('sm')]: {
         flexDirection: 'column',
+        margin: theme.spacing(1),
       },
     },
     posterContainer: {
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
+      margin: '0 auto',
       width: '50%',
-      display: 'flex',
-      flex: '0 1 auto',
       position: 'relative',
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
@@ -157,7 +168,12 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       alignItems: 'flex-start',
       width: '80%',
-      marginBottom: 10,
+      [theme.breakpoints.down('sm')]: {
+        width: '100%',
+        alignItems: 'center',
+      },
+      marginBottom: theme.spacing(1),
+      zIndex: 9999,
     },
     loadingCircle: {
       display: 'flex',
@@ -208,10 +224,15 @@ interface RouteProps {
   id: string;
 }
 
+interface WidthProps {
+  width: string;
+}
+
 type NotOwnProps = DispatchProps &
   RouteComponentProps<RouteProps> &
   WithStyles<typeof styles> &
-  WithUserProps;
+  WithUserProps &
+  WidthProps;
 
 type Props = OwnProps & StateProps & NotOwnProps;
 
@@ -240,12 +261,9 @@ class PersonDetail extends React.Component<Props, State> {
 
     let filterParams = R.mergeDeepRight(
       defaultFilterParams,
-      R.filter(
-        R.compose(
-          R.not,
-          R.isNil,
-        ),
-      )(parseFilterParamsFromQs(props.location.search)),
+      R.filter(R.compose(R.not, R.isNil))(
+        parseFilterParamsFromQs(props.location.search),
+      ),
     ) as FilterParams;
 
     this.state = {
@@ -440,12 +458,6 @@ class PersonDetail extends React.Component<Props, State> {
               Filmography
             </Typography>
           </div>
-          <ActiveFilters
-            genres={genres}
-            updateFilters={this.handleFilterParamsChange}
-            filters={this.state.filters}
-            isListDynamic={false}
-          />
           <IconButton
             onClick={this.toggleFilters}
             className={classes.settings}
@@ -455,6 +467,14 @@ class PersonDetail extends React.Component<Props, State> {
             <Typography variant="srOnly">Tune</Typography>
           </IconButton>
           <CreateSmartListButton onClick={this.createListFromFilters} />
+        </div>
+        <div className={classes.filters}>
+          <ActiveFilters
+            genres={genres}
+            updateFilters={this.handleFilterParamsChange}
+            filters={this.state.filters}
+            isListDynamic={false}
+          />
         </div>
         <AllFilters
           genres={genres}
@@ -492,10 +512,11 @@ class PersonDetail extends React.Component<Props, State> {
   };
 
   renderDescriptiveDetails = (person: Person) => {
-    const { classes } = this.props;
+    const { classes, width } = this.props;
     const { showFullBiography } = this.state;
-
     const biography = person.biography || '';
+    const isMobile = ['xs', 'sm'].includes(width);
+    const truncateSize = isMobile ? 300 : 1200;
 
     return (
       <div className={classes.descriptionContainer}>
@@ -512,7 +533,7 @@ class PersonDetail extends React.Component<Props, State> {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Typography color="inherit">
-            {showFullBiography ? biography : biography.substr(0, 1200)}
+            {showFullBiography ? biography : biography.substr(0, truncateSize)}
           </Typography>
           {biography.length > 1200 ? (
             <Button
@@ -536,7 +557,7 @@ class PersonDetail extends React.Component<Props, State> {
   };
 
   renderPerson() {
-    let { classes, person, loadingPerson } = this.props;
+    let { classes, person, loadingPerson, width } = this.props;
     let {
       needsFetch,
       createDynamicListDialogOpen,
@@ -547,6 +568,7 @@ class PersonDetail extends React.Component<Props, State> {
       return this.renderLoading();
     }
 
+    const isMobile = ['xs', 'sm'].includes(width);
     const backdrop =
       person &&
       person.cast_credits &&
@@ -566,16 +588,12 @@ class PersonDetail extends React.Component<Props, State> {
           <meta
             name="title"
             property="og:title"
-            content={`${
-              person.name
-            } | Where to stream, rent, or buy. Track this person today!`}
+            content={`${person.name} | Where to stream, rent, or buy. Track this person today!`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy content featuring ${
-              person.name
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="image"
@@ -601,15 +619,11 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="twitter:title"
-            content={`${
-              person.name
-            } - Where to Stream, Rent, or Buy their content`}
+            content={`${person.name} - Where to Stream, Rent, or Buy their content`}
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy content featuring ${
-              person.name
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="twitter:image"
@@ -617,9 +631,7 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="keywords"
-            content={`${
-              person.name
-            }, stream, streaming, rent, buy, watch, track`}
+            content={`${person.name}, stream, streaming, rent, buy, watch, track`}
           />
           <link
             rel="canonical"
@@ -642,7 +654,7 @@ class PersonDetail extends React.Component<Props, State> {
                   pictureStyle={{
                     display: 'block',
                     position: 'relative',
-                    height: 'auto',
+                    height: '100%',
                   }}
                 />
                 <div className={classes.backdropGradient} />
@@ -654,17 +666,18 @@ class PersonDetail extends React.Component<Props, State> {
                   alignItems: 'flex-start',
                 }}
               >
-                <Button
-                  size="small"
-                  onClick={this.props.history.goBack}
-                  variant="contained"
-                  aria-label="Go Back"
-                  style={{ marginTop: 20, marginLeft: 20 }}
-                >
-                  <ChevronLeft style={{ marginRight: 8 }} />
-                  Go Back
-                </Button>
-
+                {!isMobile && (
+                  <Button
+                    size="small"
+                    onClick={this.props.history.goBack}
+                    variant="contained"
+                    aria-label="Go Back"
+                    style={{ marginTop: 20, marginLeft: 20 }}
+                  >
+                    <ChevronLeft style={{ marginRight: 8 }} />
+                    Go Back
+                  </Button>
+                )}
                 <div className={classes.personDetailContainer}>
                   <div className={classes.leftContainer}>
                     <Hidden smUp>{this.renderTitle(person)}</Hidden>
@@ -756,13 +769,10 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch =>
     dispatch,
   );
 
-export default withUser(
-  withStyles(styles)(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(PersonDetail),
+export default withWidth()(
+  withUser(
+    withStyles(styles)(
+      withRouter(connect(mapStateToProps, mapDispatchToProps)(PersonDetail)),
     ),
   ),
 );
