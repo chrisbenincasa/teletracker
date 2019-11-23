@@ -11,6 +11,7 @@ import {
   Typography,
   withStyles,
   WithStyles,
+  withWidth,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import { ChevronLeft, ExpandLess, ExpandMore, Tune } from '@material-ui/icons';
@@ -208,10 +209,15 @@ interface RouteProps {
   id: string;
 }
 
+interface WidthProps {
+  width: string;
+}
+
 type NotOwnProps = DispatchProps &
   RouteComponentProps<RouteProps> &
   WithStyles<typeof styles> &
-  WithUserProps;
+  WithUserProps &
+  WidthProps;
 
 type Props = OwnProps & StateProps & NotOwnProps;
 
@@ -240,12 +246,9 @@ class PersonDetail extends React.Component<Props, State> {
 
     let filterParams = R.mergeDeepRight(
       defaultFilterParams,
-      R.filter(
-        R.compose(
-          R.not,
-          R.isNil,
-        ),
-      )(parseFilterParamsFromQs(props.location.search)),
+      R.filter(R.compose(R.not, R.isNil))(
+        parseFilterParamsFromQs(props.location.search),
+      ),
     ) as FilterParams;
 
     this.state = {
@@ -536,7 +539,7 @@ class PersonDetail extends React.Component<Props, State> {
   };
 
   renderPerson() {
-    let { classes, person, loadingPerson } = this.props;
+    let { classes, person, loadingPerson, width } = this.props;
     let {
       needsFetch,
       createDynamicListDialogOpen,
@@ -547,6 +550,7 @@ class PersonDetail extends React.Component<Props, State> {
       return this.renderLoading();
     }
 
+    const isMobile = ['xs', 'sm'].includes(width);
     const backdrop =
       person &&
       person.cast_credits &&
@@ -566,16 +570,12 @@ class PersonDetail extends React.Component<Props, State> {
           <meta
             name="title"
             property="og:title"
-            content={`${
-              person.name
-            } | Where to stream, rent, or buy. Track this person today!`}
+            content={`${person.name} | Where to stream, rent, or buy. Track this person today!`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy content featuring ${
-              person.name
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="image"
@@ -601,15 +601,11 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="twitter:title"
-            content={`${
-              person.name
-            } - Where to Stream, Rent, or Buy their content`}
+            content={`${person.name} - Where to Stream, Rent, or Buy their content`}
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy content featuring ${
-              person.name
-            } online. Track it to find out when it's available on one of your services.`}
+            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
           />
           <meta
             name="twitter:image"
@@ -617,9 +613,7 @@ class PersonDetail extends React.Component<Props, State> {
           />
           <meta
             name="keywords"
-            content={`${
-              person.name
-            }, stream, streaming, rent, buy, watch, track`}
+            content={`${person.name}, stream, streaming, rent, buy, watch, track`}
           />
           <link
             rel="canonical"
@@ -654,17 +648,18 @@ class PersonDetail extends React.Component<Props, State> {
                   alignItems: 'flex-start',
                 }}
               >
-                <Button
-                  size="small"
-                  onClick={this.props.history.goBack}
-                  variant="contained"
-                  aria-label="Go Back"
-                  style={{ marginTop: 20, marginLeft: 20 }}
-                >
-                  <ChevronLeft style={{ marginRight: 8 }} />
-                  Go Back
-                </Button>
-
+                {!isMobile && (
+                  <Button
+                    size="small"
+                    onClick={this.props.history.goBack}
+                    variant="contained"
+                    aria-label="Go Back"
+                    style={{ marginTop: 20, marginLeft: 20 }}
+                  >
+                    <ChevronLeft style={{ marginRight: 8 }} />
+                    Go Back
+                  </Button>
+                )}
                 <div className={classes.personDetailContainer}>
                   <div className={classes.leftContainer}>
                     <Hidden smUp>{this.renderTitle(person)}</Hidden>
@@ -756,13 +751,10 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch =>
     dispatch,
   );
 
-export default withUser(
-  withStyles(styles)(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(PersonDetail),
+export default withWidth()(
+  withUser(
+    withStyles(styles)(
+      withRouter(connect(mapStateToProps, mapDispatchToProps)(PersonDetail)),
     ),
   ),
 );
