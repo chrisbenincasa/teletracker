@@ -235,6 +235,7 @@ const MenuItemLink = (props: MenuItemProps) => {
 };
 
 class Toolbar extends Component<Props, State> {
+  private mobileSearchIcon: React.RefObject<HTMLDivElement>;
   private mobileSearchInput: React.RefObject<HTMLInputElement>;
   private desktopSearchInput: React.RefObject<HTMLInputElement>;
   private genreShowContainerRef: React.RefObject<HTMLElement>;
@@ -242,6 +243,7 @@ class Toolbar extends Component<Props, State> {
 
   constructor(props) {
     super(props);
+    this.mobileSearchIcon = React.createRef();
     this.mobileSearchInput = React.createRef();
     this.desktopSearchInput = React.createRef();
     this.genreShowContainerRef = React.createRef();
@@ -345,12 +347,21 @@ class Toolbar extends Component<Props, State> {
 
   debouncedExecSearch = _.debounce(this.execQuickSearch, 250);
 
-  handleMobileSearchDisplay = () => {
+  handleMobileSearchDisplayOpen = () => {
     this.setState(
-      state => ({ mobileSearchBarOpen: !this.state.mobileSearchBarOpen }),
+      state => ({ mobileSearchBarOpen: true }),
       () => {
         this.mobileSearchInput.current &&
           this.mobileSearchInput.current.focus();
+      },
+    );
+  };
+
+  handleMobileSearchDisplayClose = () => {
+    this.setState(
+      state => ({ mobileSearchBarOpen: false }),
+      () => {
+        this.mobileSearchIcon.current && this.mobileSearchIcon.current.focus();
       },
     );
   };
@@ -443,11 +454,11 @@ class Toolbar extends Component<Props, State> {
           />
         </div>
 
-        <div className={classes.sectionMobile}>
+        <div className={classes.sectionMobile} ref={this.mobileSearchIcon}>
           <IconButton
             aria-owns={'Search Teletracker'}
             aria-haspopup="true"
-            onClick={this.handleMobileSearchDisplay}
+            onClick={this.handleMobileSearchDisplayOpen}
             color="inherit"
             disableRipple
           >
@@ -604,7 +615,7 @@ class Toolbar extends Component<Props, State> {
           className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
         >
           <IconButton
-            onClick={this.handleMobileSearchDisplay}
+            onClick={this.handleMobileSearchDisplayClose}
             color="inherit"
             size="small"
             className={classes.mobileSearchIcon}
