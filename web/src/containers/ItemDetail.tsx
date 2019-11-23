@@ -56,6 +56,7 @@ import {
 } from '../utils/textHelper';
 import Login from './Login';
 import moment from 'moment';
+import { useWidth } from '../hooks/useWidth';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -69,6 +70,9 @@ const styles = (theme: Theme) =>
       position: 'relative',
     },
     backdropContainer: {
+      [theme.breakpoints.down('sm')]: {
+        height: '100%',
+      },
       height: 'auto',
       overflow: 'hidden',
       top: 0,
@@ -216,7 +220,8 @@ function ItemDetails(props: Props) {
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
-
+  const width = useWidth();
+  const isMobile = ['xs', 'sm'].includes(width);
   let location = useLocation();
   let history = useHistory();
   let params = useParams();
@@ -492,7 +497,7 @@ function ItemDetails(props: Props) {
               pictureStyle={{
                 display: 'block',
                 position: 'relative',
-                height: 'auto',
+                height: '100%',
               }}
             />
             <div className={classes.backdropGradient} />
@@ -504,16 +509,18 @@ function ItemDetails(props: Props) {
               alignItems: 'flex-start',
             }}
           >
-            <Button
-              size="small"
-              onClick={history.goBack}
-              variant="contained"
-              aria-label="Go Back"
-              style={{ marginTop: 20, marginLeft: 20 }}
-              startIcon={<ChevronLeft style={{ marginRight: 8 }} />}
-            >
-              Go Back
-            </Button>
+            {!isMobile && (
+              <Button
+                size="small"
+                onClick={history.goBack}
+                variant="contained"
+                aria-label="Go Back"
+                style={{ marginTop: 20, marginLeft: 20 }}
+                startIcon={<ChevronLeft style={{ marginRight: 8 }} />}
+              >
+                Go Back
+              </Button>
+            )}
 
             <div
               className={classes.itemDetailContainer}
