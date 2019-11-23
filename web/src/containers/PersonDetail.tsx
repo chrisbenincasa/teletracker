@@ -85,6 +85,13 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       marginBottom: theme.spacing(1),
     },
+    filters: {
+      display: 'flex',
+      flexDirection: 'row',
+      marginBottom: theme.spacing(1),
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+    },
     filterSortContainer: {
       [theme.breakpoints.up('sm')]: {
         display: 'flex',
@@ -451,12 +458,6 @@ class PersonDetail extends React.Component<Props, State> {
               Filmography
             </Typography>
           </div>
-          <ActiveFilters
-            genres={genres}
-            updateFilters={this.handleFilterParamsChange}
-            filters={this.state.filters}
-            isListDynamic={false}
-          />
           <IconButton
             onClick={this.toggleFilters}
             className={classes.settings}
@@ -466,6 +467,14 @@ class PersonDetail extends React.Component<Props, State> {
             <Typography variant="srOnly">Tune</Typography>
           </IconButton>
           <CreateSmartListButton onClick={this.createListFromFilters} />
+        </div>
+        <div className={classes.filters}>
+          <ActiveFilters
+            genres={genres}
+            updateFilters={this.handleFilterParamsChange}
+            filters={this.state.filters}
+            isListDynamic={false}
+          />
         </div>
         <AllFilters
           genres={genres}
