@@ -63,6 +63,9 @@ const styles = (theme: Theme) =>
     },
     backdropContainer: {
       height: 'auto',
+      [theme.breakpoints.down('sm')]: {
+        height: '100%',
+      },
       overflow: 'hidden',
       top: 0,
       width: '100%',
@@ -80,13 +83,13 @@ const styles = (theme: Theme) =>
     descriptionContainer: {
       display: 'flex',
       flexDirection: 'column',
-      marginBottom: 10,
+      marginBottom: theme.spacing(1),
     },
     filterSortContainer: {
       [theme.breakpoints.up('sm')]: {
         display: 'flex',
       },
-      marginBottom: 8,
+      marginBottom: theme.spacing(1),
       flexGrow: 1,
     },
     genre: { margin: 5 },
@@ -94,7 +97,7 @@ const styles = (theme: Theme) =>
     leftContainer: {
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
+
       [theme.breakpoints.up('sm')]: {
         position: 'sticky',
         top: 75,
@@ -119,7 +122,7 @@ const styles = (theme: Theme) =>
     },
     personInformationContainer: {
       [theme.breakpoints.up('sm')]: {
-        marginLeft: 20,
+        marginLeft: theme.spacing(3),
       },
       display: 'flex',
       flex: '1 1 auto',
@@ -129,21 +132,21 @@ const styles = (theme: Theme) =>
       position: 'relative',
     },
     personDetailContainer: {
-      margin: 20,
+      margin: theme.spacing(3),
       display: 'flex',
       flex: '1 1 auto',
       color: '#fff',
       [theme.breakpoints.down('sm')]: {
         flexDirection: 'column',
+        margin: theme.spacing(1),
       },
     },
     posterContainer: {
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
-      width: 'inherit',
-      display: 'flex',
-      flex: '0 1 auto',
+      margin: '0 auto',
+      width: '50%',
       position: 'relative',
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
@@ -162,7 +165,7 @@ const styles = (theme: Theme) =>
         width: '100%',
         alignItems: 'center',
       },
-      marginBottom: 10,
+      marginBottom: theme.spacing(1),
       zIndex: 9999,
     },
     loadingCircle: {
@@ -642,7 +645,7 @@ class PersonDetail extends React.Component<Props, State> {
                   pictureStyle={{
                     display: 'block',
                     position: 'relative',
-                    height: 'auto',
+                    height: '100%',
                   }}
                 />
                 <div className={classes.backdropGradient} />
