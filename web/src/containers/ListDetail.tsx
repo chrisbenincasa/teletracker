@@ -107,6 +107,13 @@ const styles = (theme: Theme) =>
       minHeight: 200,
       height: '100%',
     },
+    filters: {
+      display: 'flex',
+      flexDirection: 'row',
+      marginBottom: 8,
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+    },
     formControl: {
       margin: theme.spacing(1),
       minWidth: 120,
@@ -770,17 +777,6 @@ class ListDetail extends Component<Props, State> {
                   {list.name}
                 </Typography>
               </div>
-              <ActiveFilters
-                genres={genres}
-                updateFilters={this.handleFilterParamsChange}
-                isListDynamic={list.isDynamic}
-                filters={
-                  isDefaultFilter(filters) && listFilters
-                    ? listFilters
-                    : filters
-                }
-                initialState={listFilters}
-              />
               <IconButton
                 onClick={this.toggleFilters}
                 className={classes.settings}
@@ -803,6 +799,19 @@ class ListDetail extends Component<Props, State> {
                   <Typography variant="srOnly">Save</Typography>
                 </IconButton>
               ) : null}
+            </div>
+            <div className={classes.filters}>
+              <ActiveFilters
+                genres={genres}
+                updateFilters={this.handleFilterParamsChange}
+                isListDynamic={list.isDynamic}
+                filters={
+                  isDefaultFilter(filters) && listFilters
+                    ? listFilters
+                    : filters
+                }
+                initialState={listFilters}
+              />
             </div>
             <AllFilters
               genres={genres}
@@ -885,12 +894,7 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 export default withWidth()(
   withUser(
     withStyles(styles)(
-      withRouter(
-        connect(
-          mapStateToProps,
-          mapDispatchToProps,
-        )(ListDetail),
-      ),
+      withRouter(connect(mapStateToProps, mapDispatchToProps)(ListDetail)),
     ),
   ),
 );

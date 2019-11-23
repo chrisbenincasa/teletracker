@@ -68,13 +68,16 @@ const styles = (theme: Theme) =>
     },
     popularContainer: {
       padding: `0 ${theme.spacing(3)}px`,
+      [theme.breakpoints.down('sm')]: {
+        padding: `0 ${theme.spacing(1)}px`,
+      },
       display: 'flex',
       flexDirection: 'column',
     },
     filters: {
       display: 'flex',
       flexDirection: 'row',
-      marginBottom: 8,
+      marginBottom: theme.spacing(1),
       justifyContent: 'flex-end',
       alignItems: 'center',
     },
