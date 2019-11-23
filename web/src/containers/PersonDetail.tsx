@@ -141,7 +141,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
-      width: '50%',
+      width: 'inherit',
       display: 'flex',
       flex: '0 1 auto',
       position: 'relative',
@@ -158,7 +158,12 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       alignItems: 'flex-start',
       width: '80%',
+      [theme.breakpoints.down('sm')]: {
+        width: '100%',
+        alignItems: 'center',
+      },
       marginBottom: 10,
+      zIndex: 9999,
     },
     loadingCircle: {
       display: 'flex',
@@ -495,10 +500,11 @@ class PersonDetail extends React.Component<Props, State> {
   };
 
   renderDescriptiveDetails = (person: Person) => {
-    const { classes } = this.props;
+    const { classes, width } = this.props;
     const { showFullBiography } = this.state;
-
     const biography = person.biography || '';
+    const isMobile = ['xs', 'sm'].includes(width);
+    const truncateSize = isMobile ? 300 : 1200;
 
     return (
       <div className={classes.descriptionContainer}>
@@ -515,7 +521,7 @@ class PersonDetail extends React.Component<Props, State> {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Typography color="inherit">
-            {showFullBiography ? biography : biography.substr(0, 1200)}
+            {showFullBiography ? biography : biography.substr(0, truncateSize)}
           </Typography>
           {biography.length > 1200 ? (
             <Button
