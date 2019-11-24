@@ -21,11 +21,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     bottom: 0,
     height: '9rem',
     [theme.breakpoints.down('sm')]: {
-      height: '2rem',
+      height: '3rem',
     },
     width: '100%',
     marginTop: theme.spacing(2),
     alignSelf: 'flex-end',
+    zIndex: 9999,
   },
   section: {
     display: 'flex',
