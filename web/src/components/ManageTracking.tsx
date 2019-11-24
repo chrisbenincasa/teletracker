@@ -10,7 +10,6 @@ import React, { Component } from 'react';
 import AddToListDialog from '../components/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
 import AuthDialog from './Auth/AuthDialog';
-import { ApiItem } from '../types/v2';
 import { Item, itemBelongsToLists } from '../types/v2/Item';
 import ManageTrackingButton from './ManageTrackingButton';
 

@@ -10,7 +10,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Add, Tune } from '@material-ui/icons';
+import { Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -178,7 +178,7 @@ class Popular extends Component<Props, State> {
 
   loadPopular(passBookmark: boolean, firstRun?: boolean) {
     const {
-      filters: { itemTypes, sortOrder, genresFilter, networks, sliders },
+      filters: { itemTypes, genresFilter, networks, sliders },
     } = this.state;
     const { bookmark, retrievePopular, width } = this.props;
 
