@@ -131,7 +131,7 @@ const scrapeType = async letter => {
 
       await uploadToS3(
         DATA_BUCKET,
-        `scrape-results/netflix/new-on-netflix/${currentDate}/netflix-catalog-${letter}.json.json`,
+        `scrape-results/netflix/new-on-netflix/${currentDate}/netflix-catalog-${letter}.json`,
         path,
       );
     }
