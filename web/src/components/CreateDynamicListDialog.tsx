@@ -14,18 +14,12 @@ import {
   Typography,
 } from '@material-ui/core';
 import React, { useEffect, useState } from 'react';
-import {
-  FilterParams,
-  SliderParamState,
-  SlidersState,
-} from '../utils/searchFilters';
+import { FilterParams, SliderParamState } from '../utils/searchFilters';
 import {
   Genre,
   ItemType,
   ListDefaultSort,
-  ListGenreRule,
   ListNetworkRule,
-  ListPersonRule,
   ListReleaseYearRule,
   ListRule,
   ListRuleType,
@@ -33,8 +27,6 @@ import {
   NetworkType,
 } from '../types';
 import _ from 'lodash';
-import { isGenreRule, isNetworkRule } from '../utils/list-utils';
-import { Person } from '../types/v2/Person';
 import { prettyItemType, prettySort } from './Filters/ActiveFilters';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../reducers';
@@ -109,6 +101,8 @@ export default function CreateDynamicListDialog(props: Props) {
                 networkId: foundNetwork.id,
                 type: ListRuleType.UserListNetworkRule,
               };
+            } else {
+              return null;
             }
           })
           .filter(x => !_.isUndefined(x)) as ListNetworkRule[],

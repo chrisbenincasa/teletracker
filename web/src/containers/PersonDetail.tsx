@@ -100,7 +100,11 @@ const styles = (theme: Theme) =>
       flexGrow: 1,
     },
     genre: { margin: 5 },
-    genreContainer: { display: 'flex', flexWrap: 'wrap' },
+    genreContainer: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      flexDirection: 'column',
+    },
     leftContainer: {
       display: 'flex',
       flexDirection: 'column',
@@ -474,6 +478,7 @@ class PersonDetail extends React.Component<Props, State> {
             updateFilters={this.handleFilterParamsChange}
             filters={this.state.filters}
             isListDynamic={false}
+            variant="default"
           />
         </div>
         <AllFilters

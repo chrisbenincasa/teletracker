@@ -1,5 +1,5 @@
 import React from 'react';
-import { Chip } from '@material-ui/core';
+import { Chip, Theme } from '@material-ui/core';
 import { useHistory } from 'react-router-dom';
 import {
   Genre,
@@ -18,19 +18,23 @@ import { AppState } from '../../reducers';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 
-const useStyles = makeStyles({
+const useStyles = makeStyles((theme: Theme) => ({
   activeFiltersContainer: {
     display: 'flex',
     flexWrap: 'wrap',
   },
-  networkChip: {
+  chip: {
+    margin: '2px',
+    backgroundColor: `${theme.palette.grey[800]}`,
+  },
+  highlightChip: {
     margin: '2px',
   },
   networkIcon: {
     width: 20,
     borderRadius: '50%',
   },
-});
+}));
 
 interface Props {
   updateFilters: (FilterParams) => void;
@@ -38,6 +42,7 @@ interface Props {
   isListDynamic?: boolean;
   filters: FilterParams;
   initialState?: FilterParams;
+  variant?: 'default' | 'outlined';
 }
 
 export const prettyItemType = (itemType: ItemType) => {
@@ -65,6 +70,10 @@ export const prettySort = (sortOption: SortOptions) => {
 export default function ActiveFilters(props: Props) {
   const classes = useStyles();
   const history = useHistory();
+  const { genres, initialState, isListDynamic, variant } = props;
+  let {
+    filters: { genresFilter, itemTypes, networks, sortOrder, sliders, people },
+  } = props;
 
   let personNameBySlugOrId = useSelector(
     (state: AppState) => state.people.nameByIdOrSlug,
@@ -73,9 +82,6 @@ export default function ActiveFilters(props: Props) {
   const deleteNetworkFilter = (
     network?: NetworkType[],
   ): [NetworkType[] | undefined, boolean] => {
-    let {
-      filters: { networks },
-    } = props;
     if (!network) {
       return [networks, false];
     }
@@ -104,9 +110,6 @@ export default function ActiveFilters(props: Props) {
   const deleteTypeFilter = (
     type?: ItemType[],
   ): [ItemType[] | undefined, boolean] => {
-    let {
-      filters: { itemTypes },
-    } = props;
     let typeList: ItemType[] = ['movie', 'show'];
 
     if (!type) {
@@ -125,10 +128,6 @@ export default function ActiveFilters(props: Props) {
   const deletePersonFilter = (
     newPeople?: string[],
   ): [string[] | undefined, boolean] => {
-    let {
-      filters: { people },
-    } = props;
-
     if (!newPeople) {
       return [people, false];
     }
@@ -145,10 +144,6 @@ export default function ActiveFilters(props: Props) {
   const deleteGenreFilter = (
     genresToRemove: number[],
   ): [number[] | undefined, boolean] => {
-    const {
-      filters: { genresFilter },
-    } = props;
-
     // If there are set genres, remove them. Then return the new set.
     if (genresFilter && genresFilter.length > 0) {
       let diff = _.difference(genresFilter, genresToRemove);
@@ -162,9 +157,6 @@ export default function ActiveFilters(props: Props) {
   const deleteSort = (
     sort: SortOptions,
   ): [SortOptions | undefined, boolean] => {
-    const {
-      filters: { sortOrder },
-    } = props;
     const cleanSort = sort === 'default' ? undefined : sort;
 
     if (sort !== sortOrder) {
@@ -249,16 +241,9 @@ export default function ActiveFilters(props: Props) {
   };
 
   const mapGenre = (genre: number) => {
-    const { genres } = props;
     const genreItem = genres && genres.find(obj => obj.id === genre);
     return (genreItem && genreItem.name) || '';
   };
-
-  const {
-    isListDynamic,
-    filters: { genresFilter, itemTypes, networks, sortOrder, sliders, people },
-    initialState,
-  } = props;
 
   let releaseYearMin =
     sliders && sliders.releaseYear ? sliders.releaseYear.min : undefined;
@@ -306,10 +291,10 @@ export default function ActiveFilters(props: Props) {
           genresFilter.map((genre: number) => (
             <Chip
               key={genre}
-              className={classes.networkChip}
+              className={classes.chip}
               label={mapGenre(Number(genre))}
               onDelete={() => removeFilters({ genre: [genre] })}
-              variant="outlined"
+              variant={variant}
             />
           ))
         : null}
@@ -325,10 +310,10 @@ export default function ActiveFilters(props: Props) {
                   alt={network}
                 />
               }
-              className={classes.networkChip}
+              className={classes.chip}
               label={networkToPrettyName[network]}
               onDelete={() => removeFilters({ network: [network] })}
-              variant="outlined"
+              variant={variant}
             />
           ))
         : null}
@@ -338,9 +323,9 @@ export default function ActiveFilters(props: Props) {
             <Chip
               key={type}
               label={`Type: ${prettyItemType(type)}`}
-              className={classes.networkChip}
+              className={classes.chip}
               onDelete={() => removeFilters({ type: [type] })}
-              variant="outlined"
+              variant={variant}
             />
           ))
         : null}
@@ -348,9 +333,9 @@ export default function ActiveFilters(props: Props) {
         <Chip
           key={sortOrder}
           label={`Sort by: ${sortLabels[sortOrder]}`}
-          className={classes.networkChip}
+          className={classes.chip}
           onDelete={() => removeFilters({ sort: 'default' })}
-          variant="outlined"
+          variant={variant}
         />
       ) : null}
       {showReleaseYearSlider ? (
@@ -359,9 +344,9 @@ export default function ActiveFilters(props: Props) {
             <Chip
               key={releaseYearMin}
               label={'Released since: ' + releaseYearMin}
-              className={classes.networkChip}
+              className={classes.chip}
               onDelete={() => removeFilters({ releaseYearMin: true })}
-              variant="outlined"
+              variant={variant}
             />
           ) : null}
           {releaseYearMax ? (
@@ -369,8 +354,8 @@ export default function ActiveFilters(props: Props) {
               key={releaseYearMax}
               label={'Released before: ' + (releaseYearMax + 1)}
               onDelete={() => removeFilters({ releaseYearMax: true })}
-              className={classes.networkChip}
-              variant="outlined"
+              className={classes.chip}
+              variant={variant}
             />
           ) : null}
         </React.Fragment>
@@ -382,11 +367,11 @@ export default function ActiveFilters(props: Props) {
               <Chip
                 key={person}
                 label={`Starring: ${personNameBySlugOrId[person]}`}
-                className={classes.networkChip}
+                className={classes.chip}
                 clickable
                 onClick={() => history.push(`/person/${person}`)}
                 onDelete={() => removeFilters({ people: [person] })}
-                variant="outlined"
+                variant={variant}
               />
             ) : null,
           )
@@ -394,9 +379,9 @@ export default function ActiveFilters(props: Props) {
       {showReset ? (
         <Chip
           key="Reset"
-          className={classes.networkChip}
+          className={classes.highlightChip}
           label="Reset All"
-          variant="outlined"
+          variant={variant}
           color="secondary"
           onClick={resetFilters}
         />
@@ -404,13 +389,16 @@ export default function ActiveFilters(props: Props) {
       {showResetDefaults ? (
         <Chip
           key="Reset_default"
-          className={classes.networkChip}
+          className={classes.highlightChip}
           label="Reset to Default"
-          variant="outlined"
+          variant={variant}
           color="secondary"
+          clickable
           onClick={resetToDefaults}
         />
       ) : null}
     </div>
   );
 }
+
+ActiveFilters.defaultProps = { variant: 'outlined' };
