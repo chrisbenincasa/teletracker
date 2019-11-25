@@ -22,6 +22,9 @@ import {
   PersonAdd,
   PowerSettingsNew,
   Settings,
+  TrendingUp,
+  Apps,
+  FiberNew,
 } from '@material-ui/icons';
 import classNames from 'classnames';
 import _ from 'lodash';
@@ -276,7 +279,7 @@ class Drawer extends Component<Props, State> {
   };
 
   renderDrawerContents() {
-    let { classes, isAuthed, listsById } = this.props;
+    let { classes, isAuthed, listsById, location } = this.props;
 
     function ListItemLink(props: ListItemProps) {
       const { primary, to, selected } = props;
@@ -294,12 +297,49 @@ class Drawer extends Component<Props, State> {
     return (
       <React.Fragment>
         <div className={classes.toolbar} />
+        {['xs', 'sm', 'md'].includes(this.props.width) && (
+          <React.Fragment>
+            <ListItem
+              button
+              component={RouterLink}
+              to="/all"
+              selected={location.pathname.toLowerCase() === '/all'}
+            >
+              <ListItemIcon>
+                <Apps />
+              </ListItemIcon>
+              Explore
+            </ListItem>
+            <ListItem
+              button
+              component={RouterLink}
+              to="/popular"
+              selected={location.pathname.toLowerCase() === '/popular'}
+            >
+              <ListItemIcon>
+                <TrendingUp />
+              </ListItemIcon>
+              Browse Popular
+            </ListItem>
+            <ListItem
+              button
+              component={RouterLink}
+              to="/new"
+              selected={location.pathname.toLowerCase() === '/new'}
+            >
+              <ListItemIcon>
+                <FiberNew />
+              </ListItemIcon>
+              What's New?
+            </ListItem>
+            <Divider />
+          </React.Fragment>
+        )}
         {isAuthed ? (
           <React.Fragment>
             <Typography component="h6" variant="h6" className={classes.margin}>
               My Lists
             </Typography>
-            <Divider />
             <Button
               variant="contained"
               color="primary"
@@ -411,11 +451,6 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
 
 export default withWidth()(
   withStyles(styles, { withTheme: true })(
-    withRouter(
-      connect(
-        mapStateToProps,
-        mapDispatchToProps,
-      )(Drawer),
-    ),
+    withRouter(connect(mapStateToProps, mapDispatchToProps)(Drawer)),
   ),
 );

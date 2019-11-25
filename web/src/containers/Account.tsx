@@ -281,7 +281,7 @@ class Account extends Component<Props, State> {
   };
 
   renderNetworkGridItem = (network: Network) => {
-    let { classes, theme } = this.props;
+    let { classes } = this.props;
     let isSubscribed = this.isSubscribedToNetwork(network);
 
     return (
@@ -302,6 +302,7 @@ class Account extends Component<Props, State> {
               <img
                 className={classes.cardMedia}
                 src={`/images/logos/${network.slug}/icon.jpg`}
+                alt={`${network.name} logo`}
               />
             </div>
             <Typography
@@ -332,11 +333,9 @@ class Account extends Component<Props, State> {
   };
 
   renderSettings() {
-    let { classes, drawerOpen, theme, userSelf } = this.props;
-
-    let usersNetworks = R.map(R.prop('id'), this.props.userSelf!.networks);
-
+    let { classes, theme } = this.props;
     let networks: Network[];
+
     if (this.state.networkFilter && this.state.networkFilter.length > 0) {
       let filter = this.state.networkFilter!.toLowerCase();
       networks = R.filter(
