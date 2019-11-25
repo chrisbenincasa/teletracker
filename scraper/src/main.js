@@ -13,8 +13,14 @@ export {
   scrape as whatsOnNetflixCatalog,
 } from './netflix/whats-on-netflix-catalog';
 export {
+  scrape as whatsOnNetflixUpcoming,
+} from './netflix/whats-on-netflix-upcoming';
+export {
   scrape as newOnNetflixCatalog,
 } from './netflix/new-on-netflix-catalog';
+export {
+  scrape as newOnNetflixExpiring,
+} from './netflix/new-on-netflix-expiring';
 export { scrape as tmdbChanges } from './tmdb/changes/scrape';
 export { scrape as tmdbIds } from './tmdb/scrape-ids';
 export { scrape as unogsNetflixExpiring } from './unogs/scrape';
