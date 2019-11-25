@@ -87,6 +87,7 @@ export default function ActiveFilters(props: Props) {
       'netflix',
       'netflix-kids',
       'hulu',
+      'disney-plus',
     ];
 
     if (!networks) {

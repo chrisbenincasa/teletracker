@@ -85,7 +85,7 @@ class NetworkSelect extends Component<Props> {
           <ButtonGroup
             variant="contained"
             color="primary"
-            aria-label="Filter by Netflix, Hulu, HBO, or All"
+            aria-label="Filter by Netflix, Hulu, HBO, Disney+ or All"
             fullWidth
             className={classes.buttonGroup}
           >
@@ -155,6 +155,24 @@ class NetworkSelect extends Component<Props> {
               }
             >
               HBO
+            </Button>
+            <Button
+              color={
+                selectedNetworks && selectedNetworks.includes('disney-plus')
+                  ? 'secondary'
+                  : 'primary'
+              }
+              onClick={() => this.updateNetworks('networks', ['disney-plus'])}
+              startIcon={
+                <img
+                  className={classes.networkIcon}
+                  src={`/images/logos/disney-plus/icon.jpg`}
+                  alt="Disney+ logo"
+                />
+              }
+              className={classes.filterButtons}
+            >
+              Disney+
             </Button>
           </ButtonGroup>
         </div>

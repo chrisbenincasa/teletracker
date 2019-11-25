@@ -83,7 +83,8 @@ export type NetworkType =
   | 'hbo-now'
   | 'amazon-prime-video'
   | 'amazon-video'
-  | 'hulu';
+  | 'hulu'
+  | 'disney-plus';
 
 export function isNetworkType(s: string): s is NetworkType {
   const allowed = [
@@ -94,6 +95,7 @@ export function isNetworkType(s: string): s is NetworkType {
     'amazon-prime-video',
     'amazon-video',
     'hulu',
+    'disney-plus',
   ];
 
   return allowed.includes(s);
@@ -107,6 +109,7 @@ export const networkToPrettyName: { [K in NetworkType]?: string } = {
   'amazon-prime-video': 'Prime Video',
   'amazon-video': 'Amazon Video',
   hulu: 'Hulu',
+  'disney-plus': 'Disney+',
 };
 
 export interface ListConfiguration {
