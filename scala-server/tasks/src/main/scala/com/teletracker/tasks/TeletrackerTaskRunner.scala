@@ -41,8 +41,16 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
   override protected def collectArgs: Map[String, Option[Any]] = {
     args.toList
       .map(arg => {
-        val Array(f, value) = arg.split("=", 2)
-        f.stripPrefix("-") -> Some(value)
+        try {
+          val Array(f, value) = arg.split("=", 2)
+          f.stripPrefix("-") -> Some(value)
+        } catch {
+          case e: MatchError =>
+            println(
+              s"Could not match arg split. Actual: ${arg.split("=").toList}"
+            )
+            throw e
+        }
       })
       .toMap
   }

@@ -35,6 +35,12 @@ class NetworksDbAccess @Inject()(
     }
   }
 
+  def findNetworkById(id: Int) = {
+    run {
+      networks.query.filter(_.id === id).result.headOption
+    }
+  }
+
   def findAllNetworks(): Future[Seq[(NetworkReference, Network)]] = {
     run {
       networkReferences.query
