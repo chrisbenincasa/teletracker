@@ -219,10 +219,5 @@ const mapDispatchToProps = dispatch =>
   );
 
 export default withUser(
-  withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(New),
-  ),
+  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(New)),
 );
