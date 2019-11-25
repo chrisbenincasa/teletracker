@@ -1,5 +1,5 @@
 import * as _ from './common/config';
-export { scrape as disneyPlusCatalog } from './disneyplus/catalog';
+export { scrape as disneyPlusCatalog } from './disney-plus/catalog';
 export { scrape as hboCatalog } from './hbo/catalog';
 export { scrape as hboWhatsNew } from './hbo/whats-new/scrape';
 export { scrape as huluCatalog } from './hulu/catalog/scrape';
