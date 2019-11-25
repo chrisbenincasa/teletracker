@@ -39,16 +39,18 @@ class DbLookup(
     val matchThingsByName = findMatchesViaExactTitle(withoutReleaseYear)
 
     val foundMoviesFut = lookupThingsBySlugsAndType(
-      itemsBySlug.filter {
-        case (_, item) => item.thingType == ThingType.Movie
+      itemsBySlug.collect {
+        case (slug, item) if item.thingType.contains(ThingType.Movie) =>
+          slug -> item
       },
       ThingType.Movie,
       args
     )
 
     val foundShowsFut = lookupThingsBySlugsAndType(
-      itemsBySlug.filter {
-        case (_, item) => item.thingType == ThingType.Show
+      itemsBySlug.collect {
+        case (slug, item) if item.thingType.contains(ThingType.Show) =>
+          slug -> item
       },
       ThingType.Show,
       args

@@ -30,7 +30,7 @@ export const scrape = () => {
           certification: undefined,
           externalId: undefined,
         };
-        data.push(JSON.stringify(obj, null, 0) + '\n');
+        data.push(JSON.stringify(obj, null, 0));
       }
     }
   });
@@ -40,7 +40,7 @@ export const scrape = () => {
 
   fs.writeFileSync(
     'disney-plus/catalog/' + currentDate + '-disney-plus-catalog' + '.json',
-    data,
+    data.join('\n'),
     'utf8',
   );
 };
