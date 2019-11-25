@@ -8,6 +8,7 @@ import { wait } from '../common/promise_utils';
 import _ from 'lodash';
 import moment from 'moment';
 import AWS from 'aws-sdk';
+import {resolveSecret} from "../common/aws_utils";
 
 const FunctionName = 'new-on-netflix-catalog';
 const nameAndYearRegex = /^(.*)\s\((\d+)\)$/i;
@@ -17,6 +18,8 @@ let totalCountRegex = /\[(\d+) titles]\s*-\s*Showing\s*(\d+)\s*to\s*(\d+)/i;
 
 const scrapeType = async letter => {
   try {
+    let proxyAddress = await resolveSecret('proxy-address');
+
     let pathLetter = letter;
     if (letter === 'all') {
       pathLetter = '';
@@ -36,6 +39,7 @@ const scrapeType = async letter => {
           headers: {
             'User-Agent': USER_AGENT_STRING,
           },
+          proxy: proxyAddress,
           qs: {
             start: offset || 0,
           },
