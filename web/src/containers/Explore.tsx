@@ -351,6 +351,7 @@ class Explore extends Component<Props, State> {
             updateFilters={this.handleFilterParamsChange}
             isListDynamic={false}
             filters={this.state.filters}
+            variant="default"
           />
         </div>
         <AllFilters

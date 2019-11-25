@@ -2,14 +2,10 @@ import { Slider, Theme, Typography } from '@material-ui/core';
 import React, { useEffect } from 'react';
 import { RouteComponentProps, withRouter } from 'react-router';
 import makeStyles from '@material-ui/core/styles/makeStyles';
-import {
-  parseFilterParamsFromQs,
-  updateMultipleUrlParams,
-} from '../../utils/urlHelper';
 import _ from 'lodash';
 import * as R from 'ramda';
 import { OpenRange } from '../../types';
-import { FilterParams, SlidersState } from '../../utils/searchFilters';
+import { SlidersState } from '../../utils/searchFilters';
 
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {

@@ -698,31 +698,24 @@ class Toolbar extends Component<Props, State> {
               })
             }
           >
-            <Box display={{ xs: 'none', sm: 'block' }} m={1}>
-              Teletracker
-            </Box>
-            <Box display={{ xs: 'block', sm: 'none' }} m={1}>
-              TT
-            </Box>
+            Teletracker
           </Typography>
           <div className={classes.grow} />
           <Hidden mdDown>
             {this.renderGenreMenu('show')}
             {this.renderGenreMenu('movie')}
           </Hidden>
-          <Hidden lgUp>
+          <Hidden mdDown>
             <ButtonLink color="inherit" primary="Popular" to="/popular" />
           </Hidden>
-          <Box display={{ xs: 'none', sm: 'block' }} m={1}>
+          <Box display={{ xs: 'none', sm: 'none' }} m={1}>
             <ButtonLink
               color="inherit"
               primary="New, Arriving, &amp; Expiring"
               to="/new"
             />
           </Box>
-          <Box display={{ xs: 'block', sm: 'none' }} m={1}>
-            <ButtonLink color="inherit" primary="New" to="/new" />
-          </Box>
+
           {!isAuthed && (
             <Button
               component={RouterLink}

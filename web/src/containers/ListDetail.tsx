@@ -811,6 +811,7 @@ class ListDetail extends Component<Props, State> {
                     : filters
                 }
                 initialState={listFilters}
+                variant="default"
               />
             </div>
             <AllFilters
