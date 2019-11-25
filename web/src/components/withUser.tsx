@@ -47,15 +47,7 @@ const withUser = <P extends object>(
     }, 100);
 
     render() {
-      // Loading until we've both confirmed we're logged in (auth check) and retrieved
-      // the current user from the server
-      return this.props.isCheckingAuth ? (
-        <div style={{ flexGrow: 1 }}>
-          {loadingComponent ? loadingComponent(this.props) : <LinearProgress />}
-        </div>
-      ) : (
-        <Component {...(this.props as P & WithUserProps)} />
-      );
+      return <Component {...(this.props as P & WithUserProps)} />;
     }
   }
 
