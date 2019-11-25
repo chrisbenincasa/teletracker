@@ -211,10 +211,5 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
 };
 
 export default withUser(
-  withStyles(styles)(
-    connect(
-      mapStateToProps,
-      mapDispatchToProps,
-    )(Search),
-  ),
+  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Search)),
 );

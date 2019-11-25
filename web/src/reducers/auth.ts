@@ -14,6 +14,8 @@ import {
   SignupSuccessfulAction,
   UNSET_TOKEN,
   UnsetTokenAction,
+  USER_STATE_CHANGE,
+  UserStateChangeAction,
 } from '../actions/auth';
 import { User } from '../types';
 import { flattenActions, handleAction } from './utils';
@@ -41,6 +43,16 @@ const initialState: State = {
   isLoggingOut: false,
   isSigningUp: false,
 };
+
+const stateChange = handleAction<UserStateChangeAction, State>(
+  USER_STATE_CHANGE,
+  state => {
+    return {
+      ...state,
+      checkingAuth: false,
+    };
+  },
+);
 
 const signupInitiated = handleAction<SignupInitiatedAction, State>(
   SIGNUP_INITIATED,
@@ -133,6 +145,7 @@ export default flattenActions(
   initialState,
   ...[
     ...loginInitiated,
+    stateChange,
     loginSuccess,
     logoutSuccess,
     setToken,
