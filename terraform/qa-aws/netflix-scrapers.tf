@@ -25,14 +25,37 @@ resource "aws_cloudwatch_event_rule" "new-on-netflix-event-rule" {
 resource "aws_cloudwatch_event_target" "new-on-netflix-event-target" {
   arn = module.new-on-netflix-catalog.lambda_arn
   input = jsonencode({
-    "letter" = "all",
-    "limit"  = 4
+    "letter"       = "all",
+    "limit"        = 4,
+    "scheduleNext" = true
   })
   rule = aws_cloudwatch_event_rule.new-on-netflix-event-rule.name
 }
 
 resource "aws_iam_role_policy_attachment" "new-on-netflix-catalog-lambda-invoke" {
   policy_arn = aws_iam_policy.lambda_execute.arn
+  role       = module.new-on-netflix-catalog.lambda_role_name
+}
+
+resource "aws_lambda_permission" "new-on-netflix-event-permission" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.new-on-netflix-catalog.lambda_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.new-on-netflix-event-rule.arn
+}
+
+resource "aws_iam_role_policy_attachment" "new-on-netflix-catalog-ssm-attachment" {
+  policy_arn = data.aws_iam_policy.ssm_read_only_policy.arn
+  role       = module.new-on-netflix-catalog.lambda_role_name
+}
+
+resource "aws_iam_role_policy_attachment" "new-on-netflix-catalog-kms-attachment" {
+  policy_arn = data.aws_iam_policy.kms_power_user_policy.arn
+  role       = module.new-on-netflix-catalog.lambda_role_name
+}
+
+resource "aws_iam_role_policy_attachment" "new-on-netflix-catalog-kms-encrypt-attachment" {
+  policy_arn = aws_iam_policy.kms_encrypt_decrypt_policy.arn
   role       = module.new-on-netflix-catalog.lambda_role_name
 }
 
