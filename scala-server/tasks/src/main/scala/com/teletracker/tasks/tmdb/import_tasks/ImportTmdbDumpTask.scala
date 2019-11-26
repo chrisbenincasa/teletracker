@@ -26,7 +26,7 @@ object ImportTmdbDumpTaskArgs {
   def default(input: URI) = ImportTmdbDumpTaskArgs(
     input = input,
     dryRun = false,
-    perBatchSleepMs = Some((500 millis).toMillis.toInt)
+    perBatchSleepMs = Some((1 second).toMillis.toInt)
   )
 }
 
