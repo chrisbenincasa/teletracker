@@ -21,8 +21,6 @@ abstract class TeletrackerTaskApp[T <: TeletrackerTask: Manifest]
 
   protected def extraModules: Seq[Module] = Seq()
 
-  protected lazy val dbProvider = injector.instance[SyncDbProvider]
-
   override protected def run(): Unit = {
     try {
       injector.instance[T].run(collectArgs)
