@@ -27,7 +27,7 @@ import Login from './Login';
 import Signup from './Signup';
 import New from './New';
 import Popular from './Popular';
-import PersonDetail from './PersonDetail';
+import PersonDetail from './PersonDetail2';
 import Drawer, { DrawerWidthPx } from '../components/Drawer';
 import Toolbar from '../components/Toolbar/Toolbar';
 import Footer from '../components/Footer';
