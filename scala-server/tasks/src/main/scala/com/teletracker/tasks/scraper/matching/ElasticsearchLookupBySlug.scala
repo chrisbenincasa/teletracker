@@ -30,11 +30,15 @@ class ElasticsearchLookupBySlug @Inject()(
           })
           .toMap
 
-        val lookupTriples = itemsBySlug.map {
-          case (slug, item) =>
+        val missingType = itemsBySlug.filter {
+          case (_, item) => item.thingType.isEmpty
+        }.values
+
+        val lookupTriples = itemsBySlug.collect {
+          case (slug, item) if item.thingType.nonEmpty =>
             (
               slug,
-              item.thingType,
+              item.thingType.get,
               item.releaseYear.map(ry => (ry - 1) to (ry + 1))
             )
         }.toList
@@ -61,7 +65,7 @@ class ElasticsearchLookupBySlug @Inject()(
                   )
             }
 
-            matchResultsForSlugs.toList -> (missing ++ withoutReleaseYear)
+            matchResultsForSlugs.toList -> (missing ++ withoutReleaseYear ++ missingType)
           })
       }
     }

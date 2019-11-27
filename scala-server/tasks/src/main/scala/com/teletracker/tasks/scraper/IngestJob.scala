@@ -83,7 +83,7 @@ abstract class IngestJob[T <: ScrapedItem](
 
   protected val logger = LoggerFactory.getLogger(getClass)
 
-  protected val today = LocalDate.now()
+  protected lazy val today = LocalDate.now()
   protected val missingItemsFile = new File(
     s"${today}_${getClass.getSimpleName}-missing-items.json"
   )
@@ -99,8 +99,6 @@ abstract class IngestJob[T <: ScrapedItem](
     new BufferedOutputStream(new FileOutputStream(matchItemsFile))
   )
 
-  protected def tmdbClient: TmdbClient
-  protected def tmdbProcessor: TmdbEntityProcessor
   protected def thingsDb: ThingsDbAccess
   protected def s3: S3Client
   protected def networkCache: NetworkCache
@@ -528,13 +526,13 @@ trait ScrapedItem {
 
   def isMovie: Boolean
   def isTvShow: Boolean
-  def thingType = {
+  def thingType: Option[ThingType] = {
     if (isMovie) {
-      ThingType.Movie
+      Some(ThingType.Movie)
     } else if (isTvShow) {
-      ThingType.Show
+      Some(ThingType.Show)
     } else {
-      throw new IllegalArgumentException("")
+      None
     }
   }
 }

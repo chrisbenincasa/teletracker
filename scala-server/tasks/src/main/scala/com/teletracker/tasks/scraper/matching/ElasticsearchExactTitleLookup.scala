@@ -42,7 +42,7 @@ class ElasticsearchExactTitleLookup @Inject()(
     val titleTriples = items.map(item => {
       (
         item.title,
-        Some(item.thingType).filter(_ => includeType),
+        item.thingType.filter(_ => includeType),
         item.releaseYear.map(ry => (ry - 1) to (ry + 1))
       )
     })

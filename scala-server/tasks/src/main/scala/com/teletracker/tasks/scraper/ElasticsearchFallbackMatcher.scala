@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import cats.syntax.group
 import com.teletracker.common.elasticsearch.{
   ElasticsearchAccess,
   ElasticsearchExecutor,
@@ -7,6 +8,7 @@ import com.teletracker.common.elasticsearch.{
 }
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
+import com.teletracker.tasks.scraper.model.PotentialMatch
 import io.circe.syntax._
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
 import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
@@ -27,7 +29,7 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
   private val os = new PrintStream(
     new BufferedOutputStream(
       new FileOutputStream(
-        new File(s"${getClass.getSimpleName}_potentialMatches.txt")
+        new File(s"${today}-${getClass.getSimpleName}_potential-matches.txt")
       )
     )
   )
@@ -45,10 +47,12 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
           val missing =
             group.filter(item => !exactMatches.exists(_._2.title == item.title))
 
+          recordPotentialMatches(exactMatches)
+
           performFuzzyMatchQuery(missing).map(fuzzyMatches => {
             recordPotentialMatches(fuzzyMatches)
 
-            exactMatches.map {
+            (exactMatches ++ fuzzyMatches).map {
               case (esItem, scrapedItem) =>
                 NonMatchResult(
                   scrapedItem,
@@ -59,68 +63,11 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
             }
           })
         })
-
-        val exactMatchMultiSearch = new MultiSearchRequest()
-        group
-          .map(nonMatch => {
-            val query = exactTitleMatchQuery(nonMatch)
-            val src = new SearchRequest("items")
-              .source(new SearchSourceBuilder().query(query))
-            src
-          })
-          .foreach(exactMatchMultiSearch.add)
-
-        val multiSearchRequest = new MultiSearchRequest()
-        group
-          .map(nonMatch => {
-            val query = fuzzyQueryForItem(nonMatch)
-            new SearchRequest("items")
-              .source(new SearchSourceBuilder().query(query))
-          })
-          .foreach(multiSearchRequest.add)
-
-        elasticsearchExecutor
-          .multiSearch(
-            multiSearchRequest
-          )
-          .map(multiResponse => {
-            multiResponse.getResponses.toList.zip(group).map {
-              case (response, item) =>
-                searchResponseToItems(response.getResponse).items.headOption
-                  .map(_ -> item)
-            }
-          })
-          .map(_.flatten)
       })
       .map(_.flatten)
-      .map(potentialMatches => {
-        potentialMatches.foreach {
-          case (potentialEsItem, item) =>
-            val stringToJson = Map(
-              "original_title" -> potentialEsItem.original_title
-                .getOrElse("")
-                .asJson,
-              "title" -> potentialEsItem.title.get.headOption
-                .getOrElse("")
-                .asJson,
-              "release_date" -> potentialEsItem.release_date
-                .map(_.toString)
-                .getOrElse("")
-                .asJson,
-              "external_ids" -> potentialEsItem.external_ids
-                .getOrElse(Nil)
-                .asJson
-            )
-            os.println(
-              Map(
-                "potential" -> stringToJson.asJson,
-                "scraped" -> item.asJson
-              ).asJson.noSpaces
-            )
-        }
-
+      .map(_ => {
         os.flush()
-
+        // TODO: Actually return these
         Nil
       })
   }
@@ -181,30 +128,13 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
   private def recordPotentialMatches(
     potentialMatches: Iterable[(EsItem, T)]
   ) = {
-    potentialMatches.foreach {
-      case (potentialEsItem, item) =>
-        val stringToJson = Map(
-          "original_title" -> potentialEsItem.original_title
-            .getOrElse("")
-            .asJson,
-          "title" -> potentialEsItem.title.get.headOption
-            .getOrElse("")
-            .asJson,
-          "release_date" -> potentialEsItem.release_date
-            .map(_.toString)
-            .getOrElse("")
-            .asJson,
-          "external_ids" -> potentialEsItem.external_ids
-            .getOrElse(Nil)
-            .asJson
-        )
+    potentialMatches
+      .map(Function.tupled(PotentialMatch.forEsItem))
+      .foreach(potentialMatch => {
         os.println(
-          Map(
-            "potential" -> stringToJson.asJson,
-            "scraped" -> item.asJson
-          ).asJson.noSpaces
+          potentialMatch.asJson.noSpaces
         )
-    }
+      })
 
     os.flush()
   }
@@ -215,16 +145,16 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
       .should(
         QueryBuilders
           .matchQuery("original_title", nonMatch.title)
-          .operator(Operator.AND)
+          .operator(Operator.OR)
       )
       .should(
-        QueryBuilders.matchQuery("title", nonMatch.title).operator(Operator.AND)
+        QueryBuilders.matchQuery("title", nonMatch.title).operator(Operator.OR)
       )
       .minimumShouldMatch(1)
-      .applyIf(requireTypeMatch)(
+      .applyIf(requireTypeMatch && nonMatch.thingType.isDefined)(
         _.filter(
           QueryBuilders
-            .termQuery("type", nonMatch.thingType.getName.toLowerCase())
+            .termQuery("type", nonMatch.thingType.get.getName.toLowerCase())
         )
       )
       .applyOptional(nonMatch.releaseYear)(
@@ -240,41 +170,42 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
   }
 
   private def fuzzyQueryForItem(nonMatch: T) = {
-    QueryBuilders.functionScoreQuery(
-      QueryBuilders
-        .boolQuery()
-        .should(
+//    QueryBuilders.functionScoreQuery(
+//      ,
+//      ScoreFunctionBuilders
+//        .fieldValueFactorFunction("popularity")
+//        .factor(1.2f)
+//        .missing(0.8)
+//        .modifier(FieldValueFactorFunction.Modifier.SQRT)
+//    )
+    QueryBuilders
+      .boolQuery()
+      .should(
+        QueryBuilders
+          .matchQuery("original_title", nonMatch.title)
+          .operator(Operator.OR)
+      )
+      .should(
+        QueryBuilders
+          .matchQuery("title", nonMatch.title)
+          .operator(Operator.OR)
+      )
+      .minimumShouldMatch(1)
+      .applyIf(requireTypeMatch && nonMatch.thingType.isDefined)(
+        _.filter(
           QueryBuilders
-            .matchQuery("original_title", nonMatch.title)
-            .operator(Operator.AND)
+            .termQuery("type", nonMatch.thingType.get.getName.toLowerCase())
         )
-        .should(
-          QueryBuilders
-            .matchQuery("title", nonMatch.title)
-            .operator(Operator.AND)
-        )
-        .minimumShouldMatch(1)
-        .applyIf(requireTypeMatch)(
-          _.filter(
+      )
+      .applyOptional(nonMatch.releaseYear)(
+        (builder, ry) =>
+          builder.filter(
             QueryBuilders
-              .termQuery("type", nonMatch.thingType.getName.toLowerCase())
+              .rangeQuery("release_date")
+              .format("yyyy")
+              .gte(s"${ry}||/y")
+              .lte(s"${ry}||/y")
           )
-        )
-        .applyOptional(nonMatch.releaseYear)(
-          (builder, ry) =>
-            builder.filter(
-              QueryBuilders
-                .rangeQuery("release_date")
-                .format("yyyy")
-                .gte(s"${ry}||/y")
-                .lte(s"${ry}||/y")
-            )
-        ),
-      ScoreFunctionBuilders
-        .fieldValueFactorFunction("popularity")
-        .factor(1.2f)
-        .missing(0.8)
-        .modifier(FieldValueFactorFunction.Modifier.SQRT)
-    )
+      )
   }
 }
