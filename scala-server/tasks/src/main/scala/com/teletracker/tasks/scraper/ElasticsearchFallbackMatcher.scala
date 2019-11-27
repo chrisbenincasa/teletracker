@@ -8,6 +8,7 @@ import com.teletracker.common.elasticsearch.{
 }
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
+import com.teletracker.tasks.scraper.model.PotentialMatch
 import io.circe.syntax._
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
 import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
@@ -127,30 +128,13 @@ trait ElasticsearchFallbackMatcher[T <: ScrapedItem]
   private def recordPotentialMatches(
     potentialMatches: Iterable[(EsItem, T)]
   ) = {
-    potentialMatches.foreach {
-      case (potentialEsItem, item) =>
-        val stringToJson = Map(
-          "original_title" -> potentialEsItem.original_title
-            .getOrElse("")
-            .asJson,
-          "title" -> potentialEsItem.title.get.headOption
-            .getOrElse("")
-            .asJson,
-          "release_date" -> potentialEsItem.release_date
-            .map(_.toString)
-            .getOrElse("")
-            .asJson,
-          "external_ids" -> potentialEsItem.external_ids
-            .getOrElse(Nil)
-            .asJson
-        )
+    potentialMatches
+      .map(Function.tupled(PotentialMatch.forEsItem))
+      .foreach(potentialMatch => {
         os.println(
-          Map(
-            "potential" -> stringToJson.asJson,
-            "scraped" -> item.asJson
-          ).asJson.noSpaces
+          potentialMatch.asJson.noSpaces
         )
-    }
+      })
 
     os.flush()
   }
