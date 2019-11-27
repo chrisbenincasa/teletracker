@@ -61,6 +61,7 @@ const styles = (theme: Theme) =>
     drawer: {
       flexShrink: 0,
       width: DrawerWidthPx,
+      zIndex: `${theme.zIndex.appBar - 1} !important` as any,
     },
     toolbar: theme.mixins.toolbar,
     listName: {
@@ -82,9 +83,6 @@ const styles = (theme: Theme) =>
     },
     iconSmall: {
       fontSize: 20,
-    },
-    root: {
-      zIndex: theme.zIndex.appBar - 1,
     },
   });
 
@@ -392,15 +390,10 @@ class Drawer extends Component<Props, State> {
         open={open}
         anchor="left"
         className={classes.drawer}
-        style={{ width: open ? 216 : 0 }}
+        style={{ width: open ? 220 : 0 }}
         ModalProps={{
           onBackdropClick: this.props.closeRequested,
           onEscapeKeyDown: this.props.closeRequested,
-          BackdropProps: {
-            classes: {
-              root: classes.root,
-            },
-          },
         }}
       >
         {this.isLoading() ? <CircularProgress /> : this.renderDrawerContents()}
