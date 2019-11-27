@@ -148,6 +148,8 @@ const A_CHAR_CODE = 97;
 const Z_CHAR_CODE = 122;
 
 function getLetterRange(start, limit) {
+  const charCode = start.charCodeAt(0);
+
   if (start === 'all') {
     let max;
     if (!limit || limit === -1) {
@@ -159,13 +161,13 @@ function getLetterRange(start, limit) {
     return _.chain(['all'])
       .concat(_.range(A_CHAR_CODE, max).map(i => String.fromCharCode(i)))
       .value();
-  } else if (start >= A_CHAR_CODE && start <= Z_CHAR_CODE) {
+  } else if (charCode >= A_CHAR_CODE && charCode <= Z_CHAR_CODE) {
     if (limit === -1) {
-      return _.range(start, Z_CHAR_CODE + 1).map(i => String.fromCharCode(i));
+      return _.range(charCode, Z_CHAR_CODE + 1).map(i => String.fromCharCode(i));
     } else {
       // Pick the range up to 'z'
-      let maxLetter = Math.min(Z_CHAR_CODE + 1, start + limit);
-      return _.range(start, maxLetter).map(i => String.fromCharCode(i));
+      let maxLetter = Math.min(Z_CHAR_CODE + 1, charCode + limit);
+      return _.range(charCode, maxLetter).map(i => String.fromCharCode(i));
     }
   } else {
     return [];
@@ -174,6 +176,8 @@ function getLetterRange(start, limit) {
 
 export const scrape = async event => {
   try {
+    console.log(event);
+
     let letter = event.letter;
 
     if (!letter) {
@@ -224,7 +228,7 @@ export const scrape = async event => {
             region: 'us-west-1',
           });
 
-          await lambda
+          const result = await lambda
             .invoke({
               FunctionName,
               InvocationType: 'Event',
@@ -234,6 +238,8 @@ export const scrape = async event => {
               ),
             })
             .promise();
+
+          console.log(result);
         }
       }
     }
