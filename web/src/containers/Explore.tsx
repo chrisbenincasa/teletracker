@@ -48,7 +48,12 @@ import { layoutStyles } from '../styles';
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
+    layout: {
+      ...layoutStyles(theme),
+      display: 'flex',
+      flexGrow: 1,
+      flexDirection: 'column',
+    },
     settings: {
       display: 'flex',
       alignSelf: 'flex-end',
@@ -397,10 +402,7 @@ class Explore extends Component<Props, State> {
     const { classes, items, loading } = this.props;
 
     return (
-      <div
-        style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}
-        className={classes.layout}
-      >
+      <div className={classes.layout}>
         <LinearProgress
           style={{ visibility: loading || !items ? 'visible' : 'hidden' }}
         />

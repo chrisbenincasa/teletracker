@@ -68,11 +68,11 @@ class Signup extends Component<Props, State> {
     let { isAuthed, classes } = this.props;
 
     return !isAuthed ? (
-      <main className={classes.main}>
+      <div className={classes.main}>
         <Paper className={classes.paper}>
           <SignupForm />
         </Paper>
-      </main>
+      </div>
     ) : (
       <Redirect to="/" />
     );

@@ -52,6 +52,7 @@ import { ResponsiveImage } from './ResponsiveImage';
 import { Item, itemHasTag } from '../types/v2/Item';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
 import { useWidth } from '../hooks/useWidth';
+import { hexToRGB } from '../utils/style-utils';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -83,7 +84,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     position: 'absolute',
     top: 0,
     left: 0,
-    background: theme.custom.hover.active,
+    background: hexToRGB(theme.palette.grey[900], 0.85),
   },
   hoverDelete: {
     color: theme.palette.common.white,
@@ -127,6 +128,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     zIndex: 1,
     height: '100%',
     width: '100%',
+    backgroundColor: hexToRGB(theme.palette.grey[900], 0.85),
   },
   ratingTitle: {
     color: theme.palette.primary.contrastText,
