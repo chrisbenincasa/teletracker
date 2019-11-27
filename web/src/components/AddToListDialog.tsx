@@ -61,6 +61,10 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexGrow: 1,
     },
+    title: {
+      backgroundColor: theme.palette.primary.main,
+      padding: theme.spacing(1, 2),
+    },
   });
 
 interface AddToListDialogProps {
@@ -302,7 +306,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
           fullWidth
           maxWidth="sm"
         >
-          <DialogTitle id="update-tracking-dialog">
+          <DialogTitle id="update-tracking-dialog" className={classes.title}>
             Add or Remove {this.props.item.canonicalTitle} from your lists
           </DialogTitle>
 

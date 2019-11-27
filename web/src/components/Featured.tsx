@@ -21,6 +21,7 @@ import {
   getVoteCount,
   truncateText,
 } from '../utils/textHelper';
+import { hexToRGB } from '../utils/style-utils';
 
 const useStyles = makeStyles((theme: Theme) => ({
   backdropContainer: {
@@ -74,7 +75,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     right: 0,
     padding: theme.spacing(1),
     marginBottom: theme.spacing(2),
-    backgroundColor: theme.custom.hover.active,
+    backgroundColor: hexToRGB(theme.palette.grey[900], 0.65),
     maxWidth: '50%',
   },
   wrapper: {
