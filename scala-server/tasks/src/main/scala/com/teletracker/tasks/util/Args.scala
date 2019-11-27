@@ -76,6 +76,12 @@ object ArgParser extends LowPriArgParsers {
 
   implicit val uuidArg: ArgParser[UUID] =
     stringArg.andThen(UUID.fromString)
+
+  implicit def javaEnumArg[T <: Enum[T]: Manifest]: ArgParser[T] = {
+    val enums = manifest[T].runtimeClass.asInstanceOf[Class[T]].getEnumConstants
+
+    stringArg.andThenOpt(str => enums.find(_.name().equalsIgnoreCase(str)))
+  }
 }
 
 trait ArgParser[T] { self =>
@@ -88,6 +94,22 @@ trait ArgParser[T] { self =>
 
   def andThen[U](parser: T => U): ArgParser[U] = new ArgParser[U] {
     override def parse(in: Any): Try[U] = self.parse(in).map(parser)
+  }
+
+  def andThenOpt[U](parser: T => Option[U]): ArgParser[U] = new ArgParser[U] {
+    override def parse(in: Any): Try[U] =
+      self
+        .parse(in)
+        .flatMap(
+          t =>
+            parser(t) match {
+              case Some(value) => Success(value)
+              case None =>
+                Failure(
+                  new IllegalArgumentException(s"parser returned None for $in")
+                )
+            }
+        )
   }
 
   def or(parser: ArgParser[T]): ArgParser[T] = new ArgParser[T] {
