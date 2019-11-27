@@ -66,7 +66,7 @@ object SqlDumpSanitizer {
   def extractThingFromLine(
     line: String,
     idx: Option[Int]
-  ) = {
+  ): Option[Thing] = {
     val Array(
       id,
       name,

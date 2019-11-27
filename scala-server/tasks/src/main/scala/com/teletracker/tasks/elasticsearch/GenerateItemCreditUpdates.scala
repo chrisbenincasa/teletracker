@@ -13,7 +13,7 @@ import java.util.UUID
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-class UpsertCreditsFromDump @Inject()(sourceRetriever: SourceRetriever)
+class GenerateItemCreditUpdates @Inject()(sourceRetriever: SourceRetriever)
     extends TeletrackerTaskWithDefaultArgs {
   private val logger = LoggerFactory.getLogger(getClass)
 
