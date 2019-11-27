@@ -92,8 +92,6 @@ const styles = (theme: Theme) =>
       height: 220,
     },
     descriptionContainer: {
-      display: 'flex',
-      flexDirection: 'column',
       marginBottom: theme.spacing(1),
     },
     genre: {
@@ -105,6 +103,7 @@ const styles = (theme: Theme) =>
       flexWrap: 'wrap',
     },
     itemDetailContainer: {
+      position: 'relative',
       margin: theme.spacing(3),
       display: 'flex',
       flex: '1 1 auto',
@@ -163,11 +162,15 @@ const styles = (theme: Theme) =>
       marginLeft: theme.spacing(1),
     },
     titleContainer: {
-      display: 'flex',
       marginBottom: theme.spacing(1),
-      flexDirection: 'column',
-      alignItems: 'self-start',
       color: theme.palette.primary.contrastText,
+    },
+    titleWrapper: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      width: '100%',
+      marginBottom: theme.spacing(1),
     },
     trailerVideo: {
       width: '60vw',
@@ -258,22 +261,14 @@ function ItemDetails(props: Props) {
   };
 
   const renderTitle = (item: Item) => {
+    const { classes } = props;
     const voteAverage = getVoteAverage(item);
     const voteCount = getVoteCount(item);
     const runtime =
       (item.runtime && formatRuntime(item.runtime, item.type)) || null;
 
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          width: '100%',
-          marginBottom: 10,
-          zIndex: 99999,
-        }}
-      >
+      <div className={classes.titleWrapper}>
         <Typography color="inherit" variant="h4" itemProp="name">
           {`${item.canonicalTitle} (${moment(item.release_date).format(
             'YYYY',

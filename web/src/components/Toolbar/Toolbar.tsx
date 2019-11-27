@@ -118,7 +118,7 @@ const styles = (theme: Theme) =>
       flexGrow: 1,
       position: 'absolute',
       width: '100%',
-      backgroundColor: theme.palette.primary[500],
+      backgroundColor: theme.palette.primary.main,
       zIndex: theme.zIndex.appBar + 1,
       padding: 'inherit',
       left: 0,

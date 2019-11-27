@@ -67,9 +67,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     overflow: 'hidden',
     width: '100%',
     height: '100%',
-    // background: theme.palette.action.hover,
     display: 'block',
-    zIndex: 1,
   },
   cardHoverExit: {
     display: 'block',
@@ -77,7 +75,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: '100%',
     opacity: 1,
     overflow: 'hidden',
-    zIndex: 1,
   },
   hoverActions: {
     display: 'flex',
@@ -86,17 +83,16 @@ const useStyles = makeStyles((theme: Theme) => ({
     position: 'absolute',
     top: 0,
     left: 0,
-    zIndex: 1,
     background: theme.custom.hover.active,
   },
   hoverDelete: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: red[300],
     },
   },
   hoverWatch: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: green[300],
     },
@@ -104,17 +100,17 @@ const useStyles = makeStyles((theme: Theme) => ({
   hoverWatchInvert: {
     color: green[300],
     '&:hover': {
-      color: '#fff',
+      color: theme.palette.common.white,
     },
   },
   hoverRatingThumbsDown: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: red[300],
     },
   },
   hoverRatingThumbsUp: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: green[300],
     },
@@ -133,7 +129,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: '100%',
   },
   ratingTitle: {
-    color: '#fff',
+    color: theme.palette.primary.contrastText,
     fontWeight: 'bold',
   },
   ratingContainer: {
@@ -152,13 +148,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     justifyContent: 'space-around',
   },
   ratingVoteDown: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: red[300],
     },
   },
   ratingVoteUp: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: green[300],
     },

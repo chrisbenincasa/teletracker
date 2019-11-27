@@ -119,7 +119,6 @@ interface Props {
 
 const AllFilters = (props: Props) => {
   const classes = useStyles();
-  console.log(classes);
   const TIMEOUT_ENTER = 300;
   const TIMEOUT_EXIT = 300;
   const {
