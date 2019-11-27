@@ -182,7 +182,7 @@ class IngestHuluChanges @Inject()(
       case (title, item) =>
         (
           title,
-          Some(item.thingType),
+          item.thingType,
           item.releaseYear.map(ry => (ry - 1) to (ry + 1))
         )
     }.toList
@@ -205,14 +205,17 @@ class IngestHuluChanges @Inject()(
   private def lookupBySlugs(itemBySlug: Map[Slug, HuluScrapeItem]) = {
     itemSearch
       .lookupItemsBySlug(
-        itemBySlug.map {
-          case (slug, item) =>
-            (
-              slug,
-              item.thingType,
-              item.releaseYear.map(ry => (ry - 1) to (ry + 1))
-            )
-        }.toList
+        itemBySlug
+          .filter(_._2.thingType.isDefined)
+          .map {
+            case (slug, item) =>
+              (
+                slug,
+                item.thingType.get,
+                item.releaseYear.map(ry => (ry - 1) to (ry + 1))
+              )
+          }
+          .toList
       )
       .map(foundBySlug => {
         foundBySlug.flatMap {

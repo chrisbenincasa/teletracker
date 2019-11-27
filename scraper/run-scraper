@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+pushd src
+yarn run main $@
+popd

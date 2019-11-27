@@ -194,8 +194,8 @@ export const scrape = async event => {
       if (maxLetter) {
         if (maxLetter === 'all') {
           nextLetter = 'a';
-        } else if (maxLetter.charCodeAt(0) < Z_CHAR_CODE) {
-          nextLetter = maxLetter;
+        } else if (maxLetter.charCodeAt(0) + 1 < Z_CHAR_CODE) {
+          nextLetter = String.fromCharCode(maxLetter.charCodeAt(0) + 1);
         }
       }
 
@@ -227,7 +227,7 @@ export const scrape = async event => {
               FunctionName,
               InvocationType: 'Event',
               Payload: Buffer.from(
-                JSON.stringify({ scheduleNext, letter: nextLetter }),
+                JSON.stringify({ scheduleNext, letter: nextLetter, limit }),
                 'utf-8',
               ),
             })
