@@ -9,6 +9,7 @@ import org.elasticsearch.action.bulk.{
   BulkRequestBuilder
 }
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
+import org.elasticsearch.action.support.WriteRequest
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.QueryBuilders
@@ -157,6 +158,7 @@ class ItemUpdater @Inject()(
         val updateDenormRequest =
           new UpdateRequest("user_items", s"${userId}_${itemId}")
             .script(UpdateUserTagsScript(value))
+            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
         val bulkRequest = new BulkRequest()
         bulkRequest.add(updateRequest)
@@ -222,6 +224,7 @@ class ItemUpdater @Inject()(
         val updateDenormRequest =
           new UpdateRequest("user_items", s"${userId}_${itemId}")
             .script(RemoveUserTagScript(value))
+            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
         val bulkRequest = new BulkRequest()
         bulkRequest.add(updateRequest)
@@ -318,6 +321,7 @@ class ItemUpdater @Inject()(
   }
 
   // Might be better to fire and forget...
+  // TODO: Send request to user_things index too.
   def removeItemFromLists(
     listIds: Set[Int],
     userId: String
