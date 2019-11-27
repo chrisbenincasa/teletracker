@@ -43,13 +43,6 @@ const styles = (theme: Theme) =>
         marginRight: 'auto',
       },
     },
-    paper: {
-      marginTop: theme.spacing(8),
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: theme.spacing(2, 3, 3),
-    },
     overlay: {
       display: 'flex',
       flexDirection: 'column',

@@ -83,6 +83,9 @@ const styles = (theme: Theme) =>
     iconSmall: {
       fontSize: 20,
     },
+    root: {
+      zIndex: theme.zIndex.appBar - 1,
+    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
@@ -393,6 +396,11 @@ class Drawer extends Component<Props, State> {
         ModalProps={{
           onBackdropClick: this.props.closeRequested,
           onEscapeKeyDown: this.props.closeRequested,
+          BackdropProps: {
+            classes: {
+              root: classes.root,
+            },
+          },
         }}
       >
         {this.isLoading() ? <CircularProgress /> : this.renderDrawerContents()}

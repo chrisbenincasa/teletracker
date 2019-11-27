@@ -1,5 +1,5 @@
-import { Collapse, makeStyles, Theme } from '@material-ui/core';
 import React from 'react';
+import { Collapse, makeStyles, Paper, Theme } from '@material-ui/core';
 import { Genre, ItemType, SortOptions, NetworkType } from '../../types';
 import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
@@ -12,10 +12,7 @@ import PersonFilter from './PersonFilter';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
-    display: 'flex',
-    flexWrap: 'wrap',
     padding: theme.spacing(2),
-    backgroundColor: `${theme.palette.grey[800]}`,
   },
   filterSortContainer: {
     [theme.breakpoints.up('sm')]: {
@@ -187,7 +184,11 @@ const AllFilters = (props: Props) => {
       className={classes.toEdgeWrapper}
       appear
     >
-      <div className={classes.allFiltersContainer}>
+      <Paper
+        id="all-filters"
+        elevation={5}
+        className={classes.allFiltersContainer}
+      >
         <div className={classes.filterSortContainer}>
           <div className={classes.genreContainer}>
             {!disableGenres && (
@@ -237,7 +238,7 @@ const AllFilters = (props: Props) => {
             )}
           </div>
         </div>
-      </div>
+      </Paper>
     </Collapse>
   );
 };
