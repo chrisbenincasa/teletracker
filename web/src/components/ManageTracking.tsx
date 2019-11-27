@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   Button,
   createStyles,
@@ -6,7 +7,6 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { List as ListIcon } from '@material-ui/icons';
-import React, { Component } from 'react';
 import AddToListDialog from '../components/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
 import AuthDialog from './Auth/AuthDialog';
@@ -18,7 +18,7 @@ const styles = (theme: Theme) =>
     button: {
       marginTop: theme.spacing(1),
       [theme.breakpoints.down('sm')]: {
-        padding: theme.spacing(1) / 4,
+        padding: theme.spacing(0.25),
       },
     },
     buttonIcon: {

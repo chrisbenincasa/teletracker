@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   Dialog,
@@ -13,7 +14,6 @@ import {
   TextField,
   Typography,
 } from '@material-ui/core';
-import React, { useEffect, useState } from 'react';
 import { FilterParams, SliderParamState } from '../utils/searchFilters';
 import {
   Genre,
@@ -39,7 +39,7 @@ const useStyles = makeStyles(theme => ({
     margin: theme.spacing(1),
   },
   filterContainer: {
-    marginTop: theme.spacing(),
+    marginTop: theme.spacing(1),
   },
 }));
 

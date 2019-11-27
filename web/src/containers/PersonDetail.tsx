@@ -63,22 +63,21 @@ const styles = (theme: Theme) =>
     },
     backdropContainer: {
       height: 'auto',
-      [theme.breakpoints.down('sm')]: {
-        height: '100%',
-      },
       overflow: 'hidden',
       top: 0,
       width: '100%',
       position: 'fixed',
+      [theme.breakpoints.down('sm')]: {
+        height: '100%',
+      },
     },
     backdropGradient: {
       position: 'absolute',
       top: 0,
       width: '100%',
       height: '100%',
-      backgroundColor: 'rgba(48, 48, 48, 0.5)',
-      backgroundImage:
-        'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
+      backgroundColor: theme.custom.backdrop.backgroundColor,
+      backgroundImage: theme.custom.backdrop.backgroundImage,
     },
     descriptionContainer: {
       display: 'flex',
@@ -93,13 +92,15 @@ const styles = (theme: Theme) =>
       alignItems: 'center',
     },
     filterSortContainer: {
+      marginBottom: theme.spacing(1),
+      flexGrow: 1,
       [theme.breakpoints.up('sm')]: {
         display: 'flex',
       },
-      marginBottom: theme.spacing(1),
-      flexGrow: 1,
     },
-    genre: { margin: 5 },
+    genre: {
+      margin: theme.spacing(1),
+    },
     genreContainer: {
       display: 'flex',
       flexWrap: 'wrap',
@@ -108,7 +109,6 @@ const styles = (theme: Theme) =>
     leftContainer: {
       display: 'flex',
       flexDirection: 'column',
-
       [theme.breakpoints.up('sm')]: {
         position: 'sticky',
         top: 75,
@@ -116,7 +116,7 @@ const styles = (theme: Theme) =>
       },
     },
     listHeader: {
-      margin: `${theme.spacing(2)}px 0`,
+      margin: theme.spacing(2, 0),
       display: 'flex',
       flex: '1 0 auto',
       alignItems: 'center',
@@ -126,21 +126,21 @@ const styles = (theme: Theme) =>
       flex: '1 0 auto',
     },
     personCTA: {
+      width: '100%',
       [theme.breakpoints.down('sm')]: {
         width: '80%',
       },
-      width: '100%',
     },
     personInformationContainer: {
-      [theme.breakpoints.up('sm')]: {
-        marginLeft: theme.spacing(3),
-      },
       display: 'flex',
       flex: '1 1 auto',
       backgroundColor: 'transparent',
       color: '#fff',
       flexDirection: 'column',
       position: 'relative',
+      [theme.breakpoints.up('sm')]: {
+        marginLeft: theme.spacing(3),
+      },
     },
     personDetailContainer: {
       margin: theme.spacing(3),
@@ -153,14 +153,14 @@ const styles = (theme: Theme) =>
       },
     },
     posterContainer: {
-      [theme.breakpoints.up('sm')]: {
-        width: 250,
-      },
       margin: '0 auto',
       width: '50%',
       position: 'relative',
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
+      },
+      [theme.breakpoints.up('sm')]: {
+        width: 250,
       },
     },
     settings: {
@@ -172,12 +172,12 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       alignItems: 'flex-start',
       width: '80%',
+      marginBottom: theme.spacing(1),
+      zIndex: theme.zIndex.mobileStepper,
       [theme.breakpoints.down('sm')]: {
         width: '100%',
         alignItems: 'center',
       },
-      marginBottom: theme.spacing(1),
-      zIndex: 9999,
     },
     loadingCircle: {
       display: 'flex',

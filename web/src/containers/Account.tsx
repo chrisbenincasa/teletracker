@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   Card,
   createStyles,
@@ -23,7 +24,6 @@ import CheckIcon from '@material-ui/icons/Check';
 import Slider from '@material-ui/core/Slider';
 import _ from 'lodash';
 import * as R from 'ramda';
-import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { ValueType } from 'react-select/lib/types';
 import { bindActionCreators } from 'redux';
@@ -52,40 +52,14 @@ const styles = (theme: Theme) =>
     sectionHeader: {
       paddingLeft: theme.spacing(0.5),
     },
-    drawer: {
-      width: 240,
-      flexShrink: 0,
-    },
-    drawerPaper: {
-      width: 240,
-    },
-    drawerHeader: {
-      display: 'flex',
-      alignItems: 'center',
-      padding: '0 8px',
-      ...theme.mixins.toolbar,
-      justifyContent: 'flex-end',
-    },
     list: {
       backgroundColor: theme.palette.background.paper,
-    },
-    card: {
-      display: 'flex',
-      height: 50,
-    },
-    cardDetails: {
-      display: 'flex',
-      flexDirection: 'column',
-      flex: '1',
-    },
-    cardContent: {
-      flex: '1 0 auto',
     },
     cardMedia: {
       width: 45,
       height: 45,
-      margin: 2.5,
-      borderRadius: theme.spacing(0.5),
+      margin: theme.spacing(0.25),
+      borderRadius: theme.shape.borderRadius,
     },
     paper: {
       color: theme.palette.text.secondary,
@@ -103,8 +77,8 @@ const styles = (theme: Theme) =>
       },
     },
     filterSearchField: {
-      padding: `${theme.spacing(0.5)}px 0`,
-      margin: `0 0 ${theme.spacing(0.6)}px`,
+      padding: theme.spacing(0.5, 0),
+      margin: theme.spacing(0, 0, 0.6),
     },
   });
 

@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   Button,
   ButtonGroup,
@@ -9,7 +10,6 @@ import {
 } from '@material-ui/core';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { ItemType } from '../../types';
-import React, { Component } from 'react';
 import { parseFilterParamsFromQs } from '../../utils/urlHelper';
 
 const styles = (theme: Theme) =>
@@ -20,15 +20,15 @@ const styles = (theme: Theme) =>
       flexWrap: 'wrap',
     },
     filterButtons: {
-      [theme.breakpoints.down('sm')]: {
-        fontSize: '0.575rem',
-      },
       whiteSpace: 'nowrap',
     },
     filterLabel: {
-      paddingBottom: theme.spacing() / 2,
+      paddingBottom: theme.spacing(0.5),
     },
-    typeContainer: { display: 'flex', flexDirection: 'column' },
+    typeContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+    },
   });
 
 interface OwnProps {

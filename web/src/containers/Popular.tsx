@@ -43,10 +43,6 @@ import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 
 const styles = (theme: Theme) =>
   createStyles({
-    networkIcon: {
-      width: 20,
-      borderRadius: '50%',
-    },
     settings: {
       display: 'flex',
       alignSelf: 'flex-end',
@@ -67,9 +63,9 @@ const styles = (theme: Theme) =>
       height: '100%',
     },
     popularContainer: {
-      padding: `0 ${theme.spacing(3)}px`,
+      padding: theme.spacing(0, 3),
       [theme.breakpoints.down('sm')]: {
-        padding: `0 ${theme.spacing(1)}px`,
+        padding: theme.spacing(0, 1),
       },
       display: 'flex',
       flexDirection: 'column',

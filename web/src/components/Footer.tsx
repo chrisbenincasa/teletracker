@@ -1,11 +1,12 @@
 import React from 'react';
 import { Hidden, makeStyles, Theme, Typography } from '@material-ui/core';
 import RouterLink from './RouterLink';
+import moment from 'moment';
 
 const useStyles = makeStyles((theme: Theme) => ({
   link: {
     textDecoration: 'none',
-    color: `${theme.palette.text.primary}`,
+    color: theme.palette.text.primary,
   },
   mobileFooter: {
     display: 'flex',
@@ -16,7 +17,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   wrapper: {
     display: 'flex',
     flexDirection: 'row',
-    backgroundColor: `${theme.palette.grey[800]}`,
+    backgroundColor: theme.custom.hover.active,
     position: 'absolute',
     bottom: 0,
     height: '9rem',
@@ -26,14 +27,14 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: '100%',
     marginTop: theme.spacing(2),
     alignSelf: 'flex-end',
-    zIndex: 9999,
+    zIndex: theme.zIndex.appBar,
   },
   section: {
     display: 'flex',
     flexDirection: 'column',
     flexGrow: 1,
     alignItems: 'flex-start',
-    padding: `${theme.spacing(2)}px ${theme.spacing(3)}px`,
+    padding: theme.spacing(2, 3),
   },
 }));
 
@@ -41,11 +42,12 @@ interface Props {}
 
 const Footer = (props: Props) => {
   const classes = useStyles();
+  const year = moment().format('YYYY');
 
   return (
     <footer className={classes.wrapper}>
       <Hidden only={['xs', 'sm']}>
-        <div className={classes.section}>Teletracker &copy; 2019</div>
+        <div className={classes.section}>Teletracker &copy; {year}</div>
         <div className={classes.section}>
           <Typography variant="h6">Networks</Typography>
           <RouterLink
@@ -95,7 +97,7 @@ const Footer = (props: Props) => {
         </div>
       </Hidden>
       <Hidden mdUp>
-        <div className={classes.mobileFooter}>Teletracker &copy; 2019</div>
+        <div className={classes.mobileFooter}>Teletracker &copy; {year}</div>
       </Hidden>
     </footer>
   );

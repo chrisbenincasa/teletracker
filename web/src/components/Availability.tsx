@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   CardContent,
   Chip,
@@ -17,7 +18,6 @@ import {
 } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
-import React from 'react';
 import { connect } from 'react-redux';
 import { AppState } from '../reducers';
 import { UserSelf } from '../reducers/user';
@@ -34,9 +34,18 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
     flexWrap: 'wrap',
   },
-  genre: { marginTop: 5 },
-  logo: { width: 50, borderRadius: 10 },
-  platform: { display: 'flex', flexDirection: 'column', margin: 10 },
+  genre: {
+    marginTop: theme.spacing(1),
+  },
+  logo: {
+    width: 50,
+    borderRadius: theme.shape.borderRadius,
+  },
+  platform: {
+    display: 'flex',
+    flexDirection: 'column',
+    margin: theme.spacing(1),
+  },
 }));
 
 interface Props {

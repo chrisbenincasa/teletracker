@@ -40,7 +40,7 @@ const styles = (theme: Theme) =>
     },
     listName: {
       textDecoration: 'none',
-      margin: `${theme.spacing(2)}px 0`,
+      margin: theme.spacing(2, 0),
       '&:focus, &:hover, &:visited, &:link &:active': {
         color: '#000',
       },
@@ -49,7 +49,7 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       flex: '1 0 auto',
-      padding: `0 ${theme.spacing(2)}px`,
+      padding: theme.spacing(0, 2),
     },
     listContainer: {
       display: 'flex',

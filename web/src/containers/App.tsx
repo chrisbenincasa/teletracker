@@ -48,15 +48,6 @@ const styles = (theme: Theme) =>
         paddingBottom: '2rem',
       },
     },
-    mainContentShift: {
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-      [theme.breakpoints.up('sm')]: {
-        marginLeft: DrawerWidthPx,
-      },
-    },
     root: {
       flexGrow: 1,
       minHeight: '100vh',

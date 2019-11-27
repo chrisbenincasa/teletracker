@@ -1,3 +1,4 @@
+import React, { ChangeEvent, Component } from 'react';
 import {
   Button,
   Checkbox,
@@ -21,7 +22,6 @@ import {
 import { Cancel, Check, PlaylistAdd } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
-import React, { ChangeEvent, Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import {

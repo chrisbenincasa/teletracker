@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   Button,
   createStyles,
@@ -7,7 +8,6 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { Check } from '@material-ui/icons';
-import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators, Dispatch } from 'redux';
 import withUser, { WithUserProps } from '../components/withUser';

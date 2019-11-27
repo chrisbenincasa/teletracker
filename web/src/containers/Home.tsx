@@ -31,29 +31,33 @@ import _ from 'lodash';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
 
 const useStyles = makeStyles((theme: Theme) => ({
-  layout: layoutStyles(theme),
+  layout: {
+    ...layoutStyles(theme),
+    display: 'flex',
+    flexDirection: 'column',
+  },
   buttonContainer: {
     display: 'flex',
     flexDirection: 'row',
   },
   buttonIcon: {
-    marginRight: 8,
+    marginRight: theme.spacing(1),
   },
   container: {
     display: 'flex',
     flexDirection: 'row',
-    margin: `${theme.spacing(3)}px`,
+    margin: theme.spacing(3),
     alignItems: 'center',
     justifyContent: 'center',
     [theme.breakpoints.down('sm')]: {
       flexDirection: 'column-reverse',
-      margin: 5,
+      margin: theme.spacing(0.5),
     },
   },
   ctaContainer: {
     display: 'flex',
     flexDirection: 'column',
-    margin: 100,
+    margin: theme.spacing(12),
     [theme.breakpoints.down('sm')]: {
       margin: 0,
       alignItems: 'center',
@@ -72,7 +76,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'absolute',
-    zIndex: 99,
     top: 0,
     width: '100%',
     height: '100%',
@@ -84,9 +87,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
-    margin: `${theme.spacing(4)}px 0px`,
+    margin: theme.spacing(4, 0),
     [theme.breakpoints.down('sm')]: {
-      margin: `${theme.spacing(6)}px 0px`,
+      margin: theme.spacing(6, 0),
     },
   },
   listTitleContainer: {
@@ -94,24 +97,21 @@ const useStyles = makeStyles((theme: Theme) => ({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    zIndex: 999,
     width: '100%',
-    margin: `${theme.spacing(2)}px 0px`,
+    margin: theme.spacing(2, 0),
     [theme.breakpoints.down('sm')]: {
       flexDirection: 'column',
       textAlign: 'center',
     },
   },
   loginButton: {
-    margin: `${theme.spacing(2)}px ${theme.spacing(2)}px ${theme.spacing(
-      2,
-    )}px ${theme.spacing(1)}px`,
+    margin: theme.spacing(2, 2, 2, 1),
     width: '100%',
     maxWidth: 200,
     whiteSpace: 'nowrap',
   },
   highlightText: {
-    marginRight: 15,
+    marginRight: theme.spacing(2),
     whiteSpace: 'nowrap',
   },
   movieCountContainer: {
@@ -128,7 +128,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     display: 'flex',
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    margin: `${theme.spacing(3)}px`,
+    margin: theme.spacing(3),
     filter: 'blur(3px)',
   },
   searchContainer: {
@@ -137,33 +137,27 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: `${theme.spacing(3)}px`,
+    margin: theme.spacing(3),
     [theme.breakpoints.down('sm')]: {
       flexDirection: 'column-reverse',
-      margin: `${theme.spacing(3)}px 0px`,
+      margin: theme.spacing(3, 0),
     },
   },
   searchCtaContainer: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    margin: 100,
+    margin: theme.spacing(12),
     [theme.breakpoints.down('sm')]: {
       margin: 0,
       textAlign: 'center',
     },
   },
   signupButton: {
-    margin: `${theme.spacing(2)}px ${theme.spacing(1)}px ${theme.spacing(
-      2,
-    )}px 0`,
+    margin: theme.spacing(2, 1, 2, 0),
     width: '100%',
     maxWidth: 200,
     whiteSpace: 'nowrap',
-  },
-  wrapper: {
-    display: 'flex',
-    flexDirection: 'column',
   },
 }));
 
@@ -475,7 +469,7 @@ function Home(props: Props) {
 
   return !props.isAuthed ? (
     <React.Fragment>
-      <div className={classes.wrapper}>
+      <div className={classes.layout}>
         {renderTotalMoviesSection()}
         <Divider />
         {renderListSection()}

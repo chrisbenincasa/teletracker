@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   Button,
   ButtonGroup,
@@ -7,7 +8,6 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import React, { Component } from 'react';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { NetworkType } from '../../types';
 import { parseFilterParamsFromQs } from '../../utils/urlHelper';
@@ -23,22 +23,17 @@ const styles = (theme: Theme) =>
       whiteSpace: 'nowrap',
     },
     filterLabel: {
-      paddingBottom: theme.spacing() / 2,
-    },
-    filterButtons: {
-      [theme.breakpoints.down('sm')]: {
-        fontSize: '0.575rem',
-      },
-    },
-    networkIcon: {
-      width: 20,
-      height: 20,
-      borderRadius: '10%',
+      paddingBottom: theme.spacing(0.5),
     },
     networkContainer: {
       display: 'flex',
       flexDirection: 'column',
       width: '100%',
+    },
+    networkIcon: {
+      width: 20,
+      height: 20,
+      borderRadius: theme.shape.borderRadius,
     },
   });
 
@@ -92,7 +87,6 @@ class NetworkSelect extends Component<Props> {
             <Button
               color={!selectedNetworks ? 'secondary' : 'primary'}
               onClick={() => this.updateNetworks('networks', undefined)}
-              className={classes.filterButtons}
             >
               All
             </Button>
@@ -113,7 +107,6 @@ class NetworkSelect extends Component<Props> {
                   alt="Netflix logo"
                 />
               }
-              className={classes.filterButtons}
             >
               Netflix
             </Button>
@@ -124,7 +117,6 @@ class NetworkSelect extends Component<Props> {
                   : 'primary'
               }
               onClick={() => this.updateNetworks('networks', ['hulu'])}
-              className={classes.filterButtons}
               startIcon={
                 <img
                   className={classes.networkIcon}
@@ -145,7 +137,6 @@ class NetworkSelect extends Component<Props> {
               onClick={() =>
                 this.updateNetworks('networks', ['hbo-go', 'hbo-now'])
               }
-              className={classes.filterButtons}
               startIcon={
                 <img
                   className={classes.networkIcon}

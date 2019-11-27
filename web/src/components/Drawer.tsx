@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   Avatar,
   Button,
@@ -28,7 +29,6 @@ import {
 } from '@material-ui/icons';
 import classNames from 'classnames';
 import _ from 'lodash';
-import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -42,7 +42,6 @@ import CreateListDialog from '../components/CreateListDialog';
 import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
-import { layoutStyles } from '../styles';
 import { List as ListType } from '../types';
 import RouterLink from './RouterLink';
 import AuthDialog from './Auth/AuthDialog';
@@ -51,7 +50,6 @@ export const DrawerWidthPx = 220;
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
     avatar: {
       width: 30,
       height: 30,
@@ -62,27 +60,22 @@ const styles = (theme: Theme) =>
     },
     drawer: {
       flexShrink: 0,
-      zIndex: 1000,
-    },
-    drawerPaper: {
-      zIndex: 1000,
       width: DrawerWidthPx,
     },
     toolbar: theme.mixins.toolbar,
     listName: {
       textDecoration: 'none',
-      marginBottom: 10,
+      marginBottom: theme.spacing(1),
     },
     listsContainer: {
       display: 'flex',
       flexDirection: 'column',
       flex: '1 0 auto',
-      margin: '20px 0',
+      margin: theme.spacing(3, 0),
       width: '100%',
     },
     margin: {
-      margin: theme.spacing(2),
-      marginRight: theme.spacing(3),
+      margin: theme.spacing(2, 3, 2),
     },
     leftIcon: {
       marginRight: theme.spacing(1),
@@ -396,10 +389,11 @@ class Drawer extends Component<Props, State> {
         open={open}
         anchor="left"
         className={classes.drawer}
-        classes={{
-          paper: classes.drawerPaper,
-        }}
         style={{ width: open ? 216 : 0 }}
+        ModalProps={{
+          onBackdropClick: this.props.closeRequested,
+          onEscapeKeyDown: this.props.closeRequested,
+        }}
       >
         {this.isLoading() ? <CircularProgress /> : this.renderDrawerContents()}
       </DrawerUI>

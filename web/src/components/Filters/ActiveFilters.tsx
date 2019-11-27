@@ -24,15 +24,15 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexWrap: 'wrap',
   },
   chip: {
-    margin: '2px',
+    margin: theme.spacing(0.25),
     backgroundColor: `${theme.palette.grey[800]}`,
   },
   highlightChip: {
-    margin: '2px',
+    margin: theme.spacing(0.25),
   },
   networkIcon: {
     width: 20,
-    borderRadius: '50%',
+    borderRadius: theme.custom.borderRadius.circle,
   },
 }));
 

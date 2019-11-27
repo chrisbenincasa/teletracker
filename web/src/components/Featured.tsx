@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import {
   CardMedia,
   Fade,
@@ -7,7 +8,6 @@ import {
   Typography,
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
-import React, { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import ManageTracking from '../components/ManageTracking';
@@ -54,7 +54,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexDirection: 'row',
   },
   ratingVoteCount: {
-    marginRight: 10,
+    marginRight: theme.spacing(1),
     [theme.breakpoints.down('sm')]: {
       display: 'none',
     },
@@ -63,7 +63,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     textAlign: 'right',
     alignSelf: 'flex-end',
     fontSize: theme.typography.h5.fontSize,
-    fontWeight: 700,
+    fontWeight: theme.typography.fontWeightBold,
   },
   titleContainer: {
     display: 'flex',
@@ -74,7 +74,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     right: 0,
     padding: theme.spacing(1),
     marginBottom: theme.spacing(2),
-    backgroundColor: 'rgba(48, 48, 48, 0.6)',
+    backgroundColor: theme.custom.hover.active,
     maxWidth: '50%',
   },
   wrapper: {

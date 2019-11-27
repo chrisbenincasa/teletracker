@@ -25,7 +25,7 @@ const useStyles = makeStyles((theme: Theme) => ({
       display: 'flex',
       flexDirection: 'column',
     },
-    zIndex: 1000,
+    zIndex: theme.zIndex.mobileStepper,
     marginBottom: theme.spacing(1),
     flexGrow: 1,
   },
@@ -38,7 +38,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexDirection: 'row',
     width: '40%',
     flexWrap: 'wrap',
-    margin: `${theme.spacing(1)}px 0`,
+    margin: theme.spacing(1, 0),
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
@@ -46,17 +46,14 @@ const useStyles = makeStyles((theme: Theme) => ({
   peopleContainer: {
     display: 'flex',
     flexGrow: 1,
-    margin: `${theme.spacing(1)}px 0`,
+    margin: theme.spacing(1, 0),
     alignItems: 'flex-start',
     width: '100%',
-    [theme.breakpoints.down('sm')]: {
-      width: '100%',
-    },
   },
   slidersContainer: {
     display: 'flex',
     flexGrow: 1,
-    margin: `0 ${theme.spacing(3)}px`,
+    margin: theme.spacing(0, 3),
     [theme.breakpoints.down('md')]: {
       margin: 0,
     },
@@ -70,16 +67,13 @@ const useStyles = makeStyles((theme: Theme) => ({
   sliderContainer: {
     display: 'flex',
     flexGrow: 1,
-    margin: `${theme.spacing(1)}px 0`,
+    margin: theme.spacing(1, 0),
     alignItems: 'flex-start',
     width: '100%',
-    [theme.breakpoints.down('sm')]: {
-      width: '100%',
-    },
   },
   networkContainer: {
     display: 'flex',
-    margin: `${theme.spacing(1)}px 0`,
+    margin: theme.spacing(1, 0),
     alignItems: 'flex-start',
     flexGrow: 1,
     flexDirection: 'column',
@@ -92,11 +86,11 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
   },
   toEdgeWrapper: {
-    margin: `0 0 ${theme.spacing(2)}px`,
+    margin: theme.spacing(0, 0, 2),
   },
   typeContainer: {
     display: 'flex',
-    margin: `${theme.spacing(1)}px 0`,
+    margin: theme.spacing(1, 0),
     alignItems: 'flex-start',
     flexGrow: 1,
   },
@@ -125,6 +119,7 @@ interface Props {
 
 const AllFilters = (props: Props) => {
   const classes = useStyles();
+  console.log(classes);
   const TIMEOUT_ENTER = 300;
   const TIMEOUT_EXIT = 300;
   const {

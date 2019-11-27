@@ -44,13 +44,11 @@ import {
   PeopleFetchInitiatedPayload,
 } from '../actions/people/get_people';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
+import { layoutStyles } from '../styles';
 
 const styles = (theme: Theme) =>
   createStyles({
-    networkIcon: {
-      width: 20,
-      borderRadius: '50%',
-    },
+    layout: layoutStyles(theme),
     settings: {
       display: 'flex',
       alignSelf: 'flex-end',
@@ -60,9 +58,6 @@ const styles = (theme: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
     },
-    loadingBar: {
-      flexGrow: 1,
-    },
     loadingCircle: {
       display: 'flex',
       alignItems: 'center',
@@ -70,7 +65,7 @@ const styles = (theme: Theme) =>
       minHeight: 200,
       height: '100%',
     },
-    popularContainer: {
+    exploreContainer: {
       padding: theme.spacing(3),
       display: 'flex',
       flexDirection: 'column',
@@ -78,7 +73,7 @@ const styles = (theme: Theme) =>
     filters: {
       display: 'flex',
       flexDirection: 'row',
-      marginBottom: 8,
+      marginBottom: theme.spacing(1),
       justifyContent: 'flex-end',
       alignItems: 'center',
     },
@@ -315,7 +310,7 @@ class Explore extends Component<Props, State> {
     } = this.state;
 
     return items ? (
-      <div className={classes.popularContainer}>
+      <div className={classes.exploreContainer}>
         <div className={classes.listTitle}>
           <Typography
             color="inherit"
@@ -399,10 +394,13 @@ class Explore extends Component<Props, State> {
   };
 
   render() {
-    const { items, loading } = this.props;
+    const { classes, items, loading } = this.props;
 
     return (
-      <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
+      <div
+        style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}
+        className={classes.layout}
+      >
         <LinearProgress
           style={{ visibility: loading || !items ? 'visible' : 'hidden' }}
         />

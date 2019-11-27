@@ -65,34 +65,28 @@ const styles = (theme: Theme) =>
       width: '100%',
       height: '100%',
       display: 'flex',
-      zIndex: 1,
-      //To do: integrate with theme styling for primary
       position: 'relative',
     },
     backdropContainer: {
-      [theme.breakpoints.down('sm')]: {
-        height: '100%',
-      },
       height: 'auto',
       overflow: 'hidden',
       top: 0,
       width: '100%',
       position: 'fixed',
+      [theme.breakpoints.down('sm')]: {
+        height: '100%',
+      },
     },
     backdropGradient: {
       position: 'absolute',
       top: 0,
       width: '100%',
       height: '100%',
-      backgroundColor: 'rgba(48, 48, 48, 0.5)',
-      backgroundImage:
-        'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
+      backgroundColor: theme.custom.backdrop.backgroundColor,
+      backgroundImage: theme.custom.backdrop.backgroundImage,
     },
     badge: {
       margin: theme.spacing(1),
-    },
-    card: {
-      margin: '10px 0',
     },
     carousel: {
       height: 220,
@@ -100,40 +94,35 @@ const styles = (theme: Theme) =>
     descriptionContainer: {
       display: 'flex',
       flexDirection: 'column',
-      marginBottom: 10,
+      marginBottom: theme.spacing(1),
     },
     genre: {
-      margin: 5,
+      margin: theme.spacing(0.5),
       cursor: 'pointer',
     },
     genreContainer: {
       display: 'flex',
       flexWrap: 'wrap',
     },
-    heroContent: {
-      maxWidth: 600,
-      margin: '0 auto',
-      padding: `${theme.spacing(8)}px 0 ${theme.spacing(7)}px`,
-    },
     itemDetailContainer: {
-      margin: 20,
+      margin: theme.spacing(3),
       display: 'flex',
       flex: '1 1 auto',
-      color: '#fff',
+      color: theme.palette.primary.contrastText,
       [theme.breakpoints.down('sm')]: {
         flexDirection: 'column',
       },
     },
     itemInformationContainer: {
-      [theme.breakpoints.up('sm')]: {
-        marginLeft: 20,
-      },
       display: 'flex',
       flex: '1 1 auto',
       backgroundColor: 'transparent',
-      color: '#fff',
+      color: theme.palette.primary.contrastText,
       flexDirection: 'column',
       position: 'relative',
+      [theme.breakpoints.up('sm')]: {
+        marginLeft: theme.spacing(3),
+      },
     },
     leftContainer: {
       display: 'flex',
@@ -151,9 +140,6 @@ const styles = (theme: Theme) =>
       justifyContent: 'center',
     },
     posterContainer: {
-      [theme.breakpoints.up('sm')]: {
-        width: 250,
-      },
       width: '50%',
       display: 'flex',
       flex: '0 1 auto',
@@ -161,27 +147,27 @@ const styles = (theme: Theme) =>
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
       },
-    },
-    root: {
-      flexGrow: 1,
+      [theme.breakpoints.up('sm')]: {
+        width: 250,
+      },
     },
     seasonContainer: {
       display: 'flex',
       flexDirection: 'column',
     },
     seasonPoster: {
-      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+      boxShadow: theme.shadows[1],
       width: 100,
     },
     seasonTitle: {
-      marginLeft: 8,
+      marginLeft: theme.spacing(1),
     },
     titleContainer: {
       display: 'flex',
-      marginBottom: 8,
+      marginBottom: theme.spacing(1),
       flexDirection: 'column',
       alignItems: 'self-start',
-      color: '#fff',
+      color: theme.palette.primary.contrastText,
     },
     trailerVideo: {
       width: '60vw',

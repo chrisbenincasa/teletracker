@@ -1,3 +1,4 @@
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -27,7 +28,6 @@ import {
   ThumbDown,
   ThumbUp,
 } from '@material-ui/icons';
-import React, { useEffect, useRef, useState } from 'react';
 import { connect } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -67,7 +67,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     overflow: 'hidden',
     width: '100%',
     height: '100%',
-    background: 'rgba(0, 0, 0, 0.9)',
+    // background: theme.palette.action.hover,
     display: 'block',
     zIndex: 1,
   },
@@ -87,7 +87,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     top: 0,
     left: 0,
     zIndex: 1,
-    background: 'rgba(0, 0, 0, 0.5)',
+    background: theme.custom.hover.active,
   },
   hoverDelete: {
     color: '#fff',
@@ -131,7 +131,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     zIndex: 1,
     height: '100%',
     width: '100%',
-    background: 'rgba(0, 0, 0, 0.75)',
   },
   ratingTitle: {
     color: '#fff',
@@ -433,6 +432,7 @@ function ItemCard(props: Props) {
                   aria-label="Manage Tracking"
                   onClick={() => setManageTrackingModalOpen(true)}
                   disableRipple
+                  disableFocusRipple
                 >
                   <PlaylistAdd className={classes.hoverWatch} />
                   <Typography variant="srOnly">Manage Tracking</Typography>

@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   Button,
   createStyles,
@@ -12,7 +13,6 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import React, { Component } from 'react';
 import withUser, { WithUserProps } from '../components/withUser';
 import { Loading } from '../reducers/user';
 import {
@@ -114,7 +114,7 @@ class CreateListDialog extends Component<Props, State> {
       <Dialog fullWidth maxWidth="xs" open={this.props.open}>
         <DialogTitle>Create New List</DialogTitle>
         <DialogContent>
-          <FormControl style={{ width: '100%' }}>
+          <FormControl fullWidth>
             <TextField
               autoFocus
               margin="dense"

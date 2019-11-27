@@ -35,50 +35,8 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: `${theme.spacing(2)}px ${theme.spacing(3)}px ${theme.spacing(
-        3,
-      )}px`,
+      padding: theme.spacing(2, 3, 3),
       position: 'relative',
-    },
-    avatar: {
-      margin: theme.spacing(1),
-      backgroundColor: theme.palette.secondary.main,
-    },
-    form: {
-      width: '100%', // Fix IE 11 issue.
-      marginTop: theme.spacing(1),
-    },
-    submit: {
-      marginTop: theme.spacing(3),
-    },
-    overlay: {
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-      zIndex: 1000,
-    },
-    socialSignInContainer: {
-      marginTop: theme.spacing(1),
-    },
-    progressSpinner: {
-      marginBottom: theme.spacing(1),
-    },
-    googleButtonIcon: {
-      height: 30,
-    },
-    googleButtonText: {
-      marginLeft: theme.spacing(1),
-    },
-    signUpLinkText: {
-      marginTop: theme.spacing(2),
-      textAlign: 'center',
     },
   });
 

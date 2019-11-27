@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   AppBar,
   Box,
@@ -35,7 +36,6 @@ import {
 import clsx from 'clsx';
 import _ from 'lodash';
 import * as R from 'ramda';
-import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -46,16 +46,38 @@ import { AppState } from '../../reducers';
 import { Genre as GenreModel } from '../../types';
 import { Item } from '../../types/v2/Item';
 import QuickSearch from './QuickSearch';
+import { hexToRGB } from '../../utils/style-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
     appbar: {
-      zIndex: 99999,
+      zIndex: theme.zIndex.drawer + 1,
+      whiteSpace: 'nowrap',
     },
     root: {
       flexGrow: 1,
     },
-    genreMenu: { columns: 3 },
+    genreMenu: {
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+    },
+    genreMenuList: {
+      display: 'flex',
+      flexFlow: 'column wrap',
+      height: 275,
+      width: 475,
+    },
+    genreMenuSubtitle: {
+      fontWeight: theme.typography.fontWeightBold,
+      padding: theme.spacing(1, 2),
+    },
+    genrePaper: {
+      position: 'absolute',
+      zIndex: theme.zIndex.appBar,
+      marginTop: 0,
+      borderTopLeftRadius: 0,
+      backgroundColor: hexToRGB(theme.palette.primary.main, 0.9),
+    },
     grow: {
       flexGrow: 1,
     },
@@ -64,10 +86,7 @@ const styles = (theme: Theme) =>
       width: '100%',
     },
     inputInput: {
-      paddingTop: theme.spacing(1),
-      paddingRight: theme.spacing(1),
-      paddingBottom: theme.spacing(1),
-      paddingLeft: theme.spacing(10),
+      padding: theme.spacing(1, 1, 1, 10),
       transition: theme.transitions.create('width'),
       width: '100%',
       [theme.breakpoints.up('md')]: {
@@ -79,7 +98,7 @@ const styles = (theme: Theme) =>
       caretColor: theme.palette.common.white,
     },
     loginButton: {
-      margin: `0 ${theme.spacing(1)}px`,
+      margin: theme.spacing(0, 1),
     },
     mobileInput: {
       padding: theme.spacing(1),
@@ -100,13 +119,13 @@ const styles = (theme: Theme) =>
       position: 'absolute',
       width: '100%',
       backgroundColor: theme.palette.primary[500],
-      zIndex: 9999,
+      zIndex: theme.zIndex.appBar + 1,
       padding: 'inherit',
       left: 0,
       right: 0,
     },
     mobileSearchIcon: {
-      padding: `${theme.spacing(1) / 2}px ${theme.spacing(1)}px`,
+      padding: theme.spacing(0.5, 1),
     },
     noResults: {
       margin: theme.spacing(1),
@@ -114,8 +133,8 @@ const styles = (theme: Theme) =>
     },
     poster: {
       width: 25,
-      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
-      marginRight: `${theme.spacing(1)}`,
+      boxShadow: theme.shadows[1],
+      marginRight: theme.spacing(1),
     },
     progressSpinner: {
       margin: theme.spacing(1),
@@ -470,7 +489,7 @@ class Toolbar extends Component<Props, State> {
   }
 
   renderGenreMenu(type: 'movie' | 'show') {
-    const { genres } = this.props;
+    const { classes, genres } = this.props;
     const { genreAnchorEl } = this.state;
 
     // Todo: support 'show' in genre types
@@ -489,12 +508,8 @@ class Toolbar extends Component<Props, State> {
           onClick={event => this.handleGenreMenu(event, type)}
           onMouseEnter={event => this.handleGenreMenu(event, type)}
           onMouseLeave={event => this.handleGenreMenu(event, type)}
-          style={{
-            backgroundColor:
-              this.state.genreType === type ? '#424242' : 'inherit',
-            borderBottomLeftRadius: 0,
-            borderBottomRightRadius: 0,
-          }}
+          color="inherit"
+          className={classes.genreMenu}
           endIcon={
             this.isSmallDevice ? null : this.state.genreType === type ? (
               <ArrowDropUp />
@@ -524,12 +539,7 @@ class Toolbar extends Component<Props, State> {
               timeout={200}
             >
               <Paper
-                style={{
-                  position: 'absolute',
-                  zIndex: 9999999,
-                  marginTop: 0,
-                  borderTopLeftRadius: 0,
-                }}
+                className={classes.genrePaper}
                 onMouseLeave={this.handleGenreMenuClose}
                 ref={
                   type === 'show'
@@ -541,17 +551,10 @@ class Toolbar extends Component<Props, State> {
                   onClickAway={this.handleGenreMenuClose}
                   touchEvent={false}
                 >
-                  <MenuList
-                    style={{
-                      display: 'flex',
-                      flexFlow: 'column wrap',
-                      height: 275,
-                      width: 475,
-                    }}
-                  >
+                  <MenuList className={classes.genreMenuList}>
                     <Typography
                       variant="subtitle1"
-                      style={{ fontWeight: 700, padding: '6px 16px' }}
+                      className={classes.genreMenuSubtitle}
                     >
                       Explore
                     </Typography>
@@ -575,7 +578,7 @@ class Toolbar extends Component<Props, State> {
                     />
                     <Typography
                       variant="subtitle1"
-                      style={{ fontWeight: 700, padding: '6px 16px' }}
+                      className={classes.genreMenuSubtitle}
                     >
                       Genres
                     </Typography>
@@ -679,7 +682,7 @@ class Toolbar extends Component<Props, State> {
     }
 
     return (
-      <AppBar position="sticky" style={{ whiteSpace: 'nowrap', zIndex: 10000 }}>
+      <AppBar position="sticky">
         <MUIToolbar variant="dense" disableGutters>
           <IconButton
             focusRipple={false}

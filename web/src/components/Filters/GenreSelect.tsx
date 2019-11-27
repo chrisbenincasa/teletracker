@@ -1,19 +1,20 @@
+import React, { Component } from 'react';
 import {
   Chip,
   createStyles,
+  Theme,
   Typography,
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import _ from 'lodash';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { Genre } from '../../types';
-import React, { Component } from 'react';
+import _ from 'lodash';
 
-const styles = () =>
+const styles = (theme: Theme) =>
   createStyles({
     chip: {
-      margin: 4,
+      margin: theme.spacing(0.25),
       flexGrow: 1,
     },
     chipContainer: {

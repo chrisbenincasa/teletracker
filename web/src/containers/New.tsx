@@ -30,7 +30,7 @@ const styles = (theme: Theme) =>
   createStyles({
     layout: layoutStyles(theme),
     cardGrid: {
-      padding: `${theme.spacing(1)}px`,
+      padding: theme.spacing(1),
     },
   });
 
