@@ -218,6 +218,8 @@ export const scrape = async event => {
 
         // If we want to schedule and have more to do, do it.
         if (Boolean(scheduleNext) && nextLetter) {
+          console.log('scheduling next');
+
           const lambda = new AWS.Lambda({
             region: 'us-west-1',
           });
