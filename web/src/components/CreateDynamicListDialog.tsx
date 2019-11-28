@@ -41,6 +41,10 @@ const useStyles = makeStyles(theme => ({
   filterContainer: {
     marginTop: theme.spacing(1),
   },
+  title: {
+    backgroundColor: theme.palette.primary.main,
+    padding: theme.spacing(1, 2),
+  },
 }));
 
 interface OwnProps {
@@ -298,7 +302,7 @@ export default function CreateDynamicListDialog(props: Props) {
       fullWidth
       maxWidth="sm"
     >
-      <DialogTitle id="create-dynamic-list-dialog">
+      <DialogTitle id="create-dynamic-list-dialog" className={classes.title}>
         Create Smart List
       </DialogTitle>
       <DialogContent>
