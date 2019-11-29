@@ -37,6 +37,7 @@ import { collect } from '../../utils/collection-utils';
 const useStyles = makeStyles(theme => ({
   button: {
     margin: theme.spacing(1),
+    whiteSpace: 'nowrap',
   },
   filterContainer: {
     marginTop: theme.spacing(1),

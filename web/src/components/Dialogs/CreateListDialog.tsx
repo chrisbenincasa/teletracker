@@ -26,7 +26,13 @@ import { ListsByIdMap } from '../../reducers/lists';
 import { AppState } from '../../reducers';
 import CreateAListValidator from '../../utils/validation/CreateAListValidator';
 
-const styles = (theme: Theme) => createStyles({});
+const styles = (theme: Theme) =>
+  createStyles({
+    button: {
+      margin: theme.spacing(1),
+      whiteSpace: 'nowrap',
+    },
+  });
 
 interface DispatchProps {
   createList: (payload?: UserCreateListPayload) => void;
@@ -106,7 +112,7 @@ class CreateListDialog extends Component<Props, State> {
   };
 
   renderDialog() {
-    let { loading } = this.props;
+    let { classes, loading } = this.props;
     let { listName, nameDuplicateError, nameLengthError } = this.state;
     let isLoading = Boolean(loading[USER_SELF_CREATE_LIST]);
 
@@ -145,6 +151,7 @@ class CreateListDialog extends Component<Props, State> {
             disabled={isLoading}
             onClick={this.handleModalClose}
             color="primary"
+            className={classes.button}
           >
             Cancel
           </Button>
@@ -153,6 +160,7 @@ class CreateListDialog extends Component<Props, State> {
             onClick={this.validateListName}
             color="secondary"
             variant="contained"
+            className={classes.button}
           >
             Create
           </Button>

@@ -53,6 +53,7 @@ const styles = (theme: Theme) =>
     },
     button: {
       margin: theme.spacing(1),
+      whiteSpace: 'nowrap',
     },
     leftIcon: {
       marginRight: theme.spacing(1),
