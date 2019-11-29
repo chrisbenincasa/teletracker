@@ -10,15 +10,15 @@ import {
 import { Check } from '@material-ui/icons';
 import { connect } from 'react-redux';
 import { bindActionCreators, Dispatch } from 'redux';
-import withUser, { WithUserProps } from '../components/withUser';
+import withUser, { WithUserProps } from '../withUser';
 import {
   removeUserItemTags,
   updateUserItemTags,
   UserUpdateItemTagsPayload,
-} from '../actions/user';
-import AuthDialog from './Auth/AuthDialog';
-import { ActionType } from '../types';
-import Thing from '../types/Thing';
+} from '../../actions/user';
+import AuthDialog from '../Auth/AuthDialog';
+import { ActionType } from '../../types';
+import Thing from '../../types/Thing';
 import moment from 'moment';
 
 const styles = (theme: Theme) =>

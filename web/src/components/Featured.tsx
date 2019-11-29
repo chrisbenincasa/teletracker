@@ -13,7 +13,7 @@ import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import ManageTracking from '../components/ManageTracking';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import { Item } from '../types/v2/Item';
-import AddToListDialog from './AddToListDialog';
+import AddToListDialog from './Dialogs/AddToListDialog';
 import withUser, { WithUserProps } from './withUser';
 import {
   formatRuntime,

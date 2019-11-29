@@ -13,18 +13,18 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import withUser, { WithUserProps } from '../components/withUser';
-import { Loading } from '../reducers/user';
+import withUser, { WithUserProps } from '../withUser';
+import { Loading } from '../../reducers/user';
 import {
   createList,
   USER_SELF_CREATE_LIST,
   UserCreateListPayload,
-} from '../actions/lists';
+} from '../../actions/lists';
 import { bindActionCreators, Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { ListsByIdMap } from '../reducers/lists';
-import { AppState } from '../reducers';
-import CreateAListValidator from '../utils/validation/CreateAListValidator';
+import { ListsByIdMap } from '../../reducers/lists';
+import { AppState } from '../../reducers';
+import CreateAListValidator from '../../utils/validation/CreateAListValidator';
 
 const styles = (theme: Theme) => createStyles({});
 

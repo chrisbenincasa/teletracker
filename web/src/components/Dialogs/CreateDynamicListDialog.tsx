@@ -14,7 +14,7 @@ import {
   TextField,
   Typography,
 } from '@material-ui/core';
-import { FilterParams, SliderParamState } from '../utils/searchFilters';
+import { FilterParams, SliderParamState } from '../../utils/searchFilters';
 import {
   Genre,
   ItemType,
@@ -25,14 +25,14 @@ import {
   ListRuleType,
   Network,
   NetworkType,
-} from '../types';
+} from '../../types';
 import _ from 'lodash';
-import { prettyItemType, prettySort } from './Filters/ActiveFilters';
+import { prettyItemType, prettySort } from '../Filters/ActiveFilters';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../reducers';
-import { createList } from '../actions/lists';
-import CreateAListValidator from '../utils/validation/CreateAListValidator';
-import { collect } from '../utils/collection-utils';
+import { AppState } from '../../reducers';
+import { createList } from '../../actions/lists';
+import CreateAListValidator from '../../utils/validation/CreateAListValidator';
+import { collect } from '../../utils/collection-utils';
 
 const useStyles = makeStyles(theme => ({
   button: {

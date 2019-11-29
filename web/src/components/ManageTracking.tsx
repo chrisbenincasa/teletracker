@@ -7,11 +7,11 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { List as ListIcon } from '@material-ui/icons';
-import AddToListDialog from '../components/AddToListDialog';
+import AddToListDialog from './Dialogs/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
 import AuthDialog from './Auth/AuthDialog';
 import { Item, itemBelongsToLists } from '../types/v2/Item';
-import ManageTrackingButton from './ManageTrackingButton';
+import ManageTrackingButton from './Buttons/ManageTrackingButton';
 
 const styles = (theme: Theme) =>
   createStyles({

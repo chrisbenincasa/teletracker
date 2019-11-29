@@ -34,11 +34,11 @@ import {
 } from '../actions/people/get_person';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
-import CreateDynamicListDialog from '../components/CreateDynamicListDialog';
+import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import AllFilters from '../components/Filters/AllFilters';
 import ItemCard from '../components/ItemCard';
-import ManageTrackingButton from '../components/ManageTrackingButton';
+import ManageTrackingButton from '../components/Buttons/ManageTrackingButton';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';

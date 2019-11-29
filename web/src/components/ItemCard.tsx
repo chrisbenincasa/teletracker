@@ -47,7 +47,7 @@ import { UserSelf } from '../reducers/user';
 import { ActionType, List } from '../types';
 import HasImagery from '../types/HasImagery';
 import { Linkable, ThingLikeStruct } from '../types/Thing';
-import AddToListDialog from './AddToListDialog';
+import AddToListDialog from './Dialogs/AddToListDialog';
 import { ResponsiveImage } from './ResponsiveImage';
 import { Item, itemHasTag } from '../types/v2/Item';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';

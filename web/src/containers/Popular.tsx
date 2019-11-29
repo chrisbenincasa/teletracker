@@ -38,7 +38,7 @@ import {
 } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import { getVoteAverage, getVoteCount } from '../utils/textHelper';
-import CreateDynamicListDialog from '../components/CreateDynamicListDialog';
+import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 
 const styles = (theme: Theme) =>

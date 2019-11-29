@@ -39,7 +39,7 @@ import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import ThingAvailability from '../components/Availability';
 import Cast from '../components/Cast';
 import ManageTracking from '../components/ManageTracking';
-import MarkAsWatched from '../components/MarkAsWatched';
+import MarkAsWatched from '../components/Buttons/MarkAsWatched';
 import Recommendations from '../components/Recommendations';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import RouterLink from '../components/RouterLink';

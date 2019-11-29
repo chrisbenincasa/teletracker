@@ -38,7 +38,7 @@ import {
   updateUrlParamsForFilter,
 } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
-import CreateDynamicListDialog from '../components/CreateDynamicListDialog';
+import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import {
   peopleFetchInitiated,
   PeopleFetchInitiatedPayload,

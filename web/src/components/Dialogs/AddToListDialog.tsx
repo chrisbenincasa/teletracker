@@ -32,16 +32,16 @@ import {
   updateListTracking,
   UserCreateListPayload,
   USER_SELF_CREATE_LIST,
-} from '../actions/lists';
-import { AppState } from '../reducers';
-import { ListOperationState, ListsByIdMap } from '../reducers/lists';
-import { UserSelf } from '../reducers/user';
-import { List } from '../types';
-import { Item, itemBelongsToLists } from '../types/v2/Item';
+} from '../../actions/lists';
+import { AppState } from '../../reducers';
+import { ListOperationState, ListsByIdMap } from '../../reducers/lists';
+import { UserSelf } from '../../reducers/user';
+import { List } from '../../types';
+import { Item, itemBelongsToLists } from '../../types/v2/Item';
 import CreateAListValidator, {
   CreateAListValidationStateObj,
-} from '../utils/validation/CreateAListValidator';
-import AuthDialog from './Auth/AuthDialog';
+} from '../../utils/validation/CreateAListValidator';
+import AuthDialog from '../Auth/AuthDialog';
 
 const styles = (theme: Theme) =>
   createStyles({

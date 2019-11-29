@@ -38,7 +38,7 @@ import {
   ListRetrieveAllPayload,
   retrieveAllLists,
 } from '../actions/lists';
-import CreateListDialog from '../components/CreateListDialog';
+import CreateListDialog from './Dialogs/CreateListDialog';
 import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
