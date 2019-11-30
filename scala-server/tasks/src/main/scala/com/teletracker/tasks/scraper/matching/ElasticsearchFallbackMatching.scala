@@ -1,4 +1,4 @@
-package com.teletracker.tasks.scraper
+package com.teletracker.tasks.scraper.matching
 
 import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.elasticsearch.{
@@ -9,6 +9,12 @@ import com.teletracker.common.elasticsearch.{
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.scraper.model.{NonMatchResult, PotentialMatch}
+import com.teletracker.tasks.scraper.{
+  model,
+  IngestJob,
+  IngestJobArgs,
+  ScrapedItem
+}
 import io.circe.Codec
 import io.circe.syntax._
 import javax.inject.Inject

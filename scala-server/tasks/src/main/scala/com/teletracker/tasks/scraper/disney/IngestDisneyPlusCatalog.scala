@@ -1,4 +1,4 @@
-package com.teletracker.tasks.scraper
+package com.teletracker.tasks.scraper.disney
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ThingType
@@ -9,8 +9,13 @@ import com.teletracker.common.elasticsearch.{
 }
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchFallbackMatching,
+  ElasticsearchLookup,
+  MatchMode
+}
 import com.teletracker.tasks.scraper.model.DisneyPlusCatalogItem
+import com.teletracker.tasks.scraper.{IngestJob, IngestJobArgs, IngestJobParser}
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.io.File

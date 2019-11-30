@@ -1,39 +1,41 @@
-package com.teletracker.tasks.scraper
+package com.teletracker.tasks.scraper.netflix
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.{
   Availability,
   Network,
   OfferType,
-  PresentationType,
-  ThingRaw
+  PresentationType
 }
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.NetworkCache
-import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
-import io.circe.generic.auto._
+import com.teletracker.tasks.scraper.{
+  IngestDeltaJob,
+  IngestDeltaJobWithElasticsearch,
+  IngestJobParser
+}
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.util.UUID
 
-class HuluCatalogDeltaIngestJob @Inject()(
-  protected val s3: S3Client,
-  protected val networkCache: NetworkCache,
+case class NetflixCatalogDeltaIngestJob @Inject()(
+  s3: S3Client,
+  networkCache: NetworkCache,
   protected val itemSearch: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   elasticsearchLookup: ElasticsearchLookup)
-    extends IngestDeltaJob[HuluCatalogItem](elasticsearchLookup)
-    with IngestDeltaJobWithElasticsearch[HuluCatalogItem] {
+    extends IngestDeltaJob[NetflixCatalogItem](elasticsearchLookup)
+    with IngestDeltaJobWithElasticsearch[NetflixCatalogItem] {
 
-  override protected def networkNames: Set[String] = Set("hulu")
+  override protected def networkNames: Set[String] = Set("netflix")
 
   override protected def createAvailabilities(
     networks: Set[StoredNetwork],
     itemId: UUID,
     title: String,
-    scrapedItem: HuluCatalogItem,
+    scrapedItem: NetflixCatalogItem,
     isAvailable: Boolean
   ): List[Availability] = {
     for {
@@ -60,6 +62,6 @@ class HuluCatalogDeltaIngestJob @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def uniqueKey(item: HuluCatalogItem): String =
+  override protected def uniqueKey(item: NetflixCatalogItem): String =
     item.externalId.get
 }
