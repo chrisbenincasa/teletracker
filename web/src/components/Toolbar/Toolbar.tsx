@@ -57,10 +57,6 @@ const styles = (theme: Theme) =>
     root: {
       flexGrow: 1,
     },
-    genreMenu: {
-      borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0,
-    },
     genreMenuList: {
       display: 'flex',
       flexFlow: 'column wrap',
@@ -74,9 +70,8 @@ const styles = (theme: Theme) =>
     genrePaper: {
       position: 'absolute',
       zIndex: theme.zIndex.appBar,
-      marginTop: 0,
-      borderTopLeftRadius: 0,
-      backgroundColor: hexToRGB(theme.palette.primary.main, 0.9),
+      marginTop: 10,
+      backgroundColor: hexToRGB(theme.palette.primary.main, 0.95),
     },
     grow: {
       flexGrow: 1,
@@ -259,6 +254,8 @@ class Toolbar extends Component<Props, State> {
   private desktopSearchInput: React.RefObject<HTMLInputElement>;
   private genreShowContainerRef: React.RefObject<HTMLElement>;
   private genreMovieContainerRef: React.RefObject<HTMLElement>;
+  private genreShowSpacerRef: React.RefObject<HTMLDivElement>;
+  private genreMovieSpacerRef: React.RefObject<HTMLDivElement>;
 
   constructor(props) {
     super(props);
@@ -267,6 +264,8 @@ class Toolbar extends Component<Props, State> {
     this.desktopSearchInput = React.createRef();
     this.genreShowContainerRef = React.createRef();
     this.genreMovieContainerRef = React.createRef();
+    this.genreShowSpacerRef = React.createRef();
+    this.genreMovieSpacerRef = React.createRef();
   }
 
   state = {
@@ -401,7 +400,9 @@ class Toolbar extends Component<Props, State> {
       this.state.genreType === type &&
       event.relatedTarget !==
         this.genreMovieContainerRef!.current!.firstChild &&
-      event.relatedTarget !== this.genreShowContainerRef!.current!.firstChild
+      event.relatedTarget !== this.genreShowContainerRef!.current!.firstChild &&
+      event.relatedTarget !== this.genreShowSpacerRef!.current! &&
+      event.relatedTarget !== this.genreMovieSpacerRef!.current!
     ) {
       this.setState({
         genreAnchorEl: null,
@@ -502,28 +503,44 @@ class Toolbar extends Component<Props, State> {
 
     return (
       <React.Fragment>
-        <Button
-          aria-controls="genre-menu"
-          aria-haspopup="true"
-          onClick={event => this.handleGenreMenu(event, type)}
-          onMouseEnter={event => this.handleGenreMenu(event, type)}
-          onMouseLeave={event => this.handleGenreMenu(event, type)}
-          color="inherit"
-          className={classes.genreMenu}
-          endIcon={
-            this.isSmallDevice ? null : this.state.genreType === type ? (
-              <ArrowDropUp />
-            ) : (
-              <ArrowDropDown />
-            )
-          }
-        >
-          {type === 'show'
-            ? this.isSmallDevice
-              ? 'Shows'
-              : 'TV Shows'
-            : 'Movies'}
-        </Button>
+        <div style={{ position: 'relative' }}>
+          <Button
+            aria-controls="genre-menu"
+            aria-haspopup="true"
+            onClick={event => this.handleGenreMenu(event, type)}
+            onMouseEnter={event => this.handleGenreMenu(event, type)}
+            onMouseLeave={event => this.handleGenreMenu(event, type)}
+            color="inherit"
+            endIcon={
+              this.isSmallDevice ? null : this.state.genreType === type ? (
+                <ArrowDropUp />
+              ) : (
+                <ArrowDropDown />
+              )
+            }
+          >
+            {type === 'show'
+              ? this.isSmallDevice
+                ? 'Shows'
+                : 'TV Shows'
+              : 'Movies'}
+          </Button>
+          {this.state.genreType === type && (
+            <div
+              ref={
+                type === 'show'
+                  ? this.genreShowSpacerRef
+                  : this.genreMovieSpacerRef
+              }
+              style={{
+                position: 'absolute',
+                bottom: -15,
+                height: 15,
+                width: '100%',
+              }}
+            ></div>
+          )}
+        </div>
         <Popper
           open={Boolean(this.state.genreType === type)}
           anchorEl={genreAnchorEl}
