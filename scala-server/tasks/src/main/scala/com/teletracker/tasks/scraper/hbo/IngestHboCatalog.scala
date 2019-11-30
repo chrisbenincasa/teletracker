@@ -1,7 +1,7 @@
-package com.teletracker.tasks.scraper
+package com.teletracker.tasks.scraper.hbo
 
 import com.teletracker.common.util.json.circe._
-import com.teletracker.common.db.model.{ThingRaw, ThingType}
+import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
@@ -9,7 +9,12 @@ import com.teletracker.common.elasticsearch.{
 }
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper._
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchFallbackMatching,
+  ElasticsearchLookup,
+  MatchMode
+}
 import com.teletracker.tasks.scraper.model.{MatchResult, NonMatchResult}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._

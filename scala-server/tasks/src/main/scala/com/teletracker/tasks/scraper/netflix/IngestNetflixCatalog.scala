@@ -1,4 +1,4 @@
-package com.teletracker.tasks.scraper
+package com.teletracker.tasks.scraper.netflix
 
 import com.teletracker.common.db.model._
 import com.teletracker.common.elasticsearch.{
@@ -9,10 +9,21 @@ import com.teletracker.common.elasticsearch.{
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
-import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchFallbackMatcher,
+  ElasticsearchFallbackMatcherOptions,
+  ElasticsearchLookup,
+  MatchMode
+}
 import com.teletracker.tasks.scraper.model.{
   NonMatchResult,
   WhatsOnNetflixCatalogItem
+}
+import com.teletracker.tasks.scraper.{
+  IngestJob,
+  IngestJobArgs,
+  IngestJobArgsLike,
+  ScrapedItem
 }
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.JsonCodec

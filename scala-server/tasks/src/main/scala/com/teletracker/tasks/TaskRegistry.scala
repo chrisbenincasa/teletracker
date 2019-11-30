@@ -1,6 +1,14 @@
 package com.teletracker.tasks
 
 import com.teletracker.tasks.scraper._
+import com.teletracker.tasks.scraper.hbo.IngestHboChanges
+import com.teletracker.tasks.scraper.hulu.IngestHuluChanges
+import com.teletracker.tasks.scraper.netflix.{
+  IngestNetflixCatalog,
+  IngestNetflixOriginalsArrivals,
+  IngestUnogsNetflixExpiring,
+  NetflixCatalogDeltaIngestJob
+}
 import com.teletracker.tasks.tmdb.export_tasks.{
   MovieChangesDumpTask,
   PersonChangesDumpTask,
