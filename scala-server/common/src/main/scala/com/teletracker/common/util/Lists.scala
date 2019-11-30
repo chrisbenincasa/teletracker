@@ -10,7 +10,7 @@ object Lists {
   implicit def toSafeTakeIterator[T](l: Iterator[T]): IteratorWithSafeTake[T] =
     new IteratorWithSafeTake[T](l)
 
-  implicit def toStreamTakeIterator[T](l: Stream[T]): StreamWithSafeTake[T] =
+  implicit def toStreamTakeStream[T](l: Stream[T]): StreamWithSafeTake[T] =
     new StreamWithSafeTake(l)
 
   implicit private val LocalDateOrdering: Ordering[LocalDate] =

@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.util.AsyncStream
 import com.teletracker.tasks.scraper.IngestJobParser.{
   AllJson,
   JsonPerLine,
@@ -64,4 +65,10 @@ class IngestJobParser {
           })
       }
   }
+
+  def asyncStream[T](
+    lines: Iterator[String]
+  )(implicit decoder: Decoder[T]
+  ): AsyncStream[Either[Exception, T]] =
+    AsyncStream.fromStream(stream[T](lines))
 }
