@@ -46,7 +46,8 @@ class DependantTask @Inject()(
   }
 
   override def followupTasksToSchedule(
-    args: TypedArgs
+    args: TypedArgs,
+    rawArgs: Args
   ): List[TeletrackerTaskQueueMessage] = {
     List(TeletrackerTaskQueueMessage(classOf[TimeoutTask].getName, Map(), None))
   }

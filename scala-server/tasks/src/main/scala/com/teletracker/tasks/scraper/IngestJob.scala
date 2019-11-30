@@ -4,35 +4,34 @@ import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.elasticsearch
 import com.teletracker.common.elasticsearch.{
-  ElasticsearchExecutor,
   EsAvailability,
   EsItem,
   ItemLookup,
+  ItemSearch,
   ItemUpdater
 }
-import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.execution.SequentialFutures
+import com.teletracker.common.util.{AsyncStream, NetworkCache}
 import com.teletracker.common.util.json.circe._
-import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
-import com.teletracker.tasks.scraper.matching.{DbLookup, MatchMode}
-import com.teletracker.tasks.util.SourceRetriever
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
+import com.teletracker.common.util.Functions._
+import com.teletracker.tasks.TeletrackerTaskApp
+import com.teletracker.tasks.scraper.IngestJobParser.ParseMode
+import com.teletracker.tasks.scraper.matching.MatchMode
+import com.teletracker.tasks.scraper.model.MatchResult
+import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
 import io.circe.generic.semiauto.deriveEncoder
-import io.circe.syntax._
 import io.circe.{Codec, Decoder, Encoder}
-import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.s3.S3Client
-import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
+import java.io.File
 import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneOffset}
 import java.util.UUID
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.io.Source
 import scala.util.control.NonFatal
 
 abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
@@ -45,19 +44,6 @@ abstract class IngestJobApp[T <: IngestJob[_]: Manifest]
   val dryRun = flag[Boolean]("dryRun", true, "X")
 }
 
-case class MatchResult[T <: ScrapedItem](
-  item: T,
-  itemId: UUID,
-  title: String)
-
-case class NonMatchResult[T <: ScrapedItem](
-  amendedItem: T,
-  originalItem: T,
-  itemId: UUID,
-  title: String) {
-  def toMatchResult: MatchResult[T] = MatchResult(amendedItem, itemId, title)
-}
-
 trait IngestJobArgsLike {
   val offset: Int
   val limit: Int
@@ -67,39 +53,27 @@ trait IngestJobArgsLike {
 
 case class IngestJobArgs(
   inputFile: URI,
-  offset: Int = 0,
-  limit: Int = -1,
-  titleMatchThreshold: Int = 15,
-  dryRun: Boolean = true,
-  parallelism: Int = 32)
+  offset: Int,
+  limit: Int,
+  titleMatchThreshold: Int,
+  dryRun: Boolean,
+  parallelism: Int,
+  sourceLimit: Int,
+  perBatchSleepMs: Option[Int])
     extends IngestJobArgsLike
 
 abstract class IngestJob[T <: ScrapedItem](
   implicit protected val codec: Codec[T])
-    extends TeletrackerTask {
+    extends BaseIngestJob[T, IngestJobArgs]()(
+      scala.concurrent.ExecutionContext.Implicits.global,
+      codec
+    ) {
 
   implicit protected val execCtx =
     scala.concurrent.ExecutionContext.Implicits.global
 
-  protected val logger = LoggerFactory.getLogger(getClass)
-
-  protected lazy val today = LocalDate.now()
-  protected val missingItemsFile = new File(
-    s"${today}_${getClass.getSimpleName}-missing-items.json"
-  )
-  protected val matchItemsFile = new File(
-    s"${today}_${getClass.getSimpleName}-match-items.json"
-  )
-
-  protected val missingItemsWriter = new PrintStream(
-    new BufferedOutputStream(new FileOutputStream(missingItemsFile))
-  )
-
-  protected val matchigItemsWriter = new PrintStream(
-    new BufferedOutputStream(new FileOutputStream(matchItemsFile))
-  )
-
-  protected def thingsDb: ThingsDbAccess
+  protected def itemLookup: ItemLookup
+  protected def itemUpdater: ItemUpdater
   protected def s3: S3Client
   protected def networkCache: NetworkCache
 
@@ -108,17 +82,21 @@ abstract class IngestJob[T <: ScrapedItem](
   protected def presentationTypes: Set[PresentationType] =
     Set(PresentationType.SD, PresentationType.HD)
 
-  protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
-
-  protected def parseMode: ParseMode = AllJson
-  protected def matchMode: MatchMode = new DbLookup(thingsDb)
+  protected def parseMode: ParseMode
+  protected def matchMode: MatchMode
 
   protected def processMode(args: IngestJobArgs): ProcessMode =
-    Parallel(args.parallelism)
+    Parallel(args.parallelism, args.perBatchSleepMs.map(_ millis))
+
+  protected def outputLocation(
+    args: TypedArgs,
+    rawArgs: Args
+  ): Option[URI] = None
+  protected def getAdditionalOutputFiles: Seq[(File, String)] = Seq()
 
   override type TypedArgs = IngestJobArgs
 
-  implicit override protected def typedArgsEncoder: Encoder[IngestJobArgs] =
+  implicit override protected def typedArgsEncoder: Encoder[TypedArgs] =
     deriveEncoder[IngestJobArgs]
 
   override def preparseArgs(args: Args): TypedArgs = parseArgs(args)
@@ -132,7 +110,9 @@ abstract class IngestJob[T <: ScrapedItem](
       limit = args.valueOrDefault("limit", -1),
       titleMatchThreshold = args.valueOrDefault("fuzzyThreshold", 15),
       dryRun = args.valueOrDefault("dryRun", true),
-      parallelism = args.valueOrDefault("parallelism", 32)
+      parallelism = args.valueOrDefault("parallelism", 32),
+      sourceLimit = args.valueOrDefault("sourceLimit", -1),
+      perBatchSleepMs = args.value[Int]("perBatchSleepMs")
     )
   }
 
@@ -141,24 +121,57 @@ abstract class IngestJob[T <: ScrapedItem](
     val network = getNetworksOrExit()
     implicit val listDec = implicitly[Decoder[List[T]]]
 
+    logger.info("Running preprocess phase")
+    preprocess(parsedArgs, args)
+
     logger.info(s"Starting ingest of ${networkNames} content")
 
-    val source = new SourceRetriever(s3).getSource(parsedArgs.inputFile)
+    new SourceRetriever(s3)
+      .getSourceStream(parsedArgs.inputFile)
+      .safeTake(parsedArgs.sourceLimit)
+      .foreach(processSource(_, network, parsedArgs, args))
+  }
 
+  protected def preprocess(
+    args: IngestJobArgs,
+    rawArgs: Args
+  ): Unit = {}
+
+  private def processSource(
+    source: Source,
+    networks: Set[Network],
+    parsedArgs: IngestJobArgs,
+    rawArgs: Args
+  ): Unit = {
     try {
-      val items = new IngestJobParser().parse[T](source.getLines(), parseMode)
+      parseMode match {
+        case IngestJobParser.JsonPerLine =>
+          new IngestJobParser()
+            .asyncStream[T](source.getLines())
+            .flatMapOption {
+              case Left(value) =>
+                logger.warn("Could not parse line", value)
+                None
+              case Right(value) =>
+                Some(value)
+            }
+            .throughApply(processAll(_, networks, parsedArgs))
+            .force
+            .await()
 
-      items match {
-        case Left(value) =>
-          value.printStackTrace()
-          throw value
+        case IngestJobParser.AllJson =>
+          new IngestJobParser().parse[T](source.getLines(), parseMode) match {
+            case Left(value) =>
+              value.printStackTrace()
+              throw value
 
-        case Right(items) =>
-          processAll(
-            items,
-            network,
-            parsedArgs
-          )
+            case Right(items) =>
+              processAll(
+                AsyncStream.fromSeq(items),
+                networks,
+                parsedArgs
+              ).force.await()
+          }
       }
     } catch {
       case NonFatal(e) =>
@@ -168,147 +181,61 @@ abstract class IngestJob[T <: ScrapedItem](
       missingItemsWriter.flush()
       missingItemsWriter.close()
 
-      matchigItemsWriter.flush()
-      matchigItemsWriter.close()
+      matchingItemsWriter.flush()
+      matchingItemsWriter.close()
+
+      uploadResultFiles(parsedArgs, rawArgs)
     }
   }
 
-  protected def processAll(
-    items: List[T],
-    networks: Set[Network],
-    args: IngestJobArgs
-  ): Unit = {
-    processMode(args) match {
-      case Serial =>
-        SequentialFutures
-          .serialize(
-            items.drop(args.offset).safeTake(args.limit).map(sanitizeItem),
-            Some(40 millis)
-          )(
-            processSingle(_, networks, args)
-          )
-          .await()
-
-      case Parallel(parallelism) =>
-        SequentialFutures
-          .batchedIterator(
-            items.drop(args.offset).safeTake(args.limit).iterator,
-            parallelism
-          )(batch => {
-            processBatch(batch.toList, networks, args)
-          })
-          .await()
-    }
-  }
-
-  protected def processBatch(
-    items: List[T],
+  override protected def handleMatchResults(
+    results: List[MatchResult[T]],
     networks: Set[Network],
     args: IngestJobArgs
   ): Future[Unit] = {
-    val filteredAndSanitized = items.filter(shouldProcessItem).map(sanitizeItem)
-    if (filteredAndSanitized.nonEmpty) {
-      matchMode
-        .lookup(
-          filteredAndSanitized,
-          args
-        )
-        .flatMap {
-          case (things, nonMatchedItems) =>
-            handleNonMatches(args, nonMatchedItems).flatMap(fallbackMatches => {
-              val allItems = things ++ fallbackMatches
-                .map(_.toMatchResult)
+    val itemsWithNewAvailability = results.map {
+      case MatchResult(item, esItem) =>
+        val availabilities =
+          createAvailabilities(
+            networks,
+            esItem,
+            item
+          )
 
-              val stillMissing = (filteredAndSanitized
-                .map(_.title.toLowerCase())
-                .toSet -- things
-                .map(_.title.toLowerCase())
-                .toSet) -- fallbackMatches
-                .map(_.originalItem.title.toLowerCase())
-                .toSet
-
-              writeMissingItems(
-                filteredAndSanitized
-                  .filter(
-                    item => stillMissing.contains(item.title.toLowerCase())
-                  )
+        val newAvailabilities = esItem.availability match {
+          case Some(value) =>
+            val duplicatesRemoved = value.filterNot(availability => {
+              availabilities.exists(
+                EsAvailability.availabilityEquivalent(_, availability)
               )
-
-              logger.info(
-                s"Successfully found matches for ${allItems.size} out of ${items.size} items."
-              )
-
-              if (args.dryRun) {
-                writeMatchingItems(allItems)
-              }
-
-              Future
-                .sequence {
-                  allItems.map {
-                    case MatchResult(item, itemId, title) =>
-                      val availabilityFut =
-                        createAvailabilities(networks, itemId, title, item)
-
-                      if (args.dryRun) {
-                        availabilityFut.map(avs => {
-                          avs.foreach(
-                            av =>
-                              logger.debug(s"Would've saved availability: $av")
-                          )
-                          avs
-                        })
-                      } else {
-                        availabilityFut.flatMap(avs => {
-                          val availabilitiesGrouped = avs
-                            .filter(_.thingId.isDefined)
-                            .groupBy(_.thingId.get)
-
-                          SequentialFutures
-                            .serialize(
-                              availabilitiesGrouped.toList.grouped(50).toList
-                            )(
-                              batch =>
-                                Future
-                                  .sequence(
-                                    batch
-                                      .map(Function.tupled(saveAvailabilities))
-                                  )
-                                  .map(_ => {})
-                            )
-                        })
-                      }
-                  }
-                }
-                .map(_ => {})
             })
+
+            duplicatesRemoved ++ availabilities
+
+          case None =>
+            availabilities
         }
+
+        esItem.copy(availability = Some(newAvailabilities.toList))
+    }
+
+    if (!args.dryRun) {
+      SequentialFutures
+        .serialize(
+          itemsWithNewAvailability.grouped(50).toList
+        )(
+          batch =>
+            Future
+              .sequence(
+                batch
+                  .map(itemUpdater.update)
+              )
+              .map(_ => {})
+        )
+        .map(_ => {})
     } else {
       Future.unit
     }
-  }
-
-  protected def saveAvailabilities(
-    itemId: UUID,
-    availabilities: Seq[Availability]
-  ): Future[Unit] = {
-    thingsDb.saveAvailabilities(availabilities)
-  }
-
-  protected def shouldProcessItem(item: T): Boolean = true
-
-  protected def sanitizeItem(item: T): T = identity(item)
-
-  protected def handleNonMatches(
-    args: IngestJobArgs,
-    nonMatches: List[T]
-  ): Future[List[NonMatchResult[T]]] = Future.successful(Nil)
-
-  protected def processSingle(
-    item: T,
-    networks: Set[Network],
-    args: IngestJobArgs
-  ): Future[Unit] = {
-    processBatch(List(item), networks, args)
   }
 
   protected def getNetworksOrExit(): Set[Network] = {
@@ -332,60 +259,38 @@ abstract class IngestJob[T <: ScrapedItem](
 
   protected def createAvailabilities(
     networks: Set[Network],
-    itemId: UUID,
-    title: String,
+    item: EsItem,
     scrapeItem: T
-  ): Future[Seq[Availability]] = {
+  ): Seq[EsAvailability] = {
     val start =
       if (scrapeItem.isExpiring) None else scrapeItem.availableLocalDate
     val end =
       if (scrapeItem.isExpiring) scrapeItem.availableLocalDate else None
 
-    SequentialFutures
-      .serialize(networks.toSeq)(
-        network => {
-          thingsDb
-            .findAvailability(itemId, network.id.get)
-            .map {
-              case Seq() =>
-                presentationTypes.toSeq.map(pres => {
-                  Availability(
-                    None,
-                    isAvailable = isAvailable(scrapeItem, today),
-                    region = Some("US"),
-                    numSeasons = None,
-                    startDate =
-                      start.map(_.atStartOfDay().atOffset(networkTimeZone)),
-                    endDate =
-                      end.map(_.atStartOfDay().atOffset(networkTimeZone)),
-                    offerType = Some(OfferType.Subscription),
-                    cost = None,
-                    currency = None,
-                    thingId = Some(itemId),
-                    tvShowEpisodeId = None,
-                    networkId = Some(network.id.get),
-                    presentationType = Some(pres)
-                  )
-                })
+    networks.toSeq.map(network => {
+      item.availability
+        .getOrElse(Nil)
+        .find(_.network_id == network.id.get) match {
+        case Some(existingAvailability) =>
+          existingAvailability.copy(
+            start_date = start,
+            end_date = end
+          )
 
-              case availabilities =>
-                // TODO(christian) - find missing presentation types
-                availabilities.map(
-                  _.copy(
-                    isAvailable = isAvailable(scrapeItem, today),
-                    numSeasons = None,
-                    startDate =
-                      start.map(_.atStartOfDay().atOffset(networkTimeZone)),
-                    endDate =
-                      end.map(_.atStartOfDay().atOffset(networkTimeZone))
-                  )
-                )
-
-//                thingsDb.saveAvailabilities(newAvs).map(_ => newAvs)
-            }
-        }
-      )
-      .map(_.flatten)
+        case None =>
+          EsAvailability(
+            network_id = network.id.get,
+            region = "US",
+            start_date = start,
+            end_date = end,
+            // TODO: This isn't always correct, let jobs configure offer, cost, currency
+            offer_type = OfferType.Subscription.toString,
+            cost = None,
+            currency = None,
+            presentation_types = Some(presentationTypes.map(_.toString).toList)
+          )
+      }
+    })
   }
 
   protected def isAvailable(
@@ -402,111 +307,29 @@ abstract class IngestJob[T <: ScrapedItem](
     end.exists(_.isAfter(today))
   }
 
-  protected def writeMissingItems(items: List[T]): Unit = {
-    items.foreach(item => {
-      missingItemsWriter.println(item.asJson.noSpaces)
-    })
-  }
-
-  protected def writeMatchingItems(items: List[MatchResult[T]]): Unit = {
-    items.foreach {
-      case MatchResult(item, id, title) =>
-        matchigItemsWriter.println(
-          Map(
-            "scraped" -> item.asJson,
-            "match" -> Map(
-              "id" -> id.asJson,
-              "title" -> title.asJson
-            ).asJson
-          ).asJson.noSpaces
+  protected def uploadResultFiles(
+    parsedArgs: TypedArgs,
+    rawArgs: Args
+  ): Unit = {
+    outputLocation(parsedArgs, rawArgs).foreach(uri => {
+      try {
+        new SourceWriter(s3).writeFile(
+          uri.resolve(s"${uri.getPath}/match-items.txt"),
+          matchItemsFile.toPath
         )
-    }
-  }
-
-  sealed trait ProcessMode
-  case object Serial extends ProcessMode
-  case class Parallel(parallelism: Int) extends ProcessMode
-}
-
-trait IngestJobWithElasticsearch[T <: ScrapedItem] { self: IngestJob[T] =>
-  protected def itemSearch: ItemLookup
-  protected def itemUpdater: ItemUpdater
-
-  override protected def saveAvailabilities(
-    itemId: UUID,
-    availabilities: Seq[Availability]
-  ): Future[Unit] = {
-    val distinctAvailabilities = availabilities
-      .flatMap(convertToEsAvailability)
-      .map(_._2)
-      .groupBy(av => (av.network_id, av.region, av.offer_type))
-      .flatMap {
-        case (key, values) => combinePresentationTypes(values).map(key -> _)
+      } catch {
+        case NonFatal(e) => logger.error("Error writing match-items file", e)
       }
-      .values
 
-    itemSearch
-      .lookupItem(Left(itemId), None, materializeJoins = false)
-      .flatMap {
-        case None => Future.successful(None)
-        case Some(item) =>
-          logger.info(
-            s"Updating availability for item id = ${item.rawItem.id}"
-          )
-
-          val newAvailabilities = item.rawItem.availability match {
-            case Some(value) =>
-              val duplicatesRemoved = value.filterNot(availability => {
-                distinctAvailabilities.exists(
-                  EsAvailability.availabilityEquivalent(_, availability)
-                )
-              })
-
-              duplicatesRemoved ++ distinctAvailabilities
-
-            case None =>
-              distinctAvailabilities
-          }
-
-          itemUpdater
-            .update(
-              item.rawItem
-                .copy(availability = Some(newAvailabilities.toList))
-            )
-            .map(Some(_))
+      try {
+        new SourceWriter(s3).writeFile(
+          uri.resolve(s"${uri.getPath}/missing-items.txt"),
+          missingItemsFile.toPath
+        )
+      } catch {
+        case NonFatal(e) => logger.error("Error writing match-items file", e)
       }
-  }
-
-  protected def combinePresentationTypes(
-    availabilities: Seq[EsAvailability]
-  ): Option[EsAvailability] = {
-    if (availabilities.isEmpty) {
-      None
-    } else {
-      Some(availabilities.reduce((l, r) => {
-        val combined = l.presentation_types
-          .getOrElse(Nil) ++ r.presentation_types.getOrElse(Nil)
-        l.copy(presentation_types = Some(combined.distinct))
-      }))
-    }
-  }
-
-  protected def convertToEsAvailability(
-    availability: Availability
-  ): Option[(UUID, EsAvailability)] = {
-    availability.thingId.map(
-      _ -> elasticsearch.EsAvailability(
-        network_id = availability.networkId.get,
-        region = availability.region.getOrElse("US"),
-        start_date = availability.startDate.map(_.toLocalDate),
-        end_date = availability.endDate.map(_.toLocalDate),
-        offer_type = availability.offerType.getOrElse(OfferType.Rent).toString,
-        cost = availability.cost.map(_.toDouble),
-        currency = availability.currency,
-        presentation_types =
-          availability.presentationType.map(_.toString).map(List(_))
-      )
-    )
+    })
   }
 }
 
@@ -518,6 +341,8 @@ trait ScrapedItem {
   def network: String
   def status: String
   def externalId: Option[String]
+
+  def actualItemId: Option[UUID] = None
 
   lazy val availableLocalDate: Option[LocalDate] =
     availableDate.map(LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE))

@@ -55,7 +55,8 @@ class MovieChangesDumpTask @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ThingType.Movie, s3, itemExpander, publisher) {
   override def followupTasksToSchedule(
-    args: DataDumpTaskArgs
+    args: DataDumpTaskArgs,
+    rawArgs: Args
   ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[ImportMoviesFromDump](
       ImportTmdbDumpTaskArgs.default(s3Uri)
@@ -71,7 +72,8 @@ class TvChangesDumpTask @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ThingType.Show, s3, itemExpander, publisher) {
   override def followupTasksToSchedule(
-    args: DataDumpTaskArgs
+    args: DataDumpTaskArgs,
+    rawArgs: Args
   ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[ImportTvShowsFromDump](
       ImportTmdbDumpTaskArgs.default(s3Uri)
@@ -86,7 +88,8 @@ class PersonChangesDumpTask @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ThingType.Person, s3, itemExpander, publisher) {
   override def followupTasksToSchedule(
-    args: DataDumpTaskArgs
+    args: DataDumpTaskArgs,
+    rawArgs: Args
   ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[ImportPeopleFromDump](
       ImportTmdbDumpTaskArgs.default(s3Uri)

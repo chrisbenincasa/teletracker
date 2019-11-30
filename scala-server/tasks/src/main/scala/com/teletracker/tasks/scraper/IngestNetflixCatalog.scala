@@ -14,26 +14,42 @@ import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
 import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.model.{
+  NonMatchResult,
+  WhatsOnNetflixCatalogItem
+}
+import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
+import io.circe.parser._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
+import java.net.URI
+import java.time.LocalDate
 import java.util.UUID
+import scala.collection.mutable
 import scala.concurrent.Future
+import scala.io.Source
+
+case class IngestNetflixCatalogJobArgs(
+  inputFile: URI,
+  offset: Int,
+  limit: Int,
+  titleMatchThreshold: Int,
+  dryRun: Boolean,
+  parallelism: Int,
+  sourceLimit: Int)
+    extends IngestJobArgsLike
 
 class IngestNetflixCatalog @Inject()(
-  protected val tmdbClient: TmdbClient,
-  protected val tmdbProcessor: TmdbEntityProcessor,
-  protected val thingsDb: ThingsDbAccess,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
-  protected val itemSearch: ItemLookup,
+  protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   protected val elasticsearchExecutor: ElasticsearchExecutor,
+  elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory,
   elasticsearchLookup: ElasticsearchLookup)
-    extends IngestJob[NetflixCatalogItem]
-    with IngestJobWithElasticsearch[NetflixCatalogItem]
-    with ElasticsearchFallbackMatcher[NetflixCatalogItem] {
+    extends IngestJob[NetflixCatalogItem] {
   override protected def networkNames: Set[String] = Set("netflix")
 
   override protected def parseMode: ParseMode = JsonPerLine
@@ -41,64 +57,98 @@ class IngestNetflixCatalog @Inject()(
   override protected def matchMode: MatchMode =
     elasticsearchLookup
 
-  override protected def requireTypeMatch: Boolean = false
+  private val elasticsearchMatcherOptions =
+    ElasticsearchFallbackMatcherOptions(false, getClass.getSimpleName)
 
-  override protected def createAvailabilities(
-    networks: Set[Network],
-    itemId: UUID,
-    title: String,
-    scrapeItem: NetflixCatalogItem
-  ): Future[Seq[Availability]] = {
-    SequentialFutures
-      .serialize(networks.toSeq)(
-        network => {
-          thingsDb
-            .findAvailability(itemId, network.id.get)
-            .flatMap {
-              case Seq() =>
-                Future.successful {
+  private val alternateItemsByNetflixId =
+    new mutable.HashMap[String, WhatsOnNetflixCatalogItem]()
 
-                  presentationTypes.toSeq.map(pres => {
-                    Availability(
-                      None,
-                      isAvailable = true, // TODO compare to last dump and see what is missing
-                      region = Some("US"),
-                      numSeasons = None,
-                      startDate = None,
-                      endDate = None,
-                      offerType = Some(OfferType.Subscription),
-                      cost = None,
-                      currency = None,
-                      thingId = Some(itemId),
-                      tvShowEpisodeId = None,
-                      networkId = Some(network.id.get),
-                      presentationType = Some(pres)
-                    )
-                  })
-                }
+  override protected def preprocess(
+    args: IngestJobArgs,
+    rawArgs: Args
+  ): Unit = {
+    val alternateMovieCatalogUri =
+      rawArgs.valueOrThrow[URI]("alternateMovieCatalog")
+    val alternateShowCatalogUri =
+      rawArgs.valueOrThrow[URI]("alternateTvCatalog")
 
-//                thingsDb.insertAvailabilities(avs)
+    val sourceRetriever = new SourceRetriever(s3)
 
-              case availabilities =>
-                // TODO(christian) - find missing presentation types
-                Future.successful {
+    val alternateMovieSource =
+      sourceRetriever.getSource(alternateMovieCatalogUri)
 
-                  availabilities.map(
-                    _.copy(
-                      isAvailable = true,
-                      numSeasons = None,
-                      startDate = None,
-                      endDate = None
-                    )
-                  )
-                }
+    val alternateTvSource =
+      sourceRetriever.getSource(alternateShowCatalogUri)
 
-//                thingsDb.saveAvailabilities(newAvs).map(_ => newAvs)
-            }
+    def loadItemsOrThrow(source: Source): Unit = {
+      try {
+        decode[List[WhatsOnNetflixCatalogItem]](
+          source.getLines().mkString("")
+        ) match {
+          case Left(value) =>
+            logger.error(value.getMessage)
+            throw value
+
+          case Right(value) =>
+            value
+              .map(item => item.netflixid -> item)
+              .foreach(alternateItemsByNetflixId += _)
         }
-      )
-      .map(_.flatten)
+      } finally {
+        source.close()
+      }
+    }
+
+    loadItemsOrThrow(alternateMovieSource)
+    loadItemsOrThrow(alternateTvSource)
   }
+
+  override protected def handleNonMatches(
+    args: IngestJobArgs,
+    nonMatches: List[NetflixCatalogItem]
+  ): Future[List[NonMatchResult[NetflixCatalogItem]]] = {
+    val (hasAlternate, doesntHaveAlternate) = nonMatches.partition(
+      item =>
+        item.externalId.isDefined && alternateItemsByNetflixId
+          .isDefinedAt(item.externalId.get)
+    )
+
+    val alternateItems = hasAlternate.map(original => {
+      val alternate = alternateItemsByNetflixId(original.externalId.get)
+      original.copy(
+        title =
+          if (alternate.title != original.title) alternate.title
+          else original.title,
+        releaseYear = Some(alternate.titlereleased.toInt)
+      )
+    })
+
+    elasticsearchFallbackMatcher
+      .create(elasticsearchMatcherOptions)
+      .handleNonMatches(
+        args,
+        alternateItems ++ doesntHaveAlternate
+      )
+      .map(results => {
+        results.map(result => {
+          result.amendedScrapedItem.externalId match {
+            case Some(value) =>
+              result.copy(
+                originalScrapedItem = nonMatches
+                  .find(_.externalId.contains(value))
+                  .getOrElse(result.amendedScrapedItem)
+              )
+
+            case None => result
+          }
+        })
+      })
+  }
+
+  override protected def isAvailable(
+    item: NetflixCatalogItem,
+    today: LocalDate
+  ): Boolean = true
 }
 
 @JsonCodec

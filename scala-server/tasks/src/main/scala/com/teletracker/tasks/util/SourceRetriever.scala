@@ -2,33 +2,36 @@ package com.teletracker.tasks.util
 
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.core.ResponseInputStream
 import software.amazon.awssdk.core.exception.SdkClientException
-import software.amazon.awssdk.core.sync.ResponseTransformer
-import software.amazon.awssdk.http.AbortableInputStream
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{
   GetObjectRequest,
-  GetObjectResponse,
-  ListObjectsV2Request
+  ListObjectsV2Request,
+  NoSuchKeyException
 }
 import software.amazon.awssdk.utils.IoUtils
 import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.URI
+import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.GZIPInputStream
 import scala.annotation.tailrec
-import scala.io.{BufferedSource, Source}
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
+import scala.io.Source
 import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 
 class SourceRetriever @Inject()(s3: S3Client) {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def getSource(uri: URI): Source = {
+  private val localFsCache = new ConcurrentHashMap[String, URI]()
+
+  def getSource(
+    uri: URI,
+    consultCache: Boolean = false
+  ): Source = {
     uri.getScheme match {
       case "s3" =>
-        getS3Object(uri.getHost, uri.getPath)
+        getS3Object(uri.getHost, uri.getPath, consultCache)
 
       case "file" =>
         Source.fromFile(uri)
@@ -41,51 +44,78 @@ class SourceRetriever @Inject()(s3: S3Client) {
 
   def getS3Object(
     bucket: String,
-    key: String
+    key: String,
+    consultCache: Boolean = false
   ): Source = {
-    val tmpFile = File.createTempFile(s"${bucket}_${key}", ".tmp.txt")
-    val stream = withRetries(5) {
-      s3.getObject(
-        GetObjectRequest
-          .builder()
-          .bucket(bucket)
-          .key(key.stripPrefix("/"))
-          .build()
-      )
-    } {
-      case e: SdkClientException if e.retryable() =>
-        true
-
-      case NonFatal(e) =>
-        logger.error(
-          s"Failed to get object: s3://${bucket}/${key.stripPrefix("/")}",
-          e
+    def getS3ObjectInner() = {
+      val tmpFile = File.createTempFile(s"${bucket}_${key}", ".tmp.txt")
+      val stream = withRetries(5) {
+        s3.getObject(
+          GetObjectRequest
+            .builder()
+            .bucket(bucket)
+            .key(key.stripPrefix("/"))
+            .build()
         )
+      } {
+        case _: NoSuchKeyException =>
+          false
 
-        true
+        case e: SdkClientException if e.retryable() =>
+          true
+
+        case NonFatal(e) =>
+          logger.error(
+            s"Failed to get object: s3://${bucket}/${key.stripPrefix("/")}",
+            e
+          )
+
+          true
+      }
+
+      val finalStream = stream.response().contentEncoding() match {
+        case "gzip" =>
+          new GZIPInputStream(
+            stream
+          )
+
+        case _ => stream
+      }
+
+      val fos = new FileOutputStream(tmpFile)
+      try {
+        IoUtils.copy(finalStream, fos)
+      } finally {
+        fos.flush()
+        fos.close()
+      }
+
+      localFsCache.put(s"${bucket}_${key}", tmpFile.toURI)
+
+      Source.fromInputStream(new FileInputStream(tmpFile))
     }
 
-    val finalStream = stream.response().contentEncoding() match {
-      case "gzip" =>
-        new GZIPInputStream(
-          stream
-        )
-
-      case _ => stream
+    if (consultCache) {
+      Option(localFsCache.get(s"${bucket}_${key}")) match {
+        case Some(value) =>
+          val f = new File(value)
+          if (!f.exists()) {
+            getS3ObjectInner()
+          } else {
+            Source.fromFile(f)
+          }
+        case None =>
+          getS3ObjectInner()
+      }
+    } else {
+      getS3ObjectInner()
     }
-
-    val fos = new FileOutputStream(tmpFile)
-    try {
-      IoUtils.copy(finalStream, fos)
-    } finally {
-      fos.flush()
-      fos.close()
-    }
-
-    Source.fromInputStream(new FileInputStream(tmpFile))
   }
 
-  def getSourceStream(uri: URI): Stream[Source] = {
+  def getSourceStream(
+    uri: URI,
+    consultCache: Boolean = false
+  ): Stream[Source] = {
     uri.getScheme match {
       case "s3" =>
         withRetries(5) {
@@ -111,7 +141,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
           .flatMap(_.contents().asScala.toStream)
           .map(obj => {
             logger.info(s"Pulling s3://${uri.getHost}/${obj.key()}")
-            getS3Object(uri.getHost, obj.key())
+            getS3Object(uri.getHost, obj.key(), consultCache)
           })
       case "file" =>
         Stream(Source.fromFile(uri))

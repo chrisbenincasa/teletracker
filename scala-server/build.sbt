@@ -85,7 +85,8 @@ lazy val common = project
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
       ),
-      "org.scalatest" %% "scalatest" % "3.0.5" % Test
+      "org.scalatest" %% "scalatest" % "3.0.5" % Test,
+      "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.5" % Test
     ) ++ Dependencies.circe
   )
 

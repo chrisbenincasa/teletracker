@@ -1,12 +1,14 @@
 package com.teletracker.tasks.scraper
 
-import com.teletracker.common.db.access.ThingsDbAccess
-import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.process.tmdb.TmdbEntityProcessor
+import com.teletracker.common.elasticsearch.{
+  ElasticsearchExecutor,
+  ItemLookup,
+  ItemUpdater
+}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
@@ -18,19 +20,20 @@ object IngestHboChanges extends IngestJobApp[IngestHboChanges]
 object HboScrapeItem
 
 class IngestHboChanges @Inject()(
-  protected val tmdbClient: TmdbClient,
-  protected val tmdbProcessor: TmdbEntityProcessor,
-  protected val thingsDb: ThingsDbAccess,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
-  protected val itemSearch: ItemLookup,
-  protected val itemUpdater: ItemUpdater)
+  protected val itemLookup: ItemLookup,
+  protected val itemUpdater: ItemUpdater,
+  elasticsearchLookup: ElasticsearchLookup,
+  protected val elasticsearchExecutor: ElasticsearchExecutor)
     extends IngestJob[HboScrapeItem]
-    with IngestJobWithElasticsearch[HboScrapeItem] {
+    with ElasticsearchFallbackMatching[HboScrapeItem] {
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
   override protected def networkNames: Set[String] = Set("hbo-now", "hbo-go")
+
+  override protected def matchMode: MatchMode = elasticsearchLookup
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Eastern").getRules.getOffset(Instant.now())
