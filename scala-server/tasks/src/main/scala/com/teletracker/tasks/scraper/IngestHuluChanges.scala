@@ -11,6 +11,7 @@ import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.model.NonMatchResult
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import io.circe.parser._
@@ -25,18 +26,14 @@ import scala.concurrent.duration._
 import scala.io.Source
 
 class IngestHuluChanges @Inject()(
-  protected val tmdbClient: TmdbClient,
-  protected val tmdbProcessor: TmdbEntityProcessor,
-  protected val thingsDb: ThingsDbAccess,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
-  protected val itemSearch: ItemLookup,
+  protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   httpClient: HttpClient.Factory,
   berglasDecoder: BerglasDecoder,
   elasticsearchLookup: ElasticsearchLookup)
-    extends IngestJob[HuluScrapeItem]
-    with IngestJobWithElasticsearch[HuluScrapeItem] {
+    extends IngestJob[HuluScrapeItem] {
 
   private val premiumNetworks = Set("hbo", "starz", "showtime")
 
@@ -166,11 +163,10 @@ class IngestHuluChanges @Inject()(
                 logger.info(
                   s"Successfully found fallback match for ${thingRaw.title.get.head} (${thingRaw.id} (Original item title: ${originalItem.title}))"
                 )
-                NonMatchResult(
+                model.NonMatchResult(
                   amended,
                   originalItem,
-                  thingRaw.id,
-                  thingRaw.title.get.head
+                  thingRaw
                 )
             })
         })
@@ -187,7 +183,7 @@ class IngestHuluChanges @Inject()(
         )
     }.toList
 
-    itemSearch
+    itemLookup
       .lookupItemsByTitleMatch(titleTriples)
       .map(matchesByTitle => {
         matchesByTitle.collect {
@@ -203,7 +199,7 @@ class IngestHuluChanges @Inject()(
   }
 
   private def lookupBySlugs(itemBySlug: Map[Slug, HuluScrapeItem]) = {
-    itemSearch
+    itemLookup
       .lookupItemsBySlug(
         itemBySlug
           .filter(_._2.thingType.isDefined)

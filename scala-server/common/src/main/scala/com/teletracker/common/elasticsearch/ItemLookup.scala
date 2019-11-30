@@ -4,6 +4,7 @@ import com.teletracker.common.db.model.{ExternalSource, ThingType}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Slug
 import javax.inject.Inject
+import org.elasticsearch.action.get.{GetRequest, MultiGetRequest}
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
 import org.elasticsearch.index.query.{BoolQueryBuilder, Operator, QueryBuilders}
 import org.elasticsearch.indices.TermsLookup
@@ -15,6 +16,36 @@ class ItemLookup @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
+  def getItemsById(ids: Set[UUID]): Future[Map[UUID, Option[EsItem]]] = {
+    if (ids.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      val multiGetRequest = new MultiGetRequest()
+      ids.toList
+        .map(id => new MultiGetRequest.Item("items", id.toString))
+        .foreach(multiGetRequest.add)
+
+      elasticsearchExecutor
+        .multiGet(multiGetRequest)
+        .map(response => {
+          response.getResponses.toList
+            .flatMap(response => {
+              val id = response.getId
+              if (!response.isFailed) {
+                None
+              } else {
+                Some(
+                  UUID.fromString(id) -> decodeSourceString[EsItem](
+                    response.getResponse.getSourceAsString
+                  )
+                )
+              }
+            })
+            .toMap
+        })
+    }
+  }
+
   def lookupItemByExternalId(
     source: ExternalSource,
     id: String,

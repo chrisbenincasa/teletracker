@@ -13,7 +13,8 @@ case class TeletrackerConfig(
   auth: AuthConfig,
   tmdb: TmdbConfig,
   env: String,
-  async: AsyncConfig)
+  async: AsyncConfig,
+  data: DataConfig)
 
 case class AuthConfig(
   admin: AdminConfig,
@@ -51,3 +52,5 @@ case class EsCredentials(
   password: Option[String])
 
 case class TmdbConfig(api_key: String)
+
+case class DataConfig(s3_bucket: String)

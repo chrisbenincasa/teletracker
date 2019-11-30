@@ -3,11 +3,17 @@ package com.teletracker.tasks.scraper
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.db.model.{ThingRaw, ThingType}
-import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.elasticsearch.{
+  ElasticsearchExecutor,
+  ItemLookup,
+  ItemUpdater
+}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.model.{MatchResult, NonMatchResult}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
@@ -17,17 +23,18 @@ import java.util.regex.Pattern
 import scala.concurrent.Future
 
 class IngestHboCatalog @Inject()(
-  protected val tmdbClient: TmdbClient,
-  protected val tmdbProcessor: TmdbEntityProcessor,
-  protected val thingsDb: ThingsDbAccess,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
-  protected val itemSearch: ItemLookup,
-  protected val itemUpdater: ItemUpdater)
+  protected val itemLookup: ItemLookup,
+  protected val itemUpdater: ItemUpdater,
+  elasticsearchLookup: ElasticsearchLookup,
+  protected val elasticsearchExecutor: ElasticsearchExecutor)
     extends IngestJob[HboCatalogItem]
-    with IngestJobWithElasticsearch[HboCatalogItem] {
+    with ElasticsearchFallbackMatching[HboCatalogItem] {
 
   override protected def networkNames: Set[String] = Set("hbo-now", "hbo-go")
+
+  override protected def matchMode: MatchMode = elasticsearchLookup
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
@@ -67,8 +74,12 @@ class IngestHboCatalog @Inject()(
       .map {
         case (matches, _) =>
           matches.map {
-            case MatchResult(amended, itemId, title) =>
-              NonMatchResult(amended, originalByAmended(amended), itemId, title)
+            case MatchResult(amended, esItem) =>
+              model.NonMatchResult(
+                amended,
+                originalByAmended(amended),
+                esItem
+              )
           }
       }
   }

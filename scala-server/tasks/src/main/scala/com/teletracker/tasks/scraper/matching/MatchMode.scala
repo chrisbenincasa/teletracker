@@ -1,10 +1,7 @@
 package com.teletracker.tasks.scraper.matching
 
-import com.teletracker.tasks.scraper.{
-  IngestJobArgsLike,
-  MatchResult,
-  ScrapedItem
-}
+import com.teletracker.tasks.scraper.model.MatchResult
+import com.teletracker.tasks.scraper.{IngestJobArgsLike, ScrapedItem}
 import scala.concurrent.Future
 
 trait MatchMode {

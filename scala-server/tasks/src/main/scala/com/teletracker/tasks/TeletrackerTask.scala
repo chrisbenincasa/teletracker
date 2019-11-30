@@ -98,7 +98,7 @@ trait SchedulesFollowupTasks { self: TeletrackerTask =>
       "scheduleFollowupTasks",
       (typedArgs, args) => {
         if (args.valueOrDefault("scheduleFollowups", true)) {
-          val tasks = followupTasksToSchedule(typedArgs)
+          val tasks = followupTasksToSchedule(typedArgs, args)
           logger.info(
             s"Scheduling ${tasks.size} follow-up tasks:\n${tasks.map(_.toString).mkString("\n")}"
           )
@@ -111,6 +111,7 @@ trait SchedulesFollowupTasks { self: TeletrackerTask =>
                   .builder()
                   .messageBody(message.asJson.noSpaces)
                   .queueUrl(
+                    // TODO: Use config
                     "https://sqs.us-west-1.amazonaws.com/302782651551/teletracker-tasks-qa"
                   )
                   .build()
@@ -124,6 +125,7 @@ trait SchedulesFollowupTasks { self: TeletrackerTask =>
   )
 
   def followupTasksToSchedule(
-    args: TypedArgs
+    args: TypedArgs,
+    rawArgs: Args
   ): List[TeletrackerTaskQueueMessage]
 }

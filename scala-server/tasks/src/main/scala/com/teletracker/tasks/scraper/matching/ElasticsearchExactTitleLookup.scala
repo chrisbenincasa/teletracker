@@ -1,11 +1,8 @@
 package com.teletracker.tasks.scraper.matching
 
 import com.teletracker.common.elasticsearch.{EsItem, ItemLookup}
-import com.teletracker.tasks.scraper.{
-  IngestJobArgsLike,
-  MatchResult,
-  ScrapedItem
-}
+import com.teletracker.tasks.scraper.model.MatchResult
+import com.teletracker.tasks.scraper.{model, IngestJobArgsLike, ScrapedItem}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -26,8 +23,14 @@ class ElasticsearchExactTitleLookup @Inject()(
     args: IngestJobArgsLike
   ): Future[(List[MatchResult[T]], List[T])] = {
     for {
-      (exactMatches, nonMatchesFromExact) <- getMatches(items, true)
-      (nonTypeMatches, nonMatches) <- getMatches(nonMatchesFromExact, false)
+      (exactMatches, nonMatchesFromExact) <- getMatches(
+        items,
+        includeType = true
+      )
+      (nonTypeMatches, nonMatches) <- getMatches(
+        nonMatchesFromExact,
+        includeType = false
+      )
     } yield {
       exactMatches ++ nonTypeMatches -> nonMatches
     }
@@ -81,10 +84,9 @@ class ElasticsearchExactTitleLookup @Inject()(
 
         val matchResultsForTitles = actualMatchesByTitle.map {
           case (scrapedItem, esItem) =>
-            MatchResult(
+            model.MatchResult(
               scrapedItem,
-              esItem.id,
-              esItem.title.get.head
+              esItem
             )
         }
 

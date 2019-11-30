@@ -1,12 +1,7 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.access.ThingsDbAccess
-import com.teletracker.common.db.model.{
-  Availability,
-  Network,
-  OfferType,
-  ThingRaw
-}
+import com.teletracker.common.db.model.{Availability, Network, OfferType}
 import com.teletracker.common.elasticsearch
 import com.teletracker.common.elasticsearch.{
   EsAvailability,
@@ -14,22 +9,21 @@ import com.teletracker.common.elasticsearch.{
   ItemUpdater
 }
 import com.teletracker.common.util.json.circe._
-import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.util.SourceRetriever
-import io.circe.{Decoder, Encoder}
+import io.circe.{Codec, Encoder}
 import io.circe.generic.semiauto.deriveEncoder
-import org.slf4j.LoggerFactory
 import java.net.URI
-import java.time.{LocalDate, ZoneOffset}
+import java.time.ZoneOffset
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.util.NetworkCache
-import com.teletracker.tasks.scraper.matching.{DbLookup, MatchMode}
-import io.grpc.Context.Storage
+import com.teletracker.common.util.{Folds, NetworkCache}
+import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
 import software.amazon.awssdk.services.s3.S3Client
 import java.util.UUID
 import scala.concurrent.Future
-import scala.io.Source
+import scala.concurrent.duration._
+import com.teletracker.common.util.Functions._
+import com.teletracker.tasks.scraper.model.MatchResult
 import scala.util.control.NonFatal
 
 case class IngestDeltaJobArgs(
@@ -39,28 +33,32 @@ case class IngestDeltaJobArgs(
   limit: Int = -1,
   dryRun: Boolean = true,
   titleMatchThreshold: Int = 15,
-  thingIdFilter: Option[UUID] = None)
+  thingIdFilter: Option[UUID] = None,
+  perBatchSleepMs: Option[Int] = None)
     extends IngestJobArgsLike
 
-abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
-    extends TeletrackerTask {
+abstract class IngestDeltaJob[T <: ScrapedItem](
+  elasticsearchLookup: ElasticsearchLookup
+)(implicit codec: Codec[T])
+    extends BaseIngestJob[T, IngestDeltaJobArgs]()(
+      scala.concurrent.ExecutionContext.Implicits.global,
+      codec
+    ) {
 
   implicit protected val execCtx =
     scala.concurrent.ExecutionContext.Implicits.global
-
-  protected val logger = LoggerFactory.getLogger(getClass)
-
-  val today = LocalDate.now()
 
   protected def s3: S3Client
   protected def thingsDbAccess: ThingsDbAccess
 
   protected def networkNames: Set[String]
-  protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
   protected def networkCache: NetworkCache
 
   protected def parseMode: ParseMode = AllJson
-  protected def matchMode: MatchMode = new DbLookup(thingsDbAccess)
+  protected def matchMode: MatchMode = elasticsearchLookup
+
+  override protected def processMode(args: IngestDeltaJobArgs): ProcessMode =
+    Parallel(4, args.perBatchSleepMs.map(_ millis))
 
   override type TypedArgs = IngestDeltaJobArgs
 
@@ -76,7 +74,8 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
       offset = args.valueOrDefault("offset", 0),
       limit = args.valueOrDefault("limit", -1),
       dryRun = args.valueOrDefault("dryRun", true),
-      thingIdFilter = args.value[UUID]("thingIdFilter")
+      thingIdFilter = args.value[UUID]("thingIdFilter"),
+      perBatchSleepMs = args.value[Int]("perBatchSleepMs")
     )
   }
 
@@ -84,62 +83,148 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
     val networks = getNetworksOrExit()
 
     val parsedArgs = parseArgs(args)
+    val sourceRetriever = new SourceRetriever(s3)
+
     val afterSource =
-      new SourceRetriever(s3).getSource(parsedArgs.snapshotAfter)
+      sourceRetriever.getSource(parsedArgs.snapshotAfter)
     val beforeSource =
-      new SourceRetriever(s3).getSource(parsedArgs.snapshotBefore)
+      sourceRetriever.getSource(parsedArgs.snapshotBefore)
 
-    val after = parseSource(afterSource)
-    val before = parseSource(beforeSource)
+    val parser = new IngestJobParser()
 
-    val afterById = after.map(a => uniqueKey(a) -> a).toMap
-    val beforeById = before.map(a => uniqueKey(a) -> a).toMap
+    val afterIds = try {
+      parser
+        .stream[T](afterSource.getLines())
+        .flatMap {
+          case Left(NonFatal(ex)) =>
+            logger.warn(s"Error parsing line: ${ex.getMessage}")
+            None
+          case Right(value) => Some(uniqueKey(value))
+        }
+        .toSet
+    } finally {
+      afterSource.close()
+    }
 
-    val newIds = afterById.keySet -- beforeById.keySet
-    val removedIds = beforeById.keySet -- afterById.keySet
+    val beforeIds = try {
+      parser
+        .stream[T](beforeSource.getLines())
+        .flatMap {
+          case Left(NonFatal(ex)) =>
+            logger.warn(s"Error parsing line: ${ex.getMessage}")
+            None
+          case Right(value) => Some(uniqueKey(value))
+        }
+        .toSet
+    } finally {
+      beforeSource.close()
+    }
 
-    val newItems = newIds.flatMap(afterById.get)
-    val (foundItems, nonMatchedItems) = matchMode
-      .lookup(
-        newItems.toList,
-        parsedArgs
-      )
-      .await()
+    val newIds = afterIds -- beforeIds
+    val removedIds = beforeIds -- afterIds
 
-    val newAvailabilities = foundItems
+    val afterItemSource =
+      sourceRetriever.getSource(parsedArgs.snapshotAfter, consultCache = true)
+
+    val (addedMatches, addedNotFound) = try {
+      parser
+        .asyncStream[T](afterItemSource.getLines())
+        .flatMapOption {
+          case Left(NonFatal(ex)) =>
+            logger.warn(s"Error parsing line: ${ex.getMessage}")
+            None
+
+          case Right(value) if newIds.contains(uniqueKey(value)) =>
+            Some(value)
+
+          case _ => None
+        }
+        .throughApply(processAll(_, networks, parsedArgs))
+        .map {
+          case (matchResults, nonMatches) =>
+            val filteredResults = matchResults.filter {
+              case MatchResult(_, esItem) =>
+                parsedArgs.thingIdFilter.forall(_ == esItem.id)
+            }
+
+            filteredResults -> nonMatches
+        }
+        .foldLeft(Folds.list2Empty[MatchResult[T], T])(Folds.fold2Append)
+        .await()
+    } finally {
+      afterItemSource.close()
+    }
+
+    val newAvailabilities = addedMatches
       .filter {
-        case MatchResult(_, itemId, _) =>
-          parsedArgs.thingIdFilter.forall(_ == itemId)
+        case MatchResult(_, esItem) =>
+          parsedArgs.thingIdFilter.forall(_ == esItem.id)
       }
       .flatMap {
-        case MatchResult(scrapedItem, itemId, title) =>
-          createAvailabilities(networks, itemId, title, scrapedItem, true)
+        case MatchResult(scrapedItem, esItem) =>
+          createAvailabilities(
+            networks,
+            esItem.id,
+            esItem.title.get.headOption.orElse(esItem.original_title).get,
+            scrapedItem,
+            true
+          )
       }
 
     logger.warn(
-      s"Could not find matches for added items: ${nonMatchedItems}"
+      s"Could not find matches for added items: ${addedNotFound}"
     )
 
-    val removedItems = removedIds.flatMap(beforeById.get)
-    val (foundRemovals, nonMatchedRemovals) = matchMode
-      .lookup(
-        removedItems.toList,
-        parsedArgs
-      )
-      .await()
+    val beforeItemSource =
+      sourceRetriever.getSource(parsedArgs.snapshotBefore, consultCache = true)
 
-    val removedAvailabilities = foundRemovals
+    val (beforeMatches, beforeNotFound) = try {
+      parser
+        .asyncStream[T](beforeItemSource.getLines())
+        .flatMapOption {
+          case Left(NonFatal(ex)) =>
+            logger.warn(s"Error parsing line: ${ex.getMessage}")
+            None
+
+          case Right(value) if removedIds.contains(uniqueKey(value)) =>
+            Some(value)
+
+          case _ => None
+        }
+        .throughApply(processAll(_, networks, parsedArgs))
+        .map {
+          case (matchResults, nonMatches) =>
+            val filteredResults = matchResults.filter {
+              case MatchResult(_, esItem) =>
+                parsedArgs.thingIdFilter.forall(_ == esItem.id)
+            }
+
+            filteredResults -> nonMatches
+        }
+        .foldLeft(Folds.list2Empty[MatchResult[T], T])(Folds.fold2Append)
+        .await()
+    } finally {
+      beforeItemSource.close()
+    }
+
+    val removedAvailabilities = beforeMatches
       .filter {
-        case MatchResult(_, itemId, _) =>
-          parsedArgs.thingIdFilter.forall(_ == itemId)
+        case MatchResult(_, esItem) =>
+          parsedArgs.thingIdFilter.forall(_ == esItem.id)
       }
       .flatMap {
-        case MatchResult(scrapedItem, itemId, title) =>
-          createAvailabilities(networks, itemId, title, scrapedItem, false)
+        case MatchResult(scrapedItem, esItem) =>
+          createAvailabilities(
+            networks,
+            esItem.id,
+            esItem.title.get.headOption.orElse(esItem.original_title).get,
+            scrapedItem,
+            false
+          )
       }
 
     logger.warn(
-      s"Could not find matches for added items: ${nonMatchedRemovals}"
+      s"Could not find matches for added items: ${beforeNotFound}"
     )
 
     logger.info(s"Found ${removedAvailabilities.size} availabilities to remove")
@@ -195,25 +280,11 @@ abstract class IngestDeltaJob[T <: ScrapedItem](implicit decoder: Decoder[T])
 
   protected def uniqueKey(item: T): String
 
-  private def parseSource(source: Source): List[T] = {
-    try {
-      val items = new IngestJobParser().parse[T](source.getLines(), parseMode)
-
-      items match {
-        case Left(value) =>
-          value.printStackTrace()
-          throw value
-
-        case Right(items) =>
-          items
-      }
-    } catch {
-      case NonFatal(e) =>
-        throw e
-    } finally {
-      source.close()
-    }
-  }
+  override protected def handleMatchResults(
+    results: List[MatchResult[T]],
+    networks: Set[Network],
+    args: IngestDeltaJobArgs
+  ): Future[Unit] = Future.unit
 }
 
 trait IngestDeltaJobWithElasticsearch[T <: ScrapedItem] {
