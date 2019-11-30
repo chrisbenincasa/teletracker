@@ -3,6 +3,7 @@ export { scrape as disneyPlusCatalog } from './disney-plus/catalog/scrape';
 export { scrape as hboCatalog } from './hbo/catalog';
 export { scrape as hboWhatsNew } from './hbo/whats-new/scrape';
 export { scrape as huluCatalog } from './hulu/catalog/scrape';
+export { default as huluCatalogWatcher} from './hulu/catalog/watcher';
 export { scrape as huluChanges } from './hulu/changes/scrape';
 export { scrape as huluCatalogDump } from './hulu/catalog/dump';
 export {

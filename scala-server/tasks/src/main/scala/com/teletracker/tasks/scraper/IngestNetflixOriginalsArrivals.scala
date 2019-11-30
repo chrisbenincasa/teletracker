@@ -17,16 +17,12 @@ import software.amazon.awssdk.services.s3.S3Client
 import java.time.{Instant, LocalDate, ZoneId, ZoneOffset}
 
 class IngestNetflixOriginalsArrivals @Inject()(
-  protected val tmdbClient: TmdbClient,
-  protected val tmdbProcessor: TmdbEntityProcessor,
-  protected val thingsDb: ThingsDbAccess,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
-  protected val itemSearch: ItemLookup,
+  protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   elasticsearchLookup: ElasticsearchLookup)
-    extends IngestJob[NetflixOriginalScrapeItem]
-    with IngestJobWithElasticsearch[NetflixOriginalScrapeItem] {
+    extends IngestJob[NetflixOriginalScrapeItem] {
 
   private val farIntoTheFuture = LocalDate.now().plusYears(1)
 

@@ -12,6 +12,7 @@ import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
 import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
@@ -22,8 +23,9 @@ class HuluCatalogDeltaIngestJob @Inject()(
   protected val thingsDbAccess: ThingsDbAccess,
   protected val networkCache: NetworkCache,
   protected val itemSearch: ItemLookup,
-  protected val itemUpdater: ItemUpdater)
-    extends IngestDeltaJob[HuluCatalogItem]
+  protected val itemUpdater: ItemUpdater,
+  elasticsearchLookup: ElasticsearchLookup)
+    extends IngestDeltaJob[HuluCatalogItem](elasticsearchLookup)
     with IngestDeltaJobWithElasticsearch[HuluCatalogItem] {
 
   override protected def networkNames: Set[String] = Set("hulu")

@@ -7,22 +7,25 @@ import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
+import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 
 class IngestUnogsNetflixExpiring @Inject()(
-  protected val tmdbClient: TmdbClient,
-  protected val tmdbProcessor: TmdbEntityProcessor,
-  protected val thingsDb: ThingsDbAccess,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
-  protected val itemSearch: ItemLookup,
-  protected val itemUpdater: ItemUpdater)
-    extends IngestJob[UnogsScrapeItem]
-    with IngestJobWithElasticsearch[UnogsScrapeItem] {
+  protected val itemLookup: ItemLookup,
+  protected val itemUpdater: ItemUpdater,
+  elasticsearchLookup: ElasticsearchLookup)
+    extends IngestJob[UnogsScrapeItem] {
   override protected def networkNames: Set[String] = Set("netflix")
+
+  override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
+
+  override protected def matchMode: MatchMode = elasticsearchLookup
 }
 
 @JsonCodec

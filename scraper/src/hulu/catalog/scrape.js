@@ -248,7 +248,7 @@ const scrape = async event => {
       _.isNumber(mod) &&
       _.isNumber(band) &&
       _.isNumber(parallelism) &&
-      band + parallelism <= mod
+      band + parallelism < mod
     ) {
       const lambda = new AWS.Lambda({
         region: 'us-west-1',

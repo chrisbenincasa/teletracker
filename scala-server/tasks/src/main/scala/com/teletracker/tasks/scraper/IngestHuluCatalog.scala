@@ -3,32 +3,38 @@ package com.teletracker.tasks.scraper
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.db.model.ThingType
-import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.elasticsearch.{
+  ElasticsearchExecutor,
+  ItemLookup,
+  ItemUpdater
+}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time.{LocalDate, OffsetDateTime}
-import java.time.format.DateTimeFormatter
 
 class IngestHuluCatalog @Inject()(
-  protected val tmdbClient: TmdbClient,
-  protected val tmdbProcessor: TmdbEntityProcessor,
-  protected val thingsDb: ThingsDbAccess,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
-  protected val itemSearch: ItemLookup,
-  protected val itemUpdater: ItemUpdater)
+  protected val itemLookup: ItemLookup,
+  protected val itemUpdater: ItemUpdater,
+  protected val elasticsearchExecutor: ElasticsearchExecutor,
+  elasticsearchLookup: ElasticsearchLookup)
     extends IngestJob[HuluCatalogItem]
-    with IngestJobWithElasticsearch[HuluCatalogItem] {
+    with ElasticsearchFallbackMatching[HuluCatalogItem] {
 
   override protected def networkNames: Set[String] = Set("hulu")
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
+
+  override protected def matchMode: MatchMode =
+    elasticsearchLookup
 
   override protected def sanitizeItem(item: HuluCatalogItem): HuluCatalogItem =
     if (item.releaseYear.isDefined && item.name.endsWith(

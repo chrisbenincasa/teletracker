@@ -11,4 +11,5 @@ final class RichAny[T](val v: T) extends AnyVal {
     case None        => v
   }
   def through(f: T => T): T = f(v)
+  def throughApply[U](f: T => U): U = f(v)
 }

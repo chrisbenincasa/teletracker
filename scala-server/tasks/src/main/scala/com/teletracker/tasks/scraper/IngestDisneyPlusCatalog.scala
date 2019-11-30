@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.elasticsearch.{
@@ -13,25 +14,44 @@ import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
 import com.teletracker.tasks.scraper.model.DisneyPlusCatalogItem
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
+import java.io.File
+import java.net.URI
 import java.time.LocalDate
 
 class IngestDisneyPlusCatalog @Inject()(
-  protected val thingsDb: ThingsDbAccess,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
-  protected val itemSearch: ItemLookup,
+  protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   protected val elasticsearchExecutor: ElasticsearchExecutor,
-  elasticsearchLookup: ElasticsearchLookup)
+  elasticsearchLookup: ElasticsearchLookup,
+  teletrackerConfig: TeletrackerConfig)
     extends IngestJob[DisneyPlusCatalogItem]
-    with IngestJobWithElasticsearch[DisneyPlusCatalogItem]
-    with ElasticsearchFallbackMatcher[DisneyPlusCatalogItem] {
+    with ElasticsearchFallbackMatching[DisneyPlusCatalogItem] {
   override protected def networkNames: Set[String] = Set("disney-plus")
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
   override protected def matchMode: MatchMode =
     elasticsearchLookup
+
+  override protected def outputLocation(
+    args: IngestJobArgs,
+    rawArgs: Args
+  ): Option[URI] = {
+    if (rawArgs.valueOrDefault("outputLocal", true)) {
+      Some(URI.create(s"file://${System.getProperty("user.dir")}"))
+    } else {
+      Some(
+        URI.create(
+          s"s3://${teletrackerConfig.data.s3_bucket}/ingest-results/disney-plus/catalog/$now"
+        )
+      )
+    }
+  }
+
+  override protected def getAdditionalOutputFiles: Seq[(File, String)] =
+    Seq(getElasticsearchFallbackMatchFile -> "fallback-matches.txt")
 
   override protected def sanitizeItem(
     item: DisneyPlusCatalogItem
