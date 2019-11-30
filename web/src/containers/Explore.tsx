@@ -44,12 +44,10 @@ import {
   PeopleFetchInitiatedPayload,
 } from '../actions/people/get_people';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
-import { layoutStyles } from '../styles';
 
 const styles = (theme: Theme) =>
   createStyles({
     layout: {
-      ...layoutStyles(theme),
       display: 'flex',
       flexGrow: 1,
       flexDirection: 'column',

@@ -46,7 +46,6 @@ import RouterLink from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
-import { layoutStyles } from '../styles';
 import { Genre } from '../types';
 import { Item } from '../types/v2/Item';
 import {
@@ -60,7 +59,6 @@ import { useWidth } from '../hooks/useWidth';
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
     backdrop: {
       width: '100%',
       height: '100%',

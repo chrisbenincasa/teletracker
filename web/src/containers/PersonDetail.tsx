@@ -43,7 +43,6 @@ import { ResponsiveImage } from '../components/ResponsiveImage';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
-import { layoutStyles } from '../styles';
 import { Genre, Network } from '../types';
 import { Item } from '../types/v2/Item';
 import { Person } from '../types/v2/Person';
@@ -54,7 +53,6 @@ import { parseFilterParamsFromQs } from '../utils/urlHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
     backdrop: {
       width: '100%',
       height: '100%',

@@ -99,6 +99,9 @@ let theme = createMuiTheme({
     secondary: {
       main: '#e53935',
     },
+    error: {
+      main: '#e53935',
+    },
     type: 'dark',
   },
   custom: {

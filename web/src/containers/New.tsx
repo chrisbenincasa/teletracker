@@ -21,14 +21,12 @@ import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { AvailabilityState } from '../reducers/availability';
-import { layoutStyles } from '../styles';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants/';
 import { Item } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
     cardGrid: {
       padding: theme.spacing(1),
     },

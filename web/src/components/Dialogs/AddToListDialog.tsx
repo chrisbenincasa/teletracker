@@ -322,6 +322,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
                         this.handleCheckboxChange(list, checked)
                       }
                       checked={this.state.listChanges[list.id]}
+                      color="primary"
                     />
                   }
                   label={list.name}
@@ -349,7 +350,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
             <Button
               disabled={this.hasTrackingChanged()}
               onClick={this.handleSubmit}
-              color="secondary"
+              color="primary"
               variant="contained"
               className={classes.button}
             >

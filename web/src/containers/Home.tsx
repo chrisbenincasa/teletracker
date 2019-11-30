@@ -17,7 +17,6 @@ import { bindActionCreators } from 'redux';
 import withUser, { WithUserProps } from '../components/withUser';
 import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
-import { layoutStyles } from '../styles';
 import { Item } from '../types/v2/Item';
 import Odometer from 'react-odometerjs';
 import Typist from 'react-typist';
@@ -32,7 +31,6 @@ import useIntersectionObserver from '../hooks/useIntersectionObserver';
 
 const useStyles = makeStyles((theme: Theme) => ({
   layout: {
-    ...layoutStyles(theme),
     display: 'flex',
     flexDirection: 'column',
   },

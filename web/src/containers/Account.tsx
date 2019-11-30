@@ -36,14 +36,12 @@ import {
 import { AutocompleteOption } from '../components/AutoComplete';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
-import { layoutStyles } from '../styles';
 import { Network, UserPreferences } from '../types';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants/';
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
     section: {
       marginBottom: theme.spacing(2),
       display: 'flex',
@@ -321,7 +319,7 @@ class Account extends Component<Props, State> {
     }
 
     return (
-      <div style={{ display: 'flex' }} className={classes.layout}>
+      <div style={{ display: 'flex' }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <section className={classes.section}>
             <div className={classes.sectionHeader}>
