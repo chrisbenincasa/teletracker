@@ -15,14 +15,15 @@ import { parseFilterParamsFromQs } from '../../utils/urlHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
-    buttonContainer: {
+    chip: {
+      margin: theme.spacing(0.25),
+      flexGrow: 1,
+    },
+    chipContainer: {
       display: 'flex',
       flexDirection: 'row',
       width: '75%',
       flexWrap: 'nowrap',
-    },
-    buttonGroup: {
-      whiteSpace: 'nowrap',
     },
     filterLabel: {
       paddingBottom: theme.spacing(0.5),
@@ -36,14 +37,6 @@ const styles = (theme: Theme) =>
       width: 20,
       height: 20,
       borderRadius: theme.custom.borderRadius.circle,
-    },
-    selectedButton: {
-      backgroundColor: theme.palette.primary.main,
-      color: theme.palette.common.white,
-    },
-    unselectedButton: {
-      backgroundColor: theme.palette.grey[700],
-      color: theme.palette.common.white,
     },
     selectedChip: {
       margin: theme.spacing(0.25),
@@ -77,6 +70,7 @@ export const getNetworkTypeFromUrlParam = () => {
 class NetworkSelect extends Component<Props> {
   componentDidUpdate = oldProps => {
     if (oldProps.location.search !== this.props.location.search) {
+      console.log('test');
       // To do, only update this when these params changed
       this.setState({
         type: getNetworkTypeFromUrlParam(),
@@ -104,17 +98,14 @@ class NetworkSelect extends Component<Props> {
         <Typography className={classes.filterLabel} display="block">
           Network
         </Typography>
-        <div className={classes.buttonContainer}>
+        <div className={classes.chipContainer}>
           <Chip
             key={'all'}
             onClick={() => this.updateNetworks('networks', undefined)}
             size="medium"
-            color={!selectedNetworks ? 'primary' : 'default'}
+            color={!selectedNetworks ? 'primary' : 'secondary'}
             label="All"
-            variant="default"
-            className={
-              !selectedNetworks ? classes.selectedChip : classes.unselectedChip
-            }
+            className={classes.chip}
           />
           <Chip
             key={'netflix'}
@@ -122,12 +113,9 @@ class NetworkSelect extends Component<Props> {
               this.updateNetworks('networks', ['netflix', 'netflix-kids'])
             }
             size="medium"
-            color={isNetflixSelected ? 'primary' : 'default'}
+            color={isNetflixSelected ? 'primary' : 'secondary'}
             label="Netlflix"
-            variant="default"
-            className={
-              isNetflixSelected ? classes.selectedChip : classes.unselectedChip
-            }
+            className={classes.chip}
             icon={
               <img
                 className={classes.networkIcon}
@@ -140,12 +128,9 @@ class NetworkSelect extends Component<Props> {
             key={'hulu'}
             onClick={() => this.updateNetworks('networks', ['hulu'])}
             size="medium"
-            color={isHuluSelected ? 'primary' : 'default'}
+            color={isHuluSelected ? 'primary' : 'secondary'}
             label="Hulu"
-            variant="default"
-            className={
-              isHuluSelected ? classes.selectedChip : classes.unselectedChip
-            }
+            className={classes.chip}
             icon={
               <img
                 className={classes.networkIcon}
@@ -160,12 +145,9 @@ class NetworkSelect extends Component<Props> {
               this.updateNetworks('networks', ['hbo-go', 'hbo-now'])
             }
             size="medium"
-            color={isHboSelected ? 'primary' : 'default'}
+            color={isHboSelected ? 'primary' : 'secondary'}
             label="HBO"
-            variant="default"
-            className={
-              isHboSelected ? classes.selectedChip : classes.unselectedChip
-            }
+            className={classes.chip}
             icon={
               <img
                 className={classes.networkIcon}

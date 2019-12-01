@@ -13,15 +13,9 @@ import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
-    selectedChip: {
+    chip: {
       margin: theme.spacing(0.25),
       flexGrow: 1,
-      backgroundColor: theme.palette.primary.main,
-    },
-    unselectedChip: {
-      margin: theme.spacing(0.25),
-      flexGrow: 1,
-      backgroundColor: theme.palette.grey[700],
     },
     chipContainer: {
       display: 'flex',
@@ -89,15 +83,10 @@ class GenreSelect extends Component<Props> {
             color={
               !selectedGenres || selectedGenres.length === 0
                 ? 'primary'
-                : 'default'
+                : 'secondary'
             }
             label="All"
-            variant="default"
-            className={
-              !selectedGenres || selectedGenres.length === 0
-                ? classes.selectedChip
-                : classes.unselectedChip
-            }
+            className={classes.chip}
             disabled={!!excludeGenres}
           />
           {(genres || [])
@@ -111,15 +100,10 @@ class GenreSelect extends Component<Props> {
                   color={
                     selectedGenres && selectedGenres.includes(item.id)
                       ? 'primary'
-                      : 'default'
+                      : 'secondary'
                   }
-                  variant="default"
                   label={item.name}
-                  className={
-                    selectedGenres && selectedGenres.includes(item.id)
-                      ? classes.selectedChip
-                      : classes.unselectedChip
-                  }
+                  className={classes.chip}
                   disabled={excludeGenres && excludeGenres.includes(item.id)}
                 />
               );

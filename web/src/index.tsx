@@ -72,6 +72,9 @@ declare module '@material-ui/core/styles/createMuiTheme' {
         backgroundColor: string;
         backgroundImage: string;
       };
+      palette: {
+        cancel: string;
+      };
     };
   }
   // allow configuration using `createMuiTheme`
@@ -88,6 +91,9 @@ declare module '@material-ui/core/styles/createMuiTheme' {
         backgroundColor?: string;
         backgroundImage?: string;
       };
+      palette?: {
+        cancel?: string;
+      };
     };
   }
 }
@@ -98,7 +104,6 @@ let theme = createMuiTheme({
       main: '#00838f',
     },
     secondary: {
-      // main: '#e53935',
       main: grey[700],
     },
     type: 'dark',
@@ -115,6 +120,9 @@ let theme = createMuiTheme({
       backgroundColor: 'rgba(48, 48, 48, 0.5)',
       backgroundImage:
         'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
+    },
+    palette: {
+      cancel: '#e53935',
     },
   },
 });

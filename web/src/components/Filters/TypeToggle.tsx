@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import {
-  Button,
-  ButtonGroup,
+  Chip,
   createStyles,
   Theme,
   Typography,
@@ -14,13 +13,14 @@ import { parseFilterParamsFromQs } from '../../utils/urlHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
-    buttonContainer: {
+    chip: {
+      margin: theme.spacing(0.25),
+      flexGrow: 1,
+    },
+    chipContainer: {
       display: 'flex',
       flexDirection: 'row',
       flexWrap: 'wrap',
-    },
-    filterButtons: {
-      whiteSpace: 'nowrap',
     },
     filterLabel: {
       paddingBottom: theme.spacing(0.5),
@@ -73,34 +73,31 @@ class TypeToggle extends Component<Props> {
         <Typography className={classes.filterLabel} display="block">
           Type
         </Typography>
-        <div className={classes.buttonContainer}>
-          <ButtonGroup
-            variant="contained"
-            color="primary"
-            aria-label="Filter by All, Movies, or just TV Shows"
-          >
-            <Button
-              color={isTypeAll ? 'primary' : 'secondary'}
-              onClick={() => this.updateTypes('type', [])}
-              className={classes.filterButtons}
-            >
-              All
-            </Button>
-            <Button
-              color={isTypeMovie ? 'primary' : 'secondary'}
-              onClick={() => this.updateTypes('type', ['movie'])}
-              className={classes.filterButtons}
-            >
-              Movies
-            </Button>
-            <Button
-              color={isTypeShow ? 'primary' : 'secondary'}
-              onClick={() => this.updateTypes('type', ['show'])}
-              className={classes.filterButtons}
-            >
-              TV
-            </Button>
-          </ButtonGroup>
+        <div className={classes.chipContainer}>
+          <Chip
+            key={'all'}
+            onClick={() => this.updateTypes('type', [])}
+            size="medium"
+            color={isTypeAll ? 'primary' : 'secondary'}
+            label="All"
+            className={classes.chip}
+          />
+          <Chip
+            key={'Movies'}
+            onClick={() => this.updateTypes('type', ['movie'])}
+            size="medium"
+            color={isTypeMovie ? 'primary' : 'secondary'}
+            label="Movies"
+            className={classes.chip}
+          />
+          <Chip
+            key={'TV'}
+            onClick={() => this.updateTypes('type', ['show'])}
+            size="medium"
+            color={isTypeShow ? 'primary' : 'secondary'}
+            label="TV"
+            className={classes.chip}
+          />
         </div>
       </div>
     );

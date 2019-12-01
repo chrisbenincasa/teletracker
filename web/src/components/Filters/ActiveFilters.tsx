@@ -35,7 +35,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     borderRadius: theme.custom.borderRadius.circle,
   },
   resetChip: {
-    backgroundColor: '#e53935',
+    backgroundColor: theme.custom.palette.cancel,
     margin: theme.spacing(0.25),
   },
 }));
