@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import {
   Button,
   ButtonGroup,
+  Chip,
   createStyles,
   Theme,
   Typography,
@@ -17,7 +18,8 @@ const styles = (theme: Theme) =>
     buttonContainer: {
       display: 'flex',
       flexDirection: 'row',
-      flexWrap: 'wrap',
+      width: '75%',
+      flexWrap: 'nowrap',
     },
     buttonGroup: {
       whiteSpace: 'nowrap',
@@ -33,7 +35,25 @@ const styles = (theme: Theme) =>
     networkIcon: {
       width: 20,
       height: 20,
-      borderRadius: theme.shape.borderRadius,
+      borderRadius: theme.custom.borderRadius.circle,
+    },
+    selectedButton: {
+      backgroundColor: theme.palette.primary.main,
+      color: theme.palette.common.white,
+    },
+    unselectedButton: {
+      backgroundColor: theme.palette.grey[700],
+      color: theme.palette.common.white,
+    },
+    selectedChip: {
+      margin: theme.spacing(0.25),
+      flexGrow: 1,
+      backgroundColor: theme.palette.primary.main,
+    },
+    unselectedChip: {
+      margin: theme.spacing(0.25),
+      flexGrow: 1,
+      backgroundColor: theme.palette.grey[700],
     },
   });
 
@@ -70,6 +90,14 @@ class NetworkSelect extends Component<Props> {
 
   render() {
     const { classes, selectedNetworks } = this.props;
+    const isNetflixSelected =
+      (selectedNetworks && selectedNetworks.includes('netflix')) ||
+      (selectedNetworks && selectedNetworks.includes('netflix-kids'));
+    const isHuluSelected =
+      selectedNetworks && selectedNetworks.includes('hulu');
+    const isHboSelected =
+      (selectedNetworks && selectedNetworks.includes('hbo-go')) ||
+      (selectedNetworks && selectedNetworks.includes('hbo-now'));
 
     return (
       <div className={classes.networkContainer}>
@@ -77,77 +105,75 @@ class NetworkSelect extends Component<Props> {
           Network
         </Typography>
         <div className={classes.buttonContainer}>
-          <ButtonGroup
-            variant="contained"
-            color="primary"
-            aria-label="Filter by Netflix, Hulu, HBO, or All"
-            fullWidth
-            className={classes.buttonGroup}
-          >
-            <Button
-              color={!selectedNetworks ? 'secondary' : 'primary'}
-              onClick={() => this.updateNetworks('networks', undefined)}
-            >
-              All
-            </Button>
-            <Button
-              color={
-                (selectedNetworks && selectedNetworks.includes('netflix')) ||
-                (selectedNetworks && selectedNetworks.includes('netflix-kids'))
-                  ? 'secondary'
-                  : 'primary'
-              }
-              onClick={() =>
-                this.updateNetworks('networks', ['netflix', 'netflix-kids'])
-              }
-              startIcon={
-                <img
-                  className={classes.networkIcon}
-                  src={`/images/logos/netflix/icon.jpg`}
-                  alt="Netflix logo"
-                />
-              }
-            >
-              Netflix
-            </Button>
-            <Button
-              color={
-                selectedNetworks && selectedNetworks.includes('hulu')
-                  ? 'secondary'
-                  : 'primary'
-              }
-              onClick={() => this.updateNetworks('networks', ['hulu'])}
-              startIcon={
-                <img
-                  className={classes.networkIcon}
-                  src={`/images/logos/hulu/icon.jpg`}
-                  alt="Hulu logo"
-                />
-              }
-            >
-              Hulu
-            </Button>
-            <Button
-              color={
-                (selectedNetworks && selectedNetworks.includes('hbo-go')) ||
-                (selectedNetworks && selectedNetworks.includes('hbo-now'))
-                  ? 'secondary'
-                  : 'primary'
-              }
-              onClick={() =>
-                this.updateNetworks('networks', ['hbo-go', 'hbo-now'])
-              }
-              startIcon={
-                <img
-                  className={classes.networkIcon}
-                  src={`/images/logos/hbo-now/icon.jpg`}
-                  alt="HBO logo"
-                />
-              }
-            >
-              HBO
-            </Button>
-          </ButtonGroup>
+          <Chip
+            key={'all'}
+            onClick={() => this.updateNetworks('networks', undefined)}
+            size="medium"
+            color={!selectedNetworks ? 'primary' : 'default'}
+            label="All"
+            variant="default"
+            className={
+              !selectedNetworks ? classes.selectedChip : classes.unselectedChip
+            }
+          />
+          <Chip
+            key={'netflix'}
+            onClick={() =>
+              this.updateNetworks('networks', ['netflix', 'netflix-kids'])
+            }
+            size="medium"
+            color={isNetflixSelected ? 'primary' : 'default'}
+            label="Netlflix"
+            variant="default"
+            className={
+              isNetflixSelected ? classes.selectedChip : classes.unselectedChip
+            }
+            icon={
+              <img
+                className={classes.networkIcon}
+                src={`/images/logos/netflix/icon.jpg`}
+                alt="Netflix logo"
+              />
+            }
+          />
+          <Chip
+            key={'hulu'}
+            onClick={() => this.updateNetworks('networks', ['hulu'])}
+            size="medium"
+            color={isHuluSelected ? 'primary' : 'default'}
+            label="Hulu"
+            variant="default"
+            className={
+              isHuluSelected ? classes.selectedChip : classes.unselectedChip
+            }
+            icon={
+              <img
+                className={classes.networkIcon}
+                src={`/images/logos/hulu/icon.jpg`}
+                alt="Hulu logo"
+              />
+            }
+          />
+          <Chip
+            key={'hbo'}
+            onClick={() =>
+              this.updateNetworks('networks', ['hbo-go', 'hbo-now'])
+            }
+            size="medium"
+            color={isHboSelected ? 'primary' : 'default'}
+            label="HBO"
+            variant="default"
+            className={
+              isHboSelected ? classes.selectedChip : classes.unselectedChip
+            }
+            icon={
+              <img
+                className={classes.networkIcon}
+                src={`/images/logos/hbo-now/icon.jpg`}
+                alt="HBO logo"
+              />
+            }
+          />
         </div>
       </div>
     );

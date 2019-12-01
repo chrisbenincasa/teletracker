@@ -417,7 +417,7 @@ class Popular extends Component<Props, State> {
           <IconButton
             onClick={this.toggleFilters}
             className={classes.settings}
-            color={this.state.showFilter ? 'secondary' : 'inherit'}
+            color={this.state.showFilter ? 'primary' : 'inherit'}
           >
             <Tune />
             <Typography variant="srOnly">Tune</Typography>

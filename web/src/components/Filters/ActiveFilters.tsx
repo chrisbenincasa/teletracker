@@ -34,6 +34,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: 20,
     borderRadius: theme.custom.borderRadius.circle,
   },
+  resetChip: {
+    backgroundColor: '#e53935',
+    margin: theme.spacing(0.25),
+  },
 }));
 
 interface Props {
@@ -379,20 +383,20 @@ export default function ActiveFilters(props: Props) {
       {showReset ? (
         <Chip
           key="Reset"
-          className={classes.highlightChip}
+          className={classes.resetChip}
           label="Reset All"
           variant={variant}
-          color="secondary"
+          color="default"
           onClick={resetFilters}
         />
       ) : null}
       {showResetDefaults ? (
         <Chip
           key="Reset_default"
-          className={classes.highlightChip}
+          className={classes.resetChip}
           label="Reset to Default"
           variant={variant}
-          color="secondary"
+          color="default"
           clickable
           onClick={resetToDefaults}
         />

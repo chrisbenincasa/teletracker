@@ -32,6 +32,10 @@ const styles = (theme: Theme) =>
       margin: theme.spacing(1),
       whiteSpace: 'nowrap',
     },
+    title: {
+      backgroundColor: theme.palette.primary.main,
+      padding: theme.spacing(1, 2),
+    },
   });
 
 interface DispatchProps {
@@ -118,7 +122,7 @@ class CreateListDialog extends Component<Props, State> {
 
     return (
       <Dialog fullWidth maxWidth="xs" open={this.props.open}>
-        <DialogTitle>Create New List</DialogTitle>
+        <DialogTitle className={classes.title}>Create New List</DialogTitle>
         <DialogContent>
           <FormControl fullWidth>
             <TextField
@@ -150,7 +154,6 @@ class CreateListDialog extends Component<Props, State> {
           <Button
             disabled={isLoading}
             onClick={this.handleModalClose}
-            color="primary"
             className={classes.button}
           >
             Cancel
@@ -158,7 +161,7 @@ class CreateListDialog extends Component<Props, State> {
           <Button
             disabled={isLoading}
             onClick={this.validateListName}
-            color="secondary"
+            color="primary"
             variant="contained"
             className={classes.button}
           >

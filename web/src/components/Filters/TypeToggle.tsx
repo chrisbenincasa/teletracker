@@ -64,6 +64,8 @@ class TypeToggle extends Component<Props> {
 
   render() {
     const { classes, selectedTypes } = this.props;
+    const isTypeMovie = selectedTypes && selectedTypes.includes('movie');
+    const isTypeShow = selectedTypes && selectedTypes.includes('show');
 
     return (
       <div className={classes.typeContainer}>
@@ -77,29 +79,21 @@ class TypeToggle extends Component<Props> {
             aria-label="Filter by All, Movies, or just TV Shows"
           >
             <Button
-              color={!selectedTypes ? 'secondary' : 'primary'}
+              color={!selectedTypes ? 'primary' : 'secondary'}
               onClick={() => this.updateTypes('type', [])}
               className={classes.filterButtons}
             >
               All
             </Button>
             <Button
-              color={
-                selectedTypes && selectedTypes.includes('movie')
-                  ? 'secondary'
-                  : 'primary'
-              }
+              color={isTypeMovie ? 'primary' : 'secondary'}
               onClick={() => this.updateTypes('type', ['movie'])}
               className={classes.filterButtons}
             >
               Movies
             </Button>
             <Button
-              color={
-                selectedTypes && selectedTypes.includes('show')
-                  ? 'secondary'
-                  : 'primary'
-              }
+              color={isTypeShow ? 'primary' : 'secondary'}
               onClick={() => this.updateTypes('type', ['show'])}
               className={classes.filterButtons}
             >

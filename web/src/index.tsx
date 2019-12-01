@@ -5,6 +5,7 @@ import {
   responsiveFontSizes,
   Theme,
 } from '@material-ui/core';
+import { grey } from '@material-ui/core/colors';
 import { ConnectedRouter } from 'connected-react-router';
 import { render } from 'react-dom';
 import { Provider } from 'react-redux';
@@ -97,10 +98,8 @@ let theme = createMuiTheme({
       main: '#00838f',
     },
     secondary: {
-      main: '#e53935',
-    },
-    error: {
-      main: '#e53935',
+      // main: '#e53935',
+      main: grey[700],
     },
     type: 'dark',
   },

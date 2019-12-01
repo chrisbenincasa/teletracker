@@ -354,7 +354,7 @@ export default function CreateDynamicListDialog(props: Props) {
         </Button>
         <Button
           onClick={submitListCreate}
-          color="secondary"
+          color="primary"
           variant="contained"
           className={classes.button}
         >
