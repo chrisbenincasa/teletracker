@@ -15,7 +15,7 @@ const useStyles = makeStyles(theme => ({
   poster: {
     width: 25,
     boxShadow: theme.shadows[1],
-    marginRight: `${theme.spacing(1)}`,
+    marginRight: theme.spacing(1),
   },
 }));
 
@@ -29,7 +29,6 @@ type Props = OwnProps;
 export default function PersonFilter(props: Props) {
   const classes = useStyles();
   const [open, setOpen] = useState(false);
-  const [options, setOptions] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
   const dispatch = useDispatch();
   const peopleSearch = useSelector(
@@ -57,7 +56,6 @@ export default function PersonFilter(props: Props) {
   const personSelected = (event, people: string[]) => {
     props.handleChange(people);
 
-    setOptions([]);
     setInputValue('');
   };
 

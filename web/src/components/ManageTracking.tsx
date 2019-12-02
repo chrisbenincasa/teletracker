@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   Button,
   createStyles,
@@ -6,19 +7,18 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { List as ListIcon } from '@material-ui/icons';
-import React, { Component } from 'react';
-import AddToListDialog from '../components/AddToListDialog';
+import AddToListDialog from './Dialogs/AddToListDialog';
 import withUser, { WithUserProps } from '../components/withUser';
 import AuthDialog from './Auth/AuthDialog';
 import { Item, itemBelongsToLists } from '../types/v2/Item';
-import ManageTrackingButton from './ManageTrackingButton';
+import ManageTrackingButton from './Buttons/ManageTrackingButton';
 
 const styles = (theme: Theme) =>
   createStyles({
     button: {
       marginTop: theme.spacing(1),
       [theme.breakpoints.down('sm')]: {
-        padding: theme.spacing(1) / 4,
+        padding: theme.spacing(0.25),
       },
     },
     buttonIcon: {

@@ -43,15 +43,6 @@ const styles = (theme: Theme) =>
         marginRight: 'auto',
       },
     },
-    paper: {
-      marginTop: theme.spacing(8),
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      padding: `${theme.spacing(2)}px ${theme.spacing(3)}px ${theme.spacing(
-        3,
-      )}px`,
-    },
     overlay: {
       display: 'flex',
       flexDirection: 'column',
@@ -63,7 +54,7 @@ const styles = (theme: Theme) =>
       width: '100%',
       height: '100%',
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      zIndex: 1000,
+      zIndex: theme.zIndex.modal,
     },
     progressSpinner: {
       marginBottom: theme.spacing(1),

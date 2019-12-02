@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   Avatar,
   createStyles,
@@ -6,7 +7,6 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import React, { Component } from 'react';
 import { parseInitials } from '../utils/textHelper';
 import RouterLink from './RouterLink';
 import { FixedSizeList as LazyList } from 'react-window';
@@ -18,22 +18,26 @@ const styles = (theme: Theme) =>
     avatar: {
       width: 100,
       height: 100,
-      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+      boxShadow: theme.shadows[1],
       '&:hover': {
         opacity: 0.8,
+        transition: theme.transitions.create(['backgroundColor', 'opacity'], {
+          duration: theme.transitions.duration.leavingScreen,
+          easing: theme.transitions.easing.easeIn,
+        }),
       },
     },
     avatarLink: {
       textDecoration: 'none',
     },
     actualName: {
-      fontWeight: 'bold',
+      fontWeight: theme.typography.fontWeightBold,
     },
     castContainer: {
-      marginTop: 10,
+      marginTop: theme.spacing(1),
     },
     characterName: {
-      fontStyle: 'Italic',
+      fontStyle: 'italic',
     },
     grid: {
       [theme.breakpoints.up('sm')]: {
@@ -46,7 +50,7 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       maxWidth: 100,
-      margin: 10,
+      margin: theme.spacing(1),
     },
   });
 
@@ -66,7 +70,7 @@ class Cast extends Component<Props, {}> {
         className={classes.avatarLink}
       >
         <Avatar
-          alt={castMember.name}
+          alt={`Photo of ${castMember.name}`}
           src={
             castMember.person && castMember.person.profile_path
               ? `https://image.tmdb.org/t/p/w185/${castMember.person.profile_path}`

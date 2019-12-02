@@ -23,7 +23,6 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
-import { layoutStyles } from '../styles';
 import { List as ListType } from '../types';
 import _ from 'lodash';
 import ReactGA from 'react-ga';
@@ -31,7 +30,6 @@ import { GA_TRACKING_ID } from '../constants/';
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
     root: {
       display: 'flex',
       flexWrap: 'wrap',
@@ -40,7 +38,7 @@ const styles = (theme: Theme) =>
     },
     listName: {
       textDecoration: 'none',
-      margin: `${theme.spacing(2)}px 0`,
+      margin: theme.spacing(2, 0),
       '&:focus, &:hover, &:visited, &:link &:active': {
         color: '#000',
       },
@@ -49,7 +47,7 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       flex: '1 0 auto',
-      padding: `0 ${theme.spacing(2)}px`,
+      padding: theme.spacing(0, 2),
     },
     listContainer: {
       display: 'flex',

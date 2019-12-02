@@ -1,19 +1,20 @@
+import React, { Component } from 'react';
 import {
   Chip,
   createStyles,
+  Theme,
   Typography,
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import _ from 'lodash';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { Genre } from '../../types';
-import React, { Component } from 'react';
+import _ from 'lodash';
 
-const styles = () =>
+const styles = (theme: Theme) =>
   createStyles({
     chip: {
-      margin: 4,
+      margin: theme.spacing(0.25),
       flexGrow: 1,
     },
     chipContainer: {
@@ -81,8 +82,8 @@ class GenreSelect extends Component<Props> {
             size="medium"
             color={
               !selectedGenres || selectedGenres.length === 0
-                ? 'secondary'
-                : 'primary'
+                ? 'primary'
+                : 'secondary'
             }
             label="All"
             className={classes.chip}
@@ -98,8 +99,8 @@ class GenreSelect extends Component<Props> {
                   size="medium"
                   color={
                     selectedGenres && selectedGenres.includes(item.id)
-                      ? 'secondary'
-                      : 'primary'
+                      ? 'primary'
+                      : 'secondary'
                   }
                   label={item.name}
                   className={classes.chip}

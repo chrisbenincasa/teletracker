@@ -1,44 +1,52 @@
+import React, { Component } from 'react';
 import {
   Button,
   ButtonGroup,
+  Chip,
   createStyles,
   Theme,
   Typography,
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import React, { Component } from 'react';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { NetworkType } from '../../types';
 import { parseFilterParamsFromQs } from '../../utils/urlHelper';
 
 const styles = (theme: Theme) =>
   createStyles({
-    buttonContainer: {
+    chip: {
+      margin: theme.spacing(0.25),
+      flexGrow: 1,
+    },
+    chipContainer: {
       display: 'flex',
       flexDirection: 'row',
-      flexWrap: 'wrap',
-    },
-    buttonGroup: {
-      whiteSpace: 'nowrap',
+      width: '75%',
+      flexWrap: 'nowrap',
     },
     filterLabel: {
-      paddingBottom: theme.spacing() / 2,
-    },
-    filterButtons: {
-      [theme.breakpoints.down('sm')]: {
-        fontSize: '0.575rem',
-      },
-    },
-    networkIcon: {
-      width: 20,
-      height: 20,
-      borderRadius: '10%',
+      paddingBottom: theme.spacing(0.5),
     },
     networkContainer: {
       display: 'flex',
       flexDirection: 'column',
       width: '100%',
+    },
+    networkIcon: {
+      width: 20,
+      height: 20,
+      borderRadius: theme.custom.borderRadius.circle,
+    },
+    selectedChip: {
+      margin: theme.spacing(0.25),
+      flexGrow: 1,
+      backgroundColor: theme.palette.primary.main,
+    },
+    unselectedChip: {
+      margin: theme.spacing(0.25),
+      flexGrow: 1,
+      backgroundColor: theme.palette.grey[700],
     },
   });
 
@@ -62,6 +70,7 @@ export const getNetworkTypeFromUrlParam = () => {
 class NetworkSelect extends Component<Props> {
   componentDidUpdate = oldProps => {
     if (oldProps.location.search !== this.props.location.search) {
+      console.log('test');
       // To do, only update this when these params changed
       this.setState({
         type: getNetworkTypeFromUrlParam(),
@@ -75,88 +84,78 @@ class NetworkSelect extends Component<Props> {
 
   render() {
     const { classes, selectedNetworks } = this.props;
+    const isNetflixSelected =
+      (selectedNetworks && selectedNetworks.includes('netflix')) ||
+      (selectedNetworks && selectedNetworks.includes('netflix-kids'));
+    const isHuluSelected =
+      selectedNetworks && selectedNetworks.includes('hulu');
+    const isHboSelected =
+      (selectedNetworks && selectedNetworks.includes('hbo-go')) ||
+      (selectedNetworks && selectedNetworks.includes('hbo-now'));
 
     return (
       <div className={classes.networkContainer}>
         <Typography className={classes.filterLabel} display="block">
           Network
         </Typography>
-        <div className={classes.buttonContainer}>
-          <ButtonGroup
-            variant="contained"
-            color="primary"
-            aria-label="Filter by Netflix, Hulu, HBO, or All"
-            fullWidth
-            className={classes.buttonGroup}
-          >
-            <Button
-              color={!selectedNetworks ? 'secondary' : 'primary'}
-              onClick={() => this.updateNetworks('networks', undefined)}
-              className={classes.filterButtons}
-            >
-              All
-            </Button>
-            <Button
-              color={
-                (selectedNetworks && selectedNetworks.includes('netflix')) ||
-                (selectedNetworks && selectedNetworks.includes('netflix-kids'))
-                  ? 'secondary'
-                  : 'primary'
-              }
-              onClick={() =>
-                this.updateNetworks('networks', ['netflix', 'netflix-kids'])
-              }
-              startIcon={
-                <img
-                  className={classes.networkIcon}
-                  src={`/images/logos/netflix/icon.jpg`}
-                  alt="Netflix logo"
-                />
-              }
-              className={classes.filterButtons}
-            >
-              Netflix
-            </Button>
-            <Button
-              color={
-                selectedNetworks && selectedNetworks.includes('hulu')
-                  ? 'secondary'
-                  : 'primary'
-              }
-              onClick={() => this.updateNetworks('networks', ['hulu'])}
-              className={classes.filterButtons}
-              startIcon={
-                <img
-                  className={classes.networkIcon}
-                  src={`/images/logos/hulu/icon.jpg`}
-                  alt="Hulu logo"
-                />
-              }
-            >
-              Hulu
-            </Button>
-            <Button
-              color={
-                (selectedNetworks && selectedNetworks.includes('hbo-go')) ||
-                (selectedNetworks && selectedNetworks.includes('hbo-now'))
-                  ? 'secondary'
-                  : 'primary'
-              }
-              onClick={() =>
-                this.updateNetworks('networks', ['hbo-go', 'hbo-now'])
-              }
-              className={classes.filterButtons}
-              startIcon={
-                <img
-                  className={classes.networkIcon}
-                  src={`/images/logos/hbo-now/icon.jpg`}
-                  alt="HBO logo"
-                />
-              }
-            >
-              HBO
-            </Button>
-          </ButtonGroup>
+        <div className={classes.chipContainer}>
+          <Chip
+            key={'all'}
+            onClick={() => this.updateNetworks('networks', undefined)}
+            size="medium"
+            color={!selectedNetworks ? 'primary' : 'secondary'}
+            label="All"
+            className={classes.chip}
+          />
+          <Chip
+            key={'netflix'}
+            onClick={() =>
+              this.updateNetworks('networks', ['netflix', 'netflix-kids'])
+            }
+            size="medium"
+            color={isNetflixSelected ? 'primary' : 'secondary'}
+            label="Netlflix"
+            className={classes.chip}
+            icon={
+              <img
+                className={classes.networkIcon}
+                src={`/images/logos/netflix/icon.jpg`}
+                alt="Netflix logo"
+              />
+            }
+          />
+          <Chip
+            key={'hulu'}
+            onClick={() => this.updateNetworks('networks', ['hulu'])}
+            size="medium"
+            color={isHuluSelected ? 'primary' : 'secondary'}
+            label="Hulu"
+            className={classes.chip}
+            icon={
+              <img
+                className={classes.networkIcon}
+                src={`/images/logos/hulu/icon.jpg`}
+                alt="Hulu logo"
+              />
+            }
+          />
+          <Chip
+            key={'hbo'}
+            onClick={() =>
+              this.updateNetworks('networks', ['hbo-go', 'hbo-now'])
+            }
+            size="medium"
+            color={isHboSelected ? 'primary' : 'secondary'}
+            label="HBO"
+            className={classes.chip}
+            icon={
+              <img
+                className={classes.networkIcon}
+                src={`/images/logos/hbo-now/icon.jpg`}
+                alt="HBO logo"
+              />
+            }
+          />
         </div>
       </div>
     );

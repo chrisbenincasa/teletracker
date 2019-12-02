@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import {
   CardMedia,
   Fade,
@@ -7,13 +8,12 @@ import {
   Typography,
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
-import React, { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import ManageTracking from '../components/ManageTracking';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import { Item } from '../types/v2/Item';
-import AddToListDialog from './AddToListDialog';
+import AddToListDialog from './Dialogs/AddToListDialog';
 import withUser, { WithUserProps } from './withUser';
 import {
   formatRuntime,
@@ -21,6 +21,7 @@ import {
   getVoteCount,
   truncateText,
 } from '../utils/textHelper';
+import { hexToRGB } from '../utils/style-utils';
 
 const useStyles = makeStyles((theme: Theme) => ({
   backdropContainer: {
@@ -54,7 +55,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexDirection: 'row',
   },
   ratingVoteCount: {
-    marginRight: 10,
+    marginRight: theme.spacing(1),
     [theme.breakpoints.down('sm')]: {
       display: 'none',
     },
@@ -63,7 +64,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     textAlign: 'right',
     alignSelf: 'flex-end',
     fontSize: theme.typography.h5.fontSize,
-    fontWeight: 700,
+    fontWeight: theme.typography.fontWeightBold,
   },
   titleContainer: {
     display: 'flex',
@@ -74,7 +75,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     right: 0,
     padding: theme.spacing(1),
     marginBottom: theme.spacing(2),
-    backgroundColor: 'rgba(48, 48, 48, 0.6)',
+    backgroundColor: hexToRGB(theme.palette.grey[900], 0.65),
     maxWidth: '50%',
   },
   wrapper: {

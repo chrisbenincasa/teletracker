@@ -24,15 +24,19 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexWrap: 'wrap',
   },
   chip: {
-    margin: '2px',
+    margin: theme.spacing(0.25),
     backgroundColor: `${theme.palette.grey[800]}`,
   },
   highlightChip: {
-    margin: '2px',
+    margin: theme.spacing(0.25),
   },
   networkIcon: {
     width: 20,
-    borderRadius: '50%',
+    borderRadius: theme.custom.borderRadius.circle,
+  },
+  resetChip: {
+    backgroundColor: theme.custom.palette.cancel,
+    margin: theme.spacing(0.25),
   },
 }));
 
@@ -379,20 +383,20 @@ export default function ActiveFilters(props: Props) {
       {showReset ? (
         <Chip
           key="Reset"
-          className={classes.highlightChip}
+          className={classes.resetChip}
           label="Reset All"
           variant={variant}
-          color="secondary"
+          color="default"
           onClick={resetFilters}
         />
       ) : null}
       {showResetDefaults ? (
         <Chip
           key="Reset_default"
-          className={classes.highlightChip}
+          className={classes.resetChip}
           label="Reset to Default"
           variant={variant}
-          color="secondary"
+          color="default"
           clickable
           onClick={resetToDefaults}
         />

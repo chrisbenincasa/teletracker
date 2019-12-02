@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   createStyles,
   MenuItem,
@@ -9,17 +10,11 @@ import {
 } from '@material-ui/core';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { SortOptions } from '../../types';
-import React, { Component } from 'react';
 
 const styles = (theme: Theme) =>
   createStyles({
-    filterButtons: {
-      [theme.breakpoints.down('sm')]: {
-        fontSize: '0.575rem',
-      },
-    },
     filterLabel: {
-      paddingBottom: theme.spacing() / 2,
+      paddingBottom: theme.spacing(0.5),
     },
   });
 

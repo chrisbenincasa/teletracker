@@ -1,3 +1,4 @@
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -27,7 +28,6 @@ import {
   ThumbDown,
   ThumbUp,
 } from '@material-ui/icons';
-import React, { useEffect, useRef, useState } from 'react';
 import { connect } from 'react-redux';
 import { Link as RouterLink } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -47,11 +47,12 @@ import { UserSelf } from '../reducers/user';
 import { ActionType, List } from '../types';
 import HasImagery from '../types/HasImagery';
 import { Linkable, ThingLikeStruct } from '../types/Thing';
-import AddToListDialog from './AddToListDialog';
+import AddToListDialog from './Dialogs/AddToListDialog';
 import { ResponsiveImage } from './ResponsiveImage';
 import { Item, itemHasTag } from '../types/v2/Item';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
 import { useWidth } from '../hooks/useWidth';
+import { hexToRGB } from '../utils/style-utils';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -67,9 +68,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     overflow: 'hidden',
     width: '100%',
     height: '100%',
-    background: 'rgba(0, 0, 0, 0.9)',
     display: 'block',
-    zIndex: 1,
   },
   cardHoverExit: {
     display: 'block',
@@ -77,7 +76,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: '100%',
     opacity: 1,
     overflow: 'hidden',
-    zIndex: 1,
   },
   hoverActions: {
     display: 'flex',
@@ -86,17 +84,16 @@ const useStyles = makeStyles((theme: Theme) => ({
     position: 'absolute',
     top: 0,
     left: 0,
-    zIndex: 1,
-    background: 'rgba(0, 0, 0, 0.5)',
+    background: hexToRGB(theme.palette.grey[900], 0.85),
   },
   hoverDelete: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: red[300],
     },
   },
   hoverWatch: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: green[300],
     },
@@ -104,17 +101,17 @@ const useStyles = makeStyles((theme: Theme) => ({
   hoverWatchInvert: {
     color: green[300],
     '&:hover': {
-      color: '#fff',
+      color: theme.palette.common.white,
     },
   },
   hoverRatingThumbsDown: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: red[300],
     },
   },
   hoverRatingThumbsUp: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: green[300],
     },
@@ -131,10 +128,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     zIndex: 1,
     height: '100%',
     width: '100%',
-    background: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: hexToRGB(theme.palette.grey[900], 0.85),
   },
   ratingTitle: {
-    color: '#fff',
+    color: theme.palette.primary.contrastText,
     fontWeight: 'bold',
   },
   ratingContainer: {
@@ -153,13 +150,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     justifyContent: 'space-around',
   },
   ratingVoteDown: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: red[300],
     },
   },
   ratingVoteUp: {
-    color: '#fff',
+    color: theme.palette.common.white,
     '&:hover': {
       color: green[300],
     },
@@ -433,6 +430,7 @@ function ItemCard(props: Props) {
                   aria-label="Manage Tracking"
                   onClick={() => setManageTrackingModalOpen(true)}
                   disableRipple
+                  disableFocusRipple
                 >
                   <PlaylistAdd className={classes.hoverWatch} />
                   <Typography variant="srOnly">Manage Tracking</Typography>

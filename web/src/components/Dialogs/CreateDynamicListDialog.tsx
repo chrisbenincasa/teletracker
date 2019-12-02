@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   Dialog,
@@ -13,8 +14,7 @@ import {
   TextField,
   Typography,
 } from '@material-ui/core';
-import React, { useEffect, useState } from 'react';
-import { FilterParams, SliderParamState } from '../utils/searchFilters';
+import { FilterParams, SliderParamState } from '../../utils/searchFilters';
 import {
   Genre,
   ItemType,
@@ -25,21 +25,26 @@ import {
   ListRuleType,
   Network,
   NetworkType,
-} from '../types';
+} from '../../types';
 import _ from 'lodash';
-import { prettyItemType, prettySort } from './Filters/ActiveFilters';
+import { prettyItemType, prettySort } from '../Filters/ActiveFilters';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../reducers';
-import { createList } from '../actions/lists';
-import CreateAListValidator from '../utils/validation/CreateAListValidator';
-import { collect } from '../utils/collection-utils';
+import { AppState } from '../../reducers';
+import { createList } from '../../actions/lists';
+import CreateAListValidator from '../../utils/validation/CreateAListValidator';
+import { collect } from '../../utils/collection-utils';
 
 const useStyles = makeStyles(theme => ({
   button: {
     margin: theme.spacing(1),
+    whiteSpace: 'nowrap',
   },
   filterContainer: {
-    marginTop: theme.spacing(),
+    marginTop: theme.spacing(1),
+  },
+  title: {
+    backgroundColor: theme.palette.primary.main,
+    padding: theme.spacing(1, 2),
   },
 }));
 
@@ -298,7 +303,7 @@ export default function CreateDynamicListDialog(props: Props) {
       fullWidth
       maxWidth="sm"
     >
-      <DialogTitle id="create-dynamic-list-dialog">
+      <DialogTitle id="create-dynamic-list-dialog" className={classes.title}>
         Create Smart List
       </DialogTitle>
       <DialogContent>
@@ -349,7 +354,7 @@ export default function CreateDynamicListDialog(props: Props) {
         </Button>
         <Button
           onClick={submitListCreate}
-          color="secondary"
+          color="primary"
           variant="contained"
           className={classes.button}
         >

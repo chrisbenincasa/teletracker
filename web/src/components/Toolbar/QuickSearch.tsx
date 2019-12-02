@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   CircularProgress,
   Chip,
@@ -14,7 +15,6 @@ import {
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
 import { Item } from '../../types/v2/Item';
-import React from 'react';
 import { truncateText } from '../../utils/textHelper';
 import RouterLink from '../RouterLink';
 import { getTmdbPosterImage } from '../../utils/image-helper';
@@ -23,8 +23,7 @@ import moment from 'moment';
 
 const useStyles = makeStyles((theme: Theme) => ({
   chip: {
-    margin: `${theme.spacing(1) / 2}px ${theme.spacing(1) /
-      2}px ${theme.spacing(1) / 2}px 0`,
+    margin: theme.spacing(0.5, 0.5, 0.5, 0),
   },
   chipWrapper: {
     display: 'flex',
@@ -40,8 +39,8 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: 50,
     marginRight: theme.spacing(1),
     height: 75,
-    color: '#9e9e9e',
-    backgroundColor: '#e0e0e0',
+    color: theme.palette.grey[500],
+    backgroundColor: theme.palette.grey[300],
     fontSize: '3em',
   },
   missingPosterIcon: {
@@ -67,7 +66,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: 338,
     backgroundColor: theme.palette.primary.main,
   },
-  viewAllResults: { justifyContent: 'center', padding: theme.spacing(1) },
+  viewAllResults: {
+    justifyContent: 'center',
+    padding: theme.spacing(1),
+  },
 }));
 
 interface Props {

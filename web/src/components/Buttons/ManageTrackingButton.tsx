@@ -1,8 +1,8 @@
 import React from 'react';
 import { Button, makeStyles } from '@material-ui/core';
 import { AddCircle, List as ListIcon } from '@material-ui/icons';
-import { Item, itemBelongsToLists } from '../types/v2/Item';
-import { useWidth } from '../hooks/useWidth';
+import { Item, itemBelongsToLists } from '../../types/v2/Item';
+import { useWidth } from '../../hooks/useWidth';
 
 const useStyles = makeStyles(theme => ({
   button: {
