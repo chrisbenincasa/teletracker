@@ -81,6 +81,19 @@ class ItemExpander @Inject()(
     )
   }
 
+  def expandMovieRaw(
+    id: Int,
+    extraExpandFields: List[String] = Nil
+  ): Future[Json] = {
+    tmdbClient.makeRequest[Json](
+      s"movie/$id",
+      Seq(
+        "append_to_response" -> (extraExpandFields ++ DefaultMovieAppendFields).distinct
+          .mkString(",")
+      )
+    )
+  }
+
   def expandTvShow(
     id: Int,
     extraExpandFields: List[String] = Nil

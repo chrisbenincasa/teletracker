@@ -23,7 +23,7 @@ class MovieDump @Inject()(
 
   override protected def getRawJson(currentId: Int): Future[String] = {
     itemExpander
-      .expandMovie(currentId, List("recommendations", "similar", "videos"))
-      .map(_.asJson.noSpaces)
+      .expandMovieRaw(currentId, List("recommendations", "similar", "videos"))
+      .map(_.noSpaces)
   }
 }
