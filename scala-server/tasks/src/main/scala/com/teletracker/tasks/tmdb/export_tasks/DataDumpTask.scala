@@ -16,6 +16,7 @@ import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
+import java.util.zip.GZIPOutputStream
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -91,7 +92,9 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
 
         output = new File(f"$baseFileName.$batch%03d.json")
         os = new PrintStream(
-          new BufferedOutputStream(new FileOutputStream(output))
+          new BufferedOutputStream(
+            new GZIPOutputStream(new FileOutputStream(output))
+          )
         )
       }
     }
@@ -153,8 +156,7 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
     os.flush()
     os.close()
 
-    val suffix = processed.get() / rotateEvery
-    rotateFile(suffix)
+    uploadToS3(output)
 
     source.close()
   }
@@ -174,6 +176,7 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
         .bucket("teletracker-data")
         .key(s"$fullPath/${file.getName}")
         .contentType("text/plain")
+        .contentEncoding("gzip")
         .build(),
       RequestBody.fromFile(file)
     )
