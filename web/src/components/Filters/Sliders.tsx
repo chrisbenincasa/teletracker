@@ -1,5 +1,5 @@
-import { Slider, Theme, Typography } from '@material-ui/core';
 import React, { useEffect } from 'react';
+import { Slider, Theme, Typography } from '@material-ui/core';
 import { RouteComponentProps, withRouter } from 'react-router';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import _ from 'lodash';
@@ -10,7 +10,7 @@ import { SlidersState } from '../../utils/searchFilters';
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {
     width: '100%',
-    padding: `0 ${theme.spacing(2)}px`,
+    padding: theme.spacing(0, 2),
   },
 }));
 

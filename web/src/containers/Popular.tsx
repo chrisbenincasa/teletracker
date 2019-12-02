@@ -38,15 +38,11 @@ import {
 } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import { getVoteAverage, getVoteCount } from '../utils/textHelper';
-import CreateDynamicListDialog from '../components/CreateDynamicListDialog';
+import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 
 const styles = (theme: Theme) =>
   createStyles({
-    networkIcon: {
-      width: 20,
-      borderRadius: '50%',
-    },
     settings: {
       display: 'flex',
       alignSelf: 'flex-end',
@@ -67,9 +63,9 @@ const styles = (theme: Theme) =>
       height: '100%',
     },
     popularContainer: {
-      padding: `0 ${theme.spacing(3)}px`,
+      padding: theme.spacing(0, 3),
       [theme.breakpoints.down('sm')]: {
-        padding: `0 ${theme.spacing(1)}px`,
+        padding: theme.spacing(0, 1),
       },
       display: 'flex',
       flexDirection: 'column',
@@ -421,7 +417,7 @@ class Popular extends Component<Props, State> {
           <IconButton
             onClick={this.toggleFilters}
             className={classes.settings}
-            color={this.state.showFilter ? 'secondary' : 'inherit'}
+            color={this.state.showFilter ? 'primary' : 'inherit'}
           >
             <Tune />
             <Typography variant="srOnly">Tune</Typography>

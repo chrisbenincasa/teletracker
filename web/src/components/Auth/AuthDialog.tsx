@@ -7,9 +7,7 @@ import SignupForm from './SignupForm';
 const styles = (theme: Theme) =>
   createStyles({
     paper: {
-      padding: `${theme.spacing(2)}px ${theme.spacing(3)}px ${theme.spacing(
-        3,
-      )}px`,
+      padding: theme.spacing(2, 3, 3),
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',

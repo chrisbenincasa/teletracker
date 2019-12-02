@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import {
   Button,
   createStyles,
@@ -12,21 +13,30 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import React, { Component } from 'react';
-import withUser, { WithUserProps } from '../components/withUser';
-import { Loading } from '../reducers/user';
+import withUser, { WithUserProps } from '../withUser';
+import { Loading } from '../../reducers/user';
 import {
   createList,
   USER_SELF_CREATE_LIST,
   UserCreateListPayload,
-} from '../actions/lists';
+} from '../../actions/lists';
 import { bindActionCreators, Dispatch } from 'redux';
 import { connect } from 'react-redux';
-import { ListsByIdMap } from '../reducers/lists';
-import { AppState } from '../reducers';
-import CreateAListValidator from '../utils/validation/CreateAListValidator';
+import { ListsByIdMap } from '../../reducers/lists';
+import { AppState } from '../../reducers';
+import CreateAListValidator from '../../utils/validation/CreateAListValidator';
 
-const styles = (theme: Theme) => createStyles({});
+const styles = (theme: Theme) =>
+  createStyles({
+    button: {
+      margin: theme.spacing(1),
+      whiteSpace: 'nowrap',
+    },
+    title: {
+      backgroundColor: theme.palette.primary.main,
+      padding: theme.spacing(1, 2),
+    },
+  });
 
 interface DispatchProps {
   createList: (payload?: UserCreateListPayload) => void;
@@ -106,15 +116,15 @@ class CreateListDialog extends Component<Props, State> {
   };
 
   renderDialog() {
-    let { loading } = this.props;
+    let { classes, loading } = this.props;
     let { listName, nameDuplicateError, nameLengthError } = this.state;
     let isLoading = Boolean(loading[USER_SELF_CREATE_LIST]);
 
     return (
       <Dialog fullWidth maxWidth="xs" open={this.props.open}>
-        <DialogTitle>Create New List</DialogTitle>
+        <DialogTitle className={classes.title}>Create New List</DialogTitle>
         <DialogContent>
-          <FormControl style={{ width: '100%' }}>
+          <FormControl fullWidth>
             <TextField
               autoFocus
               margin="dense"
@@ -144,15 +154,16 @@ class CreateListDialog extends Component<Props, State> {
           <Button
             disabled={isLoading}
             onClick={this.handleModalClose}
-            color="primary"
+            className={classes.button}
           >
             Cancel
           </Button>
           <Button
             disabled={isLoading}
             onClick={this.validateListName}
-            color="secondary"
+            color="primary"
             variant="contained"
+            className={classes.button}
           >
             Create
           </Button>
