@@ -12,8 +12,8 @@ const useStyles = makeStyles((theme: Theme) => ({
     display: 'flex',
     width: '100%',
     height: '100%',
-    color: '#9e9e9e',
-    backgroundColor: '#e0e0e0',
+    color: theme.palette.grey[500],
+    backgroundColor: theme.palette.grey[300],
     fontSize: '25vw',
   },
   fallbackImageIcon: {

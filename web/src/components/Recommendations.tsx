@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   createStyles,
   Grid,
@@ -6,7 +7,6 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import React from 'react';
 import ItemCard from './ItemCard';
 import { UserSelf } from '../reducers/user';
 import { Item } from '../types/v2/Item';
@@ -16,17 +16,19 @@ import { useWidth } from '../hooks/useWidth';
 const styles = (theme: Theme) =>
   createStyles({
     recommendationsContainer: {
-      marginTop: 10,
+      marginTop: theme.spacing(1),
     },
     characterName: {
       fontWeight: 'bold',
     },
-    grid: { justifyContent: 'flex-start' },
+    grid: {
+      justifyContent: 'flex-start',
+    },
     recommendationContainer: {
       display: 'flex',
       flexDirection: 'column',
       maxWidth: 100,
-      margin: 10,
+      margin: theme.spacing(1),
     },
   });
 

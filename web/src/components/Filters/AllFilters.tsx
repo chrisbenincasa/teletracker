@@ -1,5 +1,5 @@
-import { Collapse, makeStyles, Theme } from '@material-ui/core';
 import React from 'react';
+import { Collapse, makeStyles, Paper, Theme } from '@material-ui/core';
 import { Genre, ItemType, SortOptions, NetworkType } from '../../types';
 import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
@@ -12,10 +12,7 @@ import PersonFilter from './PersonFilter';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
-    display: 'flex',
-    flexWrap: 'wrap',
     padding: theme.spacing(2),
-    backgroundColor: `${theme.palette.grey[800]}`,
   },
   filterSortContainer: {
     [theme.breakpoints.up('sm')]: {
@@ -25,7 +22,7 @@ const useStyles = makeStyles((theme: Theme) => ({
       display: 'flex',
       flexDirection: 'column',
     },
-    zIndex: 1000,
+    zIndex: theme.zIndex.mobileStepper,
     marginBottom: theme.spacing(1),
     flexGrow: 1,
   },
@@ -38,7 +35,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexDirection: 'row',
     width: '40%',
     flexWrap: 'wrap',
-    margin: `${theme.spacing(1)}px 0`,
+    margin: theme.spacing(1, 0),
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
@@ -46,17 +43,14 @@ const useStyles = makeStyles((theme: Theme) => ({
   peopleContainer: {
     display: 'flex',
     flexGrow: 1,
-    margin: `${theme.spacing(1)}px 0`,
+    margin: theme.spacing(1, 0),
     alignItems: 'flex-start',
     width: '100%',
-    [theme.breakpoints.down('sm')]: {
-      width: '100%',
-    },
   },
   slidersContainer: {
     display: 'flex',
     flexGrow: 1,
-    margin: `0 ${theme.spacing(3)}px`,
+    margin: theme.spacing(0, 3),
     [theme.breakpoints.down('md')]: {
       margin: 0,
     },
@@ -70,16 +64,13 @@ const useStyles = makeStyles((theme: Theme) => ({
   sliderContainer: {
     display: 'flex',
     flexGrow: 1,
-    margin: `${theme.spacing(1)}px 0`,
+    margin: theme.spacing(1, 0),
     alignItems: 'flex-start',
     width: '100%',
-    [theme.breakpoints.down('sm')]: {
-      width: '100%',
-    },
   },
   networkContainer: {
     display: 'flex',
-    margin: `${theme.spacing(1)}px 0`,
+    margin: theme.spacing(1, 0),
     alignItems: 'flex-start',
     flexGrow: 1,
     flexDirection: 'column',
@@ -92,11 +83,11 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
   },
   toEdgeWrapper: {
-    margin: `0 0 ${theme.spacing(2)}px`,
+    margin: theme.spacing(0, 0, 2),
   },
   typeContainer: {
     display: 'flex',
-    margin: `${theme.spacing(1)}px 0`,
+    margin: theme.spacing(1, 0),
     alignItems: 'flex-start',
     flexGrow: 1,
   },
@@ -193,7 +184,11 @@ const AllFilters = (props: Props) => {
       className={classes.toEdgeWrapper}
       appear
     >
-      <div className={classes.allFiltersContainer}>
+      <Paper
+        id="all-filters"
+        elevation={5}
+        className={classes.allFiltersContainer}
+      >
         <div className={classes.filterSortContainer}>
           <div className={classes.genreContainer}>
             {!disableGenres && (
@@ -243,7 +238,7 @@ const AllFilters = (props: Props) => {
             )}
           </div>
         </div>
-      </div>
+      </Paper>
     </Collapse>
   );
 };

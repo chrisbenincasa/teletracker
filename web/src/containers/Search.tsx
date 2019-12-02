@@ -15,7 +15,6 @@ import { bindActionCreators, Dispatch } from 'redux';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
-import { layoutStyles } from '../styles';
 import { Error as ErrorIcon } from '@material-ui/icons';
 import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants/';
@@ -25,7 +24,6 @@ import { Item } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
-    layout: layoutStyles(theme),
     searchError: {
       display: 'flex',
       flexDirection: 'column',

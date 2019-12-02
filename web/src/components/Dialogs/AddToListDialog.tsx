@@ -1,3 +1,4 @@
+import React, { ChangeEvent, Component } from 'react';
 import {
   Button,
   Checkbox,
@@ -21,7 +22,6 @@ import {
 import { Cancel, Check, PlaylistAdd } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
-import React, { ChangeEvent, Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import {
@@ -32,16 +32,16 @@ import {
   updateListTracking,
   UserCreateListPayload,
   USER_SELF_CREATE_LIST,
-} from '../actions/lists';
-import { AppState } from '../reducers';
-import { ListOperationState, ListsByIdMap } from '../reducers/lists';
-import { UserSelf } from '../reducers/user';
-import { List } from '../types';
-import { Item, itemBelongsToLists } from '../types/v2/Item';
+} from '../../actions/lists';
+import { AppState } from '../../reducers';
+import { ListOperationState, ListsByIdMap } from '../../reducers/lists';
+import { UserSelf } from '../../reducers/user';
+import { List } from '../../types';
+import { Item, itemBelongsToLists } from '../../types/v2/Item';
 import CreateAListValidator, {
   CreateAListValidationStateObj,
-} from '../utils/validation/CreateAListValidator';
-import AuthDialog from './Auth/AuthDialog';
+} from '../../utils/validation/CreateAListValidator';
+import AuthDialog from '../Auth/AuthDialog';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -53,6 +53,7 @@ const styles = (theme: Theme) =>
     },
     button: {
       margin: theme.spacing(1),
+      whiteSpace: 'nowrap',
     },
     leftIcon: {
       marginRight: theme.spacing(1),
@@ -60,6 +61,10 @@ const styles = (theme: Theme) =>
     spacer: {
       display: 'flex',
       flexGrow: 1,
+    },
+    title: {
+      backgroundColor: theme.palette.primary.main,
+      padding: theme.spacing(1, 2),
     },
   });
 
@@ -302,7 +307,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
           fullWidth
           maxWidth="sm"
         >
-          <DialogTitle id="update-tracking-dialog">
+          <DialogTitle id="update-tracking-dialog" className={classes.title}>
             Add or Remove {this.props.item.canonicalTitle} from your lists
           </DialogTitle>
 
@@ -317,6 +322,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
                         this.handleCheckboxChange(list, checked)
                       }
                       checked={this.state.listChanges[list.id]}
+                      color="primary"
                     />
                   }
                   label={list.name}
@@ -344,7 +350,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
             <Button
               disabled={this.hasTrackingChanged()}
               onClick={this.handleSubmit}
-              color="secondary"
+              color="primary"
               variant="contained"
               className={classes.button}
             >

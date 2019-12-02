@@ -85,7 +85,7 @@ import { Person } from '../types/v2/Person';
 const styles = (theme: Theme) =>
   createStyles({
     listHeader: {
-      margin: `${theme.spacing(2)}px 0`,
+      margin: theme.spacing(2, 0),
       display: 'flex',
       flex: '1 0 auto',
       alignItems: 'center',
@@ -110,7 +110,7 @@ const styles = (theme: Theme) =>
     filters: {
       display: 'flex',
       flexDirection: 'row',
-      marginBottom: 8,
+      marginBottom: theme.spacing(1),
       justifyContent: 'flex-end',
       alignItems: 'center',
     },
@@ -122,7 +122,7 @@ const styles = (theme: Theme) =>
     listContainer: {
       display: 'flex',
       flexDirection: 'column',
-      padding: `0 ${theme.spacing(2)}px`,
+      padding: theme.spacing(0, 2),
       width: '100%',
     },
     root: {
@@ -134,8 +134,7 @@ const styles = (theme: Theme) =>
       alignSelf: 'flex-end',
     },
     textField: {
-      marginLeft: theme.spacing(1),
-      marginRight: theme.spacing(1),
+      margin: theme.spacing(0, 1),
       width: 200,
     },
   });
@@ -780,7 +779,7 @@ class ListDetail extends Component<Props, State> {
               <IconButton
                 onClick={this.toggleFilters}
                 className={classes.settings}
-                color={showFilter ? 'secondary' : 'inherit'}
+                color={showFilter ? 'primary' : 'default'}
               >
                 <Tune />
                 <Typography variant="srOnly">Tune</Typography>
