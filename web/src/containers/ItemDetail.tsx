@@ -102,13 +102,14 @@ const styles = (theme: Theme) =>
     },
     itemDetailContainer: {
       position: 'relative',
-      margin: theme.spacing(3),
+      padding: theme.spacing(3),
       display: 'flex',
       flex: '1 1 auto',
       color: theme.palette.primary.contrastText,
       [theme.breakpoints.down('sm')]: {
         flexDirection: 'column',
       },
+      width: '100%',
     },
     itemInformationContainer: {
       display: 'flex',
@@ -310,7 +311,7 @@ function ItemDetails(props: Props) {
         </div>
         <div className={classes.genreContainer}>
           {genresToRender &&
-            genresToRender.length &&
+            genresToRender.length > 0 &&
             genresToRender.map(genre => (
               <Chip
                 key={genre.id}
@@ -486,6 +487,7 @@ function ItemDetails(props: Props) {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',
+              flexGrow: 1,
             }}
           >
             {!isMobile && (

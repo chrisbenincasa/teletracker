@@ -463,7 +463,7 @@ class PersonDetail extends React.Component<Props, State> {
           <IconButton
             onClick={this.toggleFilters}
             className={classes.settings}
-            color={this.state.showFilter ? 'secondary' : 'inherit'}
+            color={this.state.showFilter ? 'primary' : 'default'}
           >
             <Tune />
             <Typography variant="srOnly">Tune</Typography>

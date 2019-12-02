@@ -141,6 +141,7 @@ interface ListItemProps {
   to: string;
   primary?: string;
   selected?: boolean;
+  onClick?: () => void;
 }
 
 // TODO: Get type definitions for props working
@@ -224,6 +225,10 @@ class Drawer extends Component<Props, State> {
     this.props.closeRequested();
   };
 
+  navigateSettings = () => {
+    this.props.closeRequested();
+  };
+
   toggleAuthModal = (initialForm?: 'login' | 'signup') => {
     if (['xs', 'sm', 'md'].includes(this.props.width)) {
       this.setState({
@@ -263,7 +268,6 @@ class Drawer extends Component<Props, State> {
         index={index}
         key={userList.id}
         to={`/lists/${list.id}`}
-        // TODO: Improve logic for selection
         selected={listPath === this.props.location.pathname}
         primary={list.name}
         listLength={userList.totalItems}
@@ -279,7 +283,13 @@ class Drawer extends Component<Props, State> {
       const { primary, to, selected } = props;
 
       return (
-        <ListItem button component={RouterLink} to={to} selected={selected}>
+        <ListItem
+          button
+          component={RouterLink}
+          to={to}
+          selected={selected}
+          onClick={props.onClick}
+        >
           <ListItemIcon>
             <Settings />
           </ListItemIcon>
@@ -353,7 +363,11 @@ class Drawer extends Component<Props, State> {
         <List>
           {isAuthed ? (
             <React.Fragment>
-              <ListItemLink to="/account" primary="Settings" />
+              <ListItemLink
+                to="/account"
+                primary="Settings"
+                onClick={this.props.closeRequested}
+              />
               <ListItem button onClick={this.handleLogout}>
                 <ListItemIcon>
                   <PowerSettingsNew />

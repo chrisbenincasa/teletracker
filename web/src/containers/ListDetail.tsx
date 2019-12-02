@@ -779,7 +779,7 @@ class ListDetail extends Component<Props, State> {
               <IconButton
                 onClick={this.toggleFilters}
                 className={classes.settings}
-                color={showFilter ? 'secondary' : 'inherit'}
+                color={showFilter ? 'primary' : 'default'}
               >
                 <Tune />
                 <Typography variant="srOnly">Tune</Typography>
