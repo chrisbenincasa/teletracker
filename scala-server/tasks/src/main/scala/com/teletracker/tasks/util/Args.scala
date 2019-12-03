@@ -2,6 +2,7 @@ package com.teletracker.tasks.util
 
 import java.io.File
 import java.net.URI
+import java.time.LocalDate
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
@@ -82,6 +83,9 @@ object ArgParser extends LowPriArgParsers {
 
     stringArg.andThenOpt(str => enums.find(_.name().equalsIgnoreCase(str)))
   }
+
+  implicit val localDateArg: ArgParser[LocalDate] =
+    stringArg.andThen(LocalDate.parse)
 }
 
 trait ArgParser[T] { self =>
