@@ -1,0 +1,7 @@
+{
+  "name": "ingest",
+  "version": "1.0.0",
+  "description": "Lambdas relating to data ingestion",
+  "main": "index.js",
+  "license": "MIT"
+}

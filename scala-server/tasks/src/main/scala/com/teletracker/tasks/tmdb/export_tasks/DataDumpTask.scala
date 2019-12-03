@@ -8,6 +8,7 @@ import io.circe.parser._
 import io.circe.generic.semiauto.deriveEncoder
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.util.SourceRetriever
+import io.circe.generic.JsonCodec
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
@@ -190,6 +191,7 @@ trait TmdbDumpFileRow {
 
 case class ResultWrapperType[T <: TmdbDumpFileRow](results: List[T])
 
+@JsonCodec
 case class MovieDumpFileRow(
   adult: Boolean,
   id: Int,
@@ -198,6 +200,7 @@ case class MovieDumpFileRow(
   video: Boolean)
     extends TmdbDumpFileRow
 
+@JsonCodec
 case class TvShowDumpFileRow(
   id: Int,
   original_name: String,
