@@ -1,6 +1,7 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.db.model.UserThingTagType
+import com.teletracker.common.monitoring.Timing
 import javax.inject.Inject
 import org.elasticsearch.action.DocWriteResponse
 import org.elasticsearch.action.bulk.{
@@ -25,6 +26,7 @@ import scala.util.control.NonFatal
 
 object ItemUpdater {
   final private val ItemsIndex = "items"
+  final private val UserItemsIndex = "user_items"
 
   // TODO: Store script in ES
   final private val UpdateTagsScriptSource =
@@ -155,49 +157,41 @@ class ItemUpdater @Inject()(
 
     userTag match {
       case Some((userId, value)) =>
-        val updateDenormRequest =
-          new UpdateRequest("user_items", s"${userId}_${itemId}")
-            .script(UpdateUserTagsScript(value))
+        val denormUpdateFut =
+          Timing.time("denormUpdateFut", logger) {
+            createUserItemTag(itemId, userId, value).flatMap(userItemTag => {
+              val updateDenormRequest =
+                new UpdateRequest(UserItemsIndex, s"${userId}_${itemId}")
+                  .script(UpdateUserTagsScript(value))
+                  .upsert(userItemTag.asJson.noSpaces, XContentType.JSON)
+                  .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
-        val bulkRequest = new BulkRequest()
-          .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        bulkRequest.add(updateRequest)
-        bulkRequest.add(updateDenormRequest)
+              elasticsearchExecutor.update(updateDenormRequest)
+            })
+          }
 
-        elasticsearchExecutor
-          .bulk(bulkRequest)
-          .flatMap(response => {
+        val itemUpdateFut = Timing.time("itemUpdateFut", logger) {
+          elasticsearchExecutor.update(updateRequest)
+        }
 
-            val updates = response.getItems
-              .flatMap(item => Option(item.getResponse[UpdateResponse]))
+        val updateFut = for {
+          denormUpdate <- denormUpdateFut
+          itemUpdate <- itemUpdateFut
+        } yield {
+          UpdateMultipleDocResponse(
+            error = false,
+            Seq(denormUpdate, itemUpdate)
+          )
+        }
 
-            if (response.hasFailures) {
-              val userItemsUpdate = response.getItems.last
-
-              if (userItemsUpdate.getFailure.getStatus == RestStatus.NOT_FOUND) {
-                createUserItemTag(itemId, userId, value).map(indexResponse => {
-                  UpdateMultipleDocResponse(
-                    error = false, // TODO: Handle real failure
-                    updates.init.toSeq ++ Seq(indexResponse)
-                  )
-                })
-              } else {
-                Future.successful(
-                  UpdateMultipleDocResponse(
-                    error = true,
-                    updates
-                  )
-                )
-              }
-            } else {
-              Future.successful(
-                UpdateMultipleDocResponse(
-                  error = false,
-                  updates
-                )
-              )
-            }
-          })
+        updateFut.recover {
+          case NonFatal(e) =>
+            logger.error("Encountered error while adding tag", e)
+            UpdateMultipleDocResponse(
+              error = true,
+              Seq()
+            )
+        }
       case _ =>
         elasticsearchExecutor
           .update(updateRequest)
@@ -228,8 +222,8 @@ class ItemUpdater @Inject()(
         val bulkRequest = new BulkRequest()
           .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
-        bulkRequest.add(updateRequest)
         bulkRequest.add(updateDenormRequest)
+        bulkRequest.add(updateRequest)
 
         elasticsearchExecutor
           .bulk(bulkRequest)
@@ -256,30 +250,47 @@ class ItemUpdater @Inject()(
     userId: String,
     userTag: EsUserItemTag
   ) = {
-    itemSearch
-      .lookupItem(Left(itemId), None, materializeJoins = false)
-      .flatMap {
-        case None =>
-          Future.failed(
-            new IllegalArgumentException(
+    Timing.time("createUserItemTag", logger) {
+      itemSearch
+        .lookupItem(Left(itemId), None, materializeJoins = false)
+        .map {
+          case None =>
+            throw new IllegalArgumentException(
               s"Could not find item with id = ${itemId}"
             )
-          )
-        case Some(item) =>
-          val userItem = EsUserItem(
-            id = s"${userId}_${itemId}",
-            item_id = Some(itemId),
-            user_id = Some(userId),
-            tags = List(userTag),
-            item = Some(item.rawItem.toDenormalizedUserItem)
-          )
+          case Some(item) =>
+            makeEsUserItem(itemId, userId, userTag, item.rawItem)
+        }
+    }
+  }
 
-          elasticsearchExecutor.index(
-            new IndexRequest("user_items")
-              .id(userItem.id)
-              .source(userItem.asJson.noSpaces, XContentType.JSON)
-          )
-      }
+  private def createAndIndexUserItemTag(
+    itemId: UUID,
+    userId: String,
+    userTag: EsUserItemTag
+  ): Future[IndexResponse] = {
+    createUserItemTag(itemId, userId, userTag).flatMap(userItem => {
+      elasticsearchExecutor.index(
+        new IndexRequest("user_items")
+          .id(userItem.id)
+          .source(userItem.asJson.noSpaces, XContentType.JSON)
+      )
+    })
+  }
+
+  private def makeEsUserItem(
+    itemId: UUID,
+    userId: String,
+    userTag: EsUserItemTag,
+    item: EsItem
+  ) = {
+    EsUserItem(
+      id = s"${userId}_${itemId}",
+      item_id = Some(itemId),
+      user_id = Some(userId),
+      tags = List(userTag),
+      item = Some(item.toDenormalizedUserItem)
+    )
   }
 
   def addListTagToItem(

@@ -58,6 +58,13 @@ class ListQuery @Inject()(
 
   private val defaultFields = List(Field("id"))
 
+  def findUsersListsLite(userId: String): Future[Seq[TrackedList]] = {
+    val listsQuery = makeListsQuery(userId, includeDynamic = true)
+    run("findUsersListsLite_lists")(listsQuery.result).map(lists => {
+      lists.map(_.toFull)
+    })
+  }
+
   def findUsersLists(
     userId: String,
     includeThings: Boolean = true,
