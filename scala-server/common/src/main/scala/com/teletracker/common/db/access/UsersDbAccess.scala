@@ -21,6 +21,7 @@ import com.teletracker.common.db.{
   DefaultForListType,
   SortMode
 }
+import com.teletracker.common.monitoring.Timing
 import com.teletracker.common.util.{
   FactoryImplicits,
   Field,
@@ -32,6 +33,7 @@ import javax.inject.{Inject, Provider}
 import java.time.{Instant, OffsetDateTime}
 import java.util.UUID
 import com.teletracker.common.util.Functions._
+import org.slf4j.LoggerFactory
 import slick.basic.DatabasePublisher
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -150,11 +152,15 @@ class UsersDbAccess @Inject()(
     }
   }
 
+  private val logger = LoggerFactory.getLogger(getClass)
+
   def findListsForUser(
     userId: String,
     includeThings: Boolean
   ): Future[Seq[TrackedList]] = {
-    listQuery.findUsersLists(userId, includeThings = includeThings)
+    Timing.time("findListsForUser", logger) {
+      listQuery.findUsersListsLite(userId)
+    }
   }
 
   def findListForUser(

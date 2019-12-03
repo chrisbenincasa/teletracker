@@ -585,20 +585,20 @@ class UserController @Inject()(
 
       put("/:userId/lists/:listId/things") { req: AddThingToListRequest =>
         withList(req.authenticatedUserId.get, req.listId) { list =>
-          thingsDbAccess.findThingByIdOrSlug(req.idOrSlug).flatMap {
-            case None => Future.successful(response.notFound)
-            case Some(thing) =>
-              listsApi
-                .addThingToList(req.authenticatedUserId.get, list.id, thing.id)
-                .map(updateResponse => {
+          listsApi
+            .addThingToList(
+              req.authenticatedUserId.get,
+              list.id,
+              UUID.fromString(req.thingId)
+            )
+            .map(updateResponse => {
 
-                  if (updateResponse.error) {
-                    response.internalServerError
-                  } else {
-                    response.noContent
-                  }
-                })
-          }
+              if (updateResponse.error) {
+                response.internalServerError
+              } else {
+                response.noContent
+              }
+            })
         }
       }
 
@@ -653,30 +653,25 @@ class UserController @Inject()(
             if (validAdds.isEmpty && validRemoves.isEmpty) {
               Future.successful(response.notFound)
             } else {
+              val futs = validAdds.map(listId => {
+                listsApi.addThingToList(
+                  req.authenticatedUserId.get,
+                  listId,
+                  UUID.fromString(req.thingId)
+                )
+              })
 
-              thingsDbAccess.findThingByIdOrSlug(req.idOrSlug).flatMap {
-                case None => Future.successful(response.notFound)
-                case Some(thing) =>
-                  val futs = validAdds.map(listId => {
-                    listsApi.addThingToList(
-                      req.authenticatedUserId.get,
-                      listId,
-                      thing.id
-                    )
-                  })
+              val removeFuts = validRemoves.map(listId => {
+                listsApi.removeThingFromList(
+                  req.authenticatedUserId.get,
+                  listId,
+                  UUID.fromString(req.thingId)
+                )
+              })
 
-                  val removeFuts = validRemoves.map(listId => {
-                    listsApi.removeThingFromList(
-                      req.authenticatedUserId.get,
-                      listId,
-                      thing.id
-                    )
-                  })
-
-                  Future
-                    .sequence(futs ++ removeFuts)
-                    .map(_ => response.noContent)
-              }
+              Future
+                .sequence(futs ++ removeFuts)
+                .map(_ => response.noContent)
             }
           })
       }

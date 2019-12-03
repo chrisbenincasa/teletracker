@@ -3,6 +3,7 @@ package com.teletracker.service.controllers
 import com.teletracker.common.db.BaseDbProvider
 import com.teletracker.common.db.access.UsersDbAccess
 import com.teletracker.common.db.model.TrackedListRow
+import com.teletracker.common.monitoring.Timing
 import com.teletracker.common.util.FactoryImplicits
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -40,9 +41,11 @@ abstract class TeletrackerController(
   )(
     f: TrackedListRow => Future[ResponseBuilder#EnrichedResponse]
   ): Future[ResponseBuilder#EnrichedResponse] = {
-    getListForId(userId, listId).flatMap {
-      case None       => Future.successful(response.noContent)
-      case Some(list) => f(list)
+    Timing.time("withList") {
+      getListForId(userId, listId).flatMap {
+        case None       => Future.successful(response.noContent)
+        case Some(list) => f(list)
+      }
     }
   }
 
