@@ -248,7 +248,11 @@ class Popular extends Component<Props, State> {
     const { loading, popular, thingsById, width } = this.props;
     const { featuredItemsIndex, needsNewFeatured } = this.state;
     const isInitialLoad = popular && !prevProps.popular && !loading;
-    const didNavigateBack = popular && prevProps.loading && !loading;
+    const didNavigateBack =
+      popular &&
+      prevState.featuredItemsIndex.length === 0 &&
+      prevProps.loading &&
+      !loading;
     const didScreenResize =
       popular &&
       ['xs', 'sm'].includes(prevProps.width) !==
