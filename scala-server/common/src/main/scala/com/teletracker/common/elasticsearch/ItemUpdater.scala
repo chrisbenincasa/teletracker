@@ -158,9 +158,9 @@ class ItemUpdater @Inject()(
         val updateDenormRequest =
           new UpdateRequest("user_items", s"${userId}_${itemId}")
             .script(UpdateUserTagsScript(value))
-            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
         val bulkRequest = new BulkRequest()
+          .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
         bulkRequest.add(updateRequest)
         bulkRequest.add(updateDenormRequest)
 
@@ -224,9 +224,10 @@ class ItemUpdater @Inject()(
         val updateDenormRequest =
           new UpdateRequest("user_items", s"${userId}_${itemId}")
             .script(RemoveUserTagScript(value))
-            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
         val bulkRequest = new BulkRequest()
+          .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+
         bulkRequest.add(updateRequest)
         bulkRequest.add(updateDenormRequest)
 
