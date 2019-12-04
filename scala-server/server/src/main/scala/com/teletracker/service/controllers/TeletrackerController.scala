@@ -1,15 +1,13 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.BaseDbProvider
-import com.teletracker.common.db.access.UsersDbAccess
-import com.teletracker.common.db.model.TrackedListRow
+import com.teletracker.common.db.dynamo.model.StoredUserList
 import com.teletracker.common.monitoring.Timing
-import com.teletracker.common.util.FactoryImplicits
+import com.teletracker.common.util.{FactoryImplicits, UuidOrT}
+import com.teletracker.service.api.ListsApi
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.http.response.ResponseBuilder
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Try
+import scala.concurrent.{ExecutionContext, Future}
 
 object TeletrackerController {
   implicit def toRichInjectedRequest(re: InjectedRequest): RichInjectedRequest =
@@ -22,7 +20,7 @@ object TeletrackerController {
 }
 
 abstract class TeletrackerController(
-  usersDbAccess: UsersDbAccess
+  listsApi: ListsApi
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with FactoryImplicits {
@@ -39,7 +37,7 @@ abstract class TeletrackerController(
     userId: String,
     listId: String
   )(
-    f: TrackedListRow => Future[ResponseBuilder#EnrichedResponse]
+    f: StoredUserList => Future[ResponseBuilder#EnrichedResponse]
   ): Future[ResponseBuilder#EnrichedResponse] = {
     Timing.time("withList") {
       getListForId(userId, listId).flatMap {
@@ -52,17 +50,13 @@ abstract class TeletrackerController(
   def getListForId(
     userId: String,
     listId: String
-  ): Future[Option[TrackedListRow]] = {
-    if (listId == "default") {
-      usersDbAccess.findDefaultListForUser(userId)
-    } else {
-      Promise
-        .fromTry(Try(listId.toInt))
-        .future
-        .flatMap(listId => {
-          usersDbAccess
-            .findListForUser(userId, listId)
-        })
+  ): Future[Option[StoredUserList]] = {
+    UuidOrT.parse(listId, _.toInt).idOrFallback match {
+      case Left(value) =>
+        listsApi.findListForUser(value, userId)
+
+      case Right(value) =>
+        listsApi.findListForUserLegacy(value, userId)
     }
   }
 }

@@ -295,20 +295,20 @@ class ItemUpdater @Inject()(
 
   def addListTagToItem(
     itemId: UUID,
-    listId: Int,
+    listId: UUID,
     userId: String
   ): Future[UpdateMultipleDocResponse] = {
     val tag =
-      EsItemTag.userScoped(
+      EsItemTag.userScopedString(
         userId,
         UserThingTagType.TrackedInList,
-        Some(listId),
+        Some(listId.toString),
         Some(Instant.now())
       )
 
-    val userTag = EsUserItemTag.forInt(
+    val userTag = EsUserItemTag.forString(
       tag = UserThingTagType.TrackedInList,
-      value = listId
+      value = listId.toString
     )
 
     upsertItemTag(itemId, tag, Some(userId -> userTag))
@@ -316,18 +316,19 @@ class ItemUpdater @Inject()(
 
   def removeListTagFromItem(
     itemId: UUID,
-    listId: Int,
+    listId: UUID,
     userId: String
   ): Future[UpdateMultipleDocResponse] = {
     val tag =
-      EsItemTag.userScoped(
+      EsItemTag.userScopedString(
         userId,
         UserThingTagType.TrackedInList,
-        Some(listId),
+        Some(listId.toString),
         Some(Instant.now())
       )
 
-    val userTag = EsUserItemTag.forInt(UserThingTagType.TrackedInList, listId)
+    val userTag =
+      EsUserItemTag.forString(UserThingTagType.TrackedInList, listId.toString)
 
     removeItemTag(itemId, tag, Some(userId -> userTag))
   }

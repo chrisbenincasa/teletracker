@@ -1,7 +1,6 @@
 package com.teletracker.tasks.tmdb
 
 import com.teletracker.common.db.BaseDbProvider
-import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
@@ -20,18 +19,17 @@ import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.Future
 import scala.util.control.NonFatal
 
 class UpdateMoviePopularities @Inject()(
   dbProvider: BaseDbProvider,
   sourceRetriever: SourceRetriever,
-  ingestJobParser: IngestJobParser,
-  thingsDbAccess: ThingsDbAccess)
+  ingestJobParser: IngestJobParser)
     extends UpdatePopularities[MovieDumpFileRow](
       dbProvider,
       sourceRetriever,
-      ingestJobParser,
-      thingsDbAccess
+      ingestJobParser
     ) {
 
   override protected val tDecoder: Decoder[MovieDumpFileRow] =
@@ -43,13 +41,11 @@ class UpdateMoviePopularities @Inject()(
 class UpdateTvShowPopularities @Inject()(
   dbProvider: BaseDbProvider,
   sourceRetriever: SourceRetriever,
-  ingestJobParser: IngestJobParser,
-  thingsDbAccess: ThingsDbAccess)
+  ingestJobParser: IngestJobParser)
     extends UpdatePopularities[TvShowDumpFileRow](
       dbProvider,
       sourceRetriever,
-      ingestJobParser,
-      thingsDbAccess
+      ingestJobParser
     ) {
 
   override protected val tDecoder: Decoder[TvShowDumpFileRow] =
@@ -61,8 +57,7 @@ class UpdateTvShowPopularities @Inject()(
 abstract class UpdatePopularities[T <: TmdbDumpFileRow](
   dbProvider: BaseDbProvider,
   sourceRetriever: SourceRetriever,
-  ingestJobParser: IngestJobParser,
-  thingsDbAccess: ThingsDbAccess)
+  ingestJobParser: IngestJobParser)
     extends TeletrackerTaskWithDefaultArgs {
   import dbProvider.driver.api._
 
@@ -105,9 +100,12 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow](
         }
 
         if (!dryRun) {
-          thingsDbAccess
-            .updatePopularitiesInBatch(updates)
-            .await()
+//          thingsDbAccess
+//            .updatePopularitiesInBatch(updates)
+//            .await()
+
+          // TODO: Elasticseaerch
+          Future.unit
         } else {
           updates.foreach(update => logger.info(s"Would've updated: $update"))
         }

@@ -66,6 +66,7 @@ lazy val common = project
       "software.amazon.awssdk" % "s3" % "2.9.24",
       "software.amazon.awssdk" % "sqs" % "2.9.24",
       "software.amazon.awssdk" % "ssm" % "2.9.24",
+      "software.amazon.awssdk" % "dynamodb" % "2.9.24",
       // Inject
       "com.google.inject" % "guice" % versions.guice,
       "com.google.inject.extensions" % "guice-assistedinject" % versions.guice,

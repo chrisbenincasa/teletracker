@@ -20,7 +20,7 @@ abstract class AbstractDbAccess(
       provider.getDB.run(action).recoverWith {
         case _: RejectedExecutionException =>
           Future.failed(
-            SlickDBNoAvailableThreadsException(
+            new RuntimeException(
               "DB thread pool is busy and queue is full, try again"
             )
           )
@@ -34,7 +34,7 @@ abstract class AbstractDbAccess(
     provider.getDB.run(action).recoverWith {
       case _: RejectedExecutionException =>
         Future.failed(
-          SlickDBNoAvailableThreadsException(
+          new RuntimeException(
             "DB thread pool is busy and queue is full, try again"
           )
         )

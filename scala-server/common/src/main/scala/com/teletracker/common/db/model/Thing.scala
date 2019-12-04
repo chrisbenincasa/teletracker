@@ -1,7 +1,10 @@
 package com.teletracker.common.db.model
 
-import com.teletracker.common.db.{CustomPostgresProfile, DbImplicits}
-import com.teletracker.common.db.access.UserThingDetails
+import com.teletracker.common.db.{
+  CustomPostgresProfile,
+  DbImplicits,
+  UserThingDetails
+}
 import com.teletracker.common.model.tmdb._
 import com.teletracker.common.util.Slug
 import java.time.OffsetDateTime

@@ -1,11 +1,7 @@
 package com.teletracker.tasks.scraper
 
-import cats.Parallel
-import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine

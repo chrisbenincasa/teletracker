@@ -75,7 +75,6 @@ trait ModelInstances extends ConfiguredModelInstances with JodaInstances {
   implicit val networkEncoder: Codec[Network] = deriveCodec
   implicit val objectMetadataEncoder: Codec[ObjectMetadata] = deriveCodec
   implicit val thingEncoder: Codec[Thing] = deriveCodec
-  implicit val partialThingEncoder: Codec[PartialThing] = deriveCodec
   implicit val trackedListEncoder: Codec[TrackedList] = deriveCodec
   implicit val userPrefsEncoder: Codec[UserPreferences] = deriveCodec
   implicit val dynamicListRulesEncoder: Codec[DynamicListRules] = deriveCodec

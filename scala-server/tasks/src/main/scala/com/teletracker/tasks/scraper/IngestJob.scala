@@ -1,13 +1,11 @@
 package com.teletracker.tasks.scraper
 
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model._
-import com.teletracker.common.elasticsearch
 import com.teletracker.common.elasticsearch.{
   EsAvailability,
   EsItem,
   ItemLookup,
-  ItemSearch,
   ItemUpdater
 }
 import com.teletracker.common.util.Futures._
@@ -139,7 +137,7 @@ abstract class IngestJob[T <: ScrapedItem](
 
   private def processSource(
     source: Source,
-    networks: Set[Network],
+    networks: Set[StoredNetwork],
     parsedArgs: IngestJobArgs,
     rawArgs: Args
   ): Unit = {
@@ -190,7 +188,7 @@ abstract class IngestJob[T <: ScrapedItem](
 
   override protected def handleMatchResults(
     results: List[MatchResult[T]],
-    networks: Set[Network],
+    networks: Set[StoredNetwork],
     args: IngestJobArgs
   ): Future[Unit] = {
     val itemsWithNewAvailability = results.map {
@@ -238,12 +236,12 @@ abstract class IngestJob[T <: ScrapedItem](
     }
   }
 
-  protected def getNetworksOrExit(): Set[Network] = {
+  protected def getNetworksOrExit(): Set[StoredNetwork] = {
     val foundNetworks = networkCache
-      .get()
+      .getAllNetworks()
       .await()
       .collect {
-        case (_, network) if networkNames.contains(network.slug.value) =>
+        case network if networkNames.contains(network.slug.value) =>
           network
       }
       .toSet
@@ -258,7 +256,7 @@ abstract class IngestJob[T <: ScrapedItem](
   }
 
   protected def createAvailabilities(
-    networks: Set[Network],
+    networks: Set[StoredNetwork],
     item: EsItem,
     scrapeItem: T
   ): Seq[EsAvailability] = {
@@ -270,7 +268,7 @@ abstract class IngestJob[T <: ScrapedItem](
     networks.toSeq.map(network => {
       item.availability
         .getOrElse(Nil)
-        .find(_.network_id == network.id.get) match {
+        .find(_.network_id == network.id) match {
         case Some(existingAvailability) =>
           existingAvailability.copy(
             start_date = start,
@@ -279,7 +277,7 @@ abstract class IngestJob[T <: ScrapedItem](
 
         case None =>
           EsAvailability(
-            network_id = network.id.get,
+            network_id = network.id,
             region = "US",
             start_date = start,
             end_date = end,

@@ -1,9 +1,11 @@
 package com.teletracker.common.api.model
 
+import com.teletracker.common.db.dynamo.model.UserListRowOptions
 import com.teletracker.common.db.model.{DynamicListRules, TrackedListRowOptions}
 
 case class TrackedListOptions(removeWatchedItems: Boolean) {
   def toRow: TrackedListRowOptions = TrackedListRowOptions(removeWatchedItems)
+  def toDynamoRow: UserListRowOptions = UserListRowOptions(removeWatchedItems)
 }
 
 object TrackedListOptions {
