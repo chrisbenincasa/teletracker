@@ -35,7 +35,6 @@ export interface DataResponse<T> {
 export type TeletrackerResponse<T> = apisauce.ApiResponse<DataResponse<T>>;
 
 const DefaultTeletrackerApiOptions: TeletrackerApiOptions = {
-  // url: "http://10.0.0.75:3000", //Config.TELETRACKER_API_URL,
   url: process.env.REACT_APP_TELETRACKER_URL,
 };
 
@@ -70,16 +69,8 @@ export class TeletrackerApi {
     this.token = undefined;
   }
 
-  async getAuthStatus(token: string): Promise<apisauce.ApiResponse<any>> {
-    return this.api.get('/api/v1/auth/status', { token });
-  }
-
-  async getUser(token: string, id: string) {
-    return this.api.get<User>(`/api/v1/users/${id}`, { token });
-  }
-
   async getUserSelf(token: string) {
-    return this.api.get<DataResponse<User>>('/api/v1/users/self', { token });
+    return this.api.get<DataResponse<User>>('/api/v2/users/self', { token });
   }
 
   async updateUserSelf(
@@ -88,38 +79,10 @@ export class TeletrackerApi {
     userPreferences?: UserPreferences | undefined,
   ) {
     return this.api.put(
-      '/api/v1/users/self',
+      '/api/v2/users/self',
       { networkSubscriptions, userPreferences },
       { params: { token } },
     );
-  }
-
-  async loginUser(email: string, password: string) {
-    const data = { email, password };
-    return this.api.post<any>('/api/v1/auth/login', data).then(response => {
-      if (response.ok) {
-        this.setToken(response.data.data.token);
-      }
-
-      return response;
-    });
-  }
-
-  async logoutUser() {
-    return this.withTokenCheck(async () => {
-      return this.api.post<any>('/api/v1/auth/logout');
-    });
-  }
-
-  async registerUser(username: string, email: string, password: string) {
-    const data = { username, email, password, name: username };
-    return this.api.post<any>('/api/v1/users', data).then(response => {
-      if (response.ok) {
-        this.setToken(response.data.data.token);
-      }
-
-      return response;
-    });
   }
 
   async search(token: string, searchText: string, bookmark?: string) {
@@ -174,7 +137,7 @@ export class TeletrackerApi {
       return this.api.delete(`/api/v1/users/self/lists/${listId}`, { token });
     } else {
       return this.api.delete(
-        `/api/v1/users/self/lists/${listId}?mergeWithList=${mergeListId}`,
+        `/api/v2/users/self/lists/${listId}?mergeWithList=${mergeListId}`,
         { token },
       );
     }
@@ -182,7 +145,7 @@ export class TeletrackerApi {
 
   async renameList(token: string, listId: number, listName: string) {
     return this.api.put(
-      `/api/v1/users/self/lists/${listId}`,
+      `/api/v2/users/self/lists/${listId}`,
       {
         name: listName,
       },
@@ -251,7 +214,7 @@ export class TeletrackerApi {
 
   async updateList(
     token: string,
-    id: number,
+    id: string,
     name?: string,
     rules?: ListRules,
     options?: ListOptions,
@@ -291,46 +254,10 @@ export class TeletrackerApi {
 
   async addItemToList(token: string, listId: string, itemId: string) {
     return this.api.put<any>(
-      `/api/v1/users/self/lists/${listId}/things`,
+      `/api/v2/users/self/lists/${listId}/things`,
       { itemId },
       { params: { token } },
     );
-  }
-
-  async postEvent(
-    token: string,
-    eventType: string,
-    targetType: string,
-    targetId: string,
-    details: string,
-  ) {
-    return this.api.post<any>(
-      '/api/v1/users/self/events',
-      {
-        event: {
-          type: eventType,
-          targetEntityType: targetType,
-          targetEntityId: targetId,
-          timestamp: new Date().getTime(),
-          details,
-        },
-      },
-      {
-        params: { token },
-      },
-    );
-  }
-
-  async getThingsBatch(
-    token: string,
-    ids: number[],
-    fields?: KeyMap<ObjectMetadata>,
-  ) {
-    return this.api.get('/api/v1/things', {
-      thingIds: ids,
-      fields: fields ? this.createFilter(fields!) : undefined,
-      token,
-    });
   }
 
   async getItem(token: string, id: string | number, type: string) {
@@ -387,10 +314,6 @@ export class TeletrackerApi {
       token,
       personIds: ids.join(','),
     });
-  }
-
-  async getEvents(token: string) {
-    return this.api.get<any>('/api/v1/users/self/events', { token });
   }
 
   async getNetworks(token: string): Promise<TeletrackerResponse<Network[]>> {
