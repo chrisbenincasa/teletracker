@@ -19,7 +19,6 @@ object TaskRegistry {
     classOf[ImportMoviesFromDump],
     classOf[ImportPeopleAssociationsFromCsvs],
     classOf[ImportPeopleFromDump],
-    classOf[ImportPersonAssociations],
     classOf[ImportTvShowsFromDump],
     classOf[RemoteTask],
     classOf[NoopTeletrackerTask],

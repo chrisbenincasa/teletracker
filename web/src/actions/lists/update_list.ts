@@ -11,7 +11,7 @@ export const USER_SELF_UPDATE_LIST = 'user/self/update_list/INITIATED';
 export const USER_SELF_UPDATE_LIST_SUCCESS = 'user/self/update_list/SUCCESS';
 
 export interface UserUpdateListPayload {
-  listId: number;
+  listId: string;
   name?: string;
   rules?: ListRules;
   options?: ListOptions;

@@ -34,7 +34,7 @@ class ListFilterParser @Inject()(genreCache: GenreCache) {
             parsedGenres.flatMap {
               case Left(value) => Some(value)
               case Right(value) =>
-                genresMap.values.find(_.slug == value).flatMap(_.id)
+                genresMap.find(_.slug == value).map(_.id)
             }
           })
           .map(_.toSet)

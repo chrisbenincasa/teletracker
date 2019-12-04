@@ -190,7 +190,7 @@ interface State {
   loadingList: boolean;
   migrateListId: number;
   newListName: string;
-  prevListId: number;
+  prevListId: string;
   renameDialogOpen: boolean;
   showFilter: boolean;
   filters: FilterParams;
@@ -201,7 +201,7 @@ interface State {
 class ListDetail extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    let listId = Number(this.props.match.params.id);
+    let listId = this.props.match.params.id;
     let params = new URLSearchParams(props.location.search);
 
     let list = props.listsById[listId];
@@ -231,7 +231,7 @@ class ListDetail extends Component<Props, State> {
   }
 
   static getDerivedStateFromProps(props: Props, state: State) {
-    let newId = Number(props.match.params.id);
+    let newId = props.match.params.id;
 
     if (newId !== state.prevListId) {
       return {
@@ -245,7 +245,7 @@ class ListDetail extends Component<Props, State> {
   }
 
   get listId() {
-    return Number(this.props.match.params.id);
+    return this.props.match.params.id;
   }
 
   makeListFilters = (
@@ -414,7 +414,7 @@ class ListDetail extends Component<Props, State> {
     const { filters, list } = this.state;
 
     if (
-      this.listId !== Number(oldProps.match.params.id) ||
+      this.listId !== oldProps.match.params.id ||
       (!prevState.loadingList && this.state.loadingList)
     ) {
       this.setState({ loadingList: true });
@@ -509,7 +509,7 @@ class ListDetail extends Component<Props, State> {
 
     if (userSelf) {
       updateList({
-        listId: Number(match.params.id),
+        listId: match.params.id,
         name: newListName,
       });
     }

@@ -1,5 +1,6 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.db.dynamo.model.StoredUserList
 import com.teletracker.common.db.{
   AddedTime,
   Bookmark,
@@ -29,6 +30,7 @@ import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
 import java.time.LocalDate
+import java.util.UUID
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
@@ -40,8 +42,8 @@ class DynamicListBuilder @Inject()(
     extends ElasticsearchAccess {
   def getDynamicListCounts(
     userId: String,
-    lists: List[TrackedListRow]
-  ): Future[List[(Int, Long)]] = {
+    lists: List[StoredUserList]
+  ): Future[List[(UUID, Long)]] = {
     Promise
       .fromTry(Try {
         require(lists.nonEmpty)
@@ -75,7 +77,7 @@ class DynamicListBuilder @Inject()(
 
   def getDynamicListItemCount(
     userId: String,
-    list: TrackedListRow
+    list: StoredUserList
   ): Future[Long] = {
     val listQuery =
       getDynamicListQuery(userId, list, None, None, None, None)
@@ -89,7 +91,7 @@ class DynamicListBuilder @Inject()(
 
   def buildDynamicList(
     userId: String,
-    list: TrackedListRow,
+    list: StoredUserList,
     listFilters: Option[ListFilters],
     sortMode: SortMode = Popularity(),
     bookmark: Option[Bookmark] = None,
@@ -141,7 +143,7 @@ class DynamicListBuilder @Inject()(
 
   private def getDynamicListQuery(
     userId: String,
-    dynamicList: TrackedListRow,
+    dynamicList: StoredUserList,
     listFilters: Option[ListFilters],
     sortMode: Option[SortMode],
     bookmark: Option[Bookmark],

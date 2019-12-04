@@ -1,63 +1,40 @@
 package com.teletracker.service.api
 
-import com.teletracker.common.api.model.TrackedListRules
-import com.teletracker.common.db.access.{
-  ListUpdateResult,
-  ListsDbAccess,
-  UsersDbAccess
+import com.teletracker.common.api.model.{TrackedListOptions, TrackedListRules}
+import com.teletracker.common.db.dynamo.model.{
+  StoredUserList,
+  UserListRowOptions
 }
-import com.teletracker.common.db.model.TrackedListRow
+import com.teletracker.common.db.dynamo.{ListsDbAccess => DynamoListsDbAccess}
+import com.teletracker.common.db.model.{DynamicListRules, DynamicListTagRule}
 import com.teletracker.common.elasticsearch.{
   ItemUpdater,
   PersonLookup,
   UpdateMultipleDocResponse
 }
+import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Slug
-import com.teletracker.service.api.model.{UserListPersonRule, UserListRules}
+import com.teletracker.service.api.model.{
+  UserList,
+  UserListPersonRule,
+  UserListRules
+}
 import javax.inject.Inject
-import org.elasticsearch.action.update.UpdateResponse
+import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ListsApi @Inject()(
-  usersDbAccess: UsersDbAccess,
-  listsDbAccess: ListsDbAccess,
   itemUpdater: ItemUpdater,
-  personLookup: PersonLookup
+  personLookup: PersonLookup,
+  dynamoListsDbAccess: DynamoListsDbAccess
 )(implicit executionContext: ExecutionContext) {
   def createList(
     userId: String,
     name: String,
     thingsToAdd: Option[List[UUID]],
-    rules: Option[TrackedListRules]
-  ): Future[TrackedListRow] = {
-    if (thingsToAdd.isDefined && rules.isDefined) {
-      Future.failed(
-        new IllegalArgumentException(
-          "Cannot specify both thingIds and rules when creating a list"
-        )
-      )
-    } else {
-      usersDbAccess
-        .insertList(userId, name, rules.map(_.toRow))
-        .flatMap(newList => {
-          thingsToAdd
-            .map(things => {
-              listsDbAccess
-                .addTrackedThings(newList.id, things.toSet)
-                .map(_ => newList)
-            })
-            .getOrElse(Future.successful(newList))
-        })
-    }
-  }
-
-  def createList2(
-    userId: String,
-    name: String,
-    thingsToAdd: Option[List[UUID]],
     rules: Option[UserListRules]
-  ): Future[TrackedListRow] = {
+  ): Future[StoredUserList] = {
     if (thingsToAdd.isDefined && rules.isDefined) {
       Future.failed(
         new IllegalArgumentException(
@@ -113,16 +90,28 @@ class ListsApi @Inject()(
 
         val newRules = rules.map(_.copy(rules = sanitizedRules))
 
-        usersDbAccess
-          .insertList(userId, name, newRules.map(_.toRow))
-          .flatMap(newList => {
+        dynamoListsDbAccess
+          .saveList(
+            StoredUserList(
+              id = UUID.randomUUID(),
+              name = name,
+              isDefault = false,
+              isPublic = false,
+              userId = userId,
+              isDynamic = newRules.isDefined,
+              rules = newRules.map(_.toRow),
+              options = None,
+              lastUpdatedAt = Some(OffsetDateTime.now())
+            )
+          )
+          .flatMap(list => {
             thingsToAdd
-              .map(things => {
-                listsDbAccess
-                  .addTrackedThings(newList.id, things.toSet)
-                  .map(_ => newList)
+              .map(items => {
+                Future
+                  .sequence(items.map(addThingToList(userId, list.id, _)))
+                  .map(_ => list)
               })
-              .getOrElse(Future.successful(newList))
+              .getOrElse(Future.successful(list))
           })
       })
 
@@ -131,44 +120,104 @@ class ListsApi @Inject()(
 
   def deleteList(
     userId: String,
-    listId: Int,
-    mergeWithList: Option[Int]
+    listId: UUID,
+    mergeWithList: Option[UUID]
   ): Future[Boolean] = {
-    mergeWithList
-      .map(listId => {
-        usersDbAccess
-          .getList(
-            userId,
-            listId
+    // TODO: merge list
+    dynamoListsDbAccess.deleteList(listId, userId).map(_ >= 1)
+  }
+
+  def findUserLists(userId: String) = {
+    dynamoListsDbAccess
+      .getAllListsForUser(userId)
+      .map(_.map(UserList.fromStoredList))
+  }
+
+  def findListForUser(
+    listId: UUID,
+    userId: String
+  ) = {
+    dynamoListsDbAccess.getList(userId, listId)
+  }
+
+  def findListForUserLegacy(
+    listId: Int,
+    userId: String
+  ) = {
+    dynamoListsDbAccess.getListByLegacyId(userId, listId)
+  }
+
+  def updateList(
+    listId: UUID,
+    userId: String,
+    name: Option[String],
+    rules: Option[TrackedListRules],
+    options: Option[TrackedListOptions]
+  ) = {
+    val rulesDao = rules.map(_.toRow)
+    val optionsDao = options.map(_.toDynamoRow)
+
+    dynamoListsDbAccess.getList(userId, listId).flatMap {
+      case None =>
+        Future.failed(
+          new IllegalArgumentException(s"List with id = ${listId} not found")
+        )
+      case Some(list) =>
+        val updatedList = list
+          .copy(
+            name = name.getOrElse(list.name),
+            rules = rulesDao.orElse(list.rules),
+            options = optionsDao.orElse(list.options),
+            lastUpdatedAt = Some(OffsetDateTime.now())
           )
-      })
-      .getOrElse(Future.successful(None))
-      .flatMap {
-        case Some(list) if list.isDynamic =>
-          Future.failed(new IllegalArgumentException)
+          .applyIf(options.exists(_.removeWatchedItems) && list.isDynamic)(
+            addRemoveWhenWatchedRule
+          )
+          .applyIf(options.exists(!_.removeWatchedItems) && list.isDynamic)(
+            removeRemoveWhenWatchedRule
+          )
 
-        case None if mergeWithList.nonEmpty =>
-          Future.failed(new IllegalArgumentException)
+        dynamoListsDbAccess
+          .saveList(updatedList)
+          .map(list => {
+            ListUpdateResult(
+              list.rules,
+              rulesDao.orElse(list.rules),
+              list.options,
+              optionsDao.orElse(list.options)
+            )
+          })
+    }
+  }
 
-        case _ =>
-          listsDbAccess.markListDeleted(userId, listId).flatMap {
-            case 0 => Future.successful(false)
+  private def addRemoveWhenWatchedRule(list: StoredUserList) = {
+    list.copy(
+      rules = list.rules.map(
+        rules =>
+          rules.copy(
+            rules = (rules.rules :+ DynamicListTagRule.notWatched).distinct
+          )
+      )
+    )
+  }
 
-            case 1 if mergeWithList.isDefined =>
-              mergeLists(userId, listId, mergeWithList.get).map(_ => true)
-
-            case 1 => Future.successful(true)
-
-            case _ => throw new IllegalStateException("")
-          }
-      }
-
+  private def removeRemoveWhenWatchedRule(list: StoredUserList) = {
+    list.copy(
+      rules = list.rules.map(
+        rules =>
+          rules.copy(
+            rules = (rules.rules
+              .filterNot(_ == DynamicListTagRule.notWatched))
+              .distinct
+          )
+      )
+    )
   }
 
   // ES only
   def addThingToList(
     userId: String,
-    listId: Int,
+    listId: UUID,
     thingId: UUID
   ): Future[UpdateMultipleDocResponse] = {
     itemUpdater.addListTagToItem(thingId, listId, userId)
@@ -177,36 +226,36 @@ class ListsApi @Inject()(
   // ES Only
   def removeThingFromList(
     userId: String,
-    listId: Int,
+    listId: UUID,
     thingId: UUID
   ): Future[UpdateMultipleDocResponse] = {
     itemUpdater.removeListTagFromItem(thingId, listId, userId)
   }
 
-  def mergeLists(
-    userId: String,
-    sourceList: Int,
-    targetList: Int
-  ): Future[Unit] = {
-
-    val sourceItemsFut =
-      listsDbAccess.findItemsInList(userId, sourceList).map(_.flatMap(_._2))
-    val targetItemsFut =
-      listsDbAccess.findItemsInList(userId, targetList).map(_.flatMap(_._2))
-
-    for {
-      sourceItems <- sourceItemsFut
-      targetItems <- targetItemsFut
-      sourceIds = sourceItems.map(_.thingId)
-      targetIds = targetItems.map(_.thingId)
-      idsToInsert = sourceIds.toSet -- targetIds
-      _ <- listsDbAccess.addTrackedThings(targetList, idsToInsert)
-    } yield {}
-  }
+//  def mergeLists(
+//    userId: String,
+//    sourceList: Int,
+//    targetList: Int
+//  ): Future[Unit] = {
+//
+//    val sourceItemsFut =
+//      listsDbAccess.findItemsInList(userId, sourceList).map(_.flatMap(_._2))
+//    val targetItemsFut =
+//      listsDbAccess.findItemsInList(userId, targetList).map(_.flatMap(_._2))
+//
+//    for {
+//      sourceItems <- sourceItemsFut
+//      targetItems <- targetItemsFut
+//      sourceIds = sourceItems.map(_.thingId)
+//      targetIds = targetItems.map(_.thingId)
+//      idsToInsert = sourceIds.toSet -- targetIds
+//      _ <- listsDbAccess.addTrackedThings(targetList, idsToInsert)
+//    } yield {}
+//  }
 
   def handleListUpdateResult(
     userId: String,
-    listId: Int,
+    listId: UUID,
     listUpdateResult: ListUpdateResult
   ): Future[Unit] = {
     if (listUpdateResult.optionsChanged) {
@@ -216,7 +265,9 @@ class ListsApi @Inject()(
       ) match {
         case (preOpts, Some(opts))
             if (preOpts.isEmpty || !preOpts.get.removeWatchedItems) && opts.removeWatchedItems =>
-          listsDbAccess.removeWatchedThingsFromList(listId).map(_ => {})
+          // TODO: Implement with ES
+          Future.unit
+//          listsDbAccess.removeWatchedThingsFromList(listId).map(_ => {})
 
         case _ => Future.unit
       }
@@ -224,4 +275,15 @@ class ListsApi @Inject()(
       Future.unit
     }
   }
+}
+
+case class ListUpdateResult(
+  preMutationRules: Option[DynamicListRules],
+  postMutationRules: Option[DynamicListRules],
+  preMutationOptions: Option[UserListRowOptions],
+  postMutationOptions: Option[UserListRowOptions]) {
+
+  def rulesChanged: Boolean = preMutationRules != postMutationRules
+  def optionsChanged: Boolean = preMutationOptions != postMutationOptions
+
 }

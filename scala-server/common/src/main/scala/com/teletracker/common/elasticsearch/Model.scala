@@ -194,7 +194,16 @@ object EsItemTag {
     value: Option[Double],
     lastUpdated: Option[Instant]
   ): EsItemTag = {
-    EsItemTag(TagFormatter.format(userId, tag), value, lastUpdated)
+    EsItemTag(TagFormatter.format(userId, tag), value, None, lastUpdated)
+  }
+
+  def userScopedString(
+    userId: String,
+    tag: UserThingTagType,
+    value: Option[String],
+    lastUpdated: Option[Instant]
+  ): EsItemTag = {
+    EsItemTag(TagFormatter.format(userId, tag), None, value, lastUpdated)
   }
 
   object UserScoped {
@@ -214,6 +223,7 @@ object EsItemTag {
 case class EsItemTag(
   tag: String,
   value: Option[Double],
+  string_value: Option[String],
   last_updated: Option[Instant])
 
 @JsonCodec
@@ -367,6 +377,15 @@ object EsUserItemTag {
   ): EsUserItemTag = EsUserItemTag(
     tag = tag.toString,
     double_value = Some(value),
+    last_updated = Some(Instant.now())
+  )
+
+  def forString(
+    tag: UserThingTagType,
+    value: String
+  ): EsUserItemTag = EsUserItemTag(
+    tag = tag.toString,
+    string_value = Some(value),
     last_updated = Some(Instant.now())
   )
 }

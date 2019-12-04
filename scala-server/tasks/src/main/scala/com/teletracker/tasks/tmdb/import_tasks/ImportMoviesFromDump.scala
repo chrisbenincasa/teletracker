@@ -1,6 +1,5 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.model.ToEsItem
@@ -20,7 +19,6 @@ import scala.util.control.NonFatal
 class ImportMoviesFromDump @Inject()(
   s3: S3Client,
   sourceRetriever: SourceRetriever,
-  thingsDbAccess: ThingsDbAccess,
   genreCache: GenreCache,
   protected val itemSearch: ItemLookup,
   protected val itemUpdater: ItemUpdater,
@@ -29,7 +27,6 @@ class ImportMoviesFromDump @Inject()(
     extends ImportTmdbDumpTask[Movie](
       s3,
       sourceRetriever,
-      thingsDbAccess,
       genreCache
     )
     with ImportTmdbDumpTaskToElasticsearch[Movie] {
@@ -118,7 +115,7 @@ class ImportMoviesFromDump @Inject()(
 
         case None =>
           val updateFut = for {
-            genres <- genreCache.get()
+            genres <- genreCache.getReferenceMap()
             castAndCrew <- {
               val castIds =
                 item.credits.toList.flatMap(_.cast.toList.flatMap(_.map(_.id)))
@@ -195,7 +192,7 @@ class ImportMoviesFromDump @Inject()(
                 itemGenres
                   .map(genre => {
                     EsGenre(
-                      id = genre.id.get,
+                      id = genre.id,
                       name = genre.name
                     )
                   })

@@ -1,41 +1,24 @@
 package com.teletracker.common.elasticsearch
 
-import com.teletracker.common.db.access.SearchOptions
-import com.teletracker.common.db.model.{
-  Genre,
-  Network,
-  PersonAssociationType,
-  ThingType
-}
-import com.teletracker.common.db.{
-  AddedTime,
-  Bookmark,
-  DefaultForListType,
-  Popularity,
-  Recent,
-  SearchScore,
-  SortMode
-}
+import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
+import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db._
 import com.teletracker.common.util.Functions._
-import com.teletracker.common.util.{IdOrSlug, OpenDateRange, OpenRange}
+import com.teletracker.common.util.OpenDateRange
 import javax.inject.Inject
-import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders
 import org.elasticsearch.index.query.{
-  BoolQueryBuilder,
   MultiMatchQueryBuilder,
   Operator,
-  QueryBuilders,
-  TermQueryBuilder
+  QueryBuilders
 }
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
 import java.time.LocalDate
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
-import scala.collection.JavaConverters._
 
 class ItemSearch @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor
@@ -111,8 +94,8 @@ class ItemSearch @Inject()(
   }
 
   def searchItems(
-    genres: Option[Set[Genre]],
-    networks: Option[Set[Network]],
+    genres: Option[Set[StoredGenre]],
+    networks: Option[Set[StoredNetwork]],
     itemTypes: Option[Set[ThingType]],
     sortMode: SortMode,
     limit: Int,

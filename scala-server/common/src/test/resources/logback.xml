@@ -1,0 +1,23 @@
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <encoder>
+            <pattern>%d [%X{traceId}] [%thread] %-5level %logger{36} %marker - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ===================================================== -->
+    <!-- Package Config -->
+    <!-- ===================================================== -->
+
+    <!-- Root Config -->
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+    <!-- Per-Package Config -->
+    <logger name="com.chrisbenincasa" level="info"/>
+</configuration>

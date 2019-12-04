@@ -18,7 +18,7 @@ export const LIST_RETRIEVE_SUCCESS = 'lists/retrieve/SUCCESS';
 export const LIST_RETRIEVE_FAILED = 'lists/retrieve/FAILED';
 
 export interface ListRetrieveInitiatedPayload {
-  listId: number;
+  listId: string;
   force?: boolean;
   sort?: SortOptions;
   desc?: boolean;
