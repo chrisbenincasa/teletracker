@@ -133,6 +133,7 @@ interface State {
   needsNewFeatured: boolean;
   totalLoadedImages: number;
   createDynamicListDialogOpen: boolean;
+  navigateBack: boolean;
 }
 
 class Popular extends Component<Props, State> {
@@ -161,6 +162,7 @@ class Popular extends Component<Props, State> {
       needsNewFeatured: false,
       totalLoadedImages: 0,
       createDynamicListDialogOpen: false,
+      navigateBack: false,
     };
   }
 
@@ -200,9 +202,16 @@ class Popular extends Component<Props, State> {
   }
 
   componentDidMount() {
-    const { isLoggedIn, userSelf } = this.props;
+    const { isLoggedIn, popular, userSelf } = this.props;
 
-    this.loadPopular(false, true);
+    if (!popular) {
+      this.loadPopular(false, true);
+    } else {
+      // If popular already exists, we know the user is navigating back to this page
+      this.setState({
+        navigateBack: true,
+      });
+    }
 
     ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -218,12 +227,16 @@ class Popular extends Component<Props, State> {
   }
 
   getFeaturedItems = numberFeaturedItems => {
-    const { popular, thingsById } = this.props;
+    const { popular, thingsById, width } = this.props;
+
+    // We'll use the initialLoadSize to slice the array to ensure the featured items don't change as the popular array size increases
+    const initialLoadSize = calculateLimit(width, 3, numberFeaturedItems);
 
     // We only want Featured items that have a background and poster image
     // and we want them sorted by average score && vote count
     return popular && popular.length > 2
       ? popular
+          .slice(0, initialLoadSize)
           .filter(id => {
             const item = thingsById[id];
             const hasBackdropImage =
@@ -244,15 +257,49 @@ class Popular extends Component<Props, State> {
       : [];
   };
 
+  setFeaturedItems = () => {
+    const { popular, thingsById, width } = this.props;
+    const { featuredItemsIndex } = this.state;
+    let numberFeaturedItems: number = this.getNumberFeaturedItems();
+    const featuredItems: string[] = this.getFeaturedItems(numberFeaturedItems);
+
+    // Require that there be at least 2 full rows before displaying Featured items.
+    const featuredRequiredItems = calculateLimit(width, 2, numberFeaturedItems);
+
+    // If we don't have enough content to fill featured items, don't show any
+    if (
+      featuredItems.length < numberFeaturedItems ||
+      popular!.length < featuredRequiredItems
+    ) {
+      // Prevent re-setting state if it's already been reset
+      if (featuredItemsIndex.length > 0) {
+        this.setState({
+          featuredItemsIndex: [],
+          featuredItems: [],
+          needsNewFeatured: false,
+        });
+      }
+    } else {
+      const featuredIndexes = featuredItems.map(item =>
+        popular!.findIndex(id => item === id),
+      );
+
+      this.setState({
+        featuredItemsIndex: featuredIndexes,
+        featuredItems: featuredIndexes.map(
+          index => thingsById[popular![index]],
+        ),
+        needsNewFeatured: false,
+      });
+    }
+  };
+
   componentDidUpdate(prevProps: Props, prevState: State) {
-    const { loading, popular, thingsById, width } = this.props;
-    const { featuredItemsIndex, needsNewFeatured } = this.state;
+    const { loading, popular } = this.props;
+    const { navigateBack, needsNewFeatured } = this.state;
     const isInitialLoad = popular && !prevProps.popular && !loading;
     const didNavigateBack =
-      popular &&
-      prevState.featuredItemsIndex.length === 0 &&
-      prevProps.loading &&
-      !loading;
+      popular && prevState.featuredItemsIndex.length === 0 && navigateBack;
     const didScreenResize =
       popular &&
       ['xs', 'sm'].includes(prevProps.width) !==
@@ -266,44 +313,7 @@ class Popular extends Component<Props, State> {
       didScreenResize ||
       didNavigateBack
     ) {
-      let numberFeaturedItems: number = this.getNumberFeaturedItems();
-      const featuredItems: string[] = this.getFeaturedItems(
-        numberFeaturedItems,
-      );
-
-      // Require that there be at least 2 full rows before displaying Featured items.
-      const featuredRequiredItems = calculateLimit(
-        width,
-        2,
-        numberFeaturedItems,
-      );
-
-      // If we don't have enough content to fill featured items, don't show any
-      if (
-        featuredItems.length < numberFeaturedItems ||
-        popular!.length < featuredRequiredItems
-      ) {
-        // Prevent re-setting state if it's already been reset
-        if (featuredItemsIndex.length > 0) {
-          this.setState({
-            featuredItemsIndex: [],
-            featuredItems: [],
-            needsNewFeatured: false,
-          });
-        }
-      } else {
-        const featuredIndexes = featuredItems.map(item =>
-          popular!.findIndex(id => item === id),
-        );
-
-        this.setState({
-          featuredItemsIndex: featuredIndexes,
-          featuredItems: featuredIndexes.map(
-            index => thingsById[popular![index]],
-          ),
-          needsNewFeatured: false,
-        });
-      }
+      this.setFeaturedItems();
     }
   }
 
