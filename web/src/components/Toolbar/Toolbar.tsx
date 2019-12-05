@@ -389,6 +389,10 @@ class Toolbar extends Component<Props, State> {
   }
 
   handleGenreMenu = (event, type: 'movie' | 'show' | null) => {
+    // If quick search is open, close it & move focus to button
+    this.resetSearchAnchor(event);
+    event.target.focus();
+
     // If user is on smaller device, go directly to page
     if (this.isSmallDevice) {
       this.props.history.push(`popular?type=${type}`);

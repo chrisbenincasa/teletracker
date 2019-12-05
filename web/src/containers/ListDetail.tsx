@@ -125,6 +125,10 @@ const styles = (theme: Theme) =>
       padding: theme.spacing(0, 2),
       width: '100%',
     },
+    noContent: {
+      margin: theme.spacing(5),
+      width: '100%',
+    },
     root: {
       display: 'flex',
       flexGrow: 1,
@@ -758,6 +762,7 @@ class ListDetail extends Component<Props, State> {
   renderListDetail(list: List) {
     const { classes, genres, listLoading, thingsById, userSelf } = this.props;
     const { deleted, showFilter, filters, listFilters } = this.state;
+    console.log(this.state);
 
     if ((!listLoading && !list) || deleted) {
       return <Redirect to="/" />;
@@ -830,18 +835,31 @@ class ListDetail extends Component<Props, State> {
               threshold={300}
             >
               <Grid container spacing={2}>
-                {(list!.items || []).map(item =>
-                  thingsById[item.id] ? (
-                    <ItemCard
-                      key={item.id}
-                      userSelf={userSelf}
-                      item={thingsById[item.id]}
-                      listContext={list}
-                      withActionButton
-                      hoverDelete
-                      hasLoaded={this.setVisibleItems}
-                    />
-                  ) : null,
+                {list && list.items && list.items.length > 0 ? (
+                  list.items.map(item =>
+                    thingsById[item.id] ? (
+                      <ItemCard
+                        key={item.id}
+                        userSelf={userSelf}
+                        item={thingsById[item.id]}
+                        listContext={list}
+                        withActionButton
+                        hoverDelete
+                        hasLoaded={this.setVisibleItems}
+                      />
+                    ) : null,
+                  )
+                ) : (
+                  <Typography
+                    align="center"
+                    color="secondary"
+                    display="block"
+                    className={classes.noContent}
+                  >
+                    {list.totalItems > 0
+                      ? 'Sorry, nothing matches your current filter.  Please update and try again.'
+                      : 'Nothing has been added to this list yet.'}
+                  </Typography>
                 )}
               </Grid>
               {this.props.listLoading && this.renderLoadingCircle()}
