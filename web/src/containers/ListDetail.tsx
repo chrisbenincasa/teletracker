@@ -762,7 +762,6 @@ class ListDetail extends Component<Props, State> {
   renderListDetail(list: List) {
     const { classes, genres, listLoading, thingsById, userSelf } = this.props;
     const { deleted, showFilter, filters, listFilters } = this.state;
-    console.log(this.state);
 
     if ((!listLoading && !list) || deleted) {
       return <Redirect to="/" />;
