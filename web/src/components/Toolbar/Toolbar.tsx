@@ -515,6 +515,7 @@ class Toolbar extends Component<Props, State> {
             onMouseEnter={event => this.handleGenreMenu(event, type)}
             onMouseLeave={event => this.handleGenreMenu(event, type)}
             color="inherit"
+            focusRipple={false}
             endIcon={
               this.isSmallDevice ? null : this.state.genreType === type ? (
                 <ArrowDropUp />
@@ -583,19 +584,19 @@ class Toolbar extends Component<Props, State> {
                     <MenuItemLink
                       to={`/${type}s`}
                       key={`explore-${type}`}
-                      primary={'All'}
+                      primary={`All ${type}s`}
                     />
                     <MenuItemLink
                       onClick={this.handleGenreMenuClose}
                       key={`popular-${type}`}
                       to={`/popular?type=${type}`}
-                      primary={"What's Popular?"}
+                      primary={`Trending ${type}s`}
                     />
                     <MenuItemLink
                       onClick={this.handleGenreMenuClose}
                       key={`new-${type}`}
                       to={`/new?type=${type}`}
-                      primary={"What's New?"}
+                      primary={`New ${type}s`}
                     />
                     <Typography
                       variant="subtitle1"
@@ -728,9 +729,6 @@ class Toolbar extends Component<Props, State> {
           <Hidden mdDown>
             {this.renderGenreMenu('show')}
             {this.renderGenreMenu('movie')}
-          </Hidden>
-          <Hidden mdDown>
-            <ButtonLink color="inherit" primary="Popular" to="/popular" />
           </Hidden>
           <Box display={{ xs: 'none', sm: 'none' }} m={1}>
             <ButtonLink
