@@ -133,7 +133,6 @@ interface State {
   needsNewFeatured: boolean;
   totalLoadedImages: number;
   createDynamicListDialogOpen: boolean;
-  navigateBack: boolean;
 }
 
 class Popular extends Component<Props, State> {
@@ -141,7 +140,6 @@ class Popular extends Component<Props, State> {
     super(props);
 
     let filterParams = DEFAULT_FILTER_PARAMS;
-
     let paramsFromQuery = parseFilterParamsFromQs(props.location.search);
 
     if (paramsFromQuery.sortOrder === 'default') {
@@ -162,7 +160,6 @@ class Popular extends Component<Props, State> {
       needsNewFeatured: false,
       totalLoadedImages: 0,
       createDynamicListDialogOpen: false,
-      navigateBack: false,
     };
   }
 
@@ -206,11 +203,6 @@ class Popular extends Component<Props, State> {
 
     if (!popular) {
       this.loadPopular(false, true);
-    } else {
-      // If popular already exists, we know the user is navigating back to this page
-      this.setState({
-        navigateBack: true,
-      });
     }
 
     ReactGA.initialize(GA_TRACKING_ID);
@@ -294,29 +286,6 @@ class Popular extends Component<Props, State> {
     }
   };
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
-    const { loading, popular } = this.props;
-    const { navigateBack, needsNewFeatured } = this.state;
-    const isInitialLoad = popular && !prevProps.popular && !loading;
-    const didNavigateBack =
-      popular && prevState.featuredItemsIndex.length === 0 && navigateBack;
-    const didScreenResize =
-      popular &&
-      ['xs', 'sm'].includes(prevProps.width) !==
-        ['xs', 'sm'].includes(this.props.width);
-    const didFilterChange =
-      popular && prevProps.loading && !loading && needsNewFeatured;
-
-    if (
-      isInitialLoad ||
-      didFilterChange ||
-      didScreenResize ||
-      didNavigateBack
-    ) {
-      this.setFeaturedItems();
-    }
-  }
-
   handleFilterParamsChange = (filterParams: FilterParams) => {
     if (!filterParamsEqual(this.state.filters, filterParams)) {
       this.setState(
@@ -326,11 +295,32 @@ class Popular extends Component<Props, State> {
         },
         () => {
           updateUrlParamsForFilter(this.props, filterParams);
-          this.loadPopular(false);
+          this.loadPopular(false, true);
         },
       );
     }
   };
+
+  componentDidUpdate(prevProps: Props) {
+    const { loading, popular } = this.props;
+    const { needsNewFeatured } = this.state;
+    const isInitialFetch = popular && !prevProps.popular && !loading;
+    const didScreenResize =
+      popular &&
+      ['xs', 'sm'].includes(prevProps.width) !==
+        ['xs', 'sm'].includes(this.props.width);
+    const didFilterChange =
+      popular && prevProps.loading && !loading && needsNewFeatured;
+
+    let paramsFromQuery = parseFilterParamsFromQs(this.props.location.search);
+
+    // Checks if filters have changed, if so, update state and re-fetch popular
+    this.handleFilterParamsChange(paramsFromQuery);
+
+    if (isInitialFetch || didFilterChange || didScreenResize) {
+      this.setFeaturedItems();
+    }
+  }
 
   toggleFilters = () => {
     this.setState({ showFilter: !this.state.showFilter });
@@ -364,7 +354,7 @@ class Popular extends Component<Props, State> {
   }
 
   debounceLoadMore = _.debounce(() => {
-    this.loadPopular(true);
+    this.loadPopular(true, false);
   }, 250);
 
   loadMoreResults = () => {
@@ -416,7 +406,7 @@ class Popular extends Component<Props, State> {
             variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
             style={{ flexGrow: 1 }}
           >
-            {`Popular ${
+            {`Trending ${
               genresFilter && genresFilter.length === 1
                 ? this.mapGenre(genresFilter[0])
                 : ''
