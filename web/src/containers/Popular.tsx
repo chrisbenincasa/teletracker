@@ -141,7 +141,6 @@ class Popular extends Component<Props, State> {
     super(props);
 
     let filterParams = DEFAULT_FILTER_PARAMS;
-
     let paramsFromQuery = parseFilterParamsFromQs(props.location.search);
 
     if (paramsFromQuery.sortOrder === 'default') {
@@ -294,6 +293,21 @@ class Popular extends Component<Props, State> {
     }
   };
 
+  handleFilterParamsChange = (filterParams: FilterParams) => {
+    if (!filterParamsEqual(this.state.filters, filterParams)) {
+      this.setState(
+        {
+          filters: filterParams,
+          needsNewFeatured: true,
+        },
+        () => {
+          updateUrlParamsForFilter(this.props, filterParams);
+          this.loadPopular(false, true);
+        },
+      );
+    }
+  };
+
   componentDidUpdate(prevProps: Props, prevState: State) {
     const { loading, popular } = this.props;
     const { navigateBack, needsNewFeatured } = this.state;
@@ -307,6 +321,11 @@ class Popular extends Component<Props, State> {
     const didFilterChange =
       popular && prevProps.loading && !loading && needsNewFeatured;
 
+    let paramsFromQuery = parseFilterParamsFromQs(this.props.location.search);
+
+    // Checks if filters have changed, if so, update state and re-fetch popular
+    this.handleFilterParamsChange(paramsFromQuery);
+
     if (
       isInitialLoad ||
       didFilterChange ||
@@ -316,21 +335,6 @@ class Popular extends Component<Props, State> {
       this.setFeaturedItems();
     }
   }
-
-  handleFilterParamsChange = (filterParams: FilterParams) => {
-    if (!filterParamsEqual(this.state.filters, filterParams)) {
-      this.setState(
-        {
-          filters: filterParams,
-          needsNewFeatured: true,
-        },
-        () => {
-          updateUrlParamsForFilter(this.props, filterParams);
-          this.loadPopular(false);
-        },
-      );
-    }
-  };
 
   toggleFilters = () => {
     this.setState({ showFilter: !this.state.showFilter });
@@ -364,7 +368,7 @@ class Popular extends Component<Props, State> {
   }
 
   debounceLoadMore = _.debounce(() => {
-    this.loadPopular(true);
+    this.loadPopular(true, false);
   }, 250);
 
   loadMoreResults = () => {
