@@ -406,7 +406,7 @@ class Popular extends Component<Props, State> {
             variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
             style={{ flexGrow: 1 }}
           >
-            {`Popular ${
+            {`Trending ${
               genresFilter && genresFilter.length === 1
                 ? this.mapGenre(genresFilter[0])
                 : ''
