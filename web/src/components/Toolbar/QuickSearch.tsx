@@ -65,6 +65,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     overflow: 'scroll',
     width: 338,
     backgroundColor: theme.palette.primary.main,
+    marginTop: 10,
   },
   viewAllResults: {
     justifyContent: 'center',
@@ -119,7 +120,10 @@ function QuickSearch(props: Props) {
                 }
               >
                 {isSearching ? (
-                  <CircularProgress className={classes.progressSpinner} />
+                  <CircularProgress
+                    className={classes.progressSpinner}
+                    color="secondary"
+                  />
                 ) : (
                   <div>
                     {searchResults && searchResults.length > 0 ? (
