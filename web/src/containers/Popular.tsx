@@ -133,7 +133,6 @@ interface State {
   needsNewFeatured: boolean;
   totalLoadedImages: number;
   createDynamicListDialogOpen: boolean;
-  navigateBack: boolean;
 }
 
 class Popular extends Component<Props, State> {
@@ -161,7 +160,6 @@ class Popular extends Component<Props, State> {
       needsNewFeatured: false,
       totalLoadedImages: 0,
       createDynamicListDialogOpen: false,
-      navigateBack: false,
     };
   }
 
@@ -205,11 +203,6 @@ class Popular extends Component<Props, State> {
 
     if (!popular) {
       this.loadPopular(false, true);
-    } else {
-      // If popular already exists, we know the user is navigating back to this page
-      this.setState({
-        navigateBack: true,
-      });
     }
 
     ReactGA.initialize(GA_TRACKING_ID);
@@ -308,12 +301,10 @@ class Popular extends Component<Props, State> {
     }
   };
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
+  componentDidUpdate(prevProps: Props) {
     const { loading, popular } = this.props;
-    const { navigateBack, needsNewFeatured } = this.state;
-    const isInitialLoad = popular && !prevProps.popular && !loading;
-    const didNavigateBack =
-      popular && prevState.featuredItemsIndex.length === 0 && navigateBack;
+    const { needsNewFeatured } = this.state;
+    const isInitialFetch = popular && !prevProps.popular && !loading;
     const didScreenResize =
       popular &&
       ['xs', 'sm'].includes(prevProps.width) !==
@@ -326,12 +317,7 @@ class Popular extends Component<Props, State> {
     // Checks if filters have changed, if so, update state and re-fetch popular
     this.handleFilterParamsChange(paramsFromQuery);
 
-    if (
-      isInitialLoad ||
-      didFilterChange ||
-      didScreenResize ||
-      didNavigateBack
-    ) {
+    if (isInitialFetch || didFilterChange || didScreenResize) {
       this.setFeaturedItems();
     }
   }

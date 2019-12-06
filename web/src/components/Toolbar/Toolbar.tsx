@@ -62,6 +62,7 @@ const styles = (theme: Theme) =>
       flexFlow: 'column wrap',
       height: 275,
       width: 475,
+      textTransform: 'capitalize',
     },
     genreMenuSubtitle: {
       fontWeight: theme.typography.fontWeightBold,

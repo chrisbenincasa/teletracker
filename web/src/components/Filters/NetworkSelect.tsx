@@ -70,7 +70,6 @@ export const getNetworkTypeFromUrlParam = () => {
 class NetworkSelect extends Component<Props> {
   componentDidUpdate = oldProps => {
     if (oldProps.location.search !== this.props.location.search) {
-      console.log('test');
       // To do, only update this when these params changed
       this.setState({
         type: getNetworkTypeFromUrlParam(),
