@@ -1,6 +1,5 @@
 package com.teletracker.common.util
 
-import com.teletracker.common.db.access.GenresDbAccess
 import com.teletracker.common.db.dynamo.MetadataDbAccess
 import com.teletracker.common.db.dynamo.model.StoredGenre
 import com.teletracker.common.db.model._
@@ -11,13 +10,8 @@ import javax.inject.{Inject, Singleton}
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.{ExecutionContext, Future}
 
-object GenreCache {
-  type GenreMap = Map[(ExternalSource, String), Genre]
-}
-
 @Singleton
 class GenreCache @Inject()(
-  genresDbAccess: GenresDbAccess,
   metadataDbAccess: MetadataDbAccess
 )(implicit executionContext: ExecutionContext) {
 

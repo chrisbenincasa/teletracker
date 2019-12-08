@@ -1,6 +1,5 @@
 package com.teletracker.service.api
 
-import com.teletracker.common.db.access.GenresDbAccess
 import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
 import com.teletracker.common.db.model.{
   PartialThing,
@@ -18,7 +17,6 @@ import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ThingApi @Inject()(
-  genresDbAccess: GenresDbAccess,
   genreCache: GenreCache,
   networkCache: NetworkCache,
   popularItemSearch: ItemSearch,
@@ -53,12 +51,13 @@ class ThingApi @Inject()(
       })
   }
 
-  def addTagToThing(
+  def addTagToThing[T](
     userId: String,
     idOrSlug: Either[UUID, Slug],
     thingType: Option[ThingType],
     tag: UserThingTagType,
-    value: Option[Double]
+    value: Option[T]
+  )(implicit esItemTaggable: EsItemTaggable[T]
   ): Future[Option[(UUID, EsItemTag)]] = {
     val esTag = EsItemTag.userScoped(userId, tag, value, Some(Instant.now()))
     val userTag = EsUserItemTag.noValue(tag)
@@ -85,7 +84,8 @@ class ThingApi @Inject()(
     thingType: Option[ThingType],
     tag: UserThingTagType
   ): Future[Option[(UUID, EsItemTag)]] = {
-    val esTag = EsItemTag.userScoped(userId, tag, None, Some(Instant.now()))
+    val esTag =
+      EsItemTag.userScoped[String](userId, tag, None, Some(Instant.now()))
     val userTag = EsUserItemTag.noValue(tag)
 
     idOrSlug match {
@@ -150,45 +150,6 @@ class ThingApi @Inject()(
         )
       )
     )
-  }
-
-  def getPopularByGenre(
-    genreIdOrSlug: String,
-    thingType: Option[ThingType],
-    limit: Int = 20,
-    bookmark: Option[Bookmark]
-  ): Future[Option[(Seq[PartialThing], Option[Bookmark])]] = {
-    genreCache
-      .get()
-      .flatMap(genres => {
-        val genre = HasGenreIdOrSlug.parse(genreIdOrSlug) match {
-          case Left(id)    => genres.find(_.id == id)
-          case Right(slug) => genres.find(_.slug == slug)
-        }
-
-        // TODO: Fill in user deets
-        genre.map(g => {
-          genresDbAccess
-            .findMostPopularThingsForGenre(g.id, thingType, limit, bookmark)
-            .map(_.map(_.toPartial))
-            .map(popularThings => {
-              val nextBookmark = popularThings.lastOption.map(last => {
-                val refinement = bookmark
-                  .filter(_.value == last.popularity.getOrElse(0.0).toString)
-                  .map(_ => last.id.toString)
-
-                Bookmark(
-                  Popularity(),
-                  last.popularity.getOrElse(0.0).toString,
-                  refinement
-                )
-              })
-
-              popularThings -> nextBookmark
-            })
-            .map(Some(_))
-        })
-      }.getOrElse(Future.successful(None)))
   }
 
   def search(request: ItemSearchRequest): Future[ElasticsearchItemsResponse] = {

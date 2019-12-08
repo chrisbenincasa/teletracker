@@ -6,6 +6,7 @@ import com.teletracker.common.db.model.{
   UserThingTag,
   UserThingTagType
 }
+import com.teletracker.common.elasticsearch.EsItemTag.TagFormatter
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.json.circe._
 import io.circe.{Codec, Decoder, Encoder}
@@ -173,6 +174,55 @@ case class EsPerson(
   slug: Option[Slug],
   known_for: Option[List[EsDenormalizedItem]])
 
+object EsItemTaggable {
+  implicit val esItemTaggableString: EsItemTaggable[String] =
+    (tag: String, value: Option[String], lastUpdated: Instant) => {
+      EsItemTag(
+        tag = tag,
+        value = None,
+        string_value = value,
+        last_updated = Some(lastUpdated)
+      )
+    }
+
+  implicit val esItemTaggableDouble: EsItemTaggable[Double] =
+    (tag: String, value: Option[Double], lastUpdated: Instant) => {
+      EsItemTag(
+        tag = tag,
+        value = value,
+        string_value = None,
+        last_updated = Some(lastUpdated)
+      )
+    }
+
+  implicit val esItemTaggableInt: EsItemTaggable[Int] =
+    (tag: String, value: Option[Int], lastUpdated: Instant) => {
+      EsItemTag(
+        tag = tag,
+        value = value.map(_.toDouble),
+        string_value = None,
+        last_updated = Some(lastUpdated)
+      )
+    }
+}
+
+trait EsItemTaggable[T] {
+  def makeTag(
+    tag: String,
+    value: Option[T],
+    lastUpdated: Instant = Instant.now()
+  ): EsItemTag
+
+  def makeUserScopedTag(
+    userId: String,
+    tag: UserThingTagType,
+    value: Option[T],
+    lastUpdated: Instant = Instant.now()
+  ) = {
+    makeTag(TagFormatter.format(userId, tag), value, lastUpdated)
+  }
+}
+
 object EsItemTag {
   import io.circe.generic.semiauto._
   implicit val esItemTagCodec: Codec[EsItemTag] = deriveCodec
@@ -188,14 +238,14 @@ object EsItemTag {
     }
   }
 
-  def userScoped(
-    userId: String,
-    tag: UserThingTagType,
-    value: Option[Double],
-    lastUpdated: Option[Instant]
-  ): EsItemTag = {
-    EsItemTag(TagFormatter.format(userId, tag), value, None, lastUpdated)
-  }
+//  def userScoped(
+//    userId: String,
+//    tag: UserThingTagType,
+//    value: Option[Double],
+//    lastUpdated: Option[Instant]
+//  ): EsItemTag = {
+//    EsItemTag(TagFormatter.format(userId, tag), value, None, lastUpdated)
+//  }
 
   def userScopedString(
     userId: String,
@@ -204,6 +254,21 @@ object EsItemTag {
     lastUpdated: Option[Instant]
   ): EsItemTag = {
     EsItemTag(TagFormatter.format(userId, tag), None, value, lastUpdated)
+  }
+
+  def userScoped[T](
+    userId: String,
+    tag: UserThingTagType,
+    value: Option[T],
+    lastUpdated: Option[Instant]
+  )(implicit esItemTaggable: EsItemTaggable[T]
+  ): EsItemTag = {
+    esItemTaggable.makeUserScopedTag(
+      userId,
+      tag,
+      value,
+      lastUpdated.getOrElse(Instant.now())
+    )
   }
 
   object UserScoped {

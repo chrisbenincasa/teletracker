@@ -75,7 +75,7 @@ class ListBuilder @Inject()(
       .query(termQuery)
       .fetchSource(false)
 
-    val searchRequest = new SearchRequest().source(source)
+    val searchRequest = new SearchRequest("items").source(source)
 
     elasticsearchExecutor
       .search(searchRequest)

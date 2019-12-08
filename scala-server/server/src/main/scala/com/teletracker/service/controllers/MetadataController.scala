@@ -1,7 +1,5 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.BaseDbProvider
-import com.teletracker.common.db.access.{NetworksDbAccess}
 import com.teletracker.common.db.model.GenreType
 import com.teletracker.common.model.DataResponse
 import com.teletracker.common.util.json.circe._
@@ -16,8 +14,6 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 class MetadataController @Inject()(
-  baseDbProvider: BaseDbProvider,
-  networksDbAccess: NetworksDbAccess,
   genreCache: GenreCache,
   networkCache: NetworkCache
 )(implicit executionContext: ExecutionContext)

@@ -1,7 +1,5 @@
 package com.teletracker.common.db.model
 
-import com.teletracker.common.db.SortMode
-import org.checkerframework.checker.units.qual.min
 import java.util.UUID
 
 sealed trait DynamicListRule {

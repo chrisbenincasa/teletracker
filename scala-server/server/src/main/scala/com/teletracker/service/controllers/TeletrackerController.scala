@@ -2,7 +2,7 @@ package com.teletracker.service.controllers
 
 import com.teletracker.common.db.dynamo.model.StoredUserList
 import com.teletracker.common.monitoring.Timing
-import com.teletracker.common.util.{FactoryImplicits, UuidOrT}
+import com.teletracker.common.util.UuidOrT
 import com.teletracker.service.api.ListsApi
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -22,8 +22,7 @@ object TeletrackerController {
 abstract class TeletrackerController(
   listsApi: ListsApi
 )(implicit executionContext: ExecutionContext)
-    extends Controller
-    with FactoryImplicits {
+    extends Controller {
 
   implicit def toRichInjectedRequest(re: InjectedRequest): RichInjectedRequest =
     new RichInjectedRequest(re)

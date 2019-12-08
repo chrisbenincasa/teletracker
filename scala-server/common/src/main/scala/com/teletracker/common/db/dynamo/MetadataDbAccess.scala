@@ -91,6 +91,21 @@ class MetadataDbAccess @Inject()(
     })
   }
 
+  def saveNetworkReference(storedNetworkReference: StoredNetworkReference) = {
+    dynamo
+      .putItem(
+        PutItemRequest
+          .builder()
+          .tableName(TableName)
+          .item(storedNetworkReference.toDynamoItem)
+          .build()
+      )
+      .toScala
+      .map(_ => {
+        storedNetworkReference
+      })
+  }
+
   def getNetworkByReference(
     externalSource: ExternalSource,
     externalId: String
@@ -133,6 +148,21 @@ class MetadataDbAccess @Inject()(
       .toScala
       .map(_ => {
         storedGenre
+      })
+  }
+
+  def saveGenreReference(storedGenreReference: StoredGenreReference) = {
+    dynamo
+      .putItem(
+        PutItemRequest
+          .builder()
+          .tableName(TableName)
+          .item(storedGenreReference.toDynamoItem)
+          .build()
+      )
+      .toScala
+      .map(_ => {
+        storedGenreReference
       })
   }
 

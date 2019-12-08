@@ -1,4 +1,4 @@
-package com.teletracker.common.db.access;
+package com.teletracker.common.db;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 

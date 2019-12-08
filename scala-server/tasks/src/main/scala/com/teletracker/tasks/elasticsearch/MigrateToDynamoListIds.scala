@@ -4,8 +4,10 @@ import com.teletracker.common.db.dynamo.ListsDbAccess
 import com.teletracker.common.db.model.UserThingTagType
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
+  EsItemTag,
   EsUserItem,
-  Indices
+  Indices,
+  ItemUpdater
 }
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
@@ -23,7 +25,8 @@ import scala.concurrent.ExecutionContext
 
 class MigrateToDynamoListIds @Inject()(
   listsDbAccess: ListsDbAccess,
-  elasticsearchExecutor: ElasticsearchExecutor
+  elasticsearchExecutor: ElasticsearchExecutor,
+  itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {
   override protected def runInternal(args: Args): Unit = {
@@ -35,6 +38,8 @@ class MigrateToDynamoListIds @Inject()(
           list.legacyId
             .filter(id => listIdFilter.forall(_ == id))
             .foreach(legacyId => {
+              println("Processing list " + legacyId)
+
               val baseBoolQuery = QueryBuilders
                 .boolQuery()
                 .filter(
@@ -74,29 +79,53 @@ class MigrateToDynamoListIds @Inject()(
                 })
                 .await()
 
-              val newUserItems = foundUserItems
-                .map(userItem => {
-                  val (trackedTag, otherTags) = userItem.tags
-                    .partition(_.tag == UserThingTagType.TrackedInList.toString)
-                  val newTrackedTags =
-                    trackedTag
-                      .map(_.copy(string_value = Some(list.id.toString)))
+              println(s"Found ${foundUserItems.size} items")
 
-                  userItem.copy(
-                    tags = newTrackedTags ++ otherTags
+              if (foundUserItems.nonEmpty) {
+                val newUserItems = foundUserItems
+                  .map(userItem => {
+                    val (trackedTag, otherTags) = userItem.tags
+                      .partition(
+                        _.tag == UserThingTagType.TrackedInList.toString
+                      )
+                    val newTrackedTags =
+                      trackedTag
+                        .map(_.copy(string_value = Some(list.id.toString)))
+
+                    userItem.copy(
+                      tags = newTrackedTags ++ otherTags
+                    )
+                  })
+
+                val bulkRequest = new BulkRequest()
+
+                newUserItems.foreach(newUserItem => {
+                  bulkRequest.add(
+                    new UpdateRequest(Indices.UserItemIndex, newUserItem.id)
+                      .doc(newUserItem.asJson.noSpaces, XContentType.JSON)
                   )
                 })
 
-              val bulkRequest = new BulkRequest()
+                elasticsearchExecutor.bulk(bulkRequest).await()
 
-              newUserItems.foreach(newUserItem => {
-                bulkRequest.add(
-                  new UpdateRequest(Indices.UserItemIndex, newUserItem.id)
-                    .doc(newUserItem.asJson.noSpaces, XContentType.JSON)
-                )
-              })
+                for {
+                  foundUserItem <- foundUserItems
+                  if foundUserItem.user_id.isDefined && foundUserItem.item_id.isDefined
+                } yield {
+                  val tag = EsItemTag.userScoped(
+                    foundUserItem.user_id.get,
+                    UserThingTagType.TrackedInList,
+                    Some(list.id.toString),
+                    None
+                  )
 
-              elasticsearchExecutor.bulk(bulkRequest).await()
+                  itemUpdater
+                    .upsertItemTag(foundUserItem.item_id.get, tag, None)
+                    .await()
+                }
+
+                println("saved user items")
+              }
             })
         }
       })

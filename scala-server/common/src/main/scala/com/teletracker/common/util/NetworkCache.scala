@@ -1,6 +1,5 @@
 package com.teletracker.common.util
 
-import com.teletracker.common.db.access.NetworksDbAccess
 import com.teletracker.common.db.dynamo.MetadataDbAccess
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model._
@@ -26,7 +25,6 @@ object NetworkCache {
 
 @Singleton
 class NetworkCache @Inject()(
-  networksDbAccess: NetworksDbAccess,
   metadataDbAccess: MetadataDbAccess
 )(implicit executionContext: ExecutionContext) {
 

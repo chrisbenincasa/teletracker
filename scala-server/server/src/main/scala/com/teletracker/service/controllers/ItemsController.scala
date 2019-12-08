@@ -1,7 +1,12 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.{Bookmark, Recent, SearchOptions, SortMode}
-import com.teletracker.common.db.access.SearchRankingMode
+import com.teletracker.common.db.{
+  Bookmark,
+  Recent,
+  SearchOptions,
+  SearchRankingMode,
+  SortMode
+}
 import com.teletracker.common.db.model.{PersonAssociationType, ThingType}
 import com.teletracker.common.elasticsearch.{EsItem, EsPerson, PersonLookup}
 import com.teletracker.common.model.{DataResponse, Paging}
