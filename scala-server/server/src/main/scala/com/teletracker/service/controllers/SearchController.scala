@@ -1,9 +1,8 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.access.SearchRankingMode
 import com.teletracker.common.db.model.ThingType
-import com.teletracker.common.db.{Bookmark, SearchOptions}
+import com.teletracker.common.db.{Bookmark, SearchOptions, SearchRankingMode}
 import com.teletracker.common.elasticsearch.ItemSearch
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.CanParseFieldFilter

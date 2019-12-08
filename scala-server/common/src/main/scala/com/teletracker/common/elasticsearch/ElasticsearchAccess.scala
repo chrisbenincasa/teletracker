@@ -5,13 +5,7 @@ import com.teletracker.common.db.dynamo.model.{
   StoredNetwork,
   StoredUserList
 }
-import com.teletracker.common.db.model.{
-  Genre,
-  Network,
-  PersonAssociationType,
-  ThingType,
-  TrackedListRow
-}
+import com.teletracker.common.db.model.{PersonAssociationType, ThingType}
 import com.teletracker.common.db.{
   AddedTime,
   Bookmark,

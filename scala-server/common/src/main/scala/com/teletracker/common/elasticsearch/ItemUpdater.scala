@@ -95,7 +95,8 @@ object ItemUpdater {
   private def tagAsMap(tag: EsItemTag) = {
     List(
       "tag" -> Some(tag.tag),
-      "value" -> tag.value
+      "value" -> tag.value,
+      "string_value" -> tag.string_value
     ).collect {
         case (x, Some(v)) => x -> v
       }

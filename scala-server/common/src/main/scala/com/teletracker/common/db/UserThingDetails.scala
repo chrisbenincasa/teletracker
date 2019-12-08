@@ -1,7 +1,6 @@
 package com.teletracker.common.db
 
 import com.teletracker.common.api.model.TrackedList
-import com.teletracker.common.db.access.SearchRankingMode
 import com.teletracker.common.db.model.{PartialThing, ThingType, UserThingTag}
 
 object UserThingDetails {

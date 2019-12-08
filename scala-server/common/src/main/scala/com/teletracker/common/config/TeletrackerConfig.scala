@@ -8,7 +8,6 @@ import scala.concurrent.duration.FiniteDuration
 case class TeletrackerConfig(
   cwd: String,
   mode: String = "multi user",
-  db: DbConfig,
   elasticsearch: EsConfig,
   auth: AuthConfig,
   tmdb: TmdbConfig,
@@ -29,14 +28,6 @@ case class AsyncConfig(taskQueue: QueueConfig)
 case class QueueConfig(url: String)
 
 case class AdminConfig(adminKeys: Set[String])
-
-case class DbConfig(
-  @JsonSerialize(using = classOf[ClassNameJsonSerializer])
-  driver: Driver,
-  url: String,
-  user: String,
-  password: String,
-  cloudSqlInstance: Option[String])
 
 case class EsConfig(
   hosts: List[EsHostConfig],

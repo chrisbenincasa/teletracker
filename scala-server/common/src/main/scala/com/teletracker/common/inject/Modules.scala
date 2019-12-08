@@ -11,11 +11,8 @@ object Modules {
     Seq(
       new ConfigModule,
       new ExecutionContextModule,
-      new BaseDbModule,
-      new DbModule,
       new BackgroundProcessorModule,
       new CacheModule,
-//      new GoogleModule,
       new OpenCensusMetricsModule,
       new CodahaleMetricsModule,
       new ElasticsearchModule,
@@ -27,7 +24,6 @@ object Modules {
 class ConfigModule extends TwitterModule {
   import net.ceedubs.ficus.Ficus._
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-  import com.teletracker.common.config.CustomReaders._
 
   @Provides
   @Singleton

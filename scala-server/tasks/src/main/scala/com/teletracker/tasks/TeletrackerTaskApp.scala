@@ -1,7 +1,6 @@
 package com.teletracker.tasks
 
 import com.google.inject.Module
-import com.teletracker.common.db.SyncDbProvider
 import com.teletracker.common.inject.Modules
 import com.teletracker.tasks.inject.{FactoriesModule, HttpClientModule}
 import com.twitter.app.Flaggable
@@ -27,8 +26,6 @@ abstract class TeletrackerTaskApp[T <: TeletrackerTask: Manifest]
     } catch {
       case NonFatal(e) =>
         e.printStackTrace()
-    } finally {
-      injector.instance[SyncDbProvider].shutdown()
     }
   }
 

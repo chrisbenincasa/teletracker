@@ -48,13 +48,6 @@ lazy val common = project
       "io.opencensus" % "opencensus-impl" % "0.23.0",
       // Jackson
       "com.fasterxml.jackson.core" % "jackson-annotations" % versions.jackson,
-      // Db
-      "com.typesafe.slick" %% "slick" % "3.2.3",
-      "com.typesafe.slick" %% "slick-hikaricp" % "3.2.3",
-      "com.github.tminglei" %% "slick-pg" % "0.16.2",
-      "com.github.tminglei" %% "slick-pg_circe-json" % "0.16.2",
-      "com.github.tminglei" %% "slick-pg_joda-time" % "0.16.2",
-      "org.postgresql" % "postgresql" % "42.2.2",
       // Auth
       "io.jsonwebtoken" % "jjwt-api" % "0.10.7",
       "io.jsonwebtoken" % "jjwt-impl" % "0.10.7",

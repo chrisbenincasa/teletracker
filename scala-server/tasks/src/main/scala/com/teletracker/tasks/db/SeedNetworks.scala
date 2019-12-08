@@ -1,37 +1,27 @@
 package com.teletracker.tasks.db
 
-import com.teletracker.common.db.SyncDbProvider
-import com.teletracker.common.db.access.NetworksDbAccess
+import com.teletracker.common.db.dynamo.MetadataDbAccess
+import com.teletracker.common.db.dynamo.model.{
+  StoredNetwork,
+  StoredNetworkReference
+}
 import com.teletracker.common.db.model._
 import com.teletracker.common.model.justwatch.Provider
 import com.teletracker.common.util.Slug
-import com.teletracker.tasks.{
-  TeletrackerTask,
-  TeletrackerTaskApp,
-  TeletrackerTaskWithDefaultArgs
-}
+import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import javax.inject.Inject
 import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-class NetworkSeeder @Inject()(
-  dbProvider: SyncDbProvider,
-  networks: Networks,
-  networkReferences: NetworkReferences,
-  networksDbAccess: NetworksDbAccess)
+class NetworkSeeder @Inject()(metadataDbAccess: MetadataDbAccess)
     extends TeletrackerTaskWithDefaultArgs {
   def runInternal(args: Args): Unit = {
     import io.circe.generic.auto._
     import io.circe.parser._
-    import networks.driver.api._
 
-    Await.result(
-      dbProvider.getDB.run(networkReferences.query.delete),
-      Duration.Inf
-    )
-    Await.result(dbProvider.getDB.run(networks.query.delete), Duration.Inf)
+    // TODO: Delete networks in dynamo?
 
     val lines = scala.io.Source
       .fromFile(
@@ -46,28 +36,29 @@ class NetworkSeeder @Inject()(
         println(err)
         sys.exit(1)
       case Right(providers) =>
-        val inserts = providers.map(provider => {
-          val network = Network(
-            None,
-            provider.clear_name,
-            Slug.forString(provider.clear_name),
-            provider.short_name,
-            None,
-            None
-          )
-
-          val networkInsert = networksDbAccess.saveNetwork(network)
-          networkInsert.flatMap(n => {
-            networksDbAccess.saveNetworkReference(
-              NetworkReference(
-                None,
-                ExternalSource.JustWatch,
-                provider.id.toString,
-                n.id.get
-              )
+        val inserts = providers.zipWithIndex.map {
+          case (provider, index) =>
+            val network = StoredNetwork(
+              index + 1,
+              provider.clear_name,
+              Slug.forString(provider.clear_name),
+              provider.short_name,
+              None,
+              None
             )
-          })
-        })
+
+            val networkInsert = metadataDbAccess.saveNetwork(network)
+
+            networkInsert.flatMap(n => {
+              metadataDbAccess.saveNetworkReference(
+                StoredNetworkReference(
+                  ExternalSource.JustWatch,
+                  provider.id.toString,
+                  n.id
+                )
+              )
+            })
+        }
 
         Await.result(Future.sequence(inserts), Duration.Inf)
     }
