@@ -9,7 +9,7 @@ export interface Paging {
 }
 
 export interface ApiList {
-  id: number;
+  id: string;
   name: string;
   items: ApiItem[];
   isDefault?: boolean;
@@ -22,7 +22,7 @@ export interface ApiList {
 }
 
 export interface List {
-  id: number;
+  id: string;
   name: string;
   items: Item[];
   isDefault?: boolean;
