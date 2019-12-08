@@ -203,6 +203,10 @@ class Popular extends Component<Props, State> {
 
     if (!popular) {
       this.loadPopular(false, true);
+    } else {
+      this.setState({
+        needsNewFeatured: true,
+      });
     }
 
     ReactGA.initialize(GA_TRACKING_ID);
@@ -302,22 +306,32 @@ class Popular extends Component<Props, State> {
   };
 
   componentDidUpdate(prevProps: Props) {
-    const { loading, popular } = this.props;
+    const { loading, location, popular } = this.props;
     const { needsNewFeatured } = this.state;
+
+    // Initial mount of Popular
     const isInitialFetch = popular && !prevProps.popular && !loading;
+
+    // Any new fetches (e.g. filtering popular by type, genre, etc)
+    const isNewFetch = popular && prevProps.loading && !loading;
+
+    // Re-sizing to sm,xs changes # of featured items
     const didScreenResize =
       popular &&
       ['xs', 'sm'].includes(prevProps.width) !==
         ['xs', 'sm'].includes(this.props.width);
-    const didFilterChange =
-      popular && prevProps.loading && !loading && needsNewFeatured;
 
-    let paramsFromQuery = parseFilterParamsFromQs(this.props.location.search);
+    // User navigated back to page or via top nav
+    const didNavigate = !isInitialFetch && needsNewFeatured;
+
+    let paramsFromQuery = parseFilterParamsFromQs(location.search);
 
     // Checks if filters have changed, if so, update state and re-fetch popular
-    this.handleFilterParamsChange(paramsFromQuery);
+    if (location.search !== prevProps.location.search) {
+      this.handleFilterParamsChange(paramsFromQuery);
+    }
 
-    if (isInitialFetch || didFilterChange || didScreenResize) {
+    if (isInitialFetch || isNewFetch || didScreenResize || didNavigate) {
       this.setFeaturedItems();
     }
   }
