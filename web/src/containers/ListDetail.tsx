@@ -620,7 +620,7 @@ class ListDetail extends Component<Props, State> {
                   _.map(
                     this.props.listsById,
                     item =>
-                      item.id !== Number(match.params.id) && (
+                      item.id !== match.params.id && (
                         <MenuItem key={item.id} value={item.id}>
                           {item.name}
                         </MenuItem>
