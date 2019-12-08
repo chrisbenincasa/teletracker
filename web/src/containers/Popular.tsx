@@ -305,7 +305,7 @@ class Popular extends Component<Props, State> {
     }
   };
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
+  componentDidUpdate(prevProps: Props) {
     const { loading, location, popular } = this.props;
     const { needsNewFeatured } = this.state;
 
