@@ -18,6 +18,7 @@ class MigrateNetworksToDynamo @Inject()(
   override protected def runInternal(args: Args): Unit = {
     val networkId = args.value[Int]("networkId")
     val input = args.valueOrThrow[URI]("input")
+    val dryRun = args.valueOrDefault("dryRun", true)
 
     sourceRetriever
       .getSource(input)
@@ -34,7 +35,11 @@ class MigrateNetworksToDynamo @Inject()(
           origin = network.origin
         )
 
-        metadataDbAccess.saveNetwork(storedNetwork).await()
+        if (dryRun) {
+          println(s"Would've inserted ${storedNetwork}")
+        } else {
+          metadataDbAccess.saveNetwork(storedNetwork).await()
+        }
       })
   }
 }

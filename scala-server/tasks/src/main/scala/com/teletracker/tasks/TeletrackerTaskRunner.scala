@@ -30,7 +30,7 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
     new TeletrackerTaskRunner(injector.underlying)
       .run(clazzToRun, collectArgs)
 
-    System.exit(1)
+    System.exit(0)
   }
 
   override protected def collectArgs: Map[String, Option[Any]] = {
