@@ -8,6 +8,8 @@ import java.util.regex.Pattern
 import scala.util.Try
 
 object Slug {
+  final private val Separator = "-"
+
   private val NonLatin = Pattern.compile("[^\\w-]")
   private val Whitespace = Pattern.compile("[\\s]")
   private val NormalizerFunc = Seq[String => String](
@@ -26,7 +28,7 @@ object Slug {
     year: Int
   ): Slug = {
     val slug = NormalizerFunc(input)
-    raw(s"$slug-$year")
+    raw(s"$slug$Separator$year")
   }
 
   def apply(
@@ -42,11 +44,11 @@ object Slug {
 
   def unapply(arg: Slug): Option[(String, Option[Int])] = {
     val slugString = arg.toString
-    val idx = slugString.lastIndexOf("-")
+    val idx = slugString.lastIndexOf(Separator)
     if (idx > -1) {
       val (left, right) = slugString.splitAt(idx)
       Some(
-        Try(right.stripPrefix("-").toInt)
+        Try(right.stripPrefix(Separator).toInt)
           .map(year => left -> Some(year))
           .getOrElse(slugString -> None)
       )
@@ -60,4 +62,6 @@ object Slug {
 class Slug(val value: String) extends AnyVal {
   @JsonValue
   override def toString: String = value
+
+  def addSuffix(suffix: String) = new Slug(value + Slug.Separator + suffix)
 }
