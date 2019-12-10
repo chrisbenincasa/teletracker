@@ -119,7 +119,7 @@ let theme = createMuiTheme({
     backdrop: {
       backgroundColor: 'rgba(48, 48, 48, 0.5)',
       backgroundImage:
-        'linear-gradient(to bottom, rgba(255, 255, 255,0) 0%,rgba(48, 48, 48,1) 100%)',
+        'linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%,rgba(48, 48, 48,1) 100%)',
     },
     palette: {
       cancel: '#e53935',

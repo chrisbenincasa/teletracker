@@ -30,7 +30,7 @@ export interface ListOperationState {
 }
 
 export interface ListsByIdMap {
-  [key: number]: List;
+  [key: string]: List;
 }
 
 export interface State {

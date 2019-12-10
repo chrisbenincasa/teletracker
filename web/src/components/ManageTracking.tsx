@@ -50,7 +50,7 @@ class ManageTracking extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    const belongsToLists: number[] =
+    const belongsToLists: string[] =
       props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
 
     this.state = {

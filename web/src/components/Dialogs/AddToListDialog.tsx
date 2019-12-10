@@ -88,8 +88,8 @@ interface AddToListDialogDispatchProps {
 interface AddToListDialogState {
   exited: boolean;
   actionPending: boolean;
-  originalListState: { [listId: number]: boolean };
-  listChanges: { [listId: number]: boolean };
+  originalListState: { [listId: string]: boolean };
+  listChanges: { [listId: string]: boolean };
   createAListEnabled: boolean;
   newListName: string;
   newListValidation: CreateAListValidationStateObj;
@@ -103,7 +103,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   constructor(props: Props) {
     super(props);
 
-    const belongsToLists: number[] =
+    const belongsToLists: string[] =
       props && props.item ? itemBelongsToLists(props.item) : [];
 
     let listChanges = _.reduce(
@@ -111,7 +111,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       (acc, elem) => {
         return {
           ...acc,
-          [elem]: belongsToLists.includes(Number(elem)),
+          [elem]: belongsToLists.includes(elem),
         };
       },
       {},
@@ -193,7 +193,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       );
     }, R.values(this.props.listsById));
 
-    const extractIds = R.map<List, string>(R.compose(R.toString, R.prop('id')));
+    const extractIds = R.map<List, string>(R.prop('id'));
 
     this.props.updateLists({
       thingId: this.props.item.id,
