@@ -20,13 +20,6 @@ import { FilterParams } from './searchFilters';
 export class SagaTeletrackerClient {
   static instance = new SagaTeletrackerClient();
 
-  *getAuthStatus() {
-    return yield this.apiCall(
-      client => client.getAuthStatus,
-      yield call([this, this.withToken]),
-    );
-  }
-
   *getUserSelf() {
     return yield this.apiCall(
       client => client.getUserSelf,
@@ -47,7 +40,7 @@ export class SagaTeletrackerClient {
   }
 
   *getList(
-    id: number,
+    id: string,
     sort?: SortOptions,
     desc?: boolean,
     itemTypes?: ItemType[],
@@ -71,7 +64,7 @@ export class SagaTeletrackerClient {
   }
 
   *updateList(
-    id: number,
+    id: string,
     name?: string,
     rules?: ListRules,
     options?: ListOptions,
@@ -184,15 +177,6 @@ export class SagaTeletrackerClient {
       client => client.getPeople,
       yield call([this, this.withToken]),
       ids,
-    );
-  }
-
-  *getThingsBatch(ids: number[], fields?: KeyMap<ObjectMetadata>) {
-    return yield this.apiCall(
-      client => client.getThingsBatch,
-      yield call([this, this.withToken]),
-      ids,
-      fields,
     );
   }
 

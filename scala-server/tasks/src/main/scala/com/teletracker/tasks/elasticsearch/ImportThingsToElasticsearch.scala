@@ -402,10 +402,10 @@ class ImportThingsToElasticsearch @Inject()(
       ),
       genres = thing.genres.map(
         _.flatMap(id => {
-          genres.values.find(_.id.contains(id))
+          genres.find(_.id == id)
         }).map(genre => {
             EsGenre(
-              id = genre.id.get,
+              id = genre.id,
               name = genre.name
               // TODO include short name?
             )

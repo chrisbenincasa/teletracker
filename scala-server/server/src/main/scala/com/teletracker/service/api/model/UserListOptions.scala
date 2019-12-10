@@ -1,5 +1,6 @@
 package com.teletracker.service.api.model
 
+import com.teletracker.common.db.dynamo.model.UserListRowOptions
 import com.teletracker.common.db.model.{DynamicListRules, TrackedListRowOptions}
 import io.circe.Codec
 
@@ -12,6 +13,10 @@ object UserListOptions {
     io.circe.generic.semiauto.deriveCodec
 
   def fromRow(options: TrackedListRowOptions): UserListOptions = {
+    UserListOptions(options.removeWatchedItems)
+  }
+
+  def fromRow(options: UserListRowOptions): UserListOptions = {
     UserListOptions(options.removeWatchedItems)
   }
 }
@@ -27,6 +32,16 @@ object UserListConfiguration {
   def fromRow(
     rules: Option[DynamicListRules],
     options: Option[TrackedListRowOptions]
+  ): UserListConfiguration = {
+    UserListConfiguration(
+      ruleConfiguration = rules.map(UserListRules.fromRow),
+      options = options.map(UserListOptions.fromRow)
+    )
+  }
+
+  def fromStoredConfiguration(
+    rules: Option[DynamicListRules],
+    options: Option[UserListRowOptions]
   ): UserListConfiguration = {
     UserListConfiguration(
       ruleConfiguration = rules.map(UserListRules.fromRow),

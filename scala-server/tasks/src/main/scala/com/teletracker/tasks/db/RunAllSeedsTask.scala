@@ -9,11 +9,10 @@ import javax.inject.Inject
 
 class RunAllSeedsTask @Inject()(
   networkSeeder: NetworkSeeder,
-  genreSeeder: GenreSeeder2,
-  certificationSeeder: CertificationSeeder)
+  genreSeeder: GenreSeeder)
     extends TeletrackerCompoundTask
     with DefaultAnyArgs {
 
   override def tasks: Seq[TeletrackerTask] =
-    Seq(networkSeeder, genreSeeder, certificationSeeder)
+    Seq(networkSeeder, genreSeeder)
 }

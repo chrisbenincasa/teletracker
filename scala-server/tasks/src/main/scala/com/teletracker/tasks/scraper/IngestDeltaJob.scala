@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper
 
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.{Availability, Network, OfferType}
 import com.teletracker.common.elasticsearch
 import com.teletracker.common.elasticsearch.{
@@ -49,7 +49,6 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
     scala.concurrent.ExecutionContext.Implicits.global
 
   protected def s3: S3Client
-  protected def thingsDbAccess: ThingsDbAccess
 
   protected def networkNames: Set[String]
   protected def networkCache: NetworkCache
@@ -244,19 +243,14 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
   protected def saveAvailabilities(
     newAvailabilities: Seq[Availability],
     availabilitiesToRemove: Seq[Availability]
-  ): Future[Unit] = {
-    thingsDbAccess
-      .saveAvailabilities(
-        newAvailabilities ++ availabilitiesToRemove
-      )
-  }
+  ): Future[Unit]
 
-  protected def getNetworksOrExit(): Set[Network] = {
+  protected def getNetworksOrExit(): Set[StoredNetwork] = {
     val foundNetworks = networkCache
-      .get()
+      .getAllNetworks()
       .await()
       .collect {
-        case (_, network) if networkNames.contains(network.slug.value) =>
+        case network if networkNames.contains(network.slug.value) =>
           network
       }
       .toSet
@@ -271,7 +265,7 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
   }
 
   protected def createAvailabilities(
-    networks: Set[Network],
+    networks: Set[StoredNetwork],
     itemId: UUID,
     title: String,
     scrapedItem: T,
@@ -282,7 +276,7 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
 
   override protected def handleMatchResults(
     results: List[MatchResult[T]],
-    networks: Set[Network],
+    networks: Set[StoredNetwork],
     args: IngestDeltaJobArgs
   ): Future[Unit] = Future.unit
 }

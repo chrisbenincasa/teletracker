@@ -1,20 +1,15 @@
 package com.teletracker.common.db.model
 
-import com.teletracker.common.db.{CustomPostgresProfile, DbImplicits}
-import com.teletracker.common.db.access.UserThingDetails
+import com.teletracker.common.db.UserThingDetails
 import com.teletracker.common.model.tmdb._
 import com.teletracker.common.util.Slug
 import java.time.OffsetDateTime
-import javax.inject.Inject
 import io.circe._
 import io.circe.shapes._
 import io.circe.generic.auto._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import shapeless.Witness
-import slick.ast.BaseTypedType
-import slick.jdbc.JdbcType
-import slick.lifted.MappedProjection
 import java.util.UUID
 
 case class Thing(
@@ -144,128 +139,4 @@ case class ObjectMetadata(
 
   def tmdbMovie: Option[Movie] = themoviedb.flatMap(_.get(movieWitness))
   def tmdbShow: Option[TvShow] = themoviedb.flatMap(_.get(showWitness))
-}
-
-class Things @Inject()(
-  val profile: CustomPostgresProfile,
-  dbImplicits: DbImplicits) {
-  import profile.api._
-  import dbImplicits._
-
-  object Implicits {
-    implicit val metaToJson
-      : JdbcType[ObjectMetadata] with BaseTypedType[ObjectMetadata] =
-      MappedColumnType
-        .base[ObjectMetadata, Json](_.asJson, _.as[ObjectMetadata].right.get)
-  }
-
-  import Implicits._
-
-  class ThingsTable(tag: Tag) extends Table[Thing](tag, "things") {
-    def id = column[UUID]("id", O.PrimaryKey)
-    def name = column[String]("name")
-    def normalizedName = column[Slug]("normalized_name")
-    def `type` = column[ThingType]("type")
-    def createdAt =
-      column[OffsetDateTime](
-        "created_at",
-        O.SqlType("timestamp with time zone")
-      )
-    def lastUpdatedAt =
-      column[OffsetDateTime](
-        "last_updated_at",
-        O.SqlType("timestamp with time zone")
-      )
-    def metadata =
-      column[Option[ObjectMetadata]]("metadata", O.SqlType("jsonb"))
-    def tmdbId = column[Option[String]]("tmdb_id")
-    def popularity = column[Option[Double]]("popularity")
-    def genres = column[Option[List[Int]]]("genres")
-
-    def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
-
-    override def * =
-      (
-        id,
-        name,
-        normalizedName,
-        `type`,
-        createdAt,
-        lastUpdatedAt,
-        metadata,
-        tmdbId,
-        popularity,
-        genres
-      ) <> (Thing.tupled, Thing.unapply)
-  }
-
-  class ThingsTableRaw(tag: Tag) extends Table[ThingRaw](tag, "things") {
-    def id = column[UUID]("id", O.PrimaryKey)
-    def name = column[String]("name")
-    def normalizedName = column[Slug]("normalized_name")
-    def `type` = column[ThingType]("type")
-    def createdAt =
-      column[OffsetDateTime](
-        "created_at",
-        O.SqlType("timestamp with time zone")
-      )
-    def lastUpdatedAt =
-      column[OffsetDateTime](
-        "last_updated_at",
-        O.SqlType("timestamp with time zone")
-      )
-    def metadata = column[Option[Json]]("metadata", O.SqlType("jsonb"))
-    def tmdbId = column[Option[String]]("tmdb_id")
-    def popularity = column[Option[Double]]("popularity")
-    def genres = column[Option[List[Int]]]("genres")
-
-    def uniqueSlugType = index("unique_slug_type", (normalizedName, `type`))
-
-    def allCols(includeMetadata: Boolean) = (
-      id,
-      name,
-      normalizedName,
-      `type`,
-      createdAt,
-      lastUpdatedAt,
-      if (includeMetadata) metadata else Rep.None[Json],
-      tmdbId,
-      popularity,
-      genres
-    )
-
-    def projWithMetadata(includeMetadata: Boolean): MappedProjection[
-      ThingRaw,
-      (
-        UUID,
-        String,
-        Slug,
-        ThingType,
-        OffsetDateTime,
-        OffsetDateTime,
-        Option[Json],
-        Option[String],
-        Option[Double],
-        Option[List[Int]]
-      )
-    ] =
-      (
-        id,
-        name,
-        normalizedName,
-        `type`,
-        createdAt,
-        lastUpdatedAt,
-        if (includeMetadata) metadata else Rep.None[Json],
-        tmdbId,
-        popularity,
-        genres
-      ) <> (ThingRaw.tupled, ThingRaw.unapply)
-
-    override def * =
-      projWithMetadata(true)
-  }
-
-  val query = TableQuery[ThingsTable]
-  val rawQuery = TableQuery[ThingsTableRaw]
 }

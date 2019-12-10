@@ -7,7 +7,6 @@ import com.teletracker.common.model.tmdb.{Person => TmdbPerson, _}
 import com.teletracker.common.util.json.circe._
 import io.circe.Json
 import javax.inject.Inject
-import shapeless.tag.@@
 import scala.concurrent.{ExecutionContext, Future}
 
 object ItemExpander {
@@ -127,33 +126,5 @@ class ItemExpander @Inject()(
         ).mkString(",")
       )
     )
-  }
-
-  object ExpandItem extends shapeless.Poly1 {
-    implicit val atMovieIdInt: Case.Aux[Int @@ MovieId, Future[Movie]] = at {
-      m =>
-        expandMovie(m, Nil)
-    }
-
-    implicit val atMovie: Case.Aux[Movie, Future[Movie]] = at { m =>
-      expandMovie(m.id, Nil)
-    }
-
-    implicit val atShow: Case.Aux[TvShow, Future[TvShow]] = at { s =>
-      expandTvShow(s.id)
-    }
-
-    implicit val atShowId: Case.Aux[Int @@ TvShowId, Future[TvShow]] = at { s =>
-      expandTvShow(s)
-    }
-
-    implicit val atPerson: Case.Aux[TmdbPerson, Future[TmdbPerson]] = at { p =>
-      expandPerson(p.id)
-    }
-
-    implicit val atPersonId: Case.Aux[Int @@ PersonId, Future[TmdbPerson]] =
-      at { p =>
-        expandPerson(p)
-      }
   }
 }

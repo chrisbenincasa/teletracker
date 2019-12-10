@@ -64,6 +64,7 @@ export interface ItemCastMember {
 export interface ItemTag {
   tag: string;
   value?: number;
+  string_value?: string;
   userId?: string;
 }
 
@@ -80,7 +81,7 @@ export const itemHasTag = (thing: ApiItem | Item, expectedTag: ActionType) => {
 export const itemBelongsToLists = (item: ApiItem | Item) => {
   return (item.tags || [])
     .filter(tag => tag.tag.indexOf(ActionType.TrackedInList) !== -1)
-    .map(tag => tag.value!);
+    .map(tag => tag.string_value!);
 };
 
 export class ItemFactory {

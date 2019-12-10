@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.Network
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.tasks.TeletrackerTask
@@ -60,7 +61,7 @@ abstract class BaseIngestJob[
 
   protected def processAll(
     items: AsyncStream[T],
-    networks: Set[Network],
+    networks: Set[StoredNetwork],
     args: IngestJobArgsType
   ): AsyncStream[(List[MatchResult[T]], List[T])] = {
     processMode(args) match {
@@ -93,7 +94,7 @@ abstract class BaseIngestJob[
 
   protected def processBatch(
     items: List[T],
-    networks: Set[Network],
+    networks: Set[StoredNetwork],
     args: IngestJobArgsType
   ): Future[(List[MatchResult[T]], List[T])] = {
     val filteredAndSanitized = items.filter(shouldProcessItem).map(sanitizeItem)
@@ -146,7 +147,7 @@ abstract class BaseIngestJob[
 
   protected def processSingle(
     item: T,
-    networks: Set[Network],
+    networks: Set[StoredNetwork],
     args: IngestJobArgsType
   ): Future[(List[MatchResult[T]], List[T])] = {
     processBatch(List(item), networks, args)
@@ -154,7 +155,7 @@ abstract class BaseIngestJob[
 
   protected def handleMatchResults(
     results: List[MatchResult[T]],
-    networks: Set[Network],
+    networks: Set[StoredNetwork],
     args: IngestJobArgsType
   ): Future[Unit]
 

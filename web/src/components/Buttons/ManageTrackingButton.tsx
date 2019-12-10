@@ -33,7 +33,7 @@ export default function ManageTrackingButton(props: Props) {
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
 
-  const belongsToLists: number[] =
+  const belongsToLists: string[] =
     props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
 
   let trackingCTA = belongsToLists ? 'Manage Tracking' : 'Add to List';

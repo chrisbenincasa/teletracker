@@ -1,10 +1,11 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.{Bookmark, Popularity, Recent, SortMode}
-import com.teletracker.common.db.access.{
+import com.teletracker.common.db.{
+  Bookmark,
+  Recent,
   SearchOptions,
   SearchRankingMode,
-  ThingsDbAccess
+  SortMode
 }
 import com.teletracker.common.db.model.{PersonAssociationType, ThingType}
 import com.teletracker.common.elasticsearch.{EsItem, EsPerson, PersonLookup}
@@ -12,7 +13,7 @@ import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
 import com.teletracker.common.util.json.circe._
 import com.teletracker.service.api
-import com.teletracker.service.api.{PersonCreditsRequest, ThingApi}
+import com.teletracker.service.api.ThingApi
 import com.teletracker.service.api.model.Person
 import com.teletracker.service.controllers.TeletrackerController._
 import com.teletracker.service.controllers.annotations.ItemReleaseYear
@@ -33,40 +34,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class ItemsController @Inject()(
-  thingsDbAccess: ThingsDbAccess,
   thingApi: ThingApi,
   personLookup: PersonLookup
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with CanParseFieldFilter {
-  prefix("/api/v1/things") {
-    post("/batch/?") { req: BatchGetThingsRequest =>
-      val selectFields = parseFieldsOrNone(req.fields)
-
-      thingsDbAccess
-        .findThingsByIds(req.thingIds.toSet, selectFields)
-        .map(thingsById => {
-          response.ok
-            .contentTypeJson()
-            .body(DataResponse.complex(thingsById.mapValues(_.toPartial)))
-        })
-    }
-
-    get("/:thingId/?") { req: GetThingRequest =>
-      thingApi
-        .getThing(req.authenticatedUserId, req.thingId, req.thingType)
-        .map {
-          case None =>
-            Future.successful(response.notFound)
-
-          case Some(found) =>
-            response.ok
-              .contentTypeJson()
-              .body(DataResponse.complex(found))
-        }
-    }
-  }
-
   prefix("/api/v2/items") {
     get("/:thingId/?") { req: GetThingRequest =>
       thingApi
@@ -84,18 +56,6 @@ class ItemsController @Inject()(
               .contentTypeJson()
               .body(DataResponse.complex(found))
         }
-    }
-  }
-
-  prefix("/api/v1/people") {
-    get("/:personId") { req: GetPersonRequest =>
-      thingApi.getPerson(req.authenticatedUserId, req.personId).map {
-        case None => response.notFound
-        case Some(person) =>
-          response.ok(
-            DataResponse.complex(person)
-          )
-      }
     }
   }
 

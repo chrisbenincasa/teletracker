@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper
 
-import com.teletracker.common.db.access.ThingsDbAccess
+import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.{
   Availability,
   Network,
@@ -20,7 +20,6 @@ import java.util.UUID
 
 case class NetflixCatalogDeltaIngestJob @Inject()(
   s3: S3Client,
-  thingsDbAccess: ThingsDbAccess,
   networkCache: NetworkCache,
   protected val itemSearch: ItemLookup,
   protected val itemUpdater: ItemUpdater,
@@ -31,7 +30,7 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   override protected def networkNames: Set[String] = Set("netflix")
 
   override protected def createAvailabilities(
-    networks: Set[Network],
+    networks: Set[StoredNetwork],
     itemId: UUID,
     title: String,
     scrapedItem: NetflixCatalogItem,
@@ -53,7 +52,7 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
         currency = None,
         thingId = Some(itemId),
         tvShowEpisodeId = None,
-        networkId = network.id,
+        networkId = Some(network.id),
         presentationType = Some(presentationType)
       )
     }
