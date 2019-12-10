@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   CardMedia,
   Fade,
@@ -80,12 +80,8 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   wrapper: {
     display: 'flex',
-    flexGrow: 1,
     flexDirection: 'row',
     margin: theme.spacing(2),
-    [theme.breakpoints.down('sm')]: {
-      margin: theme.spacing(1),
-    },
   },
 }));
 
@@ -102,11 +98,21 @@ function Featured(props: Props) {
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const classes = useStyles();
   const { featuredItems, userSelf } = props;
+  const featuredContainer = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setImageLoading(true);
     return setImageLoading(false);
   }, [featuredItems]);
+
+  useEffect(
+    () =>
+      (featuredContainer &&
+        featuredContainer.current &&
+        featuredContainer.current.clientWidth &&
+        console.log(featuredContainer!.current.clientWidth / 3.5)) ||
+      console.log('test'),
+  );
 
   const renderTitle = (item: Item) => {
     const voteAverage = getVoteAverage(item);
@@ -157,7 +163,7 @@ function Featured(props: Props) {
                       objectFit: 'cover',
                       width: '100%',
                       height: '100%',
-                      maxHeight: 424,
+                      // maxHeight: 424,
                       borderRadius: 10,
                     }}
                     pictureStyle={{
@@ -184,7 +190,6 @@ function Featured(props: Props) {
                       imageStyle={{
                         boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                         maxWidth: '100%',
-                        maxHeight: 340,
                         borderRadius: 10,
                       }}
                       pictureStyle={{
@@ -194,7 +199,7 @@ function Featured(props: Props) {
                       }}
                     />
                   </RouterLink>
-                  <ManageTracking itemDetail={item} style={{ maxWidth: 225 }} />
+                  <ManageTracking itemDetail={item} />
 
                   <AddToListDialog
                     open={manageTrackingModalOpen}
@@ -212,8 +217,11 @@ function Featured(props: Props) {
         })
       : null;
   };
+
   return featuredItems && featuredItems.length > 0 ? (
-    <div className={classes.wrapper}>{renderFeaturedItems()}</div>
+    <div className={classes.wrapper} ref={featuredContainer}>
+      {renderFeaturedItems()}
+    </div>
   ) : null;
 }
 

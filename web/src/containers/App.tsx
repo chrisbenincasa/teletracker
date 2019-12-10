@@ -42,7 +42,6 @@ const styles = (theme: Theme) =>
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
       }),
-      marginLeft: 0,
       paddingBottom: '10rem',
       [theme.breakpoints.down('sm')]: {
         paddingBottom: '2rem',
@@ -90,6 +89,7 @@ class App extends Component<Props, State> {
   }
 
   toggleDrawer = (close?: boolean) => {
+    console.log(close);
     // If close is provided, close the drawer, otherwise flip it
     if (close) {
       this.setState({ drawerOpen: false });

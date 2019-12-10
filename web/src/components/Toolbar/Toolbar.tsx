@@ -310,12 +310,17 @@ class Toolbar extends Component<Props, State> {
   };
 
   handleSearchFocus = event => {
+    if (this.props.drawerOpen) {
+      this.props.onDrawerChange();
+    }
+
     if (
       this.state.searchAnchor === null &&
       this.props.location.pathname !== '/search'
     ) {
       this.setState({ searchAnchor: event.currentTarget });
     }
+    console.log(event.currentTarget);
   };
 
   handleSearchForSubmit = event => {
