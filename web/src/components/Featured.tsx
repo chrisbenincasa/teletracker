@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   CardMedia,
   Fade,
@@ -98,21 +98,11 @@ function Featured(props: Props) {
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const classes = useStyles();
   const { featuredItems, userSelf } = props;
-  const featuredContainer = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setImageLoading(true);
     return setImageLoading(false);
   }, [featuredItems]);
-
-  useEffect(
-    () =>
-      (featuredContainer &&
-        featuredContainer.current &&
-        featuredContainer.current.clientWidth &&
-        console.log(featuredContainer!.current.clientWidth / 3.5)) ||
-      console.log('test'),
-  );
 
   const renderTitle = (item: Item) => {
     const voteAverage = getVoteAverage(item);
@@ -163,7 +153,6 @@ function Featured(props: Props) {
                       objectFit: 'cover',
                       width: '100%',
                       height: '100%',
-                      // maxHeight: 424,
                       borderRadius: 10,
                     }}
                     pictureStyle={{
@@ -219,9 +208,7 @@ function Featured(props: Props) {
   };
 
   return featuredItems && featuredItems.length > 0 ? (
-    <div className={classes.wrapper} ref={featuredContainer}>
-      {renderFeaturedItems()}
-    </div>
+    <div className={classes.wrapper}>{renderFeaturedItems()}</div>
   ) : null;
 }
 

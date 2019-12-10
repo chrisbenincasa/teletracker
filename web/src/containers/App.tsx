@@ -89,7 +89,6 @@ class App extends Component<Props, State> {
   }
 
   toggleDrawer = (close?: boolean) => {
-    console.log(close);
     // If close is provided, close the drawer, otherwise flip it
     if (close) {
       this.setState({ drawerOpen: false });

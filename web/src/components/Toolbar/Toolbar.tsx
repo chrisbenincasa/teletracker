@@ -320,7 +320,6 @@ class Toolbar extends Component<Props, State> {
     ) {
       this.setState({ searchAnchor: event.currentTarget });
     }
-    console.log(event.currentTarget);
   };
 
   handleSearchForSubmit = event => {
