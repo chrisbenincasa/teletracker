@@ -1,19 +1,18 @@
 package com.teletracker.tasks.db
 
-import com.teletracker.common.db.access.NetworksDbAccess
-import com.teletracker.common.db.model
-import com.teletracker.common.db.model.{
-  ExternalSource,
-  Network,
-  NetworkReference
+import com.teletracker.common.db.dynamo.MetadataDbAccess
+import com.teletracker.common.db.dynamo.model.{
+  StoredNetwork,
+  StoredNetworkReference
 }
-import com.teletracker.common.util.Slug
+import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.Slug
 import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 
-class AddNetwork @Inject()(networksDbAccess: NetworksDbAccess)
+class AddNetwork @Inject()(metadataDbAccess: MetadataDbAccess)
     extends TeletrackerTaskWithDefaultArgs {
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -22,8 +21,12 @@ class AddNetwork @Inject()(networksDbAccess: NetworksDbAccess)
     val shortname = args.valueOrThrow[String]("shortname")
     val dryRun = args.valueOrDefault("dryRun", true)
 
-    val network = Network(
-      id = None,
+    val allNetworks = metadataDbAccess.getAllNetworks().await()
+
+    val maxId = allNetworks.maxBy(_.id).id
+
+    val network = StoredNetwork(
+      id = maxId + 1,
       name = name,
       slug = Slug.forString(name),
       shortname = shortname,
@@ -35,13 +38,13 @@ class AddNetwork @Inject()(networksDbAccess: NetworksDbAccess)
       logger.info(s"Would've inserted new Network: ${network}")
     } else {
       logger.info(s"Inserting new network Network: ${network}")
-      val inserted = networksDbAccess.saveNetwork(network).await()
-      logger.info(s"Inserted new network with id = ${inserted.id.get}")
+      val inserted = metadataDbAccess.saveNetwork(network).await()
+      logger.info(s"Inserted new network with id = ${inserted.id}")
     }
   }
 }
 
-class AddNetworkReference @Inject()(networksDbAccess: NetworksDbAccess)
+class AddNetworkReference @Inject()(metadataDbAccess: MetadataDbAccess)
     extends TeletrackerTaskWithDefaultArgs {
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -51,7 +54,7 @@ class AddNetworkReference @Inject()(networksDbAccess: NetworksDbAccess)
     val externalSource = args.valueOrThrow[ExternalSource]("externalSource")
     val dryRun = args.valueOrDefault("dryRun", true)
 
-    val network = networksDbAccess.findNetworkById(networkId).await()
+    val network = metadataDbAccess.getNetworkById(networkId).await()
     if (network.isEmpty) {
       throw new IllegalArgumentException(
         s"Could not find network with id = $networkId"
@@ -59,12 +62,12 @@ class AddNetworkReference @Inject()(networksDbAccess: NetworksDbAccess)
     }
 
     val reference =
-      model.NetworkReference(None, externalSource, externalId, networkId)
+      StoredNetworkReference(externalSource, externalId, networkId)
     if (dryRun) {
       logger.info(s"Would've saved reference: $reference")
     } else {
       logger.info(s"Saving reference: $reference")
-      networksDbAccess.saveNetworkReference(reference).await()
+      metadataDbAccess.saveNetworkReference(reference).await()
     }
   }
 }

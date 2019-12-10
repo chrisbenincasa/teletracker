@@ -1,6 +1,5 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.model.Thingable
 import com.teletracker.common.model.tmdb.Person
 import com.teletracker.common.util.Lists._
@@ -15,7 +14,6 @@ import java.net.URI
 import scala.concurrent.ExecutionContext
 
 class CreatePersonImportCsv @Inject()(
-  thingsDbAccess: ThingsDbAccess,
   storage: S3Client,
   sourceRetriever: SourceRetriever
 )(implicit executionContext: ExecutionContext)

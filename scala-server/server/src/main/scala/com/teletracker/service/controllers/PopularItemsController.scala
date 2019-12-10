@@ -1,15 +1,8 @@
 package com.teletracker.service.controllers
 
+import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.db.{Bookmark, Popularity, Recent, SortMode}
-import com.teletracker.common.db.access.{ThingsDbAccess, UserThingDetails}
-import com.teletracker.common.db.model.{Network, ThingType}
-import com.teletracker.common.elasticsearch
-import com.teletracker.common.elasticsearch.{
-  BinaryOperator,
-  ItemSearch,
-  PeopleCreditSearch,
-  PersonCreditSearch
-}
+import com.teletracker.common.elasticsearch.{BinaryOperator, ItemSearch}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.{
@@ -18,14 +11,9 @@ import com.teletracker.common.util.{
   NetworkCache,
   OpenDateRange
 }
-import com.teletracker.common.util.json.circe._
 import com.teletracker.service.api
 import com.teletracker.service.api.model.Item
-import com.teletracker.service.api.{
-  ItemSearchRequest,
-  PeopleCreditsFilter,
-  ThingApi
-}
+import com.teletracker.service.api.{ItemSearchRequest, ThingApi}
 import com.teletracker.service.controllers.TeletrackerController._
 import com.teletracker.service.controllers.annotations.ItemReleaseYear
 import com.twitter.finagle.http.Request
@@ -39,13 +27,11 @@ import com.twitter.finatra.validation.{
 }
 import javax.inject.Inject
 import java.time.LocalDate
-import java.util.UUID
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 class PopularItemsController @Inject()(
   tmdbClient: TmdbClient,
-  thingsDbAccess: ThingsDbAccess,
   networkCache: NetworkCache,
   popularItemSearch: ItemSearch,
   thingApi: ThingApi
@@ -53,57 +39,6 @@ class PopularItemsController @Inject()(
     extends Controller
     with CanParseFieldFilter {
   private val defaultFields = List(Field("id"))
-
-  prefix("/api/v1") {
-    get("/popular") { req: GetItemsRequest =>
-      val parsedFields = parseFieldsOrNone(req.fields)
-
-      val networksFut = if (req.networks.nonEmpty) {
-        networkCache
-          .get()
-          .map(networks => {
-            networks.values
-              .filter(network => req.networks.contains(network.slug.value))
-              .toSet
-          })
-      } else {
-        Future.successful(Set.empty[Network])
-      }
-
-      for {
-        networks <- networksFut
-        (popularItems, bookmark) <- thingsDbAccess.getMostPopularItems(
-          req.itemTypes.flatMap(t => Try(ThingType.fromString(t)).toOption),
-          networks,
-          req.bookmark.map(Bookmark.parse),
-          req.limit
-        )
-        thingIds = popularItems.map(_.id)
-
-        thingUserDetails <- req.request.authenticatedUserId
-          .map(
-            thingsDbAccess
-              .getThingsUserDetails(_, thingIds.toSet)
-          )
-          .getOrElse(Future.successful(Map.empty[UUID, UserThingDetails]))
-      } yield {
-        val itemsWithMeta = popularItems.map(thing => {
-          val meta = thingUserDetails
-            .getOrElse(thing.id, UserThingDetails.empty)
-          thing
-            .selectFields(parsedFields, defaultFields)
-            .toPartial
-            .withUserMetadata(meta)
-        })
-
-        DataResponse.forDataResponse(
-          DataResponse(itemsWithMeta).withPaging(
-            Paging(bookmark.map(_.encode))
-          )
-        )
-      }
-    }
-  }
 
   prefix("/api/v2") {
     get("/explore") { req: GetItemsRequest =>

@@ -1,12 +1,11 @@
 package com.teletracker.common.elasticsearch
 
-import com.teletracker.common.db.model.{
-  Genre,
-  Network,
-  PersonAssociationType,
-  ThingType,
-  TrackedListRow
+import com.teletracker.common.db.dynamo.model.{
+  StoredGenre,
+  StoredNetwork,
+  StoredUserList
 }
+import com.teletracker.common.db.model.{PersonAssociationType, ThingType}
 import com.teletracker.common.db.{
   AddedTime,
   Bookmark,
@@ -128,9 +127,9 @@ trait ElasticsearchAccess {
 
   protected def genresFilter(
     builder: BoolQueryBuilder,
-    genres: Set[Genre]
+    genres: Set[StoredGenre]
   ): BoolQueryBuilder = {
-    genreIdsFilter(builder, genres.flatMap(_.id))
+    genreIdsFilter(builder, genres.map(_.id))
   }
 
   protected def genreIdsFilter(
@@ -195,7 +194,7 @@ trait ElasticsearchAccess {
   protected def applyBookmark(
     builder: BoolQueryBuilder,
     bookmark: Bookmark,
-    list: Option[TrackedListRow],
+    list: Option[StoredUserList],
     defaultSort: SortMode = Popularity() // Used when a bookmark passes in a "default" sort. Decided upon by the caller
   ): BoolQueryBuilder = {
     def applyRange(
@@ -408,9 +407,9 @@ trait ElasticsearchAccess {
 
   protected def availabilityByNetworksOr(
     builder: BoolQueryBuilder,
-    networks: Set[Network]
+    networks: Set[StoredNetwork]
   ) = {
-    availabilityByNetworkIdsOr(builder, networks.flatMap(_.id))
+    availabilityByNetworkIdsOr(builder, networks.map(_.id))
   }
 
   protected def availabilityByNetworkIdsOr(

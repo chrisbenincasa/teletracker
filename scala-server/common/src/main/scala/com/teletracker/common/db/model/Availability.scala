@@ -1,9 +1,6 @@
 package com.teletracker.common.db.model
 
-import com.teletracker.common.db.{CustomPostgresProfile, DbImplicits}
-import javax.inject.Inject
 import java.time.OffsetDateTime
-import com.teletracker.common.util.json.circe._
 import java.util.UUID
 
 case class Availability(
@@ -98,67 +95,4 @@ case class AvailabilityWithDetails(
 
   def withThing(thing: PartialThing): AvailabilityWithDetails =
     this.copy(thing = Some(thing))
-}
-
-class Availabilities @Inject()(
-  val driver: CustomPostgresProfile,
-  val things: Things,
-  val episodes: TvShowEpisodes,
-  val networks: Networks,
-  val implicits: DbImplicits) {
-  import driver.api._
-  import implicits._
-
-  class AvailabilitiesTable(tag: Tag)
-      extends Table[Availability](tag, "availability") {
-    def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
-    def isAvailable = column[Boolean]("is_available")
-    def region = column[Option[String]]("region")
-    def numSeasons = column[Option[Int]]("num_seasons")
-    def startDate = column[Option[OffsetDateTime]]("start_date")
-    def endDate = column[Option[OffsetDateTime]]("end_date")
-    def offerType = column[Option[OfferType]]("offer_type")
-    def cost = column[Option[BigDecimal]]("cost")
-    def currency = column[Option[String]]("currency")
-    def thingId = column[Option[UUID]]("thing_id")
-    def tvShowEpisodeId = column[Option[Int]]("tv_show_episode_id")
-    def networkId = column[Option[Int]]("network_id")
-    def presentationType = column[Option[PresentationType]]("presentation_type")
-
-    def endDate_idx = index("availability_end_date_idx", endDate)
-    def thingIdNetworkId =
-      index("availability_thing_id_networkid", (thingId, networkId))
-
-    def thingId_fk =
-      foreignKey("availability_thing_id_fk", thingId, things.query)(_.id.?)
-    def tvShowEpisodeId_fk =
-      foreignKey(
-        "availability_tv_show_episode_id_fk",
-        tvShowEpisodeId,
-        episodes.query
-      )(_.id.?)
-    def networkId_fk =
-      foreignKey("availability_network_id_fk", networkId, networks.query)(
-        _.id.?
-      )
-
-    override def * =
-      (
-        id.?,
-        isAvailable,
-        region,
-        numSeasons,
-        startDate,
-        endDate,
-        offerType,
-        cost,
-        currency,
-        thingId,
-        tvShowEpisodeId,
-        networkId,
-        presentationType
-      ) <> (Availability.tupled, Availability.unapply)
-  }
-
-  val query = TableQuery[AvailabilitiesTable]
 }

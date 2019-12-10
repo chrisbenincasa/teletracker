@@ -1,101 +1,19 @@
 package com.teletracker.tasks.db
 
-import com.teletracker.common.db.{BaseDbProvider, SyncDbProvider}
+import com.teletracker.common.db.dynamo.{model, MetadataDbAccess}
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.util.Slug
-import com.teletracker.tasks.{
-  TeletrackerTask,
-  TeletrackerTaskApp,
-  TeletrackerTaskWithDefaultArgs
-}
-import javax.inject.Inject
 import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.Slug
+import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
+import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
 
-object SeedGenres extends TeletrackerTaskApp[GenreSeeder2]
-
-//class GenreSeeder @Inject()(
-//  tmdbClient: TmdbClient,
-//  provider: DbProvider,
-//  genres: Genres,
-//  genreReferences: GenreReferences)
-//    extends TeletrackerTask {
-//  import genres.driver.api._
-//
-//  def run(args: Map[String, Option[Any]]): Unit = {
-//    Await.result(provider.getDB.run(genres.query.delete), Duration.Inf)
-//
-//    val movieGenres = Await.result(
-//      tmdbClient.makeRequest[GenreListResponse]("genre/movie/list"),
-//      Duration.Inf
-//    )
-//
-//    val inserts = movieGenres.genres.map {
-//      case g =>
-//        val gModel =
-//          Genre(None, g.name, GenreType.Movie, Slug.forString(g.name))
-//        val insert = (genres.query returning genres.query.map(_.id) into (
-//          (
-//            g,
-//            id
-//          ) => g.copy(id = Some(id))
-//        )) += gModel
-//        insert.flatMap(saved => {
-//          genreReferences.query += GenreReference(
-//            None,
-//            ExternalSource.TheMovieDb,
-//            g.id.toString,
-//            saved.id.get
-//          )
-//        })
-//    }
-//
-//    val movieGenreInserts = provider.getDB.run(
-//      DBIO.sequence(inserts)
-//    )
-//
-//    Await.result(movieGenreInserts, Duration.Inf)
-//
-//    val tvGenres = Await.result(
-//      tmdbClient.makeRequest[GenreListResponse]("genre/tv/list"),
-//      Duration.Inf
-//    )
-//
-//    val tvInserts = tvGenres.genres.map {
-//      case g =>
-//        val gModel = Genre(None, g.name, GenreType.Tv, Slug.forString(g.name))
-//        val insert = (genres.query returning genres.query.map(_.id) into (
-//          (
-//            g,
-//            id
-//          ) => g.copy(id = Some(id))
-//        )) += gModel
-//        insert.flatMap(saved => {
-//          genreReferences.query += GenreReference(
-//            None,
-//            ExternalSource.TheMovieDb,
-//            g.id.toString,
-//            saved.id.get
-//          )
-//        })
-//    }
-//
-//    val tvGenreInserts = provider.getDB.run(
-//      DBIO.sequence(tvInserts)
-//    )
-//
-//    Await.result(tvGenreInserts, Duration.Inf)
-//  }
-//}
-
-class GenreSeeder2 @Inject()(
+class GenreSeeder @Inject()(
   tmdbClient: TmdbClient,
-  provider: BaseDbProvider,
-  genres: Genres,
-  genreReferences: GenreReferences)
+  metadataDbAccess: MetadataDbAccess
+)(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {
-
-  import genres.driver.api._
 
   val initialBoth =
     Seq(
@@ -116,31 +34,32 @@ class GenreSeeder2 @Inject()(
       "Thriller",
       "War",
       "Western"
-    ).map(name => {
-      Genre(
-        None,
-        name,
-        Slug.forString(name),
-        List(GenreType.Movie, GenreType.Tv)
-      )
-    })
+    ).zipWithIndex.map {
+      case (name, idx) =>
+        model.StoredGenre(
+          0,
+          name,
+          Slug.forString(name),
+          Set(GenreType.Movie, GenreType.Tv)
+        )
+    }
 
   val initalJustMovie = Seq("Music", "Made for TV").map(name => {
-    Genre(
-      None,
+    model.StoredGenre(
+      0,
       name,
       Slug.forString(name),
-      List(GenreType.Movie)
+      Set(GenreType.Movie)
     )
   })
 
   val initialJustTv =
     Seq("Reality", "Soap", "Talk", "Politics", "News").map(name => {
-      Genre(
-        None,
+      model.StoredGenre(
+        0,
         name,
         Slug.forString(name),
-        List(GenreType.Tv)
+        Set(GenreType.Tv)
       )
     })
 
@@ -172,39 +91,31 @@ class GenreSeeder2 @Inject()(
   )
 
   private val initialGenres =
-    (initialBoth ++ initalJustMovie ++ initialJustTv).sortBy(_.name)
+    (initialBoth ++ initalJustMovie ++ initialJustTv)
+      .sortBy(_.name)
+      .zipWithIndex
+      .map {
+        case (genre, idx) =>
+          genre.copy(id = idx + 1)
+      }
 
   override def runInternal(args: Args): Unit = {
-    val insertedGenres = provider.getDB
-      .run {
-        DBIO.sequence(
-          initialGenres.map(genre => {
-            genres.query
-              .returning(genres.query.map(_.id))
-              .into((g, id) => g.copy(id = Some(id))) += genre
-          })
-        )
-      }
+    val insertedGenres = Future
+      .sequence(initialGenres.map(metadataDbAccess.saveGenre))
+      .map(_.groupBy(_.name).mapValues(_.head))
       .await()
-      .groupBy(_.name)
-      .mapValues(_.head)
 
     val references = tmdbMappings.flatMap {
       case (name, mappings) =>
         mappings.map(mapping => {
-          GenreReference(
-            None,
+          model.StoredGenreReference(
             ExternalSource.TheMovieDb,
             mapping.toString,
-            insertedGenres(name).id.get
+            insertedGenres(name).id
           )
         })
     }
 
-    provider.getDB
-      .run {
-        genreReferences.query ++= references
-      }
-      .await()
+    Future.sequence(references.map(metadataDbAccess.saveGenreReference)).await()
   }
 }

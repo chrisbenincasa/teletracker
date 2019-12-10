@@ -1,7 +1,6 @@
 package com.teletracker.tasks
 
 import com.google.inject.Injector
-import com.teletracker.common.db.BaseDbProvider
 import javax.inject.Inject
 import scala.util.{Failure, Success, Try}
 
@@ -28,12 +27,8 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
       clazz()
     }
 
-    try {
-      new TeletrackerTaskRunner(injector.underlying)
-        .run(clazzToRun, collectArgs)
-    } finally {
-      injector.instance[BaseDbProvider].shutdown()
-    }
+    new TeletrackerTaskRunner(injector.underlying)
+      .run(clazzToRun, collectArgs)
 
     System.exit(0)
   }

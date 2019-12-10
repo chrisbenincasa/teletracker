@@ -1,7 +1,6 @@
 package com.teletracker.service
 
 import com.google.inject.Module
-import com.teletracker.common.process.tmdb.TmdbBackgroundProcessor
 import com.teletracker.common.util.{GenreCache, NetworkCache}
 import com.teletracker.service.auth.JwtAuthFilter
 import com.teletracker.service.controllers._
@@ -29,7 +28,7 @@ class TeletrackerServer(
     with Logging {
 
   postmain {
-    injector.instance[NetworkCache].get()
+    injector.instance[NetworkCache].getAllNetworks()
     injector.instance[GenreCache].get()
   }
 
@@ -78,12 +77,6 @@ class TeletrackerServer(
       .add[HealthController]
       .add[InternalController]
       .add[PopularItemsController]
-  }
-
-  override def postInjectorStartup(): Unit = {
-    super.postInjectorStartup()
-
-    injector.instance[TmdbBackgroundProcessor].run()
   }
 }
 

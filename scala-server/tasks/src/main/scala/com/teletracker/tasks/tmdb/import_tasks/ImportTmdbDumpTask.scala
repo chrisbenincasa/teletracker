@@ -1,7 +1,6 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.db.access.ThingsDbAccess
-import com.teletracker.common.db.model.{ExternalSource, ThingLike}
+import com.teletracker.common.db.model.ThingLike
 import com.teletracker.common.model.tmdb.{ErrorResponse, HasTmdbId}
 import com.teletracker.common.model.{Thingable, ToEsItem}
 import com.teletracker.common.util.Futures._
@@ -20,7 +19,6 @@ import java.time.OffsetDateTime
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 object ImportTmdbDumpTaskArgs {
   def default(input: URI) = ImportTmdbDumpTaskArgs(
@@ -42,7 +40,6 @@ case class ImportTmdbDumpTaskArgs(
 abstract class ImportTmdbDumpTask[T <: HasTmdbId](
   s3: S3Client,
   sourceRetriever: SourceRetriever,
-  thingsDbAccess: ThingsDbAccess,
   genreCache: GenreCache
 )(implicit executionContext: ExecutionContext,
   thingLike: Thingable[T],
@@ -162,57 +159,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
   protected def handleItem(
     args: ImportTmdbDumpTaskArgs,
     item: T
-  ): Future[Unit] = {
-    genreCache
-      .get()
-      .flatMap(genres => {
-        thingLike.toThing(item) match {
-          case Success(thing) =>
-            val genreIds = thing.metadata
-              .flatMap(
-                Paths.applyPaths(
-                  _,
-                  Paths.MovieGenres,
-                  Paths.ShowGenres
-                )
-              )
-              .map(_.map(_.id))
-              .map(
-                _.flatMap(
-                  id =>
-                    genres.get(
-                      ExternalSource.TheMovieDb -> id.toString
-                    )
-                )
-              )
-              .map(_.map(_.id))
-              .getOrElse(Nil)
-              .flatten
-              .toSet
-
-            val fut = thingsDbAccess
-              .saveThing(
-                thing.withGenres(genreIds),
-                Some(
-                  ExternalSource.TheMovieDb -> item.id.toString
-                )
-              )
-
-            fut
-              .flatMap(
-                thing => extraWork(thing, item).map(_ => thing)
-              )
-              .map(Some(_))
-
-          case Failure(exception) =>
-            logger.error(
-              "Encountered unexpected exception",
-              exception
-            )
-            Future.successful(None)
-        }
-      })
-  }
+  ): Future[Unit]
 
   protected def handleItemDeletion(
     args: ImportTmdbDumpTaskArgs,

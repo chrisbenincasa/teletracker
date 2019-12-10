@@ -1,17 +1,13 @@
 package com.teletracker.tasks.scraper
 
-import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model._
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.external.tmdb.TmdbClient
-import com.teletracker.common.process.tmdb.TmdbEntityProcessor
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
-import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
 import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
 import com.teletracker.tasks.scraper.model.{
@@ -26,7 +22,6 @@ import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
 import java.time.LocalDate
-import java.util.UUID
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source

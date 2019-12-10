@@ -1,12 +1,15 @@
 package com.teletracker.service.api
 
-import com.teletracker.common.db.access.{ListsDbAccess, UsersDbAccess}
-import com.teletracker.common.db.model.{
-  TrackedListFactory,
-  UserPreferences,
-  UserThingTag,
-  UserThingTagType
+import com.teletracker.common.db.dynamo.model.{
+  StoredUserListFactory,
+  StoredUserPreferences,
+  StoredUserPreferencesBlob
 }
+import com.teletracker.common.db.dynamo.{
+  MetadataDbAccess,
+  ListsDbAccess => DynamoListsDbAccess
+}
+import com.teletracker.common.db.model.UserThingTagType
 import com.teletracker.common.db.{Bookmark, DefaultForListType, SortMode}
 import com.teletracker.common.elasticsearch.{
   DynamicListBuilder,
@@ -14,35 +17,51 @@ import com.teletracker.common.elasticsearch.{
   ItemUpdater,
   ListBuilder
 }
-import com.teletracker.common.util.ListFilters
-import com.teletracker.service.api.model.{Item, Person, UserDetails, UserList}
+import com.teletracker.common.util.{ListFilters, NetworkCache}
+import com.teletracker.service.api.model._
+import com.teletracker.common.util.Functions._
 import com.teletracker.service.controllers.UpdateUserRequestPayload
 import javax.inject.Inject
+import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class UsersApi @Inject()(
-  usersDbAccess: UsersDbAccess,
-  listsDbAccess: ListsDbAccess,
   listBuilder: ListBuilder,
   dynamicListBuilder: DynamicListBuilder,
   listsApi: ListsApi,
-  itemUpdater: ItemUpdater
+  itemUpdater: ItemUpdater,
+  dynamoListsDbAccess: DynamoListsDbAccess,
+  metadataDbAccess: MetadataDbAccess,
+  networkCache: NetworkCache
 )(implicit executionContext: ExecutionContext) {
 
   def getUser(userId: String): Future[UserDetails] = {
-    val metadataFut = usersDbAccess.findMetadataForUser(userId)
-    val networkPrefsFut = usersDbAccess.findNetworkPreferencesForUser(userId)
+    val networksFut = networkCache.getAllNetworks()
+    val metadataFut = metadataDbAccess.getUserPreferences(userId)
 
     for {
       meta <- metadataFut
-      nets <- networkPrefsFut
+      nets <- networksFut
     } yield {
-      UserDetails(
-        userId,
-        meta.preferences.getOrElse(UserPreferences.default),
-        nets.toList
-      )
+      meta match {
+        case Some(value) =>
+          UserDetails(
+            userId,
+            UserPreferences(
+              presentationTypes = value.preferences.presentationTypes,
+              showOnlyNetworkSubscriptions =
+                value.preferences.showOnlyNetworkSubscriptions,
+              hideAdultContent = value.preferences.hideAdultContent
+            ),
+            networkPreferences = value.preferences.networkIds
+              .map(_.flatMap(id => nets.find(_.id == id)))
+              .map(_.toList.map(Network.fromStoredNetwork))
+              .getOrElse(Nil)
+          )
+        case None =>
+          UserDetails(userId, UserPreferences(), Nil)
+      }
     }
   }
 
@@ -50,47 +69,87 @@ class UsersApi @Inject()(
     userId: String,
     updateUserRequest: UpdateUserRequestPayload
   ): Future[Unit] = {
-    updateUserRequest.networkSubscriptions
-      .map(networkSubscriptions => {
-        usersDbAccess
-          .findNetworkPreferencesForUpdate(userId)
-          .flatMap(prefs => {
-            val networkIds = networkSubscriptions.flatMap(_.id).toSet
-            val existingNetworkIds = prefs.map(_.networkId).toSet
+    val networksFut = networkCache.getAllNetworks()
+    val preferencesFut = metadataDbAccess.getUserPreferences(userId)
 
-            val toDelete =
-              prefs.filter(pref => !networkIds(pref.networkId)).map(_.id).toSet
-            val toAdd = networkSubscriptions
-              .filter(
-                net => net.id.isDefined && !existingNetworkIds(net.id.get)
-              )
-              .flatMap(_.id)
-              .toSet
+    for {
+      networks <- networksFut
+      preferencesOpt <- preferencesFut
+    } yield {
+      preferencesOpt match {
+        case Some(preferences) =>
+          val newPreferences = preferences
+            .through(
+              _.applyOptional(updateUserRequest.networkSubscriptions)(
+                (prefs, networkSubscriptions) => {
+                  val networkIds = networkSubscriptions.flatMap(_.id).toSet
+                  val existingNetworkIds =
+                    preferences.preferences.networkIds.getOrElse(Set.empty)
 
-            usersDbAccess
-              .updateUserNetworkPreferences(
-                userId,
-                toAdd,
-                toDelete
+                  val toDelete =
+                    existingNetworkIds.diff(networkIds)
+
+                  val toAdd = networkSubscriptions
+                    .filter(
+                      net => net.id.isDefined && !existingNetworkIds(net.id.get)
+                    )
+                    .flatMap(_.id)
+                    .toSet
+
+                  prefs.copy(
+                    preferences = prefs.preferences.copy(
+                      networkIds =
+                        Some((existingNetworkIds -- toDelete) ++ toAdd)
+                    )
+                  )
+                }
               )
-          })
-      })
-      .getOrElse(Future.unit)
-      .flatMap(_ => {
-        updateUserRequest.userPreferences
-          .map(usersDbAccess.updateUserMetadata(userId, _))
-          .getOrElse(Future.unit)
-      })
+            )
+            .through(
+              _.applyOptional(updateUserRequest.userPreferences)(
+                (prefs, updatePrefs) => {
+                  prefs.copy(
+                    preferences = prefs.preferences.copy(
+                      presentationTypes =
+                        Some(updatePrefs.presentationTypes).filter(_.nonEmpty),
+                      showOnlyNetworkSubscriptions =
+                        updatePrefs.showOnlyNetworkSubscriptions,
+                      hideAdultContent = updatePrefs.hideAdultContent
+                    )
+                  )
+                }
+              )
+            )
+
+          metadataDbAccess.saveUserPreferences(
+            newPreferences.copy(lastUpdatedAt = OffsetDateTime.now())
+          )
+
+        case None =>
+          val now = OffsetDateTime.now()
+
+          StoredUserPreferences(
+            userId = userId,
+            createdAt = now,
+            lastUpdatedAt = now,
+            preferences = StoredUserPreferencesBlob(
+              networkIds = updateUserRequest.networkSubscriptions
+                .map(_.flatMap(_.id).toSet),
+              presentationTypes =
+                updateUserRequest.userPreferences.map(_.presentationTypes),
+              showOnlyNetworkSubscriptions = updateUserRequest.userPreferences
+                .flatMap(_.showOnlyNetworkSubscriptions),
+              hideAdultContent =
+                updateUserRequest.userPreferences.flatMap(_.hideAdultContent)
+            )
+          )
+      }
+    }
   }
 
-  def registerUser(userId: String): Future[Seq[Int]] = {
-    createDefaultListsForUser(userId)
-  }
-
-  // ES only
   def getUserLists(userId: String): Future[Seq[UserList]] = {
-    usersDbAccess
-      .findListsForUserRaw(userId)
+    dynamoListsDbAccess
+      .getAllListsForUser(userId)
       .flatMap(lists => {
         val (dynamicLists, regularLists) = lists.partition(_.isDynamic)
 
@@ -100,14 +159,14 @@ class UsersApi @Inject()(
               .getRegularListsCounts(userId, regularLists.map(_.id).toList)
               .map(_.toMap)
           } else {
-            Future.successful(Map.empty[Int, Long])
+            Future.successful(Map.empty[UUID, Long])
           }
           dynamicListCounts <- if (dynamicLists.nonEmpty) {
             dynamicListBuilder
-              .getDynamicListCounts(userId, dynamicLists.toList)
+              .getDynamicListCounts(userId, dynamicLists)
               .map(_.toMap)
           } else {
-            Future.successful(Map.empty[Int, Long])
+            Future.successful(Map.empty[UUID, Long])
           }
         } yield {
 
@@ -117,7 +176,7 @@ class UsersApi @Inject()(
               else regularListCounts.getOrElse(list.id, 0L).toInt
 
             UserList
-              .fromRow(list)
+              .fromStoredList(list)
               .withCount(count)
           })
         }
@@ -126,14 +185,14 @@ class UsersApi @Inject()(
 
   def getUserList(
     userId: String,
-    listId: Int,
+    listId: UUID,
     filters: Option[ListFilters] = None,
     isDynamicHint: Option[Boolean] = None,
     sortMode: SortMode = DefaultForListType(),
     bookmark: Option[Bookmark] = None,
     limit: Int = 10
   ): Future[Option[(UserList, Option[Bookmark])]] = {
-    usersDbAccess.getList(userId, listId).flatMap {
+    listsApi.findListForUser(listId, userId).flatMap {
       case None =>
         Future.successful(None)
 
@@ -150,7 +209,7 @@ class UsersApi @Inject()(
           .map {
             case (listThings, count, peopleFromRules) => {
               UserList
-                .fromRow(list)
+                .fromStoredList(list)
                 .withItems(
                   listThings.items
                     .map(Item.fromEsItem(_))
@@ -175,7 +234,7 @@ class UsersApi @Inject()(
           .map {
             case (listThings, count) => {
               UserList
-                .fromRow(list)
+                .fromStoredList(list)
                 .withItems(
                   listThings.items
                     .map(Item.fromEsItem(_))
@@ -188,31 +247,17 @@ class UsersApi @Inject()(
     }
   }
 
-  def createDefaultListsForUser(userId: String): Future[Seq[Int]] = {
-    listsDbAccess.insertLists(
-      List(
-        TrackedListFactory.defaultList(userId),
-        TrackedListFactory.watchedList(userId)
+  def createDefaultListsForUser(userId: String): Future[Unit] = {
+    Future
+      .sequence(
+        List(
+          dynamoListsDbAccess
+            .saveList(StoredUserListFactory.defaultList(userId)),
+          dynamoListsDbAccess
+            .saveList(StoredUserListFactory.watchedList(userId))
+        )
       )
-    )
-  }
-
-  def handleTagChange(userThingTag: UserThingTag): Future[Unit] = {
-    userThingTag.action match {
-      case UserThingTagType.Watched =>
-        listsDbAccess
-          .findRemoveOnWatchedLists(userThingTag.userId)
-          .flatMap(lists => {
-            usersDbAccess.removeThingFromLists(
-              lists.filter(!_.isDynamic).map(_.id).toSet,
-              userThingTag.thingId
-            )
-          })
-          .map(_ => {})
-
-      case _ =>
-        Future.unit
-    }
+      .map(_ => Unit)
   }
 
   def handleTagChange(
@@ -221,15 +266,17 @@ class UsersApi @Inject()(
   ): Future[Unit] = {
     userThingTag match {
       case EsItemTag.UserScoped(userId, UserThingTagType.Watched, _, _) =>
-        listsDbAccess
-          .findRemoveOnWatchedLists(userId)
-          .flatMap(lists => {
-            itemUpdater.removeItemFromLists(
-              lists.filter(!_.isDynamic).map(_.id).toSet,
-              userId
-            )
-          })
-          .map(_ => {})
+        // TODO: Implement for ES and Dynamo
+        Future.unit
+//        listsDbAccess
+//          .findRemoveOnWatchedLists(userId)
+//          .flatMap(lists => {
+//            itemUpdater.removeItemFromLists(
+//              lists.filter(!_.isDynamic).map(_.id).toSet,
+//              userId
+//            )
+//          })
+//          .map(_ => {})
 
       case _ => Future.unit
     }

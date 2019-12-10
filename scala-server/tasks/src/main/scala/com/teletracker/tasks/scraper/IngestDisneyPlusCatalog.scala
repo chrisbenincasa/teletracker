@@ -1,7 +1,6 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.access.ThingsDbAccess
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,

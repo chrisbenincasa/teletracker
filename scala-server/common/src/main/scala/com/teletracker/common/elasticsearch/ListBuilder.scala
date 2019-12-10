@@ -1,5 +1,6 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.db.dynamo.model.StoredUserList
 import com.teletracker.common.db.{
   AddedTime,
   Bookmark,
@@ -34,6 +35,7 @@ import org.elasticsearch.search.sort.{
   SortOrder
 }
 import java.time.LocalDate
+import java.util.UUID
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.JavaConverters._
@@ -44,7 +46,7 @@ class ListBuilder @Inject()(
     extends ElasticsearchAccess {
   def getRegularListItemCount(
     userId: String,
-    list: TrackedListRow
+    list: StoredUserList
   ): Future[Long] = {
     val listQuery =
       getRegularListQuery(userId, list, None, None, None, None)
@@ -58,22 +60,22 @@ class ListBuilder @Inject()(
 
   def getRegularListsCounts(
     userId: String,
-    listIds: List[Int]
-  ): Future[List[(Int, Long)]] = {
+    listIds: List[UUID]
+  ): Future[List[(UUID, Long)]] = {
     val tag =
       EsItemTag.TagFormatter.format(userId, UserThingTagType.TrackedInList)
     val termQuery = QueryBuilders.termQuery("tags.tag", tag)
 
     val agg =
       new TermsAggregationBuilder("regular_list_counts", ValueType.DOUBLE)
-        .field("tags.value")
+        .field("tags.string_value")
 
     val source = new SearchSourceBuilder()
       .aggregation(agg)
       .query(termQuery)
       .fetchSource(false)
 
-    val searchRequest = new SearchRequest().source(source)
+    val searchRequest = new SearchRequest("items").source(source)
 
     elasticsearchExecutor
       .search(searchRequest)
@@ -83,7 +85,7 @@ class ListBuilder @Inject()(
           .collect {
             case agg: Terms =>
               agg.getBuckets.asScala.toList.map(bucket => {
-                bucket.getKeyAsNumber.intValue() -> bucket.getDocCount
+                UUID.fromString(bucket.getKeyAsString) -> bucket.getDocCount
               })
           }
           .getOrElse(Nil)
@@ -92,7 +94,7 @@ class ListBuilder @Inject()(
 
   def buildRegularList(
     userId: String,
-    list: TrackedListRow,
+    list: StoredUserList,
     listFilters: Option[ListFilters],
     sortMode: SortMode = Popularity(),
     bookmark: Option[Bookmark] = None,
@@ -107,8 +109,6 @@ class ListBuilder @Inject()(
       bookmark,
       Some(limit)
     )
-
-    println(sourceBuilder)
 
     val itemsFut = elasticsearchExecutor
       .search(new SearchRequest(Indices.UserItemIndex).source(sourceBuilder))
@@ -159,7 +159,7 @@ class ListBuilder @Inject()(
 
   private def getRegularListQuery(
     userId: String,
-    list: TrackedListRow,
+    list: StoredUserList,
     listFilters: Option[ListFilters],
     sortMode: Option[SortMode],
     bookmark: Option[Bookmark],
@@ -179,7 +179,7 @@ class ListBuilder @Inject()(
         QueryBuilders.nestedQuery(
           "tags",
           QueryBuilders
-            .termQuery("tags.int_value", list.id),
+            .termQuery("tags.string_value", list.id.toString),
           ScoreMode.Avg
         )
       )
@@ -234,7 +234,7 @@ class ListBuilder @Inject()(
   @tailrec
   final private def makeSortForRegularList(
     sortMode: SortMode,
-    listId: Int
+    listId: UUID
   ): Option[FieldSortBuilder] = {
     sortMode match {
       case SearchScore(_) => None
@@ -273,7 +273,7 @@ class ListBuilder @Inject()(
                   )
                   .filter(
                     QueryBuilders
-                      .termQuery("tags.int_value", listId)
+                      .termQuery("tags.string_value", listId.toString)
                   )
               )
             )
@@ -287,7 +287,7 @@ class ListBuilder @Inject()(
   private def applyBookmarkForRegularList(
     builder: BoolQueryBuilder,
     bookmark: Bookmark,
-    list: TrackedListRow
+    list: StoredUserList
   ): BoolQueryBuilder = {
     def applyRange(
       rangeBuilder: RangeQueryBuilder,
@@ -366,7 +366,7 @@ class ListBuilder @Inject()(
                 )
                 .filter(
                   QueryBuilders
-                    .termQuery("tags.int_value", list.id)
+                    .termQuery("tags.string_value", list.id.toString)
                 ),
               ScoreMode.Avg
             )
@@ -394,7 +394,7 @@ class ListBuilder @Inject()(
   private def applyNextBookmarkRegularList(
     denormResponse: ElasticsearchUserItemsResponse,
     itemsResponse: ElasticsearchItemsResponse,
-    listId: Int,
+    listId: UUID,
     previousBookmark: Option[Bookmark],
     sortMode: SortMode
   ): ElasticsearchItemsResponse = {
@@ -428,8 +428,8 @@ class ListBuilder @Inject()(
               userItem.tags
                 .find(
                   t =>
-                    t.tag == UserThingTagType.TrackedInList.toString && t.int_value
-                      .contains(listId)
+                    t.tag == UserThingTagType.TrackedInList.toString && t.string_value
+                      .contains(listId.toString)
                 )
                 .flatMap(tag => {
                   userItem.item_id.map(itemId => {

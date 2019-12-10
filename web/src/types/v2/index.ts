@@ -106,6 +106,7 @@ export interface ItemGenre {
 export interface ApiItemTag {
   tag: string;
   value?: number;
+  string_value?: string;
 }
 
 export interface ItemImage {
