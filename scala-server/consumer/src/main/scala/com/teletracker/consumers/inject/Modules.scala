@@ -18,7 +18,6 @@ object Modules {
 class ConsumerConfigModule extends TwitterModule {
   import net.ceedubs.ficus.Ficus._
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-  import com.teletracker.common.config.CustomReaders._
 
   @Provides
   @Singleton
