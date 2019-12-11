@@ -1,7 +1,6 @@
 package com.teletracker.tasks.scraper.hulu
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.tasks.scraper.HuluCatalogDeltaIngestJob
 import com.teletracker.tasks.util.ArgJsonInstances._
 import com.teletracker.tasks.util.{SourceRetriever, TaskMessageHelper}
 import com.teletracker.tasks.{scraper, TeletrackerTaskWithDefaultArgs}

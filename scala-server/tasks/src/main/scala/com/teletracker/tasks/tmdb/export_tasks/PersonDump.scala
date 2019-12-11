@@ -2,6 +2,7 @@ package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.process.tmdb.ItemExpander
 import io.circe.Decoder
+import io.circe.generic.JsonCodec
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 import javax.inject.Inject
@@ -28,6 +29,7 @@ class PersonDump @Inject()(
   }
 }
 
+@JsonCodec
 case class PersonDumpFileRow(
   adult: Boolean,
   id: Int,

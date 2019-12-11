@@ -1,4 +1,4 @@
-package com.teletracker.tasks.scraper
+package com.teletracker.tasks.scraper.hbo
 
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
@@ -6,11 +6,19 @@ import com.teletracker.common.elasticsearch.{
   ItemUpdater
 }
 import com.teletracker.common.util.NetworkCache
-import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchFallbackMatching,
+  ElasticsearchLookup,
+  MatchMode
+}
+import com.teletracker.tasks.scraper.{
+  IngestJob,
+  IngestJobApp,
+  IngestJobParser,
+  ScrapedItem
+}
 import io.circe.generic.JsonCodec
-import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time.{Instant, ZoneId, ZoneOffset}

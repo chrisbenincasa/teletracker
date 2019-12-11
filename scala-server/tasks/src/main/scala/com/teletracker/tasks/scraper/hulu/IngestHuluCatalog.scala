@@ -1,4 +1,4 @@
-package com.teletracker.tasks.scraper
+package com.teletracker.tasks.scraper.hulu
 
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.db.model.ThingType
@@ -9,7 +9,12 @@ import com.teletracker.common.elasticsearch.{
 }
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchFallbackMatching,
+  ElasticsearchLookup,
+  MatchMode
+}
+import com.teletracker.tasks.scraper.{IngestJob, IngestJobParser, ScrapedItem}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject
