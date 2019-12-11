@@ -45,6 +45,7 @@ class ItemSearch @Inject()(
             "title._3gram"
           )
           .`type`(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
+          .fuzziness(5)
           .operator(Operator.AND)
       )
       .through(posterImageFilter)
