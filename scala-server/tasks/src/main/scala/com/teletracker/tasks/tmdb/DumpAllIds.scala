@@ -3,7 +3,7 @@ package com.teletracker.tasks.tmdb
 import cats.effect.{Blocker, ContextShift, IO, Resource}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.http.{BaseHttp4sClient, HttpRequest}
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import com.teletracker.tasks.tmdb.export_tasks.{
   MovieDumpFileRow,
   PersonDumpFileRow,
@@ -34,6 +34,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.sys.process._
 
+case class DumpAllIdsArgs(
+  itemType: String,
+  date: LocalDate,
+  local: Boolean)
+
 object DumpAllIds {
   def getIdsPath(
     typePrefix: String,
@@ -46,7 +51,7 @@ class DumpAllIds @Inject()(
   sourceWriter: SourceWriter,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends TeletrackerTask {
   private val logger = LoggerFactory.getLogger(getClass)
 
   implicit private val cs: ContextShift[IO] = IO.contextShift(executionContext)
@@ -56,10 +61,21 @@ class DumpAllIds @Inject()(
 
   private val blocker: Blocker = Blocker.liftExecutionContext(blockingExecCtx)
 
+  override type TypedArgs = DumpAllIdsArgs
+
+  implicit override protected lazy val typedArgsEncoder
+    : Encoder[DumpAllIdsArgs] =
+    io.circe.generic.semiauto.deriveEncoder[DumpAllIdsArgs]
+
+  override def preparseArgs(args: Args): DumpAllIdsArgs =
+    DumpAllIdsArgs(
+      itemType = args.valueOrDefault("itemType", "movie"),
+      date = args.valueOrDefault("date", LocalDate.now()),
+      local = args.valueOrDefault("local", false)
+    )
+
   override protected def runInternal(args: Args): Unit = {
-    val itemType = args.valueOrDefault("type", "movie")
-    val date = args.valueOrDefault("date", LocalDate.now())
-    val local = args.valueOrDefault("local", false)
+    val DumpAllIdsArgs(itemType, date, local) = preparseArgs(args)
 
     val sanitizedTypes = itemType match {
       case "all"  => Seq("movie", "tv_series", "person")
