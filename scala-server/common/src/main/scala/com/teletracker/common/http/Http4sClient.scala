@@ -1,24 +1,16 @@
 package com.teletracker.common.http
 
-import cats.data.EitherT
 import cats.effect.{Blocker, ContextShift, IO}
 import com.google.inject.assistedinject.Assisted
 import javax.inject.Inject
-import org.http4s.{
-  DecodeFailure,
-  DecodeResult,
-  EntityDecoder,
-  Header,
-  Request,
-  Response,
-  Uri
-}
+import org.http4s.{DecodeFailure, EntityDecoder, Header, Request, Response, Uri}
 import org.http4s.client.JavaNetClientBuilder
 import org.http4s.headers.{Accept, MediaRangeAndQValue}
 import java.util.concurrent.Executors
 import cats.implicits._
 import cats.syntax.all._
 import cats.data.EitherT._
+import java.io.File
 import scala.concurrent.{ExecutionContext, Future}
 
 class Http4sClient @Inject()(
@@ -27,7 +19,14 @@ class Http4sClient @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends HttpClient(host, options) {
 
+  private val blockingExecCtx =
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+
+  private val blocker: Blocker = Blocker.liftExecutionContext(blockingExecCtx)
+
   implicit private val cs: ContextShift[IO] = IO.contextShift(executionContext)
+
+  private val baseClient = new BaseHttp4sClient(blocker)
 
   private val fullHost = {
     if (options.useTls) {
@@ -38,45 +37,16 @@ class Http4sClient @Inject()(
   }
 
   override def get(request: HttpRequest): Future[HttpResponse[String]] = {
-    getBasic[String](request, parseResponseDefault(_))
+    baseClient.get(fullHost, request).unsafeToFuture()
   }
 
   override def getBytes(
     request: HttpRequest
   ): Future[HttpResponse[Array[Byte]]] = {
-    getBasic[Array[Byte]](request, parseResponseDefault(_))
+    baseClient.getBytes(fullHost, request).unsafeToFuture()
   }
 
-  override def close(): Unit = {
-    getClient.flatMap(_._2).unsafeRunSync()
-  }
-
-  private def getBasic[T](
-    request: HttpRequest,
-    makeResponse: Response[IO] => IO[HttpResponse[T]]
-  )(implicit ed: EntityDecoder[IO, T]
-  ): Future[HttpResponse[T]] = {
-    val params = if (request.params.nonEmpty) request.params.foldLeft("?") {
-      case (acc, (k, v)) => acc + s"&$k=$v"
-    } else ""
-
-    Uri
-      .fromString(s"$fullHost/${request.path.stripPrefix("/")}$params")
-      .fold(
-        Future.failed,
-        uri => {
-          getClient
-            .map(_._1)
-            .flatMap(client => {
-              val builtRequest = buildRequest(uri, request)
-              client.fetch(builtRequest)(makeResponse)
-            })
-//            .flatMap(_.expect[T](uri))
-//            .map(makeResponse)
-            .unsafeToFuture()
-        }
-      )
-  }
+  override def close(): Unit = {}
 
   private def buildRequest[T](
     uri: Uri,
@@ -116,11 +86,4 @@ class Http4sClient @Inject()(
       })
 
   }
-
-  private val blockingExecCtx =
-    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
-
-  private val getClient = JavaNetClientBuilder[IO](
-    Blocker.liftExecutionContext(blockingExecCtx)
-  ).allocated
 }

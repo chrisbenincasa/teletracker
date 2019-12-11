@@ -1,12 +1,13 @@
-package com.teletracker.tasks.scraper
+package com.teletracker.tasks.scraper.hulu
 
 import com.teletracker.common.crypto.BerglasDecoder
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.http.{HttpClient, HttpClientOptions, HttpRequest}
 import com.teletracker.common.util.{NetworkCache, Slug}
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.common.util.json.circe._
+import com.teletracker.common.util.{NetworkCache, Slug}
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
+import com.teletracker.tasks.scraper._
 import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
 import com.teletracker.tasks.scraper.model.NonMatchResult
 import io.circe.generic.JsonCodec

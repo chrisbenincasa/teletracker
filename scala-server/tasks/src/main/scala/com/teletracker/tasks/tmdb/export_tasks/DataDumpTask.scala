@@ -8,6 +8,7 @@ import io.circe.parser._
 import io.circe.generic.semiauto.deriveEncoder
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.util.SourceRetriever
+import io.circe.generic.JsonCodec
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
@@ -16,6 +17,7 @@ import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
+import java.util.zip.GZIPOutputStream
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -91,7 +93,9 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
 
         output = new File(f"$baseFileName.$batch%03d.json")
         os = new PrintStream(
-          new BufferedOutputStream(new FileOutputStream(output))
+          new BufferedOutputStream(
+            new GZIPOutputStream(new FileOutputStream(output))
+          )
         )
       }
     }
@@ -153,8 +157,7 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
     os.flush()
     os.close()
 
-    val suffix = processed.get() / rotateEvery
-    rotateFile(suffix)
+    uploadToS3(output)
 
     source.close()
   }
@@ -174,6 +177,7 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
         .bucket("teletracker-data")
         .key(s"$fullPath/${file.getName}")
         .contentType("text/plain")
+        .contentEncoding("gzip")
         .build(),
       RequestBody.fromFile(file)
     )
@@ -187,6 +191,7 @@ trait TmdbDumpFileRow {
 
 case class ResultWrapperType[T <: TmdbDumpFileRow](results: List[T])
 
+@JsonCodec
 case class MovieDumpFileRow(
   adult: Boolean,
   id: Int,
@@ -195,6 +200,7 @@ case class MovieDumpFileRow(
   video: Boolean)
     extends TmdbDumpFileRow
 
+@JsonCodec
 case class TvShowDumpFileRow(
   id: Int,
   original_name: String,
