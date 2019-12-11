@@ -24,10 +24,6 @@ class Http4sClient @Inject()(
 
   private val blocker: Blocker = Blocker.liftExecutionContext(blockingExecCtx)
 
-//  private val getClient = JavaNetClientBuilder[IO](
-//    blocker
-//  ).allocated
-
   implicit private val cs: ContextShift[IO] = IO.contextShift(executionContext)
 
   private val baseClient = new BaseHttp4sClient(blocker)
@@ -50,34 +46,7 @@ class Http4sClient @Inject()(
     baseClient.getBytes(fullHost, request).unsafeToFuture()
   }
 
-  override def close(): Unit = {
-//    getClient.flatMap(_._2).unsafeRunSync()
-  }
-
-//  private def getBasic[T](
-//    request: HttpRequest,
-//    makeResponse: Response[IO] => IO[HttpResponse[T]]
-//  )(implicit ed: EntityDecoder[IO, T]
-//  ): Future[HttpResponse[T]] = {
-//    val params = if (request.params.nonEmpty) request.params.foldLeft("?") {
-//      case (acc, (k, v)) => acc + s"&$k=$v"
-//    } else ""
-//
-//    Uri
-//      .fromString(s"$fullHost/${request.path.stripPrefix("/")}$params")
-//      .fold(
-//        Future.failed,
-//        uri => {
-//          getClient
-//            .map(_._1)
-//            .flatMap(client => {
-//              val builtRequest = buildRequest(uri, request)
-//              client.fetch(builtRequest)(makeResponse)
-//            })
-//            .unsafeToFuture()
-//        }
-//      )
-//  }
+  override def close(): Unit = {}
 
   private def buildRequest[T](
     uri: Uri,

@@ -24,11 +24,19 @@ resource "aws_iam_role_policy_attachment" "tmdb-changes-scraper-kms-encrypt-atta
   role       = module.tmdb-changes-scraper.lambda_role_name
 }
 
-module "tmdb-ids-scraper" {
-  source = "./scraper-lambda"
+resource "aws_cloudwatch_event_rule" "tmdb-id-dump-event-rule" {
+  name                = "tmdb-dump-all-ids-trigger"
+  description         = "Run DumpAllIds job"
+  schedule_expression = "cron(0 8 * * ? *)"
+}
 
-  handler_function = "index.tmdbIds"
-  function_name    = "tmdb-ids"
-
-  create_default_trigger = false
+resource "aws_cloudwatch_event_target" "tmdb-id-dump-event-target" {
+  arn  = aws_sqs_queue.teletracker-task-queue.arn
+  rule = aws_cloudwatch_event_rule.tmdb-id-dump-event-rule.name
+  input = jsonencode({
+    "clazz" = "com.teletracker.tasks.tmdb.DumpAllIds",
+    "args" = {
+      "type" = "all"
+    }
+  })
 }
