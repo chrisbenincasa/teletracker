@@ -25,7 +25,7 @@ object StoredUserList {
       "userId" -> userId.toAttributeValue
     ).asJava
 
-  def fromRow(row: java.util.Map[String, AttributeValue]) = {
+  def fromRow(row: java.util.Map[String, AttributeValue]): StoredUserList = {
     StoredUserList(
       id = row.get("id").valueAs[UUID],
       name = row.get("name").valueAs[String],
@@ -40,6 +40,9 @@ object StoredUserList {
         .map(_.valueAs[String])
         .map(decode[UserListRowOptions](_).right.get),
       deletedAt = Option(row.get("deletedAt"))
+        .map(_.valueAs[String])
+        .map(OffsetDateTime.parse(_)),
+      createdAt = Option(row.get("createdAt"))
         .map(_.valueAs[String])
         .map(OffsetDateTime.parse(_)),
       lastUpdatedAt = Option(row.get("lastUpdatedAt"))
@@ -59,6 +62,7 @@ case class StoredUserList(
   isDynamic: Boolean = false,
   rules: Option[DynamicListRules] = None,
   options: Option[UserListRowOptions] = None,
+  createdAt: Option[OffsetDateTime] = None,
   deletedAt: Option[OffsetDateTime] = None,
   lastUpdatedAt: Option[OffsetDateTime] = None,
   legacyId: Option[Int] = None) {
@@ -78,6 +82,7 @@ case class StoredUserList(
       "rules" -> rules.map(_.asJson.noSpaces.toAttributeValue),
       "options" -> options.map(_.asJson.noSpaces.toAttributeValue),
       "deletedAt" -> deletedAt.map(_.toString.toAttributeValue),
+      "createdAt" -> createdAt.map(_.toString.toAttributeValue),
       "lastUpdatedAt" -> lastUpdatedAt.map(_.toString.toAttributeValue),
       "legacyId" -> legacyId.map(_.toAttributeValue)
     ).collect {

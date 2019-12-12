@@ -65,7 +65,7 @@ class UserController @Inject()(
             .contentTypeJson()
             .body(
               DataResponse.complex(
-                lists
+                lists.sortBy(list => (list.createdAt, list.legacyId))
               )
             )
 

@@ -90,6 +90,7 @@ class ListsApi @Inject()(
 
         val newRules = rules.map(_.copy(rules = sanitizedRules))
 
+        val now = OffsetDateTime.now()
         dynamoListsDbAccess
           .saveList(
             StoredUserList(
@@ -101,7 +102,8 @@ class ListsApi @Inject()(
               isDynamic = newRules.isDefined,
               rules = newRules.map(_.toRow),
               options = None,
-              lastUpdatedAt = Some(OffsetDateTime.now())
+              createdAt = Some(now),
+              lastUpdatedAt = Some(now)
             )
           )
           .flatMap(list => {
