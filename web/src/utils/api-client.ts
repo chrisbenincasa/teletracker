@@ -132,9 +132,9 @@ export class TeletrackerApi {
     );
   }
 
-  async deleteList(token: string, listId: number, mergeListId?: number) {
-    if (!mergeListId || mergeListId === 0) {
-      return this.api.delete(`/api/v1/users/self/lists/${listId}`, { token });
+  async deleteList(token: string, listId: string, mergeListId?: string) {
+    if (!mergeListId || mergeListId.length === 0) {
+      return this.api.delete(`/api/v2/users/self/lists/${listId}`, { token });
     } else {
       return this.api.delete(
         `/api/v2/users/self/lists/${listId}?mergeWithList=${mergeListId}`,
@@ -143,7 +143,7 @@ export class TeletrackerApi {
     }
   }
 
-  async renameList(token: string, listId: number, listName: string) {
+  async renameList(token: string, listId: string, listName: string) {
     return this.api.put(
       `/api/v2/users/self/lists/${listId}`,
       {

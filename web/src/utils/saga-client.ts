@@ -89,7 +89,7 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *deleteList(listId: number, mergeListId?: number) {
+  *deleteList(listId: string, mergeListId?: string) {
     return yield this.apiCall(
       client => client.deleteList,
       yield call([this, this.withToken]),
@@ -98,7 +98,7 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *renameList(listId: number, listName: string) {
+  *renameList(listId: string, listName: string) {
     return yield this.apiCall(
       client => client.renameList,
       yield call([this, this.withToken]),
