@@ -66,21 +66,26 @@ class ItemApi @Inject()(
   )(implicit esItemTaggable: EsItemTaggable[T]
   ): Future[Option[(UUID, EsItemTag)]] = {
     val esTag = EsItemTag.userScoped(userId, tag, value, Some(Instant.now()))
-    val userTag = EsUserItemTag.noValue(tag)
-    idOrSlug match {
-      case Left(value) =>
-        itemUpdater
-          .upsertItemTag(value, esTag, Some(userId -> userTag))
-          .map(_ => Some(value -> esTag))
+    (idOrSlug match {
+      case Left(itemId) =>
+        val userTag = esItemTaggable.makeUserItemTag(userId, itemId, tag, value)
+        Future.successful(Some(itemId -> userTag))
 
-      case Right(value) =>
-        getThingViaSearch(Some(userId), Right(value), thingType).flatMap {
-          case None => Future.successful(None)
-          case Some(value) =>
-            itemUpdater
-              .upsertItemTag(value.id, esTag, Some(userId -> userTag))
-              .map(_ => Some(value.id -> esTag))
+      case Right(slug) =>
+        getThingViaSearch(Some(userId), Right(slug), thingType).map {
+          case None => None
+          case Some(item) =>
+            val userTag =
+              esItemTaggable.makeUserItemTag(userId, item.id, tag, value)
+
+            Some(item.id -> userTag)
         }
+    }).flatMap {
+      case None => Future.successful(None)
+      case Some((itemId, userTag)) =>
+        itemUpdater
+          .upsertItemTag(itemId, esTag, Some(userId -> userTag))
+          .map(_ => Some(itemId -> esTag))
     }
   }
 
@@ -92,12 +97,13 @@ class ItemApi @Inject()(
   ): Future[Option[(UUID, EsItemTag)]] = {
     val esTag =
       EsItemTag.userScoped[String](userId, tag, None, Some(Instant.now()))
+    // Create a no value tag because we only need the unique key to know how to delete it
     val userTag = EsUserItemTag.noValue(tag)
 
     idOrSlug match {
       case Left(value) =>
         itemUpdater
-          .upsertItemTag(value, esTag, Some(userId -> userTag))
+          .removeItemTag(value, esTag, Some(userId -> userTag))
           .map(_ => Some(value -> esTag))
 
       case Right(value) =>
@@ -105,7 +111,7 @@ class ItemApi @Inject()(
           case None => Future.successful(None)
           case Some(value) =>
             itemUpdater
-              .upsertItemTag(value.id, esTag, Some(userId -> userTag))
+              .removeItemTag(value.id, esTag, Some(userId -> userTag))
               .map(_ => Some(value.id -> esTag))
         }
     }
