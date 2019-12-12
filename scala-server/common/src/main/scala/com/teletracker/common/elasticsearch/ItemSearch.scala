@@ -53,12 +53,16 @@ class ItemSearch @Inject()(
     // TODO: Support all of the filters that regular search does
     val searchQuery = QueryBuilders
       .boolQuery()
-      .should(makeMultiMatchQuery(textQuery, 1.2f))
-      .applyOptional(FullTextSynonyms.replaceWithSynonym(textQuery))(
-        (builder, synonymQuery) =>
-          builder.should(makeMultiMatchQuery(synonymQuery))
+      .must(
+        QueryBuilders
+          .boolQuery()
+          .should(makeMultiMatchQuery(textQuery, 1.2f))
+          .applyOptional(FullTextSynonyms.replaceWithSynonym(textQuery))(
+            (builder, synonymQuery) =>
+              builder.should(makeMultiMatchQuery(synonymQuery))
+          )
+          .minimumShouldMatch(1)
       )
-      .minimumShouldMatch(1)
       .applyOptional(searchOptions.genres.filter(_.nonEmpty))(genresFilter)
       .applyOptional(searchOptions.networks.filter(_.nonEmpty))(
         availabilityByNetworksOr
