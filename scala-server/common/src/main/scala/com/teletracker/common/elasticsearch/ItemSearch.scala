@@ -33,19 +33,47 @@ class ItemSearch @Inject()(
       require(searchOptions.bookmark.get.sortType == SortMode.SearchScoreType)
     }
 
+    def makeMultiMatchQuery(
+      query: String,
+      boost: Float = 1.0f
+    ) = {
+      QueryBuilders
+        .multiMatchQuery(
+          query,
+          "title",
+          "title._2gram",
+          "title._3gram"
+        )
+        .`type`(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
+        .fuzziness(5)
+        .operator(Operator.AND)
+        .boost(boost)
+    }
+
     // TODO: Support all of the filters that regular search does
     val searchQuery = QueryBuilders
       .boolQuery()
       .must(
         QueryBuilders
-          .multiMatchQuery(
-            textQuery,
-            "title",
-            "title._2gram",
-            "title._3gram"
+          .boolQuery()
+          .should(makeMultiMatchQuery(textQuery, 1.2f))
+          .applyOptional(FullTextSynonyms.replaceWithSynonym(textQuery))(
+            (builder, synonymQuery) =>
+              builder.should(makeMultiMatchQuery(synonymQuery))
           )
-          .`type`(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
-          .operator(Operator.AND)
+          .minimumShouldMatch(1)
+      )
+      .applyOptional(searchOptions.genres.filter(_.nonEmpty))(genresFilter)
+      .applyOptional(searchOptions.networks.filter(_.nonEmpty))(
+        availabilityByNetworksOr
+      )
+      .applyOptional(searchOptions.releaseYear.filter(_.isFinite))(
+        openDateRangeFilter
+      )
+      .applyOptional(
+        searchOptions.peopleCreditSearch.filter(_.people.nonEmpty)
+      )(
+        peopleCreditSearchQuery
       )
       .through(posterImageFilter)
       .through(removeAdultItems)
@@ -68,6 +96,8 @@ class ItemSearch @Inject()(
       .applyOptional(searchOptions.bookmark)((builder, bookmark) => {
         builder.from(bookmark.value.toInt)
       })
+
+    println(searchSource)
 
     val search = new SearchRequest("items")
       .source(

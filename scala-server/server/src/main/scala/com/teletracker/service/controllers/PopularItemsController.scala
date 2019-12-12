@@ -13,7 +13,7 @@ import com.teletracker.common.util.{
 }
 import com.teletracker.service.api
 import com.teletracker.service.api.model.Item
-import com.teletracker.service.api.{ItemSearchRequest, ThingApi}
+import com.teletracker.service.api.{ItemApi, ItemSearchRequest}
 import com.teletracker.service.controllers.TeletrackerController._
 import com.teletracker.service.controllers.annotations.ItemReleaseYear
 import com.twitter.finagle.http.Request
@@ -34,7 +34,7 @@ class PopularItemsController @Inject()(
   tmdbClient: TmdbClient,
   networkCache: NetworkCache,
   popularItemSearch: ItemSearch,
-  thingApi: ThingApi
+  itemApi: ItemApi
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with CanParseFieldFilter {
@@ -56,7 +56,7 @@ class PopularItemsController @Inject()(
     userId: Option[String],
     searchRequest: ItemSearchRequest
   ) = {
-    thingApi
+    itemApi
       .search(
         searchRequest
       )
