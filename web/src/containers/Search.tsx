@@ -1,28 +1,54 @@
+import React, { Component } from 'react';
 import {
   createStyles,
   Grid,
+  IconButton,
   LinearProgress,
   Theme,
   Typography,
   WithStyles,
   withStyles,
+  withWidth,
 } from '@material-ui/core';
+import { Tune } from '@material-ui/icons';
 import * as R from 'ramda';
-import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { search, SearchInitiatedPayload } from '../actions/search';
 import { bindActionCreators, Dispatch } from 'redux';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
+import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { Error as ErrorIcon } from '@material-ui/icons';
 import ReactGA from 'react-ga';
 import InfiniteScroll from 'react-infinite-scroller';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';
+import { Genre, Network } from '../types';
+import AllFilters from '../components/Filters/AllFilters';
+import ActiveFilters from '../components/Filters/ActiveFilters';
+import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
+import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
+import {
+  parseFilterParamsFromQs,
+  updateUrlParamsForFilter,
+} from '../utils/urlHelper';
+import { filterParamsEqual } from '../utils/changeDetection';
 
 const styles = (theme: Theme) =>
   createStyles({
+    listTitle: {
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    filters: {
+      display: 'flex',
+      flexDirection: 'row',
+      marginBottom: theme.spacing(1),
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+    },
     searchError: {
       display: 'flex',
       flexDirection: 'column',
@@ -41,6 +67,10 @@ const styles = (theme: Theme) =>
       margin: theme.spacing(1),
       padding: theme.spacing(1),
     },
+    settings: {
+      display: 'flex',
+      alignSelf: 'flex-end',
+    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
@@ -56,15 +86,49 @@ interface DispatchProps {
   search: (payload: SearchInitiatedPayload) => void;
 }
 
-type Props = OwnProps & WithUserProps & DispatchProps;
+interface RouteParams {
+  id: string;
+}
+
+interface StateProps {
+  genres?: Genre[];
+  networks?: Network[];
+}
+
+interface WidthProps {
+  width: string;
+}
+
+type Props = OwnProps &
+  WithUserProps &
+  DispatchProps &
+  StateProps &
+  WidthProps &
+  RouteComponentProps<RouteParams>;
 
 type State = {
   searchText: string;
+  genres?: Genre[];
+  filters: FilterParams;
+  showFilter: boolean;
+  createDynamicListDialogOpen: boolean;
 };
 
 class Search extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
+
+    let filterParams = DEFAULT_FILTER_PARAMS;
+    let paramsFromQuery = parseFilterParamsFromQs(props.location.search);
+
+    if (paramsFromQuery.sortOrder === 'default') {
+      paramsFromQuery.sortOrder = 'popularity';
+    }
+
+    filterParams = {
+      ...filterParams,
+      ...paramsFromQuery,
+    };
 
     let params = new URLSearchParams(window.location.search);
     let query;
@@ -75,7 +139,10 @@ class Search extends Component<Props, State> {
 
       this.state = {
         ...this.state,
+        showFilter: false,
         searchText: query,
+        filters: filterParams,
+        createDynamicListDialogOpen: false,
       };
 
       if (this.props.currentSearchText !== query) {
@@ -122,14 +189,56 @@ class Search extends Component<Props, State> {
     );
   };
 
+  toggleFilters = () => {
+    this.setState({ showFilter: !this.state.showFilter });
+  };
+
+  handleFilterParamsChange = (filterParams: FilterParams) => {
+    if (!filterParamsEqual(this.state.filters, filterParams)) {
+      this.setState(
+        {
+          filters: filterParams,
+        },
+        () => {
+          updateUrlParamsForFilter(this.props, filterParams);
+          this.loadMoreResults();
+        },
+      );
+    }
+  };
+
+  createListFromFilters = () => {
+    this.setState({
+      createDynamicListDialogOpen: true,
+    });
+  };
+
+  handleCreateDynamicModalClose = () => {
+    this.setState({
+      createDynamicListDialogOpen: false,
+    });
+  };
+
+  mapGenre = (genre: number) => {
+    const { genres } = this.props;
+    const genreItem = genres && genres.find(obj => obj.id === genre);
+    return (genreItem && genreItem.name) || '';
+  };
+
   render() {
     let {
       classes,
       currentSearchText,
+      genres,
       searchBookmark,
       searchResults,
       userSelf,
     } = this.props;
+
+    const {
+      filters: { itemTypes, genresFilter, networks, sliders },
+    } = this.state;
+
     let firstLoad = !searchResults;
     searchResults = searchResults || [];
 
@@ -140,9 +249,50 @@ class Search extends Component<Props, State> {
       <React.Fragment>
         {searchResults.length ? (
           <div className={classes.searchResultsContainer}>
-            <Typography>
-              {`Movies & TV Shows that match "${currentSearchText}"`}
-            </Typography>
+            <div className={classes.listTitle}>
+              <Typography
+                color="inherit"
+                variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
+                style={{ flexGrow: 1 }}
+              >
+                {`${
+                  genresFilter && genresFilter.length === 1
+                    ? this.mapGenre(genresFilter[0])
+                    : ''
+                } ${
+                  itemTypes && itemTypes.length === 1
+                    ? itemTypes.includes('movie')
+                      ? 'Movies'
+                      : 'TV Shows'
+                    : 'Content'
+                } that matches "${currentSearchText}"`}
+              </Typography>
+              <IconButton
+                onClick={this.toggleFilters}
+                className={classes.settings}
+                color={this.state.showFilter ? 'primary' : 'inherit'}
+              >
+                <Tune />
+                <Typography variant="srOnly">Tune</Typography>
+              </IconButton>
+              <CreateSmartListButton onClick={this.createListFromFilters} />
+            </div>
+            <div className={classes.filters}>
+              <ActiveFilters
+                genres={genres}
+                updateFilters={this.handleFilterParamsChange}
+                isListDynamic={false}
+                filters={this.state.filters}
+                variant="default"
+              />
+            </div>
+            <AllFilters
+              genres={genres}
+              open={this.state.showFilter}
+              filters={this.state.filters}
+              updateFilters={this.handleFilterParamsChange}
+              sortOptions={['popularity', 'recent']}
+            />
             <InfiniteScroll
               pageStart={0}
               loadMore={() => this.loadMoreResults()}
@@ -192,6 +342,7 @@ const mapStateToProps = (appState: AppState) => {
     isSearching: appState.search.searching,
     // TODO: Pass SearchResult object that either contains error or a response
     error: appState.search.error,
+    genres: appState.metadata.genres,
     searchResults: appState.search.results,
     searchBookmark: appState.search.bookmark,
   };
@@ -206,6 +357,10 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
   );
 };
 
-export default withUser(
-  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Search)),
+export default withWidth()(
+  withUser(
+    withStyles(styles)(
+      withRouter(connect(mapStateToProps, mapDispatchToProps)(Search)),
+    ),
+  ),
 );
