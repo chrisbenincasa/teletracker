@@ -13,7 +13,7 @@ import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
 import com.teletracker.common.util.json.circe._
 import com.teletracker.service.api
-import com.teletracker.service.api.ThingApi
+import com.teletracker.service.api.ItemApi
 import com.teletracker.service.api.model.Person
 import com.teletracker.service.controllers.TeletrackerController._
 import com.teletracker.service.controllers.annotations.ItemReleaseYear
@@ -34,14 +34,14 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class ItemsController @Inject()(
-  thingApi: ThingApi,
+  itemApi: ItemApi,
   personLookup: PersonLookup
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with CanParseFieldFilter {
   prefix("/api/v2/items") {
     get("/:thingId/?") { req: GetThingRequest =>
-      thingApi
+      itemApi
         .getThingViaSearch(
           req.authenticatedUserId,
           req.thingId,
@@ -60,36 +60,8 @@ class ItemsController @Inject()(
   }
 
   prefix("/api/v2/people") {
-    get("/search") { req: SearchRequest =>
-      val query = req.query
-      val fields = parseFieldsOrNone(req.fields)
-      val mode = req.rankingMode.getOrElse(SearchRankingMode.Popularity)
-      val bookmark = req.bookmark.map(Bookmark.parse)
-
-      val options =
-        SearchOptions(mode, None, req.limit, bookmark)
-
-      for {
-        result <- personLookup.fullTextSearch(
-          query,
-          options
-        )
-      } yield {
-        response.ok
-          .contentTypeJson()
-          .body(
-            DataResponse.forDataResponse(
-              DataResponse(
-                result.items.map(Person.fromEsPerson(_, None)),
-                Some(Paging(result.bookmark.map(_.encode)))
-              )
-            )
-          )
-      }
-    }
-
     get("/batch") { req: GetPersonBatchRequest =>
-      thingApi
+      itemApi
         .getPeopleViaSearch(req.authenticatedUserId, req.personIds)
         .map(results => {
           response.ok(
@@ -106,7 +78,7 @@ class ItemsController @Inject()(
     }
 
     get("/:personId") { req: GetPersonRequest =>
-      thingApi.getPersonViaSearch(req.authenticatedUserId, req.personId).map {
+      itemApi.getPersonViaSearch(req.authenticatedUserId, req.personId).map {
         case None => response.notFound
         case Some((person, credits)) =>
           response.ok(
@@ -141,7 +113,7 @@ class ItemsController @Inject()(
         )
       )
 
-      thingApi
+      itemApi
         .getPersonCredits(req.authenticatedUserId, req.personId, request)
         .map(result => {
           val items =

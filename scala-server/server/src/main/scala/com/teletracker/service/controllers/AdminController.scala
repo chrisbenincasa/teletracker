@@ -7,7 +7,7 @@ import com.teletracker.common.model.DataResponse
 import com.teletracker.common.process.ProcessQueue
 import com.teletracker.common.process.tmdb.TmdbProcessMessage
 import com.teletracker.common.util.HasThingIdOrSlug
-import com.teletracker.service.api.ThingApi
+import com.teletracker.service.api.ItemApi
 import com.teletracker.service.auth.AdminFilter
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class AdminController @Inject()(
   tmdbLocalCache: TmdbLocalCache,
   justWatchLocalCache: JustWatchLocalCache,
-  thingsApi: ThingApi,
+  thingsApi: ItemApi,
   processQueue: ProcessQueue[TmdbProcessMessage],
   itemLookup: ItemLookup
 )(implicit executionContext: ExecutionContext)

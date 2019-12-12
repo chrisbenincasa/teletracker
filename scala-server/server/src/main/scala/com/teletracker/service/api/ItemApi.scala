@@ -7,7 +7,13 @@ import com.teletracker.common.db.model.{
   ThingType,
   UserThingTagType
 }
-import com.teletracker.common.db.{Bookmark, Popularity, SortMode}
+import com.teletracker.common.db.{
+  Bookmark,
+  Popularity,
+  SearchOptions,
+  SearchRankingMode,
+  SortMode
+}
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.util._
 import com.teletracker.service.api.model.Item
@@ -16,10 +22,10 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
-class ThingApi @Inject()(
+class ItemApi @Inject()(
   genreCache: GenreCache,
   networkCache: NetworkCache,
-  popularItemSearch: ItemSearch,
+  itemSearch: ItemSearch,
   itemLookup: ItemLookup,
   itemUpdater: ItemUpdater,
   personLookup: PersonLookup
@@ -152,56 +158,75 @@ class ThingApi @Inject()(
     )
   }
 
-  def search(request: ItemSearchRequest): Future[ElasticsearchItemsResponse] = {
-    val genresFut = if (request.genres.exists(_.nonEmpty)) {
-      genreCache
-        .get()
-        .map(cachedGenres => {
-          request.genres.get.map(HasGenreIdOrSlug.parse).flatMap {
-            case Left(id)    => cachedGenres.find(_.id == id)
-            case Right(slug) => cachedGenres.find(_.slug == slug)
-          }
-        })
-    } else {
-      Future.successful(Set.empty[StoredGenre])
-    }
-
-    val networksFut = if (request.networks.exists(_.nonEmpty)) {
-      networkCache
-        .getAllNetworks()
-        .map(cachedNetworks => {
-          cachedNetworks
-            .filter(
-              network => request.networks.get.contains(network.slug.value)
-            )
-            .toSet
-        })
-    } else {
-      Future.successful(Set.empty[StoredNetwork])
-    }
-
-    val peopleCreditFilter = if (request.peopleCredits.exists(_.nonEmpty)) {
-      val cast = request.peopleCredits.get.cast
-        .map(HasThingIdOrSlug.parseIdOrSlug)
-        .map(PersonCreditSearch(_, PersonAssociationType.Cast))
-      val crew = request.peopleCredits.get.crew
-        .map(HasThingIdOrSlug.parseIdOrSlug)
-        .map(PersonCreditSearch(_, PersonAssociationType.Crew))
-
-      Some(
-        PeopleCreditSearch(
-          cast ++ crew,
-          request.peopleCredits.get.operator
-        )
-      )
-    } else {
-      None
-    }
+  def fullTextSearch(
+    query: String,
+    request: ItemSearchRequest
+  ): Future[ElasticsearchItemsResponse] = {
+    val genresFut = resolveGenres(request)
+    val networksFut = resolveNetworks(request)
+    val peopleCreditFilter = resolveCredits(request)
 
     for {
       filterGenres <- genresFut
       filterNetworks <- networksFut
-      result <- popularItemSearch
+      result <- itemSearch
+        .fullTextSearch(
+          query,
+          SearchOptions(
+            rankingMode = SearchRankingMode.Popularity,
+            thingTypeFilter = request.itemTypes,
+            limit = request.limit,
+            bookmark = request.bookmark,
+            genres = Some(filterGenres).filter(_.nonEmpty),
+            networks = Some(filterNetworks).filter(_.nonEmpty),
+            releaseYear = request.releaseYear,
+            peopleCreditSearch = peopleCreditFilter
+          )
+        )
+    } yield {
+      result
+    }
+  }
+
+  def fullTextSearchPeople(
+    query: String,
+    request: ItemSearchRequest
+  ): Future[ElasticsearchPeopleResponse] = {
+    val genresFut = resolveGenres(request)
+    val networksFut = resolveNetworks(request)
+    val peopleCreditFilter = resolveCredits(request)
+
+    for {
+      filterGenres <- genresFut
+      filterNetworks <- networksFut
+      result <- personLookup
+        .fullTextSearch(
+          query,
+          SearchOptions(
+            rankingMode = SearchRankingMode.Popularity,
+            thingTypeFilter = request.itemTypes,
+            limit = request.limit,
+            bookmark = request.bookmark,
+            genres = Some(filterGenres).filter(_.nonEmpty),
+            networks = Some(filterNetworks).filter(_.nonEmpty),
+            releaseYear = request.releaseYear,
+            peopleCreditSearch = peopleCreditFilter
+          )
+        )
+    } yield {
+      result
+    }
+  }
+
+  def search(request: ItemSearchRequest): Future[ElasticsearchItemsResponse] = {
+    val genresFut = resolveGenres(request)
+    val networksFut = resolveNetworks(request)
+    val peopleCreditFilter = resolveCredits(request)
+
+    for {
+      filterGenres <- genresFut
+      filterNetworks <- networksFut
+      result <- itemSearch
         .searchItems(
           Some(filterGenres).filter(_.nonEmpty),
           Some(filterNetworks).filter(_.nonEmpty),
@@ -214,6 +239,58 @@ class ThingApi @Inject()(
         )
     } yield {
       result
+    }
+  }
+
+  private def resolveGenres(itemSearchRequest: ItemSearchRequest) = {
+    if (itemSearchRequest.genres.exists(_.nonEmpty)) {
+      genreCache
+        .get()
+        .map(cachedGenres => {
+          itemSearchRequest.genres.get.map(HasGenreIdOrSlug.parse).flatMap {
+            case Left(id)    => cachedGenres.find(_.id == id)
+            case Right(slug) => cachedGenres.find(_.slug == slug)
+          }
+        })
+    } else {
+      Future.successful(Set.empty[StoredGenre])
+    }
+  }
+
+  private def resolveNetworks(itemSearchRequest: ItemSearchRequest) = {
+    if (itemSearchRequest.networks.exists(_.nonEmpty)) {
+      networkCache
+        .getAllNetworks()
+        .map(cachedNetworks => {
+          cachedNetworks
+            .filter(
+              network =>
+                itemSearchRequest.networks.get.contains(network.slug.value)
+            )
+            .toSet
+        })
+    } else {
+      Future.successful(Set.empty[StoredNetwork])
+    }
+  }
+
+  private def resolveCredits(itemSearchRequest: ItemSearchRequest) = {
+    if (itemSearchRequest.peopleCredits.exists(_.nonEmpty)) {
+      val cast = itemSearchRequest.peopleCredits.get.cast
+        .map(HasThingIdOrSlug.parseIdOrSlug)
+        .map(PersonCreditSearch(_, PersonAssociationType.Cast))
+      val crew = itemSearchRequest.peopleCredits.get.crew
+        .map(HasThingIdOrSlug.parseIdOrSlug)
+        .map(PersonCreditSearch(_, PersonAssociationType.Crew))
+
+      Some(
+        PeopleCreditSearch(
+          cast ++ crew,
+          itemSearchRequest.peopleCredits.get.operator
+        )
+      )
+    } else {
+      None
     }
   }
 }
