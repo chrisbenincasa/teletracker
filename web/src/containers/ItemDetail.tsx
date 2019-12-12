@@ -232,6 +232,10 @@ function ItemDetails(props: Props) {
     }
   }, [location]);
 
+  // React.useEffect(() => {
+  //   loadItem();
+  // }, [props.itemDetail]);
+
   const loadItem = () => {
     let itemId = params.id;
     let itemType = params.type;
