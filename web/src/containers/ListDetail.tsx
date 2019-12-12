@@ -491,8 +491,9 @@ class ListDetail extends Component<Props, State> {
 
     if (userSelf) {
       deleteList({
-        listId: Number(match.params.id),
+        listId: match.params.id,
       });
+
       this.setState({ deleted: true });
     }
     this.handleDeleteModalClose();
