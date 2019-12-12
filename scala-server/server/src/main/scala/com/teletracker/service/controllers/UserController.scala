@@ -16,7 +16,7 @@ import com.teletracker.common.util.{
   ListFilterParser
 }
 import com.teletracker.service.api.model.{UserList, UserListRules}
-import com.teletracker.service.api.{ListsApi, ThingApi, UsersApi}
+import com.teletracker.service.api.{ItemApi, ListsApi, UsersApi}
 import com.teletracker.service.auth.{AuthRequiredFilter, UserSelfOnlyFilter}
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.request.{QueryParam, RouteParam}
@@ -32,7 +32,7 @@ class UserController @Inject()(
   usersApi: UsersApi,
   listsApi: ListsApi,
   listFilterParser: ListFilterParser,
-  thingApi: ThingApi
+  thingApi: ItemApi
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerController(listsApi)
     with CanParseFieldFilter {
