@@ -80,12 +80,8 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   wrapper: {
     display: 'flex',
-    flexGrow: 1,
     flexDirection: 'row',
     margin: theme.spacing(2),
-    [theme.breakpoints.down('sm')]: {
-      margin: theme.spacing(1),
-    },
   },
 }));
 
@@ -157,7 +153,6 @@ function Featured(props: Props) {
                       objectFit: 'cover',
                       width: '100%',
                       height: '100%',
-                      maxHeight: 424,
                       borderRadius: 10,
                     }}
                     pictureStyle={{
@@ -184,7 +179,6 @@ function Featured(props: Props) {
                       imageStyle={{
                         boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                         maxWidth: '100%',
-                        maxHeight: 340,
                         borderRadius: 10,
                       }}
                       pictureStyle={{
@@ -194,7 +188,7 @@ function Featured(props: Props) {
                       }}
                     />
                   </RouterLink>
-                  <ManageTracking itemDetail={item} style={{ maxWidth: 225 }} />
+                  <ManageTracking itemDetail={item} />
 
                   <AddToListDialog
                     open={manageTrackingModalOpen}
@@ -212,6 +206,7 @@ function Featured(props: Props) {
         })
       : null;
   };
+
   return featuredItems && featuredItems.length > 0 ? (
     <div className={classes.wrapper}>{renderFeaturedItems()}</div>
   ) : null;

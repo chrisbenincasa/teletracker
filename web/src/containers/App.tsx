@@ -42,7 +42,6 @@ const styles = (theme: Theme) =>
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
       }),
-      marginLeft: 0,
       paddingBottom: '10rem',
       [theme.breakpoints.down('sm')]: {
         paddingBottom: '2rem',
