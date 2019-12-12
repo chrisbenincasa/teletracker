@@ -310,6 +310,10 @@ class Toolbar extends Component<Props, State> {
   };
 
   handleSearchFocus = event => {
+    if (this.props.drawerOpen) {
+      this.props.onDrawerChange();
+    }
+
     if (
       this.state.searchAnchor === null &&
       this.props.location.pathname !== '/search'
@@ -422,6 +426,10 @@ class Toolbar extends Component<Props, State> {
   };
 
   handleGenreMenuClose = event => {
+    if (this.props.drawerOpen) {
+      this.props.onDrawerChange();
+    }
+
     this.setState({
       genreAnchorEl: null,
       genreType: null,
@@ -583,6 +591,7 @@ class Toolbar extends Component<Props, State> {
                     </Typography>
                     <Divider />
                     <MenuItemLink
+                      onClick={this.handleGenreMenuClose}
                       to={`/${type}s`}
                       key={`explore-${type}`}
                       primary={`All ${type}s`}

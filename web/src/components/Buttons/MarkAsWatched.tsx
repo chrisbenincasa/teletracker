@@ -52,6 +52,7 @@ type Props = OwnProps &
 
 interface State {
   loginModalOpen: boolean;
+  watched?: boolean;
 }
 
 class MarkAsWatched extends Component<Props, State> {
@@ -60,6 +61,7 @@ class MarkAsWatched extends Component<Props, State> {
 
     this.state = {
       loginModalOpen: false,
+      watched: this.itemMarkedAsWatched(),
     };
   }
 
@@ -72,10 +74,12 @@ class MarkAsWatched extends Component<Props, State> {
     if (!this.props.userSelf) {
       this.toggleLoginModal();
     } else {
-      if (this.itemMarkedAsWatched()) {
+      if (this.state.watched) {
         this.props.removeUserItemTags(payload);
+        this.setState({ watched: false });
       } else {
         this.props.updateUserItemTags(payload);
+        this.setState({ watched: true });
       }
     }
   };
@@ -90,7 +94,7 @@ class MarkAsWatched extends Component<Props, State> {
 
   watchedButton = (isReleased: boolean) => {
     const { classes } = this.props;
-    const watchedStatus = this.itemMarkedAsWatched();
+    const watchedStatus = this.state.watched;
     const watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
 
     return (
