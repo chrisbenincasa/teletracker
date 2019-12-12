@@ -107,7 +107,8 @@ const styles = (theme: Theme) =>
     leftContainer: {
       display: 'flex',
       flexDirection: 'column',
-      [theme.breakpoints.up('sm')]: {
+      position: 'relative',
+      [theme.breakpoints.up('md')]: {
         position: 'sticky',
         top: 75,
         height: 475,
@@ -532,7 +533,7 @@ class PersonDetail extends React.Component<Props, State> {
             color: '#fff',
           }}
         >
-          <Hidden only={['xs', 'sm']}>{this.renderTitle(person)}</Hidden>
+          <Hidden smDown>{this.renderTitle(person)}</Hidden>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Typography color="inherit">
@@ -683,7 +684,7 @@ class PersonDetail extends React.Component<Props, State> {
                 )}
                 <div className={classes.personDetailContainer}>
                   <div className={classes.leftContainer}>
-                    <Hidden smUp>{this.renderTitle(person)}</Hidden>
+                    <Hidden mdUp>{this.renderTitle(person)}</Hidden>
                     <div className={classes.posterContainer}>
                       <CardMedia
                         src={imagePlaceholder}
