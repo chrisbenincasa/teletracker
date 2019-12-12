@@ -844,7 +844,7 @@ class ListDetail extends Component<Props, State> {
                         item={thingsById[item.id]}
                         listContext={list}
                         withActionButton
-                        hoverDelete
+                        hoverDelete={!list.isDynamic}
                         hasLoaded={this.setVisibleItems}
                       />
                     ) : null,
