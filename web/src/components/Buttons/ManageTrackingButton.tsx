@@ -36,7 +36,8 @@ export default function ManageTrackingButton(props: Props) {
   const belongsToLists: string[] =
     props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
 
-  let trackingCTA = belongsToLists ? 'Manage Tracking' : 'Add to List';
+  let trackingCTA =
+    belongsToLists.length > 0 ? 'Manage Tracking' : 'Add to List';
   let trackingCTAMobile = 'Track';
 
   return (

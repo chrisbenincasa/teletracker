@@ -498,18 +498,20 @@ class PersonDetail extends React.Component<Props, State> {
           useWindow
           threshold={300}
         >
-          <Grid container spacing={2}>
-            {filmography.map(item =>
-              item && item.posterImage ? (
-                <ItemCard key={item.id} userSelf={userSelf} item={item} />
-              ) : null,
-            )}
-          </Grid>
-          {this.props.loadingCredits && this.renderLoadingCircle()}
-          {!this.props.credits ||
-            (!Boolean(this.props.creditsBookmark) && (
-              <Typography className={classes.fin}>fin.</Typography>
-            ))}
+          <React.Fragment>
+            <Grid container spacing={2}>
+              {filmography.map(item =>
+                item && item.posterImage ? (
+                  <ItemCard key={item.id} userSelf={userSelf} item={item} />
+                ) : null,
+              )}
+            </Grid>
+            {this.props.loadingCredits && this.renderLoadingCircle()}
+            {!this.props.credits ||
+              (!Boolean(this.props.creditsBookmark) && (
+                <Typography className={classes.fin}>fin.</Typography>
+              ))}
+          </React.Fragment>
         </InfiniteScroll>
       </div>
     );
