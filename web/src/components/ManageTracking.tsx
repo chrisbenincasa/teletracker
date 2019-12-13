@@ -76,29 +76,6 @@ class ManageTracking extends Component<Props, State> {
     this.setState({ manageTrackingModalOpen: false });
   };
 
-  renderTrackingToggle = () => {
-    const { classes, style } = this.props;
-    const { belongsToLists } = this.state;
-
-    let trackingCTA = belongsToLists ? 'Manage Tracking' : 'Add to List';
-
-    return (
-      <div className={classes.itemCTA} style={{ ...style }}>
-        <Button
-          size="small"
-          variant="contained"
-          aria-label="Add to List"
-          onClick={this.openManageTrackingModal}
-          fullWidth
-          className={classes.button}
-          startIcon={<ListIcon className={classes.buttonIcon} />}
-        >
-          {trackingCTA}
-        </Button>
-      </div>
-    );
-  };
-
   render() {
     let { manageTrackingModalOpen } = this.state;
     let { itemDetail, userSelf, style } = this.props;

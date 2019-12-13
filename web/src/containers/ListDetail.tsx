@@ -491,8 +491,9 @@ class ListDetail extends Component<Props, State> {
 
     if (userSelf) {
       deleteList({
-        listId: Number(match.params.id),
+        listId: match.params.id,
       });
+
       this.setState({ deleted: true });
     }
     this.handleDeleteModalClose();
@@ -843,7 +844,7 @@ class ListDetail extends Component<Props, State> {
                         item={thingsById[item.id]}
                         listContext={list}
                         withActionButton
-                        hoverDelete
+                        hoverDelete={!list.isDynamic}
                         hasLoaded={this.setVisibleItems}
                       />
                     ) : null,
