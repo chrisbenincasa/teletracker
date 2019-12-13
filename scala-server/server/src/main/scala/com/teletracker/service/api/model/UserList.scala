@@ -10,21 +10,6 @@ import java.util.UUID
 object UserList {
   implicit val codec: Codec[UserList] = io.circe.generic.semiauto.deriveCodec
 
-  def fromRow(row: TrackedListRow): UserList = {
-//    UserList(
-//      row.id,
-//      row.name,
-//      row.isDefault,
-//      row.isPublic,
-//      row.userId,
-//      items = None,
-//      isDynamic = row.isDynamic,
-//      configuration = UserListConfiguration.fromRow(row.rules, row.options),
-//      deletedAt = row.deletedAt
-//    )
-    ???
-  }
-
   def fromStoredList(storedUserList: StoredUserList): UserList = {
     UserList(
       storedUserList.id,
@@ -37,7 +22,8 @@ object UserList {
       isDynamic = storedUserList.isDynamic,
       configuration = UserListConfiguration
         .fromStoredConfiguration(storedUserList.rules, storedUserList.options),
-      deletedAt = storedUserList.deletedAt
+      deletedAt = storedUserList.deletedAt,
+      createdAt = storedUserList.createdAt
     )
   }
 }
@@ -53,6 +39,7 @@ case class UserList(
   items: Option[List[Item]] = None,
   isDynamic: Boolean = false,
   isDeleted: Boolean = false,
+  createdAt: Option[OffsetDateTime] = None,
   deletedAt: Option[OffsetDateTime] = None,
   totalItems: Option[Int] = None,
   relevantPeople: Option[List[Person]] = None) {

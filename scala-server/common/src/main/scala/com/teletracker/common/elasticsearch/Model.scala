@@ -176,38 +176,111 @@ case class EsPerson(
 
 object EsItemTaggable {
   implicit val esItemTaggableString: EsItemTaggable[String] =
-    (tag: String, value: Option[String], lastUpdated: Instant) => {
-      EsItemTag(
-        tag = tag,
-        value = None,
-        string_value = value,
-        last_updated = Some(lastUpdated)
-      )
+    new EsItemTaggable[String] {
+      override def makeItemTag(
+        tag: String,
+        value: Option[String],
+        lastUpdated: Instant
+      ) = {
+        EsItemTag(
+          tag = tag,
+          value = None,
+          string_value = value,
+          last_updated = Some(lastUpdated)
+        )
+      }
+
+      override def makeUserItemTag(
+        userId: String,
+        itemId: UUID,
+        tag: UserThingTagType,
+        value: Option[String],
+        lastUpdated: Instant = Instant.now()
+      ): EsUserItemTag = {
+        EsUserItemTag(
+          tag = tag.toString,
+          user_id = Some(userId),
+          item_id = Some(itemId.toString),
+          int_value = None,
+          double_value = None,
+          date_value = None,
+          string_value = value,
+          last_updated = Some(lastUpdated)
+        )
+      }
     }
 
-  implicit val esItemTaggableDouble: EsItemTaggable[Double] =
-    (tag: String, value: Option[Double], lastUpdated: Instant) => {
-      EsItemTag(
+  implicit val esItemTaggableDouble: EsItemTaggable[Double] = {
+    new EsItemTaggable[Double] {
+      override def makeItemTag(
+        tag: String,
+        value: Option[Double],
+        lastUpdated: Instant
+      ): EsItemTag = EsItemTag(
         tag = tag,
         value = value,
         string_value = None,
         last_updated = Some(lastUpdated)
       )
+
+      override def makeUserItemTag(
+        userId: String,
+        itemId: UUID,
+        tag: UserThingTagType,
+        value: Option[Double],
+        lastUpdated: Instant
+      ): EsUserItemTag =
+        EsUserItemTag(
+          tag = tag.toString,
+          user_id = Some(userId),
+          item_id = Some(itemId.toString),
+          int_value = None,
+          double_value = value,
+          date_value = None,
+          string_value = None,
+          last_updated = Some(lastUpdated)
+        )
     }
+  }
 
   implicit val esItemTaggableInt: EsItemTaggable[Int] =
-    (tag: String, value: Option[Int], lastUpdated: Instant) => {
-      EsItemTag(
-        tag = tag,
-        value = value.map(_.toDouble),
-        string_value = None,
-        last_updated = Some(lastUpdated)
-      )
+    new EsItemTaggable[Int] {
+      override def makeItemTag(
+        tag: String,
+        value: Option[Int],
+        lastUpdated: Instant
+      ): EsItemTag = {
+        EsItemTag(
+          tag = tag,
+          value = value.map(_.toDouble),
+          string_value = None,
+          last_updated = Some(lastUpdated)
+        )
+      }
+
+      override def makeUserItemTag(
+        userId: String,
+        itemId: UUID,
+        tag: UserThingTagType,
+        value: Option[Int],
+        lastUpdated: Instant
+      ): EsUserItemTag = {
+        EsUserItemTag(
+          tag = tag.toString,
+          user_id = Some(userId),
+          item_id = Some(itemId.toString),
+          int_value = value,
+          double_value = None,
+          date_value = None,
+          string_value = None,
+          last_updated = Some(lastUpdated)
+        )
+      }
     }
 }
 
 trait EsItemTaggable[T] {
-  def makeTag(
+  def makeItemTag(
     tag: String,
     value: Option[T],
     lastUpdated: Instant = Instant.now()
@@ -219,8 +292,16 @@ trait EsItemTaggable[T] {
     value: Option[T],
     lastUpdated: Instant = Instant.now()
   ) = {
-    makeTag(TagFormatter.format(userId, tag), value, lastUpdated)
+    makeItemTag(TagFormatter.format(userId, tag), value, lastUpdated)
   }
+
+  def makeUserItemTag(
+    userId: String,
+    itemId: UUID,
+    tag: UserThingTagType,
+    value: Option[T],
+    lastUpdated: Instant = Instant.now()
+  ): EsUserItemTag
 }
 
 object EsItemTag {
@@ -272,13 +353,22 @@ object EsItemTag {
   }
 
   object UserScoped {
-    def unapply(
-      arg: EsItemTag
-    ): Option[(String, UserThingTagType, Option[Double], Option[Instant])] = {
+    def unapply(arg: EsItemTag): Option[
+      (
+        String,
+        UserThingTagType,
+        Option[Double],
+        Option[String],
+        Option[Instant]
+      )
+    ] = {
       arg.tag.split(SEPARATOR, 2) match {
         case Array(userId, tag) =>
           Try(UserThingTagType.fromString(tag)).toOption
-            .map(tagType => (userId, tagType, arg.value, arg.last_updated))
+            .map(
+              tagType =>
+                (userId, tagType, arg.value, arg.string_value, arg.last_updated)
+            )
         case _ => None
       }
     }
@@ -427,6 +517,14 @@ object EsUserItemTag {
     EsUserItemTag(tag = tag.toString, last_updated = Some(Instant.now()))
   }
 
+  def value[T](
+    userId: String,
+    itemId: UUID,
+    tag: UserThingTagType,
+    value: Option[T]
+  )(implicit esItemTaggable: EsItemTaggable[T]
+  ): EsUserItemTag = esItemTaggable.makeUserItemTag(userId, itemId, tag, value)
+
   def forInt(
     tag: UserThingTagType,
     value: Int
@@ -458,6 +556,8 @@ object EsUserItemTag {
 @JsonCodec
 case class EsUserItemTag(
   tag: String,
+  user_id: Option[String] = None,
+  item_id: Option[String] = None,
   int_value: Option[Int] = None,
   double_value: Option[Double] = None,
   date_value: Option[Instant] = None,
