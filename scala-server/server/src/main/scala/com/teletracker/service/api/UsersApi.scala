@@ -265,7 +265,7 @@ class UsersApi @Inject()(
     userThingTag: EsItemTag
   ): Future[Unit] = {
     userThingTag match {
-      case EsItemTag.UserScoped(userId, UserThingTagType.Watched, _, _) =>
+      case EsItemTag.UserScoped(userId, UserThingTagType.Watched, _, _, _) =>
         // TODO: Implement for ES and Dynamo
         Future.unit
 //        listsDbAccess

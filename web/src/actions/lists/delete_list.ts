@@ -9,8 +9,8 @@ export const USER_SELF_DELETE_LIST = 'user/self/delete_list/INITIATED';
 export const USER_SELF_DELETE_LIST_SUCCESS = 'user/self/delete_list/SUCCESS';
 
 export interface UserDeleteListPayload {
-  listId: number;
-  mergeListId?: number;
+  listId: string;
+  mergeListId?: string;
 }
 
 export type UserDeleteListAction = FSA<
@@ -39,7 +39,7 @@ export const deleteListSaga = function*() {
       let response: TeletrackerResponse<any> = yield clientEffect(
         client => client.deleteList,
         payload.listId,
-        payload.mergeListId ? Number(payload.mergeListId) : undefined,
+        payload.mergeListId ? payload.mergeListId : undefined,
       );
 
       if (response.ok) {
