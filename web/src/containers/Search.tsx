@@ -34,6 +34,7 @@ import {
   updateUrlParamsForFilter,
 } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
+import { calculateLimit, getNumColumns } from '../utils/list-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -112,6 +113,7 @@ type State = {
   filters: FilterParams;
   showFilter: boolean;
   createDynamicListDialogOpen: boolean;
+  totalLoadedImages: number;
 };
 
 class Search extends Component<Props, State> {
@@ -143,6 +145,7 @@ class Search extends Component<Props, State> {
         searchText: query,
         filters: filterParams,
         createDynamicListDialogOpen: false,
+        totalLoadedImages: 0,
       };
 
       if (this.props.currentSearchText !== query) {
@@ -169,17 +172,56 @@ class Search extends Component<Props, State> {
   }
 
   debouncedSearch = _.debounce(() => {
-    this.props.search({
-      query: this.state.searchText,
-      bookmark: this.props.searchBookmark,
-    });
+    this.loadResults();
   }, 200);
 
-  loadMoreResults() {
+  loadResults() {
+    const {
+      filters: { itemTypes, genresFilter, networks, sliders },
+      searchText,
+    } = this.state;
+    const { searchBookmark, width } = this.props;
+
+    // To do: add support for sorting
     if (!this.props.isSearching) {
-      this.debouncedSearch();
+      this.props.search({
+        query: searchText,
+        bookmark: searchBookmark ? searchBookmark : undefined,
+        limit: calculateLimit(width, 3, 0),
+        itemTypes,
+        networks,
+        genres: genresFilter,
+        releaseYearRange:
+          sliders && sliders.releaseYear
+            ? {
+                min: sliders.releaseYear.min,
+                max: sliders.releaseYear.max,
+              }
+            : undefined,
+      });
     }
   }
+
+  loadMoreResults = () => {
+    const { totalLoadedImages } = this.state;
+    const { isSearching, searchResults, width } = this.props;
+    const numColumns = getNumColumns(width);
+
+    // If an item is featured, update total items accordingly
+    const totalFetchedItems = (searchResults && searchResults.length) || 0;
+    const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
+    const shouldLoadMore = totalNonLoadedImages <= numColumns;
+
+    if (!isSearching && shouldLoadMore) {
+      this.debouncedSearch();
+    }
+  };
+
+  setVisibleItems = () => {
+    this.setState({
+      totalLoadedImages: this.state.totalLoadedImages + 1,
+    });
+  };
 
   renderLoading = () => {
     return (

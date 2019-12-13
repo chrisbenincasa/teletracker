@@ -3,7 +3,13 @@ import { FSA } from 'flux-standard-action';
 import { clientEffect, createAction } from '../utils';
 import { TeletrackerResponse } from '../../utils/api-client';
 import _ from 'lodash';
-import { Paging } from '../../types';
+import {
+  ItemType,
+  SortOptions,
+  NetworkType,
+  OpenRange,
+  Paging,
+} from '../../types';
 import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
 
@@ -14,6 +20,12 @@ export const SEARCH_FAILED = 'search/FAILED';
 export interface SearchInitiatedPayload {
   query: string;
   bookmark?: string;
+  limit?: number;
+  itemTypes?: ItemType[];
+  networks?: NetworkType[];
+  genres?: number[];
+  releaseYearRange?: OpenRange;
+  sort?: SortOptions;
 }
 
 export type SearchInitiatedAction = FSA<
@@ -47,26 +59,34 @@ export const searchSaga = function*() {
   yield takeLatest(SEARCH_INITIATED, function*({
     payload,
   }: SearchInitiatedAction) {
-    try {
-      let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
-        client => client.searchV2,
-        payload!.query,
-        payload!.bookmark,
-      );
+    if (payload) {
+      try {
+        let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
+          client => client.searchV2,
+          payload.query,
+          payload.bookmark,
+          payload.limit,
+          payload.itemTypes,
+          payload.networks,
+          payload.genres,
+          payload.releaseYearRange,
+          payload.sort,
+        );
 
-      if (response.ok) {
-        let successPayload = {
-          results: response.data!.data.map(ItemFactory.create),
-          paging: response.data!.paging,
-          append: !_.isUndefined(payload!.bookmark),
-        };
+        if (response.ok) {
+          let successPayload = {
+            results: response.data!.data.map(ItemFactory.create),
+            paging: response.data!.paging,
+            append: !_.isUndefined(payload!.bookmark),
+          };
 
-        yield put(SearchSuccess(successPayload));
-      } else {
-        yield put(SearchFailed(new Error(response.problem)));
+          yield put(SearchSuccess(successPayload));
+        } else {
+          yield put(SearchFailed(new Error(response.problem)));
+        }
+      } catch (e) {
+        yield put(SearchFailed(e));
       }
-    } catch (e) {
-      yield put(SearchFailed(e));
     }
   });
 };

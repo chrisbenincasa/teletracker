@@ -279,12 +279,27 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *searchV2(searchText: string, bookmark?: string) {
+  *searchV2(
+    searchText: string,
+    bookmark?: string,
+    limit?: number,
+    itemTypes?: ItemType[],
+    networks?: NetworkType[],
+    genres?: number[],
+    releaseYearRange?: OpenRange,
+    sort?: SortOptions,
+  ) {
     return yield this.apiCall(
       client => client.searchV2,
       yield call([this, this.withToken]),
       searchText,
       bookmark,
+      limit,
+      itemTypes,
+      networks,
+      genres,
+      releaseYearRange,
+      sort,
     );
   }
 
