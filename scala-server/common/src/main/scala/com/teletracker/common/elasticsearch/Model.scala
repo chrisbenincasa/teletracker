@@ -353,13 +353,22 @@ object EsItemTag {
   }
 
   object UserScoped {
-    def unapply(
-      arg: EsItemTag
-    ): Option[(String, UserThingTagType, Option[Double], Option[Instant])] = {
+    def unapply(arg: EsItemTag): Option[
+      (
+        String,
+        UserThingTagType,
+        Option[Double],
+        Option[String],
+        Option[Instant]
+      )
+    ] = {
       arg.tag.split(SEPARATOR, 2) match {
         case Array(userId, tag) =>
           Try(UserThingTagType.fromString(tag)).toOption
-            .map(tagType => (userId, tagType, arg.value, arg.last_updated))
+            .map(
+              tagType =>
+                (userId, tagType, arg.value, arg.string_value, arg.last_updated)
+            )
         case _ => None
       }
     }

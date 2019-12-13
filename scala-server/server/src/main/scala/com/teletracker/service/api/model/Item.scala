@@ -61,8 +61,9 @@ object Item {
       runtime = esItem.runtime,
       slug = esItem.slug,
       tags = esItem.tags.map(_.collect {
-        case EsItemTag.UserScoped(userId, typ, value, lastUpdated) =>
-          ItemTag(Some(userId), typ, value, lastUpdated)
+        case EsItemTag
+              .UserScoped(userId, typ, value, stringValue, lastUpdated) =>
+          ItemTag(Some(userId), typ, value, stringValue, lastUpdated)
       }),
       `type` = esItem.`type`
     )
@@ -125,4 +126,5 @@ case class ItemTag(
   userId: Option[String],
   tag: UserThingTagType,
   value: Option[Double],
+  string_value: Option[String],
   lastUpdated: Option[Instant])
