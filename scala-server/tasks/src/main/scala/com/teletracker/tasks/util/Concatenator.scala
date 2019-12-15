@@ -31,7 +31,9 @@ class Concatenator @Inject()(
           })
       })
 
-    println(s"Handle a total of ${lines} lines")
+    output.flush()
+
+    println(s"Handled a total of ${lines} lines")
 
     sourceWriter.writeFile(destination, tmp)
   }

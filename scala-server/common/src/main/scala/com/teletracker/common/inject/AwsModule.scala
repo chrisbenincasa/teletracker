@@ -6,7 +6,7 @@ import javax.inject.Singleton
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 
 class AwsModule extends TwitterModule {
   @Provides
@@ -15,7 +15,7 @@ class AwsModule extends TwitterModule {
 
   @Provides
   @Singleton
-  def sqsClient: SqsClient = SqsClient.create()
+  def sqsClient: SqsAsyncClient = SqsAsyncClient.create()
 
   @Provides
   @Singleton

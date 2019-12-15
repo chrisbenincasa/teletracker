@@ -36,7 +36,28 @@ resource "aws_cloudwatch_event_target" "tmdb-id-dump-event-target" {
   input = jsonencode({
     "clazz" = "com.teletracker.tasks.tmdb.DumpAllIds",
     "args" = {
-      "type" = "all"
+      "itemType" = "all"
     }
   })
+}
+
+module "tmdb-popularity-scheduler" {
+  source = "./scraper-lambda"
+
+  function_name    = "tmdb-popularity-scheduler"
+  handler_function = "index.tmdbPopularityScheduler"
+
+  create_default_trigger = false
+}
+
+resource "aws_lambda_permission" "tmdb-popularity-scheduler-allow-teletracker-data" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.tmdb-popularity-scheduler.lambda_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = data.aws_s3_bucket.teletracker-data-bucket.arn
+}
+
+resource "aws_iam_role_policy_attachment" "tmdb-changes-scraper-kms-encrypt-attachment" {
+  policy_arn = data.aws_iam_policy.sqs_full_access_policy.arn
+  role       = module.tmdb-popularity-scheduler.lambda_role_name
 }

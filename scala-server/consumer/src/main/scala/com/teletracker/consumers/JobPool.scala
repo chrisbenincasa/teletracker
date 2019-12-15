@@ -1,4 +1,4 @@
-package com.teletracker.consumers.worker
+package com.teletracker.consumers
 
 import org.slf4j.LoggerFactory
 import java.util.concurrent.{

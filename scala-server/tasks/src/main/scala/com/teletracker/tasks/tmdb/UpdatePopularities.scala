@@ -1,8 +1,18 @@
 package com.teletracker.tasks.tmdb
 
-import com.teletracker.common.db.model.ThingType
-import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.aws.sqs.SqsQueue
+import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import com.teletracker.common.elasticsearch.ItemLookup
+import com.teletracker.common.pubsub.{
+  EsIngestMessage,
+  EsIngestMessageOperation,
+  EsIngestUpdate
+}
+import com.teletracker.common.util.AsyncStream
+import com.teletracker.common.util.json.circe._
+import com.teletracker.common.util.Futures._
+import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.{
   MovieDumpFileRow,
@@ -10,98 +20,215 @@ import com.teletracker.tasks.tmdb.export_tasks.{
   TvShowDumpFileRow
 }
 import com.teletracker.tasks.util.SourceRetriever
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveCodec
+import io.circe.generic.JsonCodec
+import io.circe.syntax._
+import io.circe.{Decoder, Encoder}
 import javax.inject.Inject
+import org.elasticsearch.common.io.stream.BytesStreamOutput
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.net.URI
 import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+
+class UpdatePopularitiesDependencies @Inject()(
+  val sourceRetriever: SourceRetriever,
+  val ingestJobParser: IngestJobParser,
+  val itemLookup: ItemLookup,
+  val teletrackerConfig: TeletrackerConfig,
+  val sqsAsyncClient: SqsAsyncClient)
 
 class UpdateMoviePopularities @Inject()(
-  sourceRetriever: SourceRetriever,
-  ingestJobParser: IngestJobParser)
+  deps: UpdatePopularitiesDependencies
+)(implicit executionContext: ExecutionContext)
     extends UpdatePopularities[MovieDumpFileRow](
-      sourceRetriever,
-      ingestJobParser
-    ) {
-
-  override protected val tDecoder: Decoder[MovieDumpFileRow] =
-    deriveCodec
-
-  override protected def thingType: ThingType = ThingType.Movie
-}
+      ThingType.Movie,
+      deps
+    )
 
 class UpdateTvShowPopularities @Inject()(
-  sourceRetriever: SourceRetriever,
-  ingestJobParser: IngestJobParser)
+  deps: UpdatePopularitiesDependencies
+)(implicit executionContext: ExecutionContext)
     extends UpdatePopularities[TvShowDumpFileRow](
-      sourceRetriever,
-      ingestJobParser
-    ) {
+      ThingType.Show,
+      deps
+    )
 
-  override protected val tDecoder: Decoder[TvShowDumpFileRow] =
-    deriveCodec
+@JsonCodec
+case class UpdatePopularitiesJobArgs(
+  snapshotBefore: URI,
+  snapshotAfter: URI,
+  offset: Int,
+  limit: Int,
+  dryRun: Boolean,
+  changeThreshold: Float,
+  verbose: Boolean = false)
 
-  override protected def thingType: ThingType = ThingType.Show
-}
-
-abstract class UpdatePopularities[T <: TmdbDumpFileRow](
-  sourceRetriever: SourceRetriever,
-  ingestJobParser: IngestJobParser)
-    extends TeletrackerTaskWithDefaultArgs {
+abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
+  itemType: ThingType,
+  deps: UpdatePopularitiesDependencies
+)(implicit executionContext: ExecutionContext)
+    extends TeletrackerTask {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  implicit protected val tDecoder: Decoder[T]
+  override type TypedArgs = UpdatePopularitiesJobArgs
 
-  protected def thingType: ThingType
+  implicit override protected lazy val typedArgsEncoder
+    : Encoder[UpdatePopularitiesJobArgs] =
+    io.circe.generic.semiauto.deriveEncoder
+
+  override def preparseArgs(args: Args): UpdatePopularitiesJobArgs = {
+    UpdatePopularitiesJobArgs(
+      snapshotAfter = args.valueOrThrow[URI]("snapshotAfter"),
+      snapshotBefore = args.valueOrThrow[URI]("snapshotBefore"),
+      offset = args.valueOrDefault("offset", 0),
+      limit = args.valueOrDefault("limit", -1),
+      dryRun = args.valueOrDefault("dryRun", true),
+      changeThreshold = args.valueOrDefault("changeThreshold", 1.0f),
+      verbose = args.valueOrDefault("verbose", false)
+    )
+  }
 
   override def runInternal(args: Args): Unit = {
+    val parsedArgs = preparseArgs(args)
+
     // Input must be SORTED BY POPULARITY DESC
-    val file = args.value[URI]("input").get
-    val offset = args.valueOrDefault("offset", 0)
-    val limit = args.valueOrDefault("limit", -1)
-    val groupSize = args.valueOrDefault("groupSize", 10)
-    val dryRun = args.valueOrDefault("dryRun", true)
-    val popularityFloor = args.valueOrDefault("popularityFloor", 25.0)
-    val source = sourceRetriever.getSource(file)
+    val beforeSource = deps.sourceRetriever.getSource(parsedArgs.snapshotBefore)
+    val afterSource = deps.sourceRetriever.getSource(parsedArgs.snapshotAfter)
 
-    val counter = new AtomicInteger()
+    val beforePopularitiesById = deps.ingestJobParser
+      .stream[T](beforeSource.getLines())
+      .flatMap {
+        case Left(value) =>
+          logger.error("Could not parse line", value)
+          None
 
-    ingestJobParser
-      .stream[T](
-        source.getLines().drop(offset).safeTake(limit)
-      )
-      .collect {
-        case Right(row) => row
-        case Left(e)    => throw e
+        case Right(value) => Some(value.id -> value.popularity)
       }
-      .takeWhile(_.popularity > popularityFloor)
-      .grouped(groupSize)
-      .foreach(batch => {
-        val updates = batch.toList.map(item => {
-          (item.id.toString, thingType, item.popularity)
-        })
+      .toMap
 
-        val count = counter.addAndGet(updates.length)
-        if (count % 50 == 0) {
-          logger.info(s"Potentially updated ${count} so far.")
-        }
+    logger.info("Finished parsing before delta")
 
-        if (!dryRun) {
-//          thingsDbAccess
-//            .updatePopularitiesInBatch(updates)
-//            .await()
+    val afterPopularitiesById = deps.ingestJobParser
+      .stream[T](afterSource.getLines())
+      .flatMap {
+        case Left(value) =>
+          logger.error("Could not parse line", value)
+          None
 
-          // TODO: Elasticseaerch
-          Future.unit
+        case Right(value) => Some(value.id -> value.popularity)
+      }
+      .toMap
+
+    logger.info("Finished parsing after delta")
+
+    val afterSourceForUpdate =
+      deps.sourceRetriever
+        .getSource(parsedArgs.snapshotAfter, consultCache = true)
+
+    val processed = new AtomicInteger()
+
+    deps.ingestJobParser
+      .asyncStream[T](afterSourceForUpdate.getLines())
+      .drop(parsedArgs.offset)
+      .safeTake(parsedArgs.limit)
+      .flatMapOption(_.toOption)
+      .filter(line => afterPopularitiesById.isDefinedAt(line.id))
+      .flatMapOption(item => {
+        if (!beforePopularitiesById.isDefinedAt(item.id)) {
+          Some(item.id -> afterPopularitiesById(item.id))
         } else {
-          updates.foreach(update => logger.info(s"Would've updated: $update"))
+          val afterPopularity = afterPopularitiesById(item.id)
+          val beforePopularity = beforePopularitiesById(item.id)
+
+          val delta = Math.abs(afterPopularity - beforePopularity)
+
+          val meetsThreshold = delta >= parsedArgs.changeThreshold
+
+          if (parsedArgs.verbose && meetsThreshold) {
+            logger.info(
+              s"Id = ${item.id} meets threshold with difference = ${afterPopularity - beforePopularity}. " +
+                s"New popularity: ${afterPopularity}"
+            )
+          }
+
+          if (meetsThreshold) {
+            Some(item.id -> afterPopularitiesById(item.id))
+          } else {
+            None
+          }
         }
       })
+      .grouped(50)
+      .foreachF(batch => {
+        processed.addAndGet(batch.size)
 
-    logger.info(
-      s"${counter.get()} total items of type ${thingType} potentially updated"
-    )
+        val output = new BytesStreamOutput()
+
+        if (!parsedArgs.dryRun) {
+          val queue = new SqsQueue[EsIngestMessage](
+            deps.sqsAsyncClient,
+            deps.teletrackerConfig.async.esIngestQueue.url
+          )
+
+          AsyncStream
+            .fromSeq(batch)
+            .grouped(10)
+            .mapF(innerBatch => {
+              logger.info(s"Looking up ${innerBatch.size} items")
+              deps.itemLookup
+                .lookupItemsByExternalIds(
+                  innerBatch
+                    .map(_._1)
+                    .map(
+                      id => (ExternalSource.TheMovieDb, id.toString, itemType)
+                    )
+                    .toList
+                )
+                .map(results => {
+                  results.map {
+                    case ((_, id), item) => id.toInt -> item.id
+                  }
+                })
+                .flatMap(itemIdById => {
+                  logger.info(s"Found ${itemIdById.size} items")
+                  val messages = innerBatch
+                    .flatMap {
+                      case (tmdbId, popularity) =>
+                        itemIdById.get(tmdbId).map(_ -> popularity)
+                    }
+                    .map {
+                      case (id, popularity) =>
+                        EsIngestMessage(
+                          EsIngestMessageOperation.Update,
+                          update = Some(
+                            EsIngestUpdate(
+                              index = "items",
+                              id.toString,
+                              None,
+                              Some(Map("popularity" -> popularity).asJson)
+                            )
+                          )
+                        )
+                    }
+
+                  queue.batchQueue(messages.toList)
+                })
+            })
+            .force
+            .map(_ => {
+              output.bytes().writeTo(Console.out)
+            })
+        } else {
+          Future.unit
+        }
+      })
+      .await()
+
+    if (parsedArgs.dryRun) {
+      logger.info(s"Would've processed ${processed.get()} total popularities")
+    } else {
+      logger.info(s"Processed ${processed.get()} total popularities")
+    }
   }
 }

@@ -73,13 +73,13 @@ class SourceRetriever @Inject()(s3: S3Client) {
           true
       }
 
-      val finalStream = stream.response().contentEncoding() match {
-        case "gzip" =>
-          new GZIPInputStream(
-            stream
-          )
+      val isGzip = stream.response().contentEncoding() == "gzip" ||
+        stream.response().contentType() == "application/gzip"
 
-        case _ => stream
+      val finalStream = if (isGzip) {
+        new GZIPInputStream(stream)
+      } else {
+        stream
       }
 
       val fos = new FileOutputStream(tmpFile)

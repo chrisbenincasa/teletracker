@@ -1,13 +1,12 @@
 package com.teletracker.consumers.impl
 
+import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.pubsub.{JobTags, TeletrackerTaskQueueMessage}
-import com.teletracker.consumers.SqsQueue
+import com.teletracker.consumers.{JobPool, TeletrackerTaskRunnable}
 import com.teletracker.consumers.config.ConsumerConfig
-import com.teletracker.consumers.worker.{
-  JobPool,
+import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
-  SqsQueueThroughputWorkerConfig,
-  TeletrackerTaskRunnable
+  SqsQueueThroughputWorkerConfig
 }
 import com.teletracker.tasks.TeletrackerTaskRunner
 import io.circe.Json

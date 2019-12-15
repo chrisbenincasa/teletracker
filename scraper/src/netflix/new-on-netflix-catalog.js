@@ -16,9 +16,9 @@ const nameAndYearRegex = /^(.*)\s\((\d+)\)$/i;
 // Format: [384 titles] - Showing 1 to 120
 let totalCountRegex = /\[(\d+) titles]\s*-\s*Showing\s*(\d+)\s*to\s*(\d+)/i;
 
-const scrapeType = async letter => {
+const scrapeType = async (letter, useProxy) => {
   try {
-    let proxyAddress = await resolveSecret('proxy-address');
+    let proxyAddress = useProxy ? await resolveSecret('proxy-address') : null;
 
     let pathLetter = letter;
     if (letter === 'all') {
@@ -39,7 +39,7 @@ const scrapeType = async letter => {
           headers: {
             'User-Agent': USER_AGENT_STRING,
           },
-          proxy: proxyAddress,
+          proxy: useProxy ? proxyAddress : undefined,
           qs: {
             start: offset || 0,
           },
@@ -185,7 +185,7 @@ export const scrape = async event => {
 
       for (let i = 0; i < aToZ.length; i++) {
         console.log('Fetching titles from page: "' + aToZ[i] + '"');
-        await scrapeType(aToZ[i]);
+        await scrapeType(aToZ[i], event.useProxy);
         await wait(1000);
       }
     } else {
@@ -233,7 +233,7 @@ export const scrape = async event => {
               FunctionName,
               InvocationType: 'Event',
               Payload: Buffer.from(
-                JSON.stringify({ scheduleNext, letter: nextLetter, limit }),
+                JSON.stringify({ scheduleNext, letter: nextLetter, limit, useProxy: event.useProxy }),
                 'utf-8',
               ),
             })

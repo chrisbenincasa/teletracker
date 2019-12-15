@@ -1,29 +1,20 @@
-package com.teletracker.consumers
+package com.teletracker.common.aws.sqs
 
+import com.teletracker.common.aws.sqs.worker.Queue
 import com.teletracker.common.pubsub.EventBase
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.consumers.worker.Queue
+import com.teletracker.common.util.Functions._
 import io.circe.Codec
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{
-  ChangeMessageVisibilityBatchRequest,
-  ChangeMessageVisibilityBatchRequestEntry,
-  ChangeMessageVisibilityBatchResponse,
-  DeleteMessageBatchRequest,
-  DeleteMessageBatchRequestEntry,
-  GetQueueAttributesRequest,
-  QueueAttributeName,
-  ReceiveMessageRequest,
-  SendMessageBatchRequest,
-  SendMessageBatchRequestEntry
-}
+import software.amazon.awssdk.services.sqs.model._
+import java.util.UUID
 import scala.collection.JavaConverters._
+import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.control.NonFatal
-import scala.compat.java8.FutureConverters._
 
 object SqsQueue {
   val MAX_MESSAGE_BATCH_SIZE = 10
@@ -54,9 +45,9 @@ class SqsQueue[T <: EventBase: Manifest: Codec](
 )(implicit executionContext: ExecutionContext)
     extends Queue[T] {
 
-  import io.circe.syntax._
-  import io.circe.parser._
   import SqsQueue._
+  import io.circe.parser._
+  import io.circe.syntax._
 
   private lazy val logger = LoggerFactory.getLogger(getClass)
 
@@ -77,7 +68,7 @@ class SqsQueue[T <: EventBase: Manifest: Codec](
   private lazy val deserializationFailureCountKey =
     "%s.%s.deserializationFailed".format(COUNTER_KEY_BASE, queue)
 
-//  val sqs = new SqsInterceptor(queue).createProxy(_sqs)
+  private lazy val isFifo = url.endsWith(".fifo")
 
   override def name: String =
     url.split("/").lastOption.getOrElse("unknown")
@@ -87,8 +78,8 @@ class SqsQueue[T <: EventBase: Manifest: Codec](
     *
     * @param message
     */
-  override def queue(message: T): Future[Unit] = {
-    batchQueue(List(message))
+  override def queue(message: T): Future[Option[T]] = {
+    batchQueue(List(message)).map(_.headOption)
   }
 
   /**
@@ -97,8 +88,8 @@ class SqsQueue[T <: EventBase: Manifest: Codec](
     * @param message
     * @return
     */
-  override def queueAsync(message: T): Future[Unit] = {
-    batchQueueAsync(List(message)).map(_ => {})
+  override def queueAsync(message: T): Future[Option[T]] = {
+    batchQueueAsync(List(message)).map(_.headOption)
   }
 
   /**
@@ -106,29 +97,16 @@ class SqsQueue[T <: EventBase: Manifest: Codec](
     *
     * @param messages
     */
-  override def batchQueue(messages: List[T]): Future[Unit] = {
-    try {
-      val entries = createBatchQueueGroups(messages).map(_.group.map(_.entry))
-
-      SequentialFutures
-        .serialize(entries)(group => {
-          val request = SendMessageBatchRequest
-            .builder()
-            .queueUrl(url)
-            .entries(group.asJava)
-            .build()
-
-          sqs.sendMessageBatch(request).toScala
-        })
-        .map(_ => {})
-    } catch {
-      case e: Exception =>
-        throw e
-    }
+  override def batchQueue(
+    messages: List[T],
+    messageGroupId: Option[String] = None
+  ): Future[List[T]] = {
+    batchQueueAsync(messages, messageGroupId)
   }
 
   private def createBatchQueueGroups(
-    messages: List[T]
+    messages: List[T],
+    messageGroupId: Option[String]
   ): Iterable[BatchGroups[EntryWithSize[T]]] = {
     val entries = messages.zipWithIndex.map {
       case (m, i) =>
@@ -139,6 +117,13 @@ class SqsQueue[T <: EventBase: Manifest: Codec](
             .builder()
             .id((i + 1).toString)
             .messageBody(message)
+            .applyIf(isFifo)(
+              _.messageGroupId(messageGroupId.getOrElse("default"))
+            )
+            // No deduplication happening here...
+            .applyIf(isFifo)(
+              _.messageDeduplicationId(UUID.randomUUID().toString)
+            )
             .build(),
           m,
           message.getBytes("UTF-8").length
@@ -199,8 +184,11 @@ class SqsQueue[T <: EventBase: Manifest: Codec](
     * @param messages
     * @return A sequence of messages whose batch request failed
     */
-  override def batchQueueAsync(messages: List[T]): Future[List[T]] = {
-    val entries = createBatchQueueGroups(messages)
+  override def batchQueueAsync(
+    messages: List[T],
+    messageGroupId: Option[String] = None
+  ): Future[List[T]] = {
+    val entries = createBatchQueueGroups(messages, messageGroupId)
 
     def batchQueueAsyncInner(
       groups: Iterable[List[SendMessageBatchRequestEntry]],

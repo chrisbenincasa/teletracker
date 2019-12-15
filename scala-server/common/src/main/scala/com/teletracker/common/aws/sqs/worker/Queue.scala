@@ -1,4 +1,4 @@
-package com.teletracker.consumers.worker
+package com.teletracker.common.aws.sqs.worker
 
 import com.teletracker.common.pubsub.EventBase
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityBatchResponse
@@ -50,7 +50,7 @@ trait QueueWriter[T <: EventBase] extends QueueIdentity {
     *
     * @param message
     */
-  def queue(message: T): Future[Unit]
+  def queue(message: T): Future[Option[T]]
 
   /**
     * Send message to the queue asynchronously
@@ -58,14 +58,17 @@ trait QueueWriter[T <: EventBase] extends QueueIdentity {
     * @param message
     * @return
     */
-  def queueAsync(message: T): Future[Unit]
+  def queueAsync(message: T): Future[Option[T]]
 
   /**
     * Send many messages to the queue
     *
     * @param messages
     */
-  def batchQueue(messages: List[T]): Future[Unit]
+  def batchQueue(
+    messages: List[T],
+    messageGroupId: Option[String] = None
+  ): Future[List[T]]
 
   /**
     * Push items onto the queue in batch, asynchronously
@@ -77,7 +80,10 @@ trait QueueWriter[T <: EventBase] extends QueueIdentity {
     * @param messages
     * @return A sequence of messages whose batch request failed
     */
-  def batchQueueAsync(messages: List[T]): Future[List[T]]
+  def batchQueueAsync(
+    messages: List[T],
+    messageGroupId: Option[String] = None
+  ): Future[List[T]]
 }
 
 trait QueueIdentity {

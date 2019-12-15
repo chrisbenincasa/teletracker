@@ -215,7 +215,7 @@ class DumpAllIds @Inject()(
     fromTsv: String => T,
     writeTo: PrintWriter
   ): Unit = {
-    writeTo.println(fromTsv(line))
+    writeTo.println(fromTsv(line).asJson.noSpaces)
   }
 
   private def makeTsvLine(movieDumpFileRow: MovieDumpFileRow): String = {

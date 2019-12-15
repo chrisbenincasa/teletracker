@@ -2,7 +2,7 @@
 // Copyright (c) 2011-2017 by Curalate, Inc.
 //
 
-package com.teletracker.consumers.worker
+package com.teletracker.common.aws.sqs.worker
 
 import com.teletracker.common.pubsub.EventBase
 import java.util.concurrent.Semaphore

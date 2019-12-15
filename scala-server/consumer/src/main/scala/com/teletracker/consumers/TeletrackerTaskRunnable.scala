@@ -1,4 +1,4 @@
-package com.teletracker.consumers.worker
+package com.teletracker.consumers
 
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.tasks.TeletrackerTask
