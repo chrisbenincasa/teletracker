@@ -1,0 +1,14 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 10
+    commands:
+      - echo Entered the install phase...
+  build:
+    commands:
+      - cd scraper && ./build-scrapers
+artifacts:
+  files:
+    - scraper/build/scrapers.zip
