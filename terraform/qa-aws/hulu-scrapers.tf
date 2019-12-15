@@ -58,3 +58,22 @@ resource "aws_iam_role_policy_attachment" "hulu-catalog-scraper-kms-encrypt-atta
   policy_arn = aws_iam_policy.kms_encrypt_decrypt_policy.arn
   role       = module.hulu-catalog-scraper.lambda_role_name
 }
+
+module "hulu-catalog-watcher" {
+  source = "./scraper-lambda"
+
+  handler_function = "index.huluCatalogWatcher"
+  function_name    = "hulu-catalog-watcher"
+
+  cron_schedule = "*/10 8 * * ? *"
+
+  extra_env_vars = {
+    EXPECTED_SIZE  = 32
+    TASK_QUEUE_URL = aws_sqs_queue.teletracker-task-queue.id
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "hulu-catalog-watcher-sqs-full-attachment" {
+  policy_arn = data.aws_iam_policy.sqs_full_access_policy.arn
+  role       = module.hulu-catalog-watcher.lambda_role_name
+}
