@@ -8,3 +8,4 @@ node_modules
 
 .terraform/
 FULL_VERSION
+out/
