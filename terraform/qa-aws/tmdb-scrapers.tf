@@ -48,6 +48,10 @@ module "tmdb-popularity-scheduler" {
   handler_function = "index.tmdbPopularityScheduler"
 
   create_default_trigger = false
+
+  extra_env_vars = {
+    TASK_QUEUE_URL = aws_sqs_queue.teletracker-task-queue.id
+  }
 }
 
 resource "aws_lambda_permission" "tmdb-popularity-scheduler-allow-teletracker-data" {
@@ -57,7 +61,7 @@ resource "aws_lambda_permission" "tmdb-popularity-scheduler-allow-teletracker-da
   source_arn    = data.aws_s3_bucket.teletracker-data-bucket.arn
 }
 
-resource "aws_iam_role_policy_attachment" "tmdb-changes-scraper-kms-encrypt-attachment" {
+resource "aws_iam_role_policy_attachment" "tmdb-changes-scraper-sqs-full-attachment" {
   policy_arn = data.aws_iam_policy.sqs_full_access_policy.arn
   role       = module.tmdb-popularity-scheduler.lambda_role_name
 }

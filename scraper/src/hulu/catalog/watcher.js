@@ -5,7 +5,9 @@ import { scheduleTask } from '../../common/task_publisher';
 
 export default async function watch(event) {
   try {
-    if (!event.expectedSize) {
+    let expectedSize = process.env.EXPECTED_SIZE || event.expectedSize;
+
+    if (!expectedSize) {
       throw new Error('Need to pass expected size');
     }
 
@@ -33,7 +35,7 @@ export default async function watch(event) {
 
     console.log(foundObjects.length);
 
-    if (foundObjects.length >= event.expectedSize) {
+    if (foundObjects.length >= expectedSize) {
       let payload = {
         clazz: 'com.teletracker.tasks.scraper.hulu.HuluCatalogConcatenate',
         args: {

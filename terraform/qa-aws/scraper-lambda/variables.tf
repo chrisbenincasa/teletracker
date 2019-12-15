@@ -30,3 +30,8 @@ variable "create_default_trigger" {
   type    = bool
   default = true
 }
+
+variable "cron_schedule" {
+  type    = string
+  default = "0 8 * * ? *"
+}

@@ -15,14 +15,14 @@ resource "aws_s3_bucket_notification" "hbo-catalog-dump-pushed" {
   lambda_function {
     lambda_function_arn = module.hbo-catalog-scheduler.lambda_arn
     events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = "scrape-results"
+    filter_prefix       = "scrape-results/hbo"
     filter_suffix       = "hbo-catalog-urls.txt"
   }
 
   lambda_function {
     lambda_function_arn = module.hulu-catalog-scheduler.lambda_arn
     events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = "scrape-results"
+    filter_prefix       = "scrape-results/hulu"
     filter_suffix       = "hulu-catalog-urls.txt"
   }
 
@@ -34,7 +34,8 @@ resource "aws_s3_bucket_notification" "hbo-catalog-dump-pushed" {
   }
 
   lambda_function {
-    events        = ["s3:ObjectCreated:*"]
-    filter_prefix = "scrape-results/tmdb"
+    lambda_function_arn = module.tmdb-popularity-scheduler.lambda_arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "scrape-results/tmdb"
   }
 }
