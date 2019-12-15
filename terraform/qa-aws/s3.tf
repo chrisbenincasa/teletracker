@@ -32,4 +32,9 @@ resource "aws_s3_bucket_notification" "hbo-catalog-dump-pushed" {
     filter_prefix       = "scrape-results/netflix/whats-on-netflix"
     filter_suffix       = "netflix-originals-catalog.json"
   }
+
+  lambda_function {
+    events        = ["s3:ObjectCreated:*"]
+    filter_prefix = "scrape-results/tmdb"
+  }
 }

@@ -1,9 +1,9 @@
-package com.teletracker.consumers.worker.poll
+package com.teletracker.common.aws.sqs.worker.poll
 
+import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.pubsub.EventBase
 import com.teletracker.common.util.execution.ProvidedSchedulerService
-import com.teletracker.consumers.SqsQueue
-import com.teletracker.consumers.worker.SqsQueueWorkerConfig
+import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerConfig
 import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 

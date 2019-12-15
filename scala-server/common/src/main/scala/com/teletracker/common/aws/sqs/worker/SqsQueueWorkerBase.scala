@@ -2,12 +2,12 @@
 // Copyright (c) 2011-2017 by Curalate, Inc.
 //
 
-package com.teletracker.consumers.worker
+package com.teletracker.common.aws.sqs.worker
 
+import com.teletracker.common.aws.sqs.ProcessingFailedException
 import com.teletracker.common.pubsub.EventBase
 import com.teletracker.common.util.Futures._
-import com.teletracker.consumers.ProcessingFailedException
-import com.teletracker.consumers.worker.poll.HeartbeatConfig
+import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}

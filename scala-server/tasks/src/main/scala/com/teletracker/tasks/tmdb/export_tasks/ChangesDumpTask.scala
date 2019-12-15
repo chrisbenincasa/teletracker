@@ -17,7 +17,7 @@ import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import scala.concurrent.{ExecutionContext, Future}
 
 @TaskTags(tags = Array(JobTags.RequiresTmdbApi))
@@ -25,7 +25,7 @@ abstract class ChangesDumpTask(
   thingType: ThingType,
   s3: S3Client,
   itemExpander: ItemExpander,
-  protected val publisher: SqsClient
+  protected val publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends DataDumpTask[ChangesDumpFileRow](s3)
     with SchedulesFollowupTasks {
@@ -51,7 +51,7 @@ abstract class ChangesDumpTask(
 class MovieChangesDumpTask @Inject()(
   s3: S3Client,
   itemExpander: ItemExpander,
-  publisher: SqsClient
+  publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ThingType.Movie, s3, itemExpander, publisher) {
   override def followupTasksToSchedule(
@@ -68,7 +68,7 @@ class MovieChangesDumpTask @Inject()(
 class TvChangesDumpTask @Inject()(
   s3: S3Client,
   itemExpander: ItemExpander,
-  publisher: SqsClient
+  publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ThingType.Show, s3, itemExpander, publisher) {
   override def followupTasksToSchedule(
@@ -84,7 +84,7 @@ class TvChangesDumpTask @Inject()(
 class PersonChangesDumpTask @Inject()(
   s3: S3Client,
   itemExpander: ItemExpander,
-  publisher: SqsClient
+  publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ThingType.Person, s3, itemExpander, publisher) {
   override def followupTasksToSchedule(

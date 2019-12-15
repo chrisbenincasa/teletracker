@@ -2,12 +2,12 @@
 // Copyright (c) 2011-2017 by Curalate, Inc.
 //
 
-package com.teletracker.consumers.worker
+package com.teletracker.common.aws.sqs.worker
 
+import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.pubsub.EventBase
 import com.teletracker.common.util.execution.ExecutionContextProvider
-import com.teletracker.consumers.SqsQueue
-import com.teletracker.consumers.worker.poll.Heartbeats
+import com.teletracker.common.aws.sqs.worker.poll.Heartbeats
 import java.util.concurrent.{Executors, Semaphore}
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}

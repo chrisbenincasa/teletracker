@@ -6,7 +6,7 @@ import io.circe.{Encoder, Json}
 import io.circe.syntax._
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 
 class NoopTeletrackerTask extends TeletrackerTaskWithDefaultArgs {
@@ -36,7 +36,7 @@ class TimeoutTask extends TeletrackerTask {
 
 class DependantTask @Inject()(
   teletrackerConfig: TeletrackerConfig,
-  protected val publisher: SqsClient)
+  protected val publisher: SqsAsyncClient)
     extends TeletrackerTaskWithDefaultArgs
     with SchedulesFollowupTasks {
   private val logger = LoggerFactory.getLogger(getClass)

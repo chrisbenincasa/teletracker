@@ -5,7 +5,7 @@ import com.teletracker.tasks.util.Args
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -38,6 +38,8 @@ trait TeletrackerTask extends Args {
     preruns.foreach(_())
 
     val parsedArgs = preparseArgs(args)
+
+    logger.info(s"Running ${getClass.getSimpleName} with args: ${args}")
 
     val success = try {
       runInternal(args)
@@ -88,10 +90,12 @@ trait DefaultAnyArgs { self: TeletrackerTask =>
 }
 
 trait SchedulesFollowupTasks { self: TeletrackerTask =>
+  import scala.compat.java8.FutureConverters._
+  import com.teletracker.common.util.Futures._
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  protected def publisher: SqsClient
+  protected def publisher: SqsAsyncClient
 
   registerCallback(
     TaskCallback(
@@ -116,6 +120,8 @@ trait SchedulesFollowupTasks { self: TeletrackerTask =>
                   )
                   .build()
               )
+              .toScala
+              .await()
           })
         } else {
           logger.info("Skipping scheduling of followup jobs")

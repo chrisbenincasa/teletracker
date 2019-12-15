@@ -1,4 +1,4 @@
-package com.teletracker.consumers
+package com.teletracker.common.aws.sqs
 
 import com.teletracker.common.pubsub.EventBase
 import io.circe.Codec

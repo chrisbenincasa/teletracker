@@ -3,7 +3,7 @@ export { scrape as disneyPlusCatalog } from './disney-plus/catalog/scrape';
 export { scrape as hboCatalog } from './hbo/catalog';
 export { scrape as hboWhatsNew } from './hbo/whats-new/scrape';
 export { scrape as huluCatalog } from './hulu/catalog/scrape';
-export { default as huluCatalogWatcher} from './hulu/catalog/watcher';
+export { default as huluCatalogWatcher } from './hulu/catalog/watcher';
 export { scrape as huluChanges } from './hulu/changes/scrape';
 export { scrape as huluCatalogDump } from './hulu/catalog/dump';
 export {
@@ -25,6 +25,7 @@ export {
 } from './netflix/new-on-netflix-expiring';
 export { scrape as tmdbChanges } from './tmdb/changes/scrape';
 export { scrape as tmdbIds } from './tmdb/scrape-ids';
+export { scrape as tmdbPopularityScheduler } from './tmdb/popularity-scheduler';
 export { scrape as unogsNetflixExpiring } from './unogs/scrape';
 export { scrape as unogsNetflixAll } from './unogs/scrape-all';
 export { scrape as hboCatalogDump } from './hbo/catalog-sitemap';

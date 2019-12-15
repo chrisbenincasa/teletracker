@@ -1,6 +1,7 @@
 package com.teletracker.tasks
 
 import com.google.inject.Injector
+import io.circe.Json
 import javax.inject.Inject
 import scala.util.{Failure, Success, Try}
 
@@ -8,8 +9,16 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
   val clazz = flag[String]("class", "", "The Teletracker task class to run")
   val taskName = flag[String]("task", "", "The Teletracker task name to run")
 
+  @volatile private var _instance: TeletrackerTaskRunner = _
+
+  def instance: TeletrackerTaskRunner = _instance
+
   override protected def allowUndefinedFlags: Boolean =
     true
+
+  override protected def postInjectorStartup(): Unit = {
+    _instance = new TeletrackerTaskRunner(injector.underlying)
+  }
 
   override protected def run(): Unit = {
     require(clazz().nonEmpty || taskName().nonEmpty)
@@ -27,8 +36,7 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
       clazz()
     }
 
-    new TeletrackerTaskRunner(injector.underlying)
-      .run(clazzToRun, collectArgs)
+    _instance.run(clazzToRun, collectArgs)
 
     System.exit(0)
   }
@@ -105,5 +113,27 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
   ): Unit = {
     getInstance(clazz)
       .run(args)
+  }
+
+  def runFromJson(
+    clazz: String,
+    args: Map[String, Json]
+  ) = {
+    getInstance(clazz).run(extractArgs(args))
+  }
+
+  private def extractArgs(args: Map[String, Json]): Map[String, Option[Any]] = {
+    args.mapValues(extractValue)
+  }
+
+  private def extractValue(j: Json): Option[Any] = {
+    j.fold(
+      None,
+      Some(_),
+      x => Some(x.toDouble),
+      Some(_),
+      v => Some(v.map(extractValue)),
+      o => Some(o.toMap.mapValues(extractValue))
+    )
   }
 }

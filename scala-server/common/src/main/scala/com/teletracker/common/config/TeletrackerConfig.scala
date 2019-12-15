@@ -23,7 +23,9 @@ case class CognitoConfig(
   region: String,
   poolId: String)
 
-case class AsyncConfig(taskQueue: QueueConfig)
+case class AsyncConfig(
+  taskQueue: QueueConfig,
+  esIngestQueue: QueueConfig)
 
 case class QueueConfig(url: String)
 

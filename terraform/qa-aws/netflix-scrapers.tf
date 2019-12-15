@@ -27,7 +27,8 @@ resource "aws_cloudwatch_event_target" "new-on-netflix-event-target" {
   input = jsonencode({
     "letter"       = "all",
     "limit"        = 4,
-    "scheduleNext" = true
+    "scheduleNext" = true,
+    "useProxy"     = false
   })
   rule = aws_cloudwatch_event_rule.new-on-netflix-event-rule.name
 }

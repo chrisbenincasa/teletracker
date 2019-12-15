@@ -1,7 +1,7 @@
-package com.teletracker.consumers
+package com.teletracker.common.aws.sqs
 
+import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase
 import com.teletracker.common.pubsub.EventBase
-import com.teletracker.consumers.worker.SqsQueueWorkerBase
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import scala.concurrent.Future
