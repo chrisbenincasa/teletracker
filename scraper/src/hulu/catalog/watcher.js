@@ -39,8 +39,8 @@ export default async function watch(event) {
       let payload = {
         clazz: 'com.teletracker.tasks.scraper.hulu.HuluCatalogConcatenate',
         args: {
-          source: `scrape-results/hulu/${today}/catalog`,
-          destination: `scrape-results/hulu/${today}/catalog/${today}_hulu-catalog.all.json`,
+          source: `s3://${DATA_BUCKET}/scrape-results/hulu/${today}/catalog`,
+          destination: `s3://${DATA_BUCKET}/scrape-results/hulu/${today}/catalog/${today}_hulu-catalog.all.json`,
           scheduleIngestJob: true,
         },
       };

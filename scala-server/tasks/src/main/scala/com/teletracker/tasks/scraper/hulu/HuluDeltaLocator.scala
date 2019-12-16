@@ -8,6 +8,7 @@ import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import java.time.LocalDate
+import scala.concurrent.ExecutionContext
 
 object HuluDeltaLocator {
   def getKey(date: LocalDate) =
@@ -18,7 +19,8 @@ class LocateAndRunHuluCatalogDelta @Inject()(
   publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
-  teletrackerConfig: TeletrackerConfig)
+  teletrackerConfig: TeletrackerConfig
+)(implicit executionContext: ExecutionContext)
     extends DeltaLocateAndRunJob[HuluCatalogDeltaIngestJob](
       publisher,
       s3Client,

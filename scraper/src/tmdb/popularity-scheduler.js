@@ -17,9 +17,13 @@ export const scrape = async event => {
       if (task) {
         await scheduleTask({
           clazz: task,
-          args: {},
+          args: {
+            mod: 4,
+          },
         });
       }
     }
   }
 };
+
+export const scheduleDirect = async => {};
