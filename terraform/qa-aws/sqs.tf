@@ -1,5 +1,10 @@
 resource "aws_sqs_queue" "teletracker-task-queue" {
-  name = "teletracker-tasks-qa"
+  name           = "teletracker-tasks-qa"
+  redrive_policy = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.teletracker-task-dlq.arn}\",\"maxReceiveCount\":3}"
+}
+
+resource "aws_sqs_queue" "teletracker-task-dlq" {
+  name = "teletracker-tasks-dlq-qa"
 }
 
 resource "aws_sqs_queue" "teletracker-es-ingest-queue" {
