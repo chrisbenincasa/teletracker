@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.util.Futures._
@@ -7,17 +8,15 @@ import com.teletracker.tasks.util.{SourceRetriever, TaskMessageHelper}
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskRunner}
 import io.circe.Encoder
 import io.circe.generic.JsonCodec
-import io.circe.syntax._
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{
   GetObjectRequest,
   NoSuchKeyException
 }
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import java.net.URI
 import java.time.LocalDate
-import scala.compat.java8.FutureConverters._
+import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
 @JsonCodec
@@ -29,7 +28,8 @@ abstract class DeltaLocatorJob(
   publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
-  teletrackerConfig: TeletrackerConfig)
+  teletrackerConfig: TeletrackerConfig
+)(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
 
   override type TypedArgs = DeltaLocatorJobArgs
@@ -98,31 +98,22 @@ abstract class DeltaLocatorJob(
           null
         )
 
-        val message = makeTaskMessage(
-          snapshotBeforeLocation,
-          snapshotAfterLocation,
-          args
-        )
-        if (!parsedArgs.local) {
+        val messages =
+          makeTaskMessages(snapshotBeforeLocation, snapshotAfterLocation, args)
 
-          publisher
-            .sendMessage(
-              SendMessageRequest
-                .builder()
-                .messageBody(
-                  message.asJson.noSpaces
-                )
-                .queueUrl(
-                  teletrackerConfig.async.taskQueue.url
-                )
-                .build()
-            )
-            .toScala
-            .await()
+        if (!parsedArgs.local) {
+          val queue = new SqsQueue[TeletrackerTaskQueueMessage](
+            publisher,
+            teletrackerConfig.async.taskQueue.url
+          )
+
+          queue.batchQueue(messages).await()
         } else {
           // FOR DEBUGGING
-          TeletrackerTaskRunner.instance
-            .runFromJson(message.clazz, message.args)
+          messages.foreach(message => {
+            TeletrackerTaskRunner.instance
+              .runFromJson(message.clazz, message.args)
+          })
         }
 
       case None =>
@@ -135,11 +126,11 @@ abstract class DeltaLocatorJob(
 
   protected def getKey(today: LocalDate): String
 
-  protected def makeTaskMessage(
+  protected def makeTaskMessages(
     snapshotBeforeLocation: URI,
     snapshotAfterLocation: URI,
     args: Args
-  ): TeletrackerTaskQueueMessage
+  ): List[TeletrackerTaskQueueMessage]
 }
 
 abstract class DeltaLocateAndRunJob[T <: IngestDeltaJob[_]: ClassTag](
@@ -147,20 +138,21 @@ abstract class DeltaLocateAndRunJob[T <: IngestDeltaJob[_]: ClassTag](
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
-)(implicit enc: Encoder.AsObject[T#TypedArgs])
+)(implicit enc: Encoder.AsObject[T#TypedArgs],
+  executionContext: ExecutionContext)
     extends DeltaLocatorJob(
       publisher,
       s3Client,
       sourceRetriever,
       teletrackerConfig
     ) {
-  override protected def makeTaskMessage(
+  override protected def makeTaskMessages(
     snapshotBeforeLocation: URI,
     snapshotAfterLocation: URI,
     args: Args
-  ): TeletrackerTaskQueueMessage = {
+  ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[T](
       IngestDeltaJobArgs(snapshotBeforeLocation, snapshotAfterLocation)
-    )
+    ) :: Nil
   }
 }

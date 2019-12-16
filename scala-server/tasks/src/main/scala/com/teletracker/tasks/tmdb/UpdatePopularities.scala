@@ -12,6 +12,8 @@ import com.teletracker.common.pubsub.{
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.Lists._
+import com.teletracker.common.util.Functions._
 import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.{
@@ -62,7 +64,9 @@ case class UpdatePopularitiesJobArgs(
   limit: Int,
   dryRun: Boolean,
   changeThreshold: Float,
-  verbose: Boolean = false)
+  verbose: Boolean = false,
+  mod: Option[Int],
+  band: Option[Int])
 
 abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
   itemType: ThingType,
@@ -85,12 +89,20 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
       limit = args.valueOrDefault("limit", -1),
       dryRun = args.valueOrDefault("dryRun", true),
       changeThreshold = args.valueOrDefault("changeThreshold", 1.0f),
-      verbose = args.valueOrDefault("verbose", false)
+      verbose = args.valueOrDefault("verbose", false),
+      mod = args.value[Int]("mod"),
+      band = args.value[Int]("band")
     )
   }
 
   override def runInternal(args: Args): Unit = {
     val parsedArgs = preparseArgs(args)
+
+    if (parsedArgs.band.isDefined && parsedArgs.mod.isEmpty || parsedArgs.band.isEmpty && parsedArgs.mod.isDefined) {
+      throw new IllegalArgumentException("Both mod and band must be defined")
+    }
+
+    val hasModAndBand = parsedArgs.band.isDefined && parsedArgs.mod.isDefined
 
     // Input must be SORTED BY POPULARITY DESC
     val beforeSource = deps.sourceRetriever.getSource(parsedArgs.snapshotBefore)
@@ -98,6 +110,11 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
 
     val beforePopularitiesById = deps.ingestJobParser
       .stream[T](beforeSource.getLines())
+      .applyIf(hasModAndBand)(
+        _.valueFilterMod({
+          case Right(value) => value.id
+        }, parsedArgs.mod.get, parsedArgs.band.get)
+      )
       .flatMap {
         case Left(value) =>
           logger.error("Could not parse line", value)
@@ -111,6 +128,11 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
 
     val afterPopularitiesById = deps.ingestJobParser
       .stream[T](afterSource.getLines())
+      .applyIf(hasModAndBand)(
+        _.valueFilterMod({
+          case Right(value) => value.id
+        }, parsedArgs.mod.get, parsedArgs.band.get)
+      )
       .flatMap {
         case Left(value) =>
           logger.error("Could not parse line", value)

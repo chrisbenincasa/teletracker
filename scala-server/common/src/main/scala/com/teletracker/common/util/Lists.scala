@@ -41,4 +41,20 @@ class IteratorWithSafeTake[T](val l: Iterator[T]) extends AnyVal {
 
 class StreamWithSafeTake[T](val l: Stream[T]) extends AnyVal {
   def safeTake(n: Int): Stream[T] = if (n < 0) l else l.take(n)
+
+  def indexFilterMod(
+    mod: Int,
+    band: Int
+  ): Stream[T] = l.zipWithIndex.collect {
+    case (t, idx) if idx % mod == band => t
+  }
+
+  def valueFilterMod(
+    f: PartialFunction[T, Int],
+    mod: Int,
+    band: Int
+  ) =
+    l.collect {
+      case t if f.isDefinedAt(t) && f(t) % mod == band => t
+    }
 }
