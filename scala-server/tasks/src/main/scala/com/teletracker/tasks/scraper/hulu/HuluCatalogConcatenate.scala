@@ -32,7 +32,7 @@ class HuluCatalogConcatenate @Inject()(
 
     if (scheduleIngestJob) {
       List(
-        TaskMessageHelper.forTask[LocalAndRunHuluCatalogDelta](
+        TaskMessageHelper.forTask[LocateAndRunHuluCatalogDelta](
           scraper.DeltaLocatorJobArgs(maxDaysBack = 3, local = false)
         )
       )

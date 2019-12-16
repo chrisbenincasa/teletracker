@@ -2,15 +2,17 @@ package com.teletracker.tasks
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessageFactory
+import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.annotations.TaskTags
 import io.circe.syntax._
 import javax.inject.Inject
-import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import scala.util.control.NonFatal
+import scala.compat.java8.FutureConverters._
 
 class RemoteTask @Inject()(
-  publisher: SqsClient,
+  publisher: SqsAsyncClient,
   teletrackerTaskRunner: TeletrackerTaskRunner,
   teletrackerConfig: TeletrackerConfig)
     extends TeletrackerTaskWithDefaultArgs {
@@ -52,5 +54,7 @@ class RemoteTask @Inject()(
           )
           .build()
       )
+      .toScala
+      .await()
   }
 }

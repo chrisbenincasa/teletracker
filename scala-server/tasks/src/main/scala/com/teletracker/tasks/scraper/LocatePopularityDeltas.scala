@@ -12,14 +12,14 @@ import com.teletracker.tasks.util.{SourceRetriever, TaskMessageHelper}
 import io.circe.Encoder
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import java.net.URI
 import java.time.LocalDate
 import scala.reflect.ClassTag
 
 abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
   itemType: ThingType,
-  publisher: SqsClient,
+  publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
@@ -61,7 +61,7 @@ abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
 }
 
 class LocateMoviePopularityDelta @Inject()(
-  publisher: SqsClient,
+  publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig)
@@ -74,7 +74,7 @@ class LocateMoviePopularityDelta @Inject()(
     )
 
 class LocateShowPopularityDelta @Inject()(
-  publisher: SqsClient,
+  publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig)
@@ -87,7 +87,7 @@ class LocateShowPopularityDelta @Inject()(
     )
 
 class LocatePersonPopularityDelta @Inject()(
-  publisher: SqsClient,
+  publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig)

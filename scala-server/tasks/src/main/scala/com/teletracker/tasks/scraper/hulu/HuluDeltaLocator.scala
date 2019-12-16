@@ -6,7 +6,7 @@ import com.teletracker.tasks.util.ArgJsonInstances._
 import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import java.time.LocalDate
 
 object HuluDeltaLocator {
@@ -14,8 +14,8 @@ object HuluDeltaLocator {
     s"scrape-results/hulu/$date/hulu_catalog_full.txt"
 }
 
-class LocalAndRunHuluCatalogDelta @Inject()(
-  publisher: SqsClient,
+class LocateAndRunHuluCatalogDelta @Inject()(
+  publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig)
