@@ -2,8 +2,9 @@ package com.teletracker.tasks.scraper
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskRunner}
+import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.util.{SourceRetriever, TaskMessageHelper}
+import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskRunner}
 import io.circe.Encoder
 import io.circe.generic.JsonCodec
 import io.circe.syntax._
@@ -12,10 +13,11 @@ import software.amazon.awssdk.services.s3.model.{
   GetObjectRequest,
   NoSuchKeyException
 }
-import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import java.net.URI
 import java.time.LocalDate
+import scala.compat.java8.FutureConverters._
 import scala.reflect.ClassTag
 
 @JsonCodec
@@ -24,7 +26,7 @@ case class DeltaLocatorJobArgs(
   local: Boolean)
 
 abstract class DeltaLocatorJob(
-  publisher: SqsClient,
+  publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig)
@@ -115,6 +117,8 @@ abstract class DeltaLocatorJob(
                 )
                 .build()
             )
+            .toScala
+            .await()
         } else {
           // FOR DEBUGGING
           TeletrackerTaskRunner.instance
@@ -139,7 +143,7 @@ abstract class DeltaLocatorJob(
 }
 
 abstract class DeltaLocateAndRunJob[T <: IngestDeltaJob[_]: ClassTag](
-  publisher: SqsClient,
+  publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
