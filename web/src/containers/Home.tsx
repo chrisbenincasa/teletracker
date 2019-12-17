@@ -15,7 +15,6 @@ import { connect } from 'react-redux';
 import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { Item } from '../types/v2/Item';
 import Odometer from 'react-odometerjs';
@@ -231,7 +230,6 @@ function Home(props: Props) {
 
     loadPopular();
 
-    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
 
     if (

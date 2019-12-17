@@ -26,7 +26,6 @@ import { Loading } from '../reducers/user';
 import { List as ListType } from '../types';
 import _ from 'lodash';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants/';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -90,7 +89,6 @@ class Lists extends Component<Props, State> {
 
     this.props.ListRetrieveAllInitiated();
 
-    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
 
     if (
