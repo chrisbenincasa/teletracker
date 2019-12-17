@@ -55,9 +55,6 @@ const styles = (theme: Theme) =>
       height: 30,
       fontSize: '1em',
     },
-    button: {
-      margin: theme.spacing(1),
-    },
     drawer: {
       flexShrink: 0,
       width: DrawerWidthPx,
@@ -303,39 +300,41 @@ class Drawer extends Component<Props, State> {
         <div className={classes.toolbar} />
         {['xs', 'sm', 'md'].includes(this.props.width) && (
           <React.Fragment>
-            <ListItem
-              button
-              component={RouterLink}
-              to="/all"
-              selected={location.pathname.toLowerCase() === '/all'}
-            >
-              <ListItemIcon>
-                <Apps />
-              </ListItemIcon>
-              Explore
-            </ListItem>
-            <ListItem
-              button
-              component={RouterLink}
-              to="/popular"
-              selected={location.pathname.toLowerCase() === '/popular'}
-            >
-              <ListItemIcon>
-                <TrendingUp />
-              </ListItemIcon>
-              Browse Popular
-            </ListItem>
-            <ListItem
-              button
-              component={RouterLink}
-              to="/new"
-              selected={location.pathname.toLowerCase() === '/new'}
-            >
-              <ListItemIcon>
-                <FiberNew />
-              </ListItemIcon>
-              What's New?
-            </ListItem>
+            <List>
+              <ListItem
+                button
+                component={RouterLink}
+                to="/all"
+                selected={location.pathname.toLowerCase() === '/all'}
+              >
+                <ListItemIcon>
+                  <Apps />
+                </ListItemIcon>
+                Explore
+              </ListItem>
+              <ListItem
+                button
+                component={RouterLink}
+                to="/popular"
+                selected={location.pathname.toLowerCase() === '/popular'}
+              >
+                <ListItemIcon>
+                  <TrendingUp />
+                </ListItemIcon>
+                Browse Popular
+              </ListItem>
+              <ListItem
+                button
+                component={RouterLink}
+                to="/new"
+                selected={location.pathname.toLowerCase() === '/new'}
+              >
+                <ListItemIcon>
+                  <FiberNew />
+                </ListItemIcon>
+                What's New?
+              </ListItem>
+            </List>
             <Divider />
           </React.Fragment>
         )}
@@ -344,19 +343,21 @@ class Drawer extends Component<Props, State> {
             <Typography component="h6" variant="h6" className={classes.margin}>
               My Lists
             </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              className={classes.button}
-              onClick={this.handleModalOpen}
-            >
-              <AddCircle
-                className={classNames(classes.leftIcon, classes.iconSmall)}
-              />
-              Create List
-            </Button>
-            <List>{_.map(listsById, this.renderListItems)}</List>
+            <List style={{ padding: '0 8px' }}>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={this.handleModalOpen}
+                fullWidth
+              >
+                <AddCircle
+                  className={classNames(classes.leftIcon, classes.iconSmall)}
+                />
+                Create List
+              </Button>
+              {_.map(listsById, this.renderListItems)}
+            </List>
             <Divider />
           </React.Fragment>
         ) : null}
