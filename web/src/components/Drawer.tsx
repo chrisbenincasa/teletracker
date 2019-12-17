@@ -61,6 +61,9 @@ const styles = (theme: Theme) =>
       zIndex: `${theme.zIndex.appBar - 1} !important` as any,
     },
     toolbar: theme.mixins.toolbar,
+    list: {
+      padding: theme.spacing(0, 1),
+    },
     listName: {
       textDecoration: 'none',
       marginBottom: theme.spacing(1),
@@ -343,7 +346,7 @@ class Drawer extends Component<Props, State> {
             <Typography component="h6" variant="h6" className={classes.margin}>
               My Lists
             </Typography>
-            <List style={{ padding: '0 8px' }}>
+            <List className={classes.list}>
               <Button
                 variant="contained"
                 color="primary"
