@@ -28,7 +28,6 @@ import {
 } from 'react-router-dom';
 import GoogleLoginButton from './GoogleLoginButton';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../../constants/';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -102,7 +101,6 @@ class SignupForm extends Component<Props, State> {
   };
 
   componentDidMount(): void {
-    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
   }
 

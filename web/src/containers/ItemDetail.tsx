@@ -44,7 +44,6 @@ import Recommendations from '../components/Recommendations';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import RouterLink from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { Genre } from '../types';
 import { Item } from '../types/v2/Item';
@@ -219,7 +218,6 @@ function ItemDetails(props: Props) {
 
     loadItem();
 
-    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
 
     if (
