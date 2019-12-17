@@ -48,7 +48,6 @@ import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import { StdRouterLink } from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';
 import { ListsByIdMap } from '../reducers/lists';
@@ -324,7 +323,6 @@ class ListDetail extends Component<Props, State> {
     this.setState({ loadingList: true });
     this.retrieveList(true);
 
-    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
 
     if (

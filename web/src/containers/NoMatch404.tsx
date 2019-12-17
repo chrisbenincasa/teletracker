@@ -7,7 +7,6 @@ import {
 } from '@material-ui/core';
 import React, { Component } from 'react';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants';
 import { Helmet } from 'react-helmet';
 
 const styles = (theme: Theme) =>
@@ -27,7 +26,6 @@ type Props = OwnProps;
 
 class NoMatch404 extends Component<Props> {
   componentDidMount(): void {
-    ReactGA.initialize(GA_TRACKING_ID);
     const page = window.location.pathname + window.location.search;
     ReactGA.pageview(page);
     ReactGA.event({
