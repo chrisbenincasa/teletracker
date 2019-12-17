@@ -26,7 +26,6 @@ import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { Genre, Network } from '../types';
 import { Item } from '../types/v2/Item';
@@ -209,7 +208,6 @@ class Popular extends Component<Props, State> {
       });
     }
 
-    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
 
     if (

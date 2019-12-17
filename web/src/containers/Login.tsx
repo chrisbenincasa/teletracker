@@ -14,7 +14,6 @@ import { login, LoginSuccessful, logInWithGoogle } from '../actions/auth';
 import { AppState } from '../reducers';
 import { Redirect } from 'react-router';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants/';
 import LoginForm from '../components/Auth/LoginForm';
 
 const styles = (theme: Theme) =>
@@ -62,7 +61,6 @@ class Login extends Component<Props, State> {
   };
 
   componentDidMount(): void {
-    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
   }
 

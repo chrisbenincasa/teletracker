@@ -17,7 +17,6 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { Error as ErrorIcon } from '@material-ui/icons';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID } from '../constants/';
 import InfiniteScroll from 'react-infinite-scroller';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';
@@ -90,7 +89,6 @@ class Search extends Component<Props, State> {
   componentDidMount() {
     const { isLoggedIn, userSelf } = this.props;
 
-    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
 
     if (

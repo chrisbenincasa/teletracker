@@ -41,7 +41,6 @@ import ItemCard from '../components/ItemCard';
 import ManageTrackingButton from '../components/Buttons/ManageTrackingButton';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import withUser, { WithUserProps } from '../components/withUser';
-import { GA_TRACKING_ID } from '../constants/';
 import { AppState } from '../reducers';
 import { Genre, Network } from '../types';
 import { Item } from '../types/v2/Item';
@@ -291,7 +290,6 @@ class PersonDetail extends React.Component<Props, State> {
       this.props.personFetchInitiated({ id: this.props.match.params.id });
     }
 
-    ReactGA.initialize(GA_TRACKING_ID);
     ReactGA.pageview(window.location.pathname + window.location.search);
 
     if (

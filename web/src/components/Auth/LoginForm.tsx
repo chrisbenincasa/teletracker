@@ -24,7 +24,7 @@ import { RouteComponentProps, withRouter } from 'react-router';
 import { Link as RouterLink } from 'react-router-dom';
 import GoogleLoginButton from './GoogleLoginButton';
 import ReactGA from 'react-ga';
-import { GA_TRACKING_ID, GOOGLE_ACCOUNT_MERGE } from '../../constants/';
+import { GOOGLE_ACCOUNT_MERGE } from '../../constants/';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -119,7 +119,6 @@ class LoginForm extends Component<Props, State> {
 
   componentDidMount(): void {
     if (!this.state.cameFromOAuth) {
-      ReactGA.initialize(GA_TRACKING_ID);
       ReactGA.pageview(window.location.pathname + window.location.search);
     }
 
