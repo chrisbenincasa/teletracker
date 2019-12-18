@@ -197,7 +197,7 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
             .fromSeq(batch)
             .grouped(10)
             .mapF(innerBatch => {
-              logger.info(s"Looking up ${innerBatch.size} items")
+              logger.debug(s"Looking up ${innerBatch.size} items")
               deps.itemLookup
                 .lookupItemsByExternalIds(
                   innerBatch
@@ -213,7 +213,7 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
                   }
                 })
                 .flatMap(itemIdById => {
-                  logger.info(s"Found ${itemIdById.size} items")
+                  logger.debug(s"Found ${itemIdById.size} items")
                   val messages = innerBatch
                     .flatMap {
                       case (tmdbId, popularity) =>
