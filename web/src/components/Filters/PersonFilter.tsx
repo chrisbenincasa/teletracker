@@ -22,6 +22,7 @@ const useStyles = makeStyles(theme => ({
 interface OwnProps {
   selectedCast?: string[];
   handleChange: (change: string[]) => void;
+  showTitle?: boolean;
 }
 
 type Props = OwnProps;
@@ -135,3 +136,7 @@ export default function PersonFilter(props: Props) {
     />
   );
 }
+
+PersonFilter.defaultProps = {
+  showTitle: true,
+};

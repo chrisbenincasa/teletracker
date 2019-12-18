@@ -23,6 +23,7 @@ interface OwnProps {
   isListDynamic?: boolean;
   validSortOptions?: SortOptions[];
   selectedSort: SortOptions;
+  showTitle?: boolean;
 }
 
 interface RouteParams {
@@ -42,6 +43,10 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 class SortDropDown extends Component<Props> {
+  static defaultProps = {
+    showTitle: true,
+  };
+
   isDefaultSort = newSort => {
     const { isListDynamic } = this.props;
 
@@ -82,9 +87,11 @@ class SortDropDown extends Component<Props> {
 
     return (
       <div>
-        <Typography className={classes.filterLabel} display="block">
-          Sort
-        </Typography>
+        {this.props.showTitle && (
+          <Typography className={classes.filterLabel} display="block">
+            Sort
+          </Typography>
+        )}
         <Select
           value={
             selectedSort && !this.isDefaultSort(selectedSort)
