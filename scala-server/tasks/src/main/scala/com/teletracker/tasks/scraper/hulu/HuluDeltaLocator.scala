@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext
 
 object HuluDeltaLocator {
   def getKey(date: LocalDate) =
-    s"scrape-results/hulu/$date/hulu_catalog_full.txt"
+    s"scrape-results/hulu/$date/catalog/${date}_hulu-catalog.all.json"
 }
 
 class LocateAndRunHuluCatalogDelta @Inject()(

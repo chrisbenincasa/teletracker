@@ -66,6 +66,9 @@ class IngestNetflixCatalog @Inject()(
   private val elasticsearchMatcherOptions =
     ElasticsearchFallbackMatcherOptions(false, getClass.getSimpleName)
 
+  private lazy val fallbackMatcher = elasticsearchFallbackMatcher
+    .create(elasticsearchMatcherOptions)
+
   private val alternateItemsByNetflixId =
     new mutable.HashMap[String, WhatsOnNetflixCatalogItem]()
 
@@ -74,17 +77,11 @@ class IngestNetflixCatalog @Inject()(
     rawArgs: Args
   ): Unit = {
     val alternateMovieCatalogUri =
-      rawArgs.valueOrThrow[URI]("alternateMovieCatalog")
+      rawArgs.value[URI]("alternateMovieCatalog")
     val alternateShowCatalogUri =
-      rawArgs.valueOrThrow[URI]("alternateTvCatalog")
+      rawArgs.value[URI]("alternateTvCatalog")
 
     val sourceRetriever = new SourceRetriever(s3)
-
-    val alternateMovieSource =
-      sourceRetriever.getSource(alternateMovieCatalogUri)
-
-    val alternateTvSource =
-      sourceRetriever.getSource(alternateShowCatalogUri)
 
     def loadItemsOrThrow(source: Source): Unit = {
       try {
@@ -105,8 +102,17 @@ class IngestNetflixCatalog @Inject()(
       }
     }
 
-    loadItemsOrThrow(alternateMovieSource)
-    loadItemsOrThrow(alternateTvSource)
+    alternateMovieCatalogUri
+      .map(sourceRetriever.getSource(_))
+      .foreach(source => {
+        loadItemsOrThrow(source)
+      })
+
+    alternateShowCatalogUri
+      .map(sourceRetriever.getSource(_))
+      .foreach(source => {
+        loadItemsOrThrow(source)
+      })
   }
 
   override protected def handleNonMatches(
@@ -129,8 +135,7 @@ class IngestNetflixCatalog @Inject()(
       )
     })
 
-    elasticsearchFallbackMatcher
-      .create(elasticsearchMatcherOptions)
+    fallbackMatcher
       .handleNonMatches(
         args,
         alternateItems ++ doesntHaveAlternate
