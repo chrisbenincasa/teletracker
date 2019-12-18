@@ -475,7 +475,7 @@ function ItemDetails(props: Props) {
               pictureStyle={{
                 display: 'block',
                 position: 'relative',
-                height: '100%',
+                height: '100vh',
               }}
             />
             <div className={classes.backdropGradient} />
