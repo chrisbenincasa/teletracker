@@ -1,14 +1,15 @@
 package com.teletracker.tasks
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.tasks.util.Args
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
+import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
 
 trait TeletrackerTask extends Args {
@@ -21,6 +22,8 @@ trait TeletrackerTask extends Args {
     mutable.Buffer.empty
 
   private val preruns: mutable.Buffer[() => Unit] = mutable.Buffer.empty
+  private val postruns: mutable.Buffer[(TypedArgs) => Unit] =
+    mutable.Buffer.empty
 
   implicit protected def typedArgsEncoder: Encoder[TypedArgs]
 
@@ -32,6 +35,10 @@ trait TeletrackerTask extends Args {
 
   protected def prerun(f: => Unit): Unit = {
     preruns += (() => f)
+  }
+
+  protected def postrun(f: this.TypedArgs => Unit): Unit = {
+    postruns += f
   }
 
   final def run(args: Args): Unit = {
@@ -49,6 +56,8 @@ trait TeletrackerTask extends Args {
         logger.error("Task ended unexpectedly", e)
         false
     }
+
+    postruns.foreach(_(parsedArgs))
 
     logger.info("Task completed. Checking for callbacks to run.")
 
