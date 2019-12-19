@@ -12,3 +12,5 @@ phases:
 artifacts:
   files:
     - scraper/build/scrapers.zip
+  name: scrapers-out
+  discard-paths: yes
