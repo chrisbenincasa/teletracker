@@ -45,8 +45,8 @@ import RouterLink, { StdRouterLink } from '../RouterLink';
 import { AppState } from '../../reducers';
 import { Genre as GenreModel } from '../../types';
 import { Item } from '../../types/v2/Item';
-import QuickSearch from './QuickSearch';
 import { hexToRGB } from '../../utils/style-utils';
+import Search from './Search';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -69,29 +69,13 @@ const styles = (theme: Theme) =>
       padding: theme.spacing(1, 2),
     },
     genrePaper: {
-      position: 'absolute',
+      // position: 'absolute',
       zIndex: theme.zIndex.appBar,
       marginTop: 10,
       backgroundColor: hexToRGB(theme.palette.primary.main, 0.95),
     },
     grow: {
       flexGrow: 1,
-    },
-    inputRoot: {
-      color: 'inherit',
-      width: '100%',
-    },
-    inputInput: {
-      padding: theme.spacing(1, 1, 1, 10),
-      transition: theme.transitions.create('width'),
-      width: '100%',
-      [theme.breakpoints.up('md')]: {
-        width: 250,
-      },
-      '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
-        '-webkit-appearance': 'none',
-      },
-      caretColor: theme.palette.common.white,
     },
     loginButton: {
       margin: theme.spacing(0, 1),
@@ -140,24 +124,6 @@ const styles = (theme: Theme) =>
       color: theme.palette.common.white,
       opacity: 0.25,
     },
-    search: {
-      position: 'relative',
-      borderRadius: theme.shape.borderRadius,
-      backgroundColor: fade(theme.palette.common.white, 0.15),
-      '&:hover': {
-        backgroundColor: fade(theme.palette.common.white, 0.25),
-      },
-      marginRight: theme.spacing(3),
-      marginLeft: 0,
-      width: '100%',
-      [theme.breakpoints.up('sm')]: {
-        marginLeft: theme.spacing(3),
-        width: 'auto',
-      },
-      [theme.breakpoints.down('sm')]: {
-        display: 'none',
-      },
-    },
     searchMobile: {
       display: 'flex',
       position: 'relative',
@@ -168,37 +134,12 @@ const styles = (theme: Theme) =>
       },
       width: '100%',
     },
-    searchIcon: {
-      width: theme.spacing(9),
-      height: '100%',
-      position: 'absolute',
-      pointerEvents: 'none',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    sectionDesktop: {
-      display: 'none',
-      [theme.breakpoints.up('md')]: {
-        display: 'flex',
-      },
-    },
-    sectionMobile: {
-      display: 'flex',
-      justifyContent: 'flex-end',
-      [theme.breakpoints.up('md')]: {
-        display: 'none',
-      },
-    },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
-  currentSearchText?: string;
   genres?: GenreModel[];
   isAuthed: boolean;
-  isSearching: boolean;
   onDrawerChange: (close?: boolean) => void;
-  searchResults?: Item[];
   drawerOpen: boolean;
 }
 
@@ -208,7 +149,6 @@ interface WidthProps {
 
 interface DispatchProps {
   logout: () => void;
-  search: (payload: SearchInitiatedPayload) => void;
 }
 
 type Props = DispatchProps & OwnProps & RouteComponentProps & WidthProps;
@@ -217,9 +157,6 @@ interface State {
   genreAnchorEl: HTMLButtonElement | null;
   genreType: 'movie' | 'show' | null;
   isLoggedOut: boolean;
-  mobileSearchBarOpen: boolean;
-  searchAnchor: HTMLInputElement | null;
-  searchText: string;
 }
 
 interface MenuItemProps {
@@ -250,9 +187,6 @@ const MenuItemLink = (props: MenuItemProps) => {
 };
 
 class Toolbar extends Component<Props, State> {
-  private mobileSearchIcon: React.RefObject<HTMLDivElement>;
-  private mobileSearchInput: React.RefObject<HTMLInputElement>;
-  private desktopSearchInput: React.RefObject<HTMLInputElement>;
   private genreShowContainerRef: React.RefObject<HTMLElement>;
   private genreMovieContainerRef: React.RefObject<HTMLElement>;
   private genreShowSpacerRef: React.RefObject<HTMLDivElement>;
@@ -260,9 +194,6 @@ class Toolbar extends Component<Props, State> {
 
   constructor(props) {
     super(props);
-    this.mobileSearchIcon = React.createRef();
-    this.mobileSearchInput = React.createRef();
-    this.desktopSearchInput = React.createRef();
     this.genreShowContainerRef = React.createRef();
     this.genreMovieContainerRef = React.createRef();
     this.genreShowSpacerRef = React.createRef();
@@ -272,121 +203,12 @@ class Toolbar extends Component<Props, State> {
   state = {
     genreAnchorEl: null,
     genreType: null,
-    searchText: '',
-    searchAnchor: null,
     mobileSearchBarOpen: false,
     isLoggedOut: true,
   };
 
-  clearSearch = () => {
-    let searchText = '';
-    this.setState({ searchText });
-    this.mobileSearchInput.current && this.mobileSearchInput.current.focus();
-  };
-
-  handleSearchChangeDebounced = _.debounce((target, searchText) => {
-    if (
-      this.state.searchAnchor === null &&
-      this.props.location.pathname !== '/search'
-    ) {
-      this.setState({ searchAnchor: target });
-    }
-
-    if (this.props.location.pathname === '/search') {
-      this.setState({ searchAnchor: null });
-    }
-
-    if (searchText.length > 0) {
-      this.execQuickSearch(searchText);
-    }
-  }, 250);
-
-  handleSearchChange = event => {
-    let target = event.currentTarget;
-    let searchText = target.value;
-    this.setState({ searchText }, () =>
-      this.handleSearchChangeDebounced(target, searchText),
-    );
-  };
-
-  handleSearchFocus = event => {
-    if (this.props.drawerOpen) {
-      this.props.onDrawerChange();
-    }
-
-    if (
-      this.state.searchAnchor === null &&
-      this.props.location.pathname !== '/search'
-    ) {
-      this.setState({ searchAnchor: event.currentTarget });
-    }
-  };
-
-  handleSearchForSubmit = event => {
-    this.resetSearchAnchor(event);
-    this.execSearch(this.state.searchText);
-  };
-
-  handleSearchForEnter = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.keyCode === 13) {
-      this.execSearch(this.state.searchText);
-      event.currentTarget.blur();
-      this.setState({ searchAnchor: null });
-    }
-  };
-
-  resetSearchAnchor = event => {
-    // If user is clicking back into search field, don't resetAnchor
-    if (event.target !== this.desktopSearchInput.current) {
-      this.setState({ searchAnchor: null });
-    }
-  };
-
-  execSearch = (text: string) => {
-    if (this.props.location.pathname !== '/search') {
-      this.props.history.push(`/search?q=${encodeURIComponent(text)}`);
-    } else {
-      this.props.history.push(`?q=${encodeURIComponent(text)}`);
-    }
-
-    if (text.length >= 1 && this.props.currentSearchText !== text) {
-      this.props.search({
-        query: text,
-      });
-    }
-  };
-
-  execQuickSearch = (text: string) => {
-    if (text.length >= 1 && this.props.currentSearchText !== text) {
-      if (this.props.location.pathname === '/search') {
-        this.props.history.push(`?q=${encodeURIComponent(text)}`);
-      }
-
-      this.props.search({
-        query: text,
-      });
-    }
-  };
-
-  debouncedExecSearch = _.debounce(this.execQuickSearch, 250);
-
-  handleMobileSearchDisplayOpen = () => {
-    this.setState(
-      state => ({ mobileSearchBarOpen: true }),
-      () => {
-        this.mobileSearchInput.current &&
-          this.mobileSearchInput.current.focus();
-      },
-    );
-  };
-
-  handleMobileSearchDisplayClose = () => {
-    this.setState(
-      state => ({ mobileSearchBarOpen: false }),
-      () => {
-        this.mobileSearchIcon.current && this.mobileSearchIcon.current.focus();
-      },
-    );
+  onSearchPage = (): boolean => {
+    return this.props.location.pathname.toLowerCase() === '/search';
   };
 
   get isSmallDevice() {
@@ -395,7 +217,7 @@ class Toolbar extends Component<Props, State> {
 
   handleGenreMenu = (event, type: 'movie' | 'show' | null) => {
     // If quick search is open, close it & move focus to button
-    this.resetSearchAnchor(event);
+    //TODO this.resetSearchAnchor(event);
     event.target.focus();
 
     // If user is on smaller device, go directly to page
@@ -405,6 +227,7 @@ class Toolbar extends Component<Props, State> {
     }
     // If Genre menu is already open and user is not navigating to submenu, close it
     // event.relatedTarget is target element in a mouseEnter/mouseExit event
+
     if (
       this.state.genreType === type &&
       event.relatedTarget !==
@@ -447,60 +270,6 @@ class Toolbar extends Component<Props, State> {
   toggleDrawer = (close?: boolean) => {
     this.props.onDrawerChange(close);
   };
-
-  renderSearch() {
-    let { classes, isSearching, searchResults } = this.props;
-    let { searchText, searchAnchor } = this.state;
-
-    return (
-      <React.Fragment>
-        <div className={classes.sectionDesktop}>
-          <div className={classes.search}>
-            <div className={classes.searchIcon}>
-              <SearchIcon />
-            </div>
-            <InputBase
-              placeholder="Search&hellip;"
-              classes={{
-                root: classes.inputRoot,
-                input: classes.inputInput,
-              }}
-              type="search"
-              inputProps={{
-                'aria-label': 'search Teletracker',
-                inputMode: 'search',
-              }}
-              inputRef={this.desktopSearchInput}
-              onChange={this.handleSearchChange}
-              onKeyDown={this.handleSearchForEnter}
-              onFocus={this.handleSearchFocus}
-            />
-          </div>
-          <div className={classes.grow} />
-          <QuickSearch
-            searchText={searchText}
-            isSearching={isSearching}
-            searchResults={searchResults}
-            searchAnchor={searchAnchor}
-            handleResetSearchAnchor={this.resetSearchAnchor}
-            handleSearchForSubmit={this.handleSearchForSubmit}
-          />
-        </div>
-
-        <div className={classes.sectionMobile} ref={this.mobileSearchIcon}>
-          <IconButton
-            aria-owns={'Search Teletracker'}
-            aria-haspopup="true"
-            onClick={this.handleMobileSearchDisplayOpen}
-            color="inherit"
-            disableRipple
-          >
-            <SearchIcon />
-          </IconButton>
-        </div>
-      </React.Fragment>
-    );
-  }
 
   renderGenreMenu(type: 'movie' | 'show') {
     const { classes, genres } = this.props;
@@ -558,10 +327,9 @@ class Toolbar extends Component<Props, State> {
         <Popper
           open={Boolean(this.state.genreType === type)}
           anchorEl={genreAnchorEl}
-          placement="bottom-start"
+          placement="bottom-end"
           keepMounted
           transition
-          disablePortal
         >
           {({ TransitionProps }) => (
             <Fade
@@ -635,70 +403,70 @@ class Toolbar extends Component<Props, State> {
     );
   }
 
-  renderMobileSearchBar = () => {
-    let { classes } = this.props;
-    let { searchText } = this.state;
+  // renderMobileSearchBar = () => {
+  //   let { classes } = this.props;
+  //   let { searchText } = this.state;
 
-    return (
-      <Slide
-        direction="down"
-        in={this.state.mobileSearchBarOpen}
-        timeout={350}
-        mountOnEnter
-      >
-        <div
-          className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
-        >
-          <IconButton
-            onClick={this.handleMobileSearchDisplayClose}
-            color="inherit"
-            size="small"
-            className={classes.mobileSearchIcon}
-          >
-            <KeyboardArrowUp />
-          </IconButton>
-          <div className={classes.searchMobile}>
-            <InputBase
-              placeholder="Search&hellip;"
-              inputProps={{
-                'aria-label': 'search Teletracker',
-                inputmode: 'search',
-              }}
-              classes={{
-                root: classes.inputRoot,
-                input: classes.mobileInput,
-              }}
-              onChange={this.handleSearchChange}
-              onKeyDown={this.handleSearchForEnter}
-              inputRef={this.mobileSearchInput}
-              type="search"
-              value={searchText}
-            />
-            {searchText.length > 0 ? (
-              <Fade in={true}>
-                <IconButton
-                  onClick={this.clearSearch}
-                  color="inherit"
-                  size="small"
-                >
-                  <Close className={classes.searchClear} />
-                </IconButton>
-              </Fade>
-            ) : null}
-          </div>
-          <div className={classes.searchIcon} />
-          <IconButton
-            onClick={this.handleSearchForSubmit}
-            color="inherit"
-            size="small"
-            className={classes.mobileSearchIcon}
-          >
-            <SearchIcon />
-          </IconButton>
-        </div>
-      </Slide>
-    );
-  };
+  //   return (
+  //     <Slide
+  //       direction="down"
+  //       in={this.state.mobileSearchBarOpen}
+  //       timeout={350}
+  //       mountOnEnter
+  //     >
+  //       <div
+  //         className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
+  //       >
+  //         <IconButton
+  //           onClick={this.handleMobileSearchDisplayClose}
+  //           color="inherit"
+  //           size="small"
+  //           className={classes.mobileSearchIcon}
+  //         >
+  //           <KeyboardArrowUp />
+  //         </IconButton>
+  //         <div className={classes.searchMobile}>
+  //           <InputBase
+  //             placeholder="Search&hellip;"
+  //             inputProps={{
+  //               'aria-label': 'search Teletracker',
+  //               inputmode: 'search',
+  //             }}
+  //             classes={{
+  //               root: classes.inputRoot,
+  //               input: classes.mobileInput,
+  //             }}
+  //             onChange={this.handleSearchChange}
+  //             onKeyDown={this.handleSearchForEnter}
+  //             inputRef={this.mobileSearchInput}
+  //             type="search"
+  //             value={searchText}
+  //           />
+  //           {searchText.length > 0 ? (
+  //             <Fade in={true}>
+  //               <IconButton
+  //                 onClick={this.clearSearch}
+  //                 color="inherit"
+  //                 size="small"
+  //               >
+  //                 <Close className={classes.searchClear} />
+  //               </IconButton>
+  //             </Fade>
+  //           ) : null}
+  //         </div>
+  //         <div className={classes.searchIcon} />
+  //         <IconButton
+  //           onClick={this.handleSearchForSubmit}
+  //           color="inherit"
+  //           size="small"
+  //           className={classes.mobileSearchIcon}
+  //         >
+  //           <SearchIcon />
+  //         </IconButton>
+  //       </div>
+  //     </Slide>
+  //   );
+  // };
 
   render() {
     let { classes, drawerOpen, isAuthed } = this.props;
@@ -735,10 +503,21 @@ class Toolbar extends Component<Props, State> {
           >
             Teletracker
           </Typography>
-          <div className={classes.grow} />
+          <div className={classes.grow}>
+            {!this.onSearchPage() && (
+              <Search
+                drawerOpen={drawerOpen}
+                onDrawerChange={this.toggleDrawer}
+              />
+            )}
+          </div>
           <Hidden mdDown>
-            {this.renderGenreMenu('show')}
-            {this.renderGenreMenu('movie')}
+            <div
+              style={{ display: 'flex', flexDirection: 'row', marginRight: 24 }}
+            >
+              {this.renderGenreMenu('show')}
+              {this.renderGenreMenu('movie')}
+            </div>
           </Hidden>
           <Box display={{ xs: 'none', sm: 'none' }} m={1}>
             <ButtonLink
@@ -760,8 +539,7 @@ class Toolbar extends Component<Props, State> {
               Login
             </Button>
           )}
-          {this.renderSearch()}
-          {this.renderMobileSearchBar()}
+          {/* {!this.onSearchPage() && <Search />} */}
         </MUIToolbar>
       </AppBar>
     );
@@ -771,13 +549,7 @@ class Toolbar extends Component<Props, State> {
 const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    currentSearchText: R.path<string>(
-      ['search', 'currentSearchText'],
-      appState,
-    ),
     genres: appState.metadata.genres,
-    isSearching: appState.search.searching,
-    searchResults: appState.search.results,
   };
 };
 
@@ -785,7 +557,6 @@ const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
   return bindActionCreators(
     {
       logout,
-      search,
     },
     dispatch,
   );

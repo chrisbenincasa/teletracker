@@ -63,7 +63,8 @@ const useStyles = makeStyles((theme: Theme) => ({
   searchWrapper: {
     height: 'auto',
     overflow: 'scroll',
-    width: 338,
+    width: '100%',
+    maxWidth: 720,
     backgroundColor: theme.palette.primary.main,
     marginTop: 10,
   },
@@ -93,10 +94,11 @@ function QuickSearch(props: Props) {
       <Popper
         open={!!searchAnchor}
         anchorEl={searchAnchor}
-        placement="bottom"
+        placement="bottom-start"
         keepMounted
         transition
         disablePortal
+        style={{ width: '100%' }}
       >
         {({ TransitionProps, placement }) => (
           <Fade
@@ -179,7 +181,7 @@ function QuickSearch(props: Props) {
                             )}
                             <div className={classes.itemDetails}>
                               <Typography variant="subtitle1">
-                                {truncateText(result.canonicalTitle, 32)}
+                                {truncateText(result.canonicalTitle, 100)}
                               </Typography>
                               <Rating
                                 value={voteAverage / 2}
@@ -239,6 +241,7 @@ function QuickSearch(props: Props) {
                         dense
                         className={classes.viewAllResults}
                         onClick={props.handleSearchForSubmit}
+                        key="view-all"
                       >
                         View All Results
                       </MenuItem>

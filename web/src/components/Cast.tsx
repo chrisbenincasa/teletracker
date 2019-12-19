@@ -81,7 +81,7 @@ class Cast extends Component<Props, {}> {
         >
           {castMember.person && castMember.person.profile_path
             ? null
-            : parseInitials(castMember.name!, 'name')}
+            : castMember.name && parseInitials(castMember.name, 'name')}
         </Avatar>
         <Typography
           variant="subtitle1"

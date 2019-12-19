@@ -149,9 +149,8 @@ class Search extends Component<Props, State> {
       };
 
       if (this.props.currentSearchText !== query) {
-        this.props.search({
-          query,
-        });
+        console.log('yep');
+        this.loadResults();
       }
     }
   }
@@ -184,6 +183,7 @@ class Search extends Component<Props, State> {
 
     // To do: add support for sorting
     if (!this.props.isSearching) {
+      console.log(this.props);
       this.props.search({
         query: searchText,
         bookmark: searchBookmark ? searchBookmark : undefined,
@@ -213,6 +213,7 @@ class Search extends Component<Props, State> {
     const shouldLoadMore = totalNonLoadedImages <= numColumns;
 
     if (!isSearching && shouldLoadMore) {
+      console.log('testestetst');
       this.debouncedSearch();
     }
   };
@@ -264,6 +265,7 @@ class Search extends Component<Props, State> {
   mapGenre = (genre: number) => {
     const { genres } = this.props;
     const genreItem = genres && genres.find(obj => obj.id === genre);
+
     return (genreItem && genreItem.name) || '';
   };
 
