@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.Network
 import com.teletracker.common.util.AsyncStream
@@ -8,10 +9,14 @@ import com.teletracker.tasks.scraper.matching.MatchMode
 import com.teletracker.tasks.scraper.model.{MatchResult, NonMatchResult}
 import io.circe.Codec
 import io.circe.syntax._
+import javax.inject.Inject
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 import java.util.concurrent.{Executors, TimeUnit}
+import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
@@ -23,6 +28,11 @@ abstract class BaseIngestJob[
 )(implicit executionContext: ExecutionContext,
   codec: Codec[T])
     extends TeletrackerTask {
+
+  @Inject
+  private[this] var teletrackerConfig: TeletrackerConfig = _
+  @Inject
+  private[this] var s3: S3Client = _
 
   protected val logger = LoggerFactory.getLogger(getClass)
 
@@ -45,9 +55,41 @@ abstract class BaseIngestJob[
     new BufferedOutputStream(new FileOutputStream(matchItemsFile))
   )
 
+  private val _artifacts: mutable.ListBuffer[File] = {
+    val a = new mutable.ListBuffer[File]()
+    a ++= List(matchItemsFile, missingItemsFile)
+    a
+  }
+
+  protected def artifacts: List[File] = _artifacts.toList
+
+  protected def registerArtifact(file: File): Unit = synchronized {
+    _artifacts += file
+  }
+
   protected def matchMode: MatchMode
 
   protected def processMode(args: IngestJobArgsType): ProcessMode
+
+  postrun { _ =>
+    missingItemsWriter.flush()
+    matchingItemsWriter.flush()
+  }
+
+  postrun(_ => {
+    artifacts.foreach(artifact => {
+      s3.putObject(
+        PutObjectRequest
+          .builder()
+          .bucket(teletrackerConfig.data.s3_bucket)
+          .key(
+            s"task-output/${getClass.getSimpleName}/$now/${artifact.getName}"
+          )
+          .build(),
+        artifact.toPath
+      )
+    })
+  })
 
   private lazy val scheduledPool = Executors.newSingleThreadScheduledExecutor()
 
