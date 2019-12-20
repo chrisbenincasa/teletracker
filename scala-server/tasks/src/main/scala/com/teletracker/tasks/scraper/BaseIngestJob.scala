@@ -76,19 +76,22 @@ abstract class BaseIngestJob[
     matchingItemsWriter.flush()
   }
 
-  postrun(_ => {
-    artifacts.foreach(artifact => {
-      s3.putObject(
-        PutObjectRequest
-          .builder()
-          .bucket(teletrackerConfig.data.s3_bucket)
-          .key(
-            s"task-output/${getClass.getSimpleName}/$now/${artifact.getName}"
-          )
-          .build(),
-        artifact.toPath
-      )
-    })
+  postrun(args => {
+    if (args.valueOrDefault("uploadArtifacts", true)) {
+
+      artifacts.foreach(artifact => {
+        s3.putObject(
+          PutObjectRequest
+            .builder()
+            .bucket(teletrackerConfig.data.s3_bucket)
+            .key(
+              s"task-output/${getClass.getSimpleName}/$now/${artifact.getName}"
+            )
+            .build(),
+          artifact.toPath
+        )
+      })
+    }
   })
 
   private lazy val scheduledPool = Executors.newSingleThreadScheduledExecutor()
