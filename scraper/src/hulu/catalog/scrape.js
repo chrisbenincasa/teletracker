@@ -213,7 +213,6 @@ const scrape = async event => {
           }
         })
         .filter(text => {
-          console.log(text);
           text.includes('/movie/');
         }),
       100,
