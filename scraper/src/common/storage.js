@@ -69,6 +69,24 @@ export const uploadStreamToS3 = async (
     .promise();
 };
 
+export const uploadStringToS3 = async (
+  bucket,
+  key,
+  string,
+  contentType = 'text/plain',
+) => {
+  console.log(`Uploading to s3://${bucket}/${key}`);
+
+  return s3
+    .upload({
+      Bucket: bucket,
+      Key: key,
+      Body: string,
+      ContentType: contentType,
+    })
+    .promise();
+};
+
 const getObjectS3 = async (bucket, key) => {
   return s3
     .getObject({

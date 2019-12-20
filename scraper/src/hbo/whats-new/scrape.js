@@ -1,10 +1,10 @@
 import request from 'request-promise';
 import cheerio from 'cheerio';
 import moment from 'moment';
-import {uploadToS3,} from '../../common/storage';
-import {createWriteStream} from "../../common/stream_utils";
-import {isProduction} from "../../common/env";
-import {DATA_BUCKET, USER_AGENT_STRING} from "../../common/constants";
+import { uploadToS3 } from '../../common/storage';
+import { createWriteStream } from '../../common/stream_utils';
+import { isProduction } from '../../common/env';
+import { DATA_BUCKET, USER_AGENT_STRING } from '../../common/constants';
 
 const scrape = async () => {
   try {
@@ -28,12 +28,18 @@ const scrape = async () => {
 
       textSections.each((_, el) => {
         let $el = $(el);
-        let title = $el.find('h4 > b').first().text();
+        let title = $el
+          .find('h4 > b')
+          .first()
+          .text();
         if (title.length === 0) {
-          title = $el.find('h4').first().text();
+          title = $el
+            .find('h4')
+            .first()
+            .text();
         }
 
-        if (title && title.includes('Starting') || title.includes('Ending')) {
+        if ((title && title.includes('Starting')) || title.includes('Ending')) {
           let status = title.includes('Starting') ? 'Arriving' : 'Expiring';
           let titleTokens = title.split(' ').filter(s => s.length > 0);
 
@@ -111,7 +117,7 @@ const scrape = async () => {
       }
     });
   } catch (e) {
-    console.error(e)
+    console.error(e);
   }
 };
 

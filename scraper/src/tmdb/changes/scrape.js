@@ -83,7 +83,7 @@ const scrape = async event => {
             input: `s3://${DATA_BUCKET}/${key}`,
             dryRun: false,
             parallelism: 4,
-            perBatchSleepMs: 500
+            perBatchSleepMs: 500,
           },
           jobTags: ['tag/RequiresTmdbApi'],
         };

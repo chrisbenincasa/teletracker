@@ -8,7 +8,7 @@ import { wait } from '../common/promise_utils';
 import _ from 'lodash';
 import moment from 'moment';
 import AWS from 'aws-sdk';
-import {resolveSecret} from "../common/aws_utils";
+import { resolveSecret } from '../common/aws_utils';
 
 const FunctionName = 'new-on-netflix-catalog';
 const nameAndYearRegex = /^(.*)\s\((\d+)\)$/i;
@@ -163,7 +163,9 @@ function getLetterRange(start, limit) {
       .value();
   } else if (charCode >= A_CHAR_CODE && charCode <= Z_CHAR_CODE) {
     if (limit === -1) {
-      return _.range(charCode, Z_CHAR_CODE + 1).map(i => String.fromCharCode(i));
+      return _.range(charCode, Z_CHAR_CODE + 1).map(i =>
+        String.fromCharCode(i),
+      );
     } else {
       // Pick the range up to 'z'
       let maxLetter = Math.min(Z_CHAR_CODE + 1, charCode + limit);
@@ -233,7 +235,12 @@ export const scrape = async event => {
               FunctionName,
               InvocationType: 'Event',
               Payload: Buffer.from(
-                JSON.stringify({ scheduleNext, letter: nextLetter, limit, useProxy: event.useProxy }),
+                JSON.stringify({
+                  scheduleNext,
+                  letter: nextLetter,
+                  limit,
+                  useProxy: event.useProxy,
+                }),
                 'utf-8',
               ),
             })
