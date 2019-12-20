@@ -170,9 +170,13 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
           )
       }
 
-    logger.warn(
-      s"Could not find matches for added items: ${addedNotFound}"
-    )
+    logger.info(s"Found ${newAvailabilities.size} availabilities to add")
+
+    if (addedNotFound.nonEmpty) {
+      logger.warn(
+        s"Could not find matches for added items: ${addedNotFound}"
+      )
+    }
 
     val beforeItemSource =
       sourceRetriever.getSource(parsedArgs.snapshotBefore, consultCache = true)
@@ -222,9 +226,11 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
           )
       }
 
-    logger.warn(
-      s"Could not find matches for added items: ${beforeNotFound}"
-    )
+    if (beforeNotFound.nonEmpty) {
+      logger.warn(
+        s"Could not find matches for added items: ${beforeNotFound}"
+      )
+    }
 
     logger.info(s"Found ${removedAvailabilities.size} availabilities to remove")
 

@@ -22,7 +22,7 @@ trait TeletrackerTask extends Args {
     mutable.Buffer.empty
 
   private val preruns: mutable.Buffer[() => Unit] = mutable.Buffer.empty
-  private val postruns: mutable.Buffer[(TypedArgs) => Unit] =
+  private val postruns: mutable.Buffer[(Args) => Unit] =
     mutable.Buffer.empty
 
   implicit protected def typedArgsEncoder: Encoder[TypedArgs]
@@ -37,7 +37,7 @@ trait TeletrackerTask extends Args {
     preruns += (() => f)
   }
 
-  protected def postrun(f: this.TypedArgs => Unit): Unit = {
+  protected def postrun(f: Args => Unit): Unit = {
     postruns += f
   }
 
@@ -57,7 +57,7 @@ trait TeletrackerTask extends Args {
         false
     }
 
-    postruns.foreach(_(parsedArgs))
+    postruns.foreach(_(args))
 
     logger.info("Task completed. Checking for callbacks to run.")
 
