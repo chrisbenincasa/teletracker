@@ -173,8 +173,6 @@ const scrape = async event => {
 
     let [path, stream, flush] = createWriteStream(fileName);
 
-    console.log(urls.length);
-
     let seriesResults = await sequentialPromises(
       urls
         .filter((item, idx) => {
