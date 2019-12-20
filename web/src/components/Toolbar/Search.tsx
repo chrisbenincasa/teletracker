@@ -1,37 +1,20 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  CircularProgress,
-  Chip,
-  ClickAwayListener,
   Fade,
-  Icon,
   IconButton,
   InputBase,
   makeStyles,
-  MenuList,
-  MenuItem,
-  Paper,
-  Popper,
   Theme,
-  Typography,
 } from '@material-ui/core';
-import { Rating } from '@material-ui/lab';
-import { Menu as MenuIcon, Search as SearchIcon } from '@material-ui/icons';
+import { Close, Search as SearchIcon } from '@material-ui/icons';
 import { useHistory, useLocation } from 'react-router-dom';
-import { Item } from '../../types/v2/Item';
-import { truncateText } from '../../utils/textHelper';
-import RouterLink from '../RouterLink';
-import { getTmdbPosterImage } from '../../utils/image-helper';
-import { formatRuntime } from '../../utils/textHelper';
-import moment from 'moment';
-import { Genre as GenreModel } from '../../types';
 import QuickSearch from './QuickSearch';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import _ from 'lodash';
 import { useDispatch, useSelector } from 'react-redux';
 import * as R from 'ramda';
 import { AppState } from '../../reducers';
-import { search, SearchInitiatedPayload } from '../../actions/search';
+import { search } from '../../actions/search';
 
 const useStyles = makeStyles((theme: Theme) => ({
   inputRoot: {
@@ -42,15 +25,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: theme.spacing(1, 1, 1, 10),
     transition: theme.transitions.create('width'),
     width: '100%',
-    [theme.breakpoints.up('md')]: {
-      width: 250,
-    },
     '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
       '-webkit-appearance': 'none',
     },
     caretColor: theme.palette.common.white,
   },
   search: {
+    display: 'flex',
     position: 'relative',
     borderRadius: theme.shape.borderRadius,
     backgroundColor: fade(theme.palette.common.white, 0.15),
@@ -62,15 +43,10 @@ const useStyles = makeStyles((theme: Theme) => ({
       margin: '0 auto',
     },
     width: '100%',
-    [theme.breakpoints.down('sm')]: {
-      display: 'none',
-    },
   },
-  sectionDesktop: {
-    display: 'none',
-    [theme.breakpoints.up('md')]: {
-      display: 'block',
-    },
+  searchClear: {
+    color: theme.palette.common.white,
+    opacity: 0.25,
   },
   sectionMobile: {
     display: 'flex',
@@ -109,20 +85,19 @@ function Search(props: Props) {
   const [searchAnchor, setSearchAnchor] = useState<HTMLInputElement | null>(
     null,
   );
-  const [mobileSearchBarOpen, setMobileSearchBarOpen] = useState<boolean>(
-    false,
-  );
-  const mobileSearchIcon = useRef<HTMLDivElement>(null);
-  const mobileSearchInput = useRef<HTMLInputElement>(null);
-  const desktopSearchInput = useRef<HTMLInputElement>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
 
   const clearSearch = () => {
-    let searchText = '';
-    setSearchText(searchText);
-    mobileSearchInput.current && mobileSearchInput.current.focus();
+    let newSearchText = '';
+    setSearchText(newSearchText);
+
+    if (searchInput.current) {
+      searchInput.current.value = '';
+      searchInput.current.focus();
+    }
   };
 
-  const handleSearchChangeDebounced = _.debounce((target, searchText) => {
+  const handleSearchChangeDebounced = _.debounce((target, newSearchText) => {
     if (searchAnchor === null && location.pathname !== '/search') {
       setSearchAnchor(target);
     }
@@ -131,16 +106,16 @@ function Search(props: Props) {
       setSearchAnchor(null);
     }
 
-    if (searchText.length > 0) {
-      execQuickSearch(searchText);
+    if (newSearchText.length > 0) {
+      execQuickSearch(newSearchText);
     }
   }, 250);
 
   const handleSearchChange = event => {
     let target = event.currentTarget;
-    let searchText = target.value;
-    setSearchText(searchText);
-    handleSearchChangeDebounced(target, searchText);
+    let newSearchText = target.value;
+    setSearchText(newSearchText);
+    handleSearchChangeDebounced(target, newSearchText);
   };
 
   const handleSearchFocus = event => {
@@ -170,7 +145,7 @@ function Search(props: Props) {
 
   const resetSearchAnchor = event => {
     // If user is clicking back into search field, don't resetAnchor
-    if (event.target !== desktopSearchInput.current) {
+    if (event.target !== searchInput.current) {
       setSearchAnchor(null);
     }
   };
@@ -205,64 +180,43 @@ function Search(props: Props) {
     }
   };
 
-  const debouncedExecSearch = _.debounce(execQuickSearch, 250);
-
-  const handleMobileSearchDisplayOpen = () => {
-    setMobileSearchBarOpen(true);
-    mobileSearchInput.current && mobileSearchInput.current.focus();
-  };
-
-  const handleMobileSearchDisplayClose = () => {
-    setMobileSearchBarOpen(false);
-    mobileSearchIcon.current && mobileSearchIcon.current.focus();
-  };
-
   return (
-    <React.Fragment>
-      <div className={classes.sectionDesktop}>
-        <div className={classes.search}>
-          <div className={classes.searchIcon}>
-            <SearchIcon />
-          </div>
-          <InputBase
-            placeholder="Search&hellip;"
-            classes={{
-              root: classes.inputRoot,
-              input: classes.inputInput,
-            }}
-            type="search"
-            inputProps={{
-              'aria-label': 'search Teletracker',
-              inputMode: 'search',
-            }}
-            inputRef={desktopSearchInput}
-            onChange={handleSearchChange}
-            onKeyDown={handleSearchForEnter}
-            onFocus={handleSearchFocus}
-          />
-          <QuickSearch
-            searchText={searchText}
-            isSearching={isSearching}
-            searchResults={searchResults}
-            searchAnchor={searchAnchor}
-            handleResetSearchAnchor={resetSearchAnchor}
-            handleSearchForSubmit={handleSearchForSubmit}
-          />
-        </div>
+    <div className={classes.search}>
+      <div className={classes.searchIcon}>
+        <SearchIcon />
       </div>
-
-      <div className={classes.sectionMobile} ref={mobileSearchIcon}>
-        <IconButton
-          aria-owns={'Search Teletracker'}
-          aria-haspopup="true"
-          onClick={handleMobileSearchDisplayOpen}
-          color="inherit"
-          disableRipple
-        >
-          <SearchIcon />
-        </IconButton>
-      </div>
-    </React.Fragment>
+      <InputBase
+        placeholder="Search&hellip;"
+        classes={{
+          root: classes.inputRoot,
+          input: classes.inputInput,
+        }}
+        type="search"
+        inputProps={{
+          'aria-label': 'search Teletracker',
+          inputMode: 'search',
+        }}
+        inputRef={searchInput}
+        onChange={handleSearchChange}
+        onKeyDown={handleSearchForEnter}
+        onFocus={handleSearchFocus}
+      />
+      {searchText.length > 0 ? (
+        <Fade in={true}>
+          <IconButton onClick={clearSearch} color="inherit" size="small">
+            <Close className={classes.searchClear} />
+          </IconButton>
+        </Fade>
+      ) : null}
+      <QuickSearch
+        searchText={searchText}
+        isSearching={isSearching}
+        searchResults={searchResults}
+        searchAnchor={searchAnchor}
+        handleResetSearchAnchor={resetSearchAnchor}
+        handleSearchForSubmit={handleSearchForSubmit}
+      />
+    </div>
   );
 }
 

@@ -10,7 +10,6 @@ import {
   Hidden,
   Icon,
   IconButton,
-  InputBase,
   MenuItem,
   MenuList,
   Paper,
@@ -23,11 +22,9 @@ import {
   withStyles,
   withWidth,
 } from '@material-ui/core';
-import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
   ArrowDropDown,
   ArrowDropUp,
-  Close,
   Menu as MenuIcon,
   Person,
   Search as SearchIcon,
@@ -40,11 +37,9 @@ import { connect } from 'react-redux';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../../actions/auth';
-import { search, SearchInitiatedPayload } from '../../actions/search';
 import RouterLink, { StdRouterLink } from '../RouterLink';
 import { AppState } from '../../reducers';
 import { Genre as GenreModel } from '../../types';
-import { Item } from '../../types/v2/Item';
 import { hexToRGB } from '../../utils/style-utils';
 import Search from './Search';
 
@@ -106,37 +101,31 @@ const styles = (theme: Theme) =>
     },
     mobileSearchIcon: {
       padding: theme.spacing(0.5, 1),
+      marginLeft: theme.spacing(2),
     },
-    noResults: {
-      margin: theme.spacing(1),
-      alignSelf: 'center',
-    },
-    poster: {
-      width: 25,
-      boxShadow: theme.shadows[1],
-      marginRight: theme.spacing(1),
-    },
-    progressSpinner: {
-      margin: theme.spacing(1),
-      justifySelf: 'center',
-    },
-    searchClear: {
-      color: theme.palette.common.white,
-      opacity: 0.25,
+    // searchClear: {
+    //   color: theme.palette.common.white,
+    //   opacity: 0.25,
+    // },
+    sectionMobile: {
+      display: 'flex',
+      justifyContent: 'flex-end',
     },
     searchMobile: {
       display: 'flex',
       position: 'relative',
       borderRadius: theme.shape.borderRadius,
-      backgroundColor: fade(theme.palette.common.white, 0.15),
-      '&:hover': {
-        backgroundColor: fade(theme.palette.common.white, 0.25),
-      },
+      // backgroundColor: fade(theme.palette.common.white, 0.15),
+      // '&:hover': {
+      //   backgroundColor: fade(theme.palette.common.white, 0.25),
+      // },
+      marginRight: theme.spacing(2),
       width: '100%',
     },
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
+  currentSearchText?: string;
   genres?: GenreModel[];
   isAuthed: boolean;
   onDrawerChange: (close?: boolean) => void;
@@ -157,6 +146,7 @@ interface State {
   genreAnchorEl: HTMLButtonElement | null;
   genreType: 'movie' | 'show' | null;
   isLoggedOut: boolean;
+  mobileSearchBarOpen: boolean;
 }
 
 interface MenuItemProps {
@@ -187,6 +177,7 @@ const MenuItemLink = (props: MenuItemProps) => {
 };
 
 class Toolbar extends Component<Props, State> {
+  private mobileSearchIcon: React.RefObject<HTMLDivElement>;
   private genreShowContainerRef: React.RefObject<HTMLElement>;
   private genreMovieContainerRef: React.RefObject<HTMLElement>;
   private genreShowSpacerRef: React.RefObject<HTMLDivElement>;
@@ -194,6 +185,7 @@ class Toolbar extends Component<Props, State> {
 
   constructor(props) {
     super(props);
+    this.mobileSearchIcon = React.createRef();
     this.genreShowContainerRef = React.createRef();
     this.genreMovieContainerRef = React.createRef();
     this.genreShowSpacerRef = React.createRef();
@@ -203,8 +195,8 @@ class Toolbar extends Component<Props, State> {
   state = {
     genreAnchorEl: null,
     genreType: null,
-    mobileSearchBarOpen: false,
     isLoggedOut: true,
+    mobileSearchBarOpen: false,
   };
 
   onSearchPage = (): boolean => {
@@ -403,73 +395,49 @@ class Toolbar extends Component<Props, State> {
     );
   }
 
-  // renderMobileSearchBar = () => {
-  //   let { classes } = this.props;
-  //   let { searchText } = this.state;
+  handleMobileSearchDisplayOpen = () => {
+    this.setState(state => ({ mobileSearchBarOpen: true }));
+  };
 
-  //   return (
-  //     <Slide
-  //       direction="down"
-  //       in={this.state.mobileSearchBarOpen}
-  //       timeout={350}
-  //       mountOnEnter
-  //     >
-  //       <div
-  //         className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
-  //       >
-  //         <IconButton
-  //           onClick={this.handleMobileSearchDisplayClose}
-  //           color="inherit"
-  //           size="small"
-  //           className={classes.mobileSearchIcon}
-  //         >
-  //           <KeyboardArrowUp />
-  //         </IconButton>
-  //         <div className={classes.searchMobile}>
-  //           <InputBase
-  //             placeholder="Search&hellip;"
-  //             inputProps={{
-  //               'aria-label': 'search Teletracker',
-  //               inputmode: 'search',
-  //             }}
-  //             classes={{
-  //               root: classes.inputRoot,
-  //               input: classes.mobileInput,
-  //             }}
-  //             onChange={this.handleSearchChange}
-  //             onKeyDown={this.handleSearchForEnter}
-  //             inputRef={this.mobileSearchInput}
-  //             type="search"
-  //             value={searchText}
-  //           />
-  //           {searchText.length > 0 ? (
-  //             <Fade in={true}>
-  //               <IconButton
-  //                 onClick={this.clearSearch}
-  //                 color="inherit"
-  //                 size="small"
-  //               >
-  //                 <Close className={classes.searchClear} />
-  //               </IconButton>
-  //             </Fade>
-  //           ) : null}
-  //         </div>
-  //         <div className={classes.searchIcon} />
-  //         <IconButton
-  //           onClick={this.handleSearchForSubmit}
-  //           color="inherit"
-  //           size="small"
-  //           className={classes.mobileSearchIcon}
-  //         >
-  //           <SearchIcon />
-  //         </IconButton>
-  //       </div>
-  //     </Slide>
-  //   );
-  // };
+  handleMobileSearchDisplayClose = () => {
+    this.setState(state => ({ mobileSearchBarOpen: false }));
+  };
+
+  renderMobileSearchBar = () => {
+    let { classes, drawerOpen } = this.props;
+
+    return (
+      <Slide
+        direction="down"
+        in={this.state.mobileSearchBarOpen}
+        timeout={350}
+        mountOnEnter
+      >
+        <div
+          className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
+        >
+          <IconButton
+            onClick={this.handleMobileSearchDisplayClose}
+            color="inherit"
+            size="small"
+            className={classes.mobileSearchIcon}
+          >
+            <KeyboardArrowUp />
+          </IconButton>
+          <div className={classes.searchMobile}>
+            <Search
+              drawerOpen={drawerOpen}
+              onDrawerChange={this.toggleDrawer}
+            />
+          </div>
+        </div>
+      </Slide>
+    );
+  };
 
   render() {
     let { classes, drawerOpen, isAuthed } = this.props;
+    const { mobileSearchBarOpen } = this.state;
 
     function ButtonLink(props) {
       const { primary, to } = props;
@@ -504,7 +472,7 @@ class Toolbar extends Component<Props, State> {
             Teletracker
           </Typography>
           <div className={classes.grow}>
-            {!this.onSearchPage() && (
+            {!this.onSearchPage() && !this.isSmallDevice && (
               <Search
                 drawerOpen={drawerOpen}
                 onDrawerChange={this.toggleDrawer}
@@ -539,7 +507,18 @@ class Toolbar extends Component<Props, State> {
               Login
             </Button>
           )}
-          {/* {!this.onSearchPage() && <Search />} */}
+          <div className={classes.sectionMobile} ref={this.mobileSearchIcon}>
+            <IconButton
+              aria-owns={'Search Teletracker'}
+              aria-haspopup="true"
+              onClick={this.handleMobileSearchDisplayOpen}
+              color="inherit"
+              disableRipple
+            >
+              <SearchIcon />
+            </IconButton>
+          </div>
+          {mobileSearchBarOpen && this.renderMobileSearchBar()}
         </MUIToolbar>
       </AppBar>
     );
@@ -548,6 +527,10 @@ class Toolbar extends Component<Props, State> {
 
 const mapStateToProps = (appState: AppState) => {
   return {
+    currentSearchText: R.path<string>(
+      ['search', 'currentSearchText'],
+      appState,
+    ),
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     genres: appState.metadata.genres,
   };
