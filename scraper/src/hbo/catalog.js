@@ -8,6 +8,7 @@ import { catalogSitemapS3Key } from './catalog-sitemap';
 import { DATA_BUCKET } from '../common/constants';
 import { isProduction } from '../common/env';
 import { createWriteStream } from '../common/stream_utils';
+import { sequentialPromises } from '../common/promise_utils';
 
 const uaString =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
@@ -206,13 +207,14 @@ const scrape = async (event, context) => {
 
   let [path, stream, flush] = createWriteStream(fileName);
 
-  let endMovies = _.chain(entries)
-    .filter(entry => movieRegex.test(entry))
-    .filter((_, idx) => idx % event.mod === event.band)
-    .chunk(5)
-    .reduce(async (prev, entries) => {
-      await prev;
-
+  await sequentialPromises(
+    _.chain(entries)
+      .filter(entry => movieRegex.test(entry))
+      .filter((_, idx) => idx % event.mod === event.band)
+      .chunk(5)
+      .value(),
+    0,
+    async entries => {
       let promises = _.map(entries, scrapeMovie);
       let res = await Promise.all(promises);
       if (res) {
@@ -221,20 +223,17 @@ const scrape = async (event, context) => {
           .each(r => stream.write(JSON.stringify(r) + '\n'))
           .value();
       }
+    },
+  );
 
-      return wait(0);
-    }, Promise.resolve())
-    .value();
-
-  await endMovies;
-
-  let endShows = _.chain(entries)
-    .filter(entry => showFirstEpisodeRegex.test(entry))
-    .filter((_, idx) => idx % event.mod === event.band)
-    .chunk(5)
-    .reduce(async (prev, entries) => {
-      await prev;
-
+  await sequentialPromises(
+    _.chain(entries)
+      .filter(entry => showFirstEpisodeRegex.test(entry))
+      .filter((_, idx) => idx % event.mod === event.band)
+      .chunk(5)
+      .value(),
+    0,
+    async entries => {
       let res = await Promise.all(_.map(entries, scrapeTvShow));
 
       if (res) {
@@ -243,11 +242,8 @@ const scrape = async (event, context) => {
           .each(r => stream.write(JSON.stringify(r) + '\n'))
           .value();
       }
-      return wait(0);
-    }, Promise.resolve())
-    .value();
-
-  await endShows;
+    },
+  );
 
   stream.close();
 
