@@ -3,7 +3,6 @@ export const wait = ms => {
 };
 
 export const sequentialPromises = async (seq, ms, itemFn) => {
-  console.log('seq', seq);
   let all = await seq.reduce(async (prev, item) => {
     let last = await prev;
 
