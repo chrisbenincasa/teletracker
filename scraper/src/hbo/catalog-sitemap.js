@@ -8,7 +8,7 @@ import { createWriteStream } from '../common/stream_utils';
 
 export const OUTPUT_FILE_NAME = 'hbo-catalog-urls.txt';
 export function catalogSitemapS3Key(date) {
-  return `scrape-results/hbo/${date}/catalog/${OUTPUT_FILE_NAME}`
+  return `scrape-results/hbo/${date}/catalog/${OUTPUT_FILE_NAME}`;
 }
 
 export const scrape = async (event, context) => {

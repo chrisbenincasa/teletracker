@@ -11,6 +11,7 @@ export {
   scheduleFromS3 as scheduleHuluCatalogS3,
 } from './hulu/catalog/scheduler';
 export { scrape as netflixOriginalsArriving } from './netflix/scrape';
+export { scrape as netflixDirect } from './netflix/scrape-direct';
 export {
   scrape as whatsOnNetflixCatalog,
 } from './netflix/whats-on-netflix-catalog';
