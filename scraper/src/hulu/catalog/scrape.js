@@ -1,4 +1,4 @@
-import * as _ from 'lodash';
+import _ from 'lodash';
 import moment from 'moment';
 import request from 'request-promise';
 import { createWriteStream } from '../../common/stream_utils';
@@ -8,6 +8,7 @@ import { getObjectS3, uploadToS3 } from '../../common/storage';
 import { isProduction } from '../../common/env';
 import AWS from 'aws-sdk';
 import { DEFAULT_BANDS, DEFAULT_PARALLELISM } from './scheduler';
+import { sequentialPromises } from '../../common/promise_utils';
 
 /*
 curl 'https://discover.hulu.com/content/v4/hubs/series/3944ff02-8772-43eb-bacc-10923d83f140?schema=9' 
@@ -140,7 +141,6 @@ const scrapeMovieJson = async (cookie, id) => {
     };
   } catch (e) {
     console.error(e.message);
-    return;
   }
 };
 
@@ -150,7 +150,7 @@ const scrape = async event => {
     let huluCookie = await resolveSecret('hulu-cookie');
 
     let offset = event.offset || 0;
-    let limit = event.limit || 50;
+    let limit = event.limit || -1;
 
     let band = event.band;
     let mod = event.mod || DEFAULT_BANDS;
@@ -162,7 +162,7 @@ const scrape = async event => {
 
     let nowString = now.format('YYYY-MM-DD');
     let fileName = nowString + '_hulu-catalog' + '.json';
-    if (mod && band) {
+    if (!_.isUndefined(mod) && !_.isUndefined(band)) {
       fileName = `${nowString}_hulu-catalog.${band}.json`;
     }
 
@@ -173,61 +173,71 @@ const scrape = async event => {
 
     let [path, stream, flush] = createWriteStream(fileName);
 
-    let seriesResults = urls
-      .filter((_, idx) => {
-        if (mod && band) {
-          return idx % mod === band;
-        } else {
-          return true;
-        }
-      })
-      .slice(offset, limit === -1 ? urls.length : limit)
-      .filter(text => text.includes('/series/'))
-      .reduce(async (prev, url) => {
-        let last = await prev;
+    console.log(urls.length);
 
+    let seriesResults = await sequentialPromises(
+      urls
+        .filter((item, idx) => {
+          if (!_.isUndefined(mod) && !_.isUndefined(band)) {
+            return idx % mod === band;
+          } else {
+            return true;
+          }
+        })
+        .slice(offset, limit === -1 ? urls.length : limit)
+        .filter(text => text.includes('/series/')),
+      100,
+      async url => {
         let matches = seriesRegex.exec(url);
         let result;
         if (matches && matches.length > 0) {
           result = await scrapeSeriesJson(huluCookie, matches[2]);
+        } else {
+          console.error('Series url did not match regex', url);
         }
 
         if (result) {
           stream.write(JSON.stringify(result) + '\n');
-        }
-
-        await wait(100);
-        return [...last, result];
-      }, Promise.resolve([]));
-
-    let movieResults = urls
-      .slice(offset, limit === -1 ? urls.length : limit)
-      .filter((_, idx) => {
-        if (mod && band) {
-          return idx % mod === band;
         } else {
-          return true;
+          console.error('Could not get series result for ' + url);
         }
-      })
-      .filter(text => text.includes('/movie/'))
-      .reduce(async (prev, url) => {
-        let last = await prev;
+      },
+    );
 
+    let movieResults = await sequentialPromises(
+      urls
+        .slice(offset, limit === -1 ? urls.length : limit)
+        .filter((_, idx) => {
+          if (mod && band) {
+            return idx % mod === band;
+          } else {
+            return true;
+          }
+        })
+        .filter(text => {
+          console.log(text);
+          text.includes('/movie/');
+        }),
+      100,
+      async url => {
         let matches = moviesRegex.exec(url);
         let result;
         if (matches && matches.length > 0) {
           result = await scrapeMovieJson(huluCookie, matches[2]);
+        } else {
+          console.error('Movie url did not match regex', url);
         }
 
         if (result) {
           stream.write(JSON.stringify(result) + '\n');
+        } else {
+          console.error('Could not get movie result for ' + url);
         }
+      },
+    );
 
-        await wait(100);
-        return [...last, result];
-      }, Promise.resolve([]));
-
-    let allResults = [...(await seriesResults), ...(await movieResults)];
+    let allResults = [...seriesResults, ...movieResults];
+    console.log(`Scraping ${allResults.length} total`);
 
     allResults = _.filter(allResults, _.negate(_.isUndefined));
 
