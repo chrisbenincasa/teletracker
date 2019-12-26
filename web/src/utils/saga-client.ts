@@ -303,6 +303,30 @@ export class SagaTeletrackerClient {
     );
   }
 
+  *quickSearch(
+    searchText: string,
+    bookmark?: string,
+    limit?: number,
+    itemTypes?: ItemType[],
+    networks?: NetworkType[],
+    genres?: number[],
+    releaseYearRange?: OpenRange,
+    sort?: SortOptions,
+  ) {
+    return yield this.apiCall(
+      client => client.quickSearch,
+      yield call([this, this.withToken]),
+      searchText,
+      bookmark,
+      limit,
+      itemTypes,
+      networks,
+      genres,
+      releaseYearRange,
+      sort,
+    );
+  }
+
   *searchPeople(searchText: string, limit?: number, bookmark?: string) {
     return yield this.apiCall(
       client => client.searchPeople,

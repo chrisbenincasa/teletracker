@@ -111,7 +111,7 @@ class App extends Component<Props, State> {
         <CssBaseline />
         <Toolbar
           drawerOpen={this.state.drawerOpen}
-          onDrawerChange={() => this.toggleDrawer()}
+          onDrawerChange={close => this.toggleDrawer(close)}
         />
         {!isBooting ? (
           <React.Fragment>

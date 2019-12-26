@@ -117,6 +117,30 @@ export class TeletrackerApi {
     });
   }
 
+  async quickSearch(
+    token: string,
+    searchText: string,
+    bookmark?: string,
+    limit?: number,
+    itemTypes?: ItemType[],
+    networks?: NetworkType[],
+    genres?: number[],
+    releaseYearRange?: OpenRange,
+    sort?: SortOptions,
+  ) {
+    return this.api.get<ApiItem[]>('/api/v3/search', {
+      token,
+      query: searchText,
+      bookmark,
+      limit,
+      itemTypes,
+      networks,
+      genres,
+      releaseYearRange,
+      sort,
+    });
+  }
+
   async searchPeople(
     token: string,
     searchText: string,

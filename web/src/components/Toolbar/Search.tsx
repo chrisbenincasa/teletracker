@@ -1,4 +1,11 @@
-import React, { useState, useRef } from 'react';
+// TO DO:
+// - Fix "x" spacing issue inside search
+// - Add IntersectionObserver to search field to display it in toolbar when off screen in container
+// - Pipe filtering into dispatch events in Search, currently just have limit setup
+// clean up search container
+// Pipe infinite scroll into search component or figure out cleaner way to handle that
+
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Fade,
   IconButton,
@@ -14,7 +21,10 @@ import _ from 'lodash';
 import { useDispatch, useSelector } from 'react-redux';
 import * as R from 'ramda';
 import { AppState } from '../../reducers';
-import { search } from '../../actions/search';
+import { quickSearch, search } from '../../actions/search';
+import { FilterParams } from '../../utils/searchFilters';
+import { calculateLimit, getNumColumns } from '../../utils/list-utils';
+import { useWidth } from '../../hooks/useWidth';
 
 const useStyles = makeStyles((theme: Theme) => ({
   inputRoot: {
@@ -22,7 +32,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: '100%',
   },
   inputInput: {
-    padding: theme.spacing(1, 1, 1, 10),
+    padding: theme.spacing(1, 1, 1, 9),
     transition: theme.transitions.create('width'),
     width: '100%',
     '&::-webkit-search-decoration,&::-webkit-search-cancel-button,&::-webkit-search-results-button,&::-webkit-search-results-decoration': {
@@ -48,13 +58,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     color: theme.palette.common.white,
     opacity: 0.25,
   },
-  sectionMobile: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    [theme.breakpoints.up('md')]: {
-      display: 'none',
-    },
-  },
   searchIcon: {
     width: theme.spacing(9),
     height: '100%',
@@ -67,8 +70,11 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  drawerOpen: boolean;
-  onDrawerChange: (close?: boolean) => void;
+  drawerOpen?: boolean;
+  onDrawerChange?: (close?: boolean) => void;
+  inputStyle?: object;
+  filters?: FilterParams;
+  loadMore?: boolean; // make required before PR
 }
 
 function Search(props: Props) {
@@ -76,16 +82,31 @@ function Search(props: Props) {
   const location = useLocation();
   const history = useHistory();
   const dispatch = useDispatch();
+  const width = useWidth();
   const currentSearchText = useSelector((state: AppState) =>
     R.path<string>(['search', 'currentSearchText'], state),
   );
-  const isSearching = useSelector((state: AppState) => state.search.searching);
-  const searchResults = useSelector((state: AppState) => state.search.results);
+  const isQuickSearching = useSelector(
+    (state: AppState) => state.search.quick.searching,
+  );
+  const quickSearchResults = useSelector(
+    (state: AppState) => state.search.quick.results,
+  );
   const [searchText, setSearchText] = useState<string>('');
   const [searchAnchor, setSearchAnchor] = useState<HTMLInputElement | null>(
     null,
   );
   const searchInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    searchInput.current && searchInput.current.focus();
+  }, []);
+
+  useEffect(() => {
+    if (props.loadMore) {
+      console.log('LOAD MORE!');
+    }
+  }, [props.loadMore]);
 
   const clearSearch = () => {
     let newSearchText = '';
@@ -119,7 +140,7 @@ function Search(props: Props) {
   };
 
   const handleSearchFocus = event => {
-    if (props.drawerOpen) {
+    if (props.drawerOpen && !!props.onDrawerChange) {
       props.onDrawerChange();
     }
 
@@ -136,6 +157,7 @@ function Search(props: Props) {
   const handleSearchForEnter = (
     event: React.KeyboardEvent<HTMLInputElement>,
   ) => {
+    console.log(event.keyCode);
     if (event.keyCode === 13) {
       execSearch(searchText);
       event.currentTarget.blur();
@@ -161,20 +183,23 @@ function Search(props: Props) {
       dispatch(
         search({
           query: text,
+          limit: calculateLimit(width, 3, 0),
         }),
       );
     }
   };
 
   const execQuickSearch = (text: string) => {
+    console.log(props);
     if (text.length >= 1 && currentSearchText !== text) {
       if (location.pathname === '/search') {
         history.push(`?q=${encodeURIComponent(text)}`);
       }
 
       dispatch(
-        search({
+        quickSearch({
           query: text,
+          limit: calculateLimit(width, 3, 0),
         }),
       );
     }
@@ -200,6 +225,7 @@ function Search(props: Props) {
         onChange={handleSearchChange}
         onKeyDown={handleSearchForEnter}
         onFocus={handleSearchFocus}
+        style={props.inputStyle || undefined}
       />
       {searchText.length > 0 ? (
         <Fade in={true}>
@@ -210,8 +236,8 @@ function Search(props: Props) {
       ) : null}
       <QuickSearch
         searchText={searchText}
-        isSearching={isSearching}
-        searchResults={searchResults}
+        isSearching={isQuickSearching}
+        searchResults={quickSearchResults}
         searchAnchor={searchAnchor}
         handleResetSearchAnchor={resetSearchAnchor}
         handleSearchForSubmit={handleSearchForSubmit}

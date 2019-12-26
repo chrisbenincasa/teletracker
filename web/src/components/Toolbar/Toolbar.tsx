@@ -125,7 +125,6 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
-  currentSearchText?: string;
   genres?: GenreModel[];
   isAuthed: boolean;
   onDrawerChange: (close?: boolean) => void;
@@ -396,11 +395,12 @@ class Toolbar extends Component<Props, State> {
   }
 
   handleMobileSearchDisplayOpen = () => {
-    this.setState(state => ({ mobileSearchBarOpen: true }));
+    this.toggleDrawer(true);
+    this.setState({ mobileSearchBarOpen: true });
   };
 
   handleMobileSearchDisplayClose = () => {
-    this.setState(state => ({ mobileSearchBarOpen: false }));
+    this.setState({ mobileSearchBarOpen: false });
   };
 
   renderMobileSearchBar = () => {
@@ -507,17 +507,19 @@ class Toolbar extends Component<Props, State> {
               Login
             </Button>
           )}
-          <div className={classes.sectionMobile} ref={this.mobileSearchIcon}>
-            <IconButton
-              aria-owns={'Search Teletracker'}
-              aria-haspopup="true"
-              onClick={this.handleMobileSearchDisplayOpen}
-              color="inherit"
-              disableRipple
-            >
-              <SearchIcon />
-            </IconButton>
-          </div>
+          {this.isSmallDevice && !mobileSearchBarOpen && (
+            <div className={classes.sectionMobile} ref={this.mobileSearchIcon}>
+              <IconButton
+                aria-owns={'Search Teletracker'}
+                aria-haspopup="true"
+                onClick={this.handleMobileSearchDisplayOpen}
+                color="inherit"
+                disableRipple
+              >
+                <SearchIcon />
+              </IconButton>
+            </div>
+          )}
           {mobileSearchBarOpen && this.renderMobileSearchBar()}
         </MUIToolbar>
       </AppBar>
@@ -527,10 +529,6 @@ class Toolbar extends Component<Props, State> {
 
 const mapStateToProps = (appState: AppState) => {
   return {
-    currentSearchText: R.path<string>(
-      ['search', 'currentSearchText'],
-      appState,
-    ),
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     genres: appState.metadata.genres,
   };

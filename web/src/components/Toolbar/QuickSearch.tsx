@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   CircularProgress,
   Chip,
   ClickAwayListener,
+  Collapse,
   Fade,
   Icon,
   makeStyles,
@@ -52,10 +53,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: theme.spacing(1),
     alignSelf: 'center',
   },
-  progressSpinner: {
-    margin: theme.spacing(1),
-    justifySelf: 'center',
-  },
   poster: {
     width: 50,
     marginRight: theme.spacing(1),
@@ -66,11 +63,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: '100%',
     maxWidth: 720,
     backgroundColor: theme.palette.primary.main,
-    marginTop: 10,
   },
   viewAllResults: {
     justifyContent: 'center',
-    padding: theme.spacing(1),
   },
 }));
 
@@ -85,6 +80,19 @@ interface Props {
 
 function QuickSearch(props: Props) {
   const classes = useStyles();
+  const quickSearchContainer = useRef<HTMLDivElement>(null);
+  let containerHeight =
+    quickSearchContainer &&
+    quickSearchContainer.current &&
+    quickSearchContainer.current.clientHeight &&
+    quickSearchContainer.current.clientHeight > 72
+      ? quickSearchContainer.current.clientHeight - 16
+      : 56;
+  // Above logic just ensures the container has enough height to be visible
+  // 16 = padding on container
+  //56 = current height of No Results messaging
+  //72 = 56+16
+
   let { searchResults, isSearching, searchText, searchAnchor } = props;
 
   return searchAnchor && searchText && searchText.length > 0 ? (
@@ -95,7 +103,7 @@ function QuickSearch(props: Props) {
         open={!!searchAnchor}
         anchorEl={searchAnchor}
         placement="bottom-start"
-        keepMounted
+        // keepMounted
         transition
         disablePortal
         style={{ width: '100%' }}
@@ -113,139 +121,145 @@ function QuickSearch(props: Props) {
               id="menu-list-grow"
               className={classes.searchWrapper}
               elevation={5}
+              ref={quickSearchContainer}
             >
-              <MenuList
-                style={
-                  isSearching
-                    ? { display: 'flex', justifyContent: 'center', padding: 0 }
-                    : { padding: 0 }
-                }
-              >
+              <MenuList>
                 {isSearching ? (
-                  <CircularProgress
-                    className={classes.progressSpinner}
-                    color="secondary"
-                  />
+                  <div
+                    style={{
+                      height: `${containerHeight}px`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <CircularProgress color="secondary" />
+                  </div>
                 ) : (
                   <div>
-                    {searchResults && searchResults.length > 0 ? (
-                      searchResults.slice(0, 4).map(result => {
-                        const voteAverage =
-                          result.ratings && result.ratings.length
-                            ? result.ratings[0].vote_average
-                            : 0;
-                        const runtime =
-                          (result.runtime &&
-                            formatRuntime(result.runtime, result.type)) ||
-                          null;
-                        const rating =
-                          result.release_dates &&
-                          result.release_dates.find(item => {
-                            if (
-                              item.country_code === 'US' &&
-                              item.certification !== 'NR'
-                            ) {
-                              return item.certification;
-                            } else {
-                              return null;
-                            }
-                          });
+                    <Collapse
+                      in={!isSearching && !!searchResults}
+                      timeout={500}
+                    >
+                      {searchResults && searchResults.length > 0 ? (
+                        searchResults.slice(0, 4).map(result => {
+                          const voteAverage =
+                            result.ratings && result.ratings.length
+                              ? result.ratings[0].vote_average
+                              : 0;
+                          const runtime =
+                            (result.runtime &&
+                              formatRuntime(result.runtime, result.type)) ||
+                            null;
+                          const rating =
+                            result.release_dates &&
+                            result.release_dates.find(item => {
+                              if (
+                                item.country_code === 'US' &&
+                                item.certification !== 'NR'
+                              ) {
+                                return item.certification;
+                              } else {
+                                return null;
+                              }
+                            });
 
-                        return (
-                          <MenuItem
-                            dense
-                            component={RouterLink}
-                            to={result.relativeUrl}
-                            key={result.id}
-                            onClick={event =>
-                              props.handleResetSearchAnchor(event)
-                            }
-                          >
-                            {getTmdbPosterImage(result) ? (
-                              <img
-                                alt={`Movie poster for ${result.canonicalTitle}`}
-                                src={`https://image.tmdb.org/t/p/w92${
-                                  getTmdbPosterImage(result)!.id
-                                }`}
-                                className={classes.poster}
-                              />
-                            ) : (
-                              <div className={classes.missingPoster}>
-                                <Icon
-                                  className={classes.missingPosterIcon}
-                                  fontSize="inherit"
-                                >
-                                  broken_image
-                                </Icon>
-                              </div>
-                            )}
-                            <div className={classes.itemDetails}>
-                              <Typography variant="subtitle1">
-                                {truncateText(result.canonicalTitle, 100)}
-                              </Typography>
-                              <Rating
-                                value={voteAverage / 2}
-                                precision={0.1}
-                                size="small"
-                                readOnly
-                              />
-                              <div className={classes.chipWrapper}>
-                                <Chip
-                                  label={result.type}
-                                  clickable
-                                  size="small"
-                                  className={classes.chip}
+                          return (
+                            <MenuItem
+                              dense
+                              component={RouterLink}
+                              to={result.relativeUrl}
+                              key={result.id}
+                              onClick={event =>
+                                props.handleResetSearchAnchor(event)
+                              }
+                            >
+                              {getTmdbPosterImage(result) ? (
+                                <img
+                                  alt={`Movie poster for ${result.canonicalTitle}`}
+                                  src={`https://image.tmdb.org/t/p/w92${
+                                    getTmdbPosterImage(result)!.id
+                                  }`}
+                                  className={classes.poster}
                                 />
-                                {rating && rating.certification && (
+                              ) : (
+                                <div className={classes.missingPoster}>
+                                  <Icon
+                                    className={classes.missingPosterIcon}
+                                    fontSize="inherit"
+                                  >
+                                    broken_image
+                                  </Icon>
+                                </div>
+                              )}
+                              <div className={classes.itemDetails}>
+                                <Typography variant="subtitle1">
+                                  {truncateText(result.canonicalTitle, 100)}
+                                </Typography>
+                                <Rating
+                                  value={voteAverage / 2}
+                                  precision={0.1}
+                                  size="small"
+                                  readOnly
+                                />
+                                <div className={classes.chipWrapper}>
                                   <Chip
-                                    label={rating.certification}
+                                    label={result.type}
                                     clickable
                                     size="small"
                                     className={classes.chip}
                                   />
-                                )}
-                                {result.release_date && (
-                                  <Chip
-                                    label={moment(result.release_date).format(
-                                      'YYYY',
-                                    )}
-                                    clickable
-                                    size="small"
-                                    className={classes.chip}
-                                  />
-                                )}
-                                {runtime && (
-                                  <Chip
-                                    label={runtime}
-                                    clickable
-                                    size="small"
-                                    className={classes.chip}
-                                  />
-                                )}
+                                  {rating && rating.certification && (
+                                    <Chip
+                                      label={rating.certification}
+                                      clickable
+                                      size="small"
+                                      className={classes.chip}
+                                    />
+                                  )}
+                                  {result.release_date && (
+                                    <Chip
+                                      label={moment(result.release_date).format(
+                                        'YYYY',
+                                      )}
+                                      clickable
+                                      size="small"
+                                      className={classes.chip}
+                                    />
+                                  )}
+                                  {runtime && (
+                                    <Chip
+                                      label={runtime}
+                                      clickable
+                                      size="small"
+                                      className={classes.chip}
+                                    />
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          </MenuItem>
-                        );
-                      })
-                    ) : (
-                      <Typography
-                        variant="body1"
-                        align="center"
-                        className={classes.noResults}
-                      >
-                        No results matching that search
-                      </Typography>
-                    )}
-                    {searchResults && searchResults.length > 4 && (
-                      <MenuItem
-                        dense
-                        className={classes.viewAllResults}
-                        onClick={props.handleSearchForSubmit}
-                        key="view-all"
-                      >
-                        View All Results
-                      </MenuItem>
-                    )}
+                            </MenuItem>
+                          );
+                        })
+                      ) : (
+                        <Typography
+                          variant="body1"
+                          align="center"
+                          className={classes.noResults}
+                        >
+                          No results matching that search
+                        </Typography>
+                      )}
+                      {searchResults && searchResults.length > 4 && (
+                        <MenuItem
+                          dense
+                          className={classes.viewAllResults}
+                          onClick={props.handleSearchForSubmit}
+                          key="view-all"
+                        >
+                          View All Results
+                        </MenuItem>
+                      )}
+                    </Collapse>
                   </div>
                 )}
               </MenuList>

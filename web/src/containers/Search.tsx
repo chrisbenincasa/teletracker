@@ -3,7 +3,7 @@ import {
   createStyles,
   Grid,
   IconButton,
-  LinearProgress,
+  CircularProgress,
   Theme,
   Typography,
   WithStyles,
@@ -35,6 +35,7 @@ import {
 } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
+import SearchInput from '../components/Toolbar/Search';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -49,6 +50,11 @@ const styles = (theme: Theme) =>
       marginBottom: theme.spacing(1),
       justifyContent: 'flex-end',
       alignItems: 'center',
+    },
+    progressSpinner: {
+      display: 'flex',
+      flexGrow: 1,
+      justifyContent: 'center',
     },
     searchError: {
       display: 'flex',
@@ -67,6 +73,7 @@ const styles = (theme: Theme) =>
     searchResultsContainer: {
       margin: theme.spacing(1),
       padding: theme.spacing(1),
+      width: '100%',
     },
     settings: {
       display: 'flex',
@@ -114,6 +121,7 @@ type State = {
   showFilter: boolean;
   createDynamicListDialogOpen: boolean;
   totalLoadedImages: number;
+  shouldLoadMore: boolean;
 };
 
 class Search extends Component<Props, State> {
@@ -146,11 +154,12 @@ class Search extends Component<Props, State> {
         filters: filterParams,
         createDynamicListDialogOpen: false,
         totalLoadedImages: 0,
+        shouldLoadMore: false,
       };
 
       if (this.props.currentSearchText !== query) {
         console.log('yep');
-        this.loadResults();
+        // this.loadResults();
       }
     }
   }
@@ -170,37 +179,37 @@ class Search extends Component<Props, State> {
     }
   }
 
-  debouncedSearch = _.debounce(() => {
-    this.loadResults();
-  }, 200);
+  // debouncedSearch = _.debounce(() => {
+  //   this.loadResults();
+  // }, 200);
 
-  loadResults() {
-    const {
-      filters: { itemTypes, genresFilter, networks, sliders },
-      searchText,
-    } = this.state;
-    const { searchBookmark, width } = this.props;
+  // loadResults() {
+  //   const {
+  //     filters: { itemTypes, genresFilter, networks, sliders },
+  //     searchText,
+  //   } = this.state;
+  //   const { searchBookmark, width } = this.props;
 
-    // To do: add support for sorting
-    if (!this.props.isSearching) {
-      console.log(this.props);
-      this.props.search({
-        query: searchText,
-        bookmark: searchBookmark ? searchBookmark : undefined,
-        limit: calculateLimit(width, 3, 0),
-        itemTypes,
-        networks,
-        genres: genresFilter,
-        releaseYearRange:
-          sliders && sliders.releaseYear
-            ? {
-                min: sliders.releaseYear.min,
-                max: sliders.releaseYear.max,
-              }
-            : undefined,
-      });
-    }
-  }
+  //   // To do: add support for sorting
+  //   if (!this.props.isSearching) {
+  //     console.log(this.props);
+  //     this.props.search({
+  //       query: searchText,
+  //       bookmark: searchBookmark ? searchBookmark : undefined,
+  //       limit: calculateLimit(width, 3, 0),
+  //       itemTypes,
+  //       networks,
+  //       genres: genresFilter,
+  //       releaseYearRange:
+  //         sliders && sliders.releaseYear
+  //           ? {
+  //               min: sliders.releaseYear.min,
+  //               max: sliders.releaseYear.max,
+  //             }
+  //           : undefined,
+  //     });
+  //   }
+  // }
 
   loadMoreResults = () => {
     const { totalLoadedImages } = this.state;
@@ -211,12 +220,29 @@ class Search extends Component<Props, State> {
     const totalFetchedItems = (searchResults && searchResults.length) || 0;
     const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
     const shouldLoadMore = totalNonLoadedImages <= numColumns;
+    console.log(isSearching);
+    console.log(shouldLoadMore);
 
     if (!isSearching && shouldLoadMore) {
       console.log('testestetst');
-      this.debouncedSearch();
+      // this.debouncedSearch();
+      this.setState({
+        shouldLoadMore: true,
+      });
     }
   };
+
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      this.state.shouldLoadMore &&
+      prevProps.isSearching &&
+      !this.props.isSearching
+    ) {
+      this.setState({
+        shouldLoadMore: false,
+      });
+    }
+  }
 
   setVisibleItems = () => {
     this.setState({
@@ -225,9 +251,11 @@ class Search extends Component<Props, State> {
   };
 
   renderLoading = () => {
+    const { classes } = this.props;
+
     return (
-      <div style={{ flexGrow: 1 }}>
-        <LinearProgress />
+      <div className={classes.progressSpinner}>
+        <CircularProgress />
       </div>
     );
   };
@@ -285,93 +313,112 @@ class Search extends Component<Props, State> {
 
     let firstLoad = !searchResults;
     searchResults = searchResults || [];
-
-    return this.props.isSearching &&
-      (!searchBookmark || this.state.searchText !== currentSearchText) ? (
-      this.renderLoading()
-    ) : !this.props.error ? (
+    console.log(searchBookmark);
+    return (
       <React.Fragment>
-        {searchResults.length ? (
-          <div className={classes.searchResultsContainer}>
-            <div className={classes.listTitle}>
-              <Typography
-                color="inherit"
-                variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
-                style={{ flexGrow: 1 }}
-              >
-                {`${
-                  genresFilter && genresFilter.length === 1
-                    ? this.mapGenre(genresFilter[0])
-                    : ''
-                } ${
-                  itemTypes && itemTypes.length === 1
-                    ? itemTypes.includes('movie')
-                      ? 'Movies'
-                      : 'TV Shows'
-                    : 'Content'
-                } that matches "${currentSearchText}"`}
-              </Typography>
-              <IconButton
-                onClick={this.toggleFilters}
-                className={classes.settings}
-                color={this.state.showFilter ? 'primary' : 'inherit'}
-              >
-                <Tune />
-                <Typography variant="srOnly">Tune</Typography>
-              </IconButton>
-              <CreateSmartListButton onClick={this.createListFromFilters} />
-            </div>
-            <div className={classes.filters}>
-              <ActiveFilters
-                genres={genres}
-                updateFilters={this.handleFilterParamsChange}
-                isListDynamic={false}
-                filters={this.state.filters}
-                variant="default"
-              />
-            </div>
-            <AllFilters
-              genres={genres}
-              open={this.state.showFilter}
-              filters={this.state.filters}
-              updateFilters={this.handleFilterParamsChange}
-              sortOptions={['popularity', 'recent']}
-            />
-            <InfiniteScroll
-              pageStart={0}
-              loadMore={() => this.loadMoreResults()}
-              hasMore={Boolean(searchBookmark)}
-              useWindow
-              threshold={300}
+        <div className={classes.searchResultsContainer}>
+          <div style={{ margin: 48 }}>
+            <Typography
+              color="inherit"
+              variant="h2"
+              align="center"
+              style={{ margin: 16 }}
             >
-              <Grid container spacing={2}>
-                {searchResults.map(result => {
-                  return (
-                    <ItemCard
-                      key={result.id}
-                      userSelf={userSelf}
-                      item={result}
-                    />
-                  );
-                })}
-              </Grid>
-            </InfiniteScroll>
-          </div>
-        ) : firstLoad ? null : (
-          <div className={classes.searchNoResults}>
-            <Typography variant="h5" gutterBottom align="center">
-              No results :(
+              Search
             </Typography>
+            <SearchInput
+              inputStyle={{ height: 50 }}
+              filters={this.state.filters}
+              loadMore={this.state.shouldLoadMore}
+            />
           </div>
-        )}
+          <div className={classes.listTitle}>
+            <Typography
+              color="inherit"
+              variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
+              style={{ flexGrow: 1 }}
+            >
+              {`${
+                genresFilter && genresFilter.length === 1
+                  ? this.mapGenre(genresFilter[0])
+                  : ''
+              } ${
+                itemTypes && itemTypes.length === 1
+                  ? itemTypes.includes('movie')
+                    ? 'Movies'
+                    : 'TV Shows'
+                  : 'Content'
+              } that matches "${currentSearchText}"`}
+            </Typography>
+            <IconButton
+              onClick={this.toggleFilters}
+              className={classes.settings}
+              color={this.state.showFilter ? 'primary' : 'inherit'}
+            >
+              <Tune />
+              <Typography variant="srOnly">Tune</Typography>
+            </IconButton>
+            <CreateSmartListButton onClick={this.createListFromFilters} />
+          </div>
+          <div className={classes.filters}>
+            <ActiveFilters
+              genres={genres}
+              updateFilters={this.handleFilterParamsChange}
+              isListDynamic={false}
+              filters={this.state.filters}
+              variant="default"
+            />
+          </div>
+          <AllFilters
+            genres={genres}
+            open={this.state.showFilter}
+            filters={this.state.filters}
+            updateFilters={this.handleFilterParamsChange}
+            sortOptions={['popularity', 'recent']}
+          />
+          {this.props.isSearching &&
+          (!searchBookmark || this.state.searchText !== currentSearchText) ? (
+            this.renderLoading()
+          ) : !this.props.error ? (
+            searchResults && searchResults.length > 0 ? (
+              <React.Fragment>
+                <InfiniteScroll
+                  pageStart={0}
+                  loadMore={() => this.loadMoreResults()}
+                  hasMore={Boolean(searchBookmark)}
+                  useWindow
+                  threshold={300}
+                >
+                  <Grid container spacing={2}>
+                    {searchResults.map(result => {
+                      return (
+                        <ItemCard
+                          key={result.id}
+                          userSelf={userSelf}
+                          item={result}
+                        />
+                      );
+                    })}
+                  </Grid>
+                </InfiniteScroll>
+              </React.Fragment>
+            ) : firstLoad ? null : (
+              <div className={classes.searchNoResults}>
+                <Typography variant="h5" gutterBottom align="center">
+                  No results :(
+                </Typography>
+              </div>
+            )
+          ) : (
+            <div className={classes.searchError}>
+              <ErrorIcon color="inherit" fontSize="large" />
+              <Typography variant="h5" gutterBottom align="center">
+                Something went wrong :(
+              </Typography>
+            </div>
+          )}
+        </div>
       </React.Fragment>
-    ) : (
-      <div className={classes.searchError}>
-        <ErrorIcon color="inherit" fontSize="large" />
-        <Typography variant="h5" gutterBottom align="center">
-          Something went wrong :(
-        </Typography>
-      </div>
     );
   }
 }

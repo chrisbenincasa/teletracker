@@ -25,7 +25,7 @@ import { loadNetworksSaga } from './metadata';
 import { loadGenres, loadGenresSaga } from './metadata/load_genres';
 import { fetchPersonDetailsSaga } from './people/get_person';
 import { popularSaga } from './popular';
-import { searchSaga } from './search';
+import { searchSaga, quickSearchSaga } from './search';
 import {
   getUserSelfSaga,
   removeUserActionSaga,
@@ -75,6 +75,7 @@ export function* root() {
     retrieveListsSaga(),
     addToListSaga(),
     searchSaga(),
+    quickSearchSaga(),
     loginSaga(),
     logoutSaga(),
     signupSaga(),
