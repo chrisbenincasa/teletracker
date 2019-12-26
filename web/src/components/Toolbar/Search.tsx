@@ -75,6 +75,7 @@ interface Props {
   inputStyle?: object;
   filters?: FilterParams;
   loadMore?: boolean; // make required before PR
+  quickSearchColor?: string;
 }
 
 function Search(props: Props) {
@@ -85,6 +86,9 @@ function Search(props: Props) {
   const width = useWidth();
   const currentSearchText = useSelector((state: AppState) =>
     R.path<string>(['search', 'currentSearchText'], state),
+  );
+  const currentQuickSearchText = useSelector((state: AppState) =>
+    R.path<string>(['search', 'quick', 'currentSearchText'], state),
   );
   const isQuickSearching = useSelector(
     (state: AppState) => state.search.quick.searching,
@@ -119,12 +123,8 @@ function Search(props: Props) {
   };
 
   const handleSearchChangeDebounced = _.debounce((target, newSearchText) => {
-    if (searchAnchor === null && location.pathname !== '/search') {
+    if (searchAnchor === null) {
       setSearchAnchor(target);
-    }
-
-    if (location.pathname === '/search') {
-      setSearchAnchor(null);
     }
 
     if (newSearchText.length > 0) {
@@ -144,13 +144,17 @@ function Search(props: Props) {
       props.onDrawerChange();
     }
 
-    if (searchAnchor === null && location.pathname !== '/search') {
+    if (searchAnchor === null) {
       setSearchAnchor(event.currentTarget);
     }
   };
 
   const handleSearchForSubmit = event => {
-    setSearchAnchor(event);
+    if (location.pathname === '/search') {
+      setSearchAnchor(null);
+    } else {
+      setSearchAnchor(event);
+    }
     execSearch(searchText);
   };
 
@@ -190,12 +194,7 @@ function Search(props: Props) {
   };
 
   const execQuickSearch = (text: string) => {
-    console.log(props);
-    if (text.length >= 1 && currentSearchText !== text) {
-      if (location.pathname === '/search') {
-        history.push(`?q=${encodeURIComponent(text)}`);
-      }
-
+    if (text.length >= 1 && currentQuickSearchText !== text) {
       dispatch(
         quickSearch({
           query: text,
@@ -241,6 +240,7 @@ function Search(props: Props) {
         searchAnchor={searchAnchor}
         handleResetSearchAnchor={resetSearchAnchor}
         handleSearchForSubmit={handleSearchForSubmit}
+        color={props.quickSearchColor ? props.quickSearchColor : undefined}
       />
     </div>
   );

@@ -57,15 +57,21 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: 50,
     marginRight: theme.spacing(1),
   },
-  searchWrapper: {
+  searchWrapper: props => ({
     height: 'auto',
     overflow: 'scroll',
     width: '100%',
     maxWidth: 720,
-    backgroundColor: theme.palette.primary.main,
-  },
+    backgroundColor:
+      props.color && props.color === 'secondary'
+        ? theme.palette.secondary.main
+        : theme.palette.primary.main,
+  }),
   viewAllResults: {
     justifyContent: 'center',
+  },
+  popper: {
+    zIndex: theme.zIndex.appBar,
   },
 }));
 
@@ -76,10 +82,11 @@ interface Props {
   searchText: string;
   handleResetSearchAnchor: (event) => void;
   handleSearchForSubmit: (event) => void;
+  color?: string;
 }
 
 function QuickSearch(props: Props) {
-  const classes = useStyles();
+  const classes = useStyles(props);
   const quickSearchContainer = useRef<HTMLDivElement>(null);
   let containerHeight =
     quickSearchContainer &&
@@ -90,9 +97,8 @@ function QuickSearch(props: Props) {
       : 56;
   // Above logic just ensures the container has enough height to be visible
   // 16 = padding on container
-  //56 = current height of No Results messaging
-  //72 = 56+16
-
+  // 56 = current height of No Results messaging
+  // 72 = 56+16
   let { searchResults, isSearching, searchText, searchAnchor } = props;
 
   return searchAnchor && searchText && searchText.length > 0 ? (
@@ -107,6 +113,7 @@ function QuickSearch(props: Props) {
         transition
         disablePortal
         style={{ width: '100%' }}
+        className={classes.popper}
       >
         {({ TransitionProps, placement }) => (
           <Fade

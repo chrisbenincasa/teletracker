@@ -144,23 +144,21 @@ class Search extends Component<Props, State> {
     let query;
     let param = params.get('q');
 
-    if (param && param.length > 0) {
-      query = decodeURIComponent(param);
+    query = param && param.length > 0 ? decodeURIComponent(param) : '';
 
-      this.state = {
-        ...this.state,
-        showFilter: false,
-        searchText: query,
-        filters: filterParams,
-        createDynamicListDialogOpen: false,
-        totalLoadedImages: 0,
-        shouldLoadMore: false,
-      };
+    this.state = {
+      ...this.state,
+      showFilter: false,
+      searchText: query,
+      filters: filterParams,
+      createDynamicListDialogOpen: false,
+      totalLoadedImages: 0,
+      shouldLoadMore: false,
+    };
 
-      if (this.props.currentSearchText !== query) {
-        console.log('yep');
-        // this.loadResults();
-      }
+    if (this.props.currentSearchText !== query) {
+      console.log('yep');
+      // this.loadResults();
     }
   }
 
@@ -313,7 +311,7 @@ class Search extends Component<Props, State> {
 
     let firstLoad = !searchResults;
     searchResults = searchResults || [];
-    console.log(searchBookmark);
+
     return (
       <React.Fragment>
         <div className={classes.searchResultsContainer}>
@@ -330,6 +328,7 @@ class Search extends Component<Props, State> {
               inputStyle={{ height: 50 }}
               filters={this.state.filters}
               loadMore={this.state.shouldLoadMore}
+              quickSearchColor={'secondary'}
             />
           </div>
           <div className={classes.listTitle}>
