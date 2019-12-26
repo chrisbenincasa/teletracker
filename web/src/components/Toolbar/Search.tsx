@@ -1,5 +1,4 @@
 // TO DO:
-// - Fix "x" spacing issue inside search
 // - Add IntersectionObserver to search field to display it in toolbar when off screen in container
 // - Pipe filtering into dispatch events in Search, currently just have limit setup
 // clean up search container
@@ -225,7 +224,11 @@ function Search(props: Props) {
       />
       {searchText.length > 0 ? (
         <Fade in={true}>
-          <IconButton onClick={clearSearch} color="inherit" size="small">
+          <IconButton
+            onClick={clearSearch}
+            color="inherit"
+            size={location.pathname === '/search' ? 'medium' : 'small'}
+          >
             <Close className={classes.searchClear} />
           </IconButton>
         </Fade>

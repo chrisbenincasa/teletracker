@@ -62,6 +62,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     overflow: 'scroll',
     width: '100%',
     maxWidth: 720,
+    marginTop: 10,
     backgroundColor:
       props.color && props.color === 'secondary'
         ? theme.palette.secondary.main
