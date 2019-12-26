@@ -74,7 +74,6 @@ interface Props {
   onDrawerChange?: (close?: boolean) => void;
   inputStyle?: object;
   filters?: FilterParams;
-  loadMore?: boolean; // make required before PR
   quickSearchColor?: string;
 }
 
@@ -105,12 +104,6 @@ function Search(props: Props) {
   useEffect(() => {
     searchInput.current && searchInput.current.focus();
   }, []);
-
-  useEffect(() => {
-    if (props.loadMore) {
-      console.log('LOAD MORE!');
-    }
-  }, [props.loadMore]);
 
   const clearSearch = () => {
     let newSearchText = '';

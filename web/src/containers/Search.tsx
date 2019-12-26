@@ -121,7 +121,6 @@ type State = {
   showFilter: boolean;
   createDynamicListDialogOpen: boolean;
   totalLoadedImages: number;
-  shouldLoadMore: boolean;
 };
 
 class Search extends Component<Props, State> {
@@ -153,12 +152,10 @@ class Search extends Component<Props, State> {
       filters: filterParams,
       createDynamicListDialogOpen: false,
       totalLoadedImages: 0,
-      shouldLoadMore: false,
     };
 
     if (this.props.currentSearchText !== query) {
-      console.log('yep');
-      // this.loadResults();
+      this.loadResults();
     }
   }
 
@@ -177,37 +174,36 @@ class Search extends Component<Props, State> {
     }
   }
 
-  // debouncedSearch = _.debounce(() => {
-  //   this.loadResults();
-  // }, 200);
+  debouncedSearch = _.debounce(() => {
+    this.loadResults();
+  }, 200);
 
-  // loadResults() {
-  //   const {
-  //     filters: { itemTypes, genresFilter, networks, sliders },
-  //     searchText,
-  //   } = this.state;
-  //   const { searchBookmark, width } = this.props;
+  loadResults() {
+    const {
+      filters: { itemTypes, genresFilter, networks, sliders },
+      searchText,
+    } = this.state;
+    const { searchBookmark, width } = this.props;
 
-  //   // To do: add support for sorting
-  //   if (!this.props.isSearching) {
-  //     console.log(this.props);
-  //     this.props.search({
-  //       query: searchText,
-  //       bookmark: searchBookmark ? searchBookmark : undefined,
-  //       limit: calculateLimit(width, 3, 0),
-  //       itemTypes,
-  //       networks,
-  //       genres: genresFilter,
-  //       releaseYearRange:
-  //         sliders && sliders.releaseYear
-  //           ? {
-  //               min: sliders.releaseYear.min,
-  //               max: sliders.releaseYear.max,
-  //             }
-  //           : undefined,
-  //     });
-  //   }
-  // }
+    // To do: add support for sorting
+    if (!this.props.isSearching) {
+      this.props.search({
+        query: searchText,
+        bookmark: searchBookmark ? searchBookmark : undefined,
+        limit: calculateLimit(width, 3, 0),
+        itemTypes,
+        networks,
+        genres: genresFilter,
+        releaseYearRange:
+          sliders && sliders.releaseYear
+            ? {
+                min: sliders.releaseYear.min,
+                max: sliders.releaseYear.max,
+              }
+            : undefined,
+      });
+    }
+  }
 
   loadMoreResults = () => {
     const { totalLoadedImages } = this.state;
@@ -218,29 +214,11 @@ class Search extends Component<Props, State> {
     const totalFetchedItems = (searchResults && searchResults.length) || 0;
     const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
     const shouldLoadMore = totalNonLoadedImages <= numColumns;
-    console.log(isSearching);
-    console.log(shouldLoadMore);
 
     if (!isSearching && shouldLoadMore) {
-      console.log('testestetst');
-      // this.debouncedSearch();
-      this.setState({
-        shouldLoadMore: true,
-      });
+      this.debouncedSearch();
     }
   };
-
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      this.state.shouldLoadMore &&
-      prevProps.isSearching &&
-      !this.props.isSearching
-    ) {
-      this.setState({
-        shouldLoadMore: false,
-      });
-    }
-  }
 
   setVisibleItems = () => {
     this.setState({
@@ -327,7 +305,6 @@ class Search extends Component<Props, State> {
             <SearchInput
               inputStyle={{ height: 50 }}
               filters={this.state.filters}
-              loadMore={this.state.shouldLoadMore}
               quickSearchColor={'secondary'}
             />
           </div>
@@ -395,6 +372,7 @@ class Search extends Component<Props, State> {
                           key={result.id}
                           userSelf={userSelf}
                           item={result}
+                          hasLoaded={this.setVisibleItems}
                         />
                       );
                     })}
