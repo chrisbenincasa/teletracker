@@ -71,7 +71,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     justifyContent: 'center',
   },
   popper: {
-    zIndex: theme.zIndex.appBar,
+    zIndex: theme.zIndex.appBar - 1,
   },
 }));
 

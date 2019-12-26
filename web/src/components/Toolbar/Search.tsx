@@ -3,7 +3,6 @@
 // - Add IntersectionObserver to search field to display it in toolbar when off screen in container
 // - Pipe filtering into dispatch events in Search, currently just have limit setup
 // clean up search container
-// Pipe infinite scroll into search component or figure out cleaner way to handle that
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -23,7 +22,7 @@ import * as R from 'ramda';
 import { AppState } from '../../reducers';
 import { quickSearch, search } from '../../actions/search';
 import { FilterParams } from '../../utils/searchFilters';
-import { calculateLimit, getNumColumns } from '../../utils/list-utils';
+import { calculateLimit } from '../../utils/list-utils';
 import { useWidth } from '../../hooks/useWidth';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -154,7 +153,6 @@ function Search(props: Props) {
   const handleSearchForEnter = (
     event: React.KeyboardEvent<HTMLInputElement>,
   ) => {
-    console.log(event.keyCode);
     if (event.keyCode === 13) {
       execSearch(searchText);
       event.currentTarget.blur();
@@ -191,7 +189,7 @@ function Search(props: Props) {
       dispatch(
         quickSearch({
           query: text,
-          limit: calculateLimit(width, 3, 0),
+          limit: 5,
         }),
       );
     }
@@ -200,7 +198,13 @@ function Search(props: Props) {
   return (
     <div className={classes.search}>
       <div className={classes.searchIcon}>
-        <SearchIcon />
+        <IconButton
+          onClick={() => execSearch(searchText)}
+          color="inherit"
+          size="small"
+        >
+          <SearchIcon />
+        </IconButton>
       </div>
       <InputBase
         placeholder="Search&hellip;"
@@ -233,7 +237,7 @@ function Search(props: Props) {
         searchAnchor={searchAnchor}
         handleResetSearchAnchor={resetSearchAnchor}
         handleSearchForSubmit={handleSearchForSubmit}
-        color={props.quickSearchColor ? props.quickSearchColor : undefined}
+        color={props.quickSearchColor || undefined}
       />
     </div>
   );

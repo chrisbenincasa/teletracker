@@ -155,7 +155,7 @@ class Search extends Component<Props, State> {
     };
 
     if (this.props.currentSearchText !== query) {
-      this.loadResults();
+      this.loadResults(true);
     }
   }
 
@@ -178,22 +178,25 @@ class Search extends Component<Props, State> {
     this.loadResults();
   }, 200);
 
-  loadResults() {
+  loadResults = (firstLoad?: boolean) => {
     const {
-      filters: { itemTypes, genresFilter, networks, sliders },
+      filters: { itemTypes, genresFilter, networks, sliders, sortOrder },
       searchText,
     } = this.state;
-    const { searchBookmark, width } = this.props;
+    const { currentSearchText, searchBookmark, width } = this.props;
+    // This is to handle the case where a query param doesn't exist, we'll want to use the redux state.
+    // We won't want to rely on this initially because initial load is relying on query param not redux state.
+    const fallbackSearchText = currentSearchText || '';
 
-    // To do: add support for sorting
     if (!this.props.isSearching) {
       this.props.search({
-        query: searchText,
+        query: firstLoad ? searchText : fallbackSearchText,
         bookmark: searchBookmark ? searchBookmark : undefined,
         limit: calculateLimit(width, 3, 0),
         itemTypes,
         networks,
         genres: genresFilter,
+        sort: sortOrder === 'default' ? 'recent' : sortOrder,
         releaseYearRange:
           sliders && sliders.releaseYear
             ? {
@@ -203,7 +206,7 @@ class Search extends Component<Props, State> {
             : undefined,
       });
     }
-  }
+  };
 
   loadMoreResults = () => {
     const { totalLoadedImages } = this.state;
@@ -352,8 +355,7 @@ class Search extends Component<Props, State> {
             updateFilters={this.handleFilterParamsChange}
             sortOptions={['popularity', 'recent']}
           />
-          {this.props.isSearching &&
-          (!searchBookmark || this.state.searchText !== currentSearchText) ? (
+          {this.props.isSearching && !searchBookmark ? (
             this.renderLoading()
           ) : !this.props.error ? (
             searchResults && searchResults.length > 0 ? (
