@@ -77,7 +77,7 @@ interface State {
 class App extends Component<Props, State> {
   state = {
     drawerOpen: false,
-    searchVisible: false,
+    searchVisible: true,
   };
 
   componentDidMount() {
