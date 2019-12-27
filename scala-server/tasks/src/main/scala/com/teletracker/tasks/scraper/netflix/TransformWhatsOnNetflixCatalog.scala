@@ -9,17 +9,43 @@ import javax.inject.Inject
 import io.circe.syntax._
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
+import java.nio.file.Files
 
-class TransformWhatsOnNetflixCatalog @Inject()(sourceRetriever: SourceRetriever)
+object TransformWhatsOnNetflixCatalog {
+  def convert(item: WhatsOnNetflixCatalogItem) = {
+    NetflixCatalogItem(
+      availableDate = None,
+      title = item.title.trim,
+      releaseYear = Some(item.titlereleased.toInt),
+      network = "Netflix",
+      `type` = item.`type` match {
+        case "Movie" | "Documentary"  => ThingType.Movie
+        case "TV" | "Stand-Up Comedy" => ThingType.Show
+        case x =>
+          throw new IllegalArgumentException(
+            s"Encountered unexpected type = $x.\n${item.asJson.spaces2}"
+          )
+      },
+      externalId = Some(item.netflixid)
+    )
+  }
+}
+
+class TransformWhatsOnNetflixCatalog @Inject()(
+  sourceRetriever: SourceRetriever,
+  sourceWriter: SourceWriter)
     extends TeletrackerTaskWithDefaultArgs {
   override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("input")
+    val input = args.valueOrThrow[URI]("source")
+    val destination = args.valueOrThrow[URI]("destination")
 
     val source = sourceRetriever.getSource(input)
 
-    val output = new File("whats-on-netflix-movies.txt")
+    val tmpLocation = Files.createTempFile("whats-on-netflix-transform", "tmp")
+    tmpLocation.toFile.deleteOnExit()
+
     val writer = new PrintWriter(
-      new BufferedOutputStream(new FileOutputStream(output))
+      new BufferedOutputStream(new FileOutputStream(tmpLocation.toFile))
     )
 
     try {
@@ -31,20 +57,7 @@ class TransformWhatsOnNetflixCatalog @Inject()(sourceRetriever: SourceRetriever)
           throw value
         case Right(value) =>
           value
-            .map(item => {
-              NetflixCatalogItem(
-                availableDate = None,
-                title = item.title.trim,
-                releaseYear = Some(item.titlereleased.toInt),
-                network = "Netflix",
-                `type` = item.`type` match {
-                  case "Movie" => ThingType.Movie
-                  case "TV"    => ThingType.Show
-                  case _       => throw new IllegalArgumentException
-                },
-                externalId = Some(item.netflixid)
-              )
-            })
+            .map(TransformWhatsOnNetflixCatalog.convert)
             .foreach(item => {
               writer.println(item.asJson.noSpaces)
             })
@@ -55,5 +68,7 @@ class TransformWhatsOnNetflixCatalog @Inject()(sourceRetriever: SourceRetriever)
 
     writer.flush()
     writer.close()
+
+    sourceWriter.writeFile(destination, tmpLocation)
   }
 }

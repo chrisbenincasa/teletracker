@@ -8,6 +8,7 @@ import com.teletracker.tasks.util.{SourceRetriever, TaskMessageHelper}
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskRunner}
 import io.circe.Encoder
 import io.circe.generic.JsonCodec
+import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{
   GetObjectRequest,
@@ -31,6 +32,8 @@ abstract class DeltaLocatorJob(
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
+
+  protected val logger = LoggerFactory.getLogger(getClass)
 
   override type TypedArgs = DeltaLocatorJobArgs
 
@@ -98,8 +101,24 @@ abstract class DeltaLocatorJob(
           null
         )
 
+        logger.info(
+          s"Found before and after deltas, located at ${snapshotBeforeLocation} and ${snapshotAfterLocation}"
+        )
+
+        val (actualBeforeLocation, actualAfterLocation) =
+          postProcessDeltas(
+            snapshotBeforeLocation -> value,
+            snapshotAfterLocation -> today
+          )
+
+        if (actualBeforeLocation != snapshotBeforeLocation || actualAfterLocation != actualAfterLocation) {
+          logger.info(
+            s"Post processing changed before and after deltas, located at ${actualBeforeLocation} and ${actualAfterLocation}"
+          )
+        }
+
         val messages =
-          makeTaskMessages(snapshotBeforeLocation, snapshotAfterLocation, args)
+          makeTaskMessages(actualBeforeLocation, actualAfterLocation, args)
 
         if (!parsedArgs.local) {
           val queue = new SqsQueue[TeletrackerTaskQueueMessage](
@@ -123,6 +142,11 @@ abstract class DeltaLocatorJob(
     }
 
   }
+
+  protected def postProcessDeltas(
+    snapshotBeforeLocation: (URI, LocalDate),
+    snapshotAfterLocation: (URI, LocalDate)
+  ): (URI, URI) = (snapshotBeforeLocation._1, snapshotAfterLocation._1)
 
   protected def getKey(today: LocalDate): String
 
@@ -152,7 +176,10 @@ abstract class DeltaLocateAndRunJob[T <: IngestDeltaJob[_]: ClassTag](
     args: Args
   ): List[TeletrackerTaskQueueMessage] = {
     TaskMessageHelper.forTask[T](
-      IngestDeltaJobArgs(snapshotBeforeLocation, snapshotAfterLocation)
+      IngestDeltaJobArgs(
+        snapshotAfter = snapshotAfterLocation,
+        snapshotBefore = snapshotBeforeLocation
+      )
     ) :: Nil
   }
 }
