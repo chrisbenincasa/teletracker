@@ -14,5 +14,4 @@ phases:
   build:
     commands:
       - cd scala-server
-      - ./sbt compile
-      - ./sbt server/assembly
+      - ./sbt consumer/compile consumer/assembly
