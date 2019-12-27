@@ -1,43 +1,39 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  CircularProgress,
   createStyles,
   Grid,
   IconButton,
-  CircularProgress,
+  makeStyles,
   Theme,
   Typography,
-  WithStyles,
-  withStyles,
-  withWidth,
 } from '@material-ui/core';
 import { Tune } from '@material-ui/icons';
 import * as R from 'ramda';
-import { connect } from 'react-redux';
-import { search, SearchInitiatedPayload } from '../actions/search';
-import { bindActionCreators, Dispatch } from 'redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { search } from '../actions/search';
 import ItemCard from '../components/ItemCard';
-import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Error as ErrorIcon } from '@material-ui/icons';
 import ReactGA from 'react-ga';
 import InfiniteScroll from 'react-infinite-scroller';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';
-import { Genre, Network } from '../types';
+import { Genre } from '../types';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
-import {
-  parseFilterParamsFromQs,
-  updateUrlParamsForFilter,
-} from '../utils/urlHelper';
+import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import SearchInput from '../components/Toolbar/Search';
+import { useWidth } from '../hooks/useWidth';
+import { useWithUser } from '../hooks/useWithUser';
+import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     listTitle: {
       display: 'flex',
@@ -79,9 +75,10 @@ const styles = (theme: Theme) =>
       display: 'flex',
       alignSelf: 'flex-end',
     },
-  });
+  }),
+);
 
-interface OwnProps extends WithStyles<typeof styles> {
+interface Props {
   error: boolean;
   isAuthed: boolean;
   isSearching: boolean;
@@ -89,30 +86,6 @@ interface OwnProps extends WithStyles<typeof styles> {
   currentSearchText?: string;
   searchBookmark?: string;
 }
-
-interface DispatchProps {
-  search: (payload: SearchInitiatedPayload) => void;
-}
-
-interface RouteParams {
-  id: string;
-}
-
-interface StateProps {
-  genres?: Genre[];
-  networks?: Network[];
-}
-
-interface WidthProps {
-  width: string;
-}
-
-type Props = OwnProps &
-  WithUserProps &
-  DispatchProps &
-  StateProps &
-  WidthProps &
-  RouteComponentProps<RouteParams>;
 
 type State = {
   searchText: string;
@@ -123,12 +96,44 @@ type State = {
   totalLoadedImages: number;
 };
 
-class Search extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
+function Search(props: Props, state: State) {
+  const classes = useStyles();
+  const width = useWidth();
+  const withUserState = useWithUser();
+  const location = useLocation();
+  const dispatch = useDispatch();
 
+  const currentSearchText = useSelector((state: AppState) =>
+    R.path<string>(['search', 'currentSearchText'], state),
+  );
+  const isSearching = useSelector((state: AppState) => state.search.searching);
+  const error = useSelector((state: AppState) => state.search.error);
+  const genres = useSelector((state: AppState) => state.metadata.genres);
+  const searchResults = useSelector((state: AppState) => state.search.results);
+  const searchBookmark = useSelector(
+    (state: AppState) => state.search.bookmark,
+  );
+
+  const [totalVisibleItems, setTotalVisibleItems] = useState<number>(0);
+  const [
+    createDynamicListDialogOpen,
+    setCreateDynamicListDialogOpen,
+  ] = useState<boolean>(false);
+  const [showFilter, setShowFilter] = useState<boolean>(false);
+  const [searchText, setSearchText] = useState<string>('');
+  const [filters, setFilters, previousFilters] = useStateDeepEqWithPrevious(
+    DEFAULT_FILTER_PARAMS,
+    filterParamsEqual,
+  );
+
+  const { itemTypes, genresFilter, networks, sliders, sortOrder } = filters;
+
+  // Initial Load
+  useEffect(() => {
     let filterParams = DEFAULT_FILTER_PARAMS;
-    let paramsFromQuery = parseFilterParamsFromQs(props.location.search);
+    let paramsFromQuery = parseFilterParamsFromQs(location.search);
+
+    ReactGA.pageview(location.pathname + location.search);
 
     if (paramsFromQuery.sortOrder === 'default') {
       paramsFromQuery.sortOrder = 'popularity';
@@ -139,99 +144,76 @@ class Search extends Component<Props, State> {
       ...paramsFromQuery,
     };
 
-    let params = new URLSearchParams(window.location.search);
+    let params = new URLSearchParams(location.search);
     let query;
     let param = params.get('q');
 
     query = param && param.length > 0 ? decodeURIComponent(param) : '';
 
-    this.state = {
-      ...this.state,
-      showFilter: false,
-      searchText: query,
-      filters: filterParams,
-      createDynamicListDialogOpen: false,
-      totalLoadedImages: 0,
-    };
+    setSearchText(query);
+    setFilters(filterParams);
+  }, []);
 
-    if (this.props.currentSearchText !== query) {
-      this.loadResults(true);
+  // Load new set of search results when searchText changes
+  useEffect(() => {
+    if (searchText !== currentSearchText && searchText.length > 0) {
+      loadResults(true);
     }
-  }
+  }, [searchText]);
 
-  componentDidMount() {
-    const { isLoggedIn, userSelf } = this.props;
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
+  // Load new set of search results when filters change
+  // Ignore initial load because previousFilters won't be defined
+  useEffect(() => {
+    if (!filterParamsEqual(previousFilters, filters) && previousFilters) {
+      loadResults(true);
     }
-  }
+  }, [filters, previousFilters, searchBookmark]);
 
-  debouncedSearch = _.debounce(() => {
-    this.loadResults();
+  const debouncedSearch = _.debounce(() => {
+    loadResults(false);
   }, 200);
 
-  loadResults = (firstLoad?: boolean) => {
-    const {
-      filters: { itemTypes, genresFilter, networks, sliders, sortOrder },
-      searchText,
-    } = this.state;
-    const { currentSearchText, searchBookmark, width } = this.props;
+  const loadResults = (firstLoad?: boolean) => {
     // This is to handle the case where a query param doesn't exist, we'll want to use the redux state.
     // We won't want to rely on this initially because initial load is relying on query param not redux state.
     const fallbackSearchText = currentSearchText || '';
 
-    if (!this.props.isSearching) {
-      this.props.search({
-        query: firstLoad ? searchText : fallbackSearchText,
-        bookmark: searchBookmark ? searchBookmark : undefined,
-        limit: calculateLimit(width, 3, 0),
-        itemTypes,
-        networks,
-        genres: genresFilter,
-        sort: sortOrder === 'default' ? 'recent' : sortOrder,
-        releaseYearRange:
-          sliders && sliders.releaseYear
-            ? {
-                min: sliders.releaseYear.min,
-                max: sliders.releaseYear.max,
-              }
-            : undefined,
-      });
+    if (!isSearching) {
+      dispatch(
+        search({
+          query: firstLoad ? searchText : fallbackSearchText,
+          bookmark: searchBookmark ? searchBookmark : undefined,
+          limit: calculateLimit(width, 3, 0),
+          itemTypes,
+          networks,
+          genres: genresFilter,
+          sort: sortOrder === 'default' ? 'recent' : sortOrder,
+          releaseYearRange:
+            sliders && sliders.releaseYear
+              ? {
+                  min: sliders.releaseYear.min,
+                  max: sliders.releaseYear.max,
+                }
+              : undefined,
+        }),
+      );
     }
   };
 
-  loadMoreResults = () => {
-    const { totalLoadedImages } = this.state;
-    const { isSearching, searchResults, width } = this.props;
+  const loadMoreResults = () => {
     const numColumns = getNumColumns(width);
 
     // If an item is featured, update total items accordingly
     const totalFetchedItems = (searchResults && searchResults.length) || 0;
-    const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
+    const totalNonLoadedImages = totalFetchedItems - totalVisibleItems;
     const shouldLoadMore = totalNonLoadedImages <= numColumns;
 
     if (!isSearching && shouldLoadMore) {
-      this.debouncedSearch();
+      debouncedSearch();
     }
   };
 
-  setVisibleItems = () => {
-    this.setState({
-      totalLoadedImages: this.state.totalLoadedImages + 1,
-    });
-  };
-
-  renderLoading = () => {
-    const { classes } = this.props;
-
+  const renderLoading = () => {
     return (
       <div className={classes.progressSpinner}>
         <CircularProgress />
@@ -239,198 +221,136 @@ class Search extends Component<Props, State> {
     );
   };
 
-  toggleFilters = () => {
-    this.setState({ showFilter: !this.state.showFilter });
+  const toggleFilters = () => {
+    setShowFilter(!showFilter);
   };
 
-  handleFilterParamsChange = (filterParams: FilterParams) => {
-    if (!filterParamsEqual(this.state.filters, filterParams)) {
-      this.setState(
-        {
-          filters: filterParams,
-        },
-        () => {
-          updateUrlParamsForFilter(this.props, filterParams);
-          this.loadMoreResults();
-        },
-      );
-    }
+  const handleFilterParamsChange = (filterParams: FilterParams) => {
+    setFilters(filterParams);
   };
 
-  createListFromFilters = () => {
-    this.setState({
-      createDynamicListDialogOpen: true,
-    });
-  };
-
-  handleCreateDynamicModalClose = () => {
-    this.setState({
-      createDynamicListDialogOpen: false,
-    });
-  };
-
-  mapGenre = (genre: number) => {
-    const { genres } = this.props;
+  const mapGenre = (genre: number) => {
     const genreItem = genres && genres.find(obj => obj.id === genre);
 
     return (genreItem && genreItem.name) || '';
   };
 
-  render() {
-    let {
-      classes,
-      currentSearchText,
-      genres,
-      searchBookmark,
-      searchResults,
-      userSelf,
-    } = this.props;
+  let firstLoad = !searchResults;
 
-    const {
-      filters: { itemTypes, genresFilter, networks, sliders },
-    } = this.state;
-
-    let firstLoad = !searchResults;
-    searchResults = searchResults || [];
-
-    return (
-      <React.Fragment>
-        <div className={classes.searchResultsContainer}>
-          <div style={{ margin: 48 }}>
-            <Typography
-              color="inherit"
-              variant="h2"
-              align="center"
-              style={{ margin: 16 }}
-            >
-              Search
-            </Typography>
-            <SearchInput
-              inputStyle={{ height: 50 }}
-              filters={this.state.filters}
-              quickSearchColor={'secondary'}
-            />
-          </div>
-          <div className={classes.listTitle}>
-            <Typography
-              color="inherit"
-              variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
-              style={{ flexGrow: 1 }}
-            >
-              {`${
-                genresFilter && genresFilter.length === 1
-                  ? this.mapGenre(genresFilter[0])
-                  : ''
-              } ${
-                itemTypes && itemTypes.length === 1
-                  ? itemTypes.includes('movie')
-                    ? 'Movies'
-                    : 'TV Shows'
-                  : 'Content'
-              } that matches "${currentSearchText}"`}
-            </Typography>
-            <IconButton
-              onClick={this.toggleFilters}
-              className={classes.settings}
-              color={this.state.showFilter ? 'primary' : 'inherit'}
-            >
-              <Tune />
-              <Typography variant="srOnly">Tune</Typography>
-            </IconButton>
-            <CreateSmartListButton onClick={this.createListFromFilters} />
-          </div>
-          <div className={classes.filters}>
-            <ActiveFilters
-              genres={genres}
-              updateFilters={this.handleFilterParamsChange}
-              isListDynamic={false}
-              filters={this.state.filters}
-              variant="default"
-            />
-          </div>
-          <AllFilters
-            genres={genres}
-            open={this.state.showFilter}
-            filters={this.state.filters}
-            updateFilters={this.handleFilterParamsChange}
-            sortOptions={['popularity', 'recent']}
+  return (
+    <React.Fragment>
+      <div className={classes.searchResultsContainer}>
+        <div style={{ margin: 48 }}>
+          <Typography
+            color="inherit"
+            variant="h2"
+            align="center"
+            style={{ margin: 16 }}
+          >
+            Search
+          </Typography>
+          <SearchInput
+            inputStyle={{ height: 50 }}
+            filters={filters}
+            quickSearchColor={'secondary'}
           />
-          {this.props.isSearching && !searchBookmark ? (
-            this.renderLoading()
-          ) : !this.props.error ? (
-            searchResults && searchResults.length > 0 ? (
-              <React.Fragment>
-                <InfiniteScroll
-                  pageStart={0}
-                  loadMore={() => this.loadMoreResults()}
-                  hasMore={Boolean(searchBookmark)}
-                  useWindow
-                  threshold={300}
-                >
-                  <Grid container spacing={2}>
-                    {searchResults.map(result => {
-                      return (
-                        <ItemCard
-                          key={result.id}
-                          userSelf={userSelf}
-                          item={result}
-                          hasLoaded={this.setVisibleItems}
-                        />
-                      );
-                    })}
-                  </Grid>
-                </InfiniteScroll>
-              </React.Fragment>
-            ) : firstLoad ? null : (
-              <div className={classes.searchNoResults}>
+        </div>
+        {currentSearchText && currentSearchText.length > 0 && (
+          <React.Fragment>
+            <div className={classes.listTitle}>
+              <Typography
+                color="inherit"
+                variant={['xs', 'sm'].includes(width) ? 'h6' : 'h4'}
+                style={{ flexGrow: 1 }}
+              >
+                {`${
+                  genresFilter && genresFilter.length === 1
+                    ? mapGenre(genresFilter[0])
+                    : ''
+                } ${
+                  itemTypes && itemTypes.length === 1
+                    ? itemTypes.includes('movie')
+                      ? 'Movies'
+                      : 'TV Shows'
+                    : 'Content'
+                } that matches "${currentSearchText}"`}
+              </Typography>
+              <IconButton
+                onClick={toggleFilters}
+                className={classes.settings}
+                color={showFilter ? 'primary' : 'inherit'}
+              >
+                <Tune />
+                <Typography variant="srOnly">Tune</Typography>
+              </IconButton>
+              <CreateSmartListButton
+                onClick={() => setCreateDynamicListDialogOpen(true)}
+              />
+            </div>
+            <div className={classes.filters}>
+              <ActiveFilters
+                genres={genres}
+                updateFilters={handleFilterParamsChange}
+                isListDynamic={false}
+                filters={filters}
+                variant="default"
+              />
+            </div>
+            <AllFilters
+              genres={genres}
+              open={showFilter}
+              filters={filters}
+              updateFilters={handleFilterParamsChange}
+              sortOptions={['popularity', 'recent']}
+            />
+            {isSearching && !searchBookmark ? (
+              renderLoading()
+            ) : !error ? (
+              searchResults && searchResults.length > 0 ? (
+                <React.Fragment>
+                  <InfiniteScroll
+                    pageStart={0}
+                    loadMore={() => loadMoreResults()}
+                    hasMore={Boolean(searchBookmark)}
+                    useWindow
+                    threshold={300}
+                  >
+                    <Grid container spacing={2}>
+                      {searchResults.map(result => {
+                        return (
+                          <ItemCard
+                            key={result.id}
+                            userSelf={withUserState.userSelf}
+                            item={result}
+                            hasLoaded={() =>
+                              setTotalVisibleItems(totalVisibleItems + 1)
+                            }
+                          />
+                        );
+                      })}
+                    </Grid>
+                  </InfiniteScroll>
+                </React.Fragment>
+              ) : firstLoad ? null : (
+                <div className={classes.searchNoResults}>
+                  <Typography variant="h5" gutterBottom align="center">
+                    No results :(
+                  </Typography>
+                </div>
+              )
+            ) : (
+              <div className={classes.searchError}>
+                <ErrorIcon color="inherit" fontSize="large" />
                 <Typography variant="h5" gutterBottom align="center">
-                  No results :(
+                  Something went wrong :(
                 </Typography>
               </div>
-            )
-          ) : (
-            <div className={classes.searchError}>
-              <ErrorIcon color="inherit" fontSize="large" />
-              <Typography variant="h5" gutterBottom align="center">
-                Something went wrong :(
-              </Typography>
-            </div>
-          )}
-        </div>
-      </React.Fragment>
-    );
-  }
+            )}
+          </React.Fragment>
+        )}
+      </div>
+    </React.Fragment>
+  );
 }
 
-const mapStateToProps = (appState: AppState) => {
-  return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    currentSearchText: R.path<string>(
-      ['search', 'currentSearchText'],
-      appState,
-    ),
-    isSearching: appState.search.searching,
-    // TODO: Pass SearchResult object that either contains error or a response
-    error: appState.search.error,
-    genres: appState.metadata.genres,
-    searchResults: appState.search.results,
-    searchBookmark: appState.search.bookmark,
-  };
-};
-
-const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
-  return bindActionCreators(
-    {
-      search,
-    },
-    dispatch,
-  );
-};
-
-export default withWidth()(
-  withUser(
-    withStyles(styles)(
-      withRouter(connect(mapStateToProps, mapDispatchToProps)(Search)),
-    ),
-  ),
-);
+export default Search;
