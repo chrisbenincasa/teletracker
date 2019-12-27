@@ -1,0 +1,28 @@
+version: "3.1"
+
+services:
+  nginx:
+    image: 302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/server-nginx:latest
+    restart: always
+    ports:
+      - 3002:80
+    environment:
+      SERVER_HOST: server
+      SERVER_PORT: 3001
+    networks:
+      - nginx
+
+  server:
+    image: 302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/server:latest
+    restart: always
+    ports:
+      - 3001:3001
+    env_file:
+      - /Users/christianbenincasa/Code/projects/teletracker/scala-server/.env
+    networks:
+      - nginx
+    volumes:
+      - ~/.aws:/root/.aws
+
+networks:
+  nginx:

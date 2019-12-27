@@ -2,13 +2,13 @@
   {
     "name": "teletracker-server",
     "image": "${image}",
-    "cpu": 1024,
-    "memory": 786,
+    "cpu": 768,
+    "memory": 768,
     "essential": true,
     "portMappings": [
       {
         "containerPort": 3001,
-        "hostPort": 0,
+        "hostPort": 3001,
         "protocol": "tcp"
       }
     ],
@@ -55,6 +55,28 @@
         "name": "ES_PASSWORD",
         "valueFrom": "arn:aws:ssm:us-west-1:302782651551:parameter/teletracker-qa-elasticsearch-password"
       }
-    ]
+    ],
+    "networkMode": "bridge"
+  },
+  {
+    "name": "teletracker-server-nginx",
+    "image": "302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/server-nginx:1.1",
+    "cpu": 256,
+    "memory": 128,
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 80,
+        "hostPort": 80,
+        "protocol": "tcp"
+      },
+      {
+        "containerPort": 443,
+        "hostPort": 443,
+        "protocol": "tcp"
+      }
+    ],
+    "links": ["teletracker-server:server"],
+    "networkMode": "bridge"
   }
 ]
