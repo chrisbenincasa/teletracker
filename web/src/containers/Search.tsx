@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   CircularProgress,
   createStyles,
+  Fade,
   Grid,
   IconButton,
   makeStyles,
@@ -19,7 +20,6 @@ import { Error as ErrorIcon } from '@material-ui/icons';
 import ReactGA from 'react-ga';
 import InfiniteScroll from 'react-infinite-scroller';
 import _ from 'lodash';
-import { Item } from '../types/v2/Item';
 import { Genre } from '../types';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
@@ -32,6 +32,7 @@ import SearchInput from '../components/Toolbar/Search';
 import { useWidth } from '../hooks/useWidth';
 import { useWithUser } from '../hooks/useWithUser';
 import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
+import useIntersectionObserver from '../hooks/useIntersectionObserver';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -70,6 +71,10 @@ const useStyles = makeStyles((theme: Theme) =>
       margin: theme.spacing(1),
       padding: theme.spacing(1),
       width: '100%',
+      marginTop: theme.spacing(5),
+    },
+    searchTitle: {
+      margin: theme.spacing(2),
     },
     settings: {
       display: 'flex',
@@ -78,14 +83,7 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
-interface Props {
-  error: boolean;
-  isAuthed: boolean;
-  isSearching: boolean;
-  searchResults?: Item[];
-  currentSearchText?: string;
-  searchBookmark?: string;
-}
+interface Props {}
 
 type State = {
   searchText: string;
@@ -96,7 +94,7 @@ type State = {
   totalLoadedImages: number;
 };
 
-function Search(props: Props, state: State) {
+const Search = ({ inViewportChange }) => {
   const classes = useStyles();
   const width = useWidth();
   const withUserState = useWithUser();
@@ -126,7 +124,19 @@ function Search(props: Props, state: State) {
     filterParamsEqual,
   );
 
+  const searchWrapperRef = useRef<HTMLDivElement>(null);
+
   const { itemTypes, genresFilter, networks, sliders, sortOrder } = filters;
+
+  const isInViewport = useIntersectionObserver({
+    lazyLoadOptions: {
+      root: null,
+      rootMargin: `0px`,
+      threshold: 1.0,
+    },
+    targetRef: searchWrapperRef,
+    useLazyLoad: false,
+  });
 
   // Initial Load
   useEffect(() => {
@@ -168,6 +178,11 @@ function Search(props: Props, state: State) {
       loadResults(true);
     }
   }, [filters, previousFilters, searchBookmark]);
+
+  // Run callback when search enters/leaves viewport
+  useEffect(() => {
+    inViewportChange(isInViewport);
+  }, [isInViewport]);
 
   const debouncedSearch = _.debounce(() => {
     loadResults(false);
@@ -236,25 +251,27 @@ function Search(props: Props, state: State) {
   };
 
   let firstLoad = !searchResults;
-
   return (
     <React.Fragment>
       <div className={classes.searchResultsContainer}>
-        <div style={{ margin: 48 }}>
-          <Typography
-            color="inherit"
-            variant="h2"
-            align="center"
-            style={{ margin: 16 }}
-          >
-            Search
-          </Typography>
-          <SearchInput
-            inputStyle={{ height: 50 }}
-            filters={filters}
-            quickSearchColor={'secondary'}
-          />
-        </div>
+        <Fade in={isInViewport} ref={searchWrapperRef} timeout={500}>
+          <div>
+            <Typography
+              color="inherit"
+              variant="h2"
+              align="center"
+              className={classes.searchTitle}
+            >
+              Search
+            </Typography>
+
+            <SearchInput
+              inputStyle={{ height: 50 }}
+              filters={filters}
+              quickSearchColor={'secondary'}
+            />
+          </div>
+        </Fade>
         {currentSearchText && currentSearchText.length > 0 && (
           <React.Fragment>
             <div className={classes.listTitle}>
@@ -351,6 +368,6 @@ function Search(props: Props, state: State) {
       </div>
     </React.Fragment>
   );
-}
+};
 
 export default Search;

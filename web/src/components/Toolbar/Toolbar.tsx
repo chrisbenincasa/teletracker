@@ -129,6 +129,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
   onDrawerChange: (close?: boolean) => void;
   drawerOpen: boolean;
+  searchVisible: boolean;
 }
 
 interface WidthProps {
@@ -196,10 +197,6 @@ class Toolbar extends Component<Props, State> {
     genreType: null,
     isLoggedOut: true,
     mobileSearchBarOpen: false,
-  };
-
-  onSearchPage = (): boolean => {
-    return this.props.location.pathname.toLowerCase() === '/search';
   };
 
   get isSmallDevice() {
@@ -472,11 +469,13 @@ class Toolbar extends Component<Props, State> {
             Teletracker
           </Typography>
           <div className={classes.grow}>
-            {!this.onSearchPage() && !this.isSmallDevice && (
-              <Search
-                drawerOpen={drawerOpen}
-                onDrawerChange={this.toggleDrawer}
-              />
+            {!this.isSmallDevice && this.props.searchVisible && (
+              <Fade in={true} timeout={1000}>
+                <Search
+                  drawerOpen={drawerOpen}
+                  onDrawerChange={this.toggleDrawer}
+                />
+              </Fade>
             )}
           </div>
           <Hidden mdDown>

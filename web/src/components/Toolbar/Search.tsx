@@ -1,8 +1,3 @@
-// TO DO:
-// - Add IntersectionObserver to search field to display it in toolbar when off screen in container
-// - Pipe filtering into dispatch events in Search, currently just have limit setup
-// clean up search container
-
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Fade,

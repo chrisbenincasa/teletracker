@@ -71,11 +71,13 @@ type Props = OwnProps & RouteComponentProps & WidthProps;
 
 interface State {
   drawerOpen: boolean;
+  searchVisible: boolean;
 }
 
 class App extends Component<Props, State> {
   state = {
     drawerOpen: false,
+    searchVisible: false,
   };
 
   componentDidMount() {
@@ -93,6 +95,13 @@ class App extends Component<Props, State> {
       }
     }
   }
+
+  setSearchVisibility = isVisible => {
+    // If search is visible, we want to not show toolbar search
+    if (!isVisible !== this.state.searchVisible) {
+      this.setState({ searchVisible: !isVisible });
+    }
+  };
 
   toggleDrawer = (close?: boolean) => {
     // If close is provided, close the drawer, otherwise flip it
@@ -112,6 +121,7 @@ class App extends Component<Props, State> {
         <Toolbar
           drawerOpen={this.state.drawerOpen}
           onDrawerChange={close => this.toggleDrawer(close)}
+          searchVisible={this.state.searchVisible}
         />
         {!isBooting ? (
           <React.Fragment>
@@ -138,7 +148,14 @@ class App extends Component<Props, State> {
                   <Route
                     exact
                     path="/search"
-                    render={props => <Search {...props} />}
+                    render={props => (
+                      <Search
+                        {...props}
+                        inViewportChange={isVisible =>
+                          this.setSearchVisibility(isVisible)
+                        }
+                      />
+                    )}
                   />
                   <Route
                     exact

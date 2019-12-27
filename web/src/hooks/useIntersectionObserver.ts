@@ -17,13 +17,17 @@ export default function useIntersectionObserver({
   const intersectionObserverRef = useRef<IntersectionObserver | null>();
 
   const handleObserverDisconnect = () => {
-    if (intersectionObserverRef.current) {
+    if (intersectionObserverRef.current && useLazyLoad) {
       intersectionObserverRef.current.disconnect();
     }
   };
 
-  const handleIntersection = () => {
-    setIntersecting(true);
+  const handleIntersection = entry => {
+    if (useLazyLoad) {
+      setIntersecting(true);
+    } else {
+      setIntersecting(entry.isIntersecting);
+    }
     handleObserverDisconnect();
   };
 
@@ -31,10 +35,10 @@ export default function useIntersectionObserver({
   const isIOSupported = isIntersectionObserverSupported();
 
   useEffect(() => {
-    if (!useLazyLoad || !isIOSupported) {
+    if (!isIOSupported) {
       // If component wants to bypass IO or if IO is not supported
       setIntersecting(true);
-    } else if (useLazyLoad && isIOSupported && targetRef.current) {
+    } else if (isIOSupported && targetRef.current) {
       intersectionObserverRef.current = createIntersectionObserver({
         callback: handleIntersection,
         options: lazyLoadOptions,
