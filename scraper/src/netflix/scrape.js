@@ -137,7 +137,7 @@ export const scrape = async () => {
   if (isProduction()) {
     await uploadToS3(
       DATA_BUCKET,
-      `scrape-results/${currentDate}/${fileName}`,
+      `scrape-results/netflix/direct/${currentDate}/${fileName}`,
       filePath,
     );
   }

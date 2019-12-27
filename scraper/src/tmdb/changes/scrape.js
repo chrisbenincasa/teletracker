@@ -73,7 +73,7 @@ const scrape = async event => {
       [showName, 'TvChangesDumpTask'],
       [personName, 'PersonChangesDumpTask'],
     ].map(async ([file, taskName]) => {
-      let key = `scrape-results/${nowString}/${file}`;
+      let key = `scrape-results/tmdb/${nowString}/${file}`;
       await uploadToS3(DATA_BUCKET, key, file);
 
       if (_.isUndefined(event.scheduleTasks) || Boolean(event.scheduleTasks)) {
