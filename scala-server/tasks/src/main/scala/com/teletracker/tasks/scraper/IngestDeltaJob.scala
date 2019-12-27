@@ -105,6 +105,8 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
       afterSource.close()
     }
 
+    logger.info(s"Found ${afterIds.size} IDs in the current snapshot")
+
     val beforeIds = try {
       parser
         .stream[T](beforeSource.getLines())
@@ -119,8 +121,14 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
       beforeSource.close()
     }
 
+    logger.info(s"Found ${beforeIds.size} IDs in the previous snapshot")
+
     val newIds = afterIds -- beforeIds
     val removedIds = beforeIds -- afterIds
+
+    logger.info(
+      s"Checking for ${newIds.size} new IDs and ${removedIds.size} removed IDs"
+    )
 
     val afterItemSource =
       sourceRetriever.getSource(parsedArgs.snapshotAfter, consultCache = true)
