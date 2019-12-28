@@ -1,35 +1,54 @@
 package com.teletracker.tasks.scraper.netflix
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.{
-  Availability,
-  Network,
-  OfferType,
-  PresentationType
+import com.teletracker.common.db.model.{OfferType, PresentationType}
+import com.teletracker.common.elasticsearch.{
+  EsAvailability,
+  ItemLookup,
+  ItemUpdater
 }
-import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchFallbackMatcher,
+  ElasticsearchFallbackMatcherOptions,
+  ElasticsearchLookup
+}
+import com.teletracker.tasks.scraper.model.NonMatchResult
 import com.teletracker.tasks.scraper.{
   IngestDeltaJob,
-  IngestDeltaJobWithElasticsearch,
+  IngestDeltaJobArgs,
+  IngestJobArgs,
   IngestJobParser
 }
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.util.UUID
+import scala.concurrent.Future
 
 case class NetflixCatalogDeltaIngestJob @Inject()(
   s3: S3Client,
   networkCache: NetworkCache,
-  protected val itemSearch: ItemLookup,
+  protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  elasticsearchLookup: ElasticsearchLookup)
-    extends IngestDeltaJob[NetflixCatalogItem](elasticsearchLookup)
-    with IngestDeltaJobWithElasticsearch[NetflixCatalogItem] {
+  elasticsearchLookup: ElasticsearchLookup,
+  elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory)
+    extends IngestDeltaJob[NetflixCatalogItem](elasticsearchLookup) {
 
   override protected def networkNames: Set[String] = Set("netflix")
+
+  private val elasticsearchMatcherOptions =
+    ElasticsearchFallbackMatcherOptions(
+      requireTypeMatch = false,
+      getClass.getSimpleName
+    )
+
+  private lazy val fallbackMatcher = elasticsearchFallbackMatcher
+    .create(elasticsearchMatcherOptions)
+
+  prerun {
+    registerArtifact(fallbackMatcher.outputFile)
+  }
 
   override protected def createAvailabilities(
     networks: Set[StoredNetwork],
@@ -37,27 +56,46 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
     title: String,
     scrapedItem: NetflixCatalogItem,
     isAvailable: Boolean
-  ): List[Availability] = {
-    for {
-      network <- networks.toList
-      presentationType <- List(PresentationType.SD, PresentationType.HD)
-    } yield {
-      Availability(
-        None,
-        isAvailable = isAvailable,
-        region = Some("US"),
-        numSeasons = None,
-        startDate = None,
-        endDate = None,
-        offerType = Some(OfferType.Subscription),
+  ): List[EsAvailability] = {
+    networks.toList.map(network => {
+      EsAvailability(
+        network_id = network.id,
+        region = "US",
+        start_date = None,
+        end_date = None,
+        offer_type = OfferType.Subscription.toString,
         cost = None,
         currency = None,
-        thingId = Some(itemId),
-        tvShowEpisodeId = None,
-        networkId = Some(network.id),
-        presentationType = Some(presentationType)
+        presentation_types = Some(
+          List(PresentationType.SD, PresentationType.HD).map(_.toString)
+        ) // TODO FIX
       )
-    }
+    })
+  }
+
+  override protected def handleNonMatches(
+    args: IngestDeltaJobArgs,
+    nonMatches: List[NetflixCatalogItem]
+  ): Future[List[NonMatchResult[NetflixCatalogItem]]] = {
+    fallbackMatcher
+      .handleNonMatches(
+        args,
+        nonMatches
+      )
+      .map(results => {
+        results.map(result => {
+          result.amendedScrapedItem.externalId match {
+            case Some(value) =>
+              result.copy(
+                originalScrapedItem = nonMatches
+                  .find(_.externalId.contains(value))
+                  .getOrElse(result.amendedScrapedItem)
+              )
+
+            case None => result
+          }
+        })
+      })
   }
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine

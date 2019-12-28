@@ -155,13 +155,19 @@ abstract class BaseIngestJob[
               val allItems = things ++ fallbackMatches
                 .map(_.toMatchResult)
 
-              val stillMissing = (filteredAndSanitized
+              val originalItems = filteredAndSanitized
                 .map(_.title.toLowerCase())
-                .toSet -- things
+                .toSet
+
+              val firstPhaseFinds = things
                 .map(_.esItem.title.get.head.toLowerCase())
-                .toSet) -- fallbackMatches
+                .toSet
+
+              val secondPhaseFinds = fallbackMatches
                 .map(_.originalScrapedItem.title.toLowerCase())
                 .toSet
+
+              val stillMissing = originalItems -- firstPhaseFinds -- secondPhaseFinds
 
               val missingItems = filteredAndSanitized
                 .filter(
