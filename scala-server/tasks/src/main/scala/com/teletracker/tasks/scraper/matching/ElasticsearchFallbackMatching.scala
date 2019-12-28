@@ -13,6 +13,7 @@ import com.teletracker.tasks.scraper.{
   model,
   IngestJob,
   IngestJobArgs,
+  IngestJobArgsLike,
   ScrapedItem
 }
 import io.circe.Codec
@@ -57,7 +58,7 @@ class ElasticsearchFallbackMatcher @Inject()(
   )
 
   def handleNonMatches[T <: ScrapedItem: Codec](
-    args: IngestJobArgs,
+    args: IngestJobArgsLike,
     nonMatches: List[T]
   ): Future[List[NonMatchResult[T]]] = {
     nonMatches

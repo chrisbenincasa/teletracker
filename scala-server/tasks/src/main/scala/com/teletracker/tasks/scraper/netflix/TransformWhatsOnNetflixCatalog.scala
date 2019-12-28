@@ -16,7 +16,7 @@ object TransformWhatsOnNetflixCatalog {
     NetflixCatalogItem(
       availableDate = None,
       title = item.title.trim,
-      releaseYear = Some(item.titlereleased.toInt),
+      releaseYear = Option(item.titlereleased).filter(_.nonEmpty).map(_.toInt),
       network = "Netflix",
       `type` = item.`type` match {
         case "Movie" | "Documentary"  => ThingType.Movie

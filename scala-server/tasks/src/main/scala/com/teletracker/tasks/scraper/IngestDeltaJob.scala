@@ -6,6 +6,7 @@ import com.teletracker.common.elasticsearch
 import com.teletracker.common.elasticsearch.{
   EsAvailability,
   ItemLookup,
+  ItemSearch,
   ItemUpdater
 }
 import com.teletracker.common.util.json.circe._
@@ -26,6 +27,17 @@ import com.teletracker.common.util.Functions._
 import com.teletracker.tasks.scraper.model.MatchResult
 import scala.util.control.NonFatal
 
+trait IngestDeltaJobArgsLike {
+  val snapshotAfter: URI
+  val snapshotBefore: URI
+  val offset: Int
+  val limit: Int
+  val dryRun: Boolean
+  val titleMatchThreshold: Int
+  val thingIdFilter: Option[UUID]
+  val perBatchSleepMs: Option[Int]
+}
+
 case class IngestDeltaJobArgs(
   snapshotAfter: URI,
   snapshotBefore: URI,
@@ -36,31 +48,12 @@ case class IngestDeltaJobArgs(
   thingIdFilter: Option[UUID] = None,
   perBatchSleepMs: Option[Int] = None)
     extends IngestJobArgsLike
+    with IngestDeltaJobArgsLike
 
 abstract class IngestDeltaJob[T <: ScrapedItem](
   elasticsearchLookup: ElasticsearchLookup
 )(implicit codec: Codec[T])
-    extends BaseIngestJob[T, IngestDeltaJobArgs]()(
-      scala.concurrent.ExecutionContext.Implicits.global,
-      codec
-    ) {
-
-  implicit protected val execCtx =
-    scala.concurrent.ExecutionContext.Implicits.global
-
-  protected def s3: S3Client
-
-  protected def networkNames: Set[String]
-  protected def networkCache: NetworkCache
-
-  protected def parseMode: ParseMode = AllJson
-  protected def matchMode: MatchMode = elasticsearchLookup
-
-  override protected def processMode(args: IngestDeltaJobArgs): ProcessMode =
-    Parallel(4, args.perBatchSleepMs.map(_ millis))
-
-  override type TypedArgs = IngestDeltaJobArgs
-
+    extends IngestDeltaJobLike[T, IngestDeltaJobArgs](elasticsearchLookup) {
   implicit override protected def typedArgsEncoder
     : Encoder[IngestDeltaJobArgs] = deriveEncoder[IngestDeltaJobArgs]
 
@@ -77,11 +70,41 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
       perBatchSleepMs = args.value[Int]("perBatchSleepMs")
     )
   }
+}
+
+abstract class IngestDeltaJobLike[
+  T <: ScrapedItem,
+  ArgsType <: IngestJobArgsLike with IngestDeltaJobArgsLike
+](
+  elasticsearchLookup: ElasticsearchLookup
+)(implicit codec: Codec[T])
+    extends BaseIngestJob[T, ArgsType]()(
+      scala.concurrent.ExecutionContext.Implicits.global,
+      codec
+    ) {
+
+  implicit protected val execCtx =
+    scala.concurrent.ExecutionContext.Implicits.global
+
+  protected def s3: S3Client
+  protected def itemLookup: ItemLookup
+  protected def itemUpdater: ItemUpdater
+
+  protected def networkNames: Set[String]
+  protected def networkCache: NetworkCache
+
+  protected def parseMode: ParseMode = AllJson
+  protected def matchMode: MatchMode = elasticsearchLookup
+
+  override protected def processMode(args: ArgsType): ProcessMode =
+    Parallel(16, args.perBatchSleepMs.map(_ millis))
+
+  override type TypedArgs = ArgsType
 
   override def runInternal(args: Args): Unit = {
     val networks = getNetworksOrExit()
 
-    val parsedArgs = parseArgs(args)
+    val parsedArgs = preparseArgs(args)
     val sourceRetriever = new SourceRetriever(s3)
 
     val afterSource =
@@ -167,9 +190,9 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
         case MatchResult(_, esItem) =>
           parsedArgs.thingIdFilter.forall(_ == esItem.id)
       }
-      .flatMap {
+      .map {
         case MatchResult(scrapedItem, esItem) =>
-          createAvailabilities(
+          esItem.id -> createAvailabilities(
             networks,
             esItem.id,
             esItem.title.get.headOption.orElse(esItem.original_title).get,
@@ -178,7 +201,9 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
           )
       }
 
-    logger.info(s"Found ${newAvailabilities.size} availabilities to add")
+    logger.info(
+      s"Found ${newAvailabilities.flatMap(_._2).size} availabilities to add"
+    )
 
     if (addedNotFound.nonEmpty) {
       logger.warn(
@@ -223,9 +248,9 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
         case MatchResult(_, esItem) =>
           parsedArgs.thingIdFilter.forall(_ == esItem.id)
       }
-      .flatMap {
+      .map {
         case MatchResult(scrapedItem, esItem) =>
-          createAvailabilities(
+          esItem.id -> createAvailabilities(
             networks,
             esItem.id,
             esItem.title.get.headOption.orElse(esItem.original_title).get,
@@ -240,7 +265,9 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
       )
     }
 
-    logger.info(s"Found ${removedAvailabilities.size} availabilities to remove")
+    logger.info(
+      s"Found ${removedAvailabilities.flatMap(_._2).size} availabilities to remove"
+    )
 
     if (!parsedArgs.dryRun) {
       logger.info(
@@ -248,73 +275,29 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
       )
       saveAvailabilities(newAvailabilities, removedAvailabilities).await()
     } else {
-      (newAvailabilities ++ removedAvailabilities).foreach(av => {
-        logger.info(s"Would've saved availability: $av")
+      newAvailabilities.foreach(av => {
+        logger.info(s"Would've added availability: $av")
+      })
+
+      removedAvailabilities.foreach(av => {
+        logger.info(s"Would've removed availability: $av")
       })
     }
   }
 
   protected def saveAvailabilities(
-    newAvailabilities: Seq[Availability],
-    availabilitiesToRemove: Seq[Availability]
-  ): Future[Unit]
-
-  protected def getNetworksOrExit(): Set[StoredNetwork] = {
-    val foundNetworks = networkCache
-      .getAllNetworks()
-      .await()
-      .collect {
-        case network if networkNames.contains(network.slug.value) =>
-          network
-      }
-      .toSet
-
-    if (networkNames.diff(foundNetworks.map(_.slug.value)).nonEmpty) {
-      throw new IllegalStateException(
-        s"""Could not find all networks "${networkNames}" network from datastore"""
-      )
-    }
-
-    foundNetworks
-  }
-
-  protected def createAvailabilities(
-    networks: Set[StoredNetwork],
-    itemId: UUID,
-    title: String,
-    scrapedItem: T,
-    isAvailable: Boolean
-  ): List[Availability]
-
-  protected def uniqueKey(item: T): String
-
-  override protected def handleMatchResults(
-    results: List[MatchResult[T]],
-    networks: Set[StoredNetwork],
-    args: IngestDeltaJobArgs
-  ): Future[Unit] = Future.unit
-}
-
-trait IngestDeltaJobWithElasticsearch[T <: ScrapedItem] {
-  self: IngestDeltaJob[T] =>
-  protected def itemSearch: ItemLookup
-  protected def itemUpdater: ItemUpdater
-
-  override protected def saveAvailabilities(
-    newAvailabilities: Seq[Availability],
-    availabilitiesToRemove: Seq[Availability]
+    newAvailabilities: List[(UUID, List[EsAvailability])],
+    availabilitiesToRemove: List[(UUID, List[EsAvailability])]
   ): Future[Unit] = {
     val newAvailabilityByThingId =
       newAvailabilities
-        .flatMap(convertToEsAvailability)
         .groupBy(_._1)
-        .mapValues(_.map(_._2))
+        .mapValues(_.flatMap(_._2))
 
     val removalAvailabilityByThingId =
       availabilitiesToRemove
-        .flatMap(convertToEsAvailability)
         .groupBy(_._1)
-        .mapValues(_.map(_._2))
+        .mapValues(_.flatMap(_._2))
 
     val allItemIds = newAvailabilityByThingId.keySet ++ removalAvailabilityByThingId.keySet
 
@@ -331,7 +314,7 @@ trait IngestDeltaJobWithElasticsearch[T <: ScrapedItem] {
         .values
         .flatMap(_.headOption)
 
-      itemSearch
+      itemLookup
         .lookupItem(Left(itemId), None, materializeJoins = false)
         .flatMap {
           case None => Future.successful(None)
@@ -364,21 +347,38 @@ trait IngestDeltaJobWithElasticsearch[T <: ScrapedItem] {
     Future.sequence(updates).map(_ => {})
   }
 
-  protected def convertToEsAvailability(
-    availability: Availability
-  ): Option[(UUID, EsAvailability)] = {
-    availability.thingId.map(
-      _ -> elasticsearch.EsAvailability(
-        network_id = availability.networkId.get,
-        region = availability.region.getOrElse("US"),
-        start_date = availability.startDate.map(_.toLocalDate),
-        end_date = availability.endDate.map(_.toLocalDate),
-        offer_type = availability.offerType.getOrElse(OfferType.Rent).toString,
-        cost = availability.cost.map(_.toDouble),
-        currency = availability.currency,
-        presentation_types =
-          Some(availability.presentationType.map(_.toString).toList) // TODO FIX
+  protected def getNetworksOrExit(): Set[StoredNetwork] = {
+    val foundNetworks = networkCache
+      .getAllNetworks()
+      .await()
+      .collect {
+        case network if networkNames.contains(network.slug.value) =>
+          network
+      }
+      .toSet
+
+    if (networkNames.diff(foundNetworks.map(_.slug.value)).nonEmpty) {
+      throw new IllegalStateException(
+        s"""Could not find all networks "${networkNames}" network from datastore"""
       )
-    )
+    }
+
+    foundNetworks
   }
+
+  protected def createAvailabilities(
+    networks: Set[StoredNetwork],
+    itemId: UUID,
+    title: String,
+    scrapedItem: T,
+    isAvailable: Boolean
+  ): List[EsAvailability]
+
+  protected def uniqueKey(item: T): String
+
+  override protected def handleMatchResults(
+    results: List[MatchResult[T]],
+    networks: Set[StoredNetwork],
+    args: ArgsType
+  ): Future[Unit] = Future.unit
 }

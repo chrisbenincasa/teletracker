@@ -45,9 +45,6 @@ class IngestHuluChanges @Inject()(
     huluFallbackMatching.handleNonMatches(args, nonMatches)
   }
 
-  private val endsWithNote = "\\([A-z0-9]+\\)$".r
-  private val badApostrophe = "[A-z]\\?[A-z]".r
-
   override protected def shouldProcessItem(item: HuluScrapeItem): Boolean = {
     val category = item.category.toLowerCase()
     val shouldInclude = if (premiumNetworks.exists(category.contains)) {
