@@ -1,29 +1,70 @@
 import { Client } from '@elastic/elasticsearch';
+import AWS from 'aws-sdk';
 
-const client = new Client({
-  node: `https://${process.env.ES_HOST}`,
-  ssl: {
-    host: process.env.ES_HOST,
-  },
-  auth: {
-    username: process.env.ES_USERNAME,
-    password: process.env.ES_PASSWORD,
-  },
-});
+const getSsm = (() => {
+  let ssm;
+  return () => {
+    if (!ssm) {
+      ssm = new AWS.SSM();
+    }
+
+    return ssm;
+  };
+})();
+
+const resolveSecret = (() => {
+  let cachedSecrets = {};
+
+  return async secret => {
+    if (!cachedSecrets[secret]) {
+      console.log('Could not find cached secret, hitting SSM API');
+      cachedSecrets[secret] = await getSsm()
+        .getParameter({
+          Name: secret,
+          WithDecryption: true,
+        })
+        .promise()
+        .then(param => param.Parameter.Value);
+    }
+
+    return cachedSecrets[secret];
+  };
+})();
+
+const getClient = (() => {
+  let client;
+  return async () => {
+    if (!client) {
+      console.log('Could not find cached ES client.');
+
+      client = new Client({
+        node: `https://${process.env.ES_HOST}`,
+        ssl: {
+          host: process.env.ES_HOST,
+        },
+        auth: {
+          username: process.env.ES_USERNAME,
+          password: await resolveSecret(process.env.ES_PASSWORD),
+        },
+      });
+    }
+
+    return client;
+  };
+})();
 
 const wait = ms => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
 export const handler = async event => {
-  console.log(event);
+  let client = await getClient();
+
   if (event.Records) {
     let all = event.Records.reduce(async (prev, record) => {
       let last = await prev;
 
       let jsonRecord = JSON.parse(record.body);
-
-      console.log(jsonRecord);
 
       switch (jsonRecord.operation) {
         case 'update':
