@@ -2,6 +2,10 @@ data "aws_s3_bucket" "teletracker-data-bucket" {
   bucket = "teletracker-data"
 }
 
+data "aws_s3_bucket" "teletracker-artifacts-bucket" {
+  bucket = "teletracker-artifacts"
+}
+
 resource "aws_s3_bucket" "teletracker-artifacts-us-west-2" {
   provider = "aws.us-west-2"
 
