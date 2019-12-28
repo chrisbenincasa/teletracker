@@ -12,6 +12,7 @@ const getSqs = (() => {
 })();
 
 export const scheduleTask = async payload => {
+  console.log(`Scheduling task ${JSON.stringify(payload)}`);
   return getSqs()
     .sendMessage({
       QueueUrl: process.env.TASK_QUEUE_URL,

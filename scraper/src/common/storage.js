@@ -87,6 +87,15 @@ export const uploadStringToS3 = async (
     .promise();
 };
 
+export const deleteS3Object = async (bucket, key) => {
+  return s3
+    .deleteObject({
+      Bucket: bucket,
+      Key: key,
+    })
+    .promise();
+};
+
 const getObjectS3 = async (bucket, key) => {
   return s3
     .getObject({
