@@ -1,8 +1,3 @@
-// TODO: Import this later
-data "aws_launch_template" "teletracker-ecs-launch-template" {
-  name = "Teletracker-QA-t3a"
-}
-
 data "aws_launch_template" "teletracker-ecs-launch-template-t2" {
   name = "teletracker-ecs-t2"
 }
