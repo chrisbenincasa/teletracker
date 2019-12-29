@@ -2,18 +2,39 @@ package com.teletracker.tasks
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
-import com.teletracker.tasks.util.Args
+import com.teletracker.tasks.util.{Args, TaskLogger}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import javax.inject.Inject
-import org.slf4j.LoggerFactory
-import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
+import org.slf4j.{Logger, LoggerFactory}
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import java.time.OffsetDateTime
 import scala.collection.mutable
 import scala.util.control.NonFatal
+import com.teletracker.common.util.Futures._
+import java.util.UUID
+import scala.compat.java8.FutureConverters._
+
+object TeletrackerTask {
+  object CommonFlags {
+    final val S3Logging = "s3Logging"
+  }
+}
 
 trait TeletrackerTask extends Args {
-  private val logger = LoggerFactory.getLogger(getClass)
+  private var _logger: Logger = _
+  private var _loggerCloseHook: () => Unit = () => {}
+
+  protected def logger: Logger = _logger
+
+  @Inject
+  private[this] var teletrackerConfig: TeletrackerConfig = _
+  @Inject
+  private[this] var s3: S3Client = _
+  @Inject
+  private[this] var publisher: SqsAsyncClient = _
 
   type Args = Map[String, Option[Any]]
   type TypedArgs
@@ -22,15 +43,15 @@ trait TeletrackerTask extends Args {
     mutable.Buffer.empty
 
   private val preruns: mutable.Buffer[() => Unit] = mutable.Buffer.empty
-  private val postruns: mutable.Buffer[(Args) => Unit] =
+  private val postruns: mutable.Buffer[Args => Unit] =
     mutable.Buffer.empty
 
   implicit protected def typedArgsEncoder: Encoder[TypedArgs]
 
   def preparseArgs(args: Args): TypedArgs
+
   def argsAsJson(args: Args): Json = preparseArgs(args).asJson
 
-  protected def runInternal(): Unit = runInternal(Map.empty)
   protected def runInternal(args: Args): Unit
 
   protected def prerun(f: => Unit): Unit = {
@@ -41,43 +62,114 @@ trait TeletrackerTask extends Args {
     postruns += f
   }
 
-  final def run(args: Args): Unit = {
-    preruns.foreach(_())
+  private def init(args: Args): Unit = synchronized {
+    val logToS3 =
+      args.valueOrDefault(TeletrackerTask.CommonFlags.S3Logging, true)
 
-    val parsedArgs = preparseArgs(args)
+    if (logToS3) {
+      val (s3Logger, onClose) = TaskLogger.make(
+        getClass,
+        s3,
+        teletrackerConfig.data.s3_bucket,
+        s"task-output/${getClass.getSimpleName}/${OffsetDateTime.now()}"
+      )
 
-    logger.info(s"Running ${getClass.getSimpleName} with args: ${args}")
-
-    val success = try {
-      runInternal(args)
-      true
-    } catch {
-      case NonFatal(e) =>
-        logger.error("Task ended unexpectedly", e)
-        false
+      _logger = s3Logger
+      _loggerCloseHook = onClose
+    } else {
+      _logger = LoggerFactory.getLogger(getClass)
     }
+  }
 
-    postruns.foreach(_(args))
+  final def run(args: Args): Unit = {
+    try {
+      init(args)
 
-    logger.info("Task completed. Checking for callbacks to run.")
+      registerFollowupTasksCallback()
 
-    callbacks.foreach(cb => {
-      if (success || cb.runOnFailure) {
-        logger.info(s"Running callback: ${cb.name}")
-        try {
-          cb.cb(parsedArgs, args)
-        } catch {
-          case NonFatal(e) =>
-            logger.error(s"""Callback "${cb.name}" failed.""", e)
-        }
+      preruns.foreach(_())
+
+      val parsedArgs = preparseArgs(args)
+
+      logger.info(s"Running ${getClass.getSimpleName} with args: ${args}")
+
+      val success = try {
+        runInternal(args)
+        true
+      } catch {
+        case NonFatal(e) =>
+          logger.error("Task ended unexpectedly", e)
+          false
       }
-    })
+
+      postruns.foreach(_(args))
+
+      logger.info("Task completed. Checking for callbacks to run.")
+
+      callbacks.foreach(cb => {
+        if (success || cb.runOnFailure) {
+          logger.info(s"Running callback: ${cb.name}")
+          try {
+            cb.cb(parsedArgs, args)
+          } catch {
+            case NonFatal(e) =>
+              logger.error(s"""Callback "${cb.name}" failed.""", e)
+          }
+        }
+      })
+    } finally {
+      if (_loggerCloseHook ne null) {
+        _loggerCloseHook()
+      }
+    }
   }
 
   def registerCallback(cb: TaskCallback): Unit = {
     callbacks += cb
     logger.info(s"Successfully attached ${cb.name} callback")
   }
+
+  private def registerFollowupTasksCallback(): Unit = {
+    registerCallback(
+      TaskCallback(
+        "scheduleFollowupTasks",
+        (typedArgs, args) => {
+          if (args.valueOrDefault("scheduleFollowups", true)) {
+            val tasks = followupTasksToSchedule(typedArgs, args)
+
+            // TODO: Batch
+            tasks.foreach(message => {
+              logger.info(
+                s"Scheduling follow-up task: ${message.toString}"
+              )
+
+              publisher
+                .sendMessage(
+                  SendMessageRequest
+                    .builder()
+                    .messageBody(message.asJson.noSpaces)
+                    .queueUrl(
+                      teletrackerConfig.async.taskQueue.url
+                    )
+                    .messageDeduplicationId(UUID.randomUUID().toString)
+                    .messageGroupId("default")
+                    .build()
+                )
+                .toScala
+                .await()
+            })
+          } else {
+            logger.info("Skipping scheduling of followup jobs")
+          }
+        }
+      )
+    )
+  }
+
+  protected def followupTasksToSchedule(
+    args: TypedArgs,
+    rawArgs: Args
+  ): List[TeletrackerTaskQueueMessage] = Nil
 
   case class TaskCallback(
     name: String,
@@ -96,51 +188,4 @@ trait DefaultAnyArgs { self: TeletrackerTask =>
   override def preparseArgs(args: Args): TypedArgs = Map()
 
   override def argsAsJson(args: Args): Json = Json.Null
-}
-
-trait SchedulesFollowupTasks { self: TeletrackerTask =>
-  import scala.compat.java8.FutureConverters._
-  import com.teletracker.common.util.Futures._
-
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  protected def publisher: SqsAsyncClient
-
-  registerCallback(
-    TaskCallback(
-      "scheduleFollowupTasks",
-      (typedArgs, args) => {
-        if (args.valueOrDefault("scheduleFollowups", true)) {
-          val tasks = followupTasksToSchedule(typedArgs, args)
-          logger.info(
-            s"Scheduling ${tasks.size} follow-up tasks:\n${tasks.map(_.toString).mkString("\n")}"
-          )
-
-          // TODO: Batch
-          tasks.foreach(message => {
-            publisher
-              .sendMessage(
-                SendMessageRequest
-                  .builder()
-                  .messageBody(message.asJson.noSpaces)
-                  .queueUrl(
-                    // TODO: Use config
-                    "https://sqs.us-west-1.amazonaws.com/302782651551/teletracker-tasks-qa"
-                  )
-                  .build()
-              )
-              .toScala
-              .await()
-          })
-        } else {
-          logger.info("Skipping scheduling of followup jobs")
-        }
-      }
-    )
-  )
-
-  def followupTasksToSchedule(
-    args: TypedArgs,
-    rawArgs: Args
-  ): List[TeletrackerTaskQueueMessage]
 }

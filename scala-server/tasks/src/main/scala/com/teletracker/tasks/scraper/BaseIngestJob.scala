@@ -2,7 +2,6 @@ package com.teletracker.tasks.scraper
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.Network
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.scraper.matching.MatchMode
@@ -10,7 +9,6 @@ import com.teletracker.tasks.scraper.model.{MatchResult, NonMatchResult}
 import io.circe.Codec
 import io.circe.syntax._
 import javax.inject.Inject
-import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
@@ -33,8 +31,6 @@ abstract class BaseIngestJob[
   private[this] var teletrackerConfig: TeletrackerConfig = _
   @Inject
   private[this] var s3: S3Client = _
-
-  protected val logger = LoggerFactory.getLogger(getClass)
 
   protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
   protected lazy val today = LocalDate.now()

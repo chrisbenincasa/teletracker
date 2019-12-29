@@ -42,7 +42,6 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
   s3: S3Client
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
-  private val logger = LoggerFactory.getLogger(getClass)
   private val dumpTime = Instant.now().toString
 
   override type TypedArgs = DataDumpTaskArgs

@@ -15,8 +15,6 @@ import scala.util.{Failure, Success, Try}
 
 class GenerateItemCreditUpdates @Inject()(sourceRetriever: SourceRetriever)
     extends TeletrackerTaskWithDefaultArgs {
-  private val logger = LoggerFactory.getLogger(getClass)
-
   private def scriptSource(field: String) =
     s"""
       |if (ctx._source.$field == null) {

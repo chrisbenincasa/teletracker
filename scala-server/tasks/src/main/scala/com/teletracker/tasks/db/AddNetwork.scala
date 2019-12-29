@@ -14,8 +14,6 @@ import org.slf4j.LoggerFactory
 
 class AddNetwork @Inject()(metadataDbAccess: MetadataDbAccess)
     extends TeletrackerTaskWithDefaultArgs {
-  private val logger = LoggerFactory.getLogger(getClass)
-
   override protected def runInternal(args: Args): Unit = {
     val name = args.valueOrThrow[String]("name").replaceAll("_", " ")
     val shortname = args.valueOrThrow[String]("shortname")
@@ -46,7 +44,6 @@ class AddNetwork @Inject()(metadataDbAccess: MetadataDbAccess)
 
 class AddNetworkReference @Inject()(metadataDbAccess: MetadataDbAccess)
     extends TeletrackerTaskWithDefaultArgs {
-  private val logger = LoggerFactory.getLogger(getClass)
 
   override protected def runInternal(args: Args): Unit = {
     val networkId = args.valueOrThrow[Int]("networkId")
