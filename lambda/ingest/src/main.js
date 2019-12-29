@@ -61,7 +61,7 @@ export const handler = async event => {
   let client = await getClient();
 
   if (event.Records) {
-    let all = event.Records.reduce(async (prev, record) => {
+    let all = await event.Records.reduce(async (prev, record) => {
       let last = await prev;
 
       let jsonRecord = JSON.parse(record.body);
@@ -89,7 +89,7 @@ export const handler = async event => {
           console.error(`Op type ${jsonRecord.operation} is unsupported`);
           return last;
       }
-    });
+    }, Promise.resolve([]));
 
     return Promise.all(all);
   }
