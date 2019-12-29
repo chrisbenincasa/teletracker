@@ -48,7 +48,6 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
 
   import com.teletracker.common.util.json.circe._
 
-  protected val logger = LoggerFactory.getLogger(getClass)
   private val processedCounter = new AtomicInteger()
 
   override type TypedArgs = ImportTmdbDumpTaskArgs

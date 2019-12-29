@@ -33,8 +33,6 @@ abstract class DeltaLocatorJob(
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
 
-  protected val logger = LoggerFactory.getLogger(getClass)
-
   override type TypedArgs = DeltaLocatorJobArgs
 
   implicit override val typedArgsEncoder: Encoder[DeltaLocatorJobArgs] =
@@ -62,7 +60,9 @@ abstract class DeltaLocatorJob(
       )
     } catch {
       case _: NoSuchKeyException =>
-        throw new RuntimeException(s"Could not find seed dump for date $today")
+        throw new RuntimeException(
+          s"Could not find seed dump for date $today at key ${getKey(today)}"
+        )
     }
 
     val previousDate = (1 to parsedArgs.maxDaysBack).toStream

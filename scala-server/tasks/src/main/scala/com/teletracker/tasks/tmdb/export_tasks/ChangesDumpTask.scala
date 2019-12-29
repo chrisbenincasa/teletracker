@@ -3,7 +3,6 @@ package com.teletracker.tasks.tmdb.export_tasks
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.process.tmdb.ItemExpander
 import com.teletracker.common.pubsub.{JobTags, TeletrackerTaskQueueMessage}
-import com.teletracker.tasks.SchedulesFollowupTasks
 import com.teletracker.tasks.annotations.TaskTags
 import com.teletracker.tasks.tmdb.import_tasks.{
   ImportMoviesFromDump,
@@ -27,8 +26,7 @@ abstract class ChangesDumpTask(
   itemExpander: ItemExpander,
   protected val publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
-    extends DataDumpTask[ChangesDumpFileRow](s3)
-    with SchedulesFollowupTasks {
+    extends DataDumpTask[ChangesDumpFileRow](s3) {
   implicit override protected val tDecoder: Decoder[ChangesDumpFileRow] =
     deriveCodec
 

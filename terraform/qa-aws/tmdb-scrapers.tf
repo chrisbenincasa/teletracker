@@ -39,6 +39,10 @@ resource "aws_cloudwatch_event_target" "tmdb-id-dump-event-target" {
       "itemType" = "all"
     }
   })
+
+  sqs_target {
+    message_group_id = "default"
+  }
 }
 
 module "tmdb-popularity-scheduler" {

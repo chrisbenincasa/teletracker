@@ -19,8 +19,6 @@ class CreatePersonImportCsv @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {
 
-  private val logger = LoggerFactory.getLogger(getClass)
-
   override def runInternal(args: Args): Unit = {
     val file = args.value[URI]("input").get
     val offset = args.valueOrDefault("offset", 0)

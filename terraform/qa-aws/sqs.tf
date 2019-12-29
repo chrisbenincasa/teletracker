@@ -1,10 +1,14 @@
 resource "aws_sqs_queue" "teletracker-task-queue" {
-  name           = "teletracker-tasks-qa"
-  redrive_policy = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.teletracker-task-dlq.arn}\",\"maxReceiveCount\":3}"
+  name                        = "teletracker-tasks-qa.fifo"
+  fifo_queue                  = true
+  content_based_deduplication = false
+  redrive_policy              = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.teletracker-task-dlq.arn}\",\"maxReceiveCount\":3}"
 }
 
 resource "aws_sqs_queue" "teletracker-task-dlq" {
-  name = "teletracker-tasks-dlq-qa"
+  name                        = "teletracker-tasks-dlq-qa.fifo"
+  fifo_queue                  = true
+  content_based_deduplication = false
 }
 
 resource "aws_sqs_queue" "teletracker-es-ingest-queue" {

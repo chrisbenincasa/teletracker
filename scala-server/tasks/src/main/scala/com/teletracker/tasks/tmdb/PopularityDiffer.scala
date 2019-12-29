@@ -17,8 +17,6 @@ class PopularityDiffer @Inject()(
   sourceRetriever: SourceRetriever,
   ingestJobParser: IngestJobParser)
     extends TeletrackerTaskWithDefaultArgs {
-  private val logger = LoggerFactory.getLogger(getClass)
-
   implicit protected val tDecoder: Decoder[MovieDumpFileRow] =
     deriveCodec
 

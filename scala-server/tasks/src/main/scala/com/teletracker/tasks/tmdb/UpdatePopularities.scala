@@ -73,8 +73,6 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
-  private val logger = LoggerFactory.getLogger(getClass)
-
   override type TypedArgs = UpdatePopularitiesJobArgs
 
   implicit override protected lazy val typedArgsEncoder

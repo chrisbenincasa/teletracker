@@ -52,8 +52,6 @@ class DumpAllIds @Inject()(
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
-  private val logger = LoggerFactory.getLogger(getClass)
-
   implicit private val cs: ContextShift[IO] = IO.contextShift(executionContext)
 
   private val blockingExecCtx =
