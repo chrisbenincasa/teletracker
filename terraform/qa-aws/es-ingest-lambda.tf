@@ -42,3 +42,8 @@ resource "aws_lambda_function" "es-ingest-lambda" {
     }
   }
 }
+
+resource "aws_lambda_event_source_mapping" "es-ingest-lambda-queue-mapping" {
+  event_source_arn = aws_sqs_queue.teletracker-es-ingest-queue.arn
+  function_name    = aws_lambda_function.es-ingest-lambda.function_name
+}
