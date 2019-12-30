@@ -26,7 +26,10 @@ export {
 } from './netflix/new-on-netflix-expiring';
 export { scrape as tmdbChanges } from './tmdb/changes/scrape';
 export { scrape as tmdbIds } from './tmdb/scrape-ids';
-export { scrape as tmdbPopularityScheduler } from './tmdb/popularity-scheduler';
+export {
+  scrape as tmdbPopularityScheduler,
+  scheduleDirect as tmdbPopularitySchedulerLocal,
+} from './tmdb/popularity-scheduler';
 export { scrape as unogsNetflixExpiring } from './unogs/scrape';
 export { scrape as unogsNetflixAll } from './unogs/scrape-all';
 export { scrape as hboCatalogDump } from './hbo/catalog-sitemap';
