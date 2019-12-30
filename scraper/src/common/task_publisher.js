@@ -1,5 +1,5 @@
 import * as AWS from 'aws-sdk';
-import * as uuid from 'uuid/v4';
+import uuid from 'uuid/v4';
 
 const getSqs = (() => {
   let sqs;
