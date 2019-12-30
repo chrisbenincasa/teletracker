@@ -1,11 +1,11 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import {
-  CircularProgress,
   Chip,
   ClickAwayListener,
   Collapse,
   Fade,
   Icon,
+  LinearProgress,
   makeStyles,
   MenuList,
   MenuItem,
@@ -62,6 +62,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     overflow: 'scroll',
     width: '100%',
     maxWidth: 720,
+    minHeight: 45,
     marginTop: 10,
     backgroundColor:
       props.color && props.color === 'secondary'
@@ -88,18 +89,7 @@ interface Props {
 
 function QuickSearch(props: Props) {
   const classes = useStyles(props);
-  const quickSearchContainer = useRef<HTMLDivElement>(null);
-  let containerHeight =
-    quickSearchContainer &&
-    quickSearchContainer.current &&
-    quickSearchContainer.current.clientHeight &&
-    quickSearchContainer.current.clientHeight > 72
-      ? quickSearchContainer.current.clientHeight - 16
-      : 56;
-  // Above logic just ensures the container has enough height to be visible
-  // 16 = padding on container
-  // 56 = current height of No Results messaging
-  // 72 = 56+16
+
   let { searchResults, isSearching, searchText, searchAnchor } = props;
 
   return searchAnchor && searchText && searchText.length > 0 ? (
@@ -128,28 +118,16 @@ function QuickSearch(props: Props) {
               id="menu-list-grow"
               className={classes.searchWrapper}
               elevation={5}
-              ref={quickSearchContainer}
             >
-              <MenuList>
-                {isSearching ? (
-                  <div
-                    style={{
-                      height: `${containerHeight}px`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <CircularProgress color="secondary" />
-                  </div>
-                ) : (
-                  <div>
-                    <Collapse
-                      in={!isSearching && !!searchResults}
-                      timeout={500}
-                    >
-                      {searchResults && searchResults.length > 0 ? (
-                        searchResults.slice(0, 4).map(result => {
+              <MenuList
+                disablePadding
+                style={{ paddingTop: isSearching ? 0 : 4 }}
+              >
+                <div>
+                  <Collapse in={!!searchResults} timeout={500}>
+                    {isSearching && <LinearProgress />}
+                    {searchResults && searchResults.length > 0
+                      ? searchResults.slice(0, 4).map(result => {
                           const voteAverage =
                             result.ratings && result.ratings.length
                               ? result.ratings[0].vote_average
@@ -247,28 +225,29 @@ function QuickSearch(props: Props) {
                             </MenuItem>
                           );
                         })
-                      ) : (
-                        <Typography
-                          variant="body1"
-                          align="center"
-                          className={classes.noResults}
-                        >
-                          No results matching that search
-                        </Typography>
-                      )}
-                      {searchResults && searchResults.length > 4 && (
-                        <MenuItem
-                          dense
-                          className={classes.viewAllResults}
-                          onClick={props.handleSearchForSubmit}
-                          key="view-all"
-                        >
-                          View All Results
-                        </MenuItem>
-                      )}
-                    </Collapse>
-                  </div>
-                )}
+                      : !isSearching &&
+                        searchText &&
+                        searchText.length > 0 && (
+                          <Typography
+                            variant="body1"
+                            align="center"
+                            className={classes.noResults}
+                          >
+                            {`Sorry, no results matching '${searchText}'`}
+                          </Typography>
+                        )}
+                    {searchResults && searchResults.length > 4 && (
+                      <MenuItem
+                        dense
+                        className={classes.viewAllResults}
+                        onClick={props.handleSearchForSubmit}
+                        key="view-all"
+                      >
+                        View All Results
+                      </MenuItem>
+                    )}
+                  </Collapse>
+                </div>
               </MenuList>
             </Paper>
           </Fade>
