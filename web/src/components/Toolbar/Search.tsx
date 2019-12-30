@@ -51,6 +51,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     color: theme.palette.common.white,
     opacity: 0.25,
   },
+  searchClearButton: {
+    padding: theme.spacing(0.5),
+  },
   searchIcon: {
     width: theme.spacing(9),
     height: '100%',
@@ -68,6 +71,7 @@ interface Props {
   inputStyle?: object;
   filters?: FilterParams;
   quickSearchColor?: string;
+  quickSearch?: boolean;
 }
 
 function Search(props: Props) {
@@ -223,22 +227,29 @@ function Search(props: Props) {
             onClick={clearSearch}
             color="inherit"
             size={location.pathname === '/search' ? 'medium' : 'small'}
+            className={classes.searchClearButton}
           >
             <Close className={classes.searchClear} />
           </IconButton>
         </Fade>
       ) : null}
-      <QuickSearch
-        searchText={searchText}
-        isSearching={isQuickSearching}
-        searchResults={quickSearchResults}
-        searchAnchor={searchAnchor}
-        handleResetSearchAnchor={resetSearchAnchor}
-        handleSearchForSubmit={handleSearchForSubmit}
-        color={props.quickSearchColor || undefined}
-      />
+      {quickSearch && (
+        <QuickSearch
+          searchText={searchText}
+          isSearching={isQuickSearching}
+          searchResults={quickSearchResults}
+          searchAnchor={searchAnchor}
+          handleResetSearchAnchor={resetSearchAnchor}
+          handleSearchForSubmit={handleSearchForSubmit}
+          color={props.quickSearchColor || undefined}
+        />
+      )}
     </div>
   );
 }
+
+Search.defaultProps = {
+  quickSearch: true,
+};
 
 export default Search;

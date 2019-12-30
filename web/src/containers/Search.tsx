@@ -71,7 +71,6 @@ const useStyles = makeStyles((theme: Theme) =>
       margin: theme.spacing(1),
       padding: theme.spacing(1),
       width: '100%',
-      marginTop: theme.spacing(5),
     },
     searchTitle: {
       margin: theme.spacing(2),
@@ -251,27 +250,37 @@ const Search = ({ inViewportChange }) => {
   };
 
   let firstLoad = !searchResults;
+
+  const showSearch =
+    !currentSearchText || (currentSearchText && currentSearchText.length === 0);
+
   return (
     <React.Fragment>
       <div className={classes.searchResultsContainer}>
-        <Fade in={isInViewport} ref={searchWrapperRef} timeout={500}>
-          <div>
-            <Typography
-              color="inherit"
-              variant="h2"
-              align="center"
-              className={classes.searchTitle}
-            >
-              Search
-            </Typography>
+        {showSearch && (
+          <Fade
+            in={isInViewport || showSearch}
+            ref={searchWrapperRef}
+            timeout={500}
+          >
+            <div>
+              <Typography
+                color="inherit"
+                variant="h2"
+                align="center"
+                className={classes.searchTitle}
+              >
+                Search
+              </Typography>
 
-            <SearchInput
-              inputStyle={{ height: 50 }}
-              filters={filters}
-              quickSearchColor={'secondary'}
-            />
-          </div>
-        </Fade>
+              <SearchInput
+                inputStyle={{ height: 50 }}
+                filters={filters}
+                quickSearchColor={'secondary'}
+              />
+            </div>
+          </Fade>
+        )}
         {currentSearchText && currentSearchText.length > 0 && (
           <React.Fragment>
             <div className={classes.listTitle}>

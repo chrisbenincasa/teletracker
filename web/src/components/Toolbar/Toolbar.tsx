@@ -71,6 +71,7 @@ const styles = (theme: Theme) =>
     },
     grow: {
       flexGrow: 1,
+      paddingLeft: theme.spacing(10), // forces search field to be true center
     },
     loginButton: {
       margin: theme.spacing(0, 1),
@@ -506,19 +507,24 @@ class Toolbar extends Component<Props, State> {
               Login
             </Button>
           )}
-          {this.isSmallDevice && !mobileSearchBarOpen && (
-            <div className={classes.sectionMobile} ref={this.mobileSearchIcon}>
-              <IconButton
-                aria-owns={'Search Teletracker'}
-                aria-haspopup="true"
-                onClick={this.handleMobileSearchDisplayOpen}
-                color="inherit"
-                disableRipple
+          {this.isSmallDevice &&
+            !mobileSearchBarOpen &&
+            this.props.searchVisible && (
+              <div
+                className={classes.sectionMobile}
+                ref={this.mobileSearchIcon}
               >
-                <SearchIcon />
-              </IconButton>
-            </div>
-          )}
+                <IconButton
+                  aria-owns={'Search Teletracker'}
+                  aria-haspopup="true"
+                  onClick={this.handleMobileSearchDisplayOpen}
+                  color="inherit"
+                  disableRipple
+                >
+                  <SearchIcon />
+                </IconButton>
+              </div>
+            )}
           {mobileSearchBarOpen && this.renderMobileSearchBar()}
         </MUIToolbar>
       </AppBar>
