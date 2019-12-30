@@ -336,7 +336,7 @@ const Search = ({ inViewportChange }) => {
                 <React.Fragment>
                   <InfiniteScroll
                     pageStart={0}
-                    loadMore={() => loadMoreResults()}
+                    loadMore={loadMoreResults}
                     hasMore={Boolean(searchBookmark)}
                     useWindow
                     threshold={300}

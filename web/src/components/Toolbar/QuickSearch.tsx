@@ -110,10 +110,9 @@ function QuickSearch(props: Props) {
         open={!!searchAnchor}
         anchorEl={searchAnchor}
         placement="bottom-start"
-        // keepMounted
+        keepMounted
         transition
-        disablePortal
-        style={{ width: '100%' }}
+        style={{ width: '100%', maxWidth: 720 }}
         className={classes.popper}
       >
         {({ TransitionProps, placement }) => (
