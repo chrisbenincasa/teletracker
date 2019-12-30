@@ -71,7 +71,7 @@ interface Props {
   inputStyle?: object;
   filters?: FilterParams;
   quickSearchColor?: string;
-  quickSearch?: boolean;
+  quickSearchEnabled?: boolean;
 }
 
 function Search(props: Props) {
@@ -233,7 +233,7 @@ function Search(props: Props) {
           </IconButton>
         </Fade>
       ) : null}
-      {quickSearch && (
+      {props.quickSearchEnabled && (
         <QuickSearch
           searchText={searchText}
           isSearching={isQuickSearching}
@@ -249,7 +249,7 @@ function Search(props: Props) {
 }
 
 Search.defaultProps = {
-  quickSearch: true,
+  quickSearchEnabled: true,
 };
 
 export default Search;

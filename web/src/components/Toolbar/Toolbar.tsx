@@ -131,6 +131,8 @@ interface OwnProps extends WithStyles<typeof styles> {
   onDrawerChange: (close?: boolean) => void;
   drawerOpen: boolean;
   searchVisible: boolean;
+  currentSearchText?: string;
+  currentQuickSearchText?: string;
 }
 
 interface WidthProps {
@@ -403,6 +405,8 @@ class Toolbar extends Component<Props, State> {
 
   renderMobileSearchBar = () => {
     let { classes, drawerOpen } = this.props;
+    const showQuickSearch =
+      this.props.currentQuickSearchText !== this.props.currentSearchText;
 
     return (
       <Slide
@@ -426,6 +430,7 @@ class Toolbar extends Component<Props, State> {
             <Search
               drawerOpen={drawerOpen}
               onDrawerChange={this.toggleDrawer}
+              quickSearchEnabled={showQuickSearch}
             />
           </div>
         </div>
@@ -436,6 +441,8 @@ class Toolbar extends Component<Props, State> {
   render() {
     let { classes, drawerOpen, isAuthed } = this.props;
     const { mobileSearchBarOpen } = this.state;
+    const showQuickSearch =
+      this.props.currentQuickSearchText !== this.props.currentSearchText;
 
     function ButtonLink(props) {
       const { primary, to } = props;
@@ -475,6 +482,7 @@ class Toolbar extends Component<Props, State> {
                 <Search
                   drawerOpen={drawerOpen}
                   onDrawerChange={this.toggleDrawer}
+                  quickSearchEnabled={showQuickSearch}
                 />
               </Fade>
             )}
@@ -525,7 +533,9 @@ class Toolbar extends Component<Props, State> {
                 </IconButton>
               </div>
             )}
-          {mobileSearchBarOpen && this.renderMobileSearchBar()}
+          {this.isSmallDevice &&
+            mobileSearchBarOpen &&
+            this.renderMobileSearchBar()}
         </MUIToolbar>
       </AppBar>
     );
@@ -536,6 +546,14 @@ const mapStateToProps = (appState: AppState) => {
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     genres: appState.metadata.genres,
+    currentSearchText: R.path<string>(
+      ['search', 'currentSearchText'],
+      appState,
+    ),
+    currentQuickSearchText: R.path<string>(
+      ['search', 'quick', 'currentSearchText'],
+      appState,
+    ),
   };
 };
 
