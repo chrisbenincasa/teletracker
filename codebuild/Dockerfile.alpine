@@ -30,9 +30,9 @@ ENV DOCKER_VERSION="19.03.1" \
 
 RUN set -ex \
     && apk update \
-    && apk add curl bc python3 \
-    && python3 -m ensurepip \
-    && pip3 install awscli boto3
+    && apk add curl bc python \
+    && python -m ensurepip \
+    && pip install awscli boto3
 
 RUN set -ex \
     && mkdir -p /usr/share \
@@ -52,12 +52,21 @@ RUN set -ex \
     && rm docker.tgz \
     && docker -v \
     # set up subuid/subgid so that "--userns-remap=default" works out-of-the-box
-    && addgroup dockremap \
-    && adduser --ingroup dockremap --disabled-password dockremap \
-    && echo 'dockremap:165536:65536' >> /etc/subuid \
-    && echo 'dockremap:165536:65536' >> /etc/subgid \
+    && addgroup -S dockremap \
+    && adduser -SDHs /sbin/nologin dockremap \
+    && echo dockremap:$(cat /etc/passwd|grep dockremap|cut -d: -f3):65536 >> /etc/subuid \
+    && echo dockremap:$(cat /etc/passwd|grep dockremap|cut -d: -f4):65536 >> /etc/subgid \
     && wget "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind" -O /usr/local/bin/dind \
-    && curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-Linux-x86_64 > /usr/local/bin/docker-compose \
-    && chmod +x /usr/local/bin/dind /usr/local/bin/docker-compose \
+    # && curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-Linux-x86_64 > /usr/local/bin/docker-compose \
+    && apk add python-dev libffi-dev openssl-dev gcc libc-dev make \
+    && pip install --no-cache-dir "docker-compose==1.24.0" \
+    && chmod +x /usr/local/bin/dind \
     # Ensure docker-compose works
+    && ls -la /usr/local/bin \
     && docker-compose version
+
+RUN apk add git
+
+COPY dockerd-entrypoint.sh /usr/local/bin/
+
+ENTRYPOINT ["dockerd-entrypoint.sh"]
