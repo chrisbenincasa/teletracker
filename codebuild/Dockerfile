@@ -21,6 +21,12 @@ ENV SBT_OPTS="\
     -server                         \
     "
 
+ENV PATH="/usr/local/bin:$PATH" \
+    GPG_KEY="E3FF2839C048B25C084DEBE9B26995E310250568" \
+    PYTHON_PIP_VERSION="19.1.1" \
+    LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8
+
 ENV DOCKER_VERSION="19.03.1" \
     DOCKER_COMPOSE_VERSION="1.24.0" \
     DOCKER_BUCKET="download.docker.com" \
@@ -32,17 +38,6 @@ RUN set -ex \
     && apt-get update -qqy \
     && apt-get install -qqy curl bc python3 python3-dev python3-pip python3-setuptools \
     && pip3 install awscli boto3
-
-RUN set -ex \
-    && mkdir -p /usr/share \
-    && curl -fsSL -o "sbt-${SBT_VERSION}.zip" "${BASE_URL}/v${SBT_VERSION}/sbt-${SBT_VERSION}.zip" \
-    && echo "${SHA}  sbt-${SBT_VERSION}.zip" | sha256sum -c - \
-    && unzip -qq "sbt-${SBT_VERSION}.zip" \
-    && rm -f "sbt-${SBT_VERSION}.zip" \
-    && mv sbt "/usr/share/sbt-${SBT_VERSION}" \
-    && ln -s "/usr/share/sbt-${SBT_VERSION}/bin/sbt" /usr/bin/sbt
-#&& apt-get remove -qqy --purge curl \
-#&& rm /var/lib/apt/lists/*_*
 
 RUN set -ex \
     && curl -fSL "https://${DOCKER_BUCKET}/linux/static/${DOCKER_CHANNEL}/x86_64/docker-${DOCKER_VERSION}.tgz" -o docker.tgz \
@@ -59,4 +54,11 @@ RUN set -ex \
     && curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-Linux-x86_64 > /usr/local/bin/docker-compose \
     && chmod +x /usr/local/bin/dind /usr/local/bin/docker-compose \
     # Ensure docker-compose works
+    && ls -la /usr/local/bin \
     && docker-compose version
+
+VOLUME /var/lib/docker
+
+COPY dockerd-entrypoint.sh /usr/local/bin/
+
+ENTRYPOINT ["dockerd-entrypoint.sh"]
