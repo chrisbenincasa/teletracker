@@ -215,3 +215,40 @@ resource "aws_codebuild_project" "build-image-codebuild" {
     }
   }
 }
+
+resource "aws_codebuild_project" "terraform-deploy-codebuild" {
+  name         = "QA-Deploy"
+  service_role = "arn:aws:iam::302782651551:role/ServerCodeBuildRole"
+
+  artifacts {
+    type = "NO_ARTIFACTS"
+  }
+
+  environment {
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:3.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = true
+  }
+
+  source {
+    type                = "GITHUB"
+    location            = "https://github.com/chrisbenincasa/teletracker.git"
+    insecure_ssl        = false
+    report_build_status = false
+    git_clone_depth     = 1
+    buildspec           = "buildspec.deploy.yml"
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      group_name = "codebuild-logs"
+      status     = "ENABLED"
+    }
+
+    s3_logs {
+      encryption_disabled = false
+      status              = "DISABLED"
+    }
+  }
+}
