@@ -149,6 +149,8 @@ lazy val tasks = project
       // Google
       "com.github.scopt" %% "scopt" % "3.5.0",
       "org.gnieh" %% "diffson-circe" % "4.0.0",
+      "software.amazon.awssdk" % "lambda" % "2.9.24",
+      "software.amazon.awssdk" % "arns" % "2.9.24",
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
       ),

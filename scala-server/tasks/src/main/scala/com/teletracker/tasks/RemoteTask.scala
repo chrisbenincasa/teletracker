@@ -8,6 +8,7 @@ import io.circe.syntax._
 import javax.inject.Inject
 import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import java.util.UUID
 import scala.util.control.NonFatal
 import scala.compat.java8.FutureConverters._
 
@@ -49,6 +50,8 @@ class RemoteTask @Inject()(
         SendMessageRequest
           .builder()
           .messageBody(message.asJson.noSpaces)
+          .messageDeduplicationId(UUID.randomUUID().toString)
+          .messageGroupId("default")
           .queueUrl(
             teletrackerConfig.async.taskQueue.url
           )

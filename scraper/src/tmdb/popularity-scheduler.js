@@ -18,7 +18,7 @@ const schedule = async type => {
   }
 
   if (task) {
-    await scheduleTask({
+    return scheduleTask({
       clazz: task,
       args: {
         mod: 4,
@@ -33,18 +33,18 @@ export const scrape = async event => {
 
     if (record.s3) {
       if (record.s3.object.key.includes('movie')) {
-        await schedule('movie');
+        return await schedule('movie');
       } else if (record.s3.object.key.includes('tv_series')) {
-        await schedule('tv_series');
+        return await schedule('tv_series');
       } else if (record.s3.object.key.includes('person')) {
-        await schedule('person');
+        return await schedule('person');
       } else {
-        console.error('Unrecognized type ' + record.s3.object.key);
+        throw new Error('Unrecognized type ' + record.s3.object.key);
       }
     }
   }
 };
 
 export const scheduleDirect = async event => {
-  await schedule(event.type);
+  return schedule(event.type);
 };
