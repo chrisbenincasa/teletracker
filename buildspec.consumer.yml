@@ -20,7 +20,7 @@ phases:
       - cd scala-server
       - echo "$(cat VERSION)-$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}" > FULL_VERSION
       - echo "Building version $(cat FULL_VERSION)"
-      - ./sbt -Dversion=$(cat FULL_VERSION) server/assembly consumer/server
+      - ./sbt -Dversion=$(cat FULL_VERSION) consumer/assembly consumer/docker
   post_build:
     commands:
-      - docker push "302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/server:$(cat FULL_VERSION)"
+      - docker push "302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/consumer:$(cat FULL_VERSION)"
