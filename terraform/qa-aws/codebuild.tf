@@ -40,6 +40,28 @@ resource "aws_codebuild_project" "scraper-codebuild" {
   }
 }
 
+resource "aws_codebuild_webhook" "scraper-codebuild-github-hook" {
+  project_name = aws_codebuild_project.scraper-codebuild.name
+
+  filter_group {
+    filter {
+      pattern = "PUSH"
+      type    = "EVENT"
+    }
+
+    filter {
+      pattern = "master"
+      type    = "HEAD_REF"
+    }
+
+    filter {
+      pattern = "scraper/.*"
+      type    = "FILE_PATH"
+    }
+  }
+}
+
+
 resource "aws_codebuild_project" "server-codebuild" {
   name         = "Server-Build"
   service_role = "arn:aws:iam::302782651551:role/ServerCodeBuildRole"
@@ -73,6 +95,27 @@ resource "aws_codebuild_project" "server-codebuild" {
     s3_logs {
       encryption_disabled = false
       status              = "DISABLED"
+    }
+  }
+}
+
+resource "aws_codebuild_webhook" "server-codebuild-github-hook" {
+  project_name = aws_codebuild_project.server-codebuild.name
+
+  filter_group {
+    filter {
+      pattern = "PUSH"
+      type    = "EVENT"
+    }
+
+    filter {
+      pattern = "master"
+      type    = "HEAD_REF"
+    }
+
+    filter {
+      pattern = "scala-server/.*"
+      type    = "FILE_PATH"
     }
   }
 }
@@ -113,6 +156,28 @@ resource "aws_codebuild_project" "consumer-codebuild" {
     }
   }
 }
+
+resource "aws_codebuild_webhook" "consumer-codebuild-github-hook" {
+  project_name = aws_codebuild_project.consumer-codebuild.name
+
+  filter_group {
+    filter {
+      pattern = "PUSH"
+      type    = "EVENT"
+    }
+
+    filter {
+      pattern = "master"
+      type    = "HEAD_REF"
+    }
+
+    filter {
+      pattern = "scala-server/.*"
+      type    = "FILE_PATH"
+    }
+  }
+}
+
 
 resource "aws_codebuild_project" "build-image-codebuild" {
   name         = "Build-Image-Build"
