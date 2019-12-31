@@ -41,7 +41,7 @@ resource "aws_codebuild_project" "scraper-codebuild" {
 }
 
 resource "aws_codebuild_project" "server-codebuild" {
-  name         = "Server-Build"
+  name         = "Consumer-Build"
   service_role = "arn:aws:iam::302782651551:role/ServerCodeBuildRole"
 
   artifacts {
@@ -49,11 +49,12 @@ resource "aws_codebuild_project" "server-codebuild" {
   }
 
   environment {
-    compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker-build/server:latest"
-    type                        = "LINUX_CONTAINER"
-    privileged_mode             = true
-    image_pull_credentials_type = "SERVICE_ROLE"
+    compute_type = "BUILD_GENERAL1_SMALL"
+    //    image                       = "302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker-build/server:latest"
+    image           = "aws/codebuild/standard:3.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = true
+    //    image_pull_credentials_type = "SERVICE_ROLE"
   }
 
   source {
@@ -87,11 +88,10 @@ resource "aws_codebuild_project" "build-image-codebuild" {
   }
 
   environment {
-    compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/standard:3.0"
-    type                        = "LINUX_CONTAINER"
-    privileged_mode             = true
-    image_pull_credentials_type = "SERVICE_ROLE"
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:3.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = true
   }
 
   source {
