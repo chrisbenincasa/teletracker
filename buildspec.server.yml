@@ -3,7 +3,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      java: openjdk11
+      java: openjdk8
     commands:
       - which java
       - echo Entered the install phase...
@@ -14,4 +14,9 @@ phases:
   build:
     commands:
       - cd scala-server
-      - ./sbt consumer/compile consumer/assembly
+      - echo "$(cat VERSION)-$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}" > FULL_VERSION
+      - echo "Deploying version $(cat FULL_VERSION)"
+      - ./sbt -Dversion=$(cat FULL_VERSION) consumer/assembly consumer/docker
+  post_build:
+    commands:
+      - docker images
