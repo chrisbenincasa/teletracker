@@ -20,4 +20,6 @@ do
 	sleep 1
 done
 
+echo "Successfully started dockerd. Running build."
+
 eval "$@"
