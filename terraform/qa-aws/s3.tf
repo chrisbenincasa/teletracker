@@ -40,6 +40,18 @@ resource "aws_s3_bucket_notification" "hbo-catalog-dump-pushed" {
   lambda_function {
     lambda_function_arn = module.tmdb-popularity-scheduler.lambda_arn
     events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = "scrape-results/tmdb"
+    filter_prefix       = "scrape-results/tmdb/movie_ids"
+  }
+
+  lambda_function {
+    lambda_function_arn = module.tmdb-popularity-scheduler.lambda_arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "scrape-results/tmdb/tv_series_ids"
+  }
+
+  lambda_function {
+    lambda_function_arn = module.tmdb-popularity-scheduler.lambda_arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "scrape-results/tmdb/person_ids"
   }
 }
