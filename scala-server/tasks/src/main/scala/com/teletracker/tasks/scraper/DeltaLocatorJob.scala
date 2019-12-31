@@ -74,7 +74,7 @@ abstract class DeltaLocatorJob(
             GetObjectRequest
               .builder()
               .bucket(teletrackerConfig.data.s3_bucket)
-              .key(getKey(today))
+              .key(getKey(date))
               .build()
           )
 
