@@ -101,6 +101,7 @@ function QuickSearch(props: Props) {
         anchorEl={searchAnchor}
         placement="bottom-start"
         keepMounted
+        disablePortal
         transition
         style={{ width: '100%', maxWidth: 720 }}
         className={classes.popper}

@@ -120,7 +120,7 @@ function Search(props: Props) {
     if (newSearchText.length > 0) {
       execQuickSearch(newSearchText);
     }
-  }, 250);
+  }, 500);
 
   const handleSearchChange = event => {
     let target = event.currentTarget;
@@ -141,6 +141,7 @@ function Search(props: Props) {
 
   const handleSearchForSubmit = event => {
     if (location.pathname === '/search') {
+      window.scrollTo(0, 0);
       setSearchAnchor(null);
     } else {
       setSearchAnchor(event);

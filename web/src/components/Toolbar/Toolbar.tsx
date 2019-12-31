@@ -403,10 +403,17 @@ class Toolbar extends Component<Props, State> {
     this.setState({ mobileSearchBarOpen: false });
   };
 
+  showQuickSearch = (): boolean => {
+    // No need to show quickSearch on the search page if the text is the same.
+    // It would just show results that are already present on the page.
+    return !(
+      this.props.currentQuickSearchText === this.props.currentSearchText &&
+      this.props.location.pathname === '/search'
+    );
+  };
+
   renderMobileSearchBar = () => {
     let { classes, drawerOpen } = this.props;
-    const showQuickSearch =
-      this.props.currentQuickSearchText !== this.props.currentSearchText;
 
     return (
       <Slide
@@ -430,7 +437,7 @@ class Toolbar extends Component<Props, State> {
             <Search
               drawerOpen={drawerOpen}
               onDrawerChange={this.toggleDrawer}
-              quickSearchEnabled={showQuickSearch}
+              quickSearchEnabled={this.showQuickSearch()}
             />
           </div>
         </div>
@@ -441,10 +448,8 @@ class Toolbar extends Component<Props, State> {
   render() {
     let { classes, drawerOpen, isAuthed } = this.props;
     const { mobileSearchBarOpen } = this.state;
-    const showQuickSearch =
-      this.props.currentQuickSearchText !== this.props.currentSearchText;
 
-    function ButtonLink(props) {
+    const ButtonLink = function ButtonLink(props) {
       const { primary, to } = props;
 
       return (
@@ -452,7 +457,7 @@ class Toolbar extends Component<Props, State> {
           {primary}
         </Button>
       );
-    }
+    };
 
     return (
       <AppBar position="sticky">
@@ -482,7 +487,7 @@ class Toolbar extends Component<Props, State> {
                 <Search
                   drawerOpen={drawerOpen}
                   onDrawerChange={this.toggleDrawer}
-                  quickSearchEnabled={showQuickSearch}
+                  quickSearchEnabled={this.showQuickSearch()}
                 />
               </Fade>
             )}
