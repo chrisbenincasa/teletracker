@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Fade,
   IconButton,
@@ -102,6 +102,17 @@ function Search(props: Props) {
     searchInput.current && searchInput.current.focus();
   }, []);
 
+  // When search text changes, execute throttled/debounced search
+  useEffect(() => {
+    if (searchText.length > 0) {
+      if (searchText.length < 5 || searchText.endsWith(' ')) {
+        handleSearchChangeThrottled(searchText);
+      } else {
+        handleSearchChangeDebounced(searchText);
+      }
+    }
+  }, [searchText]);
+
   const clearSearch = () => {
     let newSearchText = '';
     setSearchText(newSearchText);
@@ -112,21 +123,36 @@ function Search(props: Props) {
     }
   };
 
-  const handleSearchChangeDebounced = _.debounce((target, newSearchText) => {
-    if (searchAnchor === null) {
-      setSearchAnchor(target);
+  const execQuickSearch = (text: string) => {
+    // No need to search again
+    if (currentQuickSearchText !== text) {
+      dispatch(
+        quickSearch({
+          query: text,
+          limit: 5,
+        }),
+      );
     }
+  };
 
-    if (newSearchText.length > 0) {
-      execQuickSearch(newSearchText);
-    }
-  }, 500);
+  const handleSearchChangeDebounced = useCallback(
+    _.debounce(execQuickSearch, 500),
+    [],
+  );
+  const handleSearchChangeThrottled = useCallback(
+    _.throttle(execQuickSearch, 500),
+    [],
+  );
 
+  // https://www.peterbe.com/plog/how-to-throttle-and-debounce-an-autocomplete-input-in-react
   const handleSearchChange = event => {
     let target = event.currentTarget;
     let newSearchText = target.value;
     setSearchText(newSearchText);
-    handleSearchChangeDebounced(target, newSearchText);
+
+    if (searchAnchor === null) {
+      setSearchAnchor(target);
+    }
   };
 
   const handleSearchFocus = event => {
@@ -178,17 +204,6 @@ function Search(props: Props) {
         search({
           query: text,
           limit: calculateLimit(width, 3, 0),
-        }),
-      );
-    }
-  };
-
-  const execQuickSearch = (text: string) => {
-    if (text.length >= 1 && currentQuickSearchText !== text) {
-      dispatch(
-        quickSearch({
-          query: text,
-          limit: 5,
         }),
       );
     }
