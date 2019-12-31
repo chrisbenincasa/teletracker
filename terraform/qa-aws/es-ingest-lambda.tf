@@ -26,7 +26,7 @@ resource "aws_lambda_function" "es-ingest-lambda" {
   s3_bucket         = data.aws_s3_bucket.teletracker-artifacts-bucket.bucket
   s3_key            = data.aws_s3_bucket_object.es-ingest-lambda-package.key
   s3_object_version = data.aws_s3_bucket_object.es-ingest-lambda-package.version_id
-  function_name     = "esIngest"
+  function_name     = "es-ingest"
   role              = aws_iam_role.es-ingest-lambda-iam-role.arn
   handler           = "index.handler"
   timeout           = 10
@@ -41,6 +41,8 @@ resource "aws_lambda_function" "es-ingest-lambda" {
       ES_USERNAME = "teletracker"
     }
   }
+
+  reserved_concurrent_executions = 10
 }
 
 resource "aws_lambda_event_source_mapping" "es-ingest-lambda-queue-mapping" {

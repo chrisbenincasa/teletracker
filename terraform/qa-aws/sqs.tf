@@ -15,7 +15,8 @@ resource "aws_sqs_queue" "teletracker-es-ingest-queue" {
   name                        = "teletracker-es-ingest-qa.fifo"
   fifo_queue                  = true
   content_based_deduplication = false
-  redrive_policy              = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.teletracker-es-ingest-dlq.arn}\",\"maxReceiveCount\":3}"
+  redrive_policy              = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.teletracker-es-ingest-dlq.arn}\",\"maxReceiveCount\":5}"
+  visibility_timeout_seconds  = 60 # 6x timeout of the lambda trigger associated
 }
 
 resource "aws_sqs_queue" "teletracker-es-ingest-dlq" {
