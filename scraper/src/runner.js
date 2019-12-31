@@ -5,18 +5,20 @@ const startScrape = async scraper => {
   let scraperToRun = scraper || process.env.SCRAPER;
 
   if (scrapers[scraperToRun]) {
-    scrapers[scraperToRun](argv);
+    return scrapers[scraperToRun](argv);
   } else {
     throw new Error(`Scraper \"${scraperToRun}\" not supported`);
   }
 };
 
 const run = async () => {
-  try {
-    await startScrape(process.argv[2]);
-  } catch (e) {
-    console.error(e);
-  }
+  return startScrape(process.argv[2]);
 };
 
-run();
+run()
+  .then(x => {
+    console.log(x);
+  })
+  .catch(e => {
+    console.error(e);
+  });

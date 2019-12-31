@@ -2,6 +2,7 @@ package com.teletracker.tasks
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.teletracker.common.util.EnvironmentDetection
 import com.teletracker.tasks.util.{Args, TaskLogger}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -64,7 +65,8 @@ trait TeletrackerTask extends Args {
 
   private def init(args: Args): Unit = synchronized {
     val logToS3 =
-      args.valueOrDefault(TeletrackerTask.CommonFlags.S3Logging, true)
+      EnvironmentDetection.runningRemotely || args
+        .valueOrDefault(TeletrackerTask.CommonFlags.S3Logging, false)
 
     if (logToS3) {
       val (s3Logger, onClose) = TaskLogger.make(

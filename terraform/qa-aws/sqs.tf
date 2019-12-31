@@ -1,7 +1,7 @@
 resource "aws_sqs_queue" "teletracker-task-queue" {
   name                        = "teletracker-tasks-qa.fifo"
   fifo_queue                  = true
-  content_based_deduplication = false
+  content_based_deduplication = true
   redrive_policy              = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.teletracker-task-dlq.arn}\",\"maxReceiveCount\":3}"
 }
 
