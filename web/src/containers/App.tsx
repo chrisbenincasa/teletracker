@@ -75,9 +75,13 @@ interface State {
 }
 
 class App extends Component<Props, State> {
+  onSearchPage = () => {
+    return this.props.location.pathname.toLowerCase() === '/search';
+  };
+
   state = {
     drawerOpen: false,
-    searchVisible: true,
+    searchVisible: !this.onSearchPage(),
   };
 
   componentDidMount() {
@@ -93,14 +97,15 @@ class App extends Component<Props, State> {
       if (['xs', 'sm', 'md'].includes(this.props.width)) {
         this.toggleDrawer(true);
       }
+      // Always show the search in toolbar except for Search page
+      if (!this.onSearchPage()) {
+        this.setSearchToolbarVisibility(false);
+      }
     }
   }
 
-  setSearchVisibility = isVisible => {
-    // If search is visible, we want to not show toolbar search
-    if (!isVisible !== this.state.searchVisible) {
-      this.setState({ searchVisible: !isVisible });
-    }
+  setSearchToolbarVisibility = isVisible => {
+    this.setState({ searchVisible: !isVisible });
   };
 
   toggleDrawer = (close?: boolean) => {
@@ -121,7 +126,7 @@ class App extends Component<Props, State> {
         <Toolbar
           drawerOpen={this.state.drawerOpen}
           onDrawerChange={close => this.toggleDrawer(close)}
-          searchVisible={this.state.searchVisible}
+          showToolbarSearch={this.state.searchVisible}
         />
         {!isBooting ? (
           <React.Fragment>
@@ -152,7 +157,7 @@ class App extends Component<Props, State> {
                       <Search
                         {...props}
                         inViewportChange={isVisible =>
-                          this.setSearchVisibility(isVisible)
+                          this.setSearchToolbarVisibility(isVisible)
                         }
                       />
                     )}

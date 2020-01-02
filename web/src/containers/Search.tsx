@@ -181,6 +181,7 @@ const Search = ({ inViewportChange }) => {
   // Run callback when search enters/leaves viewport
   useEffect(() => {
     inViewportChange(isInViewport);
+    // return inViewportChange(false);
   }, [isInViewport]);
 
   const debouncedSearch = _.debounce(() => {
@@ -252,17 +253,15 @@ const Search = ({ inViewportChange }) => {
   let firstLoad = !searchResults;
 
   const showSearch =
-    !currentSearchText || (currentSearchText && currentSearchText.length === 0);
+    !currentSearchText ||
+    (currentSearchText && currentSearchText.length === 0) ||
+    isInViewport;
 
   return (
     <React.Fragment>
       <div className={classes.searchResultsContainer}>
         {showSearch && (
-          <Fade
-            in={isInViewport || showSearch}
-            ref={searchWrapperRef}
-            timeout={500}
-          >
+          <Fade in={showSearch} ref={searchWrapperRef} timeout={500}>
             <div>
               <Typography
                 color="inherit"
@@ -281,6 +280,7 @@ const Search = ({ inViewportChange }) => {
             </div>
           </Fade>
         )}
+
         {currentSearchText && currentSearchText.length > 0 && (
           <React.Fragment>
             <div className={classes.listTitle}>

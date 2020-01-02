@@ -17,7 +17,7 @@ export default function useIntersectionObserver({
   const intersectionObserverRef = useRef<IntersectionObserver | null>();
 
   const handleObserverDisconnect = () => {
-    if (intersectionObserverRef.current && useLazyLoad) {
+    if (intersectionObserverRef.current) {
       intersectionObserverRef.current.disconnect();
     }
   };
@@ -25,10 +25,10 @@ export default function useIntersectionObserver({
   const handleIntersection = entry => {
     if (useLazyLoad) {
       setIntersecting(true);
+      handleObserverDisconnect();
     } else {
       setIntersecting(entry.isIntersecting);
     }
-    handleObserverDisconnect();
   };
 
   // Check if the users browser supports Intersection Observer

@@ -130,7 +130,7 @@ interface OwnProps extends WithStyles<typeof styles> {
   isAuthed: boolean;
   onDrawerChange: (close?: boolean) => void;
   drawerOpen: boolean;
-  searchVisible: boolean;
+  showToolbarSearch: boolean;
   currentSearchText?: string;
   currentQuickSearchText?: string;
 }
@@ -482,8 +482,8 @@ class Toolbar extends Component<Props, State> {
             Teletracker
           </Typography>
           <div className={classes.grow}>
-            {!this.isSmallDevice && this.props.searchVisible && (
-              <Fade in={true} timeout={1000}>
+            {!this.isSmallDevice && this.props.showToolbarSearch && (
+              <Fade in={true} timeout={500}>
                 <Search
                   drawerOpen={drawerOpen}
                   onDrawerChange={this.toggleDrawer}
@@ -522,7 +522,7 @@ class Toolbar extends Component<Props, State> {
           )}
           {this.isSmallDevice &&
             !mobileSearchBarOpen &&
-            this.props.searchVisible && (
+            this.props.showToolbarSearch && (
               <div
                 className={classes.sectionMobile}
                 ref={this.mobileSearchIcon}
