@@ -218,7 +218,7 @@ resource "aws_codebuild_project" "build-image-codebuild" {
 
 resource "aws_codebuild_project" "terraform-deploy-codebuild" {
   name         = "QA-Deploy"
-  service_role = "arn:aws:iam::302782651551:role/ServerCodeBuildRole"
+  service_role = aws_iam_role.cloudbuild-terraform-role.arn
 
   artifacts {
     type = "NO_ARTIFACTS"

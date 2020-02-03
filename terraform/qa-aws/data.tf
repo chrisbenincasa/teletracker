@@ -29,3 +29,19 @@ data "aws_iam_instance_profile" "ecs-instance-profile" {
 data "aws_iam_role" "ecs-fargate-task-role" {
   name = "ecsFargateTaskRole"
 }
+
+data "aws_iam_policy" "ssm_read_only_policy" {
+  arn = "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"
+}
+
+data "aws_iam_policy" "kms_power_user_policy" {
+  arn = "arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser"
+}
+
+data "aws_iam_policy" "sqs_full_access_policy" {
+  arn = "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
+}
+
+data "aws_iam_policy" "s3_full_access_policy" {
+  arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
