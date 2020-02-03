@@ -4,7 +4,7 @@ import sbtassembly.AssemblyPlugin.autoImport._
 
 object BuildConfig {
   object Compilation {
-    lazy val scalacVersion = "2.12.9"
+    lazy val scalacVersion = "2.12.10"
 
     lazy val scalacOpts = Seq(
       "-deprecation",
