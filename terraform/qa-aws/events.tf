@@ -22,7 +22,3 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_event_iam_sqs_full_access_
   role       = aws_iam_role.cloudwatch_event_iam_role.name
   policy_arn = data.aws_iam_policy.sqs_full_access_policy.arn
 }
-
-data "aws_iam_policy" "sqs_full_access_policy" {
-  arn = "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
-}
