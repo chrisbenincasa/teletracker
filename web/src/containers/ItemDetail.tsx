@@ -47,6 +47,7 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { Genre } from '../types';
 import { Item } from '../types/v2/Item';
+import { useRouter } from 'next/router';
 import {
   formatRuntime,
   getVoteAverage,
@@ -184,6 +185,7 @@ interface OwnProps {
   isAuthed: boolean;
   isFetching: boolean;
   itemDetail?: Item;
+  initialItem?: Item;
   genres?: Genre[];
 }
 
@@ -213,6 +215,8 @@ function ItemDetails(props: Props) {
   let history = useHistory();
   let params = useParams();
 
+  let nextRouter = useRouter();
+
   React.useEffect(() => {
     const { isLoggedIn, userSelf } = props;
 
@@ -231,8 +235,18 @@ function ItemDetails(props: Props) {
   }, [location]);
 
   const loadItem = () => {
-    let itemId = params.id;
-    let itemType = params.type;
+    console.log(props.initialItem);
+
+    let itemId = nextRouter.query.id || params.id;
+
+    let type;
+    if (nextRouter && nextRouter.pathname) {
+      type = nextRouter.pathname.split('/').filter(s => s.length > 0)[0];
+    } else {
+      type = params.type;
+    }
+
+    let itemType = type;
 
     props.fetchItemDetails({ id: itemId, type: itemType });
   };
@@ -623,6 +637,10 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
     dispatch,
   );
 
+ItemDetails.getInitialProps = async () => {
+  console.log('getInitialProps');
+  return {};
+};
 export default withUser(
   withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(ItemDetails)),
 );
