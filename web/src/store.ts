@@ -1,6 +1,5 @@
 import { routerMiddleware } from 'connected-react-router';
-import { createBrowserHistory } from 'history';
-import * as localforage from 'localforage';
+import { createBrowserHistory, createMemoryHistory } from 'history';
 import { applyMiddleware, compose, createStore } from 'redux';
 import * as rp from 'redux-persist';
 import { persistReducer, persistStore, createTransform } from 'redux-persist';
@@ -14,7 +13,11 @@ import {
   initialState as defaultPeopleState,
 } from './reducers/people';
 
-export const history = createBrowserHistory();
+const isClient = typeof window !== 'undefined';
+
+export const history = isClient
+  ? createBrowserHistory()
+  : createMemoryHistory();
 
 const initialState = {};
 const enhancers: any[] = [];
@@ -49,14 +52,18 @@ const getWhitelists = () => {
   return ['auth', 'people'];
 };
 
-export const persistConfig: rp.PersistConfig = {
-  key: 'root',
-  storage: localforage,
-  whitelist: getWhitelists(),
-  transforms: [authWhitelistFilter, personNameCache],
-};
+function getPersistConfig() {
+  const localforage = require('localforage');
 
-if (env === 'development') {
+  return {
+    key: 'root',
+    storage: localforage,
+    whitelist: getWhitelists(),
+    transforms: [authWhitelistFilter, personNameCache],
+  };
+}
+
+if (env === 'development' && typeof window !== 'undefined') {
   const devToolsExtension = (window as any).__REDUX_DEVTOOLS_EXTENSION__;
 
   if (typeof devToolsExtension === 'function') {
@@ -64,15 +71,34 @@ if (env === 'development') {
   }
 }
 
-const composedEnhancers = compose(applyMiddleware(...middleware), ...enhancers);
-
-const reducerWithHistory = createRootReducer(history);
-
-const persistedReducer = persistReducer(persistConfig, reducerWithHistory);
-
 export default () => {
-  let store = createStore(persistedReducer, initialState, composedEnhancers);
+  let store, persistor;
+  const reducerWithHistory = createRootReducer(history);
+
+  if (isClient) {
+    const composedEnhancers = compose(
+      applyMiddleware(...middleware),
+      ...enhancers,
+    );
+
+    const persistedReducer = persistReducer(
+      getPersistConfig(),
+      reducerWithHistory,
+    );
+    store = createStore(persistedReducer, initialState, composedEnhancers);
+  } else {
+    store = createStore(
+      reducerWithHistory,
+      initialState,
+      applyMiddleware(sagaMiddleware),
+    );
+  }
+
   sagaMiddleware.run(root);
-  let persistor = persistStore(store);
+
+  if (isClient) {
+    persistor = persistStore(store);
+  }
+
   return { store, persistor };
 };

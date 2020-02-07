@@ -17,10 +17,13 @@ import { bindActionCreators } from 'redux';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { Item } from '../types/v2/Item';
-import Odometer from 'react-odometerjs';
+import dynamic from 'next/dynamic';
+const Odometer = dynamic(() => import('react-odometerjs'), {
+  ssr: false,
+});
 import Typist from 'react-typist';
-import 'react-typist/dist/Typist.css';
-import 'odometer/themes/odometer-theme-default.css';
+// import 'react-typist/dist/Typist.css';
+// import 'odometer/themes/odometer-theme-default.css';
 import AuthDialog from '../components/Auth/AuthDialog';
 import { retrievePopular } from '../actions/popular';
 import { PopularInitiatedActionPayload } from '../actions/popular/popular';
@@ -314,6 +317,7 @@ function Home(props: Props) {
               className={classes.highlightText}
             >
               <Odometer
+                // @ts-ignore
                 value={numberMovies}
                 format="(,ddd)"
                 theme="default"
