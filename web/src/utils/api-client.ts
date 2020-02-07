@@ -300,7 +300,7 @@ export class TeletrackerApi {
     );
   }
 
-  async getItem(token: string, id: string | number, type: string) {
+  async getItem(token: string | undefined, id: string | number, type: string) {
     return this.api.get<any>(`/api/v2/items/${id}`, {
       token,
       thingType: type,
