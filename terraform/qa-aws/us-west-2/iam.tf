@@ -41,6 +41,30 @@ resource "aws_iam_policy" "lambda_execute" {
 EOF
 }
 
+resource "aws_iam_role" "cloudbuild-terraform-role" {
+  name               = "CloudbuildTerraformRole"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "codebuild.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "cloudbuild-terraform-s3-policy" {
+  policy_arn = data.aws_iam_policy.sqs_full_access_policy.arn
+  role       = aws_iam_role.cloudbuild-terraform-role.name
+}
+
 data "aws_iam_policy" "ssm_read_only_policy" {
   arn = "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"
 }

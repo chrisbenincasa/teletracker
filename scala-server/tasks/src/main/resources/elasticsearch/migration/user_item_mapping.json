@@ -1,0 +1,71 @@
+{
+  "user_item": {
+    "mappings": {
+      "dynamic": "false",
+      "properties": {
+        "id": {
+          "type": "keyword"
+        },
+        "user_id": {
+          "type": "keyword"
+        },
+        "item_id": {
+          "type": "keyword"
+        },
+        "tags": {
+          "type": "nested",
+          "properties": {
+            "tag": {
+              "type": "keyword"
+            },
+            "int_value": {
+              "type": "integer"
+            },
+            "double_value": {
+              "type": "double"
+            },
+            "date_value": {
+              "type": "date"
+            },
+            "string_value": {
+              "type": "keyword"
+            },
+            "last_updated": {
+              "type": "date"
+            }
+          }
+        },
+        "item": {
+          "type": "nested",
+          "properties": {
+            "id": {
+              "type": "keyword"
+            },
+            "genres" : {
+              "properties" : {
+                "id" : {
+                  "type" : "integer"
+                },
+                "name" : {
+                  "type" : "keyword"
+                }
+              }
+            },
+            "release_date": {
+              "type": "date"
+            },
+            "popularity": {
+              "type": "double"
+            },
+            "slug": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}
