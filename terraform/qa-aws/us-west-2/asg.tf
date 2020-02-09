@@ -1,5 +1,5 @@
 resource "aws_autoscaling_group" "teletracker-ecs-asg" {
-  availability_zones = ["us-west-1a", "us-west-1c"]
+  availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c", "us-west-2d"]
   max_size           = 1
   min_size           = 1
   desired_capacity   = 1

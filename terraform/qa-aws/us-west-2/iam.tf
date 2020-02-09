@@ -72,3 +72,7 @@ data "aws_iam_policy" "ssm_read_only_policy" {
 data "aws_iam_policy" "kms_power_user_policy" {
   arn = "arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser"
 }
+
+data "aws_iam_policy" "lambda_basic_execution" {
+  arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}

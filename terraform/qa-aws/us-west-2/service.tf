@@ -19,7 +19,7 @@ resource "aws_ecs_service" "teletracker-qa-server" {
   name            = "teletracker-qa-server_v2"
   cluster         = aws_ecs_cluster.teletracker-qa.id
   task_definition = aws_ecs_task_definition.teletracker-qa-server.arn
-  desired_count   = 0
+  desired_count   = 1
   # iam_role        = data.aws_iam_role.ecs-service-role.name
   #   depends_on = ["${data.}"]
 

@@ -123,13 +123,13 @@ lazy val consumer = project
     imageNames in docker := Seq(
       ImageName(
         namespace =
-          Some("302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker"),
+          Some("302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker"),
         repository = "consumer",
         tag = Some("latest")
       ),
       ImageName(
         namespace =
-          Some("302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker"),
+          Some("302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker"),
         repository = "consumer",
         tag = Some(version.value)
       )
@@ -233,13 +233,13 @@ lazy val server = project
     imageNames in docker := Seq(
       ImageName(
         namespace =
-          Some("302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker"),
+          Some("302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker"),
         repository = "server",
         tag = Some("latest")
       ),
       ImageName(
         namespace =
-          Some("302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker"),
+          Some("302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker"),
         repository = "server",
         tag = Some(version.value)
       )

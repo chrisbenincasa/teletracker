@@ -22,6 +22,21 @@ EOF
   path = "/service-role/"
 }
 
+resource "aws_iam_role_policy_attachment" "es-ingest-kms-attachment" {
+  policy_arn = aws_iam_policy.kms_encrypt_decrypt_policy.arn
+  role       = aws_iam_role.es-ingest-lambda-iam-role.name
+}
+
+resource "aws_iam_role_policy_attachment" "es-ingest-ssm-attachment" {
+  policy_arn = data.aws_iam_policy.ssm_read_only_policy.arn
+  role       = aws_iam_role.es-ingest-lambda-iam-role.name
+}
+
+resource "aws_iam_role_policy_attachment" "es-ingest-basic-execution-attachment" {
+  policy_arn = data.aws_iam_policy.lambda_basic_execution.arn
+  role       = aws_iam_role.es-ingest-lambda-iam-role.name
+}
+
 resource "aws_iam_policy" "lambda_sqs_ingest" {
   name        = "Lambda_SQS_Ingest"
   path        = "/"
@@ -64,9 +79,9 @@ resource "aws_lambda_function" "es-ingest-lambda" {
 
   environment {
     variables = {
-      ES_HOST     = "e5f0ee8ddcd64d30adc14c9bd430950e.us-west-1.aws.found.io"
-      ES_PASSWORD = "teletracker-qa-elasticsearch-password"
-      ES_USERNAME = "teletracker"
+      ES_HOST = aws_elasticsearch_domain.teletracker-qa-es.endpoint
+      # ES_PASSWORD = "teletracker-qa-elasticsearch-password"
+      # ES_USERNAME = "teletracker"
     }
   }
 

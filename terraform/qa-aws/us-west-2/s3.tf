@@ -7,6 +7,10 @@ data "aws_s3_bucket" "teletracker-data-bucket" {
 resource "aws_s3_bucket" "teletracker-artifacts-us-west-2" {
   bucket = "us-west-2-teletracker-artifacts"
   region = "us-west-2"
+
+  versioning {
+    enabled = true
+  }
 }
 
 resource "aws_s3_bucket" "teletracker-data-us-west-2" {

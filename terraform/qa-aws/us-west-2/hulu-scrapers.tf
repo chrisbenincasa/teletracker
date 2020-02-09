@@ -9,6 +9,10 @@ module "hulu-catalog-scraper" {
   create_default_trigger = false
 
   s3_bucket = var.scraper-s3-bucket
+
+  extra_env_vars = {
+    DATA_BUCKET = aws_s3_bucket.teletracker-data-us-west-2.id
+  }
 }
 
 module "hulu-catalog-dump" {
@@ -20,6 +24,10 @@ module "hulu-catalog-dump" {
   memory = 256
 
   s3_bucket = var.scraper-s3-bucket
+
+  extra_env_vars = {
+    DATA_BUCKET = aws_s3_bucket.teletracker-data-us-west-2.id
+  }
 }
 
 module "hulu-catalog-scheduler" {
@@ -31,6 +39,10 @@ module "hulu-catalog-scheduler" {
   create_default_trigger = false
 
   s3_bucket = var.scraper-s3-bucket
+
+  extra_env_vars = {
+    DATA_BUCKET = aws_s3_bucket.teletracker-data-us-west-2.id
+  }
 }
 
 resource "aws_lambda_permission" "hulu-catalog-dump-allow-teletracker-data" {
@@ -76,6 +88,7 @@ module "hulu-catalog-watcher" {
   extra_env_vars = {
     EXPECTED_SIZE  = 32
     TASK_QUEUE_URL = aws_sqs_queue.teletracker-task-queue.id
+    DATA_BUCKET    = aws_s3_bucket.teletracker-artifacts-us-west-2.id
   }
 
   s3_bucket = var.scraper-s3-bucket

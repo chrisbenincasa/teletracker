@@ -5,6 +5,10 @@ module "hbo-whats-new-scraper" {
   function_name    = "hbo-whats-new"
 
   s3_bucket = var.scraper-s3-bucket
+
+  extra_env_vars = {
+    DATA_BUCKET = aws_s3_bucket.teletracker-data-us-west-2.id
+  }
 }
 
 module "hbo-catalog-scraper" {
@@ -18,6 +22,10 @@ module "hbo-catalog-scraper" {
   create_default_trigger = false
 
   s3_bucket = var.scraper-s3-bucket
+
+  extra_env_vars = {
+    DATA_BUCKET = aws_s3_bucket.teletracker-data-us-west-2.id
+  }
 }
 
 module "hbo-catalog-dump" {
@@ -29,6 +37,10 @@ module "hbo-catalog-dump" {
   memory = 256
 
   s3_bucket = var.scraper-s3-bucket
+
+  extra_env_vars = {
+    DATA_BUCKET = aws_s3_bucket.teletracker-data-us-west-2.id
+  }
 }
 
 module "hbo-catalog-scheduler" {
@@ -40,6 +52,10 @@ module "hbo-catalog-scheduler" {
   create_default_trigger = false
 
   s3_bucket = var.scraper-s3-bucket
+
+  extra_env_vars = {
+    DATA_BUCKET = aws_s3_bucket.teletracker-data-us-west-2.id
+  }
 }
 
 resource "aws_lambda_permission" "hbo-catalog-dump-allow-teletracker-data" {
