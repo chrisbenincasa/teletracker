@@ -4,7 +4,7 @@ resource "aws_codebuild_project" "scraper-codebuild" {
 
   artifacts {
     type           = "S3"
-    location       = "teletracker-artifacts"
+    location       = aws_s3_bucket.teletracker-artifacts-us-west-2.id
     name           = "scrapers-codebuild"
     packaging      = "NONE"
     namespace_type = "NONE"

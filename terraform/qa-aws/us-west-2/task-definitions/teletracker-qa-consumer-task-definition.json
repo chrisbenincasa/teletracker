@@ -20,7 +20,7 @@
       },
       {
         "name": "ES_PORT",
-        "value": "9243"
+        "value": "443"
       },
       {
         "name": "JWT_SECRET",
@@ -28,7 +28,7 @@
       },
       {
         "name": "ES_HOST",
-        "value": "e5f0ee8ddcd64d30adc14c9bd430950e.us-west-1.aws.found.io"
+        "value": "search-teletracker-qa-igmliq26kf3wlgxlrihy2bqfuu.us-west-2.es.amazonaws.com"
       },
       {
         "name": "TMDB_API_KEY",
@@ -41,10 +41,6 @@
       {
         "name": "ADMINISTRATOR_KEY",
         "value": "+pxK@ZNxp/XOlws1%Ga)vqfcvqmBh/"
-      },
-      {
-        "name": "ES_USER",
-        "value": "teletracker"
       }
     ],
     "secrets": [

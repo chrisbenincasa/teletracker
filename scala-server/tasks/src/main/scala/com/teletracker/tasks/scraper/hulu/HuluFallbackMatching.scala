@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.hulu
 
-import com.teletracker.common.crypto.BerglasDecoder
+import com.teletracker.common.crypto.SecretResolver
 import com.teletracker.common.elasticsearch.ItemLookup
 import com.teletracker.common.http.{HttpClient, HttpClientOptions, HttpRequest}
 import com.teletracker.common.util.Slug
@@ -21,7 +21,7 @@ import scala.io.Source
 class HuluFallbackMatching @Inject()(
   itemLookup: ItemLookup,
   httpClient: HttpClient.Factory,
-  berglasDecoder: BerglasDecoder
+  berglasDecoder: SecretResolver
 )(implicit executionContext: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
 

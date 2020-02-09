@@ -40,8 +40,24 @@ resource "aws_elasticsearch_domain_policy" "main" {
             "Principal": "*",
             "Effect": "Allow",
             "Condition": {
-                "IpAddress": {"aws:SourceIp": ["67.164.191.249", "54.193.107.226", "54.148.251.95"]}
+                "IpAddress": {
+                    "aws:SourceIp": [
+                        "67.164.191.249",
+                        "54.193.107.226",
+                        "54.148.251.95"
+                    ]
+                }
             },
+            "Resource": "${aws_elasticsearch_domain.teletracker-qa-es.arn}/*"
+        },
+        {
+            "Action": "es:*",
+            "Principal": {
+                "AWS": [
+                    "${data.aws_caller_identity.current.account_id}"
+                ]
+            },
+            "Effect": "Allow",
             "Resource": "${aws_elasticsearch_domain.teletracker-qa-es.arn}/*"
         }
     ]
