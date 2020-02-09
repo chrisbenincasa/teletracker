@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.hulu
 
-import com.teletracker.common.crypto.BerglasDecoder
+import com.teletracker.common.crypto.SecretResolver
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.http.HttpClient
 import com.teletracker.common.util.NetworkCache
@@ -21,7 +21,7 @@ class IngestHuluChanges @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   httpClient: HttpClient.Factory,
-  berglasDecoder: BerglasDecoder,
+  berglasDecoder: SecretResolver,
   elasticsearchLookup: ElasticsearchLookup,
   huluFallbackMatching: HuluFallbackMatching)
     extends IngestJob[HuluScrapeItem] {

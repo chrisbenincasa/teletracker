@@ -10,16 +10,16 @@ import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 import java.util.Base64
 
-object BerglasDecoder {
+object SecretResolver {
   object KnownSecrets {
     final val SecretPrefix = "teletracker-secrets"
     final val TmdbApiKey = "tmdb-api-key-qa"
   }
 
-  def makePath(name: String) = KnownSecrets.SecretPrefix + "/" + name
+  def makePath(name: String): String = KnownSecrets.SecretPrefix + "/" + name
 }
 
-class BerglasDecoder @Inject()(s3: S3Client) {
+class SecretResolver @Inject()(s3: S3Client) {
   // TODO inject
   private val ssm = SsmClient.create()
 
