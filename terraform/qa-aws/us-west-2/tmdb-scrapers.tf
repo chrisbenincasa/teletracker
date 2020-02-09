@@ -6,6 +6,7 @@ module "tmdb-changes-scraper" {
 
   extra_env_vars = {
     TASK_QUEUE_URL = aws_sqs_queue.teletracker-task-queue.id
+    DATA_BUCKET    = aws_s3_bucket.teletracker-data-us-west-2.id
   }
 
   s3_bucket = var.scraper-s3-bucket
@@ -57,6 +58,7 @@ module "tmdb-popularity-scheduler" {
 
   extra_env_vars = {
     TASK_QUEUE_URL = aws_sqs_queue.teletracker-task-queue.id
+    DATA_BUCKET    = aws_s3_bucket.teletracker-data-us-west-2.id
   }
 
   s3_bucket = var.scraper-s3-bucket

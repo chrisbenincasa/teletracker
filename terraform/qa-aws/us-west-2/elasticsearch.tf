@@ -40,7 +40,7 @@ resource "aws_elasticsearch_domain_policy" "main" {
             "Principal": "*",
             "Effect": "Allow",
             "Condition": {
-                "IpAddress": {"aws:SourceIp": ["67.164.191.249/32", "54.193.107.226/32"]}
+                "IpAddress": {"aws:SourceIp": ["67.164.191.249", "54.193.107.226", "54.148.251.95"]}
             },
             "Resource": "${aws_elasticsearch_domain.teletracker-qa-es.arn}/*"
         }

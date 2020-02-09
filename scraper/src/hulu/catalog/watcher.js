@@ -3,7 +3,6 @@ import {
   getDirectoryS3,
   getObjectS3,
   uploadStringToS3,
-  uploadToS3,
 } from '../../common/storage';
 import { DATA_BUCKET } from '../../common/constants';
 import moment from 'moment';
