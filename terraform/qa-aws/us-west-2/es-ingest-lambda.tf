@@ -85,7 +85,7 @@ resource "aws_lambda_function" "es-ingest-lambda" {
     }
   }
 
-  reserved_concurrent_executions = 10
+  reserved_concurrent_executions = 1
 }
 
 resource "aws_lambda_event_source_mapping" "es-ingest-lambda-queue-mapping" {

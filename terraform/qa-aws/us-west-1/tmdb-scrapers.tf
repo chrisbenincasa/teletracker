@@ -1,5 +1,5 @@
 module "tmdb-changes-scraper" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   handler_function = "index.tmdbChanges"
   function_name    = "tmdb-changes"
@@ -46,7 +46,7 @@ resource "aws_cloudwatch_event_target" "tmdb-id-dump-event-target" {
 }
 
 module "tmdb-popularity-scheduler" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   function_name    = "tmdb-popularity-scheduler"
   handler_function = "index.tmdbPopularityScheduler"

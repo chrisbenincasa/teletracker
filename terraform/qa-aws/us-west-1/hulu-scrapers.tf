@@ -1,5 +1,5 @@
 module "hulu-catalog-scraper" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   handler_function = "index.huluCatalog"
   function_name    = "hulu-catalog"
@@ -10,7 +10,7 @@ module "hulu-catalog-scraper" {
 }
 
 module "hulu-catalog-dump" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   handler_function = "index.huluCatalogDump"
   function_name    = "hulu-catalog-dump"
@@ -19,7 +19,7 @@ module "hulu-catalog-dump" {
 }
 
 module "hulu-catalog-scheduler" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   handler_function = "index.scheduleHuluCatalogS3"
   function_name    = "hulu-catalog-scheduler"
@@ -60,7 +60,7 @@ resource "aws_iam_role_policy_attachment" "hulu-catalog-scraper-kms-encrypt-atta
 }
 
 module "hulu-catalog-watcher" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   handler_function = "index.huluCatalogWatcher"
   function_name    = "hulu-catalog-watcher"

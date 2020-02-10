@@ -1,5 +1,5 @@
 module "wikidata-dump" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   function_name    = "wikidata-id-dump"
   handler_function = "index.wikibaseIdDump"
@@ -10,7 +10,7 @@ module "wikidata-dump" {
 }
 
 module "wikidata-data-dump" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   function_name    = "wikidata-data-dump"
   handler_function = "index.wikibaseDataDump"

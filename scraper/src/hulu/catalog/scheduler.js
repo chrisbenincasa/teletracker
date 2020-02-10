@@ -6,10 +6,11 @@ export const DEFAULT_BANDS = 32;
 
 export const schedule = async event => {
   const lambda = new AWS.Lambda({
-    region: 'us-west-1',
+    region: process.env.AWS_REGION,
   });
 
-  let parallelism = event.parallelism || process.env.PARALLELISM || DEFAULT_PARALLELISM;
+  let parallelism =
+    event.parallelism || process.env.PARALLELISM || DEFAULT_PARALLELISM;
   let mod = event.bands || process.env.BANDS || DEFAULT_BANDS;
   let scheduleNext;
   if (_.isUndefined(event.scheduleNext)) {
