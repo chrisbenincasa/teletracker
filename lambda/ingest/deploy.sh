@@ -5,6 +5,7 @@ STAMP=${1:-$NOW}
 
 ./build.sh
 
+aws s3 cp out/package.zip s3://us-west-2-teletracker-artifacts/ingest-lambda/package.zip
 aws s3 cp out/package.zip s3://teletracker-artifacts/ingest-lambda/package.zip
 
 echo "Pushed new version: ${STAMP}"

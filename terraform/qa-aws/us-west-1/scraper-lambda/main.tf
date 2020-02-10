@@ -1,4 +1,4 @@
-atalocals {
+locals {
   env_vars = {
     BACKEND  = "aws"
     NODE_ENV = "production"

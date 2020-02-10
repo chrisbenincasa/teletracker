@@ -1,12 +1,12 @@
 module "whats-on-netflix-catalog" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   function_name    = "whats-on-netflix-catalog"
   handler_function = "index.whatsOnNetflixCatalog"
 }
 
 module "new-on-netflix-catalog" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   function_name    = "new-on-netflix-catalog"
   handler_function = "index.newOnNetflixCatalog"
@@ -61,7 +61,7 @@ resource "aws_iam_role_policy_attachment" "new-on-netflix-catalog-kms-encrypt-at
 }
 
 module "netflix-originals-arriving" {
-  source = "./scraper-lambda"
+  source = "../scraper-lambda"
 
   function_name    = "netflix-arriving-originals"
   handler_function = "index.netflixOriginalsArriving"

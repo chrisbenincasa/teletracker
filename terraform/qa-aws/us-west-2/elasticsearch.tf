@@ -54,7 +54,8 @@ resource "aws_elasticsearch_domain_policy" "main" {
             "Action": "es:*",
             "Principal": {
                 "AWS": [
-                    "${data.aws_caller_identity.current.account_id}"
+                    "${aws_iam_role.es-ingest-lambda-iam-role.arn}",
+                    "${data.aws_iam_role.ecs-fargate-task-role.arn}"
                 ]
             },
             "Effect": "Allow",
