@@ -14,7 +14,7 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+      - $(aws ecr get-login --no-include-email --region $AWS_REGION)
   build:
     commands:
       - cd scala-server
@@ -23,4 +23,4 @@ phases:
       - ./sbt -Dversion=$(cat FULL_VERSION) server/assembly consumer/server
   post_build:
     commands:
-      - docker push "302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/server:$(cat FULL_VERSION)"
+      - docker push "302782651551.dkr.ecr.${AWS_REGION}.amazonaws.com/teletracker/server:$(cat FULL_VERSION)"

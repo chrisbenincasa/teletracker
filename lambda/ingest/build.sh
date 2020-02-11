@@ -18,7 +18,7 @@ rsync -avq src/* package.json yarn.lock $OUTDIR \
 pushd $OUTDIR || exit
 yarn --prod
 
-zip -q package.zip index.js main.js package.json yarn.lock
+zip -q package.zip index.js main.js es-connection.js package.json yarn.lock
 zip -urq package.zip node_modules -x "*.DS_Store"
 
 popd || exit

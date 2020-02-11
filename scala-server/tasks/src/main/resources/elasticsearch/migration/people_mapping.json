@@ -1,0 +1,121 @@
+{
+  "people" : {
+    "mappings" : {
+      "dynamic" : "false",
+      "properties" : {
+        "adult" : {
+          "type" : "boolean"
+        },
+        "biography" : {
+          "type" : "text"
+        },
+        "birthday" : {
+          "type" : "date"
+        },
+        "cast_credits" : {
+          "type" : "nested",
+          "properties" : {
+            "character" : {
+              "type" : "text"
+            },
+            "id" : {
+              "type" : "keyword"
+            },
+            "slug" : {
+              "type" : "keyword"
+            },
+            "title" : {
+              "type" : "text"
+            },
+            "type" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "crew_credits" : {
+          "type" : "nested",
+          "properties" : {
+            "department" : {
+              "type" : "keyword"
+            },
+            "id" : {
+              "type" : "keyword"
+            },
+            "job" : {
+              "type" : "keyword"
+            },
+            "order" : {
+              "type" : "integer"
+            },
+            "slug" : {
+              "type" : "keyword"
+            },
+            "title" : {
+              "type" : "text"
+            },
+            "type" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "deathday" : {
+          "type" : "date"
+        },
+        "external_ids" : {
+          "type" : "keyword"
+        },
+        "homepage" : {
+          "type" : "keyword"
+        },
+        "id" : {
+          "type" : "keyword"
+        },
+        "images" : {
+          "properties" : {
+            "id" : {
+              "type" : "keyword"
+            },
+            "image_type" : {
+              "type" : "keyword"
+            },
+            "provider_id" : {
+              "type" : "integer"
+            },
+            "provider_shortname" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "known_for" : {
+          "type" : "nested",
+          "properties" : {
+            "id" : {
+              "type" : "keyword"
+            },
+            "title" : {
+              "type" : "text"
+            },
+            "type" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "last_updated" : {
+          "type" : "date"
+        },
+        "name" : {
+          "type" : "text"
+        },
+        "place_of_birth" : {
+          "type" : "text"
+        },
+        "popularity" : {
+          "type" : "double"
+        },
+        "slug" : {
+          "type" : "keyword"
+        }
+      }
+    }
+  }
+}
