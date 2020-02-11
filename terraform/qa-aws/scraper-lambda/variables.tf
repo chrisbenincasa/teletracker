@@ -35,3 +35,8 @@ variable "cron_schedule" {
   type    = string
   default = "0 8 * * ? *"
 }
+
+variable "s3_bucket" {
+  type    = string
+  default = "teletracker-artifacts"
+}

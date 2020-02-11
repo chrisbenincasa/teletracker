@@ -37,6 +37,19 @@ class ItemSearch @Inject()(
       query: String,
       boost: Float = 1.0f
     ) = {
+      // TODO: Use this method when we have ES 7.5 available
+//      QueryBuilders
+//        .multiMatchQuery(
+//          query,
+//          "title",
+//          "title._2gram",
+//          "title._3gram"
+//        )
+//        .`type`(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
+//        .fuzziness(5)
+//        .operator(Operator.AND)
+//        .boost(boost)
+
       QueryBuilders
         .multiMatchQuery(
           query,
@@ -44,9 +57,9 @@ class ItemSearch @Inject()(
           "title._2gram",
           "title._3gram"
         )
-        .`type`(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
-        .fuzziness(5)
-        .operator(Operator.AND)
+        .`type`(MultiMatchQueryBuilder.Type.CROSS_FIELDS)
+//        .fuzziness(5)
+        .operator(Operator.OR)
         .boost(boost)
     }
 

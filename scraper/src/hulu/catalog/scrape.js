@@ -34,7 +34,6 @@ const wait = ms => {
 const uuidRegex =
   '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
 
-const genresRegex = /\/genre\/([A-z\-]+)-?([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12})$/;
 const seriesRegex = new RegExp('/series/([A-z-0-9]+)-(' + uuidRegex + ')$');
 const moviesRegex = new RegExp('/movie/([A-z-0-9]+)-(' + uuidRegex + ')$');
 

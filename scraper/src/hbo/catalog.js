@@ -3,7 +3,6 @@ import * as _ from 'lodash';
 import moment from 'moment';
 import request from 'request-promise';
 import { getObjectS3, uploadToS3 } from '../common/storage';
-import { getFilePath } from '../common/tmp_files';
 import { catalogSitemapS3Key } from './catalog-sitemap';
 import { DATA_BUCKET } from '../common/constants';
 import { isProduction } from '../common/env';

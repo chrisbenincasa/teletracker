@@ -11,6 +11,6 @@ data "aws_iam_policy" "lambda_sqs_access_policy" {
 }
 
 data "aws_s3_bucket_object" "scrapers-artifact" {
-  bucket = "teletracker-artifacts"
+  bucket = var.s3_bucket
   key    = "scrapers/scrapers.zip"
 }
