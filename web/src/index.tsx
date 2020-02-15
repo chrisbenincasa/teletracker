@@ -25,6 +25,11 @@ Amplify.configure({
     userPoolWebClientId: process.env.REACT_APP_USER_POOL_CLIENT_ID,
     mandatorySignIn: false,
 
+    cookieStorage: {
+      domain: '.teletracker.local',
+      path: '/',
+    },
+
     oauth: {
       domain: process.env.REACT_APP_AUTH_DOMAIN,
       scope: ['email', 'openid'],
@@ -56,7 +61,7 @@ Amplify.configure({
 
 const target = document.querySelector('#root');
 
-export const { store, persistor } = createStore();
+export const { store } = createStore({});
 
 declare module '@material-ui/core/styles/createMuiTheme' {
   interface Theme {
@@ -132,15 +137,15 @@ theme = responsiveFontSizes(theme, { factor: 3 });
 
 render(
   <Provider store={store}>
-    <PersistGate loading={null} persistor={persistor}>
-      <ConnectedRouter history={history}>
-        <MuiThemeProvider theme={theme}>
-          <div>
-            <App />
-          </div>
-        </MuiThemeProvider>
-      </ConnectedRouter>
-    </PersistGate>
+    {/* <PersistGate loading={null} persistor={persistor}> */}
+    <ConnectedRouter history={history}>
+      <MuiThemeProvider theme={theme}>
+        <div>
+          <App />
+        </div>
+      </MuiThemeProvider>
+    </ConnectedRouter>
+    {/* </PersistGate> */}
   </Provider>,
   target,
 );

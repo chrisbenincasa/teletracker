@@ -2,9 +2,11 @@ import { put, takeEvery } from '@redux-saga/core/effects';
 import { clientEffect, createAction } from '../utils';
 import { ErrorFluxStandardAction, FSA } from 'flux-standard-action';
 import { ApiItem } from '../../types/v2';
+import { Item } from '../../types/v2/Item';
 
 export const ITEM_FETCH_INITIATED = 'item-detail/INITIATED';
 export const ITEM_FETCH_SUCCESSFUL = 'item-detail/SUCCESSFUL';
+export const ITEM_PREFETCH_SUCCESSFUL = 'item-detail/PREFETCH_SUCCESSFUL';
 export const ITEM_FETCH_FAILED = 'item-detail/FAILED';
 
 export interface ItemFetchInitiatedPayload {
@@ -22,6 +24,11 @@ export type ItemFetchSuccessfulAction = FSA<
   ApiItem
 >;
 
+export type ItemPrefetchSuccessfulAction = FSA<
+  typeof ITEM_PREFETCH_SUCCESSFUL,
+  Item
+>;
+
 export type ItemFetchFailedAction = ErrorFluxStandardAction<
   typeof ITEM_FETCH_FAILED,
   Error
@@ -33,6 +40,10 @@ export const itemFetchInitiated = createAction<ItemFetchInitiatedAction>(
 
 export const itemFetchSuccess = createAction<ItemFetchSuccessfulAction>(
   ITEM_FETCH_SUCCESSFUL,
+);
+
+export const itemPrefetchSuccess = createAction<ItemPrefetchSuccessfulAction>(
+  ITEM_PREFETCH_SUCCESSFUL,
 );
 
 const itemFetchFailed = createAction<ItemFetchFailedAction>(ITEM_FETCH_FAILED);

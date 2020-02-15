@@ -9,9 +9,11 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { withRouter } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 import { NetworkType } from '../../types';
 import { parseFilterParamsFromQs } from '../../utils/urlHelper';
+import qs from 'querystring';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -60,12 +62,10 @@ interface RouteParams {
   id: string;
 }
 
-type Props = OwnProps &
-  WithStyles<typeof styles> &
-  RouteComponentProps<RouteParams>;
+type Props = OwnProps & WithStyles<typeof styles> & WithRouterProps;
 
-export const getNetworkTypeFromUrlParam = () => {
-  return parseFilterParamsFromQs(window.location.search).networks;
+export const getNetworkTypeFromUrlParam = qs => {
+  return parseFilterParamsFromQs(qs).networks;
 };
 
 class NetworkSelect extends Component<Props> {
@@ -74,10 +74,13 @@ class NetworkSelect extends Component<Props> {
   };
 
   componentDidUpdate = oldProps => {
-    if (oldProps.location.search !== this.props.location.search) {
+    if (
+      qs.stringify(oldProps.router.query) !==
+      qs.stringify(this.props.router.query)
+    ) {
       // To do, only update this when these params changed
       this.setState({
-        type: getNetworkTypeFromUrlParam(),
+        type: getNetworkTypeFromUrlParam(qs.stringify(this.props.router.query)),
       });
     }
   };

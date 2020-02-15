@@ -19,7 +19,7 @@ export const history = isClient
   ? createBrowserHistory()
   : createMemoryHistory();
 
-const initialState = {};
+const DEFAULT_INITIAL_STATE = {};
 const enhancers: any[] = [];
 const sagaMiddleware = createSagaMiddleware();
 const middleware = [thunk, routerMiddleware(history), sagaMiddleware];
@@ -71,34 +71,55 @@ if (env === 'development' && typeof window !== 'undefined') {
   }
 }
 
-export default () => {
-  let store, persistor;
+// export default initialState => {
+//   let store, persistor;
+//   const reducerWithHistory = createRootReducer(history);
+
+//   // if (isClient) {
+//   const composedEnhancers = compose(
+//     applyMiddleware(...middleware),
+//     ...enhancers,
+//   );
+
+//   //   const persistedReducer = persistReducer(
+//   //     getPersistConfig(),
+//   //     reducerWithHistory,
+//   //   );
+//   //   store = createStore(persistedReducer, initialState, composedEnhancers);
+//   // } else {
+//   // }
+//   store = createStore(
+//     reducerWithHistory,
+//     initialState || DEFAULT_INITIAL_STATE,
+//     composedEnhancers,
+//   );
+
+//   sagaMiddleware.run(root);
+
+//   // if (isClient) {
+//   //   persistor = persistStore(store);
+//   // }
+
+//   return { store, persistor };
+// };
+
+export default initialState => {
+  console.log('creating that store');
   const reducerWithHistory = createRootReducer(history);
+  const sagaMiddleware = createSagaMiddleware();
+  const middleware = [thunk, sagaMiddleware];
+  const composedEnhancers = compose(
+    applyMiddleware(sagaMiddleware),
+    ...enhancers,
+  );
 
-  if (isClient) {
-    const composedEnhancers = compose(
-      applyMiddleware(...middleware),
-      ...enhancers,
-    );
-
-    const persistedReducer = persistReducer(
-      getPersistConfig(),
-      reducerWithHistory,
-    );
-    store = createStore(persistedReducer, initialState, composedEnhancers);
-  } else {
-    store = createStore(
-      reducerWithHistory,
-      initialState,
-      applyMiddleware(sagaMiddleware),
-    );
-  }
+  const store = createStore(
+    reducerWithHistory,
+    initialState,
+    composedEnhancers,
+  );
 
   sagaMiddleware.run(root);
 
-  if (isClient) {
-    persistor = persistStore(store);
-  }
-
-  return { store, persistor };
+  return { store };
 };

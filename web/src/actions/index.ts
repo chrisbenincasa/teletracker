@@ -44,6 +44,7 @@ import { fetchPersonCreditsDetailsSaga } from './people/get_credits';
 
 export const STARTUP = 'startup';
 export const BOOT_DONE = 'boot/DONE';
+export const BUFFER_FLUSH = 'boot/BUFFER_FLUSH';
 
 type StartupAction = FSA<typeof STARTUP>;
 
@@ -54,9 +55,26 @@ function* startupSaga() {
   yield put(loadMetadata());
 }
 
+function* captureAll() {
+  let events: any[] = [];
+  while (true) {
+    let event = yield take('*');
+    if (event.type === BUFFER_FLUSH) {
+      break;
+    } else {
+      events.push(event);
+    }
+  }
+
+  while (events.length > 0) {
+    yield put(events.pop());
+  }
+}
+
 export function* root() {
   // Wait for any storage state rehydration to complete
-  yield take(REHYDRATE);
+  // yield take(REHYDRATE);
+  yield fork(captureAll);
 
   // Start watching for auth state changes
   yield fork(initialAuthState);
@@ -67,6 +85,8 @@ export function* root() {
 
   // Instruct the app we're finished booting
   yield put({ type: BOOT_DONE });
+
+  console.log('starting everything');
 
   // Start all of the sagas at once
   // TODO: fork all of these?
@@ -104,5 +124,8 @@ export function* root() {
     loadMetadataSaga(),
     peopleSearchSaga(),
     fetchPersonCreditsDetailsSaga(),
+    (function*() {
+      yield put({ type: BUFFER_FLUSH });
+    })(),
   ]);
 }

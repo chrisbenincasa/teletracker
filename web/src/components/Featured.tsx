@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, RefObject } from 'react';
 import {
   CardMedia,
   Fade,
@@ -8,7 +8,8 @@ import {
   Typography,
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
-import { Link as RouterLink } from 'react-router-dom';
+// import { Link as RouterLink } from 'react-router-dom';
+import RouterLink from 'next/link';
 import imagePlaceholder from '../assets/images/imagePlaceholder.png';
 import ManageTracking from '../components/ManageTracking';
 import { ResponsiveImage } from '../components/ResponsiveImage';
@@ -136,73 +137,87 @@ function Featured(props: Props) {
     setImageLoading(false);
   };
 
+  const renderFeatuedItem = item => {
+    const WrappedCardMedia = React.forwardRef(({ onClick, href }: any, ref) => {
+      return (
+        <a
+          href={href}
+          onClick={onClick}
+          ref={ref as RefObject<HTMLAnchorElement>}
+          style={{
+            display: 'block',
+            height: '100%',
+            textDecoration: 'none',
+          }}
+        >
+          <CardMedia
+            src={imagePlaceholder}
+            item={item}
+            component={ResponsiveImage}
+            imageType="poster"
+            imageStyle={{
+              boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+              maxWidth: '100%',
+              borderRadius: 10,
+            }}
+            pictureStyle={{
+              height: '100%',
+              width: '100%',
+              display: 'block',
+            }}
+          />
+        </a>
+      );
+    });
+
+    return (
+      <Fade in={!imageLoading} key={item.id}>
+        <div
+          className={classes.featuredItem}
+          style={{ width: `${100 / featuredItems.length}%` }}
+        >
+          <div className={classes.backdropContainer}>
+            <ResponsiveImage
+              item={item}
+              imageType="backdrop"
+              imageStyle={{
+                objectFit: 'cover',
+                width: '100%',
+                height: '100%',
+                borderRadius: 10,
+              }}
+              pictureStyle={{
+                display: 'block',
+              }}
+              loadCallback={imageLoaded}
+            />
+          </div>
+
+          <div className={classes.posterContainer}>
+            <RouterLink href={item.relativeUrl} passHref>
+              <WrappedCardMedia item={item} />
+            </RouterLink>
+            <ManageTracking itemDetail={item} />
+
+            <AddToListDialog
+              open={manageTrackingModalOpen}
+              onClose={() => setManageTrackingModalOpen(false)}
+              userSelf={userSelf!}
+              item={item}
+            />
+          </div>
+          <Grow in={!imageLoading} timeout={500}>
+            {renderTitle(item)}
+          </Grow>
+        </div>
+      </Fade>
+    );
+  };
+
   const renderFeaturedItems = () => {
     return featuredItems && featuredItems.length > 0
       ? featuredItems.map(item => {
-          return (
-            <Fade in={!imageLoading} key={item.id}>
-              <div
-                className={classes.featuredItem}
-                style={{ width: `${100 / featuredItems.length}%` }}
-              >
-                <div className={classes.backdropContainer}>
-                  <ResponsiveImage
-                    item={item}
-                    imageType="backdrop"
-                    imageStyle={{
-                      objectFit: 'cover',
-                      width: '100%',
-                      height: '100%',
-                      borderRadius: 10,
-                    }}
-                    pictureStyle={{
-                      display: 'block',
-                    }}
-                    loadCallback={imageLoaded}
-                  />
-                </div>
-
-                <div className={classes.posterContainer}>
-                  <RouterLink
-                    to={item.relativeUrl}
-                    style={{
-                      display: 'block',
-                      height: '100%',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    <CardMedia
-                      src={imagePlaceholder}
-                      item={item}
-                      component={ResponsiveImage}
-                      imageType="poster"
-                      imageStyle={{
-                        boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
-                        maxWidth: '100%',
-                        borderRadius: 10,
-                      }}
-                      pictureStyle={{
-                        height: '100%',
-                        width: '100%',
-                        display: 'block',
-                      }}
-                    />
-                  </RouterLink>
-                  <ManageTracking itemDetail={item} />
-
-                  <AddToListDialog
-                    open={manageTrackingModalOpen}
-                    onClose={() => setManageTrackingModalOpen(false)}
-                    userSelf={userSelf!}
-                    item={item}
-                  />
-                </div>
-                <Grow in={!imageLoading} timeout={500}>
-                  {renderTitle(item)}
-                </Grow>
-              </div>
-            </Fade>
-          );
+          return renderFeatuedItem(item);
         })
       : null;
   };

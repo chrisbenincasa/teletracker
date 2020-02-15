@@ -7,7 +7,9 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
+// import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { withRouter } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 import { Genre } from '../../types';
 import _ from 'lodash';
 
@@ -40,9 +42,7 @@ interface RouteParams {
   id: string;
 }
 
-type Props = OwnProps &
-  WithStyles<typeof styles> &
-  RouteComponentProps<RouteParams>;
+type Props = OwnProps & WithStyles<typeof styles> & WithRouterProps;
 
 class GenreSelect extends Component<Props> {
   static defaultProps = {
