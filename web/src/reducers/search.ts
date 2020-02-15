@@ -5,17 +5,21 @@ import {
   SEARCH_FAILED,
   SEARCH_INITIATED,
   SEARCH_SUCCESSFUL,
-} from '../actions/search';
-import { Item } from '../types/v2/Item';
-import { flattenActions, handleAction } from './utils';
-import {
   PEOPLE_SEARCH_FAILED,
   PEOPLE_SEARCH_INITIATED,
   PEOPLE_SEARCH_SUCCESSFUL,
   PeopleSearchFailedAction,
   PeopleSearchInitiatedAction,
   PeopleSearchSuccessfulAction,
-} from '../actions/search/person_search';
+  QuickSearchFailedAction,
+  QuickSearchInitiatedAction,
+  QuickSearchSuccessfulAction,
+  QUICK_SEARCH_FAILED,
+  QUICK_SEARCH_INITIATED,
+  QUICK_SEARCH_SUCCESSFUL,
+} from '../actions/search';
+import { Item } from '../types/v2/Item';
+import { flattenActions, handleAction } from './utils';
 import { Person } from '../types/v2/Person';
 
 export interface State {
@@ -24,6 +28,13 @@ export interface State {
   searching: boolean;
   results?: Item[];
   bookmark?: string;
+  quick: {
+    searching: boolean;
+    currentSearchText: String;
+    results?: Item[];
+    bookmark?: string;
+    error: boolean;
+  };
   people: {
     searching: boolean;
     currentSearchText: String;
@@ -37,6 +48,11 @@ const initialState: State = {
   currentSearchText: '',
   error: false,
   searching: false,
+  quick: {
+    currentSearchText: '',
+    error: false,
+    searching: false,
+  },
   people: {
     currentSearchText: '',
     error: false,
@@ -82,6 +98,60 @@ const searchSuccess = handleAction<SearchSuccessfulAction, State>(
         searching: false,
         results: newResults,
         bookmark: payload.paging ? payload.paging.bookmark : undefined,
+      };
+    } else {
+      return state;
+    }
+  },
+);
+
+const quickSearchFailed = handleAction<QuickSearchFailedAction, State>(
+  QUICK_SEARCH_FAILED,
+  (state, error) => {
+    return {
+      ...state,
+      quick: {
+        ...state.quick,
+        searching: false,
+        error: true,
+      },
+    };
+  },
+);
+
+const quickSearchInitiated = handleAction<QuickSearchInitiatedAction, State>(
+  QUICK_SEARCH_INITIATED,
+  (state, action) => {
+    return {
+      ...state,
+      quick: {
+        ...state.quick,
+        searching: true,
+        currentSearchText: action.payload!.query.trim(),
+      },
+    };
+  },
+);
+
+const quickSearchSuccess = handleAction<QuickSearchSuccessfulAction, State>(
+  QUICK_SEARCH_SUCCESSFUL,
+  (state, { payload }) => {
+    if (payload) {
+      let newResults = state.results ? state.results : [];
+      if (!payload.append) {
+        newResults = payload.results;
+      } else {
+        newResults = newResults.concat(payload.results);
+      }
+
+      return {
+        ...state,
+        quick: {
+          ...state.quick,
+          searching: false,
+          results: newResults,
+          bookmark: payload.paging ? payload.paging.bookmark : undefined,
+        },
       };
     } else {
       return state;
@@ -145,6 +215,9 @@ const peopleSearchSuccess = handleAction<PeopleSearchSuccessfulAction, State>(
 
 export default flattenActions(
   initialState,
+  quickSearchInitiated,
+  quickSearchSuccess,
+  quickSearchFailed,
   searchInitiated,
   searchSuccess,
   searchFailed,

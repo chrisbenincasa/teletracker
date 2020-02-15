@@ -1,10 +1,11 @@
 import React from 'react';
 import {
-  CircularProgress,
   Chip,
   ClickAwayListener,
+  Collapse,
   Fade,
   Icon,
+  LinearProgress,
   makeStyles,
   MenuList,
   MenuItem,
@@ -52,24 +53,27 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: theme.spacing(1),
     alignSelf: 'center',
   },
-  progressSpinner: {
-    margin: theme.spacing(1),
-    justifySelf: 'center',
-  },
   poster: {
     width: 50,
     marginRight: theme.spacing(1),
   },
-  searchWrapper: {
+  searchWrapper: props => ({
     height: 'auto',
     overflow: 'scroll',
-    width: 338,
-    backgroundColor: theme.palette.primary.main,
+    width: '100%',
+    maxWidth: 720,
+    minHeight: 45,
     marginTop: 10,
-  },
+    backgroundColor:
+      props.color && props.color === 'secondary'
+        ? theme.palette.secondary.main
+        : theme.palette.primary.main,
+  }),
   viewAllResults: {
     justifyContent: 'center',
-    padding: theme.spacing(1),
+  },
+  popper: {
+    zIndex: theme.zIndex.appBar - 1,
   },
 }));
 
@@ -80,10 +84,12 @@ interface Props {
   searchText: string;
   handleResetSearchAnchor: (event) => void;
   handleSearchForSubmit: (event) => void;
+  color?: string;
 }
 
 function QuickSearch(props: Props) {
-  const classes = useStyles();
+  const classes = useStyles(props);
+
   let { searchResults, isSearching, searchText, searchAnchor } = props;
 
   return searchAnchor && searchText && searchText.length > 0 ? (
@@ -93,10 +99,12 @@ function QuickSearch(props: Props) {
       <Popper
         open={!!searchAnchor}
         anchorEl={searchAnchor}
-        placement="bottom"
+        placement="bottom-start"
         keepMounted
-        transition
         disablePortal
+        transition
+        style={{ width: '100%', maxWidth: 720 }}
+        className={classes.popper}
       >
         {({ TransitionProps, placement }) => (
           <Fade
@@ -113,138 +121,134 @@ function QuickSearch(props: Props) {
               elevation={5}
             >
               <MenuList
-                style={
-                  isSearching
-                    ? { display: 'flex', justifyContent: 'center', padding: 0 }
-                    : { padding: 0 }
-                }
+                disablePadding
+                style={{ paddingTop: isSearching ? 0 : 4 }}
               >
-                {isSearching ? (
-                  <CircularProgress
-                    className={classes.progressSpinner}
-                    color="secondary"
-                  />
-                ) : (
-                  <div>
-                    {searchResults && searchResults.length > 0 ? (
-                      searchResults.slice(0, 4).map(result => {
-                        const voteAverage =
-                          result.ratings && result.ratings.length
-                            ? result.ratings[0].vote_average
-                            : 0;
-                        const runtime =
-                          (result.runtime &&
-                            formatRuntime(result.runtime, result.type)) ||
-                          null;
-                        const rating =
-                          result.release_dates &&
-                          result.release_dates.find(item => {
-                            if (
-                              item.country_code === 'US' &&
-                              item.certification !== 'NR'
-                            ) {
-                              return item.certification;
-                            } else {
-                              return null;
-                            }
-                          });
+                <div>
+                  <Collapse in={!!searchResults} timeout={500}>
+                    {isSearching && <LinearProgress />}
+                    {searchResults && searchResults.length > 0
+                      ? searchResults.slice(0, 4).map(result => {
+                          const voteAverage =
+                            result.ratings && result.ratings.length
+                              ? result.ratings[0].vote_average
+                              : 0;
+                          const runtime =
+                            (result.runtime &&
+                              formatRuntime(result.runtime, result.type)) ||
+                            null;
+                          const rating =
+                            result.release_dates &&
+                            result.release_dates.find(item => {
+                              if (
+                                item.country_code === 'US' &&
+                                item.certification !== 'NR'
+                              ) {
+                                return item.certification;
+                              } else {
+                                return null;
+                              }
+                            });
 
-                        return (
-                          <MenuItem
-                            dense
-                            component={RouterLink}
-                            to={result.relativeUrl}
-                            key={result.id}
-                            onClick={event =>
-                              props.handleResetSearchAnchor(event)
-                            }
-                          >
-                            {getTmdbPosterImage(result) ? (
-                              <img
-                                alt={`Movie poster for ${result.canonicalTitle}`}
-                                src={`https://image.tmdb.org/t/p/w92${
-                                  getTmdbPosterImage(result)!.id
-                                }`}
-                                className={classes.poster}
-                              />
-                            ) : (
-                              <div className={classes.missingPoster}>
-                                <Icon
-                                  className={classes.missingPosterIcon}
-                                  fontSize="inherit"
-                                >
-                                  broken_image
-                                </Icon>
-                              </div>
-                            )}
-                            <div className={classes.itemDetails}>
-                              <Typography variant="subtitle1">
-                                {truncateText(result.canonicalTitle, 32)}
-                              </Typography>
-                              <Rating
-                                value={voteAverage / 2}
-                                precision={0.1}
-                                size="small"
-                                readOnly
-                              />
-                              <div className={classes.chipWrapper}>
-                                <Chip
-                                  label={result.type}
-                                  clickable
-                                  size="small"
-                                  className={classes.chip}
+                          return (
+                            <MenuItem
+                              dense
+                              component={RouterLink}
+                              to={result.relativeUrl}
+                              key={result.id}
+                              onClick={event =>
+                                props.handleResetSearchAnchor(event)
+                              }
+                            >
+                              {getTmdbPosterImage(result) ? (
+                                <img
+                                  alt={`Movie poster for ${result.canonicalTitle}`}
+                                  src={`https://image.tmdb.org/t/p/w92${
+                                    getTmdbPosterImage(result)!.id
+                                  }`}
+                                  className={classes.poster}
                                 />
-                                {rating && rating.certification && (
+                              ) : (
+                                <div className={classes.missingPoster}>
+                                  <Icon
+                                    className={classes.missingPosterIcon}
+                                    fontSize="inherit"
+                                  >
+                                    broken_image
+                                  </Icon>
+                                </div>
+                              )}
+                              <div className={classes.itemDetails}>
+                                <Typography variant="subtitle1">
+                                  {truncateText(result.canonicalTitle, 100)}
+                                </Typography>
+                                <Rating
+                                  value={voteAverage / 2}
+                                  precision={0.1}
+                                  size="small"
+                                  readOnly
+                                />
+                                <div className={classes.chipWrapper}>
                                   <Chip
-                                    label={rating.certification}
+                                    label={result.type}
                                     clickable
                                     size="small"
                                     className={classes.chip}
                                   />
-                                )}
-                                {result.release_date && (
-                                  <Chip
-                                    label={moment(result.release_date).format(
-                                      'YYYY',
-                                    )}
-                                    clickable
-                                    size="small"
-                                    className={classes.chip}
-                                  />
-                                )}
-                                {runtime && (
-                                  <Chip
-                                    label={runtime}
-                                    clickable
-                                    size="small"
-                                    className={classes.chip}
-                                  />
-                                )}
+                                  {rating && rating.certification && (
+                                    <Chip
+                                      label={rating.certification}
+                                      clickable
+                                      size="small"
+                                      className={classes.chip}
+                                    />
+                                  )}
+                                  {result.release_date && (
+                                    <Chip
+                                      label={moment(result.release_date).format(
+                                        'YYYY',
+                                      )}
+                                      clickable
+                                      size="small"
+                                      className={classes.chip}
+                                    />
+                                  )}
+                                  {runtime && (
+                                    <Chip
+                                      label={runtime}
+                                      clickable
+                                      size="small"
+                                      className={classes.chip}
+                                    />
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          </MenuItem>
-                        );
-                      })
-                    ) : (
-                      <Typography
-                        variant="body1"
-                        align="center"
-                        className={classes.noResults}
-                      >
-                        No results matching that search
-                      </Typography>
-                    )}
+                            </MenuItem>
+                          );
+                        })
+                      : !isSearching &&
+                        searchText &&
+                        searchText.length > 0 && (
+                          <Typography
+                            variant="body1"
+                            align="center"
+                            className={classes.noResults}
+                          >
+                            {`Sorry, no results matching '${searchText}'`}
+                          </Typography>
+                        )}
                     {searchResults && searchResults.length > 4 && (
                       <MenuItem
                         dense
                         className={classes.viewAllResults}
                         onClick={props.handleSearchForSubmit}
+                        key="view-all"
                       >
                         View All Results
                       </MenuItem>
                     )}
-                  </div>
-                )}
+                  </Collapse>
+                </div>
               </MenuList>
             </Paper>
           </Fade>

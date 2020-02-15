@@ -93,11 +93,51 @@ export class TeletrackerApi {
     });
   }
 
-  async searchV2(token: string, searchText: string, bookmark?: string) {
+  async searchV2(
+    token: string,
+    searchText: string,
+    bookmark?: string,
+    limit?: number,
+    itemTypes?: ItemType[],
+    networks?: NetworkType[],
+    genres?: number[],
+    releaseYearRange?: OpenRange,
+    sort?: SortOptions,
+  ) {
     return this.api.get<ApiItem[]>('/api/v3/search', {
-      query: searchText,
       token,
+      query: searchText,
       bookmark,
+      limit,
+      itemTypes,
+      networks,
+      genres,
+      releaseYearRange,
+      sort,
+    });
+  }
+
+  async quickSearch(
+    token: string,
+    searchText: string,
+    bookmark?: string,
+    limit?: number,
+    itemTypes?: ItemType[],
+    networks?: NetworkType[],
+    genres?: number[],
+    releaseYearRange?: OpenRange,
+    sort?: SortOptions,
+  ) {
+    return this.api.get<ApiItem[]>('/api/v3/search', {
+      token,
+      query: searchText,
+      bookmark,
+      limit,
+      itemTypes,
+      networks,
+      genres,
+      releaseYearRange,
+      sort,
     });
   }
 
