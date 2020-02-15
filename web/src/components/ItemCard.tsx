@@ -267,6 +267,7 @@ function ItemCard(props: Props) {
     targetRef: loadWrapperRef,
     useLazyLoad: true,
   });
+
   const isNearViewport = useIntersectionObserver({
     lazyLoadOptions: {
       root: null,

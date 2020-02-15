@@ -22,19 +22,23 @@ export default function useIntersectionObserver({
     }
   };
 
-  const handleIntersection = () => {
-    setIntersecting(true);
-    handleObserverDisconnect();
+  const handleIntersection = entry => {
+    if (useLazyLoad) {
+      setIntersecting(true);
+      handleObserverDisconnect();
+    } else {
+      setIntersecting(entry.isIntersecting);
+    }
   };
 
   // Check if the users browser supports Intersection Observer
   const isIOSupported = isIntersectionObserverSupported();
 
   useEffect(() => {
-    if (!useLazyLoad || !isIOSupported) {
+    if (!isIOSupported) {
       // If component wants to bypass IO or if IO is not supported
       setIntersecting(true);
-    } else if (useLazyLoad && isIOSupported && targetRef.current) {
+    } else if (isIOSupported && targetRef.current) {
       intersectionObserverRef.current = createIntersectionObserver({
         callback: handleIntersection,
         options: lazyLoadOptions,
