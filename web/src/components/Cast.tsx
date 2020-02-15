@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, RefObject } from 'react';
 import {
   Avatar,
   createStyles,
@@ -8,7 +8,7 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { parseInitials } from '../utils/textHelper';
-import RouterLink from './RouterLink';
+import RouterLink from 'next/link';
 import { FixedSizeList as LazyList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Item, ItemCastMember } from '../types/v2/Item';
@@ -64,43 +64,58 @@ class Cast extends Component<Props, {}> {
   renderAvatar(castMember: ItemCastMember) {
     let { classes } = this.props;
 
+    const WrappedAvatar = React.forwardRef(({ onClick, href }: any, ref) => {
+      return (
+        <a
+          href={href}
+          onClick={onClick}
+          ref={ref as RefObject<HTMLAnchorElement>}
+          className={classes.avatarLink}
+          style={{
+            display: 'block',
+            height: '100%',
+            textDecoration: 'none',
+          }}
+        >
+          <Avatar
+            alt={`Photo of ${castMember.name}`}
+            src={
+              castMember.person && castMember.person.profile_path
+                ? `https://image.tmdb.org/t/p/w185/${castMember.person.profile_path}`
+                : ''
+            }
+            className={classes.avatar}
+            itemProp="image"
+          >
+            {castMember.person && castMember.person.profile_path
+              ? null
+              : parseInitials(castMember.name!, 'name')}
+          </Avatar>
+          <Typography
+            variant="subtitle1"
+            color="textPrimary"
+            className={classes.actualName}
+            align="center"
+            itemProp="name"
+          >
+            {castMember.name}
+          </Typography>
+          <Typography
+            variant="subtitle2"
+            color="textPrimary"
+            className={classes.characterName}
+            align="center"
+            itemProp="character"
+          >
+            {castMember.character}
+          </Typography>
+        </a>
+      );
+    });
+
     return (
-      <RouterLink
-        to={'/person/' + castMember.slug}
-        className={classes.avatarLink}
-      >
-        <Avatar
-          alt={`Photo of ${castMember.name}`}
-          src={
-            castMember.person && castMember.person.profile_path
-              ? `https://image.tmdb.org/t/p/w185/${castMember.person.profile_path}`
-              : ''
-          }
-          className={classes.avatar}
-          itemProp="image"
-        >
-          {castMember.person && castMember.person.profile_path
-            ? null
-            : castMember.name && parseInitials(castMember.name, 'name')}
-        </Avatar>
-        <Typography
-          variant="subtitle1"
-          color="textPrimary"
-          className={classes.actualName}
-          align="center"
-          itemProp="name"
-        >
-          {castMember.name}
-        </Typography>
-        <Typography
-          variant="subtitle2"
-          color="textPrimary"
-          className={classes.characterName}
-          align="center"
-          itemProp="character"
-        >
-          {castMember.character}
-        </Typography>
+      <RouterLink href={'/person/' + castMember.slug}>
+        <WrappedAvatar />
       </RouterLink>
     );
   }

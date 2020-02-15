@@ -1,6 +1,7 @@
 import React from 'react';
 import { Hidden, makeStyles, Theme, Typography } from '@material-ui/core';
-import RouterLink from './RouterLink';
+// import RouterLink from './RouterLink';
+import RouterLink from 'next/link';
 import moment from 'moment';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -50,44 +51,38 @@ const Footer = (props: Props) => {
         <div className={classes.section}>Teletracker &copy; {year}</div>
         <div className={classes.section}>
           <Typography variant="h6">Networks</Typography>
-          <RouterLink
-            to={'/popular?networks=hbo-go%2Chbo-now'}
-            className={classes.link}
-          >
-            HBO
+          <RouterLink href="/popular?networks=hbo-go%2Chbo-now" passHref>
+            <a className={classes.link}>HBO</a>
           </RouterLink>
-          <RouterLink to={'/popular?networks=hulu'} className={classes.link}>
-            Hulu
+          <RouterLink href={'/popular?networks=hulu'}>
+            <a className={classes.link}>Hulu</a>
           </RouterLink>
-          <RouterLink
-            to={'/popular?networks=netflix%2Cnetflix-kids'}
-            className={classes.link}
-          >
-            Netflix
+          <RouterLink href={'/popular?networks=netflix%2Cnetflix-kids'}>
+            <a className={classes.link}>Netflix</a>
           </RouterLink>
         </div>
         <div className={classes.section}>
           <Typography variant="h6">What's Popular</Typography>
-          <RouterLink to={'/popular?type=movie'} className={classes.link}>
-            Movies
+          <RouterLink href={'/popular?type=movie'}>
+            <a className={classes.link}>Movies</a>
           </RouterLink>
-          <RouterLink to={'/popular?type=show'} className={classes.link}>
-            TV Shows
+          <RouterLink href={'/popular?type=show'}>
+            <a className={classes.link}>TV Shows</a>
           </RouterLink>
         </div>
         <div className={classes.section}>
           <Typography variant="h6">Top Genres</Typography>
-          <RouterLink to={'/popular?genres=83'} className={classes.link}>
-            Action &amp; Adventure
+          <RouterLink href={'/popular?genres=83'}>
+            <a className={classes.link}>Action &amp; Adventure</a>
           </RouterLink>
-          <RouterLink to={'/popular?genres=85'} className={classes.link}>
-            Comedy
+          <RouterLink href={'/popular?genres=85'}>
+            <a className={classes.link}>Comedy</a>
           </RouterLink>
-          <RouterLink to={'/popular?genres=88'} className={classes.link}>
-            Drama
+          <RouterLink href={'/popular?genres=88'}>
+            <a className={classes.link}>Drama</a>
           </RouterLink>
-          <RouterLink to={'/popular?genres=92'} className={classes.link}>
-            Horror
+          <RouterLink href={'/popular?genres=92'}>
+            <a className={classes.link}>Horror</a>
           </RouterLink>
         </div>
         <div className={classes.section}>

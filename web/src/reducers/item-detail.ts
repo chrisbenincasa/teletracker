@@ -4,6 +4,8 @@ import {
   ITEM_FETCH_SUCCESSFUL,
   ItemFetchInitiatedAction,
   ItemFetchSuccessfulAction,
+  ITEM_PREFETCH_SUCCESSFUL,
+  ItemPrefetchSuccessfulAction,
 } from '../actions/item-detail';
 import {
   LIST_RETRIEVE_SUCCESS,
@@ -58,6 +60,34 @@ const itemFetchInitiated = handleAction(
       fetching: true,
       currentId: payload,
       itemDetail: undefined,
+    } as State;
+  },
+);
+
+const itemPrefetchSuccess = handleAction(
+  ITEM_PREFETCH_SUCCESSFUL,
+  (state: State, { payload }: ItemPrefetchSuccessfulAction) => {
+    let thingsById = state.thingsById || {};
+    let existingThing: Item | undefined = thingsById[payload!.id];
+
+    let newThing: Item = payload!;
+    if (existingThing) {
+      newThing = ItemFactory.merge(existingThing, newThing);
+    }
+
+    // TODO: Truncate thingsById after a certain point
+    return {
+      ...state,
+      fetching: false,
+      itemDetail: newThing,
+      thingsById: {
+        ...state.thingsById,
+        [payload!.id]: newThing,
+      } as ThingMap,
+      thingsBySlug: {
+        ...state.thingsBySlug,
+        [payload!.slug]: newThing,
+      } as ThingMap,
     } as State;
   },
 );
@@ -260,4 +290,5 @@ export default flattenActions(
   handleExploreRetrieveSuccess,
   handleSearchRetrieveSuccess,
   peopleCreditsFetchSuccess,
+  itemPrefetchSuccess,
 );

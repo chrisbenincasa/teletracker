@@ -17,6 +17,7 @@ import { useSelector } from 'react-redux';
 import { AppState } from '../../reducers';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import makeStyles from '@material-ui/core/styles/makeStyles';
+import { useRouter } from 'next/router';
 
 const useStyles = makeStyles((theme: Theme) => ({
   activeFiltersContainer: {
@@ -73,7 +74,8 @@ export const prettySort = (sortOption: SortOptions) => {
 
 export default function ActiveFilters(props: Props) {
   const classes = useStyles();
-  const history = useHistory();
+  // const history = useHistory();
+  const router = useRouter();
   const { genres, initialState, isListDynamic, variant } = props;
   let {
     filters: { genresFilter, itemTypes, networks, sortOrder, sliders, people },
@@ -373,7 +375,7 @@ export default function ActiveFilters(props: Props) {
                 label={`Starring: ${personNameBySlugOrId[person]}`}
                 className={classes.chip}
                 clickable
-                onClick={() => history.push(`/person/${person}`)}
+                onClick={() => router.push(`/person/${person}`)}
                 onDelete={() => removeFilters({ people: [person] })}
                 variant={variant}
               />

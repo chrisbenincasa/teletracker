@@ -12,33 +12,35 @@ import {
 } from '@material-ui/core';
 import { Tune } from '@material-ui/icons';
 import _ from 'lodash';
+import { WithRouterProps } from 'next/dist/client/with-router';
+import { withRouter } from 'next/router';
+import qs from 'querystring';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import ReactGA from 'react-ga';
 import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import { retrievePopular } from '../actions/popular';
 import { PopularInitiatedActionPayload } from '../actions/popular/popular';
+import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
+import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import Featured from '../components/Featured';
-import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
+import AllFilters from '../components/Filters/AllFilters';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { Genre, Network } from '../types';
 import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
+import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
+import { getVoteAverage, getVoteCount } from '../utils/textHelper';
 import {
   parseFilterParamsFromQs,
-  updateUrlParamsForFilter,
+  updateUrlParamsForFilterRouter,
 } from '../utils/urlHelper';
-import { calculateLimit, getNumColumns } from '../utils/list-utils';
-import { getVoteAverage, getVoteCount } from '../utils/textHelper';
-import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
-import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -122,7 +124,7 @@ type Props = OwnProps &
   WithUserProps &
   WidthProps &
   StateProps &
-  RouteComponentProps<RouteParams>;
+  WithRouterProps;
 
 interface State {
   featuredItemsIndex: number[];
@@ -139,7 +141,9 @@ class Popular extends Component<Props, State> {
     super(props);
 
     let filterParams = DEFAULT_FILTER_PARAMS;
-    let paramsFromQuery = parseFilterParamsFromQs(props.location.search);
+    let paramsFromQuery = parseFilterParamsFromQs(
+      qs.stringify(props.router.query),
+    );
 
     if (paramsFromQuery.sortOrder === 'default') {
       paramsFromQuery.sortOrder = 'popularity';
@@ -178,6 +182,7 @@ class Popular extends Component<Props, State> {
 
     // To do: add support for sorting
     if (!this.props.loading) {
+      console.log('in your towels');
       let numberFeaturedItems: number = this.getNumberFeaturedItems();
 
       retrievePopular({
@@ -296,7 +301,7 @@ class Popular extends Component<Props, State> {
           needsNewFeatured: true,
         },
         () => {
-          updateUrlParamsForFilter(this.props, filterParams);
+          updateUrlParamsForFilterRouter(this.props, filterParams);
           this.loadPopular(false, true);
         },
       );
@@ -304,8 +309,11 @@ class Popular extends Component<Props, State> {
   };
 
   componentDidUpdate(prevProps: Props) {
-    const { loading, location, popular } = this.props;
+    const { loading, router, popular } = this.props;
     const { needsNewFeatured } = this.state;
+
+    let query = qs.stringify(router.query);
+    let prevQuery = qs.stringify(prevProps.router.query);
 
     // Initial mount of Popular
     const isInitialFetch = popular && !prevProps.popular && !loading;
@@ -322,10 +330,10 @@ class Popular extends Component<Props, State> {
     // User navigated back to page or via top nav
     const didNavigate = !isInitialFetch && needsNewFeatured;
 
-    let paramsFromQuery = parseFilterParamsFromQs(location.search);
+    let paramsFromQuery = parseFilterParamsFromQs(query);
 
     // Checks if filters have changed, if so, update state and re-fetch popular
-    if (location.search !== prevProps.location.search) {
+    if (query !== prevQuery) {
       this.handleFilterParamsChange(paramsFromQuery);
     }
 

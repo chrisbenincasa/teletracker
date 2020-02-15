@@ -6,6 +6,10 @@ import { Item } from '../Types/v2/Item';
     Example 2: "Marc Maron" becomes "MM"
 */
 export const parseInitials = (name: string, type: string) => {
+  if (name.length === 0) {
+    return '';
+  }
+
   if (type === 'season') {
     var nameSplit = name.split(' ');
     nameSplit[0] = nameSplit[0].substring(0, 1);

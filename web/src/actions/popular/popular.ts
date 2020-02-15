@@ -45,11 +45,7 @@ export type PopularSuccessfulAction = FSA<
   PopularSuccessfulPayload
 >;
 
-export type PopularFailedAction = ErrorFSA<
-  Error,
-  undefined,
-  typeof POPULAR_FAILED
->;
+export type PopularFailedAction = FSA<typeof POPULAR_FAILED, Error>;
 
 export const retrievePopular = createAction<PopularInitiatedAction>(
   POPULAR_INITIATED,
@@ -65,6 +61,7 @@ export const popularSaga = function*() {
   yield takeEvery(POPULAR_INITIATED, function*({
     payload,
   }: PopularInitiatedAction) {
+    console.log('popularSaga');
     if (payload) {
       try {
         let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
