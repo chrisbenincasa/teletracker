@@ -44,7 +44,8 @@ resource "aws_elasticsearch_domain_policy" "main" {
                     "aws:SourceIp": [
                         "67.164.191.249",
                         "54.193.107.226",
-                        "54.148.251.95"
+                        "54.148.251.95",
+                        "73.243.144.208"
                     ]
                 }
             },
