@@ -425,7 +425,7 @@ export class TeletrackerApi {
     limit?: number,
     genres?: number[],
     releaseYearRange?: OpenRange,
-  ) {
+  ): Promise<TeletrackerResponse<ApiItem[]>> {
     return this.api.get('/api/v2/popular', {
       token,
       fields: fields ? this.createFilter(fields!) : undefined,

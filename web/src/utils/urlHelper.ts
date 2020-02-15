@@ -7,6 +7,8 @@ import {
   SortOptions,
 } from '../types';
 import { FilterParams } from './searchFilters';
+import { WithRouterProps } from 'next/dist/client/with-router';
+import querystring from 'querystring';
 
 /**
  * Updates or adds URL parameters
@@ -19,7 +21,50 @@ export const updateURLParameters = (
   param: string,
   value?: any,
 ) => {
-  updateMultipleUrlParams(props, [[param, value]]);
+  updateMultipleUrlParams(
+    props.location.search,
+    str => props.history.replace(str),
+    [[param, value]],
+  );
+};
+
+export const updateUrlParamsForFilterRouter = (
+  props: WithRouterProps,
+  filterParams: FilterParams,
+  excludedParams?: string[],
+): void => {
+  let paramUpdates: [string, any | undefined][] = [
+    ['genres', filterParams.genresFilter],
+    ['networks', filterParams.networks],
+    [
+      'sort',
+      filterParams.sortOrder === 'default' ? undefined : filterParams.sortOrder,
+    ],
+    ['type', filterParams.itemTypes],
+    [
+      'ry_min',
+      filterParams.sliders && filterParams.sliders.releaseYear
+        ? filterParams.sliders.releaseYear.min
+        : undefined,
+    ],
+    [
+      'ry_max',
+      filterParams.sliders && filterParams.sliders.releaseYear
+        ? filterParams.sliders.releaseYear.max
+        : undefined,
+    ],
+    ['cast', filterParams.people],
+  ];
+
+  paramUpdates = paramUpdates.filter(
+    ([key, _]) => !excludedParams || !excludedParams.includes(key),
+  );
+
+  updateMultipleUrlParams(
+    querystring.stringify(props.router.query),
+    str => props.router.replace(str),
+    paramUpdates,
+  );
 };
 
 export const updateUrlParamsForFilter = (
@@ -54,19 +99,23 @@ export const updateUrlParamsForFilter = (
     ([key, _]) => !excludedParams || !excludedParams.includes(key),
   );
 
-  updateMultipleUrlParams(props, paramUpdates);
+  updateMultipleUrlParams(
+    props.location.search,
+    str => props.history.replace(str),
+    paramUpdates,
+  );
 };
 
 export const updateMultipleUrlParams = (
-  props: RouteComponentProps<any>,
+  qs: string,
+  replace: (str: string) => void,
   keyValuePairs: [string, any | undefined][],
 ): void => {
   if (keyValuePairs.length === 0) {
     return;
   }
 
-  const { location } = props;
-  let params = new URLSearchParams(location.search);
+  let params = new URLSearchParams(qs);
 
   keyValuePairs.forEach(([param, value]) => {
     let paramExists = params.get(param);
@@ -90,7 +139,7 @@ export const updateMultipleUrlParams = (
 
   params.sort();
 
-  props.history.replace(`?${params}`);
+  replace(`?${params}`);
 };
 
 export function parseFilterParamsFromQs(qs: string): FilterParams {

@@ -230,10 +230,11 @@ export class SagaTeletrackerClient {
     genres?: number[],
     releaseYearRange?: OpenRange,
   ) {
-    let token = yield this.withToken();
+    console.log('popular');
+    // let token = yield this.withToken();
     return yield this.apiCall(
       client => client.getPopular,
-      token,
+      undefined,
       fields,
       itemTypes,
       networks,

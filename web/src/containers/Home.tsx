@@ -18,9 +18,6 @@ import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { Item } from '../types/v2/Item';
 import dynamic from 'next/dynamic';
-const Odometer = dynamic(() => import('react-odometerjs'), {
-  ssr: false,
-});
 import Typist from 'react-typist';
 // import 'react-typist/dist/Typist.css';
 // import 'odometer/themes/odometer-theme-default.css';
@@ -30,6 +27,9 @@ import { PopularInitiatedActionPayload } from '../actions/popular/popular';
 import ItemCard from '../components/ItemCard';
 import _ from 'lodash';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
+const Odometer = dynamic(() => require('react-odometerjs'), {
+  ssr: false,
+});
 
 const useStyles = makeStyles((theme: Theme) => ({
   layout: {

@@ -1,18 +1,19 @@
+import ItemDetail from '../../src/containers/ItemDetail';
+import { TeletrackerApi } from '../../src/utils/api-client';
 import React from 'react';
 import App from 'next/app';
 import Head from 'next/head';
 import { MuiThemeProvider } from '@material-ui/core';
 import CssBaseline from '@material-ui/core/CssBaseline';
-import 'sanitize.css/sanitize.css';
-import theme from '../src/theme';
+// import 'sanitize.css/sanitize.css';
+import theme from '../../src/theme';
 import { Provider } from 'react-redux';
-import createStore, { history } from '../src/store';
+import createStore, { history } from '../../src/store';
 import { PersistGate } from 'redux-persist/integration/react';
 import { ConnectedRouter } from 'connected-react-router';
 import Amplify from '@aws-amplify/core';
 import { launchUri } from '@aws-amplify/auth/lib/OAuth/urlOpener';
-
-console.log(process.env.REACT_APP_AUTH_REGION);
+import { ItemFactory, Item } from '../../src/types/v2/Item';
 
 Amplify.configure({
   Auth: {
@@ -52,41 +53,51 @@ Amplify.configure({
 
 export const { store, persistor } = createStore();
 
-export default class MyApp extends App {
-  componentDidMount() {
-    // Remove the server-side injected CSS.
-    const jssStyles = document.querySelector('#jss-server-side');
-    if (jssStyles) {
-      jssStyles.parentElement.removeChild(jssStyles);
-    }
-  }
-
-  render() {
-    const { Component, pageProps } = this.props;
-    console.log(pageProps);
-
-    return (
-      <React.Fragment>
-        <Head>
-          <title>My page</title>
-          <meta
-            name="viewport"
-            content="minimum-scale=1, initial-scale=1, width=device-width"
-          />
-        </Head>
-        <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-            <ConnectedRouter history={history}>
-              <MuiThemeProvider theme={theme}>
-                <div>
-                  <CssBaseline />
-                  <Component {...pageProps} />
-                </div>
-              </MuiThemeProvider>
-            </ConnectedRouter>
-          </PersistGate>
-        </Provider>
-      </React.Fragment>
-    );
-  }
+interface Props {
+  item?: Item;
+  pageProps: any;
 }
+
+function ItemDetailWrapper(props: Props) {
+  return (
+    <React.Fragment>
+      <Head>
+        <title>{props.item ? props.item.original_title : 'Not Found'}</title>
+        <meta
+          name="viewport"
+          content="minimum-scale=1, initial-scale=1, width=device-width"
+        />
+      </Head>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <ConnectedRouter history={history}>
+            <MuiThemeProvider theme={theme}>
+              <div>
+                <CssBaseline />
+                <ItemDetail
+                  {...props.pageProps}
+                  initialItem={
+                    props.item ? ItemFactory.create(props.item) : undefined
+                  }
+                />
+              </div>
+            </MuiThemeProvider>
+          </ConnectedRouter>
+        </PersistGate>
+      </Provider>
+    </React.Fragment>
+  );
+}
+
+ItemDetailWrapper.getInitialProps = async ctx => {
+  let response = await TeletrackerApi.instance.getItem(
+    undefined,
+    ctx.query.id,
+    'show',
+  );
+  return {
+    item: response.data ? response.data.data : undefined,
+  };
+};
+
+export default ItemDetailWrapper;

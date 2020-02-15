@@ -20,11 +20,12 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { login, LoginSuccessful, logInWithGoogle } from '../../actions/auth';
 import { AppState } from '../../reducers';
-import { RouteComponentProps, withRouter } from 'react-router';
-import { Link as RouterLink } from 'react-router-dom';
 import GoogleLoginButton from './GoogleLoginButton';
 import ReactGA from 'react-ga';
 import { GOOGLE_ACCOUNT_MERGE } from '../../constants/';
+import { WithRouterProps } from 'next/dist/client/with-router';
+import { withRouter } from 'next/router';
+import qs from 'querystring';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -76,7 +77,6 @@ interface OwnProps {
   logInWithGoogle: () => any;
   isLoggingIn: boolean;
   logInSuccessful: (token: string) => any;
-  changePage: () => void;
   redirect_uri?: string;
   // Events
   onSubmitted?: () => void;
@@ -84,7 +84,7 @@ interface OwnProps {
   onLogin?: () => void;
 }
 
-type Props = OwnProps & WithStyles<typeof styles> & RouteComponentProps<{}>;
+type Props = OwnProps & WithStyles<typeof styles> & WithRouterProps;
 
 interface State {
   email: string;
@@ -96,16 +96,17 @@ interface State {
 class LoginForm extends Component<Props, State> {
   constructor(props: Readonly<Props>) {
     super(props);
-    const params = new URLSearchParams(props.location.search);
+    const params = new URLSearchParams(qs.stringify(props.router.query));
 
     // If a user already has an account with email X and then attempts to sign
-    // in with a federated identity (e.g. Google) our pre-signup lambda will
+    // in with a federatedk identity (e.g. Google) our pre-signup lambda will
     // intercept and throw an error to indicate that it merged the federated
     // identity with the cognito user. This is returned in the form of an error
     // in the URL and indicates we should retry the federated login (because
     // with Cognito, the first attempt at a federated login with a matching
     // email causes an error)
     let error = params.get('error_description');
+    console.log(params.get('code'));
 
     this.state = {
       email: '',
@@ -149,7 +150,7 @@ class LoginForm extends Component<Props, State> {
     this.props.login(this.state.email, this.state.password);
 
     // TODO: Protect this with some state.
-    push('/');
+    this.props.router.push('/');
   };
 
   render() {
@@ -220,8 +221,8 @@ class LoginForm extends Component<Props, State> {
               {this.props.onNav ? (
                 <Link onClick={this.props.onNav}>Signup!</Link>
               ) : (
-                <Link component={RouterLink} to="/signup">
-                  Signup!
+                <Link href="/signup">
+                  <a>Signup!</a>
                 </Link>
               )}
             </Typography>
@@ -243,7 +244,6 @@ const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
       login: (email: string, password: string) => login(email, password),
-      changePage: () => push('/'),
       logInWithGoogle,
       logInSuccessful: (token: string) => LoginSuccessful(token),
     },

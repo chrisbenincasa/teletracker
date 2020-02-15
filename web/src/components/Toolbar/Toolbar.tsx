@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, RefObject } from 'react';
 import {
   AppBar,
   Box,
@@ -29,15 +29,18 @@ import {
   Person,
   Search as SearchIcon,
   KeyboardArrowUp,
+  MenuOpen,
 } from '@material-ui/icons';
 import clsx from 'clsx';
 import _ from 'lodash';
 import * as R from 'ramda';
 import { connect } from 'react-redux';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../../actions/auth';
-import RouterLink, { StdRouterLink } from '../RouterLink';
+import { search, SearchInitiatedPayload } from '../../actions/search';
+import Link from 'next/link';
+import { WithRouterProps } from 'next/dist/client/with-router';
+import { withRouter } from 'next/router';
 import { AppState } from '../../reducers';
 import { Genre as GenreModel } from '../../types';
 import { hexToRGB } from '../../utils/style-utils';
@@ -143,7 +146,7 @@ interface DispatchProps {
   logout: () => void;
 }
 
-type Props = DispatchProps & OwnProps & RouteComponentProps & WidthProps;
+type Props = DispatchProps & OwnProps & WithRouterProps & WidthProps;
 
 interface State {
   genreAnchorEl: HTMLButtonElement | null;
@@ -165,17 +168,30 @@ interface MenuItemProps {
 const MenuItemLink = (props: MenuItemProps) => {
   const { primary, to, selected, onClick } = props;
 
+  const ButtonLink = React.forwardRef((props: any, ref) => {
+    let { onClick, href, primary } = props;
+    return (
+      <Link href={href} passHref>
+        <a
+          onClick={onClick}
+          ref={ref as RefObject<HTMLAnchorElement>}
+          {...props}
+        >
+          {primary}
+        </a>
+      </Link>
+    );
+  });
+
   return (
     <MenuItem
       button
-      component={RouterLink}
-      to={to}
       selected={selected}
       onClick={onClick}
       dense
-    >
-      {primary}
-    </MenuItem>
+      href={to}
+      component={ButtonLink}
+    />
   );
 };
 
@@ -213,7 +229,7 @@ class Toolbar extends Component<Props, State> {
 
     // If user is on smaller device, go directly to page
     if (this.isSmallDevice) {
-      this.props.history.push(`popular?type=${type}`);
+      this.props.router.push(`popular?type=${type}`);
       return;
     }
     // If Genre menu is already open and user is not navigating to submenu, close it
@@ -312,7 +328,7 @@ class Toolbar extends Component<Props, State> {
                 height: 15,
                 width: '100%',
               }}
-            ></div>
+            />
           )}
         </div>
         <Popper
@@ -408,7 +424,7 @@ class Toolbar extends Component<Props, State> {
     // It would just show results that are already present on the page.
     return !(
       this.props.currentQuickSearchText === this.props.currentSearchText &&
-      this.props.location.pathname === '/search'
+      this.props.router.pathname === '/search'
     );
   };
 
@@ -449,15 +465,19 @@ class Toolbar extends Component<Props, State> {
     let { classes, drawerOpen, isAuthed } = this.props;
     const { mobileSearchBarOpen } = this.state;
 
-    const ButtonLink = function ButtonLink(props) {
-      const { primary, to } = props;
-
+    const ButtonLink = React.forwardRef((props: any, ref) => {
+      let { onClick, href, primary } = props;
       return (
-        <Button component={RouterLink} to={to} color="inherit">
+        <a
+          href={href}
+          onClick={onClick}
+          ref={ref as RefObject<HTMLAnchorElement>}
+          {...props}
+        >
           {primary}
-        </Button>
+        </a>
       );
-    };
+    });
 
     return (
       <AppBar position="sticky">
@@ -467,20 +487,13 @@ class Toolbar extends Component<Props, State> {
             onClick={() => this.toggleDrawer()}
             color="inherit"
           >
-            {drawerOpen ? <Icon>menu_open</Icon> : <MenuIcon />}
+            {drawerOpen ? <MenuOpen /> : <MenuIcon />}
           </IconButton>
-          <Typography
-            variant="h6"
-            color="inherit"
-            component={props =>
-              StdRouterLink('/', {
-                ...props,
-                style: { textDecoration: 'none' },
-              })
-            }
-          >
-            Teletracker
-          </Typography>
+          <Link href="/">
+            <Typography variant="h6" color="inherit">
+              Teletracker
+            </Typography>
+          </Link>
           <div className={classes.grow}>
             {!this.isSmallDevice && this.props.showToolbarSearch && (
               <Fade in={true} timeout={500}>
@@ -492,6 +505,7 @@ class Toolbar extends Component<Props, State> {
               </Fade>
             )}
           </div>
+          <div className={classes.grow} />
           <Hidden mdDown>
             <div
               style={{ display: 'flex', flexDirection: 'row', marginRight: 24 }}
@@ -510,12 +524,12 @@ class Toolbar extends Component<Props, State> {
 
           {!isAuthed && (
             <Button
-              component={RouterLink}
-              to="/login"
               startIcon={
                 ['xs', 'sm'].includes(this.props.width) ? null : <Person />
               }
               className={classes.loginButton}
+              component={ButtonLink}
+              href="/login"
             >
               Login
             </Button>

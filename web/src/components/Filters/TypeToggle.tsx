@@ -7,7 +7,8 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { withRouter } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 import { ItemType } from '../../types';
 import { parseFilterParamsFromQs } from '../../utils/urlHelper';
 
@@ -41,9 +42,7 @@ interface RouteParams {
   id: string;
 }
 
-type Props = OwnProps &
-  WithStyles<typeof styles> &
-  RouteComponentProps<RouteParams>;
+type Props = OwnProps & WithStyles<typeof styles> & WithRouterProps;
 
 export const getTypeFromUrlParam = () => {
   return parseFilterParamsFromQs(window.location.search).itemTypes;
@@ -55,7 +54,8 @@ class TypeToggle extends Component<Props> {
   };
 
   componentDidUpdate = (oldProps: Props) => {
-    if (oldProps.location.search !== this.props.location.search) {
+    // TODO: Don't do object equiv
+    if (oldProps.router.query !== this.props.router.query) {
       this.setState({
         type: getTypeFromUrlParam(),
       });

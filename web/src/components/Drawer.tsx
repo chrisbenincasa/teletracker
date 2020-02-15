@@ -30,7 +30,6 @@ import {
 import classNames from 'classnames';
 import _ from 'lodash';
 import { connect } from 'react-redux';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../actions/auth';
 import {
@@ -45,6 +44,8 @@ import { Loading } from '../reducers/user';
 import { List as ListType } from '../types';
 import RouterLink from './RouterLink';
 import AuthDialog from './Auth/AuthDialog';
+import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
+import Link from 'next/link';
 
 export const DrawerWidthPx = 220;
 
@@ -121,7 +122,7 @@ interface WidthProps {
 }
 
 type Props = OwnProps &
-  RouteComponentProps<RouteParams> &
+  WithRouterProps &
   DispatchProps &
   WithStyles<typeof styles> &
   InjectedProps &
@@ -235,7 +236,7 @@ class Drawer extends Component<Props, State> {
         authModalOpen: false,
         authModalScreen: undefined,
       });
-      this.props.history.push(`/${initialForm}`);
+      this.props.router.push(`/${initialForm}`);
     } else {
       this.setState({
         authModalOpen: !this.state.authModalOpen,
@@ -268,7 +269,7 @@ class Drawer extends Component<Props, State> {
         index={index}
         key={userList.id}
         to={`/lists/${list.id}`}
-        selected={listPath === this.props.location.pathname}
+        selected={listPath === this.props.router.pathname}
         primary={list.name}
         listLength={userList.totalItems}
         onClick={this.props.closeRequested}
@@ -277,24 +278,27 @@ class Drawer extends Component<Props, State> {
   };
 
   renderDrawerContents() {
-    let { classes, isAuthed, listsById, location } = this.props;
+    let { classes, isAuthed, listsById } = this.props;
 
     function ListItemLink(props: ListItemProps) {
       const { primary, to, selected } = props;
 
       return (
-        <ListItem
-          button
-          component={RouterLink}
-          to={to}
-          selected={selected}
-          onClick={props.onClick}
-        >
-          <ListItemIcon>
-            <Settings />
-          </ListItemIcon>
-          {primary}
-        </ListItem>
+        <Link href={to}>
+          {/*<a>*/}
+            <ListItem
+              button
+              selected={selected}
+              onClick={props.onClick}
+            >
+              <ListItemIcon>
+                <Settings />
+              </ListItemIcon>
+              {primary}
+            </ListItem>
+          {/*</a>*/}
+        </Link>
+
       );
     }
 
