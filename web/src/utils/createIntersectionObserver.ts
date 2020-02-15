@@ -22,9 +22,7 @@ export function createIntersectionObserver({
 
   const intersectionObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        callback(entry);
-      }
+      callback(entry);
     });
   }, options);
 
