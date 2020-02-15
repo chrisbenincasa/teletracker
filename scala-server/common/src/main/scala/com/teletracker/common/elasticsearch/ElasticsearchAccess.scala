@@ -42,7 +42,11 @@ trait ElasticsearchAccess {
     val hits = response.getHits
 
     ElasticsearchItemsResponse(
-      decodeSearchResponse[EsItem](response),
+      decodeSearchResponse[EsItem](response).map(item => {
+        item.copy(
+          cast = item.cast.map(_.sortWith(EsOrdering.forItemCastMember))
+        )
+      }),
       hits.getTotalHits.value
     )
   }

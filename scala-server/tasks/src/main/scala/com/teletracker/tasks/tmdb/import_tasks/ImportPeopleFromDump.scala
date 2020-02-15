@@ -37,10 +37,9 @@ class ImportPeopleFromDump @Inject()(
       s3,
       sourceRetriever,
       genreCache
-    )
-    with ImportTmdbDumpTaskToElasticsearch[Person] {
+    ) {
 
-  implicit override def toEsItem: ToEsItem[Person] = ToEsItem.forTmdbPerson
+  implicit def toEsItem: ToEsItem[Person] = ToEsItem.forTmdbPerson
 
   override protected def shouldHandleItem(item: Person): Boolean =
     item.name.exists(_.nonEmpty)

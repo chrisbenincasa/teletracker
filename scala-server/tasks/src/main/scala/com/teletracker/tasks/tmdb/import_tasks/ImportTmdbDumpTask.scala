@@ -181,19 +181,3 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
     }
   }
 }
-
-trait ImportTmdbDumpTaskToElasticsearch[T <: HasTmdbId] {
-  self: ImportTmdbDumpTask[T] =>
-
-  implicit def toEsItem: ToEsItem[T]
-
-  implicit lazy val lcs = new Patience[Json]
-  implicit protected val executionContext: ExecutionContext
-
-  override protected def handleItem(
-    args: ImportTmdbDumpTaskArgs,
-    item: T
-  ): Future[Unit]
-
-  protected def getNow(): OffsetDateTime = OffsetDateTime.now()
-}
