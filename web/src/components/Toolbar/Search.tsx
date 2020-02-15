@@ -221,6 +221,8 @@ function Search(props: Props) {
         </IconButton>
       </div>
       <InputBase
+        defaultValue={currentSearchText}
+        key={currentSearchText}
         placeholder="Search&hellip;"
         classes={{
           root: classes.inputRoot,

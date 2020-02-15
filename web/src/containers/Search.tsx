@@ -253,9 +253,8 @@ const Search = ({ inViewportChange }) => {
   let firstLoad = !searchResults;
 
   const showSearch =
-    !currentSearchText ||
-    (currentSearchText && currentSearchText.length === 0) ||
-    isInViewport;
+    !currentSearchText || (currentSearchText && currentSearchText.length === 0);
+  // || isInViewport;
 
   return (
     <React.Fragment>
