@@ -34,6 +34,7 @@ const styles = (theme: Theme) =>
 interface OwnProps {
   handleChange: (type?: ItemType[]) => void;
   selectedTypes?: ItemType[];
+  showTitle?: boolean;
 }
 
 interface RouteParams {
@@ -49,6 +50,10 @@ export const getTypeFromUrlParam = () => {
 };
 
 class TypeToggle extends Component<Props> {
+  static defaultProps = {
+    showTitle: true,
+  };
+
   componentDidUpdate = (oldProps: Props) => {
     if (oldProps.location.search !== this.props.location.search) {
       this.setState({
@@ -70,9 +75,11 @@ class TypeToggle extends Component<Props> {
 
     return (
       <div className={classes.typeContainer}>
-        <Typography className={classes.filterLabel} display="block">
-          Type
-        </Typography>
+        {this.props.showTitle && (
+          <Typography className={classes.filterLabel} display="block">
+            Type
+          </Typography>
+        )}
         <div className={classes.chipContainer}>
           <Chip
             key={'all'}

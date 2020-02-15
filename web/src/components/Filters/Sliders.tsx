@@ -22,6 +22,7 @@ const RATING_STEP = 0.5;
 interface OwnProps {
   handleChange: (change: SliderChange) => void;
   sliders?: SlidersState;
+  showTitle?: boolean;
 }
 
 type Props = OwnProps & RouteComponentProps<{}>;
@@ -127,7 +128,7 @@ const SliderFilters = (props: Props) => {
   return (
     <React.Fragment>
       <div className={classes.sliderContainer}>
-        <Typography>Release Year</Typography>
+        {props.showTitle && <Typography>Release Year</Typography>}
         <Slider
           value={yearValue}
           min={MIN_YEAR}
@@ -143,7 +144,7 @@ const SliderFilters = (props: Props) => {
         />
       </div>
       <div className={classes.sliderContainer} hidden={true}>
-        <Typography>IMDb Score</Typography>
+        {props.showTitle && <Typography>IMDb Score</Typography>}
         <Slider
           value={imdbRatingValue}
           min={MIN_RATING}
@@ -156,6 +157,10 @@ const SliderFilters = (props: Props) => {
       </div>
     </React.Fragment>
   );
+};
+
+SliderFilters.defaultProps = {
+  showTitle: true,
 };
 
 export default withRouter(SliderFilters);

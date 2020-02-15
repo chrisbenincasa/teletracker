@@ -31,6 +31,7 @@ const styles = (theme: Theme) =>
 interface OwnProps {
   handleChange: (genres?: number[]) => void;
   genres?: Genre[];
+  showTitle?: boolean;
   disabledGenres?: number[];
   selectedGenres: number[];
 }
@@ -44,6 +45,10 @@ type Props = OwnProps &
   RouteComponentProps<RouteParams>;
 
 class GenreSelect extends Component<Props> {
+  static defaultProps = {
+    showTitle: true,
+  };
+
   updateSelectedGenres = (param: string, value?: number) => {
     const { selectedGenres } = this.props;
     let newSelectedGenres: number[];
@@ -74,7 +79,7 @@ class GenreSelect extends Component<Props> {
 
     return (
       <div className={classes.genreContainer}>
-        <Typography display="block">Genre</Typography>
+        {this.props.showTitle && <Typography display="block">Genre</Typography>}
         <div className={classes.chipContainer}>
           <Chip
             key={0}
