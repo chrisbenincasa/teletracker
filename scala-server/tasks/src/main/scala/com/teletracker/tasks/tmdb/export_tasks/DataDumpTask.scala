@@ -1,5 +1,6 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
@@ -9,6 +10,7 @@ import io.circe.generic.semiauto.deriveEncoder
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.JsonCodec
+import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
@@ -42,6 +44,9 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
   s3: S3Client
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
+  @Inject
+  private[this] var teletrackerConfig: TeletrackerConfig = _
+
   private val dumpTime = Instant.now().toString
 
   override type TypedArgs = DataDumpTaskArgs
@@ -74,7 +79,7 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
     var os: PrintStream = null
 
     logger.info(
-      s"Preparing to dump data to: s3://teletracker-data/$fullPath/"
+      s"Preparing to dump data to: s3://${teletrackerConfig.data.s3_bucket}/$fullPath/"
     )
 
     def rotateFile(batch: Long): Unit = {
@@ -167,13 +172,14 @@ abstract class DataDumpTask[T <: TmdbDumpFileRow](
 
   protected def fullPath: String = s"data-dump/$baseFileName/$dumpTime"
 
-  protected def s3Uri = new URI(s"s3://teletracker-data/$fullPath")
+  protected def s3Uri =
+    new URI(s"s3://${teletrackerConfig.data.s3_bucket}/$fullPath")
 
   private def uploadToS3(file: File) = {
     s3.putObject(
       PutObjectRequest
         .builder()
-        .bucket("teletracker-data")
+        .bucket(teletrackerConfig.data.s3_bucket)
         .key(s"$fullPath/${file.getName}")
         .contentType("text/plain")
         .contentEncoding("gzip")
