@@ -1,19 +1,17 @@
-import { launchUri } from '@aws-amplify/auth/lib/OAuth/urlOpener';
 import Amplify from '@aws-amplify/core';
 import { MuiThemeProvider } from '@material-ui/core';
 import CssBaseline from '@material-ui/core/CssBaseline';
+import cookie from 'cookie';
+import _ from 'lodash';
 import { InitStoreOptions, NextJSAppContext } from 'next-redux-wrapper';
-import App from 'next/app';
+import App, { AppContext } from 'next/app';
 import Head from 'next/head';
 import React from 'react';
 import { Provider } from 'react-redux';
 import { Store } from 'redux';
 import 'sanitize.css/sanitize.css';
-import Footer from '../src/components/Footer';
-import createStore from '../src/store';
-import theme from '../src/theme';
-import cookie from 'cookie';
-import _ from 'lodash';
+import createStore from '../store';
+import theme from '../theme';
 
 interface Config {
   serializeState?: (any) => any;
@@ -67,7 +65,7 @@ Amplify.configure({
   },
 });
 
-const initStore = ({ initialState, ctx }: InitStoreOptions): Store => {
+const initStore = ({ initialState }: InitStoreOptions): Store => {
   const createStoreInner = () => createStore(initialState).store;
 
   if (isServer) {
@@ -90,8 +88,8 @@ export interface WrappedAppProps {
   isServer: boolean;
 }
 
-export default class MyApp extends App<WrappedAppProps> {
-  public static getInitialProps = async (appCtx: NextJSAppContext) => {
+export default class MyApp extends App {
+  public static getInitialProps = async (appCtx: AppContext) => {
     console.log('App.getInitialProps start');
     if (!appCtx) throw new Error('No app context');
     if (!appCtx.ctx) throw new Error('No page context');
@@ -111,7 +109,6 @@ export default class MyApp extends App<WrappedAppProps> {
         storage: {
           store: {},
           getItem(key) {
-            console.log(key);
             return parsedCookies[key];
           },
           setItem(_key, _value) {
@@ -127,14 +124,14 @@ export default class MyApp extends App<WrappedAppProps> {
       },
     });
 
-    const store = initStore({
-      ctx: appCtx.ctx,
-    });
+    const store = initStore({});
 
     // if (config.debug)
     // console.log('1. WrappedApp.getInitialProps wrapper got the store with state', store.getState());
 
+    // @ts-ignore
     appCtx.ctx.store = store;
+    // @ts-ignore
     appCtx.ctx.isServer = isServer;
 
     let initialProps = {};
@@ -162,8 +159,15 @@ export default class MyApp extends App<WrappedAppProps> {
 
     const { initialState } = props;
 
+    console.log(initialState.startup);
+
     this.store = initStore({
-      initialState,
+      initialState: {
+        ...initialState,
+        startup: {
+          isBooting: true,
+        },
+      },
     });
   }
 
@@ -186,6 +190,14 @@ export default class MyApp extends App<WrappedAppProps> {
             name="viewport"
             content="minimum-scale=1, initial-scale=1, width=device-width"
           />
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css?family=Roboto:300,400,500"
+          />
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          ></link>
         </Head>
         <Provider store={this.store}>
           {/* <PersistGate loading={null} persistor={persistor}> */}

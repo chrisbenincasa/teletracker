@@ -21,6 +21,7 @@ import RouterLink from '../RouterLink';
 import { getTmdbPosterImage } from '../../utils/image-helper';
 import { formatRuntime } from '../../utils/textHelper';
 import moment from 'moment';
+import { useRouter } from 'next/router';
 
 const useStyles = makeStyles((theme: Theme) => ({
   chip: {
@@ -89,8 +90,14 @@ interface Props {
 
 function QuickSearch(props: Props) {
   const classes = useStyles(props);
+  const router = useRouter();
 
   let { searchResults, isSearching, searchText, searchAnchor } = props;
+
+  const handleMenuItemClick = (event, relativeUrl: string) => {
+    props.handleResetSearchAnchor(event);
+    router.push(relativeUrl);
+  };
 
   return searchAnchor && searchText && searchText.length > 0 ? (
     <ClickAwayListener
@@ -153,12 +160,15 @@ function QuickSearch(props: Props) {
                           return (
                             <MenuItem
                               dense
-                              component={RouterLink}
-                              to={result.relativeUrl}
+                              // component={RouterLink}
+                              // href={result.relativeUrl}
                               key={result.id}
                               onClick={event =>
-                                props.handleResetSearchAnchor(event)
+                                handleMenuItemClick(event, result.relativeUrl)
                               }
+                              // onClick={event =>
+                              //   props.handleResetSearchAnchor(event)
+                              // }
                             >
                               {getTmdbPosterImage(result) ? (
                                 <img

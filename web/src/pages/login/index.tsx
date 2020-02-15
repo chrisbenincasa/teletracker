@@ -1,8 +1,7 @@
 import Head from 'next/head';
 import React from 'react';
-import AppWrapper from '../../src/containers/AppWrapper';
-import Login from '../../src/containers/Login';
-import { Item } from '../../src/types/v2/Item';
+import AppWrapper from '../../containers/AppWrapper';
+import Login from '../../containers/Login';
 
 interface Props {
   pageProps: any;

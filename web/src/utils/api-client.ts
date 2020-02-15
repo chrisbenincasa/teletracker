@@ -307,7 +307,7 @@ export class TeletrackerApi {
     });
   }
 
-  async getPerson(token: String, id: string) {
+  async getPerson(token: string | undefined, id: string) {
     return this.api.get<any>(`/api/v2/people/${id}`, {
       token,
     });
