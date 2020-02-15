@@ -53,6 +53,7 @@ const styles = (theme: Theme) =>
 interface OwnProps {
   handleChange: (type?: NetworkType[]) => void;
   selectedNetworks?: NetworkType[];
+  showTitle?: boolean;
 }
 
 interface RouteParams {
@@ -68,6 +69,10 @@ export const getNetworkTypeFromUrlParam = () => {
 };
 
 class NetworkSelect extends Component<Props> {
+  static defaultProps = {
+    showTitle: true,
+  };
+
   componentDidUpdate = oldProps => {
     if (oldProps.location.search !== this.props.location.search) {
       // To do, only update this when these params changed
@@ -94,9 +99,11 @@ class NetworkSelect extends Component<Props> {
 
     return (
       <div className={classes.networkContainer}>
-        <Typography className={classes.filterLabel} display="block">
-          Network
-        </Typography>
+        {this.props.showTitle && (
+          <Typography className={classes.filterLabel} display="block">
+            Network
+          </Typography>
+        )}
         <div className={classes.chipContainer}>
           <Chip
             key={'all'}
