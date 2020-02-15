@@ -32,6 +32,7 @@ export type QuickSearchInitiatedAction = FSA<
   typeof QUICK_SEARCH_INITIATED,
   QuickSearchInitiatedPayload
 >;
+
 export interface QuickSearchSuccessfulPayload {
   results: Item[];
   paging?: Paging;

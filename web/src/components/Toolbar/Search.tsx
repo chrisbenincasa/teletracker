@@ -165,8 +165,12 @@ function Search(props: Props) {
     }
   };
 
+  const onSearchPage = () => {
+    return location.pathname.toLowerCase() === '/search';
+  };
+
   const handleSearchForSubmit = event => {
-    if (location.pathname === '/search') {
+    if (onSearchPage()) {
       window.scrollTo(0, 0);
       setSearchAnchor(null);
     } else {
@@ -221,8 +225,8 @@ function Search(props: Props) {
         </IconButton>
       </div>
       <InputBase
-        defaultValue={currentSearchText}
-        key={currentSearchText}
+        defaultValue={onSearchPage() ? currentSearchText : null}
+        key={`${currentSearchText}-${onSearchPage()}`}
         placeholder="Search&hellip;"
         classes={{
           root: classes.inputRoot,
@@ -239,7 +243,8 @@ function Search(props: Props) {
         onFocus={handleSearchFocus}
         style={props.inputStyle || undefined}
       />
-      {searchText.length > 0 ? (
+      {searchText.length > 0 ||
+      (currentSearchText && currentSearchText.length > 0) ? (
         <Fade in={true}>
           <IconButton
             onClick={clearSearch}
