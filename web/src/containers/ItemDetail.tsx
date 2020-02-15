@@ -50,6 +50,8 @@ import {
   getVoteCount,
 } from '../utils/textHelper';
 import Login from './Login';
+import RouterLink from '../components/RouterLink';
+import Link from 'next/link';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -326,18 +328,24 @@ function ItemDetails(props: Props) {
           {genresToRender &&
             genresToRender.length > 0 &&
             genresToRender.map(genre => (
-              <Chip
+              <Link
                 key={genre.id}
-                label={genre.name}
-                className={classes.genre}
-                // component={
-                //   <RouterLink href={`/popular?genres=${genre.id}`} passHref>
-                //     <WrappedLink />
-                //   </RouterLink>
-                // }
-                // itemProp="genre"
-                clickable
-              />
+                href={`/popular?genres=${genre.id}`}
+                passHref
+              >
+                <Chip
+                  label={genre.name}
+                  className={classes.genre}
+                  component="a"
+                  // component={
+                  //   <RouterLink href={`/popular?genres=${genre.id}`} passHref>
+                  //     <WrappedLink />
+                  //   </RouterLink>
+                  // }
+                  itemProp="genre"
+                  clickable
+                />
+              </Link>
             ))}
         </div>
       </div>

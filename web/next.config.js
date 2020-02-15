@@ -19,13 +19,13 @@ const config = withImages({
   //   REACT_APP_USER_POOL_ID: 'us-west-2_K6E5m6v90',
   //   REACT_APP_USER_POOL_CLIENT_ID: '3e5t3s3ddfci044230p3f3ki29',
   // },
-  webpack(config, options) {
-    config.output = config.output || {};
-    config.output.devtoolModuleFilenameTemplate = function(info) {
-      return 'file:///' + encodeURI(info.absoluteResourcePath);
-    };
-    return config;
-  },
+  // webpack(config, options) {
+  //   config.output = config.output || {};
+  //   config.output.devtoolModuleFilenameTemplate = function(info) {
+  //     return 'file:///' + encodeURI(info.absoluteResourcePath);
+  //   };
+  //   return config;
+  // },
 });
 
 module.exports = config;

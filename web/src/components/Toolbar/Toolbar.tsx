@@ -21,6 +21,7 @@ import {
   WithStyles,
   withStyles,
   withWidth,
+  NoSsr,
 } from '@material-ui/core';
 import {
   ArrowDropDown,
@@ -169,7 +170,7 @@ const MenuItemLink = (props: MenuItemProps) => {
   const { primary, to, selected, onClick } = props;
 
   const ButtonLink = React.forwardRef((props: any, ref) => {
-    let { onClick, href, primary } = props;
+    let { onClick, href } = props;
     return (
       <Link href={href} passHref>
         <a
@@ -489,22 +490,29 @@ class Toolbar extends Component<Props, State> {
           >
             {drawerOpen ? <MenuOpen /> : <MenuIcon />}
           </IconButton>
-          <Link href="/">
-            <Typography variant="h6" color="inherit">
+          <Link href="/" passHref>
+            <Typography
+              variant="h6"
+              color="inherit"
+              component="a"
+              style={{ textDecoration: 'none' }}
+            >
               Teletracker
             </Typography>
           </Link>
-          <div className={classes.grow}>
-            {!this.isSmallDevice && this.props.showToolbarSearch && (
-              <Fade in={true} timeout={500}>
-                <Search
-                  drawerOpen={drawerOpen}
-                  onDrawerChange={this.toggleDrawer}
-                  quickSearchEnabled={this.showQuickSearch()}
-                />
-              </Fade>
-            )}
-          </div>
+          <NoSsr>
+            <div className={classes.grow}>
+              {!this.isSmallDevice && this.props.showToolbarSearch && (
+                <Fade in={true} timeout={500}>
+                  <Search
+                    drawerOpen={drawerOpen}
+                    onDrawerChange={this.toggleDrawer}
+                    quickSearchEnabled={this.showQuickSearch()}
+                  />
+                </Fade>
+              )}
+            </div>
+          </NoSsr>
           <div className={classes.grow} />
           <Hidden mdDown>
             <div
@@ -530,9 +538,8 @@ class Toolbar extends Component<Props, State> {
               className={classes.loginButton}
               component={ButtonLink}
               href="/login"
-            >
-              Login
-            </Button>
+              primary="Login"
+            />
           )}
           {this.isSmallDevice &&
             !mobileSearchBarOpen &&

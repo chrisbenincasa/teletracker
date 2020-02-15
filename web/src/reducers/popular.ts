@@ -78,6 +78,7 @@ const PopularFailed = handleError<PopularFailedAction, State>(
 );
 
 export default flattenActions<State>(
+  'popular',
   initialState,
   PopularInitiated,
   PopularSuccess,

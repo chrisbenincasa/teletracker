@@ -66,9 +66,9 @@ function* captureAll() {
     }
   }
 
-  while (events.length > 0) {
-    yield put(events.pop());
-  }
+  // while (events.length > 0) {
+  //   yield put(events.pop());
+  // }
 }
 
 export function* root() {
