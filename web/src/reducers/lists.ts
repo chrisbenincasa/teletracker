@@ -1,12 +1,5 @@
 import * as R from 'ramda';
 import {
-  LIST_ADD_ITEM_FAILED,
-  LIST_ADD_ITEM_INITIATED,
-  LIST_ADD_ITEM_SUCCESS,
-  LIST_RETRIEVE_ALL_INITIATED,
-  LIST_RETRIEVE_ALL_SUCCESS,
-  LIST_RETRIEVE_INITIATED,
-  LIST_RETRIEVE_SUCCESS,
   ListActions,
   ListAddFailedAction,
   ListAddInitiatedAction,
@@ -15,8 +8,22 @@ import {
   ListRetrieveAllSuccessAction,
   ListRetrieveInitiatedAction,
   ListRetrieveSuccessAction,
-  USER_SELF_UPDATE_LIST_SUCCESS,
+  LIST_RETRIEVE_ALL_INITIATED,
 } from '../actions/lists';
+import {
+  LIST_ADD_ITEM_INITIATED,
+  LIST_ADD_ITEM_SUCCESS,
+  LIST_ADD_ITEM_FAILED,
+} from '../actions/lists/add_item_to_list';
+import {
+  LIST_RETRIEVE_INITIATED,
+  LIST_RETRIEVE_SUCCESS,
+} from '../actions/lists/get_list';
+import {
+  // LIST_RETRIEVE_ALL_INITIATED,
+  LIST_RETRIEVE_ALL_SUCCESS,
+} from '../actions/lists/retrieve_all_lists';
+import { USER_SELF_UPDATE_LIST_SUCCESS } from '../actions/lists/update_list';
 import { List } from '../types';
 import { flattenActions, handleAction } from './utils';
 import Thing from '../types/Thing';
@@ -262,6 +269,7 @@ const handleListUpdate = handleAction<UserUpdateListSuccessAction, State>(
 );
 
 export default flattenActions<State>(
+  'lists',
   initialState,
   handleListAddInitiated,
   handleListAddSuccess,

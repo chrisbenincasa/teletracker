@@ -206,6 +206,7 @@ const loadingPeople = [
 });
 
 export default flattenActions(
+  'people',
   initialState,
   personFetchSuccess,
   personSearchSuccess,

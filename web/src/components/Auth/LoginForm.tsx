@@ -221,9 +221,7 @@ class LoginForm extends Component<Props, State> {
               {this.props.onNav ? (
                 <Link onClick={this.props.onNav}>Signup!</Link>
               ) : (
-                <Link href="/signup">
-                  <a>Signup!</a>
-                </Link>
+                <Link href="/signup">Signup!</Link>
               )}
             </Typography>
           </form>

@@ -142,6 +142,7 @@ const unsetToken = handleAction<UnsetTokenAction, State>(
 );
 
 export default flattenActions(
+  'auth',
   initialState,
   ...[
     ...loginInitiated,

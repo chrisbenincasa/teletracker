@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, RefObject } from 'react';
 import {
   Avatar,
   Button,
@@ -42,10 +42,10 @@ import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
 import { List as ListType } from '../types';
-import RouterLink from './RouterLink';
 import AuthDialog from './Auth/AuthDialog';
 import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
 import Link from 'next/link';
+import RouterLink from './RouterLink';
 
 export const DrawerWidthPx = 220;
 
@@ -161,12 +161,27 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
       }
     };
 
+    const ButtonLink = React.forwardRef((props: any, ref) => {
+      let { onClick, href } = props;
+      return (
+        <Link href={href} passHref>
+          <a
+            onClick={onClick}
+            ref={ref as RefObject<HTMLAnchorElement>}
+            {...props}
+          >
+            {primary}
+          </a>
+        </Link>
+      );
+    });
+
     return (
       <ListItem
         button
-        onClick={handleClick}
-        to={props.to}
-        component={RouterLink}
+        // onClick={handleClick}
+        // href={props.to}
+        // component={ButtonLink}
         selected={selected}
       >
         <ListItemAvatar>
@@ -181,7 +196,11 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
             {listLength >= 100 ? '99+' : listLength}
           </Avatar>
         </ListItemAvatar>
-        <ListItemText primary={primary} />
+        <Link href={props.to} passHref>
+          <ListItemText primary={primary} />
+          {/* <a onClick={handleClick}>
+          </a> */}
+        </Link>
       </ListItem>
     );
   },
@@ -286,19 +305,14 @@ class Drawer extends Component<Props, State> {
       return (
         <Link href={to}>
           {/*<a>*/}
-            <ListItem
-              button
-              selected={selected}
-              onClick={props.onClick}
-            >
-              <ListItemIcon>
-                <Settings />
-              </ListItemIcon>
-              {primary}
-            </ListItem>
+          <ListItem button selected={selected} onClick={props.onClick}>
+            <ListItemIcon>
+              <Settings />
+            </ListItemIcon>
+            {primary}
+          </ListItem>
           {/*</a>*/}
         </Link>
-
       );
     }
 
@@ -311,7 +325,7 @@ class Drawer extends Component<Props, State> {
               <ListItem
                 button
                 component={RouterLink}
-                to="/all"
+                href="/all"
                 selected={location.pathname.toLowerCase() === '/all'}
               >
                 <ListItemIcon>
@@ -322,7 +336,7 @@ class Drawer extends Component<Props, State> {
               <ListItem
                 button
                 component={RouterLink}
-                to="/popular"
+                href="/popular"
                 selected={location.pathname.toLowerCase() === '/popular'}
               >
                 <ListItemIcon>
@@ -333,7 +347,7 @@ class Drawer extends Component<Props, State> {
               <ListItem
                 button
                 component={RouterLink}
-                to="/new"
+                href="/new"
                 selected={location.pathname.toLowerCase() === '/new'}
               >
                 <ListItemIcon>
@@ -444,6 +458,8 @@ class Drawer extends Component<Props, State> {
     );
   }
 }
+
+console.log('what is ' + LIST_RETRIEVE_ALL_INITIATED);
 
 const mapStateToProps = (appState: AppState) => {
   return {

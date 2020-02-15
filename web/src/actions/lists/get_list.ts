@@ -51,11 +51,11 @@ export const ListRetrieveInitiated = createAction<ListRetrieveInitiatedAction>(
   LIST_RETRIEVE_INITIATED,
 );
 
-const ListRetrieveSuccess = createAction<ListRetrieveSuccessAction>(
+export const ListRetrieveSuccess = createAction<ListRetrieveSuccessAction>(
   LIST_RETRIEVE_SUCCESS,
 );
 
-const ListRetrieveFailed = createAction<ListRetrieveFailedAction>(
+export const ListRetrieveFailed = createAction<ListRetrieveFailedAction>(
   LIST_RETRIEVE_FAILED,
 );
 

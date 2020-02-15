@@ -214,6 +214,7 @@ const peopleSearchSuccess = handleAction<PeopleSearchSuccessfulAction, State>(
 );
 
 export default flattenActions(
+  'search',
   initialState,
   quickSearchInitiated,
   quickSearchSuccess,

@@ -280,6 +280,7 @@ const itemRemoveTagsSuccess = handleAction(
 );
 
 export default flattenActions(
+  'item-detail',
   initialState,
   itemFetchInitiated,
   itemFetchSuccess,

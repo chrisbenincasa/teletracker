@@ -23,7 +23,6 @@ app.prepare().then(() => {
         storage: {
           store: {},
           getItem(key) {
-            console.log(key);
             return parsed[key];
           },
           setItem(_key, _value) {
@@ -40,7 +39,7 @@ app.prepare().then(() => {
     });
 
     const parsedUrl = parse(req.url, true);
-    console.log('Serving ' + req.url);
+    // console.log('Serving ' + req.url);
     handle(req, res, parsedUrl);
   }).listen(3000, err => {
     if (err) throw err;

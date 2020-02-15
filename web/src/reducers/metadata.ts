@@ -87,6 +87,7 @@ const handleMetadataSuccess = handleAction<MetadataLoadSuccessAction, State>(
 );
 
 export default flattenActions<State>(
+  'metadata',
   initialState,
   handleNetworksInitiated,
   handleNetworksSuccess,

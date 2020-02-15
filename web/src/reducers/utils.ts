@@ -1,4 +1,5 @@
 import { FSA, ErrorFSA } from 'flux-standard-action';
+import { LIST_RETRIEVE_ALL_SUCCESS } from '../actions/lists';
 
 type AllFSA = FSA<any, any, any>;
 
@@ -13,6 +14,7 @@ export function handleAction<Action extends AllFSA, State>(
   actionType: Action['type'],
   reducer: (state: State, action: Action) => State,
 ): (initialState: State) => FSAReducer<State, Action> {
+  console.log('initializing handler for action type= ' + actionType);
   return (initialState: State) => {
     return (state: State = initialState, action: AllFSA) => {
       if (!action.type || action.type !== actionType) {
@@ -44,6 +46,7 @@ export type StateToReducer<State> = (
 ) => AnyFSAReducer<State>;
 
 export function flattenActions<State>(
+  name: string,
   initialState: State,
   ...reducers: StateToReducer<State>[]
 ) {
