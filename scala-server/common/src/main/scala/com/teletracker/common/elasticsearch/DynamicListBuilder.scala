@@ -1,5 +1,6 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredUserList
 import com.teletracker.common.db.{
   AddedTime,
@@ -37,7 +38,8 @@ import scala.util.Try
 
 class DynamicListBuilder @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor,
-  personLookup: PersonLookup
+  personLookup: PersonLookup,
+  teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
   def getDynamicListCounts(
@@ -54,7 +56,10 @@ class DynamicListBuilder @Inject()(
         val queries = lists
           .map(getDynamicListQuery(userId, _, None, None, None, None))
           .map(_.fetchSource(false))
-          .map(new SearchRequest().source(_))
+          .map(
+            new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+              .source(_)
+          )
 
         val mSearchRequest = new MultiSearchRequest()
 
@@ -82,7 +87,9 @@ class DynamicListBuilder @Inject()(
     val listQuery =
       getDynamicListQuery(userId, list, None, None, None, None)
 
-    val countRequest = new CountRequest("items").source(listQuery)
+    val countRequest = new CountRequest(
+      teletrackerConfig.elasticsearch.items_index_name
+    ).source(listQuery)
 
     elasticsearchExecutor
       .count(countRequest)
@@ -116,7 +123,9 @@ class DynamicListBuilder @Inject()(
       Future.successful(Nil)
     }
 
-    val searchRequest = new SearchRequest("items").source(listQuery)
+    val searchRequest = new SearchRequest(
+      teletrackerConfig.elasticsearch.items_index_name
+    ).source(listQuery)
 
     val itemsFut = elasticsearchExecutor
       .search(searchRequest)

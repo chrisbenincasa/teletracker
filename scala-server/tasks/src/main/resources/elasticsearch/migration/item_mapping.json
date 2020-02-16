@@ -13,7 +13,7 @@
           },
           "index_prefix_analyzer": {
             "tokenizer": "standard",
-            "filter": ["edge_ngram", "3gram_shingle"]
+            "filter": ["autocomplete_filter", "3gram_shingle"]
           }
         },
         "filter": {
@@ -21,6 +21,11 @@
             "type": "shingle",
             "max_shingle_size": 3,
             "min_shingle_size": 3
+          },
+          "autocomplete_filter": {
+            "type": "edge_ngram",
+            "min_gram": 1,
+            "max_gram": 20
           }
         }
       }

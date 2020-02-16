@@ -1,12 +1,12 @@
 package com.teletracker.tasks.elasticsearch
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.ListsDbAccess
 import com.teletracker.common.db.model.UserThingTagType
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   EsItemTag,
   EsUserItem,
-  Indices,
   ItemUpdater
 }
 import com.teletracker.common.util.Futures._
@@ -26,7 +26,8 @@ import scala.concurrent.ExecutionContext
 class MigrateToDynamoListIds @Inject()(
   listsDbAccess: ListsDbAccess,
   elasticsearchExecutor: ElasticsearchExecutor,
-  itemUpdater: ItemUpdater
+  itemUpdater: ItemUpdater,
+  teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {
   override protected def runInternal(args: Args): Unit = {
@@ -67,7 +68,9 @@ class MigrateToDynamoListIds @Inject()(
 
               val foundUserItems = elasticsearchExecutor
                 .search(
-                  new SearchRequest(Indices.UserItemIndex).source(search)
+                  new SearchRequest(
+                    teletrackerConfig.elasticsearch.user_items_index_name
+                  ).source(search)
                 )
                 .map(response => {
                   val hits = response.getHits
@@ -101,8 +104,10 @@ class MigrateToDynamoListIds @Inject()(
 
                 newUserItems.foreach(newUserItem => {
                   bulkRequest.add(
-                    new UpdateRequest(Indices.UserItemIndex, newUserItem.id)
-                      .doc(newUserItem.asJson.noSpaces, XContentType.JSON)
+                    new UpdateRequest(
+                      teletrackerConfig.elasticsearch.user_items_index_name,
+                      newUserItem.id
+                    ).doc(newUserItem.asJson.noSpaces, XContentType.JSON)
                   )
                 })
 

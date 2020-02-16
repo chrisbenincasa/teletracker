@@ -33,7 +33,10 @@ case class AdminConfig(adminKeys: Set[String])
 
 case class EsConfig(
   hosts: List[EsHostConfig],
-  creds: EsCredentials)
+  creds: EsCredentials,
+  items_index_name: String,
+  people_index_name: String,
+  user_items_index_name: String)
 
 case class EsHostConfig(
   hostname: String,

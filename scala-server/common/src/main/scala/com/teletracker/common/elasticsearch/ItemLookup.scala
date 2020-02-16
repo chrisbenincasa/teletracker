@@ -1,5 +1,6 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Slug
@@ -13,6 +14,7 @@ import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class ItemLookup @Inject()(
+  teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
@@ -22,7 +24,13 @@ class ItemLookup @Inject()(
     } else {
       val multiGetRequest = new MultiGetRequest()
       ids.toList
-        .map(id => new MultiGetRequest.Item("items", id.toString))
+        .map(
+          id =>
+            new MultiGetRequest.Item(
+              teletrackerConfig.elasticsearch.items_index_name,
+              id.toString
+            )
+        )
         .foreach(multiGetRequest.add)
 
       elasticsearchExecutor
@@ -78,7 +86,7 @@ class ItemLookup @Inject()(
             )
             .filter(QueryBuilders.termQuery("type", typ.toString))
 
-          new SearchRequest("items")
+          new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
             .source(new SearchSourceBuilder().query(query).size(1))
       }
 
@@ -110,7 +118,8 @@ class ItemLookup @Inject()(
         .map(Function.tupled(exactTitleMatchQuery))
         .map(query => {
           val searchSource = new SearchSourceBuilder().query(query).size(1)
-          new SearchRequest("items").source(searchSource)
+          new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+            .source(searchSource)
         })
 
       val multiReq = new MultiSearchRequest()
@@ -148,7 +157,8 @@ class ItemLookup @Inject()(
         .map(Function.tupled(slugMatchQuery))
         .map(query => {
           val searchSource = new SearchSourceBuilder().query(query).size(1)
-          new SearchRequest("items").source(searchSource)
+          new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+            .source(searchSource)
         })
 
       val multiReq = new MultiSearchRequest()
@@ -303,7 +313,10 @@ class ItemLookup @Inject()(
     val searchSource = new SearchSourceBuilder().query(query).size(1)
 
     elasticsearchExecutor
-      .search(new SearchRequest("items").source(searchSource))
+      .search(
+        new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+          .source(searchSource)
+      )
       .map(searchResponseToItems)
       .map(_.items.headOption)
   }
@@ -317,18 +330,23 @@ class ItemLookup @Inject()(
         QueryBuilders
           .termsLookupQuery(
             "id",
-            new TermsLookup("items", id.toString, "recommendations.id")
+            new TermsLookup(
+              teletrackerConfig.elasticsearch.items_index_name,
+              id.toString,
+              "recommendations.id"
+            )
           )
       )
 
-    val search = new SearchRequest("items")
-      .source(
-        new SearchSourceBuilder()
-          .query(query)
-          .size(
-            20
-          )
-      )
+    val search =
+      new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+        .source(
+          new SearchSourceBuilder()
+            .query(query)
+            .size(
+              20
+            )
+        )
 
     elasticsearchExecutor.search(search).map(searchResponseToItems)
   }
@@ -344,16 +362,21 @@ class ItemLookup @Inject()(
         QueryBuilders
           .termsLookupQuery(
             "id",
-            new TermsLookup("items", id.toString, "cast.id")
+            new TermsLookup(
+              teletrackerConfig.elasticsearch.items_index_name,
+              id.toString,
+              "cast.id"
+            )
           )
       )
 
-    val search = new SearchRequest("people")
-      .source(
-        new SearchSourceBuilder()
-          .query(query)
-          .size(limit)
-      )
+    val search =
+      new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
+        .source(
+          new SearchSourceBuilder()
+            .query(query)
+            .size(limit)
+        )
 
     elasticsearchExecutor.search(search).map(searchResponseToPeople)
   }

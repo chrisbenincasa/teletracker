@@ -1,5 +1,6 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.{
   Bookmark,
   Recent,
@@ -26,7 +27,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class PersonLookup @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor,
-  itemSearch: ItemSearch
+  itemSearch: ItemSearch,
+  teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
 
@@ -83,10 +85,11 @@ class PersonLookup @Inject()(
 
     println(searchSource)
 
-    val search = new SearchRequest("people")
-      .source(
-        searchSource
-      )
+    val search =
+      new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
+        .source(
+          searchSource
+        )
 
     elasticsearchExecutor
       .search(search)
@@ -119,7 +122,7 @@ class PersonLookup @Inject()(
             .termQuery("external_ids", EsExternalId(source, id).toString)
         )
 
-      new SearchRequest("people")
+      new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
         .source(new SearchSourceBuilder().query(query).size(1))
     })
 
@@ -159,7 +162,10 @@ class PersonLookup @Inject()(
     val searchSource = new SearchSourceBuilder().query(query).size(1)
 
     elasticsearchExecutor
-      .search(new SearchRequest("people").source(searchSource))
+      .search(
+        new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
+          .source(searchSource)
+      )
       .map(searchResponseToPeople)
       .map(_.items.headOption)
   }
@@ -179,8 +185,9 @@ class PersonLookup @Inject()(
           .filter(QueryBuilders.termQuery("slug", value.toString))
     }
 
-    val search = new SearchRequest("people")
-      .source(new SearchSourceBuilder().query(identifierQuery).size(1))
+    val search =
+      new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
+        .source(new SearchSourceBuilder().query(identifierQuery).size(1))
 
     elasticsearchExecutor
       .search(search)
@@ -205,7 +212,10 @@ class PersonLookup @Inject()(
 
     val idPeopleFut = if (ids.nonEmpty) {
       val multiGetRequest = new MultiGetRequest()
-      ids.foreach(multiGetRequest.add("people", _))
+      ids.foreach(
+        multiGetRequest
+          .add(teletrackerConfig.elasticsearch.people_index_name, _)
+      )
       elasticsearchExecutor
         .multiGet(multiGetRequest)
         .map(idResults => {
@@ -230,7 +240,7 @@ class PersonLookup @Inject()(
           .boolQuery()
           .filter(QueryBuilders.termQuery("slug", slug.toString))
 
-        new SearchRequest("people")
+        new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
           .source(new SearchSourceBuilder().query(query).size(1))
       })
       slugSearches.foreach(multiSearchRequest.add)
@@ -272,7 +282,7 @@ class PersonLookup @Inject()(
           .boolQuery()
           .filter(QueryBuilders.termQuery("slug", slug.toString))
 
-        new SearchRequest("people")
+        new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
           .source(new SearchSourceBuilder().query(slugQuery).size(1))
       })
 

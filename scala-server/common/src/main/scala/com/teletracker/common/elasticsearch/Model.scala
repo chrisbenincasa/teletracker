@@ -16,12 +16,6 @@ import java.util.UUID
 import scala.util.Try
 import scala.xml.parsing.ExternalSources
 
-object Indices {
-  final val ItemsIndex = "items"
-  final val PeopleIndex = "people"
-  final val UserItemIndex = "user_items"
-}
-
 object StringListOrString {
   def forString(value: String): StringListOrString = new StringListOrString {
     override def get: List[String] = List(value)

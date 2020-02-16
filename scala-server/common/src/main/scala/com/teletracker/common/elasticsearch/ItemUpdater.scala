@@ -1,21 +1,17 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.UserThingTagType
 import com.teletracker.common.monitoring.Timing
 import javax.inject.Inject
 import org.elasticsearch.action.DocWriteResponse
-import org.elasticsearch.action.bulk.{
-  BulkItemResponse,
-  BulkRequest,
-  BulkRequestBuilder
-}
+import org.elasticsearch.action.bulk.BulkRequest
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.support.WriteRequest
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.reindex.UpdateByQueryRequest
-import org.elasticsearch.rest.RestStatus
 import org.elasticsearch.script.{Script, ScriptType}
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -25,8 +21,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 object ItemUpdater {
-  final private val ItemsIndex = "items"
-  final private val UserItemsIndex = "user_items"
 
   // TODO: Store script in ES
   final private val UpdateTagsScriptSource =
@@ -122,7 +116,8 @@ object ItemUpdater {
 
 class ItemUpdater @Inject()(
   itemSearch: ItemLookup,
-  elasticsearchExecutor: ElasticsearchExecutor
+  elasticsearchExecutor: ElasticsearchExecutor,
+  teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext) {
   import ItemUpdater._
   import io.circe.syntax._
@@ -130,20 +125,23 @@ class ItemUpdater @Inject()(
   private val logger = LoggerFactory.getLogger(getClass)
 
   def insert(item: EsItem): Future[IndexResponse] = {
-    val indexRequest = new IndexRequest(ItemsIndex)
-      .create(true)
-      .id(item.id.toString)
-      .source(item.asJson.noSpaces, XContentType.JSON)
+    val indexRequest =
+      new IndexRequest(teletrackerConfig.elasticsearch.items_index_name)
+        .create(true)
+        .id(item.id.toString)
+        .source(item.asJson.noSpaces, XContentType.JSON)
 
     elasticsearchExecutor.index(indexRequest)
   }
 
   def update(item: EsItem): Future[UpdateResponse] = {
-    val updateRequest = new UpdateRequest(ItemsIndex, item.id.toString)
-      .doc(
-        item.asJson.noSpaces,
-        XContentType.JSON
-      )
+    val updateRequest = new UpdateRequest(
+      teletrackerConfig.elasticsearch.items_index_name,
+      item.id.toString
+    ).doc(
+      item.asJson.noSpaces,
+      XContentType.JSON
+    )
 
     elasticsearchExecutor.update(updateRequest)
   }
@@ -153,8 +151,10 @@ class ItemUpdater @Inject()(
     tag: EsItemTag,
     userTag: Option[(String, EsUserItemTag)]
   ): Future[UpdateMultipleDocResponse] = {
-    val updateRequest = new UpdateRequest(ItemsIndex, itemId.toString)
-      .script(UpdateTagsScript(tag))
+    val updateRequest = new UpdateRequest(
+      teletrackerConfig.elasticsearch.items_index_name,
+      itemId.toString
+    ).script(UpdateTagsScript(tag))
 
     userTag match {
       case Some((userId, value)) =>
@@ -162,8 +162,10 @@ class ItemUpdater @Inject()(
           Timing.time("denormUpdateFut", logger) {
             createUserItemTag(itemId, userId, value).flatMap(userItemTag => {
               val updateDenormRequest =
-                new UpdateRequest(UserItemsIndex, s"${userId}_${itemId}")
-                  .script(UpdateUserTagsScript(value))
+                new UpdateRequest(
+                  teletrackerConfig.elasticsearch.user_items_index_name,
+                  s"${userId}_${itemId}"
+                ).script(UpdateUserTagsScript(value))
                   .upsert(userItemTag.asJson.noSpaces, XContentType.JSON)
                   .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
@@ -211,8 +213,10 @@ class ItemUpdater @Inject()(
     userTag: Option[(String, EsUserItemTag)]
   ): Future[UpdateMultipleDocResponse] = {
     val updateRequest =
-      new UpdateRequest(ItemsIndex, itemId.toString)
-        .script(RemoveTagScript(tag))
+      new UpdateRequest(
+        teletrackerConfig.elasticsearch.items_index_name,
+        itemId.toString
+      ).script(RemoveTagScript(tag))
 
     userTag match {
       case Some((userId, value)) =>
