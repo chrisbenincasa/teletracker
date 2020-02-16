@@ -1,5 +1,6 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredUserList
 import com.teletracker.common.db.{
   AddedTime,
@@ -41,7 +42,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.JavaConverters._
 
 class ListBuilder @Inject()(
-  elasticsearchExecutor: ElasticsearchExecutor
+  elasticsearchExecutor: ElasticsearchExecutor,
+  teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
   def getRegularListItemCount(
@@ -51,7 +53,9 @@ class ListBuilder @Inject()(
     val listQuery =
       getRegularListQuery(userId, list, None, None, None, None)
 
-    val countRequest = new CountRequest("user_items").source(listQuery)
+    val countRequest = new CountRequest(
+      teletrackerConfig.elasticsearch.user_items_index_name
+    ).source(listQuery)
 
     elasticsearchExecutor
       .count(countRequest)
@@ -75,7 +79,9 @@ class ListBuilder @Inject()(
       .query(termQuery)
       .fetchSource(false)
 
-    val searchRequest = new SearchRequest("items").source(source)
+    val searchRequest = new SearchRequest(
+      teletrackerConfig.elasticsearch.items_index_name
+    ).source(source)
 
     elasticsearchExecutor
       .search(searchRequest)
@@ -111,7 +117,10 @@ class ListBuilder @Inject()(
     )
 
     val itemsFut = elasticsearchExecutor
-      .search(new SearchRequest(Indices.UserItemIndex).source(sourceBuilder))
+      .search(
+        new SearchRequest(teletrackerConfig.elasticsearch.user_items_index_name)
+          .source(sourceBuilder)
+      )
       .map(searchResponseToUserItems)
       .flatMap(response => {
         if (response.items.isEmpty) {
@@ -120,7 +129,9 @@ class ListBuilder @Inject()(
           val ids = response.items.flatMap(_.item_id).map(_.toString)
 
           val mGetBuilder = new MultiGetRequest()
-          ids.map(mGetBuilder.add(Indices.ItemsIndex, _))
+          ids.map(
+            mGetBuilder.add(teletrackerConfig.elasticsearch.items_index_name, _)
+          )
 
           elasticsearchExecutor
             .multiGet(mGetBuilder)

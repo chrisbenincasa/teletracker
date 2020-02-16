@@ -1,5 +1,6 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.db._
@@ -21,6 +22,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 class ItemSearch @Inject()(
+  teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
@@ -57,8 +59,8 @@ class ItemSearch @Inject()(
           "title._2gram",
           "title._3gram"
         )
-        .`type`(MultiMatchQueryBuilder.Type.CROSS_FIELDS)
-//        .fuzziness(5)
+        .`type`(MultiMatchQueryBuilder.Type.PHRASE_PREFIX)
+        .maxExpansions(50)
         .operator(Operator.OR)
         .boost(boost)
     }
@@ -112,10 +114,11 @@ class ItemSearch @Inject()(
 
     println(searchSource)
 
-    val search = new SearchRequest("items")
-      .source(
-        searchSource
-      )
+    val search =
+      new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+        .source(
+          searchSource
+        )
 
     elasticsearchExecutor
       .search(search)
@@ -171,7 +174,8 @@ class ItemSearch @Inject()(
 
     elasticsearchExecutor
       .search(
-        new SearchRequest().source(searchSourceBuilder)
+        new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+          .source(searchSourceBuilder)
       )
       .map(searchResponseToItems)
       .map(applyNextBookmark(_, bookmark, sortMode))

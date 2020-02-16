@@ -6,7 +6,7 @@ import com.google.inject.util.{Modules => GuiceModules}
 import com.google.inject.{Binder, Guice, Module}
 import com.teletracker.service.TeletrackerServer
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.inject.{Modules, SyncDbProvider}
+import com.teletracker.common.inject.{Modules}
 import com.twitter.finatra.http.EmbeddedHttpServer
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Assertions, BeforeAndAfterAll, FlatSpec, Inside}
@@ -26,14 +26,11 @@ trait BaseSpec
 
   def startDb = true
 
-  lazy val db = new PostgresContainer()
-
   lazy val modules = {
     val overrides = Seq(
       new Module {
         import net.ceedubs.ficus.Ficus._
         import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-        import com.teletracker.common.config.CustomReaders._
 
         override def configure(binder: Binder): Unit = {
           val loader =
@@ -47,31 +44,12 @@ trait BaseSpec
           binder.bind(classOf[TeletrackerConfig]).toInstance(loaded)
         }
       }
-    ) ++ (if (startDb) {
-            Seq(
-              new Module {
-                override def configure(binder: Binder): Unit = {
-                  binder.bind(classOf[SyncDbProvider]).toInstance(db.dbProvider)
-                }
-              }
-            )
-          } else Seq.empty)
+    )
 
     Seq(GuiceModules.`override`(Modules(): _*).`with`(overrides: _*))
   }
 
   lazy val injector = Guice.createInjector(modules: _*)
-
-  override protected def beforeAll(): Unit = {
-    if (startDb) {
-      db.initialize()
-      db.createAllTables(injector)
-    }
-  }
-
-  override protected def afterAll(): Unit = {
-    if (startDb) db.shutdown()
-  }
 }
 
 trait BaseSpecWithServer extends BaseSpec {

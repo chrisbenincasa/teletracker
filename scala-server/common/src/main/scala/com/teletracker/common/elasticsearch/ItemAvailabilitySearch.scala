@@ -1,5 +1,6 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.config.TeletrackerConfig
 import javax.inject.Inject
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
@@ -15,7 +16,8 @@ import org.elasticsearch.search.sort.{
 import scala.concurrent.{ExecutionContext, Future}
 
 class ItemAvailabilitySearch @Inject()(
-  elasticsearchExecutor: ElasticsearchExecutor
+  elasticsearchExecutor: ElasticsearchExecutor,
+  teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
 
@@ -42,7 +44,10 @@ class ItemAvailabilitySearch @Inject()(
       .through(applySorts(_, "availability.start_date", SortOrder.DESC))
 
     elasticsearchExecutor
-      .search(new SearchRequest().source(searchSource))
+      .search(
+        new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+          .source(searchSource)
+      )
       .map(searchResponseToItems)
   }
 
@@ -69,7 +74,10 @@ class ItemAvailabilitySearch @Inject()(
       .through(applySorts(_, "availability.start_date", SortOrder.ASC))
 
     elasticsearchExecutor
-      .search(new SearchRequest().source(searchSource))
+      .search(
+        new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+          .source(searchSource)
+      )
       .map(searchResponseToItems)
   }
 
@@ -96,7 +104,10 @@ class ItemAvailabilitySearch @Inject()(
       .through(applySorts(_, "availability.end_date", SortOrder.ASC))
 
     elasticsearchExecutor
-      .search(new SearchRequest().source(searchSource))
+      .search(
+        new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+          .source(searchSource)
+      )
       .map(searchResponseToItems)
   }
 
