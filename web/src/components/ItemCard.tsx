@@ -352,7 +352,7 @@ function ItemCard(props: Props) {
         {isHovering && hoverRating && renderRatingHover()}
         {isHovering && !hoverRating && renderHoverActions()}
 
-        <RouterLink href={item.relativeUrl} passHref>
+        <RouterLink href={item.canonicalUrl} as={item.relativeUrl} passHref>
           <WrappedCardMedia />
         </RouterLink>
       </div>

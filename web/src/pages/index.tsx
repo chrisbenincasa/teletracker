@@ -1,14 +1,13 @@
+import Auth, { CognitoUser } from '@aws-amplify/auth';
 import Head from 'next/head';
 import React from 'react';
-import { popularSuccess, popularFailed } from '../actions/popular';
+import { Store } from 'redux';
+import { popularFailed, popularSuccess } from '../actions/popular';
+import AppWrapper from '../containers/AppWrapper';
 import Popular from '../containers/Popular';
 import { ApiItem } from '../types/v2';
 import { ItemFactory } from '../types/v2/Item';
-import AppWrapper from '../containers/AppWrapper';
 import { TeletrackerApi, TeletrackerResponse } from '../utils/api-client';
-import Auth from '@aws-amplify/auth';
-import { extractApiKeyFromCookie } from '../utils/header-utils';
-import { Store } from 'redux';
 
 interface Props {
   pageProps: any;
@@ -25,7 +24,7 @@ function PopularityWrapper(props: Props) {
           content="minimum-scale=1, initial-scale=1, width=device-width"
         />
       </Head>
-      <AppWrapper store={props.store}>
+      <AppWrapper>
         <Popular />
       </AppWrapper>
     </React.Fragment>

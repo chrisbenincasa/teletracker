@@ -9,6 +9,7 @@ import {
 import { FilterParams } from './searchFilters';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import querystring from 'querystring';
+import url from 'url';
 
 /**
  * Updates or adds URL parameters
@@ -60,9 +61,12 @@ export const updateUrlParamsForFilterRouter = (
     ([key, _]) => !excludedParams || !excludedParams.includes(key),
   );
 
+  let sanitizedPath = url.parse(props.router.asPath).pathname;
+
   updateMultipleUrlParams(
     querystring.stringify(props.router.query),
-    str => props.router.replace(str),
+    str =>
+      props.router.replace(sanitizedPath + str, undefined, { shallow: true }),
     paramUpdates,
   );
 };

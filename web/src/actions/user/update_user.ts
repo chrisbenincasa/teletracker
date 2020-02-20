@@ -1,7 +1,8 @@
 import { actionChannel, put, take } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { UserDetails } from '../../types';
-import { clientEffect, createAction } from '../utils';
+import { createAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 import { UserSelf } from '../../reducers/user';
 import { FSA } from 'flux-standard-action';
 import ReactGA from 'react-ga';

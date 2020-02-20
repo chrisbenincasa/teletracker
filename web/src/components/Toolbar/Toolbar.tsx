@@ -500,20 +500,17 @@ class Toolbar extends Component<Props, State> {
               Teletracker
             </Typography>
           </Link>
-          <NoSsr>
-            <div className={classes.grow}>
-              {!this.isSmallDevice && this.props.showToolbarSearch && (
-                <Fade in={true} timeout={500}>
-                  <Search
-                    drawerOpen={drawerOpen}
-                    onDrawerChange={this.toggleDrawer}
-                    quickSearchEnabled={this.showQuickSearch()}
-                  />
-                </Fade>
-              )}
-            </div>
-          </NoSsr>
-          <div className={classes.grow} />
+          <div className={classes.grow}>
+            {!this.isSmallDevice && this.props.showToolbarSearch && (
+              <Fade in={true} timeout={500}>
+                <Search
+                  drawerOpen={drawerOpen}
+                  onDrawerChange={this.toggleDrawer}
+                  quickSearchEnabled={this.showQuickSearch()}
+                />
+              </Fade>
+            )}
+          </div>
           <Hidden mdDown>
             <div
               style={{ display: 'flex', flexDirection: 'row', marginRight: 24 }}
@@ -539,7 +536,9 @@ class Toolbar extends Component<Props, State> {
               component={ButtonLink}
               href="/login"
               primary="Login"
-            />
+            >
+              Login
+            </Button>
           )}
           {this.isSmallDevice &&
             !mobileSearchBarOpen &&

@@ -1,7 +1,7 @@
 import React from 'react';
 import Toolbar from '../components/Toolbar/Toolbar';
 import { useState } from 'react';
-import { makeStyles, Theme, LinearProgress } from '@material-ui/core';
+import { makeStyles, Theme, LinearProgress, NoSsr } from '@material-ui/core';
 import Drawer from '../components/Drawer';
 import Footer from '../components/Footer';
 import { connect } from 'react-redux';
@@ -38,15 +38,18 @@ function AppWrapper(props: Props) {
   let [drawerOpen, setDrawerOpen] = useState(false);
   let router = useRouter();
   let classes = useStyles();
-  console.log('booting', props.isBooting);
+
+  console.log(props, router);
 
   return (
     <div className={classes.root}>
-      <Toolbar
-        drawerOpen={drawerOpen}
-        onDrawerChange={() => setDrawerOpen(!drawerOpen)}
-        showToolbarSearch={true}
-      />
+      <NoSsr>
+        <Toolbar
+          drawerOpen={drawerOpen}
+          onDrawerChange={() => setDrawerOpen(!drawerOpen)}
+          showToolbarSearch={true}
+        />
+      </NoSsr>
       {!props.isBooting ? (
         <div style={{ flexGrow: 1 }}>
           <Drawer

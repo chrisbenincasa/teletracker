@@ -34,3 +34,6 @@ buck-out/
 build/
 .idea/
 .next/
+
+# Deployment
+out/
