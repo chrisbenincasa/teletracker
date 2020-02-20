@@ -35,7 +35,7 @@ Amplify.configure({
     mandatorySignIn: false,
 
     cookieStorage: {
-      domain: '.teletracker.local',
+      domain: process.env.REACT_APP_COOKIE_DOMAIN,
       path: '/',
     },
 
@@ -69,13 +69,11 @@ const initStore = ({ initialState }: InitStoreOptions): Store => {
   const createStoreInner = () => createStore(initialState).store;
 
   if (isServer) {
-    console.log('isServer=true. create new store');
     return createStoreInner();
   }
 
   // Memoize store if client
   if (!('__NEXT_REDUX_STORE__' in window)) {
-    console.log(window['__NEXT_REDUX_STORE__']);
     window['__NEXT_REDUX_STORE__'] = createStoreInner();
   }
 
@@ -90,7 +88,6 @@ export interface WrappedAppProps {
 
 export default class MyApp extends App {
   public static getInitialProps = async (appCtx: AppContext) => {
-    console.log('App.getInitialProps start');
     if (!appCtx) throw new Error('No app context');
     if (!appCtx.ctx) throw new Error('No page context');
 
@@ -143,7 +140,6 @@ export default class MyApp extends App {
 
     // if (config.debug) console.log('3. WrappedApp.getInitialProps has store state', store.getState());
 
-    console.log('App.getInitialProps end');
     return {
       isServer,
       initialState: store.getState(),
@@ -158,8 +154,6 @@ export default class MyApp extends App {
     super(props, context);
 
     const { initialState } = props;
-
-    console.log(initialState.startup);
 
     this.store = initStore({
       initialState: {

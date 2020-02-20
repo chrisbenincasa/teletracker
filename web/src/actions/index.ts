@@ -1,6 +1,5 @@
 import { all, fork, put, take } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import { REHYDRATE } from 'redux-persist';
 import {
   authStateWatcher,
   authWithGoogleSaga,
@@ -11,6 +10,8 @@ import {
   USER_STATE_CHANGE,
 } from './auth';
 import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
+import { exploreSaga } from './explore';
+import { filtersChangedSaga } from './filters';
 import { fetchItemDetailsSaga } from './item-detail';
 import {
   addToListSaga,
@@ -22,10 +23,14 @@ import {
   updateListTrackingSaga,
 } from './lists';
 import { loadNetworksSaga } from './metadata';
-import { loadGenres, loadGenresSaga } from './metadata/load_genres';
+import { loadGenresSaga } from './metadata/load_genres';
+import { loadMetadata, loadMetadataSaga } from './metadata/load_metadata';
+import { fetchPersonCreditsDetailsSaga } from './people/get_credits';
+import { fetchPeopleDetailsSaga } from './people/get_people';
 import { fetchPersonDetailsSaga } from './people/get_person';
 import { popularSaga } from './popular';
-import { searchSaga, quickSearchSaga } from './search';
+import { quickSearchSaga, searchSaga } from './search';
+import { peopleSearchSaga } from './search/person_search';
 import {
   getUserSelfSaga,
   removeUserActionSaga,
@@ -34,13 +39,7 @@ import {
   updateUserPreferencesSaga,
   updateUserSaga,
 } from './user';
-import { createBasicAction } from './utils';
-import { exploreSaga } from './explore';
-import { filtersChangedSaga } from './filters';
-import { loadMetadata, loadMetadataSaga } from './metadata/load_metadata';
-import { peopleSearchSaga } from './search/person_search';
-import { fetchPeopleDetailsSaga } from './people/get_people';
-import { fetchPersonCreditsDetailsSaga } from './people/get_credits';
+import { createBasicAction, isServer } from './utils';
 
 export const STARTUP = 'startup';
 export const BOOT_DONE = 'boot/DONE';
@@ -77,16 +76,16 @@ export function* root() {
   yield fork(captureAll);
 
   // Start watching for auth state changes
+  // if (!isServer()) {
   yield fork(initialAuthState);
   yield fork(authStateWatcher);
 
   // Wait for a user state change (determine whether we're logged in or out)
   yield take(USER_STATE_CHANGE);
+  // }
 
   // Instruct the app we're finished booting
   yield put({ type: BOOT_DONE });
-
-  console.log('starting everything');
 
   // Start all of the sagas at once
   // TODO: fork all of these?

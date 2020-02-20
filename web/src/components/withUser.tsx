@@ -33,7 +33,7 @@ const withUser = <P extends object>(
       if (oldProps.isCheckingAuth && !this.props.isCheckingAuth) {
         // Only load the user if we've successfully authenticated the persisted token
         if (this.props.isLoggedIn) {
-          this.loadUser(this.props);
+          this.loadUser({ ...this.props });
         } else {
           // Redirect to login
         }
@@ -42,6 +42,7 @@ const withUser = <P extends object>(
 
     loadUser = _.debounce((props: WithUserProps) => {
       if (!props.isCheckingAuth && !props.userSelf && !props.retrievingUser) {
+        console.log(props);
         props.getUserSelf(false);
       }
     }, 100);

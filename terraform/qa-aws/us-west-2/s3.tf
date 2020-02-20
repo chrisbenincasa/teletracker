@@ -13,6 +13,17 @@ resource "aws_s3_bucket" "teletracker-artifacts-us-west-2" {
   }
 }
 
+resource "aws_s3_bucket" "teletracker-artifacts-us-east-1" {
+  provider = "aws.us-east-1"
+
+  bucket = "us-east-1-teletracker-artifacts"
+  region = "us-east-1"
+
+  versioning {
+    enabled = true
+  }
+}
+
 resource "aws_s3_bucket" "teletracker-data-us-west-2" {
   bucket = "teletracker-data-us-west-2"
   region = "us-west-2"

@@ -4,6 +4,7 @@ const next = require('next');
 const fs = require('fs');
 const Amplify = require('@aws-amplify/core').default;
 const cookie = require('cookie');
+const { performance } = require('perf_hooks');
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -16,6 +17,8 @@ const httpsOptions = {
 
 app.prepare().then(() => {
   createServer(httpsOptions, (req, res) => {
+    const start = performance.now();
+
     let cookies = req.headers.cookie || '';
     let parsed = cookie.parse(cookies);
     Amplify.configure({
@@ -40,7 +43,9 @@ app.prepare().then(() => {
 
     const parsedUrl = parse(req.url, true);
     // console.log('Serving ' + req.url);
-    handle(req, res, parsedUrl);
+    handle(req, res, parsedUrl).finally(() => {
+      console.log(`${req.url} - ${performance.now() - start}ms`);
+    });
   }).listen(3000, err => {
     if (err) throw err;
     console.log('> Ready on https://localhost:3000');

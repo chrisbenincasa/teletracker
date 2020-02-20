@@ -194,7 +194,7 @@ function Featured(props: Props) {
           </div>
 
           <div className={classes.posterContainer}>
-            <RouterLink href={item.relativeUrl} passHref>
+            <RouterLink href={item.canonicalUrl} as={item.relativeUrl} passHref>
               <WrappedCardMedia item={item} />
             </RouterLink>
             <ManageTracking itemDetail={item} />

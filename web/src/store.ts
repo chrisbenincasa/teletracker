@@ -104,7 +104,6 @@ if (env === 'development' && typeof window !== 'undefined') {
 // };
 
 export default initialState => {
-  console.log('creating that store');
   const reducerWithHistory = createRootReducer(history);
   const sagaMiddleware = createSagaMiddleware();
   const middleware = [thunk, sagaMiddleware];
