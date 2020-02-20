@@ -114,7 +114,10 @@ class Cast extends Component<Props, {}> {
     });
 
     return (
-      <RouterLink href={'/person/' + castMember.slug}>
+      <RouterLink
+        href={'/person/[id]?id=' + castMember.slug}
+        as={'/person/' + castMember.slug}
+      >
         <WrappedAvatar />
       </RouterLink>
     );

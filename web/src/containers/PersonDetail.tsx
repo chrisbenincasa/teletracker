@@ -523,6 +523,19 @@ class PersonDetail extends React.Component<Props, State> {
     const isMobile = ['xs', 'sm'].includes(width);
     const truncateSize = isMobile ? 300 : 1200;
 
+    const truncatedBio = showFullBiography
+      ? biography
+      : biography.substr(0, truncateSize);
+    const formattedBiography = truncatedBio
+      .split('\n')
+      .filter(s => s.length > 0)
+      .map(part => (
+        <React.Fragment>
+          <Typography color="inherit">{part}</Typography>
+          <br />
+        </React.Fragment>
+      ));
+
     return (
       <div className={classes.descriptionContainer}>
         <div
@@ -537,9 +550,7 @@ class PersonDetail extends React.Component<Props, State> {
           <Hidden smDown>{this.renderTitle(person)}</Hidden>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <Typography color="inherit">
-            {showFullBiography ? biography : biography.substr(0, truncateSize)}
-          </Typography>
+          <React.Fragment>{formattedBiography}</React.Fragment>
           {biography.length > 1200 ? (
             <Button
               size="small"

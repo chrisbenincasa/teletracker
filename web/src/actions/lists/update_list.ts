@@ -1,6 +1,7 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
-import { clientEffect, createAction } from '../utils';
+import { createAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 import { RetrieveUserSelfInitiated } from '../user';
 import { FSA } from 'flux-standard-action';
 import { ListRules, ListOptions } from '../../types';

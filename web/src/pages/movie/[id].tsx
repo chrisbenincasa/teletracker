@@ -31,6 +31,7 @@ function ItemDetailWrapper(props: Props) {
 }
 
 ItemDetailWrapper.getInitialProps = async ctx => {
+  console.log('isServer=' + (typeof window === 'undefined'));
   if (ctx.req) {
     let user: CognitoUser | undefined;
     try {

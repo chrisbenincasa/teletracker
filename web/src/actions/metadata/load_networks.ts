@@ -1,5 +1,6 @@
 import { FSA } from 'flux-standard-action';
-import { clientEffect, createAction, createBasicAction } from '../utils';
+import { createAction, createBasicAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 import { put, select, takeLatest } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { Network } from '../../types';

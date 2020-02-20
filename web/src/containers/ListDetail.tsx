@@ -45,7 +45,6 @@ import {
 import ItemCard from '../components/ItemCard';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
-import { StdRouterLink } from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';

@@ -34,7 +34,10 @@
     "@types/redux-persist": "^4.3.1",
     "@types/redux-saga": "^0.10.5",
     "@types/redux-thunk": "^2.1.0",
+    "execa": "^4.0.0",
+    "fs-extra": "^8.1.0",
     "fsevents": "^2.0.6",
+    "path-to-regexp": "^6.1.0",
     "prettier": "1.19.0",
     "react-scripts": "3.4.0",
     "typescript": "3.7.2"

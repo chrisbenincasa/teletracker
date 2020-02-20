@@ -235,17 +235,21 @@ function ItemDetails(props: Props) {
     } else {
       let itemId = nextRouter.query.id as string;
 
-      if (props.itemsById[itemId]) {
-        props.itemPrefetchSuccess(props.itemsById[itemId]);
-      } else if (props.itemsBySlug[itemId]) {
-        props.itemPrefetchSuccess(props.itemsBySlug[itemId]);
-      } else {
-        let itemType = nextRouter.pathname
-          .split('/')
-          .filter(s => s.length > 0)[0];
+      // TODO: This is an optimization, but sometimes items don't always have all of the
+      // necessary information loaded when triggered from other pages. We should figure out
+      // a way to determine if the full item needs to be fetched, so we can still cache
+      // previious results.
+      // if (props.itemsById[itemId]) {
+      //   props.itemPrefetchSuccess(props.itemsById[itemId]);
+      // } else if (props.itemsBySlug[itemId]) {
+      //   props.itemPrefetchSuccess(props.itemsBySlug[itemId]);
+      // } else {
+      // }
+      let itemType = nextRouter.pathname
+        .split('/')
+        .filter(s => s.length > 0)[0];
 
-        props.fetchItemDetails({ id: itemId, type: itemType });
-      }
+      props.fetchItemDetails({ id: itemId, type: itemType });
     }
   };
 

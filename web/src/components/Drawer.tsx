@@ -135,6 +135,7 @@ interface LinkProps {
   primary: string;
   selected: boolean;
   to: string;
+  as?: string;
   onClick?: () => void;
 }
 
@@ -196,7 +197,7 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
             {listLength >= 100 ? '99+' : listLength}
           </Avatar>
         </ListItemAvatar>
-        <Link href={props.to} passHref>
+        <Link href={props.to} as={props.as} passHref>
           <ListItemText primary={primary} />
           {/* <a onClick={handleClick}>
           </a> */}
@@ -215,6 +216,7 @@ class Drawer extends Component<Props, State> {
   };
 
   componentDidMount() {
+    console.log('Drawer mounted');
     if (this.props.isAuthed) {
       this.props.retrieveAllLists({ includeThings: false });
     }
@@ -287,7 +289,8 @@ class Drawer extends Component<Props, State> {
       <ListItemLink
         index={index}
         key={userList.id}
-        to={`/lists/${list.id}`}
+        to={`/lists/[id]?id=${list.id}`}
+        as={`/lists/${list.id}`}
         selected={listPath === this.props.router.pathname}
         primary={list.name}
         listLength={userList.totalItems}
@@ -458,8 +461,6 @@ class Drawer extends Component<Props, State> {
     );
   }
 }
-
-console.log('what is ' + LIST_RETRIEVE_ALL_INITIATED);
 
 const mapStateToProps = (appState: AppState) => {
   return {

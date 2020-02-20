@@ -182,7 +182,6 @@ class Popular extends Component<Props, State> {
 
     // To do: add support for sorting
     if (!this.props.loading) {
-      console.log('in your towels');
       let numberFeaturedItems: number = this.getNumberFeaturedItems();
 
       retrievePopular({
@@ -333,6 +332,7 @@ class Popular extends Component<Props, State> {
     let paramsFromQuery = parseFilterParamsFromQs(query);
 
     // Checks if filters have changed, if so, update state and re-fetch popular
+    console.log(query, prevQuery);
     if (query !== prevQuery) {
       this.handleFilterParamsChange(paramsFromQuery);
     }
