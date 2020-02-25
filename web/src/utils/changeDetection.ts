@@ -1,9 +1,11 @@
 import _ from 'lodash';
 import { FilterParams, SliderParamState } from './searchFilters';
+import { SortOptions } from '../types';
 
 export function filterParamsEqual(
   left: FilterParams | undefined,
   right: FilterParams | undefined,
+  defaultSortOrder?: SortOptions,
 ) {
   if (left && right) {
     if (
@@ -42,7 +44,15 @@ export function filterParamsEqual(
     }
 
     if (left.sortOrder !== right.sortOrder) {
-      return false;
+      if (
+        !defaultSortOrder ||
+        (defaultSortOrder &&
+          left.sortOrder === 'default' &&
+            right.sortOrder !== defaultSortOrder) ||
+          (left.sortOrder !== defaultSortOrder && right.sortOrder === 'default')
+      ) {
+        return false;
+      }
     }
 
     if (left.sliders && right.sliders) {

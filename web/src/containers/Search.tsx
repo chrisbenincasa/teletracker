@@ -1,4 +1,3 @@
-import React, { useEffect, useRef, useState } from 'react';
 import {
   CircularProgress,
   createStyles,
@@ -8,31 +7,32 @@ import {
   makeStyles,
   Theme,
   Typography,
+  NoSsr,
 } from '@material-ui/core';
-import { Tune } from '@material-ui/icons';
+import { Error as ErrorIcon, Tune } from '@material-ui/icons';
+import _ from 'lodash';
+import { useRouter } from 'next/router';
+import qs from 'querystring';
 import * as R from 'ramda';
+import React, { useEffect, useRef, useState } from 'react';
+import InfiniteScroll from 'react-infinite-scroller';
 import { useDispatch, useSelector } from 'react-redux';
 import { search } from '../actions/search';
-import ItemCard from '../components/ItemCard';
-import { AppState } from '../reducers';
-import { useLocation } from 'react-router-dom';
-import { Error as ErrorIcon } from '@material-ui/icons';
-import ReactGA from 'react-ga';
-import InfiniteScroll from 'react-infinite-scroller';
-import _ from 'lodash';
-import { Genre } from '../types';
-import AllFilters from '../components/Filters/AllFilters';
-import ActiveFilters from '../components/Filters/ActiveFilters';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
-import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
-import { parseFilterParamsFromQs } from '../utils/urlHelper';
-import { filterParamsEqual } from '../utils/changeDetection';
-import { calculateLimit, getNumColumns } from '../utils/list-utils';
+import ActiveFilters from '../components/Filters/ActiveFilters';
+import AllFilters from '../components/Filters/AllFilters';
+import ItemCard from '../components/ItemCard';
 import SearchInput from '../components/Toolbar/Search';
+import useIntersectionObserver from '../hooks/useIntersectionObserver';
+import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
 import { useWidth } from '../hooks/useWidth';
 import { useWithUser } from '../hooks/useWithUser';
-import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
-import useIntersectionObserver from '../hooks/useIntersectionObserver';
+import { AppState } from '../reducers';
+import { Genre } from '../types';
+import { filterParamsEqual } from '../utils/changeDetection';
+import { calculateLimit, getNumColumns } from '../utils/list-utils';
+import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
+import { parseFilterParamsFromQs } from '../utils/urlHelper';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -68,8 +68,8 @@ const useStyles = makeStyles((theme: Theme) =>
       padding: theme.spacing(1),
     },
     searchResultsContainer: {
-      margin: theme.spacing(1),
-      padding: theme.spacing(1),
+      // margin: theme.spacing(1),
+      padding: theme.spacing(2),
       width: '100%',
     },
     searchTitle: {
@@ -97,8 +97,8 @@ const Search = ({ inViewportChange }) => {
   const classes = useStyles();
   const width = useWidth();
   const withUserState = useWithUser();
-  const location = useLocation();
   const dispatch = useDispatch();
+  const router = useRouter();
 
   const currentSearchText = useSelector((state: AppState) =>
     R.path<string>(['search', 'currentSearchText'], state),
@@ -117,7 +117,7 @@ const Search = ({ inViewportChange }) => {
     setCreateDynamicListDialogOpen,
   ] = useState<boolean>(false);
   const [showFilter, setShowFilter] = useState<boolean>(false);
-  const [searchText, setSearchText] = useState<string>('');
+  const [searchText, setSearchText] = useState<string>(currentSearchText || '');
   const [filters, setFilters, previousFilters] = useStateDeepEqWithPrevious(
     DEFAULT_FILTER_PARAMS,
     filterParamsEqual,
@@ -140,9 +140,11 @@ const Search = ({ inViewportChange }) => {
   // Initial Load
   useEffect(() => {
     let filterParams = DEFAULT_FILTER_PARAMS;
-    let paramsFromQuery = parseFilterParamsFromQs(location.search);
+    let queryString = qs.stringify(router.query);
+    let paramsFromQuery = parseFilterParamsFromQs(queryString);
 
-    ReactGA.pageview(location.pathname + location.search);
+    // How will this work with SSR
+    // ReactGA.pageview(location.pathname + location.search);
 
     if (paramsFromQuery.sortOrder === 'default') {
       paramsFromQuery.sortOrder = 'popularity';
@@ -153,7 +155,7 @@ const Search = ({ inViewportChange }) => {
       ...paramsFromQuery,
     };
 
-    let params = new URLSearchParams(location.search);
+    let params = new URLSearchParams(queryString);
     let query;
     let param = params.get('q');
 
@@ -173,13 +175,18 @@ const Search = ({ inViewportChange }) => {
   // Load new set of search results when filters change
   // Ignore initial load because previousFilters won't be defined
   useEffect(() => {
-    if (!filterParamsEqual(previousFilters, filters) && previousFilters) {
+    if (
+      previousFilters &&
+      !filterParamsEqual(previousFilters, filters, 'popularity')
+    ) {
+      console.log(previousFilters, filters, searchBookmark);
       loadResults(true);
     }
   }, [filters, previousFilters, searchBookmark]);
 
   // Run callback when search enters/leaves viewport
   useEffect(() => {
+    console.log('isInViewport=' + isInViewport);
     inViewportChange(isInViewport);
     // return inViewportChange(false);
   }, [isInViewport]);
@@ -224,7 +231,7 @@ const Search = ({ inViewportChange }) => {
     const shouldLoadMore = totalNonLoadedImages <= numColumns;
 
     if (!isSearching && shouldLoadMore) {
-      debouncedSearch();
+      // debouncedSearch();
     }
   };
 
@@ -255,6 +262,11 @@ const Search = ({ inViewportChange }) => {
   const showSearch =
     !currentSearchText || (currentSearchText && currentSearchText.length === 0);
   // || isInViewport;
+
+  const handleLoaded = () => {
+    console.log('loaded');
+    setTotalVisibleItems(prev => prev + 1);
+  };
 
   return (
     <React.Fragment>
@@ -347,9 +359,10 @@ const Search = ({ inViewportChange }) => {
                             key={result.id}
                             userSelf={withUserState.userSelf}
                             item={result}
-                            hasLoaded={() =>
-                              setTotalVisibleItems(totalVisibleItems + 1)
-                            }
+                            hasLoaded={handleLoaded}
+                            // hasLoaded={() =>
+                            //   setTotalVisibleItems(totalVisibleItems + 1)
+                            // }
                           />
                         );
                       })}
