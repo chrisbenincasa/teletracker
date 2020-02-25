@@ -137,18 +137,19 @@ export const ResponsiveImage: React.FC<imgProps> = ({
 
   if (imageName) {
     return (
-      <picture style={pictureStyle}>
-        {generateSource(imageSpecs)}
-        <img
-          data-async-image="true"
-          src={imagePlaceholder}
-          alt=""
-          decoding="async"
-          style={imageStyle}
-          itemProp="image"
-          onLoad={handleOnLoad}
-        />
-      </picture>
+      // <picture style={pictureStyle}>
+      // {generateSource(imageSpecs)}
+      // </picture>
+      <img
+        data-async-image="true"
+        src={imagePlaceholder}
+        alt=""
+        srcSet={generateSrcSet(imageSpecs[0].sizes)}
+        decoding="async"
+        style={imageStyle}
+        itemProp="image"
+        onLoad={handleOnLoad}
+      />
     );
   } else if (
     !imageName &&

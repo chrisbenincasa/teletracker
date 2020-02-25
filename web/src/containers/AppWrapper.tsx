@@ -39,8 +39,6 @@ function AppWrapper(props: Props) {
   let router = useRouter();
   let classes = useStyles();
 
-  console.log(props, router);
-
   return (
     <div className={classes.root}>
       <NoSsr>

@@ -75,6 +75,16 @@ const itemPrefetchSuccess = handleAction(
       newThing = ItemFactory.merge(existingThing, newThing);
     }
 
+    let newThingsBySlug;
+    if (payload!.slug) {
+      newThingsBySlug = {
+        ...state.thingsBySlug,
+        [payload!.slug]: newThing,
+      } as ThingMap;
+    } else {
+      newThingsBySlug = state.thingsBySlug;
+    }
+
     // TODO: Truncate thingsById after a certain point
     return {
       ...state,
@@ -84,10 +94,7 @@ const itemPrefetchSuccess = handleAction(
         ...state.thingsById,
         [payload!.id]: newThing,
       } as ThingMap,
-      thingsBySlug: {
-        ...state.thingsBySlug,
-        [payload!.slug]: newThing,
-      } as ThingMap,
+      thingsBySlug: newThingsBySlug,
     } as State;
   },
 );
@@ -103,6 +110,16 @@ const itemFetchSuccess = handleAction(
       newThing = ItemFactory.merge(existingThing, newThing);
     }
 
+    let newThingsBySlug;
+    if (payload!.slug) {
+      newThingsBySlug = {
+        ...state.thingsBySlug,
+        [payload!.slug]: newThing,
+      } as ThingMap;
+    } else {
+      newThingsBySlug = state.thingsBySlug;
+    }
+
     // TODO: Truncate thingsById after a certain point
     return {
       ...state,
@@ -112,10 +129,7 @@ const itemFetchSuccess = handleAction(
         ...state.thingsById,
         [payload!.id]: newThing,
       } as ThingMap,
-      thingsBySlug: {
-        ...state.thingsBySlug,
-        [payload!.slug]: newThing,
-      } as ThingMap,
+      thingsBySlug: newThingsBySlug,
     } as State;
   },
 );
@@ -139,10 +153,14 @@ const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
     };
   }, {});
   let newThingsBySlug = newThingsMerged.reduce((prev, curr) => {
-    return {
-      ...prev,
-      [curr.slug]: curr,
-    };
+    if (curr.slug) {
+      return {
+        ...prev,
+        [curr.slug]: curr,
+      };
+    } else {
+      return prev;
+    }
   }, {});
 
   return {

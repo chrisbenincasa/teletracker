@@ -94,7 +94,7 @@ export class TeletrackerApi {
   }
 
   async searchV2(
-    token: string,
+    token: string | undefined,
     searchText: string,
     bookmark?: string,
     limit?: number,
@@ -103,8 +103,8 @@ export class TeletrackerApi {
     genres?: number[],
     releaseYearRange?: OpenRange,
     sort?: SortOptions,
-  ) {
-    return this.api.get<ApiItem[]>('/api/v3/search', {
+  ): Promise<TeletrackerResponse<ApiItem[]>> {
+    return this.api.get('/api/v3/search', {
       token,
       query: searchText,
       bookmark,
@@ -457,7 +457,7 @@ export class TeletrackerApi {
     genres?: number[],
     releaseYearRange?: OpenRange,
     cast?: string[],
-  ) {
+  ): Promise<TeletrackerResponse<ApiItem[]>> {
     return this.api.get('/api/v2/explore', {
       token,
       itemTypes:
