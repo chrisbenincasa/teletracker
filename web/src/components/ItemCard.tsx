@@ -338,6 +338,12 @@ function ItemCard(props: Props) {
             item={item}
             component={ResponsiveImage}
             imageType="poster"
+            pictureStyle={{
+              width: '100%',
+              objectFit: 'cover',
+              height: '100%',
+              display: 'block',
+            }}
             imageStyle={{ width: '100%', objectFit: 'cover', height: '100%' }}
             loadCallback={() => setImageLoaded(true)}
           />
@@ -571,9 +577,10 @@ function ItemCard(props: Props) {
           key={!deleted ? props.item.id : `${props.item.id}-deleted`}
           {...gridProps}
         >
+          {/* //imageLoaded ? '100%' : getPlaceholderHeight(), */}
           <Card
             style={{
-              height: imageLoaded ? '100%' : getPlaceholderHeight(),
+              height: 412,
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',

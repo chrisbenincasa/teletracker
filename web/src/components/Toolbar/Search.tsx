@@ -201,7 +201,7 @@ function Search(props: Props) {
     if (router.pathname !== '/search') {
       router.push(`/search?q=${encodeURIComponent(text)}`);
     } else {
-      router.push(`?q=${encodeURIComponent(text)}`);
+      router.push(`${router.pathname}?q=${encodeURIComponent(text)}`);
     }
 
     if (text.length >= 1 && currentSearchText !== text) {
