@@ -220,7 +220,7 @@ function Home(props: Props) {
     if (!props.loading) {
       retrievePopular({
         itemTypes: ['movie'],
-        limit: 10,
+        limit: 20,
       });
     }
   };
