@@ -1,6 +1,6 @@
 import React from 'react';
 import { Icon, makeStyles, Theme } from '@material-ui/core';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';
 import { Person } from '../types/v2/Person';

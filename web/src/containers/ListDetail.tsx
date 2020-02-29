@@ -396,12 +396,6 @@ class ListDetail extends Component<Props, State> {
           })
         : undefined;
 
-      console.log(
-        groupedRules.UserListPersonRule,
-        personRules,
-        this.props.personById,
-      );
-
       return {
         genresFilter: genreRules,
         networks: networkRules,
@@ -435,12 +429,10 @@ class ListDetail extends Component<Props, State> {
       this.setState({
         loadingList: false,
         list: list,
-        deleteOnWatch: this.props.listsById[this.listId]
-          ? R.path(
-              ['list', 'configuration', 'options', 'removeWatchedItems'],
-              this.props,
-            ) || false
-          : false,
+        deleteOnWatch: Boolean(
+          this.props.listsById[this.listId]?.configuration?.options
+            ?.removeWatchedItems,
+        ),
         listFilters,
       });
     } else if (!_.isEqual(list, prevState.list)) {

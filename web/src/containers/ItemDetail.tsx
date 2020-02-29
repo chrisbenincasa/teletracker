@@ -32,7 +32,7 @@ import {
   ItemFetchInitiatedPayload,
   itemPrefetchSuccess,
 } from '../actions/item-detail';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import ThingAvailability from '../components/Availability';
 import MarkAsWatched from '../components/Buttons/MarkAsWatched';
 import Cast from '../components/Cast';

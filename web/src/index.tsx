@@ -26,7 +26,7 @@ Amplify.configure({
     mandatorySignIn: false,
 
     cookieStorage: {
-      domain: '.teletracker.local',
+      domain: process.env.REACT_APP_COOKIE_DOMAIN,
       path: '/',
     },
 

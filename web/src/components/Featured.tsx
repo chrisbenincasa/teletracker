@@ -8,11 +8,10 @@ import {
   Typography,
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
-// import { Link as RouterLink } from 'react-router-dom';
 import RouterLink from 'next/link';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import ManageTracking from '../components/ManageTracking';
-import { ResponsiveImage } from '../components/ResponsiveImage';
+import { ResponsiveImage } from './ResponsiveImage';
 import { Item } from '../types/v2/Item';
 import AddToListDialog from './Dialogs/AddToListDialog';
 import withUser, { WithUserProps } from './withUser';

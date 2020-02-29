@@ -42,7 +42,7 @@ import {
   UserUpdateItemTagsPayload,
 } from '../actions/user';
 import { GRID_COLUMNS } from '../constants/';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import { UserSelf } from '../reducers/user';
 import { ActionType, List } from '../types';
 import HasImagery from '../types/HasImagery';

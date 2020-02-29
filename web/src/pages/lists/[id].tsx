@@ -7,6 +7,8 @@ import { ListRetrieveSuccess } from '../../actions/lists';
 import ListDetail from '../../containers/ListDetail';
 import Head from 'next/head';
 import { currentUserJwt } from '../../utils/page-utils';
+import useStateSelector from '../../hooks/useStateSelector';
+import { useRouter } from 'next/router';
 
 interface Props {
   list?: List;
@@ -15,10 +17,24 @@ interface Props {
 }
 
 function ListDetailWrapper(props: Props) {
+  const router = useRouter();
+  const listsById = useStateSelector(state => state.lists.listsById);
+
+
+  const listId = router.query.id as string;
+  console.log('ListDetailWrapper', listsById[listId])
+
+  let listName: string;
+  if (props.list) {
+    listName = props.list.name;
+  } else {
+    listName = listsById[listId]?.name
+  }
+
   return (
     <React.Fragment>
       <Head>
-        <title>{props.list ? 'List - ' + props.list.name : 'Not Found'}</title>
+        <title>{listName !== '' ? 'List - ' + listName : 'Not Found'}</title>
       </Head>
       <AppWrapper>
         <ListDetail />

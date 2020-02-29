@@ -41,10 +41,7 @@ const styles = (theme: Theme) =>
 
 interface Props extends WithStyles<typeof styles> {
   isAuthed: boolean;
-  login: (email: string, password: string) => void;
-  logInWithGoogle: () => any;
   isLoggingIn: boolean;
-  logInSuccessful: (token: string) => any;
   redirect_uri?: string;
 }
 
@@ -67,12 +64,16 @@ class Login extends Component<Props & WithRouterProps, State> {
     ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
+  handleLogin(): void {
+    this.props.router.push('/');
+  }
+
   render() {
     let { classes } = this.props;
     return (
       <div className={classes.main}>
         <Paper className={classes.paper}>
-          <LoginForm />
+          <LoginForm onLogin={() => this.handleLogin()} />
         </Paper>
       </div>
     );
@@ -86,16 +87,4 @@ const mapStateToProps = (appState: AppState) => {
   };
 };
 
-const mapDispatchToProps = dispatch =>
-  bindActionCreators(
-    {
-      login: (email: string, password: string) => login(email, password),
-      logInWithGoogle,
-      logInSuccessful: (token: string) => LoginSuccessful(token),
-    },
-    dispatch,
-  );
-
-export default withRouter(
-  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Login)),
-);
+export default withRouter(withStyles(styles)(connect(mapStateToProps)(Login)));

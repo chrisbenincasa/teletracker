@@ -32,6 +32,7 @@ export interface List {
   totalItems: number;
   configuration?: ListConfiguration;
   relevantPeople?: Person[];
+  legacyId?: number;
 }
 
 export class ListFactory {
