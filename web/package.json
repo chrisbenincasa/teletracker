@@ -9,7 +9,7 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "precommit": "pretty-quick --staged",
-    "next-dev": "node --inspect server.js",
+    "next-dev": "NODE_ENV=development node --inspect server.js",
     "next-build": "next build",
     "next-start": "NODE_ENV=production node server.js"
   },
@@ -34,6 +34,7 @@
     "@types/redux-persist": "^4.3.1",
     "@types/redux-saga": "^0.10.5",
     "@types/redux-thunk": "^2.1.0",
+    "dotenv-expand": "^5.1.0",
     "execa": "^4.0.0",
     "fs-extra": "^8.1.0",
     "fsevents": "^2.0.6",
@@ -52,6 +53,7 @@
     "apisauce": "^1.0.2",
     "connected-react-router": "6.5.2",
     "cookie": "^0.4.0",
+    "css-mediaquery": "^0.1.2",
     "dotenv": "^8.2.0",
     "flux-standard-action": "^2.1.0",
     "localforage": "^1.7.3",
@@ -85,7 +87,8 @@
     "redux-thunk": "2.3.0",
     "sanitize.css": "7.0.3",
     "serve": "10.1.2",
-    "themoviedb-client-typed": "^0.0.16"
+    "themoviedb-client-typed": "^0.0.16",
+    "use-debounce": "^3.3.0"
   },
   "browserslist": [
     ">0.2%",

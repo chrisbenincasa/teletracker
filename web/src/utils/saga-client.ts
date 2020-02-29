@@ -288,7 +288,7 @@ export class SagaTeletrackerClient {
     networks?: NetworkType[],
     genres?: number[],
     releaseYearRange?: OpenRange,
-    sort?: SortOptions,
+    sort?: SortOptions | 'search_score',
   ) {
     return yield this.apiCall(
       client => client.searchV2,

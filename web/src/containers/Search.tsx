@@ -14,7 +14,7 @@ import _ from 'lodash';
 import { useRouter } from 'next/router';
 import qs from 'querystring';
 import * as R from 'ramda';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
 import { useDispatch, useSelector } from 'react-redux';
 import { search } from '../actions/search';
@@ -33,6 +33,7 @@ import { filterParamsEqual } from '../utils/changeDetection';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
+import { useDebouncedCallback } from 'use-debounce';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -165,36 +166,6 @@ const Search = ({ inViewportChange }) => {
     setFilters(filterParams);
   }, []);
 
-  // Load new set of search results when searchText changes
-  useEffect(() => {
-    if (searchText !== currentSearchText && searchText.length > 0) {
-      loadResults(true);
-    }
-  }, [searchText]);
-
-  // Load new set of search results when filters change
-  // Ignore initial load because previousFilters won't be defined
-  useEffect(() => {
-    if (
-      previousFilters &&
-      !filterParamsEqual(previousFilters, filters, 'popularity')
-    ) {
-      console.log(previousFilters, filters, searchBookmark);
-      loadResults(true);
-    }
-  }, [filters, previousFilters, searchBookmark]);
-
-  // Run callback when search enters/leaves viewport
-  useEffect(() => {
-    console.log('isInViewport=' + isInViewport);
-    inViewportChange(isInViewport);
-    // return inViewportChange(false);
-  }, [isInViewport]);
-
-  const debouncedSearch = _.debounce(() => {
-    loadResults(false);
-  }, 200);
-
   const loadResults = (firstLoad?: boolean) => {
     // This is to handle the case where a query param doesn't exist, we'll want to use the redux state.
     // We won't want to rely on this initially because initial load is relying on query param not redux state.
@@ -209,7 +180,7 @@ const Search = ({ inViewportChange }) => {
           itemTypes,
           networks,
           genres: genresFilter,
-          sort: sortOrder === 'default' ? 'recent' : sortOrder,
+          sort: 'search_score',
           releaseYearRange:
             sliders && sliders.releaseYear
               ? {
@@ -222,6 +193,33 @@ const Search = ({ inViewportChange }) => {
     }
   };
 
+  const [debouncedSearch] = useDebouncedCallback(loadResults, 200);
+  // const debouncedSearch = useRef(_.debounce(loadResults, 200)).current;
+
+  // Load new set of search results when searchText changes
+  useEffect(() => {
+    if (searchText !== currentSearchText && searchText.length > 0) {
+      debouncedSearch(true);
+    }
+  }, [searchText]);
+
+  // Load new set of search results when filters change
+  // Ignore initial load because previousFilters won't be defined
+  useEffect(() => {
+    if (
+      previousFilters &&
+      !filterParamsEqual(previousFilters, filters, 'popularity')
+    ) {
+      debouncedSearch(true);
+    }
+  }, [filters, previousFilters, searchBookmark]);
+
+  // Run callback when search enters/leaves viewport
+  useEffect(() => {
+    inViewportChange(isInViewport);
+    // return inViewportChange(false);
+  }, [isInViewport]);
+
   const loadMoreResults = () => {
     const numColumns = getNumColumns(width);
 
@@ -231,7 +229,7 @@ const Search = ({ inViewportChange }) => {
     const shouldLoadMore = totalNonLoadedImages <= numColumns;
 
     if (!isSearching && shouldLoadMore) {
-      // debouncedSearch();
+      debouncedSearch(false);
     }
   };
 
@@ -263,10 +261,10 @@ const Search = ({ inViewportChange }) => {
     !currentSearchText || (currentSearchText && currentSearchText.length === 0);
   // || isInViewport;
 
-  const handleLoaded = () => {
-    console.log('loaded');
-    setTotalVisibleItems(prev => prev + 1);
-  };
+  const loadHandler = useCallback(
+    () => setTotalVisibleItems(prev => prev + 1),
+    [],
+  );
 
   return (
     <React.Fragment>
@@ -331,12 +329,14 @@ const Search = ({ inViewportChange }) => {
                 isListDynamic={false}
                 filters={filters}
                 variant="default"
+                hideSortOptions
               />
             </div>
             <AllFilters
               genres={genres}
               open={showFilter}
               filters={filters}
+              disableSortOptions
               updateFilters={handleFilterParamsChange}
               sortOptions={['popularity', 'recent']}
             />
@@ -359,10 +359,7 @@ const Search = ({ inViewportChange }) => {
                             key={result.id}
                             userSelf={withUserState.userSelf}
                             item={result}
-                            hasLoaded={handleLoaded}
-                            // hasLoaded={() =>
-                            //   setTotalVisibleItems(totalVisibleItems + 1)
-                            // }
+                            hasLoaded={loadHandler}
                           />
                         );
                       })}

@@ -27,7 +27,7 @@ export interface SearchInitiatedPayload {
   networks?: NetworkType[];
   genres?: number[];
   releaseYearRange?: OpenRange;
-  sort?: SortOptions;
+  sort?: SortOptions | 'search_score';
 }
 
 export type SearchInitiatedAction = FSA<
@@ -79,7 +79,7 @@ export const searchSaga = function*() {
           payload.networks,
           payload.genres,
           payload.releaseYearRange,
-          payload.sort,
+          'search_score',
         );
 
         if (response.ok) {

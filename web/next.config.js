@@ -1,16 +1,35 @@
 const withImages = require('next-images');
+const fs = require('fs')
 const { PHASE_PRODUCTION_BUILD } = require('next/constants');
-require('dotenv').config();
+
+const NODE_ENV = process.env.NODE_ENV;
+if (!NODE_ENV) {
+  throw new Error(
+    'The NODE_ENV environment variable is required but was not specified.'
+  );
+}
+
+const dotenvFiles = [
+  `.env.${NODE_ENV}.local`,
+  `.env.${NODE_ENV}`,
+  // Don't include `.env.local` for `test` environment
+  // since normally you expect tests to produce the same
+  // results for everyone
+  NODE_ENV !== 'test' && `,env.local`,
+  '.env',
+].filter(Boolean);
+
+dotenvFiles.forEach(dotenvFile => {
+  if (fs.existsSync(dotenvFile)) {
+    require('dotenv-expand')(
+      require('dotenv').config({
+        path: dotenvFile,
+      })
+    );
+  }
+});
 
 module.exports = (phase, { defaultConfig }) => {
-  let envConfig;
-  // Only reference the .env file when we're building for prod.
-  if (phase === PHASE_PRODUCTION_BUILD) {
-    envConfig = { path: './.env' };
-  }
-
-  require('dotenv').config(envConfig);
-
   const env = Object.keys(process.env)
     .filter(key => key.startsWith('REACT_'))
     .reduce((obj, key) => {

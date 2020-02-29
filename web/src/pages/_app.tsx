@@ -191,7 +191,8 @@ export default class MyApp extends App {
           <link
             rel="stylesheet"
             href="https://fonts.googleapis.com/icon?family=Material+Icons"
-          ></link>
+          />
+          <meta httpEquiv="Accept-CH" content="DPR, Viewport-Width, Width" />
         </Head>
         <Provider store={this.store}>
           {/* <PersistGate loading={null} persistor={persistor}> */}
