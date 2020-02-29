@@ -12,10 +12,6 @@ function LoginWrapper(props: Props) {
     <React.Fragment>
       <Head>
         <title>Login</title>
-        <meta
-          name="viewport"
-          content="minimum-scale=1, initial-scale=1, width=device-width"
-        />
       </Head>
       <AppWrapper>
         <Login />

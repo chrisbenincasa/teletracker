@@ -102,7 +102,7 @@ export class TeletrackerApi {
     networks?: NetworkType[],
     genres?: number[],
     releaseYearRange?: OpenRange,
-    sort?: SortOptions,
+    sort?: SortOptions | 'search_score',
   ): Promise<TeletrackerResponse<ApiItem[]>> {
     return this.api.get('/api/v3/search', {
       token,
