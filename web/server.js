@@ -1,4 +1,5 @@
-const { createServer } = require('https');
+const createHttpsServer = require('https').createServer;
+const createHttpServer = require('http').createServer;
 const { parse } = require('url');
 const next = require('next');
 const fs = require('fs');
@@ -6,17 +7,24 @@ const Amplify = require('@aws-amplify/core').default;
 const cookie = require('cookie');
 const { performance } = require('perf_hooks');
 
+const enableHttps = process.env.ENABLE_HTTPS === 'true';
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
 const httpsOptions = {
-  key: fs.readFileSync('./certificates/localhost.key'),
-  cert: fs.readFileSync('./certificates/localhost.crt'),
+  key: fs.readFileSync('../localcerts/server.key'),
+  cert: fs.readFileSync('..localcerts/server.crt'),
 };
 
+const createServer = enableHttps ? createHttpsServer : createHttpServer;
+
+if (enableHttps) {
+  console.log('Starting app with HTTPS');
+}
+
 app.prepare().then(() => {
-  createServer(httpsOptions, (req, res) => {
+  createServer(enableHttps ? httpsOptions : {}, (req, res) => {
     const start = performance.now();
 
     let cookies = req.headers.cookie || '';

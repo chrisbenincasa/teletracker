@@ -47,7 +47,8 @@ import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
 import Link from 'next/link';
 import RouterLink from './RouterLink';
 
-export const DrawerWidthPx = 220;
+// TODO: Adapt to screen size
+export const DrawerWidthPx = 250;
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -180,7 +181,7 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
     return (
       <ListItem
         button
-        // onClick={handleClick}
+        onClick={handleClick}
         // href={props.to}
         // component={ButtonLink}
         selected={selected}
@@ -198,7 +199,14 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
           </Avatar>
         </ListItemAvatar>
         <Link href={props.to} as={props.as} passHref>
-          <ListItemText primary={primary} />
+          <ListItemText
+            style={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+            primary={primary}
+          />
           {/* <a onClick={handleClick}>
           </a> */}
         </Link>
@@ -302,19 +310,23 @@ class Drawer extends Component<Props, State> {
   renderDrawerContents() {
     let { classes, isAuthed, listsById } = this.props;
 
+    const sortedLists = _.sortBy(
+      _.values(listsById),
+      list => (list.legacyId ? -list.legacyId : null),
+      'id',
+    );
+
     function ListItemLink(props: ListItemProps) {
       const { primary, to, selected } = props;
 
       return (
         <Link href={to}>
-          {/*<a>*/}
           <ListItem button selected={selected} onClick={props.onClick}>
             <ListItemIcon>
               <Settings />
             </ListItemIcon>
-            {primary}
+            <ListItemText>{primary}</ListItemText>
           </ListItem>
-          {/*</a>*/}
         </Link>
       );
     }
@@ -380,7 +392,7 @@ class Drawer extends Component<Props, State> {
                 />
                 Create List
               </Button>
-              {_.map(listsById, this.renderListItems)}
+              {_.map(sortedLists, this.renderListItems)}
             </List>
             <Divider />
           </React.Fragment>
@@ -397,7 +409,7 @@ class Drawer extends Component<Props, State> {
                 <ListItemIcon>
                   <PowerSettingsNew />
                 </ListItemIcon>
-                Logout
+                <ListItemText>Logout</ListItemText>
               </ListItem>
             </React.Fragment>
           ) : (
@@ -406,13 +418,13 @@ class Drawer extends Component<Props, State> {
                 <ListItemIcon>
                   <Lock />
                 </ListItemIcon>
-                Login
+                <ListItemText>Login</ListItemText>
               </ListItem>
               <ListItem button onClick={() => this.toggleAuthModal('signup')}>
                 <ListItemIcon>
                   <PersonAdd />
                 </ListItemIcon>
-                Signup
+                <ListItemText>Signup</ListItemText>
               </ListItem>
             </React.Fragment>
           )}
@@ -433,6 +445,9 @@ class Drawer extends Component<Props, State> {
         ModalProps={{
           onBackdropClick: this.props.closeRequested,
           onEscapeKeyDown: this.props.closeRequested,
+        }}
+        PaperProps={{
+          style: { width: DrawerWidthPx },
         }}
       >
         {this.isLoading() ? <CircularProgress /> : this.renderDrawerContents()}
