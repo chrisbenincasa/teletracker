@@ -1,13 +1,12 @@
 import Head from 'next/head';
 import React from 'react';
-import { popularSuccess, popularFailed } from '../../actions/popular';
+import { popularFailed, popularSuccess } from '../../actions/popular';
 import Popular from '../../containers/Popular';
 import { ApiItem } from '../../types/v2';
 import { ItemFactory } from '../../types/v2/Item';
 import AppWrapper from '../../containers/AppWrapper';
 import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
-import Auth, { CognitoUser } from '@aws-amplify/auth';
-import { extractApiKeyFromCookie } from '../../utils/header-utils';
+import { currentUserJwt } from '../../utils/page-utils';
 
 interface Props {
   pageProps: any;
@@ -18,10 +17,6 @@ function PopularityWrapper(props: Props) {
     <React.Fragment>
       <Head>
         <title>Popular</title>
-        <meta
-          name="viewport"
-          content="minimum-scale=1, initial-scale=1, width=device-width"
-        />
       </Head>
       <AppWrapper>
         <Popular />
@@ -32,20 +27,8 @@ function PopularityWrapper(props: Props) {
 
 PopularityWrapper.getInitialProps = async ctx => {
   if (ctx.req) {
-    let user: CognitoUser | undefined;
-    try {
-      user = await Auth.currentAuthenticatedUser({ bypassCache: true });
-    } catch (e) {
-      console.log(e);
-    }
-
     let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.getPopular(
-      user && user.getSignInUserSession()
-        ? user
-            .getSignInUserSession()!
-            .getAccessToken()
-            .getJwtToken()
-        : undefined,
+      await currentUserJwt(),
       undefined,
       undefined,
       undefined,
@@ -54,11 +37,11 @@ PopularityWrapper.getInitialProps = async ctx => {
       20,
     );
 
-    if (response.ok) {
+    if (response.ok && response.data) {
       await ctx.store.dispatch(
         popularSuccess({
-          popular: response.data!.data.map(ItemFactory.create),
-          paging: response.data!.paging,
+          popular: response.data.data.map(ItemFactory.create),
+          paging: response.data.paging,
           append: false,
         }),
       );
@@ -67,7 +50,9 @@ PopularityWrapper.getInitialProps = async ctx => {
         popularItems: response.data!.data,
       };
     } else {
-      await ctx.store.dispatch(popularFailed(new Error('bad')));
+      await ctx.store.dispatch(
+        popularFailed(new Error(response.problem?.toString())),
+      );
       return {
         popularItems: null,
       };

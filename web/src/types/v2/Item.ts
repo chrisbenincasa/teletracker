@@ -98,6 +98,7 @@ export class ItemFactory {
 
     return {
       ...item,
+      title: item.alternate_titles,
       cast: (item.cast || []).map(castMember => {
         return {
           ...castMember,

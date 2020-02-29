@@ -48,6 +48,7 @@ interface Props {
   filters: FilterParams;
   initialState?: FilterParams;
   variant?: 'default' | 'outlined';
+  hideSortOptions?: boolean;
 }
 
 export const prettyItemType = (itemType: ItemType) => {
@@ -265,14 +266,16 @@ export default function ActiveFilters(props: Props) {
   const showGenreFilters = Boolean(genresFilter && genresFilter.length > 0);
   const showNetworkFilters = Boolean(networks && networks.length > 0);
   const showTypeFilters = Boolean(itemTypes && itemTypes.length > 0);
-  const showSort = Boolean(
-    !(
-      (isListDynamic && sortOrder === 'popularity') ||
-      (!isListDynamic && sortOrder === 'added_time') ||
-      sortOrder === 'default' ||
-      sortOrder === undefined
-    ),
-  );
+  const showSort =
+    Boolean(
+      !(
+        (isListDynamic && sortOrder === 'popularity') ||
+        (!isListDynamic && sortOrder === 'added_time') ||
+        sortOrder === 'default' ||
+        sortOrder === undefined
+      ),
+    ) &&
+    (_.isUndefined(props.hideSortOptions) || !props.hideSortOptions);
 
   const showPersonFilters = Boolean(people && people.length > 0);
 

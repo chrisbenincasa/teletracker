@@ -1,5 +1,4 @@
 import Auth, { CognitoUser } from '@aws-amplify/auth';
-import { useRouter } from 'next/router';
 import React from 'react';
 import AppWrapper from '../../containers/AppWrapper';
 import { ApiList, List, ListFactory } from '../../types';
@@ -7,6 +6,7 @@ import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
 import { ListRetrieveSuccess } from '../../actions/lists';
 import ListDetail from '../../containers/ListDetail';
 import Head from 'next/head';
+import { currentUserJwt } from '../../utils/page-utils';
 
 interface Props {
   list?: List;
@@ -15,7 +15,6 @@ interface Props {
 }
 
 function ListDetailWrapper(props: Props) {
-  const router = useRouter();
   return (
     <React.Fragment>
       <Head>
@@ -30,20 +29,7 @@ function ListDetailWrapper(props: Props) {
 
 ListDetailWrapper.getInitialProps = async ctx => {
   if (ctx.req) {
-    let user: CognitoUser | undefined;
-    try {
-      user = await Auth.currentAuthenticatedUser({ bypassCache: true });
-    } catch (e) {
-      console.log(e);
-    }
-
-    let token =
-      user && user.getSignInUserSession()
-        ? user
-            .getSignInUserSession()!
-            .getAccessToken()
-            .getJwtToken()
-        : undefined;
+    let token = await currentUserJwt();
 
     if (token) {
       let response: TeletrackerResponse<ApiList> = await TeletrackerApi.instance.getList(

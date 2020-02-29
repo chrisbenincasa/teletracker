@@ -124,8 +124,8 @@ resource "aws_cloudfront_distribution" "teletracker-frontend" {
     cached_methods         = ["HEAD", "GET"]
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 86400
-    max_ttl                = 31536000
+    default_ttl            = 900   # 15 minutes
+    max_ttl                = 21600 # 6 hours
 
     forwarded_values {
       query_string = true
@@ -142,6 +142,48 @@ resource "aws_cloudfront_distribution" "teletracker-frontend" {
     }
 
     target_origin_id = "staticAssets"
+  }
+
+  ordered_cache_behavior {
+    path_pattern    = "favicon.ico"
+    allowed_methods = ["HEAD", "GET"]
+    cached_methods  = ["HEAD", "GET"]
+
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 86400
+    max_ttl                = 31536000
+
+    target_origin_id = "staticAssets"
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+  }
+
+  ordered_cache_behavior {
+    path_pattern    = "images/*"
+    allowed_methods = ["HEAD", "GET"]
+    cached_methods  = ["HEAD", "GET"]
+
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 86400
+    max_ttl                = 31536000
+
+    target_origin_id = "staticAssets"
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
   }
 
   ordered_cache_behavior {
