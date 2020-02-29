@@ -337,6 +337,7 @@ class UserController @Inject()(
                   req.value
                 )
 
+                // TODO: Handle errors
                 newOrUpdatedTag.foreach(
                   _.foreach(Function.tupled(usersApi.handleTagChange))
                 )

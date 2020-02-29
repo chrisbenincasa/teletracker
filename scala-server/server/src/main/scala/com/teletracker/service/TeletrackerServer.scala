@@ -9,7 +9,10 @@ import com.teletracker.service.filters.OpenCensusMonitoringFilter
 import com.teletracker.service.inject.ServerModules
 import com.teletracker.service.util.json.JsonModule
 import com.twitter.conversions.DurationOps._
+import com.twitter.finagle.Http
 import com.twitter.finagle.http.{Request, Response}
+import com.twitter.finagle.ssl.{ClientAuth, Engine}
+import com.twitter.finagle.ssl.server.SslServerConfiguration
 import com.twitter.finatra.http.HttpServer
 import com.twitter.finatra.http.filters.{
   LoggingMDCFilter,
@@ -18,6 +21,12 @@ import com.twitter.finatra.http.filters.{
 }
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.inject.Logging
+import io.netty.handler.ssl.SslContextBuilder
+import io.netty.handler.ssl.util.{
+  InsecureTrustManagerFactory,
+  SelfSignedCertificate
+}
+import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object TeletrackerServerMain extends TeletrackerServer
@@ -77,6 +86,34 @@ class TeletrackerServer(
       .add[HealthController]
       .add[InternalController]
       .add[PopularItemsController]
+  }
+
+  override protected def configureHttpsServer(
+    server: Http.Server
+  ): Http.Server = {
+    val allocator = io.netty.buffer.UnpooledByteBufAllocator.DEFAULT
+
+    server.withTransport.tls(
+      SslServerConfiguration(clientAuth = ClientAuth.Wanted),
+      (_: SslServerConfiguration) => {
+        val context = SslContextBuilder
+          .forServer(
+            new File(
+              s"${System.getenv("LOCALCERTS_PATH")}/server.crt"
+            ),
+            new File(
+              s"${System.getenv("LOCALCERTS_PATH")}/server.key"
+            ),
+            null
+          )
+          .trustManager(InsecureTrustManagerFactory.INSTANCE)
+          .clientAuth(io.netty.handler.ssl.ClientAuth.OPTIONAL)
+          .build()
+        val engine = context.newEngine(allocator)
+        engine.setNeedClientAuth(false)
+        Engine(engine)
+      }
+    )
   }
 }
 

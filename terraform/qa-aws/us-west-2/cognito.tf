@@ -66,7 +66,25 @@ resource "aws_cognito_user_pool_client" "default-user-pool-client" {
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_flows_user_pool_client = true
 
-  callback_urls = ["http://localhost:3000/login", "https://qa.teletracker.tv/login", "https://teletracker.local:3000/login", "https://ssr.qa.teletracker.tv/login"]
+  callback_urls = [
+    "http://localhost:3000/login",
+    "https://localhost:3000/login",
+    "https://qa.teletracker.tv/login",
+    "https://teletracker.local:3000/login",
+    "https://ssr.qa.teletracker.tv/login"
+  ]
+
+  explicit_auth_flows = [
+    "ALLOW_CUSTOM_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_USER_SRP_AUTH",
+  ]
+
+  logout_urls = [
+    "https://localhost:3000",
+    "https://teletracker.local:3000",
+    "https://ssr.qa.teletracker.tv"
+  ]
 }
 
 module "cognito-signup-hook" {

@@ -31,7 +31,7 @@ import {
   personFetchInitiated,
   PersonFetchInitiatedPayload,
 } from '../actions/people/get_person';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import ActiveFilters from '../components/Filters/ActiveFilters';

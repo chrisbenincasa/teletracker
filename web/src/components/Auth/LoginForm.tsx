@@ -13,8 +13,6 @@ import {
   withStyles,
 } from '@material-ui/core';
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
-import { push } from 'connected-react-router';
-import * as R from 'ramda';
 import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -26,6 +24,7 @@ import { GOOGLE_ACCOUNT_MERGE } from '../../constants/';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import { withRouter } from 'next/router';
 import qs from 'querystring';
+import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -50,8 +49,8 @@ const styles = (theme: Theme) =>
       left: 0,
       width: '100%',
       height: '100%',
-      backgroundColor: theme.palette.action.active,
-      zIndex: theme.zIndex.modal,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      zIndex: 900, // Above everything but below toolbar
     },
     socialSignInContainer: {
       marginTop: theme.spacing(1),
@@ -99,14 +98,13 @@ class LoginForm extends Component<Props, State> {
     const params = new URLSearchParams(qs.stringify(props.router.query));
 
     // If a user already has an account with email X and then attempts to sign
-    // in with a federatedk identity (e.g. Google) our pre-signup lambda will
+    // in with a federated identity (e.g. Google) our pre-signup lambda will
     // intercept and throw an error to indicate that it merged the federated
     // identity with the cognito user. This is returned in the form of an error
     // in the URL and indicates we should retry the federated login (because
     // with Cognito, the first attempt at a federated login with a matching
     // email causes an error)
     let error = params.get('error_description');
-    console.log(params.get('code'));
 
     this.state = {
       email: '',
@@ -129,7 +127,10 @@ class LoginForm extends Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Readonly<Props>): void {
-    if (!this.props.isLoggingIn && prevProps.isLoggingIn) {
+    if (
+      (!this.props.isLoggingIn && prevProps.isLoggingIn) ||
+      (this.state.cameFromOAuth && this.props.isAuthed && !prevProps.isAuthed)
+    ) {
       if (this.props.onLogin) {
         this.props.onLogin();
       }
@@ -233,7 +234,7 @@ class LoginForm extends Component<Props, State> {
 
 const mapStateToProps = (appState: AppState) => {
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
+    isAuthed: !_.isUndefined(appState.auth.token),
     isLoggingIn: appState.auth.isLoggingIn,
   };
 };
