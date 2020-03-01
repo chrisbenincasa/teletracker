@@ -81,6 +81,7 @@ case class EsItem(
   genres: Option[List[EsGenre]],
   id: UUID,
   images: Option[List[EsItemImage]],
+  last_updated: Option[Long],
   original_title: Option[String],
   overview: Option[String],
   popularity: Option[Double],
@@ -466,7 +467,7 @@ case class EsItemImage(
 case class EsItemRecommendation(
   id: UUID,
   title: String,
-  slug: Slug)
+  slug: Option[Slug])
     extends EsDenormalizedItemLike
 
 trait EsDenormalizedItemLike {

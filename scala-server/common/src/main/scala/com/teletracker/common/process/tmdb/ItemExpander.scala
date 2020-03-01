@@ -14,14 +14,16 @@ object ItemExpander {
     "release_dates",
     "credits",
     "external_ids",
-    "alternative_titles"
+    "alternative_titles",
+    "recommendations"
   )
 
   final val DefaultTvShowAppendFields = List(
     "release_dates",
     "credits",
     "external_ids",
-    "alternative_titles"
+    "alternative_titles",
+    "recommendations"
   )
 
   final val DefaultPersonAppendFields = List(
