@@ -139,6 +139,10 @@ trait TeletrackerTask extends Args {
           if (args.valueOrDefault("scheduleFollowups", true)) {
             val tasks = followupTasksToSchedule(typedArgs, args)
 
+            if (tasks.isEmpty) {
+              logger.info("No follow-up tasks to schedule.")
+            }
+
             // TODO: Batch
             tasks.foreach(message => {
               logger.info(

@@ -48,8 +48,8 @@ export function filterParamsEqual(
         !defaultSortOrder ||
         (defaultSortOrder &&
           left.sortOrder === 'default' &&
-            right.sortOrder !== defaultSortOrder) ||
-          (left.sortOrder !== defaultSortOrder && right.sortOrder === 'default')
+          right.sortOrder !== defaultSortOrder) ||
+        (left.sortOrder !== defaultSortOrder && right.sortOrder === 'default')
       ) {
         return false;
       }

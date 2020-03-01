@@ -81,8 +81,11 @@ class MovieImportHandler @Inject()(
     value: EsItem,
     args: MovieImportHandlerArgs
   ) = {
+    val castCrewFut = lookupCastAndCrew(item)
+    val recsFut = buildRecommendations(item)
     val updateFut = for {
-      castAndCrew <- lookupCastAndCrew(item)
+      castAndCrew <- castCrewFut
+      recommendations <- recsFut
     } yield {
       val images =
         toEsItem
@@ -131,11 +134,15 @@ class MovieImportHandler @Inject()(
         cast = cast,
         crew = crew,
         images = Some(images.toList),
+        last_updated = Some(OffsetDateTime.now().toInstant.toEpochMilli),
         external_ids = Some(newExternalSources),
         original_title = item.original_title.orElse(value.original_title),
         overview = item.overview.orElse(value.overview),
         popularity = item.popularity.orElse(value.popularity),
         ratings = Some(newRatings),
+        recommendations =
+          if (recommendations.nonEmpty) Some(recommendations)
+          else value.recommendations,
         release_date = item.release_date
           .filter(_.nonEmpty)
           .map(LocalDate.parse(_))
@@ -160,9 +167,12 @@ class MovieImportHandler @Inject()(
     item: Movie,
     args: MovieImportHandlerArgs
   ) = {
+    val recsFut = buildRecommendations(item)
+    val castCrewFut = lookupCastAndCrew(item)
     val updateFut = for {
       genres <- genreCache.getReferenceMap()
-      castAndCrew <- lookupCastAndCrew(item)
+      castAndCrew <- castCrewFut
+      recommendations <- recsFut
     } yield {
       val tmdbGenreIds =
         item.genre_ids.orElse(item.genres.map(_.map(_.id)))
@@ -200,11 +210,12 @@ class MovieImportHandler @Inject()(
         ),
         id = UUID.randomUUID(),
         images = Some(toEsItem.esItemImages(item)),
+        last_updated = Some(OffsetDateTime.now().toInstant.toEpochMilli),
         original_title = item.original_title,
         overview = item.overview,
         popularity = item.popularity,
         ratings = Some(toEsItem.esItemRating(item).toList),
-        recommendations = None,
+        recommendations = Some(recommendations),
         release_date =
           item.release_date.filter(_.nonEmpty).map(LocalDate.parse(_)),
         release_dates = item.release_dates.map(_.results.map(mrd => {
@@ -294,5 +305,34 @@ class MovieImportHandler @Inject()(
             )
           })
       }).sortWith(EsOrdering.forItemCrewMember))
+  }
+
+  private def buildRecommendations(item: Movie) = {
+    val allIds = item.recommendations.toList
+      .flatMap(_.results)
+      .map(_.id)
+      .map(id => (ExternalSource.TheMovieDb, id.toString, ThingType.Movie))
+
+    itemSearch
+      .lookupItemsByExternalIds(allIds)
+      .map(_.map {
+        case ((_, id), item) => id -> item
+      })
+      .map(tmdbIdToItem => {
+        item.recommendations.toList
+          .flatMap(_.results)
+          .flatMap(movie => {
+            for {
+              title <- movie.title.orElse(movie.original_title)
+              foundItem <- tmdbIdToItem.get(movie.id.toString)
+            } yield {
+              EsItemRecommendation(
+                id = foundItem.id,
+                title = title,
+                slug = foundItem.slug
+              )
+            }
+          })
+      })
   }
 }
