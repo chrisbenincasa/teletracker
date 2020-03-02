@@ -31,6 +31,8 @@ export interface Person {
   // Compute fields
   profile_path?: string;
   canonical_id: CanonicalId;
+  canonicalUrl: string;
+  relativeUrl: string;
 }
 
 export interface PersonCastCredit {
@@ -61,6 +63,8 @@ export class PersonFactory {
       backdrop_path: undefined,
       poster_path: undefined,
       canonical_id: apiPerson.slug || apiPerson.id,
+      canonicalUrl: '/person/[id]?id=' + apiPerson.slug,
+      relativeUrl: '/person/' + apiPerson.slug,
     } as Person;
   }
 

@@ -5,16 +5,16 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import { push } from 'connected-react-router';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { login, LoginSuccessful, logInWithGoogle } from '../actions/auth';
 import { AppState } from '../reducers';
-import { Redirect } from 'react-router';
 import ReactGA from 'react-ga';
 import LoginForm from '../components/Auth/LoginForm';
+import { withRouter, Router } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -41,11 +41,7 @@ const styles = (theme: Theme) =>
 
 interface Props extends WithStyles<typeof styles> {
   isAuthed: boolean;
-  login: (email: string, password: string) => void;
-  logInWithGoogle: () => any;
   isLoggingIn: boolean;
-  logInSuccessful: (token: string) => any;
-  changePage: () => void;
   redirect_uri?: string;
 }
 
@@ -54,27 +50,32 @@ interface State {
   password: string;
 }
 
-class Login extends Component<Props, State> {
+class Login extends Component<Props & WithRouterProps, State> {
   state: State = {
     email: '',
     password: '',
   };
 
   componentDidMount(): void {
+    if (this.props.isAuthed) {
+      this.props.router.replace('/');
+    }
+
     ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
-  render() {
-    let { isAuthed, classes } = this.props;
+  handleLogin(): void {
+    this.props.router.push('/');
+  }
 
-    return !isAuthed ? (
+  render() {
+    let { classes } = this.props;
+    return (
       <div className={classes.main}>
         <Paper className={classes.paper}>
-          <LoginForm />
+          <LoginForm onLogin={() => this.handleLogin()} />
         </Paper>
       </div>
-    ) : (
-      <Redirect to="/" />
     );
   }
 }
@@ -86,17 +87,4 @@ const mapStateToProps = (appState: AppState) => {
   };
 };
 
-const mapDispatchToProps = dispatch =>
-  bindActionCreators(
-    {
-      login: (email: string, password: string) => login(email, password),
-      changePage: () => push('/'),
-      logInWithGoogle,
-      logInSuccessful: (token: string) => LoginSuccessful(token),
-    },
-    dispatch,
-  );
-
-export default withStyles(styles)(
-  connect(mapStateToProps, mapDispatchToProps)(Login),
-);
+export default withRouter(withStyles(styles)(connect(mapStateToProps)(Login)));

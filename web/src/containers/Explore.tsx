@@ -17,7 +17,6 @@ import React, { Component } from 'react';
 import ReactGA from 'react-ga';
 import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import {
   ExploreInitiatedActionPayload,
@@ -35,6 +34,7 @@ import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import {
   parseFilterParamsFromQs,
   updateUrlParamsForFilter,
+  updateUrlParamsForFilterRouter,
 } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
@@ -43,6 +43,8 @@ import {
   PeopleFetchInitiatedPayload,
 } from '../actions/people/get_people';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
+import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
+import qs from 'querystring';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -115,7 +117,7 @@ type Props = OwnProps &
   DispatchProps &
   WithUserProps &
   WidthProps &
-  RouteComponentProps<RouteParams>;
+  WithRouterProps;
 
 interface State {
   showFilter: boolean;
@@ -138,7 +140,7 @@ class Explore extends Component<Props, State> {
     let filterParams = R.mergeDeepRight(
       defaultFilterParams,
       R.filter(R.compose(R.not, R.isNil))(
-        parseFilterParamsFromQs(props.location.search),
+        parseFilterParamsFromQs(qs.stringify(props.router.query)),
       ),
     ) as FilterParams;
 
@@ -200,7 +202,9 @@ class Explore extends Component<Props, State> {
       }
     }
 
-    this.loadItems(false, true);
+    if (!this.props.items) {
+      this.loadItems(false, true);
+    }
 
     ReactGA.pageview(window.location.pathname + window.location.search);
 
@@ -229,10 +233,8 @@ class Explore extends Component<Props, State> {
           newPath = 'shows';
         }
 
-        this.props.history.replace({
-          pathname: `/${newPath}`,
-          search: this.props.location.search,
-        });
+        let queryString = qs.stringify(this.props.router.query);
+        this.props.router.replace(`/${newPath}?${queryString}`);
       }
 
       this.setState(
@@ -240,7 +242,7 @@ class Explore extends Component<Props, State> {
           filters: filterParams,
         },
         () => {
-          updateUrlParamsForFilter(this.props, filterParams, ['type']);
+          updateUrlParamsForFilterRouter(this.props, filterParams, ['type']);
           this.loadItems(false);
         },
       );

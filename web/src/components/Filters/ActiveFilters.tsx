@@ -17,6 +17,7 @@ import { useSelector } from 'react-redux';
 import { AppState } from '../../reducers';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import makeStyles from '@material-ui/core/styles/makeStyles';
+import { useRouter } from 'next/router';
 
 const useStyles = makeStyles((theme: Theme) => ({
   activeFiltersContainer: {
@@ -47,6 +48,7 @@ interface Props {
   filters: FilterParams;
   initialState?: FilterParams;
   variant?: 'default' | 'outlined';
+  hideSortOptions?: boolean;
 }
 
 export const prettyItemType = (itemType: ItemType) => {
@@ -73,7 +75,8 @@ export const prettySort = (sortOption: SortOptions) => {
 
 export default function ActiveFilters(props: Props) {
   const classes = useStyles();
-  const history = useHistory();
+  // const history = useHistory();
+  const router = useRouter();
   const { genres, initialState, isListDynamic, variant } = props;
   let {
     filters: { genresFilter, itemTypes, networks, sortOrder, sliders, people },
@@ -263,14 +266,16 @@ export default function ActiveFilters(props: Props) {
   const showGenreFilters = Boolean(genresFilter && genresFilter.length > 0);
   const showNetworkFilters = Boolean(networks && networks.length > 0);
   const showTypeFilters = Boolean(itemTypes && itemTypes.length > 0);
-  const showSort = Boolean(
-    !(
-      (isListDynamic && sortOrder === 'popularity') ||
-      (!isListDynamic && sortOrder === 'added_time') ||
-      sortOrder === 'default' ||
-      sortOrder === undefined
-    ),
-  );
+  const showSort =
+    Boolean(
+      !(
+        (isListDynamic && sortOrder === 'popularity') ||
+        (!isListDynamic && sortOrder === 'added_time') ||
+        sortOrder === 'default' ||
+        sortOrder === undefined
+      ),
+    ) &&
+    (_.isUndefined(props.hideSortOptions) || !props.hideSortOptions);
 
   const showPersonFilters = Boolean(people && people.length > 0);
 
@@ -373,7 +378,7 @@ export default function ActiveFilters(props: Props) {
                 label={`Starring: ${personNameBySlugOrId[person]}`}
                 className={classes.chip}
                 clickable
-                onClick={() => history.push(`/person/${person}`)}
+                onClick={() => router.push(`/person/${person}`)}
                 onDelete={() => removeFilters({ people: [person] })}
                 variant={variant}
               />

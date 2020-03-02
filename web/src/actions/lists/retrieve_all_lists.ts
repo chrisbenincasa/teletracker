@@ -1,5 +1,6 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
-import { clientEffect, createAction } from '../utils';
+import { createAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
 import { FSA } from 'flux-standard-action';
 import { List } from '../../types';
@@ -69,7 +70,6 @@ export const retrieveListsSaga = function*() {
     );
 
     if (response.ok && response.data) {
-      // yield put(RetrieveUserSelfSuccess(response.data!.data));
       yield put(ListRetrieveAllSuccess(response.data.data));
     } else {
       console.error('bad');

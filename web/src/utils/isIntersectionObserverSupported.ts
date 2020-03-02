@@ -4,6 +4,10 @@
 */
 
 export default function isIntersectionObserverSupported(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
   const windowRef = window as any;
 
   return (

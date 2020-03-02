@@ -7,7 +7,7 @@ import Auth, { CognitoUser } from '@aws-amplify/auth';
 export const LOGIN_INITIATED = 'login/INITIATED';
 export const LOGIN_SUCCESSFUL = 'login/SUCCESSFUL';
 
-interface LoginPayload {
+export interface LoginPayload {
   email: string;
   password: string;
 }

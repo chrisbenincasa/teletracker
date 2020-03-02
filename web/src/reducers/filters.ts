@@ -15,4 +15,4 @@ const handleFiltersChanged = handleAction<FilterUpdateAction, State>(
   },
 );
 
-export default flattenActions(initialState, handleFiltersChanged);
+export default flattenActions('filters', initialState, handleFiltersChanged);

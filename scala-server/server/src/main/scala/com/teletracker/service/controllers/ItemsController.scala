@@ -64,16 +64,18 @@ class ItemsController @Inject()(
       itemApi
         .getPeopleViaSearch(req.authenticatedUserId, req.personIds)
         .map(results => {
-          response.ok(
-            DataResponse.complex(
-              results.map(
-                Person.fromEsPerson(
-                  _,
-                  None
+          response
+            .ok(
+              DataResponse.complex(
+                results.map(
+                  Person.fromEsPerson(
+                    _,
+                    None
+                  )
                 )
               )
             )
-          )
+            .contentTypeJson()
         })
     }
 
@@ -81,14 +83,16 @@ class ItemsController @Inject()(
       itemApi.getPersonViaSearch(req.authenticatedUserId, req.personId).map {
         case None => response.notFound
         case Some((person, credits)) =>
-          response.ok(
-            DataResponse.complex(
-              Person.fromEsPerson(
-                person,
-                Some(credits)
+          response
+            .ok(
+              DataResponse.complex(
+                Person.fromEsPerson(
+                  person,
+                  Some(credits)
+                )
               )
             )
-          )
+            .contentTypeJson()
       }
     }
 
@@ -124,6 +128,9 @@ class ItemsController @Inject()(
               Paging(result.bookmark.map(_.encode))
             )
           )
+        })
+        .map(jsonResponse => {
+          response.ok(jsonResponse).contentTypeJson()
         })
     }
   }

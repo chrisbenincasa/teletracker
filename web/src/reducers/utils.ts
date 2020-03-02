@@ -1,18 +1,20 @@
 import { FSA } from 'flux-standard-action';
 
-export type FSAReducer<S, Action extends FSA<any, any, any>> = (
-  state: S | undefined,
-  action: Action,
-) => S | undefined;
+type AllFSA = FSA<any, any, any>;
 
-export type AnyFSAReducer<S> = FSAReducer<S, FSA<any, any, any>>;
+export type FSAReducer<State, AllFSA> = (
+  state: State | undefined,
+  action: AllFSA,
+) => State | undefined;
 
-export function handleAction<Action extends FSA<any, any, any>, S>(
+export type AnyFSAReducer<State> = FSAReducer<State, AllFSA>;
+
+export function handleAction<Action extends AllFSA, State>(
   actionType: Action['type'],
-  reducer: (state: S, action: Action) => S,
-): (initialState: S) => FSAReducer<S, Action> {
-  return (initialState: S) => {
-    return (state: S = initialState, action: FSA<any, any, any>) => {
+  reducer: (state: State, action: Action) => State,
+): (initialState: State) => FSAReducer<State, Action> {
+  return (initialState: State) => {
+    return (state: State = initialState, action: AllFSA) => {
       if (!action.type || action.type !== actionType) {
         return;
       } else {
@@ -22,15 +24,33 @@ export function handleAction<Action extends FSA<any, any, any>, S>(
   };
 }
 
-type StateToReducer<S> = (initialState: S) => AnyFSAReducer<S>;
+export function handleError<Action extends AllFSA, State>(
+  actionType: Action['type'],
+  reducer: (state: State, action: AllFSA) => State,
+): (initialState: State) => FSAReducer<State, AllFSA> {
+  return (initialState: State) => {
+    return (state: State = initialState, action: AllFSA) => {
+      if (!action.type || action.type !== actionType) {
+        return;
+      } else {
+        return reducer(state, action);
+      }
+    };
+  };
+}
 
-export function flattenActions<S>(
-  initialState: S,
-  ...reducers: (StateToReducer<S>)[]
+export type StateToReducer<State> = (
+  initialState: State,
+) => AnyFSAReducer<State>;
+
+export function flattenActions<State>(
+  name: string,
+  initialState: State,
+  ...reducers: StateToReducer<State>[]
 ) {
   let reducersWithState = reducers.map(r => r(initialState));
-  return (state: S = initialState, action: FSA<any, any>) => {
-    let newState: S | undefined;
+  return (state: State = initialState, action: AllFSA) => {
+    let newState: State | undefined;
     reducersWithState.some(reducer => {
       let res = reducer(state, action);
       newState = res;

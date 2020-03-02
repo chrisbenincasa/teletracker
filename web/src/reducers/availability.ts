@@ -74,6 +74,7 @@ const allAvailabilitySuccess = handleAction<
 );
 
 export default flattenActions<State>(
+  'availability',
   initialState,
   upcomingExpiringSuccess,
   allAvailabilitySuccess,

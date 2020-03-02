@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, RefObject } from 'react';
 import {
   Avatar,
   Button,
@@ -30,7 +30,6 @@ import {
 import classNames from 'classnames';
 import _ from 'lodash';
 import { connect } from 'react-redux';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import { logout } from '../actions/auth';
 import {
@@ -43,10 +42,13 @@ import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
 import { List as ListType } from '../types';
-import RouterLink from './RouterLink';
 import AuthDialog from './Auth/AuthDialog';
+import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
+import Link from 'next/link';
+import RouterLink from './RouterLink';
 
-export const DrawerWidthPx = 220;
+// TODO: Adapt to screen size
+export const DrawerWidthPx = 250;
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -121,7 +123,7 @@ interface WidthProps {
 }
 
 type Props = OwnProps &
-  RouteComponentProps<RouteParams> &
+  WithRouterProps &
   DispatchProps &
   WithStyles<typeof styles> &
   InjectedProps &
@@ -134,6 +136,7 @@ interface LinkProps {
   primary: string;
   selected: boolean;
   to: string;
+  as?: string;
   onClick?: () => void;
 }
 
@@ -160,12 +163,27 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
       }
     };
 
+    const ButtonLink = React.forwardRef((props: any, ref) => {
+      let { onClick, href } = props;
+      return (
+        <Link href={href} passHref>
+          <a
+            onClick={onClick}
+            ref={ref as RefObject<HTMLAnchorElement>}
+            {...props}
+          >
+            {primary}
+          </a>
+        </Link>
+      );
+    });
+
     return (
       <ListItem
         button
         onClick={handleClick}
-        to={props.to}
-        component={RouterLink}
+        // href={props.to}
+        // component={ButtonLink}
         selected={selected}
       >
         <ListItemAvatar>
@@ -180,7 +198,18 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
             {listLength >= 100 ? '99+' : listLength}
           </Avatar>
         </ListItemAvatar>
-        <ListItemText primary={primary} />
+        <Link href={props.to} as={props.as} passHref>
+          <ListItemText
+            style={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+            primary={primary}
+          />
+          {/* <a onClick={handleClick}>
+          </a> */}
+        </Link>
       </ListItem>
     );
   },
@@ -235,7 +264,7 @@ class Drawer extends Component<Props, State> {
         authModalOpen: false,
         authModalScreen: undefined,
       });
-      this.props.history.push(`/${initialForm}`);
+      this.props.router.push(`/${initialForm}`);
     } else {
       this.setState({
         authModalOpen: !this.state.authModalOpen,
@@ -267,8 +296,9 @@ class Drawer extends Component<Props, State> {
       <ListItemLink
         index={index}
         key={userList.id}
-        to={`/lists/${list.id}`}
-        selected={listPath === this.props.location.pathname}
+        to={`/lists/[id]?id=${list.id}`}
+        as={`/lists/${list.id}`}
+        selected={listPath === this.props.router.pathname}
         primary={list.name}
         listLength={userList.totalItems}
         onClick={this.props.closeRequested}
@@ -277,24 +307,26 @@ class Drawer extends Component<Props, State> {
   };
 
   renderDrawerContents() {
-    let { classes, isAuthed, listsById, location } = this.props;
+    let { classes, isAuthed, listsById } = this.props;
+
+    const sortedLists = _.sortBy(
+      _.values(listsById),
+      list => (list.legacyId ? -list.legacyId : null),
+      'id',
+    );
 
     function ListItemLink(props: ListItemProps) {
       const { primary, to, selected } = props;
 
       return (
-        <ListItem
-          button
-          component={RouterLink}
-          to={to}
-          selected={selected}
-          onClick={props.onClick}
-        >
-          <ListItemIcon>
-            <Settings />
-          </ListItemIcon>
-          {primary}
-        </ListItem>
+        <Link href={to}>
+          <ListItem button selected={selected} onClick={props.onClick}>
+            <ListItemIcon>
+              <Settings />
+            </ListItemIcon>
+            <ListItemText>{primary}</ListItemText>
+          </ListItem>
+        </Link>
       );
     }
 
@@ -307,7 +339,7 @@ class Drawer extends Component<Props, State> {
               <ListItem
                 button
                 component={RouterLink}
-                to="/all"
+                href="/all"
                 selected={location.pathname.toLowerCase() === '/all'}
               >
                 <ListItemIcon>
@@ -318,7 +350,7 @@ class Drawer extends Component<Props, State> {
               <ListItem
                 button
                 component={RouterLink}
-                to="/popular"
+                href="/popular"
                 selected={location.pathname.toLowerCase() === '/popular'}
               >
                 <ListItemIcon>
@@ -329,7 +361,7 @@ class Drawer extends Component<Props, State> {
               <ListItem
                 button
                 component={RouterLink}
-                to="/new"
+                href="/new"
                 selected={location.pathname.toLowerCase() === '/new'}
               >
                 <ListItemIcon>
@@ -359,7 +391,7 @@ class Drawer extends Component<Props, State> {
                 />
                 Create List
               </Button>
-              {_.map(listsById, this.renderListItems)}
+              {_.map(sortedLists, this.renderListItems)}
             </List>
             <Divider />
           </React.Fragment>
@@ -376,7 +408,7 @@ class Drawer extends Component<Props, State> {
                 <ListItemIcon>
                   <PowerSettingsNew />
                 </ListItemIcon>
-                Logout
+                <ListItemText>Logout</ListItemText>
               </ListItem>
             </React.Fragment>
           ) : (
@@ -385,13 +417,13 @@ class Drawer extends Component<Props, State> {
                 <ListItemIcon>
                   <Lock />
                 </ListItemIcon>
-                Login
+                <ListItemText>Login</ListItemText>
               </ListItem>
               <ListItem button onClick={() => this.toggleAuthModal('signup')}>
                 <ListItemIcon>
                   <PersonAdd />
                 </ListItemIcon>
-                Signup
+                <ListItemText>Signup</ListItemText>
               </ListItem>
             </React.Fragment>
           )}
@@ -412,6 +444,9 @@ class Drawer extends Component<Props, State> {
         ModalProps={{
           onBackdropClick: this.props.closeRequested,
           onEscapeKeyDown: this.props.closeRequested,
+        }}
+        PaperProps={{
+          style: { width: DrawerWidthPx },
         }}
       >
         {this.isLoading() ? <CircularProgress /> : this.renderDrawerContents()}

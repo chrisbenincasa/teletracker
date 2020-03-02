@@ -1,6 +1,7 @@
 import { put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import { clientEffect, createAction } from '../utils';
+import { createAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 import { TeletrackerResponse } from '../../utils/api-client';
 import _ from 'lodash';
 import { Paging } from '../../types';

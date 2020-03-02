@@ -7,7 +7,6 @@ import {
   Theme,
 } from '@material-ui/core';
 import { Close, Search as SearchIcon } from '@material-ui/icons';
-import { useHistory, useLocation } from 'react-router-dom';
 import QuickSearch from './QuickSearch';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import _ from 'lodash';
@@ -18,6 +17,7 @@ import { quickSearch, search } from '../../actions/search';
 import { FilterParams } from '../../utils/searchFilters';
 import { calculateLimit } from '../../utils/list-utils';
 import { useWidth } from '../../hooks/useWidth';
+import { useRouter } from 'next/router';
 
 const useStyles = makeStyles((theme: Theme) => ({
   inputRoot: {
@@ -76,8 +76,9 @@ interface Props {
 
 function Search(props: Props) {
   const classes = useStyles();
-  const location = useLocation();
-  const history = useHistory();
+  // const location = useLocation();
+  // const history = useHistory();
+  const router = useRouter();
   const dispatch = useDispatch();
   const width = useWidth();
   const currentSearchText = useSelector((state: AppState) =>
@@ -197,10 +198,10 @@ function Search(props: Props) {
   };
 
   const execSearch = (text: string) => {
-    if (location.pathname !== '/search') {
-      history.push(`/search?q=${encodeURIComponent(text)}`);
+    if (router.pathname !== '/search') {
+      router.push(`/search?q=${encodeURIComponent(text)}`);
     } else {
-      history.push(`?q=${encodeURIComponent(text)}`);
+      router.push(`${router.pathname}?q=${encodeURIComponent(text)}`);
     }
 
     if (text.length >= 1 && currentSearchText !== text) {

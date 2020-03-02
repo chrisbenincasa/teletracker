@@ -54,6 +54,7 @@ class MetadataController @Inject()(
         .map(_.filter(g => parsedType.forall(g.genreTypes.contains)))
         .map(_.map(Genre.fromStoredGenre))
         .map(DataResponse(_))
+        .map(response.ok(_).contentTypeJson())
     }
 
     get("/networks/?") { _: Request =>
@@ -62,6 +63,7 @@ class MetadataController @Inject()(
         .map(_.sortBy(_.name))
         .map(_.map(Network.fromStoredNetwork))
         .map(DataResponse(_))
+        .map(response.ok(_).contentTypeJson())
     }
   }
 }
