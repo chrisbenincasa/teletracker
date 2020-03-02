@@ -224,7 +224,6 @@ class Drawer extends Component<Props, State> {
   };
 
   componentDidMount() {
-    console.log('Drawer mounted');
     if (this.props.isAuthed) {
       this.props.retrieveAllLists({ includeThings: false });
     }

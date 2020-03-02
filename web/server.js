@@ -14,8 +14,12 @@ const handle = app.getRequestHandler();
 
 const httpsOptions = {
   key: fs.readFileSync('../localcerts/server.key'),
-  cert: fs.readFileSync('..localcerts/server.crt'),
+  cert: fs.readFileSync('../localcerts/server.crt'),
 };
+
+if (process.env.NODE_ENV !== 'production') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+}
 
 const createServer = enableHttps ? createHttpsServer : createHttpServer;
 

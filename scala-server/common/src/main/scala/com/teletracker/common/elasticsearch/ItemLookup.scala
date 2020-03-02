@@ -374,6 +374,10 @@ class ItemLookup @Inject()(
       new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
         .source(
           new SearchSourceBuilder()
+            .fetchSource(
+              null,
+              Array("biography", "cast_credits", "crew_credits")
+            )
             .query(query)
             .size(limit)
         )

@@ -6,25 +6,14 @@ export function windowTitleForItem(
   givenId: string,
   givenItem: Item | undefined,
   itemsById: ThingMap,
-  itemsBySlug: ThingMap,
 ): string {
+  let item = extractItem(givenId, givenItem, itemsById);
+
   let titleToShow: string | undefined;
 
-  if (givenItem) {
+  if (item) {
     titleToShow =
-      givenItem.title && givenItem.title.length
-        ? givenItem.title[0]
-        : givenItem.original_title;
-  } else if (itemsById[givenId]) {
-    titleToShow =
-      itemsById[givenId].title && itemsById[givenId].title!.length
-        ? itemsById[givenId].title![0]
-        : itemsById[givenId].original_title;
-  } else if (itemsBySlug[givenId]) {
-    titleToShow =
-      itemsBySlug[givenId].title && itemsBySlug[givenId].title!.length
-        ? itemsBySlug[givenId].title![0]
-        : itemsBySlug[givenId].original_title;
+      item.title && item.title.length ? item.title[0] : item.original_title;
   }
 
   if (_.isUndefined(titleToShow)) {
@@ -34,4 +23,23 @@ export function windowTitleForItem(
   }
 
   return titleToShow;
+}
+
+export function extractItem(
+  itemId: string,
+  initialItem: Item | undefined,
+  itemsById: ThingMap,
+): Item | undefined {
+  return (
+    initialItem ||
+    itemsById[itemId] ||
+    findByItemMatchingSlug(itemId, itemsById)
+  );
+}
+
+export function findByItemMatchingSlug(
+  slug: string,
+  itemsById: ThingMap,
+): Item | undefined {
+  return _.find(_.values(itemsById), item => item.slug === slug);
 }
