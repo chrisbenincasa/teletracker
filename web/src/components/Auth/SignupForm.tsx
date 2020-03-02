@@ -21,13 +21,11 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { signup, signUpWithGoogle } from '../../actions/auth';
 import { AppState } from '../../reducers';
-import {
-  Link as RouterLink,
-  RouteComponentProps,
-  withRouter,
-} from 'react-router-dom';
 import GoogleLoginButton from './GoogleLoginButton';
 import ReactGA from 'react-ga';
+import { withRouter } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
+import NextLink from 'next/link';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -78,7 +76,7 @@ const styles = (theme: Theme) =>
     },
   });
 
-interface Props extends WithStyles<typeof styles>, RouteComponentProps<{}> {
+interface Props extends WithStyles<typeof styles>, WithRouterProps {
   isAuthed: boolean;
   isSigningUp: boolean;
   signup: (username: string, email: string, password: string) => void;
@@ -110,7 +108,7 @@ class SignupForm extends Component<Props, State> {
     snapshot?: any,
   ): void {
     if (!this.props.isSigningUp && Boolean(prevProps.isSigningUp)) {
-      this.props.history.push('/');
+      this.props.router.push('/');
     }
   }
 
@@ -203,9 +201,9 @@ class SignupForm extends Component<Props, State> {
             {this.props.onNav ? (
               <Link onClick={this.props.onNav}>Login!</Link>
             ) : (
-              <Link component={RouterLink} to="/login">
-                Login!
-              </Link>
+              <NextLink href="/login" passHref>
+                <Link>Login!</Link>
+              </NextLink>
             )}
           </Typography>
         </form>
