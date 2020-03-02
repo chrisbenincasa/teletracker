@@ -25,6 +25,7 @@ import { WithRouterProps } from 'next/dist/client/with-router';
 import { withRouter } from 'next/router';
 import qs from 'querystring';
 import _ from 'lodash';
+import NextLink from 'next/link';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -222,7 +223,9 @@ class LoginForm extends Component<Props, State> {
               {this.props.onNav ? (
                 <Link onClick={this.props.onNav}>Signup!</Link>
               ) : (
-                <Link href="/signup">Signup!</Link>
+                <NextLink href="/signup" passHref>
+                  <Link>Signup!</Link>
+                </NextLink>
               )}
             </Typography>
           </form>
