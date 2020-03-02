@@ -4,6 +4,8 @@ import {
   ITEM_FETCH_SUCCESSFUL,
   ItemFetchInitiatedAction,
   ItemFetchSuccessfulAction,
+  ITEM_PREFETCH_SUCCESSFUL,
+  ItemPrefetchSuccessfulAction,
 } from '../actions/item-detail';
 import {
   LIST_RETRIEVE_SUCCESS,
@@ -39,15 +41,13 @@ export type ThingMap = {
 export interface State {
   fetching: boolean;
   currentId?: number;
-  itemDetail?: Item;
+  itemDetail?: string;
   thingsById: ThingMap;
-  thingsBySlug: ThingMap;
 }
 
 const initialState: State = {
   fetching: false,
   thingsById: {},
-  thingsBySlug: {},
 };
 
 const itemFetchInitiated = handleAction(
@@ -58,6 +58,30 @@ const itemFetchInitiated = handleAction(
       fetching: true,
       currentId: payload,
       itemDetail: undefined,
+    } as State;
+  },
+);
+
+const itemPrefetchSuccess = handleAction(
+  ITEM_PREFETCH_SUCCESSFUL,
+  (state: State, { payload }: ItemPrefetchSuccessfulAction) => {
+    let thingsById = state.thingsById || {};
+    let existingThing: Item | undefined = thingsById[payload!.id];
+
+    let newThing: Item = payload!;
+    if (existingThing) {
+      newThing = ItemFactory.merge(existingThing, newThing);
+    }
+
+    // TODO: Truncate thingsById after a certain point
+    return {
+      ...state,
+      fetching: false,
+      itemDetail: newThing.id,
+      thingsById: {
+        ...state.thingsById,
+        [payload!.id]: newThing,
+      } as ThingMap,
     } as State;
   },
 );
@@ -77,14 +101,10 @@ const itemFetchSuccess = handleAction(
     return {
       ...state,
       fetching: false,
-      itemDetail: newThing,
+      itemDetail: newThing.id,
       thingsById: {
         ...state.thingsById,
         [payload!.id]: newThing,
-      } as ThingMap,
-      thingsBySlug: {
-        ...state.thingsBySlug,
-        [payload!.slug]: newThing,
       } as ThingMap,
     } as State;
   },
@@ -108,12 +128,6 @@ const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
       [curr.id]: curr,
     };
   }, {});
-  let newThingsBySlug = newThingsMerged.reduce((prev, curr) => {
-    return {
-      ...prev,
-      [curr.slug]: curr,
-    };
-  }, {});
 
   return {
     ...existingState,
@@ -121,10 +135,6 @@ const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
     thingsById: {
       ...existingState.thingsById,
       ...newThingsById,
-    },
-    thingsBySlug: {
-      ...existingState.thingsBySlug,
-      ...newThingsBySlug,
     },
   };
 };
@@ -250,6 +260,7 @@ const itemRemoveTagsSuccess = handleAction(
 );
 
 export default flattenActions(
+  'item-detail',
   initialState,
   itemFetchInitiated,
   itemFetchSuccess,
@@ -260,4 +271,5 @@ export default flattenActions(
   handleExploreRetrieveSuccess,
   handleSearchRetrieveSuccess,
   peopleCreditsFetchSuccess,
+  itemPrefetchSuccess,
 );

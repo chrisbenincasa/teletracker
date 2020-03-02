@@ -135,7 +135,29 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   }
 
   componentDidUpdate(prevProps: AddToListDialogProps) {
-    if (prevProps.open && !this.props.open) {
+    if (this.props.open && !prevProps.open) {
+      const belongsToLists: string[] =
+        this.props && this.props.item
+          ? itemBelongsToLists(this.props.item)
+          : [];
+
+      let listChanges = _.reduce(
+        Object.keys(this.props.listsById),
+        (acc, elem) => {
+          return {
+            ...acc,
+            [elem]: belongsToLists.includes(elem),
+          };
+        },
+        {},
+      );
+
+      this.setState({
+        originalListState: {
+          ...listChanges,
+        },
+      });
+    } else if (prevProps.open && !this.props.open) {
       this.handleModalClose();
     } else if (!prevProps.open && this.props.open) {
       this.setState({ exited: false });

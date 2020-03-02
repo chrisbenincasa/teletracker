@@ -32,7 +32,6 @@ import React, { Component } from 'react';
 import ReactGA from 'react-ga';
 import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
-import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
   deleteList,
@@ -46,7 +45,6 @@ import {
 import ItemCard from '../components/ItemCard';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
-import { StdRouterLink } from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';
@@ -75,11 +73,15 @@ import {
 import {
   parseFilterParamsFromQs,
   updateUrlParamsForFilter,
+  updateUrlParamsForFilterRouter,
 } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { collect, headOption } from '../utils/collection-utils';
 import { optionalSetsEqual } from '../utils/sets';
 import { Person } from '../types/v2/Person';
+import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
+import qs from 'querystring';
+import Link from 'next/link';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -174,7 +176,7 @@ interface WidthProps {
   width: string;
 }
 
-type NotOwnProps = RouteComponentProps<RouteParams> &
+type NotOwnProps = WithRouterProps &
   DispatchProps &
   WithStyles<typeof styles> &
   WithUserProps &
@@ -204,12 +206,13 @@ interface State {
 class ListDetail extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    let listId = this.props.match.params.id;
-    let params = new URLSearchParams(props.location.search);
+    let listId = this.props.router.query.id as string;
+    let queryString = qs.stringify(props.router.query);
+    let params = new URLSearchParams();
 
     let list = props.listsById[listId];
 
-    let filters = parseFilterParamsFromQs(props.location.search);
+    let filters = parseFilterParamsFromQs(queryString);
 
     this.state = {
       anchorEl: null,
@@ -234,7 +237,7 @@ class ListDetail extends Component<Props, State> {
   }
 
   static getDerivedStateFromProps(props: Props, state: State) {
-    let newId = props.match.params.id;
+    let newId = props.router.query.id;
 
     if (newId !== state.prevListId) {
       return {
@@ -247,8 +250,8 @@ class ListDetail extends Component<Props, State> {
     }
   }
 
-  get listId() {
-    return this.props.match.params.id;
+  get listId(): string {
+    return this.props.router.query.id as string;
   }
 
   makeListFilters = (
@@ -393,12 +396,6 @@ class ListDetail extends Component<Props, State> {
           })
         : undefined;
 
-      console.log(
-        groupedRules.UserListPersonRule,
-        personRules,
-        this.props.personById,
-      );
-
       return {
         genresFilter: genreRules,
         networks: networkRules,
@@ -416,7 +413,7 @@ class ListDetail extends Component<Props, State> {
     const { filters, list } = this.state;
 
     if (
-      this.listId !== oldProps.match.params.id ||
+      this.listId !== oldProps.router.query.id ||
       (!prevState.loadingList && this.state.loadingList)
     ) {
       this.setState({ loadingList: true });
@@ -432,12 +429,10 @@ class ListDetail extends Component<Props, State> {
       this.setState({
         loadingList: false,
         list: list,
-        deleteOnWatch: this.props.listsById[this.listId]
-          ? R.path(
-              ['list', 'configuration', 'options', 'removeWatchedItems'],
-              this.props,
-            ) || false
-          : false,
+        deleteOnWatch: Boolean(
+          this.props.listsById[this.listId]?.configuration?.options
+            ?.removeWatchedItems,
+        ),
         listFilters,
       });
     } else if (!_.isEqual(list, prevState.list)) {
@@ -485,11 +480,11 @@ class ListDetail extends Component<Props, State> {
   };
 
   handleDeleteList = () => {
-    let { deleteList, userSelf, match } = this.props;
+    let { deleteList, userSelf, router } = this.props;
 
     if (userSelf) {
       deleteList({
-        listId: match.params.id,
+        listId: this.listId,
       });
 
       this.setState({ deleted: true });
@@ -507,12 +502,12 @@ class ListDetail extends Component<Props, State> {
   };
 
   handleRenameList = () => {
-    let { updateList, userSelf, match } = this.props;
+    let { updateList, userSelf, router } = this.props;
     let { newListName } = this.state;
 
     if (userSelf) {
       updateList({
-        listId: match.params.id,
+        listId: this.listId,
         name: newListName,
       });
     }
@@ -592,7 +587,7 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderDialog() {
-    let { classes, userSelf, match } = this.props;
+    let { classes, userSelf, router } = this.props;
     let { deleteConfirmationOpen, migrateListId } = this.state;
 
     return (
@@ -623,7 +618,7 @@ class ListDetail extends Component<Props, State> {
                   _.map(
                     this.props.listsById,
                     item =>
-                      item.id !== match.params.id && (
+                      item.id !== this.listId && (
                         <MenuItem key={item.id} value={item.id}>
                           {item.name}
                         </MenuItem>
@@ -710,7 +705,7 @@ class ListDetail extends Component<Props, State> {
           filters: filterParams,
         },
         () => {
-          updateUrlParamsForFilter(this.props, filterParams);
+          updateUrlParamsForFilterRouter(this.props, filterParams);
           this.retrieveList(false);
         },
       );
@@ -759,115 +754,126 @@ class ListDetail extends Component<Props, State> {
   }
 
   renderListDetail(list: List) {
-    const { classes, genres, listLoading, thingsById, userSelf } = this.props;
+    const {
+      classes,
+      genres,
+      listLoading,
+      thingsById,
+      userSelf,
+      router,
+    } = this.props;
     const { deleted, showFilter, filters, listFilters } = this.state;
 
     if ((!listLoading && !list) || deleted) {
-      return <Redirect to="/" />;
-    } else {
-      return (
-        <div className={classes.root}>
-          <div className={classes.listContainer}>
-            <div className={classes.listHeader}>
-              <div className={classes.listNameContainer}>
+      router.replace('/');
+    }
+
+    // if ((!listLoading && !list) || deleted) {
+    //   return <Redirect to="/" />;
+    // } else {
+    // }
+    return (
+      <div className={classes.root}>
+        <div className={classes.listContainer}>
+          <div className={classes.listHeader}>
+            <div className={classes.listNameContainer}>
+              <Link href={`/lists/${list.id}`} passHref>
                 <Typography
-                  component={props => StdRouterLink('/lists/' + list.id, props)}
                   variant="h4"
                   align="left"
+                  component="a"
                   className={classes.listName}
                 >
                   {list.name}
                 </Typography>
-              </div>
+              </Link>
+            </div>
+            <IconButton
+              onClick={this.toggleFilters}
+              className={classes.settings}
+              color={showFilter ? 'primary' : 'default'}
+            >
+              <Tune />
+              <Typography variant="srOnly">Tune</Typography>
+            </IconButton>
+            {this.renderProfileMenu()}
+            {list.isDynamic && listFilters ? (
               <IconButton
-                onClick={this.toggleFilters}
                 className={classes.settings}
-                color={showFilter ? 'primary' : 'default'}
-              >
-                <Tune />
-                <Typography variant="srOnly">Tune</Typography>
-              </IconButton>
-              {this.renderProfileMenu()}
-              {list.isDynamic && listFilters ? (
-                <IconButton
-                  className={classes.settings}
-                  color={showFilter ? 'secondary' : 'inherit'}
-                  disabled={
-                    isDefaultFilter(filters) ||
-                    filterParamsEqual(listFilters!, filters)
-                  }
-                >
-                  <Save />
-                  <Typography variant="srOnly">Save</Typography>
-                </IconButton>
-              ) : null}
-            </div>
-            <div className={classes.filters}>
-              <ActiveFilters
-                genres={genres}
-                updateFilters={this.handleFilterParamsChange}
-                isListDynamic={list.isDynamic}
-                filters={
-                  isDefaultFilter(filters) && listFilters
-                    ? listFilters
-                    : filters
+                color={showFilter ? 'secondary' : 'inherit'}
+                disabled={
+                  isDefaultFilter(filters) ||
+                  filterParamsEqual(listFilters!, filters)
                 }
-                initialState={listFilters}
-                variant="default"
-              />
-            </div>
-            <AllFilters
+              >
+                <Save />
+                <Typography variant="srOnly">Save</Typography>
+              </IconButton>
+            ) : null}
+          </div>
+          <div className={classes.filters}>
+            <ActiveFilters
               genres={genres}
+              updateFilters={this.handleFilterParamsChange}
+              isListDynamic={list.isDynamic}
               filters={
                 isDefaultFilter(filters) && listFilters ? listFilters : filters
               }
-              updateFilters={this.handleFilterParamsChange}
-              open={showFilter}
-              isListDynamic={list.isDynamic}
+              initialState={listFilters}
+              variant="default"
             />
-            <InfiniteScroll
-              pageStart={0}
-              loadMore={() => this.loadMoreList()}
-              hasMore={Boolean(this.props.listBookmark)}
-              useWindow
-              threshold={300}
-            >
-              <Grid container spacing={2}>
-                {list && list.items && list.items.length > 0 ? (
-                  list.items.map(item =>
-                    thingsById[item.id] ? (
-                      <ItemCard
-                        key={item.id}
-                        userSelf={userSelf}
-                        item={thingsById[item.id]}
-                        listContext={list}
-                        withActionButton
-                        hoverDelete={!list.isDynamic}
-                        hasLoaded={this.setVisibleItems}
-                      />
-                    ) : null,
-                  )
-                ) : (
-                  <Typography
-                    align="center"
-                    color="secondary"
-                    display="block"
-                    className={classes.noContent}
-                  >
-                    {list.totalItems > 0
-                      ? 'Sorry, nothing matches your current filter.  Please update and try again.'
-                      : 'Nothing has been added to this list yet.'}
-                  </Typography>
-                )}
-              </Grid>
-              {this.props.listLoading && this.renderLoadingCircle()}
-            </InfiniteScroll>
           </div>
-          {this.renderDialog()}
-          {this.renderRenameDialog(list)}
+          <AllFilters
+            genres={genres}
+            filters={
+              isDefaultFilter(filters) && listFilters ? listFilters : filters
+            }
+            updateFilters={this.handleFilterParamsChange}
+            open={showFilter}
+            isListDynamic={list.isDynamic}
+          />
+          <InfiniteScroll
+            pageStart={0}
+            loadMore={() => this.loadMoreList()}
+            hasMore={Boolean(this.props.listBookmark)}
+            useWindow
+            threshold={300}
+          >
+            <Grid container spacing={2}>
+              {list && list.items && list.items.length > 0 ? (
+                list.items.map(item =>
+                  thingsById[item.id] ? (
+                    <ItemCard
+                      key={item.id}
+                      userSelf={userSelf}
+                      item={thingsById[item.id]}
+                      listContext={list}
+                      withActionButton
+                      hoverDelete={!list.isDynamic}
+                      hasLoaded={this.setVisibleItems}
+                    />
+                  ) : null,
+                )
+              ) : (
+                <Typography
+                  align="center"
+                  color="secondary"
+                  display="block"
+                  className={classes.noContent}
+                >
+                  {list.totalItems > 0
+                    ? 'Sorry, nothing matches your current filter.  Please update and try again.'
+                    : 'Nothing has been added to this list yet.'}
+                </Typography>
+              )}
+            </Grid>
+            {this.props.listLoading && this.renderLoadingCircle()}
+          </InfiniteScroll>
         </div>
-      );
-    }
+        {this.renderDialog()}
+        {this.renderRenameDialog(list)}
+      </div>
+    );
   }
 
   render() {

@@ -7,7 +7,8 @@ import {
 } from '../../types';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import { Item, ItemFactory } from '../../types/v2/Item';
-import { clientEffect, createAction } from '../utils';
+import { createAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { ApiItem } from '../../types/v2';

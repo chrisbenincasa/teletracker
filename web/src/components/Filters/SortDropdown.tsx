@@ -8,7 +8,8 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-import { RouteComponentProps, withRouter } from 'react-router-dom';
+import { withRouter } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 import { SortOptions } from '../../types';
 
 const styles = (theme: Theme) =>
@@ -38,9 +39,7 @@ const sortOptionToName: { [K in SortOptions]?: string } = {
 
 const defaultSortOptions = ['popularity', 'added_time', 'recent'];
 
-type Props = OwnProps &
-  WithStyles<typeof styles> &
-  RouteComponentProps<RouteParams>;
+type Props = OwnProps & WithStyles<typeof styles> & WithRouterProps;
 
 class SortDropDown extends Component<Props> {
   static defaultProps = {

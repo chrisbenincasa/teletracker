@@ -17,6 +17,7 @@ import {
   QUICK_SEARCH_FAILED,
   QUICK_SEARCH_INITIATED,
   QUICK_SEARCH_SUCCESSFUL,
+  SEARCH_PRELOAD_INITIATED,
 } from '../actions/search';
 import { Item } from '../types/v2/Item';
 import { flattenActions, handleAction } from './utils';
@@ -73,6 +74,17 @@ const searchFailed = handleAction<SearchFailedAction, State>(
 
 const searchInitiated = handleAction<SearchInitiatedAction, State>(
   SEARCH_INITIATED,
+  (state, action) => {
+    return {
+      ...state,
+      searching: true,
+      currentSearchText: action.payload!.query.trim(),
+    };
+  },
+);
+
+const preloadSearchInitiated = handleAction<SearchInitiatedAction, State>(
+  SEARCH_PRELOAD_INITIATED,
   (state, action) => {
     return {
       ...state,
@@ -214,11 +226,13 @@ const peopleSearchSuccess = handleAction<PeopleSearchSuccessfulAction, State>(
 );
 
 export default flattenActions(
+  'search',
   initialState,
   quickSearchInitiated,
   quickSearchSuccess,
   quickSearchFailed,
   searchInitiated,
+  preloadSearchInitiated,
   searchSuccess,
   searchFailed,
   peopleSearchInitiated,

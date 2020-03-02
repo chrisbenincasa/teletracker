@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { Slider, Theme, Typography } from '@material-ui/core';
-import { RouteComponentProps, withRouter } from 'react-router';
+// import { RouteComponentProps, withRouter } from 'react-router';
+import { withRouter } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import _ from 'lodash';
 import * as R from 'ramda';
@@ -25,7 +27,7 @@ interface OwnProps {
   showTitle?: boolean;
 }
 
-type Props = OwnProps & RouteComponentProps<{}>;
+type Props = OwnProps & WithRouterProps;
 
 export interface SliderChange {
   releaseYear?: OpenRange;

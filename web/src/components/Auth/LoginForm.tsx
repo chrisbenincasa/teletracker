@@ -13,18 +13,19 @@ import {
   withStyles,
 } from '@material-ui/core';
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
-import { push } from 'connected-react-router';
-import * as R from 'ramda';
 import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { login, LoginSuccessful, logInWithGoogle } from '../../actions/auth';
 import { AppState } from '../../reducers';
-import { RouteComponentProps, withRouter } from 'react-router';
-import { Link as RouterLink } from 'react-router-dom';
 import GoogleLoginButton from './GoogleLoginButton';
 import ReactGA from 'react-ga';
 import { GOOGLE_ACCOUNT_MERGE } from '../../constants/';
+import { WithRouterProps } from 'next/dist/client/with-router';
+import { withRouter } from 'next/router';
+import qs from 'querystring';
+import _ from 'lodash';
+import NextLink from 'next/link';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -49,8 +50,8 @@ const styles = (theme: Theme) =>
       left: 0,
       width: '100%',
       height: '100%',
-      backgroundColor: theme.palette.action.active,
-      zIndex: theme.zIndex.modal,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      zIndex: 900, // Above everything but below toolbar
     },
     socialSignInContainer: {
       marginTop: theme.spacing(1),
@@ -76,7 +77,6 @@ interface OwnProps {
   logInWithGoogle: () => any;
   isLoggingIn: boolean;
   logInSuccessful: (token: string) => any;
-  changePage: () => void;
   redirect_uri?: string;
   // Events
   onSubmitted?: () => void;
@@ -84,7 +84,7 @@ interface OwnProps {
   onLogin?: () => void;
 }
 
-type Props = OwnProps & WithStyles<typeof styles> & RouteComponentProps<{}>;
+type Props = OwnProps & WithStyles<typeof styles> & WithRouterProps;
 
 interface State {
   email: string;
@@ -96,7 +96,7 @@ interface State {
 class LoginForm extends Component<Props, State> {
   constructor(props: Readonly<Props>) {
     super(props);
-    const params = new URLSearchParams(props.location.search);
+    const params = new URLSearchParams(qs.stringify(props.router.query));
 
     // If a user already has an account with email X and then attempts to sign
     // in with a federated identity (e.g. Google) our pre-signup lambda will
@@ -128,7 +128,10 @@ class LoginForm extends Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Readonly<Props>): void {
-    if (!this.props.isLoggingIn && prevProps.isLoggingIn) {
+    if (
+      (!this.props.isLoggingIn && prevProps.isLoggingIn) ||
+      (this.state.cameFromOAuth && this.props.isAuthed && !prevProps.isAuthed)
+    ) {
       if (this.props.onLogin) {
         this.props.onLogin();
       }
@@ -149,7 +152,7 @@ class LoginForm extends Component<Props, State> {
     this.props.login(this.state.email, this.state.password);
 
     // TODO: Protect this with some state.
-    push('/');
+    this.props.router.push('/');
   };
 
   render() {
@@ -220,9 +223,9 @@ class LoginForm extends Component<Props, State> {
               {this.props.onNav ? (
                 <Link onClick={this.props.onNav}>Signup!</Link>
               ) : (
-                <Link component={RouterLink} to="/signup">
-                  Signup!
-                </Link>
+                <NextLink href="/signup" passHref>
+                  <Link>Signup!</Link>
+                </NextLink>
               )}
             </Typography>
           </form>
@@ -234,7 +237,7 @@ class LoginForm extends Component<Props, State> {
 
 const mapStateToProps = (appState: AppState) => {
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
+    isAuthed: !_.isUndefined(appState.auth.token),
     isLoggingIn: appState.auth.isLoggingIn,
   };
 };
@@ -243,7 +246,6 @@ const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
       login: (email: string, password: string) => login(email, password),
-      changePage: () => push('/'),
       logInWithGoogle,
       logInSuccessful: (token: string) => LoginSuccessful(token),
     },

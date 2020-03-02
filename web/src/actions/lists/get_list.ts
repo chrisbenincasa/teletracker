@@ -10,7 +10,8 @@ import {
   ApiList,
 } from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
-import { clientEffect, createAction } from '../utils';
+import { createAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 import _ from 'lodash';
 
 export const LIST_RETRIEVE_INITIATED = 'lists/retrieve/INITIATED';
@@ -51,11 +52,11 @@ export const ListRetrieveInitiated = createAction<ListRetrieveInitiatedAction>(
   LIST_RETRIEVE_INITIATED,
 );
 
-const ListRetrieveSuccess = createAction<ListRetrieveSuccessAction>(
+export const ListRetrieveSuccess = createAction<ListRetrieveSuccessAction>(
   LIST_RETRIEVE_SUCCESS,
 );
 
-const ListRetrieveFailed = createAction<ListRetrieveFailedAction>(
+export const ListRetrieveFailed = createAction<ListRetrieveFailedAction>(
   LIST_RETRIEVE_FAILED,
 );
 
