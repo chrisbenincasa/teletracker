@@ -206,10 +206,12 @@ lazy val server = project
     mainClass in reStart := Some(
       "com.teletracker.service.TeletrackerServerMain"
     ),
+    reStartArgs ++= Seq("-https.port=:3002"),
     Revolver.enableDebugging(port = 5005, suspend = false),
     envVars in reStart := Map(
       "TMDB_API_KEY" -> System.getenv("TMDB_API_KEY"),
-      "JWT_SECRET" -> System.getenv("JWT_SECRET")
+      "JWT_SECRET" -> System.getenv("JWT_SECRET"),
+      "LOCALCERTS_PATH" -> System.getenv("LOCALCERTS_PATH")
     ),
     // Assmebly JAR
     mainClass in assembly := Some("com.teletracker.service.Teletracker"),

@@ -94,7 +94,7 @@ export class TeletrackerApi {
   }
 
   async searchV2(
-    token: string,
+    token: string | undefined,
     searchText: string,
     bookmark?: string,
     limit?: number,
@@ -102,9 +102,9 @@ export class TeletrackerApi {
     networks?: NetworkType[],
     genres?: number[],
     releaseYearRange?: OpenRange,
-    sort?: SortOptions,
-  ) {
-    return this.api.get<ApiItem[]>('/api/v3/search', {
+    sort?: SortOptions | 'search_score',
+  ): Promise<TeletrackerResponse<ApiItem[]>> {
+    return this.api.get('/api/v3/search', {
       token,
       query: searchText,
       bookmark,
@@ -300,14 +300,14 @@ export class TeletrackerApi {
     );
   }
 
-  async getItem(token: string, id: string | number, type: string) {
+  async getItem(token: string | undefined, id: string | number, type: string) {
     return this.api.get<any>(`/api/v2/items/${id}`, {
       token,
       thingType: type,
     });
   }
 
-  async getPerson(token: String, id: string) {
+  async getPerson(token: string | undefined, id: string) {
     return this.api.get<any>(`/api/v2/people/${id}`, {
       token,
     });
@@ -425,7 +425,7 @@ export class TeletrackerApi {
     limit?: number,
     genres?: number[],
     releaseYearRange?: OpenRange,
-  ) {
+  ): Promise<TeletrackerResponse<ApiItem[]>> {
     return this.api.get('/api/v2/popular', {
       token,
       fields: fields ? this.createFilter(fields!) : undefined,
@@ -457,7 +457,7 @@ export class TeletrackerApi {
     genres?: number[],
     releaseYearRange?: OpenRange,
     cast?: string[],
-  ) {
+  ): Promise<TeletrackerResponse<ApiItem[]>> {
     return this.api.get('/api/v2/explore', {
       token,
       itemTypes:

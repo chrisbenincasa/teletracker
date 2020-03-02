@@ -72,6 +72,7 @@ class PopularItemsController @Inject()(
           )
         )
       })
+      .map(response.ok(_).contentTypeJson())
   }
 
   private def makeSearchRequest(req: GetItemsRequest) = {

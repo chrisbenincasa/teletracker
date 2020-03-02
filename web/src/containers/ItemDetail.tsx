@@ -19,31 +19,28 @@ import { fade } from '@material-ui/core/styles/colorManipulator';
 import { ChevronLeft, PlayArrow } from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
+import moment from 'moment';
+import { useRouter } from 'next/router';
 import * as R from 'ramda';
 import React, { useState } from 'react';
 import ReactGA from 'react-ga';
-import { Helmet } from 'react-helmet';
 import { connect } from 'react-redux';
-import {
-  RouteComponentProps,
-  useHistory,
-  useLocation,
-  useParams,
-} from 'react-router-dom';
+import { RouteComponentProps } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
   itemFetchInitiated,
   ItemFetchInitiatedPayload,
+  itemPrefetchSuccess,
 } from '../actions/item-detail';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import ThingAvailability from '../components/Availability';
+import MarkAsWatched from '../components/Buttons/MarkAsWatched';
 import Cast from '../components/Cast';
 import ManageTracking from '../components/ManageTracking';
-import MarkAsWatched from '../components/Buttons/MarkAsWatched';
 import Recommendations from '../components/Recommendations';
 import { ResponsiveImage } from '../components/ResponsiveImage';
-import RouterLink from '../components/RouterLink';
 import withUser, { WithUserProps } from '../components/withUser';
+import { useWidth } from '../hooks/useWidth';
 import { AppState } from '../reducers';
 import { Genre } from '../types';
 import { Item } from '../types/v2/Item';
@@ -53,8 +50,9 @@ import {
   getVoteCount,
 } from '../utils/textHelper';
 import Login from './Login';
-import moment from 'moment';
-import { useWidth } from '../hooks/useWidth';
+import RouterLink from '../components/RouterLink';
+import Link from 'next/link';
+import { extractItem } from '../utils/item-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -184,11 +182,14 @@ interface OwnProps {
   isAuthed: boolean;
   isFetching: boolean;
   itemDetail?: Item;
+  initialItem?: Item;
   genres?: Genre[];
+  itemsById: { [key: string]: Item };
 }
 
 interface DispatchProps {
   fetchItemDetails: (payload: ItemFetchInitiatedPayload) => void;
+  itemPrefetchSuccess: (payload: Item) => void;
 }
 
 interface RouteParams {
@@ -209,16 +210,14 @@ function ItemDetails(props: Props) {
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
-  let location = useLocation();
-  let history = useHistory();
-  let params = useParams();
+  let nextRouter = useRouter();
 
   React.useEffect(() => {
     const { isLoggedIn, userSelf } = props;
 
     loadItem();
 
-    ReactGA.pageview(window.location.pathname + window.location.search);
+    ReactGA.pageview(nextRouter.asPath);
 
     if (
       isLoggedIn &&
@@ -228,13 +227,30 @@ function ItemDetails(props: Props) {
     ) {
       ReactGA.set({ userId: userSelf.user.getUsername() });
     }
-  }, [location]);
+  }, [nextRouter.query]);
 
   const loadItem = () => {
-    let itemId = params.id;
-    let itemType = params.type;
+    if (props.initialItem) {
+      props.itemPrefetchSuccess(props.initialItem);
+    } else {
+      let itemId = nextRouter.query.id as string;
 
-    props.fetchItemDetails({ id: itemId, type: itemType });
+      // TODO: This is an optimization, but sometimes items don't always have all of the
+      // necessary information loaded when triggered from other pages. We should figure out
+      // a way to determine if the full item needs to be fetched, so we can still cache
+      // previious results.
+      // if (props.itemsById[itemId]) {
+      //   props.itemPrefetchSuccess(props.itemsById[itemId]);
+      // } else if (props.itemsBySlug[itemId]) {
+      //   props.itemPrefetchSuccess(props.itemsBySlug[itemId]);
+      // } else {
+      // }
+      let itemType = nextRouter.pathname
+        .split('/')
+        .filter(s => s.length > 0)[0];
+
+      props.fetchItemDetails({ id: itemId, type: itemType });
+    }
   };
 
   const setPlayTrailerIcon = () => {
@@ -297,6 +313,11 @@ function ItemDetails(props: Props) {
       return _.includes(itemGenres, genre.id);
     });
 
+    // @ts-ignore
+    // const WrappedLink = React.forwardRef(({ onClick, href }: any, ref: any) => {
+    //   <a href={href} onClick={onClick} ref={ref} />;
+    // });
+
     return (
       <div className={classes.descriptionContainer}>
         <div className={classes.titleContainer}>
@@ -311,15 +332,24 @@ function ItemDetails(props: Props) {
           {genresToRender &&
             genresToRender.length > 0 &&
             genresToRender.map(genre => (
-              <Chip
+              <Link
                 key={genre.id}
-                label={genre.name}
-                className={classes.genre}
-                component={RouterLink}
-                to={`/popular?genres=${genre.id}`}
-                itemProp="genre"
-                clickable
-              />
+                href={`/popular?genres=${genre.id}`}
+                passHref
+              >
+                <Chip
+                  label={genre.name}
+                  className={classes.genre}
+                  component="a"
+                  // component={
+                  //   <RouterLink href={`/popular?genres=${genre.id}`} passHref>
+                  //     <WrappedLink />
+                  //   </RouterLink>
+                  // }
+                  itemProp="genre"
+                  clickable
+                />
+              </Link>
             ))}
         </div>
       </div>
@@ -404,63 +434,6 @@ function ItemDetails(props: Props) {
       renderLoading()
     ) : (
       <React.Fragment>
-        <Helmet>
-          <title>{`${itemDetail.canonicalTitle} | Teletracker`}</title>
-          <meta
-            name="title"
-            property="og:title"
-            content={`${itemDetail.canonicalTitle} | Where to stream, rent, or buy. Track it today!`}
-          />
-          <meta
-            name="description"
-            property="og:description"
-            content={`Find out where to stream, rent, or buy ${itemDetail.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
-          />
-          {/* TODO FIX <meta
-            name="image"
-            property="og:image"
-            content={`https://image.tmdb.org/t/p/w342${itemDetail.posterPath}`}
-          /> */}
-          <meta property="og:type" content="video.movie" />
-          <meta property="og:image:type" content="image/jpg" />
-          <meta property="og:image:width" content="342" />
-          <meta
-            data-react-helmet="true"
-            property="og:image:height"
-            content="513"
-          />
-          <meta
-            property="og:url"
-            content={`http://teletracker.com${location.pathname}`}
-          />
-          <meta
-            data-react-helmet="true"
-            name="twitter:card"
-            content="summary"
-          />
-          <meta
-            name="twitter:title"
-            content={`${itemDetail.canonicalTitle} - Where to Stream, Rent, or Buy It Online`}
-          />
-          <meta
-            name="twitter:description"
-            content={`Find out where to stream, rent, or buy ${itemDetail.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
-          />
-
-          {/* TODO FIX <meta
-            name="twitter:image"
-            content={`https://image.tmdb.org/t/p/w342${itemDetail.posterPath}`}
-          /> */}
-          <meta
-            name="keywords"
-            content={`${itemDetail.canonicalTitle}, ${itemDetail.type}, stream, streaming, rent, buy, watch, track`}
-          />
-          <link
-            rel="canonical"
-            href={`http://teletracker.com${location.pathname}`}
-          />
-        </Helmet>
-
         <div className={classes.backdrop}>
           <div className={classes.backdropContainer}>
             <ResponsiveImage
@@ -491,7 +464,7 @@ function ItemDetails(props: Props) {
             {!isMobile && (
               <Button
                 size="small"
-                onClick={history.goBack}
+                onClick={nextRouter.back}
                 variant="contained"
                 aria-label="Go Back"
                 style={{ marginTop: 20, marginLeft: 20 }}
@@ -610,7 +583,14 @@ const mapStateToProps: (
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
-    itemDetail: appState.itemDetail.itemDetail,
+    itemDetail: appState.itemDetail.itemDetail
+      ? extractItem(
+          appState.itemDetail.itemDetail,
+          undefined,
+          appState.itemDetail.thingsById,
+        )
+      : undefined,
+    itemsById: appState.itemDetail.thingsById,
     genres: appState.metadata.genres,
   };
 };
@@ -619,6 +599,7 @@ const mapDispatchToProps = (dispatch: Dispatch) =>
   bindActionCreators(
     {
       fetchItemDetails: itemFetchInitiated,
+      itemPrefetchSuccess: itemPrefetchSuccess,
     },
     dispatch,
   );

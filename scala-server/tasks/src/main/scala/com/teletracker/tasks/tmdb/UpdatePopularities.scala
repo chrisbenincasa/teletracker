@@ -73,6 +73,9 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
+  @Inject
+  private[this] var teletrackerConfig: TeletrackerConfig = _
+
   override type TypedArgs = UpdatePopularitiesJobArgs
 
   implicit override protected lazy val typedArgsEncoder
@@ -223,7 +226,8 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
                           EsIngestMessageOperation.Update,
                           update = Some(
                             EsIngestUpdate(
-                              index = "items",
+                              index =
+                                teletrackerConfig.elasticsearch.items_index_name,
                               id.toString,
                               None,
                               Some(Map("popularity" -> popularity).asJson)

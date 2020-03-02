@@ -19,7 +19,8 @@ import com.teletracker.common.db.model.{
   DynamicListReleaseYearRule,
   DynamicListTagRule,
   PersonAssociationType,
-  TrackedListRow
+  TrackedListRow,
+  UserThingTagType
 }
 import com.teletracker.common.elasticsearch.EsItemTag.TagFormatter
 import com.teletracker.common.util.{IdOrSlug, ListFilters, OpenDateRange}
@@ -27,7 +28,7 @@ import javax.inject.Inject
 import com.teletracker.common.util.Functions._
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
 import org.elasticsearch.client.core.CountRequest
-import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
 import java.time.LocalDate
@@ -228,6 +229,8 @@ class DynamicListBuilder @Inject()(
         ).filter(_.nonEmpty).map(personRulesToSearch)
       }
 
+    val excludeWatchedItems = dynamicList.options.exists(_.removeWatchedItems)
+
     val sourceBuilder = new SearchSourceBuilder()
     val baseBoolQuery = QueryBuilders.boolQuery()
 
@@ -259,6 +262,7 @@ class DynamicListBuilder @Inject()(
         availabilityByNetworkIdsOr
       )
       .applyOptional(releaseYearRule.filter(_.isFinite))(openDateRangeFilter)
+      .applyIf(excludeWatchedItems)(excludeWatchedItemsFilter(userId, _))
       .applyOptional(bookmark)(applyBookmark(_, _, Some(dynamicList)))
 
     val defaultSort =
@@ -322,6 +326,18 @@ class DynamicListBuilder @Inject()(
     })
 
     PeopleCreditSearch(creditSearches, BinaryOperator.Or)
+  }
+
+  private def excludeWatchedItemsFilter(
+    userId: String,
+    boolQueryBuilder: BoolQueryBuilder
+  ) = {
+    boolQueryBuilder.mustNot(
+      QueryBuilders.termQuery(
+        "tags.tag",
+        TagFormatter.format(userId, UserThingTagType.Watched)
+      )
+    )
   }
 
   private def applyNextBookmark(

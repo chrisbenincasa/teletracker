@@ -1,6 +1,5 @@
 import { routerMiddleware } from 'connected-react-router';
-import { createBrowserHistory } from 'history';
-import * as localforage from 'localforage';
+import { createBrowserHistory, createMemoryHistory } from 'history';
 import { applyMiddleware, compose, createStore } from 'redux';
 import * as rp from 'redux-persist';
 import { persistReducer, persistStore, createTransform } from 'redux-persist';
@@ -14,9 +13,13 @@ import {
   initialState as defaultPeopleState,
 } from './reducers/people';
 
-export const history = createBrowserHistory();
+const isClient = typeof window !== 'undefined';
 
-const initialState = {};
+export const history = isClient
+  ? createBrowserHistory()
+  : createMemoryHistory();
+
+const DEFAULT_INITIAL_STATE = {};
 const enhancers: any[] = [];
 const sagaMiddleware = createSagaMiddleware();
 const middleware = [thunk, routerMiddleware(history), sagaMiddleware];
@@ -49,14 +52,18 @@ const getWhitelists = () => {
   return ['auth', 'people'];
 };
 
-export const persistConfig: rp.PersistConfig = {
-  key: 'root',
-  storage: localforage,
-  whitelist: getWhitelists(),
-  transforms: [authWhitelistFilter, personNameCache],
-};
+function getPersistConfig() {
+  const localforage = require('localforage');
 
-if (env === 'development') {
+  return {
+    key: 'root',
+    storage: localforage,
+    whitelist: getWhitelists(),
+    transforms: [authWhitelistFilter, personNameCache],
+  };
+}
+
+if (env === 'development' && typeof window !== 'undefined') {
   const devToolsExtension = (window as any).__REDUX_DEVTOOLS_EXTENSION__;
 
   if (typeof devToolsExtension === 'function') {
@@ -64,15 +71,54 @@ if (env === 'development') {
   }
 }
 
-const composedEnhancers = compose(applyMiddleware(...middleware), ...enhancers);
+// export default initialState => {
+//   let store, persistor;
+//   const reducerWithHistory = createRootReducer(history);
 
-const reducerWithHistory = createRootReducer(history);
+//   // if (isClient) {
+//   const composedEnhancers = compose(
+//     applyMiddleware(...middleware),
+//     ...enhancers,
+//   );
 
-const persistedReducer = persistReducer(persistConfig, reducerWithHistory);
+//   //   const persistedReducer = persistReducer(
+//   //     getPersistConfig(),
+//   //     reducerWithHistory,
+//   //   );
+//   //   store = createStore(persistedReducer, initialState, composedEnhancers);
+//   // } else {
+//   // }
+//   store = createStore(
+//     reducerWithHistory,
+//     initialState || DEFAULT_INITIAL_STATE,
+//     composedEnhancers,
+//   );
 
-export default () => {
-  let store = createStore(persistedReducer, initialState, composedEnhancers);
+//   sagaMiddleware.run(root);
+
+//   // if (isClient) {
+//   //   persistor = persistStore(store);
+//   // }
+
+//   return { store, persistor };
+// };
+
+export default initialState => {
+  const reducerWithHistory = createRootReducer(history);
+  const sagaMiddleware = createSagaMiddleware();
+  const middleware = [thunk, sagaMiddleware];
+  const composedEnhancers = compose(
+    applyMiddleware(sagaMiddleware),
+    ...enhancers,
+  );
+
+  const store = createStore(
+    reducerWithHistory,
+    initialState,
+    composedEnhancers,
+  );
+
   sagaMiddleware.run(root);
-  let persistor = persistStore(store);
-  return { store, persistor };
+
+  return { store };
 };

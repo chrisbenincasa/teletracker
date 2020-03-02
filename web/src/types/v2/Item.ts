@@ -46,6 +46,7 @@ export interface Item {
   canonicalId: Id | Slug;
   canonicalTitle: string;
   relativeUrl: string;
+  canonicalUrl: string; // Canonical URL used by next.js
   itemMarkedAsWatched: boolean;
   posterImage?: ItemImage;
   backdropImage?: ItemImage;
@@ -97,6 +98,7 @@ export class ItemFactory {
 
     return {
       ...item,
+      title: item.alternate_titles,
       cast: (item.cast || []).map(castMember => {
         return {
           ...castMember,
@@ -111,6 +113,7 @@ export class ItemFactory {
       canonicalTitle,
       slug: item.slug,
       relativeUrl: `/${item.type}/${CANONICAL_ID}`,
+      canonicalUrl: `/${item.type}/[id]?id=${CANONICAL_ID}`,
       // description: getDescription(item),
       itemMarkedAsWatched: itemHasTag(item, ActionType.Watched),
 
@@ -123,6 +126,53 @@ export class ItemFactory {
   }
 
   static merge(left: Item, right: Item): Item {
-    return R.mergeDeepRight(left, right) as Item;
+    const merger = (key: string, l: any, r: any): any => {
+      if (key === 'cast') {
+        if (!l) {
+          return r;
+        } else if (!r) {
+          return l;
+        } else {
+          const leftCast: ItemCastMember[] = l;
+          const rightCast: ItemCastMember[] = r;
+
+          const leftCastById = R.mapObjIndexed<
+            ItemCastMember[],
+            ItemCastMember
+          >(R.head, R.groupBy(R.prop('id'), leftCast));
+
+          return R.map(castMember => {
+            const leftExisting = leftCastById[castMember.id]
+              ? leftCastById[castMember.id]
+              : undefined;
+
+            let mergedPerson: Person | undefined;
+            if (castMember.person && leftExisting && leftExisting.person) {
+              mergedPerson = PersonFactory.merge(
+                castMember.person,
+                leftExisting.person,
+              );
+            } else if (castMember.person) {
+              mergedPerson = castMember.person;
+            } else if (leftExisting) {
+              mergedPerson = leftExisting.person;
+            }
+
+            return {
+              ...castMember,
+              person: mergedPerson,
+            };
+          }, rightCast);
+        }
+      } else {
+        if (!r) {
+          return l;
+        } else {
+          return r;
+        }
+      }
+    };
+
+    return R.mergeDeepWithKey(merger, left, right) as Item;
   }
 }

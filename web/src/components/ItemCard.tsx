@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, RefObject } from 'react';
 import {
   Button,
   Card,
@@ -29,7 +29,7 @@ import {
   ThumbUp,
 } from '@material-ui/icons';
 import { connect } from 'react-redux';
-import { Link as RouterLink } from 'react-router-dom';
+import RouterLink from 'next/link';
 import { bindActionCreators, Dispatch } from 'redux';
 import { ACTION_ENJOYED, ACTION_WATCHED } from '../actions/item-detail';
 import {
@@ -42,7 +42,7 @@ import {
   UserUpdateItemTagsPayload,
 } from '../actions/user';
 import { GRID_COLUMNS } from '../constants/';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import { UserSelf } from '../reducers/user';
 import { ActionType, List } from '../types';
 import HasImagery from '../types/HasImagery';
@@ -325,15 +325,12 @@ function ItemCard(props: Props) {
   };
 
   const renderPoster = (item: Item) => {
-    return (
-      <div
-        className={isHovering ? classes.cardHoverEnter : classes.cardHoverExit}
-      >
-        {isHovering && hoverRating && renderRatingHover()}
-        {isHovering && !hoverRating && renderHoverActions()}
-
-        <RouterLink
-          to={item.relativeUrl}
+    const WrappedCardMedia = React.forwardRef(({ onClick, href }: any, ref) => {
+      return (
+        <a
+          href={href}
+          onClick={onClick}
+          ref={ref as RefObject<HTMLAnchorElement>}
           style={{ display: 'block', height: '100%', textDecoration: 'none' }}
         >
           <CardMedia
@@ -341,9 +338,28 @@ function ItemCard(props: Props) {
             item={item}
             component={ResponsiveImage}
             imageType="poster"
+            pictureStyle={{
+              width: '100%',
+              objectFit: 'cover',
+              height: '100%',
+              display: 'block',
+            }}
             imageStyle={{ width: '100%', objectFit: 'cover', height: '100%' }}
             loadCallback={() => setImageLoaded(true)}
           />
+        </a>
+      );
+    });
+
+    return (
+      <div
+        className={isHovering ? classes.cardHoverEnter : classes.cardHoverExit}
+      >
+        {isHovering && hoverRating && renderRatingHover()}
+        {isHovering && !hoverRating && renderHoverActions()}
+
+        <RouterLink href={item.canonicalUrl} as={item.relativeUrl} passHref>
+          <WrappedCardMedia />
         </RouterLink>
       </div>
     );
@@ -561,9 +577,10 @@ function ItemCard(props: Props) {
           key={!deleted ? props.item.id : `${props.item.id}-deleted`}
           {...gridProps}
         >
+          {/* //imageLoaded ? '100%' : getPlaceholderHeight(), */}
           <Card
             style={{
-              height: imageLoaded ? '100%' : getPlaceholderHeight(),
+              height: 412,
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',

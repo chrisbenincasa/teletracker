@@ -414,6 +414,7 @@ class ImportThingsToElasticsearch @Inject()(
       ),
       id = thing.id,
       images = None,
+      last_updated = Some(OffsetDateTime.now().toInstant.toEpochMilli),
       original_title = None,
       overview = None,
       popularity = thing.popularity,
@@ -476,7 +477,7 @@ class ImportThingsToElasticsearch @Inject()(
           EsItemRecommendation(
             id = id,
             title = title,
-            slug = slug
+            slug = Some(slug)
           )
         }
       })
@@ -561,7 +562,7 @@ class ImportThingsToElasticsearch @Inject()(
           EsItemRecommendation(
             id = id,
             title = movie.name,
-            slug = slug
+            slug = Some(slug)
           )
         }
       })

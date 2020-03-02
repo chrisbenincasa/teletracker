@@ -25,7 +25,6 @@ export const initialAuthState = function*() {
       yield put(SetToken(token));
     }
   } catch (e) {
-    console.error(e);
     yield put(UserStateChange(undefined));
     yield put(UnsetToken());
     yield put(LogoutSuccessful());

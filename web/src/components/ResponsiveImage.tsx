@@ -1,6 +1,6 @@
 import React from 'react';
 import { Icon, makeStyles, Theme } from '@material-ui/core';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';
 import { Person } from '../types/v2/Person';
@@ -137,18 +137,19 @@ export const ResponsiveImage: React.FC<imgProps> = ({
 
   if (imageName) {
     return (
-      <picture style={pictureStyle}>
-        {generateSource(imageSpecs)}
-        <img
-          data-async-image="true"
-          src={imagePlaceholder}
-          alt=""
-          decoding="async"
-          style={imageStyle}
-          itemProp="image"
-          onLoad={handleOnLoad}
-        />
-      </picture>
+      // <picture style={pictureStyle}>
+      // {generateSource(imageSpecs)}
+      // </picture>
+      <img
+        data-async-image="true"
+        src={imagePlaceholder}
+        alt=""
+        srcSet={generateSrcSet(imageSpecs[0].sizes)}
+        decoding="async"
+        style={imageStyle}
+        itemProp="image"
+        onLoad={handleOnLoad}
+      />
     );
   } else if (
     !imageName &&

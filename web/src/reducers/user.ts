@@ -179,6 +179,7 @@ const userRenameListSuccess = handleAction(
 );
 
 export default flattenActions(
+  'user',
   initialState,
   selfRetrieveInitiated,
   selfRetrieveSuccess,

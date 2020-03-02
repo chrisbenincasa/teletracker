@@ -4,8 +4,16 @@ import {
   PopularSuccessfulAction,
   POPULAR_INITIATED,
   POPULAR_SUCCESSFUL,
+  PopularFailedAction,
+  POPULAR_FAILED,
 } from '../actions/popular';
-import { flattenActions, handleAction } from './utils';
+import {
+  flattenActions,
+  handleAction,
+  StateToReducer,
+  handleError,
+} from './utils';
+import { FSA } from 'flux-standard-action';
 
 export interface State {
   popular?: string[]; // Array of popular slugs
@@ -57,8 +65,22 @@ const PopularSuccess = handleAction<PopularSuccessfulAction, State>(
   },
 );
 
+const PopularFailed = handleError<PopularFailedAction, State>(
+  POPULAR_FAILED,
+  (state: State, { payload }: PopularFailedAction) => {
+    // TODO: Return popularity and sort by that.
+    console.log('failed');
+    return {
+      ...state,
+      loadingPopular: false,
+    };
+  },
+);
+
 export default flattenActions<State>(
+  'popular',
   initialState,
   PopularInitiated,
   PopularSuccess,
+  PopularFailed,
 );

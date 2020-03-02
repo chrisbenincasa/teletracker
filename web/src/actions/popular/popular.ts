@@ -12,7 +12,8 @@ import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
 import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
 import { TeletrackerResponse } from '../../utils/api-client';
-import { clientEffect, createAction } from '../utils';
+import { createAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 
 export const POPULAR_INITIATED = 'popular/INITIATED';
 export const POPULAR_SUCCESSFUL = 'popular/SUCCESSFUL';
@@ -45,11 +46,7 @@ export type PopularSuccessfulAction = FSA<
   PopularSuccessfulPayload
 >;
 
-export type PopularFailedAction = ErrorFSA<
-  Error,
-  undefined,
-  typeof POPULAR_FAILED
->;
+export type PopularFailedAction = FSA<typeof POPULAR_FAILED, Error>;
 
 export const retrievePopular = createAction<PopularInitiatedAction>(
   POPULAR_INITIATED,

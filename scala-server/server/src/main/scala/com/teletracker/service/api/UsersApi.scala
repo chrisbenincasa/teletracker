@@ -266,17 +266,26 @@ class UsersApi @Inject()(
   ): Future[Unit] = {
     userThingTag match {
       case EsItemTag.UserScoped(userId, UserThingTagType.Watched, _, _, _) =>
-        // TODO: Implement for ES and Dynamo
-        Future.unit
-//        listsDbAccess
-//          .findRemoveOnWatchedLists(userId)
-//          .flatMap(lists => {
-//            itemUpdater.removeItemFromLists(
-//              lists.filter(!_.isDynamic).map(_.id).toSet,
-//              userId
-//            )
-//          })
-//          .map(_ => {})
+        listsApi
+          .findUserLists(userId)
+          .flatMap(lists => {
+            // Don't have to handle dynamic lists. Exclusions are generated at query time.
+            val deleteOnWatchLists = lists
+              .filter(_.configuration.options.exists(_.removeWatchedItems))
+              .filter(!_.isDynamic)
+
+            if (deleteOnWatchLists.isEmpty) {
+              Future.unit
+            } else {
+              Future
+                .sequence {
+                  deleteOnWatchLists.map(list => {
+                    listsApi.removeThingFromList(userId, list.id, itemId)
+                  })
+                }
+                .map(_ => {})
+            }
+          })
 
       case _ => Future.unit
     }

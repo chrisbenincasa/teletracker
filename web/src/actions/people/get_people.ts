@@ -1,5 +1,6 @@
 import { ErrorFluxStandardAction, FSA } from 'flux-standard-action';
-import { clientEffect, createAction } from '../utils';
+import { createAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { Person, PersonFactory } from '../../types/v2/Person';
 import { Id, Slug } from '../../types/v2';

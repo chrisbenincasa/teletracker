@@ -1,6 +1,7 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import { clientEffect, createAction } from '../utils';
+import { createAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 import ReactGA from 'react-ga';
 
 export const LIST_ADD_ITEM_INITIATED = 'lists/add_item/INITIATED';

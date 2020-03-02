@@ -52,6 +52,7 @@ const exploreSuccess = handleAction<ExploreSuccessfulAction, State>(
 );
 
 export default flattenActions<State>(
+  'explore',
   initialState,
   exploreInitiated,
   exploreSuccess,

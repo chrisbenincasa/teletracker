@@ -22,7 +22,6 @@ import ReactGA from 'react-ga';
 import { Helmet } from 'react-helmet';
 import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
-import { RouteComponentProps, withRouter } from 'react-router';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
   personCreditsFetchInitiated,
@@ -32,7 +31,7 @@ import {
   personFetchInitiated,
   PersonFetchInitiatedPayload,
 } from '../actions/people/get_person';
-import imagePlaceholder from '../assets/images/imagePlaceholder.png';
+import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import ActiveFilters from '../components/Filters/ActiveFilters';
@@ -49,6 +48,8 @@ import { filterParamsEqual } from '../utils/changeDetection';
 import { collect } from '../utils/collection-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
+import qs from 'querystring';
+import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -231,7 +232,7 @@ interface WidthProps {
 }
 
 type NotOwnProps = DispatchProps &
-  RouteComponentProps<RouteProps> &
+  WithRouterProps &
   WithStyles<typeof styles> &
   WithUserProps &
   WidthProps;
@@ -241,7 +242,7 @@ type Props = OwnProps & StateProps & NotOwnProps;
 class PersonDetail extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    let params = new URLSearchParams(window.location.search);
+    let params = new URLSearchParams(qs.stringify(props.router.query));
 
     let needsFetch;
 
@@ -264,7 +265,7 @@ class PersonDetail extends React.Component<Props, State> {
     let filterParams = R.mergeDeepRight(
       defaultFilterParams,
       R.filter(R.compose(R.not, R.isNil))(
-        parseFilterParamsFromQs(props.location.search),
+        parseFilterParamsFromQs(qs.stringify(props.router.query)),
       ),
     ) as FilterParams;
 
@@ -284,10 +285,10 @@ class PersonDetail extends React.Component<Props, State> {
   }
 
   componentDidMount() {
-    const { isLoggedIn, userSelf } = this.props;
+    const { isLoggedIn, userSelf, router } = this.props;
 
     if (this.state.needsFetch) {
-      this.props.personFetchInitiated({ id: this.props.match.params.id });
+      this.props.personFetchInitiated({ id: router.query.id as string });
     }
 
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -522,6 +523,19 @@ class PersonDetail extends React.Component<Props, State> {
     const isMobile = ['xs', 'sm'].includes(width);
     const truncateSize = isMobile ? 300 : 1200;
 
+    const truncatedBio = showFullBiography
+      ? biography
+      : biography.substr(0, truncateSize);
+    const formattedBiography = truncatedBio
+      .split('\n')
+      .filter(s => s.length > 0)
+      .map(part => (
+        <React.Fragment>
+          <Typography color="inherit">{part}</Typography>
+          <br />
+        </React.Fragment>
+      ));
+
     return (
       <div className={classes.descriptionContainer}>
         <div
@@ -536,9 +550,7 @@ class PersonDetail extends React.Component<Props, State> {
           <Hidden smDown>{this.renderTitle(person)}</Hidden>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <Typography color="inherit">
-            {showFullBiography ? biography : biography.substr(0, truncateSize)}
-          </Typography>
+          <React.Fragment>{formattedBiography}</React.Fragment>
           {biography.length > 1200 ? (
             <Button
               size="small"
@@ -587,61 +599,9 @@ class PersonDetail extends React.Component<Props, State> {
 
     return (
       <React.Fragment>
-        <Helmet>
-          <title>{`${person.name} | Teletracker`}</title>
-          <meta
-            name="title"
-            property="og:title"
-            content={`${person.name} | Where to stream, rent, or buy. Track this person today!`}
-          />
-          <meta
-            name="description"
-            property="og:description"
-            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
-          />
-          <meta
-            name="image"
-            property="og:image"
-            content={`https://image.tmdb.org/t/p/w342${person.profile_path}`}
-          />
-          <meta property="og:type" content="video.movie" />
-          <meta property="og:image:type" content="image/jpg" />
-          <meta property="og:image:width" content="342" />
-          <meta
-            data-react-helmet="true"
-            property="og:image:height"
-            content="513"
-          />
-          <meta
-            property="og:url"
-            content={`http://teletracker.com${this.props.location.pathname}`}
-          />
-          <meta
-            data-react-helmet="true"
-            name="twitter:card"
-            content="summary"
-          />
-          <meta
-            name="twitter:title"
-            content={`${person.name} - Where to Stream, Rent, or Buy their content`}
-          />
-          <meta
-            name="twitter:description"
-            content={`Find out where to stream, rent, or buy content featuring ${person.name} online. Track it to find out when it's available on one of your services.`}
-          />
-          <meta
-            name="twitter:image"
-            content={`https://image.tmdb.org/t/p/w342${person.profile_path}`}
-          />
-          <meta
-            name="keywords"
-            content={`${person.name}, stream, streaming, rent, buy, watch, track`}
-          />
-          <link
-            rel="canonical"
-            href={`http://teletracker.com${this.props.location.pathname}`}
-          />
-        </Helmet>
+        {/* <Helmet>
+          
+        </Helmet> */}
         <div className={classes.backdrop}>
           {backdrop && (
             <React.Fragment>
@@ -673,7 +633,7 @@ class PersonDetail extends React.Component<Props, State> {
                 {!isMobile && (
                   <Button
                     size="small"
-                    onClick={this.props.history.goBack}
+                    onClick={this.props.router.back}
                     variant="contained"
                     aria-label="Go Back"
                     style={{ marginTop: 20, marginLeft: 20 }}
@@ -741,12 +701,11 @@ const mapStateToProps: (
   initialState: AppState,
   props: NotOwnProps,
 ) => (appState: AppState) => StateProps = (initial, props) => appState => {
+  const id = props.router.query.id as string;
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     // isFetching: appState.itemDetail.fetching,
-    person:
-      appState.people.peopleById[props.match.params.id] ||
-      appState.people.peopleBySlug[props.match.params.id],
+    person: appState.people.peopleById[id] || appState.people.peopleBySlug[id],
     lists: appState.lists.listsById,
     loadingPerson: appState.people.loadingPeople,
     genres: appState.metadata.genres,

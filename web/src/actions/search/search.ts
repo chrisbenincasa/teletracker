@@ -1,6 +1,7 @@
 import { put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import { clientEffect, createAction } from '../utils';
+import { createAction } from '../utils';
+import { clientEffect } from '../clientEffect';
 import { TeletrackerResponse } from '../../utils/api-client';
 import _ from 'lodash';
 import {
@@ -14,6 +15,7 @@ import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
 
 export const SEARCH_INITIATED = 'search/INITIATED';
+export const SEARCH_PRELOAD_INITIATED = 'search/preload/INITIATED';
 export const SEARCH_SUCCESSFUL = 'search/SUCCESSFUL';
 export const SEARCH_FAILED = 'search/FAILED';
 
@@ -25,11 +27,11 @@ export interface SearchInitiatedPayload {
   networks?: NetworkType[];
   genres?: number[];
   releaseYearRange?: OpenRange;
-  sort?: SortOptions;
+  sort?: SortOptions | 'search_score';
 }
 
 export type SearchInitiatedAction = FSA<
-  typeof SEARCH_INITIATED,
+  typeof SEARCH_INITIATED | typeof SEARCH_PRELOAD_INITIATED,
   SearchInitiatedPayload
 >;
 export interface SearchSuccessfulPayload {
@@ -46,9 +48,16 @@ export type SearchSuccessfulAction = FSA<
 // TODO: Could fold this into a single action type "SearchCompleted"
 export type SearchFailedAction = FSA<typeof SEARCH_FAILED, Error>;
 
-const SearchInitiated = createAction<SearchInitiatedAction>(SEARCH_INITIATED);
-const SearchSuccess = createAction<SearchSuccessfulAction>(SEARCH_SUCCESSFUL);
-const SearchFailed = createAction<SearchFailedAction>(SEARCH_FAILED);
+export const SearchInitiated = createAction<SearchInitiatedAction>(
+  SEARCH_INITIATED,
+);
+export const PreloadSearchInitiated = createAction<SearchInitiatedAction>(
+  SEARCH_PRELOAD_INITIATED,
+);
+export const SearchSuccess = createAction<SearchSuccessfulAction>(
+  SEARCH_SUCCESSFUL,
+);
+export const SearchFailed = createAction<SearchFailedAction>(SEARCH_FAILED);
 
 export type SearchActionTypes =
   | SearchFailedAction
@@ -70,7 +79,7 @@ export const searchSaga = function*() {
           payload.networks,
           payload.genres,
           payload.releaseYearRange,
-          payload.sort,
+          'search_score',
         );
 
         if (response.ok) {

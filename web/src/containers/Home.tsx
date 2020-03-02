@@ -12,21 +12,25 @@ import * as R from 'ramda';
 import React, { useEffect, useRef, useState } from 'react';
 import ReactGA from 'react-ga';
 import { connect } from 'react-redux';
-import { Redirect, RouteComponentProps, withRouter } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { Item } from '../types/v2/Item';
-import Odometer from 'react-odometerjs';
+import dynamic from 'next/dynamic';
 import Typist from 'react-typist';
-import 'react-typist/dist/Typist.css';
-import 'odometer/themes/odometer-theme-default.css';
+// import 'react-typist/dist/Typist.css';
+// import 'odometer/themes/odometer-theme-default.css';
 import AuthDialog from '../components/Auth/AuthDialog';
 import { retrievePopular } from '../actions/popular';
-import { PopularInitiatedActionPayload } from '../actions/popular/popular';
+import { PopularInitiatedActionPayload } from '../actions/popular';
 import ItemCard from '../components/ItemCard';
 import _ from 'lodash';
+import { withRouter } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
+const Odometer = dynamic(() => require('react-odometerjs'), {
+  ssr: false,
+});
 
 const useStyles = makeStyles((theme: Theme) => ({
   layout: {
@@ -181,7 +185,7 @@ interface DispatchProps {
 type Props = InjectedProps &
   WidthProps &
   WithUserProps &
-  RouteComponentProps<RouteParams> &
+  WithRouterProps &
   DispatchProps;
 
 function Home(props: Props) {
@@ -271,11 +275,11 @@ function Home(props: Props) {
     }
   };
 
-  const toggleAuthModal = (initialForm?: 'login' | 'signup') => {
+  const toggleAuthModal = async (initialForm?: 'login' | 'signup') => {
     if (['xs', 'sm', 'md'].includes(props.width)) {
       setAuthModalOpen(false);
       setAuthModalScreen(undefined);
-      props.history.push(`/${initialForm}`);
+      props.router.push(`/${initialForm}`);
     } else {
       setAuthModalOpen(!authModalOpen);
       setAuthModalScreen(initialForm);
@@ -314,6 +318,7 @@ function Home(props: Props) {
               className={classes.highlightText}
             >
               <Odometer
+                // @ts-ignore
                 value={numberMovies}
                 format="(,ddd)"
                 theme="default"
@@ -463,7 +468,11 @@ function Home(props: Props) {
     );
   };
 
-  return !props.isAuthed ? (
+  if (props.isAuthed) {
+    props.router.push('/');
+  }
+
+  return (
     <React.Fragment>
       <div className={classes.layout}>
         {renderTotalMoviesSection()}
@@ -481,8 +490,6 @@ function Home(props: Props) {
         initialForm={authModalScreen}
       />
     </React.Fragment>
-  ) : (
-    <Redirect to="/" />
   );
 }
 

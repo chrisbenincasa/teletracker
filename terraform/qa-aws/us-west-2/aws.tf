@@ -5,12 +5,6 @@ provider "aws" {
 
 provider "aws" {
   version = "~> 2.0"
-  alias   = "us-west-2"
-  region  = "us-west-2"
-}
-
-provider "aws" {
-  version = "~> 2.0"
   alias   = "us-west-1"
   region  = "us-west-1"
 }

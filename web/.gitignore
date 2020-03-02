@@ -33,3 +33,7 @@ buck-out/
 .env.development.local
 build/
 .idea/
+.next/
+
+# Deployment
+out/
