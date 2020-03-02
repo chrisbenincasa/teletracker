@@ -22,7 +22,7 @@ import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { retrievePopular } from '../actions/popular';
-import { PopularInitiatedActionPayload } from '../actions/popular/popular';
+import { PopularInitiatedActionPayload } from '../actions/popular';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import Featured from '../components/Featured';
@@ -332,7 +332,6 @@ class Popular extends Component<Props, State> {
     let paramsFromQuery = parseFilterParamsFromQs(query);
 
     // Checks if filters have changed, if so, update state and re-fetch popular
-    console.log(query, prevQuery);
     if (query !== prevQuery) {
       this.handleFilterParamsChange(paramsFromQuery);
     }

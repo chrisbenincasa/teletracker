@@ -1,11 +1,16 @@
 package com.teletracker.common.elasticsearch
 
+import com.google.inject.Inject
 import com.teletracker.common.db.dynamo.model.{
   StoredGenre,
   StoredNetwork,
   StoredUserList
 }
-import com.teletracker.common.db.model.{PersonAssociationType, ThingType}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  PersonAssociationType,
+  ThingType
+}
 import com.teletracker.common.db.{
   AddedTime,
   Bookmark,
@@ -34,6 +39,8 @@ import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
 
 trait ElasticsearchAccess {
+//  @Inject private[this] var denormalizationCache: ItemDenormalizationCache = _
+
   private val logger = LoggerFactory.getLogger(getClass)
 
   protected def searchResponseToItems(
@@ -41,8 +48,25 @@ trait ElasticsearchAccess {
   ): ElasticsearchItemsResponse = {
     val hits = response.getHits
 
+    val items = decodeSearchResponse[EsItem](response)
+
+    // TODO: Hook this up fully
+//    denormalizationCache.setBatch(
+//      items
+//        .flatMap(item => {
+//          item.external_ids.toList.flatten.map(externalId => {
+//            (
+//              ExternalSource.fromString(externalId.provider),
+//              externalId.id,
+//              item.`type`
+//            ) -> DenormalizationCacheItem(item.id, item.slug)
+//          })
+//        })
+//        .toMap
+//    )
+
     ElasticsearchItemsResponse(
-      decodeSearchResponse[EsItem](response).map(item => {
+      items.map(item => {
         item.copy(
           cast = item.cast.map(_.sortWith(EsOrdering.forItemCastMember))
         )

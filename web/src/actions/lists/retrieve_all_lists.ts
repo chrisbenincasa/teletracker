@@ -70,8 +70,6 @@ export const retrieveListsSaga = function*() {
     );
 
     if (response.ok && response.data) {
-      console.log('got dem lists wtf');
-      // yield put(RetrieveUserSelfSuccess(response.data!.data));
       yield put(ListRetrieveAllSuccess(response.data.data));
     } else {
       console.error('bad');
