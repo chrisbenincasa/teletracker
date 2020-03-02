@@ -1,20 +1,16 @@
 import Head from 'next/head';
 import React from 'react';
 import AppWrapper from '../../containers/AppWrapper';
-import Login from '../../containers/Login';
+import Signup from '../../containers/Signup';
 
-interface Props {
-  pageProps: any;
-}
-
-export default function LoginWrapper(props: Props) {
+export default function SignupWrapper() {
   return (
     <React.Fragment>
       <Head>
-        <title>Login</title>
+        <title>Signup</title>
       </Head>
       <AppWrapper>
-        <Login />
+        <Signup />
       </AppWrapper>
     </React.Fragment>
   );
