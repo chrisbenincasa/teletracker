@@ -16,7 +16,8 @@ import { ItemType } from '../../types';
 import useItem from '../../hooks/useItem';
 
 interface Props {
-  item?: Item;
+  // item?: Item;
+  itemId?: string;
   pageProps: any;
 }
 
@@ -26,23 +27,18 @@ export default function makeItemDetailWrapper(type: ItemType) {
     const itemsById = useSelector(
       (state: AppState) => state.itemDetail.thingsById,
     );
-    const itemsBySlug = useSelector(
-      (state: AppState) => state.itemDetail.thingsBySlug,
-    );
 
     const requestedId = router.query.id;
     let actualId: string = _.isArray(requestedId)
       ? requestedId[0]
       : requestedId;
 
-    const item = useItem(actualId, props.item);
+    const item = useItem(actualId, undefined);
 
     return (
       <React.Fragment>
         <Head>
-          <title>
-            {windowTitleForItem(actualId, props.item, itemsById, itemsBySlug)}
-          </title>
+          <title>{windowTitleForItem(actualId, item, itemsById)}</title>
           <meta
             name="title"
             property="og:title"
@@ -106,7 +102,6 @@ export default function makeItemDetailWrapper(type: ItemType) {
 
   ItemDetailWrapper.getInitialProps = async ctx => {
     if (ctx.req) {
-      console.log(ctx);
       let response: TeletrackerResponse<ApiItem> = await TeletrackerApi.instance.getItem(
         await currentUserJwt(),
         ctx.query.id,
@@ -117,7 +112,8 @@ export default function makeItemDetailWrapper(type: ItemType) {
         await ctx.store.dispatch(itemFetchSuccess(response.data.data));
 
         return {
-          item: ItemFactory.create(response.data.data),
+          // item: ItemFactory.create(response.data.data),
+          itemId: response.data.data.id,
         };
       } else {
         return {

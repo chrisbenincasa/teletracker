@@ -52,6 +52,7 @@ import {
 import Login from './Login';
 import RouterLink from '../components/RouterLink';
 import Link from 'next/link';
+import { extractItem } from '../utils/item-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -184,7 +185,6 @@ interface OwnProps {
   initialItem?: Item;
   genres?: Genre[];
   itemsById: { [key: string]: Item };
-  itemsBySlug: { [key: string]: Item };
 }
 
 interface DispatchProps {
@@ -583,9 +583,14 @@ const mapStateToProps: (
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     isFetching: appState.itemDetail.fetching,
-    itemDetail: appState.itemDetail.itemDetail,
+    itemDetail: appState.itemDetail.itemDetail
+      ? extractItem(
+          appState.itemDetail.itemDetail,
+          undefined,
+          appState.itemDetail.thingsById,
+        )
+      : undefined,
     itemsById: appState.itemDetail.thingsById,
-    itemsBySlug: appState.itemDetail.thingsBySlug,
     genres: appState.metadata.genres,
   };
 };

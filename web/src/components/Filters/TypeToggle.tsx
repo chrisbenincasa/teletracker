@@ -63,7 +63,6 @@ class TypeToggle extends Component<Props> {
   };
 
   updateTypes = (param: string, value?: ItemType[]) => {
-    console.log(value);
     this.props.handleChange(value);
   };
 

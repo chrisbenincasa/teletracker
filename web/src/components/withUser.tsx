@@ -42,7 +42,6 @@ const withUser = <P extends object>(
 
     loadUser = _.debounce((props: WithUserProps) => {
       if (!props.isCheckingAuth && !props.userSelf && !props.retrievingUser) {
-        console.log(props);
         props.getUserSelf(false);
       }
     }, 100);

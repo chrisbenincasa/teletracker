@@ -41,15 +41,13 @@ export type ThingMap = {
 export interface State {
   fetching: boolean;
   currentId?: number;
-  itemDetail?: Item;
+  itemDetail?: string;
   thingsById: ThingMap;
-  thingsBySlug: ThingMap;
 }
 
 const initialState: State = {
   fetching: false,
   thingsById: {},
-  thingsBySlug: {},
 };
 
 const itemFetchInitiated = handleAction(
@@ -75,26 +73,15 @@ const itemPrefetchSuccess = handleAction(
       newThing = ItemFactory.merge(existingThing, newThing);
     }
 
-    let newThingsBySlug;
-    if (payload!.slug) {
-      newThingsBySlug = {
-        ...state.thingsBySlug,
-        [payload!.slug]: newThing,
-      } as ThingMap;
-    } else {
-      newThingsBySlug = state.thingsBySlug;
-    }
-
     // TODO: Truncate thingsById after a certain point
     return {
       ...state,
       fetching: false,
-      itemDetail: newThing,
+      itemDetail: newThing.id,
       thingsById: {
         ...state.thingsById,
         [payload!.id]: newThing,
       } as ThingMap,
-      thingsBySlug: newThingsBySlug,
     } as State;
   },
 );
@@ -110,26 +97,15 @@ const itemFetchSuccess = handleAction(
       newThing = ItemFactory.merge(existingThing, newThing);
     }
 
-    let newThingsBySlug;
-    if (payload!.slug) {
-      newThingsBySlug = {
-        ...state.thingsBySlug,
-        [payload!.slug]: newThing,
-      } as ThingMap;
-    } else {
-      newThingsBySlug = state.thingsBySlug;
-    }
-
     // TODO: Truncate thingsById after a certain point
     return {
       ...state,
       fetching: false,
-      itemDetail: newThing,
+      itemDetail: newThing.id,
       thingsById: {
         ...state.thingsById,
         [payload!.id]: newThing,
       } as ThingMap,
-      thingsBySlug: newThingsBySlug,
     } as State;
   },
 );
@@ -152,16 +128,6 @@ const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
       [curr.id]: curr,
     };
   }, {});
-  let newThingsBySlug = newThingsMerged.reduce((prev, curr) => {
-    if (curr.slug) {
-      return {
-        ...prev,
-        [curr.slug]: curr,
-      };
-    } else {
-      return prev;
-    }
-  }, {});
 
   return {
     ...existingState,
@@ -169,10 +135,6 @@ const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
     thingsById: {
       ...existingState.thingsById,
       ...newThingsById,
-    },
-    thingsBySlug: {
-      ...existingState.thingsBySlug,
-      ...newThingsBySlug,
     },
   };
 };
