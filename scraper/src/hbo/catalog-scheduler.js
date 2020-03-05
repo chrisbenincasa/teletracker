@@ -3,7 +3,7 @@ import _ from 'lodash';
 
 export const schedule = async () => {
   const lambda = new AWS.Lambda({
-    region: 'us-west-1',
+    region: process.env.AWS_REGION,
   });
 
   let all = _.range(0, 16).map(async i => {
