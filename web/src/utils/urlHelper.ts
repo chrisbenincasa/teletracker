@@ -146,8 +146,7 @@ export const updateMultipleUrlParams = (
   replace(`?${params}`);
 };
 
-export function parseFilterParamsFromQs(qs: string): FilterParams {
-  let params = new URLSearchParams(qs);
+export function parseFilterParams(params: Map<string, string>) {
   let sortParam = params.get('sort');
   let itemTypeParam = params.get('type');
   let networkParam = params.get('networks');
@@ -221,4 +220,29 @@ export function parseFilterParamsFromQs(qs: string): FilterParams {
   }
 
   return filters;
+}
+
+export function parseFilterParamsFromObject(obj: {
+  [key: string]: string | string[];
+}) {
+  let map = new Map<string, string>();
+  for (let key in obj) {
+    const value = obj[key];
+    if (_.isArray(value) && value.length > 0) {
+      map.set(key, value[0]);
+    } else if (_.isString(value)) {
+      map.set(key, value);
+    }
+  }
+
+  return parseFilterParams(map);
+}
+
+export function parseFilterParamsFromQs(qs: string): FilterParams {
+  let params = new URLSearchParams(qs);
+  let map = new Map<string, string>();
+  params.forEach((value, key) => {
+    map.set(key, value);
+  });
+  return parseFilterParams(map);
 }
