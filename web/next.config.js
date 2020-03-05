@@ -1,11 +1,13 @@
 const withImages = require('next-images');
-const fs = require('fs')
+const fs = require('fs');
 const { PHASE_PRODUCTION_BUILD } = require('next/constants');
+const util = require('util');
+const exec = util.promisify(require('child_process').exec);
 
 const NODE_ENV = process.env.NODE_ENV;
 if (!NODE_ENV) {
   throw new Error(
-    'The NODE_ENV environment variable is required but was not specified.'
+    'The NODE_ENV environment variable is required but was not specified.',
   );
 }
 
@@ -24,7 +26,7 @@ dotenvFiles.forEach(dotenvFile => {
     require('dotenv-expand')(
       require('dotenv').config({
         path: dotenvFile,
-      })
+      }),
     );
   }
 });
@@ -37,10 +39,21 @@ module.exports = (phase, { defaultConfig }) => {
       return obj;
     }, {});
 
-  console.log(env);
+  console.log('Will inject the following environment variables', env);
 
   return withImages({
     env,
     target: 'serverless',
+    poweredByHeader: false,
+    // assetPrefix: process.env.VERSION,
+    generateBuildId: async () => {
+      const secondsSinceEpoch = Math.round(new Date().getTime() / 1000);
+      const { stdout } = await exec('git rev-parse --short HEAD');
+      const buildId = `${secondsSinceEpoch}.${stdout.trim()}`;
+
+      console.log(`Generating build with ID = ${buildId}`);
+
+      return buildId;
+    },
   });
 };
