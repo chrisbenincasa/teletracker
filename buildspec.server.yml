@@ -17,7 +17,7 @@ phases:
       - $(aws ecr get-login --no-include-email --region $AWS_REGION)
   build:
     commands:
-      - cd scala-server
+      - cd backend
       - echo "$(cat VERSION)-$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}" > FULL_VERSION
       - echo "Building version $(cat FULL_VERSION)"
       - ./sbt -Dversion=$(cat FULL_VERSION) server/assembly consumer/server

@@ -114,7 +114,7 @@ resource "aws_codebuild_webhook" "server-codebuild-github-hook" {
     }
 
     filter {
-      pattern = "scala-server/.*"
+      pattern = "backend/.*"
       type    = "FILE_PATH"
     }
   }
@@ -172,7 +172,7 @@ resource "aws_codebuild_webhook" "consumer-codebuild-github-hook" {
     }
 
     filter {
-      pattern = "scala-server/.*"
+      pattern = "backend/.*"
       type    = "FILE_PATH"
     }
   }

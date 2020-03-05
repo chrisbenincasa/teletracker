@@ -39,19 +39,19 @@ function scrape_netflix() {
 }
 
 function ingest_hulu() {
-    cd scala-server
+    cd backend
     sbt "server/runMain com.teletracker.service.tools.IngestHuluChanges -input=../scraper/hulu/changes/${TODAY}-hulu-changes.json"
     cd ../
 }
 
 function ingest_hbo() {
-    cd scala-server
+    cd backend
     sbt "server/runMain com.teletracker.service.tools.IngestHboChanges -input=../scraper/hbo/whats-new/${TODAY}-hbo-changes.json"
     cd ..
 }
 
 function ingest_netflix() { 
-    cd scala-server
+    cd backend
     sbt "server/runMain com.teletracker.service.tools.IngestUnogsNetflixExpiring -input=../scraper/unogs/${TODAY}-netflix-expiring.json"
     cd ..
 }

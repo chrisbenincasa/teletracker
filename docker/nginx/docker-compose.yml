@@ -18,7 +18,7 @@ services:
     ports:
       - 3001:3001
     env_file:
-      - /Users/christianbenincasa/Code/projects/teletracker/scala-server/.env
+      - /Users/christianbenincasa/Code/projects/teletracker/backend/.env
     networks:
       - nginx
     volumes:
