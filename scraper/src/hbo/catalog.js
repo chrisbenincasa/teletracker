@@ -252,7 +252,7 @@ const scrape = async (event, context) => {
   if (isProduction()) {
     await uploadToS3(
       DATA_BUCKET,
-      `scrape-results/hbo/catalog/${currentDate}/${fileName}`,
+      `scrape-results/hbo/${currentDate}/full_catalog/${fileName}`,
       path,
     );
   }
