@@ -227,7 +227,7 @@ export const scrape = async event => {
           console.log('scheduling next');
 
           const lambda = new AWS.Lambda({
-            region: 'us-west-1',
+            region: process.env.AWS_REGION,
           });
 
           const result = await lambda

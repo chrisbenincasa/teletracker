@@ -63,6 +63,8 @@ const scrapeSeriesJson = async (cookie, id) => {
 
     let seasons = _.find(json.components, { id: '94' });
 
+    // console.log(json.components);
+
     if (seasons) {
       let availability = _.chain(seasons.items)
         .map('items')
@@ -101,7 +103,6 @@ const scrapeSeriesJson = async (cookie, id) => {
     }
   } catch (e) {
     console.error(e.message);
-    return;
   }
 };
 
@@ -146,7 +147,8 @@ const scrapeMovieJson = async (cookie, id) => {
 const scrape = async event => {
   console.log(`Got event: `, event);
   try {
-    let huluCookie = await resolveSecret('hulu-cookie');
+    let huluCookie =
+      process.env.HULU_COOKIE || (await resolveSecret('hulu-cookie'));
 
     let offset = event.offset || 0;
     let limit = event.limit || -1;
@@ -172,17 +174,18 @@ const scrape = async event => {
 
     let [path, stream, flush] = createWriteStream(fileName);
 
+    let urlBand = urls
+      .filter((item, idx) => {
+        if (!_.isUndefined(mod) && !_.isUndefined(band)) {
+          return idx % mod === band;
+        } else {
+          return true;
+        }
+      })
+      .slice(offset, limit === -1 ? urls.length : offset + limit);
+
     let seriesResults = await sequentialPromises(
-      urls
-        .filter((item, idx) => {
-          if (!_.isUndefined(mod) && !_.isUndefined(band)) {
-            return idx % mod === band;
-          } else {
-            return true;
-          }
-        })
-        .slice(offset, limit === -1 ? urls.length : limit)
-        .filter(text => text.includes('/series/')),
+      urlBand.filter(text => text.includes('/series/')),
       100,
       async url => {
         let matches = seriesRegex.exec(url);
@@ -202,18 +205,9 @@ const scrape = async event => {
     );
 
     let movieResults = await sequentialPromises(
-      urls
-        .slice(offset, limit === -1 ? urls.length : limit)
-        .filter((_, idx) => {
-          if (mod && band) {
-            return idx % mod === band;
-          } else {
-            return true;
-          }
-        })
-        .filter(text => {
-          text.includes('/movie/');
-        }),
+      urlBand.filter(text => {
+        text.includes('/movie/');
+      }),
       100,
       async url => {
         let matches = moviesRegex.exec(url);
@@ -257,7 +251,7 @@ const scrape = async event => {
       band + parallelism < mod
     ) {
       const lambda = new AWS.Lambda({
-        region: 'us-west-1',
+        region: process.env.AWS_REGION,
       });
 
       await lambda
