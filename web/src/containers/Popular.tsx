@@ -332,6 +332,7 @@ class Popular extends Component<Props, State> {
     let paramsFromQuery = parseFilterParamsFromQs(query);
 
     // Checks if filters have changed, if so, update state and re-fetch popular
+    console.log(query, prevQuery);
     if (query !== prevQuery) {
       this.handleFilterParamsChange(paramsFromQuery);
     }
