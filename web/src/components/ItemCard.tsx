@@ -592,7 +592,6 @@ function ItemCard(props: Props) {
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',
-              width: '100%',
               paddingTop: '150%', // 150% is a magic number for our 1:1.5 expected poster aspect ratio
             }}
             onMouseEnter={isMobile ? undefined : () => setIsHovering(true)}
