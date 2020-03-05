@@ -344,7 +344,7 @@ function ItemCard(props: Props) {
               height: '100%',
               display: 'block',
             }}
-            imageStyle={{ width: '100%', objectFit: 'cover', height: '100%' }}
+            imageStyle={{ width: '100%' }}
             loadCallback={() => setImageLoaded(true)}
           />
         </a>
@@ -580,7 +580,6 @@ function ItemCard(props: Props) {
           {/* //imageLoaded ? '100%' : getPlaceholderHeight(), */}
           <Card
             style={{
-              height: 412,
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',
