@@ -105,7 +105,7 @@ resource "aws_cloudfront_distribution" "teletracker-frontend" {
 
   enabled         = true
   is_ipv6_enabled = true
-  aliases         = ["ssr.qa.teletracker.tv"]
+  aliases         = ["ssr.qa.teletracker.tv", "qa.teletracker.tv"]
 
   viewer_certificate {
     acm_certificate_arn      = "arn:aws:acm:us-east-1:302782651551:certificate/0449030d-1711-4f27-9048-54a77660d9fe"
