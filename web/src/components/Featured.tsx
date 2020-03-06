@@ -45,6 +45,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: 'auto',
     top: '5%',
     left: theme.spacing(3),
+    [theme.breakpoints.down('sm')]: {
+      left: theme.spacing(2),
+    },
     width: '25%',
     [theme.breakpoints.up('md')]: {
       width: '30%',
@@ -82,6 +85,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     display: 'flex',
     flexDirection: 'row',
     margin: theme.spacing(2),
+    [theme.breakpoints.down('sm')]: {
+      margin: theme.spacing(1),
+    },
   },
 }));
 
