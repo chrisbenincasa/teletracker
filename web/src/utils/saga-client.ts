@@ -229,6 +229,7 @@ export class SagaTeletrackerClient {
     limit?: number,
     genres?: number[],
     releaseYearRange?: OpenRange,
+    castIncludes?: string[],
   ) {
     let token = yield this.withToken();
     return yield this.apiCall(
@@ -242,6 +243,7 @@ export class SagaTeletrackerClient {
       limit,
       genres,
       releaseYearRange,
+      castIncludes,
     );
   }
 
