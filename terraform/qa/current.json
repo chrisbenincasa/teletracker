@@ -1,4 +1,0 @@
-{
-  "image": "gcr.io/teletracker/server:0.1-1571153024.d07d54f",
-  "consumer_image": "gcr.io/teletracker/consumer:0.1-1573334365.6be9647c"
-}
