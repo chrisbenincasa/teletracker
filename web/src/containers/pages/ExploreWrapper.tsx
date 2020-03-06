@@ -10,6 +10,9 @@ import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
 import Explore from '../../containers/Explore';
 import { exploreFailed, exploreSuccess } from '../../actions/explore';
 import { currentUserJwt } from '../../utils/page-utils';
+import qs from 'querystring';
+import url from 'url';
+import { parseFilterParamsFromObject } from '../../utils/urlHelper';
 
 export default function makeExploreWrapper(itemType: ItemType) {
   interface Props {}
@@ -33,13 +36,19 @@ export default function makeExploreWrapper(itemType: ItemType) {
 
   ExploreWrapper.getInitialProps = async (ctx: NextPageContext & WithStore) => {
     if (ctx.req) {
+      const parsedQueryObj = qs.parse(url.parse(ctx.req.url || '').query || '');
+      const filterParams = parseFilterParamsFromObject(parsedQueryObj);
+
       let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.getItems(
         await currentUserJwt(),
         [itemType],
+        filterParams.networks,
         undefined,
-        undefined,
-        undefined,
-        20,
+        filterParams.sortOrder,
+        18,
+        filterParams.genresFilter,
+        filterParams.sliders?.releaseYear,
+        filterParams.people,
       );
 
       if (response.ok) {
