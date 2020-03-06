@@ -1,18 +1,21 @@
-import Auth, { CognitoUser } from '@aws-amplify/auth';
 import { NextPageContext } from 'next';
 import Head from 'next/head';
 import React from 'react';
 import { Store } from 'redux';
 import {
+  PreloadSearchInitiated,
   SearchFailed,
   SearchSuccess,
-  PreloadSearchInitiated,
 } from '../../actions/search';
 import AppWrapper from '../../containers/AppWrapper';
 import Search from '../../containers/Search';
 import { ApiItem } from '../../types/v2';
 import { ItemFactory } from '../../types/v2/Item';
 import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
+import { currentUserJwt } from '../../utils/page-utils';
+import qs from 'querystring';
+import url from 'url';
+import { parseFilterParamsFromObject } from '../../utils/urlHelper';
 
 interface Props {}
 
@@ -31,6 +34,7 @@ function SearchWrapper(props: Props) {
         />
       </Head>
       <AppWrapper>
+        {/* TODO: Hook this up */}
         <Search inViewportChange={() => {}} />
       </AppWrapper>
     </React.Fragment>
@@ -39,13 +43,8 @@ function SearchWrapper(props: Props) {
 
 SearchWrapper.getInitialProps = async (ctx: NextPageContext & WithStore) => {
   if (ctx.req) {
-    let user: CognitoUser | undefined;
-    try {
-      user = await Auth.currentAuthenticatedUser({ bypassCache: true });
-    } catch (e) {
-      console.log(e);
-    }
-
+    const parsedQueryObj = qs.parse(url.parse(ctx.req.url || '').query || '');
+    const filterParams = parseFilterParamsFromObject(parsedQueryObj);
     let query = ctx.query.q as string;
 
     await ctx.store.dispatch(
@@ -55,15 +54,14 @@ SearchWrapper.getInitialProps = async (ctx: NextPageContext & WithStore) => {
     );
 
     let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.searchV2(
-      user && user.getSignInUserSession()
-        ? user
-            .getSignInUserSession()!
-            .getAccessToken()
-            .getJwtToken()
-        : undefined,
+      await currentUserJwt(),
       query,
       undefined,
       18,
+      filterParams.itemTypes,
+      filterParams.networks,
+      filterParams.genresFilter,
+      filterParams.sliders?.releaseYear,
     );
 
     if (response.ok) {
