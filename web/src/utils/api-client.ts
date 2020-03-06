@@ -347,7 +347,7 @@ export class TeletrackerApi {
   }
 
   async getPeople(
-    token: String,
+    token: string | undefined,
     ids: (Id | Slug)[],
   ): Promise<TeletrackerResponse<ApiPerson[]>> {
     return this.api.get<any>(`/api/v2/people/batch`, {
@@ -425,6 +425,7 @@ export class TeletrackerApi {
     limit?: number,
     genres?: number[],
     releaseYearRange?: OpenRange,
+    castIncludes?: string[],
   ): Promise<TeletrackerResponse<ApiItem[]>> {
     return this.api.get('/api/v2/popular', {
       token,
@@ -443,6 +444,10 @@ export class TeletrackerApi {
       maxReleaseYear:
         releaseYearRange && releaseYearRange.max
           ? releaseYearRange.max
+          : undefined,
+      cast:
+        castIncludes && castIncludes.length
+          ? castIncludes.join(',')
           : undefined,
     });
   }

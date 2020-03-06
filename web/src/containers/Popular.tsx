@@ -176,7 +176,7 @@ class Popular extends Component<Props, State> {
 
   loadPopular(passBookmark: boolean, firstRun?: boolean) {
     const {
-      filters: { itemTypes, genresFilter, networks, sliders },
+      filters: { itemTypes, genresFilter, networks, sliders, people },
     } = this.state;
     const { bookmark, retrievePopular, width } = this.props;
 
@@ -197,6 +197,7 @@ class Popular extends Component<Props, State> {
                 max: sliders.releaseYear.max,
               }
             : undefined,
+        castIncludes: people,
       });
     }
   }
