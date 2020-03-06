@@ -344,7 +344,16 @@ function ItemCard(props: Props) {
               height: '100%',
               display: 'block',
             }}
-            imageStyle={{ width: '100%' }}
+            imageStyle={{
+              width: '100%',
+              objectFit: 'cover',
+              height: '100%',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              right: 0,
+            }}
             loadCallback={() => setImageLoaded(true)}
           />
         </a>
@@ -583,6 +592,7 @@ function ItemCard(props: Props) {
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',
+              paddingTop: '150%', // 150% is a magic number for our 1:1.5 expected poster aspect ratio
             }}
             onMouseEnter={isMobile ? undefined : () => setIsHovering(true)}
             onMouseLeave={isMobile ? undefined : () => setIsHovering(false)}
