@@ -28,6 +28,7 @@ export interface PopularInitiatedActionPayload {
   limit?: number;
   genres?: number[];
   releaseYearRange?: OpenRange;
+  castIncludes?: string[];
 }
 
 export type PopularInitiatedAction = FSA<
@@ -74,6 +75,7 @@ export const popularSaga = function*() {
           payload.limit,
           payload.genres,
           payload.releaseYearRange,
+          payload.castIncludes,
         );
 
         if (response.ok) {

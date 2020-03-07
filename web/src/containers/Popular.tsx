@@ -176,7 +176,7 @@ class Popular extends Component<Props, State> {
 
   loadPopular(passBookmark: boolean, firstRun?: boolean) {
     const {
-      filters: { itemTypes, genresFilter, networks, sliders },
+      filters: { itemTypes, genresFilter, networks, sliders, people },
     } = this.state;
     const { bookmark, retrievePopular, width } = this.props;
 
@@ -197,6 +197,7 @@ class Popular extends Component<Props, State> {
                 max: sliders.releaseYear.max,
               }
             : undefined,
+        castIncludes: people,
       });
     }
   }
@@ -332,7 +333,6 @@ class Popular extends Component<Props, State> {
     let paramsFromQuery = parseFilterParamsFromQs(query);
 
     // Checks if filters have changed, if so, update state and re-fetch popular
-    console.log(query, prevQuery);
     if (query !== prevQuery) {
       this.handleFilterParamsChange(paramsFromQuery);
     }
