@@ -777,16 +777,13 @@ class ListDetail extends Component<Props, State> {
         <div className={classes.listContainer}>
           <div className={classes.listHeader}>
             <div className={classes.listNameContainer}>
-              <Link href={`/lists/${list.id}`} passHref>
-                <Typography
-                  variant="h4"
-                  align="left"
-                  component="a"
-                  className={classes.listName}
-                >
-                  {list.name}
-                </Typography>
-              </Link>
+              <Typography
+                variant="h4"
+                align="left"
+                className={classes.listName}
+              >
+                {list.name}
+              </Typography>
             </div>
             <IconButton
               onClick={this.toggleFilters}

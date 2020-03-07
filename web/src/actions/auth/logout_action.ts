@@ -33,7 +33,9 @@ export const logoutSaga = function*() {
         category: 'User',
         action: 'Logout',
       });
-    } catch (e) {}
+    } catch (e) {
+      console.error(e);
+    }
   });
 };
 
