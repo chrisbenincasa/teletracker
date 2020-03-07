@@ -52,7 +52,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
   },
   peopleContainer: {
-    display: 'flex',
+    // TODO: Figure out why flexbox doesn't play nicely with the absolute
+    // positioning of the Autocomplete box
+    // display: 'flex',
     flexGrow: 1,
     margin: theme.spacing(1, 0),
     alignItems: 'flex-start',
