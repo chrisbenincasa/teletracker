@@ -4,7 +4,7 @@ import Head from 'next/head';
 import React from 'react';
 import { Store } from 'redux';
 import AppWrapper from '../../containers/AppWrapper';
-import { ApiItem } from '../../types/v2';
+import { ApiItem, ApiPerson } from '../../types/v2';
 import { ItemFactory } from '../../types/v2/Item';
 import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
 import Explore from '../../containers/Explore';
@@ -13,6 +13,8 @@ import { currentUserJwt } from '../../utils/page-utils';
 import qs from 'querystring';
 import url from 'url';
 import { parseFilterParamsFromObject } from '../../utils/urlHelper';
+import { peopleFetchSuccess } from '../../actions/people/get_people';
+import { PersonFactory } from '../../types/v2/Person';
 
 export default function makeExploreWrapper(itemType: ItemType) {
   interface Props {}
@@ -37,10 +39,24 @@ export default function makeExploreWrapper(itemType: ItemType) {
   ExploreWrapper.getInitialProps = async (ctx: NextPageContext & WithStore) => {
     if (ctx.req) {
       const parsedQueryObj = qs.parse(url.parse(ctx.req.url || '').query || '');
+      // If we're filtering on people, we have to fetch them.
       const filterParams = parseFilterParamsFromObject(parsedQueryObj);
 
+      let token = await currentUserJwt();
+
+      // TODO: Limit these
+      let peoplePromise: Promise<ApiPerson[] | undefined> | undefined;
+      if (filterParams.people && filterParams.people.length) {
+        peoplePromise = TeletrackerApi.instance
+          .getPeople(token, filterParams.people)
+          .then(result => {
+            if (result.ok && result.data) {
+              return result.data.data;
+            }
+          });
+      }
       let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.getItems(
-        await currentUserJwt(),
+        token,
         [itemType],
         filterParams.networks,
         undefined,
@@ -52,6 +68,16 @@ export default function makeExploreWrapper(itemType: ItemType) {
       );
 
       if (response.ok) {
+        // If we were fetching people, wait on that
+        if (peoplePromise) {
+          let peopleData = await peoplePromise;
+          if (peopleData) {
+            await ctx.store.dispatch(
+              peopleFetchSuccess(peopleData.map(PersonFactory.create)),
+            );
+          }
+        }
+
         await ctx.store.dispatch(
           exploreSuccess({
             items: response.data!.data.map(ItemFactory.create),

@@ -23,7 +23,7 @@ import { formatRuntime } from '../../utils/textHelper';
 import moment from 'moment';
 import { useRouter } from 'next/router';
 
-const useStyles = makeStyles((theme: Theme) => ({
+const useStyles = makeStyles<Theme, Props>((theme: Theme) => ({
   chip: {
     margin: theme.spacing(0.5, 0.5, 0.5, 0),
   },
