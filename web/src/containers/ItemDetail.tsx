@@ -89,7 +89,7 @@ const styles = (theme: Theme) =>
       marginBottom: theme.spacing(1),
     },
     genre: {
-      margin: theme.spacing(0.5),
+      margin: theme.spacing(1, 0.5),
       cursor: 'pointer',
     },
     genreContainer: {
@@ -134,9 +134,8 @@ const styles = (theme: Theme) =>
       justifyContent: 'center',
     },
     posterContainer: {
+      margin: '0 auto',
       width: '50%',
-      display: 'flex',
-      flex: '0 1 auto',
       position: 'relative',
       '&:hover': {
         backgroundColor: fade(theme.palette.common.white, 0.25),
