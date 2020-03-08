@@ -99,11 +99,6 @@ const styles = (theme: Theme) =>
     genre: {
       margin: theme.spacing(1),
     },
-    genreContainer: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      flexDirection: 'column',
-    },
     leftContainer: {
       display: 'flex',
       flexDirection: 'column',
@@ -449,7 +444,7 @@ class PersonDetail extends React.Component<Props, State> {
     }
 
     return (
-      <div className={classes.genreContainer}>
+      <React.Fragment>
         <div className={classes.listHeader}>
           <div className={classes.listNameContainer}>
             <Typography
@@ -512,7 +507,7 @@ class PersonDetail extends React.Component<Props, State> {
               ))}
           </React.Fragment>
         </InfiniteScroll>
-      </div>
+      </React.Fragment>
     );
   };
 
