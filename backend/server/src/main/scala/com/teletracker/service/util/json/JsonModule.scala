@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.{
   PropertyNamingStrategy,
   SerializationFeature
 }
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.joda.JodaModule
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.twitter.finatra.json.modules.FinatraJacksonModule
 
@@ -19,11 +21,17 @@ class JsonModule extends FinatraJacksonModule {
   override protected val serializationConfig = {
     Map(
 //      SerializationFeature.WRITE_DATES_AS_TIMESTAMPS -> true,
-      SerializationFeature.WRITE_ENUMS_USING_TO_STRING -> true
+      SerializationFeature.WRITE_ENUMS_USING_TO_STRING -> true,
+      SerializationFeature.WRITE_DATES_AS_TIMESTAMPS -> false
     )
   }
 
   def baseModules: Seq[Module] = {
-    Seq(new DefaultScalaModule, new JodaModule)
+    Seq(
+      new DefaultScalaModule,
+      new JodaModule,
+      new Jdk8Module,
+      new JavaTimeModule
+    )
   }
 }

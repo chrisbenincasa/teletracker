@@ -1,4 +1,4 @@
-import React, { Component, RefObject } from 'react';
+import React, { Component, ReactElement, ReactNode, RefObject } from 'react';
 import {
   Avatar,
   Button,
@@ -8,6 +8,7 @@ import {
   Drawer as DrawerUI,
   List,
   ListItem,
+  ListItemProps as MuiListItemProps,
   ListItemAvatar,
   ListItemIcon,
   ListItemText,
@@ -151,10 +152,12 @@ interface ListItemProps {
   primary?: string;
   selected?: boolean;
   onClick?: () => void;
+  icon?: ReactElement;
+  ListItemProps?: MuiListItemProps;
 }
 
 // TODO: Get type definitions for props working
-const ListItemLink = withStyles(styles, { withTheme: true })(
+const DrawerItemListLink = withStyles(styles, { withTheme: true })(
   (props: LinkProps & WithStyles<typeof styles, true>) => {
     const { index, primary, selected, listLength } = props;
 
@@ -169,29 +172,8 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
       }
     };
 
-    const ButtonLink = React.forwardRef((props: any, ref) => {
-      let { onClick, href } = props;
-      return (
-        <Link href={href} passHref>
-          <a
-            onClick={onClick}
-            ref={ref as RefObject<HTMLAnchorElement>}
-            {...props}
-          >
-            {primary}
-          </a>
-        </Link>
-      );
-    });
-
     return (
-      <ListItem
-        button
-        onClick={handleClick}
-        // href={props.to}
-        // component={ButtonLink}
-        selected={selected}
-      >
+      <ListItem button onClick={handleClick} selected={selected}>
         <ListItemAvatar>
           <Avatar
             style={{
@@ -213,8 +195,6 @@ const ListItemLink = withStyles(styles, { withTheme: true })(
             }}
             primary={primary}
           />
-          {/* <a onClick={handleClick}>
-          </a> */}
         </Link>
       </ListItem>
     );
@@ -299,7 +279,7 @@ class Drawer extends Component<Props, State> {
     let list = listWithDetails || userList;
     const listPath = `/lists/${list.id}`;
     return (
-      <ListItemLink
+      <DrawerItemListLink
         index={index}
         key={userList.id}
         to={`/lists/[id]?id=${list.id}`}
@@ -327,9 +307,7 @@ class Drawer extends Component<Props, State> {
       return (
         <Link href={to}>
           <ListItem button selected={selected} onClick={props.onClick}>
-            <ListItemIcon>
-              <Settings />
-            </ListItemIcon>
+            {props.icon ? <ListItemIcon>{props.icon}</ListItemIcon> : null}
             <ListItemText>{primary}</ListItemText>
           </ListItem>
         </Link>
@@ -342,39 +320,33 @@ class Drawer extends Component<Props, State> {
         {['xs', 'sm', 'md'].includes(this.props.width) && (
           <React.Fragment>
             <List>
-              <ListItem
-                button
-                component={RouterLink}
-                href="/all"
-                selected={location.pathname.toLowerCase() === '/all'}
-              >
-                <ListItemIcon>
-                  <Apps />
-                </ListItemIcon>
-                Explore
-              </ListItem>
-              <ListItem
-                button
-                component={RouterLink}
-                href="/popular"
-                selected={location.pathname.toLowerCase() === '/popular'}
-              >
-                <ListItemIcon>
-                  <TrendingUp />
-                </ListItemIcon>
-                Browse Popular
-              </ListItem>
-              <ListItem
-                button
-                component={RouterLink}
-                href="/new"
-                selected={location.pathname.toLowerCase() === '/new'}
-              >
-                <ListItemIcon>
-                  <FiberNew />
-                </ListItemIcon>
-                What's New?
-              </ListItem>
+              <ListItemLink
+                to="/all"
+                primary="Explore"
+                icon={<Apps />}
+                ListItemProps={{
+                  selected: location.pathname.toLowerCase() === '/all',
+                  button: true,
+                }}
+              />
+              <ListItemLink
+                to="/popular"
+                primary="Browse Popular"
+                icon={<TrendingUp />}
+                ListItemProps={{
+                  selected: location.pathname.toLowerCase() === '/popular',
+                  button: true,
+                }}
+              />
+              <ListItemLink
+                to="/new"
+                primary="What's New?"
+                icon={<FiberNew />}
+                ListItemProps={{
+                  selected: location.pathname.toLowerCase() === '/new',
+                  button: true,
+                }}
+              />
             </List>
             <Divider />
           </React.Fragment>

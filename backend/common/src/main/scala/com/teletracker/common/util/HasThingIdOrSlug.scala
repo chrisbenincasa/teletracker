@@ -21,10 +21,11 @@ object IdOrSlug {
   }
 }
 
-trait IdOrSlug {
+sealed trait IdOrSlug {
   def id: Option[UUID] = idOrSlug.left.toOption
   def slug: Option[Slug] = idOrSlug.right.toOption
   def idOrSlug: Either[UUID, Slug]
+  override def toString: String = idOrSlug.toString
 }
 
 object HasThingIdOrSlug {

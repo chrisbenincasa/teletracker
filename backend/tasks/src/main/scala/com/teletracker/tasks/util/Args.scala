@@ -38,7 +38,7 @@ trait LowPriArgParsers {
       override def parse(in: Any): Try[T] = parseFunc(in)
     }
 
-  def cast[T: Manifest](x: Any): Try[T] = x match {
+  protected def cast[T: Manifest](x: Any): Try[T] = x match {
     case t: T => Success(t)
     case _    => Failure(new IllegalArgumentException)
   }

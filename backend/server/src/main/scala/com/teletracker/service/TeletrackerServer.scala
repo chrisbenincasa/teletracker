@@ -5,22 +5,23 @@ import com.teletracker.common.util.{GenreCache, NetworkCache}
 import com.teletracker.service.auth.JwtAuthFilter
 import com.teletracker.service.controllers._
 import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
-import com.teletracker.service.filters.OpenCensusMonitoringFilter
+import com.teletracker.service.filters.{CorsFilter, OpenCensusMonitoringFilter}
 import com.teletracker.service.inject.ServerModules
 import com.teletracker.service.util.json.JsonModule
-import com.twitter.conversions.DurationOps._
 import com.twitter.finagle.Http
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.ssl.{ClientAuth, Engine}
 import com.twitter.finagle.ssl.server.SslServerConfiguration
 import com.twitter.finatra.http.HttpServer
 import com.twitter.finatra.http.filters.{
+  CommonFilters,
   LoggingMDCFilter,
   StatsFilter,
   TraceIdMDCFilter
 }
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.inject.Logging
+import com.twitter.inject.requestscope.FinagleRequestScopeFilter
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.{
   InsecureTrustManagerFactory,
@@ -46,33 +47,13 @@ class TeletrackerServer(
   override protected def jacksonModule: Module = new JsonModule
 
   override protected def configureHttp(router: HttpRouter): Unit = {
-    import com.twitter.finagle.http.filter.Cors
     router
-      .filter(
-        new Cors.HttpFilter(
-          Cors.Policy(
-            allowsOrigin = _ => Some("*"),
-            allowsMethods =
-              _ => Some(Seq("HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS")),
-            allowsHeaders = _ =>
-              Some(
-                Seq(
-                  "Origin",
-                  "X-Requested-With",
-                  "Content-Type",
-                  "Accept",
-                  "Authorization"
-                )
-              ),
-            supportsCredentials = true,
-            maxAge = Some(1.day)
-          )
-        )
-      )
+      .filter(CorsFilter.instance)
       .filter[LoggingMDCFilter[Request, Response]]
       .filter[TraceIdMDCFilter[Request, Response]]
       .filter[OpenCensusMonitoringFilter]
-      .filter[StatsFilter[Request]]
+      .filter[CommonFilters]
+      .filter[FinagleRequestScopeFilter[Request, Response]]
       .filter[JwtAuthFilter]
       .exceptionMapper[PassThroughExceptionMapper]
       .add[PreflightController]
@@ -86,6 +67,7 @@ class TeletrackerServer(
       .add[HealthController]
       .add[InternalController]
       .add[PopularItemsController]
+      .add[ListController]
   }
 
   override protected def configureHttpsServer(

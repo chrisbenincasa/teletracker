@@ -52,7 +52,7 @@ abstract class TeletrackerController(
   ): Future[Option[StoredUserList]] = {
     UuidOrT.parse(listId, _.toInt).idOrFallback match {
       case Left(value) =>
-        listsApi.findListForUser(value, userId)
+        listsApi.findListForUser(value, Some(userId))
 
       case Right(value) =>
         listsApi.findListForUserLegacy(value, userId)
