@@ -48,6 +48,8 @@ lazy val common = project
       "io.opencensus" % "opencensus-impl" % "0.23.0",
       // Jackson
       "com.fasterxml.jackson.core" % "jackson-annotations" % versions.jackson,
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % versions.jackson,
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % versions.jackson,
       // Auth
       "io.jsonwebtoken" % "jjwt-api" % "0.10.7",
       "io.jsonwebtoken" % "jjwt-impl" % "0.10.7",
@@ -79,6 +81,7 @@ lazy val common = project
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
       ),
+      "org.scalactic" %% "scalactic" % "3.0.5" % Test,
       "org.scalatest" %% "scalatest" % "3.0.5" % Test,
       "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.5" % Test
     ) ++ Dependencies.circe
@@ -194,6 +197,7 @@ lazy val server = project
       "com.twitter" %% "finagle-core" % versions.twitter,
       "com.twitter" %% "finagle-http" % versions.twitter,
       "com.twitter" %% "finatra-http" % versions.twitter,
+      "com.twitter" %% "inject-request-scope" % versions.twitter,
       // Testing
       "com.spotify" % "docker-client" % "8.11.7" % Test excludeAll "com.fasterxml.jackson.core",
       "org.scalatest" %% "scalatest" % "3.0.5" % Test,

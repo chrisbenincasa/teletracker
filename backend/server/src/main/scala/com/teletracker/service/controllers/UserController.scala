@@ -13,6 +13,7 @@ import com.teletracker.common.util.{
   CanParseFieldFilter,
   HasFieldsFilter,
   HasThingIdOrSlug,
+  IdOrSlug,
   ListFilterParser
 }
 import com.teletracker.service.api.model.{UserList, UserListRules}
@@ -145,9 +146,9 @@ class UserController @Inject()(
 
         filtersFut.flatMap(filters => {
           usersApi
-            .getUserList(
-              req.authenticatedUserId.get,
-              UUID.fromString(req.listId),
+            .getUserListAndItems(
+              IdOrSlug(req.listId),
+              req.authenticatedUserId,
               Some(filters),
               req.isDynamic,
               sort,

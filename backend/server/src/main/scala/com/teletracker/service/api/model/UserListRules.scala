@@ -16,7 +16,8 @@ object UserListRules {
   import io.circe.generic.extras.auto._
   import io.circe.generic.extras.Configuration
 
-  implicit val codec: Codec[UserListRules] = deriveCodec[UserListRules]
+  implicit val codec: Codec[UserListRules] =
+    deriveConfiguredCodec[UserListRules]
 
   def fromRow(dynamicListRules: DynamicListRules): UserListRules = {
     UserListRules(
@@ -95,7 +96,7 @@ object UserListRule {
   import io.circe.generic.extras.auto._
   import io.circe.generic.extras.Configuration
 
-  implicit val codec: Codec[UserListRule] = deriveCodec[UserListRule]
+  implicit val codec: Codec[UserListRule] = deriveConfiguredCodec[UserListRule]
 }
 
 sealed trait UserListRule

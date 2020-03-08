@@ -13,7 +13,8 @@ import com.teletracker.common.elasticsearch.{
   UpdateMultipleDocResponse
 }
 import com.teletracker.common.util.Functions._
-import com.teletracker.common.util.Slug
+import com.teletracker.common.util.{IdOrSlug, Slug}
+import com.teletracker.service.api.converters.UserListConverter
 import com.teletracker.service.api.model.{
   UserList,
   UserListPersonRule,
@@ -27,7 +28,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class ListsApi @Inject()(
   itemUpdater: ItemUpdater,
   personLookup: PersonLookup,
-  dynamoListsDbAccess: DynamoListsDbAccess
+  dynamoListsDbAccess: DynamoListsDbAccess,
+  userListConverter: UserListConverter
 )(implicit executionContext: ExecutionContext) {
   def createList(
     userId: String,
@@ -132,14 +134,42 @@ class ListsApi @Inject()(
   def findUserLists(userId: String) = {
     dynamoListsDbAccess
       .getAllListsForUser(userId)
-      .map(_.map(UserList.fromStoredList))
+      .map(_.map(userListConverter.fromStoredList))
   }
 
   def findListForUser(
     listId: UUID,
-    userId: String
-  ) = {
-    dynamoListsDbAccess.getList(userId, listId)
+    userId: Option[String]
+  ): Future[Option[StoredUserList]] = {
+    dynamoListsDbAccess.getList(listId).map {
+      case None                                        => None
+      case Some(list) if list.isPublic                 => Some(list)
+      case Some(list) if !userId.contains(list.userId) => None
+      case Some(list)                                  => Some(list)
+    }
+  }
+
+  def findPublicList(listId: UUID): Future[Option[StoredUserList]] = {
+    dynamoListsDbAccess.getList(listId).map(_.filter(_.isPublic))
+  }
+
+  def findListViaAlias(
+    alias: Slug,
+    expectedUser: Option[String]
+  ): Future[Option[StoredUserList]] = {
+    dynamoListsDbAccess.getListIdForAlias(alias.value).flatMap {
+      case None => Future.successful(None)
+
+      case Some(id) if expectedUser.isDefined =>
+        findListForUser(id, expectedUser).map {
+          case None                                              => None
+          case Some(list) if !expectedUser.contains(list.userId) => None
+          case Some(list)                                        => Some(list)
+        }
+
+      case Some(id) =>
+        findPublicList(id)
+    }
   }
 
   def findListForUserLegacy(
@@ -159,7 +189,7 @@ class ListsApi @Inject()(
     val rulesDao = rules.map(_.toRow)
     val optionsDao = options.map(_.toDynamoRow)
 
-    dynamoListsDbAccess.getList(userId, listId).flatMap {
+    dynamoListsDbAccess.getList(listId).flatMap {
       case None =>
         Future.failed(
           new IllegalArgumentException(s"List with id = ${listId} not found")

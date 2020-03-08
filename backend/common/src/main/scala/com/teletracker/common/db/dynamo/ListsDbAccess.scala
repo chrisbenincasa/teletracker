@@ -1,6 +1,6 @@
 package com.teletracker.common.db.dynamo
 
-import com.teletracker.common.db.dynamo.model.StoredUserList
+import com.teletracker.common.db.dynamo.model.{StoredListAlias, StoredUserList}
 import com.teletracker.common.db.dynamo.util.syntax._
 import com.teletracker.common.util.Functions._
 import javax.inject.Inject
@@ -15,7 +15,8 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 object ListsDbAccess {
-  final private val ListTable = "teletracker.qa.lists"
+  final private val ListTable = "teletracker.qa.lists-simple"
+  final private val ListAliasTable = "teletracker.qa.list_aliases"
 }
 
 class ListsDbAccess @Inject()(
@@ -36,6 +37,47 @@ class ListsDbAccess @Inject()(
       .map(_ => list)
   }
 
+  def addAliasToList(
+    listId: UUID,
+    userId: String,
+    alias: String
+  ): Future[Unit] = {
+    dynamo
+      .transactWriteItems(
+        TransactWriteItemsRequest
+          .builder()
+          .transactItems(
+            TransactWriteItem
+              .builder()
+              .put(
+                Put
+                  .builder()
+                  .tableName(ListAliasTable)
+                  .item(StoredListAlias(alias, listId).toDynamoItem)
+                  .build()
+              )
+              .build(),
+            TransactWriteItem
+              .builder()
+              .update(
+                Update
+                  .builder()
+                  .key(StoredUserList.primaryKey(listId))
+                  .tableName(ListTable)
+                  .updateExpression("ADD aliases :alias")
+                  .expressionAttributeValues(
+                    Map(":alias" -> Set(alias).toAttributeValue).asJava
+                  )
+                  .build()
+              )
+              .build()
+          )
+          .build()
+      )
+      .toScala
+      .map(_ => {})
+  }
+
   def deleteList(
     listId: UUID,
     userId: String
@@ -54,7 +96,7 @@ class ListsDbAccess @Inject()(
                 .build()
             ).asJava
           )
-          .key(StoredUserList.primaryKey(listId, userId))
+          .key(StoredUserList.primaryKey(listId))
           .build()
       )
       .toScala
@@ -64,16 +106,13 @@ class ListsDbAccess @Inject()(
       }
   }
 
-  def getList(
-    userId: String,
-    listId: UUID
-  ): Future[Option[StoredUserList]] = {
+  def getList(listId: UUID): Future[Option[StoredUserList]] = {
     dynamo
       .getItem(
         GetItemRequest
           .builder()
           .tableName(ListTable)
-          .key(StoredUserList.primaryKey(listId, userId))
+          .key(StoredUserList.primaryKey(listId))
           .build()
       )
       .toScala
@@ -193,6 +232,7 @@ class ListsDbAccess @Inject()(
     })
   }
 
+  // TODO: Shift to another thread
   def processLists(onItem: StoredUserList => Boolean): Future[Unit] = {
     val promise = Promise[Unit]()
 
@@ -224,5 +264,22 @@ class ListsDbAccess @Inject()(
       })
 
     promise.future
+  }
+
+  def getListIdForAlias(alias: String): Future[Option[UUID]] = {
+    dynamo
+      .getItem(
+        GetItemRequest
+          .builder()
+          .tableName(ListAliasTable)
+          .key(StoredListAlias.primaryKey(alias))
+          .build()
+      )
+      .toScala
+      .map(response => {
+        Option(response.item().asScala)
+          .filter(_.nonEmpty)
+          .flatMap(_.get("id").map(_.valueAs[UUID]))
+      })
   }
 }

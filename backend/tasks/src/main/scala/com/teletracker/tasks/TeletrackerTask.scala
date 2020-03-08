@@ -51,6 +51,8 @@ trait TeletrackerTask extends Args {
 
   def preparseArgs(args: Args): TypedArgs
 
+  def validateArgs(args: TypedArgs): Unit = {}
+
   def argsAsJson(args: Args): Json = preparseArgs(args).asJson
 
   protected def runInternal(args: Args): Unit
@@ -92,6 +94,8 @@ trait TeletrackerTask extends Args {
       preruns.foreach(_())
 
       val parsedArgs = preparseArgs(args)
+
+      validateArgs(parsedArgs)
 
       logger.info(s"Running ${getClass.getSimpleName} with args: ${args}")
 

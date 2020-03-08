@@ -1,6 +1,8 @@
 package com.teletracker.common.util
 
+import java.util.concurrent.ScheduledExecutorService
 import scala.collection.mutable
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
@@ -406,6 +408,38 @@ sealed abstract class AsyncStream[+A] {
       case Embed(fas)     => Embed(fas.map(_.mapF(f)))
     }
 
+  def delayedMapF[B](
+    f: A => Future[B],
+    perElementWait: FiniteDuration,
+    scheduledService: ScheduledExecutorService
+  )(implicit executionContext: ExecutionContext
+  ): AsyncStream[B] = {
+    def waitAfter(value: B): Future[B] = {
+      val promise = Promise[B]
+      scheduledService.schedule(new Runnable {
+        override def run(): Unit = promise.success(value)
+      }, perElementWait.length, perElementWait.unit)
+      promise.future
+    }
+
+    val transform: Try[B] => Future[B] = {
+      case Success(value)     => waitAfter(value)
+      case Failure(exception) => Future.failed(exception)
+    }
+
+    this match {
+      case Empty          => empty
+      case FromFuture(fa) => FromFuture(fa.flatMap(f).transformWith(transform))
+      case Cons(fa, more) =>
+        Cons(
+          fa.flatMap(f).transformWith(transform),
+          () => more().delayedMapF(f, perElementWait, scheduledService)
+        )
+      case Embed(fas) =>
+        Embed(fas.map(_.delayedMapF(f, perElementWait, scheduledService)))
+    }
+  }
+
   /**
     * Similar to foldLeft, but produces a stream from the result of each
     * successive fold:
@@ -754,6 +788,29 @@ sealed abstract class AsyncStream[+A] {
       case Cons(fa, more) => Embed(fa.map(ev)) ++ more().flatten
       case Embed(fas)     => Embed(fas.map(_.flatten))
     }
+
+  def distinct(implicit executionContext: ExecutionContext): AsyncStream[A] = {
+    def loop(
+      seen: Set[A],
+      rest: AsyncStream[A]
+    ): AsyncStream[A] = {
+      rest match {
+        case Empty          => empty
+        case FromFuture(fa) => Embed(fa.map(a => if (seen(a)) empty else of(a)))
+        case Cons(fa, more) =>
+          Embed(
+            fa.map(
+              a =>
+                if (seen(a)) empty ++ loop(seen, more())
+                else of(a) ++ loop(seen + a, more())
+            )
+          )
+        case Embed(fas) => Embed(fas.map(loop(seen, _)))
+      }
+    }
+
+    loop(Set(), this)
+  }
 
   /**
     * A Future of the stream realized as a list. This future completes when all

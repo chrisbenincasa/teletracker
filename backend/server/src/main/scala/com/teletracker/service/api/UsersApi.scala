@@ -1,6 +1,7 @@
 package com.teletracker.service.api
 
 import com.teletracker.common.db.dynamo.model.{
+  StoredUserList,
   StoredUserListFactory,
   StoredUserPreferences,
   StoredUserPreferencesBlob
@@ -17,9 +18,10 @@ import com.teletracker.common.elasticsearch.{
   ItemUpdater,
   ListBuilder
 }
-import com.teletracker.common.util.{ListFilters, NetworkCache}
+import com.teletracker.common.util.{IdOrSlug, ListFilters, NetworkCache}
 import com.teletracker.service.api.model._
 import com.teletracker.common.util.Functions._
+import com.teletracker.service.api.converters.UserListConverter
 import com.teletracker.service.controllers.UpdateUserRequestPayload
 import javax.inject.Inject
 import java.time.OffsetDateTime
@@ -33,7 +35,8 @@ class UsersApi @Inject()(
   itemUpdater: ItemUpdater,
   dynamoListsDbAccess: DynamoListsDbAccess,
   metadataDbAccess: MetadataDbAccess,
-  networkCache: NetworkCache
+  networkCache: NetworkCache,
+  userListConverter: UserListConverter
 )(implicit executionContext: ExecutionContext) {
 
   def getUser(userId: String): Future[UserDetails] = {
@@ -175,7 +178,7 @@ class UsersApi @Inject()(
               if (list.isDynamic) dynamicListCounts.getOrElse(list.id, 0L).toInt
               else regularListCounts.getOrElse(list.id, 0L).toInt
 
-            UserList
+            userListConverter
               .fromStoredList(list)
               .withCount(count)
           })
@@ -184,22 +187,68 @@ class UsersApi @Inject()(
   }
 
   def getUserList(
-    userId: String,
-    listId: UUID,
+    listId: IdOrSlug,
+    userId: Option[String],
+    mustBePublic: Boolean,
+    includeItems: Boolean
+  ): Future[Option[UserList]] = {
+    val listFut = listId.idOrSlug match {
+      case Left(id)    => listsApi.findListForUser(id, userId)
+      case Right(slug) => listsApi.findListViaAlias(slug, None)
+    }
+
+    listFut.flatMap {
+      case None => Future.successful(None)
+
+      case Some(list) =>
+        val countFut = if (list.isDynamic) {
+          dynamicListBuilder
+            .getDynamicListCounts(list.userId, List(list))
+            .map(_.toMap.getOrElse(list.id, 0L))
+        } else {
+          listBuilder
+            .getRegularListsCounts(list.userId, List(list.id))
+            .map(_.toMap.getOrElse(list.id, 0L))
+        }
+
+        countFut
+          .map(
+            count =>
+              Some(
+                userListConverter
+                  .fromStoredList(list)
+                  .withCount(Math.max(Int.MaxValue.toLong, count).toInt)
+              )
+          )
+    }
+  }
+
+  def getUserListAndItems(
+    listId: IdOrSlug,
+    requestingUserId: Option[String],
     filters: Option[ListFilters] = None,
     isDynamicHint: Option[Boolean] = None,
     sortMode: SortMode = DefaultForListType(),
     bookmark: Option[Bookmark] = None,
-    limit: Int = 10
+    limit: Int = 10,
+    mustBePublic: Boolean = false
   ): Future[Option[(UserList, Option[Bookmark])]] = {
-    listsApi.findListForUser(listId, userId).flatMap {
+    val listFut = listId.idOrSlug match {
+      case Left(id)    => listsApi.findListForUser(id, requestingUserId)
+      case Right(slug) => listsApi.findListViaAlias(slug, None)
+    }
+
+    listFut.flatMap {
       case None =>
+        Future.successful(None)
+
+      case Some(list) if !requestingUserCanViewList(list, requestingUserId) =>
         Future.successful(None)
 
       case Some(list) if list.isDynamic =>
         dynamicListBuilder
           .buildDynamicList(
-            userId,
+            list.userId,
             list,
             filters,
             sortMode,
@@ -208,12 +257,12 @@ class UsersApi @Inject()(
           )
           .map {
             case (listThings, count, peopleFromRules) => {
-              UserList
+              userListConverter
                 .fromStoredList(list)
                 .withItems(
                   listThings.items
                     .map(Item.fromEsItem(_))
-                    .map(_.scopeToUser(userId))
+                    .map(_.scopeToUser(requestingUserId))
                 )
                 .withPeople(peopleFromRules.map(Person.fromEsPerson(_, None)))
                 .withCount(count.toInt) -> listThings.bookmark
@@ -224,7 +273,7 @@ class UsersApi @Inject()(
       case Some(list) if !list.isDynamic =>
         listBuilder
           .buildRegularList(
-            userId,
+            list.userId,
             list,
             filters,
             sortMode,
@@ -233,17 +282,30 @@ class UsersApi @Inject()(
           )
           .map {
             case (listThings, count) => {
-              UserList
+              userListConverter
                 .fromStoredList(list)
                 .withItems(
                   listThings.items
                     .map(Item.fromEsItem(_))
-                    .map(_.scopeToUser(userId))
+                    .map(_.scopeToUser(requestingUserId))
                 )
                 .withCount(count.toInt) -> listThings.bookmark
             }
           }
           .map(Some(_))
+    }
+  }
+
+  private def requestingUserCanViewList(
+    list: StoredUserList,
+    requestingUserId: Option[String]
+  ) = {
+    requestingUserId match {
+      case Some(value) =>
+        list.isPublic || list.userId == value
+
+      case None =>
+        list.isPublic
     }
   }
 

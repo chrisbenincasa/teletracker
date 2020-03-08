@@ -8,7 +8,7 @@ import com.teletracker.common.util.Futures._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class ListsDbAccessTest extends FlatSpec {
-  it should "work" in {
+  "The test" should "work" in {
     val injector = Guice.createInjector(Modules(): _*)
     val access = injector.getInstance(classOf[ListsDbAccess])
 
