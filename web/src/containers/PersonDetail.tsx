@@ -686,9 +686,7 @@ class PersonDetail extends React.Component<Props, State> {
   }
 
   render() {
-    return (
-      <div style={{ display: 'flex', flexGrow: 1 }}>{this.renderPerson()}</div>
-    );
+    return <div>{this.renderPerson()}</div>;
   }
 }
 
