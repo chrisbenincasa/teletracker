@@ -230,7 +230,7 @@ export class TeletrackerApi {
   }
 
   async getList(
-    token: string,
+    token: string | undefined,
     id: string | number,
     sort?: SortOptions,
     desc?: boolean,
@@ -240,7 +240,30 @@ export class TeletrackerApi {
     networks?: NetworkType[],
     limit?: number,
   ) {
-    return this.api.get<DataResponse<List>>(`/api/v2/users/self/lists/${id}`, {
+    return this.api.get<DataResponse<List>>(`/api/v2/lists/${id}/items`, {
+      token,
+      sort,
+      desc,
+      itemTypes: itemTypes ? itemTypes.join(',') : undefined,
+      genres: genres ? genres.join(',') : undefined,
+      bookmark,
+      networks: networks ? networks.join(',') : undefined,
+      limit,
+    });
+  }
+
+  async getPublicList(
+    token: string | undefined,
+    id: string | number,
+    sort?: SortOptions,
+    desc?: boolean,
+    itemTypes?: ItemType[],
+    genres?: number[],
+    bookmark?: string,
+    networks?: NetworkType[],
+    limit?: number,
+  ) {
+    return this.api.get<DataResponse<List>>(`/api/v2/lists/${id}/items`, {
       token,
       sort,
       desc,
