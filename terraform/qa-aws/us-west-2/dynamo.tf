@@ -35,6 +35,54 @@ resource "aws_dynamodb_table" "lists-ddb-table" {
   }
 }
 
+resource "aws_dynamodb_table" "lists-simple-ddb-table" {
+  name         = "teletracker.qa.lists-simple"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  attribute {
+    name = "legacyId"
+    type = "N"
+  }
+
+  global_secondary_index {
+    name            = "legacyId-userId-index-copy"
+    hash_key        = "legacyId"
+    range_key       = "userId"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "userId-id-inverted-index"
+    hash_key        = "userId"
+    range_key       = "id"
+    projection_type = "ALL"
+  }
+}
+
+resource "aws_dynamodb_table" "list-aliases-ddb-table" {
+  name         = "teletracker.qa.list_aliases"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key = "alias"
+
+  attribute {
+    name = "alias"
+    type = "S"
+  }
+}
+
 resource "aws_dynamodb_table" "metadata-ddb-table" {
   name         = "teletracker.qa.metadata"
   billing_mode = "PAY_PER_REQUEST"

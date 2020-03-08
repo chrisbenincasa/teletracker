@@ -20,9 +20,7 @@ function ListDetailWrapper(props: Props) {
   const router = useRouter();
   const listsById = useStateSelector(state => state.lists.listsById);
 
-
   const listId = router.query.id as string;
-  console.log('ListDetailWrapper', listsById[listId])
 
   let listName: string;
   if (props.list) {
@@ -47,31 +45,27 @@ ListDetailWrapper.getInitialProps = async ctx => {
   if (ctx.req) {
     let token = await currentUserJwt();
 
-    if (token) {
-      let response: TeletrackerResponse<ApiList> = await TeletrackerApi.instance.getList(
-        token,
-        ctx.query.id,
+    let response: TeletrackerResponse<ApiList> = await TeletrackerApi.instance.getList(
+      token,
+      ctx.query.id,
+    );
+
+    if (response.ok) {
+      await ctx.store.dispatch(
+        ListRetrieveSuccess({
+          list: ListFactory.create(response.data!.data),
+          paging: response.data!.paging,
+          append: false,
+        }),
       );
 
-      if (response.ok) {
-        await ctx.store.dispatch(
-          ListRetrieveSuccess({
-            list: ListFactory.create(response.data!.data),
-            paging: response.data!.paging,
-            append: false,
-          }),
-        );
-
-        return {
-          list: ListFactory.create(response.data!.data),
-        };
-      } else {
-        console.log(response.status);
-        return {
-          error: response.status,
-        };
-      }
+      return {
+        list: ListFactory.create(response.data!.data),
+      };
     } else {
+      return {
+        error: response.status,
+      };
     }
   } else {
     return {};

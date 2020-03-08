@@ -32,6 +32,7 @@ import java.time.LocalDate
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+import scala.util.control.NonFatal
 
 class ItemsController @Inject()(
   itemApi: ItemApi,
@@ -49,12 +50,16 @@ class ItemsController @Inject()(
         )
         .map {
           case None =>
-            Future.successful(response.notFound)
+            response.notFound
 
           case Some(found) =>
             response.ok
               .contentTypeJson()
               .body(DataResponse.complex(found))
+        }
+        .recover {
+          case NonFatal(e) =>
+            response.internalServerError
         }
     }
   }

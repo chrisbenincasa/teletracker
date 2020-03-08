@@ -16,7 +16,7 @@ resource "aws_elasticsearch_domain" "teletracker-qa-es" {
 
   ebs_options {
     ebs_enabled = true
-    volume_size = 10
+    volume_size = 15
   }
 
   #   domain_endpoint_options {

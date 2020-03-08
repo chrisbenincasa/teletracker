@@ -93,11 +93,7 @@ class MovieImportHandler @Inject()(
           .foldLeft(value.imagesGrouped)((acc, image) => {
             val externalSource =
               ExternalSource.fromString(image.provider_shortname)
-            acc.get(externalSource -> image.image_type) match {
-              case Some(_) =>
-                acc.updated((externalSource, image.image_type), image)
-              case None => acc
-            }
+            acc.updated((externalSource, image.image_type), image)
           })
           .values
 
@@ -146,7 +142,10 @@ class MovieImportHandler @Inject()(
         release_date = item.release_date
           .filter(_.nonEmpty)
           .map(LocalDate.parse(_))
-          .orElse(value.release_date)
+          .orElse(value.release_date),
+        slug =
+          if (value.slug.isEmpty) item.releaseYear.map(Slug(item.title.get, _))
+          else value.slug
       )
 
       if (args.dryRun) {

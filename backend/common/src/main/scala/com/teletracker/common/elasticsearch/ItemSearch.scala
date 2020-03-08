@@ -57,7 +57,10 @@ class ItemSearch @Inject()(
           query,
           "title",
           "title._2gram",
-          "title._3gram"
+          "title._3gram",
+          "original_title",
+          "original_title._2gram",
+          "original_title._3gram"
         )
         .`type`(MultiMatchQueryBuilder.Type.PHRASE_PREFIX)
         .maxExpansions(50)
@@ -111,8 +114,6 @@ class ItemSearch @Inject()(
       .applyOptional(searchOptions.bookmark)((builder, bookmark) => {
         builder.from(bookmark.value.toInt)
       })
-
-    println(searchSource)
 
     val search =
       new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
@@ -171,6 +172,8 @@ class ItemSearch @Inject()(
       .sort(
         new FieldSortBuilder("id").order(SortOrder.ASC)
       )
+
+    println(s"Search: ${searchSourceBuilder}")
 
     elasticsearchExecutor
       .search(

@@ -22,10 +22,10 @@ trait ConfiguredModelInstances {
     Configuration.default.withDiscriminator("type")
 
   implicit val trackedListRulesEncoder: Codec[TrackedListRules] =
-    deriveCodec
+    deriveConfiguredCodec
 
   implicit val trackedListTagRuleEncoder: Codec[TrackedListTagRule] =
-    deriveCodec
+    deriveConfiguredCodec
 }
 
 trait ModelInstances extends ConfiguredModelInstances with JodaInstances {

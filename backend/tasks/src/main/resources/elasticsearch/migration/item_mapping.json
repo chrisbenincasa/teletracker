@@ -145,7 +145,21 @@
           "type": "date"
         },
         "original_title" : {
-          "type" : "text"
+          "type" : "text",
+          "fields" : {
+            "_2gram" : {
+              "type" : "text",
+              "analyzer": "2gram_analyzer"
+            },
+            "_3gram" : {
+              "type" : "text",
+              "analyzer": "3gram_analyzer"
+            },
+            "_index_prefix": {
+              "type": "text",
+              "analyzer": "index_prefix_analyzer"
+            }
+          }
         },
         "overview" : {
           "type" : "text"
