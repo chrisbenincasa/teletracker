@@ -37,6 +37,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   genre: {
     marginTop: theme.spacing(1),
   },
+  header: {
+    padding: theme.spacing(1, 0),
+  },
   logo: {
     width: 50,
     borderRadius: theme.shape.borderRadius,
@@ -155,7 +158,7 @@ const ThingAvailability = (props: Props) => {
 
   return props.networks ? (
     <React.Fragment>
-      <Typography color="inherit" variant="h5">
+      <Typography color="inherit" variant="h5" className={classes.header}>
         Availability
       </Typography>
       {(availabilities.theater && availabilities.theater.length > 0) ||
