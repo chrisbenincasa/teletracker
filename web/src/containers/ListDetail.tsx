@@ -258,6 +258,17 @@ class ListDetail extends Component<Props, State> {
     return this.props.router.query.id as string;
   }
 
+  get currentList() {
+    let list: List | undefined = this.props.listsById[this.listId];
+    if (!list) {
+      list = _.find(this.props.listsById, list =>
+        list.aliases.includes(this.listId),
+      );
+    }
+
+    return list;
+  }
+
   makeListFilters = (
     initialLoad: boolean,
     currentFilters: FilterParams,
@@ -427,15 +438,14 @@ class ListDetail extends Component<Props, State> {
       !this.props.listLoading &&
       (oldProps.listLoading || this.state.loadingList)
     ) {
-      let list = this.props.listsById[this.listId];
-      let listFilters = this.extractFiltersFromList(list);
+      let list = this.currentList;
+      let listFilters = this.extractFiltersFromList(list!);
 
       this.setState({
         loadingList: false,
-        list: list,
+        list,
         deleteOnWatch: Boolean(
-          this.props.listsById[this.listId]?.configuration?.options
-            ?.removeWatchedItems,
+          list?.configuration?.options?.removeWatchedItems,
         ),
         listFilters,
       });
@@ -533,6 +543,10 @@ class ListDetail extends Component<Props, State> {
 
   renderProfileMenu() {
     if (!this.props.isAuthed) {
+      return null;
+    }
+
+    if (!this.currentList?.ownedByRequester) {
       return null;
     }
 

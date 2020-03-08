@@ -19,6 +19,8 @@ export interface ApiList {
   totalItems: number;
   configuration?: ListConfiguration;
   relevantPeople?: ApiPerson[];
+  aliases: string[];
+  ownedByRequester: boolean;
 }
 
 export interface List {
@@ -33,6 +35,8 @@ export interface List {
   configuration?: ListConfiguration;
   relevantPeople?: Person[];
   legacyId?: number;
+  aliases: string[];
+  ownedByRequester: boolean;
 }
 
 export class ListFactory {
