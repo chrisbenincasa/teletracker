@@ -876,9 +876,12 @@ class ListDetail extends Component<Props, State> {
                   display="block"
                   className={classes.noContent}
                 >
-                  {list.totalItems > 0
-                    ? 'Sorry, nothing matches your current filter.  Please update and try again.'
-                    : 'Nothing has been added to this list yet.'}
+                  {list.totalItems > 0 &&
+                    !this.props.listLoading &&
+                    'Sorry, nothing matches your current filter.  Please update and try again.'}
+                  {list.totalItems === 0 &&
+                    !this.props.listLoading &&
+                    'Nothing has been added to this list yet.'}
                 </Typography>
               )}
             </Grid>
