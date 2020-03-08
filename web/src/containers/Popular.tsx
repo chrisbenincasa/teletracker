@@ -52,6 +52,7 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
+      marginBottom: theme.spacing(1),
     },
     loadingBar: {
       flexGrow: 1,
@@ -74,7 +75,6 @@ const styles = (theme: Theme) =>
     filters: {
       display: 'flex',
       flexDirection: 'row',
-      marginBottom: theme.spacing(1),
       justifyContent: 'flex-end',
       alignItems: 'center',
     },
