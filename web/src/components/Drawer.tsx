@@ -62,6 +62,12 @@ const styles = (theme: Theme) =>
       width: DrawerWidthPx,
       zIndex: `${theme.zIndex.appBar - 1} !important` as any,
     },
+    fixedListItems: {
+      position: 'absolute',
+      bottom: 0,
+      width: '100%',
+      padding: theme.spacing(0, 1),
+    },
     toolbar: theme.mixins.toolbar,
     list: {
       padding: theme.spacing(0, 1),
@@ -396,7 +402,7 @@ class Drawer extends Component<Props, State> {
             <Divider />
           </React.Fragment>
         ) : null}
-        <List>
+        <List className={classes.fixedListItems}>
           {isAuthed ? (
             <React.Fragment>
               <ListItemLink
