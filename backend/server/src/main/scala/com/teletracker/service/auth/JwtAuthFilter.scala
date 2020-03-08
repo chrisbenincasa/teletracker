@@ -3,6 +3,7 @@ package com.teletracker.service.auth
 import com.teletracker.common.config.TeletrackerConfig
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Service, SimpleFilter}
+import com.twitter.inject.requestscope.FinagleRequestScope
 import com.twitter.util.logging.Logger
 import com.twitter.util.{Future, Promise}
 import io.jsonwebtoken._
@@ -63,7 +64,8 @@ object TokenNotFoundException extends Exception("No token found in request")
 
 class JwtAuthFilter @Inject()(
   config: TeletrackerConfig,
-  extractor: JwtAuthExtractor
+  extractor: JwtAuthExtractor,
+  finagleRequestScope: FinagleRequestScope
 )(implicit executionContext: ExecutionContext)
     extends SimpleFilter[Request, Response] {
   private val logger = Logger(getClass)
@@ -76,6 +78,9 @@ class JwtAuthFilter @Inject()(
 
     extractor.extractToken(request) match {
       case None =>
+        finagleRequestScope.seed[Option[CurrentAuthenticatedUser]](
+          None
+        )
         service(request)
 
       case Some(t) =>
@@ -83,6 +88,9 @@ class JwtAuthFilter @Inject()(
         extractor.parseToken(t) match {
           case Success(parsed) =>
             RequestContext.set(request, parsed.getBody.getSubject, t)
+            finagleRequestScope.seed[Option[CurrentAuthenticatedUser]](
+              Some(CurrentAuthenticatedUser(parsed.getBody.getSubject))
+            )
             respPromise.become(service(request))
 
           case Failure(

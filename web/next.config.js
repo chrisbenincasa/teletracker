@@ -45,7 +45,6 @@ module.exports = (phase, { defaultConfig }) => {
     env,
     target: 'serverless',
     poweredByHeader: false,
-    // assetPrefix: process.env.VERSION,
     generateBuildId: async () => {
       const secondsSinceEpoch = Math.round(new Date().getTime() / 1000);
       const { stdout } = await exec('git rev-parse --short HEAD');

@@ -81,11 +81,7 @@ class TvShowImportHandler @Inject()(
           .foldLeft(existingShow.imagesGrouped)((acc, image) => {
             val externalSource =
               ExternalSource.fromString(image.provider_shortname)
-            acc.get(externalSource -> image.image_type) match {
-              case Some(_) =>
-                acc.updated((externalSource, image.image_type), image)
-              case None => acc
-            }
+            acc.updated((externalSource, image.image_type), image)
           })
           .values
 
@@ -141,7 +137,11 @@ class TvShowImportHandler @Inject()(
         release_date = item.first_air_date
           .filter(_.nonEmpty)
           .map(LocalDate.parse(_))
-          .orElse(existingShow.release_date)
+          .orElse(existingShow.release_date),
+        slug =
+          if (existingShow.slug.isEmpty)
+            item.releaseYear.map(Slug(item.name, _))
+          else existingShow.slug
       )
 
       if (args.dryRun) {

@@ -16,13 +16,9 @@ import scala.collection.JavaConverters._
 case class UserListRowOptions(removeWatchedItems: Boolean)
 
 object StoredUserList {
-  def primaryKey(
-    id: UUID,
-    userId: String
-  ): util.Map[String, AttributeValue] =
+  def primaryKey(id: UUID): util.Map[String, AttributeValue] =
     Map(
-      "id" -> id.toString.toAttributeValue,
-      "userId" -> userId.toAttributeValue
+      "id" -> id.toString.toAttributeValue
     ).asJava
 
   def fromRow(row: java.util.Map[String, AttributeValue]): StoredUserList = {
@@ -48,7 +44,8 @@ object StoredUserList {
       lastUpdatedAt = Option(row.get("lastUpdatedAt"))
         .map(_.valueAs[String])
         .map(OffsetDateTime.parse(_)),
-      legacyId = Option(row.get("legacyId")).map(_.valueAs[Int])
+      legacyId = Option(row.get("legacyId")).map(_.valueAs[Int]),
+      aliases = Option(row.get("aliases")).map(_.valueAs[Set[String]])
     )
   }
 }
@@ -65,10 +62,11 @@ case class StoredUserList(
   createdAt: Option[OffsetDateTime] = None,
   deletedAt: Option[OffsetDateTime] = None,
   lastUpdatedAt: Option[OffsetDateTime] = None,
-  legacyId: Option[Int] = None) {
+  legacyId: Option[Int] = None,
+  aliases: Option[Set[String]] = None) {
 
   def primaryKey: util.Map[String, AttributeValue] =
-    StoredUserList.primaryKey(id, userId)
+    StoredUserList.primaryKey(id)
 
   def toDynamoItem: java.util.Map[String, AttributeValue] = {
     (Map(
@@ -84,7 +82,8 @@ case class StoredUserList(
       "deletedAt" -> deletedAt.map(_.toString.toAttributeValue),
       "createdAt" -> createdAt.map(_.toString.toAttributeValue),
       "lastUpdatedAt" -> lastUpdatedAt.map(_.toString.toAttributeValue),
-      "legacyId" -> legacyId.map(_.toAttributeValue)
+      "legacyId" -> legacyId.map(_.toAttributeValue),
+      "aliases" -> aliases.filter(_.nonEmpty).map(_.toAttributeValue)
     ).collect {
       case (k, Some(v)) => k -> v
     }).asJava

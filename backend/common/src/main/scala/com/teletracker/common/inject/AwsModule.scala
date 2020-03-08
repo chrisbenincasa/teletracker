@@ -29,5 +29,5 @@ class AwsModule extends TwitterModule {
   @Provides
   @Singleton
   def dynamoClient: DynamoDbAsyncClient =
-    DynamoDbAsyncClient.builder().region(Region.US_WEST_1).build()
+    DynamoDbAsyncClient.builder().build()
 }

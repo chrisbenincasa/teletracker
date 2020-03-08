@@ -31,7 +31,7 @@ object DataResponse {
   )(implicit encoder: Encoder[T]
   ): String = {
     val printer = if (compact) compactPrinter else indentedPrinter
-    printer.pretty(v.asJson)
+    printer.print(v.asJson)
   }
 
   def forDataResponse[T](
