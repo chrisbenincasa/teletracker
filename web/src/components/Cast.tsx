@@ -29,12 +29,12 @@ const styles = (theme: Theme) =>
     },
     avatarLink: {
       textDecoration: 'none',
+      display: 'block',
+      height: '100%',
+      cursor: 'pointer',
     },
     actualName: {
       fontWeight: theme.typography.fontWeightBold,
-    },
-    castContainer: {
-      marginTop: theme.spacing(1),
     },
     characterName: {
       fontStyle: 'italic',
@@ -45,6 +45,9 @@ const styles = (theme: Theme) =>
       },
       justifyContent: 'space-around',
       height: 220,
+    },
+    header: {
+      padding: theme.spacing(1, 0),
     },
     personContainer: {
       display: 'flex',
@@ -71,11 +74,6 @@ class Cast extends Component<Props, {}> {
           onClick={onClick}
           ref={ref as RefObject<HTMLAnchorElement>}
           className={classes.avatarLink}
-          style={{
-            display: 'block',
-            height: '100%',
-            textDecoration: 'none',
-          }}
         >
           <Avatar
             alt={`Photo of ${castMember.name}`}
@@ -141,27 +139,25 @@ class Cast extends Component<Props, {}> {
 
     return credits && credits.length > 0 ? (
       <React.Fragment>
-        <div className={classes.castContainer}>
-          <Typography color="inherit" variant="h5">
-            Cast
-          </Typography>
+        <Typography color="inherit" variant="h5" className={classes.header}>
+          Cast
+        </Typography>
 
-          <div className={classes.grid}>
-            <AutoSizer>
-              {({ height, width }) => (
-                <LazyList
-                  height={220}
-                  itemCount={credits.length}
-                  itemSize={125}
-                  layout="horizontal"
-                  width={width}
-                  style={{ overflowX: 'auto', overflowY: 'hidden' }}
-                >
-                  {Person}
-                </LazyList>
-              )}
-            </AutoSizer>
-          </div>
+        <div className={classes.grid}>
+          <AutoSizer>
+            {({ height, width }) => (
+              <LazyList
+                height={220}
+                itemCount={credits.length}
+                itemSize={125}
+                layout="horizontal"
+                width={width}
+                style={{ overflowX: 'auto', overflowY: 'hidden' }}
+              >
+                {Person}
+              </LazyList>
+            )}
+          </AutoSizer>
         </div>
       </React.Fragment>
     ) : null;
