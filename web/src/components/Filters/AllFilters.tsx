@@ -23,6 +23,7 @@ import PersonFilter from './PersonFilter';
 
 const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
+    marginTop: theme.spacing(1),
     padding: theme.spacing(2),
   },
   filterSortContainer: {
