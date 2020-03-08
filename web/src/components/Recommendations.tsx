@@ -15,20 +15,11 @@ import { useWidth } from '../hooks/useWidth';
 
 const styles = (theme: Theme) =>
   createStyles({
-    recommendationsContainer: {
-      marginTop: theme.spacing(1),
-    },
-    characterName: {
-      fontWeight: 'bold',
-    },
     grid: {
       justifyContent: 'flex-start',
     },
-    recommendationContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      maxWidth: 100,
-      margin: theme.spacing(1),
+    header: {
+      padding: theme.spacing(1, 0),
     },
   });
 
@@ -50,16 +41,14 @@ function Recommendations(props: Props) {
 
   return recommendations && recommendations.length > 0 ? (
     <React.Fragment>
-      <div className={classes.recommendationsContainer}>
-        <Typography color="inherit" variant="h5">
-          Recommendations:
-        </Typography>
-        <Grid container spacing={2} className={classes.grid}>
-          {recommendations.slice(0, limit).map(item => {
-            return <ItemCard key={item.id} userSelf={userSelf} item={item} />;
-          })}
-        </Grid>
-      </div>
+      <Typography color="inherit" variant="h5" className={classes.header}>
+        You may also like...
+      </Typography>
+      <Grid container spacing={2} className={classes.grid}>
+        {recommendations.slice(0, limit).map(item => {
+          return <ItemCard key={item.id} userSelf={userSelf} item={item} />;
+        })}
+      </Grid>
     </React.Fragment>
   ) : null;
 }
