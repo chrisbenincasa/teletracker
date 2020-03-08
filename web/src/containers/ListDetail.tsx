@@ -142,6 +142,10 @@ const styles = (theme: Theme) =>
       margin: theme.spacing(0, 1),
       width: 200,
     },
+    title: {
+      backgroundColor: theme.palette.primary.main,
+      padding: theme.spacing(1, 2),
+    },
   });
 
 interface OwnProps {
@@ -578,7 +582,7 @@ class ListDetail extends Component<Props, State> {
                   color="primary"
                 />
               }
-              label="Delete after watched"
+              label="Automatically remove items after watching"
             />
           </MenuItem>
         </Menu>
@@ -598,40 +602,49 @@ class ListDetail extends Component<Props, State> {
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
         >
-          <DialogTitle id="alert-dialog-title">{'Delete List?'}</DialogTitle>
+          <DialogTitle id="alert-dialog-title" className={classes.title}>
+            {`Delete "${this.state.list}" list?`}
+          </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
-              Are you sure you want to delete this list? There is no way to undo
-              this. All of the content from your list can be deleted or migrated
-              to another list.
+              {`Are you sure you want to delete this list? There is no way to undo
+              this. ${this.state.list &&
+                this.state.list.totalItems > 0 &&
+                'All of the content from your list can be deleted or migrated to another list.'}'`}
             </DialogContentText>
-            {/* TODO: Only show this if there is content in the list */}
-            <FormControl className={classes.formControl}>
-              <InputLabel htmlFor="age-simple">
-                Migrate tracked items from this list to:
-              </InputLabel>
-              <Select value={migrateListId} onChange={this.handleMigration}>
-                <MenuItem value="0">
-                  <em>Delete all tracked items</em>
-                </MenuItem>
-                {userSelf &&
-                  _.map(
-                    this.props.listsById,
-                    item =>
-                      item.id !== this.listId && (
-                        <MenuItem key={item.id} value={item.id}>
-                          {item.name}
-                        </MenuItem>
-                      ),
-                  )}
-              </Select>
-            </FormControl>
+            {this.state.list && this.state.list.totalItems > 0 && (
+              <FormControl className={classes.formControl}>
+                <InputLabel htmlFor="age-simple">
+                  Migrate tracked items from this list to:
+                </InputLabel>
+                <Select value={migrateListId} onChange={this.handleMigration}>
+                  <MenuItem value="0">
+                    <em>Delete all tracked items</em>
+                  </MenuItem>
+                  {userSelf &&
+                    _.map(
+                      this.props.listsById,
+                      item =>
+                        item.id !== this.listId && (
+                          <MenuItem key={item.id} value={item.id}>
+                            {item.name}
+                          </MenuItem>
+                        ),
+                    )}
+                </Select>
+              </FormControl>
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={this.handleDeleteModalClose} color="primary">
               Cancel
             </Button>
-            <Button onClick={this.handleDeleteList} color="primary" autoFocus>
+            <Button
+              onClick={this.handleDeleteList}
+              color="primary"
+              variant="contained"
+              autoFocus
+            >
               Delete
             </Button>
           </DialogActions>
@@ -656,8 +669,8 @@ class ListDetail extends Component<Props, State> {
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
         >
-          <DialogTitle id="alert-dialog-title">
-            {'Update List Name'}
+          <DialogTitle id="alert-dialog-title" className={classes.title}>
+            {`Update "${this.state.list}" List Name?`}
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
@@ -675,7 +688,12 @@ class ListDetail extends Component<Props, State> {
           </DialogContent>
           <DialogActions>
             <Button onClick={this.handleRenameModalClose}>Cancel</Button>
-            <Button onClick={this.handleRenameList} autoFocus>
+            <Button
+              onClick={this.handleRenameList}
+              color="primary"
+              variant="contained"
+              autoFocus
+            >
               Update
             </Button>
           </DialogActions>
