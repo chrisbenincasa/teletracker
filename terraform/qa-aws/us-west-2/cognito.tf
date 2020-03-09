@@ -69,9 +69,8 @@ resource "aws_cognito_user_pool_client" "default-user-pool-client" {
   callback_urls = [
     "http://localhost:3000/login",
     "https://localhost:3000/login",
-    "https://qa.teletracker.tv/login",
     "https://teletracker.local:3000/login",
-    "https://ssr.qa.teletracker.tv/login"
+    "https://qa.teletracker.tv/login",
   ]
 
   explicit_auth_flows = [
@@ -83,7 +82,7 @@ resource "aws_cognito_user_pool_client" "default-user-pool-client" {
   logout_urls = [
     "https://localhost:3000",
     "https://teletracker.local:3000",
-    "https://ssr.qa.teletracker.tv"
+    "https://qa.teletracker.tv",
   ]
 }
 
