@@ -21,42 +21,46 @@ services:
 #    networks:
 #      - db
 #
-#  server:
-#    image: chrisbenincasa/teletracker:latest
-#    restart: always
-#    ports:
-#      - 3000:3000
-#    environment:
-#      - "DB_HOST=db"
-#    env_file:
-#      - .env
-#    networks:
-#      - db
-
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
-    environment:
-      - discovery.type=single-node
-    volumes:
-      - esdata01:/usr/share/elasticsearch/data
+  proxy:
+    image: 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/server-nginx:1.2
+    restart: always
     ports:
-      - 9200:9200
-    networks:
-      - esnet
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.4.0
-    ports:
-      - 5601:5601
-    networks:
-      - esnet
+      - 8080:80
+      - 8081:443
     links:
-      - elasticsearch:elasticsearch
+      - server
 
-volumes:
-  esdata01:
-    driver: local
+  server:
+    image: 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/server:latest
+    restart: always
+    ports:
+      - 3001:3001
+    environment:
+      - "AWS_REGION=us-west-2"
+    env_file:
+      - .env
 
-networks:
-  esnet:
-#  db:
+#  elasticsearch:
+#    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
+#    environment:
+#      - discovery.type=single-node
+#    volumes:
+#      - esdata01:/usr/share/elasticsearch/data
+#    ports:
+#      - 9200:9200
+#    networks:
+#      - esnet
+#
+#  kibana:
+#    image: docker.elastic.co/kibana/kibana:7.4.0
+#    ports:
+#      - 5601:5601
+#    networks:
+#      - esnet
+#    links:
+#      - elasticsearch:elasticsearch
+
+#volumes:
+#  esdata01:
+#    driver: local
+
