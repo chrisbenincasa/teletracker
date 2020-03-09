@@ -909,10 +909,10 @@ class ListDetail extends Component<Props, State> {
   }
 
   render() {
-    let { userSelf, loading } = this.props;
+    let { loading } = this.props;
     let { list } = this.state;
 
-    return !list || !userSelf || loading
+    return !list || loading
       ? this.renderLoading()
       : this.renderListDetail(this.state.list!);
   }
