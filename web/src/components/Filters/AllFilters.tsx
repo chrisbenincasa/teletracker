@@ -25,6 +25,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   allFiltersContainer: {
     marginTop: theme.spacing(1),
     padding: theme.spacing(2),
+    [theme.breakpoints.down('sm')]: {
+      padding: 0,
+    },
   },
   filterSortContainer: {
     [theme.breakpoints.up('sm')]: {
@@ -98,6 +101,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   toEdgeWrapper: {
     margin: theme.spacing(0, 0, 2),
+    [theme.breakpoints.down('sm')]: {
+      margin: theme.spacing(0, 0, 1),
+    },
   },
   typeContainer: {
     display: 'flex',
@@ -202,7 +208,11 @@ const AllFilters = (props: Props) => {
         className={classes.toEdgeWrapper}
         appear
       >
-        <Paper id="all-filters" elevation={5}>
+        <Paper
+          id="all-filters"
+          elevation={5}
+          className={classes.allFiltersContainer}
+        >
           <div className={classes.filterSortContainer}>
             {!disableGenres && (
               <ExpansionPanel square>

@@ -609,6 +609,7 @@ class PersonDetail extends React.Component<Props, State> {
                     objectPosition: 'center top',
                     width: '100%',
                     height: '100%',
+                    pointerEvents: 'none', // Disables ios preview on tap & hold
                   }}
                   pictureStyle={{
                     display: 'block',

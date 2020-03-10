@@ -85,9 +85,6 @@ const styles = (theme: Theme) =>
     carousel: {
       height: 220,
     },
-    descriptionContainer: {
-      marginBottom: theme.spacing(1),
-    },
     genre: {
       margin: theme.spacing(1, 0.5),
       cursor: 'pointer',
@@ -317,7 +314,7 @@ function ItemDetails(props: Props) {
     // });
 
     return (
-      <div className={classes.descriptionContainer}>
+      <React.Fragment>
         <div className={classes.titleContainer}>
           <Hidden smDown>{renderTitle(item)}</Hidden>
         </div>
@@ -350,7 +347,7 @@ function ItemDetails(props: Props) {
               </Link>
             ))}
         </div>
-      </div>
+      </React.Fragment>
     );
   };
 
@@ -442,6 +439,7 @@ function ItemDetails(props: Props) {
                 objectPosition: 'center top',
                 width: '100%',
                 height: '100%',
+                pointerEvents: 'none', // Disables ios preview on tap & hold
               }}
               pictureStyle={{
                 display: 'block',
@@ -514,14 +512,10 @@ function ItemDetails(props: Props) {
               </div>
               <div className={classes.itemInformationContainer}>
                 {renderDescriptiveDetails(itemDetail)}
-                <div>
-                  <div style={{ marginTop: 10 }}>
-                    <ThingAvailability
-                      userSelf={userSelf}
-                      itemDetail={itemDetail}
-                    />
-                  </div>
-                </div>
+                <ThingAvailability
+                  userSelf={userSelf}
+                  itemDetail={itemDetail}
+                />
                 <Cast itemDetail={itemDetail} />
                 {/* {renderSeriesDetails(itemDetail)} */}
                 <Recommendations itemDetail={itemDetail} userSelf={userSelf} />
