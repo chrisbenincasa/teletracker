@@ -86,7 +86,6 @@ interface AddToListDialogDispatchProps {
 }
 
 interface AddToListDialogState {
-  exited: boolean;
   actionPending: boolean;
   originalListState: { [listId: string]: boolean };
   listChanges: { [listId: string]: boolean };
@@ -118,7 +117,6 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     );
 
     this.state = {
-      exited: false,
       actionPending: props.listOperations.inProgress,
       originalListState: {
         ...listChanges,
@@ -159,14 +157,12 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       });
     } else if (prevProps.open && !this.props.open) {
       this.handleModalClose();
-    } else if (!prevProps.open && this.props.open) {
-      this.setState({ exited: false });
     }
 
     if (!prevProps.listItemAddLoading && this.props.listItemAddLoading) {
       this.setState({ actionPending: true });
     } else if (prevProps.listItemAddLoading && !this.props.listItemAddLoading) {
-      this.setState({ actionPending: false, exited: true });
+      this.setState({ actionPending: false });
     }
 
     if (prevProps.createAListLoading && !this.props.createAListLoading) {
@@ -179,7 +175,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   }
 
   handleModalClose = () => {
-    this.setState({ exited: true, createAListEnabled: false });
+    this.setState({ createAListEnabled: false });
     this.props.onClose();
   };
 
@@ -324,7 +320,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
         <Dialog
           aria-labelledby="update-tracking-dialog"
           aria-describedby="update-tracking-dialog"
-          open={this.props.open && !this.state.exited}
+          open={this.props.open}
           onClose={this.handleModalClose}
           fullWidth
           maxWidth="sm"
@@ -383,10 +379,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       );
     } else {
       return (
-        <AuthDialog
-          open={this.props.open && !this.state.exited}
-          onClose={this.handleModalClose}
-        />
+        <AuthDialog open={this.props.open} onClose={this.handleModalClose} />
       );
     }
   }
