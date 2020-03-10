@@ -64,14 +64,15 @@ const styles = (theme: Theme) =>
       zIndex: `${theme.zIndex.appBar - 1} !important` as any,
     },
     fixedListItems: {
-      position: 'absolute',
-      bottom: 0,
       width: '100%',
       padding: theme.spacing(0, 1),
+      flex: '0 0 auto',
     },
     toolbar: theme.mixins.toolbar,
     list: {
       padding: theme.spacing(0, 1),
+      flex: '1 1 auto',
+      overflowY: 'scroll',
     },
     listName: {
       textDecoration: 'none',
@@ -302,12 +303,12 @@ class Drawer extends Component<Props, State> {
     );
 
     function ListItemLink(props: ListItemProps) {
-      const { primary, to, selected } = props;
+      const { primary, to, selected, icon } = props;
 
       return (
         <Link href={to}>
           <ListItem button selected={selected} onClick={props.onClick}>
-            {props.icon ? <ListItemIcon>{props.icon}</ListItemIcon> : null}
+            {icon ? <ListItemIcon>{icon}</ListItemIcon> : null}
             <ListItemText>{primary}</ListItemText>
           </ListItem>
         </Link>
@@ -374,38 +375,38 @@ class Drawer extends Component<Props, State> {
             <Divider />
           </React.Fragment>
         ) : null}
-        <List className={classes.fixedListItems}>
-          {isAuthed ? (
-            <React.Fragment>
-              <ListItemLink
-                to="/account"
-                primary="Settings"
-                onClick={this.props.closeRequested}
-              />
-              <ListItem button onClick={this.handleLogout}>
-                <ListItemIcon>
-                  <PowerSettingsNew />
-                </ListItemIcon>
-                <ListItemText>Logout</ListItemText>
-              </ListItem>
-            </React.Fragment>
-          ) : (
-            <React.Fragment>
-              <ListItem button onClick={() => this.toggleAuthModal('login')}>
-                <ListItemIcon>
-                  <Lock />
-                </ListItemIcon>
-                <ListItemText>Login</ListItemText>
-              </ListItem>
-              <ListItem button onClick={() => this.toggleAuthModal('signup')}>
-                <ListItemIcon>
-                  <PersonAdd />
-                </ListItemIcon>
-                <ListItemText>Signup</ListItemText>
-              </ListItem>
-            </React.Fragment>
-          )}
-        </List>
+
+        {isAuthed ? (
+          <List className={classes.fixedListItems}>
+            <ListItemLink
+              to="/account"
+              primary="Settings"
+              onClick={this.props.closeRequested}
+              icon={<Settings />}
+            />
+            <ListItem button onClick={this.handleLogout}>
+              <ListItemIcon>
+                <PowerSettingsNew />
+              </ListItemIcon>
+              <ListItemText>Logout</ListItemText>
+            </ListItem>
+          </List>
+        ) : (
+          <List>
+            <ListItem button onClick={() => this.toggleAuthModal('login')}>
+              <ListItemIcon>
+                <Lock />
+              </ListItemIcon>
+              <ListItemText>Login</ListItemText>
+            </ListItem>
+            <ListItem button onClick={() => this.toggleAuthModal('signup')}>
+              <ListItemIcon>
+                <PersonAdd />
+              </ListItemIcon>
+              <ListItemText>Signup</ListItemText>
+            </ListItem>
+          </List>
+        )}
       </React.Fragment>
     );
   }

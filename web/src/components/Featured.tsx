@@ -32,6 +32,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   featuredItem: {
     position: 'relative',
+    display: 'inline-block',
     margin: theme.spacing(1),
     [theme.breakpoints.down('sm')]: {
       margin: 0,
@@ -84,6 +85,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   wrapper: {
     display: 'flex',
     flexDirection: 'row',
+    position: 'relative',
     margin: theme.spacing(2),
     [theme.breakpoints.down('sm')]: {
       margin: theme.spacing(1),
@@ -142,7 +144,7 @@ function Featured(props: Props) {
     setImageLoading(false);
   };
 
-  const renderFeatuedItem = item => {
+  const renderFeaturedItem = item => {
     const WrappedCardMedia = React.forwardRef(({ onClick, href }: any, ref) => {
       return (
         <a
@@ -175,11 +177,15 @@ function Featured(props: Props) {
       );
     });
 
+    const calcPadding = featuredItems.length * 8;
+
     return (
       <Fade in={!imageLoading} key={item.id}>
         <div
           className={classes.featuredItem}
-          style={{ width: `${100 / featuredItems.length}%` }}
+          style={{
+            width: `calc(${100 / featuredItems.length}% - ${calcPadding}px)`,
+          }}
         >
           <div className={classes.backdropContainer}>
             <ResponsiveImage
@@ -190,6 +196,7 @@ function Featured(props: Props) {
                 width: '100%',
                 height: '100%',
                 borderRadius: 10,
+                pointerEvents: 'none', // Disables ios preview on tap & hold
               }}
               pictureStyle={{
                 display: 'block',
@@ -222,13 +229,20 @@ function Featured(props: Props) {
   const renderFeaturedItems = () => {
     return featuredItems && featuredItems.length > 0
       ? featuredItems.map(item => {
-          return renderFeatuedItem(item);
+          return renderFeaturedItem(item);
         })
       : null;
   };
 
   return featuredItems && featuredItems.length > 0 ? (
-    <div className={classes.wrapper}>{renderFeaturedItems()}</div>
+    <div
+      className={classes.wrapper}
+      style={{ paddingTop: `${56.25 / featuredItems.length}%` }}
+    >
+      <div style={{ position: 'absolute', top: 0 }}>
+        {renderFeaturedItems()}
+      </div>
+    </div>
   ) : null;
 }
 

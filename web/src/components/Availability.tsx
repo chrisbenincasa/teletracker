@@ -49,6 +49,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexDirection: 'column',
     margin: theme.spacing(1),
   },
+  unavailableContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+  },
 }));
 
 interface Props {
@@ -122,7 +126,6 @@ const ThingAvailability = (props: Props) => {
       return !R.isNil(av.network_id) && includeFromPrefs(av, av.network_id!);
     };
 
-    console.log(props.networks);
     let groupedByNetwork = availabilities
       ? R.groupBy(
           (av: ItemAvailability) =>
@@ -239,27 +242,19 @@ const ThingAvailability = (props: Props) => {
           </Collapse>
         </React.Fragment>
       ) : (
-        <React.Fragment>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              justifyContent: 'center',
-            }}
-          >
-            <TvOff fontSize="large" style={{ margin: 10 }} />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="subtitle1">
-                {`${itemDetail.canonicalTitle} is not currently available to stream, rent,
+        <div className={classes.unavailableContainer}>
+          <TvOff fontSize="large" style={{ margin: 8 }} />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="subtitle1">
+              {`${itemDetail.canonicalTitle} is not currently available to stream, rent,
                       or purchase.`}
-              </Typography>
-              <Typography variant="subtitle1">
-                Add it to your list and we'll be sure to notify you when it
-                becomes available!
-              </Typography>
-            </div>
+            </Typography>
+            <Typography variant="subtitle1">
+              Add it to your list and we'll be sure to notify you when it
+              becomes available!
+            </Typography>
           </div>
-        </React.Fragment>
+        </div>
       )}
     </React.Fragment>
   ) : null;
