@@ -26,6 +26,13 @@ import { ItemAvailability } from '../types/v2';
 import { Item } from '../types/v2/Item';
 
 const useStyles = makeStyles((theme: Theme) => ({
+  availabilityContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    [theme.breakpoints.up('sm')]: {
+      justifyContent: 'center',
+    },
+  },
   availabilePlatforms: {
     display: 'flex',
     justifyContent: 'flex-start',
@@ -244,7 +251,7 @@ const ThingAvailability = (props: Props) => {
       ) : (
         <div className={classes.unavailableContainer}>
           <TvOff fontSize="large" style={{ margin: 8 }} />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className={classes.availabilityContainer}>
             <Typography variant="subtitle1">
               {`${itemDetail.canonicalTitle} is not currently available to stream, rent,
                       or purchase. Add it to your list and we'll notify you when it

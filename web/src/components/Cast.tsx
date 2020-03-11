@@ -18,6 +18,7 @@ const styles = (theme: Theme) =>
     avatar: {
       width: 100,
       height: 100,
+      fontSize: '3rem',
       boxShadow: theme.shadows[1],
       '&:hover': {
         opacity: 0.8,
