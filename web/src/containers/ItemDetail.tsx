@@ -192,7 +192,7 @@ const styles = (theme: Theme) =>
       flexDirection: 'column',
       alignItems: 'flex-start',
       [theme.breakpoints.down('sm')]: {
-        textAlign: 'center',
+        alignItems: 'center',
       },
       width: '100%',
       marginBottom: theme.spacing(1),
