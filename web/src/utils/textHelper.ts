@@ -83,3 +83,15 @@ export const getVoteCount = (item: Item) => {
     ? item.ratings[0].vote_count
     : 0;
 };
+
+/*
+    Get Vote Count Formatted e.g 4,000 === 4k
+    This currently uses [0] which is TMDB
+*/
+export const getVoteCountFormatted = (item: Item) => {
+  return item.ratings && item.ratings.length > 0 && item.ratings[0].vote_count
+    ? item.ratings[0].vote_count > 999
+      ? `${(item.ratings[0].vote_count / 1000).toFixed(1)}k`
+      : item.ratings[0].vote_count
+    : 0;
+};

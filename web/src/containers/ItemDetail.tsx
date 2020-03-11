@@ -47,7 +47,7 @@ import { Item } from '../types/v2/Item';
 import {
   formatRuntime,
   getVoteAverage,
-  getVoteCount,
+  getVoteCountFormatted,
 } from '../utils/textHelper';
 import Login from './Login';
 import RouterLink from '../components/RouterLink';
@@ -56,6 +56,21 @@ import { extractItem } from '../utils/item-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
+    actionButtonContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'row',
+      },
+      width: '100%',
+    },
+    actionButton: {
+      marginTop: theme.spacing(1),
+      width: '100%',
+      [theme.breakpoints.down('sm')]: {
+        margin: theme.spacing(1, 0.5),
+      },
+    },
     backdrop: {
       width: '100%',
       height: '100%',
@@ -86,12 +101,28 @@ const styles = (theme: Theme) =>
       height: 220,
     },
     genre: {
-      margin: theme.spacing(1, 0.5),
+      margin: theme.spacing(1, 1, 1, 0),
       cursor: 'pointer',
     },
     genreContainer: {
       display: 'flex',
       flexWrap: 'wrap',
+      [theme.breakpoints.down('sm')]: {
+        margin: '0 auto',
+      },
+    },
+    header: {
+      padding: theme.spacing(1, 0),
+    },
+    information: {
+      [theme.breakpoints.down('sm')]: {
+        textAlign: 'center',
+      },
+    },
+    informationContainer: {
+      [theme.breakpoints.down('sm')]: {
+        marginTop: theme.spacing(1),
+      },
     },
     itemDetailContainer: {
       position: 'relative',
@@ -160,6 +191,9 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'flex-start',
+      [theme.breakpoints.down('sm')]: {
+        textAlign: 'center',
+      },
       width: '100%',
       marginBottom: theme.spacing(1),
     },
@@ -270,18 +304,27 @@ function ItemDetails(props: Props) {
 
   const renderTitle = (item: Item) => {
     const { classes } = props;
-    const voteAverage = getVoteAverage(item);
-    const voteCount = getVoteCount(item);
-    const runtime =
-      (item.runtime && formatRuntime(item.runtime, item.type)) || null;
 
     return (
       <div className={classes.titleWrapper}>
-        <Typography color="inherit" variant="h4" itemProp="name">
-          {`${item.canonicalTitle} (${moment(item.release_date).format(
-            'YYYY',
-          )})`}
+        <Typography color="inherit" variant="h2" itemProp="name">
+          {item.canonicalTitle}
         </Typography>
+      </div>
+    );
+  };
+
+  const renderInformation = (item: Item) => {
+    const { classes } = props;
+    const voteAverage = getVoteAverage(item);
+    const voteCount = getVoteCountFormatted(item);
+    const runtime =
+      (item.runtime && formatRuntime(item.runtime, item.type)) || '';
+    const releaseDate =
+      (item.release_date && moment(item.release_date).format('YYYY')) || '';
+
+    return (
+      <div className={classes.informationContainer}>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Rating value={voteAverage} precision={0.1} readOnly />
           <Typography
@@ -292,62 +335,51 @@ function ItemDetails(props: Props) {
             {`(${voteCount})`}
           </Typography>
         </div>
-        <Typography color="inherit" variant="body1" itemProp="duration">
-          {runtime}
+        <Typography
+          color="inherit"
+          variant="body1"
+          itemProp="duration"
+          className={classes.information}
+        >
+          {`${runtime} ${runtime && releaseDate ? '|' : ''} ${releaseDate}`}
         </Typography>
       </div>
     );
   };
 
-  const renderDescriptiveDetails = (item: Item) => {
+  const renderGenres = (item: Item) => {
     const { classes, genres } = props;
     const itemGenres = (item.genres || []).map(g => g.id);
-    const overview = item.overview || '';
-
     const genresToRender = _.filter(genres || [], genre => {
       return _.includes(itemGenres, genre.id);
     });
+    return (
+      <div className={classes.genreContainer}>
+        {genresToRender &&
+          genresToRender.length > 0 &&
+          genresToRender.map(genre => (
+            <Link key={genre.id} href={`/popular?genres=${genre.id}`} passHref>
+              <Chip
+                label={genre.name}
+                className={classes.genre}
+                component="a"
+                itemProp="genre"
+                clickable
+              />
+            </Link>
+          ))}
+      </div>
+    );
+  };
 
-    // @ts-ignore
-    // const WrappedLink = React.forwardRef(({ onClick, href }: any, ref: any) => {
-    //   <a href={href} onClick={onClick} ref={ref} />;
-    // });
+  const renderDescriptiveDetails = (item: Item) => {
+    const { classes } = props;
 
     return (
-      <React.Fragment>
-        <div className={classes.titleContainer}>
-          <Hidden smDown>{renderTitle(item)}</Hidden>
-        </div>
-        <div>
-          <Typography color="inherit" itemProp="about">
-            {overview}
-          </Typography>
-        </div>
-        <div className={classes.genreContainer}>
-          {genresToRender &&
-            genresToRender.length > 0 &&
-            genresToRender.map(genre => (
-              <Link
-                key={genre.id}
-                href={`/popular?genres=${genre.id}`}
-                passHref
-              >
-                <Chip
-                  label={genre.name}
-                  className={classes.genre}
-                  component="a"
-                  // component={
-                  //   <RouterLink href={`/popular?genres=${genre.id}`} passHref>
-                  //     <WrappedLink />
-                  //   </RouterLink>
-                  // }
-                  itemProp="genre"
-                  clickable
-                />
-              </Link>
-            ))}
-        </div>
-      </React.Fragment>
+      <div className={classes.titleContainer}>
+        <Hidden smDown>{renderTitle(item)}</Hidden>
+        <Hidden smDown>{renderInformation(item)}</Hidden>
+      </div>
     );
   };
 
@@ -418,8 +450,8 @@ function ItemDetails(props: Props) {
   const renderItemDetails = () => {
     let { classes, isFetching, itemDetail, userSelf } = props;
     let itemType;
-
-    if (itemDetail && itemDetail.type && itemDetail.type === 'movie') {
+    const overview = itemDetail?.overview || '';
+    if (itemDetail?.type === 'movie') {
       itemType = 'Movie';
     } else if (itemDetail && itemDetail.type && itemDetail.type === 'show') {
       itemType = 'TVSeries';
@@ -506,16 +538,42 @@ function ItemDetails(props: Props) {
                     }}
                   />
                 </div>
-
-                <MarkAsWatched itemDetail={itemDetail} />
-                <ManageTracking itemDetail={itemDetail} />
+                <Hidden mdUp>{renderInformation(itemDetail)}</Hidden>
+                <Hidden mdUp>{renderGenres(itemDetail)}</Hidden>
+                <div className={classes.actionButtonContainer}>
+                  <div className={classes.actionButton}>
+                    <MarkAsWatched
+                      itemDetail={itemDetail}
+                      className={classes.actionButton}
+                    />
+                  </div>
+                  <div className={classes.actionButton}>
+                    <ManageTracking
+                      itemDetail={itemDetail}
+                      className={classes.actionButton}
+                    />
+                  </div>
+                </div>
               </div>
               <div className={classes.itemInformationContainer}>
                 {renderDescriptiveDetails(itemDetail)}
+                <Hidden mdDown>{renderGenres(itemDetail)}</Hidden>
                 <ThingAvailability
                   userSelf={userSelf}
                   itemDetail={itemDetail}
                 />
+                <div>
+                  <Typography
+                    color="inherit"
+                    variant="h5"
+                    className={classes.header}
+                  >
+                    Description
+                  </Typography>
+                  <Typography color="inherit" itemProp="about">
+                    {overview}
+                  </Typography>
+                </div>
                 <Cast itemDetail={itemDetail} />
                 {/* {renderSeriesDetails(itemDetail)} */}
                 <Recommendations itemDetail={itemDetail} userSelf={userSelf} />
