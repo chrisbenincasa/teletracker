@@ -62,13 +62,12 @@ const styles = (theme: Theme) =>
     },
     form: {
       width: '100%', // Fix IE 11 issue.
-      marginTop: theme.spacing(1),
     },
     submit: {
       marginTop: theme.spacing(3),
     },
     socialSignInContainer: {
-      marginTop: theme.spacing(1),
+      marginTop: theme.spacing(2),
     },
     signUpLinkText: {
       marginTop: theme.spacing(2),
