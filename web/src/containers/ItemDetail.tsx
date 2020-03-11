@@ -16,7 +16,7 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { ChevronLeft, PlayArrow } from '@material-ui/icons';
+import { ChevronLeft, Lens, PlayArrow } from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import moment from 'moment';
@@ -342,7 +342,13 @@ function ItemDetails(props: Props) {
           itemProp="duration"
           className={classes.information}
         >
-          {`${runtime} ${runtime && releaseDate ? '|' : ''} ${releaseDate}`}
+          {runtime}
+          {runtime && releaseDate ? (
+            <Lens style={{ fontSize: 8, margin: '0 8px' }} />
+          ) : (
+            ''
+          )}
+          {releaseDate}
         </Typography>
       </div>
     );
