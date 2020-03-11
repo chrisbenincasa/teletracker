@@ -113,6 +113,7 @@ const styles = (theme: Theme) =>
     },
     header: {
       padding: theme.spacing(1, 0),
+      fontWeight: 700,
     },
     information: {
       [theme.breakpoints.down('sm')]: {
