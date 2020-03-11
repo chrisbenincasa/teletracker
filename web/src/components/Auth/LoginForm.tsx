@@ -35,7 +35,6 @@ const styles = (theme: Theme) =>
     },
     form: {
       width: '100%', // Fix IE 11 issue.
-      marginTop: theme.spacing(1),
     },
     submit: {
       marginTop: theme.spacing(3),
@@ -54,7 +53,7 @@ const styles = (theme: Theme) =>
       zIndex: 900, // Above everything but below toolbar
     },
     socialSignInContainer: {
-      marginTop: theme.spacing(1),
+      marginTop: theme.spacing(2),
     },
     progressSpinner: {
       marginBottom: theme.spacing(1),
