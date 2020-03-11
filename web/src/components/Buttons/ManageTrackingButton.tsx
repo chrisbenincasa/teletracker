@@ -5,9 +5,6 @@ import { Item, itemBelongsToLists } from '../../types/v2/Item';
 import { useWidth } from '../../hooks/useWidth';
 
 const useStyles = makeStyles(theme => ({
-  button: {
-    marginTop: theme.spacing(1),
-  },
   buttonIcon: {
     marginRight: theme.spacing(1),
     [theme.breakpoints.down('sm')]: {
@@ -16,7 +13,7 @@ const useStyles = makeStyles(theme => ({
     fontSIze: '2rem',
   },
   itemCTA: {
-    width: '100%',
+    // width: '100%',
     whiteSpace: 'nowrap',
   },
 }));
@@ -48,7 +45,6 @@ export default function ManageTrackingButton(props: Props) {
         fullWidth
         aria-label={props.cta || trackingCTA}
         onClick={props.onClick}
-        className={classes.button}
         startIcon={
           !isMobile ? (
             <ListIcon className={classes.buttonIcon} />

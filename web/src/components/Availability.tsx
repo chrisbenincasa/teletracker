@@ -247,11 +247,8 @@ const ThingAvailability = (props: Props) => {
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <Typography variant="subtitle1">
               {`${itemDetail.canonicalTitle} is not currently available to stream, rent,
-                      or purchase.`}
-            </Typography>
-            <Typography variant="subtitle1">
-              Add it to your list and we'll be sure to notify you when it
-              becomes available!
+                      or purchase. Add it to your list and we'll notify you when it
+                      becomes available!`}
             </Typography>
           </div>
         </div>
