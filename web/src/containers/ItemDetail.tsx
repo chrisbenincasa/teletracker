@@ -109,12 +109,16 @@ const styles = (theme: Theme) =>
     genre: {
       margin: theme.spacing(1, 1, 1, 0),
       cursor: 'pointer',
+      [theme.breakpoints.down('sm')]: {
+        display: 'flex',
+        flexGrow: 1,
+      },
     },
     genreContainer: {
       display: 'flex',
       flexWrap: 'wrap',
       [theme.breakpoints.down('sm')]: {
-        margin: '0 auto',
+        justifyContent: 'center',
       },
     },
     header: {
