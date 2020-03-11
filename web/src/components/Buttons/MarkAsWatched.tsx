@@ -27,7 +27,6 @@ const styles = (theme: Theme) =>
       marginRight: theme.spacing(1),
     },
     itemCTA: {
-      // width: '100%',
       whiteSpace: 'nowrap',
     },
   });

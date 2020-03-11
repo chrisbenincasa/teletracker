@@ -13,7 +13,6 @@ const useStyles = makeStyles(theme => ({
     fontSIze: '2rem',
   },
   itemCTA: {
-    // width: '100%',
     whiteSpace: 'nowrap',
   },
 }));
