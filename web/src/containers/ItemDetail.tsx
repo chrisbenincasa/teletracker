@@ -16,7 +16,13 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { ChevronLeft, Lens, PlayArrow } from '@material-ui/icons';
+import {
+  ChevronLeft,
+  ExpandLess,
+  ExpandMore,
+  Lens,
+  PlayArrow,
+} from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import moment from 'moment';
@@ -238,6 +244,7 @@ function ItemDetails(props: Props) {
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
+  const [showFullOverview, setshowFullOverview] = useState<boolean>(false);
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
   let nextRouter = useRouter();
@@ -458,6 +465,22 @@ function ItemDetails(props: Props) {
     let { classes, isFetching, itemDetail, userSelf } = props;
     let itemType;
     const overview = itemDetail?.overview || '';
+    const isMobile = ['xs', 'sm'].includes(width);
+    const truncateSize = isMobile ? 300 : 900;
+
+    const truncatedOverview = showFullOverview
+      ? overview
+      : overview.substr(0, truncateSize);
+    const formattedOverview = truncatedOverview
+      .split('\n')
+      .filter(s => s.length > 0)
+      .map(part => (
+        <React.Fragment>
+          <Typography color="inherit">{part}</Typography>
+          <br />
+        </React.Fragment>
+      ));
+
     if (itemDetail?.type === 'movie') {
       itemType = 'Movie';
     } else if (itemDetail && itemDetail.type && itemDetail.type === 'show') {
@@ -577,9 +600,31 @@ function ItemDetails(props: Props) {
                   >
                     Description
                   </Typography>
-                  <Typography color="inherit" itemProp="about">
-                    {overview}
-                  </Typography>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <React.Fragment>{formattedOverview}</React.Fragment>
+                    {overview.length > truncateSize ? (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        aria-label={
+                          showFullOverview ? 'Read Less' : 'Read More'
+                        }
+                        onClick={() => setshowFullOverview(!showFullOverview)}
+                        style={{
+                          marginTop: 5,
+                          display: 'flex',
+                          alignSelf: 'center',
+                        }}
+                      >
+                        {showFullOverview ? (
+                          <ExpandLess style={{ marginRight: 8 }} />
+                        ) : (
+                          <ExpandMore style={{ marginRight: 8 }} />
+                        )}
+                        {showFullOverview ? 'Read Less' : 'Read More'}
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
                 <Cast itemDetail={itemDetail} />
                 {/* {renderSeriesDetails(itemDetail)} */}
