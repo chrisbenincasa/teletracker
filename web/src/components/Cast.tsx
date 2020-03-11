@@ -149,7 +149,7 @@ class Cast extends Component<Props, {}> {
           <AutoSizer>
             {({ height, width }) => (
               <LazyList
-                height={220}
+                height={190}
                 itemCount={credits.length}
                 itemSize={125}
                 layout="horizontal"
