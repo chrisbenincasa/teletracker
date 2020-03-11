@@ -23,14 +23,11 @@ import moment from 'moment';
 
 const styles = (theme: Theme) =>
   createStyles({
-    button: {
-      marginTop: theme.spacing(1),
-    },
     buttonIcon: {
       marginRight: theme.spacing(1),
     },
     itemCTA: {
-      width: '100%',
+      // width: '100%',
       whiteSpace: 'nowrap',
     },
   });
@@ -105,7 +102,6 @@ class MarkAsWatched extends Component<Props, State> {
         onClick={this.toggleItemWatched}
         fullWidth
         disabled={!isReleased}
-        className={classes.button}
         color={watchedStatus ? 'primary' : undefined}
         startIcon={<Check className={classes.buttonIcon} />}
       >
