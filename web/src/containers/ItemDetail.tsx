@@ -204,6 +204,7 @@ const styles = (theme: Theme) =>
       alignItems: 'flex-start',
       [theme.breakpoints.down('sm')]: {
         alignItems: 'center',
+        textAlign: 'center',
       },
       width: '100%',
       marginBottom: theme.spacing(1),
