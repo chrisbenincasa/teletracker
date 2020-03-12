@@ -26,6 +26,13 @@ import { ItemAvailability } from '../types/v2';
 import { Item } from '../types/v2/Item';
 
 const useStyles = makeStyles((theme: Theme) => ({
+  availabilityContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    [theme.breakpoints.up('sm')]: {
+      justifyContent: 'center',
+    },
+  },
   availabilePlatforms: {
     display: 'flex',
     justifyContent: 'flex-start',
@@ -39,6 +46,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   header: {
     padding: theme.spacing(1, 0),
+    fontWeight: 700,
   },
   logo: {
     width: 50,
@@ -48,6 +56,10 @@ const useStyles = makeStyles((theme: Theme) => ({
     display: 'flex',
     flexDirection: 'column',
     margin: theme.spacing(1),
+  },
+  unavailableContainer: {
+    display: 'flex',
+    flexDirection: 'row',
   },
 }));
 
@@ -122,7 +134,6 @@ const ThingAvailability = (props: Props) => {
       return !R.isNil(av.network_id) && includeFromPrefs(av, av.network_id!);
     };
 
-    console.log(props.networks);
     let groupedByNetwork = availabilities
       ? R.groupBy(
           (av: ItemAvailability) =>
@@ -239,27 +250,16 @@ const ThingAvailability = (props: Props) => {
           </Collapse>
         </React.Fragment>
       ) : (
-        <React.Fragment>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              justifyContent: 'center',
-            }}
-          >
-            <TvOff fontSize="large" style={{ margin: 10 }} />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="subtitle1">
-                {`${itemDetail.canonicalTitle} is not currently available to stream, rent,
-                      or purchase.`}
-              </Typography>
-              <Typography variant="subtitle1">
-                Add it to your list and we'll be sure to notify you when it
-                becomes available!
-              </Typography>
-            </div>
+        <div className={classes.unavailableContainer}>
+          <TvOff fontSize="large" style={{ margin: 8 }} />
+          <div className={classes.availabilityContainer}>
+            <Typography variant="subtitle1">
+              {`${itemDetail.canonicalTitle} is not currently available to stream, rent,
+                      or purchase. Add it to your list and we'll notify you when it
+                      becomes available!`}
+            </Typography>
           </div>
-        </React.Fragment>
+        </div>
       )}
     </React.Fragment>
   ) : null;

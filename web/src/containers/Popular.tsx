@@ -52,7 +52,6 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: theme.spacing(1),
     },
     loadingBar: {
       flexGrow: 1,
@@ -455,6 +454,7 @@ class Popular extends Component<Props, State> {
             isListDynamic={false}
             filters={this.state.filters}
             variant="default"
+            hideSortOptions //Need better solution to just hide popular by default
           />
         </div>
         <AllFilters

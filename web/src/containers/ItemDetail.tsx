@@ -16,7 +16,13 @@ import {
   withStyles,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { ChevronLeft, PlayArrow } from '@material-ui/icons';
+import {
+  ChevronLeft,
+  ExpandLess,
+  ExpandMore,
+  Lens,
+  PlayArrow,
+} from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import moment from 'moment';
@@ -47,7 +53,7 @@ import { Item } from '../types/v2/Item';
 import {
   formatRuntime,
   getVoteAverage,
-  getVoteCount,
+  getVoteCountFormatted,
 } from '../utils/textHelper';
 import Login from './Login';
 import RouterLink from '../components/RouterLink';
@@ -56,6 +62,21 @@ import { extractItem } from '../utils/item-utils';
 
 const styles = (theme: Theme) =>
   createStyles({
+    actionButtonContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'row',
+      },
+      width: '100%',
+    },
+    actionButton: {
+      marginTop: theme.spacing(1),
+      width: '100%',
+      [theme.breakpoints.down('sm')]: {
+        margin: theme.spacing(1, 0.5),
+      },
+    },
     backdrop: {
       width: '100%',
       height: '100%',
@@ -85,16 +106,34 @@ const styles = (theme: Theme) =>
     carousel: {
       height: 220,
     },
-    descriptionContainer: {
-      marginBottom: theme.spacing(1),
-    },
     genre: {
-      margin: theme.spacing(1, 0.5),
+      margin: theme.spacing(1, 1, 1, 0),
       cursor: 'pointer',
+      [theme.breakpoints.down('sm')]: {
+        display: 'flex',
+        flexGrow: 1,
+      },
     },
     genreContainer: {
       display: 'flex',
       flexWrap: 'wrap',
+      [theme.breakpoints.down('sm')]: {
+        justifyContent: 'center',
+      },
+    },
+    header: {
+      padding: theme.spacing(1, 0),
+      fontWeight: 700,
+    },
+    information: {
+      [theme.breakpoints.down('sm')]: {
+        textAlign: 'center',
+      },
+    },
+    informationContainer: {
+      [theme.breakpoints.down('sm')]: {
+        marginTop: theme.spacing(1),
+      },
     },
     itemDetailContainer: {
       position: 'relative',
@@ -163,6 +202,10 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'flex-start',
+      [theme.breakpoints.down('sm')]: {
+        alignItems: 'center',
+        textAlign: 'center',
+      },
       width: '100%',
       marginBottom: theme.spacing(1),
     },
@@ -206,6 +249,7 @@ function ItemDetails(props: Props) {
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
+  const [showFullOverview, setshowFullOverview] = useState<boolean>(false);
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
   let nextRouter = useRouter();
@@ -273,18 +317,27 @@ function ItemDetails(props: Props) {
 
   const renderTitle = (item: Item) => {
     const { classes } = props;
-    const voteAverage = getVoteAverage(item);
-    const voteCount = getVoteCount(item);
-    const runtime =
-      (item.runtime && formatRuntime(item.runtime, item.type)) || null;
 
     return (
       <div className={classes.titleWrapper}>
-        <Typography color="inherit" variant="h4" itemProp="name">
-          {`${item.canonicalTitle} (${moment(item.release_date).format(
-            'YYYY',
-          )})`}
+        <Typography color="inherit" variant="h2" itemProp="name">
+          {item.canonicalTitle}
         </Typography>
+      </div>
+    );
+  };
+
+  const renderInformation = (item: Item) => {
+    const { classes } = props;
+    const voteAverage = getVoteAverage(item);
+    const voteCount = getVoteCountFormatted(item);
+    const runtime =
+      (item.runtime && formatRuntime(item.runtime, item.type)) || '';
+    const releaseDate =
+      (item.release_date && moment(item.release_date).format('YYYY')) || '';
+
+    return (
+      <div className={classes.informationContainer}>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Rating value={voteAverage} precision={0.1} readOnly />
           <Typography
@@ -295,61 +348,56 @@ function ItemDetails(props: Props) {
             {`(${voteCount})`}
           </Typography>
         </div>
-        <Typography color="inherit" variant="body1" itemProp="duration">
+        <Typography
+          color="inherit"
+          variant="body1"
+          itemProp="duration"
+          className={classes.information}
+        >
           {runtime}
+          {runtime && releaseDate ? (
+            <Lens style={{ fontSize: 8, margin: '0 8px' }} />
+          ) : (
+            ''
+          )}
+          {releaseDate}
         </Typography>
       </div>
     );
   };
 
-  const renderDescriptiveDetails = (item: Item) => {
+  const renderGenres = (item: Item) => {
     const { classes, genres } = props;
     const itemGenres = (item.genres || []).map(g => g.id);
-    const overview = item.overview || '';
-
     const genresToRender = _.filter(genres || [], genre => {
       return _.includes(itemGenres, genre.id);
     });
+    return (
+      <div className={classes.genreContainer}>
+        {genresToRender &&
+          genresToRender.length > 0 &&
+          genresToRender.map(genre => (
+            <Link key={genre.id} href={`/popular?genres=${genre.id}`} passHref>
+              <Chip
+                label={genre.name}
+                className={classes.genre}
+                component="a"
+                itemProp="genre"
+                clickable
+              />
+            </Link>
+          ))}
+      </div>
+    );
+  };
 
-    // @ts-ignore
-    // const WrappedLink = React.forwardRef(({ onClick, href }: any, ref: any) => {
-    //   <a href={href} onClick={onClick} ref={ref} />;
-    // });
+  const renderDescriptiveDetails = (item: Item) => {
+    const { classes } = props;
 
     return (
-      <div className={classes.descriptionContainer}>
-        <div className={classes.titleContainer}>
-          <Hidden smDown>{renderTitle(item)}</Hidden>
-        </div>
-        <div>
-          <Typography color="inherit" itemProp="about">
-            {overview}
-          </Typography>
-        </div>
-        <div className={classes.genreContainer}>
-          {genresToRender &&
-            genresToRender.length > 0 &&
-            genresToRender.map(genre => (
-              <Link
-                key={genre.id}
-                href={`/popular?genres=${genre.id}`}
-                passHref
-              >
-                <Chip
-                  label={genre.name}
-                  className={classes.genre}
-                  component="a"
-                  // component={
-                  //   <RouterLink href={`/popular?genres=${genre.id}`} passHref>
-                  //     <WrappedLink />
-                  //   </RouterLink>
-                  // }
-                  itemProp="genre"
-                  clickable
-                />
-              </Link>
-            ))}
-        </div>
+      <div className={classes.titleContainer}>
+        <Hidden smDown>{renderTitle(item)}</Hidden>
+        <Hidden smDown>{renderInformation(item)}</Hidden>
       </div>
     );
   };
@@ -421,8 +469,24 @@ function ItemDetails(props: Props) {
   const renderItemDetails = () => {
     let { classes, isFetching, itemDetail, userSelf } = props;
     let itemType;
+    const overview = itemDetail?.overview || '';
+    const isMobile = ['xs', 'sm'].includes(width);
+    const truncateSize = isMobile ? 300 : 900;
 
-    if (itemDetail && itemDetail.type && itemDetail.type === 'movie') {
+    const truncatedOverview = showFullOverview
+      ? overview
+      : overview.substr(0, truncateSize);
+    const formattedOverview = truncatedOverview
+      .split('\n')
+      .filter(s => s.length > 0)
+      .map(part => (
+        <React.Fragment>
+          <Typography color="inherit">{part}</Typography>
+          <br />
+        </React.Fragment>
+      ));
+
+    if (itemDetail?.type === 'movie') {
       itemType = 'Movie';
     } else if (itemDetail && itemDetail.type && itemDetail.type === 'show') {
       itemType = 'TVSeries';
@@ -442,6 +506,7 @@ function ItemDetails(props: Props) {
                 objectPosition: 'center top',
                 width: '100%',
                 height: '100%',
+                pointerEvents: 'none', // Disables ios preview on tap & hold
               }}
               pictureStyle={{
                 display: 'block',
@@ -508,18 +573,62 @@ function ItemDetails(props: Props) {
                     }}
                   />
                 </div>
-
-                <MarkAsWatched itemDetail={itemDetail} />
-                <ManageTracking itemDetail={itemDetail} />
+                <Hidden mdUp>{renderInformation(itemDetail)}</Hidden>
+                <Hidden mdUp>{renderGenres(itemDetail)}</Hidden>
+                <div className={classes.actionButtonContainer}>
+                  <div className={classes.actionButton}>
+                    <MarkAsWatched
+                      itemDetail={itemDetail}
+                      className={classes.actionButton}
+                    />
+                  </div>
+                  <div className={classes.actionButton}>
+                    <ManageTracking
+                      itemDetail={itemDetail}
+                      className={classes.actionButton}
+                    />
+                  </div>
+                </div>
               </div>
               <div className={classes.itemInformationContainer}>
                 {renderDescriptiveDetails(itemDetail)}
+                <Hidden mdDown>{renderGenres(itemDetail)}</Hidden>
+                <ThingAvailability
+                  userSelf={userSelf}
+                  itemDetail={itemDetail}
+                />
                 <div>
-                  <div style={{ marginTop: 10 }}>
-                    <ThingAvailability
-                      userSelf={userSelf}
-                      itemDetail={itemDetail}
-                    />
+                  <Typography
+                    color="inherit"
+                    variant="h5"
+                    className={classes.header}
+                  >
+                    Description
+                  </Typography>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <React.Fragment>{formattedOverview}</React.Fragment>
+                    {overview.length > truncateSize ? (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        aria-label={
+                          showFullOverview ? 'Read Less' : 'Read More'
+                        }
+                        onClick={() => setshowFullOverview(!showFullOverview)}
+                        style={{
+                          marginTop: 5,
+                          display: 'flex',
+                          alignSelf: 'center',
+                        }}
+                      >
+                        {showFullOverview ? (
+                          <ExpandLess style={{ marginRight: 8 }} />
+                        ) : (
+                          <ExpandMore style={{ marginRight: 8 }} />
+                        )}
+                        {showFullOverview ? 'Read Less' : 'Read More'}
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
                 <Cast itemDetail={itemDetail} />

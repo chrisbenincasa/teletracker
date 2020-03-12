@@ -18,6 +18,7 @@ const styles = (theme: Theme) =>
     avatar: {
       width: 100,
       height: 100,
+      fontSize: '3rem',
       boxShadow: theme.shadows[1],
       '&:hover': {
         opacity: 0.8,
@@ -35,19 +36,22 @@ const styles = (theme: Theme) =>
     },
     actualName: {
       fontWeight: theme.typography.fontWeightBold,
+      fontSize: '0.9rem',
     },
     characterName: {
       fontStyle: 'italic',
+      fontSize: '0.7rem',
     },
     grid: {
       [theme.breakpoints.up('sm')]: {
         justifyContent: 'flex-start',
       },
       justifyContent: 'space-around',
-      height: 220,
+      height: 180,
     },
     header: {
       padding: theme.spacing(1, 0),
+      fontWeight: 700,
     },
     personContainer: {
       display: 'flex',
@@ -90,7 +94,6 @@ class Cast extends Component<Props, {}> {
               : parseInitials(castMember.name!, 'name')}
           </Avatar>
           <Typography
-            variant="subtitle1"
             color="textPrimary"
             className={classes.actualName}
             align="center"
@@ -99,7 +102,6 @@ class Cast extends Component<Props, {}> {
             {castMember.name}
           </Typography>
           <Typography
-            variant="subtitle2"
             color="textPrimary"
             className={classes.characterName}
             align="center"
@@ -147,7 +149,7 @@ class Cast extends Component<Props, {}> {
           <AutoSizer>
             {({ height, width }) => (
               <LazyList
-                height={220}
+                height={190}
                 itemCount={credits.length}
                 itemSize={125}
                 layout="horizontal"
