@@ -1,5 +1,7 @@
 package com.teletracker.tasks
 
+import com.teletracker.common.tasks.TeletrackerTask
+
 abstract class TeletrackerCompoundTask extends TeletrackerTask {
   def tasks: Seq[TeletrackerTask]
 

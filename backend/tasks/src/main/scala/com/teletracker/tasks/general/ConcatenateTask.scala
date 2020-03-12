@@ -1,6 +1,6 @@
 package com.teletracker.tasks.general
 
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.util.Concatenator
 import javax.inject.Inject
 import java.net.URI

@@ -1,11 +1,11 @@
 package com.teletracker.tasks.db
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.dynamo.{model, MetadataDbAccess}
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Slug
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 

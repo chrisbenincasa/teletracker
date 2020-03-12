@@ -1,8 +1,8 @@
 package com.teletracker.tasks.elasticsearch
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.elasticsearch.{ElasticsearchExecutor, EsItem}
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import javax.inject.Inject
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.index.query.QueryBuilders

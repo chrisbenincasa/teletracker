@@ -1,9 +1,10 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskApp}
+import com.teletracker.tasks.TeletrackerTaskApp
 import io.circe.{Decoder, Encoder}
 import io.circe.parser._
 import io.circe.generic.semiauto.deriveEncoder

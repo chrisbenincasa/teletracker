@@ -1,5 +1,6 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.db.model.ThingLike
 import com.teletracker.common.model.tmdb.{ErrorResponse, HasTmdbId}
 import com.teletracker.common.model.{Thingable, ToEsItem}
@@ -7,7 +8,6 @@ import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.GenreCache
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.util.SourceRetriever
 import diffson.lcs.Patience
 import io.circe.parser._

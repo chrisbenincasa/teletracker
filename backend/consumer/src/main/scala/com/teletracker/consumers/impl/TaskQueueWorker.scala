@@ -1,7 +1,7 @@
 package com.teletracker.consumers.impl
 
 import com.teletracker.common.aws.sqs.SqsQueue
-import com.teletracker.common.pubsub.{JobTags, TeletrackerTaskQueueMessage}
+import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
 import com.teletracker.consumers.{JobPool, TeletrackerTaskRunnable}
 import com.teletracker.consumers.config.ConsumerConfig
 import com.teletracker.common.aws.sqs.worker.{
@@ -60,7 +60,7 @@ class TaskQueueWorker(
       val submitted =
         if (message.jobTags
               .getOrElse(Set.empty)
-              .contains(JobTags.RequiresTmdbApi)) {
+              .contains(TaskTag.RequiresTmdbApi)) {
           needsTmdbPool.submit(runnable)
         } else {
           normalPool.submit(runnable)

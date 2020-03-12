@@ -1,10 +1,10 @@
 package com.teletracker.tasks.elasticsearch
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.json.circe._
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.syntax._
 import javax.inject.Inject

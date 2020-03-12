@@ -1,8 +1,8 @@
 package com.teletracker.tasks.lists
 
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.db.dynamo.ListsDbAccess
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.TeletrackerTask
 import io.circe.Encoder
 import javax.inject.Inject
 import java.util.UUID

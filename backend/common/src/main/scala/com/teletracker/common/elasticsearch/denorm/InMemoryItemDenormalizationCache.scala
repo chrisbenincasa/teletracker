@@ -1,4 +1,4 @@
-package com.teletracker.common.elasticsearch
+package com.teletracker.common.elasticsearch.denorm
 
 import javax.inject.{Inject, Singleton}
 import java.util.concurrent.ConcurrentHashMap

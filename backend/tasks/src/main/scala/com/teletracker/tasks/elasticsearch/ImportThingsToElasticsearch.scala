@@ -1,5 +1,6 @@
 package com.teletracker.tasks.elasticsearch
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.model.{
   ExternalSource,
   ObjectMetadata,
@@ -23,7 +24,6 @@ import com.teletracker.common.elasticsearch.{
   StringListOrString
 }
 import com.teletracker.common.model.tmdb.MovieCountryRelease
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import java.net.URI
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.{GenreCache, Slug}

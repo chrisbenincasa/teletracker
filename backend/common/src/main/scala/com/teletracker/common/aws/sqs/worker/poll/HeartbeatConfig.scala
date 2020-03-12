@@ -1,12 +1,11 @@
 package com.teletracker.common.aws.sqs.worker.poll
 
-import com.teletracker.common.pubsub.EventBase
+import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.execution.{
   ExecutionContextProvider,
   ProvidedSchedulerService
 }
-import com.teletracker.common.aws.sqs.worker.QueueReader
 import software.amazon.awssdk.services.sqs.model.SqsException
 import java.util.concurrent.{Executors, ScheduledFuture, TimeUnit}
 import scala.concurrent.duration.FiniteDuration

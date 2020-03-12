@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.netflix
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.model.ThingType
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.scraper.model.WhatsOnNetflixCatalogItem
 import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}

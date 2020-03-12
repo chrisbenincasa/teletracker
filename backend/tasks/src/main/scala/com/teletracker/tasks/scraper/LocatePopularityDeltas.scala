@@ -3,13 +3,14 @@ package com.teletracker.tasks.scraper
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.tasks.tmdb.{
   UpdateMoviePopularities,
   UpdatePopularities,
   UpdatePopularitiesJobArgs,
   UpdateTvShowPopularities
 }
-import com.teletracker.tasks.util.{SourceRetriever, TaskMessageHelper}
+import com.teletracker.tasks.util.SourceRetriever
 import io.circe.Encoder
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client

@@ -1,10 +1,7 @@
 package com.teletracker.tasks.db
 
-import com.teletracker.tasks.{
-  DefaultAnyArgs,
-  TeletrackerCompoundTask,
-  TeletrackerTask
-}
+import com.teletracker.common.tasks.{DefaultAnyArgs, TeletrackerTask}
+import com.teletracker.tasks.TeletrackerCompoundTask
 import javax.inject.Inject
 
 class RunAllSeedsTask @Inject()(

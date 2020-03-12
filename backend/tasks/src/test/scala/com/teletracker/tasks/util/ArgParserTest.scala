@@ -1,5 +1,6 @@
 package com.teletracker.tasks.util
 
+import com.teletracker.common.tasks.Args
 import org.scalatest.{FlatSpec, Matchers}
 
 class ArgParserTest extends FlatSpec with Args with Matchers {

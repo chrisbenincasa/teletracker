@@ -1,8 +1,13 @@
 package com.teletracker.tasks
 
-import com.google.inject.Injector
+import com.google.inject.{Injector, Module}
+import com.teletracker.common.tasks.TeletrackerTask
+import com.teletracker.common.tasks.model.TeletrackerTaskIdentifier
 import io.circe.Json
 import javax.inject.Inject
+import com.google.inject.util.Modules
+import com.teletracker.tasks.inject.TaskSchedulerModule
+import scala.compat.java8.OptionConverters._
 import scala.util.{Failure, Success, Try}
 
 object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
@@ -12,6 +17,9 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
   @volatile private var _instance: TeletrackerTaskRunner = _
 
   def instance: TeletrackerTaskRunner = _instance
+
+  override protected def overrideModules: Seq[Module] =
+    Seq(new TaskSchedulerModule)
 
   override protected def allowUndefinedFlags: Boolean =
     true
@@ -104,8 +112,15 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
 
   private def attemptToLoadTaskName(
     taskName: String
-  ): Option[Class[_ <: TeletrackerTask]] =
-    TaskRegistry.TasksToClass.get(taskName)
+  ): Option[Class[_ <: TeletrackerTask]] = {
+    TeletrackerTaskIdentifier.forString(taskName).asScala match {
+      case Some(value) =>
+        Some(TaskRegistry.taskForTaskType(value))
+      case None =>
+        TaskRegistry.TasksToClass.get(taskName)
+    }
+
+  }
 
   def run(
     clazz: String,

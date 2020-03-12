@@ -1,5 +1,6 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
 import com.teletracker.common.elasticsearch.ItemLookup
@@ -7,7 +8,6 @@ import com.teletracker.common.process.tmdb.ItemExpander
 import com.teletracker.common.util.{AsyncStream, ClosedDateRange}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.json.circe._
-import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.tmdb.export_tasks.ChangesDumpFileRow
 import io.circe.Encoder
 import io.circe.parser._

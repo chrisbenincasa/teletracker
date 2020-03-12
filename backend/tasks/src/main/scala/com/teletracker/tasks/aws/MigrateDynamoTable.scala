@@ -1,8 +1,8 @@
 package com.teletracker.tasks.aws
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import javax.inject.Inject
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient

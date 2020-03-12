@@ -1,7 +1,7 @@
 package com.teletracker.tasks.tmdb
 
 import com.codahale.metrics.{Histogram, SlidingWindowReservoir}
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.MovieDumpFileRow
 import com.teletracker.tasks.util.SourceRetriever

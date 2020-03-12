@@ -1,8 +1,8 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.process.tmdb.ItemExpander
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.process.tmdb.{ItemExpander, TvShowImportHandler}
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 

@@ -1,5 +1,6 @@
 package com.teletracker.tasks.db
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.dynamo.MetadataDbAccess
 import com.teletracker.common.db.dynamo.model.{
   StoredNetwork,
@@ -8,7 +9,6 @@ import com.teletracker.common.db.dynamo.model.{
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Slug
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 

@@ -1,10 +1,10 @@
 package com.teletracker.tasks.tmdb
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.http.{HttpClient, HttpClientOptions}
 import com.teletracker.common.model.tmdb.Network
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import javax.inject.Inject
 import java.io.{File, FileOutputStream}
 import scala.concurrent.ExecutionContext.Implicits.global
