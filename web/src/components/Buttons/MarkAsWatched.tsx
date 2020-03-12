@@ -7,7 +7,7 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import { Check } from '@material-ui/icons';
+import { CheckBox, CheckBoxOutlineBlank } from '@material-ui/icons';
 import { connect } from 'react-redux';
 import { bindActionCreators, Dispatch } from 'redux';
 import withUser, { WithUserProps } from '../withUser';
@@ -24,7 +24,7 @@ import moment from 'moment';
 const styles = (theme: Theme) =>
   createStyles({
     buttonIcon: {
-      marginRight: theme.spacing(1),
+      // marginRight: theme.spacing(),
     },
     itemCTA: {
       whiteSpace: 'nowrap',
@@ -91,7 +91,7 @@ class MarkAsWatched extends Component<Props, State> {
   watchedButton = (isReleased: boolean) => {
     const { classes } = this.props;
     const watchedStatus = this.state.watched;
-    const watchedCTA = watchedStatus ? 'Mark as unwatched' : 'Mark as watched';
+    const watchedCTA = watchedStatus ? 'Watched' : 'I watched it';
 
     return (
       <Button
@@ -102,7 +102,9 @@ class MarkAsWatched extends Component<Props, State> {
         fullWidth
         disabled={!isReleased}
         color={watchedStatus ? 'primary' : undefined}
-        startIcon={<Check className={classes.buttonIcon} />}
+        startIcon={
+          watchedStatus ? <CheckBox className={classes.buttonIcon} /> : null
+        }
       >
         {watchedCTA}
       </Button>
