@@ -3,14 +3,20 @@ package com.teletracker.common.pubsub
 import io.circe.Json
 import io.circe.generic.JsonCodec
 
-object JobTags {
+object TaskTag {
   final val RequiresTmdbApi = "tag/RequiresTmdbApi"
   final val RequiresDbAccess = "tag/RequiresDbAccess"
 }
 
-class EventBase extends Serializable {
+class EventBase extends Serializable with SettableReceiptHandle {
   var receipt_handle: Option[String] = None
   var queued_timestamp: Option[Long] = None
+
+  override def receiptHandle: Option[String] =
+    receipt_handle
+
+  override def setReceiptHandle(handle: Option[String]): Unit =
+    receipt_handle = handle
 
   /**
     * Defines a unique identifier for this message for use in de-duplicating messages.

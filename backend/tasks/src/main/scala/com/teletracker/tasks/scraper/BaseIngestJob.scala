@@ -1,9 +1,9 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.util.AsyncStream
-import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.scraper.matching.MatchMode
 import com.teletracker.tasks.scraper.model.{MatchResult, NonMatchResult}
 import io.circe.Codec

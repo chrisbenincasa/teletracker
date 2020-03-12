@@ -1,9 +1,10 @@
 package com.teletracker.tasks.scraper.hulu
 
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.tasks.general.ConcatenateTask
 import com.teletracker.tasks.scraper
-import com.teletracker.tasks.util.{Concatenator, TaskMessageHelper}
+import com.teletracker.tasks.util.Concatenator
 import javax.inject.Inject
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 

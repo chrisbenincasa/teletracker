@@ -1,9 +1,9 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.model.Thingable
 import com.teletracker.common.model.tmdb.Person
 import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.parser.parse
 import javax.inject.Inject

@@ -272,6 +272,20 @@ class PersonLookup @Inject()(
     lookupPeopleBySlugs(List(slug)).map(_.get(slug))
   }
 
+  def lookupPeopleBySlugPrefix(
+    slug: Slug
+  ): Future[ElasticsearchPeopleResponse] = {
+    val slugQuery = QueryBuilders
+      .boolQuery()
+      .filter(QueryBuilders.prefixQuery("slug", slug.toString))
+
+    val request =
+      new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
+        .source(new SearchSourceBuilder().query(slugQuery))
+
+    elasticsearchExecutor.search(request).map(searchResponseToPeople)
+  }
+
   def lookupPeopleBySlugs(slugs: List[Slug]): Future[Map[Slug, EsPerson]] = {
     if (slugs.isEmpty) {
       Future.successful(Map.empty)

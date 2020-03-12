@@ -2,7 +2,8 @@ package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.process.tmdb.ItemExpander
-import com.teletracker.common.pubsub.{JobTags, TeletrackerTaskQueueMessage}
+import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
+import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.tasks.annotations.TaskTags
 import com.teletracker.tasks.tmdb.import_tasks.{
   ImportMoviesFromDump,
@@ -11,7 +12,6 @@ import com.teletracker.tasks.tmdb.import_tasks.{
   ImportTvShowsFromDump
 }
 import com.teletracker.tasks.util.ArgJsonInstances._
-import com.teletracker.tasks.util.TaskMessageHelper
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
 import javax.inject.Inject
@@ -19,7 +19,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import scala.concurrent.{ExecutionContext, Future}
 
-@TaskTags(tags = Array(JobTags.RequiresTmdbApi))
+@TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 abstract class ChangesDumpTask(
   thingType: ThingType,
   s3: S3Client,
@@ -62,7 +62,7 @@ class MovieChangesDumpTask @Inject()(
   }
 }
 
-@TaskTags(tags = Array(JobTags.RequiresTmdbApi))
+@TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 class TvChangesDumpTask @Inject()(
   s3: S3Client,
   itemExpander: ItemExpander,

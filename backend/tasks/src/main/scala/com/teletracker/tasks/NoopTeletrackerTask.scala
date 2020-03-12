@@ -1,5 +1,9 @@
 package com.teletracker.tasks
 
+import com.teletracker.common.tasks.{
+  TeletrackerTask,
+  TeletrackerTaskWithDefaultArgs
+}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import io.circe.{Encoder, Json}

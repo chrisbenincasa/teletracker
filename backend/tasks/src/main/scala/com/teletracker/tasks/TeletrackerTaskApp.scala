@@ -1,6 +1,7 @@
 package com.teletracker.tasks
 
 import com.google.inject.Module
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.inject.Modules
 import com.teletracker.tasks.inject.{FactoriesModule, HttpClientModule}
 import com.twitter.app.Flaggable

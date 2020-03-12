@@ -1,8 +1,8 @@
-package com.teletracker.tasks.util
+package com.teletracker.common.logging
 
-import ch.qos.logback.classic.{Level, Logger, LoggerContext}
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.classic.{Level, Logger, LoggerContext}
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.core.rolling.{
   RollingFileAppender,
@@ -10,7 +10,6 @@ import ch.qos.logback.core.rolling.{
   TimeBasedRollingPolicy
 }
 import ch.qos.logback.core.util.FileSize
-import com.teletracker.common.logging.S3RollingPolicy
 import org.slf4j
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.s3.S3Client

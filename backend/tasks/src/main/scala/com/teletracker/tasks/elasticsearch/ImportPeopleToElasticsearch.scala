@@ -1,5 +1,6 @@
 package com.teletracker.tasks.elasticsearch
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.model.{
   ExternalSource,
   Person,
@@ -9,7 +10,6 @@ import com.teletracker.common.db.model.{
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.Slug
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import com.twitter.util.StorageUnit
 import io.circe.syntax._
 import javax.inject.Inject

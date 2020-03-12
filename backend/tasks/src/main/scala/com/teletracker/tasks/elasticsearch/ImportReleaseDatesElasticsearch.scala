@@ -1,9 +1,9 @@
 package com.teletracker.tasks.elasticsearch
 
 import cats.syntax.show
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.elasticsearch.EsItemReleaseDate
 import com.teletracker.common.model.tmdb.MovieCountryRelease
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import com.twitter.util.StorageUnit
 import javax.inject.Inject
 import java.net.URI
