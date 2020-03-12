@@ -617,14 +617,16 @@ class ListDetail extends Component<Props, State> {
           aria-describedby="alert-dialog-description"
         >
           <DialogTitle id="alert-dialog-title" className={classes.title}>
-            {`Delete "${this.state.list}" list?`}
+            {`Delete "${this.state?.list?.name}" list?`}
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               {`Are you sure you want to delete this list? There is no way to undo
-              this. ${this.state.list &&
-                this.state.list.totalItems > 0 &&
-                'All of the content from your list can be deleted or migrated to another list.'}'`}
+              this. ${
+                this.state.list && this.state.list.totalItems > 0
+                  ? 'All of the content from your list can be deleted or migrated to another list.'
+                  : ''
+              }`}
             </DialogContentText>
             {this.state.list && this.state.list.totalItems > 0 && (
               <FormControl className={classes.formControl}>
@@ -684,7 +686,7 @@ class ListDetail extends Component<Props, State> {
           aria-describedby="alert-dialog-description"
         >
           <DialogTitle id="alert-dialog-title" className={classes.title}>
-            {`Update "${this.state.list}" List Name?`}
+            {`Update "${this.state?.list?.name}" List Name?`}
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">

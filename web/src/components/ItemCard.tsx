@@ -85,6 +85,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     top: 0,
     left: 0,
     background: hexToRGB(theme.palette.grey[900], 0.85),
+    zIndex: theme.zIndex.modal - 1,
   },
   hoverDelete: {
     color: theme.palette.common.white,
@@ -410,7 +411,7 @@ function ItemCard(props: Props) {
     const tooltipPlacement = 'right';
 
     return (
-      <Collapse in={true}>
+      <Collapse in={true} style={{ position: 'absolute', top: 0 }}>
         <div className={classes.hoverActions}>
           {userSelf && hoverWatch && (
             <Zoom in={isHovering}>
