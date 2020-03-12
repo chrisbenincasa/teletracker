@@ -150,9 +150,6 @@ const styles = (theme: Theme) =>
       margin: '0 auto',
       width: '50%',
       position: 'relative',
-      '&:hover': {
-        backgroundColor: fade(theme.palette.common.white, 0.25),
-      },
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
