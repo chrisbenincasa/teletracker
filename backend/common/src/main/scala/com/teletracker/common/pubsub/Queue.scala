@@ -1,6 +1,5 @@
-package com.teletracker.common.aws.sqs.worker
+package com.teletracker.common.pubsub
 
-import com.teletracker.common.pubsub.EventBase
 import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityBatchResponse
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -53,34 +52,11 @@ trait QueueWriter[T <: EventBase] extends QueueIdentity {
   def queue(message: T): Future[Option[T]]
 
   /**
-    * Send message to the queue asynchronously
-    *
-    * @param message
-    * @return
-    */
-  def queueAsync(message: T): Future[Option[T]]
-
-  /**
     * Send many messages to the queue
     *
     * @param messages
     */
   def batchQueue(
-    messages: List[T],
-    messageGroupId: Option[String] = None
-  ): Future[List[T]]
-
-  /**
-    * Push items onto the queue in batch, asynchronously
-    *
-    * Internally, messages are grouped into constant sized buckets and batch written to SQS
-    * It's possible some batches may fail. We don't fail the whole function (and leave buckets hanging)
-    * but rather accumulate the failed message batches and return them to the caller for further action
-    *
-    * @param messages
-    * @return A sequence of messages whose batch request failed
-    */
-  def batchQueueAsync(
     messages: List[T],
     messageGroupId: Option[String] = None
   ): Future[List[T]]

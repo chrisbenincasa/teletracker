@@ -1,9 +1,9 @@
 package com.teletracker.tasks.db
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.dynamo.MetadataDbAccess
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.db.legacy_model.Network
 import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject

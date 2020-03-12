@@ -1,7 +1,7 @@
 package com.teletracker.consumers
 
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
-import com.teletracker.tasks.TeletrackerTask
 import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
 

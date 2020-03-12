@@ -1,5 +1,6 @@
 package com.teletracker.tasks.tmdb
 
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
@@ -14,7 +15,6 @@ import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.Functions._
-import com.teletracker.tasks.TeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.{
   MovieDumpFileRow,

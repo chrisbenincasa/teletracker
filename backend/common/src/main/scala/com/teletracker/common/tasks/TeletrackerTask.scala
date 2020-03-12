@@ -1,9 +1,10 @@
-package com.teletracker.tasks
+package com.teletracker.common.tasks
 
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.logging.TaskLogger
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.util.EnvironmentDetection
-import com.teletracker.tasks.util.{Args, TaskLogger}
+import com.teletracker.common.util.Futures._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import javax.inject.Inject
@@ -12,11 +13,10 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import java.time.OffsetDateTime
-import scala.collection.mutable
-import scala.util.control.NonFatal
-import com.teletracker.common.util.Futures._
 import java.util.UUID
+import scala.collection.mutable
 import scala.compat.java8.FutureConverters._
+import scala.util.control.NonFatal
 
 object TeletrackerTask {
   object CommonFlags {

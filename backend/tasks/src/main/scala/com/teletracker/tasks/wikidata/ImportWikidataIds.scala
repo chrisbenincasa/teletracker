@@ -1,10 +1,10 @@
 package com.teletracker.tasks.wikidata
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
 import com.teletracker.common.elasticsearch.{EsExternalId, ItemLookup}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.elasticsearch.FileRotator
 import com.teletracker.tasks.util.SourceRetriever
 import com.twitter.util.StorageUnit

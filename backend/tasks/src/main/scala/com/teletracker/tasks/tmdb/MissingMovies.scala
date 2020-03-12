@@ -1,10 +1,9 @@
 package com.teletracker.tasks.tmdb
 
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.MovieDumpFileRow
 import com.teletracker.tasks.util.SourceRetriever
-import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
 import javax.inject.Inject
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}

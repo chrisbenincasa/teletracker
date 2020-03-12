@@ -1,6 +1,6 @@
 package com.teletracker.tasks.elasticsearch
 
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject
 import com.teletracker.common.util.Lists._

@@ -1,8 +1,8 @@
 package com.teletracker.tasks.aws
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.dynamo.ListsDbAccess
 import com.teletracker.common.db.dynamo.model.StoredUserList
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import javax.inject.Inject
 import com.teletracker.common.util.Futures._
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient

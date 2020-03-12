@@ -1,6 +1,6 @@
 package com.teletracker.tasks.aws
 
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import javax.inject.Inject
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import com.teletracker.common.util.Futures._

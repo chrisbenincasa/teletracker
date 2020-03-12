@@ -5,7 +5,7 @@
 package com.teletracker.common.aws.sqs.worker
 
 import com.teletracker.common.aws.sqs.ProcessingFailedException
-import com.teletracker.common.pubsub.EventBase
+import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
 import org.slf4j.LoggerFactory

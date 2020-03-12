@@ -1,5 +1,6 @@
 package com.teletracker.tasks
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessageFactory
 import com.teletracker.common.util.Futures._

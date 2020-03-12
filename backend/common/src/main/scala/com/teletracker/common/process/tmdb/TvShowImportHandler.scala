@@ -1,37 +1,56 @@
-package com.teletracker.tasks.tmdb.import_tasks
+package com.teletracker.common.process.tmdb
 
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
 import com.teletracker.common.elasticsearch._
+import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
 import com.teletracker.common.model.ToEsItem
-import com.teletracker.common.model.tmdb.{Movie, TvShow}
+import com.teletracker.common.model.tmdb.TvShow
+import com.teletracker.common.process.tmdb.TvShowImportHandler.{
+  TvShowImportHandlerArgs,
+  TvShowImportResult
+}
+import com.teletracker.common.pubsub.TaskScheduler
+import com.teletracker.common.tasks.TaskMessageHelper
+import com.teletracker.common.tasks.model.{
+  DenormalizeItemTaskArgs,
+  TeletrackerTaskIdentifier
+}
 import com.teletracker.common.util.{GenreCache, Slug}
-import com.teletracker.tasks.tmdb.import_tasks.TvShowImportHandler.TvShowImportHandlerArgs
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 import scala.util.control.NonFatal
 
 object TvShowImportHandler {
   case class TvShowImportHandlerArgs(dryRun: Boolean)
+
+  case class TvShowImportResult(
+    itemId: UUID,
+    inserted: Boolean,
+    updated: Boolean,
+    castNeedsDenorm: Boolean,
+    crewNeedsDenorm: Boolean,
+    itemChanged: Boolean)
 }
 
 class TvShowImportHandler @Inject()(
   genreCache: GenreCache,
   itemSearch: ItemLookup,
   itemUpdater: ItemUpdater,
-  personLookup: PersonLookup
+  personLookup: PersonLookup,
+  creditsDenormalization: ItemCreditsDenormalizationHelper,
+  taskScheduler: TaskScheduler
 )(implicit executor: ExecutionContext) {
 
   import com.teletracker.common.util.Shows._
   import diffson._
-  import diffson.lcs._
   import diffson.circe._
-  import diffson.jsonpatch._
   import diffson.jsonpatch.lcsdiff.remembering._
+  import diffson.lcs._
   import io.circe._
-  import io.circe.parser._
   import io.circe.syntax._
 
   implicit private val lcs = new Patience[Json]
@@ -44,7 +63,7 @@ class TvShowImportHandler @Inject()(
   def handleItem(
     args: TvShowImportHandlerArgs,
     item: TvShow
-  ): Future[Unit] = {
+  ): Future[TvShowImportResult] = {
     itemSearch
       .lookupItemByExternalId(
         ExternalSource.TheMovieDb,
@@ -58,9 +77,30 @@ class TvShowImportHandler @Inject()(
         case None =>
           insertNewShow(item, args)
       }
+      .andThen {
+        case Success(result)
+            if !args.dryRun && (result.inserted || result.updated) =>
+          logger.debug(
+            s"Scheduling denormalization task item id = ${result.itemId}"
+          )
+
+          taskScheduler.schedule(
+            TaskMessageHelper.forTaskArgs(
+              TeletrackerTaskIdentifier.DENORMALIZE_ITEM_TASK,
+              DenormalizeItemTaskArgs.apply(
+                itemId = result.itemId,
+                creditsChanged = result.castNeedsDenorm,
+                crewChanged = result.crewNeedsDenorm,
+                dryRun = args.dryRun
+              ),
+              tags = None
+            )
+          )
+      }
       .recover {
         case NonFatal(e) =>
           logger.warn(e.getMessage)
+          throw e
       }
   }
 
@@ -68,7 +108,7 @@ class TvShowImportHandler @Inject()(
     item: TvShow,
     existingShow: EsItem,
     args: TvShowImportHandlerArgs
-  ) = {
+  ): Future[TvShowImportResult] = {
     val castCrewFut = lookupCastAndCrew(item)
     val recsFut = buildRecommendations(item)
     val updateFut = for {
@@ -117,8 +157,12 @@ class TvShowImportHandler @Inject()(
         .map(Function.tupled(EsExternalId.apply))
 
       val cast = buildCredits(item, castAndCrew)
+      val castNeedsDenorm =
+        creditsDenormalization.castNeedsDenormalization(cast, existingShow.cast)
 
       val crew = buildCrew(item, castAndCrew)
+      val crewNeedsDenorm =
+        creditsDenormalization.crewNeedsDenormalization(crew, existingShow.crew)
 
       val partialUpdates = existingShow.copy(
         adult = existingShow.adult,
@@ -145,13 +189,32 @@ class TvShowImportHandler @Inject()(
       )
 
       if (args.dryRun) {
+        logger.info(
+          s"Would've updated id = ${existingShow.id}:\n${diff(existingShow.asJson, partialUpdates.asJson).asJson.spaces2}"
+        )
         Future.successful {
-          logger.info(
-            s"Would've updated id = ${existingShow.id}:\n${diff(existingShow.asJson, partialUpdates.asJson).asJson.spaces2}"
+          TvShowImportResult(
+            itemId = existingShow.id,
+            inserted = false,
+            updated = false,
+            castNeedsDenorm = castNeedsDenorm,
+            crewNeedsDenorm = crewNeedsDenorm,
+            itemChanged = partialUpdates != existingShow
           )
         }
       } else {
-        itemUpdater.update(partialUpdates).map(_ => {})
+        itemUpdater
+          .update(partialUpdates)
+          .map(_ => {
+            TvShowImportResult(
+              itemId = existingShow.id,
+              inserted = false,
+              updated = true,
+              castNeedsDenorm = castNeedsDenorm,
+              crewNeedsDenorm = crewNeedsDenorm,
+              itemChanged = partialUpdates != existingShow
+            )
+          })
       }
     }
 
@@ -161,7 +224,7 @@ class TvShowImportHandler @Inject()(
   private def insertNewShow(
     item: TvShow,
     args: TvShowImportHandlerArgs
-  ) = {
+  ): Future[TvShowImportResult] = {
     val castCrewFut = lookupCastAndCrew(item)
     val recsFut = buildRecommendations(item)
 
@@ -237,17 +300,36 @@ class TvShowImportHandler @Inject()(
       )
 
       if (args.dryRun) {
+        logger.info(
+          s"Would've inserted new movie (id = ${item.id}, slug = ${esItem.slug})\n:${esItem.asJson.spaces2}"
+        )
         Future.successful {
-          logger.info(
-            s"Would've inserted new show (id = ${item.show.id}, slug = ${esItem.slug})\n:${esItem.asJson.noSpaces}"
+          TvShowImportResult(
+            itemId = esItem.id,
+            inserted = false,
+            updated = false,
+            castNeedsDenorm = true,
+            crewNeedsDenorm = true,
+            itemChanged = true
           )
         }
       } else {
-        itemUpdater.insert(esItem)
+        itemUpdater
+          .insert(esItem)
+          .map(_ => {
+            TvShowImportResult(
+              itemId = esItem.id,
+              inserted = true,
+              updated = false,
+              castNeedsDenorm = true,
+              crewNeedsDenorm = true,
+              itemChanged = true
+            )
+          })
       }
     }
 
-    updateFut.flatMap(identity).map(_ => {})
+    updateFut.flatMap(identity)
   }
 
   private def lookupCastAndCrew(item: TvShow) = {
