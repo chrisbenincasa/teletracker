@@ -167,7 +167,30 @@ case class EsPerson(
   place_of_birth: Option[String],
   popularity: Option[Double],
   slug: Option[Slug],
-  known_for: Option[List[EsDenormalizedItem]])
+  known_for: Option[List[EsDenormalizedItem]]) {
+
+  def externalIdsGrouped: Map[ExternalSource, String] = {
+    external_ids
+      .getOrElse(Nil)
+      .map(id => {
+        ExternalSource.fromString(id.provider) -> id.id
+      })
+      .toMap
+  }
+
+  def imagesGrouped: Map[(ExternalSource, EsImageType), EsItemImage] = {
+    images
+      .getOrElse(Nil)
+      .groupBy(
+        image =>
+          ExternalSource
+            .fromString(image.provider_shortname) -> image.image_type
+      )
+      .map {
+        case (k, v) => k -> v.head
+      }
+  }
+}
 
 object EsItemTaggable {
   implicit val esItemTaggableString: EsItemTaggable[String] =

@@ -1,5 +1,6 @@
 package com.teletracker.tasks.elasticsearch
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.ListsDbAccess
 import com.teletracker.common.db.model.UserThingTagType
@@ -10,7 +11,6 @@ import com.teletracker.common.elasticsearch.{
   ItemUpdater
 }
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import javax.inject.Inject
 import io.circe.parser._
 import io.circe.syntax._

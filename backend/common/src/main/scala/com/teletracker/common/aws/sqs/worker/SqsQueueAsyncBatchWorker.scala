@@ -4,7 +4,7 @@
 
 package com.teletracker.common.aws.sqs.worker
 
-import com.teletracker.common.pubsub.EventBase
+import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import java.util.concurrent.Semaphore
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}

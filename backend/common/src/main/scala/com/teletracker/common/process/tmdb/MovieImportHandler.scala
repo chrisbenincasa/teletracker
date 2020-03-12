@@ -1,29 +1,51 @@
-package com.teletracker.tasks.tmdb.import_tasks
+package com.teletracker.common.process.tmdb
 
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import com.teletracker.common.tasks.model.DenormalizeItemTaskArgs
 import com.teletracker.common.elasticsearch._
+import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
 import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.{Movie, MovieCountryRelease}
+import com.teletracker.common.process.tmdb.MovieImportHandler.{
+  MovieImportHandlerArgs,
+  MovieImportResult
+}
+import com.teletracker.common.pubsub.{TaskScheduler, TaskTag}
+import com.teletracker.common.tasks.TaskMessageHelper
+import com.teletracker.common.tasks.model.TeletrackerTaskIdentifier
 import com.teletracker.common.util.Movies._
+import com.teletracker.common.util.Tuples._
+import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.{GenreCache, Slug}
-import com.teletracker.tasks.tmdb.import_tasks.MovieImportHandler.MovieImportHandlerArgs
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Success, Try}
 import scala.util.control.NonFatal
 
 object MovieImportHandler {
-  case class MovieImportHandlerArgs(dryRun: Boolean)
+  case class MovieImportHandlerArgs(
+    forceDenorm: Boolean,
+    dryRun: Boolean)
+
+  case class MovieImportResult(
+    itemId: UUID,
+    inserted: Boolean,
+    updated: Boolean,
+    castNeedsDenorm: Boolean,
+    crewNeedsDenorm: Boolean,
+    itemChanged: Boolean)
 }
 
 class MovieImportHandler @Inject()(
   genreCache: GenreCache,
   itemSearch: ItemLookup,
   itemUpdater: ItemUpdater,
-  personLookup: PersonLookup
+  personLookup: PersonLookup,
+  creditsDenormalizer: ItemCreditsDenormalizationHelper,
+  taskScheduler: TaskScheduler
 )(implicit executor: ExecutionContext) {
   import diffson._
   import diffson.circe._
@@ -42,7 +64,7 @@ class MovieImportHandler @Inject()(
   def handleItem(
     args: MovieImportHandlerArgs,
     item: Movie
-  ): Future[Unit] = {
+  ): Future[MovieImportResult] = {
     itemSearch
       .lookupItemByExternalId(
         ExternalSource.TheMovieDb,
@@ -56,9 +78,29 @@ class MovieImportHandler @Inject()(
         case None =>
           handleNewMovie(item, args)
       }
+      .through {
+        case Success(result) if args.forceDenorm || result.itemChanged =>
+          logger.debug(
+            s"Scheduling denormalization task item id = ${result.itemId}"
+          )
+
+          taskScheduler.schedule(
+            TaskMessageHelper.forTaskArgs(
+              TeletrackerTaskIdentifier.DENORMALIZE_ITEM_TASK,
+              DenormalizeItemTaskArgs.apply(
+                itemId = result.itemId,
+                creditsChanged = result.castNeedsDenorm || args.forceDenorm,
+                crewChanged = result.crewNeedsDenorm || args.forceDenorm,
+                dryRun = args.dryRun
+              ),
+              tags = None
+            )
+          )
+      }
       .recover {
         case NonFatal(e) =>
           logger.warn(e.getMessage)
+          throw e
       }
   }
 
@@ -78,9 +120,9 @@ class MovieImportHandler @Inject()(
 
   private def handleExistingMovie(
     item: Movie,
-    value: EsItem,
+    existingMovie: EsItem,
     args: MovieImportHandlerArgs
-  ) = {
+  ): Future[MovieImportResult] = {
     val castCrewFut = lookupCastAndCrew(item)
     val recsFut = buildRecommendations(item)
     val updateFut = for {
@@ -90,7 +132,7 @@ class MovieImportHandler @Inject()(
       val images =
         toEsItem
           .esItemImages(item)
-          .foldLeft(value.imagesGrouped)((acc, image) => {
+          .foldLeft(existingMovie.imagesGrouped)((acc, image) => {
             val externalSource =
               ExternalSource.fromString(image.provider_shortname)
             acc.updated((externalSource, image.image_type), image)
@@ -101,9 +143,10 @@ class MovieImportHandler @Inject()(
         .esItemRating(item)
         .map(
           rating =>
-            value.ratingsGrouped.updated(ExternalSource.TheMovieDb, rating)
+            existingMovie.ratingsGrouped
+              .updated(ExternalSource.TheMovieDb, rating)
         )
-        .getOrElse(value.ratingsGrouped)
+        .getOrElse(existingMovie.ratingsGrouped)
         .values
         .toList
 
@@ -115,47 +158,74 @@ class MovieImportHandler @Inject()(
       ).flatten
 
       val newExternalSources = extractedExternalIds
-        .foldLeft(value.externalIdsGrouped)(
+        .foldLeft(existingMovie.externalIdsGrouped)(
           (acc, id) =>
             acc.updated(ExternalSource.fromString(id.provider), id.id)
         )
         .toList
         .map(Function.tupled(EsExternalId.apply))
 
-      val cast = buildCredits(item, castAndCrew)
-      val crew = buildCrew(item, castAndCrew)
+      val cast = buildCast(item, castAndCrew)
+      val castNeedsDenorm =
+        creditsDenormalizer.castNeedsDenormalization(cast, existingMovie.cast)
 
-      val partialUpdates = value.copy(
-        adult = value.adult,
+      val crew = buildCrew(item, castAndCrew)
+      val crewNeedsDenorm =
+        creditsDenormalizer.crewNeedsDenormalization(crew, existingMovie.crew)
+
+      val partialUpdates = existingMovie.copy(
+        adult = item.adult.orElse(existingMovie.adult),
         cast = cast,
         crew = crew,
         images = Some(images.toList),
         last_updated = Some(OffsetDateTime.now().toInstant.toEpochMilli),
         external_ids = Some(newExternalSources),
-        original_title = item.original_title.orElse(value.original_title),
-        overview = item.overview.orElse(value.overview),
-        popularity = item.popularity.orElse(value.popularity),
+        original_title =
+          item.original_title.orElse(existingMovie.original_title),
+        overview = item.overview.orElse(existingMovie.overview),
+        popularity = item.popularity.orElse(existingMovie.popularity),
         ratings = Some(newRatings),
         recommendations =
           if (recommendations.nonEmpty) Some(recommendations)
-          else value.recommendations,
+          else existingMovie.recommendations,
         release_date = item.release_date
           .filter(_.nonEmpty)
           .map(LocalDate.parse(_))
-          .orElse(value.release_date),
+          .orElse(existingMovie.release_date),
+        runtime = item.runtime.orElse(existingMovie.runtime),
         slug =
-          if (value.slug.isEmpty) item.releaseYear.map(Slug(item.title.get, _))
-          else value.slug
+          if (existingMovie.slug.isEmpty)
+            item.releaseYear.map(Slug(item.title.get, _))
+          else existingMovie.slug
       )
 
       if (args.dryRun) {
+        logger.info(
+          s"Would've updated id = ${existingMovie.id}:\n${diff(existingMovie.asJson, partialUpdates.asJson).asJson.spaces2}"
+        )
         Future.successful {
-          logger.info(
-            s"Would've updated id = ${value.id}:\n${diff(value.asJson, partialUpdates.asJson).asJson.spaces2}"
+          MovieImportResult(
+            itemId = existingMovie.id,
+            inserted = false,
+            updated = false,
+            castNeedsDenorm = castNeedsDenorm,
+            crewNeedsDenorm = crewNeedsDenorm,
+            itemChanged = partialUpdates != existingMovie
           )
         }
       } else {
-        itemUpdater.update(partialUpdates).map(_ => {})
+        itemUpdater
+          .update(partialUpdates)
+          .map(_ => {
+            MovieImportResult(
+              itemId = existingMovie.id,
+              inserted = false,
+              updated = true,
+              castNeedsDenorm = castNeedsDenorm,
+              crewNeedsDenorm = crewNeedsDenorm,
+              itemChanged = partialUpdates != existingMovie
+            )
+          })
       }
     }
 
@@ -165,7 +235,7 @@ class MovieImportHandler @Inject()(
   private def handleNewMovie(
     item: Movie,
     args: MovieImportHandlerArgs
-  ) = {
+  ): Future[MovieImportResult] = {
     val recsFut = buildRecommendations(item)
     val castCrewFut = lookupCastAndCrew(item)
     val updateFut = for {
@@ -182,7 +252,7 @@ class MovieImportHandler @Inject()(
           id => genres.get(ExternalSource.TheMovieDb, id.toString)
         )
 
-      val cast = buildCredits(item, castAndCrew)
+      val cast = buildCast(item, castAndCrew)
       val crew = buildCrew(item, castAndCrew)
 
       val esItem = EsItem(
@@ -233,17 +303,36 @@ class MovieImportHandler @Inject()(
       )
 
       if (args.dryRun) {
+        logger.info(
+          s"Would've inserted new movie (id = ${item.id}, slug = ${esItem.slug})\n:${esItem.asJson.spaces2}"
+        )
         Future.successful {
-          logger.info(
-            s"Would've inserted new movie (id = ${item.id}, slug = ${esItem.slug})\n:${esItem.asJson.spaces2}"
+          MovieImportResult(
+            itemId = esItem.id,
+            inserted = false,
+            updated = false,
+            castNeedsDenorm = true,
+            crewNeedsDenorm = true,
+            itemChanged = true
           )
         }
       } else {
-        itemUpdater.insert(esItem)
+        itemUpdater
+          .insert(esItem)
+          .map(_ => {
+            MovieImportResult(
+              itemId = esItem.id,
+              inserted = true,
+              updated = false,
+              castNeedsDenorm = true,
+              crewNeedsDenorm = true,
+              itemChanged = true
+            )
+          })
       }
     }
 
-    updateFut.flatMap(identity).map(_ => {})
+    updateFut.flatMap(identity)
   }
 
   private def lookupCastAndCrew(item: Movie) = {
@@ -263,7 +352,7 @@ class MovieImportHandler @Inject()(
     }
   }
 
-  private def buildCredits(
+  private def buildCast(
     item: Movie,
     matchedCastAndCrew: Map[String, EsPerson]
   ) = {

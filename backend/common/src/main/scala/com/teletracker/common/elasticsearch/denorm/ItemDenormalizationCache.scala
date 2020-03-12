@@ -1,4 +1,4 @@
-package com.teletracker.common.elasticsearch
+package com.teletracker.common.elasticsearch.denorm
 
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
 import com.teletracker.common.util.Slug

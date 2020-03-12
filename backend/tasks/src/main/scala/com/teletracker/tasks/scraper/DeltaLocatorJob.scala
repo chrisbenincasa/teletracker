@@ -1,11 +1,12 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.tasks.{TaskMessageHelper, TeletrackerTask}
 import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.util.{SourceRetriever, TaskMessageHelper}
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskRunner}
+import com.teletracker.tasks.util.SourceRetriever
+import com.teletracker.tasks.TeletrackerTaskRunner
 import io.circe.Encoder
 import io.circe.generic.JsonCodec
 import org.slf4j.LoggerFactory

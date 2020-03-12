@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper
 
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import io.circe.generic.JsonCodec
 import io.circe.syntax._
 import io.circe._

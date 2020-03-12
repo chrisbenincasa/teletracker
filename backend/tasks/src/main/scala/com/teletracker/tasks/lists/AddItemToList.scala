@@ -1,7 +1,7 @@
 package com.teletracker.tasks.lists
 
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.elasticsearch.ItemUpdater
-import com.teletracker.tasks.TeletrackerTask
 import io.circe.Encoder
 import javax.inject.Inject
 import java.util.UUID

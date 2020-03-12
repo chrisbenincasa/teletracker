@@ -1,12 +1,12 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.model.{
   PersonAssociationType,
   PersonThing,
   ThingType
 }
 import com.teletracker.common.model.tmdb.{CastMember, CrewMember}
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
 import java.util.UUID

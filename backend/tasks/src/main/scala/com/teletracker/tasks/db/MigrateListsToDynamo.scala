@@ -1,11 +1,11 @@
 package com.teletracker.tasks.db
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.dynamo.{ListsDbAccess => DynamoListsDbAccess}
 import com.teletracker.common.db.dynamo.model.{
   StoredUserList,
   UserListRowOptions
 }
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
 import javax.inject.Inject
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.db.legacy_model.TrackedListRow

@@ -1,8 +1,8 @@
 package com.teletracker.service.controllers
 
 import com.google.inject.Injector
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.service.auth.AdminFilter
-import com.teletracker.tasks.TeletrackerTask
 import com.twitter.concurrent.NamedPoolThreadFactory
 import com.twitter.finatra.http.Controller
 import javax.inject.Inject

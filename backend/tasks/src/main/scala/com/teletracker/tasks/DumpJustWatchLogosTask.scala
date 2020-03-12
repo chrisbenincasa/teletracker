@@ -1,5 +1,6 @@
 package com.teletracker.tasks
 
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.http.{HttpClient, HttpClientOptions}
 import com.teletracker.common.model.justwatch.Provider
 import javax.inject.Inject

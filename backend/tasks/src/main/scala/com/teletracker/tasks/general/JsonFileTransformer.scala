@@ -1,6 +1,6 @@
 package com.teletracker.tasks.general
 
-import com.teletracker.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
 import io.circe.Json

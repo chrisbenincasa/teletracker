@@ -1,9 +1,9 @@
 package com.teletracker.tasks.tmdb
 
 import cats.effect.{Blocker, ContextShift, IO, Resource}
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.http.{BaseHttp4sClient, HttpRequest}
-import com.teletracker.tasks.{TeletrackerTask, TeletrackerTaskWithDefaultArgs}
 import com.teletracker.tasks.tmdb.export_tasks.{
   MovieDumpFileRow,
   PersonDumpFileRow,
