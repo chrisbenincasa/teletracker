@@ -18,7 +18,7 @@ import withUser, { WithUserProps } from './withUser';
 import {
   formatRuntime,
   getVoteAverage,
-  getVoteCount,
+  getVoteCountFormatted,
   truncateText,
 } from '../utils/textHelper';
 import { hexToRGB } from '../utils/style-utils';
@@ -37,6 +37,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     [theme.breakpoints.down('sm')]: {
       margin: 0,
     },
+  },
+  manageTrackingButton: {
+    marginTop: theme.spacing(1),
   },
   posterContainer: {
     display: 'flex',
@@ -114,7 +117,7 @@ function Featured(props: Props) {
 
   const renderTitle = (item: Item) => {
     const voteAverage = getVoteAverage(item);
-    const voteCount = getVoteCount(item);
+    const voteCount = getVoteCountFormatted(item);
     const runtime =
       (item.runtime && formatRuntime(item.runtime, item.type)) || null;
 
@@ -209,7 +212,10 @@ function Featured(props: Props) {
             <RouterLink href={item.canonicalUrl} as={item.relativeUrl} passHref>
               <WrappedCardMedia item={item} />
             </RouterLink>
-            <ManageTracking itemDetail={item} />
+
+            <div className={classes.manageTrackingButton}>
+              <ManageTracking itemDetail={item} />
+            </div>
 
             <AddToListDialog
               open={manageTrackingModalOpen}
