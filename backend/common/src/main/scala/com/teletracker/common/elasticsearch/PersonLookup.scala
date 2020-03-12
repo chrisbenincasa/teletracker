@@ -9,7 +9,7 @@ import com.teletracker.common.db.{
   SortMode
 }
 import com.teletracker.common.db.model.{ExternalSource, PersonAssociationType}
-import com.teletracker.common.util.{IdOrSlug, Slug}
+import com.teletracker.common.util.{Folds, IdOrSlug, Slug}
 import javax.inject.Inject
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
 import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
@@ -24,6 +24,7 @@ import java.util.UUID
 import com.teletracker.common.util.Functions._
 import org.elasticsearch.action.get.MultiGetRequest
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 
 class PersonLookup @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor,
@@ -268,8 +269,12 @@ class PersonLookup @Inject()(
     }
   }
 
-  def lookupPersonBySlug(slug: Slug): Future[Option[EsPerson]] = {
-    lookupPeopleBySlugs(List(slug)).map(_.get(slug))
+  def lookupPersonBySlug(
+    slug: Slug,
+    throwOnMultipleSlugs: Boolean = false
+  ): Future[Option[EsPerson]] = {
+    lookupPeopleBySlugs(List(slug), throwOnMultipleSlugs)
+      .map(_.get(slug).headOption)
   }
 
   def lookupPeopleBySlugPrefix(
@@ -286,7 +291,10 @@ class PersonLookup @Inject()(
     elasticsearchExecutor.search(request).map(searchResponseToPeople)
   }
 
-  def lookupPeopleBySlugs(slugs: List[Slug]): Future[Map[Slug, EsPerson]] = {
+  def lookupPeopleBySlugs(
+    slugs: List[Slug],
+    throwOnMultipleSlugs: Boolean = false
+  ): Future[Map[Slug, EsPerson]] = {
     if (slugs.isEmpty) {
       Future.successful(Map.empty)
     } else {
@@ -297,7 +305,11 @@ class PersonLookup @Inject()(
           .filter(QueryBuilders.termQuery("slug", slug.toString))
 
         new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
-          .source(new SearchSourceBuilder().query(slugQuery).size(1))
+          .source(
+            new SearchSourceBuilder()
+              .query(slugQuery)
+              .applyIf(!throwOnMultipleSlugs)(_.size(1))
+          )
       })
 
       searches.foreach(multiSearchRequest.add)
@@ -305,16 +317,35 @@ class PersonLookup @Inject()(
       elasticsearchExecutor
         .multiSearch(multiSearchRequest)
         .map(response => {
-          response.getResponses
-            .zip(slugs)
-            .flatMap {
-              case (response, slug) =>
-                // TODO: Properly handle failures
-                searchResponseToPeople(response.getResponse).items.headOption
-                  .map(slug -> _)
-            }
-            .toMap
+          response.getResponses.map(response => {
+            // TODO: Properly handle failures
+            searchResponseToPeople(response.getResponse).items
+              .filter(_.slug.isDefined)
+              .groupBy(_.slug.get)
+
+          })
         })
+        .map(
+          _.foldLeft(Map.empty[Slug, List[EsPerson]])(
+            Folds.foldMapAppend[Slug, EsPerson, List]
+          )
+        )
+        .andThen {
+          case Success(value) =>
+            value.applyIf(throwOnMultipleSlugs)(map => {
+              map.foreach {
+                case (slug, people) =>
+                  if (people.size > 1) {
+                    throw new IllegalStateException(
+                      s"Found multiple people associated with slug: $slug"
+                    )
+                  }
+              }
+
+              map
+            })
+        }
+        .map(_.mapValues(_.head))
     }
   }
 

@@ -4,6 +4,9 @@ import java.time.LocalDate
 import scala.math.Ordering.OptionOrdering
 
 object Lists {
+  implicit def toRichList[T](l: List[T]): RichList[T] =
+    new RichList[T](l)
+
   implicit def toSafeTakeList[T](l: List[T]): ListWithSafeTake[T] =
     new ListWithSafeTake[T](l)
 
@@ -29,6 +32,18 @@ object Lists {
         case (Some(x), Some(y)) => optionOrdering.compare(x, y)
       }
     }
+}
+
+class RichList[T](val l: List[T]) extends AnyVal {
+  def replaceWhere(
+    f: T => Boolean,
+    replace: T => T
+  ): List[T] = {
+    l.foldRight(List.empty[T]) {
+      case (item, acc) if f(item) => acc :+ replace(item)
+      case (item, acc)            => acc :+ item
+    }
+  }
 }
 
 class ListWithSafeTake[T](val l: List[T]) extends AnyVal {
