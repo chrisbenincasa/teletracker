@@ -14,7 +14,8 @@ import org.elasticsearch.action.search.{
   MultiSearchRequest,
   MultiSearchResponse,
   SearchRequest,
-  SearchResponse
+  SearchResponse,
+  SearchScrollRequest
 }
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.client.core.{CountRequest, CountResponse}
@@ -54,6 +55,10 @@ class ElasticsearchExecutor @Inject()(client: RestHighLevelClient) {
 
   def search(request: SearchRequest): Future[SearchResponse] = {
     withListener(client.searchAsync(request, RequestOptions.DEFAULT, _))
+  }
+
+  def scroll(request: SearchScrollRequest): Future[SearchResponse] = {
+    withListener(client.scrollAsync(request, RequestOptions.DEFAULT, _))
   }
 
   def multiSearch(request: MultiSearchRequest): Future[MultiSearchResponse] = {
