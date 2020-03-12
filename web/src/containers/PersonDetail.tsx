@@ -110,7 +110,7 @@ const styles = (theme: Theme) =>
       },
     },
     listHeader: {
-      margin: theme.spacing(2, 0),
+      marginTop: theme.spacing(1),
       display: 'flex',
       flex: '1 0 auto',
       alignItems: 'center',
@@ -150,9 +150,6 @@ const styles = (theme: Theme) =>
       margin: '0 auto',
       width: '50%',
       position: 'relative',
-      '&:hover': {
-        backgroundColor: fade(theme.palette.common.white, 0.25),
-      },
       [theme.breakpoints.up('sm')]: {
         width: 250,
       },
@@ -172,6 +169,9 @@ const styles = (theme: Theme) =>
         width: '100%',
         alignItems: 'center',
       },
+    },
+    trackingButton: {
+      marginTop: theme.spacing(1),
     },
     loadingCircle: {
       display: 'flex',
@@ -546,7 +546,7 @@ class PersonDetail extends React.Component<Props, State> {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <React.Fragment>{formattedBiography}</React.Fragment>
-          {biography.length > 1200 ? (
+          {biography.length > truncateSize ? (
             <Button
               size="small"
               variant="contained"
@@ -609,6 +609,7 @@ class PersonDetail extends React.Component<Props, State> {
                     objectPosition: 'center top',
                     width: '100%',
                     height: '100%',
+                    pointerEvents: 'none', // Disables ios preview on tap & hold
                   }}
                   pictureStyle={{
                     display: 'block',
@@ -651,11 +652,13 @@ class PersonDetail extends React.Component<Props, State> {
                           boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                         }}
                       />
+                      <div className={classes.trackingButton}>
+                        <ManageTrackingButton
+                          cta={'Track Actor'}
+                          onClick={this.createListForPerson}
+                        />
+                      </div>
                     </div>
-                    <ManageTrackingButton
-                      cta={'Track Actor'}
-                      onClick={this.createListForPerson}
-                    />
                   </div>
                   <div className={classes.personInformationContainer}>
                     {this.renderDescriptiveDetails(person)}
