@@ -98,13 +98,19 @@ class FixDuplicatePersonSlugs @Inject()(
       new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
         .source(searchSource)
 
-    elasticsearchExecutor
+    val aggResults = elasticsearchExecutor
       .search(search)
       .map(results => {
         val aggResult = results.getAggregations.get[Terms]("slug_agg")
 
         aggResult.getBuckets.asScala.toList
       })
+
+    aggResults.foreach(buckets => {
+      logger.info(s"Found ${buckets.size} slugs with >1 duplicates.")
+    })
+
+    aggResults
   }
 
   private def fixPerson(
