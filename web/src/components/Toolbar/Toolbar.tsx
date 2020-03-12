@@ -338,6 +338,9 @@ class Toolbar extends Component<Props, State> {
           placement="bottom-end"
           keepMounted
           transition
+          style={{
+            display: Boolean(this.state.genreType === type) ? 'block' : 'none',
+          }}
         >
           {({ TransitionProps }) => (
             <Fade
