@@ -34,8 +34,11 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.SortOrder
 import java.util.UUID
+import java.util.concurrent.{Executors, TimeUnit}
 import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.duration._
+import scala.util.Try
 
 private[elasticsearch] object Scripts {
   final val UpdateCastMemberSlugScriptSource =
@@ -101,7 +104,216 @@ class FixDuplicatePersonSlugs @Inject()(
       .mustNot(QueryBuilders.termQuery("slug", "-"))
       .mustNot(QueryBuilders.termQuery("slug", "--"))
       .mustNot(QueryBuilders.termQuery("slug", ""))
-      .mustNot(QueryBuilders.regexpQuery("slug", ".*-[0-9]"))
+      .applyOptional(slugFilter)(
+        (builder, slug) => builder.filter(QueryBuilders.termQuery("slug", slug))
+      )
+
+    val aggs =
+      AggregationBuilders
+        .terms("slug_agg")
+        .field("slug")
+        .minDocCount(2)
+        .applyOptional(limit.filter(_ > 0))(_.size(_))
+
+    val searchSource = new SearchSourceBuilder()
+      .fetchSource(false)
+      .query(query)
+      .aggregation(aggs)
+
+    logger.info(searchSource.toString())
+
+    val search =
+      new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
+        .source(searchSource)
+
+    val aggResults = elasticsearchExecutor
+      .search(search)
+      .map(results => {
+        val aggResult = results.getAggregations.get[Terms]("slug_agg")
+
+        aggResult.getBuckets.asScala.toList
+      })
+
+    aggResults.foreach(buckets => {
+      logger.info(s"Found ${buckets.size} slugs with >1 duplicates.")
+    })
+
+    aggResults
+  }
+
+  private val scheduler = Executors.newSingleThreadScheduledExecutor()
+
+  private def fixPerson(
+    slug: String,
+    count: Long,
+    dryRun: Boolean
+  ) = {
+    logger.info(s"Fixing slug (${slug}).")
+
+    val query = QueryBuilders.termQuery("slug", slug)
+
+    val request =
+      new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
+        .source(
+          new SearchSourceBuilder()
+            .query(query)
+            .size(100)
+            .sort("popularity", SortOrder.DESC)
+        )
+
+    elasticsearchExecutor
+      .search(request)
+      .map(searchResponseToPeople)
+      .flatMap(response => {
+        val people = response.items
+
+        if (people.size > 1) {
+          val peopleAndIdx = people.tail.zipWithIndex.map {
+            case (person, idx) => person -> (idx + 2)
+          }
+
+          AsyncStream
+            .fromSeq(peopleAndIdx)
+            .delayedMapF(100 millis, scheduler) {
+              case (person, idx) =>
+                val newSlug = person.slug.get.addSuffix(s"$idx")
+                val newPerson = person.copy(
+                  slug = Some(newSlug)
+                )
+
+                if (!dryRun) {
+                  logger.info(
+                    s"Updating person ${newPerson.id} with new slug: ${newSlug}"
+                  )
+
+                  personUpdater
+                    .update(newPerson, refresh = true)
+                    .flatMap(_ => fixCastAndCrew(newPerson.id, newSlug))
+                } else {
+                  Future
+                    .successful {
+                      logger.info(
+                        s"Would've updated person ${newPerson.id} with new slug: ${newSlug}"
+                      )
+                    }
+                }
+            }
+            .force
+        } else {
+          logger.info(
+            s"Only found 1 person with slug ${slug}: ${people.headOption.map(_.id)}"
+          )
+          Future.unit
+        }
+      })
+  }
+
+  private def fixCastAndCrew(
+    personId: UUID,
+    newSlug: Slug
+  ): Future[Unit] = {
+    def getFixQuery(field: String) = {
+      val query = QueryBuilders.nestedQuery(
+        field,
+        QueryBuilders.termQuery(s"$field.id", personId.toString),
+        ScoreMode.Avg
+      )
+
+      val updateByQueryRequest = new UpdateByQueryRequest(
+        teletrackerConfig.elasticsearch.items_index_name
+      )
+
+      updateByQueryRequest.setQuery(query)
+      updateByQueryRequest.setScript(
+        new Script(
+          ScriptType.INLINE,
+          "painless",
+          UpdateCastMemberSlugScriptSource,
+          Map[String, Object](
+            "id" -> personId.toString,
+            "slug" -> newSlug.value
+          ).asJava
+        )
+      )
+    }
+
+    logger.info(
+      s"Fixing cast and crew for person id ${personId} with new slug ${newSlug}"
+    )
+
+    elasticsearchExecutor
+      .updateByQuery(getFixQuery("cast"))
+      .flatMap(response => {
+        logger
+          .info(
+            s"Fixed ${response.getUpdated} items' cast members for person ${personId}"
+          )
+
+        elasticsearchExecutor
+          .updateByQuery(getFixQuery("crew"))
+          .map(crewResponse => {
+            logger.info(
+              s"Fixed ${crewResponse.getUpdated} items' crew members for person ${personId}"
+            )
+          })
+      })
+  }
+}
+
+class FixDuplicateNumberedPersonSlugs @Inject()(
+  teletrackerConfig: TeletrackerConfig,
+  elasticsearchExecutor: ElasticsearchExecutor,
+  personUpdater: PersonUpdater
+)(implicit executionContext: ExecutionContext)
+    extends TeletrackerTaskWithDefaultArgs
+    with ElasticsearchAccess {
+  import Scripts._
+
+  private val scheduler = Executors.newSingleThreadScheduledExecutor()
+
+  override protected def runInternal(args: Args): Unit = {
+    val dupeSlug = args.value[String]("dupeSlug")
+    val dryRun = args.valueOrDefault("dryRun", true)
+    val limit = args.valueOrDefault("limit", 10)
+
+    if (dupeSlug.isDefined) {
+      AsyncStream
+        .fromFuture(getSlugCounts(dupeSlug))
+        .map(_.find(_.getKeyAsString == dupeSlug.get))
+        .mapF {
+          case Some(value) =>
+            fixPerson(value.getKeyAsString, value.getDocCount, dryRun)
+
+          case None =>
+            Future.failed(
+              new IllegalArgumentException(s"Slug not found: ${dupeSlug.get}")
+            )
+        }
+        .force
+        .await()
+    } else {
+      AsyncStream
+        .fromFuture(getSlugCounts(None, Some(limit)))
+        .flatMap(AsyncStream.fromSeq)
+        .mapF(bucket => {
+          fixPerson(bucket.getKeyAsString, bucket.getDocCount, dryRun)
+        })
+        .force
+        .await()
+    }
+  }
+
+  private def getSlugCounts(
+    slugFilter: Option[String],
+    limit: Option[Int] = None
+  ) = {
+    val query = QueryBuilders
+      .boolQuery()
+      .must(QueryBuilders.existsQuery("slug"))
+      .must(QueryBuilders.regexpQuery("slug", ".*-[0-9]"))
+      .mustNot(QueryBuilders.termQuery("slug", "-"))
+      .mustNot(QueryBuilders.termQuery("slug", "--"))
+      .mustNot(QueryBuilders.termQuery("slug", ""))
       .applyOptional(slugFilter)(
         (builder, slug) => builder.filter(QueryBuilders.termQuery("slug", slug))
       )
@@ -146,14 +358,19 @@ class FixDuplicatePersonSlugs @Inject()(
   ) = {
     logger.info(s"Fixing slug (${slug}).")
 
-    val query = QueryBuilders.termQuery("slug", slug)
+    val prefix = slug
+      .split("-")
+      .filter(part => Try(part.toInt).isFailure)
+      .mkString("-")
+
+    val query = QueryBuilders.regexpQuery("slug", s"$prefix(-[0-9])+")
 
     val request =
       new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
         .source(
           new SearchSourceBuilder()
             .query(query)
-            .size(Math.min(Int.MaxValue, count).toInt)
+            .size(100)
             .sort("popularity", SortOrder.DESC)
         )
 
@@ -164,32 +381,62 @@ class FixDuplicatePersonSlugs @Inject()(
         val people = response.items
 
         if (people.size > 1) {
-          val peopleAndIdx = people.tail.zipWithIndex.map {
-            case (person, idx) => person -> (idx + 2)
-          }
+          val got = people.flatMap(_.slug).sortBy(_.value).mkString("\n")
+
+          logger.info(s"Got:\n${got}\n")
+
+          val (toFix, existing) =
+            people.partition(_.slug.map(_.value).contains(slug))
+
+          logger.info(s"Must fix:\n${toFix.flatMap(_.slug).mkString("\n")}\n")
+
+          val nextSlugIndex = existing
+            .flatMap(_.slug)
+            .map(
+              _.value.replaceAllLiterally(
+                prefix + "-",
+                ""
+              )
+            )
+            .flatMap(x => Try(x.toInt).toOption)
+            .max + 1
+
+          val fixables =
+            (nextSlugIndex to (nextSlugIndex + toFix.size)).zip(toFix).map {
+              case (idx, person) => {
+                person.copy(slug = Some(Slug.raw(prefix).addSuffix(s"$idx")))
+              }
+            }
+
+          logger.info(s"Fixable:\n${fixables.flatMap(_.slug).mkString("\n")}")
+
+//          var proceed = false
+//          if (dryRun) {
+//            logger.info("Proceed?")
+//            val line = scala.io.StdIn.readLine()
+//            println(line)
+//            if (line.trim.equalsIgnoreCase("yes")) {
+//              proceed = true
+//            }
+//          }
 
           AsyncStream
-            .fromSeq(peopleAndIdx)
-            .mapF {
-              case (person, idx) =>
-                val newSlug = person.slug.get.addSuffix(s"$idx")
-                val newPerson = person.copy(
-                  slug = Some(newSlug)
-                )
-
+            .fromSeq(fixables.toList)
+            .delayedMapF(100 millis, scheduler) {
+              person =>
                 if (!dryRun) {
                   logger.info(
-                    s"Updating person ${newPerson.id} with new slug: ${newSlug}"
+                    s"Updating person ${person.id} with new slug: ${person.slug.get}"
                   )
 
                   personUpdater
-                    .update(newPerson)
-                    .flatMap(_ => fixCastAndCrew(newPerson.id, newSlug))
+                    .update(person, refresh = true)
+                    .flatMap(_ => fixCastAndCrew(person.id, person.slug.get))
                 } else {
                   Future
                     .successful {
                       logger.info(
-                        s"Would've updated person ${newPerson.id} with new slug: ${newSlug}"
+                        s"Would've updated person ${person.id} with new slug: ${person.slug.get}"
                       )
                     }
                 }
@@ -267,11 +514,22 @@ class MigratePersonSlug @Inject()(
   import Scripts._
 
   override protected def runInternal(args: Args): Unit = {
-    val fromSlug = Slug.raw(args.valueOrThrow[String]("from"))
+    val fromSlug = args.value[String]("from").map(Slug.raw)
+    val fromId = args.value[UUID]("fromId")
     val toSlug = Slug.raw(args.valueOrThrow[String]("to"))
 
-    personLookup
-      .lookupPersonBySlug(fromSlug, throwOnMultipleSlugs = true)
+    if (fromSlug.isEmpty && fromId.isEmpty) {
+      throw new IllegalArgumentException
+    }
+
+    val person = if (fromSlug.isDefined) {
+      personLookup
+        .lookupPersonBySlug(fromSlug.get, throwOnMultipleSlugs = true)
+    } else {
+      personLookup.lookupPerson(Left(fromId.get)).map(_.map(_._1))
+    }
+
+    person
       .flatMap {
         case None =>
           throw new IllegalArgumentException(
@@ -340,6 +598,9 @@ class VerifyDupeSlugs @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs
     with ElasticsearchAccess {
+
+  private val scheduler = Executors.newScheduledThreadPool(5)
+
   override protected def runInternal(args: Args): Unit = {
     val limit = args.valueOrDefault("limit", 10)
     val dryRun = args.valueOrDefault("dryRun", true)
@@ -420,7 +681,7 @@ class VerifyDupeSlugs @Inject()(
 
               AsyncStream
                 .fromSeq(needsUpdate)
-                .mapF(item => {
+                .delayedMapF(150 millis, scheduler)(item => {
                   if (dryRun) {
                     Future.successful {
                       logger.info(
@@ -433,7 +694,13 @@ class VerifyDupeSlugs @Inject()(
                 })
             })
 
-          AsyncStream.fromFuture(updateFut)
+          AsyncStream.fromFuture(updateFut.map(as => {
+            val p = Promise[AsyncStream[Any]]
+            scheduler.schedule(new Runnable {
+              override def run(): Unit = p.success(as)
+            }, 100, TimeUnit.MILLISECONDS)
+            p.future
+          }))
       }
       .force
       .await()

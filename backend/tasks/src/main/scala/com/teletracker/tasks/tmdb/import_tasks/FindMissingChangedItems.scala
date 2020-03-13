@@ -108,7 +108,7 @@ class FindMissingChangedItems @Inject()(
 
     val actuallyMissingIds = AsyncStream
       .fromSeq(missingIds.toSeq)
-      .delayedMapF(
+      .delayedMapF(250.millis, scheduledService)(
         item => {
           parsedArgs.itemType match {
             case ThingType.Movie =>
@@ -124,9 +124,7 @@ class FindMissingChangedItems @Inject()(
                 case NonFatal(e) => None
               }
           }
-        },
-        250.millis,
-        scheduledService
+        }
       )
       .flatMap(AsyncStream.fromOption)
       .toSeq()

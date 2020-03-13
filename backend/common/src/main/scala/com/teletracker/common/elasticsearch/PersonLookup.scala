@@ -295,6 +295,15 @@ class PersonLookup @Inject()(
     slugs: List[Slug],
     throwOnMultipleSlugs: Boolean = false
   ): Future[Map[Slug, EsPerson]] = {
+    lookupDupePeopleBySlugs(slugs, throwOnMultipleSlugs).map(
+      _.mapValues(_.head)
+    )
+  }
+
+  def lookupDupePeopleBySlugs(
+    slugs: List[Slug],
+    throwOnMultipleSlugs: Boolean = false
+  ): Future[Map[Slug, List[EsPerson]]] = {
     if (slugs.isEmpty) {
       Future.successful(Map.empty)
     } else {
@@ -345,7 +354,6 @@ class PersonLookup @Inject()(
               map
             })
         }
-        .map(_.mapValues(_.head))
     }
   }
 
