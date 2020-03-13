@@ -409,9 +409,10 @@ sealed abstract class AsyncStream[+A] {
     }
 
   def delayedMapF[B](
-    f: A => Future[B],
     perElementWait: FiniteDuration,
     scheduledService: ScheduledExecutorService
+  )(
+    f: A => Future[B]
   )(implicit executionContext: ExecutionContext
   ): AsyncStream[B] = {
     def waitAfter(value: B): Future[B] = {
@@ -433,10 +434,10 @@ sealed abstract class AsyncStream[+A] {
       case Cons(fa, more) =>
         Cons(
           fa.flatMap(f).transformWith(transform),
-          () => more().delayedMapF(f, perElementWait, scheduledService)
+          () => more().delayedMapF(perElementWait, scheduledService)(f)
         )
       case Embed(fas) =>
-        Embed(fas.map(_.delayedMapF(f, perElementWait, scheduledService)))
+        Embed(fas.map(_.delayedMapF(perElementWait, scheduledService)(f)))
     }
   }
 
