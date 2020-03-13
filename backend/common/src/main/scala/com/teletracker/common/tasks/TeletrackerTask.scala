@@ -2,7 +2,10 @@ package com.teletracker.common.tasks
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.logging.TaskLogger
-import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.teletracker.common.pubsub.{
+  TaskScheduler,
+  TeletrackerTaskQueueMessage
+}
 import com.teletracker.common.util.EnvironmentDetection
 import com.teletracker.common.util.Futures._
 import io.circe.syntax._
@@ -35,7 +38,7 @@ trait TeletrackerTask extends Args {
   @Inject
   private[this] var s3: S3Client = _
   @Inject
-  private[this] var publisher: SqsAsyncClient = _
+  private[this] var taskScheduler: TaskScheduler = _
 
   type Args = Map[String, Option[Any]]
   type TypedArgs
@@ -153,20 +156,7 @@ trait TeletrackerTask extends Args {
                 s"Scheduling follow-up task: ${message.toString}"
               )
 
-              publisher
-                .sendMessage(
-                  SendMessageRequest
-                    .builder()
-                    .messageBody(message.asJson.noSpaces)
-                    .queueUrl(
-                      teletrackerConfig.async.taskQueue.url
-                    )
-                    .messageDeduplicationId(UUID.randomUUID().toString)
-                    .messageGroupId("default")
-                    .build()
-                )
-                .toScala
-                .await()
+              taskScheduler.schedule(message).await()
             })
           } else {
             logger.info("Skipping scheduling of followup jobs")

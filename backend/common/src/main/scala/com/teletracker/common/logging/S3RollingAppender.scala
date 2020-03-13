@@ -76,6 +76,8 @@ class S3RollingPolicy extends FixedWindowRollingPolicy {
                 .build(),
               file.toPath
             )
+
+            file.delete()
           } catch {
             case NonFatal(e) => e.printStackTrace()
           }

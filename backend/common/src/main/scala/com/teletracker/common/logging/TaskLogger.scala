@@ -9,6 +9,7 @@ import ch.qos.logback.core.rolling.{
   SizeAndTimeBasedFNATP,
   TimeBasedRollingPolicy
 }
+import ch.qos.logback.core.status.OnConsoleStatusListener
 import ch.qos.logback.core.util.FileSize
 import org.slf4j
 import org.slf4j.LoggerFactory
@@ -74,6 +75,8 @@ object TaskLogger {
         consoleAppender.start()
 
         val logger = factory.getLogger(clazz.getName).asInstanceOf[Logger]
+
+        context.getStatusManager.add(new OnConsoleStatusListener)
 
         logger.addAppender(appender)
         logger.addAppender(consoleAppender)
