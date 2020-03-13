@@ -80,7 +80,11 @@ object TaskLogger {
         logger.setLevel(Level.INFO)
         logger.setAdditive(false)
 
-        logger -> (() => rollingPolicy.stop())
+        logger -> (() => {
+          logger.detachAndStopAllAppenders()
+          triggeringPolicy.stop()
+          rollingPolicy.stop()
+        })
 
       case _ => factory.getLogger(clazz.getName) -> (() => Unit)
     }
