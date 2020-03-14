@@ -5,10 +5,10 @@ import java.text.Normalizer
 import java.text.Normalizer.Form
 import java.util.{Locale, Objects}
 import java.util.regex.Pattern
-import scala.util.Try
+import scala.util.{Success, Try}
 
 object Slug {
-  final private val Separator = "-"
+  final val Separator = "-"
 
   private val NonLatin = Pattern.compile("[^\\w-]")
   private val Whitespace = Pattern.compile("[\\s]")
@@ -54,6 +54,35 @@ object Slug {
       )
     } else {
       Some(slugString -> None)
+    }
+  }
+
+  def findNext(
+    targetSlug: Slug,
+    existingSlugs: List[Slug]
+  ): Try[Slug] = {
+    if (existingSlugs.isEmpty) {
+      Success(targetSlug)
+    } else {
+      Try {
+        val nextSlugIndex = existingSlugs
+          .map(slug => {
+            if (!slug.value.startsWith(targetSlug.value)) {
+              throw new IllegalArgumentException(
+                s"Given slug (${slug}) does not contain prefix ${targetSlug}"
+              )
+            }
+
+            slug.value.stripPrefix(targetSlug.value).stripPrefix(Slug.Separator)
+          })
+          .map {
+            case ""  => 0
+            case str => str.toInt
+          }
+          .max + 1
+
+        targetSlug.addSuffix(s"$nextSlugIndex")
+      }
     }
   }
 }

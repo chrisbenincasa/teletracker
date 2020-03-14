@@ -34,9 +34,8 @@
 
     <!-- Root Config -->
     <root level="info">
-        <appender-ref ref="ASYNC-SERVICE"/>
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="CLOUD" />
+        <appender-ref ref="SERVICE"/>
     </root>
 
     <!-- Per-Package Config -->

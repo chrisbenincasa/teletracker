@@ -59,7 +59,8 @@ class AdminController @Inject()(
 
   get("/admin/finatra/things/:thingId", admin = true) { req: Request =>
     (HasThingIdOrSlug.parse(req.getParam("thingId")) match {
-      case Left(id) => itemLookup.getItemsById(Set(id)).map(_.get(id).flatten)
+      case Left(id) =>
+        itemLookup.lookupItemsByIds(Set(id)).map(_.get(id).flatten)
       case Right(slug) =>
         itemLookup.lookupItemBySlug(
           slug,

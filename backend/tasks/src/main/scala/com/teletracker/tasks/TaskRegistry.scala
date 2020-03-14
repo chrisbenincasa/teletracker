@@ -2,7 +2,10 @@ package com.teletracker.tasks
 
 import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.tasks.model.TeletrackerTaskIdentifier
-import com.teletracker.tasks.elasticsearch.DenormalizeItemTask
+import com.teletracker.tasks.elasticsearch.{
+  DenormalizeItemTask,
+  DenormalizePersonTask
+}
 import com.teletracker.tasks.scraper._
 import com.teletracker.tasks.scraper.hbo.IngestHboChanges
 import com.teletracker.tasks.scraper.hulu.IngestHuluChanges
@@ -26,6 +29,8 @@ object TaskRegistry {
     taskIdentifier match {
       case TeletrackerTaskIdentifier.DENORMALIZE_ITEM_TASK =>
         classOf[DenormalizeItemTask]
+      case TeletrackerTaskIdentifier.DENORMALIZE_PERSON_TASK =>
+        classOf[DenormalizePersonTask]
     }
   }
 

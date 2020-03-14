@@ -89,7 +89,7 @@ abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec](
       .toMap
 
     itemLookup
-      .getItemsById(itemsByEsId.keySet)
+      .lookupItemsByIds(itemsByEsId.keySet)
       .map(esItemMap => {
         val (matchResults, missingEsItems) =
           itemsByEsId.foldLeft(Folds.list2Empty[MatchResult[T], T]) {

@@ -3,7 +3,8 @@ package com.teletracker.common.tasks.model;
 import java.util.Optional;
 
 public enum TeletrackerTaskIdentifier {
-    DENORMALIZE_ITEM_TASK("DenormalizeItemTask");
+    DENORMALIZE_ITEM_TASK("DenormalizeItemTask"),
+    DENORMALIZE_PERSON_TASK("DenormalizePersonTask");
 
     private String value;
 

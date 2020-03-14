@@ -18,7 +18,7 @@ class ElasticsearchDirectLookup @Inject()(
     }.toMap
 
     itemLookup
-      .getItemsById(itemByActualId.keySet)
+      .lookupItemsByIds(itemByActualId.keySet)
       .map(foundItems => {
         val matches = foundItems.toList.collect {
           case (id, Some(item)) => MatchResult(itemByActualId(id), item)

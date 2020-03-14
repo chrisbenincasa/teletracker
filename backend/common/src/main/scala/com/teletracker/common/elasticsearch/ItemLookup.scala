@@ -18,7 +18,7 @@ class ItemLookup @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
-  def getItemsById(ids: Set[UUID]): Future[Map[UUID, Option[EsItem]]] = {
+  def lookupItemsByIds(ids: Set[UUID]): Future[Map[UUID, Option[EsItem]]] = {
     if (ids.isEmpty) {
       Future.successful(Map.empty)
     } else {
@@ -39,7 +39,7 @@ class ItemLookup @Inject()(
           response.getResponses.toList
             .flatMap(response => {
               val id = response.getId
-              if (!response.isFailed) {
+              if (response.isFailed) {
                 None
               } else {
                 Some(
