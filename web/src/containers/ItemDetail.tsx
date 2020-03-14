@@ -280,7 +280,7 @@ function ItemDetails(props: Props) {
       // TODO: This is an optimization, but sometimes items don't always have all of the
       // necessary information loaded when triggered from other pages. We should figure out
       // a way to determine if the full item needs to be fetched, so we can still cache
-      // previious results.
+      // previous results.
       // if (props.itemsById[itemId]) {
       //   props.itemPrefetchSuccess(props.itemsById[itemId]);
       // } else if (props.itemsBySlug[itemId]) {
@@ -531,7 +531,7 @@ function ItemDetails(props: Props) {
                 variant="contained"
                 aria-label="Go Back"
                 style={{ marginTop: 20, marginLeft: 20 }}
-                startIcon={<ChevronLeft style={{ marginRight: 8 }} />}
+                startIcon={<ChevronLeft />}
               >
                 Go Back
               </Button>
