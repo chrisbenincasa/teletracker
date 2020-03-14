@@ -43,15 +43,6 @@
         </encoder>
     </appender>
 
-<!--    <appender name="CLOUD" class="com.google.cloud.logging.logback.LoggingAppender">-->
-<!--        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->
-<!--            <level>INFO</level>-->
-<!--        </filter>-->
-<!--        <log>application.log</log>-->
-<!--        <flushLevel>WARN</flushLevel>-->
-<!--        <enhancer>com.teletracker.service.logging.TeletrackerLogsEnhancer</enhancer>-->
-<!--    </appender>-->
-
     <!-- ===================================================== -->
     <!-- Primary Async Appenders -->
     <!-- ===================================================== -->
@@ -72,7 +63,6 @@
     <root level="info">
         <appender-ref ref="ASYNC-SERVICE"/>
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="CLOUD" />
     </root>
 
     <!-- Per-Package Config -->

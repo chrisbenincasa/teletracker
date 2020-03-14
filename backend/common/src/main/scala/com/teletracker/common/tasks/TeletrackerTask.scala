@@ -40,6 +40,8 @@ trait TeletrackerTask extends Args {
   @Inject
   private[this] var taskScheduler: TaskScheduler = _
 
+  private[this] var _options: Options = _
+
   type Args = Map[String, Option[Any]]
   type TypedArgs
 
@@ -86,6 +88,13 @@ trait TeletrackerTask extends Args {
     } else {
       _logger = LoggerFactory.getLogger(getClass)
     }
+
+    _options = Options(
+      scheduleFollowupTasks = args
+        .value[Boolean]("scheduleFollowups")
+        .orElse(args.value[Boolean]("scheduleFollowupTasks"))
+        .getOrElse(false)
+    )
   }
 
   final def run(args: Args): Unit = {
@@ -138,6 +147,13 @@ trait TeletrackerTask extends Args {
     logger.info(s"Successfully attached ${cb.name} callback")
   }
 
+  protected def followupTasksToSchedule(
+    args: TypedArgs,
+    rawArgs: Args
+  ): List[TeletrackerTaskQueueMessage] = Nil
+
+  protected def options: Options = _options
+
   private def registerFollowupTasksCallback(): Unit = {
     registerCallback(
       TaskCallback(
@@ -166,15 +182,12 @@ trait TeletrackerTask extends Args {
     )
   }
 
-  protected def followupTasksToSchedule(
-    args: TypedArgs,
-    rawArgs: Args
-  ): List[TeletrackerTaskQueueMessage] = Nil
-
   case class TaskCallback(
     name: String,
     cb: (TypedArgs, Args) => Unit,
     runOnFailure: Boolean = false)
+
+  case class Options(scheduleFollowupTasks: Boolean = true)
 }
 
 trait TeletrackerTaskWithDefaultArgs extends TeletrackerTask with DefaultAnyArgs

@@ -101,12 +101,12 @@ object ToEsItem {
 
     override def esItemImages(t: Person): List[EsItemImage] =
       List(
-        t.profile_path.map(backdrop => {
+        t.profile_path.map(profile => {
           EsItemImage(
             provider_id = ExternalSource.TheMovieDb.ordinal(), // TMDb, for now
             provider_shortname = ExternalSource.TheMovieDb.getName,
-            id = backdrop,
-            image_type = EsImageType.Backdrop
+            id = profile,
+            image_type = EsImageType.Profile
           )
         })
       ).flatten
