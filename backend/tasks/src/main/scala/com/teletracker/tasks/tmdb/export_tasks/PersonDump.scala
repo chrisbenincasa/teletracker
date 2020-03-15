@@ -28,11 +28,3 @@ class PersonDump @Inject()(
       .map(_.noSpaces)
   }
 }
-
-@JsonCodec
-case class PersonDumpFileRow(
-  adult: Boolean,
-  id: Int,
-  name: String,
-  popularity: Double)
-    extends TmdbDumpFileRow

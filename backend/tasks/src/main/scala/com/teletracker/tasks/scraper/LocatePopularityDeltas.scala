@@ -6,6 +6,7 @@ import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.tasks.tmdb.{
   UpdateMoviePopularities,
+  UpdatePeoplePopularities,
   UpdatePopularities,
   UpdatePopularitiesJobArgs,
   UpdateTvShowPopularities
@@ -116,15 +117,16 @@ class LocateShowPopularityDelta @Inject()(
       teletrackerConfig
     )
 
-//class LocatePersonPopularityDelta @Inject()(
-//  publisher: SqsAsyncClient,
-//  s3Client: S3Client,
-//  sourceRetriever: SourceRetriever,
-//  teletrackerConfig: TeletrackerConfig)
-//    extends LocatePopularityDeltas[](
-//      ThingType.Person,
-//      publisher,
-//      s3Client,
-//      sourceRetriever,
-//      teletrackerConfig
-//    )
+class LocatePersonPopularityDelta @Inject()(
+  publisher: SqsAsyncClient,
+  s3Client: S3Client,
+  sourceRetriever: SourceRetriever,
+  teletrackerConfig: TeletrackerConfig
+)(implicit executionContext: ExecutionContext)
+    extends LocatePopularityDeltas[UpdatePeoplePopularities](
+      ThingType.Person,
+      publisher,
+      s3Client,
+      sourceRetriever,
+      teletrackerConfig
+    )

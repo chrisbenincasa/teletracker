@@ -4,7 +4,7 @@ import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ThingType}
-import com.teletracker.common.elasticsearch.ItemLookup
+import com.teletracker.common.elasticsearch.{ItemLookup, PersonLookup}
 import com.teletracker.common.pubsub.{
   EsIngestMessage,
   EsIngestMessageOperation,
@@ -18,6 +18,7 @@ import com.teletracker.common.util.Functions._
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.{
   MovieDumpFileRow,
+  PersonDumpFileRow,
   TmdbDumpFileRow,
   TvShowDumpFileRow
 }
@@ -30,6 +31,7 @@ import org.elasticsearch.common.io.stream.BytesStreamOutput
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.net.URI
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -37,13 +39,14 @@ class UpdatePopularitiesDependencies @Inject()(
   val sourceRetriever: SourceRetriever,
   val ingestJobParser: IngestJobParser,
   val itemLookup: ItemLookup,
+  val personLookup: PersonLookup,
   val teletrackerConfig: TeletrackerConfig,
   val sqsAsyncClient: SqsAsyncClient)
 
 class UpdateMoviePopularities @Inject()(
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
-    extends UpdatePopularities[MovieDumpFileRow](
+    extends UpdateItemPopularities[MovieDumpFileRow](
       ThingType.Movie,
       deps
     )
@@ -51,7 +54,7 @@ class UpdateMoviePopularities @Inject()(
 class UpdateTvShowPopularities @Inject()(
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
-    extends UpdatePopularities[TvShowDumpFileRow](
+    extends UpdateItemPopularities[TvShowDumpFileRow](
       ThingType.Show,
       deps
     )
@@ -67,6 +70,76 @@ case class UpdatePopularitiesJobArgs(
   verbose: Boolean = false,
   mod: Option[Int],
   band: Option[Int])
+
+abstract class UpdateItemPopularities[T <: TmdbDumpFileRow: Decoder](
+  itemType: ThingType,
+  deps: UpdatePopularitiesDependencies
+)(implicit executionContext: ExecutionContext)
+    extends UpdatePopularities[T](itemType, deps) {
+  override protected def lookupBatch(ids: List[Int]): Future[Map[Int, UUID]] = {
+    deps.itemLookup
+      .lookupItemsByExternalIds(
+        ids
+          .map(
+            id => (ExternalSource.TheMovieDb, id.toString, itemType)
+          )
+      )
+      .map(results => {
+        results.map {
+          case ((_, id), item) => id.toInt -> item.id
+        }
+      })
+  }
+
+  override protected def createUpdateMessage(
+    id: UUID,
+    popularity: Double
+  ): EsIngestMessage = {
+    EsIngestMessage(
+      EsIngestMessageOperation.Update,
+      update = Some(
+        EsIngestUpdate(
+          index = deps.teletrackerConfig.elasticsearch.items_index_name,
+          id.toString,
+          None,
+          Some(Map("popularity" -> popularity).asJson)
+        )
+      )
+    )
+  }
+}
+
+class UpdatePeoplePopularities(
+  deps: UpdatePopularitiesDependencies
+)(implicit executionContext: ExecutionContext)
+    extends UpdatePopularities[PersonDumpFileRow](ThingType.Person, deps) {
+  override protected def lookupBatch(ids: List[Int]): Future[Map[Int, UUID]] = {
+    deps.personLookup
+      .lookupPeopleByExternalIds(ExternalSource.TheMovieDb, ids.map(_.toString))
+      .map(results => {
+        results.map {
+          case (id, item) => id.toInt -> item.id
+        }
+      })
+  }
+
+  override protected def createUpdateMessage(
+    id: UUID,
+    popularity: Double
+  ): EsIngestMessage = {
+    EsIngestMessage(
+      EsIngestMessageOperation.Update,
+      update = Some(
+        EsIngestUpdate(
+          index = deps.teletrackerConfig.elasticsearch.people_index_name,
+          id.toString,
+          None,
+          Some(Map("popularity" -> popularity).asJson)
+        )
+      )
+    )
+  }
+}
 
 abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
   itemType: ThingType,
@@ -199,45 +272,17 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
             .grouped(10)
             .mapF(innerBatch => {
               logger.debug(s"Looking up ${innerBatch.size} items")
-              deps.itemLookup
-                .lookupItemsByExternalIds(
-                  innerBatch
-                    .map(_._1)
-                    .map(
-                      id => (ExternalSource.TheMovieDb, id.toString, itemType)
-                    )
-                    .toList
-                )
-                .map(results => {
-                  results.map {
-                    case ((_, id), item) => id.toInt -> item.id
+              lookupBatch(innerBatch.map(_._1).toList).flatMap(itemIdById => {
+                logger.debug(s"Found ${itemIdById.size} items")
+                val messages = innerBatch
+                  .flatMap {
+                    case (tmdbId, popularity) =>
+                      itemIdById.get(tmdbId).map(_ -> popularity)
                   }
-                })
-                .flatMap(itemIdById => {
-                  logger.debug(s"Found ${itemIdById.size} items")
-                  val messages = innerBatch
-                    .flatMap {
-                      case (tmdbId, popularity) =>
-                        itemIdById.get(tmdbId).map(_ -> popularity)
-                    }
-                    .map {
-                      case (id, popularity) =>
-                        EsIngestMessage(
-                          EsIngestMessageOperation.Update,
-                          update = Some(
-                            EsIngestUpdate(
-                              index =
-                                teletrackerConfig.elasticsearch.items_index_name,
-                              id.toString,
-                              None,
-                              Some(Map("popularity" -> popularity).asJson)
-                            )
-                          )
-                        )
-                    }
+                  .map(Function.tupled(createUpdateMessage))
 
-                  queue.batchQueue(messages.toList)
-                })
+                queue.batchQueue(messages.toList)
+              })
             })
             .force
             .map(_ => {
@@ -255,4 +300,11 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
       logger.info(s"Processed ${processed.get()} total popularities")
     }
   }
+
+  protected def lookupBatch(ids: List[Int]): Future[Map[Int, UUID]]
+
+  protected def createUpdateMessage(
+    id: UUID,
+    popularity: Double
+  ): EsIngestMessage
 }
