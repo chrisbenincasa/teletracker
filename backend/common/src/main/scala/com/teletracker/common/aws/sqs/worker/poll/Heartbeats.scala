@@ -13,7 +13,8 @@ trait Heartbeats[T <: EventBase] {
   protected def getConfig: SqsQueueWorkerConfig
 
   protected def heartbeatPool: ProvidedSchedulerService
-  private val heartbeatRegistry = new ConcurrentHashMap[String, Heartbeat[T]]()
+  protected val heartbeatRegistry =
+    new ConcurrentHashMap[String, Heartbeat[T]]()
 
   protected def registerHeartbeat(item: T): Unit = {
     val heartbeat =

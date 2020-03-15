@@ -65,24 +65,24 @@ class S3RollingPolicy extends FixedWindowRollingPolicy {
 
       val objectName = s"$getKeyPrefix/${file.getName}"
 
-      uploadPool.submit(new Runnable {
-        override def run(): Unit = {
-          try {
-            getS3Client().putObject(
-              PutObjectRequest
-                .builder()
-                .bucket(getBucketName)
-                .key(objectName)
-                .build(),
-              file.toPath
-            )
+      try {
+        getS3Client().putObject(
+          PutObjectRequest
+            .builder()
+            .bucket(getBucketName)
+            .key(objectName)
+            .build(),
+          file.toPath
+        )
 
-            file.delete()
-          } catch {
-            case NonFatal(e) => e.printStackTrace()
-          }
-        }
-      })
+        file.delete()
+      } catch {
+        case NonFatal(e) => e.printStackTrace()
+      }
+//      uploadPool.submit(new Runnable {
+//        override def run(): Unit = {
+//        }
+//      })
     }
   }
 

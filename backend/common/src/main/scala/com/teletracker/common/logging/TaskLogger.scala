@@ -2,7 +2,7 @@ package com.teletracker.common.logging
 
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.classic.{Level, Logger, LoggerContext}
+import ch.qos.logback.classic.{Level, Logger, LoggerContext, LoggerWrapper}
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.core.rolling.{
   RollingFileAppender,
@@ -14,6 +14,7 @@ import ch.qos.logback.core.util.FileSize
 import org.slf4j
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.s3.S3Client
+import java.util.UUID
 
 object TaskLogger {
   final private val LogFormat =
@@ -23,8 +24,9 @@ object TaskLogger {
     clazz: Class[_],
     s3Client: S3Client,
     s3Bucket: String,
-    s3KeyPrefix: String
-  ): (slf4j.Logger, () => Unit) = {
+    s3KeyPrefix: String,
+    outputToConsole: Boolean
+  ): (slf4j.Logger, () => Unit) = synchronized {
     val now = System.currentTimeMillis()
     val factory = LoggerFactory.getILoggerFactory
 
@@ -35,10 +37,11 @@ object TaskLogger {
         encoder.setContext(context)
         encoder.start()
 
-        val appender = new RollingFileAppender[ILoggingEvent]()
-        appender.setFile(s"${clazz.getSimpleName}-$now.log")
-        appender.setEncoder(encoder)
-        appender.setContext(context)
+        val s3Appender = new RollingFileAppender[ILoggingEvent]()
+        s3Appender.setFile(s"${clazz.getSimpleName}-$now.log")
+        s3Appender.setEncoder(encoder)
+        s3Appender.setImmediateFlush(true)
+        s3Appender.setContext(context)
 
         val rollingPolicy = new S3RollingPolicy
         rollingPolicy.setContext(context)
@@ -48,14 +51,14 @@ object TaskLogger {
         rollingPolicy.setFileNamePattern(
           s"${clazz.getSimpleName}-$now-%d{yyyy-MM-dd}.%i"
         )
-        rollingPolicy.setParent(appender)
+        rollingPolicy.setParent(s3Appender)
         rollingPolicy.start()
 
         val triggeringPolicy = new SizeAndTimeBasedFNATP[ILoggingEvent]()
         val tbrp = new TimeBasedRollingPolicy[ILoggingEvent]
         tbrp.setContext(context)
         tbrp.setFileNamePattern(s"${clazz.getSimpleName}-$now-%d.%i")
-        tbrp.setParent(appender)
+        tbrp.setParent(s3Appender)
         tbrp.start()
 
         triggeringPolicy.setTimeBasedRollingPolicy(tbrp)
@@ -65,28 +68,38 @@ object TaskLogger {
         triggeringPolicy.setContext(context)
         triggeringPolicy.start()
 
-        appender.setTriggeringPolicy(triggeringPolicy)
-        appender.setRollingPolicy(rollingPolicy)
-        appender.start()
+        s3Appender.setTriggeringPolicy(triggeringPolicy)
+        s3Appender.setRollingPolicy(rollingPolicy)
+        s3Appender.start()
 
         val consoleAppender = new ConsoleAppender[ILoggingEvent]
         consoleAppender.setContext(context)
         consoleAppender.setEncoder(encoder)
+        consoleAppender.setName(clazz.getName)
         consoleAppender.start()
 
-        val logger = factory.getLogger(clazz.getName).asInstanceOf[Logger]
+        val finalLogger = {
+          val logger = factory
+            .getLogger(clazz.getName)
+            .asInstanceOf[Logger]
 
-        context.getStatusManager.add(new OnConsoleStatusListener)
+          val wrapper = new LoggerWrapper(logger, context)
 
-        logger.addAppender(appender)
-        logger.addAppender(consoleAppender)
-        logger.setLevel(Level.INFO)
-        logger.setAdditive(false)
+          wrapper.addWrapperAppender(s3Appender)
 
-        logger -> (() => {
-          logger.detachAndStopAllAppenders()
-          triggeringPolicy.stop()
-          rollingPolicy.stop()
+          if ((logger
+                .getAppender(consoleAppender.getName) eq null)) {
+            logger.addAppender(consoleAppender)
+          }
+
+          logger.setLevel(Level.INFO)
+          logger.setAdditive(false)
+
+          wrapper
+        }
+
+        finalLogger -> (() => {
+          finalLogger.detachAndStopAllAppenders()
         })
 
       case _ => factory.getLogger(clazz.getName) -> (() => Unit)

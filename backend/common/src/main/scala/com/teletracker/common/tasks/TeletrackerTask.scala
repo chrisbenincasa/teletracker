@@ -6,6 +6,7 @@ import com.teletracker.common.pubsub.{
   TaskScheduler,
   TeletrackerTaskQueueMessage
 }
+import com.teletracker.common.tasks.TeletrackerTask.CommonFlags
 import com.teletracker.common.util.EnvironmentDetection
 import com.teletracker.common.util.Futures._
 import io.circe.syntax._
@@ -15,7 +16,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
-import java.time.OffsetDateTime
+import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.collection.mutable
 import scala.compat.java8.FutureConverters._
@@ -24,10 +25,16 @@ import scala.util.control.NonFatal
 object TeletrackerTask {
   object CommonFlags {
     final val S3Logging = "s3Logging"
+    final val OutputToConsole = "outputToConsole"
+    final val ScheduleFollowups = "scheduleFollowups" // Legacy
+    final val ScheduleFollowupTasks = "scheduleFollowupTasks"
   }
 }
 
 trait TeletrackerTask extends Args {
+  protected lazy val taskId: UUID = UUID.randomUUID()
+
+  private val selfLogger = LoggerFactory.getLogger(getClass)
   private var _logger: Logger = _
   private var _loggerCloseHook: () => Unit = () => {}
 
@@ -73,14 +80,26 @@ trait TeletrackerTask extends Args {
   private def init(args: Args): Unit = synchronized {
     val logToS3 =
       EnvironmentDetection.runningRemotely || args
-        .valueOrDefault(TeletrackerTask.CommonFlags.S3Logging, false)
+        .valueOrDefault(CommonFlags.S3Logging, false)
+
+    val logToConsole =
+      EnvironmentDetection.runningLocally || args
+        .valueOrDefault(CommonFlags.OutputToConsole, false)
 
     if (logToS3) {
+      val s3Key =
+        s"task-output/${getClass.getSimpleName}/${LocalDate.now()}/${OffsetDateTime.now()}"
+
       val (s3Logger, onClose) = TaskLogger.make(
         getClass,
         s3,
         teletrackerConfig.data.s3_bucket,
-        s"task-output/${getClass.getSimpleName}/${OffsetDateTime.now()}"
+        s3Key,
+        outputToConsole = logToConsole
+      )
+
+      selfLogger.info(
+        s"Logs for ${getClass.getSimpleName} (id: $taskId) can be found at s3://${teletrackerConfig.data.s3_bucket}/$s3Key"
       )
 
       _logger = s3Logger
@@ -91,14 +110,18 @@ trait TeletrackerTask extends Args {
 
     _options = Options(
       scheduleFollowupTasks = args
-        .value[Boolean]("scheduleFollowups")
-        .orElse(args.value[Boolean]("scheduleFollowupTasks"))
-        .getOrElse(false)
+        .value[Boolean](CommonFlags.ScheduleFollowups)
+        .orElse(args.value[Boolean](CommonFlags.ScheduleFollowupTasks))
+        .getOrElse(true)
     )
   }
 
   final def run(args: Args): Unit = {
     try {
+      logger.info(
+        s"Running ${getClass.getSimpleName} (id: $taskId) with args: ${args}"
+      )
+
       init(args)
 
       registerFollowupTasksCallback()
@@ -108,8 +131,6 @@ trait TeletrackerTask extends Args {
       val parsedArgs = preparseArgs(args)
 
       validateArgs(parsedArgs)
-
-      logger.info(s"Running ${getClass.getSimpleName} with args: ${args}")
 
       val success = try {
         runInternal(args)
@@ -126,7 +147,7 @@ trait TeletrackerTask extends Args {
 
       callbacks.foreach(cb => {
         if (success || cb.runOnFailure) {
-          logger.info(s"Running callback: ${cb.name}")
+          logger.debug(s"Running callback: ${cb.name}")
           try {
             cb.cb(parsedArgs, args)
           } catch {
@@ -144,7 +165,7 @@ trait TeletrackerTask extends Args {
 
   def registerCallback(cb: TaskCallback): Unit = {
     callbacks += cb
-    logger.info(s"Successfully attached ${cb.name} callback")
+    logger.debug(s"Successfully attached ${cb.name} callback")
   }
 
   protected def followupTasksToSchedule(
@@ -159,23 +180,22 @@ trait TeletrackerTask extends Args {
       TaskCallback(
         "scheduleFollowupTasks",
         (typedArgs, args) => {
-          if (args.valueOrDefault("scheduleFollowups", true)) {
+          if (options.scheduleFollowupTasks) {
             val tasks = followupTasksToSchedule(typedArgs, args)
 
             if (tasks.isEmpty) {
-              logger.info("No follow-up tasks to schedule.")
+              logger.debug("No follow-up tasks to schedule.")
             }
 
-            // TODO: Batch
             tasks.foreach(message => {
-              logger.info(
+              logger.debug(
                 s"Scheduling follow-up task: ${message.toString}"
               )
-
-              taskScheduler.schedule(message).await()
             })
+
+            taskScheduler.schedule(tasks).await()
           } else {
-            logger.info("Skipping scheduling of followup jobs")
+            logger.debug("Skipping scheduling of followup jobs")
           }
         }
       )

@@ -20,6 +20,7 @@ class RemoteTask @Inject()(
     extends TeletrackerTaskWithDefaultArgs {
   override def runInternal(args: Args): Unit = {
     val clazz = args.value[String]("classToRun").get
+    val instances = args.valueOrDefault[Int]("instances", 1)
     val instance =
       teletrackerTaskRunner.getInstance(clazz)
 
@@ -46,19 +47,21 @@ class RemoteTask @Inject()(
 
     println(message.asJson)
 
-    publisher
-      .sendMessage(
-        SendMessageRequest
-          .builder()
-          .messageBody(message.asJson.noSpaces)
-          .messageDeduplicationId(UUID.randomUUID().toString)
-          .messageGroupId("default")
-          .queueUrl(
-            teletrackerConfig.async.taskQueue.url
-          )
-          .build()
-      )
-      .toScala
-      .await()
+    (0 until instances).foreach(_ => {
+      publisher
+        .sendMessage(
+          SendMessageRequest
+            .builder()
+            .messageBody(message.asJson.noSpaces)
+            .messageDeduplicationId(UUID.randomUUID().toString)
+            .messageGroupId("default")
+            .queueUrl(
+              teletrackerConfig.async.taskQueue.url
+            )
+            .build()
+        )
+        .toScala
+        .await()
+    })
   }
 }

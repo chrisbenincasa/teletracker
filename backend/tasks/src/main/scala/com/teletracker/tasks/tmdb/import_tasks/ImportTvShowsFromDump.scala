@@ -31,7 +31,7 @@ class ImportTvShowsFromDump @Inject()(
       .map(_ => {})
       .recover {
         case NonFatal(e) =>
-          logger.warn("Error occurred while processing movie", e)
+          logger.warn("Error occurred while processing show", e)
       }
   }
 }
