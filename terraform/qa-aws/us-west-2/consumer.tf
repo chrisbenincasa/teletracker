@@ -15,7 +15,7 @@ data "template_file" "teletracker-qa-consumer-task-definition-template-ec2" {
 // EC2 based consumer
 resource "aws_ecs_task_definition" "teletracker-qa-consumer-ec2" {
   family                = "teletracker-consumer-ec2"
-  container_definitions = data.template_file.teletracker-qa-consumer-task-definition-template.rendered
+  container_definitions = data.template_file.teletracker-qa-consumer-task-definition-template-ec2.rendered
   execution_role_arn    = data.aws_iam_role.ecs-task-execution-role.arn
   task_role_arn         = data.aws_iam_role.ecs-fargate-task-role.arn
 
@@ -55,7 +55,7 @@ resource "aws_ecs_service" "teletracker-qa-consumer-ec2" {
 // Fargate based Consumer
 resource "aws_ecs_task_definition" "teletracker-qa-consumer" {
   family                = "teletracker-consumer"
-  container_definitions = data.template_file.teletracker-qa-consumer-task-definition-template-ec2.rendered
+  container_definitions = data.template_file.teletracker-qa-consumer-task-definition-template.rendered
   execution_role_arn    = data.aws_iam_role.ecs-task-execution-role.arn
   task_role_arn         = data.aws_iam_role.ecs-fargate-task-role.arn
 
