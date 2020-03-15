@@ -16,12 +16,9 @@
     <!-- Service Log (Rollover daily/50MB) -->
     <appender name="SERVICE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.service.output:-service.log}</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>service-%d{yyyy-MM-dd}.%i</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy
-                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>50MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxFileSize>50MB</maxFileSize>
         </rollingPolicy>
         <encoder>
             <pattern>%date %.-3level %-16X{traceId} %-25logger{0} %msg%n</pattern>
@@ -31,12 +28,9 @@
     <!-- Access Log (Rollover daily/50MB) -->
     <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.access.output:-access.log}</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>access-%d{yyyy-MM-dd}.%i</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy
-                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>50MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxFileSize>50MB</maxFileSize>
         </rollingPolicy>
         <encoder>
             <pattern>%msg %X{traceId}%n</pattern>
