@@ -3,7 +3,7 @@
     "name": "teletracker-consumer",
     "image": "${image}",
     "cpu": 512,
-    "memory": 768,
+    "memory": 1024,
     "essential": true,
     "logConfiguration": {
       "logDriver": "awslogs",
@@ -41,6 +41,10 @@
       {
         "name": "ADMINISTRATOR_KEY",
         "value": "+pxK@ZNxp/XOlws1%Ga)vqfcvqmBh/"
+      },
+      {
+        "name": "JVM_ARGS",
+        "value": "-Xmx1g"
       }
     ],
     "secrets": [
