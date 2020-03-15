@@ -29,6 +29,7 @@ import Featured from '../components/Featured';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import AllFilters from '../components/Filters/AllFilters';
 import ItemCard from '../components/ItemCard';
+import ScrollToTop from '../components/Buttons/ScrollToTop';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { Genre, Network } from '../types';
@@ -133,11 +134,15 @@ interface State {
   needsNewFeatured: boolean;
   totalLoadedImages: number;
   createDynamicListDialogOpen: boolean;
+  showScrollToTop: boolean;
 }
 
 class Popular extends Component<Props, State> {
+  private popularWrapper: React.RefObject<HTMLDivElement>;
+
   constructor(props: Props) {
     super(props);
+    this.popularWrapper = React.createRef();
 
     let filterParams = DEFAULT_FILTER_PARAMS;
     let paramsFromQuery = parseFilterParamsFromQs(
@@ -162,6 +167,7 @@ class Popular extends Component<Props, State> {
       needsNewFeatured: false,
       totalLoadedImages: 0,
       createDynamicListDialogOpen: false,
+      showScrollToTop: false,
     };
   }
 
@@ -222,7 +228,19 @@ class Popular extends Component<Props, State> {
     ) {
       ReactGA.set({ userId: userSelf.user.getUsername() });
     }
+
+    window.addEventListener('scroll', this.onScroll);
   }
+
+  onScroll = () => {
+    const scrollTop = window.pageYOffset || 0;
+    // to do: 100 is just a random number, we can play with this or make it dynamic
+    if (scrollTop > 100 && !this.state.showScrollToTop) {
+      this.setState({ showScrollToTop: true });
+    } else if (scrollTop < 100 && this.state.showScrollToTop) {
+      this.setState({ showScrollToTop: false });
+    }
+  };
 
   getFeaturedItems = numberFeaturedItems => {
     const { popular, thingsById, width } = this.props;
@@ -376,8 +394,19 @@ class Popular extends Component<Props, State> {
     this.loadPopular(true, false);
   }, 250);
 
+  scrollToTop = () => {
+    window.scrollTo(0, 0);
+    this.setState({
+      showScrollToTop: false,
+    });
+  };
+
   loadMoreResults = () => {
-    const { featuredItemsIndex, totalLoadedImages } = this.state;
+    const {
+      featuredItemsIndex,
+      showScrollToTop,
+      totalLoadedImages,
+    } = this.state;
     const { loading, popular, width } = this.props;
     const numColumns = getNumColumns(width);
 
@@ -389,6 +418,11 @@ class Popular extends Component<Props, State> {
 
     if (!loading && shouldLoadMore) {
       this.debounceLoadMore();
+    }
+    if (!showScrollToTop) {
+      this.setState({
+        showScrollToTop: true,
+      });
     }
   };
 
@@ -472,7 +506,7 @@ class Popular extends Component<Props, State> {
             useWindow
             threshold={300}
           >
-            <Grid container spacing={2}>
+            <Grid container spacing={2} ref={this.popularWrapper}>
               {popular.map((result, index) => {
                 let thing = thingsById[result];
                 if (thing && !this.state.featuredItemsIndex.includes(index)) {
@@ -509,13 +543,24 @@ class Popular extends Component<Props, State> {
   };
 
   render() {
-    const { featuredItems } = this.state;
+    const { featuredItems, showScrollToTop } = this.state;
     const { classes, popular } = this.props;
 
     return popular ? (
       <div className={classes.popularWrapper}>
         <Featured featuredItems={featuredItems} />
         {this.renderPopular()}
+        {showScrollToTop && (
+          <ScrollToTop
+            onClick={this.scrollToTop}
+            style={{
+              position: 'fixed',
+              bottom: 8,
+              right: 8,
+              backgroundColor: '#00838f',
+            }}
+          />
+        )}
       </div>
     ) : (
       this.renderLoading()
