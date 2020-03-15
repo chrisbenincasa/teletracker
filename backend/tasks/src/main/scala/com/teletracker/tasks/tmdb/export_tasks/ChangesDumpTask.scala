@@ -79,6 +79,7 @@ class TvChangesDumpTask @Inject()(
   }
 }
 
+@TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 class PersonChangesDumpTask @Inject()(
   s3: S3Client,
   itemExpander: ItemExpander,

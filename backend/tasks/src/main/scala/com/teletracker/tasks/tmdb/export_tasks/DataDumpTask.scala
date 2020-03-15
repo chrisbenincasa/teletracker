@@ -212,3 +212,11 @@ case class TvShowDumpFileRow(
   original_name: String,
   popularity: Double)
     extends TmdbDumpFileRow
+
+@JsonCodec
+case class PersonDumpFileRow(
+  adult: Boolean,
+  id: Int,
+  name: String,
+  popularity: Double)
+    extends TmdbDumpFileRow
