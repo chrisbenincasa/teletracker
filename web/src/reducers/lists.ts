@@ -9,6 +9,8 @@ import {
   ListRetrieveInitiatedAction,
   ListRetrieveSuccessAction,
   LIST_RETRIEVE_ALL_INITIATED,
+  USER_SELF_DELETE_LIST_SUCCESS,
+  UserDeleteListSuccessAction,
 } from '../actions/lists';
 import {
   LIST_ADD_ITEM_INITIATED,
@@ -131,6 +133,16 @@ const handleListRetrieveAllInitiated = handleAction<
       [LIST_RETRIEVE_ALL_INITIATED]: true,
     },
   };
+});
+
+const handleListDeleteSuccess = handleAction<
+  UserDeleteListSuccessAction,
+  State
+>(USER_SELF_DELETE_LIST_SUCCESS, (state, { payload }) => {
+  if (payload) {
+    delete state.listsById[payload.listId];
+  }
+  return state;
 });
 
 const groupById = (things: Thing[]) =>
@@ -279,4 +291,5 @@ export default flattenActions<State>(
   handleUserRetrieve,
   handleListRetrieveAllInitiated,
   handleListUpdate,
+  handleListDeleteSuccess,
 );
