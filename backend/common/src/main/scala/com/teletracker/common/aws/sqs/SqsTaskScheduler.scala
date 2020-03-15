@@ -28,7 +28,7 @@ class SqsTaskScheduler @Inject()(
     queue
       .queue(
         teletrackerTaskQueueMessage,
-        teletrackerConfig.async.taskQueue.message_group_id
+        Some(UUID.randomUUID().toString)
       )
       .map(_ => {})
   }
@@ -38,7 +38,7 @@ class SqsTaskScheduler @Inject()(
   ): Future[Unit] = {
     queue.batchQueue(
       teletrackerTaskQueueMessage,
-      teletrackerConfig.async.taskQueue.message_group_id
+      Some(UUID.randomUUID().toString)
     )
   }.map(_ => {})
 }
