@@ -35,7 +35,7 @@
     <!-- Root Config -->
     <root level="info">
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="SERVICE"/>
+<!--        <appender-ref ref="SERVICE"/>-->
     </root>
 
     <!-- Per-Package Config -->

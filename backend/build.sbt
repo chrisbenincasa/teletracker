@@ -108,6 +108,13 @@ lazy val consumer = project
     libraryDependencies ++= Seq(
       "org.scalatest" %% "scalatest" % "3.0.5" % Test
     ),
+    envVars in reStart := Map(
+      "TMDB_API_KEY" -> System.getenv("TMDB_API_KEY"),
+      "JWT_SECRET" -> System.getenv("JWT_SECRET"),
+      "LOCALCERTS_PATH" -> System.getenv("LOCALCERTS_PATH"),
+      "AWS_EXECUTION_ENV" -> Option(System.getenv("AWS_EXECUTION_ENV"))
+        .getOrElse("")
+    ),
     Revolver.enableDebugging(port = 5005, suspend = false),
     dockerfile in docker := {
       // The assembly task generates a fat JAR file

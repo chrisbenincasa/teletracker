@@ -1,0 +1,21 @@
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <encoder>
+            <pattern>%d [%X{traceId}] [%thread] %-5level %logger{36} %marker - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Root Config -->
+    <root level="info">
+    </root>
+
+    <!-- Per-Package Config -->
+    <logger name="com.twitter" level="info"/>
+    <logger name="com.teletracker" level="info"/>
+    <logger name="com.zaxxer" level="info" />
+
+</configuration>

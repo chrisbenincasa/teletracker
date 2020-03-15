@@ -17,6 +17,7 @@ import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+import scala.collection.JavaConverters._
 
 sealed trait Process
 
@@ -206,11 +207,11 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
     val timer = Future {
       latch.await()
 
-//      heartbeatRegistry.elements().asScala.foreach(_.complete())
-//
-//      heartbeatPool.shutdown()
-//
-//      heartbeatRegistry.clear()
+      heartbeatRegistry.elements().asScala.foreach(_.complete())
+
+      heartbeatPool.shutdown()
+
+      heartbeatRegistry.clear()
     }
 
     Future.firstCompletedOf(List(flusher, timer)).map(_ => {})

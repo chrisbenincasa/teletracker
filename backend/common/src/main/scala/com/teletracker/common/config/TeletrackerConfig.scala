@@ -27,7 +27,9 @@ case class AsyncConfig(
   taskQueue: QueueConfig,
   esIngestQueue: QueueConfig)
 
-case class QueueConfig(url: String)
+case class QueueConfig(
+  url: String,
+  message_group_id: Option[String])
 
 case class AdminConfig(adminKeys: Set[String])
 
