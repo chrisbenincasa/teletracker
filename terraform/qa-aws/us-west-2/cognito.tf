@@ -70,6 +70,7 @@ resource "aws_cognito_user_pool_client" "default-user-pool-client" {
     "http://localhost:3000/login",
     "https://localhost:3000/login",
     "https://teletracker.local:3000/login",
+    "https://local.teletracker.tv:3000/login",
     "https://qa.teletracker.tv/login",
   ]
 
@@ -82,6 +83,7 @@ resource "aws_cognito_user_pool_client" "default-user-pool-client" {
   logout_urls = [
     "https://localhost:3000",
     "https://teletracker.local:3000",
+    "https://local.teletracker.tv:3000",
     "https://qa.teletracker.tv",
   ]
 }
