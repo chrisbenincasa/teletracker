@@ -1,4 +1,4 @@
 {
   "server_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/server:0.1-1584048805.e772fe80",
-  "consumer_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1584287254.cfddb1aa"
+  "consumer_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1584288218.13589f12"
 }
