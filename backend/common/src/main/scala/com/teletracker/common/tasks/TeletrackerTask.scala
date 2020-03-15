@@ -32,9 +32,9 @@ object TeletrackerTask {
 }
 
 trait TeletrackerTask extends Args {
-  protected lazy val taskId: UUID = UUID.randomUUID()
+  protected[this] val taskId: UUID = UUID.randomUUID()
+  private[this] val selfLogger = LoggerFactory.getLogger(getClass)
 
-  private val selfLogger = LoggerFactory.getLogger(getClass)
   private var _logger: Logger = _
   private var _loggerCloseHook: () => Unit = () => {}
 
@@ -118,11 +118,11 @@ trait TeletrackerTask extends Args {
 
   final def run(args: Args): Unit = {
     try {
+      init(args)
+
       logger.info(
         s"Running ${getClass.getSimpleName} (id: $taskId) with args: ${args}"
       )
-
-      init(args)
 
       registerFollowupTasksCallback()
 
