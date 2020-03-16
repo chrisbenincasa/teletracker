@@ -3,6 +3,9 @@ import { createStyles, WithStyles } from '@material-ui/styles';
 import React, { Component } from 'react';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
+import { LoginState } from '../../actions/auth';
+import { withRouter, Router } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -25,7 +28,7 @@ interface State {
   show: 'login' | 'signup';
 }
 
-type Props = OwnProps & WithStyles<typeof styles>;
+type Props = OwnProps & WithStyles<typeof styles> & WithRouterProps;
 
 class AuthDialog extends Component<Props, State> {
   constructor(props: Props) {
@@ -49,6 +52,18 @@ class AuthDialog extends Component<Props, State> {
 
   close = () => {
     this.props.onClose();
+  };
+
+  onLogin = (state?: LoginState) => {
+    this.close();
+
+    if (state?.redirect) {
+      this.props.router.replace(state.redirect.route, state.redirect.asPath, {
+        shallow: true,
+      });
+    } else {
+      this.props.router.push('/');
+    }
   };
 
   switchForm = () => {
@@ -82,7 +97,7 @@ class AuthDialog extends Component<Props, State> {
         {show === 'login' ? (
           <LoginForm
             onSubmitted={this.handleAction}
-            onLogin={this.close}
+            onLogin={(state?: LoginState) => this.onLogin(state)}
             onNav={() => this.switchForm()}
           />
         ) : (
@@ -93,4 +108,4 @@ class AuthDialog extends Component<Props, State> {
   }
 }
 
-export default withStyles(styles)(AuthDialog);
+export default withRouter(withStyles(styles)(AuthDialog));

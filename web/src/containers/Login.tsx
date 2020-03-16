@@ -8,12 +8,11 @@ import {
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
-import { login, LoginSuccessful, logInWithGoogle } from '../actions/auth';
+import { LoginState } from '../actions/auth';
 import { AppState } from '../reducers';
 import ReactGA from 'react-ga';
 import LoginForm from '../components/Auth/LoginForm';
-import { withRouter, Router } from 'next/router';
+import { withRouter } from 'next/router';
 import { WithRouterProps } from 'next/dist/client/with-router';
 
 const styles = (theme: Theme) =>
@@ -58,14 +57,20 @@ class Login extends Component<Props & WithRouterProps, State> {
 
   componentDidMount(): void {
     if (this.props.isAuthed) {
-      this.props.router.replace('/');
+      // this.props.router.replace('/');
     }
 
     ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
-  handleLogin(): void {
-    this.props.router.push('/');
+  handleLogin(state?: LoginState): void {
+    if (state?.redirect) {
+      this.props.router.replace(state.redirect.route, state.redirect.asPath, {
+        shallow: true,
+      });
+    } else {
+      this.props.router.push('/');
+    }
   }
 
   render() {
@@ -73,7 +78,9 @@ class Login extends Component<Props & WithRouterProps, State> {
     return (
       <div className={classes.main}>
         <Paper className={classes.paper}>
-          <LoginForm onLogin={() => this.handleLogin()} />
+          <LoginForm
+            onLogin={(state?: LoginState) => this.handleLogin(state)}
+          />
         </Paper>
       </div>
     );
