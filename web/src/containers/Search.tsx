@@ -18,6 +18,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
 import { useDispatch, useSelector } from 'react-redux';
 import { search } from '../actions/search';
+import ScrollToTop from '../components/Buttons/ScrollToTop';
 import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import AllFilters from '../components/Filters/AllFilters';
@@ -51,8 +52,10 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     progressSpinner: {
       display: 'flex',
-      flexGrow: 1,
+      alignItems: 'center',
       justifyContent: 'center',
+      minHeight: 200,
+      height: '100%',
     },
     searchError: {
       display: 'flex',
@@ -83,17 +86,6 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
-interface Props {}
-
-type State = {
-  searchText: string;
-  genres?: Genre[];
-  filters: FilterParams;
-  showFilter: boolean;
-  createDynamicListDialogOpen: boolean;
-  totalLoadedImages: number;
-};
-
 const Search = ({ inViewportChange }) => {
   const classes = useStyles();
   const width = useWidth();
@@ -112,6 +104,7 @@ const Search = ({ inViewportChange }) => {
     (state: AppState) => state.search.bookmark,
   );
 
+  const [showScrollToTop, setShowScrollToTop] = useState<boolean>(false);
   const [totalVisibleItems, setTotalVisibleItems] = useState<number>(0);
   const [
     createDynamicListDialogOpen,
@@ -165,6 +158,28 @@ const Search = ({ inViewportChange }) => {
     setSearchText(query);
     setFilters(filterParams);
   }, []);
+
+  const onScroll = () => {
+    const scrollTop = window.pageYOffset || 0;
+    // to do: 100 is just a random number, we can play with this or make it dynamic
+    if (scrollTop > 100 && !showScrollToTop) {
+      setShowScrollToTop(true);
+    } else if (scrollTop < 100 && showScrollToTop) {
+      setShowScrollToTop(false);
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo(0, 0);
+    setShowScrollToTop(false);
+  };
+
+  useEffect(() => {
+    window.addEventListener('scroll', onScroll, false);
+    return () => {
+      window.removeEventListener('scroll', onScroll, false);
+    };
+  });
 
   const loadResults = (firstLoad?: boolean) => {
     // This is to handle the case where a query param doesn't exist, we'll want to use the redux state.
@@ -236,7 +251,9 @@ const Search = ({ inViewportChange }) => {
   const renderLoading = () => {
     return (
       <div className={classes.progressSpinner}>
-        <CircularProgress />
+        <div>
+          <CircularProgress />
+        </div>
       </div>
     );
   };
@@ -364,6 +381,7 @@ const Search = ({ inViewportChange }) => {
                         );
                       })}
                     </Grid>
+                    {isSearching && renderLoading()}
                   </InfiniteScroll>
                 </React.Fragment>
               ) : firstLoad ? null : (
@@ -380,6 +398,17 @@ const Search = ({ inViewportChange }) => {
                   Something went wrong :(
                 </Typography>
               </div>
+            )}
+            {showScrollToTop && (
+              <ScrollToTop
+                onClick={scrollToTop}
+                style={{
+                  position: 'fixed',
+                  bottom: 8,
+                  right: 8,
+                  backgroundColor: '#00838f',
+                }}
+              />
             )}
           </React.Fragment>
         )}
