@@ -14,6 +14,7 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
+      minHeight: 412,
     },
   });
 
