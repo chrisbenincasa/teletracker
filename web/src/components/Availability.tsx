@@ -33,6 +33,9 @@ const useStyles = makeStyles((theme: Theme) => ({
       justifyContent: 'center',
     },
   },
+  availabilityWrapper: {
+    maxWidth: 1000,
+  },
   availabilePlatforms: {
     display: 'flex',
     justifyContent: 'flex-start',
@@ -168,7 +171,7 @@ const ThingAvailability = (props: Props) => {
   };
 
   return props.networks ? (
-    <React.Fragment>
+    <div className={classes.availabilityWrapper}>
       <Typography color="inherit" variant="h5" className={classes.header}>
         Availability
       </Typography>
@@ -261,7 +264,7 @@ const ThingAvailability = (props: Props) => {
           </div>
         </div>
       )}
-    </React.Fragment>
+    </div>
   ) : null;
 };
 
