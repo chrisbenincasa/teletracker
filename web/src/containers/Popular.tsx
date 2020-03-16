@@ -142,6 +142,7 @@ class Popular extends Component<Props, State> {
 
   constructor(props: Props) {
     super(props);
+    this.onScroll = this.onScroll.bind(this);
     this.popularWrapper = React.createRef();
 
     let filterParams = DEFAULT_FILTER_PARAMS;
@@ -229,7 +230,11 @@ class Popular extends Component<Props, State> {
       ReactGA.set({ userId: userSelf.user.getUsername() });
     }
 
-    window.addEventListener('scroll', this.onScroll);
+    window.addEventListener('scroll', this.onScroll, false);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this.onScroll, false);
   }
 
   onScroll = () => {
