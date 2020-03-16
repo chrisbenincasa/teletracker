@@ -85,7 +85,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     top: 0,
     left: 0,
     background: hexToRGB(theme.palette.grey[900], 0.85),
-    zIndex: theme.zIndex.modal - 1,
+    zIndex: theme.zIndex.appBar - 1,
   },
   hoverDelete: {
     color: theme.palette.common.white,
