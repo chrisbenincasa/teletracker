@@ -15,7 +15,11 @@ export const scrape = async () => {
     DATA_BUCKET,
     `scrape-results/netflix/whats-on-netflix/${currentDate}/netflix-originals-catalog.json`,
   ).then(buf => {
-    return JSON.parse(buf.toString('utf-8'));
+    return buf
+      .toString('utf-8')
+      .split('\n')
+      .filter(s => s.length > 0)
+      .map(JSON.parse);
   });
 
   let netflixOriginalById = _.groupBy(allNetflixOriginals, 'netflixid');
