@@ -143,16 +143,16 @@ const ThingAvailability = (props: Props) => {
       : {};
 
     // TODO: Fix id - give availabilities IDs
-    let i = 0;
+    // currently using index for keying purposes
     return R.values(
-      R.mapObjIndexed(avs => {
+      R.mapObjIndexed((avs, index) => {
         let lowestCostAv = R.head(R.sortBy(R.prop('cost'))(avs))!;
         // let logoUri =
         //   '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
 
         // TODO: Need logo UI
         return (
-          <div className={classes.platform} key={i}>
+          <div className={classes.platform} key={index}>
             {/* <img src={logoUri} className={classes.logo} /> */}
             {lowestCostAv.cost && (
               <Chip

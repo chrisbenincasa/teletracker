@@ -524,8 +524,8 @@ class PersonDetail extends React.Component<Props, State> {
     const formattedBiography = truncatedBio
       .split('\n')
       .filter(s => s.length > 0)
-      .map(part => (
-        <React.Fragment>
+      .map((part, index) => (
+        <React.Fragment key={index}>
           <Typography color="inherit">{part}</Typography>
           <br />
         </React.Fragment>
