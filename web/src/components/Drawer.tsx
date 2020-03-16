@@ -358,9 +358,9 @@ class Drawer extends Component<Props, State> {
               My Lists
             </Typography>
             <List className={classes.list}>
+              {_.map(sortedLists, this.renderListItems)}
               <Button
                 variant="contained"
-                color="primary"
                 size="small"
                 onClick={this.handleModalOpen}
                 fullWidth
@@ -370,7 +370,6 @@ class Drawer extends Component<Props, State> {
                 />
                 Create List
               </Button>
-              {_.map(sortedLists, this.renderListItems)}
             </List>
             <Divider />
           </React.Fragment>

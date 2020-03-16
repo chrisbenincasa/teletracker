@@ -357,55 +357,50 @@ class Toolbar extends Component<Props, State> {
                     : this.genreMovieContainerRef
                 }
               >
-                <ClickAwayListener
-                  onClickAway={this.handleGenreMenuClose}
-                  touchEvent={false}
-                >
-                  <MenuList className={classes.genreMenuList}>
-                    <Typography
-                      variant="subtitle1"
-                      className={classes.genreMenuSubtitle}
-                    >
-                      Explore
-                    </Typography>
-                    <Divider />
-                    <MenuItemLink
-                      onClick={this.handleGenreMenuClose}
-                      to={`/${type}s`}
-                      key={`explore-${type}`}
-                      primary={`All ${type}s`}
-                    />
-                    <MenuItemLink
-                      onClick={this.handleGenreMenuClose}
-                      key={`popular-${type}`}
-                      to={`/popular?type=${type}`}
-                      primary={`Trending ${type}s`}
-                    />
-                    <MenuItemLink
-                      onClick={this.handleGenreMenuClose}
-                      key={`new-${type}`}
-                      to={`/new?type=${type}`}
-                      primary={`New ${type}s`}
-                    />
-                    <Typography
-                      variant="subtitle1"
-                      className={classes.genreMenuSubtitle}
-                    >
-                      Genres
-                    </Typography>
-                    <Divider />
-                    {filteredGenres.map(item => {
-                      return (
-                        <MenuItemLink
-                          onClick={this.handleGenreMenuClose}
-                          key={item.slug}
-                          to={`/popular?genres=${item.id}&type=${type}`}
-                          primary={item.name}
-                        />
-                      );
-                    })}
-                  </MenuList>
-                </ClickAwayListener>
+                <MenuList className={classes.genreMenuList}>
+                  <Typography
+                    variant="subtitle1"
+                    className={classes.genreMenuSubtitle}
+                  >
+                    Explore
+                  </Typography>
+                  <Divider />
+                  <MenuItemLink
+                    onClick={this.handleGenreMenuClose}
+                    to={`/${type}s`}
+                    key={`explore-${type}`}
+                    primary={`All ${type}s`}
+                  />
+                  <MenuItemLink
+                    onClick={this.handleGenreMenuClose}
+                    key={`popular-${type}`}
+                    to={`/popular?type=${type}`}
+                    primary={`Trending ${type}s`}
+                  />
+                  <MenuItemLink
+                    onClick={this.handleGenreMenuClose}
+                    key={`new-${type}`}
+                    to={`/new?type=${type}`}
+                    primary={`New ${type}s`}
+                  />
+                  <Typography
+                    variant="subtitle1"
+                    className={classes.genreMenuSubtitle}
+                  >
+                    Genres
+                  </Typography>
+                  <Divider />
+                  {filteredGenres.map(item => {
+                    return (
+                      <MenuItemLink
+                        onClick={this.handleGenreMenuClose}
+                        key={item.slug}
+                        to={`/popular?genres=${item.id}&type=${type}`}
+                        primary={item.name}
+                      />
+                    );
+                  })}
+                </MenuList>
               </Paper>
             </Fade>
           )}

@@ -143,6 +143,7 @@ const styles = (theme: Theme) =>
       color: theme.palette.primary.contrastText,
       [theme.breakpoints.down('sm')]: {
         flexDirection: 'column',
+        padding: theme.spacing(1),
       },
       width: '100%',
     },
