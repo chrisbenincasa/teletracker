@@ -39,7 +39,7 @@ import {
   updateUserPreferencesSaga,
   updateUserSaga,
 } from './user';
-import { createBasicAction, isServer } from './utils';
+import { createBasicAction } from './utils';
 
 export const STARTUP = 'startup';
 export const BOOT_DONE = 'boot/DONE';

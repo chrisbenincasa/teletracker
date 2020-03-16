@@ -479,8 +479,8 @@ function ItemDetails(props: Props) {
     const formattedOverview = truncatedOverview
       .split('\n')
       .filter(s => s.length > 0)
-      .map(part => (
-        <React.Fragment>
+      .map((part, idx) => (
+        <React.Fragment key={idx}>
           <Typography color="inherit">{part}</Typography>
           <br />
         </React.Fragment>
