@@ -2,12 +2,18 @@ import React, { Component, RefObject } from 'react';
 import {
   Avatar,
   createStyles,
+  IconButton,
   Theme,
   Typography,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import { parseInitials } from '../utils/textHelper';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Person,
+  TheatersSharp,
+} from '@material-ui/icons';
 import RouterLink from 'next/link';
 import { FixedSizeList as LazyList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
@@ -38,6 +44,17 @@ const styles = (theme: Theme) =>
       fontWeight: theme.typography.fontWeightBold,
       fontSize: '0.9rem',
     },
+    castNavigation: {
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      flexGrow: 1,
+    },
+    castWrapper: {
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'flex-start',
+    },
     characterName: {
       fontStyle: 'italic',
       fontSize: '0.7rem',
@@ -67,7 +84,58 @@ interface OwnProps {
 
 type Props = OwnProps & WithStyles<typeof styles>;
 
-class Cast extends Component<Props, {}> {
+interface State {
+  currentCarouselIndex: number;
+  totalCast: number;
+  numberCastRemaining: number;
+  castPerPage: number;
+}
+
+class Cast extends Component<Props, State> {
+  private listRef: React.RefObject<LazyList>;
+  private prevListRef: React.RefObject<LazyList>;
+
+  constructor(props) {
+    super(props);
+    this.listRef = React.createRef();
+    this.prevListRef = React.createRef();
+
+    this.state = {
+      currentCarouselIndex: 0,
+      totalCast: 0,
+      numberCastRemaining: 0,
+      castPerPage: 0,
+    };
+  }
+
+  componentDidUpdate() {
+    const { itemDetail } = this.props;
+    const credits = itemDetail.cast ? itemDetail.cast : [];
+    const width = this.listRef?.current?.props?.width;
+    const itemSize = this.listRef?.current?.props?.itemSize;
+    const pageSize = Math.round(Number(width) / Number(itemSize));
+
+    if (!this.prevListRef && this.listRef.current) {
+      this.setState({
+        totalCast: credits.length,
+        castPerPage: pageSize,
+        numberCastRemaining:
+          credits.length - pageSize < 0 ? 0 : credits.length - pageSize,
+      });
+      this.prevListRef = this.listRef;
+    }
+  }
+
+  componentDidMount() {
+    this.prevListRef = this.listRef.current;
+    this.setState({
+      currentCarouselIndex: 0,
+      totalCast: 0,
+      numberCastRemaining: 0,
+      castPerPage: 0,
+    });
+  }
+
   renderAvatar(castMember: ItemCastMember) {
     let { classes } = this.props;
 
@@ -89,9 +157,9 @@ class Cast extends Component<Props, {}> {
             className={classes.avatar}
             itemProp="image"
           >
-            {castMember.person && castMember.person.profile_path
-              ? null
-              : parseInitials(castMember.name!, 'name')}
+            {castMember.person && castMember.person.profile_path ? null : (
+              <Person style={{ fontSize: '5rem' }} />
+            )}
           </Avatar>
           <Typography
             color="textPrimary"
@@ -123,9 +191,56 @@ class Cast extends Component<Props, {}> {
     );
   }
 
+  setCurrentCarouselIndex = index => {
+    this.setState({
+      currentCarouselIndex: index,
+    });
+  };
+
+  carouselNavigationPrevious = () => {
+    const { castPerPage, numberCastRemaining } = this.state;
+    const remainingCast =
+      numberCastRemaining > 0 ? numberCastRemaining + castPerPage : castPerPage;
+    const newIndex = this.state.currentCarouselIndex - castPerPage;
+
+    this.setState({
+      currentCarouselIndex: newIndex < 0 ? 0 : newIndex,
+      castPerPage: castPerPage,
+      numberCastRemaining: remainingCast < 1 ? 0 : remainingCast,
+    });
+    this.listRef?.current?.scrollToItem(newIndex, 'start');
+  };
+
+  carouselNavigationNext = () => {
+    const { castPerPage, numberCastRemaining, totalCast } = this.state;
+    const remainingCast =
+      (numberCastRemaining > 0
+        ? numberCastRemaining
+        : totalCast - castPerPage) - castPerPage;
+    const newIndex =
+      numberCastRemaining > castPerPage
+        ? this.state.currentCarouselIndex + castPerPage
+        : this.state.currentCarouselIndex + numberCastRemaining;
+
+    this.setState({
+      currentCarouselIndex: newIndex > totalCast ? totalCast : newIndex,
+      castPerPage: castPerPage,
+      numberCastRemaining: remainingCast < 0 ? 0 : remainingCast,
+    });
+    this.listRef?.current?.scrollToItem(newIndex, 'start');
+  };
+
   render() {
     const { classes, itemDetail } = this.props;
+    const {
+      castPerPage,
+      currentCarouselIndex,
+      numberCastRemaining,
+    } = this.state;
     const credits = itemDetail.cast ? itemDetail.cast : [];
+    const previousDisabled = currentCarouselIndex === 0;
+    const nextDisabled = numberCastRemaining < 1;
+
     const Person = ({ index, style }) => (
       <div
         className={classes.personContainer}
@@ -139,12 +254,47 @@ class Cast extends Component<Props, {}> {
       </div>
     );
 
-    return credits && credits.length > 0 ? (
+    return (
       <React.Fragment>
-        <Typography color="inherit" variant="h5" className={classes.header}>
-          Cast
-        </Typography>
-
+        <div className={classes.castWrapper}>
+          <Typography color="inherit" variant="h5" className={classes.header}>
+            Cast
+          </Typography>
+          <div className={classes.castNavigation}>
+            <IconButton
+              onClick={this.carouselNavigationPrevious}
+              size="medium"
+              style={{
+                cursor: previousDisabled ? undefined : 'pointer',
+                padding: 6,
+              }}
+              color={previousDisabled ? 'secondary' : undefined}
+              disabled={previousDisabled}
+            >
+              <ChevronLeft
+                style={{
+                  fontSize: '2.5rem',
+                }}
+              />
+            </IconButton>
+            <IconButton
+              style={{
+                cursor: nextDisabled ? undefined : 'pointer',
+                padding: 6,
+              }}
+              size="medium"
+              color={nextDisabled ? 'secondary' : undefined}
+              onClick={this.carouselNavigationNext}
+              disabled={nextDisabled}
+            >
+              <ChevronRight
+                style={{
+                  fontSize: '2.5rem',
+                }}
+              />
+            </IconButton>
+          </div>
+        </div>
         <div className={classes.grid}>
           <AutoSizer>
             {({ height, width }) => (
@@ -154,7 +304,9 @@ class Cast extends Component<Props, {}> {
                 itemSize={125}
                 layout="horizontal"
                 width={width}
-                style={{ overflowX: 'auto', overflowY: 'hidden' }}
+                overscanCount={castPerPage}
+                style={{ overflow: 'hidden' }}
+                ref={this.listRef}
               >
                 {Person}
               </LazyList>
@@ -162,7 +314,7 @@ class Cast extends Component<Props, {}> {
           </AutoSizer>
         </div>
       </React.Fragment>
-    ) : null;
+    );
   }
 }
 
