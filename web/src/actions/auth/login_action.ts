@@ -12,6 +12,16 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface LoginRedirect {
+  route: string;
+  asPath: string;
+  query: object;
+}
+
+export interface LoginState {
+  redirect?: LoginRedirect;
+}
+
 export type LoginInitiatedAction = FSA<typeof LOGIN_INITIATED, LoginPayload>;
 export type LoginSuccessfulAction = FSA<typeof LOGIN_SUCCESSFUL, string>;
 
