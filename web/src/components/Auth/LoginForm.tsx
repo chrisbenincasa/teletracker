@@ -16,7 +16,13 @@ import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { login, LoginSuccessful, logInWithGoogle } from '../../actions/auth';
+import {
+  login,
+  LoginState,
+  LoginSuccessful,
+  logInWithGoogle,
+  LoginWithGooglePayload,
+} from '../../actions/auth';
 import { AppState } from '../../reducers';
 import GoogleLoginButton from './GoogleLoginButton';
 import ReactGA from 'react-ga';
@@ -24,6 +30,7 @@ import { GOOGLE_ACCOUNT_MERGE } from '../../constants/';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import { withRouter } from 'next/router';
 import qs from 'querystring';
+import url from 'url';
 import _ from 'lodash';
 import NextLink from 'next/link';
 
@@ -73,14 +80,14 @@ const styles = (theme: Theme) =>
 interface OwnProps {
   isAuthed: boolean;
   login: (email: string, password: string) => void;
-  logInWithGoogle: () => any;
+  logInWithGoogle: (payload?: LoginWithGooglePayload) => any;
   isLoggingIn: boolean;
   logInSuccessful: (token: string) => any;
   redirect_uri?: string;
   // Events
   onSubmitted?: () => void;
   onNav?: () => void;
-  onLogin?: () => void;
+  onLogin?: (state?: LoginState) => void;
 }
 
 type Props = OwnProps & WithStyles<typeof styles> & WithRouterProps;
@@ -90,12 +97,25 @@ interface State {
   password: string;
   cameFromOAuth: boolean;
   mergedFederatedAccount: boolean;
+  authState?: LoginState;
 }
 
 class LoginForm extends Component<Props, State> {
   constructor(props: Readonly<Props>) {
     super(props);
     const params = new URLSearchParams(qs.stringify(props.router.query));
+
+    let state: any = params
+      .get('state')
+      ?.split('-')
+      .splice(1)
+      .join('-');
+
+    if (state) {
+      try {
+        state = JSON.parse(atob(state));
+      } catch (e) {}
+    }
 
     // If a user already has an account with email X and then attempts to sign
     // in with a federated identity (e.g. Google) our pre-signup lambda will
@@ -113,6 +133,7 @@ class LoginForm extends Component<Props, State> {
       mergedFederatedAccount: error
         ? error.includes(GOOGLE_ACCOUNT_MERGE)
         : false,
+      authState: state ? (state as LoginState) : undefined,
     };
   }
 
@@ -126,19 +147,35 @@ class LoginForm extends Component<Props, State> {
     }
   }
 
-  componentDidUpdate(prevProps: Readonly<Props>): void {
+  componentDidUpdate(
+    prevProps: Readonly<Props>,
+    prevState: Readonly<State>,
+  ): void {
     if (
       (!this.props.isLoggingIn && prevProps.isLoggingIn) ||
       (this.state.cameFromOAuth && this.props.isAuthed && !prevProps.isAuthed)
     ) {
       if (this.props.onLogin) {
-        this.props.onLogin();
+        this.props.onLogin(this.state.authState);
       }
     }
   }
 
   logInWithGoogle = () => {
-    this.props.logInWithGoogle();
+    let query = qs.stringify(this.props.router.query);
+    let path = this.props.router.route;
+    if (query) {
+      path += `?${query};`;
+    }
+    this.props.logInWithGoogle({
+      state: {
+        redirect: {
+          route: path,
+          asPath: this.props.router.asPath,
+          query: this.props.router.query,
+        },
+      },
+    });
   };
 
   onSubmit = (ev: FormEvent<HTMLFormElement>) => {
@@ -178,7 +215,7 @@ class LoginForm extends Component<Props, State> {
         </Typography>
 
         <div className={classes.socialSignInContainer}>
-          <GoogleLoginButton onClick={this.logInWithGoogle} />
+          <GoogleLoginButton onClick={() => this.logInWithGoogle()} />
         </div>
         <div>
           <form className={classes.form} onSubmit={this.onSubmit}>
