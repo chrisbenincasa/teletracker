@@ -14,7 +14,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: '100%',
     color: theme.palette.grey[500],
     backgroundColor: theme.palette.grey[300],
-    // fontSize: '20vw',
   },
   fallbackImageIcon: {
     alignSelf: 'center',
