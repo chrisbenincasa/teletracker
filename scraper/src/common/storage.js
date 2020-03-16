@@ -105,6 +105,13 @@ const getObjectS3 = async (bucket, key) => {
     .promise()
     .then(res => {
       return res.Body;
+    })
+    .catch(e => {
+      if (e.code === 'NoSuchKey') {
+        console.error('Could not find key ' + key);
+      }
+
+      throw e;
     });
 };
 

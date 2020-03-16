@@ -11,4 +11,5 @@ export function randomUserAgent() {
   return alternateAgents[_.random(0, alternateAgents.length, false)];
 }
 
-export const DATA_BUCKET = process.env.DATA_BUCKET || 'teletracker-data';
+export const DATA_BUCKET =
+  process.env.DATA_BUCKET || 'teletracker-data-us-west-2';
