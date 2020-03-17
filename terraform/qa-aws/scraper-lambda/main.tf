@@ -56,8 +56,7 @@ resource "aws_lambda_function" "scraper_lambda" {
   handler           = var.handler_function
   timeout           = var.timeout
   memory_size       = var.memory
-
-  runtime = "nodejs10.x"
+  runtime           = var.runtime
 
   environment {
     variables = {

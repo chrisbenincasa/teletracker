@@ -2,7 +2,11 @@ export const wait = ms => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
-export const sequentialPromises = async (seq, ms, itemFn) => {
+export async function sequentialPromises<T, U>(
+  seq: T[],
+  ms: number | undefined,
+  itemFn: (item: T) => Promise<U>,
+): Promise<U[]> {
   let all = await seq.reduce(async (prev, item) => {
     let last = await prev;
 
@@ -13,7 +17,7 @@ export const sequentialPromises = async (seq, ms, itemFn) => {
     }
 
     return [...last, result];
-  }, Promise.resolve([]));
+  }, Promise.resolve([] as U[]));
 
   return Promise.all(all);
-};
+}

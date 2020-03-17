@@ -5,7 +5,7 @@ STAMP=${1:-$NOW}
 
 ./build-scrapers
 
-aws s3 cp build/scrapers.zip s3://teletracker-artifacts/scrapers/scrapers.zip
+# aws s3 cp build/scrapers.zip s3://teletracker-artifacts/scrapers/scrapers.zip
 aws s3 cp build/scrapers.zip s3://us-west-2-teletracker-artifacts/scrapers/scrapers.zip
 
 echo "Pushed new version: ${STAMP}"

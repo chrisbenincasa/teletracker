@@ -1,15 +1,21 @@
 import request from 'request-promise';
 import cheerio from 'cheerio';
 import moment from 'moment';
-import fs from 'fs';
 import * as _ from 'lodash';
-import { writeResultsAndUploadToStorage } from '../../common/storage';
-import { USER_AGENT_STRING } from '../../common/constants';
+import { uploadToS3 } from '../../common/storage';
+import { DATA_BUCKET, USER_AGENT_STRING } from '../../common/constants';
 import { isProduction } from '../../common/env';
+import { createWriteStream } from '../../common/stream_utils';
 
-const scrape = async () => {
+export const scrape = async event => {
+  let pageName =
+    event.pageName ||
+    moment()
+      .format('MMMM-YYYY')
+      .toLowerCase();
+
   let html = await request({
-    uri: 'https://www.hulu.com/press/new-this-month/',
+    uri: `https://press.hulu.com/schedule/${pageName}/`,
     headers: {
       'User-Agent': USER_AGENT_STRING,
     },
@@ -19,12 +25,11 @@ const scrape = async () => {
   let $ = cheerio.load(html);
   let currentYear = new Date().getFullYear();
 
-  $('.new-this-month__table-content.table-content tbody tr').each(function(
-    i,
-    element,
-  ) {
+  $('#tableSchedule tbody tr').each(function(i, element) {
     //Process date of availability
-    let date = $(this)
+    let $this = $(this);
+
+    let date = $this
       .children()
       .eq(0)
       .text()
@@ -37,10 +42,9 @@ const scrape = async () => {
 
     let availableDate = m.format('YYYY-MM-DD');
 
-    let show = $(this)
+    let show = $this
       .children()
       .eq(1)
-      .find('em')
       .text();
     console.log(show);
 
@@ -70,16 +74,17 @@ const scrape = async () => {
       network = 'Hulu';
     }
 
-    let notes = $(this)
+    let notes = $this
       .children()
       .eq(1)
-      .find('span')
       .text();
-    let category = $(this)
+
+    let category = $this
       .children()
       .eq(2)
       .text();
-    let status = $(this)
+
+    let status = $this
       .children()
       .eq(3)
       .text();
@@ -101,31 +106,24 @@ const scrape = async () => {
   // Export data into JSON file
   let currentDate = moment().format('YYYY-MM-DD');
   let fileName = currentDate + '-hulu-changes' + '.json';
+  let [filePath, stream, flush] = createWriteStream(fileName);
+
+  _.chain(parsedResults)
+    .sortBy(r => r.title)
+    .each(r => {
+      stream.write(JSON.stringify(r) + '\n');
+    })
+    .value();
+
+  stream.close();
+
+  await flush;
 
   if (isProduction()) {
-    // if (!process.env.API_HOST) {
-    // return Promise.reject(
-    // new Error("Could not find value for API_HOST variable")
-    // );
-    // }
-
-    let [file, _] = await writeResultsAndUploadToStorage(
-      fileName,
-      'scrape-results/' + currentDate,
-      parsedResults,
+    await uploadToS3(
+      DATA_BUCKET,
+      `scrape-results/hulu/new/${currentDate}/${fileName}`,
+      filePath,
     );
-    // return scheduleJob(file.name);
-  } else {
-    const stream = fs.createWriteStream(fileName, 'utf-8');
-    _.chain(parsedResults)
-      .sortBy(r => r.title)
-      .each(r => {
-        stream.write(JSON.stringify(r) + '\n');
-      })
-      .value();
-
-    stream.close();
   }
 };
-
-export { scrape };

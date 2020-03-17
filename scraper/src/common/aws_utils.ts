@@ -1,7 +1,7 @@
 import AWS from 'aws-sdk';
 
 const getSsm = (() => {
-  let ssm;
+  let ssm: AWS.SSM;
   return () => {
     if (!ssm) {
       console.log('Creating SSM client in region ' + process.env.AWS_REGION);
@@ -12,7 +12,7 @@ const getSsm = (() => {
   };
 })();
 
-export const resolveSecret = async secret => {
+export const resolveSecret = async (secret: string) => {
   console.log('Fetching SSM from ' + process.env.AWS_REGION);
   return getSsm()
     .getParameter({
@@ -20,5 +20,5 @@ export const resolveSecret = async secret => {
       WithDecryption: true,
     })
     .promise()
-    .then(param => param.Parameter.Value);
+    .then(param => param?.Parameter?.Value);
 };
