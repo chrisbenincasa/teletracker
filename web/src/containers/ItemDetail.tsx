@@ -56,7 +56,6 @@ import {
   getVoteCountFormatted,
 } from '../utils/textHelper';
 import Login from './Login';
-import RouterLink from '../components/RouterLink';
 import Link from 'next/link';
 import { extractItem } from '../utils/item-utils';
 
@@ -126,6 +125,7 @@ const styles = (theme: Theme) =>
       fontWeight: 700,
     },
     information: {
+      display: 'flex',
       [theme.breakpoints.down('sm')]: {
         textAlign: 'center',
       },
@@ -184,6 +184,10 @@ const styles = (theme: Theme) =>
         width: 250,
       },
     },
+    rating: {
+      borderRadius: 0,
+      height: 'auto',
+    },
     seasonContainer: {
       display: 'flex',
       flexDirection: 'column',
@@ -194,6 +198,12 @@ const styles = (theme: Theme) =>
     },
     seasonTitle: {
       marginLeft: theme.spacing(1),
+    },
+    separator: {
+      display: 'flex',
+      alignSelf: 'center',
+      fontSize: 8,
+      margin: theme.spacing(0, 1),
     },
     titleContainer: {
       marginBottom: theme.spacing(1),
@@ -259,7 +269,7 @@ function ItemDetails(props: Props) {
     const { isLoggedIn, userSelf } = props;
 
     loadItem();
-
+    console.log(props);
     ReactGA.pageview(nextRouter.asPath);
 
     if (
@@ -321,7 +331,12 @@ function ItemDetails(props: Props) {
 
     return (
       <div className={classes.titleWrapper}>
-        <Typography color="inherit" variant="h2" itemProp="name">
+        <Typography
+          color="inherit"
+          variant="h2"
+          itemProp="name"
+          style={{ lineHeight: 0.85 }}
+        >
           {item.canonicalTitle}
         </Typography>
       </div>
@@ -336,33 +351,34 @@ function ItemDetails(props: Props) {
       (item.runtime && formatRuntime(item.runtime, item.type)) || '';
     const releaseDate =
       (item.release_date && moment(item.release_date).format('YYYY')) || '';
+    const ratingObject = _.filter(
+      item.release_dates,
+      item => item.country_code === 'US',
+    );
+    const rating = ratingObject[0]?.certification;
 
     return (
       <div className={classes.informationContainer}>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Rating value={voteAverage} precision={0.1} readOnly />
-          <Typography
-            color="inherit"
-            variant="body1"
-            style={{ marginRight: 10 }}
-          >
+          <Typography color="inherit" variant="body1">
             {`(${voteCount})`}
           </Typography>
         </div>
-        <Typography
-          color="inherit"
-          variant="body1"
-          itemProp="duration"
-          className={classes.information}
-        >
-          {runtime}
-          {runtime && releaseDate ? (
-            <Lens style={{ fontSize: 8, margin: '0 8px' }} />
-          ) : (
-            ''
-          )}
-          {releaseDate}
-        </Typography>
+        <div style={{ display: 'flex', flexDirection: 'row' }}>
+          <Typography
+            color="inherit"
+            variant="body1"
+            itemProp="duration"
+            className={classes.information}
+          >
+            {runtime}
+            {runtime && releaseDate && <Lens className={classes.separator} />}
+            {releaseDate}
+            {rating && <Lens className={classes.separator} />}
+            {rating && `Rated ${rating}`}
+          </Typography>
+        </div>
       </div>
     );
   };
