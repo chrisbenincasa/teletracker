@@ -257,9 +257,8 @@ const ThingAvailability = (props: Props) => {
           <TvOff fontSize="large" style={{ margin: 8 }} />
           <div className={classes.availabilityContainer}>
             <Typography variant="subtitle1">
-              {`${itemDetail.canonicalTitle} is not currently available to stream, rent,
-                      or purchase. Add it to your list and we'll notify you when it
-                      becomes available!`}
+              {`${itemDetail.canonicalTitle} is not currently available to stream, rent, or purchase.`}
+              {/* {`Add it to your list and we'll notify you when it becomes available!`} */}
             </Typography>
           </div>
         </div>
