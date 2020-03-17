@@ -36,7 +36,9 @@ export default function makeItemDetailWrapper(type: ItemType) {
 
     const item = useItem(actualId, undefined);
     const releaseDate =
-      (item?.release_date && moment(item?.release_date).format('YYYY')) || '';
+      (item?.release_date &&
+        ` (${moment(item?.release_date).format('YYYY')})`) ||
+      '';
     const firstLineOverview = item?.overview?.split('.')[0];
 
     return (
@@ -46,7 +48,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
           <meta
             name="title"
             property="og:title"
-            content={`${item?.canonicalTitle} (${releaseDate}) | Where to stream, rent, or buy`}
+            content={`${item?.canonicalTitle}${releaseDate} | Where to stream, rent, or buy`}
           />
           <meta
             name="description"
