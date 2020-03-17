@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Toolbar from '../components/Toolbar/Toolbar';
 import { useState } from 'react';
 import { makeStyles, Theme, LinearProgress, NoSsr } from '@material-ui/core';
@@ -7,6 +7,7 @@ import Footer from '../components/Footer';
 import { connect } from 'react-redux';
 import { AppState } from '../reducers';
 import { useRouter } from 'next/router';
+import { initGA, logPageView } from '../utils/analytics';
 
 const useStyles = makeStyles((theme: Theme) => ({
   mainContent: {
@@ -34,10 +35,24 @@ interface Props {
   children: any;
 }
 
+declare global {
+  interface Window {
+    GA_INITIALIZED: boolean;
+  }
+}
+
 function AppWrapper(props: Props) {
   let [drawerOpen, setDrawerOpen] = useState(false);
   let router = useRouter();
   let classes = useStyles();
+
+  useEffect(() => {
+    if (!window.GA_INITIALIZED) {
+      initGA();
+      window.GA_INITIALIZED = true;
+    }
+    logPageView();
+  }, []);
 
   return (
     <div className={classes.root}>

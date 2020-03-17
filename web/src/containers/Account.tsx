@@ -37,7 +37,6 @@ import { AutocompleteOption } from '../components/AutoComplete';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { Network, UserPreferences } from '../types';
-import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -136,17 +135,6 @@ class Account extends Component<Props, State> {
     const { isLoggedIn, userSelf } = this.props;
 
     this.props.loadNetworks();
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
-    }
   }
 
   componentDidUpdate(oldProps: Props) {

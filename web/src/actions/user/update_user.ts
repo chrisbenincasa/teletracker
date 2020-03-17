@@ -5,7 +5,7 @@ import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { UserSelf } from '../../reducers/user';
 import { FSA } from 'flux-standard-action';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 
 export type UserUpdateSuccessPayload = Omit<UserSelf, 'user'>;
 
@@ -47,10 +47,7 @@ export const updateUserSaga = function*() {
           }),
         );
 
-        ReactGA.event({
-          category: 'User',
-          action: 'Updated users',
-        });
+        logEvent('User', 'Updated users');
       }
     }
   }

@@ -25,7 +25,6 @@ import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
 import { List as ListType } from '../types';
 import _ from 'lodash';
-import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -88,17 +87,6 @@ class Lists extends Component<Props, State> {
     const { isLoggedIn, userSelf } = this.props;
 
     this.props.ListRetrieveAllInitiated();
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
-    }
   }
 
   renderLoading() {

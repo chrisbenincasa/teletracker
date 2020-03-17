@@ -18,7 +18,6 @@ import { withRouter } from 'next/router';
 import qs from 'querystring';
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import ReactGA from 'react-ga';
 import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
@@ -217,17 +216,6 @@ class Popular extends Component<Props, State> {
       this.setState({
         needsNewFeatured: true,
       });
-    }
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
     }
 
     window.addEventListener('scroll', this.onScroll, false);

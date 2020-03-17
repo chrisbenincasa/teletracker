@@ -25,7 +25,6 @@ import {
 } from '../../actions/auth';
 import { AppState } from '../../reducers';
 import GoogleLoginButton from './GoogleLoginButton';
-import ReactGA from 'react-ga';
 import { GOOGLE_ACCOUNT_MERGE } from '../../constants/';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import { withRouter } from 'next/router';
@@ -138,10 +137,6 @@ class LoginForm extends Component<Props, State> {
   }
 
   componentDidMount(): void {
-    if (!this.state.cameFromOAuth) {
-      ReactGA.pageview(window.location.pathname + window.location.search);
-    }
-
     if (this.state.mergedFederatedAccount) {
       this.logInWithGoogle();
     }

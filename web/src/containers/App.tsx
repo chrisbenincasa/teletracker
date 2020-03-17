@@ -34,8 +34,6 @@ import Footer from '../components/Footer';
 import Logout from './Logout';
 import Explore from './Explore';
 import NoMatch404 from './NoMatch404';
-import { GA_TRACKING_ID } from '../constants/';
-import ReactGA from 'react-ga';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -83,10 +81,6 @@ class App extends Component<Props, State> {
     drawerOpen: false,
     searchVisible: !this.onSearchPage(),
   };
-
-  componentDidMount() {
-    ReactGA.initialize(GA_TRACKING_ID);
-  }
 
   componentDidUpdate(prevProps: Props) {
     // If user navigates on mobile with drawer open, let's close it

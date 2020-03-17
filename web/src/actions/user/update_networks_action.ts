@@ -6,7 +6,7 @@ import { Network } from '../../types';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
 import { updateUser } from './update_user';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 
 export const USER_SELF_UPDATE_NETWORKS = 'user/self/networks/UPDATE';
 export const USER_SELF_UPDATE_NETWORKS_SUCCESS =
@@ -57,10 +57,7 @@ export const updateNetworksForUserSaga = function*() {
 
         yield put(updateUser(newUser));
 
-        ReactGA.event({
-          category: 'User',
-          action: 'Updated networks',
-        });
+        logEvent('User', 'Updated networks');
       }
     }
   });

@@ -10,7 +10,6 @@ import {
 import { ExitToApp, List, PersonAdd } from '@material-ui/icons';
 import * as R from 'ramda';
 import React, { useEffect, useRef, useState } from 'react';
-import ReactGA from 'react-ga';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import withUser, { WithUserProps } from '../components/withUser';
@@ -233,17 +232,6 @@ function Home(props: Props) {
     const { isLoggedIn, userSelf } = props;
 
     loadPopular();
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
-    }
 
     setNumberMovies(488689);
   }, []);

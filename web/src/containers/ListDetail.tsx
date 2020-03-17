@@ -29,7 +29,6 @@ import { Delete, Edit, Save, Settings, Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
-import ReactGA from 'react-ga';
 import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -340,17 +339,6 @@ class ListDetail extends Component<Props, State> {
 
     this.setState({ loadingList: true });
     this.retrieveList(true);
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
-    }
   }
 
   extractFiltersFromList = (list: List): FilterParams | undefined => {

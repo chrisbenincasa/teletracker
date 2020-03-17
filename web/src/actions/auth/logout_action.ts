@@ -2,7 +2,7 @@ import { call, put, takeLatest } from '@redux-saga/core/effects';
 
 import { FSA } from 'flux-standard-action';
 import { createBasicAction } from '../utils';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 import Auth from '@aws-amplify/auth';
 
 export const LOGOUT_INITIATED = 'logout/INITIATED';
@@ -29,10 +29,7 @@ export const logoutSaga = function*() {
       yield call([Auth, Auth.signOut]);
       yield put(LogoutSuccessful());
 
-      ReactGA.event({
-        category: 'User',
-        action: 'Logout',
-      });
+      logEvent('User', 'Logout');
     } catch (e) {
       console.error(e);
     }

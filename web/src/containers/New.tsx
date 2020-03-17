@@ -21,7 +21,6 @@ import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { AvailabilityState } from '../reducers/availability';
-import ReactGA from 'react-ga';
 import { Item } from '../types/v2/Item';
 
 const styles = (theme: Theme) =>
@@ -53,17 +52,6 @@ class New extends Component<Props> {
 
     this.props.retrieveUpcomingAvailability();
     // this.props.retrieveAllAvailability();
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
-    }
   }
 
   renderLoading = () => {

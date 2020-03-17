@@ -4,7 +4,7 @@ import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 
 export const LIST_UPDATE_TRACKING_INITIATED = 'lists/update_tracking/INITIATED';
 export const LIST_UPDATE_TRACKING_SUCCESS = 'lists/update_tracking/SUCCESS';
@@ -40,10 +40,7 @@ export const updateListTrackingSaga = function*() {
       if (response.ok) {
         yield put(retrieveAllLists({}));
 
-        ReactGA.event({
-          category: 'User',
-          action: 'Updated list',
-        });
+        logEvent('User', 'Updated list');
       }
     } else {
     }

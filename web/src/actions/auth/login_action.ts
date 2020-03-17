@@ -1,7 +1,7 @@
 import { call, put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
 
 export const LOGIN_INITIATED = 'login/INITIATED';
@@ -61,10 +61,7 @@ export const loginSaga = function*() {
           ),
         );
 
-        ReactGA.event({
-          category: 'User',
-          action: 'Login',
-        });
+        logEvent('User', 'Login');
       } catch (e) {
         console.error(e);
       }

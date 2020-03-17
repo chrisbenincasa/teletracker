@@ -1,7 +1,7 @@
 import { call, put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
 
 export const SIGNUP_INITIATED = 'signup/INITIATED';
@@ -58,10 +58,7 @@ export const signupSaga = function*() {
           payload.password,
         );
 
-        ReactGA.event({
-          category: 'User',
-          action: 'Signup',
-        });
+        logEvent('User', 'Signup');
 
         let user: CognitoUser = yield call(
           (email: string, password: string) =>

@@ -6,7 +6,6 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import React, { Component } from 'react';
-import ReactGA from 'react-ga';
 import { Helmet } from 'react-helmet';
 
 const styles = (theme: Theme) =>
@@ -25,17 +24,6 @@ interface OwnProps extends WithStyles<typeof styles> {}
 type Props = OwnProps;
 
 class NoMatch404 extends Component<Props> {
-  componentDidMount(): void {
-    const page = window.location.pathname + window.location.search;
-    ReactGA.pageview(page);
-    ReactGA.event({
-      category: '404',
-      action: page,
-      value: 1,
-      nonInteraction: true,
-    });
-  }
-
   render() {
     const { classes } = this.props;
 

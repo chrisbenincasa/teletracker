@@ -29,7 +29,6 @@ import moment from 'moment';
 import { useRouter } from 'next/router';
 import * as R from 'ramda';
 import React, { useState } from 'react';
-import ReactGA from 'react-ga';
 import { connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -269,16 +268,6 @@ function ItemDetails(props: Props) {
     const { isLoggedIn, userSelf } = props;
 
     loadItem();
-    ReactGA.pageview(nextRouter.asPath);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
-    }
   }, [nextRouter.query]);
 
   const loadItem = () => {

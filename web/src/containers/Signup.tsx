@@ -13,7 +13,6 @@ import { bindActionCreators } from 'redux';
 import { signup, signUpWithGoogle } from '../actions/auth';
 import { AppState } from '../reducers';
 import { Redirect } from 'react-router';
-import ReactGA from 'react-ga';
 import SignupForm from '../components/Auth/SignupForm';
 
 const styles = (theme: Theme) =>
@@ -57,10 +56,6 @@ class Signup extends Component<Props, State> {
     email: '',
     password: '',
   };
-
-  componentDidMount(): void {
-    ReactGA.pageview(window.location.pathname + window.location.search);
-  }
 
   render() {
     let { isAuthed, classes } = this.props;

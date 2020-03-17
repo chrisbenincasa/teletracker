@@ -22,7 +22,6 @@ import { bindActionCreators } from 'redux';
 import { signup, signUpWithGoogle } from '../../actions/auth';
 import { AppState } from '../../reducers';
 import GoogleLoginButton from './GoogleLoginButton';
-import ReactGA from 'react-ga';
 import { withRouter } from 'next/router';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import NextLink from 'next/link';
@@ -96,10 +95,6 @@ class SignupForm extends Component<Props, State> {
     email: '',
     password: '',
   };
-
-  componentDidMount(): void {
-    ReactGA.pageview(window.location.pathname + window.location.search);
-  }
 
   componentDidUpdate(
     prevProps: Readonly<Props>,

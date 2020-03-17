@@ -137,9 +137,6 @@ const Search = ({ inViewportChange }) => {
     let queryString = qs.stringify(router.query);
     let paramsFromQuery = parseFilterParamsFromQs(queryString);
 
-    // How will this work with SSR
-    // ReactGA.pageview(location.pathname + location.search);
-
     if (paramsFromQuery.sortOrder === 'default') {
       paramsFromQuery.sortOrder = 'popularity';
     }

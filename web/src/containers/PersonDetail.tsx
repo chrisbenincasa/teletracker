@@ -18,8 +18,6 @@ import { ChevronLeft, ExpandLess, ExpandMore, Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import { default as React } from 'react';
-import ReactGA from 'react-ga';
-import { Helmet } from 'react-helmet';
 import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -284,17 +282,6 @@ class PersonDetail extends React.Component<Props, State> {
 
     if (this.state.needsFetch) {
       this.props.personFetchInitiated({ id: router.query.id as string });
-    }
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
     }
   }
 
