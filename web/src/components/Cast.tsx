@@ -115,7 +115,7 @@ class Cast extends Component<Props, State> {
     const itemSize = this.listRef?.current?.props?.itemSize;
     const pageSize = Math.round(Number(width) / Number(itemSize));
 
-    if (!this.prevListRef && this.listRef.current) {
+    if (!this.prevListRef.current && this.listRef.current) {
       this.setState({
         totalCast: credits.length,
         castPerPage: pageSize,
@@ -127,7 +127,6 @@ class Cast extends Component<Props, State> {
   }
 
   componentDidMount() {
-    this.prevListRef = this.listRef.current;
     this.setState({
       currentCarouselIndex: 0,
       totalCast: 0,
