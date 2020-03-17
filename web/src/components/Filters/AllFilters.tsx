@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Collapse,
   ExpansionPanel,
@@ -9,14 +9,22 @@ import {
   Theme,
   Typography,
 } from '@material-ui/core';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import { ExpandMore } from '@material-ui/icons';
 import { useWidth } from '../../hooks/useWidth';
-import { Genre, ItemType, SortOptions, NetworkType } from '../../types';
+import {
+  Genre,
+  Network,
+  ItemType,
+  SortOptions,
+  NetworkType,
+} from '../../types';
 import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
 import SortDropdown from './SortDropdown';
 import Sliders, { SliderChange } from './Sliders';
+import CreateSmartListButton from '../Buttons/CreateSmartListButton';
+import CreateDynamicListDialog from '../Dialogs/CreateDynamicListDialog';
 import { FilterParams } from '../../utils/searchFilters';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import PersonFilter from './PersonFilter';
@@ -132,6 +140,7 @@ interface Props {
   open: boolean;
   disabledGenres?: number[];
   sortOptions?: SortOptions[];
+  networks?: Network[];
 }
 
 const AllFilters = (props: Props) => {
@@ -155,6 +164,8 @@ const AllFilters = (props: Props) => {
 
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
+
+  const [smartListOpen, setSmartListOpen] = useState<boolean>(false);
 
   const handleFilterUpdate = (newFilter: FilterParams) => {
     if (!filterParamsEqual(filters, newFilter)) {
@@ -197,6 +208,33 @@ const AllFilters = (props: Props) => {
     });
   };
 
+  const renderCreateSmartListDialog = () => {
+    return (
+      <React.Fragment>
+        <CreateDynamicListDialog
+          filters={props.filters}
+          open={smartListOpen}
+          onClose={() => setSmartListOpen(false)}
+          networks={props.networks || []}
+          genres={props.genres || []}
+        />
+      </React.Fragment>
+    );
+  };
+
+  const actionButtons = () => {
+    return (
+      <React.Fragment>
+        <div
+          style={{ display: 'flex', flexGrow: 1, justifyContent: 'flex-end' }}
+        >
+          <CreateSmartListButton onClick={() => setSmartListOpen(true)} />
+        </div>
+        {renderCreateSmartListDialog()}
+      </React.Fragment>
+    );
+  };
+
   const mobileFilters = () => {
     return (
       <Collapse
@@ -217,7 +255,7 @@ const AllFilters = (props: Props) => {
             {!disableGenres && (
               <ExpansionPanel square>
                 <ExpansionPanelSummary
-                  expandIcon={<ExpandMoreIcon />}
+                  expandIcon={<ExpandMore />}
                   aria-controls="genre-content"
                   id="genre-header"
                 >
@@ -240,7 +278,7 @@ const AllFilters = (props: Props) => {
             {!disableSliders ? (
               <ExpansionPanel square>
                 <ExpansionPanelSummary
-                  expandIcon={<ExpandMoreIcon />}
+                  expandIcon={<ExpandMore />}
                   aria-controls="slider-content"
                   id="slider-header"
                 >
@@ -262,7 +300,7 @@ const AllFilters = (props: Props) => {
 
             <ExpansionPanel square>
               <ExpansionPanelSummary
-                expandIcon={<ExpandMoreIcon />}
+                expandIcon={<ExpandMore />}
                 aria-controls="people-content"
                 id="people-header"
               >
@@ -282,7 +320,7 @@ const AllFilters = (props: Props) => {
             {!disableNetworks && (
               <ExpansionPanel square>
                 <ExpansionPanelSummary
-                  expandIcon={<ExpandMoreIcon />}
+                  expandIcon={<ExpandMore />}
                   aria-controls="networks-content"
                   id="networks-header"
                 >
@@ -301,7 +339,7 @@ const AllFilters = (props: Props) => {
             {!disableTypeChange && (
               <ExpansionPanel square>
                 <ExpansionPanelSummary
-                  expandIcon={<ExpandMoreIcon />}
+                  expandIcon={<ExpandMore />}
                   aria-controls="type-content"
                   id="type-header"
                 >
@@ -320,7 +358,7 @@ const AllFilters = (props: Props) => {
             {!disableSortOptions && (
               <ExpansionPanel square>
                 <ExpansionPanelSummary
-                  expandIcon={<ExpandMoreIcon />}
+                  expandIcon={<ExpandMore />}
                   aria-controls="sort-content"
                   id="sort-header"
                 >
@@ -338,6 +376,7 @@ const AllFilters = (props: Props) => {
               </ExpansionPanel>
             )}
           </div>
+          {actionButtons()}
         </Paper>
       </Collapse>
     );
@@ -411,6 +450,7 @@ const AllFilters = (props: Props) => {
               )}
             </div>
           </div>
+          {actionButtons()}
         </Paper>
       </Collapse>
     );
