@@ -269,7 +269,6 @@ function ItemDetails(props: Props) {
     const { isLoggedIn, userSelf } = props;
 
     loadItem();
-    console.log(props);
     ReactGA.pageview(nextRouter.asPath);
 
     if (
