@@ -1,4 +1,5 @@
 import {
+  Button,
   CircularProgress,
   createStyles,
   Grid,
@@ -23,7 +24,6 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { retrievePopular } from '../actions/popular';
 import { PopularInitiatedActionPayload } from '../actions/popular';
-import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import Featured from '../components/Featured';
 import ActiveFilters from '../components/Filters/ActiveFilters';
@@ -455,6 +455,7 @@ class Popular extends Component<Props, State> {
       filters: { genresFilter, itemTypes },
       createDynamicListDialogOpen,
     } = this.state;
+    const filtersCTA = this.state.showFilter ? 'Hide Filters' : 'Filters';
 
     return popular ? (
       <div className={classes.popularContainer}>
@@ -476,15 +477,15 @@ class Popular extends Component<Props, State> {
                 : 'Content'
             }`}
           </Typography>
-          <IconButton
+          <Button
+            size="small"
             onClick={this.toggleFilters}
-            className={classes.settings}
-            color={this.state.showFilter ? 'primary' : 'inherit'}
+            variant="contained"
+            aria-label={filtersCTA}
+            startIcon={<Tune />}
           >
-            <Tune />
-            <Typography variant="srOnly">Tune</Typography>
-          </IconButton>
-          <CreateSmartListButton onClick={this.createListFromFilters} />
+            {filtersCTA}
+          </Button>
         </div>
         <div className={classes.filters}>
           <ActiveFilters
@@ -536,13 +537,6 @@ class Popular extends Component<Props, State> {
         ) : (
           <Typography>Sorry, nothing matches your filter.</Typography>
         )}
-        <CreateDynamicListDialog
-          filters={this.state.filters}
-          open={createDynamicListDialogOpen}
-          onClose={this.handleCreateDynamicModalClose}
-          networks={this.props.networks || []}
-          genres={this.props.genres || []}
-        />
       </div>
     ) : null;
   };
