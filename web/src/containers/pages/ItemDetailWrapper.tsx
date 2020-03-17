@@ -34,6 +34,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
       : requestedId;
 
     const item = useItem(actualId, undefined);
+    const firstLineOverview = item?.overview?.split('.')[0];
 
     return (
       <React.Fragment>
@@ -42,34 +43,29 @@ export default function makeItemDetailWrapper(type: ItemType) {
           <meta
             name="title"
             property="og:title"
-            content={`${item?.canonicalTitle} | Where to stream, rent, or buy. Track it today!`}
+            content={`${item?.canonicalTitle} | Where to stream, rent, or buy`}
           />
           <meta
             name="description"
             property="og:description"
-            content={`Find out where to stream, rent, or buy ${item?.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
+            content={`${firstLineOverview}. Find out where to stream, rent, or buy ${item?.canonicalTitle} on Teletracker.tv.`}
           />
-          {/* TODO FIX <meta
+          <meta
             name="image"
             property="og:image"
-            content={`https://image.tmdb.org/t/p/w342${itemDetail.posterPath}`}
-          /> */}
+            content={`https://image.tmdb.org/t/p/w342${item?.posterImage?.id}`}
+          />
           <meta property="og:type" content="video.movie" />
           <meta property="og:image:type" content="image/jpg" />
           <meta property="og:image:width" content="342" />
-          <meta
-            data-react-helmet="true"
-            property="og:image:height"
-            content="513"
-          />
+          <meta property="og:image:height" content="513" />
           <meta
             property="og:url"
             content={`http://teletracker.com${router.asPath}`}
           />
           <meta
-            data-react-helmet="true"
             name="twitter:card"
-            content={`Find out where to stream, rent, or buy ${item?.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
+            content={`${firstLineOverview}. Find out where to stream, rent, or buy ${item?.canonicalTitle} on Teletracker.tv.`}
           />
           <meta
             name="twitter:title"
@@ -77,13 +73,12 @@ export default function makeItemDetailWrapper(type: ItemType) {
           />
           <meta
             name="twitter:description"
-            content={`Find out where to stream, rent, or buy ${item?.canonicalTitle} online. Track it to find out when it's available on one of your services.`}
+            content={`${firstLineOverview}. Find out where to stream, rent, or buy ${item?.canonicalTitle} on Teletracker.tv.`}
           />
-
-          {/* TODO FIX <meta
+          <meta
             name="twitter:image"
-            content={`https://image.tmdb.org/t/p/w342${itemDetail.posterPath}`}
-          /> */}
+            content={`https://image.tmdb.org/t/p/w342${item?.posterImage?.id}`}
+          />
           <meta
             name="keywords"
             content={`${item?.canonicalTitle}, ${item?.type}, stream, streaming, rent, buy, watch, track`}
