@@ -192,6 +192,14 @@ class MovieImportHandler @Inject()(
           .filter(_.nonEmpty)
           .map(LocalDate.parse(_))
           .orElse(existingMovie.release_date),
+        release_dates = item.release_dates.map(_.results.map(mrd => {
+          val earliest = findEarliestReleaseDate(mrd.release_dates)
+          EsItemReleaseDate(
+            mrd.iso_3166_1,
+            earliest.map(_._1.toLocalDate),
+            earliest.flatMap(_._2.certification)
+          )
+        })),
         runtime = item.runtime.orElse(existingMovie.runtime),
         slug =
           if (existingMovie.slug.isEmpty)
