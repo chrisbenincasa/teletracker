@@ -593,7 +593,7 @@ function ItemDetails(props: Props) {
               </div>
               <div className={classes.itemInformationContainer}>
                 {renderDescriptiveDetails(itemDetail)}
-                <Hidden mdDown>{renderGenres(itemDetail)}</Hidden>
+                <Hidden smDown>{renderGenres(itemDetail)}</Hidden>
                 <ThingAvailability
                   userSelf={userSelf}
                   itemDetail={itemDetail}
