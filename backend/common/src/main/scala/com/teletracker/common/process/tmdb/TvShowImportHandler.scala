@@ -182,6 +182,17 @@ class TvShowImportHandler @Inject()(
           .filter(_.nonEmpty)
           .map(LocalDate.parse(_))
           .orElse(existingShow.release_date),
+        release_dates = Some(
+          item.content_ratings
+            .map(_.results.map(rating => {
+              EsItemReleaseDate(
+                rating.iso_3166_1,
+                None,
+                Some(rating.rating)
+              )
+            }))
+            .getOrElse(Nil)
+        ),
         slug =
           if (existingShow.slug.isEmpty)
             item.releaseYear.map(Slug(item.name, _))
