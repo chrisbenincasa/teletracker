@@ -14,6 +14,7 @@ import { windowTitleForItem } from '../../utils/item-utils';
 import { currentUserJwt } from '../../utils/page-utils';
 import { ItemType } from '../../types';
 import useItem from '../../hooks/useItem';
+import moment from 'moment';
 
 interface Props {
   // item?: Item;
@@ -34,6 +35,8 @@ export default function makeItemDetailWrapper(type: ItemType) {
       : requestedId;
 
     const item = useItem(actualId, undefined);
+    const releaseDate =
+      (item?.release_date && moment(item?.release_date).format('YYYY')) || '';
     const firstLineOverview = item?.overview?.split('.')[0];
 
     return (
@@ -43,7 +46,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
           <meta
             name="title"
             property="og:title"
-            content={`${item?.canonicalTitle} | Where to stream, rent, or buy`}
+            content={`${item?.canonicalTitle} (${releaseDate}) | Where to stream, rent, or buy`}
           />
           <meta
             name="description"
@@ -53,20 +56,20 @@ export default function makeItemDetailWrapper(type: ItemType) {
           <meta
             name="image"
             property="og:image"
-            content={`https://image.tmdb.org/t/p/w342${item?.posterImage?.id}`}
+            content={`https://image.tmdb.org/t/p/w780${item?.backdropImage?.id}`}
           />
-          <meta property="og:type" content="video.movie" />
+          <meta
+            property="og:type"
+            content={item?.type === 'movie' ? 'video.movie' : 'video.tv_show'}
+          />
           <meta property="og:image:type" content="image/jpg" />
-          <meta property="og:image:width" content="342" />
-          <meta property="og:image:height" content="513" />
+          <meta property="og:image:width" content="780" />
+          <meta property="og:image:height" content="439" />
           <meta
             property="og:url"
             content={`http://teletracker.com${router.asPath}`}
           />
-          <meta
-            name="twitter:card"
-            content={`${firstLineOverview}. Find out where to stream, rent, or buy ${item?.canonicalTitle} on Teletracker.tv.`}
-          />
+          <meta name="twitter:card" content="summary_large_image" />
           <meta
             name="twitter:title"
             content={`${item?.canonicalTitle} - Where to Stream, Rent, or Buy It Online`}
@@ -77,8 +80,9 @@ export default function makeItemDetailWrapper(type: ItemType) {
           />
           <meta
             name="twitter:image"
-            content={`https://image.tmdb.org/t/p/w342${item?.posterImage?.id}`}
+            content={`https://image.tmdb.org/t/p/w780${item?.backdropImage?.id}`}
           />
+          <meta name="twitter:domain" content="Teletracker.tv" />
           <meta
             name="keywords"
             content={`${item?.canonicalTitle}, ${item?.type}, stream, streaming, rent, buy, watch, track`}
