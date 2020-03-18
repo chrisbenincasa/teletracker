@@ -133,6 +133,9 @@ const styles = (theme: Theme) =>
     informationContainer: {
       [theme.breakpoints.down('sm')]: {
         marginTop: theme.spacing(1),
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
       },
     },
     itemDetailContainer: {
@@ -368,7 +371,6 @@ function ItemDetails(props: Props) {
           style={{
             display: 'flex',
             flexDirection: 'row',
-            justifyContent: 'center',
           }}
         >
           <Typography
