@@ -1,20 +1,23 @@
-import { promises as fsPromises } from 'fs';
-import fs from 'fs';
+import fs, { promises as fsPromises } from 'fs';
+import stream from 'stream';
 import AWS from 'aws-sdk';
 import _ from 'lodash';
 import zlib from 'zlib';
 
 const s3 = new AWS.S3();
 
-const writeResultsAndUploadToStorage = async (
-  fileName,
-  destinationDir,
-  results,
+export const writeResultsAndUploadToStorage = async (
+  fileName: string,
+  destinationDir: string,
+  results: any,
 ) => {
   return writeResultsAndUploadToS3(fileName, destinationDir, results);
 };
 
-const uploadToStorage = async (fileName, destinationDir) => {
+export const uploadToStorage = async (
+  fileName: string,
+  destinationDir: string,
+) => {
   let sanitized = fileName.replace(/^\/tmp\//gi, '');
   return uploadToS3(
     'teletracker-data',
@@ -23,7 +26,11 @@ const uploadToStorage = async (fileName, destinationDir) => {
   );
 };
 
-const writeResultsAndUploadToS3 = async (fileName, destinationDir, results) => {
+export const writeResultsAndUploadToS3 = async (
+  fileName: string,
+  destinationDir: string,
+  results: any,
+) => {
   await fsPromises.writeFile(fileName, JSON.stringify(results), 'utf8');
 
   return uploadToS3(
@@ -33,28 +40,30 @@ const writeResultsAndUploadToS3 = async (fileName, destinationDir, results) => {
   );
 };
 
-const uploadToS3 = async (
-  bucket,
-  key,
-  fileName,
-  contentType = 'text/plain',
-  gzip = false,
+export const uploadToS3 = async (
+  bucket: string,
+  key: string,
+  fileName: string,
+  contentType: string = 'text/plain',
+  gzip: boolean = false,
 ) => {
   let sanitized = fileName.replace(/^\/tmp\//gi, '');
-  let stream = fs.createReadStream(`/tmp/${sanitized}`);
+  let stream;
   if (gzip) {
-    stream = stream.pipe(zlib.createGzip());
+    stream = fs.createReadStream(`/tmp/${sanitized}`).pipe(zlib.createGzip());
+  } else {
+    stream = fs.createReadStream(`/tmp/${sanitized}`);
   }
 
   return uploadStreamToS3(bucket, key, stream, contentType, gzip);
 };
 
 export const uploadStreamToS3 = async (
-  bucket,
-  key,
-  stream,
-  contentType = 'text/plain',
-  gzip = false,
+  bucket: string,
+  key: string,
+  stream: stream.Readable,
+  contentType: string = 'text/plain',
+  gzip: boolean = false,
 ) => {
   console.log(`Uploading to s3://${bucket}/${key}`);
 
@@ -70,10 +79,10 @@ export const uploadStreamToS3 = async (
 };
 
 export const uploadStringToS3 = async (
-  bucket,
-  key,
-  string,
-  contentType = 'text/plain',
+  bucket: string,
+  key: string,
+  string: string,
+  contentType: string = 'text/plain',
 ) => {
   console.log(`Uploading to s3://${bucket}/${key}`);
 
@@ -87,7 +96,7 @@ export const uploadStringToS3 = async (
     .promise();
 };
 
-export const deleteS3Object = async (bucket, key) => {
+export const deleteS3Object = async (bucket: string, key: string) => {
   return s3
     .deleteObject({
       Bucket: bucket,
@@ -96,7 +105,10 @@ export const deleteS3Object = async (bucket, key) => {
     .promise();
 };
 
-const getObjectS3 = async (bucket, key) => {
+export const getObjectS3: (
+  bucket: string,
+  key: string,
+) => Promise<Buffer> = async (bucket: string, key: string) => {
   return s3
     .getObject({
       Bucket: bucket,
@@ -104,7 +116,7 @@ const getObjectS3 = async (bucket, key) => {
     })
     .promise()
     .then(res => {
-      return res.Body;
+      return res.Body as Buffer;
     })
     .catch(e => {
       if (e.code === 'NoSuchKey') {
@@ -115,8 +127,13 @@ const getObjectS3 = async (bucket, key) => {
     });
 };
 
-export const getDirectoryS3 = async (bucket, prefix) => {
-  const getDirectoryS3Inner = async (bucket, prefix, token, acc) => {
+export const getDirectoryS3 = async (bucket: string, prefix: string) => {
+  const getDirectoryS3Inner = async (
+    bucket: string,
+    prefix: string,
+    token: string | undefined,
+    acc: AWS.S3.ObjectList,
+  ) => {
     return s3
       .listObjectsV2({
         Bucket: bucket,
@@ -125,7 +142,7 @@ export const getDirectoryS3 = async (bucket, prefix) => {
       })
       .promise()
       .then(res => {
-        let nextAcc = acc.concat(res.Contents);
+        let nextAcc = acc.concat(res.Contents || []);
         if (res.IsTruncated) {
           return getDirectoryS3Inner(
             bucket,
@@ -139,11 +156,11 @@ export const getDirectoryS3 = async (bucket, prefix) => {
       });
   };
 
-  return getDirectoryS3Inner(bucket, prefix, null, []);
+  return getDirectoryS3Inner(bucket, prefix, undefined, []);
 };
 
-const fetchMostRecentFromS3 = async (bucket, key) => {
-  let results = [];
+export const fetchMostRecentFromS3 = async (bucket: string, key: string) => {
+  let results: AWS.S3.Object[] = [];
   let continuationToken;
   do {
     let resp = await s3
@@ -153,7 +170,11 @@ const fetchMostRecentFromS3 = async (bucket, key) => {
         ContinuationToken: continuationToken,
       })
       .promise();
-    results = results.concat(resp.Contents);
+
+    if (resp.Contents) {
+      results = results.concat(resp.Contents);
+    }
+
     continuationToken = resp.NextContinuationToken;
   } while (Boolean(continuationToken));
 
@@ -163,12 +184,4 @@ const fetchMostRecentFromS3 = async (bucket, key) => {
       .reverse()
       .value()[0];
   }
-};
-
-export {
-  uploadToStorage,
-  writeResultsAndUploadToStorage,
-  writeResultsAndUploadToS3,
-  uploadToS3,
-  getObjectS3,
 };

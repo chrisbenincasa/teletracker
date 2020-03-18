@@ -81,6 +81,8 @@ module "netflix-originals-arriving" {
 
   s3_bucket = var.scraper-s3-bucket
 
+  runtime = "nodejs12.x"
+
   extra_env_vars = {
     DATA_BUCKET = aws_s3_bucket.teletracker-data-us-west-2.id
   }

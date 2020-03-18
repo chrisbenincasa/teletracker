@@ -40,3 +40,8 @@ variable "s3_bucket" {
   type    = string
   default = "teletracker-artifacts"
 }
+
+variable "runtime" {
+  type    = string
+  default = "nodejs10.x"
+}

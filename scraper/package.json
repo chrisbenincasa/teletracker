@@ -20,12 +20,14 @@
   "devDependencies": {
     "@types/cheerio": "^0.22.13",
     "@types/lodash": "^4.14.144",
+    "@types/moment": "^2.13.0",
     "prettier": "1.17.0",
-    "typescript": "^3.6.4",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.8.3",
     "yargs": "^14.2.0"
   },
   "scripts": {
     "build": "tsc",
-    "main": "node --no-warnings -r esm runner.js"
+    "main": "ts-node src/runner.js"
   }
 }
