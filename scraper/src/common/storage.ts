@@ -133,7 +133,7 @@ export const getDirectoryS3 = async (bucket: string, prefix: string) => {
     prefix: string,
     token: string | undefined,
     acc: AWS.S3.ObjectList,
-  ) => {
+  ): Promise<AWS.S3.ObjectList> => {
     return s3
       .listObjectsV2({
         Bucket: bucket,

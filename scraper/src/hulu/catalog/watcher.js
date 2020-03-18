@@ -9,18 +9,20 @@ import moment from 'moment';
 import { scheduleTask } from '../../common/task_publisher';
 
 const grabLock = async today => {
-  return uploadStringToS3(
+  await uploadStringToS3(
     DATA_BUCKET,
     `scrape-results/hulu/${today}/catalog-ingest.lock`,
     'lock',
   );
+  console.log('Successfully grabbed the lock.');
 };
 
 const releaseLock = async today => {
-  return deleteS3Object(
+  await deleteS3Object(
     DATA_BUCKET,
     `scrape-results/hulu/${today}/catalog-ingest.lock`,
   );
+  console.log('Successfully released the lock.');
 };
 
 export default async function watch(event) {
@@ -61,7 +63,7 @@ export default async function watch(event) {
       `scrape-results/hulu/${today}/catalog`,
     );
 
-    console.log(`Found ${foundObjects.size} in the target directory`);
+    console.log(`Found ${foundObjects.length} in the target directory`);
 
     if (foundObjects.length >= expectedSize) {
       let payload = {
@@ -76,6 +78,8 @@ export default async function watch(event) {
       try {
         await scheduleTask(payload);
       } catch (e) {
+        console.error('Unable to schedule task', e);
+      } finally {
         await releaseLock(today);
       }
     } else {
