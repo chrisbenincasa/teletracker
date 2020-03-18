@@ -157,6 +157,7 @@ const styles = (theme: Theme) =>
       color: theme.palette.primary.contrastText,
       flexDirection: 'column',
       position: 'relative',
+      marginBottom: theme.spacing(2),
       [theme.breakpoints.up('sm')]: {
         marginLeft: theme.spacing(3),
       },
@@ -219,6 +220,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.down('sm')]: {
         alignItems: 'center',
         textAlign: 'center',
+        margin: theme.spacing(1, 0, 2, 0),
       },
       width: '100%',
       marginBottom: theme.spacing(1),

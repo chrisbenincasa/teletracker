@@ -135,6 +135,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         marginLeft: theme.spacing(3),
       },
+      marginBottom: theme.spacing(2),
     },
     personDetailContainer: {
       margin: theme.spacing(3),
@@ -168,6 +169,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.down('sm')]: {
         textAlign: 'center',
         alignItems: 'center',
+        margin: theme.spacing(1, 0, 2, 0),
       },
     },
     trackingButton: {
