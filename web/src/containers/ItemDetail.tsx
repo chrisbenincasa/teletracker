@@ -364,7 +364,13 @@ function ItemDetails(props: Props) {
             {`(${voteCount})`}
           </Typography>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'center',
+          }}
+        >
           <Typography
             color="inherit"
             variant="body1"

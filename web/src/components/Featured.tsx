@@ -180,7 +180,8 @@ function Featured(props: Props) {
       );
     });
 
-    const calcPadding = featuredItems.length * 8;
+    // This calculates the spaces between multiple features items, 0 if only 1
+    const calcPadding = featuredItems.length > 1 ? featuredItems.length * 8 : 0;
 
     return (
       <Fade in={!imageLoading} key={item.id}>
