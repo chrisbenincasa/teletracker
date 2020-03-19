@@ -133,6 +133,9 @@ const styles = (theme: Theme) =>
     informationContainer: {
       [theme.breakpoints.down('sm')]: {
         marginTop: theme.spacing(1),
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
       },
     },
     itemDetailContainer: {
@@ -154,6 +157,7 @@ const styles = (theme: Theme) =>
       color: theme.palette.primary.contrastText,
       flexDirection: 'column',
       position: 'relative',
+      marginBottom: theme.spacing(2),
       [theme.breakpoints.up('sm')]: {
         marginLeft: theme.spacing(3),
       },
@@ -209,13 +213,21 @@ const styles = (theme: Theme) =>
       marginBottom: theme.spacing(1),
       color: theme.palette.primary.contrastText,
     },
+    title: {
+      [theme.breakpoints.up('sm')]: {
+        lineHeight: 0.85,
+      },
+    },
     titleWrapper: {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'flex-start',
+
       [theme.breakpoints.down('sm')]: {
         alignItems: 'center',
         textAlign: 'center',
+        margin: theme.spacing(1, 0, 2, 0),
+        lineHeight: 1,
       },
       width: '100%',
       marginBottom: theme.spacing(1),
@@ -334,7 +346,7 @@ function ItemDetails(props: Props) {
           color="inherit"
           variant="h2"
           itemProp="name"
-          style={{ lineHeight: 0.85 }}
+          className={classes.title}
         >
           {item.canonicalTitle}
         </Typography>
@@ -364,7 +376,12 @@ function ItemDetails(props: Props) {
             {`(${voteCount})`}
           </Typography>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+          }}
+        >
           <Typography
             color="inherit"
             variant="body1"
