@@ -185,7 +185,7 @@ function Featured(props: Props) {
     // This calculates the spaces between multiple features items, 0 if only 1
     const calcPadding =
       featuredItems.length > 1 ? featuredItems.length * theme.spacing(1) : 0;
-    console.log(theme.spacing(1));
+
     return (
       <Fade in={!imageLoading} key={item.id}>
         <div
