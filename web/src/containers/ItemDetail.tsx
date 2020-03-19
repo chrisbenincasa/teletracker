@@ -213,14 +213,21 @@ const styles = (theme: Theme) =>
       marginBottom: theme.spacing(1),
       color: theme.palette.primary.contrastText,
     },
+    title: {
+      [theme.breakpoints.up('sm')]: {
+        lineHeight: 0.85,
+      },
+    },
     titleWrapper: {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'flex-start',
+
       [theme.breakpoints.down('sm')]: {
         alignItems: 'center',
         textAlign: 'center',
         margin: theme.spacing(1, 0, 2, 0),
+        lineHeight: 1,
       },
       width: '100%',
       marginBottom: theme.spacing(1),
@@ -339,7 +346,7 @@ function ItemDetails(props: Props) {
           color="inherit"
           variant="h2"
           itemProp="name"
-          style={{ lineHeight: 0.85 }}
+          className={classes.title}
         >
           {item.canonicalTitle}
         </Typography>

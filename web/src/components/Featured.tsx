@@ -4,6 +4,7 @@ import {
   Fade,
   Grow,
   makeStyles,
+  useTheme,
   Theme,
   Typography,
 } from '@material-ui/core';
@@ -109,6 +110,7 @@ function Featured(props: Props) {
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const classes = useStyles();
   const { featuredItems, userSelf } = props;
+  const theme: Theme = useTheme();
 
   useEffect(() => {
     setImageLoading(true);
@@ -181,8 +183,9 @@ function Featured(props: Props) {
     });
 
     // This calculates the spaces between multiple features items, 0 if only 1
-    const calcPadding = featuredItems.length > 1 ? featuredItems.length * 8 : 0;
-
+    const calcPadding =
+      featuredItems.length > 1 ? featuredItems.length * theme.spacing(1) : 0;
+    console.log(theme.spacing(1));
     return (
       <Fade in={!imageLoading} key={item.id}>
         <div
