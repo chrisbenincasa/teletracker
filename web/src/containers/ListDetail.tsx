@@ -25,7 +25,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Delete, Edit, Save, Settings, Tune } from '@material-ui/icons';
+import { Delete, Edit, Save, Settings } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -45,6 +45,7 @@ import {
 import ItemCard from '../components/ItemCard';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
+import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { ThingMap } from '../reducers/item-detail';
@@ -133,10 +134,6 @@ const styles = (theme: Theme) =>
     root: {
       display: 'flex',
       flexGrow: 1,
-    },
-    settings: {
-      display: 'flex',
-      alignSelf: 'flex-end',
     },
     textField: {
       margin: theme.spacing(0, 1),
@@ -551,7 +548,6 @@ class ListDetail extends Component<Props, State> {
     }
 
     let { anchorEl } = this.state;
-    let { classes } = this.props;
     let isMenuOpen = !!anchorEl;
 
     return (
@@ -561,7 +557,6 @@ class ListDetail extends Component<Props, State> {
           aria-haspopup="true"
           color="inherit"
           onClick={this.handleMenu}
-          className={classes.settings}
         >
           <Settings />
           <Typography variant="srOnly">Settings</Typography>
@@ -819,18 +814,11 @@ class ListDetail extends Component<Props, State> {
                 {list.name}
               </Typography>
             </div>
-            <IconButton
-              onClick={this.toggleFilters}
-              className={classes.settings}
-              color={showFilter ? 'primary' : 'default'}
-            >
-              <Tune />
-              <Typography variant="srOnly">Tune</Typography>
-            </IconButton>
+            <ShowFiltersButton onClick={this.toggleFilters} />
             {this.renderProfileMenu()}
-            {list.isDynamic && listFilters ? (
+            {/* Just commenting this out for now, need to test with an actual smart list */}
+            {/* {list.isDynamic && listFilters ? (
               <IconButton
-                className={classes.settings}
                 color={showFilter ? 'secondary' : 'inherit'}
                 disabled={
                   isDefaultFilter(filters) ||
@@ -840,7 +828,7 @@ class ListDetail extends Component<Props, State> {
                 <Save />
                 <Typography variant="srOnly">Save</Typography>
               </IconButton>
-            ) : null}
+            ) : null} */}
           </div>
           <div className={classes.filters}>
             <ActiveFilters

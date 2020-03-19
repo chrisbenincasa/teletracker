@@ -11,7 +11,6 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import { withRouter } from 'next/router';
@@ -27,6 +26,7 @@ import { PopularInitiatedActionPayload } from '../actions/popular';
 import Featured from '../components/Featured';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import AllFilters from '../components/Filters/AllFilters';
+import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ItemCard from '../components/ItemCard';
 import ScrollToTop from '../components/Buttons/ScrollToTop';
 import withUser, { WithUserProps } from '../components/withUser';
@@ -44,10 +44,6 @@ import {
 
 const styles = (theme: Theme) =>
   createStyles({
-    settings: {
-      display: 'flex',
-      alignSelf: 'flex-end',
-    },
     listTitle: {
       display: 'flex',
       flexDirection: 'row',
@@ -440,7 +436,6 @@ class Popular extends Component<Props, State> {
     const {
       filters: { genresFilter, itemTypes },
     } = this.state;
-    const filtersCTA = this.state.showFilter ? 'Hide Filters' : 'Filters';
 
     return popular ? (
       <div className={classes.popularContainer}>
@@ -450,7 +445,7 @@ class Popular extends Component<Props, State> {
             variant={['xs', 'sm'].includes(this.props.width) ? 'h6' : 'h4'}
             style={{ flexGrow: 1 }}
           >
-            {`Trending ${
+            {`Popular ${
               genresFilter && genresFilter.length === 1
                 ? this.mapGenre(genresFilter[0])
                 : ''
@@ -462,16 +457,7 @@ class Popular extends Component<Props, State> {
                 : 'Content'
             }`}
           </Typography>
-          <Button
-            size="small"
-            onClick={this.toggleFilters}
-            variant="contained"
-            aria-label={filtersCTA}
-            startIcon={<Tune />}
-            style={{ whiteSpace: 'nowrap' }}
-          >
-            {filtersCTA}
-          </Button>
+          <ShowFiltersButton onClick={this.toggleFilters} />
         </div>
         <div className={classes.filters}>
           <ActiveFilters

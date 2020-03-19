@@ -3,13 +3,11 @@ import {
   createStyles,
   Fade,
   Grid,
-  IconButton,
   makeStyles,
   Theme,
   Typography,
-  NoSsr,
 } from '@material-ui/core';
-import { Error as ErrorIcon, Tune } from '@material-ui/icons';
+import { Error as ErrorIcon } from '@material-ui/icons';
 import _ from 'lodash';
 import { useRouter } from 'next/router';
 import qs from 'querystring';
@@ -19,7 +17,7 @@ import InfiniteScroll from 'react-infinite-scroller';
 import { useDispatch, useSelector } from 'react-redux';
 import { search } from '../actions/search';
 import ScrollToTop from '../components/Buttons/ScrollToTop';
-import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
+import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import AllFilters from '../components/Filters/AllFilters';
 import ItemCard from '../components/ItemCard';
@@ -29,7 +27,6 @@ import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
 import { useWidth } from '../hooks/useWidth';
 import { useWithUser } from '../hooks/useWithUser';
 import { AppState } from '../reducers';
-import { Genre } from '../types';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
@@ -79,10 +76,6 @@ const useStyles = makeStyles((theme: Theme) =>
     searchTitle: {
       margin: theme.spacing(2),
     },
-    settings: {
-      display: 'flex',
-      alignSelf: 'flex-end',
-    },
   }),
 );
 
@@ -106,10 +99,6 @@ const Search = ({ inViewportChange }) => {
 
   const [showScrollToTop, setShowScrollToTop] = useState<boolean>(false);
   const [totalVisibleItems, setTotalVisibleItems] = useState<number>(0);
-  const [
-    createDynamicListDialogOpen,
-    setCreateDynamicListDialogOpen,
-  ] = useState<boolean>(false);
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>(currentSearchText || '');
   const [filters, setFilters, previousFilters] = useStateDeepEqWithPrevious(
@@ -277,7 +266,6 @@ const Search = ({ inViewportChange }) => {
   const showSearch =
     !currentSearchText || (currentSearchText && currentSearchText.length === 0);
   // || isInViewport;
-
   const loadHandler = useCallback(
     () => setTotalVisibleItems(prev => prev + 1),
     [],
@@ -327,17 +315,7 @@ const Search = ({ inViewportChange }) => {
                     : 'Content'
                 } that matches "${currentSearchText}"`}
               </Typography>
-              <IconButton
-                onClick={toggleFilters}
-                className={classes.settings}
-                color={showFilter ? 'primary' : 'inherit'}
-              >
-                <Tune />
-                <Typography variant="srOnly">Tune</Typography>
-              </IconButton>
-              <CreateSmartListButton
-                onClick={() => setCreateDynamicListDialogOpen(true)}
-              />
+              <ShowFiltersButton onClick={toggleFilters} />
             </div>
             <div className={classes.filters}>
               <ActiveFilters

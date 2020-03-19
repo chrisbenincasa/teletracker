@@ -2,7 +2,6 @@ import {
   CircularProgress,
   createStyles,
   Grid,
-  IconButton,
   LinearProgress,
   Theme,
   Typography,
@@ -10,7 +9,6 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -24,6 +22,7 @@ import {
 } from '../actions/explore';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
+import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ItemCard from '../components/ItemCard';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
@@ -42,7 +41,6 @@ import {
   peopleFetchInitiated,
   PeopleFetchInitiatedPayload,
 } from '../actions/people/get_people';
-import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
 import qs from 'querystring';
 
@@ -52,10 +50,6 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexGrow: 1,
       flexDirection: 'column',
-    },
-    settings: {
-      display: 'flex',
-      alignSelf: 'flex-end',
     },
     listTitle: {
       display: 'flex',
@@ -310,6 +304,7 @@ class Explore extends Component<Props, State> {
       filters: { genresFilter, itemTypes },
       createDynamicListDialogOpen,
     } = this.state;
+    const filtersCTA = this.state.showFilter ? 'Hide Filters' : 'Filters';
 
     return items ? (
       <div className={classes.exploreContainer}>
@@ -332,15 +327,7 @@ class Explore extends Component<Props, State> {
             }`}
           </Typography>
           {/* TODO: put some copy here explaining what the Explore page is */}
-          <IconButton
-            onClick={this.toggleFilters}
-            className={classes.settings}
-            color={this.state.showFilter ? 'secondary' : 'inherit'}
-          >
-            <Tune />
-            <Typography variant="srOnly">Tune</Typography>
-          </IconButton>
-          <CreateSmartListButton onClick={this.createListFromFilters} />
+          <ShowFiltersButton onClick={this.toggleFilters} />
         </div>
         <div className={classes.filters}>
           <ActiveFilters
