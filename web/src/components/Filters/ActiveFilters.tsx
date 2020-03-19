@@ -25,7 +25,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexWrap: 'wrap',
   },
   chip: {
-    margin: theme.spacing(0, 0.5),
+    margin: theme.spacing(0.5, 0.5, 0, 0.5),
     backgroundColor: `${theme.palette.grey[800]}`,
   },
   networkIcon: {
@@ -34,7 +34,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   resetChip: {
     backgroundColor: theme.custom.palette.cancel,
-    margin: theme.spacing(0, 0.5),
+    margin: theme.spacing(0.5, 0, 0, 0.5),
   },
 }));
 

@@ -24,7 +24,6 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { retrievePopular } from '../actions/popular';
 import { PopularInitiatedActionPayload } from '../actions/popular';
-import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import Featured from '../components/Featured';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import AllFilters from '../components/Filters/AllFilters';
@@ -53,6 +52,7 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
+      marginBottom: theme.spacing(1),
     },
     loadingBar: {
       flexGrow: 1,
@@ -133,7 +133,6 @@ interface State {
   filters: FilterParams;
   needsNewFeatured: boolean;
   totalLoadedImages: number;
-  createDynamicListDialogOpen: boolean;
   showScrollToTop: boolean;
 }
 
@@ -167,7 +166,6 @@ class Popular extends Component<Props, State> {
       filters: filterParams,
       needsNewFeatured: false,
       totalLoadedImages: 0,
-      createDynamicListDialogOpen: false,
       showScrollToTop: false,
     };
   }
@@ -431,18 +429,6 @@ class Popular extends Component<Props, State> {
     }
   };
 
-  createListFromFilters = () => {
-    this.setState({
-      createDynamicListDialogOpen: true,
-    });
-  };
-
-  handleCreateDynamicModalClose = () => {
-    this.setState({
-      createDynamicListDialogOpen: false,
-    });
-  };
-
   setVisibleItems = () => {
     this.setState({
       totalLoadedImages: this.state.totalLoadedImages + 1,
@@ -453,7 +439,6 @@ class Popular extends Component<Props, State> {
     const { classes, genres, popular, userSelf, thingsById } = this.props;
     const {
       filters: { genresFilter, itemTypes },
-      createDynamicListDialogOpen,
     } = this.state;
     const filtersCTA = this.state.showFilter ? 'Hide Filters' : 'Filters';
 
@@ -483,6 +468,7 @@ class Popular extends Component<Props, State> {
             variant="contained"
             aria-label={filtersCTA}
             startIcon={<Tune />}
+            style={{ whiteSpace: 'nowrap' }}
           >
             {filtersCTA}
           </Button>
