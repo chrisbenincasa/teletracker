@@ -29,18 +29,21 @@ export default function ManageTrackingButton(props: Props) {
   const isMobile = ['xs', 'sm'].includes(width);
   let [isTracked, setIsTracked] = useState(false);
 
-  // const belongsToLists: string[] =
-  //   props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
+  const belongsToLists: string[] =
+    props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
+
+  console.log(props.itemDetail);
 
   useEffect(() => {
     let belongsToLists: string[] =
       props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
-    console.log(props?.itemDetail);
+    // console.log(belongsToLists);
     if (belongsToLists.length > 0) {
       setIsTracked(true);
     } else {
       setIsTracked(false);
     }
+    console.log(belongsToLists);
   });
 
   let trackingCTA = isTracked ? 'Manage Tracking' : 'Add to List';
@@ -54,7 +57,7 @@ export default function ManageTrackingButton(props: Props) {
         fullWidth
         aria-label={props.cta || trackingCTA}
         onClick={props.onClick}
-        color={isTracked ? 'primary' : undefined}
+        color={belongsToLists.length > 0 ? 'primary' : undefined}
         startIcon={<PlaylistAdd className={classes.buttonIcon} />}
       >
         {props.cta || isMobile ? trackingCTAMobile : trackingCTA}

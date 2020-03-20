@@ -63,7 +63,7 @@ class MarkAsWatched extends Component<Props, State> {
 
   toggleItemWatched = (): void => {
     let payload = {
-      thingId: this.props.itemDetail.id,
+      itemId: this.props.itemDetail.id,
       action: ActionType.Watched,
     };
 

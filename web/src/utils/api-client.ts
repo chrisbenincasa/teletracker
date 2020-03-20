@@ -158,14 +158,14 @@ export class TeletrackerApi {
   async createList(
     token: string,
     name: string,
-    thingIds?: string[],
+    itemIds?: string[],
     rules?: ListRules,
   ) {
     return this.api.post<DataResponse<{ id: number }>>(
       '/api/v2/users/self/lists',
       {
         name,
-        thingIds,
+        itemIds,
         rules,
       },
       { params: { token } },
@@ -299,12 +299,12 @@ export class TeletrackerApi {
 
   async updateListTracking(
     token: string,
-    thingId: string,
+    itemId: string,
     addToLists: string[],
     removeFromLists: string[],
   ) {
     return this.api.put<any>(
-      `/api/v2/users/self/things/${thingId}/lists`,
+      `/api/v2/users/self/things/${itemId}/lists`,
       {
         addToLists,
         removeFromLists,
@@ -393,12 +393,12 @@ export class TeletrackerApi {
 
   async updateActions(
     token: string,
-    thingId: string,
+    itemId: string,
     action: ActionType,
     value?: number,
   ) {
     return this.api.put(
-      `/api/v2/users/self/things/${thingId}/actions`,
+      `/api/v2/users/self/things/${itemId}/actions`,
       {
         action,
         value,
@@ -407,9 +407,9 @@ export class TeletrackerApi {
     );
   }
 
-  async removeActions(token: string, thingId: string, action: ActionType) {
+  async removeActions(token: string, itemId: string, action: ActionType) {
     return this.api.delete(
-      `/api/v2/users/self/things/${thingId}/actions/${action}`,
+      `/api/v2/users/self/things/${itemId}/actions/${action}`,
       { token },
     );
   }

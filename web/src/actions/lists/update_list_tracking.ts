@@ -1,17 +1,19 @@
-import { put, takeLatest } from '@redux-saga/core/effects';
+import { all, put, takeLatest } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
 import ReactGA from 'react-ga';
+import { updateUserItemTags } from '../user/update_user_tags';
+import { ActionType } from '../../types';
 
 export const LIST_UPDATE_TRACKING_INITIATED = 'lists/update_tracking/INITIATED';
 export const LIST_UPDATE_TRACKING_SUCCESS = 'lists/update_tracking/SUCCESS';
 export const LIST_UPDATE_TRACKING_FAILED = 'lists/update_tracking/FAILED';
 
 export interface ListTrackingUpdatedInitiatedPayload {
-  thingId: string;
+  itemId: string;
   addToLists: string[];
   removeFromLists: string[];
 }
@@ -32,13 +34,27 @@ export const updateListTrackingSaga = function*() {
     if (payload) {
       let response: TeletrackerResponse<any> = yield clientEffect(
         client => client.updateListTracking,
-        payload.thingId,
+        payload.itemId,
         payload.addToLists,
         payload.removeFromLists,
       );
 
       if (response.ok) {
         yield put(retrieveAllLists({}));
+        console.log('test');
+        console.log(payload.addToLists);
+
+        yield all(
+          payload.addToLists.map(listId => {
+            put(
+              updateUserItemTags({
+                itemId: payload.itemId,
+                action: ActionType.TrackedInList,
+                string_value: listId,
+              }),
+            );
+          }),
+        );
 
         ReactGA.event({
           category: 'User',

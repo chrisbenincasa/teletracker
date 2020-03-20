@@ -12,10 +12,11 @@ export const USER_SELF_UPDATE_ITEM_TAGS_SUCCESS =
   'user/self/update_item_tags/SUCCESS';
 
 export interface UserUpdateItemTagsPayload {
-  thingId: string;
+  itemId: string;
   action: ActionType;
   value?: number;
   lazy?: boolean; // If true, requires the server call to complete before updating state.
+  string_value?: string;
 }
 
 export type UserUpdateItemTagsAction = FSA<
@@ -47,7 +48,7 @@ export const updateUserActionSaga = function*() {
 
       let response: TeletrackerResponse<any> = yield clientEffect(
         client => client.updateActions,
-        payload.thingId,
+        payload.itemId,
         payload.action,
         payload.value,
       );

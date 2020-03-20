@@ -3,6 +3,8 @@ import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import ReactGA from 'react-ga';
+import { updateUserItemTagsSuccess } from '../user/update_user_tags';
+import { ActionType } from '../../types';
 
 export const LIST_ADD_ITEM_INITIATED = 'lists/add_item/INITIATED';
 export const LIST_ADD_ITEM_SUCCESS = 'lists/add_item/SUCCESS';
@@ -43,6 +45,13 @@ export const addToListSaga = function*() {
         );
         if (response.ok) {
           yield put({ type: LIST_ADD_ITEM_SUCCESS });
+          yield put(
+            updateUserItemTagsSuccess({
+              itemId: payload.itemId,
+              action: ActionType.TrackedInList,
+            }),
+          );
+
           // TODO: put a retrieve user action here
 
           ReactGA.event({

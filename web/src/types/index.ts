@@ -222,7 +222,7 @@ export interface UserDetails {
 export interface UserThingTag {
   id?: number;
   userId?: number;
-  thingId?: number;
+  itemId?: number;
   action: ActionType;
   value?: number;
 }
@@ -264,7 +264,7 @@ export interface Availability {
     | 'aggregate';
   cost?: number;
   currency?: string;
-  thingId: number;
+  itemId: number;
   networkId: number;
   network?: Network;
   presentationType?: PresentationType;

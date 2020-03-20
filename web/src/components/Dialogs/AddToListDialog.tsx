@@ -214,7 +214,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     const extractIds = R.map<List, string>(R.prop('id'));
 
     this.props.updateLists({
-      thingId: this.props.item.id,
+      itemId: this.props.item.id,
       addToLists: extractIds(addedToLists),
       removeFromLists: extractIds(removedFromLists),
     });

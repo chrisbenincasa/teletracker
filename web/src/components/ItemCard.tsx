@@ -281,7 +281,7 @@ function ItemCard(props: Props) {
 
   const handleRemoveFromList = () => {
     props.ListUpdate({
-      thingId: props.item.id,
+      itemId: props.item.id,
       addToLists: [],
       removeFromLists: [props.listContext!.id.toString()],
     });
@@ -291,7 +291,7 @@ function ItemCard(props: Props) {
 
   const toggleItemWatched = () => {
     let payload = {
-      thingId: currentId,
+      itemId: currentId,
       action: ActionType.Watched,
     };
 
@@ -305,7 +305,7 @@ function ItemCard(props: Props) {
 
   const toggleItemRating = (rating: number) => {
     let payload = {
-      thingId: currentId,
+      itemId: currentId,
       action: ActionType.Enjoyed,
       value: rating,
     };

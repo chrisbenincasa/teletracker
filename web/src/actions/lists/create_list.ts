@@ -12,7 +12,7 @@ export const USER_SELF_CREATE_LIST_SUCCESS = 'user/self/create_list/SUCCESS';
 
 export interface UserCreateListPayload {
   name: string;
-  thingIds?: string[];
+  itemIds?: string[];
   rules?: ListRules;
 }
 
@@ -42,7 +42,7 @@ export const createNewListSaga = function*() {
       let response: TeletrackerResponse<any> = yield clientEffect(
         client => client.createList,
         payload.name,
-        payload.thingIds,
+        payload.itemIds,
         payload.rules,
       );
 
