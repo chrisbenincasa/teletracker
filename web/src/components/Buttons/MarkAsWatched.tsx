@@ -91,7 +91,7 @@ class MarkAsWatched extends Component<Props, State> {
   watchedButton = (isReleased: boolean) => {
     const { classes } = this.props;
     const watchedStatus = this.state.watched;
-    const watchedCTA = watchedStatus ? 'Watched' : 'I watched it';
+    const watchedCTA = watchedStatus ? 'Watched' : 'Mark Watched';
 
     return (
       <Button

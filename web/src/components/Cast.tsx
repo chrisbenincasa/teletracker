@@ -266,6 +266,7 @@ class Cast extends Component<Props, State> {
               style={{
                 cursor: previousDisabled ? undefined : 'pointer',
                 padding: 6,
+                touchAction: 'manipulation',
               }}
               color={previousDisabled ? 'secondary' : undefined}
               disabled={previousDisabled}
@@ -280,6 +281,7 @@ class Cast extends Component<Props, State> {
               style={{
                 cursor: nextDisabled ? undefined : 'pointer',
                 padding: 6,
+                touchAction: 'manipulation',
               }}
               size="medium"
               color={nextDisabled ? 'secondary' : undefined}
