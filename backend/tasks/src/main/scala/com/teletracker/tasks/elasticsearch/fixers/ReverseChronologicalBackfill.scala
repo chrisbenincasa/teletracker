@@ -6,11 +6,10 @@ import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import com.twitter.util.StorageUnit
-import io.circe.{Codec, Decoder}
+import io.circe.Codec
 import io.circe.syntax._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
-import java.io.File
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 
@@ -23,12 +22,12 @@ abstract class ReverseChronologicalBackfill[T: Codec]
     val limit = args.valueOrDefault[Int]("limit", -1)
     val perFileLimit = args.valueOrDefault[Int]("perFileLimit", -1)
     val append = args.valueOrDefault[Boolean]("append", false)
-    val region = Region.of(regionString)
     val gteFilter = args.value[String]("gteFilter")
     val ltFilter = args.value[String]("ltFilter")
-
     val baseFileName = args.valueOrThrow[String]("baseFileName")
     val outputFolder = args.valueOrThrow[String]("outputFolder")
+
+    val region = Region.of(regionString)
 
     val s3 = S3Client.builder().region(region).build()
 

@@ -24,4 +24,5 @@ case class PotentialInput[T <: ScrapedItem: Codec](
   override def externalId: Option[String] = scraped.externalId
   override def isMovie: Boolean = scraped.isMovie
   override def isTvShow: Boolean = scraped.isTvShow
+  override def description: Option[String] = scraped.description
 }

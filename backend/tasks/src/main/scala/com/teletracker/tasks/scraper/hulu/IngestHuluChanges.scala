@@ -77,7 +77,8 @@ case class HuluScrapeItem(
   category: String,
   network: String,
   status: String,
-  externalId: Option[String])
+  externalId: Option[String],
+  description: Option[String])
     extends ScrapedItem {
   override def isMovie: Boolean = category.toLowerCase().trim() == "film"
 

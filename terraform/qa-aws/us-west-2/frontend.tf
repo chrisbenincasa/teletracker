@@ -39,7 +39,7 @@ resource "aws_lambda_function" "teletracker-frontend-lambda" {
   description   = "Handles SSR requests for Teletracker frontend"
   function_name = "teletracker-frontend-ssr"
   handler       = "index.handler"
-  runtime       = "nodejs10.x"
+  runtime       = "nodejs12.x"
 
   s3_bucket         = data.aws_s3_bucket_object.teletracker-frontend-lambda-zip.bucket
   s3_key            = data.aws_s3_bucket_object.teletracker-frontend-lambda-zip.key

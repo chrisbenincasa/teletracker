@@ -2,6 +2,7 @@ import {
   deleteS3Object,
   getDirectoryS3,
   getObjectS3,
+  objectExists,
   uploadStringToS3,
 } from '../../common/storage';
 import { DATA_BUCKET } from '../../common/constants';
@@ -25,6 +26,15 @@ const releaseLock = async today => {
   console.log('Successfully released the lock.');
 };
 
+const writeSentinel = async (today: string) => {
+  await uploadStringToS3(
+    DATA_BUCKET,
+    `scrape-results/hulu/${today}/catalog-processing.lock`,
+    'lock',
+  );
+  console.log('Successfully wrote sentinel object.');
+};
+
 export default async function watch(event) {
   try {
     let expectedSize = process.env.EXPECTED_SIZE || event.expectedSize;
@@ -35,6 +45,15 @@ export default async function watch(event) {
     }
 
     let today = moment().format('YYYY-MM-DD');
+
+    if (
+      await objectExists(
+        DATA_BUCKET,
+        `scrape-results/hulu/${today}/catalog-processing.lock`,
+      )
+    ) {
+      console.log('Catalog is already processing. Skipping checks');
+    }
 
     try {
       await getObjectS3(
@@ -76,6 +95,7 @@ export default async function watch(event) {
       };
 
       try {
+        await writeSentinel(today);
         await scheduleTask(payload);
       } catch (e) {
         console.error('Unable to schedule task', e);

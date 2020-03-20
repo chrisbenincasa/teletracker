@@ -5,9 +5,11 @@ import com.teletracker.common.elasticsearch.EsItem
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.ScrapedItem
 import io.circe.Codec
+import io.circe.generic.JsonCodec
 import java.time.LocalDate
 import java.util.UUID
 
+@JsonCodec
 case class MatchResult[T <: ScrapedItem](
   scrapedItem: T,
   esItem: EsItem) {
@@ -70,7 +72,7 @@ object PotentialMatch {
   }
 }
 
-case class PotentialMatch[T <: ScrapedItem](
+case class PotentialMatch[+T <: ScrapedItem](
   potential: PartialEsItem,
   scraped: T)
 

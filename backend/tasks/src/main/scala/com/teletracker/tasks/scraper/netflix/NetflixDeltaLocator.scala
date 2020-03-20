@@ -2,9 +2,15 @@ package com.teletracker.tasks.scraper.netflix
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.tasks.scraper.model.WhatsOnNetflixCatalogItem
-import com.teletracker.tasks.scraper.{DeltaLocateAndRunJob, IngestJobParser}
+import com.teletracker.tasks.scraper.{
+  DeltaLocateAndRunJob,
+  DeltaLocatorJobArgs,
+  DeltaLocatorJobArgsLike,
+  IngestJobParser
+}
 import com.teletracker.tasks.util.ArgJsonInstances._
 import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
+import io.circe.generic.JsonCodec
 import io.circe.syntax._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
@@ -23,6 +29,13 @@ object NetflixDeltaLocator {
     s"scrape-results/netflix/whats-on-netflix/$date/netflix-tv-catalog-converted.json"
 }
 
+@JsonCodec
+case class NetflixCatalogDeltaArgs(
+  maxDaysBack: Int,
+  local: Boolean,
+  seedDumpDate: Option[LocalDate] = None)
+    extends DeltaLocatorJobArgsLike
+
 class LocateAndRunNetflixTvCatalogDelta @Inject()(
   publisher: SqsAsyncClient,
   s3Client: S3Client,
@@ -30,12 +43,25 @@ class LocateAndRunNetflixTvCatalogDelta @Inject()(
   teletrackerConfig: TeletrackerConfig,
   sourceWriter: SourceWriter
 )(implicit executionContext: ExecutionContext)
-    extends DeltaLocateAndRunJob[NetflixCatalogDeltaIngestJob](
+    extends DeltaLocateAndRunJob[
+      NetflixCatalogDeltaArgs,
+      NetflixCatalogDeltaIngestJob
+    ](
       publisher,
       s3Client,
       sourceRetriever,
       teletrackerConfig
     ) {
+
+  override protected def postParseArgs(
+    halfParsed: DeltaLocatorJobArgs
+  ): NetflixCatalogDeltaArgs = {
+    NetflixCatalogDeltaArgs(
+      maxDaysBack = halfParsed.maxDaysBack,
+      local = halfParsed.local,
+      seedDumpDate = halfParsed.seedDumpDate
+    )
+  }
 
   override protected def postProcessDeltas(
     snapshotBeforeLocation: (URI, LocalDate),

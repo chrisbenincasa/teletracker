@@ -29,7 +29,7 @@ class IngestDisneyPlusCatalog @Inject()(
   protected val itemUpdater: ItemUpdater,
   protected val elasticsearchExecutor: ElasticsearchExecutor,
   elasticsearchLookup: ElasticsearchLookup,
-  teletrackerConfig: TeletrackerConfig)
+  protected val teletrackerConfig: TeletrackerConfig)
     extends IngestJob[DisneyPlusCatalogItem]
     with ElasticsearchFallbackMatching[DisneyPlusCatalogItem] {
   override protected def networkNames: Set[String] = Set("disney-plus")
@@ -54,8 +54,8 @@ class IngestDisneyPlusCatalog @Inject()(
     }
   }
 
-  override protected def getAdditionalOutputFiles: Seq[(File, String)] =
-    Seq(getElasticsearchFallbackMatchFile -> "fallback-matches.txt")
+//  override protected def getAdditionalOutputFiles: Seq[(File, String)] =
+//    Seq(getElasticsearchFallbackMatchFile -> "fallback-matches.txt")
 
   override protected def sanitizeItem(
     item: DisneyPlusCatalogItem

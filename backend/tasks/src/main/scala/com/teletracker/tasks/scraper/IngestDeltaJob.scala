@@ -193,7 +193,7 @@ abstract class IngestDeltaJobLike[
             esItem.id,
             esItem.title.get.headOption.orElse(esItem.original_title).get,
             scrapedItem,
-            true
+            isAvailable = true
           )
       }
 
@@ -251,7 +251,7 @@ abstract class IngestDeltaJobLike[
             esItem.id,
             esItem.title.get.headOption.orElse(esItem.original_title).get,
             scrapedItem,
-            false
+            isAvailable = false
           )
       }
 

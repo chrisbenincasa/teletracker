@@ -10,8 +10,8 @@
     "eject": "react-scripts eject",
     "precommit": "pretty-quick --staged",
     "next-dev": "NODE_ENV=development node --inspect server.js",
-    "next-build": "next build",
-    "next-start": "NODE_ENV=productionnode node server.js"
+    "next-build": "NODE_ENV=production next build",
+    "next-start": "NODE_ENV=production node server.js"
   },
   "devDependencies": {
     "@types/jest": "^24.0.11",

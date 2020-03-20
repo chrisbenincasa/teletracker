@@ -89,11 +89,12 @@ const scrapeSeriesJson = async (cookie, id) => {
 
       return {
         name: json.details.entity.name,
-        genres: json.details.entity.genres,
+        genres: json.details.entity.genres || json.details.entity.genre_names,
         releaseYear: json.details.entity.premiere_date
           ? moment.utc(json.details.entity.premiere_date).year()
           : null,
         externalId: json.details.entity.id,
+        description: json.details.entity.description,
         type: 'show',
         network: 'Hulu',
         numSeasonsAvailable,
@@ -129,18 +130,48 @@ const scrapeMovieJson = async (cookie, id) => {
 
     return {
       name: json.details.entity.name,
-      genres: json.details.entity.genres,
+      genres: json.details.entity.genres || json.details.entity.genre_names,
       releaseYear: json.details.entity.premiere_date
         ? moment.utc(json.details.entity.premiere_date).year()
         : null,
       externalId: json.details.entity.id,
       type: 'movie',
       network: 'Hulu',
+      description: json.details.entity.description,
       availableOn: availableOn ? moment.utc(availableOn).format() : null,
       expiresOn: availableEnd ? moment.utc(availableEnd).format() : null,
     };
   } catch (e) {
     console.error(e.message);
+  }
+};
+
+export const scrapeSingle = async event => {
+  try {
+    let huluCookie =
+      process.env.HULU_COOKIE || (await resolveSecret('hulu-cookie'));
+
+    let url = event.url;
+
+    if (url.includes('/series/')) {
+      let matches = seriesRegex.exec(url);
+      if (matches && matches.length > 0) {
+        console.log(await scrapeSeriesJson(huluCookie, matches[2]));
+      } else {
+        console.error('Series url did not match regex', url);
+      }
+    } else if (url.includes('/movie/')) {
+      let matches = moviesRegex.exec(url);
+      if (matches && matches.length > 0) {
+        console.log(await scrapeMovieJson(huluCookie, matches[2]));
+      } else {
+        console.error('Movie url did not match regex', url);
+      }
+    } else {
+      console.error("URL doesn't match supported scrape types");
+    }
+  } catch (e) {
+    console.error(e);
   }
 };
 

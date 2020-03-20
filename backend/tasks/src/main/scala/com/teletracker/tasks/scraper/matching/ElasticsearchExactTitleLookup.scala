@@ -51,7 +51,7 @@ class ElasticsearchExactTitleLookup @Inject()(
     })
 
     itemSearch
-      .lookupItemsByTitleMatch(titleTriples)
+      .lookupItemsByTitleMatch(titleTriples, looseReleaseYearMatching = true)
       .map(matchesByTitle => {
         val (actualMatchesByTitle, nonMatches) = matchesByTitle.foldLeft(
           (List.empty[(T, EsItem)] -> List.empty[(T, EsItem)])

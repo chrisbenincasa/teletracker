@@ -86,7 +86,6 @@ object Slug {
             val nextSlugIndex = xs.max + 1
             targetSlug.addSuffix(nextSlugIndex.toString)
         }
-
       }
     }
   }

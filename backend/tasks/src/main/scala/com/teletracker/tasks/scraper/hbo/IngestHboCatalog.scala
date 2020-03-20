@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper.hbo
 
 import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
@@ -25,6 +26,7 @@ import java.util.regex.Pattern
 import scala.concurrent.Future
 
 class IngestHboCatalog @Inject()(
+  protected val teletrackerConfig: TeletrackerConfig,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
@@ -73,16 +75,33 @@ class IngestHboCatalog @Inject()(
 
     matchMode
       .lookup(originalByAmended.keys.toList, args)
-      .map {
+      .flatMap {
         case (matches, _) =>
-          matches.map {
-            case MatchResult(amended, esItem) =>
-              model.NonMatchResult(
-                amended,
-                originalByAmended(amended),
-                esItem
-              )
+          val amendedMatches = matches.map(_.scrapedItem)
+          val missing = originalByAmended.collect {
+            case (amended, original) if !amendedMatches.contains(amended) =>
+              original
           }
+
+          super
+            .handleNonMatches(args, missing.toList)
+            .map(_ => {
+              val potentialMatches = matches.map {
+                case MatchResult(amended, esItem) =>
+                  esItem -> originalByAmended(amended)
+              }
+
+              writePotentialMatches(potentialMatches)
+
+              matches.map {
+                case MatchResult(amended, esItem) =>
+                  model.NonMatchResult(
+                    amended,
+                    originalByAmended(amended),
+                    esItem
+                  )
+              }
+            })
       }
   }
 }
@@ -95,7 +114,8 @@ case class HboCatalogItem(
   network: String,
   `type`: ItemType,
   externalId: Option[String],
-  genres: Option[List[String]])
+  genres: Option[List[String]],
+  description: Option[String])
     extends ScrapedItem {
 
   override def category: String = ""

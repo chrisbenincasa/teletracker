@@ -469,21 +469,26 @@ sealed abstract class AsyncStream[+A] {
       promise.future
     }
 
-    val transform: Try[B] => Future[B] = {
-      case Success(value)     => waitAfter(value)
-      case Failure(exception) => Future.failed(exception)
-    }
+    if (perElementWait.length == 0) {
+      mapF(f)
+    } else {
+      val transform: Try[B] => Future[B] = {
+        case Success(value)     => waitAfter(value)
+        case Failure(exception) => Future.failed(exception)
+      }
 
-    this match {
-      case Empty          => empty
-      case FromFuture(fa) => FromFuture(fa.flatMap(f).transformWith(transform))
-      case Cons(fa, more) =>
-        Cons(
-          fa.flatMap(f).transformWith(transform),
-          () => more().delayedMapF(perElementWait, scheduledService)(f)
-        )
-      case Embed(fas) =>
-        Embed(fas.map(_.delayedMapF(perElementWait, scheduledService)(f)))
+      this match {
+        case Empty => empty
+        case FromFuture(fa) =>
+          FromFuture(fa.flatMap(f).transformWith(transform))
+        case Cons(fa, more) =>
+          Cons(
+            fa.flatMap(f).transformWith(transform),
+            () => more().delayedMapF(perElementWait, scheduledService)(f)
+          )
+        case Embed(fas) =>
+          Embed(fas.map(_.delayedMapF(perElementWait, scheduledService)(f)))
+      }
     }
   }
 

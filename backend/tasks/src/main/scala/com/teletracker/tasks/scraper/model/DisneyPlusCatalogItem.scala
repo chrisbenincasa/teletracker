@@ -24,4 +24,6 @@ case class DisneyPlusCatalogItem(
   override def isMovie: Boolean = false
 
   override def isTvShow: Boolean = false
+
+  override def description: Option[String] = None
 }

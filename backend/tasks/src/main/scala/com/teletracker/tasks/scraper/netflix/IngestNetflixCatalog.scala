@@ -64,7 +64,11 @@ class IngestNetflixCatalog @Inject()(
     elasticsearchLookup
 
   private val elasticsearchMatcherOptions =
-    ElasticsearchFallbackMatcherOptions(false, getClass.getSimpleName)
+    ElasticsearchFallbackMatcherOptions(
+      requireTypeMatch = false,
+      getClass.getSimpleName,
+      returnResults = true
+    )
 
   private lazy val fallbackMatcher = elasticsearchFallbackMatcher
     .create(elasticsearchMatcherOptions)
@@ -154,6 +158,12 @@ class IngestNetflixCatalog @Inject()(
           }
         })
       })
+      .map(results => {
+        writePotentialMatches(results.map(result => {
+          result.esItem -> result.originalScrapedItem
+        }))
+        Nil
+      })
   }
 
   override protected def isAvailable(
@@ -169,7 +179,8 @@ case class NetflixCatalogItem(
   releaseYear: Option[Int],
   network: String,
   `type`: ItemType,
-  externalId: Option[String])
+  externalId: Option[String],
+  description: Option[String])
     extends ScrapedItem {
   val status = "Available"
 
@@ -178,4 +189,7 @@ case class NetflixCatalogItem(
   override def isMovie: Boolean = `type` == ItemType.Movie
 
   override def isTvShow: Boolean = `type` == ItemType.Show
+
+  override def url: Option[String] =
+    externalId.map(id => s"https://netflix.com/title/$id")
 }

@@ -46,9 +46,9 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   private lazy val fallbackMatcher = elasticsearchFallbackMatcher
     .create(elasticsearchMatcherOptions)
 
-  prerun {
-    registerArtifact(fallbackMatcher.outputFile)
-  }
+//  prerun {
+//    registerArtifact(fallbackMatcher.outputFile)
+//  }
 
   override protected def createAvailabilities(
     networks: Set[StoredNetwork],

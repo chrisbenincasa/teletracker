@@ -94,3 +94,20 @@ resource "aws_lambda_permission" "netflix-originals-arriving-allow-teletracker-d
   principal     = "s3.amazonaws.com"
   source_arn    = aws_s3_bucket.teletracker-data-us-west-2.arn
 }
+
+module "netflix-direct" {
+  source = "../scraper-lambda"
+
+  function_name    = "netflix-direct"
+  handler_function = "index.netflixDirect"
+
+  create_default_trigger = false
+
+  s3_bucket = var.scraper-s3-bucket
+
+  runtime = "nodejs12.x"
+
+  extra_env_vars = {
+    DATA_BUCKET = aws_s3_bucket.teletracker-data-us-west-2.id
+  }
+}

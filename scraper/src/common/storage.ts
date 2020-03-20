@@ -127,6 +127,19 @@ export const getObjectS3: (
     });
 };
 
+export async function objectExists(bucket: string, key: string) {
+  try {
+    await getObjectS3(bucket, key);
+    return true;
+  } catch (e) {
+    if (e.code === 'NoSuchKey') {
+      return false;
+    } else {
+      throw e;
+    }
+  }
+}
+
 export const getDirectoryS3 = async (bucket: string, prefix: string) => {
   const getDirectoryS3Inner = async (
     bucket: string,

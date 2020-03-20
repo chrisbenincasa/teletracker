@@ -1,13 +1,14 @@
 package com.teletracker.tasks.scraper.hulu
 
-import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.util.NetworkCache
+import com.teletracker.common.util.{NetworkCache, Slug}
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatching,
@@ -22,6 +23,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import java.time.{LocalDate, OffsetDateTime}
 
 class IngestHuluCatalog @Inject()(
+  protected val teletrackerConfig: TeletrackerConfig,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
@@ -37,6 +39,11 @@ class IngestHuluCatalog @Inject()(
 
   override protected def matchMode: MatchMode =
     elasticsearchLookup
+
+  override protected def shouldProcessItem(item: HuluCatalogItem): Boolean = {
+    !item.title.toLowerCase().contains("en español") &&
+    !item.title.toLowerCase().contains("en espanol")
+  }
 
   override protected def sanitizeItem(item: HuluCatalogItem): HuluCatalogItem =
     if (item.releaseYear.isDefined && item.name.endsWith(
@@ -56,6 +63,16 @@ class IngestHuluCatalog @Inject()(
   ): Boolean = {
     true
   }
+
+  override protected def itemUniqueIdentifier(item: HuluCatalogItem): String =
+    item.externalId.get
+
+  override protected def getExternalIds(
+    item: HuluCatalogItem
+  ): Map[ExternalSource, String] =
+    item.externalId
+      .map(id => Map(ExternalSource.Hulu -> id))
+      .getOrElse(Map.empty)
 }
 
 @JsonCodec
@@ -68,7 +85,8 @@ case class HuluCatalogItem(
   `type`: ItemType,
   externalId: Option[String],
   numSeasonsAvailable: Option[Int],
-  genres: Option[List[String]])
+  genres: Option[List[String]],
+  description: Option[String])
     extends ScrapedItem {
   override def category: String = ""
 
@@ -84,4 +102,25 @@ case class HuluCatalogItem(
 
   override lazy val availableLocalDate: Option[LocalDate] =
     availableDate.map(OffsetDateTime.parse(_)).map(_.toLocalDate)
+
+  override def url: Option[String] = {
+    externalId.map(eid => {
+      s"https://www.hulu.com/${makeHuluType(`type`)}/${makeHuluSlug(title, eid)}"
+    })
+  }
+
+  private def makeHuluType(thingType: ItemType) = {
+    thingType match {
+      case ItemType.Movie  => "movie"
+      case ItemType.Show   => "series"
+      case ItemType.Person => throw new IllegalArgumentException
+    }
+  }
+
+  private def makeHuluSlug(
+    title: String,
+    id: String
+  ) = {
+    Slug.apply(title, None).addSuffix(id).toString
+  }
 }

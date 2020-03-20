@@ -54,4 +54,6 @@ case class NetflixOriginalScrapeItem(
   override def isMovie: Boolean = `type` == ItemType.Movie
 
   override def isTvShow: Boolean = `type` == ItemType.Show
+
+  override def description: Option[String] = None
 }
