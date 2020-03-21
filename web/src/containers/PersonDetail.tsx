@@ -5,7 +5,6 @@ import {
   createStyles,
   Grid,
   Hidden,
-  IconButton,
   LinearProgress,
   Theme,
   Typography,
@@ -13,13 +12,11 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { fade } from '@material-ui/core/styles/colorManipulator';
 import { ChevronLeft, ExpandLess, ExpandMore, Tune } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import { default as React } from 'react';
 import ReactGA from 'react-ga';
-import { Helmet } from 'react-helmet';
 import InfiniteScroll from 'react-infinite-scroller';
 import { connect } from 'react-redux';
 import { bindActionCreators, Dispatch } from 'redux';
@@ -32,7 +29,6 @@ import {
   PersonFetchInitiatedPayload,
 } from '../actions/people/get_person';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
-import CreateSmartListButton from '../components/Buttons/CreateSmartListButton';
 import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import AllFilters from '../components/Filters/AllFilters';
@@ -99,6 +95,10 @@ const styles = (theme: Theme) =>
     genre: {
       margin: theme.spacing(1),
     },
+    header: {
+      padding: theme.spacing(1, 0),
+      fontWeight: 700,
+    },
     leftContainer: {
       display: 'flex',
       flexDirection: 'column',
@@ -135,6 +135,7 @@ const styles = (theme: Theme) =>
       [theme.breakpoints.up('sm')]: {
         marginLeft: theme.spacing(3),
       },
+      marginBottom: theme.spacing(2),
     },
     personDetailContainer: {
       margin: theme.spacing(3),
@@ -162,12 +163,13 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'flex-start',
-      width: '80%',
+      width: '100%',
       marginBottom: theme.spacing(1),
       zIndex: theme.zIndex.mobileStepper,
       [theme.breakpoints.down('sm')]: {
-        width: '100%',
+        textAlign: 'center',
         alignItems: 'center',
+        margin: theme.spacing(1, 0, 2, 0),
       },
     },
     trackingButton: {
@@ -197,7 +199,6 @@ interface State {
   // page, so we need a full fetch.
   needsFetch: boolean;
   loadingCredits: boolean;
-  createDynamicListDialogOpen: boolean;
   createPersonListDialogOpen: boolean;
 }
 
@@ -274,7 +275,6 @@ class PersonDetail extends React.Component<Props, State> {
       filters: filterParams,
       needsFetch,
       loadingCredits: false,
-      createDynamicListDialogOpen: false,
       createPersonListDialogOpen: false,
     };
   }
@@ -331,7 +331,12 @@ class PersonDetail extends React.Component<Props, State> {
     const { classes } = this.props;
     return (
       <div className={classes.titleContainer}>
-        <Typography color="inherit" variant="h4">
+        <Typography
+          color="inherit"
+          variant="h2"
+          itemProp="name"
+          style={{ lineHeight: 0.85 }}
+        >
           {`${person.name}`}
         </Typography>
       </div>
@@ -398,12 +403,6 @@ class PersonDetail extends React.Component<Props, State> {
     };
   };
 
-  createListFromFilters = () => {
-    this.setState({
-      createDynamicListDialogOpen: true,
-    });
-  };
-
   createListForPerson = () => {
     this.setState({
       createPersonListDialogOpen: true,
@@ -412,7 +411,6 @@ class PersonDetail extends React.Component<Props, State> {
 
   handleCreateDynamicModalClose = () => {
     this.setState({
-      createDynamicListDialogOpen: false,
       createPersonListDialogOpen: false,
     });
   };
@@ -433,6 +431,7 @@ class PersonDetail extends React.Component<Props, State> {
     const {
       filters: { genresFilter, itemTypes, sortOrder },
     } = this.state;
+    const filtersCTA = this.state.showFilter ? 'Hide Filters' : 'Filters';
 
     let filmography: Item[];
     if (credits) {
@@ -447,23 +446,20 @@ class PersonDetail extends React.Component<Props, State> {
       <React.Fragment>
         <div className={classes.listHeader}>
           <div className={classes.listNameContainer}>
-            <Typography
-              color="inherit"
-              variant="h5"
-              style={{ display: 'block', width: '100%' }}
-            >
+            <Typography color="inherit" variant="h5" className={classes.header}>
               Filmography
             </Typography>
           </div>
-          <IconButton
+          <Button
+            size="small"
             onClick={this.toggleFilters}
-            className={classes.settings}
-            color={this.state.showFilter ? 'primary' : 'default'}
+            variant="contained"
+            aria-label={filtersCTA}
+            startIcon={<Tune />}
+            style={{ whiteSpace: 'nowrap' }}
           >
-            <Tune />
-            <Typography variant="srOnly">Tune</Typography>
-          </IconButton>
-          <CreateSmartListButton onClick={this.createListFromFilters} />
+            {filtersCTA}
+          </Button>
         </div>
         <div className={classes.filters}>
           <ActiveFilters
@@ -545,6 +541,9 @@ class PersonDetail extends React.Component<Props, State> {
           <Hidden smDown>{this.renderTitle(person)}</Hidden>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography color="inherit" variant="h5" className={classes.header}>
+            Biography
+          </Typography>
           <React.Fragment>{formattedBiography}</React.Fragment>
           {biography.length > truncateSize ? (
             <Button
@@ -569,11 +568,7 @@ class PersonDetail extends React.Component<Props, State> {
 
   renderPerson() {
     let { classes, person, loadingPerson, width } = this.props;
-    let {
-      needsFetch,
-      createDynamicListDialogOpen,
-      createPersonListDialogOpen,
-    } = this.state;
+    let { needsFetch, createPersonListDialogOpen } = this.state;
 
     if (!person || loadingPerson || needsFetch) {
       return this.renderLoading();
@@ -666,13 +661,6 @@ class PersonDetail extends React.Component<Props, State> {
                   </div>
                 </div>
               </div>
-              <CreateDynamicListDialog
-                filters={this.creditFiltersForCreateDialog()}
-                open={createDynamicListDialogOpen}
-                onClose={this.handleCreateDynamicModalClose}
-                networks={this.props.networks || []}
-                genres={this.props.genres || []}
-              />
               <CreateDynamicListDialog
                 filters={this.personFiltersForCreateDialog()}
                 open={createPersonListDialogOpen}
