@@ -5,7 +5,9 @@ import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
 import ReactGA from 'react-ga';
-import { updateUserItemTags } from '../user/update_user_tags';
+import { updateUserItemTagsSuccess } from '../user/update_user_tags';
+import { removeUserItemTagsSuccess } from '../user/remove_user_tag';
+
 import { ActionType } from '../../types';
 
 export const LIST_UPDATE_TRACKING_INITIATED = 'lists/update_tracking/INITIATED';
@@ -41,13 +43,25 @@ export const updateListTrackingSaga = function*() {
 
       if (response.ok) {
         yield put(retrieveAllLists({}));
-        console.log('test');
-        console.log(payload.addToLists);
 
         yield all(
           payload.addToLists.map(listId => {
-            put(
-              updateUserItemTags({
+            console.log('add: ', listId);
+            return put(
+              updateUserItemTagsSuccess({
+                itemId: payload.itemId,
+                action: ActionType.TrackedInList,
+                string_value: listId,
+              }),
+            );
+          }),
+        );
+
+        yield all(
+          payload.removeFromLists.map(listId => {
+            console.log('remove: ', listId);
+            return put(
+              removeUserItemTagsSuccess({
                 itemId: payload.itemId,
                 action: ActionType.TrackedInList,
                 string_value: listId,

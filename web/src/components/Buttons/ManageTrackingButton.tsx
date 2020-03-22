@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, makeStyles } from '@material-ui/core';
-import { AddCircle, PlaylistAdd } from '@material-ui/icons';
+import { PlaylistAdd } from '@material-ui/icons';
 import { Item, itemBelongsToLists } from '../../types/v2/Item';
 import { useWidth } from '../../hooks/useWidth';
 
@@ -43,7 +43,6 @@ export default function ManageTrackingButton(props: Props) {
     } else {
       setIsTracked(false);
     }
-    console.log(belongsToLists);
   });
 
   let trackingCTA = isTracked ? 'Manage Tracking' : 'Add to List';
@@ -57,7 +56,7 @@ export default function ManageTrackingButton(props: Props) {
         fullWidth
         aria-label={props.cta || trackingCTA}
         onClick={props.onClick}
-        color={belongsToLists.length > 0 ? 'primary' : undefined}
+        color={isTracked ? 'primary' : undefined}
         startIcon={<PlaylistAdd className={classes.buttonIcon} />}
       >
         {props.cta || isMobile ? trackingCTAMobile : trackingCTA}
