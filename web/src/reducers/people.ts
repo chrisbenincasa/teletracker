@@ -39,7 +39,6 @@ interface PersonDetailState {
 export interface State {
   loadingPeople: boolean;
   peopleById: { [key: string]: Person };
-  peopleBySlug: { [key: string]: Person };
   nameByIdOrSlug: { [key: string]: string };
   detail?: PersonDetailState;
 }
@@ -47,7 +46,6 @@ export interface State {
 export const initialState: State = {
   loadingPeople: false,
   peopleById: {},
-  peopleBySlug: {},
   nameByIdOrSlug: {},
 };
 
@@ -70,17 +68,6 @@ const updateStateWithNewPeople = (state: State, newPeople: Person[]) => {
     };
   }, {});
 
-  let newThingsBySlug = newThingsMerged.reduce((prev, curr) => {
-    if (curr.slug) {
-      return {
-        ...prev,
-        [curr.slug]: curr,
-      };
-    } else {
-      return prev;
-    }
-  }, {});
-
   let newNamesBySlugOrId = newThingsMerged.reduce((prev, curr) => {
     return {
       ...prev,
@@ -96,10 +83,6 @@ const updateStateWithNewPeople = (state: State, newPeople: Person[]) => {
       ...state.peopleById,
       ...newThingsById,
     },
-    peopleBySlug: {
-      ...state.peopleBySlug,
-      ...newThingsBySlug,
-    },
     nameByIdOrSlug: {
       ...state.nameByIdOrSlug,
       ...newNamesBySlugOrId,
@@ -111,7 +94,7 @@ const personFetchSuccess = handleAction(
   PERSON_FETCH_SUCCESSFUL,
   (state: State, { payload }: PersonFetchSuccessfulAction) => {
     if (payload) {
-      return updateStateWithNewPeople(state, [payload]);
+      return updateStateWithNewPeople(state, [payload.person]);
     } else {
       return state;
     }

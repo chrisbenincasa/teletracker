@@ -1,7 +1,7 @@
 import Thing, { ApiThing } from './Thing';
-import { ApiItem, ApiPerson } from './v2';
+import { ApiItem } from './v2';
 import { Item, ItemFactory } from './v2/Item';
-import { Person, PersonFactory } from './v2/Person';
+import { ApiPerson, Person, PersonFactory } from './v2/Person';
 import lists from '../reducers/lists';
 
 export interface Paging {

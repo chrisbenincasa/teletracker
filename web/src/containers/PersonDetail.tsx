@@ -41,7 +41,7 @@ import { Genre, Network } from '../types';
 import { Item } from '../types/v2/Item';
 import { Person } from '../types/v2/Person';
 import { filterParamsEqual } from '../utils/changeDetection';
-import { collect } from '../utils/collection-utils';
+import { collect, extractValue } from '../utils/collection-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import qs from 'querystring';
@@ -244,10 +244,10 @@ class PersonDetail extends React.Component<Props, State> {
 
     if (props.person) {
       needsFetch =
-        _.isUndefined(props.person.cast_credits) ||
-        props.person.cast_credits.data.length === 0 ||
-        _.some(props.person.cast_credits.data, credit =>
-          _.isUndefined(credit.item),
+        _.isUndefined(props.person.cast_credit_ids) ||
+        props.person.cast_credit_ids.data.length === 0 ||
+        _.some(props.person.cast_credit_ids.data, creditId =>
+          _.isUndefined(props.itemById[creditId]),
         );
     } else {
       needsFetch = true;
@@ -363,15 +363,15 @@ class PersonDetail extends React.Component<Props, State> {
     );
   };
 
-  loadMoreResults = () => {
+  loadMoreResults = _.debounce((props: Props, state: State) => {
     if (
-      Boolean(this.props.credits) &&
-      !this.props.loadingCredits &&
-      !this.state.loadingCredits
+      (_.isUndefined(props.credits) || !_.isUndefined(props.creditsBookmark)) &&
+      !props.loadingCredits &&
+      !state.loadingCredits
     ) {
       this.loadCredits();
     }
-  };
+  }, 100);
 
   handleFilterParamsChange = (filterParams: FilterParams) => {
     if (!filterParamsEqual(this.state.filters, filterParams)) {
@@ -437,8 +437,8 @@ class PersonDetail extends React.Component<Props, State> {
     if (credits) {
       filmography = collect(credits, id => itemById[id]);
     } else {
-      filmography = person!.cast_credits
-        ? collect(person!.cast_credits.data, credit => credit.item)
+      filmography = person!.cast_credit_ids
+        ? collect(person!.cast_credit_ids.data, id => itemById[id])
         : [];
     }
 
@@ -481,11 +481,14 @@ class PersonDetail extends React.Component<Props, State> {
 
         <InfiniteScroll
           pageStart={0}
-          loadMore={this.loadMoreResults}
-          hasMore={
-            !Boolean(this.props.credits) || Boolean(this.props.creditsBookmark)
+          loadMore={() =>
+            this.loadMoreResults({ ...this.props }, { ...this.state })
           }
           useWindow
+          hasMore={
+            _.isUndefined(this.props.credits) ||
+            !_.isUndefined(this.props.creditsBookmark)
+          }
           threshold={300}
         >
           <React.Fragment>
@@ -575,23 +578,17 @@ class PersonDetail extends React.Component<Props, State> {
     }
 
     const isMobile = ['xs', 'sm'].includes(width);
-    const backdrop =
-      person &&
-      person.cast_credits &&
-      person.cast_credits.data
-        .map(character => character.item)
-        .filter(item => {
-          if (item && item.backdropImage) {
-            return item;
-          }
-        })
-        .slice(0, 1)[0];
+    const backdrop = person?.cast_credit_ids?.data
+      .map(itemId => {
+        let item = this.props.itemById[itemId];
+        if (item?.backdropImage) {
+          return item;
+        }
+      })
+      .find(item => !_.isUndefined(item));
 
     return (
       <React.Fragment>
-        {/* <Helmet>
-          
-        </Helmet> */}
         <div className={classes.backdrop}>
           {backdrop && (
             <React.Fragment>
@@ -689,7 +686,9 @@ const mapStateToProps: (
   return {
     isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
     // isFetching: appState.itemDetail.fetching,
-    person: appState.people.peopleById[id] || appState.people.peopleBySlug[id],
+    person:
+      appState.people.peopleById[id] ||
+      extractValue(id, undefined, appState.people.peopleById),
     lists: appState.lists.listsById,
     loadingPerson: appState.people.loadingPeople,
     genres: appState.metadata.genres,
