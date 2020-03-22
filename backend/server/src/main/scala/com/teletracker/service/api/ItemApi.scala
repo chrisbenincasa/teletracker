@@ -119,9 +119,15 @@ class ItemApi @Inject()(
 
   def getPersonViaSearch(
     userId: Option[String],
-    idOrSlug: String
+    idOrSlug: String,
+    materializeCredits: Boolean,
+    creditsLimit: Int
   ): Future[Option[(EsPerson, ElasticsearchItemsResponse)]] = {
-    personLookup.lookupPerson(HasThingIdOrSlug.parse(idOrSlug))
+    personLookup.lookupPerson(
+      HasThingIdOrSlug.parse(idOrSlug),
+      materializeCredits,
+      Some(creditsLimit)
+    )
   }
 
   def getPeopleViaSearch(

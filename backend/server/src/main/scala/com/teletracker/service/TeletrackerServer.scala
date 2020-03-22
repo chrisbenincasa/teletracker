@@ -10,23 +10,19 @@ import com.teletracker.service.inject.ServerModules
 import com.teletracker.service.util.json.JsonModule
 import com.twitter.finagle.Http
 import com.twitter.finagle.http.{Request, Response}
-import com.twitter.finagle.ssl.{ClientAuth, Engine}
 import com.twitter.finagle.ssl.server.SslServerConfiguration
+import com.twitter.finagle.ssl.{ClientAuth, Engine}
 import com.twitter.finatra.http.HttpServer
 import com.twitter.finatra.http.filters.{
   CommonFilters,
   LoggingMDCFilter,
-  StatsFilter,
   TraceIdMDCFilter
 }
 import com.twitter.finatra.http.routing.HttpRouter
 import com.twitter.inject.Logging
 import com.twitter.inject.requestscope.FinagleRequestScopeFilter
 import io.netty.handler.ssl.SslContextBuilder
-import io.netty.handler.ssl.util.{
-  InsecureTrustManagerFactory,
-  SelfSignedCertificate
-}
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import java.io.File
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -96,54 +92,5 @@ class TeletrackerServer(
         Engine(engine)
       }
     )
-  }
-}
-
-object Teletracker extends com.twitter.inject.app.App {
-  override protected def modules: Seq[Module] =
-    Seq(com.google.inject.util.Modules.EMPTY_MODULE)
-
-  override protected def run(): Unit = {
-    val cmd = args.headOption.getOrElse("server")
-    val rest = if (args.nonEmpty) args.tail else Array.empty[String]
-
-    cmd match {
-      case "server" => new TeletrackerServer().main(rest)
-//      case "reset-db" =>
-//        val location = new File(
-//          s"${System.getProperty("java.io.tmpdir")}/db/migrate/postgres"
-//        )
-//        val gddl = new GenerateDdls()
-//        gddl.main(
-//          Array(
-//            new File(s"${location.getAbsolutePath}/V1__create.sql").getAbsolutePath
-//          )
-//        )
-//        Await.result(gddl)
-//
-//        val clean = new RunDatabaseMigration()
-//        clean.main(Array("-action=clean"))
-//        Await.result(clean)
-//
-//        val migrate = new RunDatabaseMigration()
-//        migrate.main(Array("-action=migrate", s"-loc=$location"))
-//        Await.result(migrate)
-//
-//        injector.instance[RunAllSeedsTask].run()
-//
-//        close()
-//      case "generate-ddl"        => new GenerateDdls().main(rest)
-//      case "db-migrate"          => new RunDatabaseMigration().main(rest)
-//      case "import-movies"       => ImportMovies.main(rest)
-//      case "import-tv"           => ImportTv.main(rest)
-//      case "import-people"       => ImportPeople.main(rest)
-//      case "run-all-seeds"       => RunAllSeedsMain.main(rest)
-//      case "seed-certifications" => SeedCertifications.main(rest)
-//      case "seed-genres"         => SeedGenres.main(rest)
-//      case "seed-networks"       => SeedNetworks.main(rest)
-      case x =>
-        Console.err.println(s"Unrecognized program: $x")
-        sys.exit(1)
-    }
   }
 }

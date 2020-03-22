@@ -37,3 +37,4 @@ build/
 
 # Deployment
 out/
+frontend-lambda.zip

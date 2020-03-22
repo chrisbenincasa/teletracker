@@ -85,20 +85,27 @@ class ItemsController @Inject()(
     }
 
     get("/:personId") { req: GetPersonRequest =>
-      itemApi.getPersonViaSearch(req.authenticatedUserId, req.personId).map {
-        case None => response.notFound
-        case Some((person, credits)) =>
-          response
-            .ok(
-              DataResponse.complex(
-                Person.fromEsPerson(
-                  person,
-                  Some(credits)
+      itemApi
+        .getPersonViaSearch(
+          req.authenticatedUserId,
+          req.personId,
+          materializeCredits = true,
+          creditsLimit = req.creditsLimit.getOrElse(20)
+        )
+        .map {
+          case None => response.notFound
+          case Some((person, credits)) =>
+            response
+              .ok(
+                DataResponse.complex(
+                  Person.fromEsPerson(
+                    person,
+                    Some(credits)
+                  )
                 )
               )
-            )
-            .contentTypeJson()
-      }
+              .contentTypeJson()
+        }
     }
 
     get("/:personId/credits") { req: GetPersonCreditsRequest =>
@@ -164,6 +171,8 @@ case class BatchGetThingsRequest(
 case class GetPersonRequest(
   @RouteParam personId: String,
   @QueryParam fields: Option[String],
+  @Min(0) @Max(20)
+  @QueryParam creditsLimit: Option[Int],
   request: Request)
     extends InjectedRequest
 

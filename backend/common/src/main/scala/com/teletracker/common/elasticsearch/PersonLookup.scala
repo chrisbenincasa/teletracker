@@ -172,7 +172,9 @@ class PersonLookup @Inject()(
   }
 
   def lookupPerson(
-    identifier: Either[UUID, Slug]
+    identifier: Either[UUID, Slug],
+    materializeCredits: Boolean,
+    creditsLimit: Option[Int]
   ): Future[Option[(EsPerson, ElasticsearchItemsResponse)]] = {
     val identifierQuery = identifier match {
       case Left(value) =>
@@ -198,10 +200,12 @@ class PersonLookup @Inject()(
       })
       .flatMap {
         case None => Future.successful(None)
+        case Some(person) if !materializeCredits =>
+          Future.successful(Some(person -> ElasticsearchItemsResponse.empty))
         case Some(person) =>
           lookupPersonCastCredits(
             person.id,
-            person.cast_credits.getOrElse(Nil).size
+            creditsLimit.getOrElse(person.cast_credits.getOrElse(Nil).size)
           ).map(credits => Some(person -> credits))
       }
   }

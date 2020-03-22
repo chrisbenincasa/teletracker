@@ -20,7 +20,11 @@ import {
 import { PersonFactory } from './Person';
 import { Person } from './Person';
 
-export interface Item {
+export interface HasSlug {
+  slug?: Slug;
+}
+
+export interface Item extends HasSlug {
   adult?: boolean;
   availability?: ItemAvailability[];
   cast?: ItemCastMember[];
@@ -37,7 +41,7 @@ export interface Item {
   release_date?: string;
   release_dates?: ItemReleaseDate[];
   runtime?: number;
-  slug: string;
+  slug: Slug;
   tags?: ItemTag[];
   title?: string[];
   type: ItemType;

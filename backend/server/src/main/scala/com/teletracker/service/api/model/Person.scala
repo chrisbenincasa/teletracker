@@ -81,19 +81,7 @@ object Person {
           )
         }
 
-        val leftoverCredits = itemsNotPresent.toList
-          .flatMap(creditsById.get)
-          .map(credit => {
-            PersonCastMember(
-              character = credit.character,
-              id = credit.id,
-              title = credit.title,
-              slug = credit.slug,
-              item = None
-            )
-          })
-
-        sortedCredits ++ leftoverCredits
+        sortedCredits
 
       case None =>
         esPerson.cast_credits

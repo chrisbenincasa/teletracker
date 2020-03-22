@@ -19,8 +19,9 @@ import {
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import { ApiThing } from '../types/Thing';
-import { ApiItem, ApiPerson, Id, Slug } from '../types/v2';
+import { ApiItem, Id, Slug } from '../types/v2';
 import { FilterParams } from './searchFilters';
+import { ApiPerson } from '../types/v2/Person';
 
 export interface TeletrackerApiOptions {
   url?: string;
@@ -330,9 +331,14 @@ export class TeletrackerApi {
     });
   }
 
-  async getPerson(token: string | undefined, id: string) {
+  async getPerson(
+    token: string | undefined,
+    id: string,
+    creditsLimit?: number,
+  ) {
     return this.api.get<any>(`/api/v2/people/${id}`, {
       token,
+      creditsLimit,
     });
   }
 
