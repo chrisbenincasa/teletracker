@@ -3,6 +3,8 @@ import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { Person, PersonFactory } from '../../types/v2/Person';
+import { TeletrackerResponse } from '../../utils/api-client';
+import { ApiPerson } from '../../types/v2/Person';
 
 export const PERSON_FETCH_INITIATED = 'person/fetch/INITIATED';
 export const PERSON_FETCH_SUCCESSFUL = 'person/fetch/SUCCESSFUL';
@@ -17,14 +19,18 @@ export type PersonFetchInitiatedAction = FSA<
   PersonFetchInitiatedPayload
 >;
 
+export interface PersonFetchSuccessfulPayload {
+  person: Person;
+  rawPerson: ApiPerson;
+}
+
 export type PersonFetchSuccessfulAction = FSA<
   typeof PERSON_FETCH_SUCCESSFUL,
-  Person
+  PersonFetchSuccessfulPayload
 >;
 
 export type PersonFetchFailedAction = ErrorFluxStandardAction<
-  typeof PERSON_FETCH_FAILED,
-  Error
+  typeof PERSON_FETCH_FAILED
 >;
 
 export const personFetchInitiated = createAction<PersonFetchInitiatedAction>(
@@ -44,10 +50,18 @@ export const fetchPersonDetailsSaga = function*() {
     payload,
   }: PersonFetchInitiatedAction) {
     if (payload) {
-      let response = yield clientEffect(client => client.getPerson, payload.id);
+      let response: TeletrackerResponse<ApiPerson> = yield clientEffect(
+        client => client.getPerson,
+        payload.id,
+      );
 
-      if (response.ok) {
-        yield put(personFetchSuccess(PersonFactory.create(response.data.data)));
+      if (response.ok && response.data) {
+        yield put(
+          personFetchSuccess({
+            person: PersonFactory.create(response.data.data),
+            rawPerson: response.data.data,
+          }),
+        );
       } else {
         yield put(personFetchFailed(new Error()));
       }

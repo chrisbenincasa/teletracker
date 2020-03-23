@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import {
-  ApiPerson,
+  ApiItem,
   ApiPersonCrewCredit,
   CanonicalId,
   Id,
@@ -9,14 +9,16 @@ import {
   Slug,
 } from '.';
 import { getTmdbProfileImage } from '../../utils/image-helper';
-import { Item, ItemFactory } from './Item';
+import { HasSlug, Item, ItemFactory } from './Item';
 import PagedResponse from './PagedResponse';
+import _ from 'lodash';
 
-export interface Person {
+export interface Person extends HasSlug {
   adult?: boolean;
   biography?: string;
   birthday?: string;
   cast_credits?: PagedResponse<PersonCastCredit>;
+  cast_credit_ids?: PagedResponse<string>;
   crew_credits?: ApiPersonCrewCredit[];
   external_ids?: ItemExternalId[];
   deathday?: string;
@@ -44,18 +46,40 @@ export interface PersonCastCredit {
   item?: Item;
 }
 
+export interface ApiPersonCastCredit {
+  character?: string;
+  id: string;
+  title: string;
+  type: string;
+  slug: string;
+  item?: ApiItem;
+}
+
+export interface ApiPerson {
+  adult?: boolean;
+  biography?: string;
+  birthday?: string;
+  cast_credits?: PagedResponse<ApiPersonCastCredit>;
+  crew_credits?: ApiPersonCrewCredit[];
+  external_ids?: ItemExternalId[];
+  deathday?: string;
+  homepage?: string;
+  id: Id;
+  images?: ItemImage[];
+  name: string;
+  place_of_birth?: string;
+  popularity?: number;
+  slug?: Slug;
+}
+
 export class PersonFactory {
   static create(apiPerson: ApiPerson): Person {
+    const personWithoutCredits = _.omit(apiPerson, 'cast_credits');
     return {
-      ...apiPerson,
-      cast_credits: apiPerson.cast_credits
+      ...personWithoutCredits,
+      cast_credit_ids: apiPerson.cast_credits
         ? {
-            data: apiPerson.cast_credits.data.map(credit => {
-              return {
-                ...credit,
-                item: credit.item ? ItemFactory.create(credit.item) : undefined,
-              };
-            }),
+            data: apiPerson.cast_credits.data.map(credit => credit.id),
             paging: apiPerson.cast_credits.paging,
           }
         : undefined,

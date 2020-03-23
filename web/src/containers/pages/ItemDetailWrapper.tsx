@@ -17,7 +17,6 @@ import useItem from '../../hooks/useItem';
 import moment from 'moment';
 
 interface Props {
-  // item?: Item;
   itemId?: string;
   pageProps: any;
 }

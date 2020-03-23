@@ -65,7 +65,11 @@ class DenormalizePersonTask @Inject()(
     val args = preparseArgs(_args)
 
     val futStream = personLookup
-      .lookupPerson(Left(args.personId))
+      .lookupPerson(
+        Left(args.personId),
+        materializeCredits = false,
+        creditsLimit = None
+      )
       .flatMap {
         case Some((person, _)) =>
           val castItemIds = person.cast_credits.getOrElse(Nil).map(_.id)

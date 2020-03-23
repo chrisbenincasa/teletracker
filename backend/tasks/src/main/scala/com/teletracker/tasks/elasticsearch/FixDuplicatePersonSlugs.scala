@@ -526,7 +526,13 @@ class MigratePersonSlug @Inject()(
       personLookup
         .lookupPersonBySlug(fromSlug.get, throwOnMultipleSlugs = true)
     } else {
-      personLookup.lookupPerson(Left(fromId.get)).map(_.map(_._1))
+      personLookup
+        .lookupPerson(
+          Left(fromId.get),
+          materializeCredits = false,
+          creditsLimit = None
+        )
+        .map(_.map(_._1))
     }
 
     person
