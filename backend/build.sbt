@@ -225,7 +225,9 @@ lazy val server = project
       "LOCALCERTS_PATH" -> System.getenv("LOCALCERTS_PATH")
     ),
     // Assmebly JAR
-    mainClass in assembly := Some("com.teletracker.service.Teletracker"),
+    mainClass in assembly := Some(
+      "com.teletracker.service.TeletrackerServerMain"
+    ),
     // Docker
     dockerfile in docker := {
       // The assembly task generates a fat JAR file
