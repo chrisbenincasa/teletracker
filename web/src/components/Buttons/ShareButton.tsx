@@ -108,7 +108,7 @@ export default function ShareButton(props: Props) {
     }
   };
 
-  const share = () => {
+  const share = event => {
     let newVariable: any;
 
     newVariable = window.navigator;
