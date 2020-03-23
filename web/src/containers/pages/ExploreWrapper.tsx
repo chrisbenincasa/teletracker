@@ -4,7 +4,7 @@ import Head from 'next/head';
 import React from 'react';
 import { Store } from 'redux';
 import AppWrapper from '../../containers/AppWrapper';
-import { ApiItem, ApiPerson } from '../../types/v2';
+import { ApiItem } from '../../types/v2';
 import { ItemFactory } from '../../types/v2/Item';
 import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
 import Explore from '../../containers/Explore';
@@ -14,7 +14,7 @@ import qs from 'querystring';
 import url from 'url';
 import { parseFilterParamsFromObject } from '../../utils/urlHelper';
 import { peopleFetchSuccess } from '../../actions/people/get_people';
-import { PersonFactory } from '../../types/v2/Person';
+import { ApiPerson, PersonFactory } from '../../types/v2/Person';
 
 export default function makeExploreWrapper(itemType: ItemType) {
   interface Props {}

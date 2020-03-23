@@ -33,6 +33,15 @@ import {
   PERSON_CREDITS_FETCH_SUCCESSFUL,
   PersonCreditsFetchSuccessfulAction,
 } from '../actions/people/get_credits';
+import {
+  PERSON_FETCH_SUCCESSFUL,
+  PersonFetchSuccessfulAction,
+} from '../actions/people/get_person';
+import {
+  PEOPLE_FETCH_SUCCESSFUL,
+  PeopleFetchSuccessfulAction,
+} from '../actions/people/get_people';
+import _ from 'lodash';
 
 export type ThingMap = {
   [key: string]: Item;
@@ -175,6 +184,21 @@ const handleExploreRetrieveSuccess = handleAction<
   }
 });
 
+const personFetchSuccess = handleAction(
+  PERSON_FETCH_SUCCESSFUL,
+  (state: State, { payload }: PersonFetchSuccessfulAction) => {
+    if ((payload?.rawPerson.cast_credits?.data?.length || 0) > 0) {
+      let things = _.flatMap(
+        payload!.rawPerson.cast_credits!.data || [],
+        credit => (credit.item ? [credit.item!] : []),
+      );
+      return updateStateWithNewThings(state, things.map(ItemFactory.create));
+    } else {
+      return state;
+    }
+  },
+);
+
 const peopleCreditsFetchSuccess = handleAction(
   PERSON_CREDITS_FETCH_SUCCESSFUL,
   (state: State, { payload }: PersonCreditsFetchSuccessfulAction) => {
@@ -272,4 +296,5 @@ export default flattenActions(
   handleSearchRetrieveSuccess,
   peopleCreditsFetchSuccess,
   itemPrefetchSuccess,
+  personFetchSuccess,
 );

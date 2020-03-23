@@ -4,18 +4,28 @@ import React from 'react';
 import { personFetchSuccess } from '../../actions/people/get_person';
 import AppWrapper from '../../containers/AppWrapper';
 import PersonDetail from '../../containers/PersonDetail';
-import { ApiPerson } from '../../types/v2';
-import { Person, PersonFactory } from '../../types/v2/Person';
+import { ApiPerson, PersonFactory } from '../../types/v2/Person';
 import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
 import { useRouter } from 'next/router';
+import _ from 'lodash';
+import usePerson from '../../hooks/usePerson';
+import { personCreditsFetchSuccess } from '../../actions/people/get_credits';
+import { currentUserJwt } from '../../utils/page-utils';
+import { ItemFactory } from '../../types/v2/Item';
 
 interface Props {
-  person?: Person;
+  personId?: string;
   pageProps: any;
 }
 
 function PersonDetailWrapper(props: Props) {
   const router = useRouter();
+
+  const requestedId = router.query.id;
+  let actualId: string = _.isArray(requestedId) ? requestedId[0] : requestedId;
+
+  const person = usePerson(actualId, undefined);
+
   return (
     <React.Fragment>
       <Head>
@@ -24,23 +34,23 @@ function PersonDetailWrapper(props: Props) {
           name="viewport"
           content="minimum-scale=1, initial-scale=1, width=device-width"
         />
-        {props.person ? (
+        {person ? (
           <React.Fragment>
-            <title>{`${props.person.name} | Teletracker`}</title>
+            <title>{`${person?.name} | Teletracker`}</title>
             <meta
               name="title"
               property="og:title"
-              content={`${props.person.name} | Where to stream, rent, or buy. Track this person today!`}
+              content={`${person?.name} | Where to stream, rent, or buy. Track this person today!`}
             />
             <meta
               name="description"
               property="og:description"
-              content={`Find out where to stream, rent, or buy content featuring ${props.person.name} online. Track it to find out when it's available on one of your services.`}
+              content={`Find out where to stream, rent, or buy content featuring ${person?.name} online. Track it to find out when it's available on one of your services.`}
             />
             <meta
               name="image"
               property="og:image"
-              content={`https://image.tmdb.org/t/p/w342${props.person.profile_path}`}
+              content={`https://image.tmdb.org/t/p/w342${person?.profile_path}`}
             />
             <meta property="og:type" content="video.movie" />
             <meta property="og:image:type" content="image/jpg" />
@@ -57,19 +67,19 @@ function PersonDetailWrapper(props: Props) {
             />
             <meta
               name="twitter:title"
-              content={`${props.person.name} - Where to Stream, Rent, or Buy their content`}
+              content={`${person?.name} - Where to Stream, Rent, or Buy their content`}
             />
             <meta
               name="twitter:description"
-              content={`Find out where to stream, rent, or buy content featuring ${props.person.name} online. Track it to find out when it's available on one of your services.`}
+              content={`Find out where to stream, rent, or buy content featuring ${person?.name} online. Track it to find out when it's available on one of your services.`}
             />
             <meta
               name="twitter:image"
-              content={`https://image.tmdb.org/t/p/w342${props.person.profile_path}`}
+              content={`https://image.tmdb.org/t/p/w342${person?.profile_path}`}
             />
             <meta
               name="keywords"
-              content={`${props.person.name}, stream, streaming, rent, buy, watch, track`}
+              content={`${person?.name}, stream, streaming, rent, buy, watch, track`}
             />
           </React.Fragment>
         ) : null}
@@ -92,27 +102,34 @@ function PersonDetailWrapper(props: Props) {
 
 PersonDetailWrapper.getInitialProps = async ctx => {
   if (ctx.req) {
-    let user: CognitoUser | undefined;
-    try {
-      user = await Auth.currentAuthenticatedUser({ bypassCache: true });
-    } catch (e) {
-      console.log(e);
-    }
-
     let response: TeletrackerResponse<ApiPerson> = await TeletrackerApi.instance.getPerson(
-      user && user.getSignInUserSession()
-        ? user
-            .getSignInUserSession()!
-            .getAccessToken()
-            .getJwtToken()
-        : undefined,
+      await currentUserJwt(),
       ctx.query.id,
+      /*creditsLimit=*/ 6,
     );
 
     if (response.ok) {
-      const fullPerson = PersonFactory.create(response.data!.data);
+      let apiPerson = response.data!.data;
+      const fullPerson = PersonFactory.create(apiPerson);
+      const creditItems = _.flatMap(apiPerson.cast_credits?.data || [], c =>
+        c.item ? [ItemFactory.create(c.item!)] : [],
+      );
 
-      await ctx.store.dispatch(personFetchSuccess(fullPerson));
+      await Promise.all([
+        ctx.store.dispatch(
+          personFetchSuccess({
+            person: fullPerson,
+            rawPerson: apiPerson,
+          }),
+        ),
+        ctx.store.dispatch(
+          personCreditsFetchSuccess({
+            credits: creditItems,
+            paging: apiPerson.cast_credits?.paging,
+            append: false,
+          }),
+        ),
+      ]);
 
       return {
         person: fullPerson,

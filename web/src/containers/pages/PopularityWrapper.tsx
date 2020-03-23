@@ -6,13 +6,13 @@ import qs from 'querystring';
 import url from 'url';
 import { parseFilterParamsFromObject } from '../../utils/urlHelper';
 import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
-import { ApiItem, ApiPerson } from '../../types/v2';
+import { ApiItem } from '../../types/v2';
 import { currentUserJwt } from '../../utils/page-utils';
 import { DEFAULT_POPULAR_LIMIT } from '../../constants';
 import { popularFailed, popularSuccess } from '../../actions/popular';
 import { ItemFactory } from '../../types/v2/Item';
 import { peopleFetchSuccess } from '../../actions/people/get_people';
-import { PersonFactory } from '../../types/v2/Person';
+import { ApiPerson, PersonFactory } from '../../types/v2/Person';
 
 function PopularityWrapper() {
   return (

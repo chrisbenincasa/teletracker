@@ -5,8 +5,7 @@ import { clientEffect } from '../clientEffect';
 import { TeletrackerResponse } from '../../utils/api-client';
 import _ from 'lodash';
 import { Paging } from '../../types';
-import { ApiPerson } from '../../types/v2';
-import { Person, PersonFactory } from '../../types/v2/Person';
+import { ApiPerson, Person, PersonFactory } from '../../types/v2/Person';
 
 export const PEOPLE_SEARCH_INITIATED = 'search/people/INITIATED';
 export const PEOPLE_SEARCH_SUCCESSFUL = 'search/people/SUCCESSFUL';

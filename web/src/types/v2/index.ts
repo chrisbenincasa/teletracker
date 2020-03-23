@@ -1,5 +1,5 @@
 import { ItemType } from '..';
-import PagedResponse from './PagedResponse';
+import { ApiPerson } from './Person';
 
 export type Slug = string;
 export type Id = string;
@@ -29,23 +29,6 @@ export interface ApiItem {
   type: ItemType;
 }
 
-export interface ApiPerson {
-  adult?: boolean;
-  biography?: string;
-  birthday?: string;
-  cast_credits?: PagedResponse<ApiPersonCastCredit>;
-  crew_credits?: ApiPersonCrewCredit[];
-  external_ids?: ItemExternalId[];
-  deathday?: string;
-  homepage?: string;
-  id: Id;
-  images?: ItemImage[];
-  name: string;
-  place_of_birth?: string;
-  popularity?: number;
-  slug?: Slug;
-}
-
 export interface ItemAvailability {
   network_id: number;
   region: string;
@@ -64,15 +47,6 @@ export interface ApiItemCastMember {
   name: string;
   slug: Slug;
   person?: ApiPerson;
-}
-
-export interface ApiPersonCastCredit {
-  character?: string;
-  id: string;
-  title: string;
-  type: string;
-  slug: string;
-  item?: ApiItem;
 }
 
 export interface ItemCrewMember {
