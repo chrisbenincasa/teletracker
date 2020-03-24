@@ -29,13 +29,10 @@ export default function ManageTrackingButton(props: Props) {
   const isMobile = ['xs', 'sm'].includes(width);
   let [isTracked, setIsTracked] = useState(false);
 
-  const belongsToLists: string[] =
-    props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
-
   useEffect(() => {
     let belongsToLists: string[] =
       props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
-    // console.log(belongsToLists);
+
     if (belongsToLists.length > 0) {
       setIsTracked(true);
     } else {
