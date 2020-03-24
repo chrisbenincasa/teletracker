@@ -17,6 +17,7 @@ export interface UserUpdateItemTagsPayload {
   value?: number;
   lazy?: boolean; // If true, requires the server call to complete before updating state.
   string_value?: string;
+  unique?: boolean;
 }
 
 export type UserUpdateItemTagsAction = FSA<

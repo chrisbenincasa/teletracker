@@ -32,8 +32,6 @@ export default function ManageTrackingButton(props: Props) {
   const belongsToLists: string[] =
     props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
 
-  console.log(props.itemDetail);
-
   useEffect(() => {
     let belongsToLists: string[] =
       props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];

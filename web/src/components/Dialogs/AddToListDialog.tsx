@@ -149,7 +149,6 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
         },
         {},
       );
-      console.log('listChange: ', listChanges);
 
       this.setState({
         originalListState: {
@@ -185,8 +184,6 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   };
 
   handleCheckboxChange = (list: List, checked: boolean) => {
-    console.log([list.id], ':', checked);
-    console.log(this.state.listChanges);
     this.setState({
       listChanges: {
         ...this.state.listChanges,
@@ -215,9 +212,6 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     }, R.values(this.props.listsById));
 
     const extractIds = R.map<List, string>(R.prop('id'));
-
-    console.log('atl: ', extractIds(addedToLists));
-    console.log('rfl: ', extractIds(removedFromLists));
 
     this.props.updateLists({
       itemId: this.props.item.id,

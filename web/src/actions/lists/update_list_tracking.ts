@@ -46,12 +46,12 @@ export const updateListTrackingSaga = function*() {
 
         yield all(
           payload.addToLists.map(listId => {
-            console.log('add: ', listId);
             return put(
               updateUserItemTagsSuccess({
                 itemId: payload.itemId,
                 action: ActionType.TrackedInList,
                 string_value: listId,
+                unique: true,
               }),
             );
           }),
@@ -59,12 +59,12 @@ export const updateListTrackingSaga = function*() {
 
         yield all(
           payload.removeFromLists.map(listId => {
-            console.log('remove: ', listId);
             return put(
               removeUserItemTagsSuccess({
                 itemId: payload.itemId,
                 action: ActionType.TrackedInList,
                 string_value: listId,
+                unique: true,
               }),
             );
           }),

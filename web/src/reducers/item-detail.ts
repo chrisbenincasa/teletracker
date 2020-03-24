@@ -242,7 +242,15 @@ const itemUpdateTagsSuccess = handleAction(
             value: payload!.value,
             string_value: payload!.string_value,
           },
-          filterNot(R.propEq('tag', payload!.action), tags),
+          payload?.unique
+            ? filterNot(
+                R.both(
+                  R.propEq('tag', payload!.action),
+                  R.propEq('string_value', payload!.string_value),
+                ),
+                tags,
+              )
+            : filterNot(R.propEq('tag', payload!.action), tags),
         );
       },
       payload,
@@ -256,7 +264,15 @@ const itemRemoveTagsSuccess = handleAction(
     return updateTagsState(
       state,
       tags => {
-        return filterNot(R.propEq('action', payload!.action), tags);
+        return payload?.unique
+          ? filterNot(
+              R.both(
+                R.propEq('tag', payload!.action),
+                R.propEq('string_value', payload!.string_value),
+              ),
+              tags,
+            )
+          : filterNot(R.propEq('tag', payload!.action), tags);
       },
       payload,
     );
