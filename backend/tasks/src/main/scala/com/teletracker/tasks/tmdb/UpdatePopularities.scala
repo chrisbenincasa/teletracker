@@ -3,7 +3,7 @@ package com.teletracker.tasks.tmdb
 import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.{ItemLookup, PersonLookup}
 import com.teletracker.common.pubsub.{
   EsIngestMessage,
@@ -47,7 +47,7 @@ class UpdateMoviePopularities @Inject()(
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
     extends UpdateItemPopularities[MovieDumpFileRow](
-      ThingType.Movie,
+      ItemType.Movie,
       deps
     )
 
@@ -55,7 +55,7 @@ class UpdateTvShowPopularities @Inject()(
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
     extends UpdateItemPopularities[TvShowDumpFileRow](
-      ThingType.Show,
+      ItemType.Show,
       deps
     )
 
@@ -72,7 +72,7 @@ case class UpdatePopularitiesJobArgs(
   band: Option[Int])
 
 abstract class UpdateItemPopularities[T <: TmdbDumpFileRow: Decoder](
-  itemType: ThingType,
+  itemType: ItemType,
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
     extends UpdatePopularities[T](itemType, deps) {
@@ -112,7 +112,7 @@ abstract class UpdateItemPopularities[T <: TmdbDumpFileRow: Decoder](
 class UpdatePeoplePopularities(
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
-    extends UpdatePopularities[PersonDumpFileRow](ThingType.Person, deps) {
+    extends UpdatePopularities[PersonDumpFileRow](ItemType.Person, deps) {
   override protected def lookupBatch(ids: List[Int]): Future[Map[Int, UUID]] = {
     deps.personLookup
       .lookupPeopleByExternalIds(ExternalSource.TheMovieDb, ids.map(_.toString))
@@ -142,7 +142,7 @@ class UpdatePeoplePopularities(
 }
 
 abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
-  itemType: ThingType,
+  itemType: ItemType,
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {

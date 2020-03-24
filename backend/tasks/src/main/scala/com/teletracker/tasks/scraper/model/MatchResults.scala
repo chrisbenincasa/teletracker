@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.model
 
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.EsItem
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.ScrapedItem
@@ -96,4 +96,4 @@ case class PartialEsItem(
   title: List[String],
   release_date: Option[LocalDate],
   external_ids: Option[List[String]],
-  `type`: ThingType)
+  `type`: ItemType)

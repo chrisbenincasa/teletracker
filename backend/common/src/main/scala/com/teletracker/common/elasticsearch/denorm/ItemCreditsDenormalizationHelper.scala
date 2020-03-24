@@ -1,6 +1,11 @@
 package com.teletracker.common.elasticsearch.denorm
 
-import com.teletracker.common.elasticsearch.{EsItemCastMember, EsItemCrewMember}
+import com.teletracker.common.elasticsearch.{
+  EsItemCastMember,
+  EsItemCrewMember,
+  EsPersonCastCredit,
+  EsPersonCrewCredit
+}
 import com.teletracker.common.pubsub.TaskScheduler
 import com.teletracker.common.util.Tuples._
 import javax.inject.Inject
@@ -83,5 +88,83 @@ class ItemCreditsDenormalizationHelper @Inject()(taskScheduler: TaskScheduler) {
     left.department != right.department ||
     left.slug != right.slug ||
     left.name != right.name
+  }
+
+  def personCastNeedsDenormalization(
+    newCast: Option[List[EsPersonCastCredit]],
+    existingCast: Option[List[EsPersonCastCredit]]
+  ): Boolean = {
+    val newAndOld = (newCast, existingCast)
+
+    if (newAndOld.bothEmpty) {
+      false
+    } else {
+      newAndOld
+        .ifBothPresent((newCast, oldCast) => {
+          val newById = newCast.map(member => member.id -> member).toMap
+          val oldById = oldCast.map(member => member.id -> member).toMap
+
+          val diff =
+            ((newById.keySet diff oldById.keySet) union (oldById.keySet diff newById.keySet)).nonEmpty
+
+          diff || {
+            newById.keys.exists(id => {
+              val newMember = newById(id)
+              val oldMember = oldById(id)
+
+              castMemberNeedsDenorm(newMember, oldMember)
+            })
+          }
+        })
+        .getOrElse(false)
+    }
+  }
+
+  def personCrewNeedsDenormalization(
+    newCrew: Option[List[EsPersonCrewCredit]],
+    existingCrew: Option[List[EsPersonCrewCredit]]
+  ): Boolean = {
+    val newAndOld = (newCrew, existingCrew)
+
+    if (newAndOld.bothEmpty) {
+      false
+    } else {
+      newAndOld
+        .ifBothPresent((newCrew, oldCrew) => {
+          val newById = newCrew.map(member => member.id -> member).toMap
+          val oldById = oldCrew.map(member => member.id -> member).toMap
+
+          val diff =
+            ((newById.keySet diff oldById.keySet) union (oldById.keySet diff newById.keySet)).nonEmpty
+
+          diff || {
+            newById.keys.exists(id => {
+              val newMember = newById(id)
+              val oldMember = oldById(id)
+
+              crewMemberNeedsDenorm(newMember, oldMember)
+            })
+          }
+        })
+        .getOrElse(false)
+    }
+  }
+
+  private def castMemberNeedsDenorm(
+    left: EsPersonCastCredit,
+    right: EsPersonCastCredit
+  ) = {
+    left.character != right.character ||
+    left.slug != right.slug
+  }
+
+  private def crewMemberNeedsDenorm(
+    left: EsPersonCrewCredit,
+    right: EsPersonCrewCredit
+  ) = {
+    left.job != right.job ||
+    left.department != right.department ||
+    left.slug != right.slug ||
+    left.title != right.title
   }
 }

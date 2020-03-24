@@ -1,7 +1,7 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.db.{Bookmark, SearchScore}
 import com.teletracker.common.elasticsearch.{
   BinaryOperator,
@@ -89,7 +89,7 @@ class SearchController @Inject()(
       genres = Some(req.genres.map(_.toString)).filter(_.nonEmpty),
       networks = Some(req.networks).filter(_.nonEmpty),
       itemTypes = Some(
-        req.itemTypes.flatMap(t => Try(ThingType.fromString(t)).toOption)
+        req.itemTypes.flatMap(t => Try(ItemType.fromString(t)).toOption)
       ),
       sortMode = SearchScore(),
       limit = req.limit,
@@ -118,7 +118,7 @@ case class SearchRequest(
   @QueryParam
   query: String,
   @QueryParam(commaSeparatedList = true)
-  itemTypes: Set[String] = Set(ThingType.Movie, ThingType.Show).map(_.toString),
+  itemTypes: Set[String] = Set(ItemType.Movie, ItemType.Show).map(_.toString),
   @QueryParam
   bookmark: Option[String],
   @Min(0) @Max(50) @QueryParam

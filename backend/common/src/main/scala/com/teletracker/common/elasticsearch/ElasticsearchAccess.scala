@@ -8,8 +8,8 @@ import com.teletracker.common.db.dynamo.model.{
 }
 import com.teletracker.common.db.model.{
   ExternalSource,
-  PersonAssociationType,
-  ThingType
+  ItemType,
+  PersonAssociationType
 }
 import com.teletracker.common.db.{
   AddedTime,
@@ -202,7 +202,7 @@ trait ElasticsearchAccess {
 
   protected def itemTypesFilter(
     builder: BoolQueryBuilder,
-    itemTypes: Set[ThingType]
+    itemTypes: Set[ItemType]
   ): BoolQueryBuilder = {
     require(itemTypes.nonEmpty)
     builder.filter(
@@ -212,7 +212,7 @@ trait ElasticsearchAccess {
 
   protected def itemTypeFilter(
     builder: BoolQueryBuilder,
-    itemType: ThingType
+    itemType: ItemType
   ) = {
     builder
       .should(QueryBuilders.termQuery("type", itemType.toString))

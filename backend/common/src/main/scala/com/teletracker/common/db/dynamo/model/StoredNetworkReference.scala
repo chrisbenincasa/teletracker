@@ -1,11 +1,8 @@
 package com.teletracker.common.db.dynamo.model
 
-import com.teletracker.common.db.model.{ExternalId, ExternalSource}
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import com.teletracker.common.db.dynamo.util.syntax._
-import com.teletracker.common.util.Slug
+import com.teletracker.common.db.model.ExternalSource
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
-import java.util
 import scala.collection.JavaConverters._
 
 object StoredNetworkReference {

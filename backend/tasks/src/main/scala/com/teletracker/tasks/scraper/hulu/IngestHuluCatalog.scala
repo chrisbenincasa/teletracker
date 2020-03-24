@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.hulu
 
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.util.json.circe._
-import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
@@ -65,7 +65,7 @@ case class HuluCatalogItem(
   name: String,
   releaseYear: Option[Int],
   network: String,
-  `type`: ThingType,
+  `type`: ItemType,
   externalId: Option[String],
   numSeasonsAvailable: Option[Int],
   genres: Option[List[String]])
@@ -78,9 +78,9 @@ case class HuluCatalogItem(
 
   override def title: String = name
 
-  override def isMovie: Boolean = `type` == ThingType.Movie
+  override def isMovie: Boolean = `type` == ItemType.Movie
 
-  override def isTvShow: Boolean = `type` == ThingType.Show
+  override def isTvShow: Boolean = `type` == ItemType.Show
 
   override lazy val availableLocalDate: Option[LocalDate] =
     availableDate.map(OffsetDateTime.parse(_)).map(_.toLocalDate)

@@ -38,7 +38,7 @@ case class DynamicListGenreRule(
     extends DynamicListRule
 
 case class DynamicListItemTypeRule(
-  itemType: ThingType,
+  itemType: ItemType,
   negated: Option[Boolean] = None)
     extends DynamicListRule
 

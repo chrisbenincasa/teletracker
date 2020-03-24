@@ -1,10 +1,10 @@
 package com.teletracker.tasks.db.legacy_model
 
-import com.teletracker.common.db.model.{DynamicListRules, TrackedListRowOptions}
+import com.teletracker.common.api.model.TrackedListRowOptions
+import com.teletracker.common.db.model.DynamicListRules
 import com.teletracker.common.util.json.circe._
-import java.time.OffsetDateTime
-import io.circe._
 import io.circe.parser._
+import java.time.OffsetDateTime
 
 object TrackedListRow {
   def fromLine(

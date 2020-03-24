@@ -1,13 +1,7 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.{
-  Bookmark,
-  Recent,
-  SearchOptions,
-  SearchScore,
-  SortMode
-}
+import com.teletracker.common.db.{Bookmark, Recent, SearchScore, SortMode}
 import com.teletracker.common.db.model.{ExternalSource, PersonAssociationType}
 import com.teletracker.common.util.{Folds, IdOrSlug, Slug}
 import javax.inject.Inject

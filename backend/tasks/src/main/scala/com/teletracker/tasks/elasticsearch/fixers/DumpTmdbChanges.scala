@@ -1,7 +1,7 @@
 package com.teletracker.tasks.elasticsearch.fixers
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   EsExternalId
@@ -60,7 +60,7 @@ class DumpTmdbChanges @Inject()(
   override protected def runInternal(args: Args): Unit = {
     val after = args.valueOrThrow[LocalDate]("after")
     val before = args.valueOrDefault[LocalDate]("before", LocalDate.now())
-    val itemType = args.valueOrThrow[ThingType]("type")
+    val itemType = args.valueOrThrow[ItemType]("type")
 
     val today = LocalDate.now()
     val range = ClosedDateRange(after, before)
@@ -89,7 +89,7 @@ class DumpTmdbChanges @Inject()(
   }
 
   private def fetchChangesJson(
-    thingType: ThingType,
+    thingType: ItemType,
     date: LocalDate
   ) = {
     val (clientToUse, bucket) =
@@ -152,7 +152,7 @@ class UpdateAdultBit @Inject()(
 
   override protected def runInternal(args: Args): Unit = {
     val input = args.valueOrThrow[URI]("input")
-    val itemType = args.valueOrThrow[ThingType]("type")
+    val itemType = args.valueOrThrow[ItemType]("type")
     val offset = args.valueOrDefault("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
     val dryRun = args.valueOrDefault("dryRun", true)

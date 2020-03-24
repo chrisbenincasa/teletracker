@@ -115,7 +115,7 @@ case class UserListPersonRule(
 
 case class UserListGenreRule(genreId: Int) extends UserListRule
 
-case class UserListItemTypeRule(itemType: ThingType) extends UserListRule
+case class UserListItemTypeRule(itemType: ItemType) extends UserListRule
 
 case class UserListNetworkRule(networkId: Int) extends UserListRule
 

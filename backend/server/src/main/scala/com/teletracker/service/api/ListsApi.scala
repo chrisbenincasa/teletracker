@@ -12,14 +12,10 @@ import com.teletracker.common.elasticsearch.{
   PersonLookup,
   UpdateMultipleDocResponse
 }
+import com.teletracker.common.util.Slug
 import com.teletracker.common.util.Functions._
-import com.teletracker.common.util.{IdOrSlug, Slug}
 import com.teletracker.service.api.converters.UserListConverter
-import com.teletracker.service.api.model.{
-  UserList,
-  UserListPersonRule,
-  UserListRules
-}
+import com.teletracker.service.api.model.{UserListPersonRule, UserListRules}
 import javax.inject.Inject
 import java.time.OffsetDateTime
 import java.util.UUID

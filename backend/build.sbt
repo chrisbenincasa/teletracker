@@ -44,8 +44,6 @@ lazy val common = project
       "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "7.4.0",
       // Monitoring
       "io.dropwizard.metrics" % "metrics-core" % "3.1.0",
-      "io.opencensus" % "opencensus-api" % "0.23.0",
-      "io.opencensus" % "opencensus-impl" % "0.23.0",
       // Jackson
       "com.fasterxml.jackson.core" % "jackson-annotations" % versions.jackson,
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % versions.jackson,
@@ -156,7 +154,6 @@ lazy val tasks = project
   .settings(
     name := "tasks",
     libraryDependencies ++= Seq(
-      "org.flywaydb" % "flyway-core" % "6.0.0-beta2",
       "com.github.scopt" %% "scopt" % "3.5.0",
       "software.amazon.awssdk" % "lambda" % "2.9.24",
       "software.amazon.awssdk" % "arns" % "2.9.24",
@@ -173,7 +170,7 @@ lazy val tasks = project
     ),
     Compile / run / fork := true,
     Compile / run / javaOptions ++= Seq(
-      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006"
+      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5007"
     ),
     connectInput in run := true,
     `run-db-migrations` := runInputTask(

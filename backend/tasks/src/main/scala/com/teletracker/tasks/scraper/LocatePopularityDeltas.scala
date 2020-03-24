@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.tasks.tmdb.{
@@ -22,7 +22,7 @@ import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
 abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
-  itemType: ThingType,
+  itemType: ItemType,
   publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
@@ -38,9 +38,9 @@ abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
 
   override protected def getKey(today: LocalDate): String = {
     val typeString = itemType match {
-      case ThingType.Movie  => "movie"
-      case ThingType.Show   => "tv_series"
-      case ThingType.Person => "person"
+      case ItemType.Movie  => "movie"
+      case ItemType.Show   => "tv_series"
+      case ItemType.Person => "person"
     }
 
     s"scrape-results/tmdb/$today/${typeString}_ids_sorted-$today.json.gz"
@@ -96,7 +96,7 @@ class LocateMoviePopularityDelta @Inject()(
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends LocatePopularityDeltas[UpdateMoviePopularities](
-      ThingType.Movie,
+      ItemType.Movie,
       publisher,
       s3Client,
       sourceRetriever,
@@ -110,7 +110,7 @@ class LocateShowPopularityDelta @Inject()(
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends LocatePopularityDeltas[UpdateTvShowPopularities](
-      ThingType.Show,
+      ItemType.Show,
       publisher,
       s3Client,
       sourceRetriever,
@@ -124,7 +124,7 @@ class LocatePersonPopularityDelta @Inject()(
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends LocatePopularityDeltas[UpdatePeoplePopularities](
-      ThingType.Person,
+      ItemType.Person,
       publisher,
       s3Client,
       sourceRetriever,

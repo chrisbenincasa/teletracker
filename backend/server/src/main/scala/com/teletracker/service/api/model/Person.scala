@@ -1,6 +1,6 @@
 package com.teletracker.service.api.model
 
-import com.teletracker.common.db.model.{PersonAssociationType, ThingType}
+import com.teletracker.common.db.model.{ItemType, PersonAssociationType}
 import com.teletracker.common.elasticsearch.{
   ElasticsearchItemsResponse,
   EsDenormalizedItem,
@@ -43,7 +43,7 @@ case class PersonCredit(
   normalizedName: Slug,
   tmdbId: Option[String],
   popularity: Option[Double],
-  `type`: ThingType,
+  `type`: ItemType,
   associationType: PersonAssociationType,
   characterName: Option[String],
   releaseDate: Option[LocalDate],

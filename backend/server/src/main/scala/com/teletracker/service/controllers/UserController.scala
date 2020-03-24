@@ -388,7 +388,7 @@ trait InjectedRequest {
   def request: Request
 }
 
-case class ListFilters(itemTypes: Option[Set[ThingType]])
+case class ListFilters(itemTypes: Option[Set[ItemType]])
 
 case class RegisterUserRequest(userId: String)
 
@@ -476,7 +476,7 @@ case class DeleteListRequest(
 case class AddThingToListsRequest(
   @RouteParam userId: String,
   thingId: String,
-  thingType: Option[ThingType], // Required if thingId is a slug...
+  thingType: Option[ItemType], // Required if thingId is a slug...
   listIds: List[UUID],
   request: Request)
     extends InjectedRequest
@@ -520,7 +520,7 @@ case class UpdateUserRequestPayload(
 case class UpdateUserThingActionRequest(
   @RouteParam userId: String,
   @RouteParam thingId: String,
-  thingType: Option[ThingType],
+  thingType: Option[ItemType],
   action: String,
   value: Option[Double],
   request: Request)
@@ -530,6 +530,6 @@ case class DeleteUserThingActionRequest(
   @RouteParam userId: String,
   @RouteParam thingId: String,
   @RouteParam actionType: String,
-  thingType: Option[ThingType],
+  thingType: Option[ItemType],
   request: Request)
     extends HasThingIdOrSlug

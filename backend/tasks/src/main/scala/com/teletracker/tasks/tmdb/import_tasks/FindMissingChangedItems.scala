@@ -2,7 +2,7 @@ package com.teletracker.tasks.tmdb.import_tasks
 
 import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.ItemLookup
 import com.teletracker.common.process.tmdb.ItemExpander
 import com.teletracker.common.util.{AsyncStream, ClosedDateRange}
@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
 case class FindMissingChangedItemsArgs(
   start: LocalDate,
   end: LocalDate,
-  itemType: ThingType)
+  itemType: ItemType)
 
 class FindMissingChangedItems @Inject()(
   teletrackerConfig: TeletrackerConfig,
@@ -47,7 +47,7 @@ class FindMissingChangedItems @Inject()(
     FindMissingChangedItemsArgs(
       start = args.valueOrThrow[LocalDate]("start"),
       end = args.valueOrThrow[LocalDate]("end"),
-      itemType = args.valueOrThrow[ThingType]("itemType")
+      itemType = args.valueOrThrow[ItemType]("itemType")
     )
 
   override protected def runInternal(args: Args): Unit = {
@@ -111,15 +111,15 @@ class FindMissingChangedItems @Inject()(
       .delayedMapF(250.millis, scheduledService)(
         item => {
           parsedArgs.itemType match {
-            case ThingType.Movie =>
+            case ItemType.Movie =>
               itemExpander.expandMovie(item).map(_ => Some(item)).recover {
                 case NonFatal(e) => None
               }
-            case ThingType.Show =>
+            case ItemType.Show =>
               itemExpander.expandTvShow(item).map(_ => Some(item)).recover {
                 case NonFatal(e) => None
               }
-            case ThingType.Person =>
+            case ItemType.Person =>
               itemExpander.expandPerson(item).map(_ => Some(item)).recover {
                 case NonFatal(e) => None
               }

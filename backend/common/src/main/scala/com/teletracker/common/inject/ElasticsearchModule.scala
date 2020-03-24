@@ -53,8 +53,8 @@ class ElasticsearchModule extends TwitterModule {
       credsProvider.setCredentials(
         AuthScope.ANY,
         new UsernamePasswordCredentials(
-          teletrackerConfig.elasticsearch.creds.user.get,
-          teletrackerConfig.elasticsearch.creds.password.get
+          user,
+          password
         )
       )
       credsProvider

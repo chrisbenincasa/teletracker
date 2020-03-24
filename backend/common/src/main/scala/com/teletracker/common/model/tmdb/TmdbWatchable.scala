@@ -1,13 +1,13 @@
 package com.teletracker.common.model.tmdb
 
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.util.{Movies, Shows}
 
 trait TmdbWatchable[T] {
   def id(x: T): Int
   def title(x: T): Option[String]
   def releaseYear(x: T): Option[Int]
-  def mediaType(x: T): ThingType
+  def mediaType(x: T): ItemType
 
   def asMovie(x: T): Option[Movie]
   def asShow(x: T): Option[TvShow]
@@ -23,7 +23,7 @@ object TmdbWatchable {
     override def releaseYear(x: Movie): Option[Int] =
       Movies.toRichMovie(x).releaseYear
 
-    override def mediaType(x: Movie): ThingType = ThingType.Movie
+    override def mediaType(x: Movie): ItemType = ItemType.Movie
 
     override def asMovie(x: Movie): Option[Movie] = Some(x)
 
@@ -39,7 +39,7 @@ object TmdbWatchable {
     override def releaseYear(x: TvShow): Option[Int] =
       Shows.toRichShow(x).releaseYear
 
-    override def mediaType(x: TvShow): ThingType = ThingType.Show
+    override def mediaType(x: TvShow): ItemType = ItemType.Show
 
     override def asMovie(x: TvShow): Option[Movie] = None
 
@@ -53,8 +53,8 @@ object TmdbWatchable {
         x.fold(MovieIsWatchable.title, TvShowIsWatchable.title)
       override def releaseYear(x: Either[Movie, TvShow]): Option[Int] =
         x.fold(MovieIsWatchable.releaseYear, TvShowIsWatchable.releaseYear)
-      override def mediaType(x: Either[Movie, TvShow]): ThingType =
-        x.fold(_ => ThingType.Movie, _ => ThingType.Show)
+      override def mediaType(x: Either[Movie, TvShow]): ItemType =
+        x.fold(_ => ItemType.Movie, _ => ItemType.Show)
       override def asMovie(x: Either[Movie, TvShow]): Option[Movie] =
         x.fold(MovieIsWatchable.asMovie, TvShowIsWatchable.asMovie)
       override def asShow(x: Either[Movie, TvShow]): Option[TvShow] =

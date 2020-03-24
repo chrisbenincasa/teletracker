@@ -67,6 +67,7 @@ trait HasTmdbId {
   vote_average: Option[Double],
   vote_count: Option[Int],
   // Join fields
+  alternative_titles: Option[MovieAlternativeTitles],
   release_dates: Option[MovieReleaseDates],
   credits: Option[MovieCredits],
   external_ids: Option[ExternalIds],
@@ -74,6 +75,14 @@ trait HasTmdbId {
   similar: Option[PagedResult[Movie]])
     extends TmdbQueryableEntity
     with HasTmdbId
+
+@JsonCodec case class MovieAlternativeTitles(
+  titles: List[MovieAlternativeTitle])
+
+@JsonCodec case class MovieAlternativeTitle(
+  iso_3166_1: String,
+  title: String,
+  `type`: Option[String])
 
 @JsonCodec case class MovieExternalIds(
   imdb_id: Option[String],
@@ -207,12 +216,20 @@ trait TvShowId
   vote_average: Option[Double],
   vote_count: Option[Int],
   // Join fields
+  alternative_titles: Option[TvAlternativeTitles],
   content_ratings: Option[TvContentRatings],
   credits: Option[TvShowCredits],
   external_ids: Option[ExternalIds],
   recommendations: Option[PagedResult[TvShow]],
   similar: Option[PagedResult[TvShow]])
     extends HasTmdbId
+
+@JsonCodec case class TvAlternativeTitles(titles: List[TvAlternativeTitle])
+
+@JsonCodec case class TvAlternativeTitle(
+  iso_3166_1: String,
+  title: String,
+  `type`: Option[String])
 
 @JsonCodec case class TvNetwork(
   id: Int,

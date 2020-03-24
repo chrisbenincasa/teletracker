@@ -1,9 +1,14 @@
 package com.teletracker.tasks
 
 import com.google.inject.Module
+import com.google.inject.util.{Modules => GuiceModules}
 import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.inject.Modules
-import com.teletracker.tasks.inject.{FactoriesModule, HttpClientModule}
+import com.teletracker.tasks.inject.{
+  FactoriesModule,
+  HttpClientModule,
+  TaskModules
+}
 import com.twitter.app.Flaggable
 import java.net.URI
 import scala.util.control.NonFatal
@@ -17,7 +22,11 @@ abstract class TeletrackerTaskApp[T <: TeletrackerTask: Manifest]
     scala.concurrent.ExecutionContext.Implicits.global
 
   override protected def modules: Seq[Module] =
-    Modules() ++ Seq(new HttpClientModule, new FactoriesModule) ++ extraModules
+    Seq(
+      GuiceModules
+        .`override`(Modules(): _*)
+        .`with`(TaskModules() ++ extraModules: _*)
+    )
 
   protected def extraModules: Seq[Module] = Seq()
 

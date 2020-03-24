@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.disney
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
@@ -63,7 +63,7 @@ class IngestDisneyPlusCatalog @Inject()(
     if (item.title.endsWith(" - Series")) {
       item.copy(
         title = item.title.replaceAll(" - Series", "").trim,
-        thingType = Some(ThingType.Show)
+        thingType = Some(ItemType.Show)
       )
     } else {
       item

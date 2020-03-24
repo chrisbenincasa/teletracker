@@ -2,8 +2,8 @@ package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
-import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.db._
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.OpenDateRange
 import javax.inject.Inject
@@ -60,7 +60,10 @@ class ItemSearch @Inject()(
           "title._3gram",
           "original_title",
           "original_title._2gram",
-          "original_title._3gram"
+          "original_title._3gram",
+          "alternative_titles",
+          "alternative_titles._2gram",
+          "alternative_titles._3gram"
         )
         .`type`(MultiMatchQueryBuilder.Type.PHRASE_PREFIX)
         .maxExpansions(50)
@@ -143,7 +146,7 @@ class ItemSearch @Inject()(
   def searchItems(
     genres: Option[Set[StoredGenre]],
     networks: Option[Set[StoredNetwork]],
-    itemTypes: Option[Set[ThingType]],
+    itemTypes: Option[Set[ItemType]],
     sortMode: SortMode,
     limit: Int,
     bookmark: Option[Bookmark],

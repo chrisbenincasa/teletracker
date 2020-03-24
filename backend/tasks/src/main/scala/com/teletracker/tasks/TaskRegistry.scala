@@ -42,7 +42,6 @@ object TaskRegistry {
     classOf[IngestUnogsNetflixExpiring],
     classOf[NetflixCatalogDeltaIngestJob],
     classOf[ImportMoviesFromDump],
-    classOf[ImportPeopleAssociationsFromCsvs],
     classOf[ImportPeopleFromDump],
     classOf[ImportTvShowsFromDump],
     classOf[RemoteTask],

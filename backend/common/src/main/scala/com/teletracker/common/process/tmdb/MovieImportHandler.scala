@@ -1,6 +1,7 @@
 package com.teletracker.common.process.tmdb
 
-import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import cats.implicits._
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.tasks.model.DenormalizeItemTaskArgs
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
@@ -65,11 +66,26 @@ class MovieImportHandler @Inject()(
     args: MovieImportHandlerArgs,
     item: Movie
   ): Future[MovieImportResult] = {
+    if (item.title.isEmpty) {
+      Future.failed(
+        new IllegalArgumentException(
+          s"Movie (id=${item.id}) did not have a title set."
+        )
+      )
+    } else {
+      handleItemInternal(args, item)
+    }
+  }
+
+  private def handleItemInternal(
+    args: MovieImportHandlerArgs,
+    item: Movie
+  ): Future[MovieImportResult] = {
     itemSearch
       .lookupItemByExternalId(
         ExternalSource.TheMovieDb,
         item.id.toString,
-        ThingType.Movie
+        ItemType.Movie
       )
       .flatMap {
         case Some(esItem) =>
@@ -174,10 +190,23 @@ class MovieImportHandler @Inject()(
         creditsDenormalizer.crewNeedsDenormalization(crew, existingMovie.crew)
 
       val partialUpdates = existingMovie.copy(
+        alternative_titles = item.alternative_titles
+          .map(_.titles)
+          .nested
+          .map(
+            altTitle =>
+              EsItemAlternativeTitle(
+                country_code = altTitle.iso_3166_1,
+                title = altTitle.title,
+                `type` = altTitle.`type`
+              )
+          )
+          .value
+          .orElse(existingMovie.alternative_titles),
         adult = item.adult.orElse(existingMovie.adult),
         cast = cast,
         crew = crew,
-        images = Some(images.toList),
+        images = images.toList.some,
         last_updated = Some(OffsetDateTime.now().toInstant.toEpochMilli),
         external_ids = Some(newExternalSources),
         original_title =
@@ -264,7 +293,19 @@ class MovieImportHandler @Inject()(
       val crew = buildCrew(item, castAndCrew)
 
       val esItem = EsItem(
-        adult = None,
+        adult = item.adult,
+        alternative_titles = item.alternative_titles
+          .map(_.titles)
+          .nested
+          .map(
+            altTitle =>
+              EsItemAlternativeTitle(
+                country_code = altTitle.iso_3166_1,
+                title = altTitle.title,
+                `type` = altTitle.`type`
+              )
+          )
+          .value,
         availability = None,
         cast = cast,
         crew = crew,
@@ -307,7 +348,7 @@ class MovieImportHandler @Inject()(
         slug = item.releaseYear.map(Slug(item.title.get, _)),
         tags = None,
         title = StringListOrString.forString(item.title.get),
-        `type` = ThingType.Movie
+        `type` = ItemType.Movie
       )
 
       if (args.dryRun) {
@@ -407,7 +448,7 @@ class MovieImportHandler @Inject()(
     val allIds = item.recommendations.toList
       .flatMap(_.results)
       .map(_.id)
-      .map(id => (ExternalSource.TheMovieDb, id.toString, ThingType.Movie))
+      .map(id => (ExternalSource.TheMovieDb, id.toString, ItemType.Movie))
 
     itemSearch
       .lookupItemsByExternalIds(allIds)
@@ -419,7 +460,7 @@ class MovieImportHandler @Inject()(
           .flatMap(_.results)
           .flatMap(movie => {
             for {
-              title <- movie.title.orElse(movie.original_title)
+              title <- movie.title
               foundItem <- tmdbIdToItem.get(movie.id.toString)
             } yield {
               EsItemRecommendation(

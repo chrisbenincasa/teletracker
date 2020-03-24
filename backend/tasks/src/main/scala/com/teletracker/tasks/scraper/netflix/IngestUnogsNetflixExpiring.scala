@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.netflix
 
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
@@ -33,12 +33,12 @@ case class UnogsScrapeItem(
   releaseYear: Option[Int],
   network: String,
   status: String,
-  `type`: ThingType,
+  `type`: ItemType,
   externalId: Option[String])
     extends ScrapedItem {
   override def category: String = ""
 
-  override def isMovie: Boolean = `type` == ThingType.Movie
+  override def isMovie: Boolean = `type` == ItemType.Movie
 
-  override def isTvShow: Boolean = `type` == ThingType.Show
+  override def isTvShow: Boolean = `type` == ItemType.Show
 }

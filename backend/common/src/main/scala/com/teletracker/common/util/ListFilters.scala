@@ -1,12 +1,12 @@
 package com.teletracker.common.util
 
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 case class ListFilters(
-  itemTypes: Option[Set[ThingType]],
+  itemTypes: Option[Set[ItemType]],
   genres: Option[Set[Int]],
   networks: Option[Set[Int]],
   personIdentifiers: Option[Set[String]])
@@ -18,10 +18,10 @@ class ListFilterParser @Inject()(genreCache: GenreCache) {
   )(implicit executionContext: ExecutionContext
   ): Future[ListFilters] = {
     val types = itemTypes match {
-      case Some(Seq()) => Some(Set.empty[ThingType])
+      case Some(Seq()) => Some(Set.empty[ItemType])
       case Some(value) =>
         Some(
-          value.flatMap(typ => Try(ThingType.fromString(typ)).toOption).toSet
+          value.flatMap(typ => Try(ItemType.fromString(typ)).toOption).toSet
         )
       case None => None
     }

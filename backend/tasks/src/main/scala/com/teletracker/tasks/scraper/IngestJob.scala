@@ -349,11 +349,11 @@ trait ScrapedItem {
 
   def isMovie: Boolean
   def isTvShow: Boolean
-  def thingType: Option[ThingType] = {
+  def thingType: Option[ItemType] = {
     if (isMovie) {
-      Some(ThingType.Movie)
+      Some(ItemType.Movie)
     } else if (isTvShow) {
-      Some(ThingType.Show)
+      Some(ItemType.Show)
     } else {
       None
     }

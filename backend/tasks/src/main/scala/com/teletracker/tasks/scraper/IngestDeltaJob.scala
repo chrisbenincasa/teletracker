@@ -1,30 +1,26 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.{Availability, Network, OfferType}
-import com.teletracker.common.elasticsearch
 import com.teletracker.common.elasticsearch.{
   EsAvailability,
   ItemLookup,
-  ItemSearch,
   ItemUpdater
 }
 import com.teletracker.common.util.json.circe._
-import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
-import com.teletracker.tasks.util.SourceRetriever
-import io.circe.{Codec, Encoder}
-import io.circe.generic.semiauto.deriveEncoder
-import java.net.URI
-import java.time.ZoneOffset
+import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.{Folds, NetworkCache}
+import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.model.MatchResult
+import com.teletracker.tasks.util.SourceRetriever
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.{Codec, Encoder}
 import software.amazon.awssdk.services.s3.S3Client
+import java.net.URI
 import java.util.UUID
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import com.teletracker.common.util.Functions._
-import com.teletracker.tasks.scraper.model.MatchResult
 import scala.util.control.NonFatal
 
 trait IngestDeltaJobArgsLike {

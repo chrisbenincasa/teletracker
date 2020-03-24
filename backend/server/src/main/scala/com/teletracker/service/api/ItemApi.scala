@@ -2,18 +2,17 @@ package com.teletracker.service.api
 
 import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
 import com.teletracker.common.db.model.{
-  PartialThing,
+  ItemType,
   PersonAssociationType,
-  ThingType,
   UserThingTagType
 }
 import com.teletracker.common.db.{
   Bookmark,
   Popularity,
-  SearchOptions,
   SearchRankingMode,
   SortMode
 }
+import com.teletracker.common.elasticsearch
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.util._
 import com.teletracker.service.api.model.Item
@@ -33,7 +32,7 @@ class ItemApi @Inject()(
   def getThingViaSearch(
     userId: Option[String],
     idOrSlug: String,
-    thingType: Option[ThingType]
+    thingType: Option[ItemType]
   ): Future[Option[Item]] = {
     getThingViaSearch(userId, HasThingIdOrSlug.parse(idOrSlug), thingType)
   }
@@ -41,7 +40,7 @@ class ItemApi @Inject()(
   def getThingViaSearch(
     userId: Option[String],
     idOrSlug: Either[UUID, Slug],
-    thingType: Option[ThingType]
+    thingType: Option[ItemType]
   ): Future[Option[Item]] = {
     itemLookup
       .lookupItem(idOrSlug, thingType)
@@ -60,7 +59,7 @@ class ItemApi @Inject()(
   def addTagToThing[T](
     userId: String,
     idOrSlug: Either[UUID, Slug],
-    thingType: Option[ThingType],
+    thingType: Option[ItemType],
     tag: UserThingTagType,
     value: Option[T]
   )(implicit esItemTaggable: EsItemTaggable[T]
@@ -92,7 +91,7 @@ class ItemApi @Inject()(
   def removeTagFromThing(
     userId: String,
     idOrSlug: Either[UUID, Slug],
-    thingType: Option[ThingType],
+    thingType: Option[ItemType],
     tag: UserThingTagType
   ): Future[Option[(UUID, EsItemTag)]] = {
     val esTag =
@@ -184,7 +183,7 @@ class ItemApi @Inject()(
       result <- itemSearch
         .fullTextSearch(
           query,
-          SearchOptions(
+          elasticsearch.SearchOptions(
             rankingMode = SearchRankingMode.Popularity,
             thingTypeFilter = request.itemTypes,
             limit = request.limit,
@@ -214,7 +213,7 @@ class ItemApi @Inject()(
       result <- personLookup
         .fullTextSearch(
           query,
-          SearchOptions(
+          elasticsearch.SearchOptions(
             rankingMode = SearchRankingMode.Popularity,
             thingTypeFilter = request.itemTypes,
             limit = request.limit,
@@ -317,7 +316,7 @@ case class PeopleCreditsFilter(
 case class ItemSearchRequest(
   genres: Option[Set[String]],
   networks: Option[Set[String]],
-  itemTypes: Option[Set[ThingType]],
+  itemTypes: Option[Set[ItemType]],
   sortMode: SortMode,
   limit: Int,
   bookmark: Option[Bookmark],
@@ -327,7 +326,7 @@ case class ItemSearchRequest(
 case class PersonCreditsRequest(
   genres: Option[Set[String]],
   networks: Option[Set[String]],
-  itemTypes: Option[Set[ThingType]],
+  itemTypes: Option[Set[ItemType]],
   creditTypes: Option[Set[PersonAssociationType]],
   sortMode: SortMode,
   limit: Int,

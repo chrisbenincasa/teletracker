@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.netflix
 
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
-import com.teletracker.common.db.model.ThingType
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.scraper.model.WhatsOnNetflixCatalogItem
 import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
@@ -19,8 +19,8 @@ object TransformWhatsOnNetflixCatalog {
       releaseYear = Option(item.titlereleased).filter(_.nonEmpty).map(_.toInt),
       network = "Netflix",
       `type` = item.`type` match {
-        case "Movie" | "Documentary"  => ThingType.Movie
-        case "TV" | "Stand-Up Comedy" => ThingType.Show
+        case "Movie" | "Documentary"  => ItemType.Movie
+        case "TV" | "Stand-Up Comedy" => ItemType.Show
         case x =>
           throw new IllegalArgumentException(
             s"Encountered unexpected type = $x.\n${item.asJson.spaces2}"
