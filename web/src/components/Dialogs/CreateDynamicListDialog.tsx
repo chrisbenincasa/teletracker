@@ -143,6 +143,8 @@ export default function CreateDynamicListDialog(props: Props) {
         }),
       );
     }
+    console.log('-----');
+    console.log(rules);
 
     return rules;
   };

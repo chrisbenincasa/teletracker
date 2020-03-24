@@ -816,19 +816,6 @@ class ListDetail extends Component<Props, State> {
             </div>
             <ShowFiltersButton onClick={this.toggleFilters} />
             {this.renderProfileMenu()}
-            {/* Just commenting this out for now, need to test with an actual smart list */}
-            {/* {list.isDynamic && listFilters ? (
-              <IconButton
-                color={showFilter ? 'secondary' : 'inherit'}
-                disabled={
-                  isDefaultFilter(filters) ||
-                  filterParamsEqual(listFilters!, filters)
-                }
-              >
-                <Save />
-                <Typography variant="srOnly">Save</Typography>
-              </IconButton>
-            ) : null} */}
           </div>
           <div className={classes.filters}>
             <ActiveFilters
@@ -850,6 +837,7 @@ class ListDetail extends Component<Props, State> {
             updateFilters={this.handleFilterParamsChange}
             open={showFilter}
             isListDynamic={list.isDynamic}
+            listFilters={listFilters}
           />
           <InfiniteScroll
             pageStart={0}

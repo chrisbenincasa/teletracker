@@ -475,6 +475,7 @@ class Popular extends Component<Props, State> {
           filters={this.state.filters}
           updateFilters={this.handleFilterParamsChange}
           sortOptions={['popularity', 'recent']}
+          networks={this.props.networks}
         />
         {popular.length > 0 ? (
           <InfiniteScroll
