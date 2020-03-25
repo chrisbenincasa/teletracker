@@ -231,17 +231,15 @@ const AllFilters = (props: Props) => {
 
   const actionButtons = () => {
     return (
-      <React.Fragment>
-        <div className={classes.actionButtons}>
-          <CreateSmartListButton
-            filters={props.filters}
-            listFilters={props.listFilters}
-            onClick={() => setSmartListOpen(true)}
-            isListDynamic={props.isListDynamic}
-          />
-        </div>
+      <div className={classes.actionButtons}>
+        <CreateSmartListButton
+          filters={props.filters}
+          listFilters={props.listFilters}
+          onClick={() => setSmartListOpen(true)}
+          isListDynamic={props.isListDynamic}
+        />
         {renderCreateSmartListDialog()}
-      </React.Fragment>
+      </div>
     );
   };
 
