@@ -403,7 +403,9 @@ function ItemDetails(props: Props) {
             {runtime && releaseDate && <Lens className={classes.separator} />}
             {releaseDate}
             {rating && <Lens className={classes.separator} />}
-            {rating && `Rated ${rating}`}
+            {rating && rating !== 'NR'
+              ? `Rated ${rating}`
+              : rating && 'Not Rated'}
           </Typography>
         </div>
       </div>
