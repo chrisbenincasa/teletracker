@@ -2,6 +2,7 @@ import { flattenActions, handleAction } from './utils';
 import {
   PERSON_FETCH_INITIATED,
   PERSON_FETCH_SUCCESSFUL,
+  PersonFetchInitiatedAction,
   PersonFetchSuccessfulAction,
 } from '../actions/people/get_person';
 import { Person, PersonFactory } from '../types/v2/Person';
@@ -116,7 +117,14 @@ const peopleFetchSuccess = handleAction(
   PEOPLE_FETCH_SUCCESSFUL,
   (state: State, { payload }: PeopleFetchSuccessfulAction) => {
     if (payload) {
-      return updateStateWithNewPeople(state, payload);
+      return {
+        ...state,
+        ...updateStateWithNewPeople(state, payload),
+        detail: {
+          ...state.detail,
+          loading: false,
+        },
+      };
     } else {
       return state;
     }
@@ -130,6 +138,7 @@ const peopleCreditsFetchInitiated = handleAction(
       ...state,
       detail: {
         ...state.detail,
+        current: payload?.personId,
         loading: true,
       },
     };
@@ -152,6 +161,7 @@ const peopleCreditsFetchSuccess = handleAction(
         ...state,
         detail: {
           ...state.detail,
+          current: payload.personId,
           loading: false,
           credits: newCredits,
           bookmark: payload.paging ? payload.paging.bookmark : undefined,
@@ -175,18 +185,41 @@ const handleListRetrieveSuccess = handleAction<
   }
 });
 
-const loadingPeople = [
-  PERSON_FETCH_INITIATED,
-  PEOPLE_FETCH_INITIATED,
-  PEOPLE_SEARCH_INITIATED,
-].map(actionType => {
-  return handleAction<FSA<typeof actionType>, State>(actionType, state => {
+const handlePersonFetchInitiated = handleAction<
+  PersonFetchInitiatedAction,
+  State
+>(PERSON_FETCH_INITIATED, (state, action) => {
+  if (action.payload) {
+    let detail = state.detail;
+
+    // Clear out previously loaded credits if we've navigated to a new page.
+    if (action.payload.forDetailPage) {
+      detail = {
+        loading: true,
+        current: action.payload.id,
+      };
+    }
+
     return {
       ...state,
       loadingPeople: true,
+      detail,
     };
-  });
+  } else {
+    return state;
+  }
 });
+
+const loadingPeople = [PEOPLE_FETCH_INITIATED, PEOPLE_SEARCH_INITIATED].map(
+  actionType => {
+    return handleAction<FSA<typeof actionType>, State>(actionType, state => {
+      return {
+        ...state,
+        loadingPeople: true,
+      };
+    });
+  },
+);
 
 export default flattenActions(
   'people',
@@ -195,6 +228,7 @@ export default flattenActions(
   personSearchSuccess,
   peopleFetchSuccess,
   handleListRetrieveSuccess,
+  handlePersonFetchInitiated,
   ...loadingPeople,
   peopleCreditsFetchInitiated,
   peopleCreditsFetchSuccess,
