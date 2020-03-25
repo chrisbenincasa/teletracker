@@ -124,6 +124,7 @@ PersonDetailWrapper.getInitialProps = async ctx => {
         ),
         ctx.store.dispatch(
           personCreditsFetchSuccess({
+            personId: fullPerson.id,
             credits: creditItems,
             paging: apiPerson.cast_credits?.paging,
             append: false,
