@@ -79,12 +79,12 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *createList(name: string, thingIds?: string[], rules?: ListRules) {
+  *createList(name: string, itemIds?: string[], rules?: ListRules) {
     return yield this.apiCall(
       client => client.createList,
       yield call([this, this.withToken]),
       name,
-      thingIds,
+      itemIds,
       rules,
     );
   }
@@ -126,14 +126,14 @@ export class SagaTeletrackerClient {
   }
 
   *updateListTracking(
-    thingId: string,
+    itemId: string,
     addToLists: string[],
     removeFromLists: string[],
   ) {
     return yield this.apiCall(
       client => client.updateListTracking,
       yield call([this, this.withToken]),
-      thingId,
+      itemId,
       addToLists,
       removeFromLists,
     );
@@ -180,21 +180,21 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *updateActions(thingId: string, action: ActionType, value?: number) {
+  *updateActions(itemId: string, action: ActionType, value?: number) {
     return yield this.apiCall(
       client => client.updateActions,
       yield call([this, this.withToken]),
-      thingId,
+      itemId,
       action,
       value,
     );
   }
 
-  *removeActions(thingId: string, action: ActionType) {
+  *removeActions(itemId: string, action: ActionType) {
     return yield this.apiCall(
       client => client.removeActions,
       yield call([this, this.withToken]),
-      thingId,
+      itemId,
       action,
     );
   }

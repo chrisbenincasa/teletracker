@@ -12,7 +12,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { ChevronLeft, ExpandLess, ExpandMore, Tune } from '@material-ui/icons';
+import { ChevronLeft, ExpandLess, ExpandMore } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import { default as React } from 'react';
@@ -32,6 +32,7 @@ import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import AllFilters from '../components/Filters/AllFilters';
+import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ItemCard from '../components/ItemCard';
 import ManageTrackingButton from '../components/Buttons/ManageTrackingButton';
 import { ResponsiveImage } from '../components/ResponsiveImage';
@@ -431,7 +432,6 @@ class PersonDetail extends React.Component<Props, State> {
     const {
       filters: { genresFilter, itemTypes, sortOrder },
     } = this.state;
-    const filtersCTA = this.state.showFilter ? 'Hide Filters' : 'Filters';
 
     let filmography: Item[];
     if (credits) {
@@ -450,16 +450,7 @@ class PersonDetail extends React.Component<Props, State> {
               Filmography
             </Typography>
           </div>
-          <Button
-            size="small"
-            onClick={this.toggleFilters}
-            variant="contained"
-            aria-label={filtersCTA}
-            startIcon={<Tune />}
-            style={{ whiteSpace: 'nowrap' }}
-          >
-            {filtersCTA}
-          </Button>
+          <ShowFiltersButton onClick={this.toggleFilters} />
         </div>
         <div className={classes.filters}>
           <ActiveFilters
