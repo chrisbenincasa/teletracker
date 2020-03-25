@@ -65,7 +65,7 @@ object Slug {
       Success(targetSlug)
     } else {
       Try {
-        val nextSlugIndex = existingSlugs
+        val slugIndexes = existingSlugs
           .map(slug => {
             if (!slug.value.startsWith(targetSlug.value)) {
               throw new IllegalArgumentException(
@@ -79,9 +79,14 @@ object Slug {
             case ""  => Some(0)
             case str => Try(str.toInt).toOption
           }
-          .max + 1
 
-        targetSlug.addSuffix(s"$nextSlugIndex")
+        slugIndexes match {
+          case Nil => targetSlug
+          case xs =>
+            val nextSlugIndex = xs.max + 1
+            targetSlug.addSuffix(nextSlugIndex.toString)
+        }
+
       }
     }
   }
