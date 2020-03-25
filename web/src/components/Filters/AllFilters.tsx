@@ -30,6 +30,12 @@ import { filterParamsEqual } from '../../utils/changeDetection';
 import PersonFilter from './PersonFilter';
 
 const useStyles = makeStyles((theme: Theme) => ({
+  actionButtons: {
+    display: 'flex',
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+    marginTop: theme.spacing(1),
+  },
   allFiltersContainer: {
     marginTop: theme.spacing(1),
     padding: theme.spacing(2),
@@ -110,7 +116,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   toEdgeWrapper: {
     margin: theme.spacing(0, 0, 2),
     [theme.breakpoints.down('sm')]: {
-      margin: theme.spacing(0, 0, 1),
+      margin: theme.spacing(0.5, 0, 1),
     },
   },
   typeContainer: {
@@ -226,9 +232,7 @@ const AllFilters = (props: Props) => {
   const actionButtons = () => {
     return (
       <React.Fragment>
-        <div
-          style={{ display: 'flex', flexGrow: 1, justifyContent: 'flex-end' }}
-        >
+        <div className={classes.actionButtons}>
           <CreateSmartListButton
             filters={props.filters}
             listFilters={props.listFilters}
@@ -252,138 +256,131 @@ const AllFilters = (props: Props) => {
         className={classes.toEdgeWrapper}
         appear
       >
-        <Paper
-          id="all-filters"
-          elevation={5}
-          className={classes.allFiltersContainer}
-        >
-          <div className={classes.filterSortContainer}>
-            {!disableGenres && (
-              <ExpansionPanel square>
-                <ExpansionPanelSummary
-                  expandIcon={<ExpandMore />}
-                  aria-controls="genre-content"
-                  id="genre-header"
-                >
-                  <Typography>Genres</Typography>
-                </ExpansionPanelSummary>
-                <ExpansionPanelDetails>
-                  <div className={classes.genreContainer}>
-                    <GenreSelect
-                      genres={genres}
-                      disabledGenres={disabledGenres}
-                      handleChange={setGenre}
-                      selectedGenres={filters.genresFilter || []}
-                      showTitle={false}
-                    />
-                  </div>
-                </ExpansionPanelDetails>
-              </ExpansionPanel>
-            )}
+        {!disableGenres && (
+          <ExpansionPanel square>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="genre-content"
+              id="genre-header"
+            >
+              <Typography>Genres</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <div className={classes.genreContainer}>
+                <GenreSelect
+                  genres={genres}
+                  disabledGenres={disabledGenres}
+                  handleChange={setGenre}
+                  selectedGenres={filters.genresFilter || []}
+                  showTitle={false}
+                />
+              </div>
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+        )}
 
-            {!disableSliders ? (
-              <ExpansionPanel square>
-                <ExpansionPanelSummary
-                  expandIcon={<ExpandMore />}
-                  aria-controls="slider-content"
-                  id="slider-header"
-                >
-                  <Typography>Release Year</Typography>
-                </ExpansionPanelSummary>
-                <ExpansionPanelDetails>
-                  <div className={classes.slidersContainer}>
-                    <div className={classes.sliderContainer}>
-                      <Sliders
-                        handleChange={setSliders}
-                        sliders={filters.sliders}
-                        showTitle={false}
-                      />
-                    </div>
-                  </div>
-                </ExpansionPanelDetails>
-              </ExpansionPanel>
-            ) : null}
-
-            <ExpansionPanel square>
-              <ExpansionPanelSummary
-                expandIcon={<ExpandMore />}
-                aria-controls="people-content"
-                id="people-header"
-              >
-                <Typography>People</Typography>
-              </ExpansionPanelSummary>
-              <ExpansionPanelDetails>
-                <div className={classes.peopleContainer}>
-                  <PersonFilter
-                    handleChange={setPeople}
-                    selectedCast={filters.people}
+        {!disableSliders ? (
+          <ExpansionPanel square>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="slider-content"
+              id="slider-header"
+            >
+              <Typography>Release Year</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <div className={classes.slidersContainer}>
+                <div className={classes.sliderContainer}>
+                  <Sliders
+                    handleChange={setSliders}
+                    sliders={filters.sliders}
                     showTitle={false}
                   />
                 </div>
-              </ExpansionPanelDetails>
-            </ExpansionPanel>
+              </div>
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+        ) : null}
 
-            {!disableNetworks && (
-              <ExpansionPanel square>
-                <ExpansionPanelSummary
-                  expandIcon={<ExpandMore />}
-                  aria-controls="networks-content"
-                  id="networks-header"
-                >
-                  <Typography>Networks</Typography>
-                </ExpansionPanelSummary>
-                <ExpansionPanelDetails>
-                  <NetworkSelect
-                    selectedNetworks={filters.networks}
-                    handleChange={setNetworks}
-                    showTitle={false}
-                  />
-                </ExpansionPanelDetails>
-              </ExpansionPanel>
-            )}
+        <ExpansionPanel square>
+          <ExpansionPanelSummary
+            expandIcon={<ExpandMore />}
+            aria-controls="people-content"
+            id="people-header"
+          >
+            <Typography>People</Typography>
+          </ExpansionPanelSummary>
+          <ExpansionPanelDetails>
+            <div className={classes.peopleContainer}>
+              <PersonFilter
+                handleChange={setPeople}
+                selectedCast={filters.people}
+                showTitle={false}
+              />
+            </div>
+          </ExpansionPanelDetails>
+        </ExpansionPanel>
 
-            {!disableTypeChange && (
-              <ExpansionPanel square>
-                <ExpansionPanelSummary
-                  expandIcon={<ExpandMore />}
-                  aria-controls="type-content"
-                  id="type-header"
-                >
-                  <Typography>Content Type</Typography>
-                </ExpansionPanelSummary>
-                <ExpansionPanelDetails>
-                  <TypeToggle
-                    selectedTypes={filters.itemTypes}
-                    handleChange={setType}
-                    showTitle={false}
-                  />
-                </ExpansionPanelDetails>
-              </ExpansionPanel>
-            )}
+        {!disableNetworks && (
+          <ExpansionPanel square>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="networks-content"
+              id="networks-header"
+            >
+              <Typography>Networks</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <NetworkSelect
+                selectedNetworks={filters.networks}
+                handleChange={setNetworks}
+                showTitle={false}
+              />
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+        )}
 
-            {!disableSortOptions && (
-              <ExpansionPanel square>
-                <ExpansionPanelSummary
-                  expandIcon={<ExpandMore />}
-                  aria-controls="sort-content"
-                  id="sort-header"
-                >
-                  <Typography>Sort</Typography>
-                </ExpansionPanelSummary>
-                <ExpansionPanelDetails>
-                  <SortDropdown
-                    isListDynamic={!!isListDynamic}
-                    handleChange={setSort}
-                    selectedSort={filters.sortOrder}
-                    validSortOptions={sortOptions}
-                    showTitle={false}
-                  />
-                </ExpansionPanelDetails>
-              </ExpansionPanel>
-            )}
-          </div>
-          {actionButtons()}
-        </Paper>
+        {!disableTypeChange && (
+          <ExpansionPanel square>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="type-content"
+              id="type-header"
+            >
+              <Typography>Content Type</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <TypeToggle
+                selectedTypes={filters.itemTypes}
+                handleChange={setType}
+                showTitle={false}
+              />
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+        )}
+
+        {!disableSortOptions && (
+          <ExpansionPanel square>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="sort-content"
+              id="sort-header"
+            >
+              <Typography>Sort</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <SortDropdown
+                isListDynamic={!!isListDynamic}
+                handleChange={setSort}
+                selectedSort={filters.sortOrder}
+                validSortOptions={sortOptions}
+                showTitle={false}
+              />
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+        )}
+
+        {actionButtons()}
       </Collapse>
     );
   };
