@@ -259,42 +259,44 @@ class Cast extends Component<Props, State> {
           <Typography color="inherit" variant="h5" className={classes.header}>
             Cast
           </Typography>
-          <div className={classes.castNavigation}>
-            <IconButton
-              onClick={this.carouselNavigationPrevious}
-              size="medium"
-              style={{
-                cursor: previousDisabled ? undefined : 'pointer',
-                padding: 6,
-                touchAction: 'manipulation',
-              }}
-              color={previousDisabled ? 'secondary' : undefined}
-              disabled={previousDisabled}
-            >
-              <ChevronLeft
+          {previousDisabled && nextDisabled ? null : (
+            <div className={classes.castNavigation}>
+              <IconButton
+                onClick={this.carouselNavigationPrevious}
+                size="medium"
                 style={{
-                  fontSize: '2.5rem',
+                  cursor: previousDisabled ? undefined : 'pointer',
+                  padding: 6,
+                  touchAction: 'manipulation',
                 }}
-              />
-            </IconButton>
-            <IconButton
-              style={{
-                cursor: nextDisabled ? undefined : 'pointer',
-                padding: 6,
-                touchAction: 'manipulation',
-              }}
-              size="medium"
-              color={nextDisabled ? 'secondary' : undefined}
-              onClick={this.carouselNavigationNext}
-              disabled={nextDisabled}
-            >
-              <ChevronRight
+                color={previousDisabled ? 'secondary' : undefined}
+                disabled={previousDisabled}
+              >
+                <ChevronLeft
+                  style={{
+                    fontSize: '2.5rem',
+                  }}
+                />
+              </IconButton>
+              <IconButton
                 style={{
-                  fontSize: '2.5rem',
+                  cursor: nextDisabled ? undefined : 'pointer',
+                  padding: 6,
+                  touchAction: 'manipulation',
                 }}
-              />
-            </IconButton>
-          </div>
+                size="medium"
+                color={nextDisabled ? 'secondary' : undefined}
+                onClick={this.carouselNavigationNext}
+                disabled={nextDisabled}
+              >
+                <ChevronRight
+                  style={{
+                    fontSize: '2.5rem',
+                  }}
+                />
+              </IconButton>
+            </div>
+          )}
         </div>
         <div className={classes.grid}>
           <AutoSizer>
