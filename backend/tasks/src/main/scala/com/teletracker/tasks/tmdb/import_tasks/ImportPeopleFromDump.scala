@@ -40,7 +40,10 @@ class ImportPeopleFromDump @Inject()(
       .map(_ => {})
       .recover {
         case NonFatal(e) =>
-          logger.warn("Error occurred while processing person", e)
+          logger.warn(
+            s"Error occurred while processing person id = ${person.id}",
+            e
+          )
       }
   }
 }
