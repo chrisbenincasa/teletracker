@@ -23,7 +23,6 @@ const useStyles = makeStyles(theme => ({
   },
   snackbarContainer: {
     position: 'fixed',
-    width: '100%',
     display: 'flex',
     justifyContent: 'center',
     bottom: 0,
@@ -166,7 +165,7 @@ export default function ShareButton(props: Props) {
           horizontal: 'center',
         }}
         open={open}
-        autoHideDuration={6000}
+        autoHideDuration={5000}
         onClose={handleClose}
         onExited={handleClose}
         className={classes.snackbarContainer}
