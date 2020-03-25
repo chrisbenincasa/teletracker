@@ -9,9 +9,11 @@ import { ApiPerson } from '../../types/v2/Person';
 export const PERSON_FETCH_INITIATED = 'person/fetch/INITIATED';
 export const PERSON_FETCH_SUCCESSFUL = 'person/fetch/SUCCESSFUL';
 export const PERSON_FETCH_FAILED = 'person/fetch/FAILED';
+export const PERSON_DETAIL_PAGE_SET_CURRENT = 'person/detail/SET_CURRENT';
 
 export interface PersonFetchInitiatedPayload {
   id: string;
+  forDetailPage: boolean;
 }
 
 export type PersonFetchInitiatedAction = FSA<
