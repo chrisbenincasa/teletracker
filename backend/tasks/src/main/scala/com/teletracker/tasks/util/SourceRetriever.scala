@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.s3.model.{
 import software.amazon.awssdk.utils.IoUtils
 import java.io.{File, FileInputStream, FileOutputStream}
 import java.net.URI
+import java.nio.file.{Files, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.GZIPInputStream
 import scala.annotation.tailrec
@@ -19,6 +20,7 @@ import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
+import scala.compat.java8.StreamConverters._
 
 class SourceRetriever @Inject()(s3: S3Client) {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -144,7 +146,25 @@ class SourceRetriever @Inject()(s3: S3Client) {
             getS3Object(uri.getHost, obj.key(), consultCache)
           })
       case "file" =>
-        Stream(Source.fromFile(uri))
+        val file = new File(uri)
+        if (file.isDirectory) {
+          val paths = Files
+            .find(
+              Paths.get(uri),
+              1,
+              (path, attrs) =>
+                !attrs.isDirectory && !path.getFileName.toString
+                  .contains(".DS_Store")
+            )
+            .toScala[List]
+          paths.toStream
+            .map(path => {
+              logger.info(s"Reading file://${path.toAbsolutePath.toString}")
+              Source.fromFile(path.toFile)
+            })
+        } else {
+          Stream(Source.fromFile(file))
+        }
       case _ =>
         throw new IllegalArgumentException(
           s"Unsupported file scheme: ${uri.getScheme}"

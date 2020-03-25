@@ -75,9 +75,9 @@ object Slug {
 
             slug.value.stripPrefix(targetSlug.value).stripPrefix(Slug.Separator)
           })
-          .map {
-            case ""  => 0
-            case str => str.toInt
+          .flatMap {
+            case ""  => Some(0)
+            case str => Try(str.toInt).toOption
           }
           .max + 1
 
