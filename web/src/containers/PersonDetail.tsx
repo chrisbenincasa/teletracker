@@ -284,7 +284,10 @@ class PersonDetail extends React.Component<Props, State> {
     const { isLoggedIn, userSelf, router } = this.props;
 
     if (this.state.needsFetch) {
-      this.props.personFetchInitiated({ id: router.query.id as string });
+      this.props.personFetchInitiated({
+        id: router.query.id as string,
+        forDetailPage: true,
+      });
     }
 
     ReactGA.pageview(window.location.pathname + window.location.search);
@@ -674,26 +677,40 @@ const mapStateToProps: (
   props: NotOwnProps,
 ) => (appState: AppState) => StateProps = (initial, props) => appState => {
   const id = props.router.query.id as string;
+
+  const person: Person | undefined =
+    appState.people.peopleById[id] ||
+    extractValue(id, undefined, appState.people.peopleById);
+
+  // Only populate current credits if the id/slug from the people.detail state
+  // matches the person id/slug we're currently trying to load
+  let loadedCreditsMatch = false;
+  if (person) {
+    loadedCreditsMatch =
+      appState.people.detail?.current === person.id ||
+      (person.slug ? appState.people.detail?.current === person.slug : false);
+  }
+
   return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    // isFetching: appState.itemDetail.fetching,
-    person:
-      appState.people.peopleById[id] ||
-      extractValue(id, undefined, appState.people.peopleById),
+    isAuthed: !_.isUndefined(appState.auth.token),
+    person,
     lists: appState.lists.listsById,
     loadingPerson: appState.people.loadingPeople,
     genres: appState.metadata.genres,
     networks: appState.metadata.networks,
     itemById: appState.itemDetail.thingsById,
-    credits: appState.people.detail
-      ? appState.people.detail.credits
-      : undefined,
-    creditsBookmark: appState.people.detail
-      ? appState.people.detail.bookmark
-      : undefined,
-    loadingCredits: appState.people.detail
-      ? appState.people.detail.loading
-      : false,
+    credits:
+      appState.people.detail && loadedCreditsMatch
+        ? appState.people.detail.credits
+        : undefined,
+    creditsBookmark:
+      appState.people.detail && loadedCreditsMatch
+        ? appState.people.detail.bookmark
+        : undefined,
+    loadingCredits:
+      appState.people.detail && loadedCreditsMatch
+        ? appState.people.detail.loading
+        : false,
   };
 };
 

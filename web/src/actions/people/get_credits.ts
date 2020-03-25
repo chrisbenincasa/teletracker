@@ -26,6 +26,7 @@ export type PersonCreditsFetchInitiatedAction = FSA<
 >;
 
 export interface PersonCreditsFetchSuccessfulPayload {
+  personId: Id | Slug;
   credits: Item[];
   paging?: Paging;
   append: boolean;
@@ -69,6 +70,7 @@ export const fetchPersonCreditsDetailsSaga = function*() {
       if (response.ok) {
         yield put(
           personCreditsFetchSuccess({
+            personId: payload.personId,
             credits: response.data.data.map(ItemFactory.create),
             paging: response.data!.paging,
             append: !_.isUndefined(payload.bookmark),
