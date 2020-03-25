@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, makeStyles } from '@material-ui/core';
-import { AddCircle, List as ListIcon } from '@material-ui/icons';
+import { PlaylistAdd } from '@material-ui/icons';
 import { Item, itemBelongsToLists } from '../../types/v2/Item';
 import { useWidth } from '../../hooks/useWidth';
 
@@ -27,13 +27,21 @@ export default function ManageTrackingButton(props: Props) {
   const classes = useStyles();
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
+  let [isTracked, setIsTracked] = useState(false);
 
-  const belongsToLists: string[] =
-    props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
+  useEffect(() => {
+    let belongsToLists: string[] =
+      props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
 
-  let trackingCTA =
-    belongsToLists.length > 0 ? 'Manage Tracking' : 'Add to List';
-  let trackingCTAMobile = 'Track';
+    if (belongsToLists.length > 0) {
+      setIsTracked(true);
+    } else {
+      setIsTracked(false);
+    }
+  });
+
+  let trackingCTA = isTracked ? 'Manage Tracking' : 'Add to List';
+  let trackingCTAMobile = isTracked ? 'Tracked' : 'Add to List';
 
   return (
     <div className={classes.itemCTA} style={{ ...props.style }}>
@@ -43,13 +51,8 @@ export default function ManageTrackingButton(props: Props) {
         fullWidth
         aria-label={props.cta || trackingCTA}
         onClick={props.onClick}
-        startIcon={
-          !isMobile ? (
-            <ListIcon className={classes.buttonIcon} />
-          ) : (
-            <AddCircle />
-          )
-        }
+        color={isTracked ? 'primary' : undefined}
+        startIcon={<PlaylistAdd className={classes.buttonIcon} />}
       >
         {props.cta || isMobile ? trackingCTAMobile : trackingCTA}
       </Button>

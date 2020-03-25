@@ -43,6 +43,7 @@ import ThingAvailability from '../components/Availability';
 import MarkAsWatched from '../components/Buttons/MarkAsWatched';
 import Cast from '../components/Cast';
 import ManageTracking from '../components/ManageTracking';
+import ShareButton from '../components/Buttons/ShareButton';
 import Recommendations from '../components/Recommendations';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import withUser, { WithUserProps } from '../components/withUser';
@@ -62,6 +63,14 @@ import { extractItem } from '../utils/item-utils';
 const styles = (theme: Theme) =>
   createStyles({
     actionButtonContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      [theme.breakpoints.down('sm')]: {
+        flexDirection: 'row',
+      },
+      width: '100%',
+    },
+    actionButtonContainerSecondary: {
       display: 'flex',
       flexDirection: 'column',
       [theme.breakpoints.down('sm')]: {
@@ -166,6 +175,8 @@ const styles = (theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
+      position: 'relative',
+      zIndex: theme.zIndex.appBar - 2, // under app bar & drawer
       [theme.breakpoints.up('md')]: {
         position: 'sticky',
         top: 75,
@@ -619,6 +630,15 @@ function ItemDetails(props: Props) {
                     <ManageTracking
                       itemDetail={itemDetail}
                       className={classes.actionButton}
+                    />
+                  </div>
+                </div>
+                <div className={classes.actionButtonContainerSecondary}>
+                  <div className={classes.actionButton}>
+                    <ShareButton
+                      title={itemDetail.canonicalTitle}
+                      text={''}
+                      url={`${window.location.hostname}${itemDetail.relativeUrl}`}
                     />
                   </div>
                 </div>

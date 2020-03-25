@@ -141,6 +141,7 @@ interface Props {
   disabledGenres?: number[];
   sortOptions?: SortOptions[];
   networks?: Network[];
+  listFilters?: FilterParams;
 }
 
 const AllFilters = (props: Props) => {
@@ -228,7 +229,12 @@ const AllFilters = (props: Props) => {
         <div
           style={{ display: 'flex', flexGrow: 1, justifyContent: 'flex-end' }}
         >
-          <CreateSmartListButton onClick={() => setSmartListOpen(true)} />
+          <CreateSmartListButton
+            filters={props.filters}
+            listFilters={props.listFilters}
+            onClick={() => setSmartListOpen(true)}
+            isListDynamic={props.isListDynamic}
+          />
         </div>
         {renderCreateSmartListDialog()}
       </React.Fragment>

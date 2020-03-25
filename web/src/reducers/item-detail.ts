@@ -234,16 +234,16 @@ const updateTagsState = (
   payload?: UserUpdateItemTagsPayload,
 ) => {
   let thingsById = state.thingsById || {};
-  let thingId = payload!.thingId;
-  if (payload && thingsById[thingId] && thingsById[thingId].tags) {
-    let thing = thingsById[thingId]!;
+  let itemId = payload!.itemId;
+  if (payload && thingsById[itemId] && thingsById[itemId].tags) {
+    let thing = thingsById[itemId]!;
     let newTagSet = fn(thing.tags!);
 
     return {
       ...state,
       thingsById: {
         ...thingsById,
-        [thingId]: {
+        [itemId]: {
           ...thing,
           tags: newTagSet,
         },
@@ -261,8 +261,20 @@ const itemUpdateTagsSuccess = handleAction(
       state,
       tags => {
         return R.append(
-          { tag: payload!.action, value: payload!.value },
-          filterNot(R.propEq('tag', payload!.action), tags),
+          {
+            tag: payload!.action,
+            value: payload!.value,
+            string_value: payload!.string_value,
+          },
+          payload?.unique
+            ? filterNot(
+                R.both(
+                  R.propEq('tag', payload!.action),
+                  R.propEq('string_value', payload!.string_value),
+                ),
+                tags,
+              )
+            : filterNot(R.propEq('tag', payload!.action), tags),
         );
       },
       payload,
@@ -276,7 +288,15 @@ const itemRemoveTagsSuccess = handleAction(
     return updateTagsState(
       state,
       tags => {
-        return filterNot(R.propEq('action', payload!.action), tags);
+        return payload?.unique
+          ? filterNot(
+              R.both(
+                R.propEq('tag', payload!.action),
+                R.propEq('string_value', payload!.string_value),
+              ),
+              tags,
+            )
+          : filterNot(R.propEq('tag', payload!.action), tags);
       },
       payload,
     );

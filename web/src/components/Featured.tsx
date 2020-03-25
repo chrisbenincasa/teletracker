@@ -47,16 +47,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     flex: '0 1 auto',
     flexDirection: 'column',
     position: 'absolute',
-    height: 'auto',
-    top: '5%',
-    left: theme.spacing(3),
-    [theme.breakpoints.down('sm')]: {
-      left: theme.spacing(2),
-    },
-    width: '25%',
-    [theme.breakpoints.up('md')]: {
-      width: '30%',
-    },
+    height: '100%',
+    padding: theme.spacing(2),
+    top: theme.spacing(0),
   },
   ratingContainer: {
     display: 'flex',
@@ -171,6 +164,7 @@ function Featured(props: Props) {
               boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
               maxWidth: '100%',
               borderRadius: 10,
+              maxHeight: '100%',
             }}
             pictureStyle={{
               height: '100%',
@@ -217,9 +211,9 @@ function Featured(props: Props) {
               <WrappedCardMedia item={item} />
             </RouterLink>
 
-            <div className={classes.manageTrackingButton}>
+            {/* <div className={classes.manageTrackingButton}>
               <ManageTracking itemDetail={item} />
-            </div>
+            </div> */}
 
             <AddToListDialog
               open={manageTrackingModalOpen}

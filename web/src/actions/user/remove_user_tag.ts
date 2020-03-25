@@ -39,7 +39,7 @@ export const removeUserActionSaga = function*() {
 
       let response: TeletrackerResponse<any> = yield clientEffect(
         client => client.removeActions,
-        payload.thingId,
+        payload.itemId,
         payload.action,
       );
 
