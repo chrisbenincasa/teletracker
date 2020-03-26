@@ -93,7 +93,7 @@ object Slug {
 }
 
 //@JsonCreator
-class Slug(val value: String) extends AnyVal {
+final class Slug(val value: String) extends AnyVal {
   @JsonValue
   override def toString: String = value
 

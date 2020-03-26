@@ -7,7 +7,9 @@ import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.Person
 import com.teletracker.common.process.tmdb.PersonImportHandler.{
   PersonImportHandlerArgs,
-  PersonImportResult
+  PersonImportResult,
+  PersonInsertResult,
+  PersonUpdateResult
 }
 import com.teletracker.common.pubsub.{TaskScheduler, TaskTag}
 import com.teletracker.common.tasks.TaskMessageHelper
@@ -33,13 +35,43 @@ object PersonImportHandler {
     scheduleDenorm: Boolean,
     forceScheduleDenorm: Boolean = false)
 
-  case class PersonImportResult(
+  sealed trait PersonImportResult {
+    def personId: UUID
+    def isInsertOperation: Boolean
+    def isUpdateOperation: Boolean
+    def inserted: Boolean
+    def updated: Boolean
+    def castNeedsDenorm: Boolean
+    def crewNeedsDenorm: Boolean
+    def itemChanged: Boolean
+    def jsonResult: Option[String]
+  }
+
+  case class PersonInsertResult(
     personId: UUID,
     inserted: Boolean,
+    jsonResult: Option[String])
+      extends PersonImportResult {
+    override def isInsertOperation: Boolean = true
+    override def isUpdateOperation: Boolean = false
+    override def updated: Boolean = false
+    override def castNeedsDenorm: Boolean = true
+    override def crewNeedsDenorm: Boolean = true
+    override def itemChanged: Boolean = true
+  }
+
+  case class PersonUpdateResult(
+    personId: UUID,
     updated: Boolean,
     castNeedsDenorm: Boolean,
     crewNeedsDenorm: Boolean,
-    itemChanged: Boolean)
+    itemChanged: Boolean,
+    jsonResult: Option[String])
+      extends PersonImportResult {
+    override def isInsertOperation: Boolean = false
+    override def isUpdateOperation: Boolean = true
+    override def inserted: Boolean = false
+  }
 }
 
 class PersonImportHandler @Inject()(
@@ -182,16 +214,16 @@ class PersonImportHandler @Inject()(
                   s"Would've updated id = ${existingPerson.id}:\n${diff(existingPerson.asJson, personToUpdate.asJson).asJson.spaces2}"
                 )
 
-                PersonImportResult(
+                PersonUpdateResult(
                   personId = personToUpdate.id,
-                  inserted = false,
                   updated = false,
                   castNeedsDenorm = castNeedsDenorm,
                   crewNeedsDenorm = crewNeedsDenorm,
-                  itemChanged = existingPerson != personToUpdate
+                  itemChanged = existingPerson != personToUpdate,
+                  jsonResult = Some(personUpdater.getUpdateJson(personToUpdate))
                 )
               }
-            } else {
+            } else if (personToUpdate != existingPerson) {
               logger.info(
                 s"Updated existing person (id = ${personToUpdate.id}, slug = ${personToUpdate.slug})"
               )
@@ -199,15 +231,29 @@ class PersonImportHandler @Inject()(
               personUpdater
                 .update(personToUpdate)
                 .map(_ => {
-                  PersonImportResult(
+                  PersonUpdateResult(
                     personId = personToUpdate.id,
-                    inserted = false,
                     updated = true,
-                    castNeedsDenorm = false,
-                    crewNeedsDenorm = false,
-                    itemChanged = true
+                    castNeedsDenorm = castNeedsDenorm,
+                    crewNeedsDenorm = crewNeedsDenorm,
+                    itemChanged = true,
+                    jsonResult = None
                   )
                 })
+            } else {
+              Future.successful {
+                logger.info(
+                  s"Person id = ${personToUpdate.id} hasn't changed. Skipping update."
+                )
+                PersonUpdateResult(
+                  personId = personToUpdate.id,
+                  updated = false,
+                  castNeedsDenorm = false,
+                  crewNeedsDenorm = false,
+                  itemChanged = false,
+                  jsonResult = None
+                )
+              }
             }
           })
         }
@@ -262,13 +308,10 @@ class PersonImportHandler @Inject()(
                 s"Would've inserted new person (id = ${person.id}, slug = ${person.slug})\n:${person.asJson.spaces2}"
               )
 
-              PersonImportResult(
+              PersonInsertResult(
                 personId = person.id,
                 inserted = false,
-                updated = false,
-                castNeedsDenorm = false,
-                crewNeedsDenorm = false,
-                itemChanged = true
+                jsonResult = Some(personUpdater.getIndexJson(person))
               )
             }
           } else {
@@ -278,13 +321,10 @@ class PersonImportHandler @Inject()(
             personUpdater
               .insert(person)
               .map(_ => {
-                PersonImportResult(
+                PersonInsertResult(
                   personId = person.id,
                   inserted = true,
-                  updated = false,
-                  castNeedsDenorm = false,
-                  crewNeedsDenorm = false,
-                  itemChanged = true
+                  jsonResult = None
                 )
               })
           }

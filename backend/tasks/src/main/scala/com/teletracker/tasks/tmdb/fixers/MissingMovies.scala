@@ -1,15 +1,15 @@
-package com.teletracker.tasks.tmdb
+package com.teletracker.tasks.tmdb.fixers
 
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.MovieDumpFileRow
 import com.teletracker.tasks.util.SourceRetriever
+import io.circe._
 import io.circe.generic.semiauto.deriveCodec
+import io.circe.syntax._
 import javax.inject.Inject
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
-import io.circe._
-import io.circe.syntax._
 
 class MissingMovies @Inject()(
   sourceRetriever: SourceRetriever,

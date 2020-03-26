@@ -2,20 +2,17 @@ package com.teletracker.tasks.elasticsearch.fixers
 
 import com.teletracker.common.model.tmdb.Person
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.elasticsearch.FileRotator
 import com.teletracker.tasks.scraper.IngestJobParser
-import com.teletracker.tasks.tmdb.export_tasks.{
-  PersonChangesDumpTask,
-  PersonDumpFileRow
-}
 import com.teletracker.tasks.util.SourceRetriever
 import com.twitter.util.StorageUnit
+import io.circe.syntax._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
+import java.io.File
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
-import scala.io.Source
-import io.circe.syntax._
 
 class ReverseChronologicalBackfill extends TeletrackerTaskWithDefaultArgs {
   override protected def runInternal(args: Args): Unit = {
@@ -29,14 +26,17 @@ class ReverseChronologicalBackfill extends TeletrackerTaskWithDefaultArgs {
     val gteFilter = args.value[String]("gteFilter")
     val ltFilter = args.value[String]("ltFilter")
 
+    val baseFileName = args.valueOrThrow[String]("baseFileName")
+    val outputFolder = args.valueOrThrow[String]("outputFolder")
+
     val s3 = S3Client.builder().region(region).build()
 
     val retriever = new SourceRetriever(s3)
 
     val fileRotator = FileRotator.everyNBytes(
-      "people-backfill",
+      baseFileName,
       StorageUnit.fromMegabytes(100),
-      Some("people-backfill"),
+      Some(outputFolder),
       append = append
     )
 
@@ -67,6 +67,7 @@ class ReverseChronologicalBackfill extends TeletrackerTaskWithDefaultArgs {
             .collect {
               case Right(value) if seen.add(value.id) => value
             }
+            .safeTake(perFileLimit)
             .foreach(person => {
               fileRotator.writeLines(Seq(person.asJson.noSpaces))
             })

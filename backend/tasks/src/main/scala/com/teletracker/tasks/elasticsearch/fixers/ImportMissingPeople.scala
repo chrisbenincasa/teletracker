@@ -1,15 +1,21 @@
 package com.teletracker.tasks.elasticsearch.fixers
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.model.tmdb.Person
 import com.teletracker.common.process.tmdb.PersonImportHandler
 import com.teletracker.common.process.tmdb.PersonImportHandler.PersonImportHandlerArgs
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
+import com.teletracker.tasks.elasticsearch.FileRotator
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.SourceRetriever
+import com.twitter.util.StorageUnit
 import javax.inject.Inject
+import org.elasticsearch.action.bulk.BulkRequest
 import java.net.URI
+import io.circe.syntax._
+import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
@@ -17,6 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 
 class ImportMissingPeople @Inject()(
+  teletrackerConfig: TeletrackerConfig,
   sourceRetriever: SourceRetriever,
   personImportHandler: PersonImportHandler
 )(implicit executionContext: ExecutionContext)
@@ -41,6 +48,12 @@ class ImportMissingPeople @Inject()(
     val total = new AtomicInteger()
     var continue = true
 
+    val rotator = FileRotator.everyNBytes(
+      "people-import-2",
+      StorageUnit.fromMegabytes(50),
+      Some("people-import-2")
+    )
+
     sourceRetriever
       .getSourceStream(input, offset = offset, limit = limit)
       .foreach(source => {
@@ -61,7 +74,12 @@ class ImportMissingPeople @Inject()(
                   }
                 })
             )
-            .grouped(4)
+//            .foreachConcurrent(8)(_ => {
+//              Future {
+//                total.incrementAndGet()
+//              }
+//            })
+            .grouped(10)
             .delayedMapF(1 second, scheduler)(group => {
               if (continue) {
                 total.addAndGet(group.size)
@@ -75,7 +93,38 @@ class ImportMissingPeople @Inject()(
                       person
                     )
                   }))
-                  .map(_ => {})
+                  .map(result => {
+                    val lines = result
+                      .collect {
+                        case PersonImportHandler.PersonInsertResult(
+                            personId,
+                            _,
+                            Some(jsonResult)
+                            ) =>
+                          EsBulkIndex(
+                            teletrackerConfig.elasticsearch.people_index_name,
+                            personId,
+                            jsonResult
+                          )
+
+                        case PersonImportHandler.PersonUpdateResult(
+                            personId,
+                            _,
+                            _,
+                            _,
+                            _,
+                            Some(jsonResult)
+                            ) =>
+                          EsBulkUpdate(
+                            teletrackerConfig.elasticsearch.people_index_name,
+                            personId,
+                            jsonResult
+                          )
+                      }
+                      .flatMap(_.lines)
+
+                    rotator.writeLines(lines)
+                  })
               } else {
                 Future.unit
               }
@@ -87,6 +136,38 @@ class ImportMissingPeople @Inject()(
         }
       })
 
+    rotator.finish()
+
     logger.info(s"Would've updated a total of ${total.get()} missing ids")
   }
+}
+
+trait EsBulkOp {
+  def typ: String
+  def lines: Seq[String]
+}
+case class EsBulkIndex(
+  index: String,
+  id: UUID,
+  doc: String)
+    extends EsBulkOp {
+  override def typ: String = "index"
+
+  override def lines: Seq[String] = Seq(
+    Map(typ -> Map("_index" -> index, "_id" -> id.toString).asJson).asJson.noSpaces,
+    doc
+  )
+}
+
+case class EsBulkUpdate(
+  index: String,
+  id: UUID,
+  update: String)
+    extends EsBulkOp {
+  override def typ: String = "update"
+
+  override def lines: Seq[String] = Seq(
+    Map(typ -> Map("_index" -> index, "_id" -> id.toString).asJson).asJson.noSpaces,
+    update
+  )
 }
