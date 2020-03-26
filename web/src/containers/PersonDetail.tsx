@@ -570,6 +570,7 @@ class PersonDetail extends React.Component<Props, State> {
     if (!person || loadingPerson || needsFetch) {
       return this.renderLoading();
     }
+    console.log(person, loadingPerson, needsFetch);
 
     const isMobile = ['xs', 'sm'].includes(width);
     const backdrop = person?.cast_credit_ids?.data
