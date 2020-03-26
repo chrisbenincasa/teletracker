@@ -11,8 +11,6 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.{ExecutionContext, Future}
 
 object NetworkCache {
-  type NetworkMap = Map[(ExternalSource, String), Network]
-
   final private val cache = new ConcurrentMapCache[String, List[StoredNetwork]](
     new ConcurrentHashMap[String, TFuture[List[StoredNetwork]]]()
   )

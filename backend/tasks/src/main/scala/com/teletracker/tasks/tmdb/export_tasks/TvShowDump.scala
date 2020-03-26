@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.process.tmdb.ItemExpander
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
@@ -25,7 +25,7 @@ class TvShowDump @Inject()(
   override protected def getRawJson(currentId: Int): Future[String] = {
     itemExpander
       .expandRaw(
-        ThingType.Show,
+        ItemType.Show,
         currentId,
         List("recommendations", "similar", "videos")
       )

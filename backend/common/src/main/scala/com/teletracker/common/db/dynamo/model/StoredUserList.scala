@@ -1,15 +1,15 @@
 package com.teletracker.common.db.dynamo.model
 
 import com.teletracker.common.db.dynamo.util.syntax._
-import com.teletracker.common.db.model.{DynamicListRules, TrackedListRowOptions}
+import com.teletracker.common.db.model.DynamicListRules
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
 import io.circe.parser.decode
+import io.circe.syntax._
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import java.time.OffsetDateTime
-import java.util.UUID
-import io.circe.syntax._
 import java.util
+import java.util.UUID
 import scala.collection.JavaConverters._
 
 @JsonCodec

@@ -36,6 +36,33 @@
         "adult" : {
           "type" : "boolean"
         },
+        "alternative_titles": {
+          "properties": {
+            "title" : {
+              "type" : "text",
+              "fields" : {
+                "_2gram" : {
+                  "type" : "text",
+                  "analyzer": "2gram_analyzer"
+                },
+                "_3gram" : {
+                  "type" : "text",
+                  "analyzer": "3gram_analyzer"
+                },
+                "_index_prefix": {
+                  "type": "text",
+                  "analyzer": "index_prefix_analyzer"
+                }
+              }
+            },
+            "country_code" : {
+              "type" : "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            }
+          }
+        },
         "availability" : {
           "type" : "nested",
           "properties" : {

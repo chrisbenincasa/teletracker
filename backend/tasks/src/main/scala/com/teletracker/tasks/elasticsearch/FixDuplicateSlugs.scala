@@ -1,7 +1,7 @@
 package com.teletracker.tasks.elasticsearch
 
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
-import com.teletracker.common.db.model.ThingType
 import com.teletracker.common.elasticsearch.{ElasticsearchExecutor, EsItem}
 import javax.inject.Inject
 import org.elasticsearch.action.search.SearchRequest
@@ -76,9 +76,9 @@ class FixDuplicateSlugs @Inject()(
             val bulkReq = new BulkRequest()
 
             val movieHits = hits
-              .filter(_.`type` == ThingType.Movie)
+              .filter(_.`type` == ItemType.Movie)
             val showHits = hits
-              .filter(_.`type` == ThingType.Show)
+              .filter(_.`type` == ItemType.Show)
 
             if (dryRun) {
               println(

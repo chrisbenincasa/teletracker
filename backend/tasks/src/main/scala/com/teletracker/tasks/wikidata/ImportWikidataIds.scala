@@ -1,7 +1,7 @@
 package com.teletracker.tasks.wikidata
 
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
-import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.{EsExternalId, ItemLookup}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
@@ -85,7 +85,7 @@ class ImportWikidataIds @Inject()(
             val idByExternalId = itemSearch
               .lookupItemsByExternalIds(
                 validRows.map(
-                  i => (ExternalSource.TheMovieDb, i.tmdb_id, ThingType.Movie)
+                  i => (ExternalSource.TheMovieDb, i.tmdb_id, ItemType.Movie)
                 )
               )
               .await()

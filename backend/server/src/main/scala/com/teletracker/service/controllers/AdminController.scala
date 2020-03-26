@@ -1,11 +1,9 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.cache.{JustWatchLocalCache, TmdbLocalCache}
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.ItemLookup
 import com.teletracker.common.model.DataResponse
-import com.teletracker.common.process.ProcessQueue
-import com.teletracker.common.process.tmdb.TmdbProcessMessage
 import com.teletracker.common.util.HasThingIdOrSlug
 import com.teletracker.service.api.ItemApi
 import com.teletracker.service.auth.AdminFilter
@@ -18,7 +16,6 @@ class AdminController @Inject()(
   tmdbLocalCache: TmdbLocalCache,
   justWatchLocalCache: JustWatchLocalCache,
   thingsApi: ItemApi,
-  processQueue: ProcessQueue[TmdbProcessMessage],
   itemLookup: ItemLookup
 )(implicit executionContext: ExecutionContext)
     extends Controller {
@@ -64,7 +61,7 @@ class AdminController @Inject()(
       case Right(slug) =>
         itemLookup.lookupItemBySlug(
           slug,
-          ThingType.fromString(req.getParam("type")),
+          ItemType.fromString(req.getParam("type")),
           None
         )
     }).map {
@@ -78,4 +75,4 @@ class AdminController @Inject()(
 case class RefreshThingRequest(thingId: String) extends HasThingIdOrSlug
 case class ScrapeTmdbRequest(
   id: Int,
-  thingType: ThingType)
+  thingType: ItemType)

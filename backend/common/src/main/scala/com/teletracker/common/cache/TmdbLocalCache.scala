@@ -1,7 +1,7 @@
 package com.teletracker.common.cache
 
 import com.google.common.cache.{Cache, CacheBuilder}
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.process.tmdb.TmdbEntity
 import com.teletracker.common.process.tmdb.TmdbEntity.Entities
 import javax.inject.{Singleton, Inject => JInject}
@@ -21,7 +21,7 @@ class TmdbLocalCache @JInject()(implicit executionContext: ExecutionContext) {
       .build()
 
   def getOrSetEntity[T](
-    thingType: ThingType,
+    thingType: ItemType,
     id: Int,
     f: => Future[T]
   )(implicit inj: Inject[Entities, T],
@@ -57,7 +57,7 @@ class TmdbLocalCache @JInject()(implicit executionContext: ExecutionContext) {
   }
 
   private def keyForType(
-    thingType: ThingType,
+    thingType: ItemType,
     id: Int
   ): String = {
     s"$thingType.$id"

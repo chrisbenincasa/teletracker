@@ -10,44 +10,13 @@ import com.teletracker.common.db.model.{
   DynamicListRule,
   DynamicListRules,
   DynamicListTagRule,
+  ItemType,
   PersonAssociationType,
-  ThingType,
   UserThingTagType
 }
 import java.util.UUID
 
 object TrackedListRules {
-  def fromRow(dynamicListRules: DynamicListRules): TrackedListRules = {
-    TrackedListRules(
-      rules = dynamicListRules.rules.map(convertRule),
-      sortOptions = dynamicListRules.sort.map(
-        opts => TrackedListSortOptions(sort = opts.sort)
-      )
-    )
-  }
-
-  private def convertRule(dynamicListRule: DynamicListRule): TrackedListRule = {
-    dynamicListRule match {
-      case DynamicListPersonRule(personId, associationType, _) =>
-        TrackedListPersonRule(personId, associationType)
-
-      case DynamicListTagRule(tagType, value, isPresent, _) =>
-        TrackedListTagRule(tagType, value, isPresent)
-
-      case DynamicListGenreRule(genreId, _) =>
-        TrackedListGenreRule(genreId)
-
-      case DynamicListItemTypeRule(itemType, _) =>
-        TrackedListItemTypeRule(itemType)
-
-      case DynamicListNetworkRule(networkId, _) =>
-        TrackedListNetworkRule(networkId)
-
-      case DynamicListReleaseYearRule(min, max, _) =>
-        TrackedListReleaseYearRule(min, max)
-    }
-  }
-
   private def convertRule(trackedListRule: TrackedListRule): DynamicListRule = {
     trackedListRule match {
       case TrackedListPersonRule(personId, associationType) =>
@@ -100,7 +69,7 @@ case class TrackedListPersonRule(
 
 case class TrackedListGenreRule(genreId: Int) extends TrackedListRule
 
-case class TrackedListItemTypeRule(itemType: ThingType) extends TrackedListRule
+case class TrackedListItemTypeRule(itemType: ItemType) extends TrackedListRule
 
 case class TrackedListNetworkRule(networkId: Int) extends TrackedListRule
 

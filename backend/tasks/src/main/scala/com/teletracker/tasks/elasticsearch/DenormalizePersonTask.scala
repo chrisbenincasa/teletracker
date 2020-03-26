@@ -1,6 +1,6 @@
 package com.teletracker.tasks.elasticsearch
 
-import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.elasticsearch.denorm.DenormalizedItemUpdater
 import com.teletracker.common.model.tmdb.{
@@ -30,6 +30,8 @@ class DenormalizePersonTask @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
   override type TypedArgs = DenormalizePersonTaskArgs
+
+  override def retryable: Boolean = true
 
   implicit override protected def typedArgsEncoder
     : Encoder[DenormalizePersonTaskArgs] =
@@ -92,7 +94,7 @@ class DenormalizePersonTask @Inject()(
                     .map(_.toInt)
                     .map(id => {
                       item.`type` match {
-                        case ThingType.Movie =>
+                        case ItemType.Movie =>
                           logger.info(
                             s"Looking up movie (${item.original_title}) in tmdb"
                           )
@@ -102,7 +104,7 @@ class DenormalizePersonTask @Inject()(
                               _.credits
                                 .flatMap(handleRawTvCredits(person, item, _))
                             )
-                        case ThingType.Show =>
+                        case ItemType.Show =>
                           logger.info(
                             s"Looking up show (${item.original_title}) in tmdb"
                           )
@@ -112,7 +114,7 @@ class DenormalizePersonTask @Inject()(
                               _.credits
                                 .flatMap(handleRawTvCredits(person, item, _))
                             )
-                        case ThingType.Person =>
+                        case ItemType.Person =>
                           throw new IllegalStateException()
                       }
                     })

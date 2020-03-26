@@ -1,6 +1,6 @@
 package com.teletracker.common.model.tmdb;
 
-import com.teletracker.common.db.model.ThingType;
+import com.teletracker.common.db.model.ItemType;
 
 public enum MediaType {
     Movie("movie"),
@@ -17,10 +17,10 @@ public enum MediaType {
         return type;
     }
 
-    public ThingType toThingType() {
+    public ItemType toThingType() {
         switch (this) {
-            case Movie: return ThingType.Movie;
-            case Tv: return ThingType.Show;
+            case Movie: return ItemType.Movie;
+            case Tv: return ItemType.Show;
         }
 
         throw new IllegalArgumentException("");

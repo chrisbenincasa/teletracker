@@ -3,7 +3,6 @@ package com.teletracker.common.inject
 import com.google.inject.{Module, Provides, Singleton}
 import com.teletracker.common.config.{ConfigLoader, TeletrackerConfig}
 import com.twitter.inject.TwitterModule
-import com.typesafe.config.ConfigFactory
 import scala.concurrent.ExecutionContext
 
 object Modules {
@@ -11,9 +10,7 @@ object Modules {
     Seq(
       new ConfigModule,
       new ExecutionContextModule,
-      new BackgroundProcessorModule,
       new CacheModule,
-      new OpenCensusMetricsModule,
       new CodahaleMetricsModule,
       new ElasticsearchModule,
       new AwsModule

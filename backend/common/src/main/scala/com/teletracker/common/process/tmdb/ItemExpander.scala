@@ -40,20 +40,20 @@ class ItemExpander @Inject()(
   import ItemExpander._
 
   def expandRaw(
-    thingType: ThingType,
+    thingType: ItemType,
     id: Int,
     extraAppendFields: List[String] = Nil
   ): Future[Json] = {
     val path = thingType match {
-      case ThingType.Movie  => "movie"
-      case ThingType.Show   => "tv"
-      case ThingType.Person => "person"
+      case ItemType.Movie  => "movie"
+      case ItemType.Show   => "tv"
+      case ItemType.Person => "person"
     }
 
     val defaultFields = thingType match {
-      case ThingType.Movie  => DefaultMovieAppendFields
-      case ThingType.Show   => DefaultTvShowAppendFields
-      case ThingType.Person => DefaultPersonAppendFields
+      case ItemType.Movie  => DefaultMovieAppendFields
+      case ItemType.Show   => DefaultTvShowAppendFields
+      case ItemType.Person => DefaultPersonAppendFields
     }
 
     tmdbClient.makeRequest[Json](
@@ -70,7 +70,7 @@ class ItemExpander @Inject()(
     extraExpandFields: List[String] = Nil
   ): Future[Movie] = {
     cache.getOrSetEntity(
-      ThingType.Movie,
+      ItemType.Movie,
       id, {
         tmdbClient.makeRequest[Movie](
           s"movie/$id",
@@ -101,7 +101,7 @@ class ItemExpander @Inject()(
     extraExpandFields: List[String] = Nil
   ): Future[TvShow] = {
     cache.getOrSetEntity(
-      ThingType.Show,
+      ItemType.Show,
       id, {
         tmdbClient.makeRequest[TvShow](
           s"tv/$id",

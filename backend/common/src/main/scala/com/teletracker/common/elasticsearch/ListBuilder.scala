@@ -11,7 +11,7 @@ import com.teletracker.common.db.{
   SearchScore,
   SortMode
 }
-import com.teletracker.common.db.model.{TrackedListRow, UserThingTagType}
+import com.teletracker.common.db.model.{UserThingTagType}
 import com.teletracker.common.util.ListFilters
 import javax.inject.Inject
 import org.apache.lucene.search.join.ScoreMode

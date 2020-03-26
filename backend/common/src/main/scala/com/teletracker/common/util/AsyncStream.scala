@@ -94,6 +94,29 @@ sealed abstract class AsyncStream[+A] {
       f(a)
     }
 
+  def foreachConcurrent(
+    concurrencyLevel: Int
+  )(
+    f: A => Future[Unit]
+  )(implicit executionContext: ExecutionContext
+  ): Future[Unit] = {
+    if (concurrencyLevel == 1) {
+      foreachF(f)
+    } else if (concurrencyLevel < 1) {
+      Future.failed(
+        new IllegalArgumentException(
+          s"concurrencyLevel must be at least one. got: $concurrencyLevel"
+        )
+      )
+    } else {
+      this match {
+        case Empty => Future.unit
+        case _ =>
+          embed(AsyncStream.mapConcStep(concurrencyLevel, f, Nil, () => this)).force
+      }
+    }
+  }
+
   /**
     * Execute the specified effect as each element of the resulting
     * stream is demanded. This method does '''not''' force the
@@ -171,7 +194,7 @@ sealed abstract class AsyncStream[+A] {
 
   /**
     * Given a predicate `p`, returns the longest prefix (possibly empty) of this
-    * stream that satisfes `p`:
+    * stream that satisfies `p`:
     *
     * {{{
     * AsyncStream(1, 2, 3, 4, 1).takeWhile(_ < 3) = AsyncStream(1, 2)

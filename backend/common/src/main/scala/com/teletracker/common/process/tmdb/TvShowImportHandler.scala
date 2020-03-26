@@ -1,6 +1,7 @@
 package com.teletracker.common.process.tmdb
 
-import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import cats.implicits._
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
 import com.teletracker.common.model.ToEsItem
@@ -68,7 +69,7 @@ class TvShowImportHandler @Inject()(
       .lookupItemByExternalId(
         ExternalSource.TheMovieDb,
         item.id.toString,
-        ThingType.Show
+        ItemType.Show
       )
       .flatMap {
         case Some(value) =>
@@ -165,6 +166,19 @@ class TvShowImportHandler @Inject()(
         creditsDenormalization.crewNeedsDenormalization(crew, existingShow.crew)
 
       val partialUpdates = existingShow.copy(
+        alternative_titles = item.alternative_titles
+          .map(_.titles)
+          .nested
+          .map(
+            altTitle =>
+              EsItemAlternativeTitle(
+                country_code = altTitle.iso_3166_1,
+                title = altTitle.title,
+                `type` = altTitle.`type`
+              )
+          )
+          .value
+          .orElse(existingShow.alternative_titles),
         adult = existingShow.adult,
         cast = cast,
         crew = crew,
@@ -257,6 +271,18 @@ class TvShowImportHandler @Inject()(
       val crew = buildCrew(item, castAndCrew)
 
       val esItem = EsItem(
+        alternative_titles = item.alternative_titles
+          .map(_.titles)
+          .nested
+          .map(
+            altTitle =>
+              EsItemAlternativeTitle(
+                country_code = altTitle.iso_3166_1,
+                title = altTitle.title,
+                `type` = altTitle.`type`
+              )
+          )
+          .value,
         adult = None,
         availability = None,
         cast = cast,
@@ -307,7 +333,7 @@ class TvShowImportHandler @Inject()(
         slug = item.releaseYear.map(Slug(item.name, _)),
         tags = None,
         title = StringListOrString.forString(item.name),
-        `type` = ThingType.Show
+        `type` = ItemType.Show
       )
 
       if (args.dryRun) {
@@ -425,7 +451,7 @@ class TvShowImportHandler @Inject()(
     val allIds = item.recommendations.toList
       .flatMap(_.results)
       .map(_.id)
-      .map(id => (ExternalSource.TheMovieDb, id.toString, ThingType.Show))
+      .map(id => (ExternalSource.TheMovieDb, id.toString, ItemType.Show))
 
     itemSearch
       .lookupItemsByExternalIds(allIds)

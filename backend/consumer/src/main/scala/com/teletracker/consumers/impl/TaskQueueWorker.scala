@@ -8,6 +8,7 @@ import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig
 }
+import com.teletracker.common.tasks.TeletrackerTask.FailureResult
 import com.teletracker.tasks.TeletrackerTaskRunner
 import io.circe.Json
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -15,6 +16,7 @@ import scala.util.control.NonFatal
 
 class TaskQueueWorker(
   queue: SqsQueue[TeletrackerTaskQueueMessage],
+  dlq: Option[SqsQueue[TeletrackerTaskQueueMessage]],
   config: SqsQueueThroughputWorkerConfig,
   taskRunner: TeletrackerTaskRunner,
   consumerConfig: ConsumerConfig
@@ -50,10 +52,17 @@ class TaskQueueWorker(
           extractArgs(message.args)
         )
 
-      runnable.addCallback({
-        case Some(e) => completionPromise.tryFailure(e)
-        case None    => completionPromise.success(message.receipt_handle)
-      })
+      runnable.addCallback {
+        // Do not ack the message if it's retryable
+        case (task, FailureResult(NonFatal(error))) if task.retryable =>
+          completionPromise.tryFailure(error)
+        // Send non-retryables to the DLQ if there is one and ack
+        case (_, FailureResult(_)) =>
+          dlq.foreach(queue => queue.queue(message))
+          completionPromise.success(message.receiptHandle)
+        // Ack everything else
+        case _ => completionPromise.success(message.receiptHandle)
+      }
 
       logger.info(s"Attempting to schedule ${message.clazz}")
 

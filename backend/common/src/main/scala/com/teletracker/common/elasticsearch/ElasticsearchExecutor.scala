@@ -10,13 +10,7 @@ import org.elasticsearch.action.get.{
   MultiGetResponse
 }
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
-import org.elasticsearch.action.search.{
-  MultiSearchRequest,
-  MultiSearchResponse,
-  SearchRequest,
-  SearchResponse,
-  SearchScrollRequest
-}
+import org.elasticsearch.action.search._
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.client.core.{CountRequest, CountResponse}
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
@@ -24,9 +18,12 @@ import org.elasticsearch.index.reindex.{
   BulkByScrollResponse,
   UpdateByQueryRequest
 }
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
-class ElasticsearchExecutor @Inject()(client: RestHighLevelClient) {
+class ElasticsearchExecutor @Inject()(
+  client: RestHighLevelClient
+)(implicit executionContext: ExecutionContext) {
+
   def get(request: GetRequest): Future[GetResponse] = {
     withListener(client.getAsync(request, RequestOptions.DEFAULT, _))
   }
@@ -69,13 +66,13 @@ class ElasticsearchExecutor @Inject()(client: RestHighLevelClient) {
     withListener(client.countAsync(request, RequestOptions.DEFAULT, _))
   }
 
-  def withListener[T](f: ActionListener[T] => Unit): Future[T] = {
+  protected def withListener[T](f: ActionListener[T] => Unit): Future[T] = {
     val (listener, promise) = makeListener[T]
     f(listener)
     promise.future
   }
 
-  private def makeListener[T]: (ActionListener[T], Promise[T]) = {
+  protected def makeListener[T]: (ActionListener[T], Promise[T]) = {
     val promise = Promise[T]
     val listener = new ActionListener[T] {
       override def onResponse(response: T): Unit =

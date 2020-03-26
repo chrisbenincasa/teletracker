@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.process.tmdb.ItemExpander
 import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
 import com.teletracker.common.tasks.TaskMessageHelper
@@ -21,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 abstract class ChangesDumpTask(
-  thingType: ThingType,
+  thingType: ItemType,
   s3: S3Client,
   itemExpander: ItemExpander,
   protected val publisher: SqsAsyncClient
@@ -32,11 +32,11 @@ abstract class ChangesDumpTask(
 
   override protected def getRawJson(currentId: Int): Future[String] = {
     val extraFields = thingType match {
-      case ThingType.Movie =>
+      case ItemType.Movie =>
         List("recommendations", "similar", "videos")
-      case ThingType.Show =>
+      case ItemType.Show =>
         List("recommendations", "similar", "videos")
-      case ThingType.Person =>
+      case ItemType.Person =>
         List("tagged_images")
     }
 
@@ -51,7 +51,7 @@ class MovieChangesDumpTask @Inject()(
   itemExpander: ItemExpander,
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ThingType.Movie, s3, itemExpander, publisher) {
+    extends ChangesDumpTask(ItemType.Movie, s3, itemExpander, publisher) {
   override def followupTasksToSchedule(
     args: DataDumpTaskArgs,
     rawArgs: Args
@@ -68,7 +68,7 @@ class TvChangesDumpTask @Inject()(
   itemExpander: ItemExpander,
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ThingType.Show, s3, itemExpander, publisher) {
+    extends ChangesDumpTask(ItemType.Show, s3, itemExpander, publisher) {
   override def followupTasksToSchedule(
     args: DataDumpTaskArgs,
     rawArgs: Args
@@ -85,7 +85,7 @@ class PersonChangesDumpTask @Inject()(
   itemExpander: ItemExpander,
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ThingType.Person, s3, itemExpander, publisher) {
+    extends ChangesDumpTask(ItemType.Person, s3, itemExpander, publisher) {
   override def followupTasksToSchedule(
     args: DataDumpTaskArgs,
     rawArgs: Args

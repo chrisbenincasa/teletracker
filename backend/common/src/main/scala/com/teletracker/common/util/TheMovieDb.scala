@@ -16,6 +16,7 @@ final class RichPersonCredits(val pc: PersonCredit) extends AnyVal {
 
   def asMovie: Movie = {
     Movie(
+      alternative_titles = None,
       adult = pc.adult,
       backdrop_path = pc.backdrop_path,
       belongs_to_collection = None,
@@ -50,6 +51,7 @@ final class RichPersonCredits(val pc: PersonCredit) extends AnyVal {
 
   def asTvShow: TvShow = {
     TvShow(
+      alternative_titles = None,
       backdrop_path = pc.backdrop_path,
       created_by = None,
       episode_run_time = None,

@@ -1,6 +1,6 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.model.ThingType
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.db.{Bookmark, Popularity, Recent, SortMode}
 import com.teletracker.common.elasticsearch.{BinaryOperator, ItemSearch}
 import com.teletracker.common.external.tmdb.TmdbClient
@@ -80,7 +80,7 @@ class PopularItemsController @Inject()(
       genres = Some(req.genres.map(_.toString)).filter(_.nonEmpty),
       networks = Some(req.networks).filter(_.nonEmpty),
       itemTypes = Some(
-        req.itemTypes.flatMap(t => Try(ThingType.fromString(t)).toOption)
+        req.itemTypes.flatMap(t => Try(ItemType.fromString(t)).toOption)
       ),
       sortMode = req.sort.map(SortMode.fromString).getOrElse(Recent()),
       limit = req.limit,
@@ -114,7 +114,7 @@ object GetItemsRequest {
 
 case class GetItemsRequest(
   @QueryParam(commaSeparatedList = true) itemTypes: Set[String] =
-    Set(ThingType.Movie, ThingType.Show).map(_.toString),
+    Set(ItemType.Movie, ItemType.Show).map(_.toString),
   @QueryParam bookmark: Option[String],
   @QueryParam sort: Option[String],
   @Min(0) @Max(50) @QueryParam limit: Int = GetItemsRequest.DefaultLimit,

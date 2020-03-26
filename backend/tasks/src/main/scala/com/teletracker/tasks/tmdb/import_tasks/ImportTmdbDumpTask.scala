@@ -1,21 +1,16 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.tasks.TeletrackerTask
-import com.teletracker.common.db.model.ThingLike
 import com.teletracker.common.model.tmdb.{ErrorResponse, HasTmdbId}
-import com.teletracker.common.model.{Thingable, ToEsItem}
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.GenreCache
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.tasks.util.SourceRetriever
-import diffson.lcs.Patience
 import io.circe.parser._
-import io.circe.{Decoder, Encoder, Json}
-import org.slf4j.LoggerFactory
+import io.circe.{Decoder, Encoder}
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
-import java.time.OffsetDateTime
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -42,7 +37,6 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
   sourceRetriever: SourceRetriever,
   genreCache: GenreCache
 )(implicit executionContext: ExecutionContext,
-  thingLike: Thingable[T],
   decoder: Decoder[T])
     extends TeletrackerTask {
 
@@ -166,11 +160,6 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
   ): Future[Unit] = Future.unit
 
   protected def shouldHandleItem(item: T): Boolean = true
-
-  protected def extraWork(
-    thingLike: ThingLike,
-    entity: T
-  ): Future[Unit] = Future.unit
 
   private def sanitizeLine(line: String): List[String] = {
     if (line.contains("}{")) {

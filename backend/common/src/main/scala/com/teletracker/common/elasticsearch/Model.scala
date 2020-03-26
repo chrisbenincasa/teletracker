@@ -2,8 +2,7 @@ package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.db.model.{
   ExternalSource,
-  ThingType,
-  UserThingTag,
+  ItemType,
   UserThingTagType
 }
 import com.teletracker.common.elasticsearch.EsItemTag.TagFormatter
@@ -14,20 +13,9 @@ import io.circe.generic.JsonCodec
 import java.time.{Instant, LocalDate}
 import java.util.UUID
 import scala.util.Try
-import scala.xml.parsing.ExternalSources
 
 object StringListOrString {
-  def forString(value: String): StringListOrString = new StringListOrString {
-    override def get: List[String] = List(value)
-  }
-}
-
-trait StringListOrString {
-  def get: List[String]
-}
-
-object ExtraDecoders {
-  implicit val stringListOrStringCodec: Codec[StringListOrString] = Codec.from(
+  implicit final val codec: Codec[StringListOrString] = Codec.from(
     Decoder.decodeString.either(Decoder.decodeArray[String]).map {
       case Left(value) =>
         new StringListOrString {
@@ -40,9 +28,15 @@ object ExtraDecoders {
     },
     Encoder.encodeList[String].contramap[StringListOrString](_.get)
   )
+
+  def forString(value: String): StringListOrString = new StringListOrString {
+    override def get: List[String] = List(value)
+  }
 }
 
-import ExtraDecoders._
+trait StringListOrString {
+  def get: List[String]
+}
 
 object EsExternalId {
   final private val SEPARATOR = "__"
@@ -74,6 +68,7 @@ case class EsExternalId(
 @JsonCodec
 case class EsItem(
   adult: Option[Boolean],
+  alternative_titles: Option[List[EsItemAlternativeTitle]],
   availability: Option[List[EsAvailability]],
   cast: Option[List[EsItemCastMember]],
   crew: Option[List[EsItemCrewMember]],
@@ -93,7 +88,7 @@ case class EsItem(
   slug: Option[Slug],
   tags: Option[List[EsItemTag]],
   title: StringListOrString,
-  `type`: ThingType) {
+  `type`: ItemType) {
 
   def externalIdsGrouped: Map[ExternalSource, String] = {
     external_ids
@@ -400,6 +395,12 @@ case class EsItemTag(
   last_updated: Option[Instant])
 
 @JsonCodec
+case class EsItemAlternativeTitle(
+  country_code: String,
+  title: String,
+  `type`: Option[String])
+
+@JsonCodec
 case class EsItemReleaseDate(
   country_code: String,
   release_date: Option[LocalDate],
@@ -453,7 +454,7 @@ case class EsPersonCastCredit(
   character: Option[String],
   id: UUID,
   title: String,
-  `type`: ThingType,
+  `type`: ItemType,
   slug: Option[Slug])
 
 @JsonCodec
@@ -471,7 +472,7 @@ case class EsPersonCrewCredit(
   title: String,
   department: Option[String],
   job: Option[String],
-  `type`: ThingType,
+  `type`: ItemType,
   slug: Option[Slug])
 
 @JsonCodec
@@ -590,4 +591,4 @@ case class EsUserDenormalizedItem(
   original_title: Option[String],
   popularity: Option[Double],
   slug: Option[Slug],
-  `type`: ThingType)
+  `type`: ItemType)

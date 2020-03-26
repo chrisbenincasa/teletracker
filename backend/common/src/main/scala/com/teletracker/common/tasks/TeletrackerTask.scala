@@ -6,7 +6,7 @@ import com.teletracker.common.pubsub.{
   TaskScheduler,
   TeletrackerTaskQueueMessage
 }
-import com.teletracker.common.tasks.TeletrackerTask.CommonFlags
+import com.teletracker.common.tasks.TeletrackerTask.{CommonFlags, TaskResult}
 import com.teletracker.common.util.EnvironmentDetection
 import com.teletracker.common.util.Futures._
 import io.circe.syntax._
@@ -28,6 +28,20 @@ object TeletrackerTask {
     final val OutputToConsole = "outputToConsole"
     final val ScheduleFollowups = "scheduleFollowups" // Legacy
     final val ScheduleFollowupTasks = "scheduleFollowupTasks"
+  }
+
+  object TaskResult {
+    def success: TaskResult = SuccessResult
+    def failure(e: Throwable): TaskResult = FailureResult(e)
+  }
+  sealed trait TaskResult {
+    def isSuccess: Boolean
+  }
+  case object SuccessResult extends TaskResult {
+    override def isSuccess: Boolean = true
+  }
+  case class FailureResult(error: Throwable) extends TaskResult {
+    override def isSuccess: Boolean = false
   }
 }
 
@@ -66,6 +80,8 @@ trait TeletrackerTask extends Args {
   def validateArgs(args: TypedArgs): Unit = {}
 
   def argsAsJson(args: Args): Json = preparseArgs(args).asJson
+
+  def retryable: Boolean = false
 
   protected def runInternal(args: Args): Unit
 
@@ -116,7 +132,7 @@ trait TeletrackerTask extends Args {
     )
   }
 
-  final def run(args: Args): Unit = {
+  final def run(args: Args): TeletrackerTask.TaskResult = {
     try {
       init(args)
 
@@ -132,13 +148,13 @@ trait TeletrackerTask extends Args {
 
       validateArgs(parsedArgs)
 
-      val success = try {
+      val result = try {
         runInternal(args)
-        true
+        TaskResult.success
       } catch {
         case NonFatal(e) =>
           logger.error("Task ended unexpectedly", e)
-          false
+          TaskResult.failure(e)
       }
 
       postruns.foreach(_(args))
@@ -146,7 +162,7 @@ trait TeletrackerTask extends Args {
       logger.info("Task completed. Checking for callbacks to run.")
 
       callbacks.foreach(cb => {
-        if (success || cb.runOnFailure) {
+        if (result.isSuccess || cb.runOnFailure) {
           logger.debug(s"Running callback: ${cb.name}")
           try {
             cb.cb(parsedArgs, args)
@@ -156,6 +172,8 @@ trait TeletrackerTask extends Args {
           }
         }
       })
+
+      result
     } finally {
       if (_loggerCloseHook ne null) {
         _loggerCloseHook()

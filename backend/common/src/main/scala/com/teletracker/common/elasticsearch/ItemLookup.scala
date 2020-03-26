@@ -1,7 +1,7 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Slug
 import javax.inject.Inject
@@ -57,7 +57,7 @@ class ItemLookup @Inject()(
   def lookupItemByExternalId(
     source: ExternalSource,
     id: String,
-    thingType: ThingType
+    thingType: ItemType
   ): Future[Option[EsItem]] = {
     val query = QueryBuilders
       .boolQuery()
@@ -71,7 +71,7 @@ class ItemLookup @Inject()(
   }
 
   def lookupItemsByExternalIds(
-    items: List[(ExternalSource, String, ThingType)]
+    items: List[(ExternalSource, String, ItemType)]
   ): Future[Map[(ExternalSource, String), EsItem]] = {
     if (items.isEmpty) {
       Future.successful(Map.empty)
@@ -109,7 +109,7 @@ class ItemLookup @Inject()(
   }
 
   def lookupItemsByTitleMatch(
-    titles: List[(String, Option[ThingType], Option[Range])] // TODO: Accept a range
+    titles: List[(String, Option[ItemType], Option[Range])] // TODO: Accept a range
   ): Future[Map[String, EsItem]] = {
     if (titles.isEmpty) {
       Future.successful(Map.empty)
@@ -141,14 +141,14 @@ class ItemLookup @Inject()(
 
   def lookupItemByTitleMatch(
     title: String,
-    thingType: Option[ThingType],
+    thingType: Option[ItemType],
     releaseYear: Option[Range]
   ): Future[Option[EsItem]] = {
     singleItemSearch(exactTitleMatchQuery(title, thingType, releaseYear))
   }
 
   def lookupItemsBySlug(
-    slugs: List[(Slug, ThingType, Option[Range])]
+    slugs: List[(Slug, ItemType, Option[Range])]
   ): Future[Map[Slug, EsItem]] = {
     if (slugs.isEmpty) {
       Future.successful(Map.empty)
@@ -179,7 +179,7 @@ class ItemLookup @Inject()(
 
   def lookupItemBySlug(
     slug: Slug,
-    thingType: ThingType,
+    thingType: ItemType,
     releaseYear: Option[Range]
   ): Future[Option[EsItem]] = {
     singleItemSearch(slugMatchQuery(slug, thingType, releaseYear))
@@ -187,7 +187,7 @@ class ItemLookup @Inject()(
 
   def lookupItem(
     identifier: Either[UUID, Slug],
-    thingType: Option[ThingType],
+    thingType: Option[ItemType],
     materializeJoins: Boolean = true
   ): Future[Option[ItemLookupResponse]] = {
     val identifierQuery = identifier match {
@@ -257,7 +257,7 @@ class ItemLookup @Inject()(
 
   private def slugMatchQuery(
     slug: Slug,
-    thingType: ThingType,
+    thingType: ItemType,
     releaseYear: Option[Range]
   ) = {
     QueryBuilders
@@ -272,7 +272,7 @@ class ItemLookup @Inject()(
 
   private def exactTitleMatchQuery(
     title: String,
-    thingType: Option[ThingType],
+    thingType: Option[ItemType],
     releaseYear: Option[Range]
   ) = {
     QueryBuilders

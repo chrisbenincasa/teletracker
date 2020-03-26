@@ -1,10 +1,6 @@
 package com.teletracker.common.util.json.circe
 
-import com.teletracker.common.api.model.{
-  TrackedList,
-  TrackedListRules,
-  TrackedListTagRule
-}
+import com.teletracker.common.api.model.{TrackedListRules, TrackedListTagRule}
 import com.teletracker.common.db.model._
 import com.teletracker.common.util.Slug
 import io.circe.{Codec, Decoder, DecodingFailure, Encoder, Json}
@@ -71,17 +67,9 @@ trait ModelInstances extends ConfiguredModelInstances with JodaInstances {
     Encoder.encodeString.contramap(slug => slug.value)
   implicit val slugDecoder: Decoder[Slug] = Decoder.decodeString.map(Slug.raw)
 
-  implicit val availabilityEncoder: Codec[Availability] = deriveCodec
   implicit val networkEncoder: Codec[Network] = deriveCodec
-  implicit val objectMetadataEncoder: Codec[ObjectMetadata] = deriveCodec
-  implicit val thingEncoder: Codec[Thing] = deriveCodec
-  implicit val trackedListEncoder: Codec[TrackedList] = deriveCodec
   implicit val userPrefsEncoder: Codec[UserPreferences] = deriveCodec
   implicit val dynamicListRulesEncoder: Codec[DynamicListRules] = deriveCodec
-  implicit val availabilityWithDetailsEncoder: Codec[AvailabilityWithDetails] =
-    deriveCodec
   implicit val dynamicListTagRuleEncoder: Codec[DynamicListTagRule] =
-    deriveCodec
-  implicit val trackedListRowOptionsRuleEncoder: Codec[TrackedListRowOptions] =
     deriveCodec
 }

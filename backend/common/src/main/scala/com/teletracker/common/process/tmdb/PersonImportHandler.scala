@@ -2,13 +2,14 @@ package com.teletracker.common.process.tmdb
 
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch._
+import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
 import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.Person
 import com.teletracker.common.process.tmdb.PersonImportHandler.{
   PersonImportHandlerArgs,
   PersonImportResult
 }
-import com.teletracker.common.pubsub.TaskScheduler
+import com.teletracker.common.pubsub.{TaskScheduler, TaskTag}
 import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.common.tasks.model.{
   DenormalizePersonTaskArgs,
@@ -17,6 +18,7 @@ import com.teletracker.common.tasks.model.{
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Slug
+import com.teletracker.common.util.time.LocalDateUtils
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import java.time.LocalDate
@@ -28,7 +30,8 @@ import scala.util.control.NonFatal
 object PersonImportHandler {
   case class PersonImportHandlerArgs(
     dryRun: Boolean,
-    scheduleDenorm: Boolean)
+    scheduleDenorm: Boolean,
+    forceScheduleDenorm: Boolean = false)
 
   case class PersonImportResult(
     personId: UUID,
@@ -43,7 +46,8 @@ class PersonImportHandler @Inject()(
   personLookup: PersonLookup,
   personUpdater: PersonUpdater,
   itemLookup: ItemLookup,
-  taskScheduler: TaskScheduler
+  taskScheduler: TaskScheduler,
+  creditsDenormalizer: ItemCreditsDenormalizationHelper
 )(implicit executionContext: ExecutionContext) {
   import diffson._
   import diffson.circe._
@@ -72,21 +76,32 @@ class PersonImportHandler @Inject()(
           handlePersonInsert(person, args)
       }
       .through {
-        case Success(result) if args.scheduleDenorm =>
-          logger.debug(
-            s"Scheduling denormalization task item id = ${result.personId}"
-          )
-
-          taskScheduler.schedule(
-            TaskMessageHelper.forTaskArgs(
-              TeletrackerTaskIdentifier.DENORMALIZE_PERSON_TASK,
-              DenormalizePersonTaskArgs(
-                personId = result.personId,
-                dryRun = args.dryRun
-              ),
-              tags = None
+        case Success(result) =>
+          val changeHappened = result.itemChanged || result.inserted || result.castNeedsDenorm || result.crewNeedsDenorm
+          if (args.forceScheduleDenorm || (args.scheduleDenorm && changeHappened)) {
+            logger.info(
+              s"Scheduling denormalization task item id = ${result.personId}"
             )
-          )
+
+            taskScheduler.schedule(
+              TaskMessageHelper.forTaskArgs(
+                TeletrackerTaskIdentifier.DENORMALIZE_PERSON_TASK,
+                DenormalizePersonTaskArgs(
+                  personId = result.personId,
+                  dryRun = args.dryRun
+                ),
+                tags = Some(Set(TaskTag.RequiresTmdbApi))
+              )
+            )
+          } else if (!args.scheduleDenorm && result.itemChanged) {
+            Future.successful {
+              logger.info(
+                s"Would've scheduled denormalization task item id = ${result.personId}"
+              )
+            }
+          } else {
+            Future.unit
+          }
       }
       .recover {
         case NonFatal(e) =>
@@ -101,10 +116,14 @@ class PersonImportHandler @Inject()(
     args: PersonImportHandlerArgs
   ): Future[PersonImportResult] = {
     fetchCastAndCredits(person)
-      .map(
+      .flatMap(
         castAndCrewById => {
           val cast = buildCast(person, castAndCrewById)
+          val castNeedsDenorm = creditsDenormalizer
+            .personCastNeedsDenormalization(cast, existingPerson.cast_credits)
           val crew = buildCrew(person, castAndCrewById)
+          val crewNeedsDenorm = creditsDenormalizer
+            .personCrewNeedsDenormalization(crew, existingPerson.crew_credits)
 
           val images =
             toEsItem
@@ -118,18 +137,18 @@ class PersonImportHandler @Inject()(
 
           val newName = person.name.orElse(existingPerson.name)
 
-          existingPerson.copy(
+          val updatedPerson = existingPerson.copy(
             adult = person.adult.orElse(person.adult),
             biography = person.biography.orElse(existingPerson.biography),
             birthday = person.birthday
               .filter(_.nonEmpty)
-              .map(LocalDate.parse(_))
+              .flatMap(LocalDateUtils.parseLocalDateWithFallback)
               .orElse(existingPerson.birthday),
             cast_credits = cast,
             crew_credits = crew,
             deathday = person.deathday
               .filter(_.nonEmpty)
-              .map(LocalDate.parse(_))
+              .flatMap(LocalDateUtils.parseLocalDateWithFallback)
               .orElse(existingPerson.deathday),
             homepage = person.homepage.orElse(existingPerson.homepage),
             images = Some(images.toList),
@@ -142,52 +161,56 @@ class PersonImportHandler @Inject()(
                 newName.get,
                 person.birthday
                   .filter(_.nonEmpty)
-                  .map(LocalDate.parse(_))
+                  .flatMap(LocalDateUtils.parseLocalDateWithFallback)
                   .map(_.getYear)
               )
             ),
             known_for = None
           )
-        }
-      )
-      .flatMap(updatedPerson => {
-        if (updatedPerson.slug != existingPerson.slug) {
-          ensureUniqueSlug(updatedPerson)
-        } else {
-          Future.successful(updatedPerson)
-        }
-      })
-      .flatMap(
-        person =>
-          if (args.dryRun) {
-            Future.successful {
+
+          val personToUpdateFut =
+            if (updatedPerson.slug != existingPerson.slug) {
+              ensureUniqueSlug(updatedPerson)
+            } else {
+              Future.successful(updatedPerson)
+            }
+
+          personToUpdateFut.flatMap(personToUpdate => {
+            if (args.dryRun) {
+              Future.successful {
+                logger.info(
+                  s"Would've updated id = ${existingPerson.id}:\n${diff(existingPerson.asJson, personToUpdate.asJson).asJson.spaces2}"
+                )
+
+                PersonImportResult(
+                  personId = personToUpdate.id,
+                  inserted = false,
+                  updated = false,
+                  castNeedsDenorm = castNeedsDenorm,
+                  crewNeedsDenorm = crewNeedsDenorm,
+                  itemChanged = existingPerson != personToUpdate
+                )
+              }
+            } else {
               logger.info(
-                s"Would've updated id = ${existingPerson.id}:\n${diff(existingPerson.asJson, person.asJson).asJson.spaces2}"
+                s"Updated existing person (id = ${personToUpdate.id}, slug = ${personToUpdate.slug})"
               )
 
-              PersonImportResult(
-                personId = person.id,
-                inserted = false,
-                updated = false,
-                castNeedsDenorm = false,
-                crewNeedsDenorm = false,
-                itemChanged = existingPerson != person
-              )
+              personUpdater
+                .update(personToUpdate)
+                .map(_ => {
+                  PersonImportResult(
+                    personId = personToUpdate.id,
+                    inserted = false,
+                    updated = true,
+                    castNeedsDenorm = false,
+                    crewNeedsDenorm = false,
+                    itemChanged = true
+                  )
+                })
             }
-          } else {
-            personUpdater
-              .update(person)
-              .map(_ => {
-                PersonImportResult(
-                  personId = person.id,
-                  inserted = false,
-                  updated = true,
-                  castNeedsDenorm = false,
-                  crewNeedsDenorm = false,
-                  itemChanged = true
-                )
-              })
-          }
+          })
+        }
       )
   }
 
@@ -203,11 +226,15 @@ class PersonImportHandler @Inject()(
         EsPerson(
           adult = person.adult,
           biography = person.biography,
-          birthday = person.birthday.filter(_.nonEmpty).map(LocalDate.parse(_)),
+          birthday = person.birthday
+            .filter(_.nonEmpty)
+            .flatMap(LocalDateUtils.parseLocalDateWithFallback),
           cast_credits = cast,
           crew_credits = crew,
           external_ids = Some(toEsItem.esExternalId(person).toList),
-          deathday = person.deathday.filter(_.nonEmpty).map(LocalDate.parse(_)),
+          deathday = person.deathday
+            .filter(_.nonEmpty)
+            .flatMap(LocalDateUtils.parseLocalDateWithFallback),
           homepage = person.homepage,
           id = UUID.randomUUID(),
           images = Some(toEsItem.esItemImages(person)),
@@ -219,7 +246,7 @@ class PersonImportHandler @Inject()(
               person.name.get,
               person.birthday
                 .filter(_.nonEmpty)
-                .map(LocalDate.parse(_))
+                .flatMap(LocalDateUtils.parseLocalDateWithFallback)
                 .map(_.getYear)
             )
           ),
@@ -232,7 +259,7 @@ class PersonImportHandler @Inject()(
           if (args.dryRun) {
             Future.successful {
               logger.info(
-                s"Would've inserted new movie (id = ${person.id}, slug = ${person.slug})\n:${person.asJson.spaces2}"
+                s"Would've inserted new person (id = ${person.id}, slug = ${person.slug})\n:${person.asJson.spaces2}"
               )
 
               PersonImportResult(
@@ -245,6 +272,9 @@ class PersonImportHandler @Inject()(
               )
             }
           } else {
+            logger.info(
+              s"Inserted new person (id = ${person.id}, slug = ${person.slug})"
+            )
             personUpdater
               .insert(person)
               .map(_ => {

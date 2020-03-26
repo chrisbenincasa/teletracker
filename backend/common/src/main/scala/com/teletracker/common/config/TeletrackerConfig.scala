@@ -29,6 +29,12 @@ case class AsyncConfig(
 
 case class QueueConfig(
   url: String,
+  message_group_id: Option[String],
+  dlq: Option[DlqConfig])
+
+// Has to be separate from QueueConfig or Ficus will blow up from recursive type
+case class DlqConfig(
+  url: String,
   message_group_id: Option[String])
 
 case class AdminConfig(adminKeys: Set[String])

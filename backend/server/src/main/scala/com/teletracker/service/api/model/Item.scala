@@ -1,6 +1,6 @@
 package com.teletracker.service.api.model
 
-import com.teletracker.common.db.model.{ThingType, UserThingTagType}
+import com.teletracker.common.db.model.{ItemType, UserThingTagType}
 import com.teletracker.common.elasticsearch.{
   EsAvailability,
   EsExternalId,
@@ -65,6 +65,7 @@ object Item {
               .UserScoped(userId, typ, value, stringValue, lastUpdated) =>
           ItemTag(Some(userId), typ, value, stringValue, lastUpdated)
       }),
+      title = esItem.title.get.headOption,
       `type` = esItem.`type`
     )
   }
@@ -90,7 +91,8 @@ case class Item(
   runtime: Option[Int],
   slug: Option[Slug],
   tags: Option[List[ItemTag]],
-  `type`: ThingType) {
+  title: Option[String],
+  `type`: ItemType) {
 
   def scopeToUser(userId: String): Item = scopeToUser(Some(userId))
 

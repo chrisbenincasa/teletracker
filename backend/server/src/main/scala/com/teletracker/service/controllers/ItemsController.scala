@@ -1,13 +1,7 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.db.{
-  Bookmark,
-  Recent,
-  SearchOptions,
-  SearchRankingMode,
-  SortMode
-}
-import com.teletracker.common.db.model.{PersonAssociationType, ThingType}
+import com.teletracker.common.db.{Bookmark, Recent, SearchRankingMode, SortMode}
+import com.teletracker.common.db.model.{ItemType, PersonAssociationType}
 import com.teletracker.common.elasticsearch.{EsItem, EsPerson, PersonLookup}
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
@@ -113,7 +107,7 @@ class ItemsController @Inject()(
         genres = Some(req.genres.map(_.toString)).filter(_.nonEmpty),
         networks = Some(req.networks).filter(_.nonEmpty),
         itemTypes = Some(
-          req.itemTypes.flatMap(t => Try(ThingType.fromString(t)).toOption)
+          req.itemTypes.flatMap(t => Try(ItemType.fromString(t)).toOption)
         ),
         creditTypes = Some(
           req.creditTypes.map(PersonAssociationType.fromString)
@@ -158,7 +152,7 @@ case class PersonResponse(
 
 case class GetThingRequest(
   @RouteParam thingId: String,
-  @QueryParam thingType: ThingType,
+  @QueryParam thingType: ItemType,
   request: Request)
     extends InjectedRequest
 
@@ -184,7 +178,7 @@ case class GetPersonBatchRequest(
 case class GetPersonCreditsRequest(
   @RouteParam personId: String,
   @QueryParam(commaSeparatedList = true) itemTypes: Set[String] =
-    Set(ThingType.Movie, ThingType.Show).map(_.toString),
+    Set(ItemType.Movie, ItemType.Show).map(_.toString),
   @QueryParam(commaSeparatedList = true) creditTypes: Set[String] =
     PersonAssociationType.values().map(_.toString).toSet,
   @QueryParam bookmark: Option[String],

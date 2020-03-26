@@ -1,12 +1,12 @@
 package com.teletracker.common.elasticsearch.denorm
 
-import com.teletracker.common.db.model.{ExternalSource, ThingType}
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.util.Slug
 import java.util.UUID
 import scala.concurrent.Future
 
 trait ItemDenormalizationCache {
-  type Key = (ExternalSource, String, ThingType)
+  type Key = (ExternalSource, String, ItemType)
 
   def get(key: Key): Future[Option[DenormalizationCacheItem]]
 

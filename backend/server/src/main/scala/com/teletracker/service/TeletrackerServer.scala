@@ -5,7 +5,7 @@ import com.teletracker.common.util.{GenreCache, NetworkCache}
 import com.teletracker.service.auth.JwtAuthFilter
 import com.teletracker.service.controllers._
 import com.teletracker.service.exception_mappers.PassThroughExceptionMapper
-import com.teletracker.service.filters.{CorsFilter, OpenCensusMonitoringFilter}
+import com.teletracker.service.filters.CorsFilter
 import com.teletracker.service.inject.ServerModules
 import com.teletracker.service.util.json.JsonModule
 import com.twitter.finagle.Http
@@ -47,7 +47,6 @@ class TeletrackerServer(
       .filter(CorsFilter.instance)
       .filter[LoggingMDCFilter[Request, Response]]
       .filter[TraceIdMDCFilter[Request, Response]]
-      .filter[OpenCensusMonitoringFilter]
       .filter[CommonFilters]
       .filter[FinagleRequestScopeFilter[Request, Response]]
       .filter[JwtAuthFilter]

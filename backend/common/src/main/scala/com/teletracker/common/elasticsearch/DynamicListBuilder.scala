@@ -19,7 +19,6 @@ import com.teletracker.common.db.model.{
   DynamicListReleaseYearRule,
   DynamicListTagRule,
   PersonAssociationType,
-  TrackedListRow,
   UserThingTagType
 }
 import com.teletracker.common.elasticsearch.EsItemTag.TagFormatter

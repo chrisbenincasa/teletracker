@@ -2,6 +2,10 @@ package com.teletracker.tasks.elasticsearch
 
 import com.twitter.util.StorageUnit
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
+import java.net.URI
+import java.nio.file.{Files, Paths}
+import scala.io.Source
+import scala.compat.java8.StreamConverters._
 
 sealed trait RotationMethod
 case class RotateEveryNBytes(amount: StorageUnit) extends RotationMethod
@@ -15,16 +19,23 @@ object FileRotator {
   def everyNBytes(
     baseFileName: String,
     every: StorageUnit,
-    outputPath: Option[String]
+    outputPath: Option[String],
+    append: Boolean = false
   ): FileRotator = {
-    new FileRotator(baseFileName, RotateEveryNBytes(every), outputPath)
+    new FileRotator(
+      baseFileName,
+      RotateEveryNBytes(every),
+      outputPath,
+      append = append
+    )
   }
 }
 
 class FileRotator(
   baseFileName: String,
   rotationMethod: RotationMethod,
-  outputPath: Option[String]) {
+  outputPath: Option[String],
+  append: Boolean = false) {
 
   if (outputPath.isDefined) {
     val f = new File(outputPath.get)
@@ -35,20 +46,70 @@ class FileRotator(
     }
   }
 
-  private var currBytes = 0L
-  private var currLines = 0L
+  private var (idx, currFile) = {
+    val initialFile = getFile(0)
 
-  private var idx = 0
-  private var currFile =
-    new File(
-      outputPath.getOrElse(System.getProperty("user.dir")),
-      s"$baseFileName.$idx.txt"
-    )
+    if (append) {
+      val basePath = initialFile.getAbsolutePath
+        .split(File.separatorChar)
+        .init
+        .mkString(File.separator)
+      val existingFiles = Files
+        .list(Paths.get(URI.create("file://" + basePath)))
+        .toScala[Stream]
+        .filter(
+          path =>
+            path
+              .getName(path.getNameCount - 1)
+              .toString
+              .startsWith(baseFileName)
+        )
+        .toList
+
+      existingFiles match {
+        case Nil => 0 -> initialFile
+        case files =>
+          val startingIdx = files
+            .map(path => {
+              path
+                .getName(path.getNameCount - 1)
+                .toString
+                .split('.')
+                .apply(1)
+                .toInt
+            })
+            .max
+          startingIdx -> getFile(startingIdx)
+      }
+    } else {
+      0 -> initialFile
+    }
+  }
+
+  private var currBytes = {
+    if (append && currFile.exists()) {
+      Files.size(Paths.get(currFile.toURI))
+    } else {
+      0L
+    }
+  }
+  private var currLines = {
+    if (append && currFile.exists()) {
+      Files.lines(Paths.get(currFile.toURI)).count()
+    } else {
+      0L
+    }
+  }
+
   private var os = new PrintStream(
-    new BufferedOutputStream(new FileOutputStream(currFile))
+    new BufferedOutputStream(new FileOutputStream(currFile, append))
   )
 
   private var isClosed = false
+
+  println(
+    s"Beginning file rotation at: ${currFile.getAbsolutePath}. (bytes=${currBytes}, lines=${currLines})"
+  )
 
   def writeLines(lines: Seq[String]): Unit = synchronized {
     if (isClosed)
@@ -78,10 +139,10 @@ class FileRotator(
     currLines = 0L
     currBytes = 0L
     idx += 1
-    currFile = new File(
-      outputPath.getOrElse(System.getProperty("user.dir")),
-      s"$baseFileName.$idx.txt"
-    )
+    currFile = getFile(idx)
+
+    println(s"Rotating to $currFile")
+
     os = new PrintStream(
       new BufferedOutputStream(new FileOutputStream(currFile))
     )
@@ -138,4 +199,10 @@ class FileRotator(
     }
   }
 
+  private def getFile(idx: Int) = {
+    new File(
+      outputPath.getOrElse(System.getProperty("user.dir")),
+      s"$baseFileName.$idx.txt"
+    )
+  }
 }

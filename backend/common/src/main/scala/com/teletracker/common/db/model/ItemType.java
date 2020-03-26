@@ -2,14 +2,14 @@ package com.teletracker.common.db.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-public enum ThingType {
+public enum ItemType {
     Movie("movie"),
     Show("show"),
     Person("person");
 
     private final String name;
 
-    ThingType(String name) {
+    ItemType(String name) {
         this.name = name;
     }
 
@@ -18,8 +18,8 @@ public enum ThingType {
     }
 
     @JsonCreator
-    public static ThingType fromString(final String s) {
-        for (ThingType src : ThingType.values()) {
+    public static ItemType fromString(final String s) {
+        for (ItemType src : ItemType.values()) {
             if (src.getName().equalsIgnoreCase(s)) {
                 return src;
             }
