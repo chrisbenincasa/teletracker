@@ -46,6 +46,7 @@ interface Props {
   initialState?: FilterParams;
   variant?: 'default' | 'outlined';
   hideSortOptions?: boolean;
+  defaultSort?: SortOptions;
 }
 
 export const prettyItemType = (itemType: ItemType) => {
@@ -63,8 +64,6 @@ export const prettySort = (sortOption: SortOptions) => {
       return 'Added Time';
     case 'popularity':
       return 'Popularity';
-    case 'default':
-      return 'Default';
     case 'recent':
       return 'Release Date';
   }
@@ -72,7 +71,6 @@ export const prettySort = (sortOption: SortOptions) => {
 
 export default function ActiveFilters(props: Props) {
   const classes = useStyles();
-  // const history = useHistory();
   const router = useRouter();
   const { genres, initialState, isListDynamic, variant } = props;
   let {
@@ -161,10 +159,8 @@ export default function ActiveFilters(props: Props) {
   const deleteSort = (
     sort: SortOptions,
   ): [SortOptions | undefined, boolean] => {
-    const cleanSort = sort === 'default' ? undefined : sort;
-
     if (sort !== sortOrder) {
-      return [cleanSort, true];
+      return [sort, true];
     }
 
     return [sort, false];
@@ -268,7 +264,8 @@ export default function ActiveFilters(props: Props) {
       !(
         (isListDynamic && sortOrder === 'popularity') ||
         (!isListDynamic && sortOrder === 'added_time') ||
-        sortOrder === 'default' ||
+        (!_.isUndefined(props.defaultSort) &&
+          sortOrder === props.defaultSort) ||
         sortOrder === undefined
       ),
     ) &&
@@ -335,12 +332,12 @@ export default function ActiveFilters(props: Props) {
             />
           ))
         : null}
-      {showSort ? (
+      {showSort && sortOrder ? (
         <Chip
           key={sortOrder}
           label={`Sort by: ${sortLabels[sortOrder]}`}
           className={classes.chip}
-          onDelete={() => removeFilters({ sort: 'default' })}
+          onDelete={() => removeFilters({ sort: undefined })}
           variant={variant}
         />
       ) : null}

@@ -18,6 +18,7 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import {
   login,
+  LoginRedirect,
   LoginState,
   LoginSuccessful,
   logInWithGoogle,
@@ -167,13 +168,19 @@ class LoginForm extends Component<Props, State> {
     if (query) {
       path += `?${query};`;
     }
+
+    let redirect: LoginRedirect | undefined;
+    if (path !== '/login') {
+      redirect = {
+        route: path,
+        asPath: this.props.router.asPath,
+        query: this.props.router.query,
+      };
+    }
+
     this.props.logInWithGoogle({
       state: {
-        redirect: {
-          route: path,
-          asPath: this.props.router.asPath,
-          query: this.props.router.query,
-        },
+        redirect,
       },
     });
   };

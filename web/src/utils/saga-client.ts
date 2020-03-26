@@ -161,6 +161,7 @@ export class SagaTeletrackerClient {
     filterParams?: FilterParams,
     limit?: number,
     bookmark?: string,
+    creditTypes?: string[],
   ) {
     return yield this.apiCall(
       client => client.getPersonCredits,
@@ -169,6 +170,7 @@ export class SagaTeletrackerClient {
       filterParams,
       limit,
       bookmark,
+      creditTypes,
     );
   }
 
