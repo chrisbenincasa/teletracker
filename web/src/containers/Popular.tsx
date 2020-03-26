@@ -36,6 +36,7 @@ import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
+import { DEFAULT_POPULAR_LIMIT, DEFAULT_ROWS } from '../constants';
 import { getVoteAverage, getVoteCount } from '../utils/textHelper';
 import {
   parseFilterParamsFromQs,
@@ -174,7 +175,7 @@ class Popular extends Component<Props, State> {
     }
   };
 
-  loadPopular(passBookmark: boolean, firstRun?: boolean) {
+  loadPopular(passBookmark: boolean, firstRun?: boolean, compensate?: number) {
     const {
       filters: { itemTypes, genresFilter, networks, sliders, people },
     } = this.state;
@@ -187,7 +188,13 @@ class Popular extends Component<Props, State> {
       retrievePopular({
         bookmark: passBookmark ? bookmark : undefined,
         itemTypes,
-        limit: calculateLimit(width, 3, firstRun ? numberFeaturedItems : 0),
+        limit: compensate
+          ? compensate
+          : calculateLimit(
+              width,
+              DEFAULT_ROWS,
+              firstRun ? numberFeaturedItems : 0,
+            ),
         networks,
         genres: genresFilter,
         releaseYearRange:
@@ -245,7 +252,11 @@ class Popular extends Component<Props, State> {
     const { popular, thingsById, width } = this.props;
 
     // We'll use the initialLoadSize to slice the array to ensure the featured items don't change as the popular array size increases
-    const initialLoadSize = calculateLimit(width, 3, numberFeaturedItems);
+    const initialLoadSize = calculateLimit(
+      width,
+      DEFAULT_ROWS,
+      numberFeaturedItems,
+    );
 
     // We only want Featured items that have a background and poster image
     // and we want them sorted by average score && vote count
@@ -280,6 +291,9 @@ class Popular extends Component<Props, State> {
 
     // Require that there be at least 2 full rows before displaying Featured items.
     const featuredRequiredItems = calculateLimit(width, 2, numberFeaturedItems);
+    const itemsInRows = DEFAULT_POPULAR_LIMIT - numberFeaturedItems;
+    const hangerItems = itemsInRows % DEFAULT_ROWS;
+    const missingItems = hangerItems > 0 ? DEFAULT_ROWS - hangerItems : 0;
 
     // If we don't have enough content to fill featured items, don't show any
     if (
@@ -306,6 +320,12 @@ class Popular extends Component<Props, State> {
         ),
         needsNewFeatured: false,
       });
+    }
+
+    // We only want to fetch missing items if this is the SSR load
+    // and we need to fill out space at the bottom
+    if (popular!.length === DEFAULT_POPULAR_LIMIT && missingItems > 0) {
+      this.loadPopular(true, false, missingItems);
     }
   };
 

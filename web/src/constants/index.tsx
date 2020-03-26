@@ -18,3 +18,5 @@ export const BASE_IMAGE_URL = 'https://image.tmdb.org/t/p/';
 export const GOOGLE_ACCOUNT_MERGE = 'GOOGLE_ACCOUNT_MERGE';
 
 export const DEFAULT_POPULAR_LIMIT = 20;
+
+export const DEFAULT_ROWS: number = 3;
