@@ -95,7 +95,14 @@ const personFetchSuccess = handleAction(
   PERSON_FETCH_SUCCESSFUL,
   (state: State, { payload }: PersonFetchSuccessfulAction) => {
     if (payload) {
-      return updateStateWithNewPeople(state, [payload.person]);
+      return {
+        ...state,
+        ...updateStateWithNewPeople(state, [payload.person]),
+        detail: {
+          ...state.detail,
+          loading: false,
+        },
+      };
     } else {
       return state;
     }
