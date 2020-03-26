@@ -139,6 +139,7 @@ interface Props {
   disableNetworks?: boolean;
   disableTypeChange?: boolean;
   disableGenres?: boolean;
+  disableStarring?: boolean;
   updateFilters: (filterParams: FilterParams) => void;
   filters: FilterParams;
   isListDynamic?: boolean;
@@ -148,6 +149,7 @@ interface Props {
   sortOptions?: SortOptions[];
   networks?: Network[];
   listFilters?: FilterParams;
+  prefilledName?: string;
 }
 
 const AllFilters = (props: Props) => {
@@ -160,6 +162,7 @@ const AllFilters = (props: Props) => {
     isListDynamic,
     open,
     disableSliders,
+    disableStarring,
     disableSortOptions,
     disableNetworks,
     disableTypeChange,
@@ -224,6 +227,7 @@ const AllFilters = (props: Props) => {
           onClose={() => setSmartListOpen(false)}
           networks={props.networks || []}
           genres={props.genres || []}
+          prefilledName={props.prefilledName || undefined}
         />
       </React.Fragment>
     );
@@ -421,10 +425,12 @@ const AllFilters = (props: Props) => {
                 ) : null}
               </div>
               <div className={classes.peopleContainer}>
-                <PersonFilter
-                  handleChange={setPeople}
-                  selectedCast={filters.people}
-                />
+                {!disableStarring ? (
+                  <PersonFilter
+                    handleChange={setPeople}
+                    selectedCast={filters.people}
+                  />
+                ) : null}
               </div>
             </div>
 

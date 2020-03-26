@@ -782,6 +782,24 @@ class ListDetail extends Component<Props, State> {
     );
   }
 
+  renderNoContentMessage(list) {
+    if (list.totalItems > 0 && !this.props.listLoading) {
+      return 'Sorry, nothing matches your current filter.  Please update and try again.';
+    } else if (
+      list.totalItems === 0 &&
+      !this.props.listLoading &&
+      !list.isDynamic
+    ) {
+      return 'Nothing has been added to this list yet.';
+    } else if (
+      list.totalItems === 0 &&
+      !this.props.listLoading &&
+      list.isDynamic
+    ) {
+      return 'Nothing currently matches this Smart Lists filtering criteria';
+    }
+  }
+
   renderListDetail(list: List) {
     const {
       classes,
@@ -868,12 +886,7 @@ class ListDetail extends Component<Props, State> {
                   display="block"
                   className={classes.noContent}
                 >
-                  {list.totalItems > 0 &&
-                    !this.props.listLoading &&
-                    'Sorry, nothing matches your current filter.  Please update and try again.'}
-                  {list.totalItems === 0 &&
-                    !this.props.listLoading &&
-                    'Nothing has been added to this list yet.'}
+                  {this.renderNoContentMessage(list)}
                 </Typography>
               )}
             </Grid>
