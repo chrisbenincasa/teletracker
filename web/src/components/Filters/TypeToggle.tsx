@@ -82,7 +82,7 @@ class TypeToggle extends Component<Props> {
         <div className={classes.chipContainer}>
           <Chip
             key={'all'}
-            onClick={() => this.updateTypes('type', [])}
+            onClick={() => this.updateTypes('type', undefined)}
             size="medium"
             color={isTypeAll ? 'primary' : 'secondary'}
             label="All"

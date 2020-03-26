@@ -11,6 +11,7 @@ import {
 import { withRouter } from 'next/router';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import { SortOptions } from '../../types';
+import _ from 'lodash';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -23,7 +24,7 @@ interface OwnProps {
   handleChange: (sortOrder: SortOptions) => void;
   isListDynamic?: boolean;
   validSortOptions?: SortOptions[];
-  selectedSort: SortOptions;
+  selectedSort?: SortOptions;
   showTitle?: boolean;
 }
 
@@ -57,8 +58,8 @@ class SortDropDown extends Component<Props> {
   };
 
   updateURLParam = (param, event) => {
-    const isNewSortDefault = this.isDefaultSort(event.target.value);
-    const isPrevSortDefault = this.isDefaultSort(this.props.selectedSort);
+    const isNewSortDefault = _.isUndefined(event.target.value);
+    const isPrevSortDefault = _.isUndefined(this.props.selectedSort);
     const newSort = isNewSortDefault ? undefined : event.target.value;
 
     if (

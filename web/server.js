@@ -13,8 +13,8 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 const httpsOptions = {
-  key: fs.readFileSync('../localcerts/server.key'),
-  cert: fs.readFileSync('../localcerts/server.crt'),
+  key: fs.readFileSync('../localcerts/localhost.key'),
+  cert: fs.readFileSync('../localcerts/localhost.crt'),
 };
 
 if (process.env.NODE_ENV !== 'production') {
@@ -60,6 +60,6 @@ app.prepare().then(() => {
     });
   }).listen(3000, err => {
     if (err) throw err;
-    console.log('> Ready on https://localhost:3000');
+    console.log(`> Ready on http${enableHttps ? 's' : ''}://localhost:3000`);
   });
 });
