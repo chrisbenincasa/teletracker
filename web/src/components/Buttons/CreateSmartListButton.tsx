@@ -26,23 +26,27 @@ export default function CreateSmartListButton(props: Props) {
       aria-label="save-as-list"
       placement="top"
     >
-      <Button
-        size="small"
-        disabled={
-          isDefaultFilter(props.filters) ||
-          filterParamsEqual(props.listFilters!, props.filters)
-        }
-        onClick={props.onClick}
-        variant="contained"
-        color="primary"
-        aria-label={
-          props.isListDynamic ? 'Save Smart List' : 'Create Smart List'
-        }
-        startIcon={props.isListDynamic ? <Save /> : <AddCircle />}
-        fullWidth={isMobile}
-      >
-        {props.isListDynamic ? 'Save Smart List' : 'Create Smart List'}
-      </Button>
+      <div>
+        <Button
+          size="small"
+          disabled={
+            props.isListDynamic
+              ? isDefaultFilter(props.filters) ||
+                filterParamsEqual(props.listFilters!, props.filters)
+              : false
+          }
+          onClick={props.onClick}
+          variant="contained"
+          color="primary"
+          aria-label={
+            props.isListDynamic ? 'Save Smart List' : 'Create Smart List'
+          }
+          startIcon={props.isListDynamic ? <Save /> : <AddCircle />}
+          fullWidth={isMobile}
+        >
+          {props.isListDynamic ? 'Save Smart List' : 'Create Smart List'}
+        </Button>
+      </div>
     </Tooltip>
   );
 }
