@@ -296,8 +296,6 @@ class ListDetail extends Component<Props, State> {
         ? currentFilters.itemTypes
         : initialFilters.itemTypes;
 
-      console.log(currentFilters, initialFilters);
-
       return {
         genres,
         networks,
@@ -325,10 +323,10 @@ class ListDetail extends Component<Props, State> {
         this.state.filters,
         this.state.listFilters,
       ),
-      // sort: sortOrder === 'default' ? undefined : sortOrder,
-      // itemTypes,
-      // genres: genresFilter ? genresFilter : undefined,
-      // networks: networks ? networks : undefined,
+      sort: sortOrder,
+      itemTypes,
+      genres: genresFilter ? genresFilter : undefined,
+      networks: networks ? networks : undefined,
     });
   }
 
@@ -408,15 +406,15 @@ class ListDetail extends Component<Props, State> {
           })
         : undefined;
 
+      let sortOrder = list.configuration.ruleConfiguration.sort?.sort;
+
       return {
         genresFilter: genreRules,
         networks: networkRules,
         itemTypes: itemTypeRules,
         sliders: releaseYearRule,
         people: personRules,
-        sortOrder: list.configuration.ruleConfiguration.sort
-          ? list.configuration.ruleConfiguration.sort.sort
-          : 'default',
+        sortOrder,
       };
     }
   };
@@ -734,7 +732,12 @@ class ListDetail extends Component<Props, State> {
           filters: filterParams,
         },
         () => {
-          updateUrlParamsForFilterRouter(this.props, filterParams);
+          updateUrlParamsForFilterRouter(
+            this.props,
+            filterParams,
+            [],
+            this.state.listFilters,
+          );
           this.retrieveList(false);
         },
       );
@@ -751,7 +754,7 @@ class ListDetail extends Component<Props, State> {
       listId: this.listId,
       bookmark: listBookmark,
       limit: calculateLimit(width, 3),
-      sort: sortOrder === 'default' ? undefined : sortOrder,
+      sort: sortOrder,
       itemTypes,
       genres: genresFilter ? genresFilter : undefined,
       networks: networks ? networks : undefined,

@@ -13,3 +13,4 @@ out/
 codebuild_build.sh
 
 localcerts/
+_localcertsold/

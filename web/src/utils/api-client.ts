@@ -343,11 +343,12 @@ export class TeletrackerApi {
   }
 
   async getPersonCredits(
-    token: String,
+    token: string | undefined,
     id: Id | Slug,
     filterParams?: FilterParams,
     limit?: number,
     bookmark?: string,
+    creditTypes?: string[],
   ) {
     const { itemTypes, networks, sortOrder, genresFilter, sliders } =
       filterParams || {};
@@ -371,6 +372,10 @@ export class TeletrackerApi {
       maxReleaseYear:
         sliders && sliders.releaseYear && sliders.releaseYear.max
           ? sliders.releaseYear.max
+          : undefined,
+      creditTypes:
+        creditTypes && creditTypes.length > 0
+          ? creditTypes.join(',')
           : undefined,
     });
   }

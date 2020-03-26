@@ -116,8 +116,8 @@ export class ItemFactory {
       // This will have to change if we ever expand to more regions
       canonicalTitle,
       slug: item.slug,
-      relativeUrl: `/${item.type}/${CANONICAL_ID}`,
-      canonicalUrl: `/${item.type}/[id]?id=${CANONICAL_ID}`,
+      relativeUrl: `/${item.type}s/${CANONICAL_ID}`,
+      canonicalUrl: `/${item.type}s/[id]?id=${CANONICAL_ID}`,
       // description: getDescription(item),
       itemMarkedAsWatched: itemHasTag(item, ActionType.Watched),
 
