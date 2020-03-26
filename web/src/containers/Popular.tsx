@@ -145,7 +145,7 @@ class Popular extends Component<Props, State> {
       qs.stringify(props.router.query),
     );
 
-    if (paramsFromQuery.sortOrder === 'default') {
+    if (_.isUndefined(paramsFromQuery.sortOrder)) {
       paramsFromQuery.sortOrder = 'popularity';
     }
 

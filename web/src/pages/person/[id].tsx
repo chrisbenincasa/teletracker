@@ -94,7 +94,7 @@ function PersonDetailWrapper(props: Props) {
         />
       </Head>
       <AppWrapper>
-        <PersonDetail />
+        <PersonDetail preloaded={!_.isUndefined(person)} />
       </AppWrapper>
     </React.Fragment>
   );
@@ -133,7 +133,7 @@ PersonDetailWrapper.getInitialProps = async ctx => {
       ]);
 
       return {
-        person: fullPerson,
+        personId: fullPerson.id,
       };
     } else {
       return {

@@ -65,6 +65,7 @@ export const fetchPersonCreditsDetailsSaga = function*() {
         payload.filterParams,
         payload.limit,
         payload.bookmark,
+        ['cast'],
       );
 
       if (response.ok) {

@@ -51,7 +51,7 @@ export class ListFactory {
   }
 }
 
-export type SortOptions = 'popularity' | 'recent' | 'added_time' | 'default';
+export type SortOptions = 'popularity' | 'recent' | 'added_time';
 
 export function isListSortOption(s: string): s is SortOptions {
   const allowed = ['popularity', 'recent', 'added_time', 'default'];

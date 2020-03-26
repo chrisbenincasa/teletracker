@@ -33,6 +33,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
       ? requestedId[0]
       : requestedId;
 
+    // TODO: Handle not found here...
     const item = useItem(actualId, undefined);
     const releaseDate =
       (item?.release_date && moment(item?.release_date).format('YYYY')) || '';
@@ -92,7 +93,9 @@ export default function makeItemDetailWrapper(type: ItemType) {
           />
         </Head>
         <AppWrapper>
-          <ItemDetail />
+          <ItemDetail
+            itemPreloadedFromServer={props.itemId && !_.isUndefined(item)}
+          />
         </AppWrapper>
       </React.Fragment>
     );
@@ -110,7 +113,6 @@ export default function makeItemDetailWrapper(type: ItemType) {
         await ctx.store.dispatch(itemFetchSuccess(response.data.data));
 
         return {
-          // item: ItemFactory.create(response.data.data),
           itemId: response.data.data.id,
         };
       } else {

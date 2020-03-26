@@ -124,7 +124,9 @@ class Explore extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    let defaultFilterParams = DEFAULT_FILTER_PARAMS;
+    let defaultFilterParams: FilterParams = {
+      sortOrder: 'recent',
+    };
 
     if (props.initialType) {
       defaultFilterParams.itemTypes = [props.initialType];
@@ -168,7 +170,7 @@ class Explore extends Component<Props, State> {
         limit: calculateLimit(width, 3, firstRun ? 1 : 0),
         networks,
         genres: genresFilter,
-        sort: sortOrder === 'default' ? 'recent' : sortOrder,
+        sort: _.isUndefined(sortOrder) ? 'recent' : sortOrder,
         releaseYearRange:
           sliders && sliders.releaseYear
             ? {
@@ -336,6 +338,7 @@ class Explore extends Component<Props, State> {
             isListDynamic={false}
             filters={this.state.filters}
             variant="default"
+            defaultSort="recent"
           />
         </div>
         <AllFilters

@@ -190,7 +190,9 @@ const styles = (theme: Theme) =>
     },
   });
 
-interface OwnProps {}
+interface OwnProps {
+  preloaded?: boolean;
+}
 
 interface State {
   showFullBiography: boolean;

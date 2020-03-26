@@ -59,6 +59,7 @@ import {
 import Login from './Login';
 import Link from 'next/link';
 import { extractItem } from '../utils/item-utils';
+import useStateSelector from '../hooks/useStateSelector';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -260,6 +261,7 @@ interface OwnProps {
   initialItem?: Item;
   genres?: Genre[];
   itemsById: { [key: string]: Item };
+  itemPreloadedFromServer?: boolean;
 }
 
 interface DispatchProps {
@@ -284,6 +286,7 @@ function ItemDetails(props: Props) {
   const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
   const [showFullOverview, setshowFullOverview] = useState<boolean>(false);
+  const itemsById = useStateSelector(state => state.itemDetail.thingsById);
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
   let nextRouter = useRouter();
@@ -310,6 +313,17 @@ function ItemDetails(props: Props) {
     } else {
       let itemId = nextRouter.query.id as string;
 
+      if (Boolean(props.itemPreloadedFromServer)) {
+        const item = extractItem(
+          nextRouter.query.id as string,
+          undefined,
+          itemsById,
+        );
+        if (item) {
+          props.itemPrefetchSuccess(item);
+          return;
+        }
+      }
       // TODO: This is an optimization, but sometimes items don't always have all of the
       // necessary information loaded when triggered from other pages. We should figure out
       // a way to determine if the full item needs to be fetched, so we can still cache
@@ -323,6 +337,10 @@ function ItemDetails(props: Props) {
       let itemType = nextRouter.pathname
         .split('/')
         .filter(s => s.length > 0)[0];
+
+      if (itemType.endsWith('s')) {
+        itemType = itemType.substr(0, itemType.length - 1);
+      }
 
       props.fetchItemDetails({ id: itemId, type: itemType });
     }

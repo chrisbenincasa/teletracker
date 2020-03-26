@@ -263,8 +263,9 @@ export default function CreateDynamicListDialog(props: Props) {
     }
   };
 
-  const defaultSort: ListDefaultSort | undefined =
-    filters.sortOrder !== 'default' ? { sort: filters.sortOrder } : undefined;
+  const defaultSort: ListDefaultSort | undefined = filters.sortOrder
+    ? { sort: filters.sortOrder }
+    : undefined;
 
   const validateListName = () => {
     let validateResult = CreateAListValidator.validate(existingLists, listName);

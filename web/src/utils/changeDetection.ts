@@ -44,12 +44,13 @@ export function filterParamsEqual(
     }
 
     if (left.sortOrder !== right.sortOrder) {
+      console.log(left, right);
       if (
         !defaultSortOrder ||
         (defaultSortOrder &&
-          left.sortOrder === 'default' &&
+          _.isUndefined(left.sortOrder) &&
           right.sortOrder !== defaultSortOrder) ||
-        (left.sortOrder !== defaultSortOrder && right.sortOrder === 'default')
+        (left.sortOrder !== defaultSortOrder && _.isUndefined(right.sortOrder))
       ) {
         return false;
       }

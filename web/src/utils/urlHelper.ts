@@ -10,6 +10,17 @@ import { FilterParams } from './searchFilters';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import querystring from 'querystring';
 import url from 'url';
+import { filterParamsEqual } from './changeDetection';
+
+const validQueryParams = [
+  'genres',
+  'networks',
+  'sort',
+  'type',
+  'ry_min',
+  'ry_max',
+  'cast',
+];
 
 /**
  * Updates or adds URL parameters
@@ -33,14 +44,23 @@ export const updateUrlParamsForFilterRouter = (
   props: WithRouterProps,
   filterParams: FilterParams,
   excludedParams?: string[],
+  defaultFilters?: FilterParams,
 ): void => {
+  let sanitizedPath = url.parse(props.router.asPath).pathname;
+
+  let sanitizedFilterQuery = _.pickBy(props.router.query, (value, key) =>
+    _.includes(validQueryParams, key),
+  );
+
+  if (defaultFilters && filterParamsEqual(defaultFilters, filterParams)) {
+    props.router.push(props.router.pathname, sanitizedPath, { shallow: true });
+    return;
+  }
+
   let paramUpdates: [string, any | undefined][] = [
     ['genres', filterParams.genresFilter],
     ['networks', filterParams.networks],
-    [
-      'sort',
-      filterParams.sortOrder === 'default' ? undefined : filterParams.sortOrder,
-    ],
+    ['sort', filterParams.sortOrder],
     ['type', filterParams.itemTypes],
     [
       'ry_min',
@@ -61,12 +81,13 @@ export const updateUrlParamsForFilterRouter = (
     ([key, _]) => !excludedParams || !excludedParams.includes(key),
   );
 
-  let sanitizedPath = url.parse(props.router.asPath).pathname;
-
   updateMultipleUrlParams(
-    querystring.stringify(props.router.query),
-    str =>
-      props.router.replace(sanitizedPath + str, undefined, { shallow: true }),
+    querystring.stringify(sanitizedFilterQuery),
+    str => {
+      props.router.push(props.router.pathname + str, sanitizedPath + str, {
+        shallow: true,
+      });
+    },
     paramUpdates,
   );
 };
@@ -79,10 +100,7 @@ export const updateUrlParamsForFilter = (
   let paramUpdates: [string, any | undefined][] = [
     ['genres', filterParams.genresFilter],
     ['networks', filterParams.networks],
-    [
-      'sort',
-      filterParams.sortOrder === 'default' ? undefined : filterParams.sortOrder,
-    ],
+    ['sort', filterParams.sortOrder],
     ['type', filterParams.itemTypes],
     [
       'ry_min',
@@ -160,7 +178,7 @@ export function parseFilterParams(params: Map<string, string>) {
     sortOrder:
       sortParam && isListSortOption(sortParam)
         ? (sortParam as SortOptions)
-        : 'default',
+        : undefined,
   };
 
   let itemTypes = itemTypeParam
