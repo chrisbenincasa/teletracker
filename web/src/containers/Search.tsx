@@ -129,7 +129,7 @@ const Search = ({ inViewportChange }) => {
     // How will this work with SSR
     // ReactGA.pageview(location.pathname + location.search);
 
-    if (paramsFromQuery.sortOrder === 'default') {
+    if (_.isUndefined(paramsFromQuery.sortOrder)) {
       paramsFromQuery.sortOrder = 'popularity';
     }
 
