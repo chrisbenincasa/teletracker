@@ -469,8 +469,10 @@ class PersonDetail extends React.Component<Props, State> {
           open={this.state.showFilter}
           filters={this.state.filters}
           updateFilters={this.handleFilterParamsChange}
-          disableNetworks
+          networks={this.props.networks}
           isListDynamic={false}
+          prefilledName={this.props.person!.name}
+          disableStarring
         />
 
         <InfiniteScroll
