@@ -648,8 +648,7 @@ function ItemDetails(props: Props) {
                   <div className={classes.actionButton}>
                     <ShareButton
                       title={itemDetail.canonicalTitle}
-                      text={''}
-                      url={`${window.location.hostname}${itemDetail.relativeUrl}`}
+                      url={window.location.href}
                     />
                   </div>
                 </div>
