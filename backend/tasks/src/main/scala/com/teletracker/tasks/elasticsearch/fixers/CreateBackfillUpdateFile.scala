@@ -1,30 +1,22 @@
 package com.teletracker.tasks.elasticsearch.fixers
 
-import cats.implicits._
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.elasticsearch.EsItemAlternativeTitle
-import com.teletracker.common.model.tmdb.Movie
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.elasticsearch.FileRotator
 import com.teletracker.tasks.scraper.IngestJobParser
-import com.teletracker.tasks.util.SourceRetriever
+import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import com.twitter.util.StorageUnit
 import io.circe.syntax._
 import io.circe.{Codec, Decoder, Json}
-import javax.inject.Inject
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
-import java.util.regex.Pattern
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class CreateBackfillUpdateFile[T: Decoder](
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {
-
-  private val NonLatin = Pattern.compile("[^\\w-\\s]")
 
   override protected def runInternal(args: Args): Unit = {
     val input = args.valueOrThrow[URI]("input")
@@ -36,15 +28,16 @@ abstract class CreateBackfillUpdateFile[T: Decoder](
     val region = Region.of(regionString)
     val gteFilter = args.value[String]("gteFilter")
     val ltFilter = args.value[String]("ltFilter")
+    val outputPath = args.valueOrThrow[String]("outputPath")
 
     val s3 = S3Client.builder().region(region).build()
 
     val retriever = new SourceRetriever(s3)
 
     val fileRotator = FileRotator.everyNBytes(
-      "alternative-title-updates",
+      "updates",
       StorageUnit.fromMegabytes(100),
-      Some("alternative-titles"),
+      Some(outputPath),
       append = append
     )
 
@@ -93,48 +86,6 @@ abstract class CreateBackfillUpdateFile[T: Decoder](
   protected def shouldKeepItem(item: T): Boolean
 
   protected def makeBackfillRow(item: T): TmdbBackfillOutputRow
-
-  private def sanitizeType(typ: String) =
-    NonLatin.matcher(typ.toLowerCase()).replaceAll("")
-}
-
-class BackfillMovieAltTitles @Inject()(
-  teletrackerConfig: TeletrackerConfig
-)(implicit executionContext: ExecutionContext)
-    extends CreateBackfillUpdateFile[Movie](teletrackerConfig) {
-  private val countries = Set("US", "GB")
-
-  override protected def shouldKeepItem(item: Movie): Boolean = {
-    item.alternative_titles
-      .exists(
-        _.titles.exists(t => countries.contains(t.iso_3166_1))
-      )
-  }
-
-  override protected def makeBackfillRow(item: Movie): TmdbBackfillOutputRow = {
-    val titles = item.alternative_titles
-      .map(_.titles)
-      .nested
-      .filter(t => countries.contains(t.iso_3166_1))
-      .value
-      .getOrElse(Nil)
-
-    val altTitles = titles
-      .map(
-        alt =>
-          EsItemAlternativeTitle(
-            country_code = alt.iso_3166_1,
-            title = alt.title,
-            `type` = alt.`type`
-          )
-      )
-      .asJson
-
-    TmdbBackfillOutputRow(
-      item.id,
-      Map("alternative_titles" -> altTitles).asJson
-    )
-  }
 }
 
 object TmdbBackfillOutputRow {

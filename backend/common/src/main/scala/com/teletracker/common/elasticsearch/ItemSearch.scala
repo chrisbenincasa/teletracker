@@ -43,32 +43,63 @@ class ItemSearch @Inject()(
 //      QueryBuilders
 //        .multiMatchQuery(
 //          query,
-//          "title",
+//          "title^2",
 //          "title._2gram",
-//          "title._3gram"
+//          "title._3gram",
+//          "original_title",
+//          "original_title._2gram",
+//          "original_title._3gram"
 //        )
 //        .`type`(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
 //        .fuzziness(5)
 //        .operator(Operator.AND)
+      QueryBuilders
+        .boolQuery()
+        .should(
+          QueryBuilders
+            .multiMatchQuery(
+              query,
+              "title",
+              "title._2gram",
+              "title._3gram"
+            )
+            .`type`(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
+            .fuzziness(5)
+            .operator(Operator.AND)
+            .boost(2.0f)
+        )
+        .should(
+          QueryBuilders
+            .multiMatchQuery(
+              query,
+              "original_title",
+              "original_title._2gram",
+              "original_title._3gram"
+            )
+            .`type`(MultiMatchQueryBuilder.Type.BOOL_PREFIX)
+            .fuzziness(5)
+            .operator(Operator.AND)
+        )
+        .minimumShouldMatch(1)
 //        .boost(boost)
 
-      QueryBuilders
-        .multiMatchQuery(
-          query,
-          "title",
-          "title._2gram",
-          "title._3gram",
-          "original_title",
-          "original_title._2gram",
-          "original_title._3gram",
-          "alternative_titles",
-          "alternative_titles._2gram",
-          "alternative_titles._3gram"
-        )
-        .`type`(MultiMatchQueryBuilder.Type.PHRASE_PREFIX)
-        .maxExpansions(50)
-        .operator(Operator.OR)
-        .boost(boost)
+//      QueryBuilders
+//        .multiMatchQuery(
+//          query,
+//          "title",
+//          "title._2gram",
+//          "title._3gram",
+//          "original_title",
+//          "original_title._2gram",
+//          "original_title._3gram",
+//          "alternative_titles",
+//          "alternative_titles._2gram",
+//          "alternative_titles._3gram"
+//        )
+//        .`type`(MultiMatchQueryBuilder.Type.PHRASE_PREFIX)
+//        .maxExpansions(50)
+//        .operator(Operator.OR)
+//        .boost(boost)
     }
 
     // TODO: Support all of the filters that regular search does
@@ -117,6 +148,8 @@ class ItemSearch @Inject()(
       .applyOptional(searchOptions.bookmark)((builder, bookmark) => {
         builder.from(bookmark.value.toInt)
       })
+
+    println(searchSource)
 
     val search =
       new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)

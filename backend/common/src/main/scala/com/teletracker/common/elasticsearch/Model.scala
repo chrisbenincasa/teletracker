@@ -90,6 +90,18 @@ case class EsItem(
   title: StringListOrString,
   `type`: ItemType) {
 
+  def castMemberForId(id: UUID): Option[EsItemCastMember] =
+    cast.flatMap(_.find(_.id == id))
+
+  def containsCastMember(id: UUID): Boolean =
+    castMemberForId(id).isDefined
+
+  def crewMemberForId(id: UUID): Option[EsItemCrewMember] =
+    crew.flatMap(_.find(_.id == id))
+
+  def containsCrewMember(id: UUID): Boolean =
+    crewMemberForId(id).isDefined
+
   def externalIdsGrouped: Map[ExternalSource, String] = {
     external_ids
       .getOrElse(Nil)

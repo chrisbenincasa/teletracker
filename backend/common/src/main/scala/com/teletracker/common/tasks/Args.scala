@@ -1,12 +1,28 @@
 package com.teletracker.common.tasks
 
+import io.circe.Json
 import java.io.File
 import java.net.URI
 import java.time.LocalDate
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
-object Args extends Args
+object Args extends Args {
+  def extractArgs(args: Map[String, Json]): Map[String, Option[Any]] = {
+    args.mapValues(extractValue)
+  }
+
+  private def extractValue(j: Json): Option[Any] = {
+    j.fold(
+      None,
+      Some(_),
+      x => Some(x.toDouble),
+      Some(_),
+      v => Some(v.map(extractValue)),
+      o => Some(o.toMap.mapValues(extractValue))
+    )
+  }
+}
 
 trait Args {
   implicit def asRichArgs(args: Map[String, Option[Any]]): RichArgs =
@@ -86,6 +102,24 @@ object ArgParser extends LowPriArgParsers {
 
   implicit val localDateArg: ArgParser[LocalDate] =
     stringArg.andThen(LocalDate.parse)
+
+  implicit def listArg[T](implicit inner: ArgParser[T]): ArgParser[List[T]] = {
+    stringArg.andThen(
+      _.split(',')
+        .map(
+          str =>
+            inner.parse(str) match {
+              case Failure(exception) => throw exception
+              case Success(value)     => value
+            }
+        )
+        .toList
+    )
+  }
+
+  implicit def setArg[T](implicit inner: ArgParser[T]): ArgParser[Set[T]] = {
+    listArg[T].andThen(_.toSet)
+  }
 }
 
 trait ArgParser[T] { self =>

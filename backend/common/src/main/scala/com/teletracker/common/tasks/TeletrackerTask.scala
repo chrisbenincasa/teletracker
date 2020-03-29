@@ -16,6 +16,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.collection.mutable
@@ -83,6 +84,12 @@ trait TeletrackerTask extends Args {
 
   def retryable: Boolean = false
 
+  def remoteLogLocation: URI =
+    URI.create(s"s3://${teletrackerConfig.data.s3_bucket}/$s3LogKey")
+
+  private lazy val s3LogKey =
+    s"task-output/${getClass.getSimpleName}/${LocalDate.now()}/${OffsetDateTime.now()}"
+
   protected def runInternal(args: Args): Unit
 
   protected def prerun(f: => Unit): Unit = {
@@ -103,19 +110,16 @@ trait TeletrackerTask extends Args {
         .valueOrDefault(CommonFlags.OutputToConsole, false)
 
     if (logToS3) {
-      val s3Key =
-        s"task-output/${getClass.getSimpleName}/${LocalDate.now()}/${OffsetDateTime.now()}"
-
       val (s3Logger, onClose) = TaskLogger.make(
         getClass,
         s3,
         teletrackerConfig.data.s3_bucket,
-        s3Key,
+        s3LogKey,
         outputToConsole = logToConsole
       )
 
       selfLogger.info(
-        s"Logs for ${getClass.getSimpleName} (id: $taskId) can be found at s3://${teletrackerConfig.data.s3_bucket}/$s3Key"
+        s"Logs for ${getClass.getSimpleName} (id: $taskId) can be found at s3://${teletrackerConfig.data.s3_bucket}/$s3LogKey"
       )
 
       _logger = s3Logger

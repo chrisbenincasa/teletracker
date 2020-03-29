@@ -22,6 +22,10 @@ class ImportMoviesFromDump @Inject()(
       genreCache
     ) {
 
+  override protected def shouldHandleItem(item: Movie): Boolean = {
+    item.adult.isEmpty || !item.adult.get
+  }
+
   override protected def handleItem(
     args: ImportTmdbDumpTaskArgs,
     item: Movie

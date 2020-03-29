@@ -7,10 +7,10 @@ import com.teletracker.common.process.tmdb.PersonImportHandler.PersonImportHandl
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.elasticsearch.FileRotator
 import com.teletracker.tasks.scraper.IngestJobParser
-import com.teletracker.tasks.util.SourceRetriever
+import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import com.twitter.util.StorageUnit
+import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import org.elasticsearch.action.bulk.BulkRequest
 import java.net.URI
@@ -142,10 +142,98 @@ class ImportMissingPeople @Inject()(
   }
 }
 
+class SplitFile @Inject()(
+  sourceRetriever: SourceRetriever,
+  teletrackerConfig: TeletrackerConfig)
+    extends TeletrackerTaskWithDefaultArgs {
+  import io.circe.parser._
+  override protected def runInternal(args: Args): Unit = {
+    val rotator = FileRotator.everyNBytes(
+      "people-import-2-smaller",
+      StorageUnit.fromMegabytes(10),
+      Some("people-import-smaller")
+    )
+
+    val input = args.valueOrThrow[URI]("input")
+    sourceRetriever
+      .getSourceStream(input)
+      .foreach(source => {
+        try {
+          source
+            .getLines()
+            .toStream
+            .foreach(rotator.writeLine)
+        } finally {
+          source.close()
+        }
+      })
+
+    rotator.finish()
+  }
+}
+
+class FixUpdateLines @Inject()(
+  sourceRetriever: SourceRetriever,
+  teletrackerConfig: TeletrackerConfig)
+    extends TeletrackerTaskWithDefaultArgs {
+  import io.circe.parser._
+  override protected def runInternal(args: Args): Unit = {
+    val rotator = FileRotator.everyNBytes(
+      "people-import-updates-only",
+      StorageUnit.fromMegabytes(10),
+      Some("people-import-updates-only")
+    )
+
+    val input = args.valueOrThrow[URI]("input")
+    sourceRetriever
+      .getSourceStream(input)
+      .foreach(source => {
+        try {
+          source
+            .getLines()
+            .toStream
+            .grouped(2)
+            .map(_.toList)
+            .foreach {
+              case op :: doc :: Nil =>
+                parse(op).foreach(json => {
+                  json.asObject
+                    .filter(_.contains("update"))
+                    .foreach(_ => {
+                      parse(doc).foreach(docJson => {
+                        rotator.writeLines(
+                          Seq(op, Map("doc" -> docJson).asJson.noSpaces)
+                        )
+                      })
+                    })
+                })
+              case _ =>
+            }
+        } finally {
+          source.close()
+        }
+      })
+
+    rotator.finish()
+  }
+}
+
 trait EsBulkOp {
   def typ: String
   def lines: Seq[String]
 }
+
+@JsonCodec
+case class EsBulkIndexRaw(index: EsBulkIndexDoc)
+
+@JsonCodec
+case class EsBulkIndexDoc(
+  _index: String,
+  _id: String)
+
+@JsonCodec
+case class EsBulkUpdateRaw(update: EsBulkIndexDoc)
+
 case class EsBulkIndex(
   index: String,
   id: UUID,
@@ -159,6 +247,7 @@ case class EsBulkIndex(
   )
 }
 
+@JsonCodec
 case class EsBulkUpdate(
   index: String,
   id: UUID,

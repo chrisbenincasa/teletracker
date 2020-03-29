@@ -153,6 +153,29 @@ sealed abstract class AsyncStream[+A] {
       f(a)
     }
 
+  def delayedForeachF(
+    perElementWait: FiniteDuration,
+    scheduledService: ScheduledExecutorService
+  )(
+    f: A => Future[Unit]
+  )(implicit executionContext: ExecutionContext
+  ): Future[Unit] = {
+    def waitAfter(): Future[Unit] = {
+      val promise = Promise[Unit]
+      scheduledService.schedule(new Runnable {
+        override def run(): Unit = promise.success(Unit)
+      }, perElementWait.length, perElementWait.unit)
+      promise.future
+    }
+
+    val transform: Try[Unit] => Future[Unit] = {
+      case Success(_)         => waitAfter()
+      case Failure(exception) => Future.failed(exception)
+    }
+
+    foreachF(a => f(a).transformWith(transform))
+  }
+
   /**
     * Map over this stream with the given concurrency. The items will
     * likely not be processed in order. `concurrencyLevel` specifies an

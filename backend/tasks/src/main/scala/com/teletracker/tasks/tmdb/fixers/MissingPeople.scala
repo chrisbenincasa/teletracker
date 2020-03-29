@@ -3,6 +3,7 @@ package com.teletracker.tasks.tmdb.fixers
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.EsPerson
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.tasks.model.EsPersonDumpRow
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.{
   MovieDumpFileRow,
@@ -80,6 +81,3 @@ class MissingPeople @Inject()(
     peopleExportSource.close()
   }
 }
-
-@JsonCodec
-case class EsPersonDumpRow(_source: EsPerson)

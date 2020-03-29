@@ -2,9 +2,8 @@ package com.teletracker.tasks.elasticsearch.fixers
 
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
-import com.teletracker.tasks.elasticsearch.FileRotator
 import com.teletracker.tasks.scraper.IngestJobParser
-import com.teletracker.tasks.util.SourceRetriever
+import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import com.twitter.util.StorageUnit
 import javax.inject.Inject
 import java.net.URI

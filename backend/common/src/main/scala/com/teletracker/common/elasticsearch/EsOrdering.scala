@@ -8,7 +8,18 @@ object EsOrdering {
       left.order <= right.order
     }
 
+  final private val crewOrdering = Ordering
+    .Tuple4[Option[Int], Option[String], Option[String], String](
+      Lists.NullsLastOrdering[Int],
+      Lists.NullsLastOrdering[String],
+      Lists.NullsLastOrdering[String],
+      Ordering[String]
+    )
+
   val forItemCrewMember = (left: EsItemCrewMember, right: EsItemCrewMember) => {
-    Lists.NullsLastOrdering[Int].lteq(left.order, right.order)
+    crewOrdering.lteq(
+      (left.order, left.department, left.job, left.name),
+      (right.order, right.department, right.job, right.name)
+    )
   }
 }

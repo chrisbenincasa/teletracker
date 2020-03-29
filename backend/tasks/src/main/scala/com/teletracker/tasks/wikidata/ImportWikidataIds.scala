@@ -5,8 +5,7 @@ import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.{EsExternalId, ItemLookup}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.elasticsearch.FileRotator
-import com.teletracker.tasks.util.SourceRetriever
+import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import com.twitter.util.StorageUnit
 import io.circe.parser._
 import io.circe.syntax._
