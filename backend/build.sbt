@@ -154,9 +154,9 @@ lazy val tasks = project
   .settings(
     name := "tasks",
     libraryDependencies ++= Seq(
-      "com.github.scopt" %% "scopt" % "3.5.0",
       "software.amazon.awssdk" % "lambda" % "2.9.24",
       "software.amazon.awssdk" % "arns" % "2.9.24",
+      "org.xerial" % "sqlite-jdbc" % "3.30.1",
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
       ),

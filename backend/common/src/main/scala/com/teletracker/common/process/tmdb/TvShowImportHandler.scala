@@ -167,7 +167,7 @@ class TvShowImportHandler @Inject()(
 
       val partialUpdates = existingShow.copy(
         alternative_titles = item.alternative_titles
-          .map(_.titles)
+          .map(_.results)
           .nested
           .map(
             altTitle =>
@@ -272,7 +272,7 @@ class TvShowImportHandler @Inject()(
 
       val esItem = EsItem(
         alternative_titles = item.alternative_titles
-          .map(_.titles)
+          .map(_.results)
           .nested
           .map(
             altTitle =>

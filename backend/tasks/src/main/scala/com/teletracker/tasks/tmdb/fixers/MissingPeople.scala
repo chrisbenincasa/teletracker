@@ -1,17 +1,18 @@
-package com.teletracker.tasks.tmdb
+package com.teletracker.tasks.tmdb.fixers
 
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.EsPerson
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.tasks.model.EsPersonDumpRow
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.tmdb.export_tasks.{
   MovieDumpFileRow,
   PersonDumpFileRow
 }
 import com.teletracker.tasks.util.SourceRetriever
-import io.circe.generic.semiauto.deriveCodec
 import io.circe.Codec
 import io.circe.generic.JsonCodec
+import io.circe.generic.semiauto.deriveCodec
 import javax.inject.Inject
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
@@ -80,6 +81,3 @@ class MissingPeople @Inject()(
     peopleExportSource.close()
   }
 }
-
-@JsonCodec
-case class EsPersonDumpRow(_source: EsPerson)

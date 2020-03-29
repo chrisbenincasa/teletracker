@@ -2,9 +2,22 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1a8006d8-ee43-4875-9987-4104d8b168e5" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../../scraper/src/common/task_publisher.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../scraper/src/common/task_publisher.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../scraper/src/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../scraper/src/main.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../scraper/src/tmdb/popularity-scheduler.js" beforeDir="false" afterPath="$PROJECT_DIR$/../../scraper/src/tmdb/popularity-scheduler.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../backend/tasks/src/main/scala/com/teletracker/tasks/general/BaseDiffTask.scala" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../backend/tasks/src/main/scala/com/teletracker/tasks/tmdb/fixers/FindDeletedPeople.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend/build.sbt" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend/build.sbt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend/common/src/main/scala/com/teletracker/common/elasticsearch/EsOrdering.scala" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend/common/src/main/scala/com/teletracker/common/elasticsearch/EsOrdering.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend/common/src/main/scala/com/teletracker/common/elasticsearch/PersonUpdater.scala" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend/common/src/main/scala/com/teletracker/common/elasticsearch/PersonUpdater.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend/common/src/main/scala/com/teletracker/common/process/tmdb/PersonImportHandler.scala" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend/common/src/main/scala/com/teletracker/common/process/tmdb/PersonImportHandler.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend/common/src/main/scala/com/teletracker/common/util/Slug.scala" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend/common/src/main/scala/com/teletracker/common/util/Slug.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend/server/src/main/scala/com/teletracker/service/controllers/ItemsController.scala" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend/server/src/main/scala/com/teletracker/service/controllers/ItemsController.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend/tasks/src/main/scala/com/teletracker/tasks/elasticsearch/fixers/ImportMissingPeople.scala" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend/tasks/src/main/scala/com/teletracker/tasks/elasticsearch/fixers/ImportMissingPeople.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend/tasks/src/main/scala/com/teletracker/tasks/elasticsearch/fixers/ReverseChronologicalBackfill.scala" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend/tasks/src/main/scala/com/teletracker/tasks/elasticsearch/fixers/ReverseChronologicalBackfill.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend/tasks/src/main/scala/com/teletracker/tasks/tmdb/MissingMovies.scala" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend/tasks/src/main/scala/com/teletracker/tasks/tmdb/fixers/MissingMovies.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../backend/tasks/src/main/scala/com/teletracker/tasks/tmdb/MissingPeople.scala" beforeDir="false" afterPath="$PROJECT_DIR$/../../backend/tasks/src/main/scala/com/teletracker/tasks/tmdb/fixers/MissingPeople.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/out/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

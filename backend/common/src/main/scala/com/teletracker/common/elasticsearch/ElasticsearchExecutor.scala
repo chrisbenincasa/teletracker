@@ -16,6 +16,7 @@ import org.elasticsearch.client.core.{CountRequest, CountResponse}
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
 import org.elasticsearch.index.reindex.{
   BulkByScrollResponse,
+  DeleteByQueryRequest,
   UpdateByQueryRequest
 }
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -48,6 +49,12 @@ class ElasticsearchExecutor @Inject()(
     request: UpdateByQueryRequest
   ): Future[BulkByScrollResponse] = {
     withListener(client.updateByQueryAsync(request, RequestOptions.DEFAULT, _))
+  }
+
+  def deleteByQuery(
+    request: DeleteByQueryRequest
+  ): Future[BulkByScrollResponse] = {
+    withListener(client.deleteByQueryAsync(request, RequestOptions.DEFAULT, _))
   }
 
   def search(request: SearchRequest): Future[SearchResponse] = {

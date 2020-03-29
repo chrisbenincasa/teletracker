@@ -1,10 +1,9 @@
-package com.teletracker.tasks.elasticsearch
+package com.teletracker.tasks.util
 
 import com.twitter.util.StorageUnit
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.net.URI
 import java.nio.file.{Files, Paths}
-import scala.io.Source
 import scala.compat.java8.StreamConverters._
 
 sealed trait RotationMethod
@@ -111,6 +110,11 @@ class FileRotator(
     s"Beginning file rotation at: ${currFile.getAbsolutePath}. (bytes=${currBytes}, lines=${currLines})"
   )
 
+  def baseUri: URI =
+    new File(outputPath.getOrElse(System.getProperty("user.dir"))).toURI
+
+  def writeLine(line: String): Unit = writeLines(Seq(line))
+
   def writeLines(lines: Seq[String]): Unit = synchronized {
     if (isClosed)
       throw new IllegalStateException("Tried to write after closing!!")
@@ -202,7 +206,7 @@ class FileRotator(
   private def getFile(idx: Int) = {
     new File(
       outputPath.getOrElse(System.getProperty("user.dir")),
-      s"$baseFileName.$idx.txt"
+      f"$baseFileName.$idx%03d.txt"
     )
   }
 }

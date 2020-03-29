@@ -8,6 +8,7 @@ import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig
 }
+import com.teletracker.common.tasks.Args
 import com.teletracker.common.tasks.TeletrackerTask.FailureResult
 import com.teletracker.tasks.TeletrackerTaskRunner
 import io.circe.Json
@@ -49,7 +50,7 @@ class TaskQueueWorker(
         new TeletrackerTaskRunnable(
           message,
           task,
-          extractArgs(message.args)
+          Args.extractArgs(message.args)
         )
 
       runnable.addCallback {
@@ -89,20 +90,5 @@ class TaskQueueWorker(
 
         Future.failed(e)
     }
-  }
-
-  private def extractArgs(args: Map[String, Json]): Map[String, Option[Any]] = {
-    args.mapValues(extractValue)
-  }
-
-  private def extractValue(j: Json): Option[Any] = {
-    j.fold(
-      None,
-      Some(_),
-      x => Some(x.toDouble),
-      Some(_),
-      v => Some(v.map(extractValue)),
-      o => Some(o.toMap.mapValues(extractValue))
-    )
   }
 }

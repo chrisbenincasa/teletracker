@@ -59,11 +59,32 @@ const wait = ms => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
+const withTryCatch = async f => {
+  try {
+    let response = await f();
+    if (process.env.SLEEP && process.env.SLEEP > 0) {
+      await wait(Number(process.env.SLEEP));
+    }
+    return response;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
 const handleRecord = async (client, jsonRecord) => {
   switch (jsonRecord.operation) {
+    case 'index':
+      return await withTryCatch(() => {
+        return client.index({
+          id: jsonRecord.index.id,
+          index: jsonRecord.index.index,
+          body: jsonRecord.index.body,
+        });
+      });
     case 'update':
-      try {
-        let response = await client.update({
+      return await withTryCatch(() => {
+        return client.update({
           index: jsonRecord.update.index,
           id: jsonRecord.update.id,
           body: {
@@ -73,16 +94,7 @@ const handleRecord = async (client, jsonRecord) => {
             doc: jsonRecord.update.doc ? jsonRecord.update.doc : undefined,
           },
         });
-
-        if (process.env.SLEEP && process.env.SLEEP > 0) {
-          await wait(Number(process.env.SLEEP));
-        }
-
-        return response;
-      } catch (e) {
-        console.error(e);
-        throw e;
-      }
+      });
 
     default:
       console.error(`Op type ${jsonRecord.operation} is unsupported`);

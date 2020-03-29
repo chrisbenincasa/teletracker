@@ -6,6 +6,7 @@ import com.teletracker.common.elasticsearch.{EsItem, EsPerson, PersonLookup}
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
 import com.teletracker.common.util.json.circe._
+import com.teletracker.common.util.time.LocalDateUtils
 import com.teletracker.service.api
 import com.teletracker.service.api.ItemApi
 import com.teletracker.service.api.model.Person
@@ -117,8 +118,8 @@ class ItemsController @Inject()(
         bookmark = req.bookmark.map(Bookmark.parse),
         releaseYear = Some(
           OpenDateRange(
-            req.minReleaseYear.map(localDateAtYear),
-            req.maxReleaseYear.map(localDateAtYear)
+            req.minReleaseYear.map(LocalDateUtils.localDateAtYear),
+            req.maxReleaseYear.map(LocalDateUtils.localDateAtYear)
           )
         )
       )
@@ -140,9 +141,6 @@ class ItemsController @Inject()(
         })
     }
   }
-
-  // TODO: Common place
-  private def localDateAtYear(year: Int): LocalDate = LocalDate.of(year, 1, 1)
 }
 
 @JsonCodec

@@ -110,9 +110,9 @@ export class TeletrackerApi {
       query: searchText,
       bookmark,
       limit,
-      itemTypes,
-      networks,
-      genres,
+      itemTypes: itemTypes ? itemTypes.join(',') : undefined,
+      networks: networks ? networks.join(',') : undefined,
+      genres: genres ? genres.join(',') : undefined,
       releaseYearRange,
       sort,
     });

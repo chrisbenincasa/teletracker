@@ -224,7 +224,7 @@ trait TvShowId
   similar: Option[PagedResult[TvShow]])
     extends HasTmdbId
 
-@JsonCodec case class TvAlternativeTitles(titles: List[TvAlternativeTitle])
+@JsonCodec case class TvAlternativeTitles(results: List[TvAlternativeTitle])
 
 @JsonCodec case class TvAlternativeTitle(
   iso_3166_1: String,

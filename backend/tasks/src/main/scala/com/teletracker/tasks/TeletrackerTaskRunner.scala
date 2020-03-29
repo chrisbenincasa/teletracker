@@ -1,11 +1,10 @@
 package com.teletracker.tasks
 
 import com.google.inject.{Injector, Module}
-import com.teletracker.common.tasks.TeletrackerTask
+import com.teletracker.common.tasks.{Args, TeletrackerTask}
 import com.teletracker.common.tasks.model.TeletrackerTaskIdentifier
 import io.circe.Json
 import javax.inject.Inject
-import com.google.inject.util.Modules
 import com.teletracker.tasks.inject.TaskSchedulerModule
 import scala.compat.java8.OptionConverters._
 import scala.util.{Failure, Success, Try}
@@ -125,7 +124,7 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
   def run(
     clazz: String,
     args: Map[String, Option[Any]]
-  ): Unit = {
+  ): TeletrackerTask.TaskResult = {
     getInstance(clazz)
       .run(args)
   }
@@ -133,22 +132,7 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
   def runFromJson(
     clazz: String,
     args: Map[String, Json]
-  ) = {
-    getInstance(clazz).run(extractArgs(args))
-  }
-
-  private def extractArgs(args: Map[String, Json]): Map[String, Option[Any]] = {
-    args.mapValues(extractValue)
-  }
-
-  private def extractValue(j: Json): Option[Any] = {
-    j.fold(
-      None,
-      Some(_),
-      x => Some(x.toDouble),
-      Some(_),
-      v => Some(v.map(extractValue)),
-      o => Some(o.toMap.mapValues(extractValue))
-    )
+  ): TeletrackerTask.TaskResult = {
+    run(clazz, Args.extractArgs(args))
   }
 }

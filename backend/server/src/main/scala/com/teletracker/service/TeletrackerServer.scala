@@ -76,10 +76,10 @@ class TeletrackerServer(
         val context = SslContextBuilder
           .forServer(
             new File(
-              s"${System.getenv("LOCALCERTS_PATH")}/server.crt"
+              s"${System.getenv("LOCALCERTS_PATH")}/fullchain.pem"
             ),
             new File(
-              s"${System.getenv("LOCALCERTS_PATH")}/server.key"
+              s"${System.getenv("LOCALCERTS_PATH")}/privkey.pem"
             ),
             null
           )

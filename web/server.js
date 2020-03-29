@@ -13,8 +13,8 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 const httpsOptions = {
-  key: fs.readFileSync('../localcerts/localhost.key'),
-  cert: fs.readFileSync('../localcerts/localhost.crt'),
+  key: fs.readFileSync('../localcerts/privkey.pem'),
+  cert: fs.readFileSync('../localcerts/fullchain.pem'),
 };
 
 if (process.env.NODE_ENV !== 'production') {
