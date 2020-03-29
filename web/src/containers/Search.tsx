@@ -175,6 +175,8 @@ const Search = ({ inViewportChange }) => {
     // We won't want to rely on this initially because initial load is relying on query param not redux state.
     const fallbackSearchText = currentSearchText || '';
 
+    console.log(searchText, itemTypes);
+
     if (!isSearching) {
       dispatch(
         search({

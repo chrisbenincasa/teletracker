@@ -53,6 +53,8 @@ SearchWrapper.getInitialProps = async (ctx: NextPageContext & WithStore) => {
       }),
     );
 
+    console.log(filterParams);
+
     let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.searchV2(
       await currentUserJwt(),
       query,
