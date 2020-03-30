@@ -1,6 +1,6 @@
 resource "aws_elasticsearch_domain" "teletracker-qa-es" {
   domain_name           = "teletracker-qa"
-  elasticsearch_version = "7.1"
+  elasticsearch_version = "7.4"
 
   cluster_config {
     instance_type  = "t2.small.elasticsearch"
@@ -45,7 +45,8 @@ resource "aws_elasticsearch_domain_policy" "main" {
                         "67.164.191.249",
                         "54.193.107.226",
                         "54.148.251.95",
-                        "73.243.144.208"
+                        "73.243.144.208",
+                        "71.185.54.20"
                     ]
                 }
             },
