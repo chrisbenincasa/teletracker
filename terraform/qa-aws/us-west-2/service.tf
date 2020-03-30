@@ -1,5 +1,5 @@
 data "template_file" "teletracker-qa-server-task-definition-template" {
-  template = file("${path.module}/task-definitions/teletracker-qa-server-task-definition.json")
+  template = file("${path.module}/task-definitions/teletracker-qa-server-only-task-definition.json")
   vars = {
     image = var.server_image
   }
@@ -36,11 +36,11 @@ resource "aws_ecs_service" "teletracker-qa-server" {
     type  = "spread"
   }
 
-  # load_balancer {
-  #   target_group_arn = aws_lb_target_group.teletracker-qa-server.arn
-  #   container_name   = "teletracker-server"
-  #   container_port   = 3001
-  # }
+  load_balancer {
+    target_group_arn = aws_lb_target_group.teletracker-qa-server.arn
+    container_name   = "teletracker-server"
+    container_port   = 3001
+  }
 
   lifecycle {
     ignore_changes = ["desired_count"]

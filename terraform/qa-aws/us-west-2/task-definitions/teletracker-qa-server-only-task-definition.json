@@ -1,0 +1,52 @@
+[
+  {
+    "name": "teletracker-server",
+    "image": "${image}",
+    "cpu": 768,
+    "memory": 768,
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 3001,
+        "hostPort": 0,
+        "protocol": "tcp"
+      }
+    ],
+    "environment": [
+      {
+        "name": "ES_SCHEME",
+        "value": "https"
+      },
+      {
+        "name": "ES_PORT",
+        "value": "443"
+      },
+      {
+        "name": "JWT_SECRET",
+        "value": "60d434edf5cba8bb3f2bed7646a0729cb1a9aea053c8715dc6b5ad97c10c7473"
+      },
+      {
+        "name": "ES_HOST",
+        "value": "search-teletracker-qa-igmliq26kf3wlgxlrihy2bqfuu.us-west-2.es.amazonaws.com"
+      },
+      {
+        "name": "TMDB_API_KEY",
+        "value": "f702b0991c1191d6dbd370b688ff780c"
+      },
+      {
+        "name": "DB_HOST",
+        "value": "teletracker-qa.ch00roo5aywx.us-west-1.rds.amazonaws.com"
+      },
+      {
+        "name": "ADMINISTRATOR_KEY",
+        "value": "+pxK@ZNxp/XOlws1%Ga)vqfcvqmBh/"
+      }
+    ],
+    "secrets": [
+      {
+        "name": "DB_PASSWORD",
+        "valueFrom": "arn:aws:ssm:us-west-1:302782651551:parameter/teletracker-qa-db-password"
+      }
+    ]
+  }
+]
