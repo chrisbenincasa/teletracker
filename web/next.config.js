@@ -11,6 +11,8 @@ if (!NODE_ENV) {
   );
 }
 
+console.log('NODE_ENV=' + NODE_ENV);
+
 const dotenvFiles = [
   `.env.${NODE_ENV}.local`,
   `.env.${NODE_ENV}`,
