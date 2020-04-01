@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.hulu
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.tasks.scraper.DeltaLocateAndRunJob
+import com.teletracker.tasks.scraper.{DeltaLocateAndRunJob, DeltaLocatorJobArgs}
 import com.teletracker.tasks.util.ArgJsonInstances._
 import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject
@@ -21,12 +21,20 @@ class LocateAndRunHuluCatalogDelta @Inject()(
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
-    extends DeltaLocateAndRunJob[HuluCatalogDeltaIngestJob](
+    extends DeltaLocateAndRunJob[
+      DeltaLocatorJobArgs,
+      HuluCatalogDeltaIngestJob
+    ](
       publisher,
       s3Client,
       sourceRetriever,
       teletrackerConfig
     ) {
+
+  override protected def postParseArgs(
+    halfParsed: DeltaLocatorJobArgs
+  ): DeltaLocatorJobArgs = identity(halfParsed)
+
   override protected def getKey(today: LocalDate): String =
     HuluDeltaLocator.getKey(today)
 }

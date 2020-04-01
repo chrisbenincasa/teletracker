@@ -43,7 +43,7 @@ export interface Item extends HasSlug {
   runtime?: number;
   slug: Slug;
   tags?: ItemTag[];
-  title?: string[];
+  title?: string;
   type: ItemType;
 
   // computed fields
@@ -95,14 +95,13 @@ export class ItemFactory {
 
     const canonicalTitle =
       item.title && item.title.length
-        ? item.title[0]
+        ? item.title
         : item.alternate_titles && item.alternate_titles.length
         ? item.alternate_titles[0]
         : item.original_title;
 
     return {
       ...item,
-      title: item.alternate_titles,
       cast: (item.cast || []).map(castMember => {
         return {
           ...castMember,

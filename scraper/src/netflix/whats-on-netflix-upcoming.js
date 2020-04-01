@@ -4,7 +4,7 @@ import { USER_AGENT_STRING } from '../common/constants';
 import moment from 'moment';
 
 const TITLE_REGEX = /What's Coming to Netflix on ([A-z]+ [0-9a-z]+).*/i;
-const nameAndYearRegex = /^(.*)\s\((\d+)\)(\s?N)$/i;
+const nameAndParenRegex = /^(.*)\s\((.+)\)(\s?N)?(.*)$/i;
 
 export const scrape = async event => {
   try {
@@ -56,7 +56,13 @@ export const scrape = async event => {
           )
           .get()
           .filter(x => x.trim().length > 0);
-        console.log(listItems);
+        if (listItems) {
+          listItems.forEach(item => {
+            if (item) {
+              console.log(item, nameAndParenRegex.exec(item));
+            }
+          });
+        }
       }
     });
   } catch (e) {

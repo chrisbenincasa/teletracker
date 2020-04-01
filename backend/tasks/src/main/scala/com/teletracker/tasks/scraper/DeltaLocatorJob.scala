@@ -9,7 +9,6 @@ import com.teletracker.tasks.util.SourceRetriever
 import com.teletracker.tasks.TeletrackerTaskRunner
 import io.circe.Encoder
 import io.circe.generic.JsonCodec
-import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{
   GetObjectRequest,
@@ -21,55 +20,69 @@ import java.time.LocalDate
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
+trait DeltaLocatorJobArgsLike {
+  def maxDaysBack: Int
+  def local: Boolean
+  def seedDumpDate: Option[LocalDate]
+}
+
 @JsonCodec
 case class DeltaLocatorJobArgs(
   maxDaysBack: Int,
-  local: Boolean)
+  local: Boolean,
+  seedDumpDate: Option[LocalDate] = None)
+    extends DeltaLocatorJobArgsLike
 
-abstract class DeltaLocatorJob(
+abstract class DeltaLocatorJob[ArgsType <: DeltaLocatorJobArgsLike](
   publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
-)(implicit executionContext: ExecutionContext)
+)(implicit executionContext: ExecutionContext,
+  enc: Encoder[ArgsType])
     extends TeletrackerTask {
 
-  override type TypedArgs = DeltaLocatorJobArgs
+  override type TypedArgs = ArgsType
 
-  implicit override val typedArgsEncoder: Encoder[DeltaLocatorJobArgs] =
-    io.circe.generic.semiauto.deriveEncoder
+  implicit override val typedArgsEncoder: Encoder[ArgsType] =
+    enc
 
   protected def defaultMaxDaysBack = 3
 
-  override def preparseArgs(args: Args): DeltaLocatorJobArgs =
-    DeltaLocatorJobArgs(
-      maxDaysBack = args.valueOrDefault("maxDaysBack", defaultMaxDaysBack),
-      local = args.valueOrDefault("local", false)
+  override def preparseArgs(args: Args): ArgsType =
+    postParseArgs(
+      DeltaLocatorJobArgs(
+        maxDaysBack = args.valueOrDefault("maxDaysBack", defaultMaxDaysBack),
+        local = args.valueOrDefault("local", false),
+        seedDumpDate = args.value[LocalDate]("seedDumpDate")
+      )
     )
+
+  protected def postParseArgs(halfParsed: DeltaLocatorJobArgs): ArgsType
 
   override protected def runInternal(args: Args): Unit = {
     val parsedArgs = preparseArgs(args)
-    val today = LocalDate.now()
+    val seedDate = parsedArgs.seedDumpDate.getOrElse(LocalDate.now())
 
     try {
       s3Client.getObject(
         GetObjectRequest
           .builder()
           .bucket(teletrackerConfig.data.s3_bucket)
-          .key(getKey(today))
+          .key(getKey(seedDate))
           .build()
       )
     } catch {
       case _: NoSuchKeyException =>
         throw new RuntimeException(
-          s"Could not find seed dump for date $today at key ${getKey(today)}"
+          s"Could not find seed dump for date $seedDate at key ${getKey(seedDate)}"
         )
     }
 
     val previousDate = (1 to parsedArgs.maxDaysBack).toStream
       .map(daysBack => {
         try {
-          val date = today.minusDays(daysBack)
+          val date = seedDate.minusDays(daysBack)
 
           s3Client.getObject(
             GetObjectRequest
@@ -98,7 +111,7 @@ abstract class DeltaLocatorJob(
         val snapshotAfterLocation = new URI(
           "s3",
           teletrackerConfig.data.s3_bucket,
-          "/" + getKey(today),
+          "/" + getKey(seedDate),
           null
         )
 
@@ -109,7 +122,7 @@ abstract class DeltaLocatorJob(
         val (actualBeforeLocation, actualAfterLocation) =
           postProcessDeltas(
             snapshotBeforeLocation -> value,
-            snapshotAfterLocation -> today
+            snapshotAfterLocation -> seedDate
           )
 
         if (actualBeforeLocation != snapshotBeforeLocation || actualAfterLocation != actualAfterLocation) {
@@ -158,14 +171,18 @@ abstract class DeltaLocatorJob(
   ): List[TeletrackerTaskQueueMessage]
 }
 
-abstract class DeltaLocateAndRunJob[T <: IngestDeltaJob[_]: ClassTag](
+abstract class DeltaLocateAndRunJob[
+  ArgsType <: DeltaLocatorJobArgsLike,
+  T <: IngestDeltaJob[_]: ClassTag
+](
   publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
 )(implicit enc: Encoder.AsObject[T#TypedArgs],
-  executionContext: ExecutionContext)
-    extends DeltaLocatorJob(
+  executionContext: ExecutionContext,
+  argsEnc: Encoder[ArgsType])
+    extends DeltaLocatorJob[ArgsType](
       publisher,
       s3Client,
       sourceRetriever,

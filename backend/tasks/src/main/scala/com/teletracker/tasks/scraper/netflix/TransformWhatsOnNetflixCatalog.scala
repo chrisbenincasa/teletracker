@@ -12,7 +12,7 @@ import java.net.URI
 import java.nio.file.Files
 
 object TransformWhatsOnNetflixCatalog {
-  def convert(item: WhatsOnNetflixCatalogItem) = {
+  def convert(item: WhatsOnNetflixCatalogItem): NetflixCatalogItem = {
     NetflixCatalogItem(
       availableDate = None,
       title = item.title.trim,
@@ -26,7 +26,8 @@ object TransformWhatsOnNetflixCatalog {
             s"Encountered unexpected type = $x.\n${item.asJson.spaces2}"
           )
       },
-      externalId = Some(item.netflixid)
+      externalId = Some(item.netflixid),
+      description = Some(item.description).filter(_.nonEmpty)
     )
   }
 }
@@ -51,7 +52,7 @@ class TransformWhatsOnNetflixCatalog @Inject()(
     try {
       new IngestJobParser().parse[WhatsOnNetflixCatalogItem](
         source.getLines(),
-        IngestJobParser.AllJson
+        IngestJobParser.JsonPerLine
       ) match {
         case Left(value) =>
           throw value

@@ -12,8 +12,7 @@ export function windowTitleForItem(
   let titleToShow: string | undefined;
 
   if (item) {
-    titleToShow =
-      item.title && item.title.length ? item.title[0] : item.original_title;
+    titleToShow = item.canonicalTitle;
   }
 
   if (_.isUndefined(titleToShow)) {

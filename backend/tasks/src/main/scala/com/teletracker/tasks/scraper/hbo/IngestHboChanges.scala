@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper.hbo
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
@@ -28,6 +29,7 @@ object IngestHboChanges extends IngestJobApp[IngestHboChanges]
 object HboScrapeItem
 
 class IngestHboChanges @Inject()(
+  protected val teletrackerConfig: TeletrackerConfig,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
@@ -62,4 +64,6 @@ case class HboScrapeItem(
   override def isTvShow: Boolean = false
 
   override def releaseYear: Option[Int] = parsedReleaseYear
+
+  override def description: Option[String] = None
 }

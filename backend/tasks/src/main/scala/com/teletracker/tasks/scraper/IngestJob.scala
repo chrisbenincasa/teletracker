@@ -4,6 +4,7 @@ import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model._
 import com.teletracker.common.elasticsearch.{
   EsAvailability,
+  EsExternalId,
   EsItem,
   ItemLookup,
   ItemUpdater
@@ -214,7 +215,12 @@ abstract class IngestJob[T <: ScrapedItem](
             availabilities
         }
 
-        esItem.copy(availability = Some(newAvailabilities.toList))
+        val newExternalIds = esItem.externalIdsGrouped ++ getExternalIds(item)
+
+        esItem.copy(
+          availability = Some(newAvailabilities.toList),
+          external_ids = EsExternalId.fromMap(newExternalIds)
+        )
     }
 
     if (!args.dryRun) {
@@ -305,6 +311,8 @@ abstract class IngestJob[T <: ScrapedItem](
     end.exists(_.isAfter(today))
   }
 
+  protected def getExternalIds(item: T): Map[ExternalSource, String] = Map.empty
+
   protected def uploadResultFiles(
     parsedArgs: TypedArgs,
     rawArgs: Args
@@ -325,7 +333,17 @@ abstract class IngestJob[T <: ScrapedItem](
           missingItemsFile.toPath
         )
       } catch {
-        case NonFatal(e) => logger.error("Error writing match-items file", e)
+        case NonFatal(e) => logger.error("Error writing missing-items file", e)
+      }
+
+      try {
+        new SourceWriter(s3).writeFile(
+          uri.resolve(s"${uri.getPath}/potential-matches.txt"),
+          potentialMatchFile.toPath
+        )
+      } catch {
+        case NonFatal(e) =>
+          logger.error("Error writing potential-matches file", e)
       }
     })
   }
@@ -339,6 +357,7 @@ trait ScrapedItem {
   def network: String
   def status: String
   def externalId: Option[String]
+  def description: Option[String]
 
   def actualItemId: Option[UUID] = None
 
@@ -358,4 +377,6 @@ trait ScrapedItem {
       None
     }
   }
+
+  def url: Option[String] = None
 }

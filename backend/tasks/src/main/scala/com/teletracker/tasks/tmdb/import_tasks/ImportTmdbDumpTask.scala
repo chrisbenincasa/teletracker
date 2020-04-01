@@ -3,7 +3,7 @@ package com.teletracker.tasks.tmdb.import_tasks
 import com.teletracker.common.model.tmdb.{ErrorResponse, HasTmdbId}
 import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.util.GenreCache
+import com.teletracker.common.util.{AsyncStream, GenreCache}
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
 import com.teletracker.tasks.util.SourceRetriever
@@ -11,6 +11,8 @@ import io.circe.parser._
 import io.circe.{Decoder, Encoder}
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
+import java.time.OffsetDateTime
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -41,6 +43,8 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
     extends TeletrackerTask {
 
   import com.teletracker.common.util.json.circe._
+
+  private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
   private val processedCounter = new AtomicInteger()
 
@@ -79,30 +83,17 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
       .safeTake(limit)
       .foreach(source => {
         try {
-          SequentialFutures
-            .batchedIterator(
-              source
-                .getLines()
-                .zipWithIndex
-                .filter(_._1.nonEmpty)
-                .flatMap(Function.tupled(extractLine))
-                .filter(shouldHandleItem)
-                .safeTake(perFileLimit),
-              parallelism,
-              perElementWait = perBatchSleepMs.map(_ millis)
-            )(batch => {
-              Future
-                .sequence(
-                  batch.map(handleItem(typedArgs, _))
-                )
-                .map(processes => {
-                  val numProcessed = processes.size
-                  val totalProcessed = processedCounter.addAndGet(numProcessed)
-                  if (totalProcessed % 500 == 0) {
-                    logger.info(s"Processed $totalProcessed items so far.")
-                  }
-                })
-            })
+          AsyncStream
+            .fromStream(source.getLines().toStream.zipWithIndex)
+            .flatMapSeq(Function.tupled(extractLine))
+            .filter(shouldHandleItem)
+            .safeTake(perFileLimit)
+            .grouped(parallelism)
+            .delayedMapF(
+              perBatchSleepMs.map(_ millis).getOrElse(0 millis),
+              scheduler
+            )(handleBatch(typedArgs, _))
+            .force
             .await()
         } finally {
           source.close()
@@ -110,6 +101,23 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
       })
 
     logger.info(s"Successfully processed: ${processedCounter.get()} items.")
+  }
+
+  private def handleBatch(
+    typedArgs: TypedArgs,
+    batch: Seq[T]
+  ) = {
+    Future
+      .sequence(
+        batch.map(handleItem(typedArgs, _))
+      )
+      .map(processes => {
+        val numProcessed = processes.size
+        val totalProcessed = processedCounter.addAndGet(numProcessed)
+        if (totalProcessed % 500 == 0) {
+          logger.info(s"Processed $totalProcessed items so far.")
+        }
+      })
   }
 
   private def extractLine(

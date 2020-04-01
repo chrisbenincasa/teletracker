@@ -3,6 +3,7 @@ package com.teletracker.tasks.util
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import java.io.File
 import java.net.URI
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 
@@ -13,6 +14,12 @@ class SourceWriter @Inject()(s3Client: S3Client) {
   ): Unit = {
     destination.getScheme match {
       case "file" =>
+        val dest = new File(destination)
+        if (!dest.exists()) {
+          dest.getParentFile.mkdirs()
+          dest.createNewFile()
+        }
+
         Files.copy(
           file,
           Paths.get(destination),

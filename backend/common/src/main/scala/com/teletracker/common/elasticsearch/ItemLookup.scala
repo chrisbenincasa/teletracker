@@ -8,6 +8,11 @@ import javax.inject.Inject
 import org.elasticsearch.action.get.{GetRequest, MultiGetRequest}
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
 import org.elasticsearch.index.query.{BoolQueryBuilder, Operator, QueryBuilders}
+import org.elasticsearch.index.query.QueryBuilders.{
+  boolQuery,
+  matchQuery,
+  termQuery
+}
 import org.elasticsearch.indices.TermsLookup
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import java.util.UUID
@@ -59,13 +64,11 @@ class ItemLookup @Inject()(
     id: String,
     thingType: ItemType
   ): Future[Option[EsItem]] = {
-    val query = QueryBuilders
-      .boolQuery()
+    val query = boolQuery()
       .filter(
-        QueryBuilders
-          .termQuery("external_ids", EsExternalId(source, id).toString)
+        termQuery("external_ids", EsExternalId(source, id).toString)
       )
-      .filter(QueryBuilders.termQuery("type", thingType.toString))
+      .filter(termQuery("type", thingType.toString))
 
     singleItemSearch(query)
   }
@@ -78,13 +81,11 @@ class ItemLookup @Inject()(
     } else {
       val searches = items.map {
         case (source, id, typ) =>
-          val query = QueryBuilders
-            .boolQuery()
+          val query = boolQuery()
             .filter(
-              QueryBuilders
-                .termQuery("external_ids", EsExternalId(source, id).toString)
+              termQuery("external_ids", EsExternalId(source, id).toString)
             )
-            .filter(QueryBuilders.termQuery("type", typ.toString))
+            .filter(termQuery("type", typ.toString))
 
           new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
             .source(new SearchSourceBuilder().query(query).size(1))
@@ -109,13 +110,17 @@ class ItemLookup @Inject()(
   }
 
   def lookupItemsByTitleMatch(
-    titles: List[(String, Option[ItemType], Option[Range])] // TODO: Accept a range
+    titles: List[(String, Option[ItemType], Option[Range])], // TODO: Accept a range
+    looseReleaseYearMatching: Boolean = false
   ): Future[Map[String, EsItem]] = {
     if (titles.isEmpty) {
       Future.successful(Map.empty)
     } else {
       val searches = titles
-        .map(Function.tupled(exactTitleMatchQuery))
+        .map(
+          Function
+            .tupled(exactTitleMatchQuery(_, _, _, looseReleaseYearMatching))
+        )
         .map(query => {
           val searchSource = new SearchSourceBuilder().query(query).size(1)
           new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
@@ -137,14 +142,6 @@ class ItemLookup @Inject()(
         .map(_.flatten.toMap)
     }
 
-  }
-
-  def lookupItemByTitleMatch(
-    title: String,
-    thingType: Option[ItemType],
-    releaseYear: Option[Range]
-  ): Future[Option[EsItem]] = {
-    singleItemSearch(exactTitleMatchQuery(title, thingType, releaseYear))
   }
 
   def lookupItemsBySlug(
@@ -192,22 +189,20 @@ class ItemLookup @Inject()(
   ): Future[Option[ItemLookupResponse]] = {
     val identifierQuery = identifier match {
       case Left(value) =>
-        QueryBuilders
-          .boolQuery()
-          .filter(QueryBuilders.termQuery("id", value.toString))
+        boolQuery()
+          .filter(termQuery("id", value.toString))
 
       case Right(value) =>
         require(thingType.isDefined)
 
-        QueryBuilders
-          .boolQuery()
-          .filter(QueryBuilders.termQuery("slug", value.toString))
+        boolQuery()
+          .filter(termQuery("slug", value.toString))
     }
 
     val query = identifierQuery.applyOptional(thingType)(
       (builder, typ) =>
         builder.filter(
-          QueryBuilders.termQuery("type", typ.toString)
+          termQuery("type", typ.toString)
         )
     )
 
@@ -260,51 +255,67 @@ class ItemLookup @Inject()(
     thingType: ItemType,
     releaseYear: Option[Range]
   ) = {
-    QueryBuilders
-      .boolQuery()
+    boolQuery()
       .filter(
-        QueryBuilders
-          .termQuery("slug", slug.value)
+        termQuery("slug", slug.value)
       )
-      .filter(QueryBuilders.termQuery("type", thingType.toString))
-      .applyOptional(releaseYear)(releaseYearRangeQuery)
+      .filter(termQuery("type", thingType.toString))
+      .applyOptional(releaseYear)(
+        releaseYearRangeQuery(_, _, looseMatching = false)
+      )
   }
 
   private def exactTitleMatchQuery(
     title: String,
     thingType: Option[ItemType],
-    releaseYear: Option[Range]
+    releaseYear: Option[Range],
+    looseYearMatching: Boolean
   ) = {
-    QueryBuilders
-      .boolQuery()
-      .should(
-        QueryBuilders.matchQuery("original_title", title).operator(Operator.AND)
+    boolQuery()
+      .must(
+        boolQuery()
+          .should(
+            matchQuery("original_title", title)
+              .operator(Operator.AND)
+          )
+          .should(
+            matchQuery("title", title).operator(Operator.AND)
+          )
+          .should(
+            matchQuery("alternative_titles.title", title)
+              .operator(Operator.AND)
+          )
+          .minimumShouldMatch(1)
       )
-      .should(
-        QueryBuilders.matchQuery("title", title).operator(Operator.AND)
-      )
-      .minimumShouldMatch(1)
       .applyOptional(thingType)(
         (builder, typ) =>
           builder.filter(
-            QueryBuilders
-              .termQuery("type", typ.toString)
+            termQuery("type", typ.toString)
           )
       )
-      .applyOptional(releaseYear)(releaseYearRangeQuery)
+      .applyOptional(releaseYear)(
+        releaseYearRangeQuery(_, _, looseYearMatching)
+      )
   }
 
   private def releaseYearRangeQuery(
     builder: BoolQueryBuilder,
-    range: Range
+    range: Range,
+    looseMatching: Boolean
   ) = {
-    builder.filter(
-      QueryBuilders
-        .rangeQuery("release_date")
-        .format("yyyy")
-        .gte(s"${range.head}||/y")
-        .lte(s"${range.last}||/y")
-    )
+    val rangeQuery = QueryBuilders
+      .rangeQuery("release_date")
+      .format("yyyy")
+      .gte(s"${range.head}||/y")
+      .lte(s"${range.last}||/y")
+
+    if (looseMatching) {
+      builder.should(rangeQuery).boost(2)
+    } else {
+      builder.filter(
+        rangeQuery
+      )
+    }
   }
 
 //  private def executeMultisearch()
@@ -324,8 +335,7 @@ class ItemLookup @Inject()(
   private def materializeRecommendations(
     id: UUID
   ): Future[ElasticsearchItemsResponse] = {
-    val query = QueryBuilders
-      .boolQuery()
+    val query = boolQuery()
       .must(
         QueryBuilders
           .termsLookupQuery(
@@ -356,8 +366,7 @@ class ItemLookup @Inject()(
     limit: Int
   )(implicit executionContext: ExecutionContext
   ): Future[ElasticsearchPeopleResponse] = {
-    val query = QueryBuilders
-      .boolQuery()
+    val query = boolQuery()
       .must(
         QueryBuilders
           .termsLookupQuery(

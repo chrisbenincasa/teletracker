@@ -29,12 +29,16 @@ abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
   teletrackerConfig: TeletrackerConfig
 )(implicit enc: Encoder.AsObject[T#TypedArgs],
   executionContext: ExecutionContext)
-    extends DeltaLocatorJob(
+    extends DeltaLocatorJob[DeltaLocatorJobArgs](
       publisher,
       s3Client,
       sourceRetriever,
       teletrackerConfig
     ) {
+
+  override protected def postParseArgs(
+    halfParsed: DeltaLocatorJobArgs
+  ): DeltaLocatorJobArgs = identity(halfParsed)
 
   override protected def getKey(today: LocalDate): String = {
     val typeString = itemType match {

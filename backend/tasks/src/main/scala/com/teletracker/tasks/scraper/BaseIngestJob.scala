@@ -3,9 +3,14 @@ package com.teletracker.tasks.scraper
 import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
+import com.teletracker.common.elasticsearch.EsItem
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.tasks.scraper.matching.MatchMode
-import com.teletracker.tasks.scraper.model.{MatchResult, NonMatchResult}
+import com.teletracker.tasks.scraper.model.{
+  MatchResult,
+  NonMatchResult,
+  PotentialMatch
+}
 import io.circe.Codec
 import io.circe.syntax._
 import javax.inject.Inject
@@ -42,6 +47,9 @@ abstract class BaseIngestJob[
   protected val matchItemsFile = new File(
     s"${today}_${getClass.getSimpleName}-match-items.json"
   )
+  protected val potentialMatchFile = new File(
+    s"${today}_${getClass.getSimpleName}-potential-matches.json"
+  )
 
   protected val missingItemsWriter = new PrintStream(
     new BufferedOutputStream(new FileOutputStream(missingItemsFile))
@@ -49,6 +57,14 @@ abstract class BaseIngestJob[
 
   protected val matchingItemsWriter = new PrintStream(
     new BufferedOutputStream(new FileOutputStream(matchItemsFile))
+  )
+
+  protected val potentialMatchesWriter = new PrintStream(
+    new BufferedOutputStream(
+      new FileOutputStream(
+        potentialMatchFile
+      )
+    )
   )
 
   private val _artifacts: mutable.ListBuffer[File] = {
@@ -69,7 +85,11 @@ abstract class BaseIngestJob[
 
   postrun { _ =>
     missingItemsWriter.flush()
+    missingItemsWriter.close()
     matchingItemsWriter.flush()
+    matchingItemsWriter.close()
+    potentialMatchesWriter.flush()
+    potentialMatchesWriter.close()
   }
 
   postrun(args => {
@@ -146,21 +166,23 @@ abstract class BaseIngestJob[
           args
         )
         .flatMap {
-          case (things, nonMatchedItems) =>
+          case (exactMatchResults, nonMatchedItems) =>
             handleNonMatches(args, nonMatchedItems).flatMap(fallbackMatches => {
-              val allItems = things ++ fallbackMatches
+              val allItems = exactMatchResults ++ fallbackMatches
                 .map(_.toMatchResult)
 
               val originalItems = filteredAndSanitized
-                .map(_.title.toLowerCase())
+                .map(itemUniqueIdentifier)
                 .toSet
 
-              val firstPhaseFinds = things
-                .map(_.esItem.title.get.head.toLowerCase())
+              val firstPhaseFinds = exactMatchResults
+                .map(_.scrapedItem)
+                .map(itemUniqueIdentifier)
                 .toSet
 
               val secondPhaseFinds = fallbackMatches
-                .map(_.originalScrapedItem.title.toLowerCase())
+                .map(_.originalScrapedItem)
+                .map(itemUniqueIdentifier)
                 .toSet
 
               val stillMissing = originalItems -- firstPhaseFinds -- secondPhaseFinds
@@ -179,7 +201,7 @@ abstract class BaseIngestJob[
               )
 
               if (args.dryRun) {
-                writeMatchingItems(allItems)
+                writeMatchingItems(exactMatchResults)
               }
 
               handleMatchResults(allItems, networks, args).map(_ => {
@@ -210,24 +232,39 @@ abstract class BaseIngestJob[
 
   protected def sanitizeItem(item: T): T = identity(item)
 
+  protected def itemUniqueIdentifier(item: T): String = item.title.toLowerCase()
+
   protected def handleNonMatches(
     args: IngestJobArgsType,
     nonMatches: List[T]
   ): Future[List[NonMatchResult[T]]] = Future.successful(Nil)
 
-  protected def writeMissingItems(items: List[T]): Unit = {
+  protected def writeMissingItems(items: List[T]): Unit = synchronized {
     items.foreach(item => {
       missingItemsWriter.println(item.asJson.noSpaces)
     })
   }
 
-  protected def writeMatchingItems(items: List[MatchResult[T]]): Unit = {
-    items
-      .map(_.toSerializable)
-      .foreach(
-        matchingItem =>
-          matchingItemsWriter.println(matchingItem.asJson.noSpaces)
-      )
+  protected def writeMatchingItems(items: List[MatchResult[T]]): Unit =
+    synchronized {
+      items
+        .map(_.toSerializable)
+        .foreach(
+          matchingItem =>
+            matchingItemsWriter.println(matchingItem.asJson.noSpaces)
+        )
+    }
+
+  protected def writePotentialMatches(
+    potentialMatches: Iterable[(EsItem, T)]
+  ): Unit = synchronized {
+    potentialMatches
+      .map(Function.tupled(PotentialMatch.forEsItem))
+      .foreach(potentialMatch => {
+        potentialMatchesWriter.println(
+          potentialMatch.asJson.noSpaces
+        )
+      })
   }
 
   sealed trait ProcessMode

@@ -7,7 +7,12 @@ const startScrape = async scraper => {
   if (scrapers[scraperToRun]) {
     return scrapers[scraperToRun](argv);
   } else {
-    throw new Error(`Scraper \"${scraperToRun}\" not supported`);
+    const all = Object.keys(scrapers)
+      .sort()
+      .join('\n');
+    throw new Error(
+      `Scraper \"${scraperToRun}\" not supported\nSupported scrapers: \n${all}`,
+    );
   }
 };
 

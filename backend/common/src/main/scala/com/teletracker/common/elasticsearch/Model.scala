@@ -12,6 +12,7 @@ import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.JsonCodec
 import java.time.{Instant, LocalDate}
 import java.util.UUID
+import scala.collection.MapLike
 import scala.util.Try
 
 object StringListOrString {
@@ -55,6 +56,10 @@ object EsExternalId {
     val Array(provider, id) = value.split(SEPARATOR, 2)
     EsExternalId(provider, id)
   }
+
+  def fromMap(map: Map[ExternalSource, String]): Option[List[EsExternalId]] =
+    if (map.isEmpty) None
+    else Some(map.toList.map(Function.tupled(apply)))
 }
 
 case class EsExternalId(
