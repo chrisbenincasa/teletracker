@@ -31,7 +31,6 @@ import * as R from 'ramda';
 import React, { useState } from 'react';
 import ReactGA from 'react-ga';
 import { connect } from 'react-redux';
-import { RouteComponentProps } from 'react-router-dom';
 import { bindActionCreators, Dispatch } from 'redux';
 import {
   itemFetchInitiated,
@@ -269,15 +268,7 @@ interface DispatchProps {
   itemPrefetchSuccess: (payload: Item) => void;
 }
 
-interface RouteParams {
-  id: string;
-  type: string;
-}
-
-type NotOwnProps = RouteComponentProps<RouteParams> &
-  DispatchProps &
-  WithStyles<typeof styles> &
-  WithUserProps;
+type NotOwnProps = DispatchProps & WithStyles<typeof styles> & WithUserProps;
 
 type Props = OwnProps & NotOwnProps;
 

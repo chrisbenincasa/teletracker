@@ -5,16 +5,16 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
-import { push } from 'connected-react-router';
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { signup, signUpWithGoogle } from '../actions/auth';
 import { AppState } from '../reducers';
-import { Redirect } from 'react-router';
 import ReactGA from 'react-ga';
 import SignupForm from '../components/Auth/SignupForm';
+import { withRouter } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -38,11 +38,10 @@ const styles = (theme: Theme) =>
     },
   });
 
-interface Props extends WithStyles<typeof styles> {
+interface Props extends WithStyles<typeof styles>, WithRouterProps {
   isAuthed: boolean;
   signup: (username: string, email: string, password: string) => void;
   signUpWithGoogle: () => any;
-  changePage: () => void;
 }
 
 interface State {
@@ -63,16 +62,17 @@ class Signup extends Component<Props, State> {
   }
 
   render() {
-    let { isAuthed, classes } = this.props;
+    let { isAuthed, classes, router } = this.props;
+    if (isAuthed) {
+      router.replace('/');
+    }
 
-    return !isAuthed ? (
+    return (
       <div className={classes.main}>
         <Paper className={classes.paper}>
           <SignupForm />
         </Paper>
       </div>
-    ) : (
-      <Redirect to="/" />
     );
   }
 }
@@ -89,11 +89,10 @@ const mapDispatchToProps = dispatch =>
       signup: (username: string, email: string, password: string) =>
         signup(username, email, password),
       signUpWithGoogle,
-      changePage: () => push('/'),
     },
     dispatch,
   );
 
-export default withStyles(styles)(
-  connect(mapStateToProps, mapDispatchToProps)(Signup),
+export default withRouter(
+  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Signup)),
 );

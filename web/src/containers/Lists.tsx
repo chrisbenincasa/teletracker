@@ -10,7 +10,6 @@ import {
 import * as R from 'ramda';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Link as RouterLink, Redirect } from 'react-router-dom';
 import { bindActionCreators } from 'redux';
 import {
   createList,
@@ -26,6 +25,9 @@ import { Loading } from '../reducers/user';
 import { List as ListType } from '../types';
 import _ from 'lodash';
 import ReactGA from 'react-ga';
+import RouterLink from '../components/RouterLink';
+import { withRouter } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -71,7 +73,8 @@ interface DispatchProps {
 type Props = OwnProps &
   DispatchProps &
   WithStyles<typeof styles> &
-  WithUserProps;
+  WithUserProps &
+  WithRouterProps;
 
 interface State {
   createDialogOpen: boolean;
@@ -170,11 +173,13 @@ class Lists extends Component<Props, State> {
   }
 
   render() {
-    let { isAuthed } = this.props;
-    return isAuthed ? (
+    let { isAuthed, router } = this.props;
+    if (!isAuthed) {
+      router.replace('/login');
+    }
+
+    return (
       <div style={{ display: 'flex', flexGrow: 1 }}>{this.renderLists()}</div>
-    ) : (
-      <Redirect to="/login" />
     );
   }
 }
@@ -197,6 +202,8 @@ const mapDispatchToProps = dispatch =>
     dispatch,
   );
 
-export default withUser(
-  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Lists)),
+export default withRouter(
+  withUser(
+    withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Lists)),
+  ),
 );

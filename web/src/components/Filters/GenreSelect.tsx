@@ -7,7 +7,6 @@ import {
   withStyles,
   WithStyles,
 } from '@material-ui/core';
-// import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { withRouter } from 'next/router';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import { Genre } from '../../types';

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Chip, Theme } from '@material-ui/core';
-import { useHistory } from 'react-router-dom';
 import {
   Genre,
   ItemType,

@@ -6,8 +6,7 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import React, { Component } from 'react';
-import ReactGA from 'react-ga';
-import { Helmet } from 'react-helmet';
+import Head from 'next/head';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -26,14 +25,15 @@ type Props = OwnProps;
 
 class NoMatch404 extends Component<Props> {
   componentDidMount(): void {
-    const page = window.location.pathname + window.location.search;
-    ReactGA.pageview(page);
-    ReactGA.event({
-      category: '404',
-      action: page,
-      value: 1,
-      nonInteraction: true,
-    });
+    // TODO: GA
+    // const page = window.location.pathname + window.location.search;
+    // ReactGA.pageview(page);
+    // ReactGA.event({
+    //   category: '404',
+    //   action: page,
+    //   value: 1,
+    //   nonInteraction: true,
+    // });
   }
 
   render() {
@@ -41,9 +41,9 @@ class NoMatch404 extends Component<Props> {
 
     return (
       <React.Fragment>
-        <Helmet>
+        <Head>
           <title>{`404 | Teletracker`}</title>
-        </Helmet>
+        </Head>
         <div className={classes.wrapper}>
           <Typography variant="h1">404</Typography>
         </div>
