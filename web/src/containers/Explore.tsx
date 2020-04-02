@@ -29,10 +29,9 @@ import { AppState } from '../reducers';
 import { Genre, ItemType, Network } from '../types';
 import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
-import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
+import { FilterParams } from '../utils/searchFilters';
 import {
   parseFilterParamsFromQs,
-  updateUrlParamsForFilter,
   updateUrlParamsForFilterRouter,
 } from '../utils/urlHelper';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';

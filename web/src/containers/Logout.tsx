@@ -4,11 +4,12 @@ import { bindActionCreators } from 'redux';
 import { logout } from '../actions/auth';
 import { connect } from 'react-redux';
 import { LinearProgress } from '@material-ui/core';
-import { Redirect } from 'react-router';
 import _ from 'lodash';
 import ReactGA from 'react-ga';
+import { withRouter } from 'next/router';
+import { WithRouterProps } from 'next/dist/client/with-router';
 
-interface Props {
+interface Props extends WithRouterProps {
   isLoggingOut: boolean;
   logout: () => void;
 }
@@ -43,11 +44,11 @@ class Logout extends React.Component<Props, State> {
   }
 
   render() {
-    return this.state.loggingOut ? (
-      <LinearProgress />
-    ) : (
-      <Redirect to={'/login'} />
-    );
+    if (this.state.loggingOut) {
+      return <LinearProgress />;
+    } else {
+      this.props.router.replace('/');
+    }
   }
 }
 
@@ -65,4 +66,4 @@ const mapDispatchToProps = dispatch =>
     dispatch,
   );
 
-export default connect(mapStateToProps, mapDispatchToProps)(Logout);
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Logout));

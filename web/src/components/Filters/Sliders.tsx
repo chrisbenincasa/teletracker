@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Slider, Theme, Typography } from '@material-ui/core';
-// import { RouteComponentProps, withRouter } from 'react-router';
 import { withRouter } from 'next/router';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import makeStyles from '@material-ui/core/styles/makeStyles';

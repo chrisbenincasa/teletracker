@@ -3,15 +3,15 @@ import { MuiThemeProvider } from '@material-ui/core';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import cookie from 'cookie';
 import _ from 'lodash';
-import { InitStoreOptions } from 'next-redux-wrapper';
 import App, { AppContext } from 'next/app';
 import Head from 'next/head';
 import React from 'react';
 import { Provider } from 'react-redux';
-import { Store } from 'redux';
+import { Action, AnyAction, Store } from 'redux';
 import 'sanitize.css/sanitize.css';
 import createStore from '../store';
 import theme from '../theme';
+import { NextPageContext } from 'next';
 
 const NEXT_REDUX_STORE_KEY = '__NEXT_REDUX_STORE__';
 
@@ -44,6 +44,17 @@ Amplify.configure({
     },
   },
 });
+
+export interface NextJSContext<S = any, A extends Action = AnyAction>
+  extends NextPageContext {
+  store: Store<S, A>;
+  isServer: boolean;
+}
+
+export interface InitStoreOptions {
+  initialState?: any;
+  ctx?: NextJSContext;
+}
 
 const initStore = ({ initialState }: InitStoreOptions): Store => {
   const createStoreInner = () => createStore(initialState).store;

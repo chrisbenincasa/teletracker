@@ -11,7 +11,6 @@ import people, { State as PersonState } from './people';
 import explore, { State as ExploreState } from './explore';
 import filters, { State as FilterState } from './filters';
 import { BOOT_DONE } from '../actions';
-import { connectRouter } from 'connected-react-router';
 
 export interface StartupState {
   isBooting: boolean;
@@ -56,7 +55,7 @@ function startupReducer(
   }
 }
 
-export default history =>
+export default () =>
   combineReducers({
     auth,
     availability,
@@ -65,7 +64,6 @@ export default history =>
     metadata,
     people,
     popular,
-    router: connectRouter(history),
     search,
     startup: startupReducer,
     userSelf,

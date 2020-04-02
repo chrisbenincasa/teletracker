@@ -1,4 +1,3 @@
-import { RouteComponentProps } from 'react-router';
 import _ from 'lodash';
 import {
   isItemType,
@@ -21,24 +20,6 @@ const validQueryParams = [
   'ry_max',
   'cast',
 ];
-
-/**
- * Updates or adds URL parameters
- * @param props
- * @param param
- * @param value
- */
-export const updateURLParameters = (
-  props: RouteComponentProps<any>,
-  param: string,
-  value?: any,
-) => {
-  updateMultipleUrlParams(
-    props.location.search,
-    str => props.history.replace(str),
-    [[param, value]],
-  );
-};
 
 export const updateUrlParamsForFilterRouter = (
   props: WithRouterProps,
@@ -88,42 +69,6 @@ export const updateUrlParamsForFilterRouter = (
         shallow: true,
       });
     },
-    paramUpdates,
-  );
-};
-
-export const updateUrlParamsForFilter = (
-  props: RouteComponentProps<any>,
-  filterParams: FilterParams,
-  excludedParams?: string[],
-): void => {
-  let paramUpdates: [string, any | undefined][] = [
-    ['genres', filterParams.genresFilter],
-    ['networks', filterParams.networks],
-    ['sort', filterParams.sortOrder],
-    ['type', filterParams.itemTypes],
-    [
-      'ry_min',
-      filterParams.sliders && filterParams.sliders.releaseYear
-        ? filterParams.sliders.releaseYear.min
-        : undefined,
-    ],
-    [
-      'ry_max',
-      filterParams.sliders && filterParams.sliders.releaseYear
-        ? filterParams.sliders.releaseYear.max
-        : undefined,
-    ],
-    ['cast', filterParams.people],
-  ];
-
-  paramUpdates = paramUpdates.filter(
-    ([key, _]) => !excludedParams || !excludedParams.includes(key),
-  );
-
-  updateMultipleUrlParams(
-    props.location.search,
-    str => props.history.replace(str),
     paramUpdates,
   );
 };

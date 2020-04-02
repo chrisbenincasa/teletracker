@@ -14,7 +14,6 @@ import {
   withStyles,
 } from '@material-ui/core';
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
-import { push } from 'connected-react-router';
 import * as R from 'ramda';
 import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
@@ -80,7 +79,6 @@ interface Props extends WithStyles<typeof styles>, WithRouterProps {
   isSigningUp: boolean;
   signup: (username: string, email: string, password: string) => void;
   signUpWithGoogle: () => any;
-  changePage: () => void;
   onNav?: () => void;
 }
 
@@ -129,9 +127,6 @@ class SignupForm extends Component<Props, State> {
       email: '',
       password: '',
     });
-
-    // TODO: Protect this with some state.
-    push('/');
   }
 
   render() {
@@ -224,7 +219,6 @@ const mapDispatchToProps = dispatch =>
       signup: (username: string, email: string, password: string) =>
         signup(username, email, password),
       signUpWithGoogle,
-      changePage: () => push('/'),
     },
     dispatch,
   );

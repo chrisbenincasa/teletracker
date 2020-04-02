@@ -25,7 +25,7 @@ import {
   WithStyles,
   withWidth,
 } from '@material-ui/core';
-import { Delete, Edit, Save, Settings } from '@material-ui/icons';
+import { Delete, Edit, Settings } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
 import React, { Component } from 'react';
@@ -53,13 +53,13 @@ import { ListsByIdMap } from '../reducers/lists';
 import {
   Genre,
   List,
-  SortOptions,
-  Network,
   ListGenreRule,
+  ListItemTypeRule,
   ListNetworkRule,
   ListPersonRule,
-  ListItemTypeRule,
   ListReleaseYearRule,
+  Network,
+  SortOptions,
 } from '../types';
 import {
   calculateLimit,
@@ -73,7 +73,6 @@ import {
 } from '../utils/searchFilters';
 import {
   parseFilterParamsFromQs,
-  updateUrlParamsForFilter,
   updateUrlParamsForFilterRouter,
 } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
@@ -82,7 +81,6 @@ import { optionalSetsEqual } from '../utils/sets';
 import { Person } from '../types/v2/Person';
 import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
 import qs from 'querystring';
-import Link from 'next/link';
 
 const styles = (theme: Theme) =>
   createStyles({

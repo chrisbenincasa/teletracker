@@ -1,3 +1,4 @@
+const TerserPlugin = require ('terser-webpack-plugin');
 const withImages = require('next-images');
 const fs = require('fs');
 const { PHASE_PRODUCTION_BUILD } = require('next/constants');
@@ -45,6 +46,16 @@ module.exports = (phase, { defaultConfig }) => {
 
   return withImages({
     env,
+    webpack: (config, { dev, isServer }) => {
+      if (!dev && !isServer) {
+        config.optimization.minimizer = [new TerserPlugin({
+          parallel: true,
+          sourceMap: false
+        })]
+      }
+
+      return config
+    },
     target: 'serverless',
     poweredByHeader: false,
     generateBuildId: async () => {
