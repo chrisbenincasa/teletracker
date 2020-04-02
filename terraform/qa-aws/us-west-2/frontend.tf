@@ -50,7 +50,7 @@ resource "aws_lambda_function" "teletracker-frontend-lambda" {
   publish = true
 
   timeout     = 30
-  memory_size = 512
+  memory_size = 1024
 }
 
 
