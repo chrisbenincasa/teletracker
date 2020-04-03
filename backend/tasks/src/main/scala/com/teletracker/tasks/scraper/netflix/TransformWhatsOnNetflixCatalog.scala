@@ -10,6 +10,7 @@ import io.circe.syntax._
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
 import java.nio.file.Files
+import java.util.concurrent.ConcurrentHashMap
 
 object TransformWhatsOnNetflixCatalog {
   def convert(item: WhatsOnNetflixCatalogItem): NetflixCatalogItem = {
@@ -40,8 +41,6 @@ class TransformWhatsOnNetflixCatalog @Inject()(
     val input = args.valueOrThrow[URI]("source")
     val destination = args.valueOrThrow[URI]("destination")
 
-    val source = sourceRetriever.getSource(input)
-
     val tmpLocation = Files.createTempFile("whats-on-netflix-transform", "tmp")
     tmpLocation.toFile.deleteOnExit()
 
@@ -49,23 +48,30 @@ class TransformWhatsOnNetflixCatalog @Inject()(
       new BufferedOutputStream(new FileOutputStream(tmpLocation.toFile))
     )
 
-    try {
-      new IngestJobParser().parse[WhatsOnNetflixCatalogItem](
-        source.getLines(),
-        IngestJobParser.JsonPerLine
-      ) match {
-        case Left(value) =>
-          throw value
-        case Right(value) =>
-          value
-            .map(TransformWhatsOnNetflixCatalog.convert)
-            .foreach(item => {
-              writer.println(item.asJson.noSpaces)
-            })
-      }
-    } finally {
-      source.close()
-    }
+    val seen = ConcurrentHashMap.newKeySet[String]()
+
+    sourceRetriever
+      .getSourceStream(input)
+      .foreach(source => {
+        try {
+          new IngestJobParser().parse[WhatsOnNetflixCatalogItem](
+            source.getLines(),
+            IngestJobParser.JsonPerLine
+          ) match {
+            case Left(value) =>
+              throw value
+            case Right(value) =>
+              value
+                .map(TransformWhatsOnNetflixCatalog.convert)
+                .filter(_.externalId.forall(seen.add))
+                .foreach(item => {
+                  writer.println(item.asJson.noSpaces)
+                })
+          }
+        } finally {
+          source.close()
+        }
+      })
 
     writer.flush()
     writer.close()

@@ -9,7 +9,7 @@ import { DATA_BUCKET } from '../../common/constants';
 import moment from 'moment';
 import { scheduleTask } from '../../common/task_publisher';
 
-const grabLock = async today => {
+const grabLock = async (today) => {
   await uploadStringToS3(
     DATA_BUCKET,
     `scrape-results/hulu/${today}/catalog-ingest.lock`,
@@ -18,7 +18,7 @@ const grabLock = async today => {
   console.log('Successfully grabbed the lock.');
 };
 
-const releaseLock = async today => {
+const releaseLock = async (today) => {
   await deleteS3Object(
     DATA_BUCKET,
     `scrape-results/hulu/${today}/catalog-ingest.lock`,
@@ -88,7 +88,7 @@ export default async function watch(event) {
       let payload = {
         clazz: 'com.teletracker.tasks.scraper.hulu.HuluCatalogConcatenate',
         args: {
-          source: `s3://${DATA_BUCKET}/scrape-results/hulu/${today}/catalog`,
+          source: `s3://${DATA_BUCKET}/scrape-results/hulu/${today}/catalog/`,
           destination: `s3://${DATA_BUCKET}/scrape-results/hulu/${today}/${today}_hulu-catalog.all.json`,
           scheduleIngestJob: true,
         },

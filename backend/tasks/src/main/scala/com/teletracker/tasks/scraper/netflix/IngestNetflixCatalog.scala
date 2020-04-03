@@ -33,6 +33,7 @@ import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
 import java.time.LocalDate
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.io.Source
@@ -75,6 +76,14 @@ class IngestNetflixCatalog @Inject()(
 
   private val alternateItemsByNetflixId =
     new mutable.HashMap[String, WhatsOnNetflixCatalogItem]()
+
+  private val seenItems = ConcurrentHashMap.newKeySet[String]()
+
+  override protected def shouldProcessItem(
+    item: NetflixCatalogItem
+  ): Boolean = {
+    item.externalId.forall(seenItems.add)
+  }
 
   override protected def preprocess(
     args: IngestJobArgs,

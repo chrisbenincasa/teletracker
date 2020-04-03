@@ -232,7 +232,14 @@ abstract class IngestJob[T <: ScrapedItem](
             Future
               .sequence(
                 batch
-                  .map(itemUpdater.update)
+                  .map(
+                    item =>
+                      itemUpdater.update(item).map(_ => {}).recover {
+                        case NonFatal(e) =>
+                          logger
+                            .error(s"Failed to update item id = ${item.id}", e)
+                      }
+                  )
               )
               .map(_ => {})
         )
