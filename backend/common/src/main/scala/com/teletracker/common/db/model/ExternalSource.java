@@ -9,7 +9,8 @@ public enum ExternalSource {
     TvDb("tvdb"),
     Wikidata("wikidata"),
     Hulu("hulu"),
-    Netflix("netflix");
+    Netflix("netflix"),
+    Hbo("hbo");
 
     private final String name;
 

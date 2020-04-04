@@ -179,6 +179,22 @@ class IngestNetflixCatalog @Inject()(
     item: NetflixCatalogItem,
     today: LocalDate
   ): Boolean = true
+
+  override protected def itemUniqueIdentifier(
+    item: NetflixCatalogItem
+  ): String = {
+    item.externalId.getOrElse(super.itemUniqueIdentifier(item))
+  }
+
+  override protected def getExternalIds(
+    item: NetflixCatalogItem
+  ): Map[ExternalSource, String] = {
+    Map(
+      ExternalSource.Netflix -> item.externalId
+    ).collect {
+      case (k, Some(v)) => k -> v
+    }
+  }
 }
 
 @JsonCodec

@@ -54,19 +54,32 @@ class IngestDisneyPlusCatalog @Inject()(
     }
   }
 
-//  override protected def getAdditionalOutputFiles: Seq[(File, String)] =
-//    Seq(getElasticsearchFallbackMatchFile -> "fallback-matches.txt")
-
   override protected def sanitizeItem(
+    item: DisneyPlusCatalogItem
+  ): DisneyPlusCatalogItem = {
+    Seq(sanitizeSeriesTitle(_), fixItemType(_)).reduce(_.andThen(_)).apply(item)
+  }
+
+  private def sanitizeSeriesTitle(
     item: DisneyPlusCatalogItem
   ): DisneyPlusCatalogItem = {
     if (item.title.endsWith(" - Series")) {
       item.copy(
-        title = item.title.replaceAll(" - Series", "").trim,
-        thingType = Some(ItemType.Show)
+        name = item.title.replaceAll(" - Series", "").trim,
+        `type` = ItemType.Show
       )
     } else {
       item
+    }
+  }
+
+  private def fixItemType(
+    item: DisneyPlusCatalogItem
+  ): DisneyPlusCatalogItem = {
+    item.url match {
+      case Some(value) if value.contains("series") && item.isMovie =>
+        item.copy(`type` = ItemType.Show)
+      case _ => item
     }
   }
 

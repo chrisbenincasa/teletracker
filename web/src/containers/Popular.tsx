@@ -177,7 +177,14 @@ class Popular extends Component<Props, State> {
 
   loadPopular(passBookmark: boolean, firstRun?: boolean, compensate?: number) {
     const {
-      filters: { itemTypes, genresFilter, networks, sliders, people },
+      filters: {
+        itemTypes,
+        genresFilter,
+        networks,
+        sliders,
+        people,
+        sortOrder,
+      },
     } = this.state;
     const { bookmark, retrievePopular, width } = this.props;
 
@@ -205,6 +212,7 @@ class Popular extends Component<Props, State> {
               }
             : undefined,
         castIncludes: people,
+        sort: sortOrder,
       });
     }
   }
@@ -486,7 +494,6 @@ class Popular extends Component<Props, State> {
             isListDynamic={false}
             filters={this.state.filters}
             variant="default"
-            hideSortOptions //Need better solution to just hide popular by default
           />
         </div>
         <AllFilters

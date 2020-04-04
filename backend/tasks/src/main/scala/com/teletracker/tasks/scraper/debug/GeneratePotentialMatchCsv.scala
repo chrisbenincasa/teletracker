@@ -11,7 +11,11 @@ import com.teletracker.tasks.scraper.{
   ScrapedItem
 }
 import com.teletracker.tasks.scraper.hulu.HuluCatalogItem
-import com.teletracker.tasks.scraper.model.{MatchResult, PotentialMatch}
+import com.teletracker.tasks.scraper.model.{
+  DisneyPlusCatalogItem,
+  MatchResult,
+  PotentialMatch
+}
 import com.teletracker.tasks.scraper.netflix.NetflixCatalogItem
 import io.circe.Decoder
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
@@ -96,6 +100,9 @@ class GeneratePotentialMatchCsv extends TeletrackerTaskWithDefaultArgs {
       case ScrapeItemType.NetflixCatalog =>
         new IngestJobParser()
           .stream[PotentialMatch[NetflixCatalogItem]](source.getLines())
+      case ScrapeItemType.DisneyPlusCatalog =>
+        new IngestJobParser()
+          .stream[PotentialMatch[DisneyPlusCatalogItem]](source.getLines())
     }
   }
 }
@@ -175,6 +182,9 @@ class GenerateMatchCsv extends TeletrackerTaskWithDefaultArgs {
       case ScrapeItemType.NetflixCatalog =>
         new IngestJobParser()
           .stream[MatchResult[NetflixCatalogItem]](source.getLines())
+      case ScrapeItemType.DisneyPlusCatalog =>
+        new IngestJobParser()
+          .stream[MatchResult[DisneyPlusCatalogItem]](source.getLines())
     }
   }
 }

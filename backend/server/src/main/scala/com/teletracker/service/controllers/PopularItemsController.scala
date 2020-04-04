@@ -47,7 +47,7 @@ class PopularItemsController @Inject()(
     }
 
     get("/popular") { req: GetItemsRequest =>
-      val searchRequest = makeSearchRequest(req).copy(sortMode = Popularity())
+      val searchRequest = makeSearchRequest(req)
       executeRequest(req.authenticatedUserId, searchRequest)
     }
   }

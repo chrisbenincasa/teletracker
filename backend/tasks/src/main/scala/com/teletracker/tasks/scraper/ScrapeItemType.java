@@ -3,7 +3,8 @@ package com.teletracker.tasks.scraper;
 public enum ScrapeItemType {
     HuluCatalog("HuluCatalog"),
     HboCatalog("HboCatalog"),
-    NetflixCatalog("NetflixCatalog");
+    NetflixCatalog("NetflixCatalog"),
+    DisneyPlusCatalog("DisneyPlusCatalog");
 
     private final String type;
 

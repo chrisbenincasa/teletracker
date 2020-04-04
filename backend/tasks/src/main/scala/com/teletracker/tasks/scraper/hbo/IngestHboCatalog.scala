@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.hbo
 
-import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.elasticsearch.{
@@ -103,6 +103,20 @@ class IngestHboCatalog @Inject()(
               }
             })
       }
+  }
+
+  override protected def itemUniqueIdentifier(item: HboCatalogItem): String = {
+    item.externalId.getOrElse(super.itemUniqueIdentifier(item))
+  }
+
+  override protected def getExternalIds(
+    item: HboCatalogItem
+  ): Map[ExternalSource, String] = {
+    Map(
+      ExternalSource.Hbo -> item.externalId
+    ).collect {
+      case (k, Some(v)) => k -> v
+    }
   }
 }
 
