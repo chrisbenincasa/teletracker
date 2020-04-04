@@ -1,5 +1,5 @@
-export const wait = ms => {
-  return new Promise(resolve => setTimeout(resolve, ms));
+export const wait: (ms: number) => Promise<void> = (ms: number) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 export async function sequentialPromises<T, U>(

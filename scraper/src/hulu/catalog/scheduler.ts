@@ -4,7 +4,7 @@ import _ from 'lodash';
 export const DEFAULT_PARALLELISM = 4;
 export const DEFAULT_BANDS = 32;
 
-export const schedule = async event => {
+export const schedule = async (event) => {
   const lambda = new AWS.Lambda({
     region: process.env.AWS_REGION,
   });
@@ -21,7 +21,7 @@ export const schedule = async event => {
 
   let chunks = mod / parallelism;
 
-  let all = _.range(0, Math.floor(mod / chunks)).map(async band => {
+  let all = _.range(0, Math.floor(mod / chunks)).map(async (band) => {
     await lambda
       .invoke({
         FunctionName: 'hulu-catalog',
@@ -37,6 +37,6 @@ export const schedule = async event => {
   return Promise.all(all);
 };
 
-export const scheduleFromS3 = async event => {
+export const scheduleFromS3 = async (event) => {
   return schedule(event);
 };

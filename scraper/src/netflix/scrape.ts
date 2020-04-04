@@ -13,6 +13,7 @@ import {
 } from './originals-arriving-scheduler';
 import AWS from 'aws-sdk';
 import '../common/seq_utils';
+import { filterMod } from '../common/seq_utils';
 
 export type Args = {
   date?: string;
@@ -45,12 +46,12 @@ export const scrape = async (event: Args) => {
   let allNetflixOriginals = await getObjectS3(
     DATA_BUCKET,
     `scrape-results/netflix/whats-on-netflix/${currentDate}/netflix-originals-catalog.json`,
-  ).then(buf => {
+  ).then((buf) => {
     return buf
       .toString('utf-8')
       .split('\n')
-      .filter(s => s.length > 0)
-      .map(line => JSON.parse(line));
+      .filter((s) => s.length > 0)
+      .map((line) => JSON.parse(line));
   });
 
   let netflixOriginalById = _.groupBy(allNetflixOriginals, 'netflixid');
@@ -64,14 +65,14 @@ export const scrape = async (event: Args) => {
 
   let parsed = JSON.parse(body);
 
-  let filteredItems = parsed.items.filter(item => {
+  let filteredItems = parsed.items.filter((item) => {
     return !moment(item.sortDate, 'YYYY-MM-DD').isAfter(
       moment().add(1, 'year'),
     );
   });
 
   let titles = await sequentialPromises(
-    filteredItems.filterMod(mod, band).page(offset, limit),
+    filterMod(filteredItems, mod, band).page(offset, limit),
     1000,
     async (item: any) => {
       let result: any = {
@@ -96,9 +97,7 @@ export const scrape = async (event: Args) => {
         let $ = cheerio.load(response);
 
         raw = JSON.parse(
-          $('head > script[type="application/ld+json"]')
-            .contents()
-            .text(),
+          $('head > script[type="application/ld+json"]').contents().text(),
         );
       } catch (e) {
         console.error(e);
@@ -115,7 +114,7 @@ export const scrape = async (event: Args) => {
         result.alternateTitle = catalogItem.title;
         result.description = catalogItem.description;
         result.type = catalogItem.type;
-        result.actors = catalogItem.actors.split(',').map(s => s.trim());
+        result.actors = catalogItem.actors.split(',').map((s) => s.trim());
       }
 
       stream.write(JSON.stringify(result) + '\n');

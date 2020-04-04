@@ -6,7 +6,7 @@ export const schedule = async () => {
     region: process.env.AWS_REGION,
   });
 
-  let all = _.range(0, 16).map(async i => {
+  let all = _.range(0, 16).map(async (i) => {
     await lambda
       .invoke({
         FunctionName: 'hbo-catalog',
@@ -19,6 +19,6 @@ export const schedule = async () => {
   return Promise.all(all);
 };
 
-export const scheduleFromS3 = async event => {
+export const scheduleFromS3 = async () => {
   return schedule();
 };

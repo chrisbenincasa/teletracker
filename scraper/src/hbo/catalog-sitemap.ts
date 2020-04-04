@@ -1,23 +1,18 @@
-import request from 'request-promise';
 import * as cheerio from 'cheerio';
 import { uploadToS3 } from '../common/storage';
 import moment from 'moment';
 import { isProduction } from '../common/env';
-import { DATA_BUCKET, USER_AGENT_STRING } from '../common/constants';
+import { DATA_BUCKET } from '../common/constants';
 import { createWriteStream } from '../common/stream_utils';
+import { httpGet } from '../common/request_utils';
 
 export const OUTPUT_FILE_NAME = 'hbo-catalog-urls.txt';
 export function catalogSitemapS3Key(date) {
   return `scrape-results/hbo/${date}/catalog/${OUTPUT_FILE_NAME}`;
 }
 
-export const scrape = async (event, context) => {
-  let sitemap = await request({
-    uri: `https://www.hbo.com/sitemap.xml`,
-    headers: {
-      'User-Agent': USER_AGENT_STRING,
-    },
-  });
+export const scrape = async () => {
+  let sitemap = await httpGet(`https://www.hbo.com/sitemap.xml`);
 
   let $ = cheerio.load(sitemap);
 
@@ -27,7 +22,7 @@ export const scrape = async (event, context) => {
 
   let [filePath, stream, flush] = createWriteStream(OUTPUT_FILE_NAME);
 
-  urls.forEach(url => {
+  urls.forEach((url) => {
     stream.write(url + '\n');
   });
 

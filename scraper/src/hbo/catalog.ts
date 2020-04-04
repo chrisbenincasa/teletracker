@@ -7,10 +7,11 @@ import { catalogSitemapS3Key } from './catalog-sitemap';
 import { DATA_BUCKET } from '../common/constants';
 import { isProduction } from '../common/env';
 import { createWriteStream } from '../common/stream_utils';
-import { sequentialPromises } from '../common/promise_utils';
-import { resolveSecret } from '../common/aws_utils';
+import { sequentialPromises, wait } from '../common/promise_utils';
 import striptags from 'striptags';
-import { DEFAULT_BANDS, DEFAULT_PARALLELISM } from '../hulu/catalog/scheduler';
+import { DEFAULT_BANDS } from '../hulu/catalog/scheduler';
+import { httpGet } from '../common/request_utils';
+import { timeAsync } from '../common/telemetry';
 
 const uaString =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36';
@@ -18,12 +19,10 @@ const movieRegex = /\/movies\/[A-z-]+\/?$/;
 const showRegex = /https:\/\/www.hbo.com\/[A-z\-]+/;
 const showFirstEpisodeRegex = /https:\/\/www.hbo.com\/[A-z\-]+(\/season-0?1\/(episodes\/)?((episode-|chapter-|part-)?(1|01)(-[A-z0-9-]+)?|pilot))$/;
 
-const wait = (ms) => {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-};
-
-const withRetries = async (tries, fn) => {
-  const retryInner = async (attempt) => {
+const withRetries = async <T>(tries: number, fn: () => Promise<T>) => {
+  const retryInner: (attempt: number) => Promise<T> = async (
+    attempt: number,
+  ) => {
     try {
       return await fn();
     } catch (e) {
@@ -46,13 +45,8 @@ const scrapeMovie = async (url) => {
   console.time(key);
   let html;
   try {
-    html = await withRetries(3, async () => {
-      return await request({
-        uri: url,
-        headers: {
-          'User-Agent': uaString,
-        },
-      });
+    html = await withRetries(3, () => {
+      return httpGet(url);
     });
   } catch (e) {
     console.error('Could not scrape ' + url + ' after retrying');
@@ -117,7 +111,7 @@ const scrapeMovie = async (url) => {
           nameFallback,
           description,
           externalId: streamingId ? streamingId.toString() : undefined,
-          originalUrl: pageState.canonicalUrl || url,
+          originalUrl: parsedPageState.canonicalUrl || url,
         };
       }
     }
@@ -129,7 +123,7 @@ const scrapeMovie = async (url) => {
 const fallbackTvShowReleaeDate = async (firstEpisodeUrl) => {
   let showUrl = showRegex.exec(firstEpisodeUrl);
 
-  if (showUrl.length > 0) {
+  if (showUrl && showUrl.length > 0) {
     let html = await request({
       uri: showUrl[0],
       headers: {
@@ -178,31 +172,25 @@ const fallbackTvShowReleaeDate = async (firstEpisodeUrl) => {
 
 const scrapeTvShowSynopsis = async (url) => {
   let key = 'scraping ' + url + ' for synopsis';
-  console.time(key);
-  let html = await request({
-    uri: url,
-    headers: {
-      'User-Agent': uaString,
-    },
-  });
+  return timeAsync(key, async () => {
+    let html = await httpGet(url);
 
-  let $ = cheerio.load(html);
+    let $ = cheerio.load(html);
 
-  let pageState = $('noscript#react-data').attr('data-state');
+    let pageState = $('noscript#react-data').attr('data-state');
 
-  if (pageState) {
-    let parsedPageState = JSON.parse(pageState);
+    if (pageState) {
+      let parsedPageState = JSON.parse(pageState);
 
-    let synopsisBand = _.find(parsedPageState.bands, { band: 'Synopsis' });
+      let synopsisBand = _.find(parsedPageState.bands, { band: 'Synopsis' });
 
-    if (synopsisBand && synopsisBand.data && synopsisBand.data.summary) {
-      console.timeEnd(key);
-      return striptags(synopsisBand.data.summary)
-        .replace(/&nbsp;/g, ' ')
-        .trim();
+      if (synopsisBand && synopsisBand.data && synopsisBand.data.summary) {
+        return striptags(synopsisBand.data.summary)
+          .replace(/&nbsp;/g, ' ')
+          .trim();
+      }
     }
-  }
-  console.timeEnd(key);
+  });
 };
 
 const scrapeTvShow = async (firstEpisodeUrl) => {
@@ -211,7 +199,7 @@ const scrapeTvShow = async (firstEpisodeUrl) => {
   let html;
   try {
     html = await withRetries(3, async () => {
-      return await request({
+      return request({
         uri: firstEpisodeUrl,
         headers: {
           'User-Agent': uaString,
@@ -219,12 +207,15 @@ const scrapeTvShow = async (firstEpisodeUrl) => {
       });
     });
   } catch (e) {
-    console.error('Could not scrape ' + url + ' after retrying');
+    console.error('Could not scrape ' + firstEpisodeUrl + ' after retrying');
     return;
   }
 
   let result = showFirstEpisodeRegex.exec(firstEpisodeUrl);
-  let baseUrl = firstEpisodeUrl.replace(result[1], '');
+  let baseUrl: string;
+  if (result && result.length > 1) {
+    baseUrl = firstEpisodeUrl.replace(result[1], '');
+  }
 
   let $ = cheerio.load(html);
 
@@ -242,7 +233,7 @@ const scrapeTvShow = async (firstEpisodeUrl) => {
         let release =
           show.releasedEvent && show.releasedEvent.startDate
             ? moment(show.releasedEvent.startDate)
-            : null;
+            : undefined;
 
         if (!release) {
           let videoObject = _.find(parsedPageState.pageSchemaList, (schema) => {
@@ -276,9 +267,9 @@ const scrapeTvShow = async (firstEpisodeUrl) => {
           releaseYear: release ? release.year() : null,
           type: 'show',
           network: 'HBO',
-          description: await scrapeTvShowSynopsis(baseUrl),
+          description: await scrapeTvShowSynopsis(baseUrl!),
           externalId: streamingId ? streamingId.toString() : undefined,
-          originalUrl: baseUrl,
+          originalUrl: baseUrl!,
         };
       }
     }
@@ -293,7 +284,7 @@ const loadSitemapEntries = async (date) => {
   });
 };
 
-const scrape = async (event, context) => {
+const scrape = async (event) => {
   console.log(event);
 
   let band =
@@ -308,17 +299,12 @@ const scrape = async (event, context) => {
   let offset = event.offset || 0;
   let limit = event.limit || -1;
 
-  // if (_.isUndefined(event.mod)  _.isUndefined(event.band)) {
-  //   console.error('requires mod and band specified');
-  //   return;
-  // }
-
   let now = moment();
   let nowString = now.format('YYYY-MM-DD');
 
-  console.time('loadSitemapEntries');
-  let entries = await loadSitemapEntries(nowString);
-  console.timeEnd('loadSitemapEntries');
+  let entries = await timeAsync('loadSitemapEntries', () => {
+    return loadSitemapEntries(nowString);
+  });
 
   let fileName = nowString + '_hbo-catalog' + '.json';
   if (!_.isUndefined(mod) && !_.isUndefined(band)) {

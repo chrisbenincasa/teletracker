@@ -14,24 +14,32 @@ declare global {
   }
 }
 
-Array.prototype.filterMod = function(
+export function filterMod<T>(
+  arr: T[],
   mod: number | undefined,
   band: number | undefined,
 ) {
-  return this.filter((item, idx) => {
+  return arr.filter((item, idx) => {
     if (!_.isUndefined(mod) && !_.isUndefined(band)) {
       return idx % mod === band;
     } else {
       return true;
     }
   });
+}
+
+Array.prototype.filterMod = function (
+  mod: number | undefined,
+  band: number | undefined,
+) {
+  return filterMod(this, mod, band);
 };
 
-Array.prototype.page = function(offset: number, limit: number) {
+Array.prototype.page = function (offset: number, limit: number) {
   return this.slice(offset, limit < 0 ? this.length : offset + limit);
 };
 
-Array.prototype.sequentialPromises = async function<T, U>(
+Array.prototype.sequentialPromises = async function <T, U>(
   fn: (item: T) => Promise<U>,
   ms?: number,
 ): Promise<U[]> {

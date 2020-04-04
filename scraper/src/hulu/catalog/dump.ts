@@ -1,4 +1,3 @@
-import { resolveSecret } from '../../common/aws_utils';
 import moment from 'moment';
 import { createWriteStream } from '../../common/stream_utils';
 import request from 'request-promise';
@@ -6,14 +5,10 @@ import { DATA_BUCKET, USER_AGENT_STRING } from '../../common/constants';
 import cheerio from 'cheerio';
 import { isProduction } from '../../common/env';
 import { uploadToS3 } from '../../common/storage';
+import { httpGet } from '../../common/request_utils';
 
 const getAllSiteMaps = async () => {
-  let html = await request({
-    uri: 'https://www.hulu.com/sitemap_index.xml',
-    headers: {
-      'User-Agent': USER_AGENT_STRING,
-    },
-  });
+  let html = await httpGet('https://www.hulu.com/sitemap_index.xml');
 
   let $ = cheerio.load(html);
 
@@ -22,13 +17,8 @@ const getAllSiteMaps = async () => {
     .get();
 };
 
-const loadSiteMap = async sitemap => {
-  let html = await request({
-    uri: sitemap,
-    headers: {
-      'User-Agent': USER_AGENT_STRING,
-    },
-  });
+const loadSiteMap = async (sitemap: string) => {
+  let html = await httpGet(sitemap);
 
   let $ = cheerio.load(html);
 
@@ -52,11 +42,11 @@ export const scrape = async () => {
 
     let [path, stream, flush] = createWriteStream(fileName);
 
-    let results = sitemaps.map(async sitemap => {
+    let results = sitemaps.map(async (sitemap) => {
       let loadedSitemap = await loadSiteMap(sitemap);
       loadedSitemap
-        .filter(url => seriesRegex.test(url) || moviesRegex.test(url))
-        .forEach(url => {
+        .filter((url) => seriesRegex.test(url) || moviesRegex.test(url))
+        .forEach((url) => {
           stream.write(url + '\n');
         });
     });

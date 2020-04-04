@@ -13,7 +13,7 @@ const scrape = async () => {
       headers: {
         'User-Agent': USER_AGENT_STRING,
       },
-    }).then(async function(html) {
+    }).then(async function (html) {
       const currentYear = new Date().getFullYear();
 
       const $ = cheerio.load(html);
@@ -28,45 +28,37 @@ const scrape = async () => {
 
       textSections.each((_, el) => {
         let $el = $(el);
-        let title = $el
-          .find('h4 > b')
-          .first()
-          .text();
+        let title = $el.find('h4 > b').first().text();
         if (title.length === 0) {
-          title = $el
-            .find('h4')
-            .first()
-            .text();
+          title = $el.find('h4').first().text();
         }
 
         if ((title && title.includes('Starting')) || title.includes('Ending')) {
           let status = title.includes('Starting') ? 'Arriving' : 'Expiring';
-          let titleTokens = title.split(' ').filter(s => s.length > 0);
+          let titleTokens = title.split(' ').filter((s) => s.length > 0);
 
           let [month, day] = titleTokens.slice(
             Math.max(titleTokens.length - 2, 1),
           );
+          let dayNumber = parseInt(day);
 
           let daysInMonth = moment(
             `${currentYear} ${month}`,
             'YYYY MMMM',
           ).daysInMonth();
 
-          if (day > daysInMonth) {
-            day = daysInMonth;
+          if (dayNumber > daysInMonth) {
+            dayNumber = daysInMonth;
           }
 
           let arrivingAt = moment(
-            `${currentYear} ${month} ${day}`,
+            `${currentYear} ${month} ${dayNumber}`,
             'YYYY MMMM DD',
           );
 
-          let titlesAndYears = $el
-            .find('p')
-            .text()
-            .split('\n');
+          let titlesAndYears = $el.find('p').text().split('\n');
 
-          titlesAndYears.forEach(titleAndYear => {
+          titlesAndYears.forEach((titleAndYear) => {
             //Strip out the release year from title
             let title = titleAndYear.trim();
             let yearRegex = /\(([0-9)]+)\)/;
@@ -84,7 +76,7 @@ const scrape = async () => {
               releaseYear = null;
             }
 
-            let parsedReleaseYear = parseInt(releaseYear);
+            let parsedReleaseYear: number | undefined = parseInt(releaseYear);
             parsedReleaseYear = isNaN(parsedReleaseYear)
               ? undefined
               : parsedReleaseYear;
