@@ -27,8 +27,8 @@ curl 'https://discover.hulu.com/content/v4/hubs/series/3944ff02-8772-43eb-bacc-1
   --compressed
 */
 
-const wait = ms => {
-  return new Promise(resolve => setTimeout(resolve, ms));
+const wait = (ms) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 const uuidRegex =
@@ -146,7 +146,7 @@ const scrapeMovieJson = async (cookie, id) => {
   }
 };
 
-export const scrapeSingle = async event => {
+export const scrapeSingle = async (event) => {
   try {
     let huluCookie =
       process.env.HULU_COOKIE || (await resolveSecret('hulu-cookie'));
@@ -175,7 +175,7 @@ export const scrapeSingle = async event => {
   }
 };
 
-const scrape = async event => {
+const scrape = async (event) => {
   console.log(`Got event: `, event);
   try {
     let huluCookie =
@@ -201,7 +201,7 @@ const scrape = async event => {
     let urls = await getObjectS3(
       DATA_BUCKET,
       `scrape-results/hulu/${nowString}/hulu-catalog-urls.txt`,
-    ).then(body => body.toString('utf-8').split('\n'));
+    ).then((body) => body.toString('utf-8').split('\n'));
 
     let [path, stream, flush] = createWriteStream(fileName);
 
@@ -216,9 +216,9 @@ const scrape = async event => {
       .slice(offset, limit === -1 ? urls.length : offset + limit);
 
     let seriesResults = await sequentialPromises(
-      urlBand.filter(text => text.includes('/series/')),
+      urlBand.filter((text) => text.includes('/series/')),
       100,
-      async url => {
+      async (url) => {
         let matches = seriesRegex.exec(url);
         let result;
         if (matches && matches.length > 0) {
@@ -236,11 +236,11 @@ const scrape = async event => {
     );
 
     let movieResults = await sequentialPromises(
-      urlBand.filter(text => {
+      urlBand.filter((text) => {
         text.includes('/movie/');
       }),
       100,
-      async url => {
+      async (url) => {
         let matches = moviesRegex.exec(url);
         let result;
         if (matches && matches.length > 0) {

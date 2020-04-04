@@ -18,12 +18,12 @@ const movieRegex = /\/movies\/[A-z-]+\/?$/;
 const showRegex = /https:\/\/www.hbo.com\/[A-z\-]+/;
 const showFirstEpisodeRegex = /https:\/\/www.hbo.com\/[A-z\-]+(\/season-0?1\/(episodes\/)?((episode-|chapter-|part-)?(1|01)(-[A-z0-9-]+)?|pilot))$/;
 
-const wait = ms => {
-  return new Promise(resolve => setTimeout(resolve, ms));
+const wait = (ms) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 const withRetries = async (tries, fn) => {
-  const retryInner = async attempt => {
+  const retryInner = async (attempt) => {
     try {
       return await fn();
     } catch (e) {
@@ -40,7 +40,7 @@ const withRetries = async (tries, fn) => {
   return await retryInner(0);
 };
 
-const scrapeMovie = async url => {
+const scrapeMovie = async (url) => {
   let key = 'scraping ' + url;
 
   console.time(key);
@@ -67,14 +67,14 @@ const scrapeMovie = async url => {
     let parsedPageState = JSON.parse(pageState);
 
     if (parsedPageState.pageSchemaList) {
-      let movie = _.find(parsedPageState.pageSchemaList, schema => {
+      let movie = _.find(parsedPageState.pageSchemaList, (schema) => {
         return schema['@type'] === 'movie';
       });
 
       let nameFallback;
       let mainNav = _.find(
         parsedPageState.bands,
-        band => band.band === 'MainNavigation',
+        (band) => band.band === 'MainNavigation',
       );
       if (mainNav && mainNav.data) {
         nameFallback = mainNav.data.subNavigationName;
@@ -126,7 +126,7 @@ const scrapeMovie = async url => {
   console.timeEnd(key);
 };
 
-const fallbackTvShowReleaeDate = async firstEpisodeUrl => {
+const fallbackTvShowReleaeDate = async (firstEpisodeUrl) => {
   let showUrl = showRegex.exec(firstEpisodeUrl);
 
   if (showUrl.length > 0) {
@@ -145,7 +145,7 @@ const fallbackTvShowReleaeDate = async firstEpisodeUrl => {
       let parsedPageState = JSON.parse(pageState);
       let band = _.find(
         parsedPageState.bands,
-        band => band.band === 'ContentOverview',
+        (band) => band.band === 'ContentOverview',
       );
       if (band) {
         let streamingId = _.at(band, 'data.infoSlice.streamingId.id');
@@ -176,7 +176,7 @@ const fallbackTvShowReleaeDate = async firstEpisodeUrl => {
   }
 };
 
-const scrapeTvShowSynopsis = async url => {
+const scrapeTvShowSynopsis = async (url) => {
   let key = 'scraping ' + url + ' for synopsis';
   console.time(key);
   let html = await request({
@@ -205,7 +205,7 @@ const scrapeTvShowSynopsis = async url => {
   console.timeEnd(key);
 };
 
-const scrapeTvShow = async firstEpisodeUrl => {
+const scrapeTvShow = async (firstEpisodeUrl) => {
   let key = 'scraping ' + firstEpisodeUrl;
   console.time(key);
   let html;
@@ -234,7 +234,7 @@ const scrapeTvShow = async firstEpisodeUrl => {
     let parsedPageState = JSON.parse(pageState);
 
     if (parsedPageState.pageSchemaList) {
-      let show = _.find(parsedPageState.pageSchemaList, schema => {
+      let show = _.find(parsedPageState.pageSchemaList, (schema) => {
         return schema && schema['@type'] === 'TVEpisode';
       });
 
@@ -245,7 +245,7 @@ const scrapeTvShow = async firstEpisodeUrl => {
             : null;
 
         if (!release) {
-          let videoObject = _.find(parsedPageState.pageSchemaList, schema => {
+          let videoObject = _.find(parsedPageState.pageSchemaList, (schema) => {
             return schema && schema['@type'] === 'VideoObject';
           });
 
@@ -287,8 +287,8 @@ const scrapeTvShow = async firstEpisodeUrl => {
   console.timeEnd(key);
 };
 
-const loadSitemapEntries = async date => {
-  return getObjectS3(DATA_BUCKET, catalogSitemapS3Key(date)).then(body => {
+const loadSitemapEntries = async (date) => {
+  return getObjectS3(DATA_BUCKET, catalogSitemapS3Key(date)).then((body) => {
     return body.toString('utf-8').split('\n');
   });
 };
@@ -329,7 +329,7 @@ const scrape = async (event, context) => {
 
   let filteredEntries = entries
     .filter(
-      entry => movieRegex.test(entry) || showFirstEpisodeRegex.test(entry),
+      (entry) => movieRegex.test(entry) || showFirstEpisodeRegex.test(entry),
     )
     .filter((item, idx) => {
       if (!_.isUndefined(mod) && !_.isUndefined(band)) {
@@ -348,17 +348,17 @@ const scrape = async (event, context) => {
 
   await sequentialPromises(
     _.chain(filteredEntries)
-      .filter(entry => movieRegex.test(entry))
+      .filter((entry) => movieRegex.test(entry))
       .chunk(5)
       .value(),
     Number(event.perBatchWait) || 0,
-    async entries => {
+    async (entries) => {
       let promises = _.map(entries, scrapeMovie);
       let res = await Promise.all(promises);
       if (res) {
         _.chain(res)
           .filter(_.negate(_.isUndefined))
-          .each(r => stream.write(JSON.stringify(r) + '\n'))
+          .each((r) => stream.write(JSON.stringify(r) + '\n'))
           .value();
       }
     },
@@ -366,16 +366,16 @@ const scrape = async (event, context) => {
 
   await sequentialPromises(
     _.chain(filteredEntries)
-      .filter(entry => showFirstEpisodeRegex.test(entry))
+      .filter((entry) => showFirstEpisodeRegex.test(entry))
       .chunk(5)
       .value(),
     Number(event.perBatchWait) || 0,
-    async entries => {
+    async (entries) => {
       let res = await Promise.all(_.map(entries, scrapeTvShow));
       if (res) {
         _.chain(res)
           .filter(_.negate(_.isUndefined))
-          .each(r => stream.write(JSON.stringify(r) + '\n'))
+          .each((r) => stream.write(JSON.stringify(r) + '\n'))
           .value();
       }
     },
@@ -397,7 +397,7 @@ const scrape = async (event, context) => {
 
 export const scrapeAll = async () => {
   try {
-    await sequentialPromises(_.range(0, 16), 5000, async i => {
+    await sequentialPromises(_.range(0, 16), 5000, async (i) => {
       await scrape({ mod: 16, band: i });
     });
   } catch (e) {
@@ -405,7 +405,7 @@ export const scrapeAll = async () => {
   }
 };
 
-export const scrapeSingle = async event => {
+export const scrapeSingle = async (event) => {
   try {
     let url = event.url;
 

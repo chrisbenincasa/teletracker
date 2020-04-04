@@ -115,10 +115,10 @@ export const getObjectS3: (
       Key: key,
     })
     .promise()
-    .then(res => {
+    .then((res) => {
       return res.Body as Buffer;
     })
-    .catch(e => {
+    .catch((e) => {
       if (e.code === 'NoSuchKey') {
         console.error('Could not find key ' + key);
       }
@@ -154,7 +154,7 @@ export const getDirectoryS3 = async (bucket: string, prefix: string) => {
         ContinuationToken: token,
       })
       .promise()
-      .then(res => {
+      .then((res) => {
         let nextAcc = acc.concat(res.Contents || []);
         if (res.IsTruncated) {
           return getDirectoryS3Inner(
@@ -193,7 +193,7 @@ export const fetchMostRecentFromS3 = async (bucket: string, key: string) => {
 
   if (results.length > 0) {
     return _.chain(results)
-      .sortBy(r => r.LastModified)
+      .sortBy((r) => r.LastModified)
       .reverse()
       .value()[0];
   }

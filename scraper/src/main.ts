@@ -19,21 +19,11 @@ export {
 } from './hulu/catalog/scheduler';
 export { scrape as netflixOriginalsArriving } from './netflix/scrape';
 export { scrape as netflixDirect } from './netflix/scrape-direct';
-export {
-  default as disneyPlusCatalogFull,
-} from './disney-plus/catalog/catalog-full';
-export {
-  scrape as whatsOnNetflixCatalog,
-} from './netflix/whats-on-netflix-catalog';
-export {
-  scrape as whatsOnNetflixUpcoming,
-} from './netflix/whats-on-netflix-upcoming';
-export {
-  scrape as newOnNetflixCatalog,
-} from './netflix/new-on-netflix-catalog';
-export {
-  scrape as newOnNetflixExpiring,
-} from './netflix/new-on-netflix-expiring';
+export { default as disneyPlusCatalogFull } from './disney-plus/catalog/catalog-full';
+export { scrape as whatsOnNetflixCatalog } from './netflix/whats-on-netflix-catalog';
+export { scrape as whatsOnNetflixUpcoming } from './netflix/whats-on-netflix-upcoming';
+export { scrape as newOnNetflixCatalog } from './netflix/new-on-netflix-catalog';
+export { scrape as newOnNetflixExpiring } from './netflix/new-on-netflix-expiring';
 export { scrape as tmdbChanges } from './tmdb/changes/scrape';
 export { scrape as tmdbIds } from './tmdb/scrape-ids';
 export {

@@ -17,6 +17,7 @@ interface Event {
 const BASE_URL = 'https://www.disneyplus.com';
 const SITEMAP_BASE_URL = 'https://www.disneyplus.com/sitemap.xml';
 const PAGE_SCRIPT_REGEX = /.*window\.__PRELOADED_STATE__\s*=\s*(.*);/m;
+const URL_REGEX = /https?:\/\/(www.)?disneyplus.com\/(series|movie)\/([A-z0-9-])+\/(.+)$/;
 
 const scrapePage = async (url) => {
   console.log(`Scraping ${url}`);
@@ -42,13 +43,21 @@ const scrapePage = async (url) => {
       let pageJson = JSON.parse(regexResult[1]);
       let itemDetails = pageJson.details[id];
 
+      let type = itemDetails.programType;
+      let urlRegexMatch = URL_REGEX.exec(url);
+      if (urlRegexMatch) {
+        if (urlRegexMatch.length >= 2) {
+          type = urlRegexMatch[2];
+        }
+      }
+
       if (itemDetails) {
         return {
           name: itemDetails.title,
           releaseDate: _.find(itemDetails.releases, { releaseType: 'original' })
             ?.releaseYear,
           externalId: id,
-          type: itemDetails.programType,
+          type,
           description: itemDetails.description,
           url,
           network: 'Disney Plus',

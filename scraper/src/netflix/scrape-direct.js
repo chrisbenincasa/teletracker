@@ -6,27 +6,19 @@ import fs from 'fs';
 
 const reg = /.*netflix\.reactContext\s*=\s*(.*)/gm;
 
-const doScrape = html => {
+const doScrape = (html) => {
   let $ = cheerio.load(html);
 
   let result = JSON.parse(
-    $('head > script[type="application/ld+json"]')
-      .contents()
-      .text(),
+    $('head > script[type="application/ld+json"]').contents().text(),
   );
 
   let other = $('script').filter((i, el) => {
-    return $(el)
-      .contents()
-      .text()
-      .includes('netflix.reactContext');
+    return $(el).contents().text().includes('netflix.reactContext');
   });
   if (other.length > 0) {
-    let x = other
-      .eq(0)
-      .contents()
-      .text();
-    let json = reg.exec(x)[1].replace(/\\x([0-9a-f]{2})/gi, function(_, pair) {
+    let x = other.eq(0).contents().text();
+    let json = reg.exec(x)[1].replace(/\\x([0-9a-f]{2})/gi, function (_, pair) {
       return String.fromCharCode(parseInt(pair, 16));
     });
     if (json.endsWith(';')) {
@@ -40,9 +32,9 @@ const doScrape = html => {
   }
 };
 
-export const scrape = async event => {
+export const scrape = async (event) => {
   const url = event.url;
-  await sequentialPromises([url], 1000, async item => {
+  await sequentialPromises([url], 1000, async (item) => {
     try {
       let response = await request({
         uri: item,

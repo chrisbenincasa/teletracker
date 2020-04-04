@@ -6,7 +6,7 @@ import moment from 'moment';
 const TITLE_REGEX = /What's Coming to Netflix on ([A-z]+ [0-9a-z]+).*/i;
 const nameAndParenRegex = /^(.*)\s\((.+)\)(\s?N)?(.*)$/i;
 
-export const scrape = async event => {
+export const scrape = async (event) => {
   try {
     const url = event.url;
     const year = event.year || moment().year();
@@ -24,15 +24,10 @@ export const scrape = async event => {
     const $ = cheerio.load(html);
 
     const headers = $('h4')
-      .filter((_, el) =>
-        $(el)
-          .text()
-          .toLowerCase()
-          .includes('netflix on'),
-      )
+      .filter((_, el) => $(el).text().toLowerCase().includes('netflix on'))
       .get();
 
-    headers.forEach(header => {
+    headers.forEach((header) => {
       const $el = $(header);
       const text = $el
         .text()
@@ -49,15 +44,11 @@ export const scrape = async event => {
       if (list) {
         const listItems = list
           .find('li')
-          .map((_, li) =>
-            $(li)
-              .children('strong')
-              .text(),
-          )
+          .map((_, li) => $(li).children('strong').text())
           .get()
-          .filter(x => x.trim().length > 0);
+          .filter((x) => x.trim().length > 0);
         if (listItems) {
-          listItems.forEach(item => {
+          listItems.forEach((item) => {
             if (item) {
               console.log(item, nameAndParenRegex.exec(item));
             }
