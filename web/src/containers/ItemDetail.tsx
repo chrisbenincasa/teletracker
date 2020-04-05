@@ -43,6 +43,7 @@ import MarkAsWatched from '../components/Buttons/MarkAsWatched';
 import Cast from '../components/Cast';
 import ManageTracking from '../components/ManageTracking';
 import ShareButton from '../components/Buttons/ShareButton';
+import PlayTrailer from '../components/Buttons/ShareButton';
 import Recommendations from '../components/Recommendations';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import withUser, { WithUserProps } from '../components/withUser';
@@ -337,10 +338,6 @@ function ItemDetails(props: Props) {
     }
   };
 
-  const setPlayTrailerIcon = () => {
-    setShowPlayIcon(!showPlayIcon);
-  };
-
   const setTrailerModal = () => {
     setTrailerModalOpen(!trailerModalOpen);
   };
@@ -599,24 +596,7 @@ function ItemDetails(props: Props) {
             >
               <div className={classes.leftContainer}>
                 <Hidden mdUp>{renderTitle(itemDetail)}</Hidden>
-                <div
-                  className={classes.posterContainer}
-                  // This is causing an issue with Cast re-endering on Enter/Leave
-                  // TODO: Investigate
-                  // onMouseEnter={setPlayTrailerIcon}
-                  // onMouseLeave={setPlayTrailerIcon}
-                >
-                  {showPlayIcon &&
-                  itemDetail.id === '7b6dbeb1-8353-45a7-8c9b-7f9ab8b037f8' ? (
-                    <IconButton
-                      aria-haspopup="true"
-                      color="inherit"
-                      style={{ position: 'absolute' }}
-                      onClick={setTrailerModal}
-                    >
-                      <PlayArrow fontSize="large" />
-                    </IconButton>
-                  ) : null}
+                <div className={classes.posterContainer}>
                   <CardMedia
                     src={imagePlaceholder}
                     item={itemDetail}
@@ -646,6 +626,10 @@ function ItemDetails(props: Props) {
                 </div>
                 <div className={classes.actionButtonContainerSecondary}>
                   <div className={classes.actionButton}>
+                    {itemDetail.id ===
+                    '7b6dbeb1-8353-45a7-8c9b-7f9ab8b037f8' ? (
+                      <PlayTrailer itemDetail={itemDetail} />
+                    ) : null}
                     <ShareButton
                       title={itemDetail.canonicalTitle}
                       text={''}
