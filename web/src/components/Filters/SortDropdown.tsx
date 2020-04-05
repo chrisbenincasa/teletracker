@@ -32,10 +32,12 @@ interface RouteParams {
   id: string;
 }
 
-const sortOptionToName: { [K in SortOptions]?: string } = {
+export const sortOptionToName: { [K in SortOptions]?: string } = {
   popularity: 'Popularity',
   added_time: 'Date Added',
   recent: 'Release Date',
+  'rating|imdb': 'IMDb Rating',
+  'rating|tmdb': 'TheMovieDb Rating',
 };
 
 const defaultSortOptions = ['popularity', 'added_time', 'recent'];

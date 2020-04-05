@@ -15,12 +15,14 @@ import com.twitter.finagle.liveness.{
   FailureAccrualPolicy
 }
 import com.twitter.finagle.service.Backoff
+import io.circe.Json
 import javax.inject.Inject
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class FinagleHttpClient @Inject()(
   @Assisted host: String,
-  @Assisted options: HttpClientOptions)
+  @Assisted options: HttpClientOptions
+)(implicit executionContext: ExecutionContext)
     extends HttpClient(host, options) {
   private lazy val client = {
     Http.client
@@ -52,6 +54,15 @@ class FinagleHttpClient @Inject()(
     resFut.onFailure(promise.tryFailure)
 
     promise.future
+  }
+
+  override def getJson(request: HttpRequest): Future[HttpResponse[Json]] = {
+    get(request).map(response => {
+      io.circe.parser.parse(response.content) match {
+        case Left(value)  => throw value
+        case Right(value) => response.copy[Json](content = value)
+      }
+    })
   }
 
   override def getBytes(

@@ -16,6 +16,7 @@ import { CognitoUser } from 'amazon-cognito-identity-js';
 import Auth from '@aws-amplify/auth';
 import { Id, Slug } from '../types/v2';
 import { FilterParams } from './searchFilters';
+import { ItemSearchRequest } from '../types/client';
 
 export class SagaTeletrackerClient {
   static instance = new SagaTeletrackerClient();
@@ -222,112 +223,21 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *getPopular(
-    fields?: KeyMap<ObjectMetadata>,
-    itemTypes?: ItemType[],
-    networks?: NetworkType[],
-    bookmark?: string,
-    sort?: SortOptions,
-    limit?: number,
-    genres?: number[],
-    releaseYearRange?: OpenRange,
-    castIncludes?: string[],
-  ) {
+  *getPopular(request: ItemSearchRequest) {
     let token = yield this.withToken();
-    return yield this.apiCall(
-      client => client.getPopular,
-      token,
-      fields,
-      itemTypes,
-      networks,
-      bookmark,
-      sort,
-      limit,
-      genres,
-      releaseYearRange,
-      castIncludes,
-    );
+    return yield this.apiCall(client => client.getPopular, token, request);
   }
 
-  *getItems(
-    itemTypes?: ItemType[],
-    networks?: NetworkType[],
-    bookmark?: string,
-    sort?: SortOptions,
-    limit?: number,
-    genres?: number[],
-    releaseYearRange?: OpenRange,
-    cast?: string[],
-  ) {
+  *getItems(request: ItemSearchRequest) {
     let token = yield this.withToken();
-    return yield this.apiCall(
-      client => client.getItems,
-      token,
-      itemTypes,
-      networks,
-      bookmark,
-      sort,
-      limit,
-      genres,
-      releaseYearRange,
-      cast,
-    );
+    return yield this.apiCall(client => client.getItems, token, request);
   }
 
-  *search(searchText: string, bookmark?: string) {
+  *search(request: ItemSearchRequest) {
     return yield this.apiCall(
       client => client.search,
       yield call([this, this.withToken]),
-      searchText,
-      bookmark,
-    );
-  }
-
-  *searchV2(
-    searchText: string,
-    bookmark?: string,
-    limit?: number,
-    itemTypes?: ItemType[],
-    networks?: NetworkType[],
-    genres?: number[],
-    releaseYearRange?: OpenRange,
-    sort?: SortOptions | 'search_score',
-  ) {
-    return yield this.apiCall(
-      client => client.searchV2,
-      yield call([this, this.withToken]),
-      searchText,
-      bookmark,
-      limit,
-      itemTypes,
-      networks,
-      genres,
-      releaseYearRange,
-      sort,
-    );
-  }
-
-  *quickSearch(
-    searchText: string,
-    bookmark?: string,
-    limit?: number,
-    itemTypes?: ItemType[],
-    networks?: NetworkType[],
-    genres?: number[],
-    releaseYearRange?: OpenRange,
-    sort?: SortOptions,
-  ) {
-    return yield this.apiCall(
-      client => client.quickSearch,
-      yield call([this, this.withToken]),
-      searchText,
-      bookmark,
-      limit,
-      itemTypes,
-      networks,
-      genres,
-      releaseYearRange,
-      sort,
+      request,
     );
   }
 

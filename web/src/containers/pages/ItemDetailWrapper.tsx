@@ -116,6 +116,12 @@ export default function makeItemDetailWrapper(type: ItemType) {
           itemId: response.data.data.id,
         };
       } else {
+        console.error(
+          'Got error code ' +
+            response.status +
+            ' while looking up ' +
+            ctx.query.id,
+        );
         return {
           error: response.status,
         };

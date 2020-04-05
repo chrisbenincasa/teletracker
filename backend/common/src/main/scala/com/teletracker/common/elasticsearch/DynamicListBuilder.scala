@@ -7,6 +7,7 @@ import com.teletracker.common.db.{
   Bookmark,
   DefaultForListType,
   Popularity,
+  Rating,
   Recent,
   SearchScore,
   SortMode
@@ -360,6 +361,13 @@ class DynamicListBuilder @Inject()(
         case AddedTime(desc) =>
           // TODO implement correctly for direct lists
           getValueForBookmark(item, Recent(desc))
+
+        case Rating(desc, source) =>
+          item.ratingsGrouped
+            .get(source)
+            .flatMap(_.weighted_average)
+            .getOrElse(if (desc) Double.MinValue else Double.MaxValue)
+            .toString
 
         case default @ DefaultForListType(_) =>
           getValueForBookmark(item, default.get(isDynamic))

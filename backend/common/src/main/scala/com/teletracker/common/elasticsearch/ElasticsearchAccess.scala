@@ -16,6 +16,7 @@ import com.teletracker.common.db.{
   Bookmark,
   DefaultForListType,
   Popularity,
+  Rating,
   Recent,
   SearchScore,
   SortMode
@@ -29,10 +30,20 @@ import org.elasticsearch.index.query.{
   TermQueryBuilder
 }
 import com.teletracker.common.util.Functions._
-import com.teletracker.common.util.{IdOrSlug, OpenDateRange}
+import com.teletracker.common.util.{
+  ClosedNumericRange,
+  IdOrSlug,
+  OpenDateRange,
+  OpenNumericRange
+}
 import io.circe.Decoder
 import org.apache.lucene.search.join.ScoreMode
-import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
+import org.elasticsearch.search.sort.{
+  FieldSortBuilder,
+  NestedSortBuilder,
+  SortOrder,
+  SortMode => EsSortMode
+}
 import org.slf4j.LoggerFactory
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
@@ -40,6 +51,8 @@ import scala.collection.JavaConverters._
 
 trait ElasticsearchAccess {
 //  @Inject private[this] var denormalizationCache: ItemDenormalizationCache = _
+  protected val SupportedRatingSortSources =
+    Set(ExternalSource.TheMovieDb, ExternalSource.Imdb)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -200,6 +213,30 @@ trait ElasticsearchAccess {
     )
   }
 
+  protected def openRatingRangeFilter(
+    builder: BoolQueryBuilder,
+    source: ExternalSource,
+    openNumericRange: ClosedNumericRange[Double]
+  ): BoolQueryBuilder = {
+    builder.filter(
+      QueryBuilders.nestedQuery(
+        "ratings",
+        QueryBuilders
+          .boolQuery()
+          .must(
+            QueryBuilders
+              .rangeQuery("ratings.weighted_average")
+              .gte(openNumericRange.start)
+              .lte(openNumericRange.end)
+          )
+          .must(
+            QueryBuilders.termQuery("ratings.provider_id", source.ordinal())
+          ),
+        ScoreMode.Avg
+      )
+    )
+  }
+
   protected def itemTypesFilter(
     builder: BoolQueryBuilder,
     itemTypes: Set[ItemType]
@@ -226,25 +263,26 @@ trait ElasticsearchAccess {
     defaultSort: SortMode = Popularity() // Used when a bookmark passes in a "default" sort. Decided upon by the caller
   ): BoolQueryBuilder = {
     def applyRange(
+      targetBuilder: BoolQueryBuilder,
       rangeBuilder: RangeQueryBuilder,
       desc: Boolean,
       value: Any
     ): BoolQueryBuilder = {
       (desc, bookmark.valueRefinement) match {
         case (true, Some(_)) =>
-          builder.filter(rangeBuilder.lte(value))
+          targetBuilder.filter(rangeBuilder.lte(value))
 
         case (true, _) =>
-          builder.filter(rangeBuilder.lt(value))
+          targetBuilder.filter(rangeBuilder.lt(value))
 
         case (false, Some(_)) =>
-          builder.filter(
+          targetBuilder.filter(
             rangeBuilder
               .gte(value)
           )
 
         case (false, _) =>
-          builder.filter(
+          targetBuilder.filter(
             rangeBuilder
               .gt(value)
           )
@@ -263,14 +301,36 @@ trait ElasticsearchAccess {
 
           val popularity = bookmark.value.toDouble
 
-          applyRange(baseQuery, desc, popularity)
+          applyRange(builder, baseQuery, desc, popularity)
 
         case Recent(desc) =>
           val baseQuery = QueryBuilders
             .rangeQuery("release_date")
           val releaseDate = bookmark.value
 
-          applyRange(baseQuery, desc, releaseDate)
+          applyRange(builder, baseQuery, desc, releaseDate)
+
+        case Rating(isDesc, source) =>
+          val innerBuilder = QueryBuilders.boolQuery
+          builder.filter(
+            QueryBuilders.nestedQuery(
+              "ratings",
+              innerBuilder
+                .filter(
+                  QueryBuilders
+                    .termQuery("ratings.provider_id", source.ordinal())
+                )
+                .through(
+                  applyRange(
+                    _,
+                    QueryBuilders.rangeQuery("ratings.weighted_average"),
+                    isDesc,
+                    bookmark.value
+                  )
+                ),
+              ScoreMode.Avg
+            )
+          )
 
         case AddedTime(desc) => applyForSortMode(Recent(desc))
 
@@ -305,8 +365,35 @@ trait ElasticsearchAccess {
       case AddedTime(desc) =>
         makeDefaultSort(Recent(desc))
 
+      case Rating(desc, source) =>
+        makeRatingFieldSort(source, desc)
+
       case DefaultForListType(desc) =>
         makeDefaultSort(Popularity(desc))
+    }
+  }
+
+  protected def makeRatingFieldSort(
+    source: ExternalSource,
+    desc: Boolean
+  ) = {
+    if (SupportedRatingSortSources.contains(source)) {
+      val sort = new FieldSortBuilder("ratings.weighted_average")
+        .sortMode(EsSortMode.AVG)
+        .order(if (desc) SortOrder.DESC else SortOrder.ASC)
+        .missing("_last")
+        .setNestedSort(
+          new NestedSortBuilder("ratings")
+            .setFilter(
+              QueryBuilders
+                .termQuery("ratings.provider_id", source.ordinal())
+            )
+        )
+      Some(sort)
+    } else {
+      throw new IllegalArgumentException(
+        s"Sorting for ratings from ${source} is not supported"
+      )
     }
   }
 

@@ -27,7 +27,9 @@ object ToEsItem {
           provider_id = ExternalSource.TheMovieDb.ordinal(),
           provider_shortname = ExternalSource.TheMovieDb.getName,
           vote_average = voteAverage,
-          vote_count = t.vote_count
+          vote_count = t.vote_count,
+          weighted_average = None,
+          weighted_last_generated = None
         )
       })
     }
@@ -65,7 +67,9 @@ object ToEsItem {
           provider_id = ExternalSource.TheMovieDb.ordinal(),
           provider_shortname = ExternalSource.TheMovieDb.getName,
           vote_average = voteAverage,
-          vote_count = t.vote_count
+          vote_count = t.vote_count,
+          weighted_average = None,
+          weighted_last_generated = None
         )
       })
     }

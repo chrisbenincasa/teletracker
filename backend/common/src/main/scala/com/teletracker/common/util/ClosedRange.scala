@@ -25,3 +25,8 @@ case class ClosedDateRange(
     range.toList.map(start.plusDays)
   }
 }
+
+case class ClosedNumericRange[T: Numeric](
+  start: T,
+  end: T)
+    extends ClosedRange[T]

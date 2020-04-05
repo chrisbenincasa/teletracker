@@ -5,17 +5,24 @@ import com.teletracker.common.db.{Bookmark, Popularity, Recent, SortMode}
 import com.teletracker.common.elasticsearch.{BinaryOperator, ItemSearch}
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.{DataResponse, Paging}
+import com.teletracker.common.util.time.LocalDateUtils
 import com.teletracker.common.util.{
   CanParseFieldFilter,
+  ClosedNumericRange,
   Field,
   NetworkCache,
-  OpenDateRange
+  OpenDateRange,
+  OpenNumericRange
 }
 import com.teletracker.service.api
 import com.teletracker.service.api.model.Item
 import com.teletracker.service.api.{ItemApi, ItemSearchRequest}
 import com.teletracker.service.controllers.TeletrackerController._
-import com.teletracker.service.controllers.annotations.ItemReleaseYear
+import com.teletracker.service.controllers.annotations.{
+  ItemReleaseYear,
+  RatingRange
+}
+import com.teletracker.service.controllers.params.RangeParser
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.QueryParam
@@ -28,7 +35,7 @@ import com.twitter.finatra.validation.{
 import javax.inject.Inject
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class PopularItemsController @Inject()(
   tmdbClient: TmdbClient,
@@ -87,8 +94,8 @@ class PopularItemsController @Inject()(
       bookmark = req.bookmark.map(Bookmark.parse),
       releaseYear = Some(
         OpenDateRange(
-          req.minReleaseYear.map(localDateAtYear),
-          req.maxReleaseYear.map(localDateAtYear)
+          req.minReleaseYear.map(LocalDateUtils.localDateAtYear),
+          req.maxReleaseYear.map(LocalDateUtils.localDateAtYear)
         )
       ),
       peopleCredits =
@@ -100,11 +107,10 @@ class PopularItemsController @Inject()(
               BinaryOperator.And
             )
           )
-        else None
+        else None,
+      imdbRating = req.imdbRating.flatMap(RangeParser.parseRatingString)
     )
   }
-
-  private def localDateAtYear(year: Int): LocalDate = LocalDate.of(year, 1, 1)
 }
 
 object GetItemsRequest {
@@ -125,6 +131,7 @@ case class GetItemsRequest(
   @QueryParam @ItemReleaseYear maxReleaseYear: Option[Int],
   @QueryParam(commaSeparatedList = true) cast: Set[String] = Set.empty,
   @QueryParam(commaSeparatedList = true) crew: Set[String] = Set.empty,
+  @QueryParam @RatingRange(min = 0.0d, max = 10.0d) imdbRating: Option[String],
   request: Request)
     extends InjectedRequest {
 

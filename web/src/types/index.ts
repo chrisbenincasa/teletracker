@@ -51,10 +51,21 @@ export class ListFactory {
   }
 }
 
-export type SortOptions = 'popularity' | 'recent' | 'added_time';
+export type SortOptions =
+  | 'popularity'
+  | 'recent'
+  | 'added_time'
+  | 'rating|imdb'
+  | 'rating|tmdb';
 
 export function isListSortOption(s: string): s is SortOptions {
-  const allowed = ['popularity', 'recent', 'added_time', 'default'];
+  const allowed: string[] = [
+    'popularity',
+    'recent',
+    'added_time',
+    'rating|imdb',
+    'rating|tmdb',
+  ];
   return allowed.includes(s);
 }
 

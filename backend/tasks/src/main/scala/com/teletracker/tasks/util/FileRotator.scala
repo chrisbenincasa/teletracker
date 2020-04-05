@@ -28,6 +28,20 @@ object FileRotator {
       append = append
     )
   }
+
+  def everyNLines(
+    baseFileName: String,
+    every: Int,
+    outputPath: Option[String],
+    append: Boolean = false
+  ): FileRotator = {
+    new FileRotator(
+      baseFileName,
+      RotateEveryNLines(every),
+      outputPath,
+      append = append
+    )
+  }
 }
 
 class FileRotator(

@@ -27,6 +27,8 @@ export interface QuickSearchInitiatedPayload {
   genres?: number[];
   releaseYearRange?: OpenRange;
   sort?: SortOptions;
+  cast?: string[];
+  imdbRating?: OpenRange;
 }
 
 export type QuickSearchInitiatedAction = FSA<
@@ -70,15 +72,19 @@ export const quickSearchSaga = function*() {
     if (payload) {
       try {
         let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
-          client => client.quickSearch,
-          payload.query,
-          payload.bookmark,
-          payload.limit,
-          payload.itemTypes,
-          payload.networks,
-          payload.genres,
-          payload.releaseYearRange,
-          payload.sort,
+          client => client.search,
+          {
+            searchText: payload.query,
+            itemTypes: payload.itemTypes,
+            networks: payload.networks,
+            bookmark: payload.bookmark,
+            sort: payload.sort,
+            limit: payload.limit,
+            genres: payload.genres,
+            releaseYearRange: payload.releaseYearRange,
+            castIncludes: payload.cast,
+            imdbRating: payload.imdbRating,
+          },
         );
 
         if (response.ok) {

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import {
   Collapse,
   ExpansionPanel,
-  ExpansionPanelSummary,
   ExpansionPanelDetails,
+  ExpansionPanelSummary,
   makeStyles,
   Paper,
   Theme,
@@ -13,10 +13,10 @@ import { ExpandMore } from '@material-ui/icons';
 import { useWidth } from '../../hooks/useWidth';
 import {
   Genre,
-  Network,
   ItemType,
-  SortOptions,
+  Network,
   NetworkType,
+  SortOptions,
 } from '../../types';
 import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
@@ -200,11 +200,12 @@ const AllFilters = (props: Props) => {
   };
 
   const setSliders = (sliderChange: SliderChange) => {
-    let newFilters = {
+    let newFilters: FilterParams = {
       ...filters,
       sliders: {
         ...(filters.sliders || {}),
         releaseYear: sliderChange.releaseYear,
+        imdbRating: sliderChange.imdbRating,
       },
     };
 
@@ -416,14 +417,9 @@ const AllFilters = (props: Props) => {
             </div>
 
             <div className={classes.slidersContainer}>
-              <div className={classes.sliderContainer}>
-                {!disableSliders ? (
-                  <Sliders
-                    handleChange={setSliders}
-                    sliders={filters.sliders}
-                  />
-                ) : null}
-              </div>
+              {!disableSliders ? (
+                <Sliders handleChange={setSliders} sliders={filters.sliders} />
+              ) : null}
               <div className={classes.peopleContainer}>
                 {!disableStarring ? (
                   <PersonFilter

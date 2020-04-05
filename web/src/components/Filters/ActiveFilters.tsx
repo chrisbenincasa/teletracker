@@ -17,6 +17,7 @@ import { AppState } from '../../reducers';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import { useRouter } from 'next/router';
+import { sortOptionToName } from './SortDropdown';
 
 const useStyles = makeStyles((theme: Theme) => ({
   activeFiltersContainer: {
@@ -58,14 +59,19 @@ export const prettyItemType = (itemType: ItemType) => {
 };
 
 export const prettySort = (sortOption: SortOptions) => {
-  switch (sortOption) {
-    case 'added_time':
-      return 'Added Time';
-    case 'popularity':
-      return 'Popularity';
-    case 'recent':
-      return 'Release Date';
-  }
+  return sortOptionToName[sortOption];
+};
+
+type FilterRemove = {
+  sort?: SortOptions;
+  network?: NetworkType[];
+  type?: ItemType[];
+  genre?: number[];
+  releaseYearMin?: true;
+  releaseYearMax?: true;
+  people?: string[];
+  imdbRatingMin?: true;
+  imdbRatingMax?: true;
 };
 
 export default function ActiveFilters(props: Props) {
@@ -180,15 +186,7 @@ export default function ActiveFilters(props: Props) {
     props.updateFilters(props.initialState!);
   };
 
-  const removeFilters = (filters: {
-    sort?: SortOptions;
-    network?: NetworkType[];
-    type?: ItemType[];
-    genre?: number[];
-    releaseYearMin?: true;
-    releaseYearMax?: true;
-    people?: string[];
-  }) => {
+  const removeFilters = (filters: FilterRemove) => {
     const [newSort, sortChanged] = applyDiffer(filters.sort, deleteSort);
     const [newNetworks, networksChanged] = applyDiffer(
       filters.network,
@@ -216,6 +214,18 @@ export default function ActiveFilters(props: Props) {
       releaseYearStateNew.max = undefined;
     }
 
+    let imdbRatingStateNew = props.filters.sliders
+      ? { ...props.filters.sliders.imdbRating } || {}
+      : {};
+
+    if (filters.imdbRatingMin) {
+      imdbRatingStateNew.min = undefined;
+    }
+
+    if (filters.imdbRatingMax) {
+      imdbRatingStateNew.max = undefined;
+    }
+
     let filterParams: FilterParams = {
       sortOrder: (sortChanged
         ? newSort
@@ -232,6 +242,7 @@ export default function ActiveFilters(props: Props) {
       sliders: {
         ...props.filters.sliders,
         releaseYear: releaseYearStateNew,
+        imdbRating: imdbRatingStateNew,
       },
       people: peopleChanged ? newPeople : props.filters.people,
     };
@@ -244,16 +255,10 @@ export default function ActiveFilters(props: Props) {
     return (genreItem && genreItem.name) || '';
   };
 
-  let releaseYearMin =
-    sliders && sliders.releaseYear ? sliders.releaseYear.min : undefined;
-  let releaseYearMax =
-    sliders && sliders.releaseYear ? sliders.releaseYear.max : undefined;
-
-  const sortLabels = {
-    added_time: 'Date Added',
-    popularity: 'Popularity',
-    recent: 'Release Date',
-  };
+  let releaseYearMin = sliders?.releaseYear?.min;
+  let releaseYearMax = sliders?.releaseYear?.max;
+  let imdbMin = sliders?.imdbRating?.min;
+  let imdbMax = sliders?.imdbRating?.max;
 
   const showGenreFilters = Boolean(genresFilter && genresFilter.length > 0);
   const showNetworkFilters = Boolean(networks && networks.length > 0);
@@ -278,8 +283,17 @@ export default function ActiveFilters(props: Props) {
       (sliders.releaseYear.min || sliders.releaseYear.max),
   );
 
+  const showImdbSlider = Boolean(
+    !_.isUndefined(sliders?.imdbRating?.min) ||
+      !_.isUndefined(sliders?.imdbRating?.max),
+  );
+
   const showReset = Boolean(
-    showSort || showGenreFilters || showNetworkFilters || showTypeFilters,
+    showSort ||
+      showGenreFilters ||
+      showNetworkFilters ||
+      showTypeFilters ||
+      showImdbSlider,
   );
 
   const showResetDefaults = Boolean(
@@ -334,7 +348,7 @@ export default function ActiveFilters(props: Props) {
       {showSort && sortOrder ? (
         <Chip
           key={sortOrder}
-          label={`Sort by: ${sortLabels[sortOrder]}`}
+          label={`Sort by: ${prettySort(sortOrder)}`}
           className={classes.chip}
           onDelete={() => removeFilters({ sort: undefined })}
           variant={variant}
@@ -356,6 +370,39 @@ export default function ActiveFilters(props: Props) {
               key={releaseYearMax}
               label={'Released before: ' + (releaseYearMax + 1)}
               onDelete={() => removeFilters({ releaseYearMax: true })}
+              className={classes.chip}
+              variant={variant}
+            />
+          ) : null}
+        </React.Fragment>
+      ) : null}
+      {showImdbSlider ? (
+        <React.Fragment>
+          {!_.isUndefined(imdbMin) && _.isUndefined(imdbMax) ? (
+            <Chip
+              key={imdbMin}
+              label={'IMDb Rating higher than: ' + imdbMin}
+              className={classes.chip}
+              onDelete={() => removeFilters({ imdbRatingMin: true })}
+              variant={variant}
+            />
+          ) : null}
+          {!_.isUndefined(imdbMax) && _.isUndefined(imdbMin) ? (
+            <Chip
+              key={imdbMax}
+              label={'IMDb Rating lower than ' + imdbMax}
+              onDelete={() => removeFilters({ imdbRatingMax: true })}
+              className={classes.chip}
+              variant={variant}
+            />
+          ) : null}
+          {!_.isUndefined(imdbMax) && !_.isUndefined(imdbMin) ? (
+            <Chip
+              key={`${imdbMin}_${imdbMax}`}
+              label={'IMDb Rating between : ' + imdbMin + ' and ' + imdbMax}
+              onDelete={() =>
+                removeFilters({ imdbRatingMin: true, imdbRatingMax: true })
+              }
               className={classes.chip}
               variant={variant}
             />

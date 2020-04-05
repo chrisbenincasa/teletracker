@@ -126,8 +126,19 @@ class TvShowImportHandler @Inject()(
           })
           .values
 
-      val newRatings = toEsItem
-        .esItemRating(item)
+      val existingRating =
+        existingShow.ratingsGrouped.get(ExternalSource.TheMovieDb)
+      val newRating = toEsItem.esItemRating(item)
+
+      val newTmdbRating = (existingRating, newRating) match {
+        case (Some(e), Some(n)) =>
+          Some(e.copy(vote_average = n.vote_average, vote_count = n.vote_count))
+        case (None, Some(n)) => Some(n)
+        case (Some(e), None) => Some(e)
+        case _               => None
+      }
+
+      val newRatings = newTmdbRating
         .map(
           rating =>
             existingShow.ratingsGrouped

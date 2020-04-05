@@ -10,6 +10,7 @@ import java.util.concurrent.Executors
 import cats.implicits._
 import cats.syntax.all._
 import cats.data.EitherT._
+import io.circe.Json
 import java.io.File
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -38,6 +39,10 @@ class Http4sClient @Inject()(
 
   override def get(request: HttpRequest): Future[HttpResponse[String]] = {
     baseClient.get(fullHost, request).unsafeToFuture()
+  }
+
+  override def getJson(request: HttpRequest): Future[HttpResponse[Json]] = {
+    baseClient.getJson(fullHost, request).unsafeToFuture()
   }
 
   override def getBytes(
