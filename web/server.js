@@ -56,7 +56,7 @@ app.prepare().then(() => {
     const parsedUrl = parse(req.url, true);
     // console.log('Serving ' + req.url);
     handle(req, res, parsedUrl).finally(() => {
-      console.log(`${req.url} - ${performance.now() - start}ms`);
+      console.log(`${req.url} (${res.statusCode}) - ${performance.now() - start}ms`);
     });
   }).listen(3000, err => {
     if (err) throw err;

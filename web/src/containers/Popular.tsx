@@ -204,15 +204,10 @@ class Popular extends Component<Props, State> {
             ),
         networks,
         genres: genresFilter,
-        releaseYearRange:
-          sliders && sliders.releaseYear
-            ? {
-                min: sliders.releaseYear.min,
-                max: sliders.releaseYear.max,
-              }
-            : undefined,
+        releaseYearRange: sliders?.releaseYear,
         castIncludes: people,
         sort: sortOrder,
+        imdbRating: sliders?.imdbRating,
       });
     }
   }
@@ -501,7 +496,7 @@ class Popular extends Component<Props, State> {
           open={this.state.showFilter}
           filters={this.state.filters}
           updateFilters={this.handleFilterParamsChange}
-          sortOptions={['popularity', 'recent']}
+          sortOptions={['popularity', 'recent', 'rating|imdb', 'rating|tmdb']}
           networks={this.props.networks}
         />
         {popular.length > 0 ? (

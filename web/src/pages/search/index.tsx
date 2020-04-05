@@ -55,7 +55,7 @@ SearchWrapper.getInitialProps = async (ctx: NextPageContext & WithStore) => {
 
     console.log(filterParams);
 
-    let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.searchV2(
+    let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.search(
       await currentUserJwt(),
       query,
       undefined,

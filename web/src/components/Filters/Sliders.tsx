@@ -7,6 +7,7 @@ import _ from 'lodash';
 import * as R from 'ramda';
 import { OpenRange } from '../../types';
 import { SlidersState } from '../../utils/searchFilters';
+import { useDebounce, useDebouncedCallback } from 'use-debounce';
 
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {
@@ -28,9 +29,7 @@ interface OwnProps {
 
 type Props = OwnProps & WithRouterProps;
 
-export interface SliderChange {
-  releaseYear?: OpenRange;
-}
+export type SliderChange = Partial<SlidersState>;
 
 const ensureNumberInRange = (num: number, lo: number, hi: number) => {
   return Math.max(Math.min(num, hi), lo);
@@ -86,15 +85,26 @@ const SliderFilters = (props: Props) => {
   }, [props.sliders, props.sliders ? props.sliders.releaseYear : undefined]);
 
   const [imdbRatingValue, setImdbRatingValue] = React.useState([
-    MIN_RATING,
-    MAX_RATING,
+    ensureNumberInRange(
+      props.sliders?.imdbRating?.min || MIN_RATING,
+      MIN_RATING,
+      MAX_RATING,
+    ),
+    ensureNumberInRange(
+      props.sliders?.imdbRating?.max || MAX_RATING,
+      MIN_YEAR,
+      MAX_RATING,
+    ),
   ]);
 
-  const debouncePropUpdate = _.debounce((sliderChange: SliderChange) => {
-    if (props.handleChange) {
-      props.handleChange(sliderChange);
-    }
-  }, 250);
+  const [debouncePropUpdate] = useDebouncedCallback(
+    (sliderChange: SliderChange) => {
+      if (props.handleChange) {
+        props.handleChange(sliderChange);
+      }
+    },
+    250,
+  );
 
   const extractValues = (
     newValue: number[],
@@ -126,6 +136,16 @@ const SliderFilters = (props: Props) => {
     setImdbRatingValue(newValue);
   };
 
+  const handleImdbCommitted = (event, newValue) => {
+    let [min, max] = extractValues(newValue, MIN_RATING, MAX_RATING);
+    debouncePropUpdate({
+      imdbRating: {
+        min,
+        max,
+      },
+    });
+  };
+
   return (
     <React.Fragment>
       <div className={classes.sliderContainer}>
@@ -144,14 +164,19 @@ const SliderFilters = (props: Props) => {
           aria-labelledby="range-slider"
         />
       </div>
-      <div className={classes.sliderContainer} hidden={true}>
+      <div className={classes.sliderContainer}>
         {props.showTitle && <Typography>IMDb Score</Typography>}
         <Slider
           value={imdbRatingValue}
           min={MIN_RATING}
           max={MAX_RATING}
           step={RATING_STEP}
+          marks={[
+            { value: MIN_RATING, label: MIN_RATING },
+            { value: MAX_RATING, label: MAX_RATING },
+          ]}
           onChange={handleImdbChange}
+          onChangeCommitted={handleImdbCommitted}
           valueLabelDisplay="auto"
           aria-labelledby="range-slider"
         />

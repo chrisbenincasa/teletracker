@@ -19,6 +19,7 @@ const validQueryParams = [
   'ry_min',
   'ry_max',
   'cast',
+  'imdbRating',
 ];
 
 export const updateUrlParamsForFilterRouter = (
@@ -36,6 +37,13 @@ export const updateUrlParamsForFilterRouter = (
   if (defaultFilters && filterParamsEqual(defaultFilters, filterParams)) {
     props.router.push(props.router.pathname, sanitizedPath, { shallow: true });
     return;
+  }
+
+  let imdbMin = filterParams.sliders?.imdbRating?.min || '';
+  let imdbMax = filterParams.sliders?.imdbRating?.max || '';
+  let imdbPart: any | undefined;
+  if (imdbMin || imdbMax) {
+    imdbPart = `${imdbMin}:${imdbMax}`;
   }
 
   let paramUpdates: [string, any | undefined][] = [
@@ -56,6 +64,7 @@ export const updateUrlParamsForFilterRouter = (
         : undefined,
     ],
     ['cast', filterParams.people],
+    ['imdbRating', imdbPart],
   ];
 
   paramUpdates = paramUpdates.filter(
@@ -109,7 +118,7 @@ export const updateMultipleUrlParams = (
   replace(`?${params}`);
 };
 
-export function parseFilterParams(params: Map<string, string>) {
+export function parseFilterParams(params: Map<string, string>): FilterParams {
   let sortParam = params.get('sort');
   let itemTypeParam = params.get('type');
   let networkParam = params.get('networks');
@@ -118,6 +127,8 @@ export function parseFilterParams(params: Map<string, string>) {
 
   let ryMin = params.get('ry_min');
   let ryMax = params.get('ry_max');
+
+  let imdbRating = params.get('imdbRating');
 
   let filters: FilterParams = {
     sortOrder:
@@ -178,6 +189,25 @@ export function parseFilterParams(params: Map<string, string>) {
       releaseYear: {
         min: releaseYearMin,
         max: releaseYearMax,
+      },
+    };
+  }
+
+  let [imdbMin, imdbMax, ...rest] = imdbRating
+    ? decodeURIComponent(imdbRating).split(':', 2)
+    : [undefined, undefined];
+  let imdbMinNum = imdbMin ? parseFloat(imdbMin) : undefined;
+  let imdbMaxNum = imdbMax ? parseFloat(imdbMax) : undefined;
+
+  if (
+    (imdbMinNum && !_.isNaN(imdbMinNum)) ||
+    (imdbMaxNum && !_.isNaN(imdbMaxNum))
+  ) {
+    filters.sliders = {
+      ...filters.sliders,
+      imdbRating: {
+        min: imdbMinNum,
+        max: imdbMaxNum,
       },
     };
   }

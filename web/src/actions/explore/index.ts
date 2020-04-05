@@ -27,6 +27,7 @@ export interface ExploreInitiatedActionPayload {
   genres?: number[];
   releaseYearRange?: OpenRange;
   cast?: string[];
+  imdbRating?: OpenRange;
 }
 
 export type ExploreInitiatedAction = FSA<
@@ -69,14 +70,17 @@ export const exploreSaga = function*() {
       try {
         let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
           client => client.getItems,
-          payload.itemTypes,
-          payload.networks,
-          payload.bookmark,
-          payload.sort,
-          payload.limit,
-          payload.genres,
-          payload.releaseYearRange,
-          payload.cast,
+          {
+            itemTypes: payload.itemTypes,
+            networks: payload.networks,
+            bookmark: payload.bookmark,
+            sort: payload.sort,
+            limit: payload.limit,
+            genres: payload.genres,
+            releaseYearRange: payload.releaseYearRange,
+            castIncludes: payload.cast,
+            imdbRating: payload.imdbRating,
+          },
         );
 
         if (response.ok) {

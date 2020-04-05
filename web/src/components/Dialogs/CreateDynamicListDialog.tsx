@@ -14,7 +14,7 @@ import {
   TextField,
   Typography,
 } from '@material-ui/core';
-import { FilterParams, SliderParamState } from '../../utils/searchFilters';
+import { FilterParams } from '../../utils/searchFilters';
 import {
   Genre,
   ItemType,
@@ -25,6 +25,7 @@ import {
   ListRuleType,
   Network,
   NetworkType,
+  OpenRange,
 } from '../../types';
 import _ from 'lodash';
 import { prettyItemType, prettySort } from '../Filters/ActiveFilters';
@@ -237,7 +238,7 @@ export default function CreateDynamicListDialog(props: Props) {
     );
   };
 
-  const renderReleaseDates = (releaseState: SliderParamState) => {
+  const renderReleaseDates = (releaseState: OpenRange) => {
     if (!releaseState.min && !releaseState.max) {
       return null;
     } else if (releaseState.min && !releaseState.max) {
