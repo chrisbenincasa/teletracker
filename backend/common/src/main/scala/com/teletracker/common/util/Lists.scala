@@ -44,6 +44,10 @@ class RichList[T](val l: List[T]) extends AnyVal {
       case (item, acc)            => acc :+ item
     }
   }
+
+  def distinctBy[U](f: T => U): Map[U, T] = {
+    l.groupBy(f).mapValues(_.head).toMap
+  }
 }
 
 class ListWithSafeTake[T](val l: List[T]) extends AnyVal {

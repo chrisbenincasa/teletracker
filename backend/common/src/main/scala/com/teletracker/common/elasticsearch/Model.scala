@@ -93,7 +93,8 @@ case class EsItem(
   slug: Option[Slug],
   tags: Option[List[EsItemTag]],
   title: StringListOrString,
-  `type`: ItemType) {
+  `type`: ItemType,
+  videos: Option[List[EsItemVideo]]) {
 
   def castMemberForId(id: UUID): Option[EsItemCastMember] =
     cast.flatMap(_.find(_.id == id))
@@ -136,6 +137,12 @@ case class EsItem(
       .map {
         case (k, v) => k -> v.head
       }
+  }
+
+  def videosGrouped: Map[ExternalSource, List[EsItemVideo]] = {
+    videos
+      .getOrElse(Nil)
+      .groupBy(video => ExternalSource.fromString(video.provider_shortname))
   }
 
   def scopeToUser(userId: Option[String]): EsItem = {
@@ -538,6 +545,19 @@ case class EsItemRating(
   vote_count: Option[Int],
   weighted_average: Option[Double],
   weighted_last_generated: Option[Instant])
+
+@JsonCodec
+case class EsItemVideo(
+  provider_id: Int,
+  provider_shortname: String,
+  provider_source_id: String,
+  name: Option[String],
+  language_code: Option[String],
+  country_code: Option[String],
+  video_source: String,
+  video_source_id: String,
+  size: Option[Int],
+  video_type: Option[String])
 
 @JsonCodec
 case class EsUserItem(

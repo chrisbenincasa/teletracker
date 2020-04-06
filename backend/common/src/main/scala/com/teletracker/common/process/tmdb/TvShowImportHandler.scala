@@ -18,6 +18,7 @@ import com.teletracker.common.tasks.model.{
 }
 import com.teletracker.common.util.{GenreCache, Slug}
 import javax.inject.Inject
+import com.teletracker.common.util.Lists._
 import org.slf4j.LoggerFactory
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
@@ -176,6 +177,26 @@ class TvShowImportHandler @Inject()(
       val crewNeedsDenorm =
         creditsDenormalization.crewNeedsDenormalization(crew, existingShow.crew)
 
+      val newVideos = toEsItem.esItemVideos(item)
+      val updatedVideos = if (newVideos.isEmpty) {
+        existingShow.videosGrouped
+      } else {
+        newVideos.foldLeft(existingShow.videosGrouped) {
+          case (videos, newVideo) =>
+            val tmdbVideos = videos.getOrElse(ExternalSource.TheMovieDb, Nil)
+            val newVideos = tmdbVideos match {
+              case Nil =>
+                List(newVideo)
+              case xs =>
+                xs.distinctBy(_.provider_source_id)
+                  .updated(newVideo.provider_source_id, newVideo)
+                  .values
+            }
+
+            videos.updated(ExternalSource.TheMovieDb, newVideos.toList)
+        }
+      }
+
       val partialUpdates = existingShow.copy(
         alternative_titles = item.alternative_titles
           .map(_.results)
@@ -221,7 +242,8 @@ class TvShowImportHandler @Inject()(
         slug =
           if (existingShow.slug.isEmpty)
             item.releaseYear.map(Slug(item.name, _))
-          else existingShow.slug
+          else existingShow.slug,
+        videos = Some(updatedVideos.values.flatten.toList).filter(_.nonEmpty)
       )
 
       if (args.dryRun) {
@@ -344,7 +366,8 @@ class TvShowImportHandler @Inject()(
         slug = item.releaseYear.map(Slug(item.name, _)),
         tags = None,
         title = StringListOrString.forString(item.name),
-        `type` = ItemType.Show
+        `type` = ItemType.Show,
+        videos = Some(toEsItem.esItemVideos(item)).filter(_.nonEmpty)
       )
 
       if (args.dryRun) {

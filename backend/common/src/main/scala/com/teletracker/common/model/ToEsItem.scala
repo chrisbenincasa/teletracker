@@ -6,7 +6,8 @@ import com.teletracker.common.elasticsearch.{
   EsImageType,
   EsItem,
   EsItemImage,
-  EsItemRating
+  EsItemRating,
+  EsItemVideo
 }
 import com.teletracker.common.model.tmdb.{Movie, Person, TvShow}
 import scala.util.Try
@@ -17,6 +18,8 @@ trait ToEsItem[T] {
   def esItemImages(t: T): List[EsItemImage]
 
   def esExternalId(t: T): Option[EsExternalId]
+
+  def esItemVideos(t: T): List[EsItemVideo]
 }
 
 object ToEsItem {
@@ -58,6 +61,26 @@ object ToEsItem {
     override def esExternalId(t: Movie): Option[EsExternalId] = {
       Some(EsExternalId(ExternalSource.TheMovieDb, t.id.toString))
     }
+
+    override def esItemVideos(t: Movie): List[EsItemVideo] = {
+      t.videos
+        .map(_.results)
+        .getOrElse(Nil)
+        .map(video => {
+          EsItemVideo(
+            provider_id = ExternalSource.TheMovieDb.getValue,
+            provider_shortname = ExternalSource.TheMovieDb.getName,
+            provider_source_id = video.id,
+            name = video.name,
+            language_code = video.iso_639_1,
+            country_code = video.iso_3166_1,
+            video_source = video.site.toLowerCase,
+            video_source_id = video.key,
+            size = video.size,
+            video_type = video.`type`
+          )
+        })
+    }
   }
 
   implicit val forTmdbShow: ToEsItem[TvShow] = new ToEsItem[TvShow] {
@@ -98,6 +121,26 @@ object ToEsItem {
     override def esExternalId(t: TvShow): Option[EsExternalId] = {
       Some(EsExternalId(ExternalSource.TheMovieDb, t.id.toString))
     }
+
+    override def esItemVideos(t: TvShow): List[EsItemVideo] = {
+      t.videos
+        .map(_.results)
+        .getOrElse(Nil)
+        .map(video => {
+          EsItemVideo(
+            provider_id = ExternalSource.TheMovieDb.getValue,
+            provider_shortname = ExternalSource.TheMovieDb.getName,
+            provider_source_id = video.id,
+            name = video.name,
+            language_code = video.iso_639_1,
+            country_code = video.iso_3166_1,
+            video_source = video.site.toLowerCase,
+            video_source_id = video.key,
+            size = video.size,
+            video_type = video.`type`
+          )
+        })
+    }
   }
 
   implicit val forTmdbPerson: ToEsItem[Person] = new ToEsItem[Person] {
@@ -117,5 +160,7 @@ object ToEsItem {
 
     override def esExternalId(t: Person): Option[EsExternalId] =
       Some(EsExternalId(ExternalSource.TheMovieDb, t.id.toString))
+
+    override def esItemVideos(t: Person): List[EsItemVideo] = Nil
   }
 }

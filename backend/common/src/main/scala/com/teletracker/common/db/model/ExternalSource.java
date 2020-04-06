@@ -3,28 +3,34 @@ package com.teletracker.common.db.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum ExternalSource {
-    TheMovieDb("tmdb"),
-    JustWatch("justwatch"),
-    Imdb("imdb"),
-    TvDb("tvdb"),
-    Wikidata("wikidata"),
-    Hulu("hulu"),
-    Netflix("netflix"),
-    Hbo("hbo");
+    TheMovieDb("tmdb", 0),
+    JustWatch("justwatch", 1),
+    Imdb("imdb", 2),
+    TvDb("tvdb", 3),
+    Wikidata("wikidata", 4),
+    Hulu("hulu", 5),
+    Netflix("netflix", 6),
+    Hbo("hbo", 7);
 
+    private final int value;
     private final String name;
 
-    ExternalSource(String name) {
+    ExternalSource(final String name, final int value) {
         this.name = name;
+        this.value = value;
     }
 
     public String getName() {
         return name;
     }
 
-    public static ExternalSource fromOrdinal(final int i) {
+    public int getValue() {
+        return value;
+    }
+
+    public static ExternalSource fromValue(final int i) {
         for (ExternalSource src : ExternalSource.values()) {
-            if (src.ordinal() == i) {
+            if (src.value == i) {
                 return src;
             }
         }

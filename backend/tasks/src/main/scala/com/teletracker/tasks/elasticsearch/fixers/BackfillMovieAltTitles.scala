@@ -45,4 +45,6 @@ class BackfillMovieAltTitles @Inject()(
       Map("alternative_titles" -> altTitles).asJson
     )
   }
+
+  override protected def uniqueId(item: Movie): String = item.id.toString
 }

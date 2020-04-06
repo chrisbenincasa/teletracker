@@ -30,8 +30,9 @@ class GenerateUpdatesByTmdbId @Inject()(
 
     val tmdbIdsToId = readDumpToMap(dumpLocation, itemType)
 
-    val rotater = FileRotator.everyNBytes(
+    val rotater = FileRotator.everyNLinesOrSize(
       "updates",
+      10000,
       StorageUnit.fromMegabytes(10),
       Some(outputPath)
     )
@@ -56,10 +57,6 @@ class GenerateUpdatesByTmdbId @Inject()(
                   itemId,
                   Map("doc" -> row.partialJson).asJson.noSpaces
                 ).lines
-              )
-
-              logger.info(
-                s"Would've updated ${row} to id = ${itemId}"
               )
             })
         } finally {

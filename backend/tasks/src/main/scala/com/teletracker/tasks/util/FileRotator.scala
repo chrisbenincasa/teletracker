@@ -42,6 +42,16 @@ object FileRotator {
       append = append
     )
   }
+
+  def everyNLinesOrSize(
+    baseFileName: String,
+    lines: Int,
+    size: StorageUnit,
+    outputPath: Option[String],
+    append: Boolean = false
+  ): FileRotator = {
+    new FileRotator(baseFileName, RotateEither(size, lines), outputPath, append)
+  }
 }
 
 class FileRotator(
@@ -174,20 +184,6 @@ class FileRotator(
     lines.size
   }
 
-  private def calculate(lines: Seq[String]) = {
-    rotationMethod match {
-      // If the total plus a new line would make us go over, start a new file
-      case RotateEveryNBytes(_) =>
-        calculateBytes(lines)
-
-      case RotateEveryNLines(_) =>
-        calculateLines(lines)
-
-      case RotateEither(amount, maxLines) =>
-        ???
-    }
-  }
-
   private def updateCurrentCounts(lines: Seq[String]) = {
     rotationMethod match {
       case RotateEveryNBytes(_) =>
@@ -205,13 +201,13 @@ class FileRotator(
   private def exceedsLimit(lines: Seq[String]) = {
     rotationMethod match {
       case RotateEveryNBytes(amount) =>
-        currBytes + calculate(lines) > amount.bytes
+        currBytes + calculateBytes(lines) > amount.bytes
 
       case RotateEveryNLines(amount) =>
-        currLines + calculate(lines) > amount
+        currLines + calculateLines(lines) > amount
 
       case RotateEither(amount, maxLines) =>
-        (currBytes + calculate(lines) > amount.bytes) || (currLines + calculate(
+        (currBytes + calculateLines(lines) > amount.bytes) || (currLines + calculateBytes(
           lines
         ) > maxLines)
     }

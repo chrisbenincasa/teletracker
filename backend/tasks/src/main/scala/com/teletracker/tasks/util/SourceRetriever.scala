@@ -37,13 +37,14 @@ class SourceRetriever @Inject()(s3: S3Client) {
   ): Source = {
     uri.getScheme match {
       case "s3" =>
+        logger.info(s"Pulling s3://${uri.getHost}/${uri.getPath}")
         getS3Object(uri.getHost, uri.getPath, consultCache)
 
       case "file" =>
         Source.fromFile(uri)
       case _ =>
         throw new IllegalArgumentException(
-          s"Unsupposed file scheme: ${uri.getScheme}"
+          s"Unsupported file scheme: ${uri.getScheme}"
         )
     }
   }

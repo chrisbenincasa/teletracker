@@ -72,7 +72,8 @@ trait HasTmdbId {
   credits: Option[MovieCredits],
   external_ids: Option[ExternalIds],
   recommendations: Option[PagedResult[Movie]],
-  similar: Option[PagedResult[Movie]])
+  similar: Option[PagedResult[Movie]],
+  videos: Option[MovieVideos])
     extends TmdbQueryableEntity
     with HasTmdbId
 
@@ -103,6 +104,18 @@ trait HasTmdbId {
 @JsonCodec case class MovieCredits(
   cast: Option[List[CastMember]],
   crew: Option[List[CrewMember]])
+
+@JsonCodec case class MovieVideos(results: List[MovieVideo])
+
+@JsonCodec case class MovieVideo(
+  id: String,
+  iso_639_1: Option[String],
+  iso_3166_1: Option[String],
+  key: String,
+  name: Option[String],
+  site: String,
+  size: Option[Int],
+  `type`: Option[String])
 
 trait PersonId
 
@@ -221,7 +234,8 @@ trait TvShowId
   credits: Option[TvShowCredits],
   external_ids: Option[ExternalIds],
   recommendations: Option[PagedResult[TvShow]],
-  similar: Option[PagedResult[TvShow]])
+  similar: Option[PagedResult[TvShow]],
+  videos: Option[TvShowVideos])
     extends HasTmdbId
 
 @JsonCodec case class TvAlternativeTitles(results: List[TvAlternativeTitle])
@@ -280,6 +294,18 @@ trait TvShowId
 @JsonCodec case class TvExternalIds(
   tvdb_id: Option[Int],
   id: Int)
+
+@JsonCodec case class TvShowVideos(results: List[TvShowVideo])
+
+@JsonCodec case class TvShowVideo(
+  id: String,
+  iso_639_1: Option[String],
+  iso_3166_1: Option[String],
+  key: String,
+  name: Option[String],
+  site: String,
+  size: Option[Int],
+  `type`: Option[String])
 
 @JsonCodec case class TvContentRatings(results: List[TvContentRating])
 

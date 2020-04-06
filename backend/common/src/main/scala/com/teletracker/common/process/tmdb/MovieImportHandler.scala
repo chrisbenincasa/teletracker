@@ -17,6 +17,7 @@ import com.teletracker.common.tasks.model.TeletrackerTaskIdentifier
 import com.teletracker.common.util.Movies._
 import com.teletracker.common.util.Tuples._
 import com.teletracker.common.util.Futures._
+import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.{GenreCache, Slug}
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
@@ -200,6 +201,26 @@ class MovieImportHandler @Inject()(
       val crewNeedsDenorm =
         creditsDenormalizer.crewNeedsDenormalization(crew, existingMovie.crew)
 
+      val newVideos = toEsItem.esItemVideos(item)
+      val updatedVideos = if (newVideos.isEmpty) {
+        existingMovie.videosGrouped
+      } else {
+        newVideos.foldLeft(existingMovie.videosGrouped) {
+          case (videos, newVideo) =>
+            val tmdbVideos = videos.getOrElse(ExternalSource.TheMovieDb, Nil)
+            val newVideos = tmdbVideos match {
+              case Nil =>
+                List(newVideo)
+              case xs =>
+                xs.distinctBy(_.provider_source_id)
+                  .updated(newVideo.provider_source_id, newVideo)
+                  .values
+            }
+
+            videos.updated(ExternalSource.TheMovieDb, newVideos.toList)
+        }
+      }
+
       val partialUpdates = existingMovie.copy(
         alternative_titles = item.alternative_titles
           .map(_.titles)
@@ -244,7 +265,8 @@ class MovieImportHandler @Inject()(
         slug =
           if (existingMovie.slug.isEmpty)
             item.releaseYear.map(Slug(item.title.get, _))
-          else existingMovie.slug
+          else existingMovie.slug,
+        videos = Some(updatedVideos.values.flatten.toList).filter(_.nonEmpty)
       )
 
       if (args.dryRun) {
@@ -359,7 +381,8 @@ class MovieImportHandler @Inject()(
         slug = item.releaseYear.map(Slug(item.title.get, _)),
         tags = None,
         title = StringListOrString.forString(item.title.get),
-        `type` = ItemType.Movie
+        `type` = ItemType.Movie,
+        videos = Option(toEsItem.esItemVideos(item)).filter(_.nonEmpty)
       )
 
       if (args.dryRun) {

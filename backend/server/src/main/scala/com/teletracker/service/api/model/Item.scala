@@ -11,6 +11,7 @@ import com.teletracker.common.elasticsearch.{
   EsItemRating,
   EsItemReleaseDate,
   EsItemTag,
+  EsItemVideo,
   EsPerson
 }
 import com.teletracker.common.util.Slug
@@ -66,7 +67,8 @@ object Item {
           ItemTag(Some(userId), typ, value, stringValue, lastUpdated)
       }),
       title = esItem.title.get.headOption,
-      `type` = esItem.`type`
+      `type` = esItem.`type`,
+      videos = esItem.videos
     )
   }
 }
@@ -92,7 +94,8 @@ case class Item(
   slug: Option[Slug],
   tags: Option[List[ItemTag]],
   title: Option[String],
-  `type`: ItemType) {
+  `type`: ItemType,
+  videos: Option[List[EsItemVideo]]) {
 
   def scopeToUser(userId: String): Item = scopeToUser(Some(userId))
 
