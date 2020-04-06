@@ -53,7 +53,7 @@ PopularityWrapper.getInitialProps = async ctx => {
       {
         itemTypes: filterParams.itemTypes,
         networks: filterParams.networks,
-        sort: filterParams.sortOrder,
+        sort: filterParams.sortOrder || 'popularity',
         limit: DEFAULT_POPULAR_LIMIT,
         genres: filterParams.genresFilter,
         releaseYearRange: filterParams.sliders?.releaseYear,
