@@ -22,6 +22,7 @@ import { ApiThing } from '../types/Thing';
 import { ApiItem, Id, Slug } from '../types/v2';
 import { FilterParams } from './searchFilters';
 import { ApiPerson } from '../types/v2/Person';
+import { ItemSearchRequest } from '../types/client';
 
 export interface TeletrackerApiOptions {
   url?: string;
@@ -86,40 +87,18 @@ export class TeletrackerApi {
     );
   }
 
-  async search(token: string, searchText: string, bookmark?: string) {
-    return this.api.get<ApiThing[]>('/api/v2/search', {
-      query: searchText,
-      token,
-      bookmark,
-    });
-  }
-
-  async searchV2(
+  async search(
     token: string | undefined,
-    searchText: string,
-    bookmark?: string,
-    limit?: number,
-    itemTypes?: ItemType[],
-    networks?: NetworkType[],
-    genres?: number[],
-    releaseYearRange?: OpenRange,
-    sort?: SortOptions | 'search_score',
+    request: ItemSearchRequest,
   ): Promise<TeletrackerResponse<ApiItem[]>> {
     return this.api.get('/api/v3/search', {
       token,
-      query: searchText,
-      bookmark,
-      limit,
-      itemTypes: itemTypes ? itemTypes.join(',') : undefined,
-      networks: networks ? networks.join(',') : undefined,
-      genres: genres ? genres.join(',') : undefined,
-      releaseYearRange,
-      sort,
+      ...this.searchRequestToParams(request),
     });
   }
 
   async quickSearch(
-    token: string,
+    token: string | undefined,
     searchText: string,
     bookmark?: string,
     limit?: number,
@@ -450,72 +429,64 @@ export class TeletrackerApi {
   }
 
   async getPopular(
-    token?: string,
-    fields?: KeyMap<ObjectMetadata>,
-    itemTypes?: ItemType[],
-    networks?: NetworkType[],
-    bookmark?: string,
-    sort?: SortOptions,
-    limit?: number,
-    genres?: number[],
-    releaseYearRange?: OpenRange,
-    castIncludes?: string[],
+    token: string | undefined,
+    request: ItemSearchRequest,
   ): Promise<TeletrackerResponse<ApiItem[]>> {
     return this.api.get('/api/v2/popular', {
       token,
-      fields: fields ? this.createFilter(fields!) : undefined,
-      itemTypes:
-        itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
-      networks: networks && networks.length ? networks.join(',') : undefined,
-      bookmark,
-      sort,
-      limit,
-      genres: genres && genres.length ? genres.join(',') : undefined,
-      minReleaseYear:
-        releaseYearRange && releaseYearRange.min
-          ? releaseYearRange.min
-          : undefined,
-      maxReleaseYear:
-        releaseYearRange && releaseYearRange.max
-          ? releaseYearRange.max
-          : undefined,
-      cast:
-        castIncludes && castIncludes.length
-          ? castIncludes.join(',')
-          : undefined,
+      ...this.searchRequestToParams(request),
     });
   }
 
   async getItems(
-    token?: string,
-    itemTypes?: ItemType[],
-    networks?: NetworkType[],
-    bookmark?: string,
-    sort?: SortOptions,
-    limit?: number,
-    genres?: number[],
-    releaseYearRange?: OpenRange,
-    cast?: string[],
+    token: string | undefined,
+    request: ItemSearchRequest,
   ): Promise<TeletrackerResponse<ApiItem[]>> {
     return this.api.get('/api/v2/explore', {
       token,
+      ...this.searchRequestToParams(request),
+    });
+  }
+
+  private searchRequestToParams(request: ItemSearchRequest) {
+    let imdbMin = request.imdbRating?.min || '';
+    let imdbMax = request.imdbRating?.max || '';
+    let imdbPart: string | undefined;
+    if (imdbMin || imdbMax) {
+      imdbPart = `${imdbMin}:${imdbMax}`;
+    }
+
+    return {
+      query: request.searchText,
       itemTypes:
-        itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
-      networks: networks && networks.length ? networks.join(',') : undefined,
-      bookmark,
-      sort,
-      limit,
-      genres: genres && genres.length ? genres.join(',') : undefined,
-      cast: cast && cast.length ? cast.join(',') : undefined,
+        request.itemTypes && request.itemTypes.length
+          ? request.itemTypes.join(',')
+          : undefined,
+      networks:
+        request.networks && request.networks.length
+          ? request.networks.join(',')
+          : undefined,
+      bookmark: request.bookmark,
+      sort: request.sort,
+      limit: request.limit,
+      genres:
+        request.genres && request.genres.length
+          ? request.genres.join(',')
+          : undefined,
       minReleaseYear:
-        releaseYearRange && releaseYearRange.min
-          ? releaseYearRange.min
+        request.releaseYearRange && request.releaseYearRange.min
+          ? request.releaseYearRange.min
           : undefined,
       maxReleaseYear:
-        releaseYearRange && releaseYearRange.max
-          ? releaseYearRange.max
+        request.releaseYearRange && request.releaseYearRange.max
+          ? request.releaseYearRange.max
           : undefined,
-    });
+      cast:
+        request.castIncludes && request.castIncludes.length
+          ? request.castIncludes.join(',')
+          : undefined,
+      imdbRating: imdbPart,
+    };
   }
 
   private withTokenCheck<T>(f: () => Promise<T>): Promise<T> {

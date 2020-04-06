@@ -1,13 +1,9 @@
-import { ItemType, NetworkType, SortOptions } from '../types';
+import { ItemType, NetworkType, OpenRange, SortOptions } from '../types';
 import _ from 'lodash';
 
-export interface SliderParamState {
-  min?: number;
-  max?: number;
-}
-
 export interface SlidersState {
-  releaseYear?: SliderParamState;
+  releaseYear?: OpenRange;
+  imdbRating?: OpenRange;
 }
 
 export const DEFAULT_FILTER_PARAMS: FilterParams = {};

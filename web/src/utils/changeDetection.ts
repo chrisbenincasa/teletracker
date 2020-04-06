@@ -1,6 +1,6 @@
 import _ from 'lodash';
-import { FilterParams, SliderParamState } from './searchFilters';
-import { SortOptions } from '../types';
+import { FilterParams } from './searchFilters';
+import { OpenRange, SortOptions } from '../types';
 
 export function filterParamsEqual(
   left: FilterParams | undefined,
@@ -60,6 +60,10 @@ export function filterParamsEqual(
       if (sliderChanged(left.sliders.releaseYear, right.sliders.releaseYear)) {
         return false;
       }
+
+      if (sliderChanged(left.sliders.imdbRating, right.sliders.imdbRating)) {
+        return false;
+      }
     }
 
     if (
@@ -78,7 +82,7 @@ export function filterParamsEqual(
   }
 }
 
-function sliderChanged(left?: SliderParamState, right?: SliderParamState) {
+function sliderChanged(left?: OpenRange, right?: OpenRange) {
   if ((!left && right) || (left && !right)) {
     return true;
   } else if (left && right) {

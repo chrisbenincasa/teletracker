@@ -50,15 +50,16 @@ PopularityWrapper.getInitialProps = async ctx => {
     // Start fetching the items with the given filters
     let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.getPopular(
       token,
-      undefined,
-      filterParams.itemTypes,
-      filterParams.networks,
-      undefined,
-      filterParams.sortOrder,
-      DEFAULT_POPULAR_LIMIT,
-      filterParams.genresFilter,
-      filterParams.sliders?.releaseYear,
-      filterParams.people,
+      {
+        itemTypes: filterParams.itemTypes,
+        networks: filterParams.networks,
+        sort: filterParams.sortOrder,
+        limit: DEFAULT_POPULAR_LIMIT,
+        genres: filterParams.genresFilter,
+        releaseYearRange: filterParams.sliders?.releaseYear,
+        castIncludes: filterParams.people,
+        imdbRating: filterParams.sliders?.imdbRating,
+      },
     );
 
     if (response.ok && response.data) {
