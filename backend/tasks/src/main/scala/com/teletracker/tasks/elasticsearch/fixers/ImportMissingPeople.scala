@@ -260,3 +260,16 @@ case class EsBulkUpdate(
     update
   )
 }
+
+@JsonCodec
+case class EsBulkDelete(
+  index: String,
+  id: UUID)
+    extends EsBulkOp {
+  override def typ: String = "delete"
+
+  override def lines: Seq[String] =
+    Seq(
+      Map(typ -> Map("_index" -> index, "_id" -> id.toString).asJson).asJson.noSpaces
+    )
+}

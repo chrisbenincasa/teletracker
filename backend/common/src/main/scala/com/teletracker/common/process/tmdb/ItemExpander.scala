@@ -6,6 +6,7 @@ import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.model.tmdb.{Person => TmdbPerson, _}
 import com.teletracker.common.util.json.circe._
 import io.circe.Json
+import io.circe.syntax._
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -56,13 +57,22 @@ class ItemExpander @Inject()(
       case ItemType.Person => DefaultPersonAppendFields
     }
 
-    tmdbClient.makeRequest[Json](
-      s"$path/$id",
-      Seq(
-        "append_to_response" -> (extraAppendFields ++ defaultFields).distinct
-          .mkString(",")
+    tmdbClient
+      .makeRequest[Json](
+        s"$path/$id",
+        Seq(
+          "append_to_response" -> (extraAppendFields ++ defaultFields).distinct
+            .mkString(",")
+        )
       )
-    )
+      .map(json => {
+        json.asObject
+          .filter(_.contains("status_code"))
+          .map(obj => {
+            obj.+:("requested_item_id" -> id.asJson).asJson
+          })
+          .getOrElse(json)
+      })
   }
 
   def expandMovie(

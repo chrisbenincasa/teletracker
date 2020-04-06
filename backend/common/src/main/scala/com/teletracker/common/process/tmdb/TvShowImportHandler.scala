@@ -123,9 +123,17 @@ class TvShowImportHandler @Inject()(
           .foldLeft(existingShow.imagesGrouped)((acc, image) => {
             val externalSource =
               ExternalSource.fromString(image.provider_shortname)
-            acc.updated((externalSource, image.image_type), image)
+            val existing =
+              acc.getOrElse(externalSource -> image.image_type, Nil).toSet
+            acc.updated(
+              (externalSource, image.image_type),
+              (existing + image).toList.sortBy(_.id)
+            )
           })
           .values
+          .flatten
+          .toList
+          .sorted(EsOrdering.forEsImages)
 
       val existingRating =
         existingShow.ratingsGrouped.get(ExternalSource.TheMovieDb)
@@ -246,23 +254,33 @@ class TvShowImportHandler @Inject()(
         videos = Some(updatedVideos.values.flatten.toList).filter(_.nonEmpty)
       )
 
-      if (args.dryRun) {
-        logger.info(
-          s"Would've updated id = ${existingShow.id}:\n${diff(existingShow.asJson, partialUpdates.asJson).asJson.spaces2}"
+      val itemChanged = partialUpdates != existingShow
+      val updatedItem = if (itemChanged) {
+        partialUpdates.copy(
+          last_updated = Some(OffsetDateTime.now().toInstant.toEpochMilli)
         )
+      } else {
+        partialUpdates
+      }
+
+      if (args.dryRun) {
         Future.successful {
+          logger.info(
+            s"Would've updated id = ${existingShow.id}:\n${diff(existingShow.asJson, updatedItem.asJson).asJson.spaces2}"
+          )
+
           TvShowImportResult(
             itemId = existingShow.id,
             inserted = false,
             updated = false,
             castNeedsDenorm = castNeedsDenorm,
             crewNeedsDenorm = crewNeedsDenorm,
-            itemChanged = partialUpdates != existingShow
+            itemChanged = itemChanged
           )
         }
-      } else {
+      } else if (itemChanged) {
         itemUpdater
-          .update(partialUpdates)
+          .update(updatedItem)
           .map(_ => {
             TvShowImportResult(
               itemId = existingShow.id,
@@ -270,9 +288,21 @@ class TvShowImportHandler @Inject()(
               updated = true,
               castNeedsDenorm = castNeedsDenorm,
               crewNeedsDenorm = crewNeedsDenorm,
-              itemChanged = partialUpdates != existingShow
+              itemChanged = itemChanged
             )
           })
+      } else {
+        logger.info(s"Skipped no-op on item ${existingShow.id}")
+        Future.successful {
+          TvShowImportResult(
+            itemId = existingShow.id,
+            inserted = false,
+            updated = false,
+            castNeedsDenorm = castNeedsDenorm,
+            crewNeedsDenorm = crewNeedsDenorm,
+            itemChanged = false
+          )
+        }
       }
     }
 
@@ -461,24 +491,6 @@ class TvShowImportHandler @Inject()(
             )
           })
       }))
-  }
-
-  private def updateImages(
-    item: TvShow,
-    existingItem: EsItem
-  ) = {
-    toEsItem
-      .esItemImages(item)
-      .foldLeft(existingItem.imagesGrouped)((acc, image) => {
-        val externalSource =
-          ExternalSource.fromString(image.provider_shortname)
-        acc.get(externalSource -> image.image_type) match {
-          case Some(_) =>
-            acc.updated((externalSource, image.image_type), image)
-          case None => acc
-        }
-      })
-      .values
   }
 
   private def buildRecommendations(item: TvShow) = {

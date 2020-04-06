@@ -1,6 +1,8 @@
 package com.teletracker.tasks.elasticsearch.fixers
 
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.model.tmdb.TmdbError
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.Futures._
@@ -21,7 +23,11 @@ abstract class CreateBackfillUpdateFile[T: Decoder](
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {
 
+  protected def init(args: Args): Unit = {}
+
   override protected def runInternal(args: Args): Unit = {
+    init(args)
+
     val input = args.valueOrThrow[URI]("input")
     val regionString = args.valueOrDefault("region", "us-west-2")
     val offset = args.valueOrDefault[Int]("offset", 0)
@@ -63,7 +69,7 @@ abstract class CreateBackfillUpdateFile[T: Decoder](
       .reverse
       .toList
 
-    logger.info("Sup")
+    import io.circe.parser._
 
     AsyncStream
       .fromSeq(uris.toStream)
@@ -71,13 +77,26 @@ abstract class CreateBackfillUpdateFile[T: Decoder](
       .foreachConcurrent(parallelism)(source => {
         Future {
           try {
-            new IngestJobParser()
-              .asyncStream[T](source.getLines())
-              .collect {
-                case Right(value)
-                    if shouldKeepItem(value) && seen.add(uniqueId(value)) =>
-                  value
-              }
+            AsyncStream
+              .fromStream(source.getLines().toStream)
+              .flatMapOption(line => {
+                decode[T](line) match {
+                  case Left(originalException) =>
+                    decode[TmdbError](line) match {
+                      case Left(_) =>
+                        logger.error(s"couldn't parse row\n", originalException)
+                        None
+                      case Right(_) =>
+                        None
+                    }
+                  case Right(value) =>
+                    if (shouldKeepItem(value) && seen.add(uniqueId(value))) {
+                      Some(value)
+                    } else {
+                      None
+                    }
+                }
+              })
               .safeTake(perFileLimit)
               .foreachConcurrent(8)(value => {
                 val row = makeBackfillRow(value)

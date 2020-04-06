@@ -45,7 +45,7 @@ trait HasTmdbId {
   adult: Option[Boolean],
   backdrop_path: Option[String],
   belongs_to_collection: Option[BelongsToCollection],
-  budget: Option[Int],
+  budget: Option[Long],
   genres: Option[List[Genre]],
   genre_ids: Option[List[Int]],
   homepage: Option[String],
@@ -58,7 +58,7 @@ trait HasTmdbId {
   poster_path: Option[String],
   production_companies: Option[List[ProductionCompany]],
   release_date: Option[String],
-  revenue: Option[Int],
+  revenue: Option[Long],
   runtime: Option[Int],
   status: Option[String],
   tagline: Option[String],
@@ -315,7 +315,9 @@ trait TvShowId
 
 @JsonCodec case class ErrorResponse(
   status_message: Option[String],
-  status_code: Option[Int])
+  status_code: Option[Int],
+  // We calculate this
+  requested_item_id: Option[Int])
 
 @JsonCodec case class Genre(
   id: Int,
@@ -404,5 +406,7 @@ trait TvShowId
 
 @JsonCodec case class TmdbError(
   status_code: Int,
-  status_message: String)
+  status_message: String,
+  // We calculate this
+  requested_item_id: Option[Int])
     extends Exception(status_message)

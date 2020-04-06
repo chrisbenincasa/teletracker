@@ -126,7 +126,7 @@ case class EsItem(
       .toMap
   }
 
-  def imagesGrouped: Map[(ExternalSource, EsImageType), EsItemImage] = {
+  def imagesGrouped: Map[(ExternalSource, EsImageType), List[EsItemImage]] = {
     images
       .getOrElse(Nil)
       .groupBy(
@@ -134,9 +134,8 @@ case class EsItem(
           ExternalSource
             .fromString(image.provider_shortname) -> image.image_type
       )
-      .map {
-        case (k, v) => k -> v.head
-      }
+      .mapValues(_.sortBy(_.id))
+      .toMap
   }
 
   def videosGrouped: Map[ExternalSource, List[EsItemVideo]] = {

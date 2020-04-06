@@ -30,7 +30,8 @@ import scala.util.control.NonFatal
 object MovieImportHandler {
   case class MovieImportHandlerArgs(
     forceDenorm: Boolean,
-    dryRun: Boolean)
+    dryRun: Boolean,
+    insertsOnly: Boolean = false)
 
   case class MovieImportResult(
     itemId: UUID,
@@ -63,7 +64,7 @@ class MovieImportHandler @Inject()(
   implicit private def toEsItem: ToEsItem[Movie] =
     ToEsItem.forTmdbMovie
 
-  def handleItem(
+  def insertOrUpdate(
     args: MovieImportHandlerArgs,
     item: Movie
   ): Future[MovieImportResult] = {
@@ -74,11 +75,35 @@ class MovieImportHandler @Inject()(
         )
       )
     } else {
-      handleItemInternal(args, item)
+      insertOrUpdateInternal(args, item)
     }
   }
 
-  private def handleItemInternal(
+  def delete(
+    args: MovieImportHandlerArgs,
+    tmdbId: Int
+  ): Future[Unit] = {
+    itemSearch
+      .lookupItemByExternalId(
+        ExternalSource.TheMovieDb,
+        tmdbId.toString,
+        ItemType.Movie
+      )
+      .flatMap {
+        case Some(value) if !args.dryRun =>
+          itemUpdater.delete(value.id).map(_ => {})
+
+        case Some(value) =>
+          logger.info(s"Would've deleted id = ${value.id}")
+          Future.unit
+
+        case None =>
+          logger.error(s"Could not find item with TMDb ID = ${tmdbId}")
+          Future.unit
+      }
+  }
+
+  private def insertOrUpdateInternal(
     args: MovieImportHandlerArgs,
     item: Movie
   ): Future[MovieImportResult] = {
@@ -89,8 +114,23 @@ class MovieImportHandler @Inject()(
         ItemType.Movie
       )
       .flatMap {
-        case Some(esItem) =>
+        case Some(esItem) if !args.insertsOnly =>
           handleExistingMovie(item, esItem, args)
+
+        case Some(esItem) =>
+          logger.info(
+            s"Skipping processing of ${esItem.id} because of insert-only mode"
+          )
+          Future.successful(
+            MovieImportResult(
+              itemId = esItem.id,
+              inserted = false,
+              updated = false,
+              castNeedsDenorm = false,
+              crewNeedsDenorm = false,
+              itemChanged = false
+            )
+          )
 
         case None =>
           handleNewMovie(item, args)
@@ -152,9 +192,17 @@ class MovieImportHandler @Inject()(
           .foldLeft(existingMovie.imagesGrouped)((acc, image) => {
             val externalSource =
               ExternalSource.fromString(image.provider_shortname)
-            acc.updated((externalSource, image.image_type), image)
+            val existing =
+              acc.getOrElse(externalSource -> image.image_type, Nil).toSet
+            acc.updated(
+              (externalSource, image.image_type),
+              (existing + image).toList.sortBy(_.id)
+            )
           })
           .values
+          .flatten
+          .toList
+          .sorted(EsOrdering.forEsImages)
 
       val existingRating =
         existingMovie.ratingsGrouped.get(ExternalSource.TheMovieDb)
@@ -239,7 +287,6 @@ class MovieImportHandler @Inject()(
         cast = cast,
         crew = crew,
         images = images.toList.some,
-        last_updated = Some(OffsetDateTime.now().toInstant.toEpochMilli),
         external_ids = Some(newExternalSources),
         original_title =
           item.original_title.orElse(existingMovie.original_title),
@@ -269,23 +316,37 @@ class MovieImportHandler @Inject()(
         videos = Some(updatedVideos.values.flatten.toList).filter(_.nonEmpty)
       )
 
-      if (args.dryRun) {
-        logger.info(
-          s"Would've updated id = ${existingMovie.id}:\n${diff(existingMovie.asJson, partialUpdates.asJson).asJson.spaces2}"
+      val itemChanged = partialUpdates != existingMovie
+      val updatedItem = if (itemChanged) {
+        partialUpdates.copy(
+          last_updated = Some(OffsetDateTime.now().toInstant.toEpochMilli)
         )
+      } else {
+        partialUpdates
+      }
+
+      if (args.dryRun) {
         Future.successful {
+          if (itemChanged) {
+            logger.info(
+              s"Would've updated id = ${existingMovie.id}:\n${diff(existingMovie.asJson, updatedItem.asJson).asJson.spaces2}"
+            )
+          } else {
+            logger.info(s"No-op on item ${existingMovie.id}")
+          }
+
           MovieImportResult(
             itemId = existingMovie.id,
             inserted = false,
             updated = false,
             castNeedsDenorm = castNeedsDenorm,
             crewNeedsDenorm = crewNeedsDenorm,
-            itemChanged = partialUpdates != existingMovie
+            itemChanged = itemChanged
           )
         }
-      } else {
+      } else if (itemChanged) {
         itemUpdater
-          .update(partialUpdates)
+          .update(updatedItem)
           .map(_ => {
             MovieImportResult(
               itemId = existingMovie.id,
@@ -293,9 +354,21 @@ class MovieImportHandler @Inject()(
               updated = true,
               castNeedsDenorm = castNeedsDenorm,
               crewNeedsDenorm = crewNeedsDenorm,
-              itemChanged = partialUpdates != existingMovie
+              itemChanged = itemChanged
             )
           })
+      } else {
+        logger.info(s"Skipped no-op on item ${existingMovie.id}")
+        Future.successful {
+          MovieImportResult(
+            itemId = existingMovie.id,
+            inserted = false,
+            updated = false,
+            castNeedsDenorm = castNeedsDenorm,
+            crewNeedsDenorm = crewNeedsDenorm,
+            itemChanged = false
+          )
+        }
       }
     }
 

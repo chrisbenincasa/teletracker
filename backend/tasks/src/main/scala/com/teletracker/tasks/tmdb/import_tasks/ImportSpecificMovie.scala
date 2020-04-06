@@ -19,7 +19,7 @@ class ImportSpecificMovie @Inject()(
     itemExpander
       .expandMovie(id)
       .flatMap(movie => {
-        movieImportHandler.handleItem(
+        movieImportHandler.insertOrUpdate(
           MovieImportHandler
             .MovieImportHandlerArgs(forceDenorm = forceDenorm, dryRun = dryRun),
           movie

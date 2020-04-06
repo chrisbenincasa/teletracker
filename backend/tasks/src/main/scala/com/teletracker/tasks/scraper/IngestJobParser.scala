@@ -30,7 +30,9 @@ class IngestJobParser {
           .flatMap(_.as[List[T]])
           .leftMap(x => new Exception(x.show))
       case JsonPerLine =>
-        lines.zipWithIndex
+        lines
+          .flatMap(sanitizeLine)
+          .zipWithIndex
           .filter(_._1.nonEmpty)
           .map { case (in, idx) => in.trim -> idx }
           .map {
@@ -55,7 +57,10 @@ class IngestJobParser {
     lines: Iterator[String]
   )(implicit decoder: Decoder[T]
   ): Stream[Either[Exception, T]] = {
-    lines.toStream.zipWithIndex
+    lines
+      .flatMap(sanitizeLine)
+      .toStream
+      .zipWithIndex
       .filter(_._1.nonEmpty)
       .map { case (in, idx) => in.trim -> idx }
       .map {
@@ -71,4 +76,13 @@ class IngestJobParser {
   )(implicit decoder: Decoder[T]
   ): AsyncStream[Either[Exception, T]] =
     AsyncStream.fromStream(stream[T](lines))
+
+  private def sanitizeLine(line: String): List[String] = {
+    if (line.contains("}{")) {
+      val left :: right :: Nil = line.split("}\\{", 2).toList
+      (left + "}") :: ("{" + right) :: Nil
+    } else {
+      List(line)
+    }
+  }
 }

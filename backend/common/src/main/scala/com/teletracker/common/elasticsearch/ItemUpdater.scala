@@ -6,6 +6,7 @@ import com.teletracker.common.monitoring.Timing
 import javax.inject.Inject
 import org.elasticsearch.action.DocWriteResponse
 import org.elasticsearch.action.bulk.BulkRequest
+import org.elasticsearch.action.delete.{DeleteRequest, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.support.WriteRequest
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
@@ -144,6 +145,15 @@ class ItemUpdater @Inject()(
     )
 
     elasticsearchExecutor.update(updateRequest)
+  }
+
+  def delete(id: UUID): Future[DeleteResponse] = {
+    val deleteRequest = new DeleteRequest(
+      teletrackerConfig.elasticsearch.items_index_name,
+      id.toString
+    )
+
+    elasticsearchExecutor.delete(deleteRequest)
   }
 
   def upsertItemTag(

@@ -6,8 +6,11 @@ import com.teletracker.tasks.model.EsPersonDumpRow
 import com.teletracker.tasks.tmdb.export_tasks.PersonDumpFileRow
 import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject
+import scala.concurrent.ExecutionContext
 
-class FindDeletedPeople @Inject()(sourceRetriever: SourceRetriever)
+class FindDeletedPeople @Inject()(
+  sourceRetriever: SourceRetriever
+)(implicit executionContext: ExecutionContext)
     extends BaseDiffTask[PersonDumpFileRow, EsPersonDumpRow, String](
       sourceRetriever
     ) {

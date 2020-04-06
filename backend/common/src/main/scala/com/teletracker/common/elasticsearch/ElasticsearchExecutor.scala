@@ -3,6 +3,7 @@ package com.teletracker.common.elasticsearch
 import javax.inject.Inject
 import org.elasticsearch.action.ActionListener
 import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
+import org.elasticsearch.action.delete.{DeleteRequest, DeleteResponse}
 import org.elasticsearch.action.get.{
   GetRequest,
   GetResponse,
@@ -49,6 +50,10 @@ class ElasticsearchExecutor @Inject()(
     request: UpdateByQueryRequest
   ): Future[BulkByScrollResponse] = {
     withListener(client.updateByQueryAsync(request, RequestOptions.DEFAULT, _))
+  }
+
+  def delete(request: DeleteRequest): Future[DeleteResponse] = {
+    withListener(client.deleteAsync(request, RequestOptions.DEFAULT, _))
   }
 
   def deleteByQuery(

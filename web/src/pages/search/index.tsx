@@ -16,6 +16,7 @@ import { currentUserJwt } from '../../utils/page-utils';
 import qs from 'querystring';
 import url from 'url';
 import { parseFilterParamsFromObject } from '../../utils/urlHelper';
+import { DEFAULT_POPULAR_LIMIT } from '../../constants';
 
 interface Props {}
 
@@ -57,13 +58,15 @@ SearchWrapper.getInitialProps = async (ctx: NextPageContext & WithStore) => {
 
     let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.search(
       await currentUserJwt(),
-      query,
-      undefined,
-      18,
-      filterParams.itemTypes,
-      filterParams.networks,
-      filterParams.genresFilter,
-      filterParams.sliders?.releaseYear,
+      {
+        searchText: query,
+        limit: DEFAULT_POPULAR_LIMIT,
+        itemTypes: filterParams.itemTypes,
+        networks: filterParams.networks,
+        genres: filterParams.genresFilter,
+        releaseYearRange: filterParams.sliders?.releaseYear,
+        imdbRating: filterParams.sliders?.imdbRating,
+      },
     );
 
     if (response.ok) {

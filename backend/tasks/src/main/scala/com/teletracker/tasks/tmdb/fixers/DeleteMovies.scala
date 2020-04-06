@@ -1,3 +1,3 @@
-package com.teletracker.tasks.tmdb.fixers class DeleteMovies {
+package com.teletracker.tasks.tmdb.fixers
 
-}
+class DeleteMovies {}

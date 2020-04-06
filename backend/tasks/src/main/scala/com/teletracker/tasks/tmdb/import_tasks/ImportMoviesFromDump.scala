@@ -31,14 +31,36 @@ class ImportMoviesFromDump @Inject()(
     item: Movie
   ): Future[Unit] = {
     movieImportHandler
-      .handleItem(
-        MovieImportHandlerArgs(forceDenorm = false, dryRun = args.dryRun),
+      .insertOrUpdate(
+        MovieImportHandlerArgs(
+          forceDenorm = false,
+          dryRun = args.dryRun,
+          insertsOnly = args.insertsOnly
+        ),
         item
       )
       .map(_ => {})
       .recover {
         case NonFatal(e) =>
-          logger.warn("Error occurred while processing movie", e)
+          logger.warn(
+            s"Error occurred while processing movie (id = ${item.id})",
+            e
+          )
+      }
+  }
+
+  override protected def handleDeletedItem(
+    args: ImportTmdbDumpTaskArgs,
+    id: Int
+  ): Future[Unit] = {
+    movieImportHandler
+      .delete(
+        MovieImportHandlerArgs(forceDenorm = false, dryRun = args.dryRun),
+        id
+      )
+      .recover {
+        case NonFatal(e) =>
+          logger.warn(s"Error occurred while deleting movie (id = $id)", e)
       }
   }
 }

@@ -1,14 +1,17 @@
 package com.teletracker.tasks.general
 
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import com.twitter.util.StorageUnit
 import io.circe.Decoder
 import java.net.URI
+import scala.concurrent.{ExecutionContext, Future}
 
 abstract class BaseDiffTask[LeftType: Decoder, RightType: Decoder, Data](
-  sourceRetriever: SourceRetriever)
+  sourceRetriever: SourceRetriever
+)(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {
 
   override protected def runInternal(args: Args): Unit = {
@@ -26,11 +29,12 @@ abstract class BaseDiffTask[LeftType: Decoder, RightType: Decoder, Data](
       fileName.map(_.getPath)
     )
 
-    val leftData =
-      sourceRetriever.getSourceStream(leftUri).foldLeft(Set.empty[Data]) {
-        case (acc, source) =>
+    val leftData = sourceRetriever
+      .getSourceAsyncStream(leftUri)
+      .mapConcurrent(8)(source => {
+        Future {
           try {
-            acc ++ ingestJobParser
+            ingestJobParser
               .stream[LeftType](source.getLines())
               .flatMap {
                 case Left(value) =>
@@ -43,7 +47,10 @@ abstract class BaseDiffTask[LeftType: Decoder, RightType: Decoder, Data](
           } finally {
             source.close()
           }
-      }
+        }
+      })
+      .foldLeft(Set.empty[Data])(_ ++ _)
+      .await()
 
     val total = sourceRetriever
       .getSourceStream(rightUri)

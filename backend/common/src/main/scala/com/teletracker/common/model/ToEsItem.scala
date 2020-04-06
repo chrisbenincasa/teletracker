@@ -7,7 +7,8 @@ import com.teletracker.common.elasticsearch.{
   EsItem,
   EsItemImage,
   EsItemRating,
-  EsItemVideo
+  EsItemVideo,
+  EsOrdering
 }
 import com.teletracker.common.model.tmdb.{Movie, Person, TvShow}
 import scala.util.Try
@@ -55,7 +56,7 @@ object ToEsItem {
             image_type = EsImageType.Poster
           )
         })
-      ).flatten
+      ).flatten.sorted(EsOrdering.forEsImages)
     }
 
     override def esExternalId(t: Movie): Option[EsExternalId] = {
@@ -115,7 +116,7 @@ object ToEsItem {
             image_type = EsImageType.Poster
           )
         })
-      ).flatten
+      ).flatten.sorted(EsOrdering.forEsImages)
     }
 
     override def esExternalId(t: TvShow): Option[EsExternalId] = {
