@@ -1,5 +1,6 @@
 package com.teletracker.common.http
 
+import io.circe.Json
 import scala.concurrent.Future
 
 object HttpClientOptions {
@@ -35,6 +36,8 @@ abstract class HttpClient(
   def get(request: HttpRequest): Future[HttpResponse[String]]
   def get(path: String): Future[HttpResponse[String]] =
     get(HttpRequest(path, Nil))
+
+  def getJson(request: HttpRequest): Future[HttpResponse[Json]]
 
   def getBytes(request: HttpRequest): Future[HttpResponse[Array[Byte]]]
   def getBytes(path: String): Future[HttpResponse[Array[Byte]]] =

@@ -2,8 +2,10 @@ package com.teletracker.common.http
 
 import cats.data.EitherT._
 import cats.effect.{Blocker, ContextShift, IO}
+import io.circe.Json
 import javax.inject.Inject
 import org.http4s._
+import org.http4s.circe._
 import org.http4s.client.JavaNetClientBuilder
 import org.http4s.headers.{Accept, MediaRangeAndQValue}
 import java.io.File
@@ -16,6 +18,13 @@ class BaseHttp4sClient @Inject()(
     request: HttpRequest
   ): IO[HttpResponse[String]] = {
     getBasic[String](host, request, parseResponseDefault(_))
+  }
+
+  def getJson(
+    host: String,
+    request: HttpRequest
+  ): IO[HttpResponse[Json]] = {
+    getBasic[Json](host, request, parseResponseDefault(_))
   }
 
   def getBytes(
@@ -53,7 +62,7 @@ class BaseHttp4sClient @Inject()(
       Uri.fromString(s"$host/${request.path.stripPrefix("/")}$params") match {
         case Left(value) => IO.raiseError(value)
         case Right(uri) =>
-          val builtRequest = buildRequest(uri, request)
+          val builtRequest = buildRequest(uri, request)(ed)
           client.fetch(builtRequest)(makeResponse)
       }
     }
@@ -63,7 +72,7 @@ class BaseHttp4sClient @Inject()(
     uri: Uri,
     request: HttpRequest
   )(implicit d: EntityDecoder[IO, T]
-  ) = {
+  ): Request[IO] = {
     val req = Request[IO](uri = uri)
     val withAccept = if (d.consumes.nonEmpty) {
       val m = d.consumes.toList

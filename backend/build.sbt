@@ -67,7 +67,8 @@ lazy val common = project
       "net.codingwell" %% "scala-guice" % versions.scalaGuice,
       // Misc
       // Http
-      "org.http4s" %% "http4s-blaze-client" % "0.21.0-M3",
+      "org.http4s" %% "http4s-blaze-client" % "0.21.3",
+      "org.http4s" %% "http4s-circe" % "0.21.3",
       "commons-codec" % "commons-codec" % "1.13",
       "javax.inject" % "javax.inject" % "1",
       "org.typelevel" %% "cats-core" % "1.1.0",

@@ -377,7 +377,8 @@ class PersonLookup @Inject()(
           ),
           BinaryOperator.Or
         )
-      )
+      ),
+      imdbRatingRange = None
     )
   }
 }

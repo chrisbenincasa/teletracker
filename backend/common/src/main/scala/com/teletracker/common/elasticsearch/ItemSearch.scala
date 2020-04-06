@@ -3,9 +3,13 @@ package com.teletracker.common.elasticsearch
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
 import com.teletracker.common.db._
-import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.util.Functions._
-import com.teletracker.common.util.OpenDateRange
+import com.teletracker.common.util.{
+  ClosedNumericRange,
+  OpenDateRange,
+  OpenNumericRange
+}
 import javax.inject.Inject
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
@@ -184,7 +188,8 @@ class ItemSearch @Inject()(
     limit: Int,
     bookmark: Option[Bookmark],
     releaseYear: Option[OpenDateRange],
-    peopleCreditSearch: Option[PeopleCreditSearch]
+    peopleCreditSearch: Option[PeopleCreditSearch],
+    imdbRatingRange: Option[ClosedNumericRange[Double]]
   ): Future[ElasticsearchItemsResponse] = {
     val actualSortMode = bookmark.map(_.sortMode).getOrElse(sortMode)
 
@@ -200,6 +205,9 @@ class ItemSearch @Inject()(
       .applyOptional(peopleCreditSearch.filter(_.people.nonEmpty))(
         peopleCreditSearchQuery
       )
+      .applyOptional(imdbRatingRange)(
+        openRatingRangeFilter(_, ExternalSource.Imdb, _)
+      )
 
     val searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -209,7 +217,7 @@ class ItemSearch @Inject()(
         new FieldSortBuilder("id").order(SortOrder.ASC)
       )
 
-    println(s"Search: ${searchSourceBuilder}")
+//    println(s"Search: ${searchSourceBuilder}")
 
     elasticsearchExecutor
       .search(
@@ -238,6 +246,13 @@ class ItemSearch @Inject()(
         case Recent(desc) =>
           item.release_date
             .getOrElse(if (desc) LocalDate.MIN else LocalDate.MAX)
+            .toString
+
+        case Rating(desc, source) =>
+          item.ratingsGrouped
+            .get(source)
+            .flatMap(_.weighted_average)
+            .getOrElse(if (desc) Double.MinValue else Double.MaxValue)
             .toString
 
         case AddedTime(desc) =>

@@ -7,11 +7,12 @@ import com.teletracker.common.db.{
   Bookmark,
   DefaultForListType,
   Popularity,
+  Rating,
   Recent,
   SearchScore,
   SortMode
 }
-import com.teletracker.common.db.model.{UserThingTagType}
+import com.teletracker.common.db.model.UserThingTagType
 import com.teletracker.common.util.ListFilters
 import javax.inject.Inject
 import org.apache.lucene.search.join.ScoreMode
@@ -266,6 +267,9 @@ class ListBuilder @Inject()(
             .setNestedSort(new NestedSortBuilder("item"))
         )
 
+      case Rating(isDesc, source) =>
+        makeRatingFieldSort(source, isDesc)
+
       case AddedTime(desc) =>
         Some(
           new FieldSortBuilder("tags.last_updated")
@@ -355,6 +359,27 @@ class ListBuilder @Inject()(
             )
           )
 
+        case Rating(isDesc, source) =>
+          builder.filter(
+            QueryBuilders.nestedQuery(
+              "ratings",
+              QueryBuilders
+                .boolQuery()
+                .filter(
+                  applyRange(
+                    QueryBuilders.rangeQuery("ratings.weighted_average"),
+                    isDesc,
+                    bookmark.value
+                  )
+                )
+                .filter(
+                  QueryBuilders
+                    .termQuery("ratings.provider_id", source.ordinal())
+                ),
+              ScoreMode.Avg
+            )
+          )
+
         case AddedTime(desc) =>
           builder.filter(
             QueryBuilders.nestedQuery(
@@ -429,6 +454,16 @@ class ListBuilder @Inject()(
           item =>
             item.id.toString -> item.release_date
               .getOrElse(if (desc) LocalDate.MIN else LocalDate.MAX)
+              .toString
+        )
+
+      case Rating(desc, source) =>
+        itemsResponse.items.lastOption.map(
+          item =>
+            item.id.toString -> item.ratingsGrouped
+              .get(source)
+              .flatMap(_.weighted_average)
+              .getOrElse(if (desc) Double.MinValue else Double.MaxValue)
               .toString
         )
 

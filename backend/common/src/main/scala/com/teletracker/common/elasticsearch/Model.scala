@@ -535,7 +535,9 @@ case class EsItemRating(
   provider_id: Int,
   provider_shortname: String,
   vote_average: Double,
-  vote_count: Option[Int])
+  vote_count: Option[Int],
+  weighted_average: Option[Double],
+  weighted_last_generated: Option[Instant])
 
 @JsonCodec
 case class EsUserItem(

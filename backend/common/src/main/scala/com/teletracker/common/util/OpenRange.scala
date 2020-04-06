@@ -26,3 +26,8 @@ case class OpenDateRange(
   end: Option[LocalDate],
   override val inclusive: Boolean = true)
     extends OpenRange[LocalDate]
+
+case class OpenNumericRange[T: Numeric](
+  start: Option[T],
+  end: Option[T])
+    extends OpenRange[T]

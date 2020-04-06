@@ -164,7 +164,8 @@ class ItemApi @Inject()(
             else Seq(),
             BinaryOperator.Or
           )
-        )
+        ),
+        imdbRating = None
       )
     )
   }
@@ -246,7 +247,8 @@ class ItemApi @Inject()(
           request.limit,
           request.bookmark,
           request.releaseYear,
-          peopleCreditFilter
+          peopleCreditFilter,
+          request.imdbRating
         )
     } yield {
       result
@@ -321,7 +323,8 @@ case class ItemSearchRequest(
   limit: Int,
   bookmark: Option[Bookmark],
   releaseYear: Option[OpenDateRange],
-  peopleCredits: Option[PeopleCreditsFilter])
+  peopleCredits: Option[PeopleCreditsFilter],
+  imdbRating: Option[ClosedNumericRange[Double]])
 
 case class PersonCreditsRequest(
   genres: Option[Set[String]],

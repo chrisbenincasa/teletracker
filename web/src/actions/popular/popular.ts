@@ -29,6 +29,7 @@ export interface PopularInitiatedActionPayload {
   genres?: number[];
   releaseYearRange?: OpenRange;
   castIncludes?: string[];
+  imdbRating?: OpenRange;
 }
 
 export type PopularInitiatedAction = FSA<
@@ -67,15 +68,17 @@ export const popularSaga = function*() {
       try {
         let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
           client => client.getPopular,
-          payload.fields,
-          payload.itemTypes,
-          payload.networks,
-          payload.bookmark,
-          payload.sort,
-          payload.limit,
-          payload.genres,
-          payload.releaseYearRange,
-          payload.castIncludes,
+          {
+            itemTypes: payload.itemTypes,
+            networks: payload.networks,
+            bookmark: payload.bookmark,
+            sort: payload.sort,
+            limit: payload.limit,
+            genres: payload.genres,
+            releaseYearRange: payload.releaseYearRange,
+            castIncludes: payload.castIncludes,
+            imdbRating: payload.imdbRating,
+          },
         );
 
         if (response.ok) {

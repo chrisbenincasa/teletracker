@@ -28,6 +28,8 @@ export interface SearchInitiatedPayload {
   genres?: number[];
   releaseYearRange?: OpenRange;
   sort?: SortOptions | 'search_score';
+  cast?: string[];
+  imdbRating?: OpenRange;
 }
 
 export type SearchInitiatedAction = FSA<
@@ -71,15 +73,19 @@ export const searchSaga = function*() {
     if (payload) {
       try {
         let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
-          client => client.searchV2,
-          payload.query,
-          payload.bookmark,
-          payload.limit,
-          payload.itemTypes,
-          payload.networks,
-          payload.genres,
-          payload.releaseYearRange,
-          'search_score',
+          client => client.search,
+          {
+            searchText: payload.query,
+            itemTypes: payload.itemTypes,
+            networks: payload.networks,
+            bookmark: payload.bookmark,
+            sort: 'search_score',
+            limit: payload.limit,
+            genres: payload.genres,
+            releaseYearRange: payload.releaseYearRange,
+            castIncludes: payload.cast,
+            imdbRating: payload.imdbRating,
+          },
         );
 
         if (response.ok) {

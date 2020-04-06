@@ -14,7 +14,11 @@ import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
 import com.teletracker.service.api
 import com.teletracker.service.api.ItemApi
 import com.teletracker.service.api.model.Person
-import com.teletracker.service.controllers.annotations.ItemReleaseYear
+import com.teletracker.service.controllers.annotations.{
+  ItemReleaseYear,
+  RatingRange
+}
+import com.teletracker.service.controllers.params.RangeParser
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.QueryParam
@@ -109,7 +113,8 @@ class SearchController @Inject()(
               BinaryOperator.And
             )
           )
-        else None
+        else None,
+      imdbRating = req.imdbRating.flatMap(RangeParser.parseRatingString)
     )
   }
 }
@@ -137,5 +142,6 @@ case class SearchRequest(
   cast: Set[String] = Set.empty,
   @QueryParam(commaSeparatedList = true)
   crew: Set[String] = Set.empty,
+  @QueryParam @RatingRange(min = 0.0d, max = 10.0d) imdbRating: Option[String],
   request: Request)
     extends InjectedRequest
