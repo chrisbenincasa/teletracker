@@ -7,12 +7,8 @@ import { DATA_BUCKET, USER_AGENT_STRING } from '../../common/constants';
 import { isProduction } from '../../common/env';
 import { createWriteStream } from '../../common/stream_utils';
 
-export const scrape = async event => {
-  let pageName =
-    event.pageName ||
-    moment()
-      .format('MMMM-YYYY')
-      .toLowerCase();
+export const scrape = async (event) => {
+  let pageName = event.pageName || moment().format('MMMM-YYYY').toLowerCase();
 
   let html = await request({
     uri: `https://press.hulu.com/schedule/${pageName}/`,
@@ -21,19 +17,15 @@ export const scrape = async event => {
     },
   });
 
-  let parsedResults = [];
+  let parsedResults: any[] = [];
   let $ = cheerio.load(html);
   let currentYear = new Date().getFullYear();
 
-  $('#tableSchedule tbody tr').each(function(i, element) {
+  $('#tableSchedule tbody tr').each(function (i, element) {
     //Process date of availability
-    let $this = $(this);
+    let $this = $(element);
 
-    let date = $this
-      .children()
-      .eq(0)
-      .text()
-      .split(' ');
+    let date = $this.children().eq(0).text().split(' ');
 
     let m = moment(
       '' + currentYear + ' ' + date[0] + ' ' + date[1],
@@ -42,10 +34,7 @@ export const scrape = async event => {
 
     let availableDate = m.format('YYYY-MM-DD');
 
-    let show = $this
-      .children()
-      .eq(1)
-      .text();
+    let show = $this.children().eq(1).text();
     console.log(show);
 
     //Strip out the release year from title
@@ -58,7 +47,7 @@ export const scrape = async event => {
     } else {
       releaseYear = null;
     }
-    let parsedReleaseYear = parseInt(releaseYear);
+    let parsedReleaseYear: number | undefined = parseInt(releaseYear);
     parsedReleaseYear = isNaN(parsedReleaseYear)
       ? undefined
       : parsedReleaseYear;
@@ -74,20 +63,11 @@ export const scrape = async event => {
       network = 'Hulu';
     }
 
-    let notes = $this
-      .children()
-      .eq(1)
-      .text();
+    let notes = $this.children().eq(1).text();
 
-    let category = $this
-      .children()
-      .eq(2)
-      .text();
+    let category = $this.children().eq(2).text();
 
-    let status = $this
-      .children()
-      .eq(3)
-      .text();
+    let status = $this.children().eq(3).text();
 
     let metadata = {
       availableDate: availableDate,
@@ -109,8 +89,8 @@ export const scrape = async event => {
   let [filePath, stream, flush] = createWriteStream(fileName);
 
   _.chain(parsedResults)
-    .sortBy(r => r.title)
-    .each(r => {
+    .sortBy((r) => r.title)
+    .each((r) => {
       stream.write(JSON.stringify(r) + '\n');
     })
     .value();
