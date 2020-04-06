@@ -15,6 +15,7 @@ import url from 'url';
 import { parseFilterParamsFromObject } from '../../utils/urlHelper';
 import { peopleFetchSuccess } from '../../actions/people/get_people';
 import { ApiPerson, PersonFactory } from '../../types/v2/Person';
+import { DEFAULT_POPULAR_LIMIT } from '../../constants';
 
 export default function makeExploreWrapper(itemType: ItemType) {
   interface Props {}
@@ -57,14 +58,16 @@ export default function makeExploreWrapper(itemType: ItemType) {
       }
       let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.getItems(
         token,
-        [itemType],
-        filterParams.networks,
-        undefined,
-        filterParams.sortOrder,
-        18,
-        filterParams.genresFilter,
-        filterParams.sliders?.releaseYear,
-        filterParams.people,
+        {
+          itemTypes: [itemType],
+          networks: filterParams.networks,
+          sort: filterParams.sortOrder,
+          limit: DEFAULT_POPULAR_LIMIT,
+          genres: filterParams.genresFilter,
+          releaseYearRange: filterParams.sliders?.releaseYear,
+          castIncludes: filterParams.people,
+          imdbRating: filterParams.sliders?.imdbRating,
+        },
       );
 
       if (response.ok) {
