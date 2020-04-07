@@ -21,6 +21,7 @@ interface Props {
   onClick: () => void;
   style?: object;
   cta?: string;
+  className?: string;
 }
 
 export default function ManageTrackingButton(props: Props) {
@@ -44,7 +45,7 @@ export default function ManageTrackingButton(props: Props) {
   let trackingCTAMobile = isTracked ? 'Tracked' : 'Add to List';
 
   return (
-    <div className={classes.itemCTA} style={{ ...props.style }}>
+    <div className={props.className} style={{ ...props.style }}>
       <Button
         size="small"
         variant="contained"
@@ -53,6 +54,7 @@ export default function ManageTrackingButton(props: Props) {
         onClick={props.onClick}
         color={isTracked ? 'primary' : undefined}
         startIcon={<PlaylistAdd className={classes.buttonIcon} />}
+        className={classes.itemCTA}
       >
         {props.cta || isMobile ? trackingCTAMobile : trackingCTA}
       </Button>

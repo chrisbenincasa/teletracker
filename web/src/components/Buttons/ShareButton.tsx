@@ -24,6 +24,7 @@ interface Props {
   title: string;
   text: string;
   url: string;
+  className?: string;
 }
 
 export interface SnackbarMessage {
@@ -64,7 +65,7 @@ export default function ShareButton(props: Props) {
   };
 
   return (
-    <div className={classes.itemCTA} style={{ ...props.style }}>
+    <div className={props.className} style={{ ...props.style }}>
       <Button
         size="small"
         variant="contained"
@@ -72,6 +73,7 @@ export default function ShareButton(props: Props) {
         aria-label={'Share'}
         onClick={event => share(event)}
         startIcon={<Share className={classes.buttonIcon} />}
+        className={classes.itemCTA}
       >
         {props.cta || 'Share'}
       </Button>

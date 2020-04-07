@@ -34,7 +34,8 @@ const useStyles = makeStyles(theme => ({
 interface Props {
   style?: object;
   cta?: string;
-  videoSourceId: string;
+  itemDetail: Item;
+  className?: string;
 }
 
 export interface State {
@@ -44,10 +45,17 @@ export interface State {
 export default function ShareButton(props: Props) {
   const classes = useStyles();
   const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
+  const trailer = props.itemDetail.videos?.filter(
+    x =>
+      x.country_code === 'US' &&
+      x.language_code === 'en' &&
+      x.video_type === 'Trailer' &&
+      x.video_source === 'youtube',
+  );
 
-  return (
+  return trailer && trailer.length > 0 ? (
     <React.Fragment>
-      <div className={classes.itemCTA} style={{ ...props.style }}>
+      <div className={props.className} style={{ ...props.style }}>
         <Button
           size="small"
           variant="contained"
@@ -55,6 +63,7 @@ export default function ShareButton(props: Props) {
           aria-label={'Play Trailer'}
           onClick={() => setTrailerModalOpen(true)}
           startIcon={<PlayArrow className={classes.buttonIcon} />}
+          className={classes.itemCTA}
         >
           {props.cta || 'Play Trailer'}
         </Button>
@@ -76,7 +85,7 @@ export default function ShareButton(props: Props) {
           <iframe
             width="600"
             height="338"
-            src={`https://www.youtube.com/embed/${props.videoSourceId}?autoplay=1`}
+            src={`https://www.youtube.com/embed/${trailer[0].video_source_id}?autoplay=1`}
             frameBorder="0"
             allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -85,5 +94,5 @@ export default function ShareButton(props: Props) {
         </Fade>
       </Modal>
     </React.Fragment>
-  );
+  ) : null;
 }

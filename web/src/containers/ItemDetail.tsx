@@ -516,14 +516,6 @@ function ItemDetails(props: Props) {
         </React.Fragment>
       ));
 
-    const trailer = itemDetail?.videos?.filter(
-      x =>
-        x.country_code === 'US' &&
-        x.language_code === 'en' &&
-        x.video_type === 'Trailer' &&
-        x.video_source === 'youtube',
-    );
-
     if (itemDetail?.type === 'movie') {
       itemType = 'Movie';
     } else if (itemDetail && itemDetail.type && itemDetail.type === 'show') {
@@ -597,32 +589,26 @@ function ItemDetails(props: Props) {
                 <Hidden mdUp>{renderInformation(itemDetail)}</Hidden>
                 <Hidden mdUp>{renderGenres(itemDetail)}</Hidden>
                 <div className={classes.actionButtonContainer}>
-                  <div className={classes.actionButton}>
-                    <ManageTracking
-                      itemDetail={itemDetail}
-                      className={classes.actionButton}
-                    />
-                  </div>
-                  <div className={classes.actionButton}>
-                    <MarkAsWatched
-                      itemDetail={itemDetail}
-                      className={classes.actionButton}
-                    />
-                  </div>
+                  <ManageTracking
+                    itemDetail={itemDetail}
+                    className={classes.actionButton}
+                  />
+                  <MarkAsWatched
+                    itemDetail={itemDetail}
+                    className={classes.actionButton}
+                  />
                 </div>
                 <div className={classes.actionButtonContainerSecondary}>
-                  {trailer && trailer.length > 0 ? (
-                    <div className={classes.actionButton}>
-                      <PlayTrailer videoSourceId={trailer[0].video_source_id} />
-                    </div>
-                  ) : null}
-                  <div className={classes.actionButton}>
-                    <ShareButton
-                      title={itemDetail.canonicalTitle}
-                      text={''}
-                      url={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${nextRouter.asPath}`}
-                    />
-                  </div>
+                  <PlayTrailer
+                    itemDetail={itemDetail}
+                    className={classes.actionButton}
+                  />
+                  <ShareButton
+                    title={itemDetail.canonicalTitle}
+                    text={''}
+                    url={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${nextRouter.asPath}`}
+                    className={classes.actionButton}
+                  />
                 </div>
               </div>
               <div className={classes.itemInformationContainer}>
