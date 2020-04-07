@@ -65,22 +65,46 @@ export const scrape = async (event) => {
 
     let notes = $this.children().eq(1).text();
 
-    let category = $this.children().eq(2).text();
+    let category = $this.children().eq(2).text().trim();
 
     let status = $this.children().eq(3).text();
 
-    let metadata = {
-      availableDate: availableDate,
-      title: show.trim(),
-      releaseYear: parsedReleaseYear,
-      notes: notes,
-      category: category,
-      network: network,
-      status: status ? status.trim() : '',
-    };
+    if (
+      category.length === 0 ||
+      (category.length > 0 && !category.toLowerCase().includes('add-on'))
+    ) {
+      let trimmedName = show.trim();
 
-    // Push meta-data into parsedResults array
-    parsedResults.push(metadata);
+      let lastColon = show.lastIndexOf(':');
+
+      let title = trimmedName;
+      let type = category.length > 0 ? 'show' : 'movie';
+      if (lastColon > 0) {
+        title = trimmedName.substring(0, lastColon).trim();
+        let titleDetails = trimmedName.substring(lastColon);
+        if (
+          titleDetails.toLowerCase().includes('series') ||
+          titleDetails.toLowerCase().includes('season')
+        ) {
+          type = 'show';
+        }
+      }
+
+      let metadata = {
+        availableDate: availableDate,
+        title: title,
+        scrapedTitle: trimmedName,
+        releaseYear: parsedReleaseYear,
+        notes: notes,
+        category: category.length > 0 ? category : undefined,
+        network: network,
+        status: status ? status.trim() : '',
+        type,
+      };
+
+      // Push meta-data into parsedResults array
+      parsedResults.push(metadata);
+    }
   });
 
   // Export data into JSON file
