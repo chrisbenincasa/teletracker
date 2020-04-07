@@ -6,16 +6,14 @@ import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 import javax.inject.Inject
-import software.amazon.awssdk.services.s3.S3Client
 import scala.concurrent.{ExecutionContext, Future}
 
 object TvShowDumpTool extends DataDumpTaskApp[TvShowDump]
 
 class TvShowDump @Inject()(
-  s3: S3Client,
   itemExpander: ItemExpander
 )(implicit executionContext: ExecutionContext)
-    extends DataDumpTask[TvShowDumpFileRow](s3) {
+    extends DataDumpTask[TvShowDumpFileRow, Int] {
 
   implicit override protected val tDecoder: Decoder[TvShowDumpFileRow] =
     deriveCodec
@@ -31,4 +29,6 @@ class TvShowDump @Inject()(
       )
       .map(_.asJson.noSpaces)
   }
+
+  override protected def getCurrentId(item: TvShowDumpFileRow): Int = item.id
 }

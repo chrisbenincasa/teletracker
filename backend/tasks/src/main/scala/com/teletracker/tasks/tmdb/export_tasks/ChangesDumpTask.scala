@@ -22,11 +22,10 @@ import scala.concurrent.{ExecutionContext, Future}
 @TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 abstract class ChangesDumpTask(
   thingType: ItemType,
-  s3: S3Client,
   itemExpander: ItemExpander,
   protected val publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
-    extends DataDumpTask[ChangesDumpFileRow](s3) {
+    extends DataDumpTask[ChangesDumpFileRow, Int] {
   implicit override protected val tDecoder: Decoder[ChangesDumpFileRow] =
     deriveCodec
 
@@ -43,15 +42,17 @@ abstract class ChangesDumpTask(
     itemExpander.expandRaw(thingType, currentId, extraFields).map(_.noSpaces)
   }
 
+  override protected def getCurrentId(item: ChangesDumpFileRow): Int = item.id
+
   override protected def baseFileName: String = s"$thingType-delta"
 }
 
+@TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 class MovieChangesDumpTask @Inject()(
-  s3: S3Client,
   itemExpander: ItemExpander,
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ItemType.Movie, s3, itemExpander, publisher) {
+    extends ChangesDumpTask(ItemType.Movie, itemExpander, publisher) {
   override def followupTasksToSchedule(
     args: DataDumpTaskArgs,
     rawArgs: Args
@@ -64,11 +65,10 @@ class MovieChangesDumpTask @Inject()(
 
 @TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 class TvChangesDumpTask @Inject()(
-  s3: S3Client,
   itemExpander: ItemExpander,
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ItemType.Show, s3, itemExpander, publisher) {
+    extends ChangesDumpTask(ItemType.Show, itemExpander, publisher) {
   override def followupTasksToSchedule(
     args: DataDumpTaskArgs,
     rawArgs: Args
@@ -81,11 +81,10 @@ class TvChangesDumpTask @Inject()(
 
 @TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 class PersonChangesDumpTask @Inject()(
-  s3: S3Client,
   itemExpander: ItemExpander,
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
-    extends ChangesDumpTask(ItemType.Person, s3, itemExpander, publisher) {
+    extends ChangesDumpTask(ItemType.Person, itemExpander, publisher) {
   override def followupTasksToSchedule(
     args: DataDumpTaskArgs,
     rawArgs: Args

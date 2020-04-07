@@ -11,10 +11,9 @@ import scala.concurrent.{ExecutionContext, Future}
 object MovieDumpTool extends DataDumpTaskApp[MovieDump]
 
 class MovieDump @Inject()(
-  s3: S3Client,
   itemExpander: ItemExpander
 )(implicit executionContext: ExecutionContext)
-    extends DataDumpTask[MovieDumpFileRow](s3) {
+    extends DataDumpTask[MovieDumpFileRow, Int] {
 
   implicit override protected val tDecoder: Decoder[MovieDumpFileRow] =
     deriveCodec
@@ -26,4 +25,6 @@ class MovieDump @Inject()(
       .expandMovieRaw(currentId, List("recommendations", "similar", "videos"))
       .map(_.noSpaces)
   }
+
+  override protected def getCurrentId(item: MovieDumpFileRow): Int = item.id
 }
