@@ -259,25 +259,32 @@ trait TvShowId
   name: Option[String],
   overview: Option[String],
   // Appended joins
-  credits: Option[TvShowCredits])
+  credits: Option[TvShowCredits],
+  external_ids: Option[ExternalIds],
+  videos: Option[List[TvShowVideo]])
 
 @JsonCodec case class TvShowEpisode(
   air_date: Option[String],
-//  crew: Option[List[Map[String, Any]]],
+  credits: Option[TvShowCredits],
   episode_number: Option[Int],
-//  guest_stars: Option[List[Map[String, Any]]],
+  external_ids: Option[ExternalIds],
   name: Option[String],
   overview: Option[String],
   id: Int,
+  images: Option[TvShowEpisodeImages],
   production_code: Option[String],
   season_number: Option[Int],
   still_path: Option[String],
   vote_average: Option[Double],
-  vote_count: Option[Int])
+  vote_count: Option[Int],
+  videos: Option[List[TvShowVideo]])
+
+@JsonCodec case class TvShowEpisodeImages(stills: Option[List[Image]])
 
 @JsonCodec case class TvShowCredits(
   cast: Option[List[CastMember]],
-  crew: Option[List[CrewMember]])
+  crew: Option[List[CrewMember]],
+  guest_stars: Option[List[CastMember]])
 
 @JsonCodec case class TvShowCreatedBy(
   id: Int,
@@ -392,6 +399,15 @@ trait TvShowId
   video: Option[Boolean],
   vote_average: Option[Double],
   vote_count: Option[Double])
+
+@JsonCodec case class Image(
+  aspect_ratio: Option[Double],
+  file_path: Option[String],
+  height: Option[Int],
+  iso_639_1: Option[String],
+  vote_average: Option[Double],
+  vote_count: Option[Int],
+  width: Option[Int])
 
 @JsonCodec case class PagedResultDates(
   minimum: String,
