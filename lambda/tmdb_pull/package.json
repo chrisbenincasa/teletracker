@@ -1,0 +1,30 @@
+{
+  "name": "teletracker-tmdb-pull",
+  "version": "0.0.1",
+  "description": "Pull entities from TMDb and save them to S3",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^1.0.0-beta.3",
+    "@aws-sdk/client-ssm": "^1.0.0-beta.3",
+    "lodash": "^4.17.15",
+    "moment": "^2.22.2",
+    "public-ip": "^4.0.1",
+    "request": "^2.87.0",
+    "request-promise": "^4.2.4"
+  },
+  "devDependencies": {
+    "@types/ip": "^1.1.0",
+    "@types/lodash": "^4.14.144",
+    "@types/moment": "^2.13.0",
+    "@types/request": "^2.48.4",
+    "@types/request-promise": "^4.1.46",
+    "prettier": "2.0.2",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.8.3",
+    "yargs": "^14.2.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "main": "ts-node src/runner.ts"
+  }
+}
