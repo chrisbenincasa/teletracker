@@ -91,7 +91,7 @@ resource "aws_s3_bucket" "teletracker-frontend-artifacts" {
 }
 
 resource "aws_cloudfront_distribution" "teletracker-frontend" {
-  provider = "aws.us-east-1"
+  provider = aws.us-east-1
 
   depends_on = [aws_s3_bucket.teletracker-frontend-artifacts]
 

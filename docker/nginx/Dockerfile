@@ -2,8 +2,7 @@ FROM nginx:1.17
 
 RUN apt-get update && apt-get install -y certbot python-certbot-nginx cron
 
-ADD fullchain.pem /etc/letsencrypt/live/api.qa.teletracker.tv/fullchain.pem
-ADD privkey.pem /etc/letsencrypt/live/api.qa.teletracker.tv/privkey.pem
+RUN mkdir -p /etc/letsencrypt
 
 RUN mkdir crontab
 ADD crontab crontab/crontab
