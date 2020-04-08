@@ -45,7 +45,6 @@ export default function ShareButton(props: Props) {
     newVariable = window.navigator;
 
     if (newVariable?.share) {
-      console.log(props.url);
       newVariable
         .share({
           title: props.title,
