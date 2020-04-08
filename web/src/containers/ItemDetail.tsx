@@ -5,24 +5,15 @@ import {
   Chip,
   createStyles,
   Dialog,
-  Fade,
   Hidden,
-  IconButton,
   LinearProgress,
-  Modal,
   Theme,
   Typography,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import {
-  ChevronLeft,
-  ExpandLess,
-  ExpandMore,
-  Lens,
-  PlayArrow,
-} from '@material-ui/icons';
+import { ChevronLeft, ExpandLess, ExpandMore, Lens } from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import moment from 'moment';
@@ -43,6 +34,7 @@ import MarkAsWatched from '../components/Buttons/MarkAsWatched';
 import Cast from '../components/Cast';
 import ManageTracking from '../components/ManageTracking';
 import ShareButton from '../components/Buttons/ShareButton';
+import PlayTrailer from '../components/Buttons/PlayTrailer';
 import Recommendations from '../components/Recommendations';
 import { ResponsiveImage } from '../components/ResponsiveImage';
 import withUser, { WithUserProps } from '../components/withUser';
@@ -243,14 +235,6 @@ const styles = (theme: Theme) =>
       width: '100%',
       marginBottom: theme.spacing(1),
     },
-    trailerVideo: {
-      width: '60vw',
-      height: '34vw',
-      [theme.breakpoints.down('sm')]: {
-        width: '100vw',
-        height: '56vw',
-      },
-    },
   });
 
 interface OwnProps {
@@ -274,7 +258,6 @@ type Props = OwnProps & NotOwnProps;
 
 function ItemDetails(props: Props) {
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
-  const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
   const [showFullOverview, setshowFullOverview] = useState<boolean>(false);
   const itemsById = useStateSelector(state => state.itemDetail.thingsById);
@@ -335,14 +318,6 @@ function ItemDetails(props: Props) {
 
       props.fetchItemDetails({ id: itemId, type: itemType });
     }
-  };
-
-  const setPlayTrailerIcon = () => {
-    setShowPlayIcon(!showPlayIcon);
-  };
-
-  const setTrailerModal = () => {
-    setTrailerModalOpen(!trailerModalOpen);
   };
 
   const closeLoginModal = () => {
@@ -599,24 +574,7 @@ function ItemDetails(props: Props) {
             >
               <div className={classes.leftContainer}>
                 <Hidden mdUp>{renderTitle(itemDetail)}</Hidden>
-                <div
-                  className={classes.posterContainer}
-                  // This is causing an issue with Cast re-endering on Enter/Leave
-                  // TODO: Investigate
-                  // onMouseEnter={setPlayTrailerIcon}
-                  // onMouseLeave={setPlayTrailerIcon}
-                >
-                  {showPlayIcon &&
-                  itemDetail.id === '7b6dbeb1-8353-45a7-8c9b-7f9ab8b037f8' ? (
-                    <IconButton
-                      aria-haspopup="true"
-                      color="inherit"
-                      style={{ position: 'absolute' }}
-                      onClick={setTrailerModal}
-                    >
-                      <PlayArrow fontSize="large" />
-                    </IconButton>
-                  ) : null}
+                <div className={classes.posterContainer}>
                   <CardMedia
                     src={imagePlaceholder}
                     item={itemDetail}
@@ -631,27 +589,26 @@ function ItemDetails(props: Props) {
                 <Hidden mdUp>{renderInformation(itemDetail)}</Hidden>
                 <Hidden mdUp>{renderGenres(itemDetail)}</Hidden>
                 <div className={classes.actionButtonContainer}>
-                  <div className={classes.actionButton}>
-                    <MarkAsWatched
-                      itemDetail={itemDetail}
-                      className={classes.actionButton}
-                    />
-                  </div>
-                  <div className={classes.actionButton}>
-                    <ManageTracking
-                      itemDetail={itemDetail}
-                      className={classes.actionButton}
-                    />
-                  </div>
+                  <ManageTracking
+                    itemDetail={itemDetail}
+                    className={classes.actionButton}
+                  />
+                  <MarkAsWatched
+                    itemDetail={itemDetail}
+                    className={classes.actionButton}
+                  />
                 </div>
                 <div className={classes.actionButtonContainerSecondary}>
-                  <div className={classes.actionButton}>
-                    <ShareButton
-                      title={itemDetail.canonicalTitle}
-                      text={''}
-                      url={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${nextRouter.asPath}`}
-                    />
-                  </div>
+                  <PlayTrailer
+                    itemDetail={itemDetail}
+                    className={classes.actionButton}
+                  />
+                  <ShareButton
+                    title={itemDetail.canonicalTitle}
+                    text={''}
+                    url={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${nextRouter.asPath}`}
+                    className={classes.actionButton}
+                  />
                 </div>
               </div>
               <div className={classes.itemInformationContainer}>
@@ -713,31 +670,6 @@ function ItemDetails(props: Props) {
         >
           <Login />
         </Dialog>
-        <Modal
-          aria-labelledby="transition-modal-title"
-          aria-describedby="transition-modal-description"
-          className={classes.modal}
-          open={trailerModalOpen}
-          onClose={setTrailerModal}
-          closeAfterTransition
-          BackdropComponent={Backdrop}
-          BackdropProps={{
-            timeout: 500,
-          }}
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
-        >
-          <Fade in={trailerModalOpen}>
-            <iframe
-              width="600"
-              height="338"
-              src="https://www.youtube.com/embed/m8e-FF8MsqU?autoplay=1 "
-              frameBorder="0"
-              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className={classes.trailerVideo}
-            />
-          </Fade>
-        </Modal>
       </React.Fragment>
     );
   };

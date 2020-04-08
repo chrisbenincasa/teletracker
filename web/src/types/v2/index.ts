@@ -77,6 +77,19 @@ export interface ItemGenre {
   name: string;
 }
 
+export interface Video {
+  country_code: string;
+  language_code: string;
+  name: string;
+  provider_id: number;
+  provider_shortname: string;
+  provider_source_id: string;
+  size: number;
+  video_source: string;
+  video_source_id: string;
+  video_type: string;
+}
+
 export interface ApiItemTag {
   tag: string;
   value?: number;

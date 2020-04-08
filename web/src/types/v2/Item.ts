@@ -10,6 +10,7 @@ import {
   ItemReleaseDate,
   Slug,
   Id,
+  Video,
 } from '.';
 import { ActionType, ItemType } from '..';
 import {
@@ -45,6 +46,7 @@ export interface Item extends HasSlug {
   tags?: ItemTag[];
   title?: string;
   type: ItemType;
+  videos?: Video[];
 
   // computed fields
   canonicalId: Id | Slug;
