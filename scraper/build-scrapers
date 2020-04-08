@@ -19,12 +19,12 @@ zip -urq scrapers.zip hbo/whats-new -x "*.DS_Store"
 zip -urq scrapers.zip hbo/catalog* -x "*.DS_Store"
 zip -urq scrapers.zip hulu/changes -x "*.DS_Store"
 zip -urq scrapers.zip hulu/catalog -x "*.DS_Store"
-zip -urq scrapers.zip disney-plus/catalog/scrape.js -x "*.DS_Store"
 zip -urq scrapers.zip netflix -x "*.DS_Store"
 zip -urq scrapers.zip unogs -x "*.DS_Store"
 zip -urq scrapers.zip tmdb -x "*.DS_Store"
 zip -urq scrapers.zip common -x "*.DS_Store"
 zip -urq scrapers.zip wikidata -x "*.DS_Store"
+zip -urq scrapers.zip disney-plus/**/*.js -x "*.DS_Store"
 zip -urq scrapers.zip node_modules -x "*.DS_Store"
 
 popd || exit

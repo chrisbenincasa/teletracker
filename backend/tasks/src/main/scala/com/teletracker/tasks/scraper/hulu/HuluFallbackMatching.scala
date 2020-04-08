@@ -5,6 +5,11 @@ import com.teletracker.common.elasticsearch.ItemLookup
 import com.teletracker.common.http.{HttpClient, HttpClientOptions, HttpRequest}
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.execution.SequentialFutures
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchExactTitleLookup,
+  ElasticsearchLookup,
+  ElasticsearchLookupBySlug
+}
 import com.teletracker.tasks.scraper.{model, IngestJobArgs}
 import com.teletracker.tasks.scraper.model.NonMatchResult
 import io.circe.parser.decode
@@ -21,7 +26,7 @@ import scala.io.Source
 class HuluFallbackMatching @Inject()(
   itemLookup: ItemLookup,
   httpClient: HttpClient.Factory,
-  berglasDecoder: SecretResolver
+  secretResolver: SecretResolver
 )(implicit executionContext: ExecutionContext) {
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -37,7 +42,7 @@ class HuluFallbackMatching @Inject()(
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36"
 
   private lazy val cookie =
-    berglasDecoder.resolve("hulu-cookie")
+    secretResolver.resolve("hulu-cookie")
 
   def handleNonMatches(
     args: IngestJobArgs,
@@ -131,9 +136,6 @@ class HuluFallbackMatching @Inject()(
             missingScrapedItems.map(item => item.title -> item).toMap
 
           lookupByNames(missingItemByTitle)
-            .map(foundThingsByTitle => {
-              foundThingsByTitle.toList
-            })
             .map(foundThings.toList ++ _)
             .map(_.map {
               case (amended, thingRaw) =>

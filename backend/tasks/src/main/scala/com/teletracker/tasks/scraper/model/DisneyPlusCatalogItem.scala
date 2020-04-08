@@ -19,7 +19,7 @@ case class DisneyPlusCatalogItem(
 
   override def availableDate: Option[String] = None
 
-  override def category: String = ""
+  override def category: Option[String] = None
 
   override def network: String = "disney-plus"
 

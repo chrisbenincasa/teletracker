@@ -40,7 +40,8 @@ case class DataDumpTaskArgs(
   limit: Int = -1,
   sleepMs: Int = 250,
   flushEvery: Int = 100,
-  rotateEvery: Int = 1000)
+  rotateEvery: Int = 1000,
+  baseOutputPath: Option[String] = None)
 
 abstract class DataDumpTask[T, Id](
 )(implicit executionContext: ExecutionContext)
@@ -68,13 +69,15 @@ abstract class DataDumpTask[T, Id](
       limit = args.valueOrDefault("limit", -1),
       sleepMs = args.valueOrDefault("sleepMs", 250),
       flushEvery = args.valueOrDefault("flushEvery", 100),
-      rotateEvery = args.valueOrDefault("rotateEvery", 1000)
+      rotateEvery = args.valueOrDefault("rotateEvery", 1000),
+      baseOutputPath = args.value[String]("baseOutputPath")
     )
   }
 
   implicit protected def tDecoder: Decoder[T]
 
   override def runInternal(args: Args): Unit = {
+    val parsedArgs = preparseArgs(args)
     val file = args.value[URI]("input").get
     val offset = args.valueOrDefault("offset", 0)
     val limit = args.valueOrDefault("limit", -1)
@@ -86,7 +89,11 @@ abstract class DataDumpTask[T, Id](
       s"Preparing to dump data to: s3://${teletrackerConfig.data.s3_bucket}/$fullPath/"
     )
 
-    val rotater = FileRotator.everyNLines(baseFileName, rotateEvery, None)
+    val rotater = FileRotator.everyNLines(
+      baseFileName,
+      rotateEvery,
+      parsedArgs.baseOutputPath
+    )
 
     val source = new SourceRetriever(s3).getSource(file)
 

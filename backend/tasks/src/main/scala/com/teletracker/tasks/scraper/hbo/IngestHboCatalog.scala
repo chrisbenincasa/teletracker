@@ -132,7 +132,7 @@ case class HboCatalogItem(
   description: Option[String])
     extends ScrapedItem {
 
-  override def category: String = ""
+  override def category: Option[String] = None
 
   override def status: String = ""
 

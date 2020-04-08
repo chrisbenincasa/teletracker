@@ -209,7 +209,7 @@ case class NetflixCatalogItem(
     extends ScrapedItem {
   val status = "Available"
 
-  override def category: String = ""
+  override def category: Option[String] = None
 
   override def isMovie: Boolean = `type` == ItemType.Movie
 

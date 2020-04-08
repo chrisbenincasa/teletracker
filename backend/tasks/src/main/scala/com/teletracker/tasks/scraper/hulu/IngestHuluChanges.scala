@@ -1,9 +1,11 @@
 package com.teletracker.tasks.scraper.hulu
 
 import com.teletracker.common.crypto.SecretResolver
+import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.http.HttpClient
 import com.teletracker.common.util.NetworkCache
+import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper._
 import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
@@ -46,7 +48,7 @@ class IngestHuluChanges @Inject()(
   }
 
   override protected def shouldProcessItem(item: HuluScrapeItem): Boolean = {
-    val category = item.category.toLowerCase()
+    val category = item.category.getOrElse("").toLowerCase()
     val shouldInclude = if (premiumNetworks.exists(category.contains)) {
       if (category.contains("series")) {
         !item.notes
@@ -74,16 +76,17 @@ case class HuluScrapeItem(
   title: String,
   releaseYear: Option[Int],
   notes: String,
-  category: String,
+  category: Option[String],
   network: String,
   status: String,
   externalId: Option[String],
-  description: Option[String])
+  description: Option[String],
+  `type`: ItemType)
     extends ScrapedItem {
-  override def isMovie: Boolean = category.toLowerCase().trim() == "film"
+  override def isMovie: Boolean = `type` == ItemType.Movie
 
   override def isTvShow: Boolean =
-    !isMovie || category.toLowerCase().contains("series")
+    !isMovie || category.getOrElse("").toLowerCase().contains("series")
 }
 
 @JsonCodec

@@ -18,7 +18,7 @@ case class PotentialInput[T <: ScrapedItem: Codec](
   override def availableDate: Option[String] = scraped.availableDate
   override def title: String = scraped.title
   override def releaseYear: Option[Int] = scraped.releaseYear
-  override def category: String = scraped.category
+  override def category(): Option[String] = scraped.category
   override def network: String = scraped.network
   override def status: String = scraped.status
   override def externalId: Option[String] = scraped.externalId

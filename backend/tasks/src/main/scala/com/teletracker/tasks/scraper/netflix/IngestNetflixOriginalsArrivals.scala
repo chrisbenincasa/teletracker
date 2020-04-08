@@ -49,7 +49,7 @@ case class NetflixOriginalScrapeItem(
   `type`: ItemType,
   externalId: Option[String])
     extends ScrapedItem {
-  override def category: String = ""
+  override def category: Option[String] = None
 
   override def isMovie: Boolean = `type` == ItemType.Movie
 
