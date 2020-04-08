@@ -67,7 +67,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
           <meta property="og:image:height" content="439" />
           <meta
             property="og:url"
-            content={`http://qa.teletracker.tv${router.asPath}`}
+            content={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.asPath}`}
           />
           <meta name="twitter:card" content="summary_large_image" />
           <meta
@@ -89,7 +89,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
           />
           <link
             rel="canonical"
-            href={`http://qa.teletracker.tv${router.asPath}`}
+            href={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.asPath}`}
           />
         </Head>
         <AppWrapper>

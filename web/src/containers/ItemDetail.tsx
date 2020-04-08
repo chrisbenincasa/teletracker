@@ -650,7 +650,7 @@ function ItemDetails(props: Props) {
                     <ShareButton
                       title={itemDetail.canonicalTitle}
                       text={''}
-                      url={`http://qa.teletracker.tv${nextRouter.asPath}`}
+                      url={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${nextRouter.asPath}`}
                     />
                   </div>
                 </div>
