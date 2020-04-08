@@ -294,7 +294,6 @@ function ItemDetails(props: Props) {
       userSelf.user &&
       userSelf.user.getUsername()
     ) {
-      console.log(nextRouter);
       ReactGA.set({ userId: userSelf.user.getUsername() });
     }
   }, [nextRouter.query]);
