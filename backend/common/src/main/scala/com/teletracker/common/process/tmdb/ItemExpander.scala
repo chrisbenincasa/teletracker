@@ -39,6 +39,13 @@ object ItemExpander {
     "images",
     "videos"
   )
+
+  final val DefaultEpisodeAppendFields = List(
+    "external_ids",
+    "credits",
+    "images",
+    "videos"
+  )
 }
 
 class ItemExpander @Inject()(
@@ -169,6 +176,17 @@ class ItemExpander @Inject()(
       Seq(
         "append_to_response" -> DefaultSeasonAppendFields.mkString(",")
       )
+    )
+  }
+
+  def expandTvEpisodeRaw(
+    showId: Int,
+    seasonNumber: Int,
+    episodeNumber: Int
+  ): Future[Json] = {
+    tmdbClient.makeRequest[Json](
+      s"tv/$showId/season/$seasonNumber/episode/$episodeNumber",
+      Seq("append_to_response" -> DefaultEpisodeAppendFields.mkString(","))
     )
   }
 }

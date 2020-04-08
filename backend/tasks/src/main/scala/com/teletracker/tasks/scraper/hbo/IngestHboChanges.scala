@@ -54,12 +54,13 @@ case class HboScrapeItem(
   availableDate: Option[String],
   title: String,
   parsedReleaseYear: Option[Int],
-  category: String,
+  category: Option[String],
   network: String,
   status: String,
   externalId: Option[String])
     extends ScrapedItem {
-  override def isMovie: Boolean = category.toLowerCase().trim() == "film"
+  override def isMovie: Boolean =
+    category.getOrElse("").toLowerCase().trim() == "film"
 
   override def isTvShow: Boolean = false
 

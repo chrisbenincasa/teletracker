@@ -88,7 +88,7 @@ case class HuluCatalogItem(
   genres: Option[List[String]],
   description: Option[String])
     extends ScrapedItem {
-  override def category: String = ""
+  override def category: Option[String] = None
 
   override def status: String = ""
 

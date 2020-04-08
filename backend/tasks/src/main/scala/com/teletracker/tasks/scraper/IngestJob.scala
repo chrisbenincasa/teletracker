@@ -360,7 +360,7 @@ trait ScrapedItem {
   def availableDate: Option[String]
   def title: String
   def releaseYear: Option[Int]
-  def category: String
+  def category: Option[String]
   def network: String
   def status: String
   def externalId: Option[String]

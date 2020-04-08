@@ -2,6 +2,7 @@ package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.process.tmdb.ItemExpander
 import io.circe.Decoder
+import io.circe.syntax._
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,7 +18,14 @@ class TvShowSeasonsDump @Inject()(
     implicitly[Decoder[TvShowSeasonDumpRow]]
 
   override protected def getRawJson(currentId: (Int, Int)): Future[String] = {
-    itemExpander.expandTvSeasonRaw(currentId._1, currentId._2).map(_.noSpaces)
+    itemExpander
+      .expandTvSeasonRaw(currentId._1, currentId._2)
+      .map(seasonJson => {
+        Map(
+          "showId" -> currentId._1.asJson,
+          "season" -> seasonJson
+        ).asJson.noSpaces
+      })
   }
 
   override protected def getCurrentId(item: TvShowSeasonDumpRow): (Int, Int) = {
