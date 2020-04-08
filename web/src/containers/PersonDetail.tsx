@@ -51,9 +51,6 @@ import ShareButton from '../components/Buttons/ShareButton';
 
 const styles = (theme: Theme) =>
   createStyles({
-    actionButton: {
-      margin: theme.spacing(1, 0),
-    },
     backdrop: {
       width: '100%',
       height: '100%',
@@ -648,19 +645,17 @@ class PersonDetail extends React.Component<Props, State> {
                         }}
                       />
                       <div className={classes.trackingButton}>
-                        <div className={classes.actionButton}>
-                          <ManageTrackingButton
-                            cta={'Track Actor'}
-                            onClick={this.createListForPerson}
-                          />
-                        </div>
-                        <div className={classes.actionButton}>
-                          <ShareButton
-                            title={person.name}
-                            text={''}
-                            url={window.location.href}
-                          />
-                        </div>
+                        <ManageTrackingButton
+                          cta={'Track Actor'}
+                          onClick={this.createListForPerson}
+                        />
+                      </div>
+                      <div className={classes.trackingButton}>
+                        <ShareButton
+                          title={person.name}
+                          text={''}
+                          url={window.location.href}
+                        />
                       </div>
                     </div>
                   </div>

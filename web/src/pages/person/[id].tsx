@@ -86,11 +86,11 @@ function PersonDetailWrapper(props: Props) {
         }
         <link
           rel="canonical"
-          href={`http://teletracker.com${router.pathname}`}
+          href={`http://qa.teletracker.tv${router.pathname}`}
         />
         <meta
           property="og:url"
-          content={`http://teletracker.com${router.pathname}`}
+          content={`http://qa.teletracker.tv${router.pathname}`}
         />
       </Head>
       <AppWrapper>

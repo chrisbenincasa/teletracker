@@ -294,6 +294,7 @@ function ItemDetails(props: Props) {
       userSelf.user &&
       userSelf.user.getUsername()
     ) {
+      console.log(nextRouter);
       ReactGA.set({ userId: userSelf.user.getUsername() });
     }
   }, [nextRouter.query]);
@@ -649,7 +650,7 @@ function ItemDetails(props: Props) {
                     <ShareButton
                       title={itemDetail.canonicalTitle}
                       text={''}
-                      url={`${window.location.hostname}${itemDetail.relativeUrl}`}
+                      url={`http://qa.teletracker.tv${nextRouter.asPath}`}
                     />
                   </div>
                 </div>
