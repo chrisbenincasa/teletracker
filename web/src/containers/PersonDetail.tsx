@@ -47,6 +47,7 @@ import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import qs from 'querystring';
 import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
+import ShareButton from '../components/Buttons/ShareButton';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -647,6 +648,13 @@ class PersonDetail extends React.Component<Props, State> {
                         <ManageTrackingButton
                           cta={'Track Actor'}
                           onClick={this.createListForPerson}
+                        />
+                      </div>
+                      <div className={classes.trackingButton}>
+                        <ShareButton
+                          title={person.name}
+                          text={''}
+                          url={window.location.href}
                         />
                       </div>
                     </div>
