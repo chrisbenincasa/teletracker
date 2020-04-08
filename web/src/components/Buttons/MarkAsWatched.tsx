@@ -34,6 +34,7 @@ const styles = (theme: Theme) =>
 interface OwnProps {
   itemDetail: Thing;
   style: object;
+  className?: string;
 }
 
 interface DispatchProps {
@@ -105,6 +106,7 @@ class MarkAsWatched extends Component<Props, State> {
         startIcon={
           watchedStatus ? <CheckBox className={classes.buttonIcon} /> : null
         }
+        className={classes.itemCTA}
       >
         {watchedCTA}
       </Button>
@@ -123,7 +125,7 @@ class MarkAsWatched extends Component<Props, State> {
 
     return (
       <React.Fragment>
-        <div className={classes.itemCTA} style={{ ...style }}>
+        <div className={this.props.className} style={{ ...style }}>
           {!isReleased ? (
             <Tooltip title={`This is currently unreleased.`} placement="top">
               <span>{this.watchedButton(isReleased)}</span>

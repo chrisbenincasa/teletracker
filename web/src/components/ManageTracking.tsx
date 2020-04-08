@@ -36,6 +36,7 @@ const styles = (theme: Theme) =>
 interface OwnProps {
   itemDetail: Item;
   style: object;
+  className?: string;
 }
 
 type Props = OwnProps & WithStyles<typeof styles> & WithUserProps;
@@ -86,6 +87,7 @@ class ManageTracking extends Component<Props, State> {
           itemDetail={itemDetail}
           onClick={this.openManageTrackingModal}
           style={style}
+          className={this.props.className}
         />
         <AddToListDialog
           open={manageTrackingModalOpen}
