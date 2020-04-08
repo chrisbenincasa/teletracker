@@ -47,9 +47,13 @@ import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import qs from 'querystring';
 import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
+import ShareButton from '../components/Buttons/ShareButton';
 
 const styles = (theme: Theme) =>
   createStyles({
+    actionButton: {
+      margin: theme.spacing(1, 0),
+    },
     backdrop: {
       width: '100%',
       height: '100%',
@@ -644,10 +648,19 @@ class PersonDetail extends React.Component<Props, State> {
                         }}
                       />
                       <div className={classes.trackingButton}>
-                        <ManageTrackingButton
-                          cta={'Track Actor'}
-                          onClick={this.createListForPerson}
-                        />
+                        <div className={classes.actionButton}>
+                          <ManageTrackingButton
+                            cta={'Track Actor'}
+                            onClick={this.createListForPerson}
+                          />
+                        </div>
+                        <div className={classes.actionButton}>
+                          <ShareButton
+                            title={person.name}
+                            text={''}
+                            url={window.location.href}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
