@@ -44,6 +44,7 @@ export default function ShareButton(props: Props) {
     newVariable = window.navigator;
 
     if (newVariable?.share) {
+      console.log(props.url);
       newVariable
         .share({
           title: props.title,
@@ -56,6 +57,7 @@ export default function ShareButton(props: Props) {
           // GA track errors?
         });
     } else {
+      console.log(props.url);
       setOpen(true);
       // GA track copies?
     }
