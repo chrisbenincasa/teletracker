@@ -20,7 +20,7 @@ phases:
       - cd backend
       - echo "$(cat VERSION)-$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}" > FULL_VERSION
       - echo "Building version $(cat FULL_VERSION)"
-      - ./sbt -Dversion=$(cat FULL_VERSION) server/assembly consumer/server
+      - ./sbt -Dversion=$(cat FULL_VERSION) server/assembly server/docker
   post_build:
     commands:
       - docker push "302782651551.dkr.ecr.${AWS_REGION}.amazonaws.com/teletracker/server:$(cat FULL_VERSION)"
