@@ -122,7 +122,7 @@ lazy val consumer = project
 
       new Dockerfile {
         from(
-          s"302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/base:latest"
+          s"302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/base:latest"
         )
         add(baseDirectory.value / "src/docker/", "/app")
         add(artifact, artifactTargetPath)
@@ -234,7 +234,7 @@ lazy val server = project
 
       new Dockerfile {
         from(
-          s"302782651551.dkr.ecr.us-west-1.amazonaws.com/teletracker/base:latest"
+          s"302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/base:latest"
         )
         add(baseDirectory.value / "src/docker/", "/app")
         add(baseDirectory.value / "data", "/data")
