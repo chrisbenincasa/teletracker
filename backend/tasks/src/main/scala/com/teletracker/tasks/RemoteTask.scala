@@ -27,10 +27,7 @@ class RemoteTask @Inject()(
     val jsonArgs = instance.argsAsJson(args)
 
     val tags = try {
-      Class
-        .forName(
-          clazz
-        )
+      instance.getClass
         .getAnnotation(classOf[TaskTags])
         .tags()
         .toSet

@@ -34,7 +34,7 @@ class ImportPeopleFromDump @Inject()(
   ): Future[Unit] = {
     personImportHandler
       .handleItem(
-        PersonImportHandlerArgs(scheduleDenorm = false, dryRun = args.dryRun),
+        PersonImportHandlerArgs(dryRun = args.dryRun),
         person
       )
       .map(_ => {})

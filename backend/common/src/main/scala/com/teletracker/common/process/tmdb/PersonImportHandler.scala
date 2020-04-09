@@ -32,7 +32,6 @@ import scala.util.control.NonFatal
 object PersonImportHandler {
   case class PersonImportHandlerArgs(
     dryRun: Boolean,
-    scheduleDenorm: Boolean,
     forceScheduleDenorm: Boolean = false)
 
   sealed trait PersonImportResult {
@@ -110,7 +109,7 @@ class PersonImportHandler @Inject()(
       .through {
         case Success(result) =>
           val changeHappened = result.itemChanged || result.inserted || result.castNeedsDenorm || result.crewNeedsDenorm
-          if (args.forceScheduleDenorm || (args.scheduleDenorm && changeHappened)) {
+          if (args.forceScheduleDenorm || (!args.dryRun && changeHappened)) {
             logger.info(
               s"Scheduling denormalization task item id = ${result.personId}"
             )
@@ -125,7 +124,7 @@ class PersonImportHandler @Inject()(
                 tags = Some(Set(TaskTag.RequiresTmdbApi))
               )
             )
-          } else if (!args.scheduleDenorm && result.itemChanged) {
+          } else if (args.dryRun && result.itemChanged) {
             Future.successful {
               logger.info(
                 s"Would've scheduled denormalization task item id = ${result.personId}"

@@ -102,7 +102,7 @@ class DenormalizeItemTask @Inject()(
 
             val combinedUpdateIds = combinedUpdates.map(_.id).toSet
             val crewUpdates =
-              crewUpdatesById.filterKeys(!combinedUpdates.contains(_)).values
+              crewUpdatesById.filterKeys(!combinedUpdateIds.contains(_)).values
 
             combinedUpdates ++ crewUpdates
           }
