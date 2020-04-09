@@ -21,7 +21,6 @@ class ImportSpecificPerson @Inject()(
       .flatMap(movie => {
         personImportHandler.handleItem(
           PersonImportHandlerArgs(
-            scheduleDenorm = options.scheduleFollowupTasks,
             dryRun = dryRun
           ),
           movie

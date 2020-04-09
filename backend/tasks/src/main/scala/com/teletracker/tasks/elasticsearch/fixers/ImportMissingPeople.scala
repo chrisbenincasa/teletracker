@@ -87,8 +87,7 @@ class ImportMissingPeople @Inject()(
                   .sequence(group.map(person => {
                     personImportHandler.handleItem(
                       PersonImportHandlerArgs(
-                        dryRun,
-                        scheduleDenorm = !dryRun
+                        dryRun
                       ),
                       person
                     )
