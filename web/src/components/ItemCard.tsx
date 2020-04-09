@@ -406,112 +406,83 @@ function ItemCard(props: Props) {
 
   const renderHoverActions = () => {
     let { hoverAddToList, hoverDelete, hoverWatch, userSelf } = props;
-
-    let transitionDelay = 100;
     const tooltipPlacement = 'right';
 
     return (
       <Collapse in={true} style={{ position: 'absolute', top: 0 }}>
         <div className={classes.hoverActions}>
           {userSelf && hoverWatch && (
-            <Zoom in={isHovering}>
-              <Tooltip
-                title={
-                  checkItemHasTag(ACTION_WATCHED)
-                    ? 'Mark as not watched'
-                    : 'Mark as watched'
-                }
-                placement={tooltipPlacement}
+            <Tooltip
+              title={
+                checkItemHasTag(ACTION_WATCHED)
+                  ? 'Mark as not watched'
+                  : 'Mark as watched'
+              }
+              placement={tooltipPlacement}
+            >
+              <IconButton
+                aria-label="Watched"
+                onClick={toggleItemWatched}
+                disableRipple
               >
-                <IconButton
-                  aria-label="Watched"
-                  onClick={toggleItemWatched}
-                  disableRipple
-                >
-                  <Check
-                    className={
-                      checkItemHasTag(ACTION_WATCHED)
-                        ? classes.hoverWatchInvert
-                        : classes.hoverWatch
-                    }
-                  />
-                  <Typography variant="srOnly">
-                    {checkItemHasTag(ACTION_WATCHED)
-                      ? 'Mark as not watched'
-                      : 'Mark as watched'}
-                  </Typography>
-                </IconButton>
-              </Tooltip>
-            </Zoom>
+                <Check
+                  className={
+                    checkItemHasTag(ACTION_WATCHED)
+                      ? classes.hoverWatchInvert
+                      : classes.hoverWatch
+                  }
+                />
+                <Typography variant="srOnly">
+                  {checkItemHasTag(ACTION_WATCHED)
+                    ? 'Mark as not watched'
+                    : 'Mark as watched'}
+                </Typography>
+              </IconButton>
+            </Tooltip>
           )}
 
           {hoverAddToList && (
-            <Zoom
-              in={isHovering}
-              style={{
-                transitionDelay: isHovering ? `${transitionDelay}ms` : '0ms',
-              }}
-            >
-              <Tooltip title="Manage Tracking" placement={tooltipPlacement}>
-                <IconButton
-                  aria-label="Manage Tracking"
-                  onClick={() => setManageTrackingModalOpen(true)}
-                  disableRipple
-                  disableFocusRipple
-                >
-                  <PlaylistAdd className={classes.hoverWatch} />
-                  <Typography variant="srOnly">Manage Tracking</Typography>
-                </IconButton>
-              </Tooltip>
-            </Zoom>
+            <Tooltip title="Manage Tracking" placement={tooltipPlacement}>
+              <IconButton
+                aria-label="Manage Tracking"
+                onClick={() => setManageTrackingModalOpen(true)}
+                disableRipple
+                disableFocusRipple
+              >
+                <PlaylistAdd className={classes.hoverWatch} />
+                <Typography variant="srOnly">Manage Tracking</Typography>
+              </IconButton>
+            </Tooltip>
           )}
 
           {isHovering && checkItemHasTag(ACTION_WATCHED) && (
-            <Zoom
-              in={isHovering}
-              style={{
-                transitionDelay: isHovering
-                  ? `${(transitionDelay += 100)}ms`
-                  : '100ms',
-              }}
-            >
-              <Tooltip title={'Rate it!'} placement={tooltipPlacement}>
-                <IconButton
-                  aria-label="Rate it!"
-                  onClick={() => setHoverRating(true)}
-                >
-                  {checkItemHasTag(ACTION_ENJOYED) ? (
-                    <ThumbUp className={classes.hoverRatingThumbsUp} />
-                  ) : (
-                    <ThumbDown className={classes.hoverRatingThumbsDown} />
-                  )}
-                  <Typography variant="srOnly">Rate it!</Typography>
-                </IconButton>
-              </Tooltip>
-            </Zoom>
+            <Tooltip title={'Rate it!'} placement={tooltipPlacement}>
+              <IconButton
+                aria-label="Rate it!"
+                onClick={() => setHoverRating(true)}
+              >
+                {checkItemHasTag(ACTION_ENJOYED) ? (
+                  <ThumbUp className={classes.hoverRatingThumbsUp} />
+                ) : (
+                  <ThumbDown className={classes.hoverRatingThumbsDown} />
+                )}
+                <Typography variant="srOnly">Rate it!</Typography>
+              </IconButton>
+            </Tooltip>
           )}
 
           {hoverDelete && (
-            <Zoom
-              in={isHovering}
-              style={{
-                transitionDelay: isHovering
-                  ? `${(transitionDelay += 100)}ms`
-                  : '100ms',
-              }}
-            >
-              <Tooltip title={'Remove from List'} placement={tooltipPlacement}>
-                <IconButton
-                  aria-label="Delete"
-                  className={classes.hoverDelete}
-                  onClick={() => setDeleteConfirmationOpen(true)}
-                  disableRipple
-                >
-                  <DeleteIcon />
-                  <Typography variant="srOnly">Delete from List</Typography>
-                </IconButton>
-              </Tooltip>
-            </Zoom>
+            <Tooltip title={'Remove from List'} placement={tooltipPlacement}>
+              <IconButton
+                aria-label="Delete"
+                className={classes.hoverDelete}
+                onClick={() => setDeleteConfirmationOpen(true)}
+                disableRipple
+              >
+                <DeleteIcon />
+                <Typography variant="srOnly">Delete from List</Typography>
+              </IconButton>
+            </Tooltip>
           )}
         </div>
       </Collapse>
