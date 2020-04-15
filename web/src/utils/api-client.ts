@@ -428,16 +428,6 @@ export class TeletrackerApi {
     });
   }
 
-  async getPopular(
-    token: string | undefined,
-    request: ItemSearchRequest,
-  ): Promise<TeletrackerResponse<ApiItem[]>> {
-    return this.api.get('/api/v2/popular', {
-      token,
-      ...this.searchRequestToParams(request),
-    });
-  }
-
   async getItems(
     token: string | undefined,
     request: ItemSearchRequest,

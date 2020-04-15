@@ -8,7 +8,7 @@ export interface SlidersState {
 
 export const DEFAULT_FILTER_PARAMS: FilterParams = {};
 
-function removeUndefinedKeys(obj: FilterParams): FilterParams {
+export function removeUndefinedKeys(obj: FilterParams): FilterParams {
   return _.pickBy(obj, _.negate(_.isUndefined));
 }
 

@@ -1,3 +1,5 @@
-import PopularityWrapper from '../containers/pages/PopularityWrapper';
+import PopularityWrapper from '../containers/pages/ExploreWrapper';
 
-export default PopularityWrapper;
+export default PopularityWrapper({
+  sortOrder: 'popularity',
+});

@@ -223,11 +223,6 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *getPopular(request: ItemSearchRequest) {
-    let token = yield this.withToken();
-    return yield this.apiCall(client => client.getPopular, token, request);
-  }
-
   *getItems(request: ItemSearchRequest) {
     let token = yield this.withToken();
     return yield this.apiCall(client => client.getItems, token, request);
