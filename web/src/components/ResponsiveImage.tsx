@@ -138,13 +138,11 @@ export const ResponsiveImage: React.FC<imgProps> = ({
   };
 
   if (imageName) {
+    // TODO: Figure out if we want to do a placeholder src. We took it away
+    // because Firefox would flicker like crazy.
     return (
-      // <picture style={pictureStyle}>
-      // {generateSource(imageSpecs)}
-      // </picture>
       <img
         data-async-image="true"
-        src={imagePlaceholder}
         alt=""
         srcSet={generateSrcSet(imageSpecs[0].sizes)}
         decoding="async"

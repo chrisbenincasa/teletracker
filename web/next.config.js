@@ -54,6 +54,16 @@ module.exports = (phase, { defaultConfig }) => {
         })]
       }
 
+      if (dev) {
+        config.resolve = {
+          ...config.resolve,
+          alias: {
+            ...config.resolve.alias,
+            'react-redux': 'react-redux/lib'
+          }
+        }
+      }
+
       return config
     },
     target: 'serverless',

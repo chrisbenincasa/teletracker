@@ -25,7 +25,7 @@ import SearchInput from '../components/Toolbar/Search';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
 import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
 import { useWidth } from '../hooks/useWidth';
-import { useWithUser } from '../hooks/useWithUser';
+import { useWithUser, useWithUserContext } from '../hooks/useWithUser';
 import { AppState } from '../reducers';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
@@ -82,7 +82,7 @@ const useStyles = makeStyles((theme: Theme) =>
 const Search = ({ inViewportChange }) => {
   const classes = useStyles();
   const width = useWidth();
-  const withUserState = useWithUser();
+  const withUserState = useWithUserContext();
   const dispatch = useDispatch();
   const router = useRouter();
 

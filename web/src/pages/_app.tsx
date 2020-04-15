@@ -12,6 +12,16 @@ import 'sanitize.css/sanitize.css';
 import createStore from '../store';
 import theme from '../theme';
 import { NextPageContext } from 'next';
+import * as ReactRedux from 'react-redux';
+
+if (process.env.NODE_ENV === 'development') {
+  const whyDidYouRender = require('@welldone-software/why-did-you-render');
+  whyDidYouRender(React, {
+    // trackAllPureComponents: true,
+    trackHooks: true,
+    trackExtraHooks: [[ReactRedux, 'useSelector']],
+  });
+}
 
 const NEXT_REDUX_STORE_KEY = '__NEXT_REDUX_STORE__';
 

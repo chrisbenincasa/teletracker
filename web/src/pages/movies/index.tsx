@@ -1,3 +1,6 @@
-import ExploreWrapper from '../../containers/pages/ExploreWrapper';
+import PopularityWrapper from '../../containers/pages/ExploreWrapper';
 
-export default ExploreWrapper('movie');
+export default PopularityWrapper({
+  itemTypes: ['movie'],
+  sortOrder: 'rating|imdb',
+});

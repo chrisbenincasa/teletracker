@@ -1,35 +1,23 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
-import { ErrorFSA, FSA } from 'flux-standard-action';
+import { FSA } from 'flux-standard-action';
 import _ from 'lodash';
-import {
-  ItemType,
-  SortOptions,
-  NetworkType,
-  OpenRange,
-  Paging,
-} from '../../types';
-import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
+import { Paging } from '../../types';
 import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
 import { TeletrackerResponse } from '../../utils/api-client';
-import { createAction } from '../utils';
+import { createAction, createBasicAction } from '../utils';
 import { clientEffect } from '../clientEffect';
+import { FilterParams } from '../../utils/searchFilters';
 
 export const POPULAR_INITIATED = 'popular/INITIATED';
 export const POPULAR_SUCCESSFUL = 'popular/SUCCESSFUL';
 export const POPULAR_FAILED = 'popular/FAILED';
+export const POPULAR_CLEAR = 'popular/CLEAR';
 
 export interface PopularInitiatedActionPayload {
-  fields?: KeyMap<ObjectMetadata>;
-  itemTypes?: ItemType[];
-  networks?: NetworkType[];
+  filters?: FilterParams;
   bookmark?: string;
-  sort?: SortOptions;
   limit?: number;
-  genres?: number[];
-  releaseYearRange?: OpenRange;
-  castIncludes?: string[];
-  imdbRating?: OpenRange;
 }
 
 export type PopularInitiatedAction = FSA<
@@ -50,6 +38,8 @@ export type PopularSuccessfulAction = FSA<
 
 export type PopularFailedAction = FSA<typeof POPULAR_FAILED, Error>;
 
+export type PopularClearAction = FSA<typeof POPULAR_CLEAR>;
+
 export const retrievePopular = createAction<PopularInitiatedAction>(
   POPULAR_INITIATED,
 );
@@ -60,6 +50,10 @@ export const popularSuccess = createAction<PopularSuccessfulAction>(
 
 export const popularFailed = createAction<PopularFailedAction>(POPULAR_FAILED);
 
+export const clearPopular = createBasicAction<PopularClearAction>(
+  POPULAR_CLEAR,
+);
+
 export const popularSaga = function*() {
   yield takeEvery(POPULAR_INITIATED, function*({
     payload,
@@ -67,17 +61,17 @@ export const popularSaga = function*() {
     if (payload) {
       try {
         let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
-          client => client.getPopular,
+          client => client.getItems,
           {
-            itemTypes: payload.itemTypes,
-            networks: payload.networks,
+            itemTypes: payload.filters?.itemTypes,
+            networks: payload.filters?.networks,
             bookmark: payload.bookmark,
-            sort: payload.sort,
+            sort: payload.filters?.sortOrder,
             limit: payload.limit,
-            genres: payload.genres,
-            releaseYearRange: payload.releaseYearRange,
-            castIncludes: payload.castIncludes,
-            imdbRating: payload.imdbRating,
+            genres: payload.filters?.genresFilter,
+            releaseYearRange: payload.filters?.sliders?.releaseYear,
+            castIncludes: payload.filters?.people,
+            imdbRating: payload.filters?.sliders?.imdbRating,
           },
         );
 
