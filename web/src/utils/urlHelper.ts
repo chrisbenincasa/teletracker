@@ -5,11 +5,12 @@ import {
   isNetworkType,
   SortOptions,
 } from '../types';
-import { FilterParams } from './searchFilters';
+import { FilterParams, removeUndefinedKeys } from './searchFilters';
 import { WithRouterProps } from 'next/dist/client/with-router';
 import querystring from 'querystring';
 import url from 'url';
 import { filterParamsEqual } from './changeDetection';
+import { NextRouter } from 'next/router';
 
 const validQueryParams = [
   'genres',
@@ -28,14 +29,28 @@ export const updateUrlParamsForFilterRouter = (
   excludedParams?: string[],
   defaultFilters?: FilterParams,
 ): void => {
-  let sanitizedPath = url.parse(props.router.asPath).pathname;
+  updateUrlParamsForNextRouter(
+    props.router,
+    filterParams,
+    excludedParams,
+    defaultFilters,
+  );
+};
 
-  let sanitizedFilterQuery = _.pickBy(props.router.query, (value, key) =>
+export const updateUrlParamsForNextRouter = (
+  router: NextRouter,
+  filterParams: FilterParams,
+  excludedParams?: string[],
+  defaultFilters?: FilterParams,
+): void => {
+  let sanitizedPath = url.parse(router.asPath).pathname;
+
+  let sanitizedFilterQuery = _.pickBy(router.query, (value, key) =>
     _.includes(validQueryParams, key),
   );
 
   if (defaultFilters && filterParamsEqual(defaultFilters, filterParams)) {
-    props.router.push(props.router.pathname, sanitizedPath, { shallow: true });
+    router.push(router.pathname, sanitizedPath, { shallow: true });
     return;
   }
 
@@ -74,7 +89,7 @@ export const updateUrlParamsForFilterRouter = (
   updateMultipleUrlParams(
     querystring.stringify(sanitizedFilterQuery),
     str => {
-      props.router.push(props.router.pathname + str, sanitizedPath + str, {
+      router.push(router.pathname + str, sanitizedPath + str, {
         shallow: true,
       });
     },
@@ -212,7 +227,7 @@ export function parseFilterParams(params: Map<string, string>): FilterParams {
     };
   }
 
-  return filters;
+  return removeUndefinedKeys(filters);
 }
 
 export function parseFilterParamsFromObject(obj: {

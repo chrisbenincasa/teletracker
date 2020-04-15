@@ -11,25 +11,25 @@ import scala.concurrent.ExecutionContext
 class FindDeletedMovies @Inject()(
   sourceRetriever: SourceRetriever
 )(implicit executionContext: ExecutionContext)
-    extends BaseDiffTask[EsItemDumpRow, MovieDumpFileRow, String](
+    extends BaseDiffTask[MovieDumpFileRow, EsItemDumpRow, String](
       sourceRetriever
     ) {
 
-  override protected def extractRightData(
-    right: MovieDumpFileRow
+  override protected def extractLeftData(
+    data: MovieDumpFileRow
   ): Option[String] = {
-//    if (right.adult) {
+//    if (data.adult) {
 //      None
 //    } else {
 //    }
-    Some(right.id.toString)
+    Some(data.id.toString)
   }
 
-  override protected def extractLeftData(
-    left: EsItemDumpRow
+  override protected def extractRightData(
+    data: EsItemDumpRow
   ): Option[String] = {
-    if (left._source.adult.contains(false) && left._source.`type` == ItemType.Movie) {
-      left._source.externalIdsGrouped.get(ExternalSource.TheMovieDb)
+    if (data._source.adult.contains(false) && data._source.`type` == ItemType.Movie) {
+      data._source.externalIdsGrouped.get(ExternalSource.TheMovieDb)
     } else {
       None
     }

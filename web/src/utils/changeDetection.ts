@@ -44,7 +44,6 @@ export function filterParamsEqual(
     }
 
     if (left.sortOrder !== right.sortOrder) {
-      console.log(left, right);
       if (
         !defaultSortOrder ||
         (defaultSortOrder &&
