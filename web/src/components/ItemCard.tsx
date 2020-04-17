@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, RefObject } from 'react';
+import React, { RefObject, useEffect, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -28,31 +28,21 @@ import {
   ThumbDown,
   ThumbUp,
 } from '@material-ui/icons';
-import { connect } from 'react-redux';
 import RouterLink from 'next/link';
-import { bindActionCreators, Dispatch } from 'redux';
 import { ACTION_ENJOYED, ACTION_WATCHED } from '../actions/item-detail';
-import {
-  ListTrackingUpdatedInitiatedPayload,
-  updateListTracking,
-} from '../actions/lists';
-import {
-  removeUserItemTags,
-  updateUserItemTags,
-  UserUpdateItemTagsPayload,
-} from '../actions/user';
+import { updateListTracking } from '../actions/lists';
+import { removeUserItemTags, updateUserItemTags } from '../actions/user';
 import { GRID_COLUMNS } from '../constants/';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import { UserSelf } from '../reducers/user';
 import { ActionType, List } from '../types';
-import HasImagery from '../types/HasImagery';
-import { Linkable, ThingLikeStruct } from '../types/Thing';
 import AddToListDialog from './Dialogs/AddToListDialog';
 import { ResponsiveImage } from './ResponsiveImage';
 import { Item, itemHasTag } from '../types/v2/Item';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
 import { useWidth } from '../hooks/useWidth';
 import { hexToRGB } from '../utils/style-utils';
+import { useDispatchAction } from '../hooks/useDispatchAction';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -176,7 +166,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
 }));
 
-interface ItemCardProps {
+interface Props {
   key: string | number;
   item: Item;
   userSelf?: UserSelf;
@@ -194,16 +184,6 @@ interface ItemCardProps {
   hasLoaded?: () => void;
 }
 
-type RequiredThingType = ThingLikeStruct & Linkable & HasImagery;
-
-interface DispatchProps {
-  ListUpdate: (payload: ListTrackingUpdatedInitiatedPayload) => void;
-  updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
-  removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
-}
-
-type Props = ItemCardProps & DispatchProps;
-
 function ItemCard(props: Props) {
   const classes = useStyles();
   const width = useWidth();
@@ -219,6 +199,10 @@ function ItemCard(props: Props) {
   const [deleted, setDeleted] = useState<boolean>(false);
   const [currentId, setCurrentId] = useState<string>('');
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
+
+  const updateList = useDispatchAction(updateListTracking);
+  const updateUserTags = useDispatchAction(updateUserItemTags);
+  const removeUserTags = useDispatchAction(removeUserItemTags);
 
   useEffect(() => {
     let { item } = props;
@@ -280,7 +264,7 @@ function ItemCard(props: Props) {
   });
 
   const handleRemoveFromList = () => {
-    props.ListUpdate({
+    updateList({
       itemId: props.item.id,
       addToLists: [],
       removeFromLists: [props.listContext!.id.toString()],
@@ -296,9 +280,9 @@ function ItemCard(props: Props) {
     };
 
     if (checkItemHasTag(ACTION_WATCHED)) {
-      props.removeUserItemTags(payload);
+      removeUserTags(payload);
     } else {
-      props.updateUserItemTags(payload);
+      updateUserTags(payload);
       setHoverRating(true);
     }
   };
@@ -311,7 +295,7 @@ function ItemCard(props: Props) {
     };
 
     // Currently no way to 'unrate' an item so no need to remove UserItemTags like we do for 'watched'
-    props.updateUserItemTags(payload);
+    updateUserTags(payload);
 
     setIsHovering(false);
     setHoverRating(false);
@@ -622,14 +606,4 @@ ItemCard.defaultProps = {
   hoverAddToList: true,
 };
 
-const mapDispatchToProps = (dispatch: Dispatch) =>
-  bindActionCreators(
-    {
-      ListUpdate: updateListTracking,
-      updateUserItemTags,
-      removeUserItemTags,
-    },
-    dispatch,
-  );
-
-export default connect(null, mapDispatchToProps)(ItemCard);
+export default ItemCard;

@@ -5,6 +5,7 @@ import {
   Chip,
   createStyles,
   Dialog,
+  Fade,
   Hidden,
   LinearProgress,
   Theme,
@@ -51,8 +52,11 @@ import Login from './Login';
 import Link from 'next/link';
 import { extractItem } from '../utils/item-utils';
 import useStateSelector from '../hooks/useStateSelector';
+import { makeStyles } from '@material-ui/core/styles';
+import { useWithUserContext } from '../hooks/useWithUser';
+import { useDispatchAction } from '../hooks/useDispatchAction';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     actionButtonContainer: {
       display: 'flex',
@@ -235,15 +239,11 @@ const styles = (theme: Theme) =>
       width: '100%',
       marginBottom: theme.spacing(1),
     },
-  });
+  }),
+);
 
 interface OwnProps {
-  isAuthed: boolean;
-  isFetching: boolean;
-  itemDetail?: Item;
   initialItem?: Item;
-  genres?: Genre[];
-  itemsById: { [key: string]: Item };
   itemPreloadedFromServer?: boolean;
 }
 
@@ -252,38 +252,44 @@ interface DispatchProps {
   itemPrefetchSuccess: (payload: Item) => void;
 }
 
-type NotOwnProps = DispatchProps & WithStyles<typeof styles> & WithUserProps;
-
-type Props = OwnProps & NotOwnProps;
+type Props = OwnProps;
 
 function ItemDetails(props: Props) {
+  const classes = useStyles();
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
   const [showFullOverview, setshowFullOverview] = useState<boolean>(false);
-  const itemsById = useStateSelector(state => state.itemDetail.thingsById);
   const width = useWidth();
-  const isMobile = ['xs', 'sm'].includes(width);
-  let nextRouter = useRouter();
+  const nextRouter = useRouter();
+  const isFetching = useStateSelector(state => state.itemDetail.fetching);
+  const userSelfState = useWithUserContext();
+  const genres = useStateSelector(state => state.metadata.genres, _.isEqual);
+  const itemDetailId = useStateSelector(state => state.itemDetail.itemDetail);
+  const itemsById = useStateSelector(state => state.itemDetail.thingsById);
+  const itemDetail = itemDetailId
+    ? extractItem(itemDetailId, undefined, itemsById)
+    : undefined;
+
+  const fetchItemDetails = useDispatchAction(itemFetchInitiated);
+  const dispatchItemPrefetchSuccess = useDispatchAction(itemPrefetchSuccess);
 
   React.useEffect(() => {
-    const { isLoggedIn, userSelf } = props;
-
     loadItem();
     ReactGA.pageview(nextRouter.asPath);
 
     if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
+      userSelfState.isLoggedIn &&
+      userSelfState.userSelf &&
+      userSelfState.userSelf.user &&
+      userSelfState.userSelf.user.getUsername()
     ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
+      ReactGA.set({ userId: userSelfState.userSelf.user.getUsername() });
     }
   }, [nextRouter.query]);
 
   const loadItem = () => {
     if (props.initialItem) {
-      props.itemPrefetchSuccess(props.initialItem);
+      dispatchItemPrefetchSuccess(props.initialItem);
     } else {
       let itemId = nextRouter.query.id as string;
 
@@ -294,7 +300,7 @@ function ItemDetails(props: Props) {
           itemsById,
         );
         if (item) {
-          props.itemPrefetchSuccess(item);
+          dispatchItemPrefetchSuccess(item);
           return;
         }
       }
@@ -316,7 +322,7 @@ function ItemDetails(props: Props) {
         itemType = itemType.substr(0, itemType.length - 1);
       }
 
-      props.fetchItemDetails({ id: itemId, type: itemType });
+      fetchItemDetails({ id: itemId, type: itemType });
     }
   };
 
@@ -333,8 +339,6 @@ function ItemDetails(props: Props) {
   };
 
   const renderTitle = (item: Item) => {
-    const { classes } = props;
-
     return (
       <div className={classes.titleWrapper}>
         <Typography
@@ -350,7 +354,6 @@ function ItemDetails(props: Props) {
   };
 
   const renderInformation = (item: Item) => {
-    const { classes } = props;
     const voteAverage = getVoteAverage(item);
     const voteCount = getVoteCountFormatted(item);
     const runtime =
@@ -397,7 +400,6 @@ function ItemDetails(props: Props) {
   };
 
   const renderGenres = (item: Item) => {
-    const { classes, genres } = props;
     const itemGenres = (item.genres || []).map(g => g.id);
     const genresToRender = _.filter(genres || [], genre => {
       return _.includes(itemGenres, genre.id);
@@ -422,8 +424,6 @@ function ItemDetails(props: Props) {
   };
 
   const renderDescriptiveDetails = (item: Item) => {
-    const { classes } = props;
-
     return (
       <div className={classes.titleContainer}>
         <Hidden smDown>{renderTitle(item)}</Hidden>
@@ -497,7 +497,6 @@ function ItemDetails(props: Props) {
   // };
 
   const renderItemDetails = () => {
-    let { classes, isFetching, itemDetail, userSelf } = props;
     let itemType;
     const overview = itemDetail?.overview || '';
     const isMobile = ['xs', 'sm'].includes(width);
@@ -522,191 +521,176 @@ function ItemDetails(props: Props) {
       itemType = 'TVSeries';
     }
 
-    return isFetching || !itemDetail ? (
-      renderLoading()
-    ) : (
-      <React.Fragment>
-        <div className={classes.backdrop}>
-          <div className={classes.backdropContainer}>
-            <ResponsiveImage
-              item={itemDetail}
-              imageType="backdrop"
-              imageStyle={{
-                objectFit: 'cover',
-                objectPosition: 'center top',
-                width: '100%',
-                height: '100%',
-                pointerEvents: 'none', // Disables ios preview on tap & hold
-              }}
-              pictureStyle={{
-                display: 'block',
-                position: 'relative',
-                height: '100vh',
-              }}
-            />
-            <div className={classes.backdropGradient} />
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              flexGrow: 1,
-            }}
-          >
-            {!isMobile && (
-              <Button
-                size="small"
-                onClick={nextRouter.back}
-                variant="contained"
-                aria-label="Go Back"
-                style={{ marginTop: 20, marginLeft: 20 }}
-                startIcon={<ChevronLeft />}
-              >
-                Go Back
-              </Button>
-            )}
-
+    return (
+      itemDetail && (
+        <React.Fragment>
+          <div className={classes.backdrop}>
+            <div className={classes.backdropContainer}>
+              <ResponsiveImage
+                item={itemDetail}
+                imageType="backdrop"
+                imageStyle={{
+                  objectFit: 'cover',
+                  objectPosition: 'center top',
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none', // Disables ios preview on tap & hold
+                }}
+                pictureStyle={{
+                  display: 'block',
+                  position: 'relative',
+                  height: '100vh',
+                }}
+              />
+              <div className={classes.backdropGradient} />
+            </div>
             <div
-              className={classes.itemDetailContainer}
-              itemScope
-              itemType={`http://schema.org/${itemType}`}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                flexGrow: 1,
+              }}
             >
-              <div className={classes.leftContainer}>
-                <Hidden mdUp>{renderTitle(itemDetail)}</Hidden>
-                <div className={classes.posterContainer}>
-                  <CardMedia
-                    src={imagePlaceholder}
-                    item={itemDetail}
-                    component={ResponsiveImage}
-                    imageType="poster"
-                    imageStyle={{
-                      width: '100%',
-                      boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
-                    }}
-                  />
-                </div>
-                <Hidden mdUp>{renderInformation(itemDetail)}</Hidden>
-                <Hidden mdUp>{renderGenres(itemDetail)}</Hidden>
-                <div className={classes.actionButtonContainer}>
-                  <ManageTracking
-                    itemDetail={itemDetail}
-                    className={classes.actionButton}
-                  />
-                  <MarkAsWatched
-                    itemDetail={itemDetail}
-                    className={classes.actionButton}
-                  />
-                </div>
-                <div className={classes.actionButtonContainerSecondary}>
-                  <PlayTrailer
-                    itemDetail={itemDetail}
-                    className={classes.actionButton}
-                  />
-                  <ShareButton
-                    title={itemDetail.canonicalTitle}
-                    text={''}
-                    url={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${nextRouter.asPath}`}
-                    className={classes.actionButton}
-                  />
-                </div>
-              </div>
-              <div className={classes.itemInformationContainer}>
-                {renderDescriptiveDetails(itemDetail)}
-                <Hidden smDown>{renderGenres(itemDetail)}</Hidden>
-                <ThingAvailability
-                  userSelf={userSelf}
-                  itemDetail={itemDetail}
-                />
-                <div>
-                  <Typography
-                    color="inherit"
-                    variant="h5"
-                    className={classes.header}
-                  >
-                    Description
-                  </Typography>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <React.Fragment>{formattedOverview}</React.Fragment>
-                    {overview.length > truncateSize ? (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        aria-label={
-                          showFullOverview ? 'Read Less' : 'Read More'
-                        }
-                        onClick={() => setshowFullOverview(!showFullOverview)}
-                        style={{
-                          marginTop: 5,
-                          display: 'flex',
-                          alignSelf: 'center',
-                        }}
-                      >
-                        {showFullOverview ? (
-                          <ExpandLess style={{ marginRight: 8 }} />
-                        ) : (
-                          <ExpandMore style={{ marginRight: 8 }} />
-                        )}
-                        {showFullOverview ? 'Read Less' : 'Read More'}
-                      </Button>
-                    ) : null}
+              {!isMobile && (
+                <Button
+                  size="small"
+                  onClick={nextRouter.back}
+                  variant="contained"
+                  aria-label="Go Back"
+                  style={{ marginTop: 20, marginLeft: 20 }}
+                  startIcon={<ChevronLeft />}
+                >
+                  Go Back
+                </Button>
+              )}
+
+              <div
+                className={classes.itemDetailContainer}
+                itemScope
+                itemType={`http://schema.org/${itemType}`}
+              >
+                <div className={classes.leftContainer}>
+                  <Hidden mdUp>{renderTitle(itemDetail)}</Hidden>
+                  <div className={classes.posterContainer}>
+                    <CardMedia
+                      src={imagePlaceholder}
+                      item={itemDetail}
+                      component={ResponsiveImage}
+                      imageType="poster"
+                      imageStyle={{
+                        width: '100%',
+                        boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+                      }}
+                    />
+                  </div>
+                  <Hidden mdUp>{renderInformation(itemDetail)}</Hidden>
+                  <Hidden mdUp>{renderGenres(itemDetail)}</Hidden>
+                  <div className={classes.actionButtonContainer}>
+                    <ManageTracking
+                      itemDetail={itemDetail}
+                      className={classes.actionButton}
+                    />
+                    <MarkAsWatched
+                      itemDetail={itemDetail}
+                      className={classes.actionButton}
+                    />
+                  </div>
+                  <div className={classes.actionButtonContainerSecondary}>
+                    <PlayTrailer
+                      itemDetail={itemDetail}
+                      className={classes.actionButton}
+                    />
+                    <ShareButton
+                      title={itemDetail.canonicalTitle}
+                      text={''}
+                      url={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${nextRouter.asPath}`}
+                      className={classes.actionButton}
+                    />
                   </div>
                 </div>
-                <Cast itemDetail={itemDetail} />
-                {/* {renderSeriesDetails(itemDetail)} */}
-                <Recommendations itemDetail={itemDetail} userSelf={userSelf} />
+                <div className={classes.itemInformationContainer}>
+                  {renderDescriptiveDetails(itemDetail)}
+                  <Hidden smDown>{renderGenres(itemDetail)}</Hidden>
+                  <ThingAvailability
+                    userSelf={userSelfState.userSelf}
+                    itemDetail={itemDetail}
+                  />
+                  <div>
+                    <Typography
+                      color="inherit"
+                      variant="h5"
+                      className={classes.header}
+                    >
+                      Description
+                    </Typography>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <React.Fragment>{formattedOverview}</React.Fragment>
+                      {overview.length > truncateSize ? (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          aria-label={
+                            showFullOverview ? 'Read Less' : 'Read More'
+                          }
+                          onClick={() => setshowFullOverview(!showFullOverview)}
+                          style={{
+                            marginTop: 5,
+                            display: 'flex',
+                            alignSelf: 'center',
+                          }}
+                        >
+                          {showFullOverview ? (
+                            <ExpandLess style={{ marginRight: 8 }} />
+                          ) : (
+                            <ExpandMore style={{ marginRight: 8 }} />
+                          )}
+                          {showFullOverview ? 'Read Less' : 'Read More'}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <Cast itemDetail={itemDetail} />
+                  {/* {renderSeriesDetails(itemDetail)} */}
+                  <Recommendations
+                    itemDetail={itemDetail}
+                    userSelf={userSelfState.userSelf}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <Dialog
-          open={loginModalOpen}
-          onClose={closeLoginModal}
-          closeAfterTransition
-          BackdropComponent={Backdrop}
-          BackdropProps={{
-            timeout: 500,
-          }}
-        >
-          <Login />
-        </Dialog>
-      </React.Fragment>
+          <Dialog
+            open={loginModalOpen}
+            onClose={closeLoginModal}
+            closeAfterTransition
+            BackdropComponent={Backdrop}
+            BackdropProps={{
+              timeout: 500,
+            }}
+          >
+            <Login />
+          </Dialog>
+        </React.Fragment>
+      )
     );
   };
 
   return (
-    <div style={{ display: 'flex', flexGrow: 1 }}>{renderItemDetails()}</div>
+    <div style={{ display: 'flex', flexGrow: 1 }}>
+      {/*{isFetching || !itemDetail ? (*/}
+      {/*  renderLoading()*/}
+      {/*) : (*/}
+      {/*  <Fade in={!isFetching && !_.isUndefined(itemDetail)}>*/}
+      {/*    {renderItemDetails()}*/}
+      {/*  </Fade>*/}
+      {/*)}*/}
+
+      <Fade in={false} timeout={1000}>
+        {renderItemDetails()}
+      </Fade>
+    </div>
   );
 }
 
-const mapStateToProps: (
-  initialState: AppState,
-  props: NotOwnProps,
-) => (appState: AppState) => OwnProps = (initial, props) => appState => {
-  return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    isFetching: appState.itemDetail.fetching,
-    itemDetail: appState.itemDetail.itemDetail
-      ? extractItem(
-          appState.itemDetail.itemDetail,
-          undefined,
-          appState.itemDetail.thingsById,
-        )
-      : undefined,
-    itemsById: appState.itemDetail.thingsById,
-    genres: appState.metadata.genres,
-  };
-};
-
-const mapDispatchToProps = (dispatch: Dispatch) =>
-  bindActionCreators(
-    {
-      fetchItemDetails: itemFetchInitiated,
-      itemPrefetchSuccess: itemPrefetchSuccess,
-    },
-    dispatch,
-  );
-
-export default withUser(
-  withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(ItemDetails)),
-);
+export default ItemDetails;
