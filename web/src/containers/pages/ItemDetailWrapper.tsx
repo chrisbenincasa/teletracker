@@ -94,7 +94,9 @@ export default function makeItemDetailWrapper(type: ItemType) {
         </Head>
         <AppWrapper>
           <ItemDetail
-            itemPreloadedFromServer={props.itemId && !_.isUndefined(item)}
+            itemPreloadedFromServer={
+              !_.isUndefined(props.itemId) && !_.isUndefined(item)
+            }
           />
         </AppWrapper>
       </React.Fragment>

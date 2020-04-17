@@ -280,7 +280,7 @@ function Explore(props: Props) {
 
     // We only want to fetch missing items if this is the SSR load
     // and we need to fill out space at the bottom
-    if (popular!.length === DEFAULT_POPULAR_LIMIT && missingItems > 0) {
+    if (popular?.length === DEFAULT_POPULAR_LIMIT && missingItems > 0) {
       loadPopular(true, false, missingItems);
     }
   }, [popular, thingsById, width, theme, featuredItemsIndex]);
