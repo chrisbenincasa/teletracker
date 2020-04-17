@@ -25,7 +25,7 @@ import {
   itemPrefetchSuccess,
 } from '../actions/item-detail';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
-import ThingAvailability from '../components/Availability';
+import Availability from '../components/Availability';
 import MarkAsWatched from '../components/Buttons/MarkAsWatched';
 import Cast from '../components/Cast';
 import ManageTracking from '../components/ManageTracking';
@@ -608,10 +608,7 @@ function ItemDetails(props: Props) {
               <div className={classes.itemInformationContainer}>
                 {renderDescriptiveDetails(itemDetail)}
                 <Hidden smDown>{renderGenres(itemDetail)}</Hidden>
-                <ThingAvailability
-                  userSelf={userSelfState.userSelf}
-                  itemDetail={itemDetail}
-                />
+                <Availability itemDetail={itemDetail} />
                 <div>
                   <Typography
                     color="inherit"
