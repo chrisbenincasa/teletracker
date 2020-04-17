@@ -10,8 +10,6 @@ import {
   LinearProgress,
   Theme,
   Typography,
-  WithStyles,
-  withStyles,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import { ChevronLeft, ExpandLess, ExpandMore, Lens } from '@material-ui/icons';
@@ -19,11 +17,8 @@ import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import moment from 'moment';
 import { useRouter } from 'next/router';
-import * as R from 'ramda';
 import React, { useState } from 'react';
 import ReactGA from 'react-ga';
-import { connect } from 'react-redux';
-import { bindActionCreators, Dispatch } from 'redux';
 import {
   itemFetchInitiated,
   ItemFetchInitiatedPayload,
@@ -38,10 +33,7 @@ import ShareButton from '../components/Buttons/ShareButton';
 import PlayTrailer from '../components/Buttons/PlayTrailer';
 import Recommendations from '../components/Recommendations';
 import { ResponsiveImage } from '../components/ResponsiveImage';
-import withUser, { WithUserProps } from '../components/withUser';
 import { useWidth } from '../hooks/useWidth';
-import { AppState } from '../reducers';
-import { Genre } from '../types';
 import { Item } from '../types/v2/Item';
 import {
   formatRuntime,
@@ -193,6 +185,7 @@ const useStyles = makeStyles((theme: Theme) =>
       },
       [theme.breakpoints.up('sm')]: {
         width: 250,
+        minHeight: 375, // TODO: Responsive.
       },
     },
     rating: {
@@ -259,6 +252,7 @@ function ItemDetails(props: Props) {
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
   const [showFullOverview, setshowFullOverview] = useState<boolean>(false);
+  const [posterLoaded, setPosterLoaded] = useState(false);
   const width = useWidth();
   const nextRouter = useRouter();
   const isFetching = useStateSelector(state => state.itemDetail.fetching);
@@ -521,57 +515,57 @@ function ItemDetails(props: Props) {
       itemType = 'TVSeries';
     }
 
-    return (
-      itemDetail && (
-        <React.Fragment>
-          <div className={classes.backdrop}>
-            <div className={classes.backdropContainer}>
-              <ResponsiveImage
-                item={itemDetail}
-                imageType="backdrop"
-                imageStyle={{
-                  objectFit: 'cover',
-                  objectPosition: 'center top',
-                  width: '100%',
-                  height: '100%',
-                  pointerEvents: 'none', // Disables ios preview on tap & hold
-                }}
-                pictureStyle={{
-                  display: 'block',
-                  position: 'relative',
-                  height: '100vh',
-                }}
-              />
-              <div className={classes.backdropGradient} />
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                flexGrow: 1,
+    return itemDetail ? (
+      <React.Fragment>
+        <div className={classes.backdrop}>
+          <div className={classes.backdropContainer}>
+            <ResponsiveImage
+              item={itemDetail}
+              imageType="backdrop"
+              imageStyle={{
+                objectFit: 'cover',
+                objectPosition: 'center top',
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none', // Disables ios preview on tap & hold
               }}
-            >
-              {!isMobile && (
-                <Button
-                  size="small"
-                  onClick={nextRouter.back}
-                  variant="contained"
-                  aria-label="Go Back"
-                  style={{ marginTop: 20, marginLeft: 20 }}
-                  startIcon={<ChevronLeft />}
-                >
-                  Go Back
-                </Button>
-              )}
-
-              <div
-                className={classes.itemDetailContainer}
-                itemScope
-                itemType={`http://schema.org/${itemType}`}
+              pictureStyle={{
+                display: 'block',
+                position: 'relative',
+                height: '100vh',
+              }}
+            />
+            <div className={classes.backdropGradient} />
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              flexGrow: 1,
+            }}
+          >
+            {!isMobile && (
+              <Button
+                size="small"
+                onClick={nextRouter.back}
+                variant="contained"
+                aria-label="Go Back"
+                style={{ marginTop: 20, marginLeft: 20 }}
+                startIcon={<ChevronLeft />}
               >
-                <div className={classes.leftContainer}>
-                  <Hidden mdUp>{renderTitle(itemDetail)}</Hidden>
+                Go Back
+              </Button>
+            )}
+
+            <div
+              className={classes.itemDetailContainer}
+              itemScope
+              itemType={`http://schema.org/${itemType}`}
+            >
+              <div className={classes.leftContainer}>
+                <Hidden mdUp>{renderTitle(itemDetail)}</Hidden>
+                <Fade in={posterLoaded}>
                   <div className={classes.posterContainer}>
                     <CardMedia
                       src={imagePlaceholder}
@@ -582,113 +576,111 @@ function ItemDetails(props: Props) {
                         width: '100%',
                         boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
                       }}
+                      loadCallback={() => setPosterLoaded(true)}
                     />
                   </div>
-                  <Hidden mdUp>{renderInformation(itemDetail)}</Hidden>
-                  <Hidden mdUp>{renderGenres(itemDetail)}</Hidden>
-                  <div className={classes.actionButtonContainer}>
-                    <ManageTracking
-                      itemDetail={itemDetail}
-                      className={classes.actionButton}
-                    />
-                    <MarkAsWatched
-                      itemDetail={itemDetail}
-                      className={classes.actionButton}
-                    />
-                  </div>
-                  <div className={classes.actionButtonContainerSecondary}>
-                    <PlayTrailer
-                      itemDetail={itemDetail}
-                      className={classes.actionButton}
-                    />
-                    <ShareButton
-                      title={itemDetail.canonicalTitle}
-                      text={''}
-                      url={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${nextRouter.asPath}`}
-                      className={classes.actionButton}
-                    />
-                  </div>
-                </div>
-                <div className={classes.itemInformationContainer}>
-                  {renderDescriptiveDetails(itemDetail)}
-                  <Hidden smDown>{renderGenres(itemDetail)}</Hidden>
-                  <ThingAvailability
-                    userSelf={userSelfState.userSelf}
+                </Fade>
+                <Hidden mdUp>{renderInformation(itemDetail)}</Hidden>
+                <Hidden mdUp>{renderGenres(itemDetail)}</Hidden>
+                <div className={classes.actionButtonContainer}>
+                  <ManageTracking
                     itemDetail={itemDetail}
+                    className={classes.actionButton}
                   />
-                  <div>
-                    <Typography
-                      color="inherit"
-                      variant="h5"
-                      className={classes.header}
-                    >
-                      Description
-                    </Typography>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <React.Fragment>{formattedOverview}</React.Fragment>
-                      {overview.length > truncateSize ? (
-                        <Button
-                          size="small"
-                          variant="contained"
-                          aria-label={
-                            showFullOverview ? 'Read Less' : 'Read More'
-                          }
-                          onClick={() => setshowFullOverview(!showFullOverview)}
-                          style={{
-                            marginTop: 5,
-                            display: 'flex',
-                            alignSelf: 'center',
-                          }}
-                        >
-                          {showFullOverview ? (
-                            <ExpandLess style={{ marginRight: 8 }} />
-                          ) : (
-                            <ExpandMore style={{ marginRight: 8 }} />
-                          )}
-                          {showFullOverview ? 'Read Less' : 'Read More'}
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                  <Cast itemDetail={itemDetail} />
-                  {/* {renderSeriesDetails(itemDetail)} */}
-                  <Recommendations
+                  <MarkAsWatched
                     itemDetail={itemDetail}
-                    userSelf={userSelfState.userSelf}
+                    className={classes.actionButton}
+                  />
+                </div>
+                <div className={classes.actionButtonContainerSecondary}>
+                  <PlayTrailer
+                    itemDetail={itemDetail}
+                    className={classes.actionButton}
+                  />
+                  <ShareButton
+                    title={itemDetail.canonicalTitle}
+                    text={''}
+                    url={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${nextRouter.asPath}`}
+                    className={classes.actionButton}
                   />
                 </div>
               </div>
+              <div className={classes.itemInformationContainer}>
+                {renderDescriptiveDetails(itemDetail)}
+                <Hidden smDown>{renderGenres(itemDetail)}</Hidden>
+                <ThingAvailability
+                  userSelf={userSelfState.userSelf}
+                  itemDetail={itemDetail}
+                />
+                <div>
+                  <Typography
+                    color="inherit"
+                    variant="h5"
+                    className={classes.header}
+                  >
+                    Description
+                  </Typography>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <React.Fragment>{formattedOverview}</React.Fragment>
+                    {overview.length > truncateSize ? (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        aria-label={
+                          showFullOverview ? 'Read Less' : 'Read More'
+                        }
+                        onClick={() => setshowFullOverview(!showFullOverview)}
+                        style={{
+                          marginTop: 5,
+                          display: 'flex',
+                          alignSelf: 'center',
+                        }}
+                      >
+                        {showFullOverview ? (
+                          <ExpandLess style={{ marginRight: 8 }} />
+                        ) : (
+                          <ExpandMore style={{ marginRight: 8 }} />
+                        )}
+                        {showFullOverview ? 'Read Less' : 'Read More'}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+                <Cast itemDetail={itemDetail} />
+                {/* {renderSeriesDetails(itemDetail)} */}
+                <Recommendations
+                  itemDetail={itemDetail}
+                  userSelf={userSelfState.userSelf}
+                />
+              </div>
             </div>
           </div>
-          <Dialog
-            open={loginModalOpen}
-            onClose={closeLoginModal}
-            closeAfterTransition
-            BackdropComponent={Backdrop}
-            BackdropProps={{
-              timeout: 500,
-            }}
-          >
-            <Login />
-          </Dialog>
-        </React.Fragment>
-      )
+        </div>
+        <Dialog
+          open={loginModalOpen}
+          onClose={closeLoginModal}
+          closeAfterTransition
+          BackdropComponent={Backdrop}
+          BackdropProps={{
+            timeout: 500,
+          }}
+        >
+          <Login />
+        </Dialog>
+      </React.Fragment>
+    ) : (
+      <div />
     );
   };
 
   return (
     <div style={{ display: 'flex', flexGrow: 1 }}>
-      {/*{isFetching || !itemDetail ? (*/}
-      {/*  renderLoading()*/}
-      {/*) : (*/}
-      {/*  <Fade in={!isFetching && !_.isUndefined(itemDetail)}>*/}
-      {/*    {renderItemDetails()}*/}
-      {/*  </Fade>*/}
-      {/*)}*/}
-
-      <Fade in={false} timeout={1000}>
-        {renderItemDetails()}
-      </Fade>
+      <React.Fragment>
+        {isFetching || !itemDetail ? renderLoading() : null}
+        <Fade in={!isFetching && !_.isUndefined(itemDetail)}>
+          <div>{!isFetching && itemDetail ? renderItemDetails() : <div />}</div>
+        </Fade>
+      </React.Fragment>
     </div>
   );
 }

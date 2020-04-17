@@ -30,7 +30,7 @@ const useStyles = makeStyles((theme: Theme) =>
 
 interface Props {
   itemDetail: Item;
-  style: object;
+  style?: object;
   className?: string;
 }
 
