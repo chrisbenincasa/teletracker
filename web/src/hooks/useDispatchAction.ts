@@ -25,3 +25,8 @@ export function useDispatchAction<T, U>(fn: (payload: T | undefined) => U) {
     dispatch(fn(payload));
   };
 }
+
+export function useDispatchSideEffect<U>(fn: () => U) {
+  const dispatch = useDispatch();
+  return () => dispatch(fn());
+}

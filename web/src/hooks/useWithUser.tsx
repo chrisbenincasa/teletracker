@@ -1,10 +1,12 @@
+import React from 'react';
 import { UserSelf } from '../reducers/user';
 import { useDispatchAction } from './useDispatchAction';
 import { getUserSelf } from '../actions/user';
-import { useEffect } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 import useStateSelector, {
   useStateSelectorWithPrevious,
 } from './useStateSelector';
+import { useDebouncedCallback } from 'use-debounce';
 import _ from 'lodash';
 
 export interface WithUserState {
@@ -14,6 +16,23 @@ export interface WithUserState {
   userSelf?: UserSelf;
 }
 
+export const UserContext = createContext<WithUserState>({
+  isCheckingAuth: false,
+  isLoggedIn: false,
+  retrievingUser: false,
+});
+
+export const WithUser = ({ children }) => {
+  const userState = useWithUser();
+  return (
+    <UserContext.Provider value={userState}>{children}</UserContext.Provider>
+  );
+};
+
+export function useWithUserContext(): WithUserState {
+  return useContext(UserContext);
+}
+
 export function useWithUser(): WithUserState {
   const [isCheckingAuth, wasCheckingAuth] = useStateSelectorWithPrevious(
     state => state.auth.checkingAuth,
@@ -21,16 +40,24 @@ export function useWithUser(): WithUserState {
   const retrievingUser = useStateSelector(
     state => state.userSelf.retrievingSelf,
   );
-  const userSelf = useStateSelector(state => state.userSelf.self);
+  const userSelf = useStateSelector(state => state.userSelf.self, _.isEqual);
   const isLoggedIn = useStateSelector(state => state.auth.isLoggedIn);
 
   const getUser = useDispatchAction(getUserSelf);
 
-  const loadUser = _.debounce((checkingAuth, user, retrieving) => {
-    if (!checkingAuth && !user && !retrieving) {
-      getUser(false);
-    }
-  }, 100);
+  const [loadUser] = useDebouncedCallback(
+    (
+      checkingAuth: boolean,
+      user: UserSelf | undefined,
+      retrieving: boolean,
+    ) => {
+      console.log('attempting to load user');
+      if (!checkingAuth && !user && !retrieving) {
+        getUser(false);
+      }
+    },
+    100,
+  );
 
   useEffect(() => {
     loadUser(isCheckingAuth, userSelf, retrievingUser);

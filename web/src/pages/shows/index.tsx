@@ -1,3 +1,6 @@
 import ExploreWrapper from '../../containers/pages/ExploreWrapper';
 
-export default ExploreWrapper('show');
+export default ExploreWrapper({
+  itemTypes: ['show'],
+  sortOrder: 'popularity',
+});

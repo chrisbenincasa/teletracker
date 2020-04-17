@@ -18,12 +18,10 @@ import {
 } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
-import { connect } from 'react-redux';
-import { AppState } from '../reducers';
-import { UserSelf } from '../reducers/user';
-import { Network } from '../types';
 import { ItemAvailability } from '../types/v2';
 import { Item } from '../types/v2/Item';
+import useStateSelector from '../hooks/useStateSelector';
+import { useWithUserContext } from '../hooks/useWithUser';
 
 const useStyles = makeStyles((theme: Theme) => ({
   availabilityContainer: {
@@ -68,14 +66,17 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 interface Props {
   itemDetail: Item;
-  userSelf?: UserSelf;
-  networks?: Network[];
 }
 
-const ThingAvailability = (props: Props) => {
+const Availability = (props: Props) => {
   const classes = useStyles();
+  const { userSelf } = useWithUserContext();
+  const networks = useStateSelector(
+    state => state.metadata.networks,
+    _.isEqual,
+  );
 
-  const { itemDetail, userSelf } = props;
+  const { itemDetail } = props;
   let availabilities: { [key: string]: ItemAvailability[] };
 
   if (itemDetail.availability) {
@@ -140,7 +141,7 @@ const ThingAvailability = (props: Props) => {
     let groupedByNetwork = availabilities
       ? R.groupBy(
           (av: ItemAvailability) =>
-            _.find(props.networks || [], n => n.id === av.network_id)!.slug,
+            _.find(networks || [], n => n.id === av.network_id)!.slug,
           R.filter(availabilityFilter, availabilities),
         )
       : {};
@@ -170,7 +171,7 @@ const ThingAvailability = (props: Props) => {
     );
   };
 
-  return props.networks ? (
+  return networks ? (
     <div className={classes.availabilityWrapper}>
       <Typography color="inherit" variant="h5" className={classes.header}>
         Availability
@@ -267,10 +268,6 @@ const ThingAvailability = (props: Props) => {
   ) : null;
 };
 
-const mapStateToProps = (appState: AppState) => {
-  return {
-    networks: appState.metadata.networks,
-  };
-};
-
-export default connect(mapStateToProps)(ThingAvailability);
+export default React.memo(Availability, (prevProps, nextProps) => {
+  return _.isEqual(prevProps, nextProps);
+});

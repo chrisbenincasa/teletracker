@@ -23,6 +23,9 @@ import {
   truncateText,
 } from '../utils/textHelper';
 import { hexToRGB } from '../utils/style-utils';
+import { useWithUser, useWithUserContext } from '../hooks/useWithUser';
+import { AccessTime } from '@material-ui/icons';
+import _ from 'lodash';
 
 const useStyles = makeStyles((theme: Theme) => ({
   backdropContainer: {
@@ -88,13 +91,21 @@ const useStyles = makeStyles((theme: Theme) => ({
       margin: theme.spacing(1),
     },
   },
+  runtimeContainer: {
+    paddingTop: theme.spacing(0.5),
+  },
+  runtimeSpan: {
+    display: 'inline-block',
+    paddingLeft: theme.spacing(0.5),
+    verticalAlign: 'middle',
+  },
 }));
 
 interface OwnProps {
   featuredItems: Item[];
 }
 
-type Props = OwnProps & WithUserProps;
+type Props = OwnProps;
 
 function Featured(props: Props) {
   const [manageTrackingModalOpen, setManageTrackingModalOpen] = useState<
@@ -102,12 +113,12 @@ function Featured(props: Props) {
   >(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const classes = useStyles();
-  const { featuredItems, userSelf } = props;
+  const { featuredItems } = props;
   const theme: Theme = useTheme();
+  const userState = useWithUserContext();
 
   useEffect(() => {
     setImageLoading(true);
-    return setImageLoading(false);
   }, [featuredItems]);
 
   const renderTitle = (item: Item) => {
@@ -131,9 +142,17 @@ function Featured(props: Props) {
             {`(${voteCount})`}
           </Typography>
         </div>
-        <Typography color="inherit" variant="body1" itemProp="duration">
-          {runtime}
-        </Typography>
+        {runtime ? (
+          <Typography
+            className={classes.runtimeContainer}
+            color="inherit"
+            variant="body1"
+            itemProp="duration"
+          >
+            <AccessTime />
+            <span className={classes.runtimeSpan}>{runtime}</span>
+          </Typography>
+        ) : null}
       </div>
     );
   };
@@ -218,7 +237,7 @@ function Featured(props: Props) {
             <AddToListDialog
               open={manageTrackingModalOpen}
               onClose={() => setManageTrackingModalOpen(false)}
-              userSelf={userSelf!}
+              userSelf={userState.userSelf}
               item={item}
             />
           </div>
@@ -250,4 +269,9 @@ function Featured(props: Props) {
   ) : null;
 }
 
-export default withUser(Featured);
+// DEV MODE ONLY
+// Featured.whyDidYouRender = true;
+
+export default React.memo(Featured, (prevProps, nextProps) => {
+  return _.isEqual(prevProps.featuredItems, nextProps.featuredItems);
+});
