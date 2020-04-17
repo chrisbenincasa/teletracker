@@ -1,19 +1,13 @@
-import React, { Component } from 'react';
-import {
-  Button,
-  createStyles,
-  Theme,
-  WithStyles,
-  withStyles,
-} from '@material-ui/core';
-import { List as ListIcon } from '@material-ui/icons';
+import React, { useState } from 'react';
+import { createStyles, Theme } from '@material-ui/core';
 import AddToListDialog from './Dialogs/AddToListDialog';
-import withUser, { WithUserProps } from '../components/withUser';
 import AuthDialog from './Auth/AuthDialog';
-import { Item, itemBelongsToLists } from '../types/v2/Item';
+import { Item } from '../types/v2/Item';
 import ManageTrackingButton from './Buttons/ManageTrackingButton';
+import { useWithUserContext } from '../hooks/useWithUser';
+import { makeStyles } from '@material-ui/core/styles';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     button: {
       marginTop: theme.spacing(1),
@@ -31,77 +25,54 @@ const styles = (theme: Theme) =>
       width: '100%',
       whiteSpace: 'nowrap',
     },
-  });
+  }),
+);
 
-interface OwnProps {
+interface Props {
   itemDetail: Item;
   style: object;
   className?: string;
 }
 
-type Props = OwnProps & WithStyles<typeof styles> & WithUserProps;
+function ManageTracking(props: Props) {
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [manageTrackingModalOpen, setManageTrackingModalOpen] = useState(false);
+  const userState = useWithUserContext();
+  const classes = useStyles();
 
-interface State {
-  manageTrackingModalOpen: boolean;
-  belongsToLists: boolean;
-  loginModalOpen: boolean;
-}
-
-class ManageTracking extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-
-    const belongsToLists: string[] =
-      props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
-
-    this.state = {
-      manageTrackingModalOpen: false,
-      belongsToLists: !!belongsToLists.length,
-      loginModalOpen: false,
-    };
-  }
-
-  toggleLoginModal = (): void => {
-    this.setState({ loginModalOpen: !this.state.loginModalOpen });
+  const toggleLoginModal = (): void => {
+    setLoginModalOpen(prev => !prev);
   };
 
-  openManageTrackingModal = (): void => {
-    if (this.props.userSelf) {
-      this.setState({ manageTrackingModalOpen: true });
+  const openManageTrackingModal = (): void => {
+    if (userState.userSelf) {
+      setManageTrackingModalOpen(true);
     } else {
-      this.toggleLoginModal();
+      toggleLoginModal();
     }
   };
 
-  closeManageTrackingModal = (): void => {
-    this.setState({ manageTrackingModalOpen: false });
+  const closeManageTrackingModal = (): void => {
+    setManageTrackingModalOpen(false);
   };
 
-  render() {
-    let { manageTrackingModalOpen } = this.state;
-    let { itemDetail, userSelf, style } = this.props;
-
-    return (
-      <React.Fragment>
-        <ManageTrackingButton
-          itemDetail={itemDetail}
-          onClick={this.openManageTrackingModal}
-          style={style}
-          className={this.props.className}
-        />
-        <AddToListDialog
-          open={manageTrackingModalOpen}
-          onClose={this.closeManageTrackingModal}
-          userSelf={userSelf!}
-          item={itemDetail}
-        />
-        <AuthDialog
-          open={this.state.loginModalOpen}
-          onClose={this.toggleLoginModal}
-        />
-      </React.Fragment>
-    );
-  }
+  return (
+    <React.Fragment>
+      <ManageTrackingButton
+        itemDetail={props.itemDetail}
+        onClick={openManageTrackingModal}
+        style={classes}
+        className={props.className}
+      />
+      <AddToListDialog
+        open={manageTrackingModalOpen}
+        onClose={closeManageTrackingModal}
+        userSelf={userState.userSelf}
+        item={props.itemDetail}
+      />
+      <AuthDialog open={loginModalOpen} onClose={toggleLoginModal} />
+    </React.Fragment>
+  );
 }
 
-export default withUser(withStyles(styles)(ManageTracking));
+export default ManageTracking;

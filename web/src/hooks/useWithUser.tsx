@@ -1,3 +1,4 @@
+import React from 'react';
 import { UserSelf } from '../reducers/user';
 import { useDispatchAction } from './useDispatchAction';
 import { getUserSelf } from '../actions/user';

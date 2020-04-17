@@ -25,7 +25,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
 }));
 
-interface imgProps {
+interface Props {
   item: Item | Person;
   imageType: ImageType;
   imageStyle?: object;
@@ -34,13 +34,12 @@ interface imgProps {
 }
 
 // TODO: Refactor this entire thing to support more than just backdrop and poster
-export const ResponsiveImage: React.FC<imgProps> = ({
+export const ResponsiveImage = ({
   item,
   imageType,
   imageStyle,
-  pictureStyle,
   loadCallback,
-}) => {
+}: Props) => {
   const classes = useStyles();
 
   function generateSource(imageSpecs) {
