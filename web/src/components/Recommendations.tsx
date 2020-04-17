@@ -1,11 +1,17 @@
 import React from 'react';
-import { createStyles, Fade, Grid, Theme, Typography } from '@material-ui/core';
+import {
+  createStyles,
+  Fade,
+  Grid,
+  makeStyles,
+  Theme,
+  Typography,
+} from '@material-ui/core';
 import ItemCard from './ItemCard';
 import { UserSelf } from '../reducers/user';
 import { Item } from '../types/v2/Item';
 import { calculateLimit } from '../utils/list-utils';
 import { useWidth } from '../hooks/useWidth';
-import { makeStyles } from '@material-ui/core/styles';
 import _ from 'lodash';
 
 const useStyles = makeStyles((theme: Theme) =>

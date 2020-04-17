@@ -118,7 +118,6 @@ function Featured(props: Props) {
   const userState = useWithUserContext();
 
   useEffect(() => {
-    console.log('image loading true');
     setImageLoading(true);
   }, [featuredItems]);
 
@@ -159,7 +158,6 @@ function Featured(props: Props) {
   };
 
   const imageLoaded = () => {
-    console.log('image loaded');
     setImageLoading(false);
   };
 
