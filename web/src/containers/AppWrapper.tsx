@@ -7,6 +7,7 @@ import Footer from '../components/Footer';
 import { connect } from 'react-redux';
 import { AppState } from '../reducers';
 import { useRouter } from 'next/router';
+import { WithUser } from '../hooks/useWithUser';
 
 const useStyles = makeStyles((theme: Theme) => ({
   mainContent: {
@@ -41,36 +42,38 @@ function AppWrapper(props: Props) {
 
   return (
     <div className={classes.root}>
-      <NoSsr>
-        <Toolbar
-          drawerOpen={drawerOpen}
-          onDrawerChange={() => setDrawerOpen(!drawerOpen)}
-          showToolbarSearch={true}
-        />
-      </NoSsr>
-      {!props.isBooting ? (
-        <div style={{ flexGrow: 1 }}>
-          <Drawer
-            open={drawerOpen}
-            closeRequested={() => setDrawerOpen(false)}
+      <WithUser>
+        <NoSsr>
+          <Toolbar
+            drawerOpen={drawerOpen}
+            onDrawerChange={() => setDrawerOpen(!drawerOpen)}
+            showToolbarSearch={true}
           />
-          <main
-            style={{
-              display: 'flex',
-              flexDirection: 'column', // isAuthed ? 'row' : 'column',
-            }}
-            className={classes.mainContent}
-          >
-            {props.children}
-          </main>
-        </div>
-      ) : (
-        <LinearProgress />
-      )}
-      {router.pathname.toLowerCase() === '/popular' ||
-      (props.isAuthed && router.pathname === '/') ? null : (
-        <Footer />
-      )}
+        </NoSsr>
+        {!props.isBooting ? (
+          <div style={{ flexGrow: 1 }}>
+            <Drawer
+              open={drawerOpen}
+              closeRequested={() => setDrawerOpen(false)}
+            />
+            <main
+              style={{
+                display: 'flex',
+                flexDirection: 'column', // isAuthed ? 'row' : 'column',
+              }}
+              className={classes.mainContent}
+            >
+              {props.children}
+            </main>
+          </div>
+        ) : (
+          <LinearProgress />
+        )}
+        {router.pathname.toLowerCase() === '/popular' ||
+        (props.isAuthed && router.pathname === '/') ? null : (
+          <Footer />
+        )}
+      </WithUser>
     </div>
   );
 }

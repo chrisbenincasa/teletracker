@@ -1,19 +1,15 @@
 import * as R from 'ramda';
 import {
-  PopularInitiatedAction,
-  PopularSuccessfulAction,
+  POPULAR_CLEAR,
+  POPULAR_FAILED,
   POPULAR_INITIATED,
   POPULAR_SUCCESSFUL,
+  PopularClearAction,
   PopularFailedAction,
-  POPULAR_FAILED,
+  PopularInitiatedAction,
+  PopularSuccessfulAction,
 } from '../actions/popular';
-import {
-  flattenActions,
-  handleAction,
-  StateToReducer,
-  handleError,
-} from './utils';
-import { FSA } from 'flux-standard-action';
+import { flattenActions, handleAction, handleError } from './utils';
 
 export interface State {
   popular?: string[]; // Array of popular slugs
@@ -77,10 +73,23 @@ const PopularFailed = handleError<PopularFailedAction, State>(
   },
 );
 
+const handleClearPopular = handleAction<PopularClearAction, State>(
+  POPULAR_CLEAR,
+  (state: State, action: PopularClearAction) => {
+    return {
+      ...state,
+      popular: undefined,
+      popularBookmark: undefined,
+      loadingPopular: false,
+    };
+  },
+);
+
 export default flattenActions<State>(
   'popular',
   initialState,
   PopularInitiated,
   PopularSuccess,
   PopularFailed,
+  handleClearPopular,
 );

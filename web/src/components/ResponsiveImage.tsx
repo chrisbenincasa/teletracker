@@ -25,7 +25,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
 }));
 
-interface imgProps {
+interface Props {
   item: Item | Person;
   imageType: ImageType;
   imageStyle?: object;
@@ -34,13 +34,12 @@ interface imgProps {
 }
 
 // TODO: Refactor this entire thing to support more than just backdrop and poster
-export const ResponsiveImage: React.FC<imgProps> = ({
+export const ResponsiveImage = ({
   item,
   imageType,
   imageStyle,
-  pictureStyle,
   loadCallback,
-}) => {
+}: Props) => {
   const classes = useStyles();
 
   function generateSource(imageSpecs) {
@@ -138,13 +137,11 @@ export const ResponsiveImage: React.FC<imgProps> = ({
   };
 
   if (imageName) {
+    // TODO: Figure out if we want to do a placeholder src. We took it away
+    // because Firefox would flicker like crazy.
     return (
-      // <picture style={pictureStyle}>
-      // {generateSource(imageSpecs)}
-      // </picture>
       <img
         data-async-image="true"
-        src={imagePlaceholder}
         alt=""
         srcSet={generateSrcSet(imageSpecs[0].sizes)}
         decoding="async"
