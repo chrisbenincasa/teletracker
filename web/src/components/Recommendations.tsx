@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  createStyles,
-  Fade,
-  Grid,
-  Theme,
-  Typography,
-  WithStyles,
-  withStyles,
-} from '@material-ui/core';
+import { createStyles, Fade, Grid, Theme, Typography } from '@material-ui/core';
 import ItemCard from './ItemCard';
 import { UserSelf } from '../reducers/user';
 import { Item } from '../types/v2/Item';
