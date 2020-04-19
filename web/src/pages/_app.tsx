@@ -6,13 +6,13 @@ import _ from 'lodash';
 import App, { AppContext } from 'next/app';
 import Head from 'next/head';
 import React from 'react';
+import * as ReactRedux from 'react-redux';
 import { Provider } from 'react-redux';
 import { Action, AnyAction, Store } from 'redux';
 import 'sanitize.css/sanitize.css';
 import createStore from '../store';
 import theme from '../theme';
 import { NextPageContext } from 'next';
-import * as ReactRedux from 'react-redux';
 
 if (process.env.NODE_ENV === 'development') {
   const whyDidYouRender = require('@welldone-software/why-did-you-render');

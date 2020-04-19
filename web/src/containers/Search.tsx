@@ -25,7 +25,7 @@ import SearchInput from '../components/Toolbar/Search';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
 import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
 import { useWidth } from '../hooks/useWidth';
-import { useWithUser, useWithUserContext } from '../hooks/useWithUser';
+import { useWithUserContext } from '../hooks/useWithUser';
 import { AppState } from '../reducers';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
