@@ -14,6 +14,7 @@ import {
   InputLabel,
   LinearProgress,
   ListItemIcon,
+  makeStyles,
   Menu,
   MenuItem,
   Select,
@@ -21,68 +22,49 @@ import {
   TextField,
   Theme,
   Typography,
-  withStyles,
-  WithStyles,
-  withWidth,
 } from '@material-ui/core';
 import { Delete, Edit, Settings } from '@material-ui/icons';
 import _ from 'lodash';
-import * as R from 'ramda';
-import React, { Component } from 'react';
-import ReactGA from 'react-ga';
+import React, { useCallback, useEffect, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
-import { connect } from 'react-redux';
-import { bindActionCreators, Dispatch } from 'redux';
 import {
   deleteList,
   LIST_RETRIEVE_INITIATED,
   ListRetrieveInitiated,
   ListRetrieveInitiatedPayload,
   updateList,
-  UserDeleteListPayload,
-  UserUpdateListPayload,
 } from '../actions/lists';
 import ItemCard from '../components/ItemCard';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
-import withUser, { WithUserProps } from '../components/withUser';
-import { AppState } from '../reducers';
-import { ThingMap } from '../reducers/item-detail';
-import { ListsByIdMap } from '../reducers/lists';
-import {
-  Genre,
-  List,
-  ListGenreRule,
-  ListItemTypeRule,
-  ListNetworkRule,
-  ListPersonRule,
-  ListReleaseYearRule,
-  Network,
-  SortOptions,
-} from '../types';
+import { List } from '../types';
 import {
   calculateLimit,
   getNumColumns,
   getOrInitListOptions,
 } from '../utils/list-utils';
-import {
-  FilterParams,
-  isDefaultFilter,
-  SlidersState,
-} from '../utils/searchFilters';
+import { FilterParams, isDefaultFilter } from '../utils/searchFilters';
 import {
   parseFilterParamsFromQs,
-  updateUrlParamsForFilterRouter,
+  updateUrlParamsForNextRouter,
 } from '../utils/urlHelper';
 import { filterParamsEqual } from '../utils/changeDetection';
-import { collect, headOption } from '../utils/collection-utils';
 import { optionalSetsEqual } from '../utils/sets';
-import { Person } from '../types/v2/Person';
-import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
+import { useRouter } from 'next/router';
 import qs from 'querystring';
+import useStateSelector from '../hooks/useStateSelector';
+import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
+import { useWithUserContext } from '../hooks/useWithUser';
+import { useDispatchAction } from '../hooks/useDispatchAction';
+import { useWidth } from '../hooks/useWidth';
+import { useDebouncedCallback } from 'use-debounce';
+import deepEq from 'dequal';
+import { createSelector } from 'reselect';
+import { AppState } from '../reducers';
+import { hookDeepEqual } from '../hooks/util';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     listHeader: {
       margin: theme.spacing(2, 0),
@@ -141,130 +123,215 @@ const styles = (theme: Theme) =>
       backgroundColor: theme.palette.primary.main,
       padding: theme.spacing(1, 2),
     },
-  });
+  }),
+);
 
-interface OwnProps {
-  isAuthed?: boolean;
-  listBookmark?: string;
-  listsById: ListsByIdMap;
-  listLoading: boolean;
-  thingsById: ThingMap;
-  personById: { [key: string]: Person };
-}
-
-interface DispatchProps {
-  deleteList: (payload: UserDeleteListPayload) => void;
-  retrieveList: (payload: ListRetrieveInitiatedPayload) => void;
-  updateList: (payload: UserUpdateListPayload) => void;
-}
-
-interface RouteParams {
-  genre?: any;
-  id: string;
-  sort?: SortOptions;
-  type?: 'movie' | 'show';
-}
-
-interface StateProps {
-  genres?: Genre[];
-  networks?: Network[];
-  loading: boolean;
-}
-
-interface WidthProps {
-  width: string;
-}
-
-type NotOwnProps = WithRouterProps &
-  DispatchProps &
-  WithStyles<typeof styles> &
-  WithUserProps &
-  StateProps &
-  WidthProps;
-
-type Props = OwnProps & NotOwnProps;
-
-interface State {
-  anchorEl: HTMLElement | null;
-  deleted: boolean;
-  deleteConfirmationOpen: boolean;
-  deleteOnWatch: boolean;
-  genre?: string;
+interface ListDetailDialogProps {
   list?: List;
-  loadingList: boolean;
-  migrateListId: number;
-  newListName: string;
-  prevListId: string;
-  renameDialogOpen: boolean;
-  showFilter: boolean;
-  filters: FilterParams;
-  listFilters?: FilterParams; // The default state of filters based on list rules.
-  totalLoadedImages: number;
+  openDeleteConfirmation: boolean;
 }
 
-class ListDetail extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    let listId = this.props.router.query.id as string;
-    let queryString = qs.stringify(props.router.query);
-    let params = new URLSearchParams();
-
-    let list = props.listsById[listId];
-
-    let filters = parseFilterParamsFromQs(queryString);
-
-    this.state = {
-      anchorEl: null,
-      deleted: false,
-      deleteConfirmationOpen: false,
-      deleteOnWatch: true,
-      list,
-      loadingList: true,
-      migrateListId: 0,
-      newListName: '',
-      prevListId: listId,
-      renameDialogOpen: false,
-      // TODO: Support sliders
-      showFilter:
-        params.has('sort') ||
-        params.has('genres') ||
-        params.has('networks') ||
-        params.has('types'),
-      filters: filters,
-      totalLoadedImages: 0,
-    };
-  }
-
-  static getDerivedStateFromProps(props: Props, state: State) {
-    let newId = props.router.query.id;
-
-    if (newId !== state.prevListId) {
-      return {
-        ...state,
-        loadingList: true,
-        prevListId: newId,
-      };
-    } else {
-      return state;
+const selectList = createSelector(
+  (state: AppState) => state.lists.listsById,
+  (_, listId) => listId,
+  (listsById, listId) => {
+    let currentList: List | undefined = listsById[listId];
+    if (!currentList) {
+      currentList = _.find(listsById, list => list.aliases.includes(listId));
     }
-  }
+    return currentList;
+  },
+);
 
-  get listId(): string {
-    return this.props.router.query.id as string;
-  }
+function ListDetailDialog(props: ListDetailDialogProps) {
+  const classes = useStyles();
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(
+    props.openDeleteConfirmation,
+  );
+  const [migrateListId, setMigrateListId] = useState('');
 
-  get currentList() {
-    let list: List | undefined = this.props.listsById[this.listId];
-    if (!list) {
-      list = _.find(this.props.listsById, list =>
-        list.aliases.includes(this.listId),
-      );
+  const { userSelf } = useWithUserContext();
+  const listsById = useStateSelector(state => state.lists.listsById);
+  const { list } = props;
+
+  useEffect(() => {
+    setDeleteConfirmationOpen(props.openDeleteConfirmation);
+  }, [props.openDeleteConfirmation]);
+
+  const handleMigration = event => {
+    setMigrateListId(event.target.value);
+  };
+
+  const handleDeleteModalClose = () => {
+    setDeleteConfirmationOpen(false);
+  };
+
+  const dispatchDeleteList = useDispatchAction(deleteList);
+
+  const handleDeleteList = () => {
+    if (userSelf) {
+      dispatchDeleteList({
+        listId: list!.id,
+        mergeListId: migrateListId,
+      });
+
+      // setDeleted(true);
     }
 
-    return list;
-  }
+    handleDeleteModalClose();
+  };
 
-  makeListFilters = (
+  return (
+    <div>
+      <Dialog
+        open={deleteConfirmationOpen}
+        onClose={() => setDeleteConfirmationOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title" className={classes.title}>
+          {`Delete "${list?.name}" list?`}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            {`Are you sure you want to delete this list? There is no way to undo
+              this. ${
+                list && list.totalItems > 0
+                  ? 'All of the content from your list can be deleted or migrated to another list.'
+                  : ''
+              }`}
+          </DialogContentText>
+          {list && list.totalItems > 0 && (
+            <FormControl className={classes.formControl}>
+              <InputLabel htmlFor="age-simple">
+                Migrate tracked items from this list to:
+              </InputLabel>
+              <Select value={migrateListId} onChange={handleMigration}>
+                <MenuItem value="0">
+                  <em>Delete all tracked items</em>
+                </MenuItem>
+                {userSelf &&
+                  _.map(
+                    listsById,
+                    item =>
+                      item.id !== list?.id && (
+                        <MenuItem key={item.id} value={item.id}>
+                          {item.name}
+                        </MenuItem>
+                      ),
+                  )}
+              </Select>
+            </FormControl>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDeleteConfirmationOpen(false)}
+            color="primary"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteList}
+            color="primary"
+            variant="contained"
+            autoFocus
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+function ListDetail() {
+  const classes = useStyles();
+
+  const genres = useStateSelector(state => state.metadata.genres, deepEq);
+  const listBookmark = useStateSelector(state => state.lists.currentBookmark);
+
+  const { userSelf, isLoggedIn } = useWithUserContext();
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | undefined>();
+  const [deleted, setDeleted] = useState(false);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [deleteOnWatch, setDeleteOnWatch] = useState(true);
+  const [newListName, setNewListName] = useState('');
+  const [totalLoadedImages, setTotalLoadedImages] = useState(0);
+  const router = useRouter();
+  const width = useWidth();
+
+  const listId = router.query.id as string;
+  const queryString = qs.stringify(router.query);
+
+  const listLoading = useStateSelector(
+    state => state.lists.loading[LIST_RETRIEVE_INITIATED],
+  );
+
+  const list = useStateSelector(state => {
+    return selectList(state, listId);
+  }, hookDeepEqual);
+
+  const [filters, setFilters, previousFilters] = useStateDeepEqWithPrevious(
+    parseFilterParamsFromQs(queryString),
+    filterParamsEqual,
+  );
+
+  const [listFilters, setListFilters] = useState<FilterParams | undefined>();
+  const [showFilter, setShowFilter] = useState(
+    _.some(
+      [
+        filters?.sortOrder,
+        filters?.genresFilter,
+        filters?.networks,
+        filters?.itemTypes,
+      ],
+      _.negate(_.isUndefined),
+    ),
+  );
+
+  const dispatchUpdateList = useDispatchAction(updateList);
+  const dispatchRetrieveList = useDispatchAction(ListRetrieveInitiated);
+  const dispatchDeleteList = useDispatchAction(deleteList);
+
+  const retrieveList = (initialLoad: boolean) => {
+    dispatchRetrieveList({
+      listId: listId,
+      force: true,
+      limit: calculateLimit(width, 3),
+      ...makeListFilters(initialLoad, filters, listFilters),
+      sort: filters?.sortOrder,
+      itemTypes: filters?.itemTypes,
+      genres: filters?.genresFilter,
+      networks: filters?.networks,
+    });
+  };
+
+  const [loadMoreDebounced] = useDebouncedCallback(() => {
+    dispatchRetrieveList({
+      listId,
+      bookmark: listBookmark,
+      limit: calculateLimit(width, 3),
+      sort: filters?.sortOrder,
+      itemTypes: filters?.itemTypes,
+      genres: filters?.genresFilter,
+      networks: filters?.networks,
+    });
+  }, 200);
+
+  const loadMoreList = () => {
+    const numColumns = getNumColumns(width);
+    const totalFetchedItems = list?.items?.length || 0;
+    const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
+    const loadMore = totalNonLoadedImages <= numColumns;
+
+    if (listBookmark && !listLoading && loadMore) {
+      loadMoreDebounced();
+    }
+  };
+
+  const makeListFilters = (
     initialLoad: boolean,
     currentFilters: FilterParams,
     initialFilters?: FilterParams,
@@ -306,158 +373,60 @@ class ListDetail extends Component<Props, State> {
     }
   };
 
-  retrieveList(initialLoad: boolean) {
-    const {
-      filters: { itemTypes, sortOrder, genresFilter, networks },
-    } = this.state;
-    const { width } = this.props;
-
-    this.props.retrieveList({
-      listId: this.listId,
-      force: true,
-      limit: calculateLimit(width, 3),
-      ...this.makeListFilters(
-        initialLoad,
-        this.state.filters,
-        this.state.listFilters,
-      ),
-      sort: sortOrder,
-      itemTypes,
-      genres: genresFilter ? genresFilter : undefined,
-      networks: networks ? networks : undefined,
-    });
-  }
-
-  componentDidMount() {
-    const { isLoggedIn, userSelf } = this.props;
-
-    this.setState({ loadingList: true });
-    this.retrieveList(true);
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
-    }
-  }
-
-  extractFiltersFromList = (list: List): FilterParams | undefined => {
-    const { networks } = this.props;
-
-    if (
-      list.isDynamic &&
-      list.configuration &&
-      list.configuration.ruleConfiguration
-    ) {
-      let groupedRules = _.groupBy(
-        list.configuration.ruleConfiguration.rules,
-        'type',
-      );
-
-      let genreRules = groupedRules.UserListGenreRule
-        ? groupedRules.UserListGenreRule.map(
-            rule => (rule as ListGenreRule).genreId,
-          )
-        : undefined;
-
-      let networkRules = groupedRules.UserListNetworkRule
-        ? collect(groupedRules.UserListNetworkRule, rule => {
-            let networkId = (rule as ListNetworkRule).networkId;
-            let foundNetwork = _.find(networks, n => n.id === networkId);
-            return foundNetwork ? foundNetwork.slug : undefined;
-          })
-        : undefined;
-
-      let itemTypeRules = groupedRules.UserListItemTypeRule
-        ? collect(
-            groupedRules.UserListItemTypeRule,
-            rule => (rule as ListItemTypeRule).itemType,
-          )
-        : undefined;
-
-      let releaseYearRule = groupedRules.UserListReleaseYearRule
-        ? headOption(
-            collect(groupedRules.UserListReleaseYearRule, rule => {
-              let typedRule = rule as ListReleaseYearRule;
-              if (typedRule.minimum || typedRule.maximum) {
-                return {
-                  releaseYear: {
-                    min: typedRule.minimum,
-                    max: typedRule.maximum,
-                  },
-                } as SlidersState;
-              }
-            }),
-          )
-        : undefined;
-
-      let personRules = groupedRules.UserListPersonRule
-        ? collect(groupedRules.UserListPersonRule, rule => {
-            let personId = (rule as ListPersonRule).personId;
-            let person = this.props.personById[personId];
-            return person ? person.canonical_id : undefined;
-          })
-        : undefined;
-
-      let sortOrder = list.configuration.ruleConfiguration.sort?.sort;
-
-      return {
-        genresFilter: genreRules,
-        networks: networkRules,
-        itemTypes: itemTypeRules,
-        sliders: releaseYearRule,
-        people: personRules,
-        sortOrder,
-      };
+  const handleFilterParamsChange = (filterParams: FilterParams) => {
+    if (!filterParamsEqual(filters, filterParams)) {
+      setFilters(filterParams);
     }
   };
 
-  componentDidUpdate(oldProps: Props, prevState: State) {
-    const { filters, list } = this.state;
-
-    if (
-      this.listId !== oldProps.router.query.id ||
-      (!prevState.loadingList && this.state.loadingList)
-    ) {
-      this.setState({ loadingList: true });
-
-      this.retrieveList(true);
-    } else if (
-      !this.props.listLoading &&
-      (oldProps.listLoading || this.state.loadingList)
-    ) {
-      let list = this.currentList;
-      let listFilters = this.extractFiltersFromList(list!);
-
-      this.setState({
-        loadingList: false,
-        list,
-        deleteOnWatch: Boolean(
-          list?.configuration?.options?.removeWatchedItems,
-        ),
-        listFilters,
+  const handleRenameList = () => {
+    if (userSelf) {
+      dispatchUpdateList({
+        listId: listId,
+        name: newListName,
       });
-    } else if (!_.isEqual(list, prevState.list)) {
-      // Detect deep object inequality
-      this.setState({ list: list });
     }
-  }
 
-  setVisibleItems = () => {
-    this.setState({
-      totalLoadedImages: this.state.totalLoadedImages + 1,
-    });
+    setRenameDialogOpen(false);
   };
 
-  setWatchedSetting = () => {
-    let { updateList } = this.props;
-    let { deleteOnWatch, list } = this.state;
+  const handleRenameChange = event => {
+    setNewListName(event.target.value);
+  };
 
+  //
+  // Effects
+  //
+
+  useEffect(() => {
+    if (!filterParamsEqual(previousFilters, filters)) {
+      updateUrlParamsForNextRouter(router, filters, [], listFilters);
+
+      retrieveList(false);
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    retrieveList(true);
+  }, [listId]);
+
+  //
+  // State updaters
+  //
+
+  const setVisibleItems = useCallback(() => {
+    setTotalLoadedImages(prev => prev + 1);
+  }, []);
+
+  const handleMenu = event => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(undefined);
+  };
+
+  const setWatchedSetting = () => {
     if (list) {
       let listOptions = getOrInitListOptions(list);
       let newListOptions = {
@@ -465,205 +434,48 @@ class ListDetail extends Component<Props, State> {
         removeWatchedItems: !deleteOnWatch,
       };
 
-      updateList({
-        listId: this.listId,
+      dispatchUpdateList({
+        listId,
         options: newListOptions,
       });
 
-      this.setState({ deleteOnWatch: !deleteOnWatch });
+      setDeleteOnWatch(prev => !prev);
     }
   };
 
-  handleMigration = event => {
-    this.setState({ migrateListId: event.target.value });
+  const handleRenameModalOpen = () => {
+    handleClose();
+    setRenameDialogOpen(true);
   };
 
-  handleMenu = event => {
-    this.setState({ anchorEl: event.currentTarget });
+  const toggleFilters = () => {
+    setShowFilter(prev => !prev);
   };
 
-  handleClose = () => {
-    this.setState({ anchorEl: null });
-  };
-
-  handleDeleteList = () => {
-    let { deleteList, userSelf, router } = this.props;
-
-    if (userSelf) {
-      deleteList({
-        listId: this.listId,
-      });
-
-      this.setState({ deleted: true });
-    }
-    this.handleDeleteModalClose();
-  };
-
-  handleDeleteModalOpen = () => {
-    this.handleClose();
-    this.setState({ deleteConfirmationOpen: true });
-  };
-
-  handleDeleteModalClose = () => {
-    this.setState({ deleteConfirmationOpen: false });
-  };
-
-  handleRenameList = () => {
-    let { updateList, userSelf, router } = this.props;
-    let { newListName } = this.state;
-
-    if (userSelf) {
-      updateList({
-        listId: this.listId,
-        name: newListName,
-      });
-    }
-    this.handleRenameModalClose();
-  };
-
-  handleRenameModalOpen = () => {
-    this.handleClose();
-    this.setState({ renameDialogOpen: true });
-  };
-
-  handleRenameModalClose = () => {
-    this.setState({ renameDialogOpen: false });
-  };
-
-  handleRenameChange = event => {
-    this.setState({ newListName: event.target.value });
-  };
-
-  renderProfileMenu() {
-    if (!this.props.isAuthed) {
-      return null;
-    }
-
-    if (!this.currentList?.ownedByRequester) {
-      return null;
-    }
-
-    let { anchorEl } = this.state;
-    let isMenuOpen = !!anchorEl;
-
+  //
+  // Render
+  //
+  const renderLoadingCircle = () => {
     return (
-      <div>
-        <IconButton
-          aria-owns={isMenuOpen ? 'material-appbar' : undefined}
-          aria-haspopup="true"
-          color="inherit"
-          onClick={this.handleMenu}
-        >
-          <Settings />
-          <Typography variant="srOnly">Settings</Typography>
-        </IconButton>
-        <Menu
-          anchorEl={anchorEl}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          open={!!this.state.anchorEl}
-          onClose={this.handleClose}
-          disableAutoFocusItem
-        >
-          <MenuItem onClick={this.handleRenameModalOpen}>
-            <ListItemIcon>
-              <Edit />
-            </ListItemIcon>
-            Rename List
-          </MenuItem>
-          <MenuItem onClick={this.handleDeleteModalOpen}>
-            <ListItemIcon>
-              <Delete />
-            </ListItemIcon>
-            Delete List
-          </MenuItem>
-          <MenuItem>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={this.state.deleteOnWatch}
-                  onChange={this.setWatchedSetting}
-                  value="checkedB"
-                  color="primary"
-                />
-              }
-              label="Automatically remove items after watching"
-            />
-          </MenuItem>
-        </Menu>
+      <div className={classes.loadingCircle}>
+        <div>
+          <CircularProgress color="secondary" />
+        </div>
       </div>
     );
-  }
+  };
 
-  renderDialog() {
-    let { classes, userSelf, router } = this.props;
-    let { deleteConfirmationOpen, migrateListId } = this.state;
+  const renderNoContentMessage = (list: List) => {
+    if (list.totalItems > 0 && !listLoading) {
+      return 'Sorry, nothing matches your current filter.  Please update and try again.';
+    } else if (list.totalItems === 0 && !listLoading && !list.isDynamic) {
+      return 'Nothing has been added to this list yet.';
+    } else if (list.totalItems === 0 && !listLoading && list.isDynamic) {
+      return 'Nothing currently matches this Smart Lists filtering criteria';
+    }
+  };
 
-    return (
-      <div>
-        <Dialog
-          open={deleteConfirmationOpen}
-          onClose={this.handleDeleteModalClose}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title" className={classes.title}>
-            {`Delete "${this.state?.list?.name}" list?`}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              {`Are you sure you want to delete this list? There is no way to undo
-              this. ${
-                this.state.list && this.state.list.totalItems > 0
-                  ? 'All of the content from your list can be deleted or migrated to another list.'
-                  : ''
-              }`}
-            </DialogContentText>
-            {this.state.list && this.state.list.totalItems > 0 && (
-              <FormControl className={classes.formControl}>
-                <InputLabel htmlFor="age-simple">
-                  Migrate tracked items from this list to:
-                </InputLabel>
-                <Select value={migrateListId} onChange={this.handleMigration}>
-                  <MenuItem value="0">
-                    <em>Delete all tracked items</em>
-                  </MenuItem>
-                  {userSelf &&
-                    _.map(
-                      this.props.listsById,
-                      item =>
-                        item.id !== this.listId && (
-                          <MenuItem key={item.id} value={item.id}>
-                            {item.name}
-                          </MenuItem>
-                        ),
-                    )}
-                </Select>
-              </FormControl>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={this.handleDeleteModalClose} color="primary">
-              Cancel
-            </Button>
-            <Button
-              onClick={this.handleDeleteList}
-              color="primary"
-              variant="contained"
-              autoFocus
-            >
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </div>
-    );
-  }
-
-  renderRenameDialog(list: List) {
-    let { classes } = this.props;
-    let { renameDialogOpen } = this.state;
-
+  const renderRenameDialog = (list: List) => {
     if (!list) {
       return;
     }
@@ -672,12 +484,12 @@ class ListDetail extends Component<Props, State> {
       <div>
         <Dialog
           open={renameDialogOpen}
-          onClose={this.handleRenameModalClose}
+          onClose={() => setRenameDialogOpen(false)}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
         >
           <DialogTitle id="alert-dialog-title" className={classes.title}>
-            {`Update "${this.state?.list?.name}" List Name?`}
+            {`Update "${list?.name}" List Name?`}
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
@@ -689,14 +501,14 @@ class ListDetail extends Component<Props, State> {
                 defaultValue={list.name}
                 className={classes.textField}
                 margin="normal"
-                onChange={this.handleRenameChange}
+                onChange={handleRenameChange}
               />
             </FormControl>
           </DialogContent>
           <DialogActions>
-            <Button onClick={this.handleRenameModalClose}>Cancel</Button>
+            <Button onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
             <Button
-              onClick={this.handleRenameList}
+              onClick={handleRenameList}
               color="primary"
               variant="contained"
               autoFocus
@@ -707,119 +519,73 @@ class ListDetail extends Component<Props, State> {
         </Dialog>
       </div>
     );
-  }
-
-  renderLoading() {
-    return (
-      <div style={{ display: 'flex' }}>
-        <div style={{ flexGrow: 1 }}>
-          <LinearProgress />
-        </div>
-      </div>
-    );
-  }
-
-  toggleFilters = () => {
-    this.setState({ showFilter: !this.state.showFilter });
   };
 
-  handleFilterParamsChange = (filterParams: FilterParams) => {
-    if (!filterParamsEqual(this.state.filters, filterParams)) {
-      this.setState(
-        {
-          filters: filterParams,
-        },
-        () => {
-          updateUrlParamsForFilterRouter(
-            this.props,
-            filterParams,
-            [],
-            this.state.listFilters,
-          );
-          this.retrieveList(false);
-        },
-      );
+  const renderProfileMenu = () => {
+    if (!isLoggedIn) {
+      return null;
     }
-  };
 
-  loadMoreDebounced = _.debounce(() => {
-    let {
-      filters: { sortOrder, itemTypes, genresFilter, networks },
-    } = this.state;
-    let { listBookmark, width } = this.props;
-
-    this.props.retrieveList({
-      listId: this.listId,
-      bookmark: listBookmark,
-      limit: calculateLimit(width, 3),
-      sort: sortOrder,
-      itemTypes,
-      genres: genresFilter ? genresFilter : undefined,
-      networks: networks ? networks : undefined,
-    });
-  }, 200);
-
-  loadMoreList() {
-    const { list, totalLoadedImages } = this.state;
-    const { listBookmark, listLoading, width } = this.props;
-    const numColumns = getNumColumns(width);
-    const totalFetchedItems = (list && list.items && list.items.length) || 0;
-    const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
-    const loadMore = totalNonLoadedImages <= numColumns;
-
-    if (listBookmark && !listLoading && loadMore) {
-      this.loadMoreDebounced();
+    if (!list?.ownedByRequester) {
+      return null;
     }
-  }
 
-  renderLoadingCircle() {
-    const { classes } = this.props;
+    let isMenuOpen = !_.isUndefined(anchorEl);
+
     return (
-      <div className={classes.loadingCircle}>
-        <div>
-          <CircularProgress color="secondary" />
-        </div>
+      <div>
+        <IconButton
+          aria-owns={isMenuOpen ? 'material-appbar' : undefined}
+          aria-haspopup="true"
+          color="inherit"
+          onClick={handleMenu}
+        >
+          <Settings />
+          <Typography variant="srOnly">Settings</Typography>
+        </IconButton>
+        <Menu
+          anchorEl={anchorEl}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          open={isMenuOpen}
+          onClose={handleClose}
+          disableAutoFocusItem
+        >
+          <MenuItem onClick={handleRenameModalOpen}>
+            <ListItemIcon>
+              <Edit />
+            </ListItemIcon>
+            Rename List
+          </MenuItem>
+          <MenuItem onClick={() => setDeleteConfirmationOpen(true)}>
+            <ListItemIcon>
+              <Delete />
+            </ListItemIcon>
+            Delete List
+          </MenuItem>
+          <MenuItem>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={deleteOnWatch}
+                  onChange={setWatchedSetting}
+                  value="checkedB"
+                  color="primary"
+                />
+              }
+              label="Automatically remove items after watching"
+            />
+          </MenuItem>
+        </Menu>
       </div>
     );
-  }
+  };
 
-  renderNoContentMessage(list) {
-    if (list.totalItems > 0 && !this.props.listLoading) {
-      return 'Sorry, nothing matches your current filter.  Please update and try again.';
-    } else if (
-      list.totalItems === 0 &&
-      !this.props.listLoading &&
-      !list.isDynamic
-    ) {
-      return 'Nothing has been added to this list yet.';
-    } else if (
-      list.totalItems === 0 &&
-      !this.props.listLoading &&
-      list.isDynamic
-    ) {
-      return 'Nothing currently matches this Smart Lists filtering criteria';
-    }
-  }
-
-  renderListDetail(list: List) {
-    const {
-      classes,
-      genres,
-      listLoading,
-      thingsById,
-      userSelf,
-      router,
-    } = this.props;
-    const { deleted, showFilter, filters, listFilters } = this.state;
-
+  const renderListDetail = (list: List) => {
     if ((!listLoading && !list) || deleted) {
       router.replace('/');
     }
 
-    // if ((!listLoading && !list) || deleted) {
-    //   return <Redirect to="/" />;
-    // } else {
-    // }
     return (
       <div className={classes.root}>
         <div className={classes.listContainer}>
@@ -833,13 +599,13 @@ class ListDetail extends Component<Props, State> {
                 {list.name}
               </Typography>
             </div>
-            <ShowFiltersButton onClick={this.toggleFilters} />
-            {this.renderProfileMenu()}
+            <ShowFiltersButton onClick={toggleFilters} />
+            {renderProfileMenu()}
           </div>
           <div className={classes.filters}>
             <ActiveFilters
               genres={genres}
-              updateFilters={this.handleFilterParamsChange}
+              updateFilters={handleFilterParamsChange}
               isListDynamic={list.isDynamic}
               filters={
                 isDefaultFilter(filters) && listFilters ? listFilters : filters
@@ -853,33 +619,33 @@ class ListDetail extends Component<Props, State> {
             filters={
               isDefaultFilter(filters) && listFilters ? listFilters : filters
             }
-            updateFilters={this.handleFilterParamsChange}
+            updateFilters={handleFilterParamsChange}
             open={showFilter}
             isListDynamic={list.isDynamic}
             listFilters={listFilters}
           />
           <InfiniteScroll
             pageStart={0}
-            loadMore={() => this.loadMoreList()}
-            hasMore={Boolean(this.props.listBookmark)}
+            loadMore={loadMoreList}
+            hasMore={!_.isUndefined(listBookmark)}
             useWindow
             threshold={300}
           >
             <Grid container spacing={2}>
-              {list && list.items && list.items.length > 0 ? (
-                list.items.map(item =>
-                  thingsById[item.id] ? (
+              {(list?.items?.length || 0) > 0 ? (
+                list?.items!.map(item => {
+                  return (
                     <ItemCard
                       key={item.id}
                       userSelf={userSelf}
-                      item={thingsById[item.id]}
+                      item={item}
                       listContext={list}
                       withActionButton
                       hoverDelete={!list.isDynamic}
-                      hasLoaded={this.setVisibleItems}
+                      hasLoaded={setVisibleItems}
                     />
-                  ) : null,
-                )
+                  );
+                })
               ) : (
                 <Typography
                   align="center"
@@ -887,60 +653,36 @@ class ListDetail extends Component<Props, State> {
                   display="block"
                   className={classes.noContent}
                 >
-                  {this.renderNoContentMessage(list)}
+                  {renderNoContentMessage(list)}
                 </Typography>
               )}
             </Grid>
-            {this.props.listLoading && this.renderLoadingCircle()}
+            {listLoading && renderLoadingCircle()}
           </InfiniteScroll>
         </div>
-        {this.renderDialog()}
-        {this.renderRenameDialog(list)}
+        <ListDetailDialog
+          list={list}
+          openDeleteConfirmation={deleteConfirmationOpen}
+        />
+        {renderRenameDialog(list)}
       </div>
     );
-  }
+  };
 
-  render() {
-    let { loading } = this.props;
-    let { list } = this.state;
+  const renderLoading = () => {
+    return (
+      <div style={{ display: 'flex' }}>
+        <div style={{ flexGrow: 1 }}>
+          <LinearProgress />
+        </div>
+      </div>
+    );
+  };
 
-    return !list || loading
-      ? this.renderLoading()
-      : this.renderListDetail(this.state.list!);
-  }
+  return !list ? renderLoading() : renderListDetail(list!);
 }
 
-const mapStateToProps: (
-  initialState: AppState,
-  props: NotOwnProps,
-) => (appState: AppState) => OwnProps = (initial, props) => appState => {
-  return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    listLoading: Boolean(appState.lists.loading[LIST_RETRIEVE_INITIATED]),
-    listsById: appState.lists.listsById,
-    thingsById: appState.itemDetail.thingsById,
-    genres: appState.metadata.genres,
-    networks: appState.metadata.networks,
-    loading: appState.metadata.metadataLoading,
-    listBookmark: appState.lists.currentBookmark,
-    personById: appState.people.peopleById,
-  };
-};
+// DEBUG only.
+// ListDetailF.whyDidYouRender = true;
 
-const mapDispatchToProps = (dispatch: Dispatch) =>
-  bindActionCreators(
-    {
-      retrieveList: ListRetrieveInitiated,
-      deleteList: deleteList,
-      updateList,
-    },
-    dispatch,
-  );
-
-export default withWidth()(
-  withUser(
-    withStyles(styles)(
-      withRouter(connect(mapStateToProps, mapDispatchToProps)(ListDetail)),
-    ),
-  ),
-);
+export default React.memo(ListDetail, _.isEqual);
