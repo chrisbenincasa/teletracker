@@ -1,21 +1,19 @@
-import React, { useEffect, useState, RefObject } from 'react';
+import React, { RefObject, useEffect, useState } from 'react';
 import {
   CardMedia,
   Fade,
   Grow,
   makeStyles,
-  useTheme,
   Theme,
   Typography,
+  useTheme,
 } from '@material-ui/core';
 import { Rating } from '@material-ui/lab';
 import RouterLink from 'next/link';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
-import ManageTracking from '../components/ManageTracking';
 import { ResponsiveImage } from './ResponsiveImage';
 import { Item } from '../types/v2/Item';
 import AddToListDialog from './Dialogs/AddToListDialog';
-import withUser, { WithUserProps } from './withUser';
 import {
   formatRuntime,
   getVoteAverage,
@@ -23,7 +21,7 @@ import {
   truncateText,
 } from '../utils/textHelper';
 import { hexToRGB } from '../utils/style-utils';
-import { useWithUser, useWithUserContext } from '../hooks/useWithUser';
+import { useWithUserContext } from '../hooks/useWithUser';
 import { AccessTime } from '@material-ui/icons';
 import _ from 'lodash';
 

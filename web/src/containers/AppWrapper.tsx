@@ -7,7 +7,9 @@ import Footer from '../components/Footer';
 import { connect } from 'react-redux';
 import { AppState } from '../reducers';
 import { useRouter } from 'next/router';
-import { WithUser } from '../hooks/useWithUser';
+import { useWithUserContext, WithUser } from '../hooks/useWithUser';
+import useStateSelector from '../hooks/useStateSelector';
+import _ from 'lodash';
 
 const useStyles = makeStyles((theme: Theme) => ({
   mainContent: {
@@ -30,15 +32,15 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  isAuthed: boolean;
-  isBooting: boolean;
   children: any;
 }
 
-function AppWrapper(props: Props) {
-  let [drawerOpen, setDrawerOpen] = useState(false);
-  let router = useRouter();
-  let classes = useStyles();
+export default function AppWrapper(props: Props) {
+  const isBooting = useStateSelector(state => state.startup.isBooting);
+  const isAuthed = useStateSelector(state => !_.isUndefined(state.auth.token));
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const router = useRouter();
+  const classes = useStyles();
 
   return (
     <div className={classes.root}>
@@ -50,7 +52,7 @@ function AppWrapper(props: Props) {
             showToolbarSearch={true}
           />
         </NoSsr>
-        {!props.isBooting ? (
+        {!isBooting ? (
           <div style={{ flexGrow: 1 }}>
             <Drawer
               open={drawerOpen}
@@ -70,17 +72,10 @@ function AppWrapper(props: Props) {
           <LinearProgress />
         )}
         {router.pathname.toLowerCase() === '/popular' ||
-        (props.isAuthed && router.pathname === '/') ? null : (
+        (isAuthed && router.pathname === '/') ? null : (
           <Footer />
         )}
       </WithUser>
     </div>
   );
 }
-
-export default connect((state: AppState) => {
-  return {
-    isAuthed: !!state.auth.token,
-    isBooting: state.startup.isBooting,
-  };
-})(AppWrapper);

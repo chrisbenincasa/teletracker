@@ -43,6 +43,7 @@ import useIntersectionObserver from '../hooks/useIntersectionObserver';
 import { useWidth } from '../hooks/useWidth';
 import { hexToRGB } from '../utils/style-utils';
 import { useDispatchAction } from '../hooks/useDispatchAction';
+import deepEq from 'dequal';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -185,6 +186,7 @@ interface Props {
 }
 
 function ItemCard(props: Props) {
+  // console.log('render');
   const classes = useStyles();
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
@@ -606,4 +608,6 @@ ItemCard.defaultProps = {
   hoverAddToList: true,
 };
 
-export default ItemCard;
+ItemCard.whyDidYouRender = true;
+
+export default React.memo(ItemCard, deepEq);

@@ -6,20 +6,15 @@ import {
   Grid,
   Hidden,
   LinearProgress,
+  makeStyles,
   Theme,
   Typography,
-  withStyles,
-  WithStyles,
-  withWidth,
 } from '@material-ui/core';
 import { ChevronLeft, ExpandLess, ExpandMore } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
-import { default as React } from 'react';
-import ReactGA from 'react-ga';
+import { default as React, useCallback, useEffect, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
-import { connect } from 'react-redux';
-import { bindActionCreators, Dispatch } from 'redux';
 import {
   personCreditsFetchInitiated,
   PersonCreditsFetchInitiatedPayload,
@@ -36,7 +31,6 @@ import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ItemCard from '../components/ItemCard';
 import ManageTrackingButton from '../components/Buttons/ManageTrackingButton';
 import { ResponsiveImage } from '../components/ResponsiveImage';
-import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { Genre, Network } from '../types';
 import { Item } from '../types/v2/Item';
@@ -46,10 +40,22 @@ import { collect, extractValue } from '../utils/collection-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import qs from 'querystring';
-import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
 import ShareButton from '../components/Buttons/ShareButton';
+import { useStateDeepEq } from '../hooks/useStateDeepEq';
+import { useRouter } from 'next/router';
+import { useWithUserContext } from '../hooks/useWithUser';
+import { useDispatchAction } from '../hooks/useDispatchAction';
+import useStateSelector, {
+  useStateSelectorWithPrevious,
+} from '../hooks/useStateSelector';
+import { createSelector } from 'reselect';
+import dequal from 'dequal';
+import { useGenres, useNetworks } from '../hooks/useStateMetadata';
+import { useWidth } from '../hooks/useWidth';
+import { useDebouncedCallback } from 'use-debounce';
+import useToggleCallback from '../hooks/useToggleCallback';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     backdrop: {
       width: '100%',
@@ -189,7 +195,8 @@ const styles = (theme: Theme) =>
       textAlign: 'center',
       margin: theme.spacing(6),
     },
-  });
+  }),
+);
 
 interface OwnProps {
   preloaded?: boolean;
@@ -231,102 +238,241 @@ interface WidthProps {
   width: string;
 }
 
-type NotOwnProps = DispatchProps &
-  WithRouterProps &
-  WithStyles<typeof styles> &
-  WithUserProps &
-  WidthProps;
+// type NotOwnProps = DispatchProps &
+//   WithRouterProps &
+//   WithStyles<typeof styles> &
+//   WithUserProps &
+//   WidthProps;
 
-type Props = OwnProps & StateProps & NotOwnProps;
+// type Props = OwnProps & StateProps & NotOwnProps;
 
-class PersonDetail extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    let params = new URLSearchParams(qs.stringify(props.router.query));
+interface NewProps {
+  preloaded?: boolean;
+}
 
-    let needsFetch;
+const selectPerson = createSelector(
+  (state: AppState) => state.people.peopleById,
+  (state: AppState) => state.people.detail?.current,
+  (_, personId) => personId,
+  (peopleById, currentPerson, personId) => {
+    const person: Person | undefined =
+      peopleById[personId] || extractValue(personId, undefined, peopleById);
 
-    if (props.person) {
-      needsFetch =
-        _.isUndefined(props.person.cast_credit_ids) ||
-        props.person.cast_credit_ids.data.length === 0 ||
-        _.some(props.person.cast_credit_ids.data, creditId =>
-          _.isUndefined(props.itemById[creditId]),
-        );
-    } else {
-      needsFetch = true;
+    return person;
+  },
+);
+
+const selectCreditDetails = createSelector(
+  selectPerson,
+  (_, personId: string) => personId,
+  state => state.people.detail,
+  (person, personId, personDetail) => {
+    let loadedCreditsMatch = false;
+    if (person) {
+      loadedCreditsMatch =
+        personId === person.id ||
+        (person.slug ? personId === person.slug : false);
     }
 
-    let defaultFilterParams = {
-      ...DEFAULT_FILTER_PARAMS,
-      sortOrder: 'recent',
+    return {
+      credits:
+        personDetail && loadedCreditsMatch ? personDetail.credits : undefined,
+      creditsBookmark:
+        personDetail && loadedCreditsMatch ? personDetail.bookmark : undefined,
+      loadingCredits:
+        personDetail && loadedCreditsMatch ? personDetail.loading : false,
     };
+  },
+);
 
-    let filterParams = R.mergeDeepRight(
-      defaultFilterParams,
-      R.filter(R.compose(R.not, R.isNil))(
-        parseFilterParamsFromQs(qs.stringify(props.router.query)),
-      ),
-    ) as FilterParams;
+function PersonDetail(props: NewProps) {
+  const classes = useStyles();
+  const router = useRouter();
+  const width = useWidth();
+  const personId = router.query.id as string;
 
-    this.state = {
-      showFullBiography: false,
-      showFilter:
-        params.has('sort') ||
-        params.has('genres') ||
-        params.has('networks') ||
-        params.has('types'),
-      filters: filterParams,
-      needsFetch,
-      loadingCredits: false,
-      createPersonListDialogOpen: false,
-    };
-  }
+  let defaultFilterParams = {
+    ...DEFAULT_FILTER_PARAMS,
+    sortOrder: 'recent',
+  };
 
-  componentDidMount() {
-    const { isLoggedIn, userSelf, router } = this.props;
+  let filterParams = R.mergeDeepRight(
+    DEFAULT_FILTER_PARAMS,
+    R.filter(R.compose(R.not, R.isNil))(
+      parseFilterParamsFromQs(qs.stringify(router.query)),
+    ),
+  ) as FilterParams;
 
-    if (this.state.needsFetch) {
-      this.props.personFetchInitiated({
+  const [showFullBiography, setShowFullBiography] = useState(false);
+  // TODO: Is this right?
+  const [showFilter, setShowFilter] = useState(
+    _.some(
+      [
+        filterParams?.sortOrder,
+        filterParams?.genresFilter,
+        filterParams?.networks,
+        filterParams?.itemTypes,
+      ],
+      _.negate(_.isUndefined),
+    ),
+  );
+  const [filters, setFilters] = useStateDeepEq(filterParams, filterParamsEqual);
+  const [showLoadingCredits, setShowLoadingCredits] = useState(false);
+  const [createPersonListDialogOpen, setCreatePersonListDialogOpen] = useState(
+    false,
+  );
+  const [needsFetch, setNeedsFetch] = useState(false);
+  const userState = useWithUserContext();
+  const itemById = useStateSelector(
+    state => state.itemDetail.thingsById,
+    dequal,
+  );
+  const [person, prevPerson] = useStateSelectorWithPrevious(state =>
+    selectPerson(state, personId),
+  );
+  const [loadingPerson, prevLoadingPerson] = useStateSelectorWithPrevious(
+    state => state.people.loadingPeople,
+  );
+  const [
+    { credits, creditsBookmark, loadingCredits },
+    prevCreditsState,
+  ] = useStateSelectorWithPrevious(state =>
+    selectCreditDetails(state, personId),
+  );
+  const networks = useNetworks();
+  const genres = useGenres();
+
+  let dispatchPersonFetch = useDispatchAction(personFetchInitiated);
+  let dispatchCreditsFetch = useDispatchAction(personCreditsFetchInitiated);
+
+  //
+  // Effects
+  //
+
+  // When the component is mounted, determine if we need a refetch of the person
+  // due to missing filmography data from previous fetches.
+  useEffect(() => {
+    if (person) {
+      let reallyNeedsFetch =
+        _.isUndefined(person.cast_credit_ids) ||
+        person.cast_credit_ids.data.length === 0 ||
+        _.some(person.cast_credit_ids.data, creditId =>
+          _.isUndefined(itemById[creditId]),
+        );
+      setNeedsFetch(reallyNeedsFetch);
+    } else {
+      setNeedsFetch(true);
+    }
+  }, []);
+
+  // Re-fetch the person when the needsFetch flag is turned to true.
+  useEffect(() => {
+    if (needsFetch) {
+      dispatchPersonFetch({
         id: router.query.id as string,
         forDetailPage: true,
       });
     }
+  }, [needsFetch]);
 
-    ReactGA.pageview(window.location.pathname + window.location.search);
-
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
+  // Turn off needsFetch is a re-fetch completed.
+  useEffect(() => {
+    if ((!prevPerson && person) || (prevLoadingPerson && !loadingPerson)) {
+      setNeedsFetch(false);
     }
-  }
+  }, [person, loadingPerson]);
 
-  componentDidUpdate(prevProps: Readonly<Props>): void {
-    if (
-      (!prevProps.person && this.props.person) ||
-      (prevProps.loadingPerson && !this.props.loadingPerson)
-    ) {
-      this.setState({
-        needsFetch: false,
-      });
+  // Turn off the credits loading indicator when credits were fetched.
+  useEffect(() => {
+    if (Boolean(prevCreditsState?.loadingCredits) && !loadingCredits) {
+      setShowLoadingCredits(false);
     }
+  }, [loadingCredits]);
 
-    if (prevProps.loadingCredits && !this.props.loadingCredits) {
-      this.setState({
-        loadingCredits: false,
-      });
-    }
-  }
-
-  showFullBiography = () => {
-    this.setState({ showFullBiography: !this.state.showFullBiography });
+  const loadCredits = (
+    person: Person,
+    filters: FilterParams,
+    creditsBookmark: string | undefined,
+  ) => {
+    dispatchCreditsFetch({
+      personId: person!.id,
+      filterParams: filters,
+      limit: 18, // TODO: use calculateLimit
+      bookmark: creditsBookmark,
+    });
   };
 
-  renderLoading = () => {
+  // Reload credits when the filters change.
+  useEffect(() => {
+    setShowLoadingCredits(true);
+    loadCredits(person, filters, undefined);
+  }, [filters]);
+
+  // Infinite scroll callback on credits.
+  const [loadMoreResults] = useDebouncedCallback(
+    (
+      person,
+      filters,
+      credits,
+      creditsBookmark,
+      loadingCredits,
+      showLoadingCredits,
+    ) => {
+      if (
+        (_.isUndefined(credits) || !_.isUndefined(creditsBookmark)) &&
+        !loadingCredits &&
+        !showLoadingCredits
+      ) {
+        setShowLoadingCredits(true);
+        loadCredits(person, filters, creditsBookmark);
+      }
+    },
+    100,
+  );
+
+  const toggleFilters = useToggleCallback(setShowFilter);
+  const toggleShowFullBio = useToggleCallback(setShowFullBiography);
+
+  //
+  // Biz Logic
+  //
+
+  const openCreateListDialog = useCallback(() => {
+    setCreatePersonListDialogOpen(true);
+  }, []);
+
+  const closeCreateListDialog = useCallback(() => {
+    setCreatePersonListDialogOpen(false);
+  }, []);
+
+  const handleFilterParamsChange = (filterParams: FilterParams) => {
+    if (!filterParamsEqual(filters, filterParams)) {
+      setFilters(filterParams);
+    }
+  };
+
+  const personFiltersForCreateDialog = useCallback(() => {
+    return {
+      ...DEFAULT_FILTER_PARAMS,
+      people: [person!.canonical_id],
+    } as FilterParams;
+  }, [person]);
+
+  //
+  // Render
+  //
+
+  const renderLoadingCircle = () => {
+    return (
+      <div className={classes.loadingCircle}>
+        <div>
+          <CircularProgress color="secondary" />
+        </div>
+      </div>
+    );
+  };
+
+  const renderLoading = () => {
     return (
       <div style={{ flexGrow: 1 }}>
         <LinearProgress />
@@ -334,8 +480,7 @@ class PersonDetail extends React.Component<Props, State> {
     );
   };
 
-  renderTitle = (person: Person) => {
-    const { classes } = this.props;
+  const renderTitle = (person: Person) => {
     return (
       <div className={classes.titleContainer}>
         <Typography
@@ -350,95 +495,7 @@ class PersonDetail extends React.Component<Props, State> {
     );
   };
 
-  toggleFilters = () => {
-    this.setState({ showFilter: !this.state.showFilter });
-  };
-
-  loadCredits = () => {
-    this.setState(
-      {
-        loadingCredits: true,
-      },
-      () => {
-        this.props.fetchPersonCredits({
-          personId: this.props.person!.id,
-          filterParams: this.state.filters,
-          limit: 18, // Use calculateLimit
-          bookmark: this.props.creditsBookmark,
-        });
-      },
-    );
-  };
-
-  loadMoreResults = _.debounce((props: Props, state: State) => {
-    if (
-      (_.isUndefined(props.credits) || !_.isUndefined(props.creditsBookmark)) &&
-      !props.loadingCredits &&
-      !state.loadingCredits
-    ) {
-      this.loadCredits();
-    }
-  }, 100);
-
-  handleFilterParamsChange = (filterParams: FilterParams) => {
-    if (!filterParamsEqual(this.state.filters, filterParams)) {
-      this.setState(
-        {
-          filters: filterParams,
-        },
-        () => {
-          this.loadCredits();
-        },
-      );
-    }
-  };
-
-  personFiltersForCreateDialog = (): FilterParams => {
-    return {
-      ...DEFAULT_FILTER_PARAMS,
-      people: [this.props.person!.canonical_id],
-    };
-  };
-
-  creditFiltersForCreateDialog = (): FilterParams => {
-    return {
-      ...this.state.filters,
-      people: [
-        ...(this.state.filters.people || []),
-        this.props.person!.canonical_id,
-      ],
-    };
-  };
-
-  createListForPerson = () => {
-    this.setState({
-      createPersonListDialogOpen: true,
-    });
-  };
-
-  handleCreateDynamicModalClose = () => {
-    this.setState({
-      createPersonListDialogOpen: false,
-    });
-  };
-
-  renderLoadingCircle() {
-    const { classes } = this.props;
-    return (
-      <div className={classes.loadingCircle}>
-        <div>
-          <CircularProgress color="secondary" />
-        </div>
-      </div>
-    );
-  }
-
-  renderFilmography = () => {
-    const { classes, genres, person, userSelf, credits, itemById } = this.props;
-    const {
-      filters: { genresFilter, itemTypes, sortOrder },
-    } = this.state;
-
+  const renderFilmography = () => {
     let filmography: Item[];
     if (credits) {
       filmography = collect(credits, id => itemById[id]);
@@ -456,51 +513,59 @@ class PersonDetail extends React.Component<Props, State> {
               Filmography
             </Typography>
           </div>
-          <ShowFiltersButton onClick={this.toggleFilters} />
+          <ShowFiltersButton onClick={toggleFilters} />
         </div>
         <div className={classes.filters}>
           <ActiveFilters
             genres={genres}
-            updateFilters={this.handleFilterParamsChange}
-            filters={this.state.filters}
+            updateFilters={handleFilterParamsChange}
+            filters={filters}
             isListDynamic={false}
             variant="default"
           />
         </div>
         <AllFilters
           genres={genres}
-          open={this.state.showFilter}
-          filters={this.state.filters}
-          updateFilters={this.handleFilterParamsChange}
-          networks={this.props.networks}
+          open={showFilter}
+          filters={filters}
+          updateFilters={handleFilterParamsChange}
+          networks={networks}
           isListDynamic={false}
-          prefilledName={this.props.person!.name}
+          prefilledName={person!.name}
           disableStarring
         />
 
         <InfiniteScroll
           pageStart={0}
           loadMore={() =>
-            this.loadMoreResults({ ...this.props }, { ...this.state })
+            loadMoreResults(
+              person,
+              filters,
+              credits,
+              creditsBookmark,
+              loadingCredits,
+              showLoadingCredits,
+            )
           }
           useWindow
-          hasMore={
-            _.isUndefined(this.props.credits) ||
-            !_.isUndefined(this.props.creditsBookmark)
-          }
+          hasMore={_.isUndefined(credits) || !_.isUndefined(creditsBookmark)}
           threshold={300}
         >
           <React.Fragment>
             <Grid container spacing={2}>
               {filmography.map(item =>
                 item && item.posterImage ? (
-                  <ItemCard key={item.id} userSelf={userSelf} item={item} />
+                  <ItemCard
+                    key={item.id}
+                    userSelf={userState.userSelf}
+                    item={item}
+                  />
                 ) : null,
               )}
             </Grid>
-            {this.props.loadingCredits && this.renderLoadingCircle()}
-            {!this.props.credits ||
-              (!Boolean(this.props.creditsBookmark) && (
+            {loadingCredits && renderLoadingCircle()}
+            {!credits ||
+              (!Boolean(creditsBookmark) && (
                 <Typography className={classes.fin}>fin.</Typography>
               ))}
           </React.Fragment>
@@ -509,9 +574,7 @@ class PersonDetail extends React.Component<Props, State> {
     );
   };
 
-  renderDescriptiveDetails = (person: Person) => {
-    const { classes, width } = this.props;
-    const { showFullBiography } = this.state;
+  const renderDescriptiveDetails = (person: Person) => {
     const biography = person.biography || '';
     const isMobile = ['xs', 'sm'].includes(width);
     const truncateSize = isMobile ? 300 : 1200;
@@ -540,7 +603,7 @@ class PersonDetail extends React.Component<Props, State> {
             color: '#fff',
           }}
         >
-          <Hidden smDown>{this.renderTitle(person)}</Hidden>
+          <Hidden smDown>{renderTitle(person)}</Hidden>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Typography color="inherit" variant="h5" className={classes.header}>
@@ -552,7 +615,7 @@ class PersonDetail extends React.Component<Props, State> {
               size="small"
               variant="contained"
               aria-label={showFullBiography ? 'Read Less' : 'Read More'}
-              onClick={this.showFullBiography}
+              onClick={toggleShowFullBio}
               style={{ marginTop: 5, display: 'flex', alignSelf: 'center' }}
             >
               {showFullBiography ? (
@@ -568,19 +631,15 @@ class PersonDetail extends React.Component<Props, State> {
     );
   };
 
-  renderPerson() {
-    let { classes, person, loadingPerson, width } = this.props;
-    let { needsFetch, createPersonListDialogOpen } = this.state;
-
+  const renderPerson = () => {
     if (!person || loadingPerson || needsFetch) {
-      return this.renderLoading();
+      return renderLoading();
     }
-    console.log(person, loadingPerson, needsFetch);
 
     const isMobile = ['xs', 'sm'].includes(width);
     const backdrop = person?.cast_credit_ids?.data
       .map(itemId => {
-        let item = this.props.itemById[itemId];
+        let item = itemById[itemId];
         if (item?.backdropImage) {
           return item;
         }
@@ -621,7 +680,7 @@ class PersonDetail extends React.Component<Props, State> {
                 {!isMobile && (
                   <Button
                     size="small"
-                    onClick={this.props.router.back}
+                    onClick={router.back}
                     variant="contained"
                     aria-label="Go Back"
                     style={{ marginTop: 20, marginLeft: 20 }}
@@ -632,7 +691,7 @@ class PersonDetail extends React.Component<Props, State> {
                 )}
                 <div className={classes.personDetailContainer}>
                   <div className={classes.leftContainer}>
-                    <Hidden mdUp>{this.renderTitle(person)}</Hidden>
+                    <Hidden mdUp>{renderTitle(person)}</Hidden>
                     <div className={classes.posterContainer}>
                       <CardMedia
                         src={imagePlaceholder}
@@ -647,7 +706,7 @@ class PersonDetail extends React.Component<Props, State> {
                       <div className={classes.trackingButton}>
                         <ManageTrackingButton
                           cta={'Track Actor'}
-                          onClick={this.createListForPerson}
+                          onClick={openCreateListDialog}
                         />
                       </div>
                       <div className={classes.trackingButton}>
@@ -660,86 +719,29 @@ class PersonDetail extends React.Component<Props, State> {
                     </div>
                   </div>
                   <div className={classes.personInformationContainer}>
-                    {this.renderDescriptiveDetails(person)}
-                    {this.renderFilmography()}
+                    {renderDescriptiveDetails(person)}
+                    {renderFilmography()}
                   </div>
                 </div>
               </div>
               <CreateDynamicListDialog
-                filters={this.personFiltersForCreateDialog()}
+                filters={personFiltersForCreateDialog()}
                 open={createPersonListDialogOpen}
-                onClose={this.handleCreateDynamicModalClose}
-                networks={this.props.networks || []}
-                genres={this.props.genres || []}
-                prefilledName={this.props.person!.name}
+                onClose={closeCreateListDialog}
+                networks={networks || []}
+                genres={genres || []}
+                prefilledName={person!.name}
               />
             </React.Fragment>
           )}
         </div>
       </React.Fragment>
     );
-  }
+  };
 
-  render() {
-    return <div>{this.renderPerson()}</div>;
-  }
+  return <div>{renderPerson()}</div>;
 }
 
-const mapStateToProps: (
-  initialState: AppState,
-  props: NotOwnProps,
-) => (appState: AppState) => StateProps = (initial, props) => appState => {
-  const id = props.router.query.id as string;
+// PersonDetailF.whyDidYouRender = true;
 
-  const person: Person | undefined =
-    appState.people.peopleById[id] ||
-    extractValue(id, undefined, appState.people.peopleById);
-
-  // Only populate current credits if the id/slug from the people.detail state
-  // matches the person id/slug we're currently trying to load
-  let loadedCreditsMatch = false;
-  if (person) {
-    loadedCreditsMatch =
-      appState.people.detail?.current === person.id ||
-      (person.slug ? appState.people.detail?.current === person.slug : false);
-  }
-
-  return {
-    isAuthed: !_.isUndefined(appState.auth.token),
-    person,
-    lists: appState.lists.listsById,
-    loadingPerson: appState.people.loadingPeople,
-    genres: appState.metadata.genres,
-    networks: appState.metadata.networks,
-    itemById: appState.itemDetail.thingsById,
-    credits:
-      appState.people.detail && loadedCreditsMatch
-        ? appState.people.detail.credits
-        : undefined,
-    creditsBookmark:
-      appState.people.detail && loadedCreditsMatch
-        ? appState.people.detail.bookmark
-        : undefined,
-    loadingCredits:
-      appState.people.detail && loadedCreditsMatch
-        ? appState.people.detail.loading
-        : false,
-  };
-};
-
-const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch =>
-  bindActionCreators(
-    {
-      personFetchInitiated,
-      fetchPersonCredits: personCreditsFetchInitiated,
-    },
-    dispatch,
-  );
-
-export default withWidth()(
-  withUser(
-    withStyles(styles)(
-      withRouter(connect(mapStateToProps, mapDispatchToProps)(PersonDetail)),
-    ),
-  ),
-);
+export default PersonDetail;
