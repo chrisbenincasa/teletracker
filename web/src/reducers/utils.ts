@@ -1,4 +1,5 @@
 import { FSA } from 'flux-standard-action';
+import dequal from 'dequal';
 
 type AllFSA = FSA<any, any, any>;
 
@@ -18,7 +19,8 @@ export function handleAction<Action extends AllFSA, State>(
       if (!action.type || action.type !== actionType) {
         return;
       } else {
-        return reducer(state, action as Action);
+        let newState = reducer(state, action as Action);
+        return dequal(state, newState) ? state : newState;
       }
     };
   };
