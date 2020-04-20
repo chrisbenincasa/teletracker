@@ -33,7 +33,6 @@ import {
   updateUserPreferences,
   UserUpdateNetworksPayload,
 } from '../actions/user';
-import { AutocompleteOption } from '../components/AutoComplete';
 import withUser, { WithUserProps } from '../components/withUser';
 import { AppState } from '../reducers';
 import { Network, UserPreferences } from '../types';
@@ -161,15 +160,6 @@ class Account extends Component<Props, State> {
       });
     }
   }
-
-  handleChange = (value: ValueType<AutocompleteOption<Network>>) => {
-    if (!R.isNil(value) && !R.is(Array, value)) {
-      this.props.updateNetworksForUser({
-        add: [(value as AutocompleteOption<Network>).value],
-        remove: [],
-      });
-    }
-  };
 
   handleClickItem = (network: Network) => {
     if (this.isSubscribedToNetwork(network)) {
