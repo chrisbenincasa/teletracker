@@ -1,6 +1,7 @@
 import { AppState } from '../reducers';
 import { useSelector } from 'react-redux';
 import { usePrevious } from './usePrevious';
+import { useDebugValue } from 'react';
 
 /**
  * Convenience wrapper around {@link useSelector} that adds our state type
@@ -11,8 +12,13 @@ import { usePrevious } from './usePrevious';
 export default function useStateSelector<Selected>(
   selector: (state: AppState) => Selected,
   equalityFn?: (left: Selected, right: Selected) => boolean,
+  name?: string,
 ): Selected {
-  return useSelector((state: AppState) => selector(state), equalityFn);
+  let value = useSelector((state: AppState) => selector(state), equalityFn);
+  if (name) {
+    useDebugValue(`${name}: ${value}`);
+  }
+  return value;
 }
 
 /**

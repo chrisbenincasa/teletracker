@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { UserSelf } from '../reducers/user';
 import { useDispatchAction } from './useDispatchAction';
 import { getUserSelf } from '../actions/user';
@@ -8,6 +8,7 @@ import useStateSelector, {
 } from './useStateSelector';
 import { useDebouncedCallback } from 'use-debounce';
 import _ from 'lodash';
+import useCustomCompareMemo from './useMemoCompare';
 
 export interface WithUserState {
   isCheckingAuth: boolean;
@@ -24,16 +25,19 @@ export const UserContext = createContext<WithUserState>({
 
 export const WithUser = ({ children }) => {
   const userState = useWithUser();
+  const memoedUserState = useCustomCompareMemo(
+    () => ({ ...userState }),
+    [userState],
+    _.isEqual,
+  );
   return (
-    <UserContext.Provider value={userState}>{children}</UserContext.Provider>
+    <UserContext.Provider value={memoedUserState}>
+      {children}
+    </UserContext.Provider>
   );
 };
 
-export function useWithUserContext(): WithUserState {
-  return useContext(UserContext);
-}
-
-export function useWithUser(): WithUserState {
+function useWithUser(): WithUserState {
   const [isCheckingAuth, wasCheckingAuth] = useStateSelectorWithPrevious(
     state => state.auth.checkingAuth,
   );
@@ -77,4 +81,8 @@ export function useWithUser(): WithUserState {
     userSelf,
     retrievingUser,
   };
+}
+
+export function useWithUserContext(): WithUserState {
+  return useContext(UserContext);
 }

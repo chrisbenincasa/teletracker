@@ -11,7 +11,7 @@ export interface Paging {
 export interface ApiList {
   id: string;
   name: string;
-  items: ApiItem[];
+  items?: ApiItem[];
   isDefault?: boolean;
   isDeleted?: boolean;
   isDynamic?: boolean;
@@ -26,7 +26,7 @@ export interface ApiList {
 export interface List {
   id: string;
   name: string;
-  items: Item[];
+  items?: Item[];
   isDefault?: boolean;
   isDeleted?: boolean;
   isDynamic?: boolean;
@@ -43,7 +43,7 @@ export class ListFactory {
   static create(list: ApiList): List {
     return {
       ...list,
-      items: list.items.map(ItemFactory.create),
+      items: (list.items || []).map(ItemFactory.create),
       relevantPeople: list.relevantPeople
         ? list.relevantPeople.map(PersonFactory.create)
         : undefined,
