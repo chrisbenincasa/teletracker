@@ -46,6 +46,7 @@ import { AppState } from '../../reducers';
 import { Genre as GenreModel } from '../../types';
 import { hexToRGB } from '../../utils/style-utils';
 import Search from './Search';
+import AuthDialog from '../Auth/AuthDialog';
 
 const styles = (theme: Theme) =>
   createStyles({
@@ -154,6 +155,7 @@ interface State {
   genreType: 'movie' | 'show' | null;
   isLoggedOut: boolean;
   mobileSearchBarOpen: boolean;
+  authDialogOpen: boolean;
 }
 
 interface MenuItemProps {
@@ -217,6 +219,7 @@ class Toolbar extends Component<Props, State> {
     genreType: null,
     isLoggedOut: true,
     mobileSearchBarOpen: false,
+    authDialogOpen: false,
   };
 
   get isSmallDevice() {
@@ -418,6 +421,9 @@ class Toolbar extends Component<Props, State> {
     this.setState({ mobileSearchBarOpen: false });
   };
 
+  openAuthDialog = () => this.setState({ authDialogOpen: true });
+  closeAuthDialog = () => this.setState({ authDialogOpen: false });
+
   showQuickSearch = (): boolean => {
     // No need to show quickSearch on the search page if the text is the same.
     // It would just show results that are already present on the page.
@@ -426,6 +432,118 @@ class Toolbar extends Component<Props, State> {
       this.props.router.pathname === '/search'
     );
   };
+
+  render() {
+    let { classes, drawerOpen, isAuthed } = this.props;
+    const { mobileSearchBarOpen } = this.state;
+
+    const ButtonLink = React.forwardRef((props: any, ref) => {
+      let { onClick, href, primary } = props;
+      return (
+        <a
+          href={href}
+          onClick={onClick}
+          ref={ref as RefObject<HTMLAnchorElement>}
+          {...props}
+        >
+          {primary}
+        </a>
+      );
+    });
+
+    return (
+      <React.Fragment>
+        <AppBar position="sticky">
+          <MUIToolbar variant="dense" disableGutters>
+            <IconButton
+              focusRipple={false}
+              onClick={() => this.toggleDrawer()}
+              color="inherit"
+            >
+              {drawerOpen ? <MenuOpen /> : <MenuIcon />}
+            </IconButton>
+            <Link href="/" passHref>
+              <Typography
+                variant="h6"
+                color="inherit"
+                component="a"
+                style={{ textDecoration: 'none' }}
+              >
+                Teletracker
+              </Typography>
+            </Link>
+            <div className={classes.grow}>
+              {!this.isSmallDevice && this.props.showToolbarSearch && (
+                <Fade in={true} timeout={500}>
+                  <Search
+                    drawerOpen={drawerOpen}
+                    onDrawerChange={this.toggleDrawer}
+                    quickSearchEnabled={this.showQuickSearch()}
+                  />
+                </Fade>
+              )}
+            </div>
+            <Hidden mdDown>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  marginRight: 24,
+                }}
+              >
+                {this.renderGenreMenu('show')}
+                {this.renderGenreMenu('movie')}
+              </div>
+            </Hidden>
+            <Box display={{ xs: 'none', sm: 'none' }} m={1}>
+              <ButtonLink
+                color="inherit"
+                primary="New, Arriving, &amp; Expiring"
+                to="/new"
+              />
+            </Box>
+
+            {!isAuthed && (
+              <Button
+                startIcon={
+                  ['xs', 'sm'].includes(this.props.width) ? null : <Person />
+                }
+                className={classes.loginButton}
+                onClick={this.openAuthDialog}
+              >
+                Login
+              </Button>
+            )}
+            {this.isSmallDevice &&
+              !mobileSearchBarOpen &&
+              this.props.showToolbarSearch && (
+                <div
+                  className={classes.sectionMobile}
+                  ref={this.mobileSearchIcon}
+                >
+                  <IconButton
+                    aria-owns={'Search Teletracker'}
+                    aria-haspopup="true"
+                    onClick={this.handleMobileSearchDisplayOpen}
+                    color="inherit"
+                    disableRipple
+                  >
+                    <SearchIcon />
+                  </IconButton>
+                </div>
+              )}
+            {this.isSmallDevice &&
+              mobileSearchBarOpen &&
+              this.renderMobileSearchBar()}
+          </MUIToolbar>
+        </AppBar>
+        <AuthDialog
+          open={this.state.authDialogOpen}
+          onClose={this.closeAuthDialog}
+        />
+      </React.Fragment>
+    );
+  }
 
   renderMobileSearchBar = () => {
     let { classes, drawerOpen } = this.props;
@@ -459,110 +577,6 @@ class Toolbar extends Component<Props, State> {
       </Slide>
     );
   };
-
-  render() {
-    let { classes, drawerOpen, isAuthed } = this.props;
-    const { mobileSearchBarOpen } = this.state;
-
-    const ButtonLink = React.forwardRef((props: any, ref) => {
-      let { onClick, href, primary } = props;
-      return (
-        <a
-          href={href}
-          onClick={onClick}
-          ref={ref as RefObject<HTMLAnchorElement>}
-          {...props}
-        >
-          {primary}
-        </a>
-      );
-    });
-
-    return (
-      <AppBar position="sticky">
-        <MUIToolbar variant="dense" disableGutters>
-          <IconButton
-            focusRipple={false}
-            onClick={() => this.toggleDrawer()}
-            color="inherit"
-          >
-            {drawerOpen ? <MenuOpen /> : <MenuIcon />}
-          </IconButton>
-          <Link href="/" passHref>
-            <Typography
-              variant="h6"
-              color="inherit"
-              component="a"
-              style={{ textDecoration: 'none' }}
-            >
-              Teletracker
-            </Typography>
-          </Link>
-          <div className={classes.grow}>
-            {!this.isSmallDevice && this.props.showToolbarSearch && (
-              <Fade in={true} timeout={500}>
-                <Search
-                  drawerOpen={drawerOpen}
-                  onDrawerChange={this.toggleDrawer}
-                  quickSearchEnabled={this.showQuickSearch()}
-                />
-              </Fade>
-            )}
-          </div>
-          <Hidden mdDown>
-            <div
-              style={{ display: 'flex', flexDirection: 'row', marginRight: 24 }}
-            >
-              {this.renderGenreMenu('show')}
-              {this.renderGenreMenu('movie')}
-            </div>
-          </Hidden>
-          <Box display={{ xs: 'none', sm: 'none' }} m={1}>
-            <ButtonLink
-              color="inherit"
-              primary="New, Arriving, &amp; Expiring"
-              to="/new"
-            />
-          </Box>
-
-          {!isAuthed && (
-            <Button
-              startIcon={
-                ['xs', 'sm'].includes(this.props.width) ? null : <Person />
-              }
-              className={classes.loginButton}
-              component={ButtonLink}
-              href="/login"
-              primary="Login"
-            >
-              Login
-            </Button>
-          )}
-          {this.isSmallDevice &&
-            !mobileSearchBarOpen &&
-            this.props.showToolbarSearch && (
-              <div
-                className={classes.sectionMobile}
-                ref={this.mobileSearchIcon}
-              >
-                <IconButton
-                  aria-owns={'Search Teletracker'}
-                  aria-haspopup="true"
-                  onClick={this.handleMobileSearchDisplayOpen}
-                  color="inherit"
-                  disableRipple
-                >
-                  <SearchIcon />
-                </IconButton>
-              </div>
-            )}
-          {this.isSmallDevice &&
-            mobileSearchBarOpen &&
-            this.renderMobileSearchBar()}
-        </MUIToolbar>
-      </AppBar>
-    );
-  }
 }
 
 const mapStateToProps = (appState: AppState) => {
