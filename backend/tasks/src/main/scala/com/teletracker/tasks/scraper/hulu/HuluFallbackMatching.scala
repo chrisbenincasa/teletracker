@@ -5,13 +5,8 @@ import com.teletracker.common.elasticsearch.ItemLookup
 import com.teletracker.common.http.{HttpClient, HttpClientOptions, HttpRequest}
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.tasks.scraper.matching.{
-  ElasticsearchExactTitleLookup,
-  ElasticsearchLookup,
-  ElasticsearchLookupBySlug
-}
-import com.teletracker.tasks.scraper.{model, IngestJobArgs}
 import com.teletracker.tasks.scraper.model.NonMatchResult
+import com.teletracker.tasks.scraper.{model, IngestJobArgs}
 import io.circe.parser.decode
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
@@ -19,8 +14,8 @@ import java.io.ByteArrayInputStream
 import java.net.URLEncoder
 import java.time.OffsetDateTime
 import java.util.zip.GZIPInputStream
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 
 class HuluFallbackMatching @Inject()(

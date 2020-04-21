@@ -17,7 +17,7 @@ import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
 import com.teletracker.tasks.TeletrackerTaskApp
 import com.teletracker.tasks.scraper.IngestJobParser.ParseMode
-import com.teletracker.tasks.scraper.matching.MatchMode
+import com.teletracker.tasks.scraper.matching.{LookupMethod}
 import com.teletracker.tasks.scraper.model.MatchResult
 import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
 import io.circe.generic.semiauto.deriveEncoder
@@ -82,7 +82,7 @@ abstract class IngestJob[T <: ScrapedItem](
     Set(PresentationType.SD, PresentationType.HD)
 
   protected def parseMode: ParseMode
-  protected def matchMode: MatchMode
+  protected def lookupMethod: LookupMethod[T]
 
   protected def processMode(args: IngestJobArgs): ProcessMode =
     Parallel(args.parallelism, args.perBatchSleepMs.map(_ millis))

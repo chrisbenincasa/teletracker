@@ -12,7 +12,7 @@ import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatching,
   ElasticsearchLookup,
-  MatchMode
+  LookupMethod
 }
 import com.teletracker.tasks.scraper.model.DisneyPlusCatalogItem
 import com.teletracker.tasks.scraper.{IngestJob, IngestJobArgs, IngestJobParser}
@@ -36,8 +36,8 @@ class IngestDisneyPlusCatalog @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def matchMode: MatchMode =
-    elasticsearchLookup
+  override protected def lookupMethod: LookupMethod[DisneyPlusCatalogItem] =
+    elasticsearchLookup.toMethod[DisneyPlusCatalogItem]
 
   override protected def outputLocation(
     args: IngestJobArgs,

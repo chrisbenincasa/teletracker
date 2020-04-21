@@ -11,7 +11,7 @@ import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatching,
   ElasticsearchLookup,
-  MatchMode
+  LookupMethod
 }
 import com.teletracker.tasks.scraper.{
   IngestJob,
@@ -43,7 +43,8 @@ class IngestHboChanges @Inject()(
 
   override protected def networkNames: Set[String] = Set("hbo-now", "hbo-go")
 
-  override protected def matchMode: MatchMode = elasticsearchLookup
+  override protected def lookupMethod: LookupMethod[HboScrapeItem] =
+    elasticsearchLookup.toMethod[HboScrapeItem]
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Eastern").getRules.getOffset(Instant.now())

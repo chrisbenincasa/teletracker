@@ -1,8 +1,11 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
+import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.{
   EsAvailability,
+  EsExternalId,
+  EsItem,
   ItemLookup,
   ItemUpdater
 }
@@ -11,11 +14,17 @@ import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.{Folds, NetworkCache}
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
-import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.matching.{
+  CustomElasticsearchLookup,
+  ElasticsearchExternalIdLookup,
+  ElasticsearchLookup,
+  LookupMethod
+}
 import com.teletracker.tasks.scraper.model.MatchResult
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Codec, Encoder}
+import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
 import java.util.UUID
@@ -82,15 +91,25 @@ abstract class IngestDeltaJobLike[
   implicit protected val execCtx =
     scala.concurrent.ExecutionContext.Implicits.global
 
+  @Inject
+  private[this] var externalIdLookup: ElasticsearchExternalIdLookup.Factory = _
+
   protected def s3: S3Client
   protected def itemLookup: ItemLookup
   protected def itemUpdater: ItemUpdater
 
   protected def networkNames: Set[String]
   protected def networkCache: NetworkCache
+  protected def externalSource: ExternalSource
 
   protected def parseMode: ParseMode = AllJson
-  protected def matchMode: MatchMode = elasticsearchLookup
+  protected def lookupMethod: LookupMethod[T] =
+    new CustomElasticsearchLookup[T](
+      List(
+        externalIdLookup.create[T](externalSource, uniqueKey),
+        elasticsearchLookup.toMethod[T]
+      )
+    )
 
   override protected def processMode(args: ArgsType): ProcessMode =
     Parallel(16, args.perBatchSleepMs.map(_ millis))
@@ -188,17 +207,18 @@ abstract class IngestDeltaJobLike[
       }
       .map {
         case MatchResult(scrapedItem, esItem) =>
-          esItem.id -> createAvailabilities(
+          val newAvailabilities = createAvailabilities(
             networks,
             esItem.id,
             esItem.title.get.headOption.orElse(esItem.original_title).get,
             scrapedItem,
             isAvailable = true
           )
+          PendingAvailabilityUpdates(esItem, scrapedItem, newAvailabilities)
       }
 
     logger.info(
-      s"Found ${newAvailabilities.flatMap(_._2).size} availabilities to add"
+      s"Found ${newAvailabilities.flatMap(_.availabilities).size} availabilities to add"
     )
 
     if (addedNotFound.nonEmpty) {
@@ -246,13 +266,15 @@ abstract class IngestDeltaJobLike[
       }
       .map {
         case MatchResult(scrapedItem, esItem) =>
-          esItem.id -> createAvailabilities(
+          val newAvailabilities = createAvailabilities(
             networks,
             esItem.id,
             esItem.title.get.headOption.orElse(esItem.original_title).get,
             scrapedItem,
             isAvailable = false
           )
+
+          PendingAvailabilityUpdates(esItem, scrapedItem, newAvailabilities)
       }
 
     if (beforeNotFound.nonEmpty) {
@@ -262,7 +284,7 @@ abstract class IngestDeltaJobLike[
     }
 
     logger.info(
-      s"Found ${removedAvailabilities.flatMap(_._2).size} availabilities to remove"
+      s"Found ${removedAvailabilities.flatMap(_.availabilities).size} availabilities to remove"
     )
 
     if (!parsedArgs.dryRun) {
@@ -272,28 +294,42 @@ abstract class IngestDeltaJobLike[
       saveAvailabilities(newAvailabilities, removedAvailabilities).await()
     } else {
       newAvailabilities.foreach(av => {
-        logger.info(s"Would've added availability: $av")
+        logger.info(
+          s"Would've added availability (ID: ${av.esItem.id}, external: ${uniqueKey(
+            av.item
+          )}, name: ${av.esItem.title.get.head}): ${av.availabilities}"
+        )
       })
 
       removedAvailabilities.foreach(av => {
-        logger.info(s"Would've removed availability: $av")
+        logger.info(
+          s"Would've removed availability (ID: ${av.esItem.id}, external: ${uniqueKey(
+            av.item
+          )}, name: ${av.esItem.title.get.head}): ${av.availabilities}"
+        )
       })
     }
   }
 
   protected def saveAvailabilities(
-    newAvailabilities: List[(UUID, List[EsAvailability])],
-    availabilitiesToRemove: List[(UUID, List[EsAvailability])]
+    newAvailabilities: List[PendingAvailabilityUpdates],
+    availabilitiesToRemove: List[PendingAvailabilityUpdates]
   ): Future[Unit] = {
+    val externalIdsById = (newAvailabilities ++ availabilitiesToRemove)
+      .map(update => {
+        update.esItem.id -> uniqueKey(update.item)
+      })
+      .toMap
+
     val newAvailabilityByThingId =
       newAvailabilities
-        .groupBy(_._1)
-        .mapValues(_.flatMap(_._2))
+        .groupBy(_.esItem.id)
+        .mapValues(_.flatMap(_.availabilities))
 
     val removalAvailabilityByThingId =
       availabilitiesToRemove
-        .groupBy(_._1)
-        .mapValues(_.flatMap(_._2))
+        .groupBy(_.esItem.id)
+        .mapValues(_.flatMap(_.availabilities))
 
     val allItemIds = newAvailabilityByThingId.keySet ++ removalAvailabilityByThingId.keySet
 
@@ -331,10 +367,24 @@ abstract class IngestDeltaJobLike[
                 newAvailabilities
             }
 
+            val existingExternalIds = item.rawItem.externalIdsGrouped
+            val newExternalIds = externalIdsById
+              .get(itemId)
+              .map(newExternalId => {
+                existingExternalIds.updated(externalSource, newExternalId)
+              })
+              .getOrElse(existingExternalIds)
+              .map {
+                case (source, id) => EsExternalId(source, id)
+              }
+
             itemUpdater
               .update(
                 item.rawItem
-                  .copy(availability = Some(availabilitiesToSave.toList))
+                  .copy(
+                    availability = Some(availabilitiesToSave.toList),
+                    external_ids = Some(newExternalIds.toList)
+                  )
               )
               .map(Some(_))
         }
@@ -377,4 +427,9 @@ abstract class IngestDeltaJobLike[
     networks: Set[StoredNetwork],
     args: ArgsType
   ): Future[Unit] = Future.unit
+
+  case class PendingAvailabilityUpdates(
+    esItem: EsItem,
+    item: T,
+    availabilities: List[EsAvailability])
 }

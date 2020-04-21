@@ -13,7 +13,7 @@ import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatcher,
   ElasticsearchFallbackMatcherOptions,
   ElasticsearchLookup,
-  MatchMode
+  LookupMethod
 }
 import com.teletracker.tasks.scraper.model.{
   NonMatchResult,
@@ -61,8 +61,8 @@ class IngestNetflixCatalog @Inject()(
 
   override protected def parseMode: ParseMode = JsonPerLine
 
-  override protected def matchMode: MatchMode =
-    elasticsearchLookup
+  override protected def lookupMethod: LookupMethod[NetflixCatalogItem] =
+    elasticsearchLookup.toMethod[NetflixCatalogItem]
 
   private val elasticsearchMatcherOptions =
     ElasticsearchFallbackMatcherOptions(

@@ -5,7 +5,7 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.elasticsearch.EsItem
 import com.teletracker.common.util.AsyncStream
-import com.teletracker.tasks.scraper.matching.MatchMode
+import com.teletracker.tasks.scraper.matching.LookupMethod
 import com.teletracker.tasks.scraper.model.{
   MatchResult,
   NonMatchResult,
@@ -79,7 +79,7 @@ abstract class BaseIngestJob[
     _artifacts += file
   }
 
-  protected def matchMode: MatchMode
+  protected def lookupMethod: LookupMethod[T]
 
   protected def processMode(args: IngestJobArgsType): ProcessMode
 
@@ -160,8 +160,8 @@ abstract class BaseIngestJob[
   ): Future[(List[MatchResult[T]], List[T])] = {
     val filteredAndSanitized = items.filter(shouldProcessItem).map(sanitizeItem)
     if (filteredAndSanitized.nonEmpty) {
-      matchMode
-        .lookup(
+      lookupMethod
+        .apply(
           filteredAndSanitized,
           args
         )

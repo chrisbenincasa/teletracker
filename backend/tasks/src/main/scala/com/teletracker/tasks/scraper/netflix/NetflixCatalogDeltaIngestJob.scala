@@ -1,7 +1,11 @@
 package com.teletracker.tasks.scraper.netflix
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.{OfferType, PresentationType}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  OfferType,
+  PresentationType
+}
 import com.teletracker.common.elasticsearch.{
   EsAvailability,
   ItemLookup,
@@ -35,7 +39,8 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory)
     extends IngestDeltaJob[NetflixCatalogItem](elasticsearchLookup) {
 
-  override protected def networkNames: Set[String] = Set("netflix")
+  override protected val networkNames: Set[String] = Set("netflix")
+  override protected val externalSource: ExternalSource = ExternalSource.Netflix
 
   private val elasticsearchMatcherOptions =
     ElasticsearchFallbackMatcherOptions(

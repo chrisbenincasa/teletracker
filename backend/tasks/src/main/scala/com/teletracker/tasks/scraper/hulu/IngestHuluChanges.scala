@@ -8,7 +8,10 @@ import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper._
-import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchLookup,
+  LookupMethod
+}
 import com.teletracker.tasks.scraper.model.NonMatchResult
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
@@ -22,8 +25,6 @@ class IngestHuluChanges @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  httpClient: HttpClient.Factory,
-  berglasDecoder: SecretResolver,
   elasticsearchLookup: ElasticsearchLookup,
   huluFallbackMatching: HuluFallbackMatching)
     extends IngestJob[HuluScrapeItem] {
@@ -37,8 +38,8 @@ class IngestHuluChanges @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def matchMode: MatchMode =
-    elasticsearchLookup
+  override protected def lookupMethod: LookupMethod[HuluScrapeItem] =
+    elasticsearchLookup.toMethod[HuluScrapeItem]
 
   override protected def handleNonMatches(
     args: IngestJobArgs,

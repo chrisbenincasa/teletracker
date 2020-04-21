@@ -14,7 +14,7 @@ import com.teletracker.tasks.scraper._
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatching,
   ElasticsearchLookup,
-  MatchMode
+  LookupMethod
 }
 import com.teletracker.tasks.scraper.model.{MatchResult, NonMatchResult}
 import io.circe.generic.JsonCodec
@@ -38,7 +38,8 @@ class IngestHboCatalog @Inject()(
 
   override protected def networkNames: Set[String] = Set("hbo-now", "hbo-go")
 
-  override protected def matchMode: MatchMode = elasticsearchLookup
+  override protected def lookupMethod: LookupMethod[HboCatalogItem] =
+    elasticsearchLookup.toMethod[HboCatalogItem]
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
@@ -73,8 +74,8 @@ class IngestHboCatalog @Inject()(
       )
       .toMap
 
-    matchMode
-      .lookup(originalByAmended.keys.toList, args)
+    lookupMethod
+      .apply(originalByAmended.keys.toList, args)
       .flatMap {
         case (matches, _) =>
           val amendedMatches = matches.map(_.scrapedItem)

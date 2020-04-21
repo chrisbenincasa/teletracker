@@ -10,7 +10,11 @@ import org.elasticsearch.action.delete.{DeleteRequest, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.support.WriteRequest
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
-import org.elasticsearch.common.xcontent.XContentType
+import org.elasticsearch.common.xcontent.{
+  ToXContent,
+  XContentHelper,
+  XContentType
+}
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.reindex.UpdateByQueryRequest
 import org.elasticsearch.script.{Script, ScriptType}
@@ -135,16 +139,33 @@ class ItemUpdater @Inject()(
     elasticsearchExecutor.index(indexRequest)
   }
 
+  def getInsertJson(item: EsItem): String = {
+    item.asJson.noSpaces
+  }
+
   def update(item: EsItem): Future[UpdateResponse] = {
-    val updateRequest = new UpdateRequest(
+    elasticsearchExecutor.update(getUpdateRequest(item))
+  }
+
+  def getUpdateJson(item: EsItem): String = {
+    XContentHelper
+      .toXContent(
+        getUpdateRequest(item),
+        XContentType.JSON,
+        ToXContent.EMPTY_PARAMS,
+        true
+      )
+      .utf8ToString
+  }
+
+  private def getUpdateRequest(item: EsItem) = {
+    new UpdateRequest(
       teletrackerConfig.elasticsearch.items_index_name,
       item.id.toString
     ).doc(
       item.asJson.noSpaces,
       XContentType.JSON
     )
-
-    elasticsearchExecutor.update(updateRequest)
   }
 
   def delete(id: UUID): Future[DeleteResponse] = {

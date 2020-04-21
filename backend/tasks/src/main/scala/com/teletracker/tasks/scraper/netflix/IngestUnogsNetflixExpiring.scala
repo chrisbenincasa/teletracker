@@ -5,7 +5,10 @@ import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.{ElasticsearchLookup, MatchMode}
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchLookup,
+  LookupMethod
+}
 import com.teletracker.tasks.scraper.{IngestJob, IngestJobParser, ScrapedItem}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
@@ -23,7 +26,8 @@ class IngestUnogsNetflixExpiring @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def matchMode: MatchMode = elasticsearchLookup
+  override protected def lookupMethod: LookupMethod[UnogsScrapeItem] =
+    elasticsearchLookup.toMethod[UnogsScrapeItem]
 }
 
 @JsonCodec

@@ -39,7 +39,8 @@ object MovieImportHandler {
     updated: Boolean,
     castNeedsDenorm: Boolean,
     crewNeedsDenorm: Boolean,
-    itemChanged: Boolean)
+    itemChanged: Boolean,
+    jsonResult: Option[String])
 }
 
 class MovieImportHandler @Inject()(
@@ -128,7 +129,8 @@ class MovieImportHandler @Inject()(
               updated = false,
               castNeedsDenorm = false,
               crewNeedsDenorm = false,
-              itemChanged = false
+              itemChanged = false,
+              jsonResult = None
             )
           )
 
@@ -327,12 +329,16 @@ class MovieImportHandler @Inject()(
 
       if (args.dryRun) {
         Future.successful {
-          if (itemChanged) {
+          val changeJson = if (itemChanged) {
             logger.info(
               s"Would've updated id = ${existingMovie.id}:\n${diff(existingMovie.asJson, updatedItem.asJson).asJson.spaces2}"
             )
+
+            None
           } else {
             logger.info(s"No-op on item ${existingMovie.id}")
+
+            Some(itemUpdater.getUpdateJson(updatedItem))
           }
 
           MovieImportResult(
@@ -341,7 +347,8 @@ class MovieImportHandler @Inject()(
             updated = false,
             castNeedsDenorm = castNeedsDenorm,
             crewNeedsDenorm = crewNeedsDenorm,
-            itemChanged = itemChanged
+            itemChanged = itemChanged,
+            jsonResult = changeJson
           )
         }
       } else if (itemChanged) {
@@ -354,7 +361,8 @@ class MovieImportHandler @Inject()(
               updated = true,
               castNeedsDenorm = castNeedsDenorm,
               crewNeedsDenorm = crewNeedsDenorm,
-              itemChanged = itemChanged
+              itemChanged = itemChanged,
+              jsonResult = Some(itemUpdater.getUpdateJson(updatedItem))
             )
           })
       } else {
@@ -366,7 +374,8 @@ class MovieImportHandler @Inject()(
             updated = false,
             castNeedsDenorm = castNeedsDenorm,
             crewNeedsDenorm = crewNeedsDenorm,
-            itemChanged = false
+            itemChanged = false,
+            jsonResult = None
           )
         }
       }
@@ -469,7 +478,8 @@ class MovieImportHandler @Inject()(
             updated = false,
             castNeedsDenorm = true,
             crewNeedsDenorm = true,
-            itemChanged = true
+            itemChanged = true,
+            jsonResult = Some(itemUpdater.getInsertJson(esItem))
           )
         }
       } else {
@@ -482,7 +492,8 @@ class MovieImportHandler @Inject()(
               updated = false,
               castNeedsDenorm = true,
               crewNeedsDenorm = true,
-              itemChanged = true
+              itemChanged = true,
+              jsonResult = Some(itemUpdater.getInsertJson(esItem))
             )
           })
       }

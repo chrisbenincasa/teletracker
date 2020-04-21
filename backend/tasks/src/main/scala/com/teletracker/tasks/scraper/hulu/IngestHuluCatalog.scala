@@ -13,7 +13,7 @@ import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatching,
   ElasticsearchLookup,
-  MatchMode
+  LookupMethod
 }
 import com.teletracker.tasks.scraper.{IngestJob, IngestJobParser, ScrapedItem}
 import io.circe.generic.JsonCodec
@@ -37,8 +37,8 @@ class IngestHuluCatalog @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def matchMode: MatchMode =
-    elasticsearchLookup
+  override protected def lookupMethod: LookupMethod[HuluCatalogItem] =
+    elasticsearchLookup.toMethod[HuluCatalogItem]
 
   override protected def shouldProcessItem(item: HuluCatalogItem): Boolean = {
     !item.title.toLowerCase().contains("en español") &&

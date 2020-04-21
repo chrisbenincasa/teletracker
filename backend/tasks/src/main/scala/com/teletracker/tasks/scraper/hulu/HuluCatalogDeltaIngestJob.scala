@@ -1,7 +1,11 @@
 package com.teletracker.tasks.scraper.hulu
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.{OfferType, PresentationType}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  OfferType,
+  PresentationType
+}
 import com.teletracker.common.elasticsearch.{
   EsAvailability,
   ItemLookup,
@@ -23,7 +27,8 @@ class HuluCatalogDeltaIngestJob @Inject()(
   elasticsearchLookup: ElasticsearchLookup)
     extends IngestDeltaJob[HuluCatalogItem](elasticsearchLookup) {
 
-  override protected def networkNames: Set[String] = Set("hulu")
+  override protected val networkNames: Set[String] = Set("hulu")
+  override protected val externalSource: ExternalSource = ExternalSource.Hulu
 
   override protected def createAvailabilities(
     networks: Set[StoredNetwork],
