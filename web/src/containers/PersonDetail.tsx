@@ -395,7 +395,7 @@ function PersonDetail(props: NewProps) {
     creditsBookmark: string | undefined,
   ) => {
     dispatchCreditsFetch({
-      personId: person!.id,
+      personId: person.id,
       filterParams: filters,
       limit: 18, // TODO: use calculateLimit
       bookmark: creditsBookmark,
@@ -405,7 +405,9 @@ function PersonDetail(props: NewProps) {
   // Reload credits when the filters change.
   useEffect(() => {
     setShowLoadingCredits(true);
-    loadCredits(person, filters, undefined);
+    if (person) {
+      loadCredits(person, filters, undefined);
+    }
   }, [filters]);
 
   // Infinite scroll callback on credits.
