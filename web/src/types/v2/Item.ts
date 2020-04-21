@@ -85,6 +85,16 @@ export const itemHasTag = (thing: ApiItem | Item, expectedTag: ActionType) => {
   return false;
 };
 
+export const getTagValue = (
+  item: ApiItem | Item,
+  expectedTag: ActionType,
+  key: string,
+) => {
+  return (item.tags || [])
+    .filter(tag => tag.tag.indexOf(expectedTag) !== -1)
+    .map(tag => tag[key]!)[0];
+};
+
 export const itemBelongsToLists = (item: ApiItem | Item) => {
   return (item.tags || [])
     .filter(tag => tag.tag.indexOf(ActionType.TrackedInList) !== -1)
