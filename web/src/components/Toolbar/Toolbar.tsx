@@ -1,15 +1,14 @@
-import React, { Component, RefObject } from 'react';
+import React, { MouseEvent, RefObject, useMemo, useRef, useState } from 'react';
 import {
   AppBar,
   Box,
   Button,
-  ClickAwayListener,
   createStyles,
   Divider,
   Fade,
   Hidden,
-  Icon,
   IconButton,
+  makeStyles,
   MenuItem,
   MenuList,
   Paper,
@@ -18,37 +17,28 @@ import {
   Theme,
   Toolbar as MUIToolbar,
   Typography,
-  WithStyles,
-  withStyles,
-  withWidth,
-  NoSsr,
 } from '@material-ui/core';
 import {
   ArrowDropDown,
   ArrowDropUp,
+  KeyboardArrowUp,
   Menu as MenuIcon,
+  MenuOpen,
   Person,
   Search as SearchIcon,
-  KeyboardArrowUp,
-  MenuOpen,
 } from '@material-ui/icons';
 import clsx from 'clsx';
-import _ from 'lodash';
-import * as R from 'ramda';
-import { connect } from 'react-redux';
-import { bindActionCreators, Dispatch } from 'redux';
-import { logout } from '../../actions/auth';
-import { search, SearchInitiatedPayload } from '../../actions/search';
 import Link from 'next/link';
-import { WithRouterProps } from 'next/dist/client/with-router';
-import { withRouter } from 'next/router';
-import { AppState } from '../../reducers';
-import { Genre as GenreModel } from '../../types';
+import { useRouter } from 'next/router';
 import { hexToRGB } from '../../utils/style-utils';
 import Search from './Search';
 import AuthDialog from '../Auth/AuthDialog';
+import { useWidth } from '../../hooks/useWidth';
+import useStateSelector from '../../hooks/useStateSelector';
+import { useWithUserContext } from '../../hooks/useWithUser';
+import { useGenres } from '../../hooks/useStateMetadata';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     appbar: {
       zIndex: theme.zIndex.drawer + 1,
@@ -128,35 +118,8 @@ const styles = (theme: Theme) =>
       marginRight: theme.spacing(2),
       width: '100%',
     },
-  });
-
-interface OwnProps extends WithStyles<typeof styles> {
-  genres?: GenreModel[];
-  isAuthed: boolean;
-  onDrawerChange: (close?: boolean) => void;
-  drawerOpen: boolean;
-  showToolbarSearch: boolean;
-  currentSearchText?: string;
-  currentQuickSearchText?: string;
-}
-
-interface WidthProps {
-  width: string;
-}
-
-interface DispatchProps {
-  logout: () => void;
-}
-
-type Props = DispatchProps & OwnProps & WithRouterProps & WidthProps;
-
-interface State {
-  genreAnchorEl: HTMLButtonElement | null;
-  genreType: 'movie' | 'show' | null;
-  isLoggedOut: boolean;
-  mobileSearchBarOpen: boolean;
-  authDialogOpen: boolean;
-}
+  }),
+);
 
 interface MenuItemProps {
   to: string;
@@ -198,94 +161,161 @@ const MenuItemLink = (props: MenuItemProps) => {
   );
 };
 
-class Toolbar extends Component<Props, State> {
-  private mobileSearchIcon: React.RefObject<HTMLDivElement>;
-  private genreShowContainerRef: React.RefObject<HTMLElement>;
-  private genreMovieContainerRef: React.RefObject<HTMLElement>;
-  private genreShowSpacerRef: React.RefObject<HTMLDivElement>;
-  private genreMovieSpacerRef: React.RefObject<HTMLDivElement>;
+interface Props {
+  drawerOpen: boolean;
+  showToolbarSearch: boolean;
+  onDrawerChange: (close?: boolean) => void;
+}
 
-  constructor(props) {
-    super(props);
-    this.mobileSearchIcon = React.createRef();
-    this.genreShowContainerRef = React.createRef();
-    this.genreMovieContainerRef = React.createRef();
-    this.genreShowSpacerRef = React.createRef();
-    this.genreMovieSpacerRef = React.createRef();
-  }
+export default function Toolbar(props: Props) {
+  const { drawerOpen, showToolbarSearch } = props;
+  const classes = useStyles();
+  const width = useWidth();
+  const router = useRouter();
+  const genres = useGenres();
 
-  state = {
-    genreAnchorEl: null,
-    genreType: null,
-    isLoggedOut: true,
-    mobileSearchBarOpen: false,
-    authDialogOpen: false,
+  const [mobileSearchBarOpen, setMobileSearchBarOpen] = useState(false);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [genreType, setGenreType] = useState<string | undefined>();
+
+  const genreMovieContainerRef = useRef<HTMLElement | null>(null);
+  const genreShowContainerRef = useRef<HTMLElement | null>(null);
+  const genreMovieSpacerRef = useRef<HTMLDivElement | null>(null);
+  const genreShowSpacerRef = useRef<HTMLDivElement | null>(null);
+  const mobileSearchIcon = useRef<HTMLDivElement | null>(null);
+  const genreAnchorEl = useRef<HTMLButtonElement | null>(null);
+
+  const currentSearchText = useStateSelector(
+    state => state.search.currentSearchText,
+  );
+  const currentQuickSearchText = useStateSelector(
+    state => state.search.quick.currentSearchText,
+  );
+
+  const { isLoggedIn } = useWithUserContext();
+
+  const isSmallDevice = useMemo(() => {
+    return ['xs', 'sm', 'md'].includes(width);
+  }, [width]);
+
+  const isSuperSmallDevice = useMemo(() => {
+    return ['xs', 'sm'].includes(width);
+  }, [width]);
+
+  const showQuickSearch = useMemo(() => {
+    // No need to show quickSearch on the search page if the text is the same.
+    // It would just show results that are already present on the page.
+    return !(
+      currentQuickSearchText === currentSearchText &&
+      router.pathname === '/search'
+    );
+  }, [currentQuickSearchText, currentSearchText, router]);
+
+  const fireOnDrawerChange = (close?: boolean) => {
+    props.onDrawerChange(close);
   };
 
-  get isSmallDevice() {
-    return ['xs', 'sm', 'md'].includes(this.props.width);
-  }
+  const openAuthDialog = () => setAuthDialogOpen(true);
+  const closeAuthDialog = () => setAuthDialogOpen(false);
 
-  handleGenreMenu = (event, type: 'movie' | 'show' | null) => {
+  const handleMobileSearchDisplayOpen = () => {
+    fireOnDrawerChange(true);
+    setMobileSearchBarOpen(true);
+  };
+
+  const handleMobileSearchDisplayClose = () => {
+    setMobileSearchBarOpen(false);
+  };
+
+  const handleGenreMenuClose = () => {
+    if (drawerOpen) {
+      props.onDrawerChange();
+    }
+
+    genreAnchorEl.current = null;
+    setGenreType(undefined);
+  };
+
+  const handleGenreMenu = (
+    event: MouseEvent<HTMLButtonElement>,
+    type: 'movie' | 'show' | undefined,
+  ) => {
     // If quick search is open, close it & move focus to button
     //TODO this.resetSearchAnchor(event);
-    event.target.focus();
+    // event.target?.focus();
+    event.currentTarget.focus();
 
     // If user is on smaller device, go directly to page
-    if (this.isSmallDevice) {
-      this.props.router.push(`popular?type=${type}`);
+    if (isSmallDevice) {
+      router.push(`popular?type=${type}`);
       return;
     }
+
     // If Genre menu is already open and user is not navigating to submenu, close it
     // event.relatedTarget is target element in a mouseEnter/mouseExit event
 
     if (
-      this.state.genreType === type &&
-      event.relatedTarget !==
-        this.genreMovieContainerRef!.current!.firstChild &&
-      event.relatedTarget !== this.genreShowContainerRef!.current!.firstChild &&
-      event.relatedTarget !== this.genreShowSpacerRef!.current! &&
-      event.relatedTarget !== this.genreMovieSpacerRef!.current!
+      genreType === type &&
+      event.relatedTarget !== genreMovieContainerRef?.current?.firstChild &&
+      event.relatedTarget !== genreShowContainerRef?.current?.firstChild &&
+      event.relatedTarget !== genreShowSpacerRef?.current &&
+      event.relatedTarget !== genreMovieSpacerRef?.current
     ) {
-      this.setState({
-        genreAnchorEl: null,
-        genreType: null,
-      });
+      genreAnchorEl.current = null;
+      setGenreType(undefined);
       return;
     }
-    this.setState({
-      genreAnchorEl: event.currentTarget,
-      genreType: type,
-    });
+
+    genreAnchorEl.current = event.currentTarget;
+    setGenreType(type);
   };
 
-  handleGenreMenuClose = event => {
-    if (this.props.drawerOpen) {
-      this.props.onDrawerChange();
-    }
+  const ButtonLink = React.forwardRef((props: any, ref) => {
+    let { onClick, href, primary } = props;
+    return (
+      <a
+        href={href}
+        onClick={onClick}
+        ref={ref as RefObject<HTMLAnchorElement>}
+        {...props}
+      >
+        {primary}
+      </a>
+    );
+  });
 
-    this.setState({
-      genreAnchorEl: null,
-      genreType: null,
-    });
+  const renderMobileSearchBar = () => {
+    return (
+      <Slide
+        direction="down"
+        in={mobileSearchBarOpen}
+        timeout={100}
+        mountOnEnter
+      >
+        <div
+          className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
+        >
+          <IconButton
+            onClick={handleMobileSearchDisplayClose}
+            color="inherit"
+            size="small"
+            className={classes.mobileSearchIcon}
+          >
+            <KeyboardArrowUp />
+          </IconButton>
+          <div className={classes.searchMobile}>
+            <Search
+              drawerOpen={drawerOpen}
+              onDrawerChange={fireOnDrawerChange}
+              quickSearchEnabled={showQuickSearch}
+            />
+          </div>
+        </div>
+      </Slide>
+    );
   };
 
-  handleLogout = () => {
-    this.toggleDrawer(true);
-    this.props.logout();
-    this.setState({
-      isLoggedOut: true,
-    });
-  };
-
-  toggleDrawer = (close?: boolean) => {
-    this.props.onDrawerChange(close);
-  };
-
-  renderGenreMenu(type: 'movie' | 'show') {
-    const { classes, genres } = this.props;
-    const { genreAnchorEl } = this.state;
-
+  const renderGenreMenu = (type: 'movie' | 'show') => {
     // Todo: support 'show' in genre types
     const filteredGenres =
       (genres &&
@@ -300,13 +330,13 @@ class Toolbar extends Component<Props, State> {
           <Button
             aria-controls="genre-menu"
             aria-haspopup="true"
-            onClick={event => this.handleGenreMenu(event, type)}
-            onMouseEnter={event => this.handleGenreMenu(event, type)}
-            onMouseLeave={event => this.handleGenreMenu(event, type)}
+            onClick={event => handleGenreMenu(event, type)}
+            onMouseEnter={event => handleGenreMenu(event, type)}
+            onMouseLeave={event => handleGenreMenu(event, type)}
             color="inherit"
             focusRipple={false}
             endIcon={
-              this.isSmallDevice ? null : this.state.genreType === type ? (
+              isSmallDevice ? null : genreType === type ? (
                 <ArrowDropUp />
               ) : (
                 <ArrowDropDown />
@@ -314,18 +344,14 @@ class Toolbar extends Component<Props, State> {
             }
           >
             {type === 'show'
-              ? this.isSmallDevice
+              ? isSmallDevice
                 ? 'Shows'
                 : 'TV Shows'
               : 'Movies'}
           </Button>
-          {this.state.genreType === type && (
+          {genreType === type && (
             <div
-              ref={
-                type === 'show'
-                  ? this.genreShowSpacerRef
-                  : this.genreMovieSpacerRef
-              }
+              ref={type === 'show' ? genreShowSpacerRef : genreMovieSpacerRef}
               style={{
                 position: 'absolute',
                 bottom: -15,
@@ -336,28 +362,28 @@ class Toolbar extends Component<Props, State> {
           )}
         </div>
         <Popper
-          open={Boolean(this.state.genreType === type)}
-          anchorEl={genreAnchorEl}
+          open={Boolean(genreType === type)}
+          anchorEl={genreAnchorEl.current}
           placement="bottom-end"
           keepMounted
           transition
           style={{
-            display: Boolean(this.state.genreType === type) ? 'block' : 'none',
+            display: Boolean(genreType === type) ? 'block' : 'none',
           }}
         >
           {({ TransitionProps }) => (
             <Fade
               {...TransitionProps}
-              in={Boolean(this.state.genreType === type)}
+              in={Boolean(genreType === type)}
               timeout={200}
             >
               <Paper
                 className={classes.genrePaper}
-                onMouseLeave={this.handleGenreMenuClose}
+                onMouseLeave={handleGenreMenuClose}
                 ref={
                   type === 'show'
-                    ? this.genreShowContainerRef
-                    : this.genreMovieContainerRef
+                    ? genreShowContainerRef
+                    : genreMovieContainerRef
                 }
               >
                 <MenuList className={classes.genreMenuList}>
@@ -369,19 +395,19 @@ class Toolbar extends Component<Props, State> {
                   </Typography>
                   <Divider />
                   <MenuItemLink
-                    onClick={this.handleGenreMenuClose}
+                    onClick={handleGenreMenuClose}
                     to={`/${type}s`}
                     key={`explore-${type}`}
                     primary={`All ${type}s`}
                   />
                   <MenuItemLink
-                    onClick={this.handleGenreMenuClose}
+                    onClick={handleGenreMenuClose}
                     key={`popular-${type}`}
                     to={`/popular?type=${type}`}
                     primary={`Trending ${type}s`}
                   />
                   <MenuItemLink
-                    onClick={this.handleGenreMenuClose}
+                    onClick={handleGenreMenuClose}
                     key={`new-${type}`}
                     to={`/new?type=${type}`}
                     primary={`New ${type}s`}
@@ -396,7 +422,7 @@ class Toolbar extends Component<Props, State> {
                   {filteredGenres.map(item => {
                     return (
                       <MenuItemLink
-                        onClick={this.handleGenreMenuClose}
+                        onClick={handleGenreMenuClose}
                         key={item.slug}
                         to={`/popular?genres=${item.id}&type=${type}`}
                         primary={item.name}
@@ -410,201 +436,86 @@ class Toolbar extends Component<Props, State> {
         </Popper>
       </React.Fragment>
     );
-  }
-
-  handleMobileSearchDisplayOpen = () => {
-    this.toggleDrawer(true);
-    this.setState({ mobileSearchBarOpen: true });
   };
 
-  handleMobileSearchDisplayClose = () => {
-    this.setState({ mobileSearchBarOpen: false });
-  };
-
-  openAuthDialog = () => this.setState({ authDialogOpen: true });
-  closeAuthDialog = () => this.setState({ authDialogOpen: false });
-
-  showQuickSearch = (): boolean => {
-    // No need to show quickSearch on the search page if the text is the same.
-    // It would just show results that are already present on the page.
-    return !(
-      this.props.currentQuickSearchText === this.props.currentSearchText &&
-      this.props.router.pathname === '/search'
-    );
-  };
-
-  render() {
-    let { classes, drawerOpen, isAuthed } = this.props;
-    const { mobileSearchBarOpen } = this.state;
-
-    const ButtonLink = React.forwardRef((props: any, ref) => {
-      let { onClick, href, primary } = props;
-      return (
-        <a
-          href={href}
-          onClick={onClick}
-          ref={ref as RefObject<HTMLAnchorElement>}
-          {...props}
-        >
-          {primary}
-        </a>
-      );
-    });
-
-    return (
-      <React.Fragment>
-        <AppBar position="sticky">
-          <MUIToolbar variant="dense" disableGutters>
-            <IconButton
-              focusRipple={false}
-              onClick={() => this.toggleDrawer()}
-              color="inherit"
-            >
-              {drawerOpen ? <MenuOpen /> : <MenuIcon />}
-            </IconButton>
-            <Link href="/" passHref>
-              <Typography
-                variant="h6"
-                color="inherit"
-                component="a"
-                style={{ textDecoration: 'none' }}
-              >
-                Teletracker
-              </Typography>
-            </Link>
-            <div className={classes.grow}>
-              {!this.isSmallDevice && this.props.showToolbarSearch && (
-                <Fade in={true} timeout={500}>
-                  <Search
-                    drawerOpen={drawerOpen}
-                    onDrawerChange={this.toggleDrawer}
-                    quickSearchEnabled={this.showQuickSearch()}
-                  />
-                </Fade>
-              )}
-            </div>
-            <Hidden mdDown>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  marginRight: 24,
-                }}
-              >
-                {this.renderGenreMenu('show')}
-                {this.renderGenreMenu('movie')}
-              </div>
-            </Hidden>
-            <Box display={{ xs: 'none', sm: 'none' }} m={1}>
-              <ButtonLink
-                color="inherit"
-                primary="New, Arriving, &amp; Expiring"
-                to="/new"
-              />
-            </Box>
-
-            {!isAuthed && (
-              <Button
-                startIcon={
-                  ['xs', 'sm'].includes(this.props.width) ? null : <Person />
-                }
-                className={classes.loginButton}
-                onClick={this.openAuthDialog}
-              >
-                Login
-              </Button>
-            )}
-            {this.isSmallDevice &&
-              !mobileSearchBarOpen &&
-              this.props.showToolbarSearch && (
-                <div
-                  className={classes.sectionMobile}
-                  ref={this.mobileSearchIcon}
-                >
-                  <IconButton
-                    aria-owns={'Search Teletracker'}
-                    aria-haspopup="true"
-                    onClick={this.handleMobileSearchDisplayOpen}
-                    color="inherit"
-                    disableRipple
-                  >
-                    <SearchIcon />
-                  </IconButton>
-                </div>
-              )}
-            {this.isSmallDevice &&
-              mobileSearchBarOpen &&
-              this.renderMobileSearchBar()}
-          </MUIToolbar>
-        </AppBar>
-        <AuthDialog
-          open={this.state.authDialogOpen}
-          onClose={this.closeAuthDialog}
-        />
-      </React.Fragment>
-    );
-  }
-
-  renderMobileSearchBar = () => {
-    let { classes, drawerOpen } = this.props;
-
-    return (
-      <Slide
-        direction="down"
-        in={this.state.mobileSearchBarOpen}
-        timeout={350}
-        mountOnEnter
-      >
-        <div
-          className={clsx(classes.sectionMobile, classes.mobileSearchContainer)}
-        >
+  return (
+    <React.Fragment>
+      <AppBar position="sticky">
+        <MUIToolbar variant="dense" disableGutters>
           <IconButton
-            onClick={this.handleMobileSearchDisplayClose}
+            focusRipple={false}
+            onClick={() => fireOnDrawerChange()}
             color="inherit"
-            size="small"
-            className={classes.mobileSearchIcon}
           >
-            <KeyboardArrowUp />
+            {drawerOpen ? <MenuOpen /> : <MenuIcon />}
           </IconButton>
-          <div className={classes.searchMobile}>
-            <Search
-              drawerOpen={drawerOpen}
-              onDrawerChange={this.toggleDrawer}
-              quickSearchEnabled={this.showQuickSearch()}
-            />
+          <Link href="/" passHref>
+            <Typography
+              variant="h6"
+              color="inherit"
+              component="a"
+              style={{ textDecoration: 'none' }}
+            >
+              Teletracker
+            </Typography>
+          </Link>
+          <div className={classes.grow}>
+            {!isSmallDevice && showToolbarSearch && (
+              <Fade in={true} timeout={500}>
+                <Search
+                  drawerOpen={drawerOpen}
+                  onDrawerChange={fireOnDrawerChange}
+                  quickSearchEnabled={showQuickSearch}
+                />
+              </Fade>
+            )}
           </div>
-        </div>
-      </Slide>
-    );
-  };
-}
+          <Hidden mdDown>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                marginRight: 24,
+              }}
+            >
+              {renderGenreMenu('show')}
+              {renderGenreMenu('movie')}
+            </div>
+          </Hidden>
+          <Box display={{ xs: 'none', sm: 'none' }} m={1}>
+            <ButtonLink
+              color="inherit"
+              primary="New, Arriving, &amp; Expiring"
+              to="/new"
+            />
+          </Box>
 
-const mapStateToProps = (appState: AppState) => {
-  return {
-    isAuthed: !R.isNil(R.path(['auth', 'token'], appState)),
-    genres: appState.metadata.genres,
-    currentSearchText: R.path<string>(
-      ['search', 'currentSearchText'],
-      appState,
-    ),
-    currentQuickSearchText: R.path<string>(
-      ['search', 'quick', 'currentSearchText'],
-      appState,
-    ),
-  };
-};
-
-const mapDispatchToProps: (dispatch: Dispatch) => DispatchProps = dispatch => {
-  return bindActionCreators(
-    {
-      logout,
-    },
-    dispatch,
+          {!isLoggedIn && (
+            <Button
+              startIcon={isSuperSmallDevice ? null : <Person />}
+              className={classes.loginButton}
+              onClick={openAuthDialog}
+            >
+              Login
+            </Button>
+          )}
+          {isSmallDevice && !mobileSearchBarOpen && showToolbarSearch && (
+            <div className={classes.sectionMobile} ref={mobileSearchIcon}>
+              <IconButton
+                aria-owns={'Search Teletracker'}
+                aria-haspopup="true"
+                onClick={handleMobileSearchDisplayOpen}
+                color="inherit"
+                disableRipple
+              >
+                <SearchIcon />
+              </IconButton>
+            </div>
+          )}
+          {isSmallDevice && renderMobileSearchBar()}
+        </MUIToolbar>
+      </AppBar>
+      <AuthDialog open={authDialogOpen} onClose={closeAuthDialog} />
+    </React.Fragment>
   );
-};
-
-export default withWidth()(
-  withRouter(
-    withStyles(styles)(connect(mapStateToProps, mapDispatchToProps)(Toolbar)),
-  ),
-);
+}

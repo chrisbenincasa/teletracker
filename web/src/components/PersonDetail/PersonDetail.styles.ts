@@ -1,6 +1,6 @@
 import { createStyles, makeStyles, Theme } from '@material-ui/core';
 
-export default makeStyles((theme: Theme) =>
+const classes = makeStyles((theme: Theme) =>
   createStyles({
     backdrop: {
       width: '100%',
@@ -142,3 +142,5 @@ export default makeStyles((theme: Theme) =>
     },
   }),
 );
+
+export default classes;
