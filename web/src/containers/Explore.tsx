@@ -43,6 +43,8 @@ import {
   useDispatchAction,
   useDispatchSideEffect,
 } from '../hooks/useDispatchAction';
+import dequal from 'dequal';
+import { useGenres, useNetworks } from '../hooks/useStateMetadata';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -127,22 +129,13 @@ function Explore(props: Props) {
   const thingsById = useStateSelector(state => state.itemDetail.thingsById);
   const [popular, previousPopular] = useStateSelectorWithPrevious(
     state => state.popular.popular,
-    (l, r) => {
-      let res = _.isEqual(l, r);
-      if (!res) {
-        console.log('not equal', l, r);
-      }
-      return res;
-    },
+    dequal,
   );
   const popularBookmark = useStateSelector(
     state => state.popular.popularBookmark,
   );
-  const genres = useStateSelector(state => state.metadata.genres, _.isEqual);
-  const networks = useStateSelector(
-    state => state.metadata.networks,
-    _.isEqual,
-  );
+  const genres = useGenres();
+  const networks = useNetworks();
   const retrievePopularFromServer = useDispatchAction(retrievePopular);
   const clearPopularState = useDispatchSideEffect(clearPopular);
   const [loading, wasLoading] = useStateSelectorWithPrevious(
@@ -344,18 +337,15 @@ function Explore(props: Props) {
   }, []);
 
   useEffect(() => {
-    console.log('router effect');
     let query = qs.stringify(router.query);
     let prevQuery = qs.stringify(previousRouterQuery);
 
     if (query !== prevQuery) {
-      console.log('router effect change');
       handleFilterParamsChange(parseFilterParamsFromQs(query));
     }
   }, [router]);
 
   useEffect(() => {
-    console.log('filters effect');
     updateUrlParamsForNextRouter(
       router,
       filters,

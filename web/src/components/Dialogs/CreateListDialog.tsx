@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button,
   createStyles,
@@ -8,25 +8,20 @@ import {
   DialogTitle,
   FormControl,
   FormHelperText,
+  makeStyles,
   TextField,
   Theme,
-  WithStyles,
-  withStyles,
 } from '@material-ui/core';
-import withUser, { WithUserProps } from '../withUser';
-import { Loading } from '../../reducers/user';
-import {
-  createList,
-  USER_SELF_CREATE_LIST,
-  UserCreateListPayload,
-} from '../../actions/lists';
-import { bindActionCreators, Dispatch } from 'redux';
-import { connect } from 'react-redux';
-import { ListsByIdMap } from '../../reducers/lists';
-import { AppState } from '../../reducers';
+import { createList, USER_SELF_CREATE_LIST } from '../../actions/lists';
 import CreateAListValidator from '../../utils/validation/CreateAListValidator';
+import useStateSelector, {
+  useStateSelectorWithPrevious,
+} from '../../hooks/useStateSelector';
+import dequal from 'dequal';
+import { useWithUserContext } from '../../hooks/useWithUser';
+import { useDispatchAction } from '../../hooks/useDispatchAction';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     button: {
       margin: theme.spacing(1),
@@ -36,164 +31,120 @@ const styles = (theme: Theme) =>
       backgroundColor: theme.palette.primary.main,
       padding: theme.spacing(1, 2),
     },
-  });
+  }),
+);
 
-interface DispatchProps {
-  createList: (payload?: UserCreateListPayload) => void;
-}
-
-interface OwnProps extends WithStyles<typeof styles> {
-  listsById: ListsByIdMap;
-  loading: Partial<Loading>;
-  onClose: () => void;
+interface Props {
   open: boolean;
+  onClose: () => void;
 }
 
-type Props = OwnProps &
-  DispatchProps &
-  WithStyles<typeof styles> &
-  WithUserProps;
+export default function CreateListDialog(props: Props) {
+  const classes = useStyles();
 
-interface State {
-  listName: string;
-  nameLengthError: boolean;
-  nameDuplicateError: boolean;
-}
+  const [listName, setListName] = useState('');
+  const [nameLengthError, setNameLengthError] = useState(false);
+  const [nameDuplicateError, setNameDuplicateError] = useState(false);
+  const [isLoading, wasLoading] = useStateSelectorWithPrevious(
+    state => state.userSelf.loading[USER_SELF_CREATE_LIST],
+  );
+  const listsById = useStateSelector(state => state.lists.listsById, dequal);
+  const { userSelf } = useWithUserContext();
 
-class CreateListDialog extends Component<Props, State> {
-  constructor(props) {
-    super(props);
+  const dispatchCreateList = useDispatchAction(createList);
 
-    this.state = {
-      listName: '',
-      nameLengthError: false,
-      nameDuplicateError: false,
-    };
-  }
-
-  componentDidUpdate(oldProps: Props) {
-    if (
-      Boolean(oldProps.loading[USER_SELF_CREATE_LIST]) &&
-      !Boolean(this.props.loading[USER_SELF_CREATE_LIST])
-    ) {
-      this.handleModalClose();
+  useEffect(() => {
+    if (wasLoading && !isLoading) {
     }
-  }
+  }, [isLoading]);
 
-  handleModalClose = () => {
-    this.setState({
-      listName: '',
-      nameLengthError: false,
-      nameDuplicateError: false,
-    });
-    this.props.onClose();
+  const updateListNameCb = useCallback(
+    (ev: React.ChangeEvent<HTMLInputElement>) => {
+      setListName(ev.target.value);
+    },
+    [listName],
+  );
+
+  const handleModalClose = () => {
+    setListName('');
+    setNameLengthError(false);
+    setNameDuplicateError(false);
+    props.onClose();
   };
 
-  validateListName = () => {
-    let { listsById, userSelf } = this.props;
-    let { listName } = this.state;
-
+  const validateListNameAndCreate = () => {
     // Reset error states before validation
     if (userSelf) {
-      this.setState(CreateAListValidator.defaultState().asObject());
-
       let validationResult = CreateAListValidator.validate(listsById, listName);
 
       if (validationResult.hasError()) {
-        this.setState(validationResult.asObject());
+        let {
+          nameDuplicateError,
+          nameLengthError,
+        } = validationResult.asObject();
+        setNameDuplicateError(nameDuplicateError);
+        setNameLengthError(nameLengthError);
       } else {
-        this.handleCreateListSubmit();
+        console.log('hey');
+        setNameLengthError(false);
+        setNameDuplicateError(false);
+        handleCreateListSubmit();
       }
     }
   };
 
-  handleCreateListSubmit = () => {
-    let { createList } = this.props;
-    let { listName } = this.state;
-
-    createList({ name: listName });
-    this.handleModalClose();
+  const handleCreateListSubmit = () => {
+    dispatchCreateList({ name: listName });
+    handleModalClose();
   };
 
-  renderDialog() {
-    let { classes, loading } = this.props;
-    let { listName, nameDuplicateError, nameLengthError } = this.state;
-    let isLoading = Boolean(loading[USER_SELF_CREATE_LIST]);
-
-    return (
-      <Dialog fullWidth maxWidth="xs" open={this.props.open}>
-        <DialogTitle className={classes.title}>Create New List</DialogTitle>
-        <DialogContent>
-          <FormControl fullWidth>
-            <TextField
-              autoFocus
-              margin="dense"
-              id="name"
-              label="Name"
-              type="text"
-              fullWidth
-              value={listName}
-              error={nameDuplicateError || nameLengthError}
-              onChange={e => this.setState({ listName: e.target.value })}
-            />
-            <FormHelperText
-              id="component-error-text"
-              style={{
-                display:
-                  nameDuplicateError || nameLengthError ? 'block' : 'none',
-              }}
-            >
-              {nameLengthError ? 'List name cannot be blank' : null}
-              {nameDuplicateError
-                ? 'You already have a list with this name'
-                : null}
-            </FormHelperText>
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            disabled={isLoading}
-            onClick={this.handleModalClose}
-            className={classes.button}
+  return (
+    <Dialog fullWidth maxWidth="xs" open={props.open}>
+      <DialogTitle className={classes.title}>Create New List</DialogTitle>
+      <DialogContent>
+        <FormControl fullWidth>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="name"
+            label="Name"
+            type="text"
+            fullWidth
+            value={listName}
+            error={nameDuplicateError || nameLengthError}
+            onChange={updateListNameCb}
+          />
+          <FormHelperText
+            id="component-error-text"
+            style={{
+              display: nameDuplicateError || nameLengthError ? 'block' : 'none',
+            }}
           >
-            Cancel
-          </Button>
-          <Button
-            disabled={isLoading}
-            onClick={this.validateListName}
-            color="primary"
-            variant="contained"
-            className={classes.button}
-          >
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
-  }
-
-  render() {
-    return this.renderDialog();
-  }
-}
-
-const mapStateToProps = (appState: AppState) => {
-  return {
-    listsById: appState.lists.listsById,
-    loading: appState.userSelf.loading,
-  };
-};
-
-const mapDispatchToProps = (dispatch: Dispatch) =>
-  bindActionCreators(
-    {
-      createList,
-    },
-    dispatch,
+            {nameLengthError ? 'List name cannot be blank' : null}
+            {nameDuplicateError
+              ? 'You already have a list with this name'
+              : null}
+          </FormHelperText>
+        </FormControl>
+      </DialogContent>
+      <DialogActions>
+        <Button
+          disabled={isLoading}
+          onClick={handleModalClose}
+          className={classes.button}
+        >
+          Cancel
+        </Button>
+        <Button
+          disabled={isLoading}
+          onClick={validateListNameAndCreate}
+          color="primary"
+          variant="contained"
+          className={classes.button}
+        >
+          Create
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
-
-export default withUser(
-  withStyles(styles)(
-    connect(mapStateToProps, mapDispatchToProps)(CreateListDialog),
-  ),
-);
+}

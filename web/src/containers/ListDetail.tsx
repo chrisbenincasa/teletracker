@@ -137,7 +137,9 @@ const selectList = createSelector(
   (listsById, listId) => {
     let currentList: List | undefined = listsById[listId];
     if (!currentList) {
-      currentList = _.find(listsById, list => list.aliases.includes(listId));
+      currentList = _.find(listsById, list =>
+        (list.aliases || []).includes(listId),
+      );
     }
     return currentList;
   },
@@ -145,6 +147,7 @@ const selectList = createSelector(
 
 function ListDetailDialog(props: ListDetailDialogProps) {
   const classes = useStyles();
+  const router = useRouter();
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(
     props.openDeleteConfirmation,
   );
@@ -175,9 +178,11 @@ function ListDetailDialog(props: ListDetailDialogProps) {
         mergeListId: migrateListId,
       });
 
-      // setDeleted(true);
+      // TODO: Loading state.
+      router.push('/');
     }
 
+    // TODO: Handle this better - tell them they can't.
     handleDeleteModalClose();
   };
 
@@ -293,7 +298,6 @@ function ListDetail() {
 
   const dispatchUpdateList = useDispatchAction(updateList);
   const dispatchRetrieveList = useDispatchAction(ListRetrieveInitiated);
-  const dispatchDeleteList = useDispatchAction(deleteList);
 
   const retrieveList = (initialLoad: boolean) => {
     dispatchRetrieveList({
