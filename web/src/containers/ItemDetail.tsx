@@ -17,7 +17,7 @@ import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import moment from 'moment';
 import { useRouter } from 'next/router';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import ReactGA from 'react-ga';
 import {
   itemFetchInitiated,
@@ -252,6 +252,7 @@ function ItemDetails(props: Props) {
   const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
   const [showFullOverview, setshowFullOverview] = useState<boolean>(false);
+  const [backdropLoaded, setBackdropoLoaded] = useState(false);
   const [posterLoaded, setPosterLoaded] = useState(false);
   const width = useWidth();
   const nextRouter = useRouter();
@@ -319,6 +320,10 @@ function ItemDetails(props: Props) {
       fetchItemDetails({ id: itemId, type: itemType });
     }
   };
+
+  const backdropLoadedCallback = useCallback(() => {
+    setBackdropoLoaded(true);
+  }, []);
 
   const closeLoginModal = () => {
     setLoginModalOpen(false);
@@ -518,25 +523,28 @@ function ItemDetails(props: Props) {
     return itemDetail ? (
       <React.Fragment>
         <div className={classes.backdrop}>
-          <div className={classes.backdropContainer}>
-            <ResponsiveImage
-              item={itemDetail}
-              imageType="backdrop"
-              imageStyle={{
-                objectFit: 'cover',
-                objectPosition: 'center top',
-                width: '100%',
-                height: '100%',
-                pointerEvents: 'none', // Disables ios preview on tap & hold
-              }}
-              pictureStyle={{
-                display: 'block',
-                position: 'relative',
-                height: '100vh',
-              }}
-            />
-            <div className={classes.backdropGradient} />
-          </div>
+          <Fade in={backdropLoaded}>
+            <div className={classes.backdropContainer}>
+              <ResponsiveImage
+                item={itemDetail}
+                imageType="backdrop"
+                imageStyle={{
+                  objectFit: 'cover',
+                  objectPosition: 'center top',
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none', // Disables ios preview on tap & hold
+                }}
+                pictureStyle={{
+                  display: 'block',
+                  position: 'relative',
+                  height: '100vh',
+                }}
+                loadCallback={backdropLoadedCallback}
+              />
+              <div className={classes.backdropGradient} />
+            </div>
+          </Fade>
           <div
             style={{
               display: 'flex',

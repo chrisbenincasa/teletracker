@@ -1,13 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Toolbar from '../components/Toolbar/Toolbar';
-import { useState } from 'react';
-import { makeStyles, Theme, LinearProgress, NoSsr } from '@material-ui/core';
+import { LinearProgress, makeStyles, NoSsr, Theme } from '@material-ui/core';
 import Drawer from '../components/Drawer';
 import Footer from '../components/Footer';
-import { connect } from 'react-redux';
-import { AppState } from '../reducers';
 import { useRouter } from 'next/router';
-import { useWithUserContext, WithUser } from '../hooks/useWithUser';
+import { WithUser } from '../hooks/useWithUser';
 import useStateSelector from '../hooks/useStateSelector';
 import _ from 'lodash';
 
@@ -48,7 +45,11 @@ export default function AppWrapper(props: Props) {
         <NoSsr>
           <Toolbar
             drawerOpen={drawerOpen}
-            onDrawerChange={() => setDrawerOpen(!drawerOpen)}
+            onDrawerChange={shouldClose =>
+              setDrawerOpen(
+                !_.isUndefined(shouldClose) ? !shouldClose : !drawerOpen,
+              )
+            }
             showToolbarSearch={true}
           />
         </NoSsr>
