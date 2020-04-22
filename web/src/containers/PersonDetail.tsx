@@ -315,7 +315,7 @@ function PersonDetail(props: NewProps) {
     <div>
       <React.Fragment>
         <Fade in={person && !loadingPerson && !needsFetch}>
-          <div>{renderPerson()}</div>
+          <div style={{ width: '100%' }}>{renderPerson()}</div>
         </Fade>
         {!person || loadingPerson || needsFetch ? renderLoading() : null}
       </React.Fragment>
