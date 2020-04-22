@@ -23,26 +23,30 @@ import { Item } from '../types/v2/Item';
 import { flattenActions, handleAction } from './utils';
 import { Person } from '../types/v2/Person';
 
+type QuickSearchState = {
+  searching: boolean;
+  currentSearchText: String;
+  results?: Item[];
+  bookmark?: string;
+  error: boolean;
+};
+
+type PeopleSearchState = {
+  searching: boolean;
+  currentSearchText: String;
+  results?: Person[];
+  bookmark?: string;
+  error: boolean;
+};
+
 export interface State {
   currentSearchText: string;
   error: boolean;
   searching: boolean;
   results?: Item[];
   bookmark?: string;
-  quick: {
-    searching: boolean;
-    currentSearchText: String;
-    results?: Item[];
-    bookmark?: string;
-    error: boolean;
-  };
-  people: {
-    searching: boolean;
-    currentSearchText: String;
-    results?: Person[];
-    bookmark?: string;
-    error: boolean;
-  };
+  quick: QuickSearchState;
+  people: PeopleSearchState;
 }
 
 const initialState: State = {

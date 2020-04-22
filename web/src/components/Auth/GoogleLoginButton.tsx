@@ -1,8 +1,7 @@
-import { Button, createStyles, Theme, WithStyles } from '@material-ui/core';
-import React, { FunctionComponent } from 'react';
-import withStyles from '@material-ui/core/styles/withStyles';
+import { Button, createStyles, makeStyles, Theme } from '@material-ui/core';
+import React from 'react';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     googleButtonIcon: {
       height: 30,
@@ -10,16 +9,15 @@ const styles = (theme: Theme) =>
     googleButtonText: {
       marginLeft: theme.spacing(1),
     },
-  });
+  }),
+);
 
 interface GoogleButtonProps {
   onClick: () => any;
 }
 
-type Props = GoogleButtonProps & WithStyles<typeof styles>;
-
-const GoogleLoginButton: FunctionComponent<Props> = (props: Props) => {
-  const { classes } = props;
+export default function GoogleLoginButton(props: GoogleButtonProps) {
+  const classes = useStyles();
 
   return (
     <Button variant="contained" onClick={() => props.onClick()}>
@@ -31,6 +29,4 @@ const GoogleLoginButton: FunctionComponent<Props> = (props: Props) => {
       <span className={classes.googleButtonText}>Sign In with Google</span>
     </Button>
   );
-};
-
-export default withStyles(styles)(GoogleLoginButton);
+}
