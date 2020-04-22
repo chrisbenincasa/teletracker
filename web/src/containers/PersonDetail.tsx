@@ -4,6 +4,7 @@ import {
   Hidden,
   LinearProgress,
   Typography,
+  Fade,
 } from '@material-ui/core';
 import { ChevronLeft, ExpandLess, ExpandMore } from '@material-ui/icons';
 import _ from 'lodash';
@@ -39,6 +40,10 @@ function PersonDetail(props: NewProps) {
   const width = useWidth();
   const personId = router.query.id as string;
 
+  const [backdropLoaded, setBackdropLoaded] = useState(false);
+  const imageLoadedCallback = useCallback(() => {
+    setBackdropLoaded(true);
+  }, []);
   const [showFullBiography, setShowFullBiography] = useState(false);
   const [createPersonListDialogOpen, setCreatePersonListDialogOpen] = useState(
     false,
@@ -202,10 +207,6 @@ function PersonDetail(props: NewProps) {
   };
 
   const renderPerson = () => {
-    if (!person || loadingPerson || needsFetch) {
-      return renderLoading();
-    }
-
     const isMobile = ['xs', 'sm'].includes(width);
     const backdrop = person?.cast_credit_ids?.data
       .map(itemId => {
@@ -217,10 +218,10 @@ function PersonDetail(props: NewProps) {
       .find(item => !_.isUndefined(item));
 
     return (
-      <React.Fragment>
-        <div className={classes.backdrop}>
-          {backdrop && (
-            <React.Fragment>
+      <div className={classes.backdrop}>
+        {backdrop && (
+          <React.Fragment>
+            <Fade in={backdropLoaded}>
               <div className={classes.backdropContainer}>
                 <ResponsiveImage
                   item={backdrop}
@@ -237,79 +238,89 @@ function PersonDetail(props: NewProps) {
                     position: 'relative',
                     height: '100%',
                   }}
+                  loadCallback={imageLoadedCallback}
                 />
                 <div className={classes.backdropGradient} />
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                }}
-              >
-                {!isMobile && (
-                  <Button
-                    size="small"
-                    onClick={router.back}
-                    variant="contained"
-                    aria-label="Go Back"
-                    style={{ marginTop: 20, marginLeft: 20 }}
-                  >
-                    <ChevronLeft style={{ marginRight: 8 }} />
-                    Go Back
-                  </Button>
-                )}
-                <div className={classes.personDetailContainer}>
-                  <div className={classes.leftContainer}>
-                    <Hidden mdUp>{renderTitle(person)}</Hidden>
-                    <div className={classes.posterContainer}>
-                      <CardMedia
-                        src={imagePlaceholder}
-                        item={person}
-                        component={ResponsiveImage}
-                        imageType="profile"
-                        imageStyle={{
-                          width: '100%',
-                          boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
-                        }}
+            </Fade>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+              }}
+            >
+              {!isMobile && (
+                <Button
+                  size="small"
+                  onClick={router.back}
+                  variant="contained"
+                  aria-label="Go Back"
+                  style={{ marginTop: 20, marginLeft: 20 }}
+                >
+                  <ChevronLeft style={{ marginRight: 8 }} />
+                  Go Back
+                </Button>
+              )}
+              <div className={classes.personDetailContainer}>
+                <div className={classes.leftContainer}>
+                  <Hidden mdUp>{renderTitle(person)}</Hidden>
+                  <div className={classes.posterContainer}>
+                    <CardMedia
+                      src={imagePlaceholder}
+                      item={person}
+                      component={ResponsiveImage}
+                      imageType="profile"
+                      imageStyle={{
+                        width: '100%',
+                        boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+                      }}
+                    />
+                    <div className={classes.trackingButton}>
+                      <ManageTrackingButton
+                        cta={'Track Actor'}
+                        onClick={openCreateListDialog}
                       />
-                      <div className={classes.trackingButton}>
-                        <ManageTrackingButton
-                          cta={'Track Actor'}
-                          onClick={openCreateListDialog}
-                        />
-                      </div>
-                      <div className={classes.trackingButton}>
-                        <ShareButton
-                          title={person.name}
-                          text={''}
-                          url={window.location.href}
-                        />
-                      </div>
+                    </div>
+                    <div className={classes.trackingButton}>
+                      <ShareButton
+                        title={person.name}
+                        text={''}
+                        url={window.location.href}
+                      />
                     </div>
                   </div>
-                  <div className={classes.personInformationContainer}>
-                    {renderDescriptiveDetails(person)}
-                    <PersonCredits person={person} />
-                  </div>
+                </div>
+                <div className={classes.personInformationContainer}>
+                  {renderDescriptiveDetails(person)}
+                  <PersonCredits person={person} />
                 </div>
               </div>
-              <CreateDynamicListDialog
-                filters={personFiltersForCreateDialog()}
-                open={createPersonListDialogOpen}
-                onClose={closeCreateListDialog}
-                networks={networks || []}
-                genres={genres || []}
-                prefilledName={person!.name}
-              />
-            </React.Fragment>
-          )}
-        </div>
-      </React.Fragment>
+            </div>
+            <CreateDynamicListDialog
+              filters={personFiltersForCreateDialog()}
+              open={createPersonListDialogOpen}
+              onClose={closeCreateListDialog}
+              networks={networks || []}
+              genres={genres || []}
+              prefilledName={person!.name}
+            />
+          </React.Fragment>
+        )}
+      </div>
     );
   };
 
-  return <div>{renderPerson()}</div>;
+  return (
+    <div>
+      <React.Fragment>
+        <Fade in={person && !loadingPerson && !needsFetch}>
+          <div>{renderPerson()}</div>
+        </Fade>
+        {!person || loadingPerson || needsFetch ? renderLoading() : null}
+      </React.Fragment>
+    </div>
+  );
 }
 
 // PersonDetailF.whyDidYouRender = true;
