@@ -20,7 +20,7 @@ import {
 import AuthDialog from '../Auth/AuthDialog';
 import { ActionType } from '../../types';
 import moment from 'moment';
-import { Item, itemHasTag, getTagValue } from '../../types/v2/Item';
+import { Item, itemHasTag, getItemTagNumberValue } from '../../types/v2/Item';
 import { ACTION_ENJOYED, ACTION_WATCHED } from '../../actions/item-detail';
 
 const styles = (theme: Theme) =>
@@ -75,7 +75,7 @@ class MarkAsWatched extends Component<Props, State> {
   }
 
   toggleItemWatched = (): void => {
-    const itemWatched = this.getItemTagValue(ACTION_WATCHED, 'tag');
+    const itemWatched = itemHasTag(this.props.itemDetail, ActionType.Watched);
     let payload = {
       itemId: this.props.itemDetail.id,
       action: ActionType.Watched,
@@ -92,18 +92,9 @@ class MarkAsWatched extends Component<Props, State> {
     }
   };
 
-  getItemTagValue = (tagName: string, key: string) => {
-    if (this.props.itemDetail) {
-      return itemHasTag(this.props.itemDetail, ActionType[tagName])
-        ? getTagValue(this.props.itemDetail, ActionType[tagName], key)
-        : false;
-    }
-    return false;
-  };
-
   watchedButton = (isReleased: boolean) => {
     const { classes } = this.props;
-    const watchedStatus = this.getItemTagValue(ACTION_WATCHED, 'tag');
+    const watchedStatus = itemHasTag(this.props.itemDetail, ActionType.Watched);
     const watchedCTA = watchedStatus ? 'Watched' : 'Mark as Watched';
 
     return (
@@ -133,7 +124,10 @@ class MarkAsWatched extends Component<Props, State> {
       value: rating,
     };
 
-    const userItemRating = this.getItemTagValue(ACTION_ENJOYED, 'value');
+    const userItemRating = getItemTagNumberValue(
+      this.props.itemDetail,
+      ActionType.Enjoyed,
+    );
 
     if (userItemRating === rating) {
       this.props.removeUserItemTags(payload);
@@ -144,7 +138,10 @@ class MarkAsWatched extends Component<Props, State> {
 
   ratingButton = () => {
     const { classes } = this.props;
-    const userItemRating = this.getItemTagValue(ACTION_ENJOYED, 'value');
+    const userItemRating = getItemTagNumberValue(
+      this.props.itemDetail,
+      ActionType.Enjoyed,
+    );
 
     return (
       <React.Fragment>

@@ -20,6 +20,7 @@ import {
 } from '../../utils/image-helper';
 import { PersonFactory } from './Person';
 import { Person } from './Person';
+import _ from 'lodash';
 
 export interface HasSlug {
   slug?: Slug;
@@ -93,6 +94,13 @@ export const getTagValue = (
   return (item.tags || [])
     .filter(tag => tag.tag.indexOf(expectedTag) !== -1)
     .map(tag => tag[key]!)[0];
+};
+
+export const getItemTagNumberValue = (
+  item: Item,
+  tag: string,
+): number | undefined => {
+  return _.find(item.tags || [], { tag })?.value;
 };
 
 export const itemBelongsToLists = (item: ApiItem | Item) => {
