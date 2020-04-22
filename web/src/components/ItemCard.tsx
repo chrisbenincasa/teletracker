@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, RefObject } from 'react';
+import React, { RefObject, useEffect, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -28,32 +28,22 @@ import {
   ThumbDown,
   ThumbUp,
 } from '@material-ui/icons';
-import { connect } from 'react-redux';
 import RouterLink from 'next/link';
-import { bindActionCreators, Dispatch } from 'redux';
 import { ACTION_ENJOYED, ACTION_WATCHED } from '../actions/item-detail';
-import {
-  ListTrackingUpdatedInitiatedPayload,
-  updateListTracking,
-} from '../actions/lists';
-import {
-  removeUserItemTags,
-  updateUserItemTags,
-  UserUpdateItemTagsPayload,
-} from '../actions/user';
+import { updateListTracking } from '../actions/lists';
+import { removeUserItemTags, updateUserItemTags } from '../actions/user';
 import { GRID_COLUMNS } from '../constants/';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import { UserSelf } from '../reducers/user';
 import { ActionType, List } from '../types';
-import HasImagery from '../types/HasImagery';
-import { Linkable, ThingLikeStruct } from '../types/Thing';
 import AddToListDialog from './Dialogs/AddToListDialog';
 import { ResponsiveImage } from './ResponsiveImage';
-import { Item, itemHasTag, getItemTagNumberValue } from '../types/v2/Item';
+import { Item, itemHasTag } from '../types/v2/Item';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
 import { useWidth } from '../hooks/useWidth';
 import { hexToRGB } from '../utils/style-utils';
-import AuthDialog from './Auth/AuthDialog';
+import { useDispatchAction } from '../hooks/useDispatchAction';
+import deepEq from 'dequal';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -177,7 +167,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
 }));
 
-interface ItemCardProps {
+interface Props {
   key: string | number;
   item: Item;
   userSelf?: UserSelf;
@@ -195,17 +185,8 @@ interface ItemCardProps {
   hasLoaded?: () => void;
 }
 
-type RequiredThingType = ThingLikeStruct & Linkable & HasImagery;
-
-interface DispatchProps {
-  ListUpdate: (payload: ListTrackingUpdatedInitiatedPayload) => void;
-  updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
-  removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
-}
-
-type Props = ItemCardProps & DispatchProps;
-
 function ItemCard(props: Props) {
+  // console.log('render');
   const classes = useStyles();
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
@@ -218,10 +199,18 @@ function ItemCard(props: Props) {
     false,
   );
   const [deleted, setDeleted] = useState<boolean>(false);
+  const [currentId, setCurrentId] = useState<string>('');
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
-  const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
+
+  const updateList = useDispatchAction(updateListTracking);
+  const updateUserTags = useDispatchAction(updateUserItemTags);
+  const removeUserTags = useDispatchAction(removeUserItemTags);
 
   useEffect(() => {
+    let { item } = props;
+    let itemId = item.id;
+    setCurrentId(itemId);
+
     if (
       !props.listContext &&
       props.withActionButton &&
@@ -277,7 +266,7 @@ function ItemCard(props: Props) {
   });
 
   const handleRemoveFromList = () => {
-    props.ListUpdate({
+    updateList({
       itemId: props.item.id,
       addToLists: [],
       removeFromLists: [props.listContext!.id.toString()],
@@ -286,45 +275,40 @@ function ItemCard(props: Props) {
     setDeleteConfirmationOpen(false);
   };
 
-  const toggleItemWatched = (): void => {
-    const itemWatched = itemHasTag(props.item, ActionType.Watched);
+  const toggleItemWatched = () => {
     let payload = {
-      itemId: props.item.id,
+      itemId: currentId,
       action: ActionType.Watched,
     };
 
-    if (!props.userSelf) {
-      setLoginModalOpen(true);
+    if (checkItemHasTag(ACTION_WATCHED)) {
+      removeUserTags(payload);
     } else {
-      if (itemWatched) {
-        props.removeUserItemTags(payload);
-      } else {
-        props.updateUserItemTags(payload);
-        setHoverRating(true);
-      }
+      updateUserTags(payload);
+      setHoverRating(true);
     }
   };
 
   const toggleItemRating = (rating: number) => {
     let payload = {
-      itemId: props.item.id,
+      itemId: currentId,
       action: ActionType.Enjoyed,
       value: rating,
     };
 
-    const userItemRating = getItemTagNumberValue(
-      props.item,
-      ActionType.Enjoyed,
-    );
-
-    if (userItemRating === rating) {
-      props.removeUserItemTags(payload);
-    } else {
-      props.updateUserItemTags(payload);
-    }
+    // Currently no way to 'unrate' an item so no need to remove UserItemTags like we do for 'watched'
+    updateUserTags(payload);
 
     setIsHovering(false);
     setHoverRating(false);
+  };
+
+  const checkItemHasTag = (tagName: string) => {
+    if (props.item) {
+      return itemHasTag(props.item, ActionType[tagName]);
+    }
+
+    return false;
   };
 
   const renderPoster = (item: Item) => {
@@ -407,22 +391,22 @@ function ItemCard(props: Props) {
   };
 
   const renderHoverActions = () => {
-    const { hoverAddToList, hoverDelete, hoverWatch } = props;
+    let { hoverAddToList, hoverDelete, hoverWatch, userSelf } = props;
+
     let transitionDelay = 100;
     const tooltipPlacement = 'right';
-    const itemWatched = itemHasTag(props.item, ActionType.Watched);
-    const userItemRating = getItemTagNumberValue(
-      props.item,
-      ActionType.Enjoyed,
-    );
 
     return (
       <Collapse in={true} style={{ position: 'absolute', top: 0 }}>
         <div className={classes.hoverActions}>
-          {hoverWatch && (
+          {userSelf && hoverWatch && (
             <Zoom in={isHovering}>
               <Tooltip
-                title={itemWatched ? 'Mark as not watched' : 'Mark as watched'}
+                title={
+                  checkItemHasTag(ACTION_WATCHED)
+                    ? 'Mark as not watched'
+                    : 'Mark as watched'
+                }
                 placement={tooltipPlacement}
               >
                 <IconButton
@@ -432,13 +416,15 @@ function ItemCard(props: Props) {
                 >
                   <Check
                     className={
-                      itemWatched
+                      checkItemHasTag(ACTION_WATCHED)
                         ? classes.hoverWatchInvert
                         : classes.hoverWatch
                     }
                   />
                   <Typography variant="srOnly">
-                    {itemWatched ? 'Mark as not watched' : 'Mark as watched'}
+                    {checkItemHasTag(ACTION_WATCHED)
+                      ? 'Mark as not watched'
+                      : 'Mark as watched'}
                   </Typography>
                 </IconButton>
               </Tooltip>
@@ -466,7 +452,7 @@ function ItemCard(props: Props) {
             </Zoom>
           )}
 
-          {isHovering && itemWatched && (
+          {isHovering && checkItemHasTag(ACTION_WATCHED) && (
             <Zoom
               in={isHovering}
               style={{
@@ -480,7 +466,7 @@ function ItemCard(props: Props) {
                   aria-label="Rate it!"
                   onClick={() => setHoverRating(true)}
                 >
-                  {userItemRating === 1 ? (
+                  {checkItemHasTag(ACTION_ENJOYED) ? (
                     <ThumbUp className={classes.hoverRatingThumbsUp} />
                   ) : (
                     <ThumbDown className={classes.hoverRatingThumbsDown} />
@@ -604,10 +590,6 @@ function ItemCard(props: Props) {
           </Card>
         </Grid>
       </Fade>
-      <AuthDialog
-        open={loginModalOpen}
-        onClose={() => setLoginModalOpen(false)}
-      />
       <AddToListDialog
         open={manageTrackingModalOpen}
         onClose={() => setManageTrackingModalOpen(false)}
@@ -626,14 +608,6 @@ ItemCard.defaultProps = {
   hoverAddToList: true,
 };
 
-const mapDispatchToProps = (dispatch: Dispatch) =>
-  bindActionCreators(
-    {
-      ListUpdate: updateListTracking,
-      updateUserItemTags,
-      removeUserItemTags,
-    },
-    dispatch,
-  );
+ItemCard.whyDidYouRender = true;
 
-export default connect(null, mapDispatchToProps)(ItemCard);
+export default React.memo(ItemCard, deepEq);
