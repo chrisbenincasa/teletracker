@@ -683,7 +683,9 @@ function ItemDetails(props: Props) {
       <React.Fragment>
         {isFetching || !itemDetail ? renderLoading() : null}
         <Fade in={!isFetching && !_.isUndefined(itemDetail)}>
-          <div>{!isFetching && itemDetail ? renderItemDetails() : <div />}</div>
+          <div style={{ width: '100%' }}>
+            {!isFetching && itemDetail ? renderItemDetails() : <div />}
+          </div>
         </Fade>
       </React.Fragment>
     </div>
