@@ -9,6 +9,7 @@ import Head from 'next/head';
 import { currentUserJwt } from '../../utils/page-utils';
 import useStateSelector from '../../hooks/useStateSelector';
 import { useRouter } from 'next/router';
+import dequal from 'dequal';
 
 interface Props {
   list?: List;
@@ -18,7 +19,7 @@ interface Props {
 
 function ListDetailWrapper(props: Props) {
   const router = useRouter();
-  const listsById = useStateSelector(state => state.lists.listsById);
+  const listsById = useStateSelector(state => state.lists.listsById, dequal);
 
   const listId = router.query.id as string;
 

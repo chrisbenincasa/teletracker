@@ -19,7 +19,7 @@ export interface ApiList {
   totalItems: number;
   configuration?: ListConfiguration;
   relevantPeople?: ApiPerson[];
-  aliases: string[];
+  aliases?: string[];
   ownedByRequester: boolean;
 }
 
@@ -35,7 +35,7 @@ export interface List {
   configuration?: ListConfiguration;
   relevantPeople?: Person[];
   legacyId?: number;
-  aliases: string[];
+  aliases?: string[];
   ownedByRequester: boolean;
 }
 

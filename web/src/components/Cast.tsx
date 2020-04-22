@@ -105,14 +105,12 @@ export default function Cast(props: Props) {
   const classes = useStyles();
 
   useEffect(() => {
-    console.log(listRef);
     if (listRef.current) {
       const credits = props.itemDetail.cast || [];
       const width = listRef.current?.props?.width;
       const itemSize = listRef.current?.props?.itemSize;
       const pageSize = Math.round(Number(width) / Number(itemSize));
 
-      console.log('effeect bruh');
       setTotalCast(credits.length);
       setCastPerPage(pageSize);
       setNumberCastRemaining(
@@ -148,7 +146,6 @@ export default function Cast(props: Props) {
   };
 
   const credits = props.itemDetail?.cast || [];
-  console.log(credits);
   const previousDisabled = currentCarouselIndex === 0;
   const nextDisabled = numberCastRemaining < 1;
 

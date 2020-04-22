@@ -140,7 +140,12 @@ const handleListDeleteSuccess = handleAction<
   State
 >(USER_SELF_DELETE_LIST_SUCCESS, (state, { payload }) => {
   if (payload) {
-    delete state.listsById[payload.listId];
+    const listsByIdCopy = { ...state.listsById };
+    delete listsByIdCopy[payload.listId];
+    return {
+      ...state,
+      listsById: listsByIdCopy,
+    };
   }
   return state;
 });
