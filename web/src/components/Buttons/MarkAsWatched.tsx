@@ -21,7 +21,6 @@ import AuthDialog from '../Auth/AuthDialog';
 import { ActionType } from '../../types';
 import moment from 'moment';
 import { Item, itemHasTag, getItemTagNumberValue } from '../../types/v2/Item';
-import { ACTION_ENJOYED, ACTION_WATCHED } from '../../actions/item-detail';
 
 const styles = (theme: Theme) =>
   createStyles({
