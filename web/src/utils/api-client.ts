@@ -16,6 +16,7 @@ import {
   User,
   UserPreferences,
   MetadataResponse,
+  ApiList,
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
 import { ApiThing } from '../types/Thing';
@@ -220,7 +221,7 @@ export class TeletrackerApi {
     networks?: NetworkType[],
     limit?: number,
   ) {
-    return this.api.get<DataResponse<List>>(`/api/v2/lists/${id}/items`, {
+    return this.api.get<DataResponse<ApiList>>(`/api/v2/lists/${id}/items`, {
       token,
       sort,
       desc,
@@ -303,8 +304,25 @@ export class TeletrackerApi {
     );
   }
 
-  async getItem(token: string | undefined, id: string | number, type: string) {
+  async getItem(
+    token: string | undefined,
+    id: string | number,
+    type: string,
+    includeRecommendations: boolean,
+  ) {
     return this.api.get<any>(`/api/v2/items/${id}`, {
+      token,
+      thingType: type,
+      includeRecommendations,
+    });
+  }
+
+  async getItemRecommendations(
+    token: string | undefined,
+    id: string | number,
+    type: string,
+  ) {
+    return this.api.get<any>(`/api/v2/items/${id}/recommendations`, {
       token,
       thingType: type,
     });

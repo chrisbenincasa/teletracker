@@ -140,9 +140,19 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *getItem(id: string | number, type: string) {
+  *getItem(id: string | number, type: string, includeRecommendations: boolean) {
     return yield this.apiCall(
       client => client.getItem,
+      yield call([this, this.withToken]),
+      id,
+      type,
+      includeRecommendations,
+    );
+  }
+
+  *getItemRecommendations(id: string | number, type: string) {
+    return yield this.apiCall(
+      client => client.getItemRecommendations,
       yield call([this, this.withToken]),
       id,
       type,

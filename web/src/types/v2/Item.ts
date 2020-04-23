@@ -39,7 +39,7 @@ export interface Item extends HasSlug {
   overview?: string;
   popularity?: number;
   ratings?: ItemRating[];
-  recommendations?: Item[];
+  recommendations?: Id[];
   release_date?: string;
   release_dates?: ItemReleaseDate[];
   runtime?: number;
@@ -134,7 +134,7 @@ export class ItemFactory {
       posterImage: getTmdbPosterImage(item),
       backdropImage: getTmdbBackdropImage(item),
       profileImage: getTmdbProfileImage(item),
-      recommendations: (item.recommendations || []).map(ItemFactory.create),
+      recommendations: (item.recommendations || []).map(rec => rec.id),
     };
   }
 

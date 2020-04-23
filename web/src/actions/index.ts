@@ -40,6 +40,7 @@ import {
   updateUserSaga,
 } from './user';
 import { createBasicAction } from './utils';
+import { fetchItemRecsSaga } from './item-detail/get_item_recommendations';
 
 export const STARTUP = 'startup';
 export const BOOT_DONE = 'boot/DONE';
@@ -123,6 +124,7 @@ export function* root() {
     loadMetadataSaga(),
     peopleSearchSaga(),
     fetchPersonCreditsDetailsSaga(),
+    fetchItemRecsSaga(),
     (function*() {
       yield put({ type: BUFFER_FLUSH });
     })(),

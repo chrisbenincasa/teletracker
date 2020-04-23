@@ -2,9 +2,9 @@ import * as R from 'ramda';
 import {
   ITEM_FETCH_INITIATED,
   ITEM_FETCH_SUCCESSFUL,
+  ITEM_PREFETCH_SUCCESSFUL,
   ItemFetchInitiatedAction,
   ItemFetchSuccessfulAction,
-  ITEM_PREFETCH_SUCCESSFUL,
   ItemPrefetchSuccessfulAction,
 } from '../actions/item-detail';
 import {
@@ -37,11 +37,13 @@ import {
   PERSON_FETCH_SUCCESSFUL,
   PersonFetchSuccessfulAction,
 } from '../actions/people/get_person';
-import {
-  PEOPLE_FETCH_SUCCESSFUL,
-  PeopleFetchSuccessfulAction,
-} from '../actions/people/get_people';
 import _ from 'lodash';
+import {
+  ITEM_RECOMMENDATIONS_FETCH_INITIATED,
+  ITEM_RECOMMENDATIONS_FETCH_SUCCESSFUL,
+  ItemRecsFetchInitiatedAction,
+  ItemRecsFetchSuccessfulAction,
+} from '../actions/item-detail/get_item_recommendations';
 
 export type ThingMap = {
   [key: string]: Item;
@@ -51,11 +53,16 @@ export interface State {
   fetching: boolean;
   currentId?: number;
   itemDetail?: string;
+  // True if we tried to lookup recs. If false and we load an item, try to load
+  // recommendations lazily.
+  fetchingRecs: boolean;
+  currentItemFetchedRecommendations?: boolean;
   thingsById: ThingMap;
 }
 
 const initialState: State = {
   fetching: false,
+  fetchingRecs: false,
   thingsById: {},
 };
 
@@ -98,26 +105,81 @@ const itemPrefetchSuccess = handleAction(
 const itemFetchSuccess = handleAction(
   ITEM_FETCH_SUCCESSFUL,
   (state: State, { payload }: ItemFetchSuccessfulAction) => {
-    let thingsById = state.thingsById || {};
-    let existingThing: Item | undefined = thingsById[payload!.id];
+    if (payload) {
+      let { item, includedRecommendations } = payload;
+      let thingsById = state.thingsById || {};
+      let existingThing: Item | undefined = thingsById[item.id];
 
-    let newThing: Item = ItemFactory.create(payload!);
-    if (existingThing) {
-      newThing = ItemFactory.merge(existingThing, newThing);
+      let newThing: Item = ItemFactory.create(item);
+      if (existingThing) {
+        newThing = ItemFactory.merge(existingThing, newThing);
+      }
+
+      let recommendations = (item.recommendations || []).map(
+        ItemFactory.create,
+      );
+
+      // TODO: Truncate thingsById after a certain point
+      return updateStateWithNewThings(
+        {
+          fetching: false,
+          itemDetail: newThing.id,
+          thingsById: {
+            ...state.thingsById,
+            [item.id]: newThing,
+          } as ThingMap,
+          currentItemFetchedRecommendations: includedRecommendations,
+        } as State,
+        recommendations,
+      );
+    } else {
+      return state;
     }
+  },
+);
 
-    // TODO: Truncate thingsById after a certain point
-    let newState = {
-      ...state,
-      fetching: false,
-      itemDetail: newThing.id,
-      thingsById: {
-        ...state.thingsById,
-        [payload!.id]: newThing,
-      } as ThingMap,
-    } as State;
+const itemRecommendationsFetch = handleAction(
+  ITEM_RECOMMENDATIONS_FETCH_INITIATED,
+  (state: State, { payload }: ItemRecsFetchInitiatedAction) => {
+    if (payload) {
+      return {
+        ...state,
+        fetchingRecs: true,
+        currentItemFetchedRecommendations: true,
+      };
+    } else {
+      return state;
+    }
+  },
+);
 
-    return updateStateWithNewThings(newState, newThing.recommendations || []);
+const itemRecommendationsFetchSuccess = handleAction(
+  ITEM_RECOMMENDATIONS_FETCH_SUCCESSFUL,
+  (state: State, { payload }: ItemRecsFetchSuccessfulAction) => {
+    if (payload) {
+      let recommendations = (payload.items || []).map(ItemFactory.create);
+
+      let forItem = state.thingsById[payload.forItem];
+
+      let nextState = state;
+      if (forItem) {
+        forItem = {
+          ...forItem,
+          recommendations: recommendations.map(r => r.id),
+        };
+        nextState = {
+          ...state,
+          thingsById: {
+            ...state.thingsById,
+            [payload.forItem]: forItem,
+          },
+        };
+      }
+
+      return updateStateWithNewThings(nextState, recommendations);
+    } else {
+      return state;
+    }
   },
 );
 
@@ -129,7 +191,7 @@ const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
   let thingsById = existingState.thingsById || {};
   let newThingsMerged = newThings.map(curr => {
     let existingThing: Item | undefined = thingsById[curr.id];
-    let newThing: Item = ItemFactory.create(curr);
+    let newThing = curr;
     if (existingThing) {
       newThing = ItemFactory.merge(existingThing, newThing);
     }
@@ -323,4 +385,6 @@ export default flattenActions(
   peopleCreditsFetchSuccess,
   itemPrefetchSuccess,
   personFetchSuccess,
+  itemRecommendationsFetch,
+  itemRecommendationsFetchSuccess,
 );
