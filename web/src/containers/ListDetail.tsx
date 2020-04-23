@@ -53,7 +53,9 @@ import { filterParamsEqual } from '../utils/changeDetection';
 import { optionalSetsEqual } from '../utils/sets';
 import { useRouter } from 'next/router';
 import qs from 'querystring';
-import useStateSelector from '../hooks/useStateSelector';
+import useStateSelector, {
+  useStateSelectorWithPrevious,
+} from '../hooks/useStateSelector';
 import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
 import { useWithUserContext } from '../hooks/useWithUser';
 import { useDispatchAction } from '../hooks/useDispatchAction';
@@ -261,7 +263,7 @@ function ListDetail() {
   const [deleted, setDeleted] = useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
-  const [deleteOnWatch, setDeleteOnWatch] = useState(true);
+  const [deleteOnWatch, setDeleteOnWatch] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [totalLoadedImages, setTotalLoadedImages] = useState(0);
   const router = useRouter();
@@ -274,7 +276,7 @@ function ListDetail() {
     state => state.lists.loading[LIST_RETRIEVE_INITIATED],
   );
 
-  const list = useStateSelector(state => {
+  const [list, previousList] = useStateSelectorWithPrevious(state => {
     return selectList(state, listId);
   }, hookDeepEqual);
 
@@ -413,6 +415,20 @@ function ListDetail() {
   useEffect(() => {
     retrieveList(true);
   }, [listId]);
+
+  useEffect(() => {
+    if (!previousList && list) {
+      setDeleteOnWatch(prev => {
+        let removeWatchedItemsOption =
+          list?.configuration?.options?.removeWatchedItems;
+        if (_.isUndefined(removeWatchedItemsOption)) {
+          return prev;
+        } else {
+          return removeWatchedItemsOption;
+        }
+      });
+    }
+  }, [list]);
 
   //
   // State updaters
@@ -642,7 +658,7 @@ function ListDetail() {
                     <ItemCard
                       key={item.id}
                       userSelf={userSelf}
-                      item={item}
+                      itemId={item.id}
                       listContext={list}
                       withActionButton
                       hoverDelete={!list.isDynamic}
