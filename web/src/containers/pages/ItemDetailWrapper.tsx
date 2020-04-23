@@ -56,6 +56,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
       imageHeight = '750';
     } else {
       imageURL = ''; // To do: make a backup share image for when one doesn't exist
+      content = 'summary';
       imageWidth = '0';
       imageHeight = '0';
     }
