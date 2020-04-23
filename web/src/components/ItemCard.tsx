@@ -287,9 +287,9 @@ function ItemCard(props: Props) {
       setLoginModalOpen(true);
     } else {
       if (itemWatched) {
-        removeUserItemTags(payload);
+        removeUserTags(payload);
       } else {
-        updateUserItemTags(payload);
+        updateUserTags(payload);
         setHoverRating(true);
       }
     }
@@ -309,10 +309,10 @@ function ItemCard(props: Props) {
 
     if (userItemRating === rating) {
       console.log('remove');
-      removeUserItemTags(payload);
+      removeUserTags(payload);
     } else {
       console.log('add');
-      updateUserItemTags(payload);
+      updateUserTags(payload);
     }
 
     setIsHovering(false);
