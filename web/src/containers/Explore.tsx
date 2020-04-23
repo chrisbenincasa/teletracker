@@ -43,8 +43,8 @@ import {
   useDispatchAction,
   useDispatchSideEffect,
 } from '../hooks/useDispatchAction';
-import dequal from 'dequal';
 import { useGenres, useNetworks } from '../hooks/useStateMetadata';
+import { hookDeepEqual } from '../hooks/util';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -129,7 +129,7 @@ function Explore(props: Props) {
   const thingsById = useStateSelector(state => state.itemDetail.thingsById);
   const [popular, previousPopular] = useStateSelectorWithPrevious(
     state => state.popular.popular,
-    dequal,
+    hookDeepEqual,
   );
   const popularBookmark = useStateSelector(
     state => state.popular.popularBookmark,
@@ -451,7 +451,7 @@ function Explore(props: Props) {
                     <ItemCard
                       key={result}
                       userSelf={userState.userSelf}
-                      item={thing}
+                      itemId={thing.id}
                       hasLoaded={setVisibleItems}
                     />
                   );

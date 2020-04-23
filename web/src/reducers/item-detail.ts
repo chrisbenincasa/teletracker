@@ -107,7 +107,7 @@ const itemFetchSuccess = handleAction(
     }
 
     // TODO: Truncate thingsById after a certain point
-    return {
+    let newState = {
       ...state,
       fetching: false,
       itemDetail: newThing.id,
@@ -116,10 +116,16 @@ const itemFetchSuccess = handleAction(
         [payload!.id]: newThing,
       } as ThingMap,
     } as State;
+
+    return updateStateWithNewThings(newState, newThing.recommendations || []);
   },
 );
 
 const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
+  if (newThings.length === 0) {
+    return existingState;
+  }
+
   let thingsById = existingState.thingsById || {};
   let newThingsMerged = newThings.map(curr => {
     let existingThing: Item | undefined = thingsById[curr.id];
