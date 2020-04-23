@@ -6,8 +6,9 @@ import {
   Tooltip,
   WithStyles,
   withStyles,
+  Zoom,
 } from '@material-ui/core';
-import { CheckBox, CheckBoxOutlineBlank } from '@material-ui/icons';
+import { CheckBox, ThumbUp, ThumbDown } from '@material-ui/icons';
 import { connect } from 'react-redux';
 import { bindActionCreators, Dispatch } from 'redux';
 import withUser, { WithUserProps } from '../withUser';
@@ -18,21 +19,33 @@ import {
 } from '../../actions/user';
 import AuthDialog from '../Auth/AuthDialog';
 import { ActionType } from '../../types';
-import Thing from '../../types/Thing';
 import moment from 'moment';
+import { Item, itemHasTag, getItemTagNumberValue } from '../../types/v2/Item';
 
 const styles = (theme: Theme) =>
   createStyles({
-    buttonIcon: {
-      // marginRight: theme.spacing(),
-    },
     itemCTA: {
       whiteSpace: 'nowrap',
+    },
+    ratingButton: {
+      minWidth: 40,
+    },
+    ratingButtonDislike: {
+      minWidth: 40,
+      '&:hover': { backgroundColor: theme.custom.palette.cancel },
+    },
+    ratingButtonDislikeActive: {
+      minWidth: 40,
+      backgroundColor: theme.custom.palette.cancel,
+      '&:hover': { backgroundColor: theme.custom.palette.cancel },
+    },
+    ratingButtonWrapper: {
+      marginLeft: theme.spacing(0.5),
     },
   });
 
 interface OwnProps {
-  itemDetail: Thing;
+  itemDetail: Item;
   style: object;
   className?: string;
 }
@@ -49,7 +62,6 @@ type Props = OwnProps &
 
 interface State {
   loginModalOpen: boolean;
-  watched?: boolean;
 }
 
 class MarkAsWatched extends Component<Props, State> {
@@ -58,11 +70,11 @@ class MarkAsWatched extends Component<Props, State> {
 
     this.state = {
       loginModalOpen: false,
-      watched: this.itemMarkedAsWatched(),
     };
   }
 
   toggleItemWatched = (): void => {
+    const itemWatched = itemHasTag(this.props.itemDetail, ActionType.Watched);
     let payload = {
       itemId: this.props.itemDetail.id,
       action: ActionType.Watched,
@@ -71,45 +83,104 @@ class MarkAsWatched extends Component<Props, State> {
     if (!this.props.userSelf) {
       this.toggleLoginModal();
     } else {
-      if (this.state.watched) {
+      if (itemWatched) {
         this.props.removeUserItemTags(payload);
-        this.setState({ watched: false });
       } else {
         this.props.updateUserItemTags(payload);
-        this.setState({ watched: true });
       }
     }
   };
 
-  itemMarkedAsWatched = (): boolean => {
-    if (this.props.itemDetail) {
-      return this.props.itemDetail.itemMarkedAsWatched;
-    }
-
-    return false;
-  };
-
   watchedButton = (isReleased: boolean) => {
     const { classes } = this.props;
-    const watchedStatus = this.state.watched;
-    const watchedCTA = watchedStatus ? 'Watched' : 'Mark Watched';
+    const watchedStatus = itemHasTag(this.props.itemDetail, ActionType.Watched);
+    const watchedCTA = watchedStatus ? 'Watched' : 'Mark as Watched';
 
     return (
-      <Button
-        size="small"
-        variant="contained"
-        aria-label={watchedCTA}
-        onClick={this.toggleItemWatched}
-        fullWidth
-        disabled={!isReleased}
-        color={watchedStatus ? 'primary' : undefined}
-        startIcon={
-          watchedStatus ? <CheckBox className={classes.buttonIcon} /> : null
-        }
-        className={classes.itemCTA}
-      >
-        {watchedCTA}
-      </Button>
+      <div style={{ display: 'flex', flexDirection: 'row' }}>
+        <Button
+          size="small"
+          variant="contained"
+          aria-label={watchedCTA}
+          onClick={this.toggleItemWatched}
+          fullWidth
+          disabled={!isReleased}
+          color={watchedStatus ? 'primary' : undefined}
+          startIcon={watchedStatus ? <CheckBox /> : null}
+          className={classes.itemCTA}
+        >
+          {watchedCTA}
+        </Button>
+        {watchedStatus && this.ratingButton()}
+      </div>
+    );
+  };
+
+  toggleItemRating = (rating: number) => {
+    let payload = {
+      itemId: this.props.itemDetail.id,
+      action: ActionType.Enjoyed,
+      value: rating,
+    };
+
+    const userItemRating = getItemTagNumberValue(
+      this.props.itemDetail,
+      ActionType.Enjoyed,
+    );
+
+    if (userItemRating === rating) {
+      this.props.removeUserItemTags(payload);
+    } else {
+      this.props.updateUserItemTags(payload);
+    }
+  };
+
+  ratingButton = () => {
+    const { classes } = this.props;
+    const userItemRating = getItemTagNumberValue(
+      this.props.itemDetail,
+      ActionType.Enjoyed,
+    );
+
+    return (
+      <React.Fragment>
+        <Tooltip title="Liked it" placement="top">
+          <div className={classes.ratingButtonWrapper}>
+            <Zoom in={true}>
+              <Button
+                aria-label="Liked it"
+                size="small"
+                variant="contained"
+                className={classes.ratingButton}
+                onClick={() => this.toggleItemRating(1)}
+                color={userItemRating === 1 ? 'primary' : 'secondary'}
+              >
+                <ThumbUp />
+              </Button>
+            </Zoom>
+          </div>
+        </Tooltip>
+        <Tooltip title={"Didn't like it"} placement="top">
+          <div className={classes.ratingButtonWrapper}>
+            <Zoom in={true}>
+              <Button
+                aria-label={"Didn't like it"}
+                size="small"
+                variant="contained"
+                className={
+                  userItemRating === 0
+                    ? classes.ratingButtonDislikeActive
+                    : classes.ratingButtonDislike
+                }
+                onClick={() => this.toggleItemRating(0)}
+                color={userItemRating === 0 ? 'primary' : 'secondary'}
+              >
+                <ThumbDown />
+              </Button>
+            </Zoom>
+          </div>
+        </Tooltip>
+      </React.Fragment>
     );
   };
 
@@ -118,14 +189,14 @@ class MarkAsWatched extends Component<Props, State> {
   };
 
   render() {
-    const { classes, style } = this.props;
+    const { className, style } = this.props;
     const currentDate = moment();
     const releaseDate = moment(this.props.itemDetail.release_date);
     const isReleased = currentDate.diff(releaseDate, 'days') >= 0;
 
     return (
       <React.Fragment>
-        <div className={this.props.className} style={{ ...style }}>
+        <div className={className} style={{ ...style }}>
           {!isReleased ? (
             <Tooltip title={`This is currently unreleased.`} placement="top">
               <span>{this.watchedButton(isReleased)}</span>
