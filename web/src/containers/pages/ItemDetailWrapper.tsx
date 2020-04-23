@@ -39,24 +39,24 @@ export default function makeItemDetailWrapper(type: ItemType) {
       (item?.release_date && moment(item?.release_date).format('YYYY')) || '';
     const firstLineOverview = item?.overview?.split('.')[0];
     const domain = process.env.REACT_APP_TELETRACKER_BASE_URL;
-    let imageURL: string;
-    let content: string;
-    let imageWidth: string;
-    let imageHeight: string;
+    let imageURL: string = '';
+    let summaryType: string = '';
+    let imageWidth: string = '';
+    let imageHeight: string = '';
 
     if (item?.backdropImage?.id) {
       imageURL = `https://image.tmdb.org/t/p/w780${item?.backdropImage?.id}`;
-      content = 'summary_large_image';
+      summaryType = 'summary_large_image';
       imageWidth = '780';
       imageHeight = '439';
     } else if (item?.posterImage?.id) {
       imageURL = `https://image.tmdb.org/t/p/w500${item?.posterImage?.id}`;
-      content = 'summary';
+      summaryType = 'summary';
       imageWidth = '500';
       imageHeight = '750';
     } else {
       imageURL = ''; // To do: make a backup share image for when one doesn't exist
-      content = 'summary';
+      summaryType = 'summary';
       imageWidth = '0';
       imageHeight = '0';
     }
@@ -87,7 +87,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
             property="og:url"
             content={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.asPath}`}
           />
-          <meta name="twitter:card" content={content} />
+          <meta name="twitter:card" content={summaryType} />
           <meta
             name="twitter:title"
             content={`${item?.canonicalTitle} - Where to Stream, Rent, or Buy It Online`}
