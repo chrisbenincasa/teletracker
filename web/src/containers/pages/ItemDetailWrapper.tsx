@@ -38,6 +38,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
     const releaseDate =
       (item?.release_date && moment(item?.release_date).format('YYYY')) || '';
     const firstLineOverview = item?.overview?.split('.')[0];
+    const domain = process.env.REACT_APP_TELETRACKER_BASE_URL;
 
     return (
       <React.Fragment>
@@ -51,7 +52,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
           <meta
             name="description"
             property="og:description"
-            content={`${firstLineOverview}. Find out where to stream, rent, or buy ${item?.canonicalTitle} on Teletracker.tv.`}
+            content={`${firstLineOverview}. Find out where to stream, rent, or buy ${item?.canonicalTitle} on ${domain}.`}
           />
           <meta
             name="image"
@@ -76,13 +77,13 @@ export default function makeItemDetailWrapper(type: ItemType) {
           />
           <meta
             name="twitter:description"
-            content={`${firstLineOverview}. Find out where to stream, rent, or buy ${item?.canonicalTitle} on Teletracker.tv.`}
+            content={`${firstLineOverview}. Find out where to stream, rent, or buy ${item?.canonicalTitle} on ${domain}.`}
           />
           <meta
             name="twitter:image"
             content={`https://image.tmdb.org/t/p/w780${item?.backdropImage?.id}`}
           />
-          <meta name="twitter:domain" content="Teletracker.tv" />
+          <meta name="twitter:domain" content={domain} />
           <meta
             name="keywords"
             content={`${item?.canonicalTitle}, ${item?.type}, stream, streaming, rent, buy, watch, track`}

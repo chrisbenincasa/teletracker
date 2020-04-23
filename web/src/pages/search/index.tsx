@@ -18,7 +18,9 @@ import url from 'url';
 import { parseFilterParamsFromObject } from '../../utils/urlHelper';
 import { DEFAULT_POPULAR_LIMIT } from '../../constants';
 
-interface Props {}
+interface Props {
+  query: string;
+}
 
 interface WithStore {
   store: Store;
@@ -28,7 +30,7 @@ function SearchWrapper(props: Props) {
   return (
     <React.Fragment>
       <Head>
-        <title>Popular</title>
+        <title>Teletracker Search - {props.query}</title>
         <meta
           name="viewport"
           content="minimum-scale=1, initial-scale=1, width=device-width"
@@ -54,8 +56,6 @@ SearchWrapper.getInitialProps = async (ctx: NextPageContext & WithStore) => {
       }),
     );
 
-    console.log(filterParams);
-
     let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.search(
       await currentUserJwt(),
       {
@@ -79,12 +79,12 @@ SearchWrapper.getInitialProps = async (ctx: NextPageContext & WithStore) => {
       );
 
       return {
-        searchResults: response.data!.data,
+        query,
       };
     } else {
       await ctx.store.dispatch(SearchFailed(new Error('bad')));
       return {
-        searchResults: null,
+        query,
       };
     }
   } else {
