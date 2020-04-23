@@ -29,6 +29,7 @@ import {
   createList,
   ListTrackingUpdatedInitiatedPayload,
   LIST_ADD_ITEM_INITIATED,
+  LIST_RETRIEVE_ALL_INITIATED,
   updateListTracking,
   UserCreateListPayload,
   USER_SELF_CREATE_LIST,
@@ -75,6 +76,7 @@ interface AddToListDialogProps {
   item: Item;
   listOperations: ListOperationState;
   listItemAddLoading: boolean;
+  listLoading: boolean;
   createAListLoading: boolean;
   listsById: ListsByIdMap;
 }
@@ -102,11 +104,27 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   constructor(props: Props) {
     super(props);
 
-    const belongsToLists: string[] =
-      props && props.item ? itemBelongsToLists(props.item) : [];
+    let listChanges = this.calculateListChanges();
+    this.state = {
+      actionPending: props.listOperations.inProgress,
+      createAListEnabled: false,
+      newListName: '',
+      newListValidation: CreateAListValidator.defaultState().asObject(),
+      originalListState: listChanges,
+      listChanges,
+    };
+  }
 
-    let listChanges = _.reduce(
-      Object.keys(props.listsById),
+  hasTrackingChanged() {
+    return _.isEqual(this.state.originalListState, this.state.listChanges);
+  }
+
+  calculateListChanges = () => {
+    const belongsToLists: string[] =
+      this.props && this.props.item ? itemBelongsToLists(this.props.item) : [];
+
+    return _.reduce(
+      Object.keys(this.props.listsById),
       (acc, elem) => {
         return {
           ...acc,
@@ -115,46 +133,27 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       },
       {},
     );
+  };
 
-    this.state = {
-      actionPending: props.listOperations.inProgress,
+  updateInitialListState = () => {
+    let listChanges = this.calculateListChanges();
+    this.setState({
       originalListState: {
         ...listChanges,
       },
       listChanges,
-      createAListEnabled: false,
-      newListName: '',
-      newListValidation: CreateAListValidator.defaultState().asObject(),
-    };
-  }
+    });
+  };
 
-  hasTrackingChanged() {
-    return _.isEqual(this.state.originalListState, this.state.listChanges);
+  componentDidMount(): void {
+    if (!this.props.listLoading) {
+      this.updateInitialListState();
+    }
   }
 
   componentDidUpdate(prevProps: AddToListDialogProps) {
     if (this.props.open && !prevProps.open) {
-      const belongsToLists: string[] =
-        this.props && this.props.item
-          ? itemBelongsToLists(this.props.item)
-          : [];
-
-      let listChanges = _.reduce(
-        Object.keys(this.props.listsById),
-        (acc, elem) => {
-          return {
-            ...acc,
-            [elem]: belongsToLists.includes(elem),
-          };
-        },
-        {},
-      );
-
-      this.setState({
-        originalListState: {
-          ...listChanges,
-        },
-      });
+      this.updateInitialListState();
     } else if (prevProps.open && !this.props.open) {
       this.handleModalClose();
     }
@@ -171,6 +170,10 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
         newListName: '',
         newListValidation: CreateAListValidator.defaultState().asObject(),
       });
+    }
+
+    if (prevProps.listLoading && !this.props.listLoading) {
+      this.updateInitialListState();
     }
   }
 
@@ -339,7 +342,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
                       onChange={(_, checked) =>
                         this.handleCheckboxChange(list, checked)
                       }
-                      checked={this.state.listChanges[list.id]}
+                      checked={this.state.listChanges[list.id] ? true : false}
                       color="primary"
                     />
                   }
@@ -392,6 +395,7 @@ const mapStateToProps = (appState: AppState) => {
     listItemAddLoading: R.defaultTo(false)(
       appState.lists.loading[LIST_ADD_ITEM_INITIATED],
     ),
+    listLoading: !!appState.lists.loading[LIST_RETRIEVE_ALL_INITIATED],
     createAListLoading: R.defaultTo(false)(
       appState.userSelf.loading[USER_SELF_CREATE_LIST],
     ),
