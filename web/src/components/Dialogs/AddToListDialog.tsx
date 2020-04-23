@@ -29,7 +29,7 @@ import {
   createList,
   ListTrackingUpdatedInitiatedPayload,
   LIST_ADD_ITEM_INITIATED,
-  LIST_RETRIEVE_INITIATED,
+  LIST_RETRIEVE_ALL_INITIATED,
   updateListTracking,
   UserCreateListPayload,
   USER_SELF_CREATE_LIST,
@@ -104,15 +104,26 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   constructor(props: Props) {
     super(props);
 
-    if (!this.props.listLoading) {
-      console.log('list is loaded');
-    }
+    let listChanges = this.calculateListChanges();
+    this.state = {
+      actionPending: props.listOperations.inProgress,
+      createAListEnabled: false,
+      newListName: '',
+      newListValidation: CreateAListValidator.defaultState().asObject(),
+      originalListState: listChanges,
+      listChanges,
+    };
+  }
 
-    const belongsToLists: string[] = this.props?.item
-      ? itemBelongsToLists(this.props.item)
-      : [];
+  hasTrackingChanged() {
+    return _.isEqual(this.state.originalListState, this.state.listChanges);
+  }
 
-    let listChanges = _.reduce(
+  calculateListChanges = () => {
+    const belongsToLists: string[] =
+      this.props && this.props.item ? itemBelongsToLists(this.props.item) : [];
+
+    return _.reduce(
       Object.keys(this.props.listsById),
       (acc, elem) => {
         return {
@@ -122,46 +133,27 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       },
       {},
     );
+  };
 
-    this.state = {
-      actionPending: props.listOperations.inProgress,
-      createAListEnabled: false,
-      newListName: '',
-      newListValidation: CreateAListValidator.defaultState().asObject(),
+  updateInitialListState = () => {
+    let listChanges = this.calculateListChanges();
+    this.setState({
       originalListState: {
         ...listChanges,
       },
       listChanges,
-    };
-  }
+    });
+  };
 
-  hasTrackingChanged() {
-    return _.isEqual(this.state.originalListState, this.state.listChanges);
+  componentDidMount(): void {
+    if (!this.props.listLoading) {
+      this.updateInitialListState();
+    }
   }
 
   componentDidUpdate(prevProps: AddToListDialogProps) {
     if (this.props.open && !prevProps.open) {
-      const belongsToLists: string[] =
-        this.props && this.props.item
-          ? itemBelongsToLists(this.props.item)
-          : [];
-
-      let listChanges = _.reduce(
-        Object.keys(this.props.listsById),
-        (acc, elem) => {
-          return {
-            ...acc,
-            [elem]: belongsToLists.includes(elem),
-          };
-        },
-        {},
-      );
-
-      this.setState({
-        originalListState: {
-          ...listChanges,
-        },
-      });
+      this.updateInitialListState();
     } else if (prevProps.open && !this.props.open) {
       this.handleModalClose();
     }
@@ -180,31 +172,8 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
       });
     }
 
-    console.log(this.props.listLoading);
-
     if (prevProps.listLoading && !this.props.listLoading) {
-      console.log('Update is running');
-      const belongsToLists: string[] = this.props?.item
-        ? itemBelongsToLists(this.props.item)
-        : [];
-
-      let listChanges = _.reduce(
-        Object.keys(this.props.listsById),
-        (acc, elem) => {
-          return {
-            ...acc,
-            [elem]: belongsToLists.includes(elem),
-          };
-        },
-        {},
-      );
-
-      this.setState({
-        originalListState: {
-          ...listChanges,
-        },
-        listChanges,
-      });
+      this.updateInitialListState();
     }
   }
 
@@ -426,7 +395,7 @@ const mapStateToProps = (appState: AppState) => {
     listItemAddLoading: R.defaultTo(false)(
       appState.lists.loading[LIST_ADD_ITEM_INITIATED],
     ),
-    listLoading: !!appState.lists.loading[LIST_RETRIEVE_INITIATED],
+    listLoading: !!appState.lists.loading[LIST_RETRIEVE_ALL_INITIATED],
     createAListLoading: R.defaultTo(false)(
       appState.userSelf.loading[USER_SELF_CREATE_LIST],
     ),
