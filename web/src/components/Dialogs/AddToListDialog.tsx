@@ -29,6 +29,7 @@ import {
   createList,
   ListTrackingUpdatedInitiatedPayload,
   LIST_ADD_ITEM_INITIATED,
+  LIST_RETRIEVE_INITIATED,
   updateListTracking,
   UserCreateListPayload,
   USER_SELF_CREATE_LIST,
@@ -75,6 +76,7 @@ interface AddToListDialogProps {
   item: Item;
   listOperations: ListOperationState;
   listItemAddLoading: boolean;
+  listLoading: boolean;
   createAListLoading: boolean;
   listsById: ListsByIdMap;
 }
@@ -102,11 +104,16 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
   constructor(props: Props) {
     super(props);
 
-    const belongsToLists: string[] =
-      props && props.item ? itemBelongsToLists(props.item) : [];
+    if (!this.props.listLoading) {
+      console.log('list is loaded');
+    }
+
+    const belongsToLists: string[] = this.props?.item
+      ? itemBelongsToLists(this.props.item)
+      : [];
 
     let listChanges = _.reduce(
-      Object.keys(props.listsById),
+      Object.keys(this.props.listsById),
       (acc, elem) => {
         return {
           ...acc,
@@ -118,13 +125,13 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
 
     this.state = {
       actionPending: props.listOperations.inProgress,
+      createAListEnabled: false,
+      newListName: '',
+      newListValidation: CreateAListValidator.defaultState().asObject(),
       originalListState: {
         ...listChanges,
       },
       listChanges,
-      createAListEnabled: false,
-      newListName: '',
-      newListValidation: CreateAListValidator.defaultState().asObject(),
     };
   }
 
@@ -170,6 +177,33 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
         createAListEnabled: false,
         newListName: '',
         newListValidation: CreateAListValidator.defaultState().asObject(),
+      });
+    }
+
+    console.log(this.props.listLoading);
+
+    if (prevProps.listLoading && !this.props.listLoading) {
+      console.log('Update is running');
+      const belongsToLists: string[] = this.props?.item
+        ? itemBelongsToLists(this.props.item)
+        : [];
+
+      let listChanges = _.reduce(
+        Object.keys(this.props.listsById),
+        (acc, elem) => {
+          return {
+            ...acc,
+            [elem]: belongsToLists.includes(elem),
+          };
+        },
+        {},
+      );
+
+      this.setState({
+        originalListState: {
+          ...listChanges,
+        },
+        listChanges,
       });
     }
   }
@@ -339,7 +373,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
                       onChange={(_, checked) =>
                         this.handleCheckboxChange(list, checked)
                       }
-                      checked={this.state.listChanges[list.id]}
+                      checked={this.state.listChanges[list.id] ? true : false}
                       color="primary"
                     />
                   }
@@ -392,6 +426,7 @@ const mapStateToProps = (appState: AppState) => {
     listItemAddLoading: R.defaultTo(false)(
       appState.lists.loading[LIST_ADD_ITEM_INITIATED],
     ),
+    listLoading: !!appState.lists.loading[LIST_RETRIEVE_INITIATED],
     createAListLoading: R.defaultTo(false)(
       appState.userSelf.loading[USER_SELF_CREATE_LIST],
     ),
