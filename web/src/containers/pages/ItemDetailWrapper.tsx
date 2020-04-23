@@ -41,23 +41,23 @@ export default function makeItemDetailWrapper(type: ItemType) {
     const domain = process.env.REACT_APP_TELETRACKER_BASE_URL;
     let imageURL: string;
     let content: string;
-    let imageWidth: number;
-    let imageHeight: number;
+    let imageWidth: string;
+    let imageHeight: string;
 
     if (item?.backdropImage?.id) {
       imageURL = `https://image.tmdb.org/t/p/w780${item?.backdropImage?.id}`;
       content = 'summary_large_image';
-      imageWidth = 780;
-      imageHeight = 439;
+      imageWidth = '780';
+      imageHeight = '439';
     } else if (item?.posterImage?.id) {
       imageURL = `https://image.tmdb.org/t/p/w500${item?.posterImage?.id}`;
       content = 'summary';
-      imageWidth = 500;
-      imageHeight = 750;
+      imageWidth = '500';
+      imageHeight = '750';
     } else {
       imageURL = ''; // To do: make a backup share image for when one doesn't exist
-      imageWidth = 0;
-      imageHeight = 0;
+      imageWidth = '0';
+      imageHeight = '0';
     }
 
     return (
