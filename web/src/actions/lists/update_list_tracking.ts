@@ -2,7 +2,7 @@ import { all, put, takeLatest } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
-import { FSA } from 'flux-standard-action';
+import { ErrorFSA, FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
 import ReactGA from 'react-ga';
 import { updateUserItemTagsSuccess } from '../user/update_user_tags';
@@ -25,57 +25,72 @@ export type ListTrackingUpdateInitiatedAction = FSA<
   ListTrackingUpdatedInitiatedPayload
 >;
 
+export type updateListTrackingFailedAction = ErrorFSA<
+  Error,
+  undefined,
+  typeof LIST_UPDATE_TRACKING_FAILED
+>;
+
 export const updateListTracking = createAction<
   ListTrackingUpdateInitiatedAction
 >(LIST_UPDATE_TRACKING_INITIATED);
+
+export const updateListTrackingFailed = createAction<
+  updateListTrackingFailedAction
+>(LIST_UPDATE_TRACKING_FAILED);
 
 export const updateListTrackingSaga = function*() {
   yield takeLatest(LIST_UPDATE_TRACKING_INITIATED, function*({
     payload,
   }: ListTrackingUpdateInitiatedAction) {
     if (payload) {
-      let response: TeletrackerResponse<any> = yield clientEffect(
-        client => client.updateListTracking,
-        payload.itemId,
-        payload.addToLists,
-        payload.removeFromLists,
-      );
-
-      if (response.ok) {
-        yield put(retrieveAllLists({}));
-
-        yield all(
-          payload.addToLists.map(listId => {
-            return put(
-              updateUserItemTagsSuccess({
-                itemId: payload.itemId,
-                action: ActionType.TrackedInList,
-                string_value: listId,
-                unique: true,
-              }),
-            );
-          }),
+      try {
+        let response: TeletrackerResponse<any> = yield clientEffect(
+          client => client.updateListTracking,
+          payload.itemId,
+          payload.addToLists,
+          payload.removeFromLists,
         );
 
-        yield all(
-          payload.removeFromLists.map(listId => {
-            return put(
-              removeUserItemTagsSuccess({
-                itemId: payload.itemId,
-                action: ActionType.TrackedInList,
-                string_value: listId,
-                unique: true,
-              }),
-            );
-          }),
-        );
+        if (response.ok) {
+          yield put(retrieveAllLists({}));
 
-        ReactGA.event({
-          category: 'User',
-          action: 'Updated list',
-        });
+          yield all(
+            payload.addToLists.map(listId => {
+              return put(
+                updateUserItemTagsSuccess({
+                  itemId: payload.itemId,
+                  action: ActionType.TrackedInList,
+                  string_value: listId,
+                  unique: true,
+                }),
+              );
+            }),
+          );
+
+          yield all(
+            payload.removeFromLists.map(listId => {
+              return put(
+                removeUserItemTagsSuccess({
+                  itemId: payload.itemId,
+                  action: ActionType.TrackedInList,
+                  string_value: listId,
+                  unique: true,
+                }),
+              );
+            }),
+          );
+
+          ReactGA.event({
+            category: 'User',
+            action: 'Updated list',
+          });
+        }
+      } catch (e) {
+        yield put(updateListTrackingFailed(e));
       }
     } else {
+      // To do: error payload doesn't exist
     }
   });
 };
