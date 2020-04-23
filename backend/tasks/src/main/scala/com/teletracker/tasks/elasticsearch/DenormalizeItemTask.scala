@@ -36,7 +36,12 @@ class DenormalizeItemTask @Inject()(
     val args = preparseArgs(_args)
 
     itemLookup
-      .lookupItem(Left(args.itemId), None, materializeJoins = false)
+      .lookupItem(
+        Left(args.itemId),
+        None,
+        shouldMateralizeCredits = false,
+        shouldMaterializeRecommendations = false
+      )
       .flatMap {
         case Some(item) =>
           // Denorm cast if necessary

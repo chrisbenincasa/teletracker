@@ -347,7 +347,12 @@ abstract class IngestDeltaJobLike[
         .flatMap(_.headOption)
 
       itemLookup
-        .lookupItem(Left(itemId), None, materializeJoins = false)
+        .lookupItem(
+          Left(itemId),
+          None,
+          shouldMateralizeCredits = false,
+          shouldMaterializeRecommendations = false
+        )
         .flatMap {
           case None => Future.successful(None)
           case Some(item) =>

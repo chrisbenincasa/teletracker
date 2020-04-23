@@ -288,7 +288,12 @@ class ItemUpdater @Inject()(
   ) = {
     Timing.time("createUserItemTag", logger) {
       itemSearch
-        .lookupItem(Left(itemId), None, materializeJoins = false)
+        .lookupItem(
+          Left(itemId),
+          None,
+          shouldMateralizeCredits = false,
+          shouldMaterializeRecommendations = false
+        )
         .map {
           case None =>
             throw new IllegalArgumentException(

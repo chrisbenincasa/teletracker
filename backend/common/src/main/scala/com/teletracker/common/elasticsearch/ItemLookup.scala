@@ -185,7 +185,8 @@ class ItemLookup @Inject()(
   def lookupItem(
     identifier: Either[UUID, Slug],
     thingType: Option[ItemType],
-    materializeJoins: Boolean = true
+    shouldMaterializeRecommendations: Boolean = true,
+    shouldMateralizeCredits: Boolean = true
   ): Future[Option[ItemLookupResponse]] = {
     val identifierQuery = identifier match {
       case Left(value) =>
@@ -223,13 +224,18 @@ class ItemLookup @Inject()(
             item.recommendations.getOrElse(Nil).map(_.id).zipWithIndex.toMap
 
           val recsFut =
-            if (materializeJoins) materializeRecommendations(item.id)
-            else Future.successful(ElasticsearchItemsResponse.empty)
+            if (shouldMaterializeRecommendations) {
+              materializeRecommendations(item.id)
+            } else {
+              Future.successful(ElasticsearchItemsResponse.empty)
+            }
 
           val castFut =
-            if (materializeJoins)
+            if (shouldMateralizeCredits) {
               lookupItemCredits(item.id, item.cast.getOrElse(Nil).size)
-            else Future.successful(ElasticsearchPeopleResponse.empty)
+            } else {
+              Future.successful(ElasticsearchPeopleResponse.empty)
+            }
 
           for {
             recs <- recsFut

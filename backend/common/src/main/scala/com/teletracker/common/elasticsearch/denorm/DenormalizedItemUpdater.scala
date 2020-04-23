@@ -53,7 +53,12 @@ class DenormalizedItemUpdater @Inject()(
 
   def updateUserItems(itemId: UUID): Future[BulkByScrollResponse] = {
     itemLookup
-      .lookupItem(Left(itemId), None, materializeJoins = false)
+      .lookupItem(
+        Left(itemId),
+        None,
+        shouldMateralizeCredits = false,
+        shouldMaterializeRecommendations = false
+      )
       .flatMap {
         case Some(value) =>
           val matchingItems =

@@ -32,18 +32,29 @@ class ItemApi @Inject()(
   def getThingViaSearch(
     userId: Option[String],
     idOrSlug: String,
-    thingType: Option[ItemType]
+    thingType: Option[ItemType],
+    materializeRecommendations: Boolean
   ): Future[Option[Item]] = {
-    getThingViaSearch(userId, HasThingIdOrSlug.parse(idOrSlug), thingType)
+    getThingViaSearch(
+      userId,
+      HasThingIdOrSlug.parse(idOrSlug),
+      thingType,
+      materializeRecommendations
+    )
   }
 
   def getThingViaSearch(
     userId: Option[String],
     idOrSlug: Either[UUID, Slug],
-    thingType: Option[ItemType]
+    thingType: Option[ItemType],
+    materializeRecommendations: Boolean
   ): Future[Option[Item]] = {
     itemLookup
-      .lookupItem(idOrSlug, thingType)
+      .lookupItem(
+        idOrSlug,
+        thingType,
+        shouldMaterializeRecommendations = materializeRecommendations
+      )
       .map(_.collect {
         case ItemLookupResponse(item, cast, recs) =>
           Item.fromEsItem(
@@ -71,7 +82,12 @@ class ItemApi @Inject()(
         Future.successful(Some(itemId -> userTag))
 
       case Right(slug) =>
-        getThingViaSearch(Some(userId), Right(slug), thingType).map {
+        getThingViaSearch(
+          Some(userId),
+          Right(slug),
+          thingType,
+          materializeRecommendations = false
+        ).map {
           case None => None
           case Some(item) =>
             val userTag =
@@ -106,7 +122,12 @@ class ItemApi @Inject()(
           .map(_ => Some(value -> esTag))
 
       case Right(value) =>
-        getThingViaSearch(Some(userId), Right(value), thingType).flatMap {
+        getThingViaSearch(
+          Some(userId),
+          Right(value),
+          thingType,
+          materializeRecommendations = false
+        ).flatMap {
           case None => Future.successful(None)
           case Some(value) =>
             itemUpdater

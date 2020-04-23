@@ -36,12 +36,13 @@ class ItemsController @Inject()(
     extends Controller
     with CanParseFieldFilter {
   prefix("/api/v2/items") {
-    get("/:thingId/?") { req: GetThingRequest =>
+    get("/:itemId/?") { req: GetItemRequest =>
       itemApi
         .getThingViaSearch(
           req.authenticatedUserId,
-          req.thingId,
-          Some(req.thingType)
+          req.itemId,
+          Some(req.thingType),
+          materializeRecommendations = req.includeRecommendations
         )
         .map {
           case None =>
@@ -51,6 +52,29 @@ class ItemsController @Inject()(
             response.ok
               .contentTypeJson()
               .body(DataResponse.complex(found))
+        }
+        .recover {
+          case NonFatal(e) =>
+            response.internalServerError
+        }
+    }
+
+    get("/:itemId/recommendations") { req: GetItemRecommendationsRequest =>
+      itemApi
+        .getThingViaSearch(
+          req.authenticatedUserId,
+          req.itemId,
+          Some(req.thingType),
+          materializeRecommendations = true
+        )
+        .map {
+          case None =>
+            response.notFound
+
+          case Some(found) =>
+            response.ok
+              .contentTypeJson()
+              .body(DataResponse.complex(found.recommendations.getOrElse(Nil)))
         }
         .recover {
           case NonFatal(e) =>
@@ -148,8 +172,15 @@ case class PersonResponse(
   person: EsPerson,
   castCreditsFull: Map[UUID, EsItem])
 
-case class GetThingRequest(
-  @RouteParam thingId: String,
+case class GetItemRequest(
+  @RouteParam itemId: String,
+  @QueryParam thingType: ItemType,
+  @QueryParam includeRecommendations: Boolean = false,
+  request: Request)
+    extends InjectedRequest
+
+case class GetItemRecommendationsRequest(
+  @RouteParam itemId: String,
   @QueryParam thingType: ItemType,
   request: Request)
     extends InjectedRequest

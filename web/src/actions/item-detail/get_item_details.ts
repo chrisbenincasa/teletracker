@@ -20,9 +20,14 @@ export type ItemFetchInitiatedAction = FSA<
   ItemFetchInitiatedPayload
 >;
 
+export interface ItemFetchSuccessfulPayload {
+  item: ApiItem;
+  includedRecommendations: boolean;
+}
+
 export type ItemFetchSuccessfulAction = FSA<
   typeof ITEM_FETCH_SUCCESSFUL,
-  ApiItem
+  ItemFetchSuccessfulPayload
 >;
 
 export type ItemPrefetchSuccessfulAction = FSA<
@@ -58,10 +63,16 @@ export const fetchItemDetailsSaga = function*() {
         client => client.getItem,
         payload.id,
         payload.type,
+        true,
       );
 
       if (response.ok) {
-        yield put(itemFetchSuccess(response.data.data));
+        yield put(
+          itemFetchSuccess({
+            item: response.data.data,
+            includedRecommendations: true,
+          }),
+        );
       } else {
         yield put(itemFetchFailed(new Error()));
       }

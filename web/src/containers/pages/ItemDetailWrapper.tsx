@@ -124,10 +124,16 @@ export default function makeItemDetailWrapper(type: ItemType) {
         await currentUserJwt(),
         ctx.query.id,
         type,
+        false,
       );
 
       if (response.ok && response.data) {
-        await ctx.store.dispatch(itemFetchSuccess(response.data.data));
+        await ctx.store.dispatch(
+          itemFetchSuccess({
+            item: response.data.data,
+            includedRecommendations: false,
+          }),
+        );
 
         return {
           itemId: response.data.data.id,

@@ -246,7 +246,8 @@ class UserController @Inject()(
                 .getThingViaSearch(
                   req.authenticatedUserId,
                   req.idOrSlug,
-                  req.thingType
+                  req.thingType,
+                  materializeRecommendations = false
                 )
                 .flatMap {
                   case None => Future.successful(response.notFound)
