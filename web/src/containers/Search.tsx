@@ -175,13 +175,11 @@ const Search = ({ inViewportChange }) => {
     // We won't want to rely on this initially because initial load is relying on query param not redux state.
     const fallbackSearchText = currentSearchText || '';
 
-    console.log(searchText, itemTypes);
-
     if (!isSearching) {
       dispatch(
         search({
           query: firstLoad ? searchText : fallbackSearchText,
-          bookmark: searchBookmark ? searchBookmark : undefined,
+          bookmark: firstLoad ? undefined : searchBookmark,
           limit: calculateLimit(width, 3, 0),
           itemTypes,
           networks,
@@ -200,7 +198,6 @@ const Search = ({ inViewportChange }) => {
   };
 
   const [debouncedSearch] = useDebouncedCallback(loadResults, 200);
-  // const debouncedSearch = useRef(_.debounce(loadResults, 200)).current;
 
   // Load new set of search results when searchText changes
   useEffect(() => {
