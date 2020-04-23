@@ -33,7 +33,7 @@ export interface Item extends HasSlug {
   crew?: ItemCrewMember[];
   external_ids?: ItemExternalId[];
   genres?: ItemGenre[];
-  id: string;
+  id: Id;
   images?: ItemImage[];
   original_title: string;
   overview?: string;

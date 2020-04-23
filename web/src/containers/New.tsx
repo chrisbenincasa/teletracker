@@ -141,7 +141,7 @@ class New extends Component<Props> {
             return (
               <ItemCard
                 key={thing.id}
-                item={thing}
+                itemId={thing.id}
                 userSelf={this.props.userSelf!}
               />
             );

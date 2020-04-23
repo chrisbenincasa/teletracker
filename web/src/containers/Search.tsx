@@ -352,7 +352,7 @@ const Search = ({ inViewportChange }) => {
                           <ItemCard
                             key={result.id}
                             userSelf={withUserState.userSelf}
-                            item={result}
+                            itemId={result.id}
                             hasLoaded={loadHandler}
                           />
                         );
