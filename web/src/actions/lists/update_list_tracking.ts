@@ -44,8 +44,6 @@ export const updateListTrackingSaga = function*() {
     payload,
   }: ListTrackingUpdateInitiatedAction) {
     if (payload) {
-      console.log(payload);
-
       try {
         let response: TeletrackerResponse<any> = yield clientEffect(
           client => client.updateListTracking,
@@ -55,7 +53,6 @@ export const updateListTrackingSaga = function*() {
         );
 
         if (response.ok) {
-          console.log('response ok');
           yield put(retrieveAllLists({}));
 
           yield all(
@@ -90,12 +87,10 @@ export const updateListTrackingSaga = function*() {
           });
         }
       } catch (e) {
-        console.log(e, 'test');
         yield put(updateListTrackingFailed(e));
       }
     } else {
       // To do: error payload doesn't exist
-      console.log('payload doesnt exist');
     }
   });
 };
