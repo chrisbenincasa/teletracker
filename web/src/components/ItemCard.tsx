@@ -37,13 +37,19 @@ import { UserSelf } from '../reducers/user';
 import { ActionType, List } from '../types';
 import AddToListDialog from './Dialogs/AddToListDialog';
 import { ResponsiveImage } from './ResponsiveImage';
-import { Item, itemHasTag, getItemTagNumberValue } from '../types/v2/Item';
+import { getItemTagNumberValue, Item, itemHasTag } from '../types/v2/Item';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
 import { useWidth } from '../hooks/useWidth';
 import { hexToRGB } from '../utils/style-utils';
 import { useDispatchAction } from '../hooks/useDispatchAction';
-import deepEq from 'dequal';
+import dequal from 'dequal';
 import AuthDialog from './Auth/AuthDialog';
+import { Id } from '../types/v2';
+import { createSelector } from 'reselect';
+import { AppState } from '../reducers';
+import useStateSelector from '../hooks/useStateSelector';
+import { hookDeepEqual } from '../hooks/util';
+import _ from 'lodash';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -169,7 +175,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 interface Props {
   key: string | number;
-  item: Item;
+  itemId: Id;
   userSelf?: UserSelf;
 
   // display props
@@ -185,8 +191,15 @@ interface Props {
   hasLoaded?: () => void;
 }
 
+const selectItem = createSelector(
+  (state: AppState) => state.itemDetail.thingsById,
+  (_, itemId: Id) => itemId,
+  (itemsById, itemId) => {
+    return itemsById[itemId];
+  },
+);
+
 function ItemCard(props: Props) {
-  // console.log('render');
   const classes = useStyles();
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
@@ -199,19 +212,18 @@ function ItemCard(props: Props) {
     false,
   );
   const [deleted, setDeleted] = useState<boolean>(false);
-  const [currentId, setCurrentId] = useState<string>('');
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
+  const item = useStateSelector(
+    state => selectItem(state, props.itemId),
+    hookDeepEqual,
+  );
 
   const updateList = useDispatchAction(updateListTracking);
   const updateUserTags = useDispatchAction(updateUserItemTags);
   const removeUserTags = useDispatchAction(removeUserItemTags);
 
   useEffect(() => {
-    let { item } = props;
-    let itemId = item.id;
-    setCurrentId(itemId);
-
     if (
       !props.listContext &&
       props.withActionButton &&
@@ -268,7 +280,7 @@ function ItemCard(props: Props) {
 
   const handleRemoveFromList = () => {
     updateList({
-      itemId: props.item.id,
+      itemId: item.id,
       addToLists: [],
       removeFromLists: [props.listContext!.id.toString()],
     });
@@ -277,9 +289,9 @@ function ItemCard(props: Props) {
   };
 
   const toggleItemWatched = (): void => {
-    const itemWatched = itemHasTag(props.item, ActionType.Watched);
+    const itemWatched = itemHasTag(item, ActionType.Watched);
     let payload = {
-      itemId: currentId,
+      itemId: props.itemId,
       action: ActionType.Watched,
     };
 
@@ -297,15 +309,12 @@ function ItemCard(props: Props) {
 
   const toggleItemRating = (rating: number) => {
     let payload = {
-      itemId: currentId,
+      itemId: props.itemId,
       action: ActionType.Enjoyed,
       value: rating,
     };
 
-    const userItemRating = getItemTagNumberValue(
-      props.item,
-      ActionType.Enjoyed,
-    );
+    const userItemRating = getItemTagNumberValue(item, ActionType.Enjoyed);
 
     if (userItemRating === rating) {
       console.log('remove');
@@ -403,11 +412,8 @@ function ItemCard(props: Props) {
 
     let transitionDelay = 100;
     const tooltipPlacement = 'right';
-    const itemWatched = itemHasTag(props.item, ActionType.Watched);
-    const userItemRating = getItemTagNumberValue(
-      props.item,
-      ActionType.Enjoyed,
-    );
+    const itemWatched = itemHasTag(item, ActionType.Watched);
+    const userItemRating = getItemTagNumberValue(item, ActionType.Enjoyed);
 
     return (
       <Collapse in={true} style={{ position: 'absolute', top: 0 }}>
@@ -572,12 +578,12 @@ function ItemCard(props: Props) {
         entering the viewport & image has successfuly loaded in,
         ensuring the fade is visible to user.
       */
-        in={isInViewport && imageLoaded}
+        in={isInViewport && !_.isUndefined(item) && imageLoaded}
         timeout={1000}
         ref={loadWrapperRef}
       >
         <Grid
-          key={!deleted ? props.item.id : `${props.item.id}-deleted`}
+          key={!deleted ? props.itemId : `${props.itemId}-deleted`}
           {...gridProps}
         >
           {/* //imageLoaded ? '100%' : getPlaceholderHeight(), */}
@@ -593,7 +599,7 @@ function ItemCard(props: Props) {
             ref={itemRef}
           >
             {/* No network call is made until container is entering the viewport. */}
-            {isNearViewport && renderPoster(props.item)}
+            {isNearViewport && renderPoster(item)}
           </Card>
         </Grid>
       </Fade>
@@ -605,7 +611,7 @@ function ItemCard(props: Props) {
         open={manageTrackingModalOpen}
         onClose={() => setManageTrackingModalOpen(false)}
         userSelf={props.userSelf}
-        item={props.item}
+        item={item}
       />
       {renderDialog()}
     </React.Fragment>
@@ -619,6 +625,6 @@ ItemCard.defaultProps = {
   hoverAddToList: true,
 };
 
-ItemCard.whyDidYouRender = true;
+// ItemCard.whyDidYouRender = true;
 
-export default React.memo(ItemCard, deepEq);
+export default React.memo(ItemCard, dequal);

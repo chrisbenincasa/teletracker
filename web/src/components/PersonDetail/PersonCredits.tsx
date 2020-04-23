@@ -28,7 +28,7 @@ import { selectPerson } from './hooks';
 import { Item } from '../../types/v2/Item';
 import { collect } from '../../utils/collection-utils';
 import { useWithUserContext } from '../../hooks/useWithUser';
-import dequal from 'dequal';
+import { hookDeepEqual } from '../../hooks/util';
 
 const selectCreditDetails = createSelector(
   selectPerson,
@@ -95,7 +95,7 @@ export default function PersonCredits(props: Props) {
   );
   const itemById = useStateSelector(
     state => state.itemDetail.thingsById,
-    dequal,
+    hookDeepEqual,
   );
 
   let dispatchCreditsFetch = useDispatchAction(personCreditsFetchInitiated);
@@ -227,7 +227,7 @@ export default function PersonCredits(props: Props) {
           <Grid container spacing={2}>
             {filmography.map(item =>
               item && item.posterImage ? (
-                <ItemCard key={item.id} userSelf={userSelf} item={item} />
+                <ItemCard key={item.id} userSelf={userSelf} itemId={item.id} />
               ) : null,
             )}
           </Grid>
