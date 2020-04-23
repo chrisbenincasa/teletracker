@@ -39,6 +39,26 @@ export default function makeItemDetailWrapper(type: ItemType) {
       (item?.release_date && moment(item?.release_date).format('YYYY')) || '';
     const firstLineOverview = item?.overview?.split('.')[0];
     const domain = process.env.REACT_APP_TELETRACKER_BASE_URL;
+    let imageURL: string;
+    let content: string;
+    let imageWidth: number;
+    let imageHeight: number;
+
+    if (item?.backdropImage?.id) {
+      imageURL = `https://image.tmdb.org/t/p/w780${item?.backdropImage?.id}`;
+      content = 'summary_large_image';
+      imageWidth = 780;
+      imageHeight = 439;
+    } else if (item?.posterImage?.id) {
+      imageURL = `https://image.tmdb.org/t/p/w500${item?.posterImage?.id}`;
+      content = 'summary';
+      imageWidth = 500;
+      imageHeight = 750;
+    } else {
+      imageURL = ''; // To do: make a backup share image for when one doesn't exist
+      imageWidth = 0;
+      imageHeight = 0;
+    }
 
     return (
       <React.Fragment>
@@ -54,23 +74,19 @@ export default function makeItemDetailWrapper(type: ItemType) {
             property="og:description"
             content={`${firstLineOverview}. Find out where to stream, rent, or buy ${item?.canonicalTitle} on ${domain}.`}
           />
-          <meta
-            name="image"
-            property="og:image"
-            content={`https://image.tmdb.org/t/p/w780${item?.backdropImage?.id}`}
-          />
+          <meta name="image" property="og:image" content={imageURL} />
           <meta
             property="og:type"
             content={item?.type === 'movie' ? 'video.movie' : 'video.tv_show'}
           />
           <meta property="og:image:type" content="image/jpg" />
-          <meta property="og:image:width" content="780" />
-          <meta property="og:image:height" content="439" />
+          <meta property="og:image:width" content={imageWidth} />
+          <meta property="og:image:height" content={imageHeight} />
           <meta
             property="og:url"
             content={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.asPath}`}
           />
-          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:card" content={content} />
           <meta
             name="twitter:title"
             content={`${item?.canonicalTitle} - Where to Stream, Rent, or Buy It Online`}
@@ -79,10 +95,7 @@ export default function makeItemDetailWrapper(type: ItemType) {
             name="twitter:description"
             content={`${firstLineOverview}. Find out where to stream, rent, or buy ${item?.canonicalTitle} on ${domain}.`}
           />
-          <meta
-            name="twitter:image"
-            content={`https://image.tmdb.org/t/p/w780${item?.backdropImage?.id}`}
-          />
+          <meta name="twitter:image" content={imageURL} />
           <meta name="twitter:domain" content={domain} />
           <meta
             name="keywords"
