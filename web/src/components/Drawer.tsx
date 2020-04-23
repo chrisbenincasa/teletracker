@@ -322,17 +322,8 @@ class Drawer extends Component<Props, State> {
           <React.Fragment>
             <List>
               <ListItemLink
-                to="/all"
-                primary="Explore"
-                icon={<Apps />}
-                ListItemProps={{
-                  selected: location.pathname.toLowerCase() === '/all',
-                  button: true,
-                }}
-              />
-              <ListItemLink
                 to="/popular"
-                primary="Browse Popular"
+                primary="Explore"
                 icon={<TrendingUp />}
                 ListItemProps={{
                   selected: location.pathname.toLowerCase() === '/popular',
