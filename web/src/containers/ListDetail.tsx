@@ -155,7 +155,7 @@ function ListDetailDialog(props: ListDetailDialogProps) {
   );
   const [migrateListId, setMigrateListId] = useState('');
 
-  const { userSelf } = useWithUserContext();
+  const { isLoggedIn } = useWithUserContext();
   const listsById = useStateSelector(state => state.lists.listsById);
   const { list } = props;
 
@@ -174,7 +174,7 @@ function ListDetailDialog(props: ListDetailDialogProps) {
   const dispatchDeleteList = useDispatchAction(deleteList);
 
   const handleDeleteList = () => {
-    if (userSelf) {
+    if (isLoggedIn) {
       dispatchDeleteList({
         listId: list!.id,
         mergeListId: migrateListId,
@@ -217,7 +217,7 @@ function ListDetailDialog(props: ListDetailDialogProps) {
                 <MenuItem value="0">
                   <em>Delete all tracked items</em>
                 </MenuItem>
-                {userSelf &&
+                {isLoggedIn &&
                   _.map(
                     listsById,
                     item =>
@@ -657,7 +657,6 @@ function ListDetail() {
                   return (
                     <ItemCard
                       key={item.id}
-                      userSelf={userSelf}
                       itemId={item.id}
                       listContext={list}
                       withActionButton

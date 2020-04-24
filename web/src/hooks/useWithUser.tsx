@@ -50,13 +50,8 @@ function useWithUser(): WithUserState {
   const getUser = useDispatchAction(getUserSelf);
 
   const [loadUser] = useDebouncedCallback(
-    (
-      checkingAuth: boolean,
-      user: UserSelf | undefined,
-      retrieving: boolean,
-    ) => {
-      console.log('attempting to load user');
-      if (!checkingAuth && !user && !retrieving) {
+    (checkingAuth: boolean, isLoggedIn: boolean, retrieving: boolean) => {
+      if (!checkingAuth && isLoggedIn && !retrieving) {
         getUser(false);
       }
     },
@@ -64,13 +59,13 @@ function useWithUser(): WithUserState {
   );
 
   useEffect(() => {
-    loadUser(isCheckingAuth, userSelf, retrievingUser);
+    loadUser(isCheckingAuth, isLoggedIn, retrievingUser);
   }, []);
 
   useEffect(() => {
     if (wasCheckingAuth && !isCheckingAuth) {
       if (isLoggedIn) {
-        loadUser(isCheckingAuth, userSelf, retrievingUser);
+        loadUser(isCheckingAuth, isLoggedIn, retrievingUser);
       }
     }
   }, [isCheckingAuth, wasCheckingAuth, userSelf, retrievingUser]);

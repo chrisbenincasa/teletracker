@@ -67,7 +67,6 @@ function ManageTracking(props: Props) {
       <AddToListDialog
         open={manageTrackingModalOpen}
         onClose={closeManageTrackingModal}
-        userSelf={userState.userSelf}
         item={props.itemDetail}
       />
       <AuthDialog open={loginModalOpen} onClose={toggleLoginModal} />
