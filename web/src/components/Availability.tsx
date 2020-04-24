@@ -118,13 +118,13 @@ const Availability = (props: Props) => {
     const includeFromPrefs = (av: ItemAvailability, networkId: number) => {
       if (userSelf) {
         let showFromSubscriptions = onlyShowsSubs
-          ? R.any(R.propEq('id', networkId), userSelf!.networks)
+          ? R.any(R.propEq('id', networkId), userSelf!.networks || [])
           : true;
 
         let hasPresentation = av.presentation_type
           ? R.contains(
               av.presentation_type,
-              userSelf!.preferences.presentationTypes,
+              userSelf!.preferences?.presentationTypes || [],
             )
           : true;
 

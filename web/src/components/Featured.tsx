@@ -235,7 +235,6 @@ function Featured(props: Props) {
             <AddToListDialog
               open={manageTrackingModalOpen}
               onClose={() => setManageTrackingModalOpen(false)}
-              userSelf={userState.userSelf}
               item={item}
             />
           </div>

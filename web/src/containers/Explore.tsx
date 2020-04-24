@@ -450,7 +450,6 @@ function Explore(props: Props) {
                   return (
                     <ItemCard
                       key={result}
-                      userSelf={userState.userSelf}
                       itemId={thing.id}
                       hasLoaded={setVisibleItems}
                     />

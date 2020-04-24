@@ -74,7 +74,7 @@ function* captureAll() {
 export function* root() {
   // Wait for any storage state rehydration to complete
   // yield take(REHYDRATE);
-  yield fork(captureAll);
+  // yield fork(captureAll);
 
   // Start watching for auth state changes
   // if (!isServer()) {
@@ -125,8 +125,5 @@ export function* root() {
     peopleSearchSaga(),
     fetchPersonCreditsDetailsSaga(),
     fetchItemRecsSaga(),
-    (function*() {
-      yield put({ type: BUFFER_FLUSH });
-    })(),
   ]);
 }

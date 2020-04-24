@@ -18,15 +18,19 @@ import {
   USER_SELF_UPDATE_LIST,
   USER_SELF_UPDATE_LIST_SUCCESS,
 } from '../actions/lists';
-import { LOGOUT_SUCCESSFUL } from '../actions/auth';
+import {
+  LOGOUT_SUCCESSFUL,
+  USER_STATE_CHANGE,
+  UserStateChangeAction,
+} from '../actions/auth';
 import { CognitoUser } from '@aws-amplify/auth';
 
 export type Loading = { [X in UserActionTypes['type']]: boolean };
 
 export interface UserSelf {
-  user: CognitoUser;
-  preferences: UserPreferences;
-  networks: Network[];
+  user?: CognitoUser;
+  preferences?: UserPreferences;
+  networks?: Network[];
 }
 
 export interface State {
@@ -41,6 +45,21 @@ const initialState: State = {
   updatingSelf: false,
   loading: {},
 };
+
+const stateChange = handleAction(
+  USER_STATE_CHANGE,
+  (state: State, { payload }: UserStateChangeAction) => {
+    let nextSelf: UserSelf = { ...state.self };
+    if (payload) {
+      nextSelf.user = payload;
+    }
+
+    return {
+      ...state,
+      self: nextSelf,
+    } as State;
+  },
+);
 
 const selfRetrieveInitiated = handleAction(
   USER_SELF_RETRIEVE_INITIATED,
@@ -192,4 +211,5 @@ export default flattenActions(
   userRenameListSuccess,
   logoutUser,
   updateUserMetadataSuccess,
+  stateChange,
 );

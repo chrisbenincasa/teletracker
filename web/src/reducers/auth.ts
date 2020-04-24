@@ -19,6 +19,7 @@ import {
 } from '../actions/auth';
 import { User } from '../types';
 import { flattenActions, handleAction } from './utils';
+import _ from 'lodash';
 
 export interface UserState extends Partial<User> {
   fetching: boolean;
@@ -46,9 +47,10 @@ const initialState: State = {
 
 const stateChange = handleAction<UserStateChangeAction, State>(
   USER_STATE_CHANGE,
-  state => {
+  (state, { payload }) => {
     return {
       ...state,
+      isLoggedIn: !_.isUndefined(payload),
       checkingAuth: false,
     };
   },

@@ -6,6 +6,7 @@ import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
 import { ListRules } from '../../types';
 import ReactGA from 'react-ga';
+import { useDispatchAction } from '../../hooks/useDispatchAction';
 
 export const USER_SELF_CREATE_LIST = 'user/self/create_list/INITIATED';
 export const USER_SELF_CREATE_LIST_SUCCESS = 'user/self/create_list/SUCCESS';
@@ -29,6 +30,8 @@ export type UserCreateListSuccessAction = FSA<
 export const createList = createAction<UserCreateListAction>(
   USER_SELF_CREATE_LIST,
 );
+
+export const useCreateList = () => useDispatchAction(createList);
 
 export const createListSuccess = createAction<UserCreateListSuccessAction>(
   USER_SELF_CREATE_LIST_SUCCESS,
