@@ -38,11 +38,11 @@ export const updateNetworksForUserSaga = function*() {
       if (!currUser) {
         // TODO: Fail
       } else {
-        let existingIds = R.map(R.prop('id'), currUser.networks);
+        let existingIds = R.map(R.prop('id'), currUser.networks || []);
         let removeIds = R.map(R.prop('id'), payload.remove);
         let subsRemoved = R.reject(
           sub => R.contains(sub.id, removeIds),
-          currUser.networks,
+          currUser.networks || [],
         );
 
         let newSubs = R.concat(

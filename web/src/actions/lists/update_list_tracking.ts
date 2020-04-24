@@ -9,6 +9,7 @@ import { updateUserItemTagsSuccess } from '../user/update_user_tags';
 import { removeUserItemTagsSuccess } from '../user/remove_user_tag';
 
 import { ActionType } from '../../types';
+import { useDispatchAction } from '../../hooks/useDispatchAction';
 
 export const LIST_UPDATE_TRACKING_INITIATED = 'lists/update_tracking/INITIATED';
 export const LIST_UPDATE_TRACKING_SUCCESS = 'lists/update_tracking/SUCCESS';
@@ -34,6 +35,9 @@ export type updateListTrackingFailedAction = ErrorFSA<
 export const updateListTracking = createAction<
   ListTrackingUpdateInitiatedAction
 >(LIST_UPDATE_TRACKING_INITIATED);
+
+export const useUpdateListTracking = () =>
+  useDispatchAction(updateListTracking);
 
 export const updateListTrackingFailed = createAction<
   updateListTrackingFailedAction

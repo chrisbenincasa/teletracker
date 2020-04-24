@@ -3,7 +3,6 @@ import {
   Button,
   Card,
   CardMedia,
-  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
@@ -21,9 +20,9 @@ import {
 import { green, red } from '@material-ui/core/colors';
 import { GridProps } from '@material-ui/core/Grid';
 import {
+  CheckCircleTwoTone,
   Close,
   Delete as DeleteIcon,
-  CheckCircleTwoTone,
   ThumbDown,
   ThumbUp,
   Visibility,
@@ -33,14 +32,13 @@ import { updateListTracking } from '../actions/lists';
 import { removeUserItemTags, updateUserItemTags } from '../actions/user';
 import { GRID_COLUMNS } from '../constants/';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
-import { UserSelf } from '../reducers/user';
 import { ActionType, List } from '../types';
 import AddToListDialog from './Dialogs/AddToListDialog';
 import { ResponsiveImage } from './ResponsiveImage';
 import {
   getItemTagNumberValue,
-  itemBelongsToLists,
   Item,
+  itemBelongsToLists,
   itemHasTag,
 } from '../types/v2/Item';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
@@ -55,6 +53,7 @@ import { AppState } from '../reducers';
 import useStateSelector from '../hooks/useStateSelector';
 import { hookDeepEqual } from '../hooks/util';
 import _ from 'lodash';
+import { useWithUserContext } from '../hooks/useWithUser';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -146,7 +145,6 @@ const useStyles = makeStyles((theme: Theme) => ({
 interface Props {
   key: string | number;
   itemId: Id;
-  userSelf?: UserSelf;
 
   // display props
   showDelete?: boolean;
@@ -186,6 +184,7 @@ function ItemCard(props: Props) {
     state => selectItem(state, props.itemId),
     hookDeepEqual,
   );
+  const { isLoggedIn } = useWithUserContext();
 
   const updateList = useDispatchAction(updateListTracking);
   const updateUserTags = useDispatchAction(updateUserItemTags);
@@ -265,7 +264,7 @@ function ItemCard(props: Props) {
       action: ActionType.Watched,
     };
 
-    if (!props.userSelf) {
+    if (!isLoggedIn) {
       setLoginModalOpen(true);
     } else {
       if (itemWatched) {
@@ -539,7 +538,6 @@ function ItemCard(props: Props) {
       <AddToListDialog
         open={manageTrackingModalOpen}
         onClose={() => setManageTrackingModalOpen(false)}
-        userSelf={props.userSelf}
         item={item}
       />
       {renderDialog()}
