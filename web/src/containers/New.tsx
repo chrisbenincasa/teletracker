@@ -138,13 +138,7 @@ class New extends Component<Props> {
             });
           })
           .map(thing => {
-            return (
-              <ItemCard
-                key={thing.id}
-                itemId={thing.id}
-                userSelf={this.props.userSelf!}
-              />
-            );
+            return <ItemCard key={thing.id} itemId={thing.id} />;
           })
           .value();
 

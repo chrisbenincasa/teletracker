@@ -227,7 +227,7 @@ export default function PersonCredits(props: Props) {
           <Grid container spacing={2}>
             {filmography.map(item =>
               item && item.posterImage ? (
-                <ItemCard key={item.id} userSelf={userSelf} itemId={item.id} />
+                <ItemCard key={item.id} itemId={item.id} />
               ) : null,
             )}
           </Grid>

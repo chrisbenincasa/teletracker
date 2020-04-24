@@ -123,11 +123,12 @@ class Account extends Component<Props, State> {
     super(props);
 
     if (props.userSelf) {
-      this.state.formatSlider =
-        props.userSelf.preferences.presentationTypes.length;
+      this.state.formatSlider = (
+        props.userSelf?.preferences?.presentationTypes || []
+      ).length;
 
       this.state.switches.showOnlyNetworks =
-        props.userSelf.preferences.showOnlyNetworkSubscriptions;
+        props.userSelf?.preferences?.showOnlyNetworkSubscriptions || false;
     }
   }
 
@@ -151,11 +152,14 @@ class Account extends Component<Props, State> {
   componentDidUpdate(oldProps: Props) {
     if (!oldProps.userSelf && this.props.userSelf) {
       this.setState({
-        formatSlider: this.props.userSelf.preferences.presentationTypes.length,
+        formatSlider: (
+          this.props.userSelf?.preferences?.presentationTypes || []
+        ).length,
         switches: {
           ...this.state.switches,
-          showOnlyNetworks: this.props.userSelf.preferences
-            .showOnlyNetworkSubscriptions,
+          showOnlyNetworks:
+            this.props.userSelf?.preferences?.showOnlyNetworkSubscriptions ||
+            false,
         },
       });
     }
@@ -177,7 +181,7 @@ class Account extends Component<Props, State> {
 
   handleSwitchChange = (switchName: string) => event => {
     let newPrefs: UserPreferences = {
-      ...this.props.userSelf!.preferences,
+      ...this.props.userSelf!.preferences!,
       showOnlyNetworkSubscriptions: event.target.checked,
     };
 
@@ -197,7 +201,7 @@ class Account extends Component<Props, State> {
   handleSliderChange = (event, value) => {
     this.setState({ formatSlider: value });
 
-    let currentPref = this.props.userSelf!.preferences.presentationTypes;
+    let currentPref = this.props.userSelf!.preferences?.presentationTypes || [];
 
     switch (value) {
       case 1:
@@ -214,7 +218,7 @@ class Account extends Component<Props, State> {
     }
 
     let newPrefs: UserPreferences = {
-      ...this.props.userSelf!.preferences,
+      ...this.props.userSelf!.preferences!,
       presentationTypes: currentPref,
     };
 
@@ -237,7 +241,10 @@ class Account extends Component<Props, State> {
   };
 
   isSubscribedToNetwork = (network: Network) => {
-    return R.any(R.propEq('slug', network.slug), this.props.userSelf!.networks);
+    return R.any(
+      R.propEq('slug', network.slug),
+      this.props.userSelf!.networks || [],
+    );
   };
 
   renderNetworkGridItem = (network: Network) => {
