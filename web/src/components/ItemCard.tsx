@@ -399,7 +399,9 @@ function ItemCard(props: Props) {
             </div>
           </Tooltip>
         )}
-        {itemWatched && (userItemRating === 0 || userItemRating === 1) ? (
+        {!isMobile &&
+        itemWatched &&
+        (userItemRating === 0 || userItemRating === 1) ? (
           <Tooltip title={ratingTitle} placement={'top'}>
             <div>
               {userItemRating === 1 ? (
