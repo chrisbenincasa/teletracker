@@ -661,7 +661,7 @@ function ListDetail() {
                       itemId={item.id}
                       listContext={list}
                       withActionButton
-                      hoverDelete={!list.isDynamic}
+                      showDelete={!list.isDynamic}
                       hasLoaded={setVisibleItems}
                     />
                   );
