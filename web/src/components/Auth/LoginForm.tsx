@@ -181,7 +181,7 @@ function LoginFormF(props: NewProps) {
   let error = params.get('error_description');
 
   const [isLoggingIn, wasLoggingIn] = useStateSelectorWithPrevious(
-    state => state.auth.isLoggedIn,
+    state => state.auth.isLoggingIn,
   );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
