@@ -23,8 +23,7 @@ import { GridProps } from '@material-ui/core/Grid';
 import {
   Close,
   Delete as DeleteIcon,
-  CheckCircleTwoTone as ListIcon,
-  PlaylistAdd,
+  CheckCircleTwoTone,
   ThumbDown,
   ThumbUp,
   Visibility,
@@ -432,7 +431,7 @@ function ItemCard(props: Props) {
 
         <Tooltip title={trackedTitle} placement={'top'}>
           <div>
-            <ListIcon
+            <CheckCircleTwoTone
               className={classes.statusIcon}
               onClick={() => setManageTrackingModalOpen(true)}
               color={belongsToLists.length > 0 ? 'action' : 'disabled'}
