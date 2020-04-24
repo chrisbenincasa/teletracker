@@ -46,7 +46,8 @@ final class RichPersonCredits(val pc: PersonCredit) extends AnyVal {
       external_ids = None,
       recommendations = None,
       similar = None,
-      videos = None
+      videos = None,
+      translations = None
     )
   }
 
@@ -84,7 +85,8 @@ final class RichPersonCredits(val pc: PersonCredit) extends AnyVal {
       external_ids = None,
       recommendations = None,
       similar = None,
-      videos = None
+      videos = None,
+      translations = None
     )
   }
 }

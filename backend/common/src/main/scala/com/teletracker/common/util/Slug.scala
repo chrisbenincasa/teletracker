@@ -1,6 +1,7 @@
 package com.teletracker.common.util
 
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonValue}
+import io.circe.{Codec, Decoder, Encoder}
 import java.text.Normalizer
 import java.text.Normalizer.Form
 import java.util.{Locale, Objects}
@@ -9,6 +10,11 @@ import scala.util.{Success, Try}
 
 object Slug {
   final val Separator = "-"
+
+  implicit val codec: Codec[Slug] = Codec.from(
+    Decoder.decodeString.map(Slug.raw),
+    Encoder.encodeString.contramap(_.value)
+  )
 
   private val NonLatin = Pattern.compile("[^\\w-]")
   private val Whitespace = Pattern.compile("[\\s]")
@@ -29,6 +35,18 @@ object Slug {
   ): Slug = {
     val slug = NormalizerFunc(input)
     raw(s"$slug$Separator$year")
+  }
+
+  def applyOptional(
+    input: String,
+    year: Int
+  ): Option[Slug] = {
+    val slug = NormalizerFunc(input)
+    if (slug.isEmpty || slug.replaceAll(Separator, "").isEmpty) {
+      None
+    } else {
+      Some(raw(s"$slug$Separator$year"))
+    }
   }
 
   def apply(
