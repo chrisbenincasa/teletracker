@@ -27,66 +27,122 @@ import scala.util.control.NonFatal
 
 object ItemUpdater {
 
-  // TODO: Store script in ES
+  final private def UpdateTagsScriptSourceWithValueCheck(
+    field: Option[String]
+  ) = {
+    val fieldClause = field match {
+      case Some(value) => s" && tag.$value.equals(params.tag.$value)"
+      case None        => ""
+    }
+
+    val removeClause =
+      s"ctx._source.tags.removeIf(tag -> tag.tag.equals(params.tag.tag)$fieldClause)"
+
+    s"""
+       |if (ctx._source.tags == null) {
+       |   ctx._source.tags = [params.tag];
+       |} else {
+       |  $removeClause;
+       |   ctx._source.tags.add(params.tag);
+       |}
+       |""".stripMargin
+  }
+
+  final private def RemoveTagsScriptSourceWithValueCheck(
+    field: Option[String]
+  ) = {
+    val fieldClause = field match {
+      case Some(value) => s" && tag.$value.equals(params.tag.$value)"
+      case None        => ""
+    }
+
+    val removeClause =
+      s"ctx._source.tags.removeIf(tag -> tag.tag.equals(params.tag.tag)$fieldClause);"
+
+    s"""
+       |if (ctx._source.tags != null) {
+       |  $removeClause
+       |}
+       |""".stripMargin
+  }
+
   final private val UpdateTagsScriptSource =
-    """
-      |if (ctx._source.tags == null) {
-      |   ctx._source.tags = [params.tag]
-      |} else {
-      |   ctx._source.tags.removeIf(tag -> tag.tag.equals(params.tag.tag));
-      |   ctx._source.tags.add(params.tag)
-      |}
-      |""".stripMargin
+    UpdateTagsScriptSourceWithValueCheck(None)
+
+  final private val UpdateTagsWithStringValueScriptSource =
+    UpdateTagsScriptSourceWithValueCheck(Some("string_value"))
+
+  final private val UpdateTagsWithDoubleValueScriptSource =
+    UpdateTagsScriptSourceWithValueCheck(Some("value"))
 
   final private val UpdateUserTagsScriptSource =
-    """
-      |if (ctx._source.tags == null) {
-      |   ctx._source.tags = [params.tag]
-      |} else {
-      |   ctx._source.tags.removeIf(tag -> tag.tag.equals(params.tag.tag));
-      |   ctx._source.tags.add(params.tag)
-      |}
-      |""".stripMargin
+    UpdateTagsScriptSourceWithValueCheck(None)
+
+  final private val UpdateUserTagsWithStringValueScriptSource =
+    UpdateTagsScriptSourceWithValueCheck(Some("string_value"))
+
+  final private val UpdateUserTagsWithDoubleValueScriptSource =
+    UpdateTagsScriptSourceWithValueCheck(Some("double_value"))
 
   final private val RemoveTagsScriptSource =
-    """
-      |if (ctx._source.tags != null) {
-      |   ctx._source.tags.removeIf(tag -> tag.tag.equals(params.tag.tag))
-      |}
-      |""".stripMargin
+    RemoveTagsScriptSourceWithValueCheck(None)
 
-  final private def UpdateTagsScript(tag: EsItemTag) = {
+  final private val RemoveTagsWithStringValueScriptSource =
+    RemoveTagsScriptSourceWithValueCheck(Some("string_value"))
+
+  final private val RemoveTagsWithDoubleValueScriptSource =
+    RemoveTagsScriptSourceWithValueCheck(Some("value"))
+
+  final private val RemoveUserTagsWithStringValueScriptSource =
+    RemoveTagsScriptSourceWithValueCheck(Some("string_value"))
+
+  final private val RemoveUserTagsWithDoubleValueScriptSource =
+    RemoveTagsScriptSourceWithValueCheck(Some("double_value"))
+
+  final private def UpdateTagsScript(
+    tag: EsItemTag,
+    scriptSource: String
+  ): Script = {
     new Script(
       ScriptType.INLINE,
       "painless",
-      UpdateTagsScriptSource,
+      scriptSource,
       Map[String, Object]("tag" -> tagAsMap(tag)).asJava
     )
   }
 
-  final private def UpdateUserTagsScript(tag: EsUserItemTag) = {
+  final private def UpdateUserTagsScript(
+    tag: EsUserItemTag,
+    scriptSource: String
+  ) = {
     new Script(
       ScriptType.INLINE,
       "painless",
-      UpdateUserTagsScriptSource,
+      scriptSource,
       Map[String, Object]("tag" -> tagAsMap(tag)).asJava
     )
   }
 
-  final private def RemoveTagScript(tag: EsItemTag) = {
+  final private def RemoveTagScript(
+    tag: EsItemTag,
+    scriptSource: String
+  ) = {
     new Script(
       ScriptType.INLINE,
       "painless",
-      RemoveTagsScriptSource,
+      scriptSource,
       Map[String, Object]("tag" -> tagAsMap(tag)).asJava
     )
   }
 
-  final private def RemoveUserTagScript(tag: EsUserItemTag) = {
+  final private def RemoveUserTagScript(
+    tag: EsUserItemTag,
+    scriptSource: String
+  ) = {
     new Script(
       ScriptType.INLINE,
       "painless",
-      RemoveTagsScriptSource,
+      scriptSource,
       Map[String, Object]("tag" -> tagAsMap(tag)).asJava
     )
   }
@@ -182,13 +238,34 @@ class ItemUpdater @Inject()(
     tag: EsItemTag,
     userTag: Option[(String, EsUserItemTag)]
   ): Future[UpdateMultipleDocResponse] = {
+    val scriptSource = tag match {
+      case EsItemTag(_, Some(_), _, _) => UpdateTagsWithDoubleValueScriptSource
+      case EsItemTag(_, _, Some(_), _) => UpdateTagsWithStringValueScriptSource
+      case EsItemTag(_, None, None, _) => UpdateTagsScriptSource
+      case _ =>
+        throw new IllegalArgumentException(s"Unexpected tag on update: $tag")
+    }
+
     val updateRequest = new UpdateRequest(
       teletrackerConfig.elasticsearch.items_index_name,
       itemId.toString
-    ).script(UpdateTagsScript(tag))
+    ).script(UpdateTagsScript(tag, scriptSource))
 
     userTag match {
       case Some((userId, value)) =>
+        val userTagsScriptSource = value match {
+          case EsUserItemTag(_, _, _, _, Some(_), _, _, _) =>
+            UpdateUserTagsWithDoubleValueScriptSource
+          case EsUserItemTag(_, _, _, _, _, _, Some(_), _) =>
+            UpdateUserTagsWithStringValueScriptSource
+          case EsUserItemTag(_, _, _, None, None, None, None, _) =>
+            UpdateUserTagsScriptSource
+          case _ =>
+            throw new IllegalArgumentException(
+              s"Unexpected user_item tag on remove: $value"
+            )
+        }
+
         val denormUpdateFut =
           Timing.time("denormUpdateFut", logger) {
             createUserItemTag(itemId, userId, value).flatMap(userItemTag => {
@@ -196,7 +273,7 @@ class ItemUpdater @Inject()(
                 new UpdateRequest(
                   teletrackerConfig.elasticsearch.user_items_index_name,
                   s"${userId}_${itemId}"
-                ).script(UpdateUserTagsScript(value))
+                ).script(UpdateUserTagsScript(value, userTagsScriptSource))
                   .upsert(userItemTag.asJson.noSpaces, XContentType.JSON)
                   .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
@@ -243,17 +320,38 @@ class ItemUpdater @Inject()(
     tag: EsItemTag,
     userTag: Option[(String, EsUserItemTag)]
   ): Future[UpdateMultipleDocResponse] = {
+    val scriptSource = tag match {
+      case EsItemTag(_, Some(_), _, _) => RemoveTagsWithDoubleValueScriptSource
+      case EsItemTag(_, _, Some(_), _) => RemoveTagsWithStringValueScriptSource
+      case EsItemTag(_, None, None, _) => RemoveTagsScriptSource
+      case _ =>
+        throw new IllegalArgumentException(s"Unexpected tag on remove: $tag")
+    }
+
     val updateRequest =
       new UpdateRequest(
         teletrackerConfig.elasticsearch.items_index_name,
         itemId.toString
-      ).script(RemoveTagScript(tag))
+      ).script(RemoveTagScript(tag, scriptSource))
 
     userTag match {
       case Some((userId, value)) =>
+        val userTagsScriptSource = value match {
+          case EsUserItemTag(_, _, _, _, Some(_), _, _, _) =>
+            RemoveUserTagsWithDoubleValueScriptSource
+          case EsUserItemTag(_, _, _, _, _, _, Some(_), _) =>
+            RemoveUserTagsWithStringValueScriptSource
+          case EsUserItemTag(_, _, _, None, None, None, None, _) =>
+            RemoveTagsScriptSource
+          case _ =>
+            throw new IllegalArgumentException(
+              s"Unexpected user_item tag on remove: $value"
+            )
+        }
+
         val updateDenormRequest =
           new UpdateRequest("user_items", s"${userId}_${itemId}")
-            .script(RemoveUserTagScript(value))
+            .script(RemoveUserTagScript(value, userTagsScriptSource))
 
         val bulkRequest = new BulkRequest()
           .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -303,20 +401,6 @@ class ItemUpdater @Inject()(
             makeEsUserItem(itemId, userId, userTag, item.rawItem)
         }
     }
-  }
-
-  private def createAndIndexUserItemTag(
-    itemId: UUID,
-    userId: String,
-    userTag: EsUserItemTag
-  ): Future[IndexResponse] = {
-    createUserItemTag(itemId, userId, userTag).flatMap(userItem => {
-      elasticsearchExecutor.index(
-        new IndexRequest("user_items")
-          .id(userItem.id)
-          .source(userItem.asJson.noSpaces, XContentType.JSON)
-      )
-    })
   }
 
   private def makeEsUserItem(
@@ -398,7 +482,7 @@ class ItemUpdater @Inject()(
         .filter(QueryBuilders.termQuery("tags.value", listId))
 
       val updateRequest = new UpdateByQueryRequest()
-        .setScript(RemoveTagScript(tag))
+        .setScript(RemoveTagScript(tag, RemoveTagsWithStringValueScriptSource))
         .setQuery(query)
 
       elasticsearchExecutor

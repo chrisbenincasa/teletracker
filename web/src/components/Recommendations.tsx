@@ -87,9 +87,7 @@ function Recommendations(props: Props) {
         </Typography>
         <Grid container spacing={2} className={classes.grid}>
           {recommendations.slice(0, limit).map(itemId => {
-            return (
-              <ItemCard key={itemId} userSelf={userSelf} itemId={itemId} />
-            );
+            return <ItemCard key={itemId} itemId={itemId} />;
           })}
         </Grid>
       </React.Fragment>

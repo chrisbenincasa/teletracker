@@ -1,6 +1,7 @@
-import React, { ChangeEvent, Component } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Button,
+  CardMedia,
   Checkbox,
   createStyles,
   Dialog,
@@ -15,36 +16,38 @@ import {
   Input,
   InputAdornment,
   InputLabel,
+  makeStyles,
   Theme,
-  WithStyles,
-  withStyles,
 } from '@material-ui/core';
 import { Cancel, Check, PlaylistAdd } from '@material-ui/icons';
 import _ from 'lodash';
 import * as R from 'ramda';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
 import {
-  addToList,
-  createList,
-  ListTrackingUpdatedInitiatedPayload,
   LIST_ADD_ITEM_INITIATED,
   LIST_RETRIEVE_ALL_INITIATED,
-  updateListTracking,
-  UserCreateListPayload,
+  useCreateList,
   USER_SELF_CREATE_LIST,
+  useUpdateListTracking,
 } from '../../actions/lists';
 import { AppState } from '../../reducers';
-import { ListOperationState, ListsByIdMap } from '../../reducers/lists';
-import { UserSelf } from '../../reducers/user';
-import { List } from '../../types';
 import { Item, itemBelongsToLists } from '../../types/v2/Item';
-import CreateAListValidator, {
-  CreateAListValidationStateObj,
-} from '../../utils/validation/CreateAListValidator';
+import CreateAListValidator from '../../utils/validation/CreateAListValidator';
 import AuthDialog from '../Auth/AuthDialog';
+import { useWithUserContext } from '../../hooks/useWithUser';
+import useStateSelector, {
+  useStateSelectorWithPrevious,
+} from '../../hooks/useStateSelector';
+import createDeepEqSelector from '../../hooks/createDeepEqSelector';
+import { usePrevious } from '../../hooks/usePrevious';
+import { useStateDeepEq } from '../../hooks/useStateDeepEq';
+import { hookDeepEqual } from '../../hooks/util';
+import useNewListValidation from '../../hooks/useNewListValidation';
+import imagePlaceholder from '../../../public/images/imagePlaceholder.png';
+import { ResponsiveImage } from '../ResponsiveImage';
+import { useWidth } from '../../hooks/useWidth';
+import useIsMobile from '../../hooks/useIsMobile';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     dialogContainer: {
       display: 'flex',
@@ -67,64 +70,55 @@ const styles = (theme: Theme) =>
       backgroundColor: theme.palette.primary.main,
       padding: theme.spacing(1, 2),
     },
-  });
+  }),
+);
 
-interface AddToListDialogProps {
+const possibleListsSelector = createDeepEqSelector(
+  (state: AppState) => state.lists.listsById,
+  listsById => _.filter(listsById, list => !list.isDynamic && !list.isDeleted),
+);
+
+const allListIdsSelector = createDeepEqSelector(
+  (state: AppState) => state.lists.listsById,
+  listsById => Object.keys(listsById),
+);
+
+interface Props {
   open: boolean;
   onClose: () => void;
-  userSelf?: UserSelf;
   item: Item;
-  listOperations: ListOperationState;
-  listItemAddLoading: boolean;
-  listLoading: boolean;
-  createAListLoading: boolean;
-  listsById: ListsByIdMap;
 }
 
-interface AddToListDialogDispatchProps {
-  addToList: (listId: string, itemId: string) => void;
-  updateLists: (payload: ListTrackingUpdatedInitiatedPayload) => void;
-  createList: (payload: UserCreateListPayload) => void;
-}
+export default function AddToListDialog(props: Props) {
+  const classes = useStyles();
+  const isMobile = useIsMobile();
+  const { isLoggedIn } = useWithUserContext();
 
-interface AddToListDialogState {
-  actionPending: boolean;
-  originalListState: { [listId: string]: boolean };
-  listChanges: { [listId: string]: boolean };
-  createAListEnabled: boolean;
-  newListName: string;
-  newListValidation: CreateAListValidationStateObj;
-}
+  const wasOpen = usePrevious(props.open);
 
-type Props = AddToListDialogProps &
-  AddToListDialogDispatchProps &
-  WithStyles<typeof styles>;
+  const listsToShow = useStateSelector(possibleListsSelector);
+  const allListIds = useStateSelector(allListIdsSelector);
+  const [listsLoading, wereListsLoading] = useStateSelectorWithPrevious(
+    state => state.lists.loading[LIST_RETRIEVE_ALL_INITIATED],
+  );
+  const [
+    addToListLoading,
+    wasAddToListLoading,
+  ] = useStateSelectorWithPrevious(state =>
+    R.defaultTo(false)(state.lists.loading[LIST_ADD_ITEM_INITIATED]),
+  );
+  const [
+    createAListLoading,
+    wasCreateAListLoading,
+  ] = useStateSelectorWithPrevious(state =>
+    R.defaultTo(false)(state.userSelf.loading[USER_SELF_CREATE_LIST]),
+  );
 
-class AddToListDialog extends Component<Props, AddToListDialogState> {
-  constructor(props: Props) {
-    super(props);
-
-    let listChanges = this.calculateListChanges();
-    this.state = {
-      actionPending: props.listOperations.inProgress,
-      createAListEnabled: false,
-      newListName: '',
-      newListValidation: CreateAListValidator.defaultState().asObject(),
-      originalListState: listChanges,
-      listChanges,
-    };
-  }
-
-  hasTrackingChanged() {
-    return _.isEqual(this.state.originalListState, this.state.listChanges);
-  }
-
-  calculateListChanges = () => {
-    const belongsToLists: string[] =
-      this.props && this.props.item ? itemBelongsToLists(this.props.item) : [];
+  const calculateListChanges = () => {
+    const belongsToLists: string[] = itemBelongsToLists(props.item);
 
     return _.reduce(
-      Object.keys(this.props.listsById),
+      allListIds,
       (acc, elem) => {
         return {
           ...acc,
@@ -135,150 +129,148 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
     );
   };
 
-  updateInitialListState = () => {
-    let listChanges = this.calculateListChanges();
-    this.setState({
-      originalListState: {
-        ...listChanges,
-      },
-      listChanges,
-    });
-  };
+  const [originalListState, setOriginalListState] = useState(
+    calculateListChanges(),
+  );
+  const [actionPending, setActionPending] = useState(false);
+  const [listChanges, setListChanges] = useState(calculateListChanges());
+  const [createAListEnabled, setCreateAListEnabled] = useState(false);
+  const [newListValidation, setNewListValidation] = useStateDeepEq(
+    CreateAListValidator.defaultState().asObject(),
+    hookDeepEqual,
+  );
+  const [newListName, setNewListName] = useState('');
+  const validateNewList = useNewListValidation();
 
-  componentDidMount(): void {
-    if (!this.props.listLoading) {
-      this.updateInitialListState();
+  const dispatchUpdateLists = useUpdateListTracking();
+  const dispatchCreateList = useCreateList();
+
+  useEffect(() => {
+    if (!listsLoading) {
+      setOriginalListState(calculateListChanges());
+      setListChanges(calculateListChanges());
     }
-  }
+  }, []);
 
-  componentDidUpdate(prevProps: AddToListDialogProps) {
-    if (this.props.open && !prevProps.open) {
-      this.updateInitialListState();
-    } else if (prevProps.open && !this.props.open) {
-      this.handleModalClose();
+  useEffect(() => {
+    if (wereListsLoading && !listsLoading) {
+      setOriginalListState(calculateListChanges());
+      setListChanges(calculateListChanges());
     }
+  }, [listsLoading, wereListsLoading]);
 
-    if (!prevProps.listItemAddLoading && this.props.listItemAddLoading) {
-      this.setState({ actionPending: true });
-    } else if (prevProps.listItemAddLoading && !this.props.listItemAddLoading) {
-      this.setState({ actionPending: false });
+  useEffect(() => {
+    if (props.open && !wasOpen) {
+      setOriginalListState(calculateListChanges());
+      setListChanges(calculateListChanges());
     }
+  }, [props.open]);
 
-    if (prevProps.createAListLoading && !this.props.createAListLoading) {
-      this.setState({
-        createAListEnabled: false,
-        newListName: '',
-        newListValidation: CreateAListValidator.defaultState().asObject(),
-      });
+  useEffect(() => {
+    if (wasAddToListLoading && !addToListLoading) {
+      setActionPending(false);
+    } else if (!wasAddToListLoading && addToListLoading) {
+      setActionPending(true);
     }
+  }, [addToListLoading]);
 
-    if (prevProps.listLoading && !this.props.listLoading) {
-      this.updateInitialListState();
+  useEffect(() => {
+    if (wasCreateAListLoading && !createAListLoading) {
+      setCreateAListEnabled(false);
+      setNewListName('');
+      setNewListValidation(CreateAListValidator.defaultState().asObject());
     }
-  }
+  }, [createAListLoading]);
 
-  handleModalClose = () => {
-    this.setState({ createAListEnabled: false });
-    this.props.onClose();
+  const handleModalClose = useCallback(() => {
+    setCreateAListEnabled(false);
+    props.onClose();
+  }, []);
+
+  const listContainsItem = (listId: string, item: Item) => {
+    return itemBelongsToLists(item).includes(listId);
   };
 
-  handleAddToList = (id: number) => {
-    this.props.addToList(id.toString(), this.props.item.id.toString());
-  };
-
-  handleCheckboxChange = (list: List, checked: boolean) => {
-    this.setState({
-      listChanges: {
-        ...this.state.listChanges,
-        [list.id]: checked,
-      },
-    });
-  };
-
-  listContainsItem = (list: List, item: Item) => {
-    return itemBelongsToLists(item).includes(list.id);
-  };
-
-  handleSubmit = () => {
-    let addedToLists = R.filter(list => {
-      return (
-        this.state.listChanges[list.id] &&
-        !this.listContainsItem(list, this.props.item)
-      );
-    }, R.values(this.props.listsById));
-
-    let removedFromLists = R.filter(list => {
-      return (
-        !this.state.listChanges[list.id] &&
-        this.listContainsItem(list, this.props.item)
-      );
-    }, R.values(this.props.listsById));
-
-    const extractIds = R.map<List, string>(R.prop('id'));
-
-    this.props.updateLists({
-      itemId: this.props.item.id,
-      addToLists: extractIds(addedToLists),
-      removeFromLists: extractIds(removedFromLists),
-    });
-    this.handleModalClose();
-  };
-
-  toggleCreateAList = () => {
-    this.setState({
-      createAListEnabled: !this.state.createAListEnabled,
-      newListName: '',
-    });
-  };
-
-  createNewList = () => {
-    this.setState({
-      newListValidation: CreateAListValidator.defaultState().asObject(),
-    });
-
-    let result = CreateAListValidator.validate(
-      this.props.listsById,
-      this.state.newListName,
+  const handleSubmit = useCallback(() => {
+    const addedToLists = _.filter(
+      allListIds,
+      listId => listChanges[listId] && !listContainsItem(listId, props.item),
+    );
+    const removedFromLists = _.filter(
+      allListIds,
+      listId => !listChanges[listId] && listContainsItem(listId, props.item),
     );
 
-    if (result.hasError()) {
-      this.setState({
-        newListValidation: result.asObject(),
-      });
-    } else {
-      this.props.createList({ name: this.state.newListName });
-    }
-  };
+    console.log(addedToLists, removedFromLists);
 
-  updateListName = (ev: ChangeEvent<HTMLInputElement>) => {
-    this.setState({
-      newListName: ev.target.value,
+    dispatchUpdateLists({
+      itemId: props.item.id,
+      addToLists: addedToLists,
+      removeFromLists: removedFromLists,
     });
-  };
 
-  renderCreateNewListSection() {
-    let {
-      newListValidation: { nameDuplicateError, nameLengthError },
-    } = this.state;
+    handleModalClose();
+  }, [listChanges, props.item]);
+
+  const handleCheckboxChange = useCallback(
+    (listId: string, checked: boolean) => {
+      setListChanges(prev => {
+        return {
+          ...prev,
+          [listId]: checked,
+        };
+      });
+    },
+    [],
+  );
+
+  const toggleCreateAList = useCallback(() => {
+    setCreateAListEnabled(prev => !prev);
+    setNewListName('');
+  }, []);
+
+  const updateListName = useCallback(
+    (ev: React.ChangeEvent<HTMLInputElement>) => {
+      setNewListName(ev.target.value);
+    },
+    [newListName],
+  );
+
+  const createNewList = useCallback(() => {
+    let result = validateNewList(newListName);
+
+    if (result.hasError()) {
+      setNewListValidation(result.asObject());
+    } else {
+      dispatchCreateList({ name: newListName });
+    }
+  }, [allListIds, newListName, newListValidation]);
+
+  const hasTrackingChanged = useMemo(() => {
+    return _.isEqual(originalListState, listChanges);
+  }, [originalListState, listChanges]);
+
+  const renderCreateNewListSection = () => {
+    let { nameDuplicateError, nameLengthError } = newListValidation;
 
     return (
       <React.Fragment>
-        <FormControl disabled={this.props.createAListLoading}>
+        <FormControl disabled={createAListLoading}>
           <InputLabel>New list</InputLabel>
           <Input
             type="text"
-            value={this.state.newListName}
-            onChange={this.updateListName}
+            value={newListName}
+            onChange={updateListName}
             error={nameDuplicateError || nameLengthError}
             fullWidth
-            disabled={this.props.createAListLoading}
+            disabled={createAListLoading}
             endAdornment={
               <React.Fragment>
                 <InputAdornment position="end">
                   <IconButton
                     size="small"
                     disableRipple
-                    onClick={this.toggleCreateAList}
+                    onClick={toggleCreateAList}
                   >
                     <Cancel />
                   </IconButton>
@@ -286,7 +278,7 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
                 <InputAdornment position="end">
                   <IconButton
                     size="small"
-                    onClick={this.createNewList}
+                    onClick={createNewList}
                     disableRipple
                   >
                     <Check />
@@ -309,109 +301,82 @@ class AddToListDialog extends Component<Props, AddToListDialogState> {
         </FormControl>
       </React.Fragment>
     );
-  }
+  };
 
-  render() {
-    const { classes, userSelf } = this.props;
-    let cleanList = _.filter(
-      this.props.listsById,
-      item => !item.isDynamic && !item.isDeleted,
+  if (isLoggedIn) {
+    return (
+      <Dialog
+        aria-labelledby="update-tracking-dialog"
+        aria-describedby="update-tracking-dialog"
+        open={props.open}
+        onClose={handleModalClose}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle id="update-tracking-dialog" className={classes.title}>
+          Add or Remove {props.item.canonicalTitle} from your lists
+        </DialogTitle>
+
+        <DialogContent className={classes.dialogContainer}>
+          <FormGroup style={{ flex: 1 }}>
+            {_.map(listsToShow, list => (
+              <FormControlLabel
+                key={list.id}
+                control={
+                  <Checkbox
+                    onChange={(_, checked) =>
+                      handleCheckboxChange(list.id, checked)
+                    }
+                    checked={listChanges[list.id] ? true : false}
+                    color="primary"
+                  />
+                }
+                label={list.name}
+              />
+            ))}
+            {createAListEnabled ? renderCreateNewListSection() : null}
+          </FormGroup>
+          {!isMobile ? (
+            <div style={{ flex: '0.5' }}>
+              <CardMedia
+                item={props.item}
+                component={ResponsiveImage}
+                imageType="poster"
+                imageStyle={{
+                  width: '100%',
+                  boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+                }}
+              />
+            </div>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="contained"
+            className={classes.button}
+            disabled={createAListEnabled}
+            onClick={toggleCreateAList}
+          >
+            <PlaylistAdd className={classes.leftIcon} />
+            New List
+          </Button>
+          <div className={classes.spacer} />
+          <Button onClick={handleModalClose} className={classes.button}>
+            Cancel
+          </Button>
+          <Button
+            disabled={hasTrackingChanged}
+            onClick={handleSubmit}
+            color="primary"
+            variant="contained"
+            className={classes.button}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     );
-
-    if (userSelf) {
-      return (
-        <Dialog
-          aria-labelledby="update-tracking-dialog"
-          aria-describedby="update-tracking-dialog"
-          open={this.props.open}
-          onClose={this.handleModalClose}
-          fullWidth
-          maxWidth="sm"
-        >
-          <DialogTitle id="update-tracking-dialog" className={classes.title}>
-            Add or Remove {this.props.item.canonicalTitle} from your lists
-          </DialogTitle>
-
-          <DialogContent className={classes.dialogContainer}>
-            <FormGroup>
-              {_.map(cleanList, list => (
-                <FormControlLabel
-                  key={list.id}
-                  control={
-                    <Checkbox
-                      onChange={(_, checked) =>
-                        this.handleCheckboxChange(list, checked)
-                      }
-                      checked={this.state.listChanges[list.id] ? true : false}
-                      color="primary"
-                    />
-                  }
-                  label={list.name}
-                />
-              ))}
-              {this.state.createAListEnabled
-                ? this.renderCreateNewListSection()
-                : null}
-            </FormGroup>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              variant="contained"
-              className={classes.button}
-              disabled={this.state.createAListEnabled}
-              onClick={this.toggleCreateAList}
-            >
-              <PlaylistAdd className={classes.leftIcon} />
-              New List
-            </Button>
-            <div className={classes.spacer} />
-            <Button onClick={this.handleModalClose} className={classes.button}>
-              Cancel
-            </Button>
-            <Button
-              disabled={this.hasTrackingChanged()}
-              onClick={this.handleSubmit}
-              color="primary"
-              variant="contained"
-              className={classes.button}
-            >
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
-      );
-    } else {
-      return (
-        <AuthDialog open={this.props.open} onClose={this.handleModalClose} />
-      );
-    }
+  } else {
+    return <AuthDialog open={props.open} onClose={handleModalClose} />;
   }
 }
-
-const mapStateToProps = (appState: AppState) => {
-  return {
-    listOperations: appState.lists.operation,
-    listsById: appState.lists.listsById,
-    listItemAddLoading: R.defaultTo(false)(
-      appState.lists.loading[LIST_ADD_ITEM_INITIATED],
-    ),
-    listLoading: !!appState.lists.loading[LIST_RETRIEVE_ALL_INITIATED],
-    createAListLoading: R.defaultTo(false)(
-      appState.userSelf.loading[USER_SELF_CREATE_LIST],
-    ),
-  };
-};
-
-const mapDispatchToProps = dispatch =>
-  bindActionCreators(
-    {
-      addToList,
-      updateLists: updateListTracking,
-      createList,
-    },
-    dispatch,
-  );
-
-export default withStyles(styles)(
-  connect(mapStateToProps, mapDispatchToProps)(AddToListDialog),
-);

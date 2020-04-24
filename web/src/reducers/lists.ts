@@ -1,5 +1,6 @@
 import * as R from 'ramda';
 import {
+  LIST_RETRIEVE_ALL_INITIATED,
   ListActions,
   ListAddFailedAction,
   ListAddInitiatedAction,
@@ -8,28 +9,34 @@ import {
   ListRetrieveAllSuccessAction,
   ListRetrieveInitiatedAction,
   ListRetrieveSuccessAction,
-  LIST_RETRIEVE_ALL_INITIATED,
   USER_SELF_DELETE_LIST_SUCCESS,
   UserDeleteListSuccessAction,
 } from '../actions/lists';
 import {
+  LIST_ADD_ITEM_FAILED,
   LIST_ADD_ITEM_INITIATED,
   LIST_ADD_ITEM_SUCCESS,
-  LIST_ADD_ITEM_FAILED,
 } from '../actions/lists/add_item_to_list';
 import {
   LIST_RETRIEVE_INITIATED,
   LIST_RETRIEVE_SUCCESS,
 } from '../actions/lists/get_list';
+import { LIST_RETRIEVE_ALL_SUCCESS } from '../actions/lists/retrieve_all_lists';
 import {
-  // LIST_RETRIEVE_ALL_INITIATED,
-  LIST_RETRIEVE_ALL_SUCCESS,
-} from '../actions/lists/retrieve_all_lists';
-import { USER_SELF_UPDATE_LIST_SUCCESS } from '../actions/lists/update_list';
-import { List } from '../types';
+  USER_SELF_UPDATE_LIST_SUCCESS,
+  UserUpdateListSuccessAction,
+} from '../actions/lists/update_list';
+import { ActionType, List } from '../types';
 import { flattenActions, handleAction } from './utils';
 import Thing from '../types/Thing';
-import { UserUpdateListSuccessAction } from '../actions/lists/update_list';
+import {
+  USER_SELF_REMOVE_ITEM_TAGS,
+  USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
+  USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
+  UserRemoveItemTagsAction,
+  UserRemoveItemTagsSuccessAction,
+  UserUpdateItemTagsSuccessAction,
+} from '../actions/user';
 
 export type Loading = { [X in ListActions['type']]: boolean };
 
@@ -287,6 +294,58 @@ const handleListUpdate = handleAction<UserUpdateListSuccessAction, State>(
   },
 );
 
+const handleUserUpdateTrackingSuccess = handleAction<
+  UserUpdateItemTagsSuccessAction,
+  State
+>(USER_SELF_UPDATE_ITEM_TAGS_SUCCESS, (state, { payload }) => {
+  if (payload?.action === ActionType.TrackedInList && payload?.string_value) {
+    const existingList = state.listsById[payload.string_value];
+    let newList = existingList;
+    if (existingList) {
+      newList = {
+        ...existingList,
+        totalItems: existingList.totalItems + 1,
+      };
+    }
+
+    return {
+      ...state,
+      listsById: {
+        ...state.listsById,
+        [existingList.id]: newList,
+      },
+    };
+  }
+
+  return state;
+});
+
+const handleUserRemoveTrackingSuccess = handleAction<
+  UserRemoveItemTagsSuccessAction,
+  State
+>(USER_SELF_REMOVE_ITEM_TAGS_SUCCESS, (state, { payload }) => {
+  if (payload?.action === ActionType.TrackedInList && payload?.string_value) {
+    const existingList = state.listsById[payload.string_value];
+    let newList = existingList;
+    if (existingList) {
+      newList = {
+        ...existingList,
+        totalItems: existingList.totalItems - 1,
+      };
+    }
+
+    return {
+      ...state,
+      listsById: {
+        ...state.listsById,
+        [existingList.id]: newList,
+      },
+    };
+  }
+
+  return state;
+});
+
 export default flattenActions<State>(
   'lists',
   initialState,
@@ -299,4 +358,6 @@ export default flattenActions<State>(
   handleListRetrieveAllInitiated,
   handleListUpdate,
   handleListDeleteSuccess,
+  handleUserRemoveTrackingSuccess,
+  handleUserUpdateTrackingSuccess,
 );
