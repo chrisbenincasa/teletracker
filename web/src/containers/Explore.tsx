@@ -88,6 +88,13 @@ const useStyles = makeStyles((theme: Theme) =>
       flexGrow: 1,
       flexDirection: 'column',
     },
+    scrollToTop: {
+      position: 'fixed',
+      bottom: theme.spacing(1),
+      right: theme.spacing(1),
+      backgroundColor: '#00838f',
+      zIndex: theme.zIndex.appBar,
+    },
   }),
 );
 
@@ -476,15 +483,7 @@ function Explore(props: Props) {
       <Featured featuredItems={featuredItems} />
       {renderPopular()}
       {showScrollToTop && (
-        <ScrollToTop
-          onClick={scrollToTop}
-          style={{
-            position: 'fixed',
-            bottom: 8,
-            right: 8,
-            backgroundColor: '#00838f',
-          }}
-        />
+        <ScrollToTop onClick={scrollToTop} className={classes.scrollToTop} />
       )}
     </div>
   ) : (
