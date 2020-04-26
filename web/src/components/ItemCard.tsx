@@ -136,12 +136,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     position: 'relative',
     cursor: 'pointer',
     marginLeft: theme.spacing(0.5),
+    transition: 'all .2s ease-in',
+    filter: 'drop-shadow( 0 0 4px rgba(0, 0, 0, 1))',
     color: theme.palette.secondary,
     '&:hover': {
       color: theme.palette.action.active,
     },
-    transition: 'all .2s ease-in',
-    filter: 'drop-shadow( 0 0 4px rgba(0, 0, 0, 1))',
   },
   statusIconEnabled: {
     color: theme.palette.action.active,
@@ -150,6 +150,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   statusIconDisabled: {
     color: theme.palette.secondary,
     opacity: 0.4,
+    '&:hover': {
+      color: theme.palette.action.active,
+      opacity: 1.0,
+    },
   },
 }));
 
