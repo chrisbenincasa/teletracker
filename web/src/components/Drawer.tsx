@@ -13,6 +13,7 @@ import {
   ListItemIcon,
   ListItemText,
   Theme,
+  Tooltip,
   Typography,
   withStyles,
   WithStyles,
@@ -27,6 +28,7 @@ import {
   TrendingUp,
   Apps,
   FiberNew,
+  OfflineBolt,
 } from '@material-ui/icons';
 import classNames from 'classnames';
 import _ from 'lodash';
@@ -141,6 +143,7 @@ interface LinkProps {
   index?: number;
   key: number | string;
   listLength: number;
+  dynamic?: boolean;
   primary: string;
   selected: boolean;
   to: string;
@@ -160,7 +163,7 @@ interface ListItemProps {
 // TODO: Get type definitions for props working
 const DrawerItemListLink = withStyles(styles, { withTheme: true })(
   (props: LinkProps & WithStyles<typeof styles, true>) => {
-    const { index, primary, selected, listLength } = props;
+    const { index, primary, selected, listLength, dynamic } = props;
 
     const backgroundColor =
       props.theme.palette.primary[
@@ -197,6 +200,11 @@ const DrawerItemListLink = withStyles(styles, { withTheme: true })(
             primary={primary}
           />
         </Link>
+        {dynamic && (
+          <Tooltip title={'This is a Smart List'} placement={'right'}>
+            <OfflineBolt />
+          </Tooltip>
+        )}
       </ListItem>
     );
   },
@@ -287,6 +295,7 @@ class Drawer extends Component<Props, State> {
         as={`/lists/${list.id}`}
         selected={listPath === this.props.router.pathname}
         primary={list.name}
+        dynamic={list.isDynamic}
         listLength={userList.totalItems}
         onClick={this.props.closeRequested}
       />
