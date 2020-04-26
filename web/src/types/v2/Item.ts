@@ -76,11 +76,9 @@ export interface ItemTag {
   userId?: string;
 }
 
-export const itemHasTag = (thing: ApiItem | Item, expectedTag: ActionType) => {
-  if (thing.tags) {
-    return R.any((tag: ItemTag) => {
-      return tag.tag === expectedTag;
-    }, thing.tags);
+export const itemHasTag = (item: ApiItem | Item, expectedTag: ActionType) => {
+  if (item.tags) {
+    return _.some(item.tags || [], { tag: expectedTag });
   }
 
   return false;

@@ -303,9 +303,9 @@ const updateTagsState = (
 ) => {
   let thingsById = state.thingsById || {};
   let itemId = payload!.itemId;
-  if (payload && thingsById[itemId] && thingsById[itemId].tags) {
+  if (payload && thingsById[itemId]) {
     let thing = thingsById[itemId]!;
-    let newTagSet = fn(thing.tags!);
+    let newTagSet = fn(thing.tags || []);
 
     return {
       ...state,
@@ -325,28 +325,33 @@ const updateTagsState = (
 const itemUpdateTagsSuccess = handleAction(
   USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
   (state: State, { payload }: UserUpdateItemTagsSuccessAction) => {
-    return updateTagsState(
-      state,
-      tags => {
-        return R.append(
-          {
-            tag: payload!.action,
-            value: payload!.value,
-            string_value: payload!.string_value,
-          },
-          payload?.unique
-            ? filterNot(
-                R.both(
-                  R.propEq('tag', payload!.action),
-                  R.propEq('string_value', payload!.string_value),
-                ),
-                tags,
-              )
-            : filterNot(R.propEq('tag', payload!.action), tags),
-        );
-      },
-      payload,
-    );
+    try {
+      return updateTagsState(
+        state,
+        tags => {
+          return R.append(
+            {
+              tag: payload!.action,
+              value: payload!.value,
+              string_value: payload!.string_value,
+            },
+            payload?.unique
+              ? filterNot(
+                  R.both(
+                    R.propEq('tag', payload!.action),
+                    R.propEq('string_value', payload!.string_value),
+                  ),
+                  tags,
+                )
+              : filterNot(R.propEq('tag', payload!.action), tags),
+          );
+        },
+        payload,
+      );
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
   },
 );
 
