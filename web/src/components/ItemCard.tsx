@@ -54,6 +54,7 @@ import useStateSelector from '../hooks/useStateSelector';
 import { hookDeepEqual } from '../hooks/util';
 import _ from 'lodash';
 import { useWithUserContext } from '../hooks/useWithUser';
+import classNames from 'classnames';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -135,10 +136,20 @@ const useStyles = makeStyles((theme: Theme) => ({
     position: 'relative',
     cursor: 'pointer',
     marginLeft: theme.spacing(0.5),
+    color: theme.palette.secondary,
     '&:hover': {
       color: theme.palette.action.active,
-      transition: 'all .2s ease-in',
     },
+    transition: 'all .2s ease-in',
+    filter: 'drop-shadow( 0 0 4px rgba(0, 0, 0, 1))',
+  },
+  statusIconEnabled: {
+    color: theme.palette.action.active,
+    opacity: 1.0,
+  },
+  statusIconDisabled: {
+    color: theme.palette.secondary,
+    opacity: 0.4,
   },
 }));
 
@@ -405,12 +416,18 @@ function ItemCard(props: Props) {
             <div>
               {userItemRating === 1 ? (
                 <ThumbUp
-                  className={classes.statusIcon}
+                  className={classNames(
+                    classes.statusIcon,
+                    classes.statusIconEnabled,
+                  )}
                   onClick={() => setHoverRating(true)}
                 />
               ) : (
                 <ThumbDown
-                  className={classes.statusIcon}
+                  className={classNames(
+                    classes.statusIcon,
+                    classes.statusIconEnabled,
+                  )}
                   onClick={() => setHoverRating(true)}
                 />
               )}
@@ -422,9 +439,13 @@ function ItemCard(props: Props) {
         <Tooltip title={watchedTitle} placement={'top'}>
           <div>
             <Visibility
-              className={classes.statusIcon}
+              className={classNames(
+                classes.statusIcon,
+                itemWatched
+                  ? classes.statusIconEnabled
+                  : classes.statusIconDisabled,
+              )}
               onClick={toggleItemWatched}
-              color={itemWatched ? 'action' : 'disabled'}
             />
             <Typography variant="srOnly">{watchedTitle}</Typography>
           </div>
@@ -433,9 +454,14 @@ function ItemCard(props: Props) {
         <Tooltip title={trackedTitle} placement={'top'}>
           <div>
             <CheckCircleTwoTone
-              className={classes.statusIcon}
+              className={classNames(
+                classes.statusIcon,
+                isMobile || isHovering ? classes.statusIconShadow : null,
+                belongsToLists.length > 0
+                  ? classes.statusIconEnabled
+                  : classes.statusIconDisabled,
+              )}
               onClick={() => setManageTrackingModalOpen(true)}
-              color={belongsToLists.length > 0 ? 'action' : 'disabled'}
             />
             <Typography variant="srOnly">{trackedTitle}</Typography>
           </div>
