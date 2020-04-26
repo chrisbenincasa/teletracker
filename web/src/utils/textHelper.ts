@@ -1,4 +1,4 @@
-import { Item } from '../Types/v2/Item';
+import { Item } from '../types/v2/Item';
 
 /*
     Parse initials from multi-word string
