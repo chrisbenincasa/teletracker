@@ -407,7 +407,7 @@ function ItemCard(props: Props) {
               <DeleteIcon
                 className={classes.statusIcon}
                 onClick={() => setDeleteConfirmationOpen(true)}
-                color={'disabled'}
+                color={'action'}
               />
               <Typography variant="srOnly">{deleteTitle}</Typography>
             </div>
@@ -530,37 +530,39 @@ function ItemCard(props: Props) {
 
   return (
     <React.Fragment>
-      <Fade
-        /*
+      {!deleted && (
+        <Fade
+          /*
         The fade will not start until the image container is
         entering the viewport & image has successfuly loaded in,
         ensuring the fade is visible to user.
       */
-        in={isInViewport && !_.isUndefined(item) && imageLoaded}
-        timeout={1000}
-        ref={loadWrapperRef}
-      >
-        <Grid
-          key={!deleted ? props.itemId : `${props.itemId}-deleted`}
-          {...gridProps}
+          in={isInViewport && !_.isUndefined(item) && imageLoaded}
+          timeout={1000}
+          ref={loadWrapperRef}
         >
-          {/* //imageLoaded ? '100%' : getPlaceholderHeight(), */}
-          <Card
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              position: 'relative',
-              paddingTop: '150%', // 150% is a magic number for our 1:1.5 expected poster aspect ratio
-            }}
-            onMouseEnter={isMobile ? undefined : () => setIsHovering(true)}
-            onMouseLeave={isMobile ? undefined : () => setIsHovering(false)}
-            ref={itemRef}
+          <Grid
+            key={!deleted ? props.itemId : `${props.itemId}-deleted`}
+            {...gridProps}
           >
-            {/* No network call is made until container is entering the viewport. */}
-            {isNearViewport && renderPoster(item)}
-          </Card>
-        </Grid>
-      </Fade>
+            {/* //imageLoaded ? '100%' : getPlaceholderHeight(), */}
+            <Card
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+                paddingTop: '150%', // 150% is a magic number for our 1:1.5 expected poster aspect ratio
+              }}
+              onMouseEnter={isMobile ? undefined : () => setIsHovering(true)}
+              onMouseLeave={isMobile ? undefined : () => setIsHovering(false)}
+              ref={itemRef}
+            >
+              {/* No network call is made until container is entering the viewport. */}
+              {isNearViewport && renderPoster(item)}
+            </Card>
+          </Grid>
+        </Fade>
+      )}
       <AuthDialog
         open={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}
