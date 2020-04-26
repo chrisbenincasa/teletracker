@@ -30,13 +30,12 @@ const useStyles = makeStyles((theme: Theme) => ({
 
 interface Props {
   children: any;
+  hideFooter?: boolean;
 }
 
 export default function AppWrapper(props: Props) {
   const isBooting = useStateSelector(state => state.startup.isBooting);
-  const isAuthed = useStateSelector(state => !_.isUndefined(state.auth.token));
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const router = useRouter();
   const classes = useStyles();
 
   return (
@@ -72,8 +71,7 @@ export default function AppWrapper(props: Props) {
         ) : (
           <LinearProgress />
         )}
-        {router.pathname.toLowerCase() === '/popular' ||
-        (isAuthed && router.pathname === '/') ? null : (
+        {props.hideFooter ? null : (
           <Footer />
         )}
       </WithUser>
