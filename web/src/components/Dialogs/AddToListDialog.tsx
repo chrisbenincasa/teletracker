@@ -300,6 +300,13 @@ export default function AddToListDialog(props: Props) {
   };
 
   if (isLoggedIn) {
+    // Match sort used in Drawer
+    const sortedLists = _.sortBy(
+      _.values(listsToShow),
+      list => (list.legacyId ? -list.legacyId : null),
+      'id',
+    );
+
     return (
       <Dialog
         aria-labelledby="update-tracking-dialog"
@@ -315,7 +322,7 @@ export default function AddToListDialog(props: Props) {
 
         <DialogContent className={classes.dialogContainer}>
           <FormGroup style={{ flex: 1 }}>
-            {_.map(listsToShow, list => (
+            {_.map(sortedLists, list => (
               <FormControlLabel
                 key={list.id}
                 control={
