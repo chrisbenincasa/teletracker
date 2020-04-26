@@ -155,6 +155,10 @@ const useStyles = makeStyles((theme: Theme) => ({
       opacity: 1.0,
     },
   },
+  title: {
+    backgroundColor: theme.palette.primary.main,
+    padding: theme.spacing(1, 2),
+  },
 }));
 
 interface Props {
@@ -363,20 +367,24 @@ function ItemCard(props: Props) {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">{'Remove from List'}</DialogTitle>
+        <DialogTitle id="alert-dialog-title" className={classes.title}>
+          {'Remove from List'}
+        </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             Are you sure you want to remove this from your list?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => setDeleteConfirmationOpen(false)}
-            color="primary"
-          >
+          <Button onClick={() => setDeleteConfirmationOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleRemoveFromList} color="primary" autoFocus>
+          <Button
+            onClick={handleRemoveFromList}
+            color="primary"
+            variant="contained"
+            autoFocus
+          >
             Remove
           </Button>
         </DialogActions>
