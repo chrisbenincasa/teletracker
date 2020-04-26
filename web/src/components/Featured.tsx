@@ -5,6 +5,7 @@ import {
   Grow,
   makeStyles,
   Theme,
+  Tooltip,
   Typography,
   useTheme,
 } from '@material-ui/core';
@@ -124,6 +125,7 @@ function Featured(props: Props) {
     const voteCount = getVoteCountFormatted(item);
     const runtime =
       (item.runtime && formatRuntime(item.runtime, item.type)) || null;
+    const itemType = item.type || 'item';
 
     return (
       <div className={classes.titleContainer}>
@@ -147,7 +149,9 @@ function Featured(props: Props) {
             variant="body1"
             itemProp="duration"
           >
-            <AccessTime />
+            <Tooltip title={`Runtime for this ${itemType}`} placement={'top'}>
+              <AccessTime fontSize="small" />
+            </Tooltip>
             <span className={classes.runtimeSpan}>{runtime}</span>
           </Typography>
         ) : null}
