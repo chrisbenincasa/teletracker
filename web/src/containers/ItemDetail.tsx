@@ -14,6 +14,7 @@ import {
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
+  AccessTime,
   ChevronLeft,
   ExpandLess,
   ExpandMore,
@@ -178,6 +179,9 @@ const useStyles = makeStyles((theme: Theme) =>
         top: 75,
         height: 475,
       },
+    },
+    metaIcon: {
+      paddingRight: theme.spacing(0.5),
     },
     modal: {
       display: 'flex',
@@ -394,13 +398,17 @@ function ItemDetails(props: Props) {
             itemProp="duration"
             className={classes.information}
           >
+            {' '}
+            <Tooltip title={`Runtime for this ${itemType}`} placement={'top'}>
+              <AccessTime fontSize="small" className={classes.metaIcon} />
+            </Tooltip>
             {runtime}
             {runtime && releaseDate && <Lens className={classes.separator} />}
             <Tooltip
               title={`Release year for this ${itemType}`}
               placement={'top'}
             >
-              <Event fontSize="small" />
+              <Event fontSize="small" className={classes.metaIcon} />
             </Tooltip>
             {releaseDate}
             {rating && <Lens className={classes.separator} />}

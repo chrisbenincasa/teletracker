@@ -138,20 +138,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     marginLeft: theme.spacing(0.5),
     transition: 'all .2s ease-in',
     filter: 'drop-shadow( 0 0 4px rgba(0, 0, 0, 1))',
-    // color: theme.palette.secondary,
-    '&:hover': {
-      // color: theme.palette.action.active,
-    },
   },
   statusIconEnabled: {
-    // color: theme.palette.action.active,
     opacity: 1.0,
   },
   statusIconDisabled: {
-    // color: theme.palette.secondary,
     opacity: 0.4,
     '&:hover': {
-      // color: theme.palette.action.active,
       opacity: 1.0,
     },
   },
@@ -443,7 +436,6 @@ function ItemCard(props: Props) {
                     classes.statusIcon,
                     classes.statusIconEnabled,
                   )}
-                  onClick={() => setHoverRating(true)}
                 />
               )}
               <Typography variant="srOnly">{ratingTitle}</Typography>

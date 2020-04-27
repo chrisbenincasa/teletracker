@@ -159,7 +159,7 @@ const Search = ({ inViewportChange }) => {
   };
 
   const scrollToTop = () => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setShowScrollToTop(false);
   };
 

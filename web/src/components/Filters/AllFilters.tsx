@@ -35,6 +35,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexGrow: 1,
     justifyContent: 'flex-end',
     marginTop: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
   },
   allFiltersContainer: {
     marginTop: theme.spacing(1),
