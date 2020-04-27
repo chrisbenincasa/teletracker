@@ -206,7 +206,7 @@ const DrawerItemListLink = withStyles(styles, { withTheme: true })(
           />
         </Link>
         {dynamic && (
-          <Tooltip title={'This is a Smart List'} placement={'right'}>
+          <Tooltip title={'Learn more about Smart Lists'} placement={'right'}>
             <ListItemSecondaryAction>
               <IconButton
                 edge="end"

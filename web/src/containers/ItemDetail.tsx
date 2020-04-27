@@ -398,7 +398,6 @@ function ItemDetails(props: Props) {
             itemProp="duration"
             className={classes.information}
           >
-            {' '}
             <Tooltip title={`Runtime for this ${itemType}`} placement={'top'}>
               <AccessTime fontSize="small" className={classes.metaIcon} />
             </Tooltip>
