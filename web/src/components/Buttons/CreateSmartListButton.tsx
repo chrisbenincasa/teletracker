@@ -26,7 +26,7 @@ export default function CreateSmartListButton(props: Props) {
       aria-label="save-as-list"
       placement="top"
     >
-      <div>
+      <React.Fragment>
         <Button
           size="small"
           disabled={
@@ -46,7 +46,7 @@ export default function CreateSmartListButton(props: Props) {
         >
           {props.isListDynamic ? 'Save Smart List' : 'Create Smart List'}
         </Button>
-      </div>
+      </React.Fragment>
     </Tooltip>
   );
 }

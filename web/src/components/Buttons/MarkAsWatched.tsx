@@ -111,7 +111,7 @@ class MarkAsWatched extends Component<Props, State> {
         >
           {watchedCTA}
         </Button>
-        {watchedStatus && this.ratingButton()}
+        {watchedStatus && isReleased && this.ratingButton()}
       </div>
     );
   };

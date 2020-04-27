@@ -35,6 +35,7 @@ export interface List {
   configuration?: ListConfiguration;
   relevantPeople?: Person[];
   legacyId?: number;
+  createdAt?: Date;
   aliases?: string[];
   ownedByRequester: boolean;
 }

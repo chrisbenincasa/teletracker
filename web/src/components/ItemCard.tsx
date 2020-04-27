@@ -54,6 +54,7 @@ import useStateSelector from '../hooks/useStateSelector';
 import { hookDeepEqual } from '../hooks/util';
 import _ from 'lodash';
 import { useWithUserContext } from '../hooks/useWithUser';
+import classNames from 'classnames';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -135,10 +136,21 @@ const useStyles = makeStyles((theme: Theme) => ({
     position: 'relative',
     cursor: 'pointer',
     marginLeft: theme.spacing(0.5),
+    transition: 'all .2s ease-in',
+    filter: 'drop-shadow( 0 0 4px rgba(0, 0, 0, 1))',
+  },
+  statusIconEnabled: {
+    opacity: 1.0,
+  },
+  statusIconDisabled: {
+    opacity: 0.4,
     '&:hover': {
-      color: theme.palette.action.active,
-      transition: 'all .2s ease-in',
+      opacity: 1.0,
     },
+  },
+  dialogTitle: {
+    backgroundColor: theme.palette.primary.main,
+    padding: theme.spacing(1, 2),
   },
 }));
 
@@ -348,20 +360,24 @@ function ItemCard(props: Props) {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">{'Remove from List'}</DialogTitle>
+        <DialogTitle id="alert-dialog-title" className={classes.dialogTitle}>
+          {'Remove from List'}
+        </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             Are you sure you want to remove this from your list?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => setDeleteConfirmationOpen(false)}
-            color="primary"
-          >
+          <Button onClick={() => setDeleteConfirmationOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleRemoveFromList} color="primary" autoFocus>
+          <Button
+            onClick={handleRemoveFromList}
+            color="primary"
+            variant="contained"
+            autoFocus
+          >
             Remove
           </Button>
         </DialogActions>
@@ -388,57 +404,79 @@ function ItemCard(props: Props) {
       <div className={classes.statusIconContainer}>
         {showDelete && (
           <Tooltip title={deleteTitle} placement={'top'}>
-            <div>
-              <DeleteIcon
-                className={classes.statusIcon}
-                onClick={() => setDeleteConfirmationOpen(true)}
-                color={'disabled'}
-              />
+            <IconButton
+              size="small"
+              aria-label={deleteTitle}
+              onClick={() => setDeleteConfirmationOpen(true)}
+            >
+              <DeleteIcon className={classes.statusIcon} color={'action'} />
               <Typography variant="srOnly">{deleteTitle}</Typography>
-            </div>
+            </IconButton>
           </Tooltip>
         )}
         {!isMobile &&
         itemWatched &&
         (userItemRating === 0 || userItemRating === 1) ? (
           <Tooltip title={ratingTitle} placement={'top'}>
-            <div>
+            <IconButton
+              size="small"
+              aria-label={ratingTitle}
+              onClick={() => setHoverRating(true)}
+            >
               {userItemRating === 1 ? (
                 <ThumbUp
-                  className={classes.statusIcon}
-                  onClick={() => setHoverRating(true)}
+                  className={classNames(
+                    classes.statusIcon,
+                    classes.statusIconEnabled,
+                  )}
                 />
               ) : (
                 <ThumbDown
-                  className={classes.statusIcon}
-                  onClick={() => setHoverRating(true)}
+                  className={classNames(
+                    classes.statusIcon,
+                    classes.statusIconEnabled,
+                  )}
                 />
               )}
               <Typography variant="srOnly">{ratingTitle}</Typography>
-            </div>
+            </IconButton>
           </Tooltip>
         ) : null}
 
         <Tooltip title={watchedTitle} placement={'top'}>
-          <div>
+          <IconButton
+            size="small"
+            aria-label={watchedTitle}
+            onClick={toggleItemWatched}
+          >
             <Visibility
-              className={classes.statusIcon}
-              onClick={toggleItemWatched}
-              color={itemWatched ? 'action' : 'disabled'}
+              className={classNames(
+                classes.statusIcon,
+                itemWatched
+                  ? classes.statusIconEnabled
+                  : classes.statusIconDisabled,
+              )}
             />
             <Typography variant="srOnly">{watchedTitle}</Typography>
-          </div>
+          </IconButton>
         </Tooltip>
 
         <Tooltip title={trackedTitle} placement={'top'}>
-          <div>
+          <IconButton
+            size="small"
+            aria-label={trackedTitle}
+            onClick={() => setManageTrackingModalOpen(true)}
+          >
             <CheckCircleTwoTone
-              className={classes.statusIcon}
-              onClick={() => setManageTrackingModalOpen(true)}
-              color={belongsToLists.length > 0 ? 'action' : 'disabled'}
+              className={classNames(
+                classes.statusIcon,
+                belongsToLists.length > 0
+                  ? classes.statusIconEnabled
+                  : classes.statusIconDisabled,
+              )}
             />
             <Typography variant="srOnly">{trackedTitle}</Typography>
-          </div>
+          </IconButton>
         </Tooltip>
       </div>
     );
@@ -500,37 +538,39 @@ function ItemCard(props: Props) {
 
   return (
     <React.Fragment>
-      <Fade
-        /*
+      {!deleted && (
+        <Fade
+          /*
         The fade will not start until the image container is
         entering the viewport & image has successfuly loaded in,
         ensuring the fade is visible to user.
       */
-        in={isInViewport && !_.isUndefined(item) && imageLoaded}
-        timeout={1000}
-        ref={loadWrapperRef}
-      >
-        <Grid
-          key={!deleted ? props.itemId : `${props.itemId}-deleted`}
-          {...gridProps}
+          in={isInViewport && !_.isUndefined(item) && imageLoaded}
+          timeout={1000}
+          ref={loadWrapperRef}
         >
-          {/* //imageLoaded ? '100%' : getPlaceholderHeight(), */}
-          <Card
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              position: 'relative',
-              paddingTop: '150%', // 150% is a magic number for our 1:1.5 expected poster aspect ratio
-            }}
-            onMouseEnter={isMobile ? undefined : () => setIsHovering(true)}
-            onMouseLeave={isMobile ? undefined : () => setIsHovering(false)}
-            ref={itemRef}
+          <Grid
+            key={!deleted ? props.itemId : `${props.itemId}-deleted`}
+            {...gridProps}
           >
-            {/* No network call is made until container is entering the viewport. */}
-            {isNearViewport && renderPoster(item)}
-          </Card>
-        </Grid>
-      </Fade>
+            {/* //imageLoaded ? '100%' : getPlaceholderHeight(), */}
+            <Card
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+                paddingTop: '150%', // 150% is a magic number for our 1:1.5 expected poster aspect ratio
+              }}
+              onMouseEnter={isMobile ? undefined : () => setIsHovering(true)}
+              onMouseLeave={isMobile ? undefined : () => setIsHovering(false)}
+              ref={itemRef}
+            >
+              {/* No network call is made until container is entering the viewport. */}
+              {isNearViewport && renderPoster(item)}
+            </Card>
+          </Grid>
+        </Fade>
+      )}
       <AuthDialog
         open={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}
