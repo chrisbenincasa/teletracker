@@ -14,6 +14,7 @@ import { ItemFactory } from '../../types/v2/Item';
 import { peopleFetchSuccess } from '../../actions/people/get_people';
 import { ApiPerson, PersonFactory } from '../../types/v2/Person';
 import { FilterParams } from '../../utils/searchFilters';
+import { WithItemFilters } from '../../components/Filters/FilterContext';
 
 export default function makeExploreWrapper(defaultFilters: FilterParams) {
   function ExploreWrapper() {
@@ -23,7 +24,9 @@ export default function makeExploreWrapper(defaultFilters: FilterParams) {
           <title>Explore - Popular</title>
         </Head>
         <AppWrapper hideFooter>
-          <Explore defaultFilters={defaultFilters} />
+          <WithItemFilters defaultFilters={defaultFilters}>
+            <Explore defaultFilters={defaultFilters} />
+          </WithItemFilters>
         </AppWrapper>
       </React.Fragment>
     );
