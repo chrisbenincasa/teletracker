@@ -13,13 +13,14 @@ phases:
       - echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
   pre_build:
     commands:
+      - cd web
       # https://github.com/yarnpkg/yarn/issues/2051
       - yarn config set ignore-engines true
-      - cd web && yarn install --ignore-engines
+      - yarn install --ignore-engines
   build:
     commands:
-      - cd web && ./build-ssr
-      - cd web &&
+      - ./build-ssr
+      - yarn jest
 cache:
   paths:
     - "web/node_modules/**/*"

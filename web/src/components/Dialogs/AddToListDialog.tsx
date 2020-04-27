@@ -34,17 +34,13 @@ import { Item, itemBelongsToLists } from '../../types/v2/Item';
 import CreateAListValidator from '../../utils/validation/CreateAListValidator';
 import AuthDialog from '../Auth/AuthDialog';
 import { useWithUserContext } from '../../hooks/useWithUser';
-import useStateSelector, {
-  useStateSelectorWithPrevious,
-} from '../../hooks/useStateSelector';
+import useStateSelector, { useStateSelectorWithPrevious } from '../../hooks/useStateSelector';
 import createDeepEqSelector from '../../hooks/createDeepEqSelector';
 import { usePrevious } from '../../hooks/usePrevious';
 import { useStateDeepEq } from '../../hooks/useStateDeepEq';
 import { hookDeepEqual } from '../../hooks/util';
 import useNewListValidation from '../../hooks/useNewListValidation';
-import imagePlaceholder from '../../../public/images/imagePlaceholder.png';
 import { ResponsiveImage } from '../ResponsiveImage';
-import { useWidth } from '../../hooks/useWidth';
 import useIsMobile from '../../hooks/useIsMobile';
 
 const useStyles = makeStyles((theme: Theme) =>

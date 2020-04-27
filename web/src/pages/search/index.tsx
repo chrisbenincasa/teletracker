@@ -36,7 +36,7 @@ function SearchWrapper(props: Props) {
           content="minimum-scale=1, initial-scale=1, width=device-width"
         />
       </Head>
-      <AppWrapper>
+      <AppWrapper hideFooter>
         {/* TODO: Hook this up */}
         <Search inViewportChange={() => {}} />
       </AppWrapper>

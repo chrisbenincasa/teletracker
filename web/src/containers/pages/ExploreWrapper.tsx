@@ -22,7 +22,7 @@ export default function makeExploreWrapper(defaultFilters: FilterParams) {
         <Head>
           <title>Explore - Popular</title>
         </Head>
-        <AppWrapper>
+        <AppWrapper hideFooter>
           <Explore defaultFilters={defaultFilters} />
         </AppWrapper>
       </React.Fragment>

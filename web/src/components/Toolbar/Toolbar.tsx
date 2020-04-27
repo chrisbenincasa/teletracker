@@ -174,6 +174,7 @@ export default function Toolbar(props: Props) {
   const router = useRouter();
   const genres = useGenres();
 
+  const isBooting = useStateSelector(state => state.startup.isBooting);
   const [mobileSearchBarOpen, setMobileSearchBarOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [genreType, setGenreType] = useState<string | undefined>();
@@ -490,7 +491,7 @@ export default function Toolbar(props: Props) {
             />
           </Box>
 
-          {!isLoggedIn && (
+          {!isBooting && !isLoggedIn && (
             <Button
               startIcon={isSuperSmallDevice ? null : <Person />}
               className={classes.loginButton}
