@@ -193,7 +193,7 @@ export default function Toolbar(props: Props) {
     state => state.search.quick.currentSearchText,
   );
 
-  const { isLoggedIn } = useWithUserContext();
+  const { isLoggedIn, isCheckingAuth } = useWithUserContext();
 
   const isSmallDevice = useMemo(() => {
     return ['xs', 'sm', 'md'].includes(width);

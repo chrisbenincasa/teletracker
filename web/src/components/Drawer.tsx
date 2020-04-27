@@ -12,7 +12,10 @@ import {
   ListItemAvatar,
   ListItemIcon,
   ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
   Theme,
+  Tooltip,
   Typography,
   withStyles,
   WithStyles,
@@ -27,6 +30,7 @@ import {
   TrendingUp,
   Apps,
   FiberNew,
+  OfflineBolt,
 } from '@material-ui/icons';
 import classNames from 'classnames';
 import _ from 'lodash';
@@ -39,6 +43,7 @@ import {
   retrieveAllLists,
 } from '../actions/lists';
 import CreateListDialog from './Dialogs/CreateListDialog';
+import SmartListDialog from './Dialogs/SmartListDialog';
 import { AppState } from '../reducers';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
@@ -116,6 +121,7 @@ interface DispatchProps {
 
 interface State {
   createDialogOpen: boolean;
+  smartListDialogOpen: boolean;
   authModalOpen: boolean;
   authModalScreen?: 'login' | 'signup';
   listsLoadedOnce: boolean;
@@ -141,11 +147,13 @@ interface LinkProps {
   index?: number;
   key: number | string;
   listLength: number;
+  dynamic?: boolean;
   primary: string;
   selected: boolean;
   to: string;
   as?: string;
   onClick?: () => void;
+  onSmartListClick: () => void;
 }
 
 interface ListItemProps {
@@ -160,7 +168,7 @@ interface ListItemProps {
 // TODO: Get type definitions for props working
 const DrawerItemListLink = withStyles(styles, { withTheme: true })(
   (props: LinkProps & WithStyles<typeof styles, true>) => {
-    const { index, primary, selected, listLength } = props;
+    const { index, primary, selected, listLength, dynamic } = props;
 
     const backgroundColor =
       props.theme.palette.primary[
@@ -197,6 +205,20 @@ const DrawerItemListLink = withStyles(styles, { withTheme: true })(
             primary={primary}
           />
         </Link>
+        {dynamic && (
+          <Tooltip title={'Learn more about Smart Lists'} placement={'right'}>
+            <ListItemSecondaryAction>
+              <IconButton
+                edge="end"
+                aria-label="smart lists"
+                size="small"
+                onClick={() => props.onSmartListClick()}
+              >
+                <OfflineBolt />
+              </IconButton>
+            </ListItemSecondaryAction>
+          </Tooltip>
+        )}
       </ListItem>
     );
   },
@@ -205,6 +227,7 @@ const DrawerItemListLink = withStyles(styles, { withTheme: true })(
 class Drawer extends Component<Props, State> {
   state: State = {
     createDialogOpen: false,
+    smartListDialogOpen: false,
     authModalOpen: false,
     authModalScreen: 'login',
     listsLoadedOnce: false,
@@ -271,6 +294,7 @@ class Drawer extends Component<Props, State> {
   handleModalClose = () => {
     this.setState({
       createDialogOpen: false,
+      smartListDialogOpen: false,
     });
   };
 
@@ -279,6 +303,7 @@ class Drawer extends Component<Props, State> {
     let listWithDetails = listsById[userList.id];
     let list = listWithDetails || userList;
     const listPath = `/lists/${list.id}`;
+
     return (
       <DrawerItemListLink
         index={index}
@@ -287,8 +312,10 @@ class Drawer extends Component<Props, State> {
         as={`/lists/${list.id}`}
         selected={listPath === this.props.router.pathname}
         primary={list.name}
+        dynamic={list.isDynamic}
         listLength={userList.totalItems}
         onClick={this.props.closeRequested}
+        onSmartListClick={() => this.setState({ smartListDialogOpen: true })}
       />
     );
   };
@@ -298,6 +325,7 @@ class Drawer extends Component<Props, State> {
 
     const sortedLists = _.sortBy(
       _.values(listsById),
+      list => (list.createdAt ? -new Date(list.createdAt) : null),
       list => (list.legacyId ? -list.legacyId : null),
       'id',
     );
@@ -433,6 +461,10 @@ class Drawer extends Component<Props, State> {
         {this.renderDrawer()}
         <CreateListDialog
           open={this.state.createDialogOpen}
+          onClose={this.handleModalClose.bind(this)}
+        />
+        <SmartListDialog
+          open={this.state.smartListDialogOpen}
           onClose={this.handleModalClose.bind(this)}
         />
         <AuthDialog

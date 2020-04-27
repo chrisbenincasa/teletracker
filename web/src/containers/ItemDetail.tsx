@@ -9,10 +9,18 @@ import {
   Hidden,
   LinearProgress,
   Theme,
+  Tooltip,
   Typography,
 } from '@material-ui/core';
 import { fade } from '@material-ui/core/styles/colorManipulator';
-import { ChevronLeft, ExpandLess, ExpandMore, Lens } from '@material-ui/icons';
+import {
+  AccessTime,
+  ChevronLeft,
+  ExpandLess,
+  ExpandMore,
+  Event,
+  Lens,
+} from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import moment from 'moment';
@@ -126,6 +134,7 @@ const useStyles = makeStyles((theme: Theme) =>
       [theme.breakpoints.down('sm')]: {
         textAlign: 'center',
       },
+      alignItems: 'center',
     },
     informationContainer: {
       [theme.breakpoints.down('sm')]: {
@@ -170,6 +179,9 @@ const useStyles = makeStyles((theme: Theme) =>
         top: 75,
         height: 475,
       },
+    },
+    metaIcon: {
+      paddingRight: theme.spacing(0.5),
     },
     modal: {
       display: 'flex',
@@ -364,6 +376,7 @@ function ItemDetails(props: Props) {
       item => item.country_code === 'US',
     );
     const rating = ratingObject[0]?.certification;
+    const itemType = item.type || 'item';
 
     return (
       <div className={classes.informationContainer}>
@@ -385,8 +398,17 @@ function ItemDetails(props: Props) {
             itemProp="duration"
             className={classes.information}
           >
+            <Tooltip title={`Runtime for this ${itemType}`} placement={'top'}>
+              <AccessTime fontSize="small" className={classes.metaIcon} />
+            </Tooltip>
             {runtime}
             {runtime && releaseDate && <Lens className={classes.separator} />}
+            <Tooltip
+              title={`Release year for this ${itemType}`}
+              placement={'top'}
+            >
+              <Event fontSize="small" className={classes.metaIcon} />
+            </Tooltip>
             {releaseDate}
             {rating && <Lens className={classes.separator} />}
             {rating && rating !== 'NR'

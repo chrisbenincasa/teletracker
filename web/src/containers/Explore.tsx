@@ -91,8 +91,7 @@ const useStyles = makeStyles((theme: Theme) =>
     scrollToTop: {
       position: 'fixed',
       bottom: theme.spacing(1),
-      right: theme.spacing(1),
-      backgroundColor: '#00838f',
+      right: theme.spacing(3),
       zIndex: theme.zIndex.appBar,
     },
   }),
@@ -286,7 +285,7 @@ function Explore(props: Props) {
   }, [popular, thingsById, width, theme, featuredItemsIndex]);
 
   const scrollToTop = useCallback(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setShowScrollToTop(false);
   }, []);
 
