@@ -401,7 +401,7 @@ function ItemDetails(props: Props) {
               placement={'top'}
             >
               <Event fontSize="small" />
-            </Tooltip>{' '}
+            </Tooltip>
             {releaseDate}
             {rating && <Lens className={classes.separator} />}
             {rating && rating !== 'NR'

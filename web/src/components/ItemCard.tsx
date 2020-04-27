@@ -138,24 +138,24 @@ const useStyles = makeStyles((theme: Theme) => ({
     marginLeft: theme.spacing(0.5),
     transition: 'all .2s ease-in',
     filter: 'drop-shadow( 0 0 4px rgba(0, 0, 0, 1))',
-    color: theme.palette.secondary,
+    // color: theme.palette.secondary,
     '&:hover': {
-      color: theme.palette.action.active,
+      // color: theme.palette.action.active,
     },
   },
   statusIconEnabled: {
-    color: theme.palette.action.active,
+    // color: theme.palette.action.active,
     opacity: 1.0,
   },
   statusIconDisabled: {
-    color: theme.palette.secondary,
+    // color: theme.palette.secondary,
     opacity: 0.4,
     '&:hover': {
-      color: theme.palette.action.active,
+      // color: theme.palette.action.active,
       opacity: 1.0,
     },
   },
-  title: {
+  dialogTitle: {
     backgroundColor: theme.palette.primary.main,
     padding: theme.spacing(1, 2),
   },
@@ -367,7 +367,7 @@ function ItemCard(props: Props) {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title" className={classes.title}>
+        <DialogTitle id="alert-dialog-title" className={classes.dialogTitle}>
           {'Remove from List'}
         </DialogTitle>
         <DialogContent>
@@ -411,28 +411,31 @@ function ItemCard(props: Props) {
       <div className={classes.statusIconContainer}>
         {showDelete && (
           <Tooltip title={deleteTitle} placement={'top'}>
-            <div>
-              <DeleteIcon
-                className={classes.statusIcon}
-                onClick={() => setDeleteConfirmationOpen(true)}
-                color={'action'}
-              />
+            <IconButton
+              size="small"
+              aria-label={deleteTitle}
+              onClick={() => setDeleteConfirmationOpen(true)}
+            >
+              <DeleteIcon className={classes.statusIcon} color={'action'} />
               <Typography variant="srOnly">{deleteTitle}</Typography>
-            </div>
+            </IconButton>
           </Tooltip>
         )}
         {!isMobile &&
         itemWatched &&
         (userItemRating === 0 || userItemRating === 1) ? (
           <Tooltip title={ratingTitle} placement={'top'}>
-            <div>
+            <IconButton
+              size="small"
+              aria-label={ratingTitle}
+              onClick={() => setHoverRating(true)}
+            >
               {userItemRating === 1 ? (
                 <ThumbUp
                   className={classNames(
                     classes.statusIcon,
                     classes.statusIconEnabled,
                   )}
-                  onClick={() => setHoverRating(true)}
                 />
               ) : (
                 <ThumbDown
@@ -444,12 +447,16 @@ function ItemCard(props: Props) {
                 />
               )}
               <Typography variant="srOnly">{ratingTitle}</Typography>
-            </div>
+            </IconButton>
           </Tooltip>
         ) : null}
 
         <Tooltip title={watchedTitle} placement={'top'}>
-          <div>
+          <IconButton
+            size="small"
+            aria-label={watchedTitle}
+            onClick={toggleItemWatched}
+          >
             <Visibility
               className={classNames(
                 classes.statusIcon,
@@ -457,26 +464,27 @@ function ItemCard(props: Props) {
                   ? classes.statusIconEnabled
                   : classes.statusIconDisabled,
               )}
-              onClick={toggleItemWatched}
             />
             <Typography variant="srOnly">{watchedTitle}</Typography>
-          </div>
+          </IconButton>
         </Tooltip>
 
         <Tooltip title={trackedTitle} placement={'top'}>
-          <div>
+          <IconButton
+            size="small"
+            aria-label={trackedTitle}
+            onClick={() => setManageTrackingModalOpen(true)}
+          >
             <CheckCircleTwoTone
               className={classNames(
                 classes.statusIcon,
-                isMobile || isHovering ? classes.statusIconShadow : null,
                 belongsToLists.length > 0
                   ? classes.statusIconEnabled
                   : classes.statusIconDisabled,
               )}
-              onClick={() => setManageTrackingModalOpen(true)}
             />
             <Typography variant="srOnly">{trackedTitle}</Typography>
-          </div>
+          </IconButton>
         </Tooltip>
       </div>
     );

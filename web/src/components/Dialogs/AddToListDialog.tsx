@@ -303,6 +303,7 @@ export default function AddToListDialog(props: Props) {
     // Match sort used in Drawer
     const sortedLists = _.sortBy(
       _.values(listsToShow),
+      list => (list.createdAt ? -new Date(list.createdAt) : null),
       list => (list.legacyId ? -list.legacyId : null),
       'id',
     );
