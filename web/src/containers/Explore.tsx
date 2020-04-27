@@ -10,7 +10,13 @@ import {
 import _ from 'lodash';
 import { useRouter } from 'next/router';
 import qs from 'querystring';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
 import { clearPopular, retrievePopular } from '../actions/popular';
 import Featured from '../components/Featured';
@@ -19,7 +25,6 @@ import AllFilters from '../components/Filters/AllFilters';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ItemCard from '../components/ItemCard';
 import ScrollToTop from '../components/Buttons/ScrollToTop';
-import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
@@ -30,7 +35,6 @@ import {
   updateUrlParamsForNextRouter,
 } from '../utils/urlHelper';
 import { useStateDeepEq } from '../hooks/useStateDeepEq';
-import { useWithUserContext } from '../hooks/useWithUser';
 import { useWidth } from '../hooks/useWidth';
 import useStateSelector, {
   useStateSelectorWithPrevious,
@@ -45,6 +49,9 @@ import {
 } from '../hooks/useDispatchAction';
 import { useGenres, useNetworks } from '../hooks/useStateMetadata';
 import { hookDeepEqual } from '../hooks/util';
+import dequal from 'dequal';
+import { Id } from '../types/v2';
+import { FilterContext } from '../components/Filters/FilterContext';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -106,12 +113,14 @@ function Explore(props: Props) {
   // State
   //
   const classes = useStyles();
-  const userState = useWithUserContext();
   const theme = useTheme();
   const width = useWidth();
 
-  let [featuredItemsIndex, setFeaturedItemsIndex] = useState<number[]>([]);
-  let [featuredItems, setFeaturedItems] = useState<Item[]>([]);
+  let [featuredItemsIndex, setFeaturedItemsIndex] = useStateDeepEq<number[]>(
+    [],
+    dequal,
+  );
+  let [featuredItems, setFeaturedItems] = useStateDeepEq<Id[]>([], dequal);
   let [showFilter, setShowFilter] = useState(false);
   let [needsNewFeatured, setNeedsNewFeatured] = useState(false);
   let totalLoadedImages = useRef(0);
@@ -163,6 +172,7 @@ function Explore(props: Props) {
   }, []);
 
   const handleFilterParamsChange = (filterParams: FilterParams) => {
+    console.log(filters, filterParams);
     if (!filterParamsEqual(filters, filterParams)) {
       setFilters(filterParams);
       setNeedsNewFeatured(true);
@@ -268,9 +278,7 @@ function Explore(props: Props) {
         popular!.findIndex(id => item === id),
       );
 
-      let newFeaturedItems = featuredIndexes.map(
-        index => thingsById[popular![index]],
-      );
+      let newFeaturedItems = featuredIndexes.map(index => popular![index]);
 
       setFeaturedItemsIndex(featuredIndexes);
       setFeaturedItems(newFeaturedItems);
@@ -363,14 +371,14 @@ function Explore(props: Props) {
 
   useEffect(() => {
     const isInitialFetch = popular && !previousPopular && !loading;
-    // const isNewFetch = popular && wasLoading && !loading;
+    const isNewFetch = popular && wasLoading && !loading;
     const didScreenResize =
       popular &&
       (!previousWidth ||
         ['xs', 'sm'].includes(previousWidth) !== ['xs', 'sm'].includes(width));
     const didNavigate = !isInitialFetch && needsNewFeatured;
 
-    if (isInitialFetch || didScreenResize || didNavigate) {
+    if (isInitialFetch || isNewFetch || didScreenResize || didNavigate) {
       updateFeaturedItems();
     }
   }, [popular, loading, width, needsNewFeatured]);
@@ -440,6 +448,7 @@ function Explore(props: Props) {
           updateFilters={handleFilterParamsChange}
           sortOptions={['popularity', 'recent', 'rating|imdb', 'rating|tmdb']}
           networks={networks}
+          defaultFilters={props.defaultFilters}
         />
         {popular.length > 0 ? (
           <InfiniteScroll
