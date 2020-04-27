@@ -1,7 +1,8 @@
 module.exports = {
   "testEnvironment": "node",
   "roots": [
-    "tests/components"
+    "tests/components",
+    "tests/reducers"
   ],
   "preset": "ts-jest",
   "setupFilesAfterEnv": ["./tests/setupTests.ts"],
