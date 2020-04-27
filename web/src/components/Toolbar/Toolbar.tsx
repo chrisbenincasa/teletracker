@@ -494,7 +494,7 @@ export default function Toolbar(props: Props) {
           {!isBooting && !isLoggedIn && (
             <Button
               startIcon={isSuperSmallDevice ? null : <Person />}
-              className={classes.loginButton}
+              className={`${classes.loginButton} loginButton`}
               onClick={openAuthDialog}
             >
               Login
