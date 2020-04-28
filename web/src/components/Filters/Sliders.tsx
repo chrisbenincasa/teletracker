@@ -1,13 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { Slider, Theme, Typography } from '@material-ui/core';
-import { withRouter } from 'next/router';
-import { WithRouterProps } from 'next/dist/client/with-router';
 import makeStyles from '@material-ui/core/styles/makeStyles';
-import _ from 'lodash';
 import * as R from 'ramda';
-import { OpenRange } from '../../types';
 import { SlidersState } from '../../utils/searchFilters';
-import { useDebounce, useDebouncedCallback } from 'use-debounce';
+import { useDebouncedCallback } from 'use-debounce';
+import { FilterContext } from './FilterContext';
+import _ from 'lodash';
 
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {
@@ -21,13 +19,10 @@ const MIN_RATING = 0;
 const MAX_RATING = 10;
 const RATING_STEP = 0.5;
 
-interface OwnProps {
+interface Props {
   handleChange: (change: SliderChange) => void;
-  sliders?: SlidersState;
   showTitle?: boolean;
 }
-
-type Props = OwnProps & WithRouterProps;
 
 export type SliderChange = Partial<SlidersState>;
 
@@ -35,67 +30,83 @@ const ensureNumberInRange = (num: number, lo: number, hi: number) => {
   return Math.max(Math.min(num, hi), lo);
 };
 
-const SliderFilters = (props: Props) => {
+export default function SliderFilters(props: Props) {
   const classes = styles();
-  let nextYear = new Date().getFullYear() + 1;
+  const {
+    filters: { sliders },
+  } = useContext(FilterContext);
+
+  const nextYear = new Date().getFullYear() + 1;
 
   const [yearValue, setYearValue] = React.useState([
     ensureNumberInRange(
-      R.or(
-        props.sliders && props.sliders.releaseYear
-          ? props.sliders.releaseYear.min
-          : undefined,
-        MIN_YEAR,
-      ) as number,
+      R.or(sliders?.releaseYear?.min, MIN_YEAR) as number,
       MIN_YEAR,
       nextYear,
     ),
     ensureNumberInRange(
-      R.or(
-        props.sliders && props.sliders.releaseYear
-          ? props.sliders.releaseYear.max
-          : undefined,
-        nextYear,
-      ) as number,
+      R.or(sliders?.releaseYear?.max, nextYear) as number,
       MIN_YEAR,
       nextYear,
     ),
   ]);
 
   useEffect(() => {
-    if (props.sliders && props.sliders.releaseYear) {
-      let currMin = yearValue[0];
-      let newMin: number | undefined = currMin;
+    if (sliders && sliders.releaseYear) {
+      let currMin = _.head(yearValue);
+      let newMin = currMin;
 
-      let currMax = yearValue[1];
-      let newMax: number | undefined = currMax;
+      let currMax = _.nth(yearValue, 1);
+      let newMax = currMax;
 
-      if (props.sliders.releaseYear.min !== currMin) {
-        newMin = props.sliders.releaseYear.min;
+      if (sliders.releaseYear.min !== currMin) {
+        newMin = sliders.releaseYear.min;
       }
 
-      if (props.sliders.releaseYear.max !== currMax) {
-        newMax = props.sliders.releaseYear.max;
+      if (sliders.releaseYear.max !== currMax) {
+        newMax = sliders.releaseYear.max;
       }
 
       if (newMin !== currMin || newMax !== currMax) {
         setYearValue([newMin || MIN_YEAR, newMax || nextYear]);
       }
     }
-  }, [props.sliders, props.sliders ? props.sliders.releaseYear : undefined]);
+  }, [sliders, yearValue]);
 
   const [imdbRatingValue, setImdbRatingValue] = React.useState([
     ensureNumberInRange(
-      props.sliders?.imdbRating?.min || MIN_RATING,
+      sliders?.imdbRating?.min || MIN_RATING,
       MIN_RATING,
       MAX_RATING,
     ),
     ensureNumberInRange(
-      props.sliders?.imdbRating?.max || MAX_RATING,
-      MIN_YEAR,
+      sliders?.imdbRating?.max || MAX_RATING,
+      MIN_RATING,
       MAX_RATING,
     ),
   ]);
+
+  useEffect(() => {
+    if (sliders && sliders.imdbRating) {
+      let currMin = _.head(imdbRatingValue);
+      let newMin = currMin;
+
+      let currMax = _.nth(imdbRatingValue, 1);
+      let newMax = currMax;
+
+      if (sliders.imdbRating.min !== currMin) {
+        newMin = sliders.imdbRating.min;
+      }
+
+      if (sliders.imdbRating.max !== currMax) {
+        newMax = sliders.imdbRating.max;
+      }
+
+      if (newMin !== currMin || newMax !== currMax) {
+        setImdbRatingValue([newMin || MIN_RATING, newMax || MAX_RATING]);
+      }
+    }
+  }, [sliders, imdbRatingValue]);
 
   const [debouncePropUpdate] = useDebouncedCallback(
     (sliderChange: SliderChange) => {
@@ -183,10 +194,8 @@ const SliderFilters = (props: Props) => {
       </div>
     </React.Fragment>
   );
-};
+}
 
 SliderFilters.defaultProps = {
   showTitle: true,
 };
-
-export default withRouter(SliderFilters);

@@ -1,12 +1,19 @@
 import _ from 'lodash';
-import { FilterParams } from './searchFilters';
+import {
+  FilterParams,
+  normalizeFilterParams,
+  SlidersState,
+} from './searchFilters';
 import { OpenRange, SortOptions } from '../types';
 
 export function filterParamsEqual(
-  left: FilterParams | undefined,
-  right: FilterParams | undefined,
+  leftParam: FilterParams | undefined,
+  rightParam: FilterParams | undefined,
   defaultSortOrder?: SortOptions,
 ) {
+  const left = leftParam ? normalizeFilterParams(leftParam) : undefined;
+  const right = rightParam ? normalizeFilterParams(rightParam) : undefined;
+
   if (left && right) {
     if (
       _.isUndefined(left.genresFilter) !== _.isUndefined(right.genresFilter) ||
@@ -44,26 +51,24 @@ export function filterParamsEqual(
     }
 
     if (left.sortOrder !== right.sortOrder) {
-      if (
-        !defaultSortOrder ||
-        (defaultSortOrder &&
-          _.isUndefined(left.sortOrder) &&
-          right.sortOrder !== defaultSortOrder) ||
-        (left.sortOrder !== defaultSortOrder && _.isUndefined(right.sortOrder))
-      ) {
+      const isEquivDefault =
+        (_.isUndefined(left.sortOrder) &&
+          right.sortOrder === defaultSortOrder) ||
+        (_.isUndefined(right.sortOrder) && left.sortOrder === defaultSortOrder);
+      if (!defaultSortOrder || !isEquivDefault) {
         return false;
       }
     }
 
-    if (left.sliders && right.sliders) {
-      if (sliderChanged(left.sliders.releaseYear, right.sliders.releaseYear)) {
-        return false;
-      }
-
-      if (sliderChanged(left.sliders.imdbRating, right.sliders.imdbRating)) {
-        return false;
-      }
+    if (sliderChanged(left.sliders?.releaseYear, right.sliders?.releaseYear)) {
+      return false;
     }
+
+    if (sliderChanged(left.sliders?.imdbRating, right.sliders?.imdbRating)) {
+      return false;
+    }
+    // if (left.sliders && right.sliders) {
+    // }
 
     if (
       left.people &&

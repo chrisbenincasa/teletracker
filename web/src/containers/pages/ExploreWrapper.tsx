@@ -14,6 +14,8 @@ import { ItemFactory } from '../../types/v2/Item';
 import { peopleFetchSuccess } from '../../actions/people/get_people';
 import { ApiPerson, PersonFactory } from '../../types/v2/Person';
 import { FilterParams } from '../../utils/searchFilters';
+import WithItemFilters from '../../components/Filters/FilterContext';
+import _ from 'lodash';
 
 export default function makeExploreWrapper(defaultFilters: FilterParams) {
   function ExploreWrapper() {
@@ -23,7 +25,9 @@ export default function makeExploreWrapper(defaultFilters: FilterParams) {
           <title>Explore - Popular</title>
         </Head>
         <AppWrapper hideFooter>
-          <Explore defaultFilters={defaultFilters} />
+          <WithItemFilters defaultFilters={{ ...defaultFilters }}>
+            <Explore defaultFilters={{ ...defaultFilters }} />
+          </WithItemFilters>
         </AppWrapper>
       </React.Fragment>
     );
@@ -32,7 +36,10 @@ export default function makeExploreWrapper(defaultFilters: FilterParams) {
   ExploreWrapper.getInitialProps = async ctx => {
     if (ctx.req) {
       const parsedQueryObj = qs.parse(url.parse(ctx.req.url).query || '');
-      const filterParams = parseFilterParamsFromObject(parsedQueryObj);
+      const filterParams = _.extend(
+        defaultFilters,
+        parseFilterParamsFromObject(parsedQueryObj),
+      );
 
       let token = await currentUserJwt();
 
@@ -53,10 +60,9 @@ export default function makeExploreWrapper(defaultFilters: FilterParams) {
       let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.getItems(
         token,
         {
-          itemTypes: filterParams.itemTypes || defaultFilters.itemTypes,
+          itemTypes: filterParams.itemTypes,
           networks: filterParams.networks,
-          sort:
-            filterParams.sortOrder || defaultFilters.sortOrder || 'rating|imdb',
+          sort: filterParams.sortOrder || 'rating|imdb',
           limit: DEFAULT_POPULAR_LIMIT,
           genres: filterParams.genresFilter,
           releaseYearRange: filterParams.sliders?.releaseYear,
@@ -81,6 +87,7 @@ export default function makeExploreWrapper(defaultFilters: FilterParams) {
             popular: response.data.data.map(ItemFactory.create),
             paging: response.data.paging,
             append: false,
+            forFilters: filterParams,
           }),
         );
 

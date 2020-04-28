@@ -184,9 +184,11 @@ class MovieImportHandler @Inject()(
   ): Future[MovieImportResult] = {
     val castCrewFut = lookupCastAndCrew(item)
     val recsFut = buildRecommendations(item)
+    val genresFut = genreCache.getReferenceMap()
     val updateFut = for {
       castAndCrew <- castCrewFut
       recommendations <- recsFut
+      genres <- genresFut
     } yield {
       val images =
         toEsItem
@@ -271,6 +273,28 @@ class MovieImportHandler @Inject()(
         }
       }
 
+      val tmdbGenreIds =
+        item.genre_ids.orElse(item.genres.map(_.map(_.id)))
+
+      val newMovieGenres = tmdbGenreIds match {
+        case Some(value) =>
+          val itemGenres = value
+            .flatMap(
+              id => genres.get(ExternalSource.TheMovieDb, id.toString)
+            )
+
+          itemGenres
+            .map(genre => {
+              EsGenre(
+                id = genre.id,
+                name = genre.name
+              )
+            })
+            .some
+        case None =>
+          existingMovie.genres
+      }
+
       val partialUpdates = existingMovie.copy(
         alternative_titles = item.alternative_titles
           .map(_.titles)
@@ -288,7 +312,8 @@ class MovieImportHandler @Inject()(
         adult = item.adult.orElse(existingMovie.adult),
         cast = cast,
         crew = crew,
-        images = images.toList.some,
+        genres = newMovieGenres,
+        images = images.some,
         external_ids = Some(newExternalSources),
         original_title =
           item.original_title.orElse(existingMovie.original_title),

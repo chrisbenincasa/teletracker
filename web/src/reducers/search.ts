@@ -22,6 +22,7 @@ import {
 import { Item } from '../types/v2/Item';
 import { flattenActions, handleAction } from './utils';
 import { Person } from '../types/v2/Person';
+import { FilterParams } from '../utils/searchFilters';
 
 type QuickSearchState = {
   searching: boolean;
@@ -45,6 +46,7 @@ export interface State {
   searching: boolean;
   results?: Item[];
   bookmark?: string;
+  currentFilters?: FilterParams;
   quick: QuickSearchState;
   people: PeopleSearchState;
 }
@@ -114,6 +116,7 @@ const searchSuccess = handleAction<SearchSuccessfulAction, State>(
         searching: false,
         results: newResults,
         bookmark: payload.paging ? payload.paging.bookmark : undefined,
+        currentFilters: payload.forFilters,
       };
     } else {
       return state;

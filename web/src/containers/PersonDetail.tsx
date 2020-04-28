@@ -29,6 +29,7 @@ import useToggleCallback from '../hooks/useToggleCallback';
 import useStyles from '../components/PersonDetail/PersonDetail.styles';
 import { selectPerson } from '../components/PersonDetail/hooks';
 import PersonCredits from '../components/PersonDetail/PersonCredits';
+import WithItemFilters from '../components/Filters/FilterContext';
 
 interface NewProps {
   preloaded?: boolean;
@@ -293,7 +294,9 @@ function PersonDetail(props: NewProps) {
                 </div>
                 <div className={classes.personInformationContainer}>
                   {renderDescriptiveDetails(person)}
-                  <PersonCredits person={person} />
+                  <WithItemFilters>
+                    <PersonCredits person={person} />
+                  </WithItemFilters>
                 </div>
               </div>
             </div>

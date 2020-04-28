@@ -37,6 +37,7 @@ import {
   UserRemoveItemTagsSuccessAction,
   UserUpdateItemTagsSuccessAction,
 } from '../actions/user';
+import { FilterParams } from '../utils/searchFilters';
 
 export type Loading = { [X in ListActions['type']]: boolean };
 
@@ -54,6 +55,7 @@ export interface State {
   listsById: ListsByIdMap;
   loading: Partial<Loading>;
   currentBookmark?: string;
+  currentFilters?: FilterParams;
 }
 
 const initialState: State = {
@@ -237,6 +239,7 @@ const handleListRetrieveSuccess = handleAction<
     currentBookmark: action.payload!!.paging
       ? action.payload!!.paging.bookmark
       : undefined,
+    currentFilters: action.payload!.forFilters,
   };
 });
 
