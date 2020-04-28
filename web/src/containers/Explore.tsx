@@ -10,7 +10,13 @@ import {
 import _ from 'lodash';
 import { useRouter } from 'next/router';
 import qs from 'querystring';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
 import { clearPopular, retrievePopular } from '../actions/popular';
 import Featured from '../components/Featured';
@@ -19,7 +25,6 @@ import AllFilters from '../components/Filters/AllFilters';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ItemCard from '../components/ItemCard';
 import ScrollToTop from '../components/Buttons/ScrollToTop';
-import { Item } from '../types/v2/Item';
 import { filterParamsEqual } from '../utils/changeDetection';
 import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
@@ -30,12 +35,11 @@ import {
   updateUrlParamsForNextRouter,
 } from '../utils/urlHelper';
 import { useStateDeepEq } from '../hooks/useStateDeepEq';
-import { useWithUserContext } from '../hooks/useWithUser';
 import { useWidth } from '../hooks/useWidth';
 import useStateSelector, {
   useStateSelectorWithPrevious,
 } from '../hooks/useStateSelector';
-import { usePrevious } from '../hooks/usePrevious';
+import { usePrevious, usePreviousDeepEq } from '../hooks/usePrevious';
 import { Breakpoint } from '@material-ui/core/styles/createBreakpoints';
 import { makeStyles } from '@material-ui/core/styles';
 import { useDebouncedCallback } from 'use-debounce';
@@ -45,6 +49,15 @@ import {
 } from '../hooks/useDispatchAction';
 import { useGenres, useNetworks } from '../hooks/useStateMetadata';
 import { hookDeepEqual } from '../hooks/util';
+import dequal from 'dequal';
+import { Id } from '../types/v2';
+import { FilterContext } from '../components/Filters/FilterContext';
+import useEffectCompare from '../hooks/useEffectCompare';
+import useDidMountEffect from '../hooks/useDidMountEffect';
+import selectItems from '../selectors/selectItems';
+import { diff } from 'deep-object-diff';
+import { useRouterDeep } from '../hooks/useRouterDeep';
+import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -106,12 +119,13 @@ function Explore(props: Props) {
   // State
   //
   const classes = useStyles();
-  const userState = useWithUserContext();
   const theme = useTheme();
   const width = useWidth();
 
-  let [featuredItemsIndex, setFeaturedItemsIndex] = useState<number[]>([]);
-  let [featuredItems, setFeaturedItems] = useState<Item[]>([]);
+  let [featuredItemsIndex, setFeaturedItemsIndex] = useStateDeepEq<number[]>(
+    [],
+  );
+  let [featuredItems, setFeaturedItems] = useStateDeepEq<Id[]>([]);
   let [showFilter, setShowFilter] = useState(false);
   let [needsNewFeatured, setNeedsNewFeatured] = useState(false);
   let totalLoadedImages = useRef(0);
@@ -119,29 +133,23 @@ function Explore(props: Props) {
 
   const popularWrapper = useRef<HTMLDivElement | null>(null);
   const previousWidth = usePrevious<Breakpoint>(width);
-  const router = useRouter();
+  const router = useRouterDeep();
 
-  let filterParams = props.defaultFilters || DEFAULT_FILTER_PARAMS;
-  let paramsFromQuery = parseFilterParamsFromQs(qs.stringify(router.query));
-
-  filterParams = {
-    ...filterParams,
-    ...paramsFromQuery,
-  };
-
-  let [filters, setFilters] = useStateDeepEq(filterParams, filterParamsEqual);
+  let { filters, defaultFilters } = useContext(FilterContext);
 
   const previousRouterQuery = usePrevious(router.query);
   const thingsById = useStateSelector(state => state.itemDetail.thingsById);
-  const [popular, previousPopular] = useStateSelectorWithPrevious(
-    state => state.popular.popular,
-    hookDeepEqual,
+  const currentlyLoadedFilters = useStateSelector(
+    state => state.popular.currentFilters,
   );
+  const popular = useStateSelector(state =>
+    selectItems(state, state.popular.popular || []),
+  );
+  const previousPopular = usePreviousDeepEq(popular);
   const popularBookmark = useStateSelector(
     state => state.popular.popularBookmark,
   );
   const genres = useGenres();
-  const networks = useNetworks();
   const retrievePopularFromServer = useDispatchAction(retrievePopular);
   const clearPopularState = useDispatchSideEffect(clearPopular);
   const [loading, wasLoading] = useStateSelectorWithPrevious(
@@ -161,13 +169,6 @@ function Explore(props: Props) {
       setShowScrollToTop(false);
     }
   }, []);
-
-  const handleFilterParamsChange = (filterParams: FilterParams) => {
-    if (!filterParamsEqual(filters, filterParams)) {
-      setFilters(filterParams);
-      setNeedsNewFeatured(true);
-    }
-  };
 
   const getNumberFeaturedItems = useCallback(() => {
     if (['xs', 'sm'].includes(width)) {
@@ -219,17 +220,14 @@ function Explore(props: Props) {
       return popular && popular.length > 2
         ? popular
             .slice(0, initialLoadSize)
-            .filter(id => {
-              const item = thingsById[id];
+            .filter(item => {
               const hasBackdropImage =
                 item.backdropImage && item.backdropImage.id;
               const hasPosterImage = item.posterImage && item.posterImage.id;
               return hasBackdropImage && hasPosterImage;
             })
-            .sort((a, b) => {
+            .sort((itemA, itemB) => {
               // TODO: Replace with weighted average
-              const itemA = thingsById[a];
-              const itemB = thingsById[b];
               const voteAverageA = getVoteAverage(itemA);
               const voteAverageB = getVoteAverage(itemB);
               const voteCountA = getVoteCount(itemA);
@@ -268,9 +266,7 @@ function Explore(props: Props) {
         popular!.findIndex(id => item === id),
       );
 
-      let newFeaturedItems = featuredIndexes.map(
-        index => thingsById[popular![index]],
-      );
+      let newFeaturedItems = featuredIndexes.map(index => popular![index].id);
 
       setFeaturedItemsIndex(featuredIndexes);
       setFeaturedItems(newFeaturedItems);
@@ -342,35 +338,23 @@ function Explore(props: Props) {
     };
   }, []);
 
-  useEffect(() => {
-    let query = qs.stringify(router.query);
-    let prevQuery = qs.stringify(previousRouterQuery);
-
-    if (query !== prevQuery) {
-      handleFilterParamsChange(parseFilterParamsFromQs(query));
-    }
-  }, [router]);
-
-  useEffect(() => {
-    updateUrlParamsForNextRouter(
-      router,
-      filters,
-      undefined,
-      props.defaultFilters,
-    );
-    loadPopular(false, true);
-  }, [filters]);
+  useFilterLoadEffect(
+    () => {
+      loadPopular(false, true);
+    },
+    state => state.popular.currentFilters,
+  );
 
   useEffect(() => {
     const isInitialFetch = popular && !previousPopular && !loading;
-    // const isNewFetch = popular && wasLoading && !loading;
+    const isNewFetch = popular && wasLoading && !loading;
     const didScreenResize =
       popular &&
       (!previousWidth ||
         ['xs', 'sm'].includes(previousWidth) !== ['xs', 'sm'].includes(width));
     const didNavigate = !isInitialFetch && needsNewFeatured;
 
-    if (isInitialFetch || didScreenResize || didNavigate) {
+    if (isInitialFetch || isNewFetch || didScreenResize || didNavigate) {
       updateFeaturedItems();
     }
   }, [popular, loading, width, needsNewFeatured]);
@@ -423,23 +407,11 @@ function Explore(props: Props) {
           <ShowFiltersButton onClick={toggleFilters} />
         </div>
         <div className={classes.filters}>
-          <ActiveFilters
-            genres={genres}
-            updateFilters={handleFilterParamsChange}
-            isListDynamic={false}
-            filters={filters}
-            initialState={props.defaultFilters}
-            defaultSort={props.defaultFilters?.sortOrder}
-            variant="default"
-          />
+          <ActiveFilters variant="default" />
         </div>
         <AllFilters
-          genres={genres}
           open={showFilter}
-          filters={filters}
-          updateFilters={handleFilterParamsChange}
           sortOptions={['popularity', 'recent', 'rating|imdb', 'rating|tmdb']}
-          networks={networks}
         />
         {popular.length > 0 ? (
           <InfiniteScroll
@@ -450,13 +422,12 @@ function Explore(props: Props) {
             threshold={300}
           >
             <Grid container spacing={2} ref={popularWrapper}>
-              {popular.map((result, index) => {
-                let thing = thingsById[result];
-                if (thing && !featuredItemsIndex.includes(index)) {
+              {popular.map((item, index) => {
+                if (item && !featuredItemsIndex.includes(index)) {
                   return (
                     <ItemCard
-                      key={result}
-                      itemId={thing.id}
+                      key={item.id}
+                      itemId={item.id}
                       hasLoaded={setVisibleItems}
                     />
                   );

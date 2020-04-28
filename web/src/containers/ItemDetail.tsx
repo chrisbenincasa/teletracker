@@ -25,7 +25,7 @@ import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
 import moment from 'moment';
 import { useRouter } from 'next/router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import ReactGA from 'react-ga';
 import {
   itemFetchInitiated,
@@ -252,11 +252,6 @@ interface OwnProps {
   itemPreloadedFromServer?: boolean;
 }
 
-interface DispatchProps {
-  fetchItemDetails: (payload: ItemFetchInitiatedPayload) => void;
-  itemPrefetchSuccess: (payload: Item) => void;
-}
-
 type Props = OwnProps;
 
 function ItemDetails(props: Props) {
@@ -280,7 +275,7 @@ function ItemDetails(props: Props) {
   const fetchItemDetails = useDispatchAction(itemFetchInitiated);
   const dispatchItemPrefetchSuccess = useDispatchAction(itemPrefetchSuccess);
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadItem();
     ReactGA.pageview(nextRouter.asPath);
 

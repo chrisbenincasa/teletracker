@@ -10,6 +10,7 @@ import {
   PopularSuccessfulAction,
 } from '../actions/popular';
 import { flattenActions, handleAction, handleError } from './utils';
+import { FilterParams } from '../utils/searchFilters';
 
 export interface State {
   popular?: string[]; // Array of popular slugs
@@ -18,6 +19,7 @@ export interface State {
   loadingGenres: boolean;
   popularBookmark?: string;
   genreBookmark?: string;
+  currentFilters?: FilterParams;
 }
 
 const initialState: State = {
@@ -54,6 +56,7 @@ const PopularSuccess = handleAction<PopularSuccessfulAction, State>(
         loadingPopular: false,
         popular: newPopular,
         popularBookmark: payload!.paging ? payload!.paging.bookmark : undefined,
+        currentFilters: payload.forFilters,
       };
     } else {
       return state;

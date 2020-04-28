@@ -1,4 +1,3 @@
-import Auth, { CognitoUser } from '@aws-amplify/auth';
 import React from 'react';
 import AppWrapper from '../../containers/AppWrapper';
 import { ApiList, List, ListFactory } from '../../types';
@@ -10,6 +9,7 @@ import { currentUserJwt } from '../../utils/page-utils';
 import useStateSelector from '../../hooks/useStateSelector';
 import { useRouter } from 'next/router';
 import dequal from 'dequal';
+import WithItemFilters from '../../components/Filters/FilterContext';
 
 interface Props {
   list?: List;
@@ -36,7 +36,9 @@ function ListDetailWrapper(props: Props) {
         <title>{listName !== '' ? 'List - ' + listName : 'Not Found'}</title>
       </Head>
       <AppWrapper>
-        <ListDetail />
+        <WithItemFilters>
+          <ListDetail />
+        </WithItemFilters>
       </AppWrapper>
     </React.Fragment>
   );

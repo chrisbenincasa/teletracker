@@ -29,6 +29,7 @@ export interface PopularSuccessfulPayload {
   popular: Item[];
   paging?: Paging;
   append: boolean;
+  forFilters?: FilterParams;
 }
 
 export type PopularSuccessfulAction = FSA<
@@ -81,6 +82,7 @@ export const popularSaga = function*() {
               popular: response.data!.data.map(ItemFactory.create),
               paging: response.data!.paging,
               append: !_.isUndefined(payload.bookmark),
+              forFilters: payload.filters,
             }),
           );
         }

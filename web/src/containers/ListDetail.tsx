@@ -25,7 +25,7 @@ import {
 } from '@material-ui/core';
 import { Delete, Edit, Settings } from '@material-ui/icons';
 import _ from 'lodash';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
 import {
   deleteList,
@@ -65,6 +65,8 @@ import deepEq from 'dequal';
 import { createSelector } from 'reselect';
 import { AppState } from '../reducers';
 import { hookDeepEqual } from '../hooks/util';
+import { FilterContext } from '../components/Filters/FilterContext';
+import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -255,7 +257,6 @@ function ListDetailDialog(props: ListDetailDialogProps) {
 function ListDetail() {
   const classes = useStyles();
 
-  const genres = useStateSelector(state => state.metadata.genres, deepEq);
   const listBookmark = useStateSelector(state => state.lists.currentBookmark);
 
   const { userSelf, isLoggedIn } = useWithUserContext();
@@ -280,19 +281,16 @@ function ListDetail() {
     return selectList(state, listId);
   }, hookDeepEqual);
 
-  const [filters, setFilters, previousFilters] = useStateDeepEqWithPrevious(
-    parseFilterParamsFromQs(queryString),
-    filterParamsEqual,
-  );
+  const { filters } = useContext(FilterContext);
 
   const [listFilters, setListFilters] = useState<FilterParams | undefined>();
   const [showFilter, setShowFilter] = useState(
     _.some(
       [
-        filters?.sortOrder,
-        filters?.genresFilter,
-        filters?.networks,
-        filters?.itemTypes,
+        filters.sortOrder,
+        filters.genresFilter,
+        filters.networks,
+        filters.itemTypes,
       ],
       _.negate(_.isUndefined),
     ),
@@ -307,10 +305,10 @@ function ListDetail() {
       force: true,
       limit: calculateLimit(width, 3),
       ...makeListFilters(initialLoad, filters, listFilters),
-      sort: filters?.sortOrder,
-      itemTypes: filters?.itemTypes,
-      genres: filters?.genresFilter,
-      networks: filters?.networks,
+      sort: filters.sortOrder,
+      itemTypes: filters.itemTypes,
+      genres: filters.genresFilter,
+      networks: filters.networks,
     });
   };
 
@@ -319,10 +317,10 @@ function ListDetail() {
       listId,
       bookmark: listBookmark,
       limit: calculateLimit(width, 3),
-      sort: filters?.sortOrder,
-      itemTypes: filters?.itemTypes,
-      genres: filters?.genresFilter,
-      networks: filters?.networks,
+      sort: filters.sortOrder,
+      itemTypes: filters.itemTypes,
+      genres: filters.genresFilter,
+      networks: filters.networks,
     });
   }, 200);
 
@@ -379,12 +377,6 @@ function ListDetail() {
     }
   };
 
-  const handleFilterParamsChange = (filterParams: FilterParams) => {
-    if (!filterParamsEqual(filters, filterParams)) {
-      setFilters(filterParams);
-    }
-  };
-
   const handleRenameList = () => {
     if (userSelf) {
       dispatchUpdateList({
@@ -404,13 +396,12 @@ function ListDetail() {
   // Effects
   //
 
-  useEffect(() => {
-    if (!filterParamsEqual(previousFilters, filters)) {
-      updateUrlParamsForNextRouter(router, filters, [], listFilters);
-
-      retrieveList(false);
-    }
-  }, [filters]);
+  useFilterLoadEffect(
+    () => {
+      retrieveList(true);
+    },
+    state => state.lists.currentFilters,
+  );
 
   useEffect(() => {
     retrieveList(true);
@@ -623,23 +614,9 @@ function ListDetail() {
             {renderProfileMenu()}
           </div>
           <div className={classes.filters}>
-            <ActiveFilters
-              genres={genres}
-              updateFilters={handleFilterParamsChange}
-              isListDynamic={list.isDynamic}
-              filters={
-                isDefaultFilter(filters) && listFilters ? listFilters : filters
-              }
-              initialState={listFilters}
-              variant="default"
-            />
+            <ActiveFilters isListDynamic={list.isDynamic} variant="default" />
           </div>
           <AllFilters
-            genres={genres}
-            filters={
-              isDefaultFilter(filters) && listFilters ? listFilters : filters
-            }
-            updateFilters={handleFilterParamsChange}
             open={showFilter}
             isListDynamic={list.isDynamic}
             listFilters={listFilters}

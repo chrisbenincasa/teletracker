@@ -22,9 +22,11 @@ import {
   truncateText,
 } from '../utils/textHelper';
 import { hexToRGB } from '../utils/style-utils';
-import { useWithUserContext } from '../hooks/useWithUser';
 import { AccessTime } from '@material-ui/icons';
-import _ from 'lodash';
+import dequal from 'dequal';
+import { Id } from '../types/v2';
+import useStateSelector from '../hooks/useStateSelector';
+import selectItems from '../selectors/selectItems';
 
 const useStyles = makeStyles((theme: Theme) => ({
   backdropContainer: {
@@ -106,11 +108,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
 }));
 
-interface OwnProps {
-  featuredItems: Item[];
+interface Props {
+  featuredItems: Id[];
 }
-
-type Props = OwnProps;
 
 function Featured(props: Props) {
   const [manageTrackingModalOpen, setManageTrackingModalOpen] = useState<
@@ -120,7 +120,7 @@ function Featured(props: Props) {
   const classes = useStyles();
   const { featuredItems } = props;
   const theme: Theme = useTheme();
-  const userState = useWithUserContext();
+  const items = useStateSelector(state => selectItems(state, featuredItems));
 
   useEffect(() => {
     setImageLoading(true);
@@ -257,17 +257,17 @@ function Featured(props: Props) {
   };
 
   const renderFeaturedItems = () => {
-    return featuredItems && featuredItems.length > 0
-      ? featuredItems.map(item => {
+    return items && items.length > 0
+      ? items.map(item => {
           return renderFeaturedItem(item);
         })
       : null;
   };
 
-  return featuredItems && featuredItems.length > 0 ? (
+  return items && items.length > 0 ? (
     <div
       className={classes.wrapper}
-      style={{ paddingTop: `${56.25 / featuredItems.length}%` }}
+      style={{ paddingTop: `${56.25 / items.length}%` }}
     >
       <div style={{ position: 'absolute', top: 0 }}>
         {renderFeaturedItems()}
@@ -279,6 +279,4 @@ function Featured(props: Props) {
 // DEV MODE ONLY
 // Featured.whyDidYouRender = true;
 
-export default React.memo(Featured, (prevProps, nextProps) => {
-  return _.isEqual(prevProps.featuredItems, nextProps.featuredItems);
-});
+export default React.memo(Featured, dequal);

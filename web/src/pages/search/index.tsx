@@ -1,6 +1,6 @@
 import { NextPageContext } from 'next';
 import Head from 'next/head';
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { Store } from 'redux';
 import {
   PreloadSearchInitiated,
@@ -17,9 +17,11 @@ import qs from 'querystring';
 import url from 'url';
 import { parseFilterParamsFromObject } from '../../utils/urlHelper';
 import { DEFAULT_POPULAR_LIMIT } from '../../constants';
+import WithItemFilters from '../../components/Filters/FilterContext';
+import _ from 'lodash';
 
 interface Props {
-  query: string;
+  query?: string;
 }
 
 interface WithStore {
@@ -27,18 +29,36 @@ interface WithStore {
 }
 
 function SearchWrapper(props: Props) {
+  let title = 'Teletracker Search';
+  if (props.query) {
+    title += ' - ' + props.query;
+  }
+
+  const [showToolbarSearch, setShowToolbarSearch] = useState(
+    _.isUndefined(props.query),
+  );
+
+  const inViewportCallback = useCallback((inViewport: boolean) => {
+    setShowToolbarSearch(!inViewport);
+  }, []);
+
   return (
     <React.Fragment>
       <Head>
-        <title>Teletracker Search - {props.query}</title>
+        <title>{title}</title>
         <meta
           name="viewport"
           content="minimum-scale=1, initial-scale=1, width=device-width"
         />
       </Head>
-      <AppWrapper hideFooter>
+      <AppWrapper hideFooter showToolbarSearch={showToolbarSearch}>
         {/* TODO: Hook this up */}
-        <Search inViewportChange={() => {}} />
+        <WithItemFilters>
+          <Search
+            preloadedQuery={props.query}
+            inViewportChange={inViewportCallback}
+          />
+        </WithItemFilters>
       </AppWrapper>
     </React.Fragment>
   );
@@ -48,44 +68,49 @@ SearchWrapper.getInitialProps = async (ctx: NextPageContext & WithStore) => {
   if (ctx.req) {
     const parsedQueryObj = qs.parse(url.parse(ctx.req.url || '').query || '');
     const filterParams = parseFilterParamsFromObject(parsedQueryObj);
-    let query = ctx.query.q as string;
+    let query = ctx.query.q as string | undefined;
 
-    await ctx.store.dispatch(
-      PreloadSearchInitiated({
-        query,
-      }),
-    );
-
-    let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.search(
-      await currentUserJwt(),
-      {
-        searchText: query,
-        limit: DEFAULT_POPULAR_LIMIT,
-        itemTypes: filterParams.itemTypes,
-        networks: filterParams.networks,
-        genres: filterParams.genresFilter,
-        releaseYearRange: filterParams.sliders?.releaseYear,
-        imdbRating: filterParams.sliders?.imdbRating,
-      },
-    );
-
-    if (response.ok) {
+    if (query) {
       await ctx.store.dispatch(
-        SearchSuccess({
-          results: response.data!.data.map(ItemFactory.create),
-          paging: response.data!.paging,
-          append: false,
+        PreloadSearchInitiated({
+          query,
         }),
       );
 
-      return {
-        query,
-      };
+      let response: TeletrackerResponse<ApiItem[]> = await TeletrackerApi.instance.search(
+        await currentUserJwt(),
+        {
+          searchText: query,
+          limit: DEFAULT_POPULAR_LIMIT,
+          itemTypes: filterParams.itemTypes,
+          networks: filterParams.networks,
+          genres: filterParams.genresFilter,
+          releaseYearRange: filterParams.sliders?.releaseYear,
+          imdbRating: filterParams.sliders?.imdbRating,
+        },
+      );
+
+      if (response.ok) {
+        await ctx.store.dispatch(
+          SearchSuccess({
+            results: response.data!.data.map(ItemFactory.create),
+            paging: response.data!.paging,
+            append: false,
+            forFilters: filterParams,
+          }),
+        );
+
+        return {
+          query,
+        };
+      } else {
+        await ctx.store.dispatch(SearchFailed(new Error('bad')));
+        return {
+          query,
+        };
+      }
     } else {
-      await ctx.store.dispatch(SearchFailed(new Error('bad')));
-      return {
-        query,
-      };
+      return {};
     }
   } else {
     return {};

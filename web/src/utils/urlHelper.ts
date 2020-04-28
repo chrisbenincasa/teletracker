@@ -21,21 +21,8 @@ const validQueryParams = [
   'ry_max',
   'cast',
   'imdbRating',
+  'q',
 ];
-
-export const updateUrlParamsForFilterRouter = (
-  props: WithRouterProps,
-  filterParams: FilterParams,
-  excludedParams?: string[],
-  defaultFilters?: FilterParams,
-): void => {
-  updateUrlParamsForNextRouter(
-    props.router,
-    filterParams,
-    excludedParams,
-    defaultFilters,
-  );
-};
 
 export const updateUrlParamsForNextRouter = (
   router: NextRouter,
@@ -49,7 +36,10 @@ export const updateUrlParamsForNextRouter = (
     _.includes(validQueryParams, key),
   );
 
-  if (defaultFilters && filterParamsEqual(defaultFilters, filterParams)) {
+  if (
+    defaultFilters &&
+    filterParamsEqual(defaultFilters, filterParams, defaultFilters?.sortOrder)
+  ) {
     router.push(router.pathname, sanitizedPath, { shallow: true });
     return;
   }
@@ -130,7 +120,11 @@ export const updateMultipleUrlParams = (
 
   params.sort();
 
-  replace(`?${params}`);
+  if (Array.from(params.entries()).length === 0) {
+    replace('');
+  } else {
+    replace(`?${params}`);
+  }
 };
 
 export function parseFilterParams(params: Map<string, string>): FilterParams {

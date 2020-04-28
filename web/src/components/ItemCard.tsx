@@ -55,6 +55,7 @@ import { hookDeepEqual } from '../hooks/util';
 import _ from 'lodash';
 import { useWithUserContext } from '../hooks/useWithUser';
 import classNames from 'classnames';
+import selectItem from '../selectors/selectItem';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -169,14 +170,6 @@ interface Props {
   hasLoaded?: () => void;
 }
 
-const selectItem = createSelector(
-  (state: AppState) => state.itemDetail.thingsById,
-  (_, itemId: Id) => itemId,
-  (itemsById, itemId) => {
-    return itemsById[itemId];
-  },
-);
-
 function ItemCard(props: Props) {
   const classes = useStyles();
   const width = useWidth();
@@ -184,14 +177,12 @@ function ItemCard(props: Props) {
   const [manageTrackingModalOpen, setManageTrackingModalOpen] = useState<
     boolean
   >(false);
-  const [isHovering, setIsHovering] = useState<boolean>(false);
-  const [hoverRating, setHoverRating] = useState<boolean>(false);
-  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState<boolean>(
-    false,
-  );
-  const [deleted, setDeleted] = useState<boolean>(false);
-  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
-  const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
+  const [isHovering, setIsHovering] = useState(false);
+  const [hoverRating, setHoverRating] = useState(false);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
   const item = useStateSelector(
     state => selectItem(state, props.itemId),
     hookDeepEqual,

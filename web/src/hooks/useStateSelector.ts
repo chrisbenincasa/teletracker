@@ -2,6 +2,9 @@ import { AppState } from '../reducers';
 import { useSelector } from 'react-redux';
 import { usePrevious } from './usePrevious';
 import { useDebugValue } from 'react';
+import { hookDeepEqual } from './util';
+
+export type AppStateSelector<T> = (state: AppState) => T;
 
 /**
  * Convenience wrapper around {@link useSelector} that adds our state type
@@ -10,8 +13,8 @@ import { useDebugValue } from 'react';
  * @param equalityFn
  */
 export default function useStateSelector<Selected>(
-  selector: (state: AppState) => Selected,
-  equalityFn?: (left: Selected, right: Selected) => boolean,
+  selector: AppStateSelector<Selected>,
+  equalityFn: (left: Selected, right: Selected) => boolean = hookDeepEqual,
   name?: string,
 ): Selected {
   let value = useSelector((state: AppState) => selector(state), equalityFn);
@@ -28,11 +31,10 @@ export default function useStateSelector<Selected>(
  * @param equalityFn
  */
 export function useStateSelectorWithPrevious<Selected>(
-  selector: (state: AppState) => Selected,
-  equalityFn?: (left: Selected, right: Selected) => boolean,
+  selector: AppStateSelector<Selected>,
+  equalityFn: (left: Selected, right: Selected) => boolean = hookDeepEqual,
 ): [Selected, Selected | undefined] {
-  const value = useSelector((state: AppState) => selector(state), equalityFn);
+  const value = useStateSelector(selector, equalityFn);
   const previous = usePrevious(value);
-
   return [value, previous];
 }
