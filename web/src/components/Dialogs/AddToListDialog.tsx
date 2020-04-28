@@ -34,7 +34,9 @@ import { Item, itemBelongsToLists } from '../../types/v2/Item';
 import CreateAListValidator from '../../utils/validation/CreateAListValidator';
 import AuthDialog from '../Auth/AuthDialog';
 import { useWithUserContext } from '../../hooks/useWithUser';
-import useStateSelector, { useStateSelectorWithPrevious } from '../../hooks/useStateSelector';
+import useStateSelector, {
+  useStateSelectorWithPrevious,
+} from '../../hooks/useStateSelector';
 import createDeepEqSelector from '../../hooks/createDeepEqSelector';
 import { usePrevious } from '../../hooks/usePrevious';
 import { useStateDeepEq } from '../../hooks/useStateDeepEq';

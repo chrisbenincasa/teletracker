@@ -1,6 +1,6 @@
 package com.teletracker.tasks.elasticsearch.fixers
 
-import com.teletracker.common.model.tmdb.{Movie, Person, TvShow}
+import com.teletracker.common.model.tmdb.{Movie, Person, TmdbError, TvShow}
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.scraper.IngestJobParser
@@ -8,6 +8,7 @@ import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import com.twitter.util.StorageUnit
 import io.circe.Codec
 import io.circe.syntax._
+import io.circe.parser._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
@@ -66,6 +67,8 @@ abstract class ReverseChronologicalBackfill[T: Codec]
         }
       })
 
+    logger.info(s"Added ${seen.size()} items to the seen set.")
+
     retriever
       .getUriStream(
         input,
@@ -84,7 +87,7 @@ abstract class ReverseChronologicalBackfill[T: Codec]
             .stream[T](source.getLines())
             .flatMap {
               case Left(value) =>
-                logger.error(s"Could not parse line", value)
+                logger.error(s"Could not parse line: ${value.getMessage}")
                 None
               case Right(value) if seen.add(uniqueId(value)) => Some(value)
               case _                                         => None

@@ -190,23 +190,11 @@ class MovieImportHandler @Inject()(
       recommendations <- recsFut
       genres <- genresFut
     } yield {
-      val images =
-        toEsItem
-          .esItemImages(item)
-          .foldLeft(existingMovie.imagesGrouped)((acc, image) => {
-            val externalSource =
-              ExternalSource.fromString(image.provider_shortname)
-            val existing =
-              acc.getOrElse(externalSource -> image.image_type, Nil).toSet
-            acc.updated(
-              (externalSource, image.image_type),
-              (existing + image).toList.sortBy(_.id)
-            )
-          })
-          .values
-          .flatten
-          .toList
-          .sorted(EsOrdering.forEsImages)
+      val images = EsItemUpdaters.updateImages(
+        ExternalSource.TheMovieDb,
+        toEsItem.esItemImages(item),
+        existingMovie.images.getOrElse(Nil)
+      )
 
       val existingRating =
         existingMovie.ratingsGrouped.get(ExternalSource.TheMovieDb)
@@ -336,10 +324,10 @@ class MovieImportHandler @Inject()(
           )
         })),
         runtime = item.runtime.orElse(existingMovie.runtime),
-        slug =
-          if (existingMovie.slug.isEmpty)
-            item.releaseYear.map(Slug(item.title.get, _))
-          else existingMovie.slug,
+        slug = item.releaseYear.map(Slug(item.title.get, _)),
+        title = item.title
+          .map(StringListOrString.forString)
+          .getOrElse(existingMovie.title),
         videos = Some(updatedVideos.values.flatten.toList).filter(_.nonEmpty)
       )
 

@@ -19,19 +19,23 @@ object StringListOrString {
   implicit final val codec: Codec[StringListOrString] = Codec.from(
     Decoder.decodeString.either(Decoder.decodeArray[String]).map {
       case Left(value) =>
-        new StringListOrString {
-          override def get: List[String] = List(value)
-        }
+        StringListOrString.forString(value)
+
       case Right(value) =>
-        new StringListOrString {
-          override def get: List[String] = value.toList
-        }
+        StringListOrString(value.toList)
     },
-    Encoder.encodeList[String].contramap[StringListOrString](_.get)
+    Encoder.encodeString.contramap[StringListOrString](_.get.head)
   )
 
   def forString(value: String): StringListOrString = new StringListOrString {
     override def get: List[String] = List(value)
+  }
+
+  def apply(l: List[String]): StringListOrString = {
+    require(l.nonEmpty)
+    new StringListOrString {
+      override val get: List[String] = l
+    }
   }
 }
 
@@ -502,6 +506,21 @@ case class EsPersonCrewCredit(
 case class EsGenre(
   id: Int,
   name: String)
+
+object EsItemImages {
+  def forSource(
+    source: ExternalSource,
+    imageType: EsImageType,
+    id: String
+  ): EsItemImage = {
+    EsItemImage(
+      provider_id = source.getValue,
+      provider_shortname = source.getName,
+      image_type = imageType,
+      id = id
+    )
+  }
+}
 
 @JsonCodec
 case class EsItemImage(
