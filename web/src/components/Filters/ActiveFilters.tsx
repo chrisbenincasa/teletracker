@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Chip, Theme } from '@material-ui/core';
 import {
   Genre,
@@ -6,11 +6,16 @@ import {
   ItemTypeEnum,
   networkToPrettyName,
   NetworkType,
+  OpenRange,
   SortOptions,
   toItemTypeEnum,
 } from '../../types';
 import _ from 'lodash';
-import { DEFAULT_FILTER_PARAMS, FilterParams } from '../../utils/searchFilters';
+import {
+  DEFAULT_FILTER_PARAMS,
+  FilterParams,
+  removeUndefinedKeys,
+} from '../../utils/searchFilters';
 import { setsEqual } from '../../utils/sets';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../reducers';
@@ -18,6 +23,8 @@ import { filterParamsEqual } from '../../utils/changeDetection';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import { useRouter } from 'next/router';
 import { sortOptionToName } from './SortDropdown';
+import { FilterContext } from './FilterContext';
+import { useGenres } from '../../hooks/useStateMetadata';
 
 const useStyles = makeStyles((theme: Theme) => ({
   activeFiltersContainer: {
@@ -39,14 +46,9 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  updateFilters: (FilterParams) => void;
-  genres?: Genre[];
   isListDynamic?: boolean;
-  filters: FilterParams;
-  initialState?: FilterParams;
   variant?: 'default' | 'outlined';
   hideSortOptions?: boolean;
-  defaultSort?: SortOptions;
 }
 
 export const prettyItemType = (itemType: ItemType) => {
@@ -77,10 +79,14 @@ type FilterRemove = {
 export default function ActiveFilters(props: Props) {
   const classes = useStyles();
   const router = useRouter();
-  const { genres, initialState, isListDynamic, variant } = props;
+  const filterState = useContext(FilterContext);
+  const genres = useGenres();
+  const { isListDynamic, variant } = props;
   let {
     filters: { genresFilter, itemTypes, networks, sortOrder, sliders, people },
-  } = props;
+    setFilters,
+    defaultFilters,
+  } = filterState;
 
   let personNameBySlugOrId = useSelector(
     (state: AppState) => state.people.nameByIdOrSlug,
@@ -179,11 +185,11 @@ export default function ActiveFilters(props: Props) {
   };
 
   const resetFilters = () => {
-    props.updateFilters(DEFAULT_FILTER_PARAMS);
+    setFilters(DEFAULT_FILTER_PARAMS);
   };
 
   const resetToDefaults = () => {
-    props.updateFilters(props.initialState!);
+    setFilters(defaultFilters!);
   };
 
   const removeFilters = (filters: FilterRemove) => {
@@ -202,52 +208,62 @@ export default function ActiveFilters(props: Props) {
       deletePersonFilter,
     );
 
-    let releaseYearStateNew = props.filters.sliders
-      ? { ...props.filters.sliders.releaseYear } || {}
-      : {};
+    let releaseYearStateNew: OpenRange | undefined;
+    if (filterState.filters.sliders?.releaseYear) {
+      releaseYearStateNew = { ...filterState.filters.sliders.releaseYear };
 
-    if (filters.releaseYearMin) {
-      releaseYearStateNew.min = undefined;
+      if (filters.releaseYearMin) {
+        delete releaseYearStateNew.min;
+      }
+
+      if (filters.releaseYearMax) {
+        delete releaseYearStateNew.max;
+      }
     }
 
-    if (filters.releaseYearMax) {
-      releaseYearStateNew.max = undefined;
+    // let imdbRatingStateNew = filterState.filters.sliders
+    //   ? { ...filterState.filters.sliders.imdbRating } || {}
+    //   : {};
+
+    let imdbRatingStateNew: OpenRange | undefined;
+    if (filterState.filters.sliders?.imdbRating) {
+      imdbRatingStateNew = { ...filterState.filters.sliders.imdbRating };
+
+      if (filters.imdbRatingMin) {
+        delete imdbRatingStateNew.min;
+      }
+
+      if (filters.imdbRatingMax) {
+        delete imdbRatingStateNew.max;
+      }
     }
 
-    let imdbRatingStateNew = props.filters.sliders
-      ? { ...props.filters.sliders.imdbRating } || {}
-      : {};
-
-    if (filters.imdbRatingMin) {
-      imdbRatingStateNew.min = undefined;
-    }
-
-    if (filters.imdbRatingMax) {
-      imdbRatingStateNew.max = undefined;
-    }
-
-    let filterParams: FilterParams = {
+    let filterParams: FilterParams = removeUndefinedKeys({
       sortOrder: (sortChanged
         ? newSort
-        : props.filters.sortOrder) as SortOptions,
+        : filterState.filters.sortOrder) as SortOptions,
       networks: (networksChanged
         ? newNetworks
-        : props.filters.networks) as NetworkType[],
+        : filterState.filters.networks) as NetworkType[],
       itemTypes: (typesChanged
         ? newType
-        : props.filters.itemTypes) as ItemType[],
+        : filterState.filters.itemTypes) as ItemType[],
       genresFilter: (genreChanged
         ? newGenre
-        : props.filters.genresFilter) as number[],
+        : filterState.filters.genresFilter) as number[],
       sliders: {
-        ...props.filters.sliders,
+        ...filterState.filters.sliders,
         releaseYear: releaseYearStateNew,
         imdbRating: imdbRatingStateNew,
       },
-      people: peopleChanged ? newPeople : props.filters.people,
-    };
+      people: peopleChanged ? newPeople : filterState.filters.people,
+    });
 
-    props.updateFilters(filterParams);
+    // if (defaultFilters?.sortOrder === filterParams.sortOrder) {
+    //   delete filterParams.sortOrder;
+    // }
+
+    setFilters(filterParams);
   };
 
   const mapGenre = (genre: number) => {
@@ -268,8 +284,8 @@ export default function ActiveFilters(props: Props) {
       !(
         (isListDynamic && sortOrder === 'popularity') ||
         (!isListDynamic && sortOrder === 'added_time') ||
-        (!_.isUndefined(props.defaultSort) &&
-          sortOrder === props.defaultSort) ||
+        (!_.isUndefined(defaultFilters?.sortOrder) &&
+          sortOrder === defaultFilters!.sortOrder) ||
         sortOrder === undefined
       ),
     ) &&
@@ -297,7 +313,12 @@ export default function ActiveFilters(props: Props) {
   );
 
   const showResetDefaults = Boolean(
-    initialState && !filterParamsEqual(initialState, props.filters),
+    defaultFilters &&
+      !filterParamsEqual(
+        defaultFilters,
+        filterState.filters,
+        defaultFilters?.sortOrder,
+      ),
   );
 
   return (

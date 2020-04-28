@@ -1,6 +1,7 @@
 import { DependencyList, useEffect, useRef } from 'react';
 import useEffectCompare from './useEffectCompare';
 import dequal from 'dequal';
+import { hookDeepEqual } from './util';
 
 // https://usehooks.com/usePrevious/
 export function usePrevious<T>(value: T): T | undefined {
@@ -19,7 +20,7 @@ export function usePrevious<T>(value: T): T | undefined {
 
 export function usePreviousDeepEq<T>(
   value: T,
-  equalityFn?: (left: T, right: T) => boolean,
+  equalityFn: (left: T, right: T) => boolean = hookDeepEqual,
 ) {
   // The ref object is a generic container whose current property is mutable ...
   // ... and can hold any value, similar to an instance property on a class

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   Collapse,
   ExpansionPanel,
@@ -29,6 +29,8 @@ import { FilterParams } from '../../utils/searchFilters';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import PersonFilter from './PersonFilter';
 import _ from 'lodash';
+import { FilterContext } from './FilterContext';
+import { useGenres, useNetworks } from '../../hooks/useStateMetadata';
 
 const useStyles = makeStyles((theme: Theme) => ({
   actionButtons: {
@@ -144,17 +146,12 @@ interface Props {
   disableTypeChange?: boolean;
   disableGenres?: boolean;
   disableStarring?: boolean;
-  updateFilters: (filterParams: FilterParams) => void;
-  filters: FilterParams;
   isListDynamic?: boolean;
-  genres?: Genre[];
   open: boolean;
   disabledGenres?: number[];
   sortOptions?: SortOptions[];
-  networks?: Network[];
   listFilters?: FilterParams;
   prefilledName?: string;
-  defaultFilters?: FilterParams;
 }
 
 const AllFilters = (props: Props) => {
@@ -163,7 +160,6 @@ const AllFilters = (props: Props) => {
   const TIMEOUT_EXIT = 300;
   const {
     disabledGenres,
-    genres,
     isListDynamic,
     open,
     disableSliders,
@@ -172,51 +168,47 @@ const AllFilters = (props: Props) => {
     disableNetworks,
     disableTypeChange,
     disableGenres,
-    updateFilters,
     sortOptions,
   } = props;
-
-  const actualBaseFilters = _.extend(props.defaultFilters || {}, props.filters);
 
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
 
-  const [smartListOpen, setSmartListOpen] = useState<boolean>(false);
+  const genres = useGenres();
+  const networks = useNetworks();
+
+  const [smartListOpen, setSmartListOpen] = useState(false);
+
+  const { filters, setFilters, defaultFilters } = useContext(FilterContext);
 
   const handleFilterUpdate = (newFilter: FilterParams) => {
-    if (
-      !filterParamsEqual(
-        actualBaseFilters,
-        newFilter,
-        props.defaultFilters?.sortOrder,
-      )
-    ) {
-      console.log(newFilter);
-      updateFilters(newFilter);
+    console.log(defaultFilters?.sortOrder);
+    if (!filterParamsEqual(filters, newFilter, defaultFilters?.sortOrder)) {
+      setFilters(newFilter);
     }
   };
 
   const setGenre = (genres?: number[]) => {
-    handleFilterUpdate({ ...actualBaseFilters, genresFilter: genres });
+    handleFilterUpdate({ ...filters, genresFilter: genres });
   };
 
   const setType = (type?: ItemType[]) => {
-    handleFilterUpdate({ ...actualBaseFilters, itemTypes: type });
+    handleFilterUpdate({ ...filters, itemTypes: type });
   };
 
   const setNetworks = (networks?: NetworkType[]) => {
-    handleFilterUpdate({ ...actualBaseFilters, networks });
+    handleFilterUpdate({ ...filters, networks });
   };
 
   const setSort = (sortOrder: SortOptions) => {
-    handleFilterUpdate({ ...actualBaseFilters, sortOrder });
+    handleFilterUpdate({ ...filters, sortOrder });
   };
 
   const setSliders = (sliderChange: SliderChange) => {
     let newFilters: FilterParams = {
-      ...actualBaseFilters,
+      ...filters,
       sliders: {
-        ...(actualBaseFilters.sliders || {}),
+        ...(filters.sliders || {}),
         releaseYear: sliderChange.releaseYear,
         imdbRating: sliderChange.imdbRating,
       },
@@ -227,7 +219,7 @@ const AllFilters = (props: Props) => {
 
   const setPeople = (people: string[]) => {
     handleFilterUpdate({
-      ...actualBaseFilters,
+      ...filters,
       people,
     });
   };
@@ -236,11 +228,11 @@ const AllFilters = (props: Props) => {
     return (
       <React.Fragment>
         <CreateDynamicListDialog
-          filters={actualBaseFilters}
+          filters={filters}
           open={smartListOpen}
           onClose={() => setSmartListOpen(false)}
-          networks={props.networks || []}
-          genres={props.genres || []}
+          networks={networks || []}
+          genres={genres || []}
           prefilledName={props.prefilledName || undefined}
         />
       </React.Fragment>
@@ -251,7 +243,7 @@ const AllFilters = (props: Props) => {
     return (
       <div className={classes.actionButtons}>
         <CreateSmartListButton
-          filters={actualBaseFilters}
+          filters={filters}
           listFilters={props.listFilters}
           onClick={() => setSmartListOpen(true)}
           isListDynamic={props.isListDynamic}
@@ -284,10 +276,8 @@ const AllFilters = (props: Props) => {
             <ExpansionPanelDetails>
               <div className={classes.genreContainer}>
                 <GenreSelect
-                  genres={genres}
                   disabledGenres={disabledGenres}
                   handleChange={setGenre}
-                  selectedGenres={actualBaseFilters.genresFilter || []}
                   showTitle={false}
                 />
               </div>
@@ -307,11 +297,7 @@ const AllFilters = (props: Props) => {
             <ExpansionPanelDetails>
               <div className={classes.slidersContainer}>
                 <div className={classes.sliderContainer}>
-                  <Sliders
-                    handleChange={setSliders}
-                    sliders={actualBaseFilters.sliders}
-                    showTitle={false}
-                  />
+                  <Sliders handleChange={setSliders} showTitle={false} />
                 </div>
               </div>
             </ExpansionPanelDetails>
@@ -330,7 +316,7 @@ const AllFilters = (props: Props) => {
             <div className={classes.peopleContainer}>
               <PersonFilter
                 handleChange={setPeople}
-                selectedCast={actualBaseFilters.people}
+                selectedCast={filters.people}
                 showTitle={false}
               />
             </div>
@@ -347,11 +333,7 @@ const AllFilters = (props: Props) => {
               <Typography>Networks</Typography>
             </ExpansionPanelSummary>
             <ExpansionPanelDetails>
-              <NetworkSelect
-                selectedNetworks={actualBaseFilters.networks}
-                handleChange={setNetworks}
-                showTitle={false}
-              />
+              <NetworkSelect handleChange={setNetworks} showTitle={false} />
             </ExpansionPanelDetails>
           </ExpansionPanel>
         )}
@@ -366,11 +348,7 @@ const AllFilters = (props: Props) => {
               <Typography>Content Type</Typography>
             </ExpansionPanelSummary>
             <ExpansionPanelDetails>
-              <TypeToggle
-                selectedTypes={actualBaseFilters.itemTypes}
-                handleChange={setType}
-                showTitle={false}
-              />
+              <TypeToggle handleChange={setType} showTitle={false} />
             </ExpansionPanelDetails>
           </ExpansionPanel>
         )}
@@ -388,7 +366,6 @@ const AllFilters = (props: Props) => {
               <SortDropdown
                 isListDynamic={!!isListDynamic}
                 handleChange={setSort}
-                selectedSort={actualBaseFilters.sortOrder}
                 validSortOptions={sortOptions}
                 showTitle={false}
               />
@@ -421,49 +398,31 @@ const AllFilters = (props: Props) => {
             <div className={classes.genreContainer}>
               {!disableGenres && (
                 <GenreSelect
-                  genres={genres}
                   disabledGenres={disabledGenres}
                   handleChange={setGenre}
-                  selectedGenres={actualBaseFilters.genresFilter || []}
                 />
               )}
             </div>
 
             <div className={classes.slidersContainer}>
-              {!disableSliders ? (
-                <Sliders
-                  handleChange={setSliders}
-                  sliders={actualBaseFilters.sliders}
-                />
-              ) : null}
+              {!disableSliders ? <Sliders handleChange={setSliders} /> : null}
               <div className={classes.peopleContainer}>
                 {!disableStarring ? (
                   <PersonFilter
                     handleChange={setPeople}
-                    selectedCast={actualBaseFilters.people}
+                    selectedCast={filters.people}
                   />
                 ) : null}
               </div>
             </div>
 
             <div className={classes.networkContainer}>
-              {!disableNetworks && (
-                <NetworkSelect
-                  selectedNetworks={actualBaseFilters.networks}
-                  handleChange={setNetworks}
-                />
-              )}
-              {!disableTypeChange && (
-                <TypeToggle
-                  selectedTypes={actualBaseFilters.itemTypes}
-                  handleChange={setType}
-                />
-              )}
+              {!disableNetworks && <NetworkSelect handleChange={setNetworks} />}
+              {!disableTypeChange && <TypeToggle handleChange={setType} />}
               {!disableSortOptions && (
                 <SortDropdown
                   isListDynamic={!!isListDynamic}
                   handleChange={setSort}
-                  selectedSort={actualBaseFilters.sortOrder}
                   validSortOptions={sortOptions}
                 />
               )}
