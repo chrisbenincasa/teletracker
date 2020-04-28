@@ -448,7 +448,7 @@ function Explore(props: Props) {
     ) : null;
   };
 
-  return popular ? (
+  return popular && !loading ? (
     <div className={classes.popularWrapper}>
       <Featured featuredItems={featuredItems} />
       {renderPopular()}

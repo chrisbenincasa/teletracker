@@ -84,6 +84,7 @@ const handleClearPopular = handleAction<PopularClearAction, State>(
       popular: undefined,
       popularBookmark: undefined,
       loadingPopular: false,
+      currentFilters: undefined,
     };
   },
 );
