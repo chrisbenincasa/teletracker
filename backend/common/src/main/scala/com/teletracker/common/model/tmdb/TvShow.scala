@@ -45,7 +45,8 @@ trait TvShowId
   recommendations: Option[PagedResult[TvShow]],
   similar: Option[PagedResult[TvShow]],
   videos: Option[TvShowVideos],
-  translations: Option[TvShowTranslations])
+  translations: Option[TvShowTranslations],
+  images: Option[TvShowImages])
     extends HasTmdbId
 
 @JsonCodec case class TvAlternativeTitles(results: List[TvAlternativeTitle])
@@ -87,8 +88,7 @@ trait TvShowId
   still_path: Option[String],
   vote_average: Option[Double],
   vote_count: Option[Int],
-  videos: Option[List[TvShowVideo]],
-  images = Option[TvShowImages])
+  videos: Option[List[TvShowVideo]])
 
 @JsonCodec case class TvShowTranslations(
   translations: Option[List[MovieTranslation]])

@@ -1,11 +1,12 @@
 package com.teletracker.common.model.tmdb
 
+import com.teletracker.common.util.Slug
+import io.circe.generic.JsonCodec
 import io.circe._
 import io.circe.shapes._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import com.teletracker.common.util.json.circe._
-import io.circe.generic.JsonCodec
 import shapeless.{:+:, CNil}
 
 trait PersonId
