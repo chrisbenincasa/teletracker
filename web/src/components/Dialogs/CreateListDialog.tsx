@@ -85,7 +85,6 @@ export default function CreateListDialog(props: Props) {
         setNameDuplicateError(nameDuplicateError);
         setNameLengthError(nameLengthError);
       } else {
-        console.log('hey');
         setNameLengthError(false);
         setNameDuplicateError(false);
         handleCreateListSubmit();

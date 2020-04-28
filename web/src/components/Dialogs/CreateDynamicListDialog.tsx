@@ -9,11 +9,22 @@ import {
   FormHelperText,
   List,
   ListItem,
+  ListItemIcon,
   ListItemText,
   makeStyles,
   TextField,
   Typography,
 } from '@material-ui/core';
+import {
+  Event,
+  Label,
+  OfflineBolt,
+  Movie,
+  Person,
+  SentimentSatisfiedAlt,
+  Sort,
+  Tv,
+} from '@material-ui/icons';
 import { FilterParams } from '../../utils/searchFilters';
 import {
   Genre,
@@ -42,6 +53,9 @@ const useStyles = makeStyles(theme => ({
   },
   filterContainer: {
     marginTop: theme.spacing(1),
+  },
+  icon: {
+    paddingRight: theme.spacing(0.5),
   },
   title: {
     backgroundColor: theme.palette.primary.main,
@@ -149,6 +163,7 @@ export default function CreateDynamicListDialog(props: Props) {
   };
 
   const renderLabels = <T extends any>(
+    icon: any,
     key: string,
     labelType: string,
     labels: T[],
@@ -182,6 +197,7 @@ export default function CreateDynamicListDialog(props: Props) {
 
       return (
         <ListItem key={key}>
+          <ListItemIcon>{icon}</ListItemIcon>
           <ListItemText primary={u} />
         </ListItem>
       );
@@ -194,6 +210,7 @@ export default function CreateDynamicListDialog(props: Props) {
     );
 
     return renderLabels(
+      <Label />,
       'genre_rules',
       'Genre',
       actualGenres,
@@ -207,6 +224,7 @@ export default function CreateDynamicListDialog(props: Props) {
     );
 
     return renderLabels(
+      <Tv />,
       'network_rules',
       'Network',
       actualNetworks,
@@ -214,10 +232,48 @@ export default function CreateDynamicListDialog(props: Props) {
     );
   };
 
+  const renderImdbRules = (ratingState: OpenRange) => {
+    if (!ratingState.min && !ratingState.max) {
+      return null;
+    } else if (ratingState.min && !ratingState.max) {
+      return (
+        <ListItem key={'rating_rule'}>
+          <ListItemIcon>
+            <SentimentSatisfiedAlt />
+          </ListItemIcon>
+          <ListItemText
+            primary={`IMDB Rating Greater Than: ${ratingState.min}`}
+          />
+        </ListItem>
+      );
+    } else if (!ratingState.min && ratingState.max) {
+      return (
+        <ListItem key={'rating_rule'}>
+          <ListItemIcon>
+            <SentimentSatisfiedAlt />
+          </ListItemIcon>
+          <ListItemText primary={`IMDB Rating Less Than: ${ratingState.max}`} />
+        </ListItem>
+      );
+    } else {
+      return (
+        <ListItem key={'rating_rule'}>
+          <ListItemIcon>
+            <SentimentSatisfiedAlt />
+          </ListItemIcon>
+          <ListItemText
+            primary={`IMDB Rating Between: ${ratingState.min} and ${ratingState.max}`}
+          />
+        </ListItem>
+      );
+    }
+  };
+
   const renderPersonRules = (people: string[]) => {
     let actualPeople = collect(people, person => personNameBySlugOrId[person]);
 
     return renderLabels(
+      <Person />,
       'person_rules',
       'Starring',
       actualPeople,
@@ -227,12 +283,22 @@ export default function CreateDynamicListDialog(props: Props) {
   };
 
   const renderItemTypes = (types: ItemType[]) => {
-    return renderLabels('type_rules', 'Type', types, prettyItemType, t => t);
+    return renderLabels(
+      <Movie />,
+      'type_rules',
+      'Type',
+      types,
+      prettyItemType,
+      t => t,
+    );
   };
 
   const renderSortRule = (sort: ListDefaultSort) => {
     return (
       <ListItem key={'sort_rule'}>
+        <ListItemIcon>
+          <Sort />
+        </ListItemIcon>
         <ListItemText primary={`Sort by: ${prettySort(sort.sort)}`} />
       </ListItem>
     );
@@ -244,18 +310,27 @@ export default function CreateDynamicListDialog(props: Props) {
     } else if (releaseState.min && !releaseState.max) {
       return (
         <ListItem key={'release_date_rule'}>
+          <ListItemIcon>
+            <Event />
+          </ListItemIcon>
           <ListItemText primary={`Released After: ${releaseState.min}`} />
         </ListItem>
       );
     } else if (!releaseState.min && releaseState.max) {
       return (
         <ListItem key={'release_date_rule'}>
+          <ListItemIcon>
+            <Event />
+          </ListItemIcon>
           <ListItemText primary={`Released Before: ${releaseState.max}`} />
         </ListItem>
       );
     } else {
       return (
         <ListItem key={'release_date_rule'}>
+          <ListItemIcon>
+            <Event />
+          </ListItemIcon>
           <ListItemText
             primary={`Released Between: ${releaseState.min} and ${releaseState.max}`}
           />
@@ -306,6 +381,7 @@ export default function CreateDynamicListDialog(props: Props) {
       maxWidth="sm"
     >
       <DialogTitle id="create-dynamic-list-dialog" className={classes.title}>
+        <OfflineBolt className={classes.icon} />
         Create Smart List
       </DialogTitle>
       <DialogContent>
@@ -345,6 +421,9 @@ export default function CreateDynamicListDialog(props: Props) {
             {filters.people ? renderPersonRules(filters.people) : null}
             {filters.sliders && filters.sliders.releaseYear
               ? renderReleaseDates(filters.sliders.releaseYear)
+              : null}
+            {filters.sliders && filters.sliders.imdbRating
+              ? renderImdbRules(filters.sliders.imdbRating)
               : null}
             {defaultSort ? renderSortRule(defaultSort) : null}
           </List>

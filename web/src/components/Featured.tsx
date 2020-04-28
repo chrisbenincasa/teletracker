@@ -59,6 +59,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   ratingVoteCount: {
     marginRight: theme.spacing(1),
+    fontStyle: 'italic',
+    fontSize: 12,
+    alignSelf: 'center',
+    opacity: 0.5,
     [theme.breakpoints.down('sm')]: {
       display: 'none',
     },
@@ -80,6 +84,8 @@ const useStyles = makeStyles((theme: Theme) => ({
     marginBottom: theme.spacing(2),
     backgroundColor: hexToRGB(theme.palette.grey[900], 0.65),
     maxWidth: '50%',
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
   },
   wrapper: {
     display: 'flex',
