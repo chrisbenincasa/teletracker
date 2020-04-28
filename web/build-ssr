@@ -8,8 +8,12 @@ mkdir out
 
 if [ -d ".next/" ]; then rm -rf ".next/"; fi
 
-VERSION="$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}" \
-  yarn run next-build || exit
+BUILD_ID="$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}"
+export BUILD_ID
+
+echo "Building production package at version ${BUILD_ID}"
+
+yarn run next-build || exit
 
 cp serverless/lambda-handler.js out/index.js
 cp serverless/next-aws-cloudfront.js out/ 

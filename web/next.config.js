@@ -2,8 +2,6 @@ const TerserPlugin = require ('terser-webpack-plugin');
 const withImages = require('next-images');
 const fs = require('fs');
 const { PHASE_PRODUCTION_BUILD } = require('next/constants');
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
 
 const NODE_ENV = process.env.NODE_ENV;
 if (!NODE_ENV) {
@@ -35,6 +33,12 @@ dotenvFiles.forEach(dotenvFile => {
 });
 
 module.exports = (phase, { defaultConfig }) => {
+  console.log('phase = ' + phase)
+
+  if (phase === PHASE_PRODUCTION_BUILD && !process.env.PROD_LOCAL && !process.env.BUILD_ID) {
+    throw new Error("Production builds require a BUILD_ID")
+  }
+
   const env = Object.keys(process.env)
     .filter(key => key.startsWith('REACT_'))
     .reduce((obj, key) => {
@@ -43,6 +47,19 @@ module.exports = (phase, { defaultConfig }) => {
     }, {});
 
   console.log('Will inject the following environment variables', env);
+
+  let assetPrefix;
+  if (phase === PHASE_PRODUCTION_BUILD) {
+    if (!!process.env.PROD_LOCAL) {
+      assetPrefix = ''
+    } else {
+      assetPrefix = process.env.BUILD_ID;
+    }
+  } else {
+    assetPrefix = ''
+  }
+
+  console.log('Generating with assetPrefix = ' + assetPrefix);
 
   return withImages({
     env,
@@ -64,18 +81,19 @@ module.exports = (phase, { defaultConfig }) => {
         }
       }
 
+      config.output = {
+        ...config.output,
+        // path: `${config.output.path}/${process.env.BUILD_ID}`
+        // publicPath: `${process.env.BUILD_ID}/`
+      }
+
       return config
     },
     target: 'serverless',
     poweredByHeader: false,
-    generateBuildId: async () => {
-      const secondsSinceEpoch = Math.round(new Date().getTime() / 1000);
-      const { stdout } = await exec('git rev-parse --short HEAD');
-      const buildId = `${secondsSinceEpoch}.${stdout.trim()}`;
-
-      console.log(`Generating build with ID = ${buildId}`);
-
-      return buildId;
+    assetPrefix,
+    generateBuildId: () => {
+      return process.env.BUILD_ID;
     },
   });
 };
