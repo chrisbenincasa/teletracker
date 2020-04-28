@@ -31,6 +31,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 interface Props {
   children: any;
   hideFooter?: boolean;
+  showToolbarSearch?: boolean;
 }
 
 export default function AppWrapper(props: Props) {
@@ -49,7 +50,11 @@ export default function AppWrapper(props: Props) {
                 !_.isUndefined(shouldClose) ? !shouldClose : !drawerOpen,
               )
             }
-            showToolbarSearch={true}
+            showToolbarSearch={
+              _.isUndefined(props.showToolbarSearch)
+                ? true
+                : props.showToolbarSearch
+            }
           />
         </NoSsr>
         {!isBooting ? (
@@ -71,9 +76,7 @@ export default function AppWrapper(props: Props) {
         ) : (
           <LinearProgress />
         )}
-        {props.hideFooter ? null : (
-          <Footer />
-        )}
+        {props.hideFooter ? null : <Footer />}
       </WithUser>
     </div>
   );

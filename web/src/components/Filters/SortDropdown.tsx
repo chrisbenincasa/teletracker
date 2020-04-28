@@ -1,36 +1,23 @@
-import React, { Component } from 'react';
+import React, { useContext } from 'react';
 import {
   createStyles,
+  makeStyles,
   MenuItem,
   Select,
   Theme,
   Typography,
-  withStyles,
-  WithStyles,
 } from '@material-ui/core';
-import { withRouter } from 'next/router';
-import { WithRouterProps } from 'next/dist/client/with-router';
 import { SortOptions } from '../../types';
 import _ from 'lodash';
+import { FilterContext } from './FilterContext';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     filterLabel: {
       paddingBottom: theme.spacing(0.5),
     },
-  });
-
-interface OwnProps {
-  handleChange: (sortOrder: SortOptions) => void;
-  isListDynamic?: boolean;
-  validSortOptions?: SortOptions[];
-  selectedSort?: SortOptions;
-  showTitle?: boolean;
-}
-
-interface RouteParams {
-  id: string;
-}
+  }),
+);
 
 export const sortOptionToName: { [K in SortOptions]?: string } = {
   popularity: 'Popularity',
@@ -40,79 +27,67 @@ export const sortOptionToName: { [K in SortOptions]?: string } = {
   'rating|tmdb': 'TheMovieDb Rating',
 };
 
-const defaultSortOptions = ['popularity', 'added_time', 'recent'];
+const defaultSortOptions: SortOptions[] = [
+  'popularity',
+  'added_time',
+  'recent',
+  'rating|imdb',
+  'rating|tmdb',
+];
 
-type Props = OwnProps & WithStyles<typeof styles> & WithRouterProps;
+interface Props {
+  showTitle?: boolean;
+  isListDynamic?: boolean;
+  validSortOptions?: SortOptions[];
+  handleChange: (sortOrder: SortOptions) => void;
+}
 
-class SortDropDown extends Component<Props> {
-  static defaultProps = {
-    showTitle: true,
-  };
+export default function SortDropDown(props: Props) {
+  const classes = useStyles();
+  const { filters } = useContext(FilterContext);
 
-  isDefaultSort = newSort => {
-    const { isListDynamic } = this.props;
-
-    return (
-      (isListDynamic && newSort === 'popularity') ||
-      (!isListDynamic && newSort === 'added_time') ||
-      newSort === 'default'
-    );
-  };
-
-  updateURLParam = (param, event) => {
+  const updateSort = (param, event) => {
     const isNewSortDefault = _.isUndefined(event.target.value);
-    const isPrevSortDefault = _.isUndefined(this.props.selectedSort);
+    const isPrevSortDefault = _.isUndefined(filters.sortOrder);
     const newSort = isNewSortDefault ? undefined : event.target.value;
 
-    if (
-      event.target.value !== this.props.selectedSort &&
-      !(isNewSortDefault && isPrevSortDefault)
-    ) {
-      this.props.handleChange(newSort);
+    if (event.target.value !== filters.sortOrder) {
+      console.log(event.target.value);
+      props.handleChange(newSort);
     }
   };
 
-  render() {
-    const {
-      isListDynamic,
-      classes,
-      selectedSort,
-      validSortOptions,
-    } = this.props;
+  const sorts = props.validSortOptions || defaultSortOptions;
+  const menuItems = sorts.map(sort => (
+    <MenuItem key={sort} value={sort}>
+      {sortOptionToName[sort]!}
+    </MenuItem>
+  ));
 
-    let sorts = validSortOptions || defaultSortOptions;
-    let menuItems = sorts.map(sort => (
-      <MenuItem key={sort} value={sort}>
-        {sortOptionToName[sort]!}
-      </MenuItem>
-    ));
-
-    return (
-      <div>
-        {this.props.showTitle && (
-          <Typography className={classes.filterLabel} display="block">
-            Sort
-          </Typography>
-        )}
-        <Select
-          value={
-            selectedSort && !this.isDefaultSort(selectedSort)
-              ? selectedSort
-              : isListDynamic
-              ? 'popularity'
-              : 'added_time'
-          }
-          inputProps={{
-            name: 'sortOrder',
-            id: 'sort-order',
-          }}
-          onChange={event => this.updateURLParam('sort', event)}
-        >
-          {menuItems}
-        </Select>
-      </div>
-    );
-  }
+  return (
+    <div>
+      {props.showTitle && (
+        <Typography className={classes.filterLabel} display="block">
+          Sort
+        </Typography>
+      )}
+      <Select
+        value={
+          filters.sortOrder ||
+          (props.isListDynamic ? 'popularity' : 'added_time')
+        }
+        inputProps={{
+          name: 'sortOrder',
+          id: 'sort-order',
+        }}
+        onChange={event => updateSort('sort', event)}
+      >
+        {menuItems}
+      </Select>
+    </div>
+  );
 }
 
-export default withStyles(styles)(withRouter(SortDropDown));
+SortDropDown.defaultProps = {
+  showTitle: true,
+};

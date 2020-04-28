@@ -13,6 +13,7 @@ import {
 } from '../../types';
 import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
+import { FilterParams, normalizeFilterParams } from '../../utils/searchFilters';
 
 export const SEARCH_INITIATED = 'search/INITIATED';
 export const SEARCH_PRELOAD_INITIATED = 'search/preload/INITIATED';
@@ -40,6 +41,7 @@ export interface SearchSuccessfulPayload {
   results: Item[];
   paging?: Paging;
   append: boolean;
+  forFilters?: FilterParams;
 }
 
 export type SearchSuccessfulAction = FSA<
@@ -88,11 +90,23 @@ export const searchSaga = function*() {
           },
         );
 
+        const filters: FilterParams = normalizeFilterParams({
+          itemTypes: payload.itemTypes,
+          genresFilter: payload.genres,
+          networks: payload.networks,
+          people: payload.cast,
+          sliders: {
+            releaseYear: payload.releaseYearRange,
+            imdbRating: payload.imdbRating,
+          },
+        });
+
         if (response.ok) {
           let successPayload = {
             results: response.data!.data.map(ItemFactory.create),
             paging: response.data!.paging,
             append: !_.isUndefined(payload!.bookmark),
+            forFilters: filters,
           };
 
           yield put(SearchSuccess(successPayload));

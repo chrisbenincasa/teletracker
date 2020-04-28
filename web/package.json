@@ -9,6 +9,7 @@
     "next-start": "NODE_ENV=production node server.js"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.11",
     "@types/enzyme": "^3.10.5",
     "@types/jest": "^25.2.1",
     "@types/lodash": "^4.14.123",
@@ -31,6 +32,7 @@
     "@types/redux-saga": "^0.10.5",
     "@types/redux-thunk": "^2.1.0",
     "@welldone-software/why-did-you-render": "^4.0.8",
+    "chai": "^4.2.0",
     "deep-object-diff": "^1.1.0",
     "depcheck": "^0.9.2",
     "dotenv": "^8.2.0",

@@ -12,7 +12,13 @@ import _ from 'lodash';
 import { useRouter } from 'next/router';
 import qs from 'querystring';
 import * as R from 'ramda';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
 import { useDispatch, useSelector } from 'react-redux';
 import { search } from '../actions/search';
@@ -32,6 +38,9 @@ import { calculateLimit, getNumColumns } from '../utils/list-utils';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import { parseFilterParamsFromQs } from '../utils/urlHelper';
 import { useDebouncedCallback } from 'use-debounce';
+import useStateSelector from '../hooks/useStateSelector';
+import { FilterContext } from '../components/Filters/FilterContext';
+import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -79,15 +88,18 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
-const Search = ({ inViewportChange }) => {
+interface Props {
+  inViewportChange: (inViewport: boolean) => void;
+  preloadedQuery?: string;
+}
+
+const Search = (props: Props) => {
   const classes = useStyles();
   const width = useWidth();
-  const withUserState = useWithUserContext();
   const dispatch = useDispatch();
-  const router = useRouter();
 
-  const currentSearchText = useSelector((state: AppState) =>
-    R.path<string>(['search', 'currentSearchText'], state),
+  const currentSearchText = useStateSelector(
+    state => state.search.currentSearchText,
   );
   const isSearching = useSelector((state: AppState) => state.search.searching);
   const error = useSelector((state: AppState) => state.search.error);
@@ -97,15 +109,11 @@ const Search = ({ inViewportChange }) => {
     (state: AppState) => state.search.bookmark,
   );
 
-  const [showScrollToTop, setShowScrollToTop] = useState<boolean>(false);
-  const [totalVisibleItems, setTotalVisibleItems] = useState<number>(0);
-  const [showFilter, setShowFilter] = useState<boolean>(false);
-  const [searchText, setSearchText] = useState<string>(currentSearchText || '');
-  const [filters, setFilters, previousFilters] = useStateDeepEqWithPrevious(
-    DEFAULT_FILTER_PARAMS,
-    filterParamsEqual,
-  );
-
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const [totalVisibleItems, setTotalVisibleItems] = useState(0);
+  const [showFilter, setShowFilter] = useState(false);
+  const [searchText, setSearchText] = useState(currentSearchText || '');
+  const { filters } = useContext(FilterContext);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
 
   const { itemTypes, genresFilter, networks, sliders, sortOrder } = filters;
@@ -120,35 +128,11 @@ const Search = ({ inViewportChange }) => {
     useLazyLoad: false,
   });
 
-  // Initial Load
   useEffect(() => {
-    let filterParams = DEFAULT_FILTER_PARAMS;
-    let queryString = qs.stringify(router.query);
-    let paramsFromQuery = parseFilterParamsFromQs(queryString);
+    setSearchText(currentSearchText);
+  }, [currentSearchText]);
 
-    // How will this work with SSR
-    // ReactGA.pageview(location.pathname + location.search);
-
-    if (_.isUndefined(paramsFromQuery.sortOrder)) {
-      paramsFromQuery.sortOrder = 'popularity';
-    }
-
-    filterParams = {
-      ...filterParams,
-      ...paramsFromQuery,
-    };
-
-    let params = new URLSearchParams(queryString);
-    let query;
-    let param = params.get('q');
-
-    query = param && param.length > 0 ? decodeURIComponent(param) : '';
-
-    setSearchText(query);
-    setFilters(filterParams);
-  }, []);
-
-  const onScroll = () => {
+  const onScroll = useCallback(() => {
     const scrollTop = window.pageYOffset || 0;
     // to do: 100 is just a random number, we can play with this or make it dynamic
     if (scrollTop > 100 && !showScrollToTop) {
@@ -156,7 +140,7 @@ const Search = ({ inViewportChange }) => {
     } else if (scrollTop < 100 && showScrollToTop) {
       setShowScrollToTop(false);
     }
-  };
+  }, []);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -208,19 +192,16 @@ const Search = ({ inViewportChange }) => {
 
   // Load new set of search results when filters change
   // Ignore initial load because previousFilters won't be defined
-  useEffect(() => {
-    if (
-      previousFilters &&
-      !filterParamsEqual(previousFilters, filters, 'popularity')
-    ) {
+  useFilterLoadEffect(
+    () => {
       debouncedSearch(true);
-    }
-  }, [filters, previousFilters, searchBookmark]);
+    },
+    state => state.search.currentFilters,
+  );
 
   // Run callback when search enters/leaves viewport
   useEffect(() => {
-    inViewportChange(isInViewport);
-    // return inViewportChange(false);
+    props.inViewportChange(isInViewport);
   }, [isInViewport]);
 
   const loadMoreResults = () => {
@@ -248,10 +229,6 @@ const Search = ({ inViewportChange }) => {
 
   const toggleFilters = () => {
     setShowFilter(!showFilter);
-  };
-
-  const handleFilterParamsChange = (filterParams: FilterParams) => {
-    setFilters(filterParams);
   };
 
   const mapGenre = (genre: number) => {
@@ -318,20 +295,14 @@ const Search = ({ inViewportChange }) => {
             </div>
             <div className={classes.filters}>
               <ActiveFilters
-                genres={genres}
-                updateFilters={handleFilterParamsChange}
                 isListDynamic={false}
-                filters={filters}
                 variant="default"
                 hideSortOptions
               />
             </div>
             <AllFilters
-              genres={genres}
               open={showFilter}
-              filters={filters}
               disableSortOptions
-              updateFilters={handleFilterParamsChange}
               sortOptions={['popularity', 'recent']}
             />
             {isSearching && !searchBookmark ? (

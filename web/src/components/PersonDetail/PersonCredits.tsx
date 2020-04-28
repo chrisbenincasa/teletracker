@@ -1,4 +1,4 @@
-import { default as React, useEffect, useState } from 'react';
+import { default as React, useContext, useEffect, useState } from 'react';
 import { CircularProgress, Grid, Typography } from '@material-ui/core';
 import ShowFiltersButton from '../Buttons/ShowFiltersButton';
 import ActiveFilters from '../Filters/ActiveFilters';
@@ -7,10 +7,7 @@ import InfiniteScroll from 'react-infinite-scroller';
 import _ from 'lodash';
 import ItemCard from '../ItemCard';
 import useStyles from './PersonDetail.styles';
-import { useGenres, useNetworks } from '../../hooks/useStateMetadata';
 import { Person } from '../../types/v2/Person';
-import { useStateDeepEq } from '../../hooks/useStateDeepEq';
-import { filterParamsEqual } from '../../utils/changeDetection';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../../utils/searchFilters';
 import * as R from 'ramda';
 import { parseFilterParamsFromQs } from '../../utils/urlHelper';
@@ -27,8 +24,8 @@ import { createSelector } from 'reselect';
 import { selectPerson } from './hooks';
 import { Item } from '../../types/v2/Item';
 import { collect } from '../../utils/collection-utils';
-import { useWithUserContext } from '../../hooks/useWithUser';
 import { hookDeepEqual } from '../../hooks/util';
+import { FilterContext } from '../Filters/FilterContext';
 
 const selectCreditDetails = createSelector(
   selectPerson,
@@ -60,28 +57,17 @@ interface Props {
 export default function PersonCredits(props: Props) {
   const { person } = props;
 
-  const router = useRouter();
-  const filterParams = R.mergeDeepRight(
-    DEFAULT_FILTER_PARAMS,
-    R.filter(R.compose(R.not, R.isNil))(
-      parseFilterParamsFromQs(qs.stringify(router.query)),
-    ),
-  ) as FilterParams;
-
   const classes = useStyles();
-  const [filters, setFilters] = useStateDeepEq(filterParams, filterParamsEqual);
-  const genres = useGenres();
-  const networks = useNetworks();
-  const { userSelf } = useWithUserContext();
+  const { filters } = useContext(FilterContext);
 
   const [showLoadingCredits, setShowLoadingCredits] = useState(false);
   const [showFilter, setShowFilter] = useState(
     _.some(
       [
-        filterParams?.sortOrder,
-        filterParams?.genresFilter,
-        filterParams?.networks,
-        filterParams?.itemTypes,
+        filters?.sortOrder,
+        filters?.genresFilter,
+        filters?.networks,
+        filters?.itemTypes,
       ],
       _.negate(_.isUndefined),
     ),
@@ -101,12 +87,6 @@ export default function PersonCredits(props: Props) {
   let dispatchCreditsFetch = useDispatchAction(personCreditsFetchInitiated);
 
   const toggleFilters = useToggleCallback(setShowFilter);
-
-  const handleFilterParamsChange = (filterParams: FilterParams) => {
-    if (!filterParamsEqual(filters, filterParams)) {
-      setFilters(filterParams);
-    }
-  };
 
   // Turn off the credits loading indicator when credits were fetched.
   useEffect(() => {
@@ -188,20 +168,10 @@ export default function PersonCredits(props: Props) {
         <ShowFiltersButton onClick={toggleFilters} />
       </div>
       <div className={classes.filters}>
-        <ActiveFilters
-          genres={genres}
-          updateFilters={handleFilterParamsChange}
-          filters={filters}
-          isListDynamic={false}
-          variant="default"
-        />
+        <ActiveFilters isListDynamic={false} variant="default" />
       </div>
       <AllFilters
-        genres={genres}
         open={showFilter}
-        filters={filters}
-        updateFilters={handleFilterParamsChange}
-        networks={networks}
         isListDynamic={false}
         prefilledName={person.name}
         disableStarring

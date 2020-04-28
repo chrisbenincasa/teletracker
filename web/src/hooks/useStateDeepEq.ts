@@ -1,5 +1,6 @@
 import { Dispatch, useState } from 'react';
 import { useStateWithPrevious } from './useStateWithPrevious';
+import { hookDeepEqual } from './util';
 
 /**
  * Version of {@link useState} that uses a custom equality check before
@@ -9,7 +10,7 @@ import { useStateWithPrevious } from './useStateWithPrevious';
  */
 export function useStateDeepEq<T>(
   value: T,
-  equalityCheck: (left: T, right: T) => boolean,
+  equalityCheck: (left: T, right: T) => boolean = hookDeepEqual,
 ): [T, Dispatch<T>] {
   const [v, actuallySetValue] = useState(value);
 
@@ -30,7 +31,7 @@ export function useStateDeepEq<T>(
  */
 export function useStateDeepEqWithPrevious<T>(
   value: T,
-  equalityCheck: (left: T, right: T) => boolean,
+  equalityCheck: (left: T, right: T) => boolean = hookDeepEqual,
 ): [T, Dispatch<T>, T | undefined] {
   const [v, actuallySetValue, previous] = useStateWithPrevious(value);
 

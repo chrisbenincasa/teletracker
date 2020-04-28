@@ -1,17 +1,38 @@
-import React, { createContext, ReactNode, useCallback } from 'react';
-import { FilterParams } from '../../utils/searchFilters';
+import React, {
+  createContext,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+} from 'react';
+import {
+  DEFAULT_FILTER_PARAMS,
+  FilterParams,
+  normalizeFilterParams,
+  removeUndefinedKeys,
+} from '../../utils/searchFilters';
 import { useStateDeepEq } from '../../hooks/useStateDeepEq';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import useCustomCompareMemo from '../../hooks/useMemoCompare';
 import dequal from 'dequal';
+import useEffectCompare from '../../hooks/useEffectCompare';
+import {
+  parseFilterParamsFromQs,
+  updateUrlParamsForNextRouter,
+} from '../../utils/urlHelper';
+import qs from 'querystring';
+import { useRouterDeep } from '../../hooks/useRouterDeep';
+import { hookDeepEqual } from '../../hooks/util';
+import { usePrevious } from '../../hooks/usePrevious';
 
 export interface FilterContextState {
   filters: FilterParams;
   setFilters: (newFilters: FilterParams) => void;
+  defaultFilters?: FilterParams;
 }
 
 export const FilterContext = createContext<FilterContextState>({
-  filters: {},
+  filters: DEFAULT_FILTER_PARAMS,
   setFilters: () => {},
 });
 
@@ -20,30 +41,17 @@ interface WithItemFiltersProps {
   children: ReactNode;
 }
 
-export function WithItemFilters(props: WithItemFiltersProps) {
-  const filterState = withFilters(props.defaultFilters);
-  const memoedFilterState = useCustomCompareMemo(
-    () => ({ ...filterState }),
-    [filterState],
-    dequal,
-  );
-
-  return (
-    <FilterContext.Provider value={memoedFilterState}>
-      {props.children}
-    </FilterContext.Provider>
-  );
-}
-
-function withFilters(defaultFilters?: FilterParams): FilterContextState {
-  const [filters, setFilters] = useStateDeepEq(
-    defaultFilters || {},
-    filterParamsEqual,
+function withFilters(
+  initialFilters: FilterParams,
+  defaultFilters?: FilterParams,
+): FilterContextState {
+  const [filters, setFilters] = useStateDeepEq(initialFilters, (left, right) =>
+    filterParamsEqual(left, right, defaultFilters?.sortOrder),
   );
 
   const actuallySetFilters = useCallback(
     (newFilters: FilterParams) => {
-      setFilters(newFilters);
+      setFilters(normalizeFilterParams(newFilters));
     },
     [filters],
   );
@@ -53,3 +61,41 @@ function withFilters(defaultFilters?: FilterParams): FilterContextState {
     setFilters: actuallySetFilters,
   };
 }
+
+function WithItemFilters(props: WithItemFiltersProps) {
+  const router = useRouterDeep();
+  const stringifiedQuery = qs.stringify(router.query);
+  // const previousQuery = usePrevious(stringifiedQuery);
+  const paramsFromQuery = parseFilterParamsFromQs(stringifiedQuery);
+  const initialFilters = {
+    ...(props.defaultFilters || DEFAULT_FILTER_PARAMS),
+    ...paramsFromQuery,
+  };
+
+  const filterState = withFilters(initialFilters, props.defaultFilters);
+  const memoedFilterState = useCustomCompareMemo(
+    () => ({ ...filterState, defaultFilters: props.defaultFilters }),
+    [filterState.filters],
+    hookDeepEqual,
+  );
+
+  useEffect(() => {
+    console.log(memoedFilterState);
+    updateUrlParamsForNextRouter(
+      router,
+      memoedFilterState.filters,
+      [],
+      memoedFilterState.defaultFilters,
+    );
+  }, [memoedFilterState]);
+
+  return (
+    <FilterContext.Provider value={memoedFilterState}>
+      {props.children}
+    </FilterContext.Provider>
+  );
+}
+
+// WithItemFilters.whyDidYouRender = true;
+
+export default React.memo(WithItemFilters, dequal);

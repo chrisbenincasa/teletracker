@@ -13,6 +13,7 @@ import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import _ from 'lodash';
+import { FilterParams, normalizeFilterParams } from '../../utils/searchFilters';
 
 export const LIST_RETRIEVE_INITIATED = 'lists/retrieve/INITIATED';
 export const LIST_RETRIEVE_SUCCESS = 'lists/retrieve/SUCCESS';
@@ -39,6 +40,7 @@ export type ListRetrieveSuccessPayload = {
   list: List;
   paging?: Paging;
   append: boolean;
+  forFilters?: FilterParams;
 };
 
 export type ListRetrieveSuccessAction = FSA<
@@ -83,12 +85,20 @@ export const retrieveListSaga = function*() {
           payload.limit,
         );
 
+        const filters: FilterParams = normalizeFilterParams({
+          sortOrder: payload.sort,
+          itemTypes: payload.itemTypes,
+          networks: payload.networks,
+          genresFilter: payload.genres,
+        });
+
         if (response.ok && response.data) {
           yield put(
             ListRetrieveSuccess({
               list: ListFactory.create(response.data.data),
               paging: response.data.paging,
               append: !_.isUndefined(payload.bookmark),
+              forFilters: filters,
             }),
           );
         } else {
