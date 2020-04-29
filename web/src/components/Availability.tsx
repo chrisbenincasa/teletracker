@@ -22,6 +22,7 @@ import { ItemAvailability } from '../types/v2';
 import { Item } from '../types/v2/Item';
 import useStateSelector from '../hooks/useStateSelector';
 import { useWithUserContext } from '../hooks/useWithUser';
+import { useNetworks } from '../hooks/useStateMetadata';
 
 const useStyles = makeStyles((theme: Theme) => ({
   availabilityContainer: {
@@ -71,10 +72,7 @@ interface Props {
 const Availability = (props: Props) => {
   const classes = useStyles();
   const { userSelf } = useWithUserContext();
-  const networks = useStateSelector(
-    state => state.metadata.networks,
-    _.isEqual,
-  );
+  const networks = useNetworks();
 
   const { itemDetail } = props;
   let availabilities: { [key: string]: ItemAvailability[] };
@@ -135,7 +133,7 @@ const Availability = (props: Props) => {
     };
 
     const availabilityFilter = (av: ItemAvailability) => {
-      return !R.isNil(av.network_id) && includeFromPrefs(av, av.network_id!);
+      return !R.isNil(av.network_id); // && includeFromPrefs(av, av.network_id!);
     };
 
     let groupedByNetwork = availabilities
@@ -148,16 +146,24 @@ const Availability = (props: Props) => {
 
     // TODO: Fix id - give availabilities IDs
     // currently using index for keying purposes
+
     return R.values(
       R.mapObjIndexed((avs, index) => {
         let lowestCostAv = R.head(R.sortBy(R.prop('cost'))(avs))!;
-        // let logoUri =
-        //   '/images/logos/' + lowestCostAv.network!.slug + '/icon.jpg';
+        let network = _.find(networks!, { id: lowestCostAv.network_id });
+
+        if (!network) {
+          return null;
+        }
+
+        let logoUri = '/images/logos/' + network!.slug + '/icon.jpg';
+
+        console.log(lowestCostAv);
 
         // TODO: Need logo UI
         return (
           <div className={classes.platform} key={index}>
-            {/* <img src={logoUri} className={classes.logo} /> */}
+            <img src={logoUri} className={classes.logo} />
             {lowestCostAv.cost && (
               <Chip
                 size="medium"
