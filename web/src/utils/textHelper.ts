@@ -70,7 +70,7 @@ const getRating = (item: Item, provider: 'imdb' | 'tmdb') => {
 
 /*
     Get Vote Average
-    This currently uses [1] which is IMDB
+    This currently uses IMDB
 */
 export const getVoteAverage = (item: Item) => {
   const imdbRating = getRating(item, 'imdb');
@@ -79,7 +79,7 @@ export const getVoteAverage = (item: Item) => {
 
 /*
     Get Vote Count
-    This currently uses [1] which is IMDV
+    This currently uses IMDB
 */
 export const getVoteCount = (item: Item) => {
   const imdbRating = getRating(item, 'imdb');
@@ -88,7 +88,7 @@ export const getVoteCount = (item: Item) => {
 
 /*
     Get Vote Count Formatted e.g 4,000 === 4k
-    This currently uses [0] which is TMDB
+    This currently uses IMDB
 */
 export const getVoteCountFormatted = (item: Item) => {
   const imdbRating = getRating(item, 'imdb');
