@@ -10,6 +10,11 @@ import useStateSelector from '../../hooks/useStateSelector';
 import { useRouter } from 'next/router';
 import dequal from 'dequal';
 import WithItemFilters from '../../components/Filters/FilterContext';
+import qs from "querystring";
+import url from "url";
+import _ from 'lodash';
+import { DEFAULT_CREDITS_FILTERS } from '../../containers/PersonDetail';
+import { parseFilterParamsFromObject } from '../../utils/urlHelper';
 
 interface Props {
   list?: List;
@@ -37,7 +42,7 @@ function ListDetailWrapper(props: Props) {
       </Head>
       <AppWrapper>
         <WithItemFilters>
-          <ListDetail />
+          <ListDetail preloaded />
         </WithItemFilters>
       </AppWrapper>
     </React.Fragment>
@@ -46,11 +51,21 @@ function ListDetailWrapper(props: Props) {
 
 ListDetailWrapper.getInitialProps = async ctx => {
   if (ctx.req) {
+    const parsedQueryObj = qs.parse(url.parse(ctx.req.url).query || '');
+    const filterParams = parseFilterParamsFromObject(parsedQueryObj);
+
     let token = await currentUserJwt();
 
     let response: TeletrackerResponse<ApiList> = await TeletrackerApi.instance.getList(
       token,
       ctx.query.id,
+      filterParams.sortOrder,
+      true,
+      filterParams.itemTypes,
+      filterParams.genresFilter,
+      undefined,
+      filterParams.networks,
+      6
     );
 
     if (response.ok) {
@@ -59,6 +74,7 @@ ListDetailWrapper.getInitialProps = async ctx => {
           list: ListFactory.create(response.data!.data),
           paging: response.data!.paging,
           append: false,
+          forFilters: filterParams
         }),
       );
 

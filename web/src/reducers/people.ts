@@ -29,12 +29,14 @@ import {
   PersonCreditsFetchSuccessfulAction,
 } from '../actions/people/get_credits';
 import * as R from 'ramda';
+import { FilterParams } from '../utils/searchFilters';
 
 interface PersonDetailState {
   current?: Id | Slug;
   credits?: string[]; // Array of popular slugs
   loading: boolean;
   bookmark?: string;
+  currentFilters?: FilterParams;
 }
 
 export interface State {
@@ -172,6 +174,7 @@ const peopleCreditsFetchSuccess = handleAction(
           loading: false,
           credits: newCredits,
           bookmark: payload.paging ? payload.paging.bookmark : undefined,
+          currentFilters: payload.forFilters,
         },
       };
     } else {
