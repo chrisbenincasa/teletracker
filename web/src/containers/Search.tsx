@@ -8,10 +8,6 @@ import {
   Typography,
 } from '@material-ui/core';
 import { Error as ErrorIcon } from '@material-ui/icons';
-import _ from 'lodash';
-import { useRouter } from 'next/router';
-import qs from 'querystring';
-import * as R from 'ramda';
 import React, {
   useCallback,
   useContext,
@@ -29,14 +25,9 @@ import AllFilters from '../components/Filters/AllFilters';
 import ItemCard from '../components/ItemCard';
 import SearchInput from '../components/Toolbar/Search';
 import useIntersectionObserver from '../hooks/useIntersectionObserver';
-import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
 import { useWidth } from '../hooks/useWidth';
-import { useWithUserContext } from '../hooks/useWithUser';
 import { AppState } from '../reducers';
-import { filterParamsEqual } from '../utils/changeDetection';
-import { calculateLimit, getNumColumns } from '../utils/list-utils';
-import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
-import { parseFilterParamsFromQs } from '../utils/urlHelper';
+import { calculateLimit } from '../utils/list-utils';
 import { useDebouncedCallback } from 'use-debounce';
 import useStateSelector from '../hooks/useStateSelector';
 import { FilterContext } from '../components/Filters/FilterContext';
@@ -110,13 +101,12 @@ const Search = (props: Props) => {
   );
 
   const [showScrollToTop, setShowScrollToTop] = useState(false);
-  const [totalVisibleItems, setTotalVisibleItems] = useState(0);
   const [showFilter, setShowFilter] = useState(false);
   const [searchText, setSearchText] = useState(currentSearchText || '');
   const { filters } = useContext(FilterContext);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
 
-  const { itemTypes, genresFilter, networks, sliders, sortOrder } = filters;
+  const { itemTypes, genresFilter, networks, sliders } = filters;
 
   const isInViewport = useIntersectionObserver({
     lazyLoadOptions: {
@@ -205,14 +195,7 @@ const Search = (props: Props) => {
   }, [isInViewport]);
 
   const loadMoreResults = () => {
-    const numColumns = getNumColumns(width);
-
-    // If an item is featured, update total items accordingly
-    const totalFetchedItems = (searchResults && searchResults.length) || 0;
-    const totalNonLoadedImages = totalFetchedItems - totalVisibleItems;
-    const shouldLoadMore = totalNonLoadedImages <= numColumns;
-
-    if (!isSearching && shouldLoadMore) {
+    if (!isSearching) {
       debouncedSearch(false);
     }
   };
@@ -242,10 +225,6 @@ const Search = (props: Props) => {
   const showSearch =
     !currentSearchText || (currentSearchText && currentSearchText.length === 0);
   // || isInViewport;
-  const loadHandler = useCallback(
-    () => setTotalVisibleItems(prev => prev + 1),
-    [],
-  );
 
   return (
     <React.Fragment>
@@ -319,13 +298,7 @@ const Search = (props: Props) => {
                   >
                     <Grid container spacing={2}>
                       {searchResults.map(result => {
-                        return (
-                          <ItemCard
-                            key={result.id}
-                            itemId={result.id}
-                            hasLoaded={loadHandler}
-                          />
-                        );
+                        return <ItemCard key={result.id} itemId={result.id} />;
                       })}
                     </Grid>
                     {isSearching && renderLoading()}
