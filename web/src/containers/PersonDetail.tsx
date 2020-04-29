@@ -295,7 +295,7 @@ function PersonDetail(props: NewProps) {
             </div>
             <div className={classes.personInformationContainer}>
               {renderDescriptiveDetails(person)}
-              <WithItemFilters>
+              <WithItemFilters defaultFilters={DEFAULT_CREDITS_FILTERS}>
                 <PersonCredits person={person} />
               </WithItemFilters>
             </div>
