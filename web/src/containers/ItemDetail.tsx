@@ -393,17 +393,21 @@ function ItemDetails(props: Props) {
             itemProp="duration"
             className={classes.information}
           >
-            <Tooltip title={`Runtime for this ${itemType}`} placement={'top'}>
-              <AccessTime fontSize="small" className={classes.metaIcon} />
-            </Tooltip>
+            {runtime && (
+              <Tooltip title={`Runtime for this ${itemType}`} placement={'top'}>
+                <AccessTime fontSize="small" className={classes.metaIcon} />
+              </Tooltip>
+            )}
             {runtime}
             {runtime && releaseDate && <Lens className={classes.separator} />}
-            <Tooltip
-              title={`Release year for this ${itemType}`}
-              placement={'top'}
-            >
-              <Event fontSize="small" className={classes.metaIcon} />
-            </Tooltip>
+            {releaseDate && (
+              <Tooltip
+                title={`Release year for this ${itemType}`}
+                placement={'top'}
+              >
+                <Event fontSize="small" className={classes.metaIcon} />
+              </Tooltip>
+            )}
             {releaseDate}
             {rating && <Lens className={classes.separator} />}
             {rating && rating !== 'NR'
