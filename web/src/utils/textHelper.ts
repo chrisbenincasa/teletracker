@@ -64,24 +64,26 @@ export const truncateText = (text: string, lengthLimit: number) => {
   return text;
 };
 
+const getRating = (item: Item, provider: 'imdb' | 'tmdb') => {
+  return item?.ratings?.filter(item => item.provider_shortname === provider)[0];
+};
+
 /*
     Get Vote Average
-    This currently uses [0] which is TMDB
+    This currently uses [1] which is IMDB
 */
 export const getVoteAverage = (item: Item) => {
-  return item.ratings && item.ratings.length > 0 && item.ratings[0].vote_average
-    ? item.ratings[0].vote_average / 2
-    : 0;
+  const imdbRating = getRating(item, 'imdb');
+  return imdbRating?.vote_average ? imdbRating.vote_average / 2 : 0;
 };
 
 /*
     Get Vote Count
-    This currently uses [0] which is TMDB
+    This currently uses [1] which is IMDV
 */
 export const getVoteCount = (item: Item) => {
-  return item.ratings && item.ratings.length > 0 && item.ratings[0].vote_count
-    ? item.ratings[0].vote_count
-    : 0;
+  const imdbRating = getRating(item, 'imdb');
+  return imdbRating?.vote_count || 0;
 };
 
 /*
@@ -89,9 +91,10 @@ export const getVoteCount = (item: Item) => {
     This currently uses [0] which is TMDB
 */
 export const getVoteCountFormatted = (item: Item) => {
-  return item.ratings && item.ratings.length > 0 && item.ratings[0].vote_count
-    ? item.ratings[0].vote_count > 999
-      ? `${(item.ratings[0].vote_count / 1000).toFixed(1)}k`
-      : item.ratings[0].vote_count
+  const imdbRating = getRating(item, 'imdb');
+  return imdbRating?.vote_count
+    ? imdbRating?.vote_count > 999
+      ? `${(imdbRating?.vote_count / 1000).toFixed(1)}k`
+      : imdbRating?.vote_count
     : 0;
 };
