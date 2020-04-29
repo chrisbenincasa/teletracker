@@ -185,11 +185,7 @@ export default function ActiveFilters(props: Props) {
   };
 
   const resetFilters = () => {
-    setFilters(DEFAULT_FILTER_PARAMS);
-  };
-
-  const resetToDefaults = () => {
-    setFilters(defaultFilters!);
+    setFilters(defaultFilters || DEFAULT_FILTER_PARAMS);
   };
 
   const removeFilters = (filters: FilterRemove) => {
@@ -450,21 +446,10 @@ export default function ActiveFilters(props: Props) {
         <Chip
           key="Reset"
           className={classes.resetChip}
-          label="Reset All"
+          label="Reset"
           variant={variant}
           color="default"
           onClick={resetFilters}
-        />
-      ) : null}
-      {showResetDefaults ? (
-        <Chip
-          key="Reset_default"
-          className={classes.resetChip}
-          label="Reset to Default"
-          variant={variant}
-          color="default"
-          clickable
-          onClick={resetToDefaults}
         />
       ) : null}
     </div>

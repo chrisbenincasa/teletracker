@@ -26,7 +26,7 @@ export default function makeExploreWrapper(defaultFilters: FilterParams) {
         </Head>
         <AppWrapper hideFooter>
           <WithItemFilters defaultFilters={{ ...defaultFilters }}>
-            <Explore defaultFilters={{ ...defaultFilters }} />
+            <Explore />
           </WithItemFilters>
         </AppWrapper>
       </React.Fragment>

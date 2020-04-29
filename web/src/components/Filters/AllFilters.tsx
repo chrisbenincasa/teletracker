@@ -11,13 +11,7 @@ import {
 } from '@material-ui/core';
 import { ExpandMore } from '@material-ui/icons';
 import { useWidth } from '../../hooks/useWidth';
-import {
-  Genre,
-  ItemType,
-  Network,
-  NetworkType,
-  SortOptions,
-} from '../../types';
+import { ItemType, NetworkType, SortOptions } from '../../types';
 import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
@@ -28,7 +22,6 @@ import CreateDynamicListDialog from '../Dialogs/CreateDynamicListDialog';
 import { FilterParams } from '../../utils/searchFilters';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import PersonFilter from './PersonFilter';
-import _ from 'lodash';
 import { FilterContext } from './FilterContext';
 import { useGenres, useNetworks } from '../../hooks/useStateMetadata';
 
@@ -182,7 +175,6 @@ const AllFilters = (props: Props) => {
   const { filters, setFilters, defaultFilters } = useContext(FilterContext);
 
   const handleFilterUpdate = (newFilter: FilterParams) => {
-    console.log(defaultFilters?.sortOrder);
     if (!filterParamsEqual(filters, newFilter, defaultFilters?.sortOrder)) {
       setFilters(newFilter);
     }
