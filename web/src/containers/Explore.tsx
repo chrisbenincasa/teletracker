@@ -442,22 +442,23 @@ function Explore(props: Props) {
             )}
           </InfiniteScroll>
         ) : (
-          <Typography>Sorry, nothing matches your filter.</Typography>
+          !loading && (
+            <Typography>Sorry, nothing matches your filter.</Typography>
+          )
         )}
       </div>
     ) : null;
   };
 
-  return popular && !loading ? (
+  return (
     <div className={classes.popularWrapper}>
+      {loading && renderLoading()}
       <Featured featuredItems={featuredItems} />
       {renderPopular()}
       {showScrollToTop && (
         <ScrollToTop onClick={scrollToTop} className={classes.scrollToTop} />
       )}
     </div>
-  ) : (
-    renderLoading()
   );
 }
 
