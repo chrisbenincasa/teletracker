@@ -74,7 +74,14 @@ const getRating = (item: Item, provider: 'imdb' | 'tmdb') => {
 */
 export const getVoteAverage = (item: Item) => {
   const imdbRating = getRating(item, 'imdb');
-  return imdbRating?.vote_average ? imdbRating.vote_average / 2 : 0;
+  const voteAverage = imdbRating?.vote_average
+    ? imdbRating?.vote_average / 2
+    : 0;
+  const weightedAverage = imdbRating?.weighted_average
+    ? imdbRating?.weighted_average / 2
+    : null;
+
+  return imdbRating?.weighted_average ? weightedAverage : voteAverage;
 };
 
 /*
@@ -92,6 +99,7 @@ export const getVoteCount = (item: Item) => {
 */
 export const getVoteCountFormatted = (item: Item) => {
   const imdbRating = getRating(item, 'imdb');
+
   return imdbRating?.vote_count
     ? imdbRating?.vote_count > 999
       ? `${(imdbRating?.vote_count / 1000).toFixed(1)}k`
