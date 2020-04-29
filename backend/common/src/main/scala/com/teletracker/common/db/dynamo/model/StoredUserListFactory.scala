@@ -7,7 +7,7 @@ object StoredUserListFactory {
   def defaultList(userId: String): StoredUserList = {
     StoredUserList(
       UUID.randomUUID(),
-      "Default List",
+      "Watchlist",
       isDefault = true,
       isPublic = false,
       userId
