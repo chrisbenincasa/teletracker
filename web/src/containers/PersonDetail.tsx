@@ -243,72 +243,72 @@ function PersonDetail(props: NewProps) {
                 <div className={classes.backdropGradient} />
               </div>
             </Fade>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-              }}
+          </React.Fragment>
+        )}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+          }}
+        >
+          {!isMobile && (
+            <Button
+              size="small"
+              onClick={router.back}
+              variant="contained"
+              aria-label="Go Back"
+              style={{ marginTop: 20, marginLeft: 20 }}
             >
-              {!isMobile && (
-                <Button
-                  size="small"
-                  onClick={router.back}
-                  variant="contained"
-                  aria-label="Go Back"
-                  style={{ marginTop: 20, marginLeft: 20 }}
-                >
-                  <ChevronLeft style={{ marginRight: 8 }} />
-                  Go Back
-                </Button>
-              )}
-              <div className={classes.personDetailContainer}>
-                <div className={classes.leftContainer}>
-                  <Hidden mdUp>{renderTitle(person)}</Hidden>
-                  <div className={classes.posterContainer}>
-                    <CardMedia
-                      src={imagePlaceholder}
-                      item={person}
-                      component={ResponsiveImage}
-                      imageType="profile"
-                      imageStyle={{
-                        width: '100%',
-                        boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
-                      }}
-                    />
-                    <div className={classes.trackingButton}>
-                      <ManageTrackingButton
-                        cta={'Track Actor'}
-                        onClick={openCreateListDialog}
-                      />
-                    </div>
-                    <div className={classes.trackingButton}>
-                      <ShareButton
-                        title={person.name}
-                        text={''}
-                        url={window.location.href}
-                      />
-                    </div>
-                  </div>
+              <ChevronLeft style={{ marginRight: 8 }} />
+              Go Back
+            </Button>
+          )}
+          <div className={classes.personDetailContainer}>
+            <div className={classes.leftContainer}>
+              <Hidden mdUp>{renderTitle(person)}</Hidden>
+              <div className={classes.posterContainer}>
+                <CardMedia
+                  src={imagePlaceholder}
+                  item={person}
+                  component={ResponsiveImage}
+                  imageType="profile"
+                  imageStyle={{
+                    width: '100%',
+                    boxShadow: '7px 10px 23px -8px rgba(0,0,0,0.57)',
+                  }}
+                />
+                <div className={classes.trackingButton}>
+                  <ManageTrackingButton
+                    cta={'Track Actor'}
+                    onClick={openCreateListDialog}
+                  />
                 </div>
-                <div className={classes.personInformationContainer}>
-                  {renderDescriptiveDetails(person)}
-                  <WithItemFilters defaultFilters={DEFAULT_CREDITS_FILTERS}>
-                    <PersonCredits person={person} />
-                  </WithItemFilters>
+                <div className={classes.trackingButton}>
+                  <ShareButton
+                    title={person.name}
+                    text={''}
+                    url={window.location.href}
+                  />
                 </div>
               </div>
             </div>
-            <CreateDynamicListDialog
-              filters={personFiltersForCreateDialog()}
-              open={createPersonListDialogOpen}
-              onClose={closeCreateListDialog}
-              networks={networks || []}
-              genres={genres || []}
-              prefilledName={person!.name}
-            />
-          </React.Fragment>
-        )}
+            <div className={classes.personInformationContainer}>
+              {renderDescriptiveDetails(person)}
+              <WithItemFilters>
+                <PersonCredits person={person} />
+              </WithItemFilters>
+            </div>
+          </div>
+        </div>
+        <CreateDynamicListDialog
+          filters={personFiltersForCreateDialog()}
+          open={createPersonListDialogOpen}
+          onClose={closeCreateListDialog}
+          networks={networks || []}
+          genres={genres || []}
+          prefilledName={person!.name}
+        />
       </div>
     );
   };
