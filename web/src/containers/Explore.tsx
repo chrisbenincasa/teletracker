@@ -8,8 +8,6 @@ import {
   useTheme,
 } from '@material-ui/core';
 import _ from 'lodash';
-import { useRouter } from 'next/router';
-import qs from 'querystring';
 import React, {
   useCallback,
   useContext,
@@ -25,15 +23,9 @@ import AllFilters from '../components/Filters/AllFilters';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ItemCard from '../components/ItemCard';
 import ScrollToTop from '../components/Buttons/ScrollToTop';
-import { filterParamsEqual } from '../utils/changeDetection';
-import { calculateLimit, getNumColumns } from '../utils/list-utils';
-import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
+import { calculateLimit } from '../utils/list-utils';
 import { DEFAULT_POPULAR_LIMIT, DEFAULT_ROWS } from '../constants';
 import { getVoteAverage, getVoteCount } from '../utils/textHelper';
-import {
-  parseFilterParamsFromQs,
-  updateUrlParamsForNextRouter,
-} from '../utils/urlHelper';
 import { useStateDeepEq } from '../hooks/useStateDeepEq';
 import { useWidth } from '../hooks/useWidth';
 import useStateSelector, {
@@ -47,16 +39,10 @@ import {
   useDispatchAction,
   useDispatchSideEffect,
 } from '../hooks/useDispatchAction';
-import { useGenres, useNetworks } from '../hooks/useStateMetadata';
-import { hookDeepEqual } from '../hooks/util';
-import dequal from 'dequal';
+import { useGenres } from '../hooks/useStateMetadata';
 import { Id } from '../types/v2';
 import { FilterContext } from '../components/Filters/FilterContext';
-import useEffectCompare from '../hooks/useEffectCompare';
-import useDidMountEffect from '../hooks/useDidMountEffect';
 import selectItems from '../selectors/selectItems';
-import { diff } from 'deep-object-diff';
-import { useRouterDeep } from '../hooks/useRouterDeep';
 import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -110,11 +96,7 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
-interface Props {
-  defaultFilters?: FilterParams;
-}
-
-function Explore(props: Props) {
+function Explore() {
   //
   // State
   //
@@ -128,20 +110,14 @@ function Explore(props: Props) {
   let [featuredItems, setFeaturedItems] = useStateDeepEq<Id[]>([]);
   let [showFilter, setShowFilter] = useState(false);
   let [needsNewFeatured, setNeedsNewFeatured] = useState(false);
-  let totalLoadedImages = useRef(0);
   let [showScrollToTop, setShowScrollToTop] = useState(false);
 
   const popularWrapper = useRef<HTMLDivElement | null>(null);
   const previousWidth = usePrevious<Breakpoint>(width);
-  const router = useRouterDeep();
 
-  let { filters, defaultFilters } = useContext(FilterContext);
+  let { filters } = useContext(FilterContext);
 
-  const previousRouterQuery = usePrevious(router.query);
   const thingsById = useStateSelector(state => state.itemDetail.thingsById);
-  const currentlyLoadedFilters = useStateSelector(
-    state => state.popular.currentFilters,
-  );
   const popular = useStateSelector(state =>
     selectItems(state, state.popular.popular || []),
   );
@@ -185,12 +161,6 @@ function Explore(props: Props) {
   ) => {
     if (!loading) {
       let numberFeaturedItems: number = getNumberFeaturedItems();
-
-      // Reset our counter for total loaded images as we're about to replace
-      // the whole grid.
-      if (firstRun) {
-        totalLoadedImages.current = 0;
-      }
 
       retrievePopularFromServer({
         bookmark: passBookmark ? popularBookmark : undefined,
@@ -299,25 +269,14 @@ function Explore(props: Props) {
   }, 250);
 
   const loadMoreResults = useCallback(() => {
-    const numColumns = getNumColumns(width);
-
-    // If an item is featured, update total items accordingly
-    const totalFetchedItems =
-      (popular && popular.length - featuredItemsIndex.length) || 0;
-    const totalNonLoadedImages = totalFetchedItems - totalLoadedImages.current;
-    const shouldLoadMore = totalNonLoadedImages <= numColumns;
-
-    if (!loading && shouldLoadMore) {
+    if (!loading) {
       debouncedLoadMore();
     }
+
     if (!showScrollToTop) {
       setShowScrollToTop(true);
     }
-  }, []);
-
-  const setVisibleItems = useCallback(() => {
-    totalLoadedImages.current += 1;
-  }, []);
+  }, [popular]);
 
   //
   // Hooks
@@ -424,13 +383,7 @@ function Explore(props: Props) {
             <Grid container spacing={2} ref={popularWrapper}>
               {popular.map((item, index) => {
                 if (item && !featuredItemsIndex.includes(index)) {
-                  return (
-                    <ItemCard
-                      key={item.id}
-                      itemId={item.id}
-                      hasLoaded={setVisibleItems}
-                    />
-                  );
+                  return <ItemCard key={item.id} itemId={item.id} />;
                 } else {
                   return null;
                 }
@@ -442,28 +395,27 @@ function Explore(props: Props) {
             )}
           </InfiniteScroll>
         ) : (
-          <Typography>Sorry, nothing matches your filter.</Typography>
+          !loading && (
+            <Typography>Sorry, nothing matches your filter.</Typography>
+          )
         )}
       </div>
     ) : null;
   };
 
-  return popular && !loading ? (
+  return (
     <div className={classes.popularWrapper}>
+      {loading && renderLoading()}
       <Featured featuredItems={featuredItems} />
       {renderPopular()}
       {showScrollToTop && (
         <ScrollToTop onClick={scrollToTop} className={classes.scrollToTop} />
       )}
     </div>
-  ) : (
-    renderLoading()
   );
 }
 
 // DEV MODE ONLY
 // Explore.whyDidYouRender = true;
 
-export default React.memo(Explore, (prevProps, nextProps) => {
-  return _.isEqual(prevProps.defaultFilters, nextProps.defaultFilters);
-});
+export default React.memo(Explore);

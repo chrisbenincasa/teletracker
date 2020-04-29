@@ -39,29 +39,17 @@ import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import { List } from '../types';
-import {
-  calculateLimit,
-  getNumColumns,
-  getOrInitListOptions,
-} from '../utils/list-utils';
-import { FilterParams, isDefaultFilter } from '../utils/searchFilters';
-import {
-  parseFilterParamsFromQs,
-  updateUrlParamsForNextRouter,
-} from '../utils/urlHelper';
-import { filterParamsEqual } from '../utils/changeDetection';
+import { calculateLimit, getOrInitListOptions } from '../utils/list-utils';
+import { FilterParams } from '../utils/searchFilters';
 import { optionalSetsEqual } from '../utils/sets';
 import { useRouter } from 'next/router';
-import qs from 'querystring';
 import useStateSelector, {
   useStateSelectorWithPrevious,
 } from '../hooks/useStateSelector';
-import { useStateDeepEqWithPrevious } from '../hooks/useStateDeepEq';
 import { useWithUserContext } from '../hooks/useWithUser';
 import { useDispatchAction } from '../hooks/useDispatchAction';
 import { useWidth } from '../hooks/useWidth';
 import { useDebouncedCallback } from 'use-debounce';
-import deepEq from 'dequal';
 import { createSelector } from 'reselect';
 import { AppState } from '../reducers';
 import { hookDeepEqual } from '../hooks/util';
@@ -266,12 +254,10 @@ function ListDetail() {
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [deleteOnWatch, setDeleteOnWatch] = useState(false);
   const [newListName, setNewListName] = useState('');
-  const [totalLoadedImages, setTotalLoadedImages] = useState(0);
   const router = useRouter();
   const width = useWidth();
 
   const listId = router.query.id as string;
-  const queryString = qs.stringify(router.query);
 
   const listLoading = useStateSelector(
     state => state.lists.loading[LIST_RETRIEVE_INITIATED],
@@ -324,16 +310,11 @@ function ListDetail() {
     });
   }, 200);
 
-  const loadMoreList = () => {
-    const numColumns = getNumColumns(width);
-    const totalFetchedItems = list?.items?.length || 0;
-    const totalNonLoadedImages = totalFetchedItems - totalLoadedImages;
-    const loadMore = totalNonLoadedImages <= numColumns;
-
-    if (listBookmark && !listLoading && loadMore) {
+  const loadMoreList = useCallback(() => {
+    if (listBookmark && !listLoading) {
       loadMoreDebounced();
     }
-  };
+  }, [listBookmark, listLoading]);
 
   const makeListFilters = (
     initialLoad: boolean,
@@ -424,10 +405,6 @@ function ListDetail() {
   //
   // State updaters
   //
-
-  const setVisibleItems = useCallback(() => {
-    setTotalLoadedImages(prev => prev + 1);
-  }, []);
 
   const handleMenu = event => {
     setAnchorEl(event.currentTarget);
@@ -638,7 +615,6 @@ function ListDetail() {
                       listContext={list}
                       withActionButton
                       showDelete={!list.isDynamic}
-                      hasLoaded={setVisibleItems}
                     />
                   );
                 })
