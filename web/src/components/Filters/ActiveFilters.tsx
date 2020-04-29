@@ -155,11 +155,11 @@ export default function ActiveFilters(props: Props) {
   };
 
   const deleteGenreFilter = (
-    genresToRemove: number[],
+    genresToRemove: number[] | undefined,
   ): [number[] | undefined, boolean] => {
     // If there are set genres, remove them. Then return the new set.
     if (genresFilter && genresFilter.length > 0) {
-      let diff = _.difference(genresFilter, genresToRemove);
+      let diff = _.difference(genresFilter, genresToRemove || []);
       return [diff, !setsEqual(diff, genresFilter)];
     }
 
@@ -168,7 +168,7 @@ export default function ActiveFilters(props: Props) {
   };
 
   const deleteSort = (
-    sort: SortOptions,
+    sort: SortOptions | undefined,
   ): [SortOptions | undefined, boolean] => {
     if (sort !== sortOrder) {
       return [sort, true];
@@ -177,32 +177,16 @@ export default function ActiveFilters(props: Props) {
     return [sort, false];
   };
 
-  const applyDiffer = <T extends unknown>(
-    value: T | undefined,
-    fn: (v: T) => [T | undefined, boolean],
-  ): [T | undefined, boolean] => {
-    return value ? fn(value) : [undefined, false];
-  };
-
   const resetFilters = () => {
     setFilters(defaultFilters || DEFAULT_FILTER_PARAMS);
   };
 
   const removeFilters = (filters: FilterRemove) => {
-    const [newSort, sortChanged] = applyDiffer(filters.sort, deleteSort);
-    const [newNetworks, networksChanged] = applyDiffer(
-      filters.network,
-      deleteNetworkFilter,
-    );
-    const [newType, typesChanged] = applyDiffer(filters.type, deleteTypeFilter);
-    const [newGenre, genreChanged] = applyDiffer(
-      filters.genre,
-      deleteGenreFilter,
-    );
-    const [newPeople, peopleChanged] = applyDiffer(
-      filters.people,
-      deletePersonFilter,
-    );
+    const [newSort, sortChanged] = deleteSort(filters.sort);
+    const [newNetworks, networksChanged] = deleteNetworkFilter(filters.network);
+    const [newType, typesChanged] = deleteTypeFilter(filters.type);
+    const [newGenre, genreChanged] = deleteGenreFilter(filters.genre);
+    const [newPeople, peopleChanged] = deletePersonFilter(filters.people);
 
     let releaseYearStateNew: OpenRange | undefined;
     if (filterState.filters.sliders?.releaseYear) {
@@ -216,10 +200,6 @@ export default function ActiveFilters(props: Props) {
         delete releaseYearStateNew.max;
       }
     }
-
-    // let imdbRatingStateNew = filterState.filters.sliders
-    //   ? { ...filterState.filters.sliders.imdbRating } || {}
-    //   : {};
 
     let imdbRatingStateNew: OpenRange | undefined;
     if (filterState.filters.sliders?.imdbRating) {
@@ -255,11 +235,7 @@ export default function ActiveFilters(props: Props) {
       people: peopleChanged ? newPeople : filterState.filters.people,
     });
 
-    // if (defaultFilters?.sortOrder === filterParams.sortOrder) {
-    //   delete filterParams.sortOrder;
-    // }
-
-    setFilters(filterParams);
+    setFilters(_.extend(defaultFilters || {}, filterParams));
   };
 
   const mapGenre = (genre: number) => {
@@ -276,15 +252,7 @@ export default function ActiveFilters(props: Props) {
   const showNetworkFilters = Boolean(networks && networks.length > 0);
   const showTypeFilters = Boolean(itemTypes && itemTypes.length > 0);
   const showSort =
-    Boolean(
-      !(
-        (isListDynamic && sortOrder === 'popularity') ||
-        (!isListDynamic && sortOrder === 'added_time') ||
-        (!_.isUndefined(defaultFilters?.sortOrder) &&
-          sortOrder === defaultFilters!.sortOrder) ||
-        sortOrder === undefined
-      ),
-    ) &&
+    sortOrder !== defaultFilters?.sortOrder &&
     (_.isUndefined(props.hideSortOptions) || !props.hideSortOptions);
 
   const showPersonFilters = Boolean(people && people.length > 0);
@@ -306,15 +274,6 @@ export default function ActiveFilters(props: Props) {
       showNetworkFilters ||
       showTypeFilters ||
       showImdbSlider,
-  );
-
-  const showResetDefaults = Boolean(
-    defaultFilters &&
-      !filterParamsEqual(
-        defaultFilters,
-        filterState.filters,
-        defaultFilters?.sortOrder,
-      ),
   );
 
   return (

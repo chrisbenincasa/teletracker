@@ -30,6 +30,7 @@ export interface PersonCreditsFetchSuccessfulPayload {
   credits: Item[];
   paging?: Paging;
   append: boolean;
+  forFilters?: FilterParams;
 }
 
 export type PersonCreditsFetchSuccessfulAction = FSA<
@@ -75,6 +76,7 @@ export const fetchPersonCreditsDetailsSaga = function*() {
             credits: response.data.data.map(ItemFactory.create),
             paging: response.data!.paging,
             append: !_.isUndefined(payload.bookmark),
+            forFilters: payload.filterParams,
           }),
         );
       } else {

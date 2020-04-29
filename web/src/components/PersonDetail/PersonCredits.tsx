@@ -22,6 +22,7 @@ import { Item } from '../../types/v2/Item';
 import { collect } from '../../utils/collection-utils';
 import { hookDeepEqual } from '../../hooks/util';
 import { FilterContext } from '../Filters/FilterContext';
+import useFilterLoadEffect from '../../hooks/useFilterLoadEffect';
 
 const selectCreditDetails = createSelector(
   selectPerson,
@@ -92,12 +93,15 @@ export default function PersonCredits(props: Props) {
   }, [loadingCredits]);
 
   // Reload credits when the filters change.
-  useEffect(() => {
-    setShowLoadingCredits(true);
-    if (person) {
-      loadCredits(person, filters, undefined);
-    }
-  }, [filters]);
+  useFilterLoadEffect(
+    () => {
+      if (person) {
+        setShowLoadingCredits(true);
+        loadCredits(person, filters, undefined);
+      }
+    },
+    state => state.people.detail?.currentFilters,
+  );
 
   const loadCredits = (
     person: Person,

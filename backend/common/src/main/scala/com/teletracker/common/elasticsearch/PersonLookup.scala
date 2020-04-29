@@ -194,7 +194,8 @@ class PersonLookup @Inject()(
       })
       .flatMap {
         case None => Future.successful(None)
-        case Some(person) if !materializeCredits =>
+        case Some(person)
+            if !materializeCredits || creditsLimit.exists(_ <= 0) =>
           Future.successful(Some(person -> ElasticsearchItemsResponse.empty))
         case Some(person) =>
           lookupPersonCastCredits(

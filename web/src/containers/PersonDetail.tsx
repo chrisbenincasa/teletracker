@@ -13,7 +13,7 @@ import { personFetchInitiated } from '../actions/people/get_person';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import ManageTrackingButton from '../components/Buttons/ManageTrackingButton';
-import { ResponsiveImage } from '../components/ResponsiveImage';
+import ResponsiveImage from '../components/ResponsiveImage';
 import { Person } from '../types/v2/Person';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
 import ShareButton from '../components/Buttons/ShareButton';
@@ -30,6 +30,10 @@ import useStyles from '../components/PersonDetail/PersonDetail.styles';
 import { selectPerson } from '../components/PersonDetail/hooks';
 import PersonCredits from '../components/PersonDetail/PersonCredits';
 import WithItemFilters from '../components/Filters/FilterContext';
+
+export const DEFAULT_CREDITS_FILTERS: FilterParams = {
+  sortOrder: 'popularity',
+};
 
 interface NewProps {
   preloaded?: boolean;
@@ -234,11 +238,6 @@ function PersonDetail(props: NewProps) {
                     height: '100%',
                     pointerEvents: 'none', // Disables ios preview on tap & hold
                   }}
-                  pictureStyle={{
-                    display: 'block',
-                    position: 'relative',
-                    height: '100%',
-                  }}
                   loadCallback={imageLoadedCallback}
                 />
                 <div className={classes.backdropGradient} />
@@ -294,7 +293,7 @@ function PersonDetail(props: NewProps) {
                 </div>
                 <div className={classes.personInformationContainer}>
                   {renderDescriptiveDetails(person)}
-                  <WithItemFilters>
+                  <WithItemFilters defaultFilters={DEFAULT_CREDITS_FILTERS}>
                     <PersonCredits person={person} />
                   </WithItemFilters>
                 </div>

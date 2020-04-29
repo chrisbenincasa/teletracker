@@ -3,7 +3,9 @@ import Head from 'next/head';
 import React from 'react';
 import { personFetchSuccess } from '../../actions/people/get_person';
 import AppWrapper from '../../containers/AppWrapper';
-import PersonDetail from '../../containers/PersonDetail';
+import PersonDetail, {
+  DEFAULT_CREDITS_FILTERS,
+} from '../../containers/PersonDetail';
 import { ApiPerson, PersonFactory } from '../../types/v2/Person';
 import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
 import { useRouter } from 'next/router';
@@ -12,6 +14,10 @@ import usePerson from '../../hooks/usePerson';
 import { personCreditsFetchSuccess } from '../../actions/people/get_credits';
 import { currentUserJwt } from '../../utils/page-utils';
 import { ItemFactory } from '../../types/v2/Item';
+import qs from 'querystring';
+import url from 'url';
+import { parseFilterParamsFromObject } from '../../utils/urlHelper';
+import { ApiItem } from '../../types/v2';
 
 interface Props {
   personId?: string;
@@ -102,17 +108,44 @@ function PersonDetailWrapper(props: Props) {
 
 PersonDetailWrapper.getInitialProps = async ctx => {
   if (ctx.req) {
-    let response: TeletrackerResponse<ApiPerson> = await TeletrackerApi.instance.getPerson(
-      await currentUserJwt(),
-      ctx.query.id,
-      /*creditsLimit=*/ 6,
+    const parsedQueryObj = qs.parse(url.parse(ctx.req.url).query || '');
+    const filterParams = _.extend(
+      DEFAULT_CREDITS_FILTERS,
+      parseFilterParamsFromObject(parsedQueryObj),
     );
 
-    if (response.ok) {
-      let apiPerson = response.data!.data;
+    const token = await currentUserJwt();
+
+    const personResponsePromise: Promise<TeletrackerResponse<
+      ApiPerson
+    >> = TeletrackerApi.instance.getPerson(
+      token,
+      ctx.query.id,
+      /*creditsLimit=*/ 0,
+    );
+
+    const creditsResponsePromise: Promise<TeletrackerResponse<
+      ApiItem[]
+    >> = TeletrackerApi.instance.getPersonCredits(
+      token,
+      ctx.query.id,
+      filterParams,
+      6,
+      undefined,
+      ['cast'],
+    );
+
+    const [personResponse, creditsResponse] = await Promise.all([
+      personResponsePromise,
+      creditsResponsePromise,
+    ]);
+
+    if (personResponse.ok && creditsResponse.ok) {
+      const apiPerson = personResponse.data!.data;
+      const credits = creditsResponse.data!.data
       const fullPerson = PersonFactory.create(apiPerson);
-      const creditItems = _.flatMap(apiPerson.cast_credits?.data || [], c =>
-        c.item ? [ItemFactory.create(c.item!)] : [],
+      const creditItems = _.flatMap(credits, c =>
+        c ? [ItemFactory.create(c)] : [],
       );
 
       await Promise.all([
@@ -122,12 +155,14 @@ PersonDetailWrapper.getInitialProps = async ctx => {
             rawPerson: apiPerson,
           }),
         ),
+
         ctx.store.dispatch(
           personCreditsFetchSuccess({
             personId: fullPerson.id,
             credits: creditItems,
-            paging: apiPerson.cast_credits?.paging,
+            paging: creditsResponse.data!.paging,
             append: false,
+            forFilters: filterParams
           }),
         ),
       ]);
@@ -135,10 +170,14 @@ PersonDetailWrapper.getInitialProps = async ctx => {
       return {
         personId: fullPerson.id,
       };
+    } else if (!personResponse.ok) {
+      return {
+        error: personResponse.status,
+      };
     } else {
       return {
-        error: response.status,
-      };
+        error: creditsResponse.status
+      }
     }
   } else {
     return {};

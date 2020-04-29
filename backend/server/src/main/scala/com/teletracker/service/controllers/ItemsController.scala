@@ -108,7 +108,7 @@ class ItemsController @Inject()(
         .getPersonViaSearch(
           req.authenticatedUserId,
           req.personId,
-          materializeCredits = true,
+          materializeCredits = req.materializeCredits,
           creditsLimit = req.creditsLimit.getOrElse(20)
         )
         .map {
@@ -196,6 +196,7 @@ case class GetPersonRequest(
   @QueryParam fields: Option[String],
   @Min(0) @Max(20)
   @QueryParam creditsLimit: Option[Int],
+  @QueryParam materializeCredits: Boolean = true,
   request: Request)
     extends InjectedRequest
 

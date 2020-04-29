@@ -13,6 +13,7 @@ export default function useFilterLoadEffect(
 
   useEffect(() => {
     if (!filterParamsEqual(filters, stateFilters, defaultFilters?.sortOrder)) {
+      console.log('changed', filters, stateFilters);
       effectCb();
     }
   }, [filters]);

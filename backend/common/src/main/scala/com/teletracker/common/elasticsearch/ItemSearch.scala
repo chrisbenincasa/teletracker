@@ -191,41 +191,43 @@ class ItemSearch @Inject()(
     peopleCreditSearch: Option[PeopleCreditSearch],
     imdbRatingRange: Option[ClosedNumericRange[Double]]
   ): Future[ElasticsearchItemsResponse] = {
-    val actualSortMode = bookmark.map(_.sortMode).getOrElse(sortMode)
+    if (limit <= 0) {
+      Future.successful(ElasticsearchItemsResponse.empty)
+    } else {
+      val actualSortMode = bookmark.map(_.sortMode).getOrElse(sortMode)
 
-    val query = QueryBuilders
-      .boolQuery()
-      .applyOptional(genres.filter(_.nonEmpty))(genresFilter)
-      .through(removeAdultItems)
-      .through(posterImageFilter)
-      .applyOptional(networks.filter(_.nonEmpty))(availabilityByNetworksOr)
-      .applyOptional(releaseYear.filter(_.isFinite))(openDateRangeFilter)
-      .applyOptional(itemTypes.filter(_.nonEmpty))(itemTypesFilter)
-      .applyOptional(bookmark)(applyBookmark(_, _, list = None))
-      .applyOptional(peopleCreditSearch.filter(_.people.nonEmpty))(
-        peopleCreditSearchQuery
-      )
-      .applyOptional(imdbRatingRange)(
-        openRatingRangeFilter(_, ExternalSource.Imdb, _)
-      )
+      val query = QueryBuilders
+        .boolQuery()
+        .applyOptional(genres.filter(_.nonEmpty))(genresFilter)
+        .through(removeAdultItems)
+        .through(posterImageFilter)
+        .applyOptional(networks.filter(_.nonEmpty))(availabilityByNetworksOr)
+        .applyOptional(releaseYear.filter(_.isFinite))(openDateRangeFilter)
+        .applyOptional(itemTypes.filter(_.nonEmpty))(itemTypesFilter)
+        .applyOptional(bookmark)(applyBookmark(_, _, list = None))
+        .applyOptional(peopleCreditSearch.filter(_.people.nonEmpty))(
+          peopleCreditSearchQuery
+        )
+        .applyOptional(imdbRatingRange)(
+          openRatingRangeFilter(_, ExternalSource.Imdb, _)
+        )
 
-    val searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .size(limit)
-      .applyOptional(makeDefaultSort(actualSortMode))(_.sort(_))
-      .sort(
-        new FieldSortBuilder("id").order(SortOrder.ASC)
-      )
+      val searchSourceBuilder = new SearchSourceBuilder()
+        .query(query)
+        .size(limit)
+        .applyOptional(makeDefaultSort(actualSortMode))(_.sort(_))
+        .sort(
+          new FieldSortBuilder("id").order(SortOrder.ASC)
+        )
 
-//    println(s"Search: ${searchSourceBuilder}")
-
-    elasticsearchExecutor
-      .search(
-        new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
-          .source(searchSourceBuilder)
-      )
-      .map(searchResponseToItems)
-      .map(applyNextBookmark(_, bookmark, sortMode))
+      elasticsearchExecutor
+        .search(
+          new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+            .source(searchSourceBuilder)
+        )
+        .map(searchResponseToItems)
+        .map(applyNextBookmark(_, bookmark, sortMode))
+    }
   }
 
   private def applyNextBookmark(

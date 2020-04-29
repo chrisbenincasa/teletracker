@@ -42,7 +42,7 @@ import { usePrevious } from '../../hooks/usePrevious';
 import { useStateDeepEq } from '../../hooks/useStateDeepEq';
 import { hookDeepEqual } from '../../hooks/util';
 import useNewListValidation from '../../hooks/useNewListValidation';
-import { ResponsiveImage } from '../ResponsiveImage';
+import ResponsiveImage from '../ResponsiveImage';
 import useIsMobile from '../../hooks/useIsMobile';
 
 const useStyles = makeStyles((theme: Theme) =>

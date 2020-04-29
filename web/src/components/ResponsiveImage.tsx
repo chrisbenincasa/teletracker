@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Icon, makeStyles, Theme } from '@material-ui/core';
-import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import _ from 'lodash';
 import { Item } from '../types/v2/Item';
 import { Person } from '../types/v2/Person';
 import { BASE_IMAGE_URL } from '../constants/';
 import { ImageType } from '../types/';
+import dequal from 'dequal';
+
+// Stupid temporary solution.
+const brokenImageCache = new Set();
 
 const useStyles = makeStyles((theme: Theme) => ({
   fallbackImageWrapper: {
@@ -29,12 +32,11 @@ interface Props {
   item: Item | Person;
   imageType: ImageType;
   imageStyle?: object;
-  pictureStyle?: object;
   loadCallback?: () => void;
 }
 
 // TODO: Refactor this entire thing to support more than just backdrop and poster
-export const ResponsiveImage = ({
+const ResponsiveImage = ({
   item,
   imageType,
   imageStyle,
@@ -130,16 +132,36 @@ export const ResponsiveImage = ({
     imageSpecs = posterSpecs;
   }
 
-  const handleOnLoad = () => {
+  const handleOnLoad = useCallback(() => {
     if (loadCallback) {
       loadCallback();
     }
+  }, []);
+
+  const handleOnError = () => {
+    brokenImageCache.add(imageName);
+    if (loadCallback) {
+      console.log('error load');
+      loadCallback();
+    }
+  };
+
+  const renderPlaceholder = () => {
+    return (
+      <div className={classes.fallbackImageWrapper}>
+        <Icon className={classes.fallbackImageIcon} fontSize="inherit">
+          {imageType === 'profile' ? 'person' : 'broken_image'}
+        </Icon>
+      </div>
+    );
   };
 
   if (imageName) {
     // TODO: Figure out if we want to do a placeholder src. We took it away
     // because Firefox would flicker like crazy.
-    return (
+    return brokenImageCache.has(imageName) ? (
+      renderPlaceholder()
+    ) : (
       <img
         data-async-image="true"
         alt=""
@@ -148,6 +170,7 @@ export const ResponsiveImage = ({
         style={imageStyle}
         itemProp="image"
         onLoad={handleOnLoad}
+        onError={handleOnError}
       />
     );
   } else if (
@@ -156,15 +179,10 @@ export const ResponsiveImage = ({
   ) {
     // Override intersection observer to ensure content with no onLoad event displays
     handleOnLoad();
-
-    return (
-      <div className={classes.fallbackImageWrapper}>
-        <Icon className={classes.fallbackImageIcon} fontSize="inherit">
-          {imageType === 'profile' ? 'person' : 'broken_image'}
-        </Icon>
-      </div>
-    );
+    return renderPlaceholder();
   } else {
     return null;
   }
 };
+
+export default React.memo(ResponsiveImage, dequal);
