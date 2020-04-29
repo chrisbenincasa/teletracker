@@ -108,6 +108,7 @@ export interface ItemRating {
   provider_shortname: string;
   vote_average: number;
   vote_count?: number;
+  weighted_average?: number;
 }
 
 export interface ItemReleaseDate {

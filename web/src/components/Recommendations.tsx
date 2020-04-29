@@ -81,7 +81,7 @@ function Recommendations(props: Props) {
 
   return (
     <Fade in={recommendations.length > 0}>
-      <React.Fragment>
+      <div>
         <Typography color="inherit" variant="h5" className={classes.header}>
           You may also like&hellip;
         </Typography>
@@ -90,7 +90,7 @@ function Recommendations(props: Props) {
             return <ItemCard key={itemId} itemId={itemId} />;
           })}
         </Grid>
-      </React.Fragment>
+      </div>
     </Fade>
   );
 }
