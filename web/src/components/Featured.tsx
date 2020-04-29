@@ -12,7 +12,7 @@ import {
 import { Rating } from '@material-ui/lab';
 import RouterLink from 'next/link';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
-import { ResponsiveImage } from './ResponsiveImage';
+import ResponsiveImage from './ResponsiveImage';
 import { Item } from '../types/v2/Item';
 import AddToListDialog from './Dialogs/AddToListDialog';
 import {
@@ -193,11 +193,6 @@ function Featured(props: Props) {
               borderRadius: 10,
               maxHeight: '100%',
             }}
-            pictureStyle={{
-              height: '100%',
-              width: '100%',
-              display: 'block',
-            }}
           />
         </a>
       );
@@ -225,9 +220,6 @@ function Featured(props: Props) {
                 height: '100%',
                 borderRadius: 10,
                 pointerEvents: 'none', // Disables ios preview on tap & hold
-              }}
-              pictureStyle={{
-                display: 'block',
               }}
               loadCallback={imageLoaded}
             />

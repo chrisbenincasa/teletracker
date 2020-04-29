@@ -182,20 +182,22 @@ const DrawerItemListLink = withStyles(styles, { withTheme: true })(
     };
 
     return (
-      <ListItem button onClick={handleClick} selected={selected}>
-        <ListItemAvatar>
-          <Avatar
-            style={{
-              backgroundColor,
-              width: 30,
-              height: 30,
-              fontSize: '1em',
-            }}
-          >
-            {listLength >= 100 ? '99+' : listLength}
-          </Avatar>
-        </ListItemAvatar>
-        <Link href={props.to} as={props.as} passHref>
+      <Link href={props.to} as={props.as} passHref>
+        <ListItem button onClick={handleClick} selected={selected}>
+          <ListItemAvatar>
+            <Avatar
+              style={{
+                backgroundColor,
+                width: 30,
+                height: 30,
+                fontSize: '1em',
+              }}
+            >
+              {listLength >= 100 ? '99+' : listLength}
+            </Avatar>
+          </ListItemAvatar>
+          {/*<Link href={props.to} as={props.as} passHref>*/}
+          {/*</Link>*/}
           <ListItemText
             style={{
               whiteSpace: 'nowrap',
@@ -204,22 +206,22 @@ const DrawerItemListLink = withStyles(styles, { withTheme: true })(
             }}
             primary={primary}
           />
-        </Link>
-        {dynamic && (
-          <Tooltip title={'Learn more about Smart Lists'} placement={'right'}>
-            <ListItemSecondaryAction>
-              <IconButton
-                edge="end"
-                aria-label="smart lists"
-                size="small"
-                onClick={() => props.onSmartListClick()}
-              >
-                <OfflineBolt />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </Tooltip>
-        )}
-      </ListItem>
+          {dynamic && (
+            <Tooltip title={'Learn more about Smart Lists'} placement={'right'}>
+              <ListItemSecondaryAction>
+                <IconButton
+                  edge="end"
+                  aria-label="smart lists"
+                  size="small"
+                  onClick={() => props.onSmartListClick()}
+                >
+                  <OfflineBolt />
+                </IconButton>
+              </ListItemSecondaryAction>
+            </Tooltip>
+          )}
+        </ListItem>
+      </Link>
     );
   },
 );
