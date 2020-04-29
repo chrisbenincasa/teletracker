@@ -372,7 +372,7 @@ function ItemDetails(props: Props) {
     );
     const rating = ratingObject[0]?.certification;
     const itemType = item.type || 'item';
-    console.log(item);
+
     return (
       <div className={classes.informationContainer}>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
