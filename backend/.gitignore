@@ -51,3 +51,4 @@ FULL_VERSION
 !item_mapping.json
 !people_mapping.json
 !user_item_mapping.json
+!jwks.json
