@@ -74,14 +74,8 @@ const getRating = (item: Item, provider: 'imdb' | 'tmdb') => {
 */
 export const getVoteAverage = (item: Item) => {
   const imdbRating = getRating(item, 'imdb');
-  const voteAverage = imdbRating?.vote_average
-    ? imdbRating?.vote_average / 2
-    : 0;
-  const weightedAverage = imdbRating?.weighted_average
-    ? imdbRating?.weighted_average / 2
-    : null;
 
-  return imdbRating?.weighted_average ? weightedAverage : voteAverage;
+  return imdbRating?.weighted_average ? imdbRating?.weighted_average / 2 : 0;
 };
 
 /*
