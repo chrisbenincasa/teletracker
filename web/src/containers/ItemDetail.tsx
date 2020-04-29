@@ -40,7 +40,7 @@ import ManageTracking from '../components/ManageTracking';
 import ShareButton from '../components/Buttons/ShareButton';
 import PlayTrailer from '../components/Buttons/PlayTrailer';
 import Recommendations from '../components/Recommendations';
-import { ResponsiveImage } from '../components/ResponsiveImage';
+import ResponsiveImage from '../components/ResponsiveImage';
 import { useWidth } from '../hooks/useWidth';
 import { Item } from '../types/v2/Item';
 import {
@@ -551,11 +551,6 @@ function ItemDetails(props: Props) {
                   width: '100%',
                   height: '100%',
                   pointerEvents: 'none', // Disables ios preview on tap & hold
-                }}
-                pictureStyle={{
-                  display: 'block',
-                  position: 'relative',
-                  height: '100vh',
                 }}
                 loadCallback={backdropLoadedCallback}
               />

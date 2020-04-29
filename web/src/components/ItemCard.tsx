@@ -1,4 +1,10 @@
-import React, { RefObject, useEffect, useRef, useState } from 'react';
+import React, {
+  RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   Button,
   Card,
@@ -34,7 +40,7 @@ import { GRID_COLUMNS } from '../constants/';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import { ActionType, List } from '../types';
 import AddToListDialog from './Dialogs/AddToListDialog';
-import { ResponsiveImage } from './ResponsiveImage';
+import ResponsiveImage from './ResponsiveImage';
 import {
   getItemTagNumberValue,
   Item,
@@ -296,6 +302,10 @@ function ItemCard(props: Props) {
     setHoverRating(false);
   };
 
+  const markImageLoadedCb = useCallback(() => {
+    setImageLoaded(true);
+  }, []);
+
   const renderPoster = (item: Item) => {
     const WrappedCardMedia = React.forwardRef(({ onClick, href }: any, ref) => {
       return (
@@ -310,12 +320,6 @@ function ItemCard(props: Props) {
             item={item}
             component={ResponsiveImage}
             imageType="poster"
-            pictureStyle={{
-              width: '100%',
-              objectFit: 'cover',
-              height: '100%',
-              display: 'block',
-            }}
             imageStyle={{
               width: '100%',
               objectFit: 'cover',
@@ -326,7 +330,7 @@ function ItemCard(props: Props) {
               bottom: 0,
               right: 0,
             }}
-            loadCallback={() => setImageLoaded(true)}
+            loadCallback={markImageLoadedCb}
           />
         </a>
       );

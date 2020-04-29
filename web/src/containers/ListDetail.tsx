@@ -123,6 +123,10 @@ interface ListDetailDialogProps {
   openDeleteConfirmation: boolean;
 }
 
+interface ListDetailProps {
+  preloaded?: boolean;
+}
+
 const selectList = createSelector(
   (state: AppState) => state.lists.listsById,
   (_, listId) => listId,
@@ -242,7 +246,7 @@ function ListDetailDialog(props: ListDetailDialogProps) {
   );
 }
 
-function ListDetail() {
+function ListDetail(props: ListDetailProps) {
   const classes = useStyles();
 
   const listBookmark = useStateSelector(state => state.lists.currentBookmark);
@@ -385,7 +389,8 @@ function ListDetail() {
   );
 
   useEffect(() => {
-    retrieveList(true);
+    console.log(props);
+    retrieveList(_.isUndefined(props.preloaded) ? true : !props.preloaded);
   }, [listId]);
 
   useEffect(() => {

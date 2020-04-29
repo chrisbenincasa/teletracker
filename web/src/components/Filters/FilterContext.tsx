@@ -1,21 +1,13 @@
-import React, {
-  createContext,
-  ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-} from 'react';
+import React, { createContext, ReactNode, useCallback, useEffect } from 'react';
 import {
   DEFAULT_FILTER_PARAMS,
   FilterParams,
   normalizeFilterParams,
-  removeUndefinedKeys,
 } from '../../utils/searchFilters';
 import { useStateDeepEq } from '../../hooks/useStateDeepEq';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import useCustomCompareMemo from '../../hooks/useMemoCompare';
 import dequal from 'dequal';
-import useEffectCompare from '../../hooks/useEffectCompare';
 import {
   parseFilterParamsFromQs,
   updateUrlParamsForNextRouter,
@@ -23,7 +15,6 @@ import {
 import qs from 'querystring';
 import { useRouterDeep } from '../../hooks/useRouterDeep';
 import { hookDeepEqual } from '../../hooks/util';
-import { usePrevious } from '../../hooks/usePrevious';
 
 export interface FilterContextState {
   filters: FilterParams;
@@ -45,8 +36,11 @@ function withFilters(
   initialFilters: FilterParams,
   defaultFilters?: FilterParams,
 ): FilterContextState {
-  const [filters, setFilters] = useStateDeepEq(initialFilters, (left, right) =>
-    filterParamsEqual(left, right, defaultFilters?.sortOrder),
+  const [filters, setFilters] = useStateDeepEq(
+    initialFilters,
+    (left, right) => {
+      return filterParamsEqual(left, right, defaultFilters?.sortOrder);
+    },
   );
 
   const actuallySetFilters = useCallback(
@@ -65,7 +59,6 @@ function withFilters(
 function WithItemFilters(props: WithItemFiltersProps) {
   const router = useRouterDeep();
   const stringifiedQuery = qs.stringify(router.query);
-  // const previousQuery = usePrevious(stringifiedQuery);
   const paramsFromQuery = parseFilterParamsFromQs(stringifiedQuery);
   const initialFilters = {
     ...(props.defaultFilters || DEFAULT_FILTER_PARAMS),
@@ -80,7 +73,6 @@ function WithItemFilters(props: WithItemFiltersProps) {
   );
 
   useEffect(() => {
-    console.log(memoedFilterState);
     updateUrlParamsForNextRouter(
       router,
       memoedFilterState.filters,
