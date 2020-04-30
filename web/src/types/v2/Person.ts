@@ -20,7 +20,7 @@ export interface Person extends HasSlug {
   cast_credits?: PagedResponse<PersonCastCredit>;
   cast_credit_ids?: PagedResponse<string>;
   crew_credits?: ApiPersonCrewCredit[];
-  external_ids?: ItemExternalId[];
+  external_ids?: string[];
   deathday?: string;
   homepage?: string;
   id: Id;
@@ -61,7 +61,7 @@ export interface ApiPerson {
   birthday?: string;
   cast_credits?: PagedResponse<ApiPersonCastCredit>;
   crew_credits?: ApiPersonCrewCredit[];
-  external_ids?: ItemExternalId[];
+  external_ids?: string[];
   deathday?: string;
   homepage?: string;
   id: Id;
