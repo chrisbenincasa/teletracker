@@ -48,7 +48,8 @@ object Item {
         )
       }).sortBy(_.order)),
       crew = esItem.crew,
-      external_ids = esItem.external_ids,
+      external_ids = esItem.external_ids
+        .map(_.map(id => ItemExternalId(provider = id.provider, id = id.id))),
       genres = esItem.genres,
       id = esItem.id,
       images = esItem.images,
@@ -79,7 +80,7 @@ case class Item(
   availability: Option[List[EsAvailability]],
   cast: Option[List[ItemCastMember]],
   crew: Option[List[EsItemCrewMember]],
-  external_ids: Option[List[EsExternalId]],
+  external_ids: Option[List[ItemExternalId]],
   genres: Option[List[EsGenre]],
   id: UUID,
   images: Option[List[EsItemImage]],
@@ -133,3 +134,8 @@ case class ItemTag(
   value: Option[Double],
   string_value: Option[String],
   lastUpdated: Option[Instant])
+
+@JsonCodec
+case class ItemExternalId(
+  provider: String,
+  id: String)
