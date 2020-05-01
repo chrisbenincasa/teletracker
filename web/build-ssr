@@ -8,7 +8,7 @@ mkdir out
 
 if [ -d ".next/" ]; then rm -rf ".next/"; fi
 
-VERSION="$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}" \
+VERSION=${1:-"$(date +%s).${SHORT_SHA:-$(git rev-parse --short HEAD)}"} \
   yarn run next-build || exit
 
 cp serverless/lambda-handler.js out/index.js
