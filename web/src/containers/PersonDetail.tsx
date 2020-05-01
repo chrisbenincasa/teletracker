@@ -212,6 +212,10 @@ function PersonDetail(props: NewProps) {
   };
 
   const renderPerson = () => {
+    if (!person) {
+      return null;
+    }
+
     const isMobile = ['xs', 'sm'].includes(width);
     const backdrop = person?.cast_credit_ids?.data
       .map(itemId => {
