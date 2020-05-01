@@ -23,6 +23,7 @@ import { collect } from '../../utils/collection-utils';
 import { hookDeepEqual } from '../../hooks/util';
 import { FilterContext } from '../Filters/FilterContext';
 import useFilterLoadEffect from '../../hooks/useFilterLoadEffect';
+import { filterParamsEqual } from '../../utils/changeDetection';
 
 const selectCreditDetails = createSelector(
   selectPerson,
@@ -55,19 +56,11 @@ export default function PersonCredits(props: Props) {
   const { person } = props;
 
   const classes = useStyles();
-  const { filters } = useContext(FilterContext);
+  const { filters, defaultFilters } = useContext(FilterContext);
 
   const [showLoadingCredits, setShowLoadingCredits] = useState(false);
   const [showFilter, setShowFilter] = useState(
-    _.some(
-      [
-        filters?.sortOrder,
-        filters?.genresFilter,
-        filters?.networks,
-        filters?.itemTypes,
-      ],
-      _.negate(_.isUndefined),
-    ),
+    !filterParamsEqual(filters, defaultFilters, defaultFilters?.sortOrder),
   );
 
   const [
