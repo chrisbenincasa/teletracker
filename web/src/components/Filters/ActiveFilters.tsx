@@ -82,11 +82,15 @@ export default function ActiveFilters(props: Props) {
   const filterState = useContext(FilterContext);
   const genres = useGenres();
   const { isListDynamic, variant } = props;
-  let {
-    filters: { genresFilter, itemTypes, networks, sortOrder, sliders, people },
-    setFilters,
-    defaultFilters,
-  } = filterState;
+  const { filters, setFilters, defaultFilters } = filterState;
+  const {
+    genresFilter,
+    itemTypes,
+    networks,
+    sortOrder,
+    sliders,
+    people,
+  } = filters;
 
   let personNameBySlugOrId = useSelector(
     (state: AppState) => state.people.nameByIdOrSlug,
@@ -108,15 +112,14 @@ export default function ActiveFilters(props: Props) {
       'hulu',
     ];
 
-    if (!networks) {
-      networks = networkList;
-    }
+    // Undefined networks means all networks.
+    let networksInFilter = networks || networkList;
 
-    let networkDiff = _.difference(networks, network);
+    let networkDiff = _.difference(networksInFilter, network);
 
     return [
       networkDiff.length === 0 ? undefined : networkDiff,
-      !setsEqual(networkDiff, networks),
+      !setsEqual(networkDiff, networksInFilter),
     ];
   };
 
@@ -129,13 +132,11 @@ export default function ActiveFilters(props: Props) {
       return [itemTypes, false];
     }
 
-    if (!itemTypes) {
-      itemTypes = typeList;
-    }
+    const itemTypesInFilter = itemTypes || typeList;
 
     const typeDiff = _.difference(itemTypes, type);
 
-    return [typeDiff, !setsEqual(typeDiff, itemTypes)];
+    return [typeDiff, !setsEqual(typeDiff, itemTypesInFilter)];
   };
 
   const deletePersonFilter = (
@@ -145,13 +146,14 @@ export default function ActiveFilters(props: Props) {
       return [people, false];
     }
 
-    if (!people) {
-      people = [];
-    }
+    const peopleInFilter = people || [];
 
-    const diff = _.difference(people, newPeople);
+    const diff = _.difference(peopleInFilter, newPeople);
 
-    return [diff.length === 0 ? undefined : diff, !setsEqual(diff, people)];
+    return [
+      diff.length === 0 ? undefined : diff,
+      !setsEqual(diff, peopleInFilter),
+    ];
   };
 
   const deleteGenreFilter = (
@@ -248,25 +250,35 @@ export default function ActiveFilters(props: Props) {
   let imdbMin = sliders?.imdbRating?.min;
   let imdbMax = sliders?.imdbRating?.max;
 
-  const showGenreFilters = Boolean(genresFilter && genresFilter.length > 0);
-  const showNetworkFilters = Boolean(networks && networks.length > 0);
-  const showTypeFilters = Boolean(itemTypes && itemTypes.length > 0);
-  const showSort =
-    sortOrder !== defaultFilters?.sortOrder &&
-    (_.isUndefined(props.hideSortOptions) || !props.hideSortOptions);
-
-  const showPersonFilters = Boolean(people && people.length > 0);
-
-  const showReleaseYearSlider = Boolean(
-    sliders &&
-      sliders.releaseYear &&
-      (sliders.releaseYear.min || sliders.releaseYear.max),
+  const isDefaultFilters = filterParamsEqual(
+    filters,
+    defaultFilters,
+    defaultFilters?.sortOrder,
   );
+  const showGenreFilters =
+    !isDefaultFilters && Boolean(genresFilter && genresFilter.length > 0);
+  const showNetworkFilters =
+    !isDefaultFilters && Boolean(networks && networks.length > 0);
+  const showTypeFilters =
+    !isDefaultFilters && Boolean(itemTypes && itemTypes.length > 0);
+  const showSort = !isDefaultFilters;
+  const showPersonFilters =
+    !isDefaultFilters && Boolean(people && people.length > 0);
 
-  const showImdbSlider = Boolean(
-    !_.isUndefined(sliders?.imdbRating?.min) ||
-      !_.isUndefined(sliders?.imdbRating?.max),
-  );
+  const showReleaseYearSlider =
+    !isDefaultFilters &&
+    Boolean(
+      sliders &&
+        sliders.releaseYear &&
+        (sliders.releaseYear.min || sliders.releaseYear.max),
+    );
+
+  const showImdbSlider =
+    !isDefaultFilters &&
+    Boolean(
+      !_.isUndefined(sliders?.imdbRating?.min) ||
+        !_.isUndefined(sliders?.imdbRating?.max),
+    );
 
   const showReset = Boolean(
     showSort ||
