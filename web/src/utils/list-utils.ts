@@ -9,7 +9,7 @@ import {
   ListNetworkRule,
 } from '../types';
 import * as R from 'ramda';
-import { GRID_COLUMNS, TOTAL_COLUMNS } from '../constants/';
+import { GRID_ITEM_SIZE_IN_COLUMNS, TOTAL_COLUMNS } from '../constants/';
 
 export function isPersonRule(x: ListRule): x is ListPersonRule {
   return x.type === 'UserListPersonRule';
@@ -73,7 +73,7 @@ export function calculateLimit(
   numRows?: number,
   offsetNum?: number,
 ) {
-  const columns = TOTAL_COLUMNS / GRID_COLUMNS[screenWidth];
+  const columns = TOTAL_COLUMNS / GRID_ITEM_SIZE_IN_COLUMNS[screenWidth];
   const rows = numRows || 3;
   const offset = offsetNum || 0;
 
@@ -81,5 +81,5 @@ export function calculateLimit(
 }
 
 export function getNumColumns(screenWidth: string) {
-  return TOTAL_COLUMNS / GRID_COLUMNS[screenWidth];
+  return TOTAL_COLUMNS / GRID_ITEM_SIZE_IN_COLUMNS[screenWidth];
 }
