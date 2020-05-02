@@ -370,7 +370,7 @@ function Explore() {
         </div>
         <AllFilters
           open={showFilter}
-          sortOptions={['popularity', 'recent', 'rating|imdb', 'rating|tmdb']}
+          sortOptions={['popularity', 'recent', 'rating|imdb']}
         />
         {popular.length > 0 ? (
           <InfiniteScroll

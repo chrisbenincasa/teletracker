@@ -18,7 +18,7 @@ const useStyles = makeStyles((theme: Theme) =>
     chipContainer: {
       display: 'flex',
       flexDirection: 'row',
-      width: '75%',
+      width: '100%',
       flexWrap: 'nowrap',
     },
     filterLabel: {
