@@ -1,14 +1,16 @@
 resource "aws_autoscaling_group" "teletracker-ecs-asg" {
-  availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c", "us-west-2d"]
+  # availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c", "us-west-2d"]
+  availability_zones = ["us-west-2c"]
   max_size           = 1
   min_size           = 1
   desired_capacity   = 1
 
-  vpc_zone_identifier = data.aws_subnet_ids.teletracker-subnet-ids.ids
+  # vpc_zone_identifier = data.aws_subnet_ids.teletracker-subnet-ids.ids
+  # vpc_zone_identifier = ["subnet-0866af572b483b24c"]
 
   launch_template {
     id      = aws_launch_template.ecs-t3a-launch-template.id
-    version = "$Latest"
+    version = aws_launch_template.ecs-t3a-launch-template.latest_version
   }
 }
 
@@ -71,10 +73,10 @@ data "template_file" "ecs-t3a-user-data" {
 
 resource "aws_launch_template" "ecs-t3a-launch-template" {
   key_name      = "teletracker-qa"
-  image_id      = "ami-0fb71e703258ab7eb"
+  image_id      = "ami-0cc2d77951f6af376"
   instance_type = "t3a.micro"
 
-  instance_initiated_shutdown_behavior = "stop"
+  instance_initiated_shutdown_behavior = "terminate"
   ebs_optimized                        = false
 
   user_data = base64encode(data.template_file.ecs-t3a-user-data.rendered)
@@ -85,7 +87,7 @@ resource "aws_launch_template" "ecs-t3a-launch-template" {
     ebs {
       delete_on_termination = true
       encrypted             = false
-      snapshot_id           = "snap-016ce1f84366b9d32"
+      snapshot_id           = "snap-0f6cf4b4deae5f20a"
       volume_size           = 30
       volume_type           = "gp2"
     }
@@ -104,23 +106,32 @@ resource "aws_launch_template" "ecs-t3a-launch-template" {
   }
 
   network_interfaces {
-    associate_public_ip_address = true
-    delete_on_termination       = true
-    device_index                = 0
+    # associate_public_ip_address = true
+    delete_on_termination = false
+    # device_index          = 0
 
-    ipv4_address_count = 0
-    ipv4_addresses     = []
-    ipv6_address_count = 0
-    ipv6_addresses     = []
+    # ipv4_address_count = 0
+    # ipv4_addresses     = []
+    # ipv6_address_count = 0
+    # ipv6_addresses     = []
 
-    security_groups = [
-      aws_security_group.ecs-instance-sg.id
-    ]
-    subnet_id = "subnet-97a65cff"
+    # security_groups = [
+    # aws_security_group.ecs-instance-sg.id
+    # ]
+    # subnet_id            = "subnet-97a65cff"
+    network_interface_id = "eni-0294d89e1dc9b5f49"
   }
 
   placement {
     tenancy = "default"
+  }
+
+  instance_market_options {
+    market_type = "spot"
+    spot_options {
+      max_price                      = "0.0094"
+      instance_interruption_behavior = "terminate"
+    }
   }
 }
 

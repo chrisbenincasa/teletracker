@@ -34,10 +34,6 @@
         "value": "f702b0991c1191d6dbd370b688ff780c"
       },
       {
-        "name": "DB_HOST",
-        "value": "teletracker-qa.ch00roo5aywx.us-west-1.rds.amazonaws.com"
-      },
-      {
         "name": "ADMINISTRATOR_KEY",
         "value": "+pxK@ZNxp/XOlws1%Ga)vqfcvqmBh/"
       }
