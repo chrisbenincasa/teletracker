@@ -26,6 +26,7 @@ const useStyles = makeStyles((theme: Theme) =>
     typeContainer: {
       display: 'flex',
       flexDirection: 'column',
+      width: '100%',
     },
   }),
 );

@@ -176,7 +176,7 @@ export default function SliderFilters(props: Props) {
         />
       </div>
       <div className={classes.sliderContainer}>
-        {props.showTitle && <Typography>IMDb Score</Typography>}
+        {props.showTitle && <Typography>IMDb Rating</Typography>}
         <Slider
           value={imdbRatingValue}
           min={MIN_RATING}

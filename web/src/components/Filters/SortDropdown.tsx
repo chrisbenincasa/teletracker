@@ -24,7 +24,6 @@ export const sortOptionToName: { [K in SortOptions]?: string } = {
   added_time: 'Date Added',
   recent: 'Release Date',
   'rating|imdb': 'IMDb Rating',
-  'rating|tmdb': 'TheMovieDb Rating',
 };
 
 const defaultSortOptions: SortOptions[] = [
@@ -32,7 +31,6 @@ const defaultSortOptions: SortOptions[] = [
   'added_time',
   'recent',
   'rating|imdb',
-  'rating|tmdb',
 ];
 
 interface Props {

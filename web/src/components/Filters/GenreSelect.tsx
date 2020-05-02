@@ -108,3 +108,7 @@ export default function GenreSelect(props: NewProps) {
     </div>
   );
 }
+
+GenreSelect.defaultProps = {
+  showTitle: true,
+};
