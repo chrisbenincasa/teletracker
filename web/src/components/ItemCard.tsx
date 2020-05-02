@@ -36,7 +36,7 @@ import {
 import RouterLink from 'next/link';
 import { updateListTracking } from '../actions/lists';
 import { removeUserItemTags, updateUserItemTags } from '../actions/user';
-import { GRID_COLUMNS } from '../constants/';
+import { GRID_ITEM_SIZE_IN_COLUMNS } from '../constants/';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import { ActionType, List } from '../types';
 import AddToListDialog from './Dialogs/AddToListDialog';
@@ -220,7 +220,7 @@ function ItemCard(props: Props) {
 
   let gridProps: GridProps = {
     item: true,
-    ...GRID_COLUMNS,
+    ...GRID_ITEM_SIZE_IN_COLUMNS,
     ...props.gridProps,
   };
   const itemRef = useRef<HTMLDivElement>(null);

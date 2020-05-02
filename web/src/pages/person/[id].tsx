@@ -110,7 +110,7 @@ PersonDetailWrapper.getInitialProps = async ctx => {
   if (ctx.req) {
     const parsedQueryObj = qs.parse(url.parse(ctx.req.url).query || '');
     const filterParams = _.extend(
-      DEFAULT_CREDITS_FILTERS,
+      { ...DEFAULT_CREDITS_FILTERS, people: [ctx.query.id] },
       parseFilterParamsFromObject(parsedQueryObj),
     );
 
@@ -142,7 +142,7 @@ PersonDetailWrapper.getInitialProps = async ctx => {
 
     if (personResponse.ok && creditsResponse.ok) {
       const apiPerson = personResponse.data!.data;
-      const credits = creditsResponse.data!.data
+      const credits = creditsResponse.data!.data;
       const fullPerson = PersonFactory.create(apiPerson);
       const creditItems = _.flatMap(credits, c =>
         c ? [ItemFactory.create(c)] : [],
@@ -162,7 +162,7 @@ PersonDetailWrapper.getInitialProps = async ctx => {
             credits: creditItems,
             paging: creditsResponse.data!.paging,
             append: false,
-            forFilters: filterParams
+            forFilters: filterParams,
           }),
         ),
       ]);
@@ -176,8 +176,8 @@ PersonDetailWrapper.getInitialProps = async ctx => {
       };
     } else {
       return {
-        error: creditsResponse.status
-      }
+        error: creditsResponse.status,
+      };
     }
   } else {
     return {};

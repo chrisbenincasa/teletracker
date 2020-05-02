@@ -55,6 +55,7 @@ import { AppState } from '../reducers';
 import { hookDeepEqual } from '../hooks/util';
 import { FilterContext } from '../components/Filters/FilterContext';
 import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
+import { filterParamsEqual } from '../utils/changeDetection';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -271,19 +272,11 @@ function ListDetail(props: ListDetailProps) {
     return selectList(state, listId);
   }, hookDeepEqual);
 
-  const { filters } = useContext(FilterContext);
+  const { filters, defaultFilters } = useContext(FilterContext);
 
   const [listFilters, setListFilters] = useState<FilterParams | undefined>();
   const [showFilter, setShowFilter] = useState(
-    _.some(
-      [
-        filters.sortOrder,
-        filters.genresFilter,
-        filters.networks,
-        filters.itemTypes,
-      ],
-      _.negate(_.isUndefined),
-    ),
+    !filterParamsEqual(filters, defaultFilters, defaultFilters?.sortOrder),
   );
 
   const dispatchUpdateList = useDispatchAction(updateList);

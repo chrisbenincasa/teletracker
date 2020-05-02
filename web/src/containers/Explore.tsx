@@ -24,7 +24,12 @@ import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ItemCard from '../components/ItemCard';
 import ScrollToTop from '../components/Buttons/ScrollToTop';
 import { calculateLimit } from '../utils/list-utils';
-import { DEFAULT_POPULAR_LIMIT, DEFAULT_ROWS } from '../constants';
+import {
+  DEFAULT_POPULAR_LIMIT,
+  DEFAULT_ROWS,
+  itemsPerRow,
+  TOTAL_COLUMNS,
+} from '../constants';
 import { getVoteAverage, getVoteCount } from '../utils/textHelper';
 import { useStateDeepEq } from '../hooks/useStateDeepEq';
 import { useWidth } from '../hooks/useWidth';
@@ -164,13 +169,12 @@ function Explore() {
 
       retrievePopularFromServer({
         bookmark: passBookmark ? popularBookmark : undefined,
-        limit: compensate
-          ? compensate
-          : calculateLimit(
-              width,
-              DEFAULT_ROWS,
-              firstRun ? numberFeaturedItems : 0,
-            ),
+        limit:
+          calculateLimit(
+            width,
+            DEFAULT_ROWS,
+            firstRun ? numberFeaturedItems : 0,
+          ) + (compensate || 0),
         filters,
       });
     }
@@ -217,8 +221,10 @@ function Explore() {
     // Require that there be at least 2 full rows before displaying Featured items.
     const featuredRequiredItems = calculateLimit(width, 2, numberFeaturedItems);
     const itemsInRows = DEFAULT_POPULAR_LIMIT - numberFeaturedItems;
-    const hangerItems = itemsInRows % DEFAULT_ROWS;
-    const missingItems = hangerItems > 0 ? DEFAULT_ROWS - hangerItems : 0;
+    const itemsPerRowForWidth = itemsPerRow(width) || TOTAL_COLUMNS;
+    const hangerItems = itemsInRows % itemsPerRowForWidth;
+    const missingItems =
+      hangerItems > 0 ? itemsPerRowForWidth - hangerItems : 0;
 
     // If we don't have enough content to fill featured items, don't show any
     if (
