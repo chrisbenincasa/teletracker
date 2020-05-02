@@ -8,9 +8,9 @@ phases:
       - echo Entered the install phase...
   build:
     commands:
-      - cd scraper && ./build-scrapers
+      - cd scraper/node && ./build-scrapers
 artifacts:
   files:
-    - scraper/build/scrapers.zip
+    - scraper/node/build/scrapers.zip
   name: scrapers-out
   discard-paths: yes
