@@ -56,8 +56,7 @@ export type SortOptions =
   | 'popularity'
   | 'recent'
   | 'added_time'
-  | 'rating|imdb'
-  | 'rating|tmdb';
+  | 'rating|imdb';
 
 export function isListSortOption(s: string): s is SortOptions {
   const allowed: string[] = [

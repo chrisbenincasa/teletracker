@@ -244,6 +244,13 @@ const useStyles = makeStyles((theme: Theme) =>
       width: '100%',
       marginBottom: theme.spacing(1),
     },
+    voteCount: {
+      fontStyle: 'italic',
+      marginRight: theme.spacing(1),
+      fontSize: 12,
+      alignSelf: 'center',
+      opacity: 0.5,
+    },
   }),
 );
 
@@ -256,7 +263,6 @@ type Props = OwnProps;
 
 function ItemDetails(props: Props) {
   const classes = useStyles();
-  const [showPlayIcon, setShowPlayIcon] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
   const [showFullOverview, setshowFullOverview] = useState<boolean>(false);
   const [backdropLoaded, setBackdropoLoaded] = useState(false);
@@ -377,7 +383,11 @@ function ItemDetails(props: Props) {
       <div className={classes.informationContainer}>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Rating value={voteAverage} precision={0.1} readOnly />
-          <Typography color="inherit" variant="body1">
+          <Typography
+            color="inherit"
+            variant="body1"
+            className={classes.voteCount}
+          >
             {`(${voteCount})`}
           </Typography>
         </div>

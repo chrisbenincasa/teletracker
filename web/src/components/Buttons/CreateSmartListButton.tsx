@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Tooltip } from '@material-ui/core';
-import { AddCircle, Save } from '@material-ui/icons';
+import { OfflineBolt, Save } from '@material-ui/icons';
 import { useWidth } from '../../hooks/useWidth';
 import { FilterParams, isDefaultFilter } from '../../utils/searchFilters';
 import { filterParamsEqual } from '../../utils/changeDetection';
@@ -41,7 +41,7 @@ export default function CreateSmartListButton(props: Props) {
           aria-label={
             props.isListDynamic ? 'Save Smart List' : 'Create Smart List'
           }
-          startIcon={props.isListDynamic ? <Save /> : <AddCircle />}
+          startIcon={props.isListDynamic ? <Save /> : <OfflineBolt />}
           fullWidth={isMobile}
         >
           {props.isListDynamic ? 'Save Smart List' : 'Create Smart List'}

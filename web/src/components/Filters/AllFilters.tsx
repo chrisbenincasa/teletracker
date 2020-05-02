@@ -63,7 +63,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     flexDirection: 'row',
     width: '40%',
     flexWrap: 'wrap',
-    margin: theme.spacing(1, 0),
+    margin: theme.spacing(1, 0.5),
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
@@ -80,13 +80,13 @@ const useStyles = makeStyles((theme: Theme) => ({
   slidersContainer: {
     display: 'flex',
     flexGrow: 1,
-    margin: theme.spacing(0, 3),
-    [theme.breakpoints.down('md')]: {
+    margin: theme.spacing(1, 2),
+    [theme.breakpoints.down('sm')]: {
       margin: 0,
     },
     alignItems: 'flex-start',
     flexDirection: 'column',
-    width: '20%',
+    width: '30%',
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
@@ -100,11 +100,10 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   networkContainer: {
     display: 'flex',
-    margin: theme.spacing(1, 0),
-    alignItems: 'flex-start',
+    margin: theme.spacing(1, 0.5),
     flexGrow: 1,
     flexDirection: 'column',
-    width: '40%',
+    width: '30%',
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
