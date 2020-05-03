@@ -44,3 +44,28 @@ class NetflixItemEpisode(scrapy.Item):
     name = scrapy.Field()
     runtime = scrapy.Field()
     description = scrapy.Field()
+
+
+class HuluItem(scrapy.Item):
+    id = scrapy.Field()
+    title = scrapy.Field()
+    description = scrapy.Field()
+    externalId = scrapy.Field()
+    seasons = scrapy.Field()
+    itemType = scrapy.Field()
+    network = scrapy.Field()
+    premiereDate = scrapy.Field()
+    episodes = scrapy.Field()
+
+
+class HuluEpisodeItem(scrapy.Item):
+    id = scrapy.Field()
+    externalId = scrapy.Field()
+    genres = scrapy.Field()
+    description = scrapy.Field()
+    title = scrapy.Field()
+    rating = scrapy.Field()
+    episodeNumber = scrapy.Field()
+    seasonNumber = scrapy.Field()
+    premiereDate = scrapy.Field()
+    duration = scrapy.Field()
