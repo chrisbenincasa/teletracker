@@ -282,11 +282,12 @@ function ListDetail(props: ListDetailProps) {
   const dispatchUpdateList = useDispatchAction(updateList);
   const dispatchRetrieveList = useDispatchAction(ListRetrieveInitiated);
 
-  const retrieveList = (initialLoad: boolean) => {
+  const retrieveList = (initialLoad: boolean, force: boolean = true) => {
     dispatchRetrieveList({
       listId: listId,
-      force: true,
+      force,
       limit: calculateLimit(width, 3),
+      bookmark: listBookmark,
       ...makeListFilters(initialLoad, filters, listFilters),
       sort: filters.sortOrder,
       itemTypes: filters.itemTypes,
@@ -296,15 +297,9 @@ function ListDetail(props: ListDetailProps) {
   };
 
   const [loadMoreDebounced] = useDebouncedCallback(() => {
-    dispatchRetrieveList({
-      listId,
-      bookmark: listBookmark,
-      limit: calculateLimit(width, 3),
-      sort: filters.sortOrder,
-      itemTypes: filters.itemTypes,
-      genres: filters.genresFilter,
-      networks: filters.networks,
-    });
+    if (!listLoading) {
+      retrieveList(false, false);
+    }
   }, 200);
 
   const loadMoreList = useCallback(() => {
