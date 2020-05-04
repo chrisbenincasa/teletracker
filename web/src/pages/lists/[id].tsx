@@ -10,10 +10,8 @@ import useStateSelector from '../../hooks/useStateSelector';
 import { useRouter } from 'next/router';
 import dequal from 'dequal';
 import WithItemFilters from '../../components/Filters/FilterContext';
-import qs from "querystring";
-import url from "url";
-import _ from 'lodash';
-import { DEFAULT_CREDITS_FILTERS } from '../../containers/PersonDetail';
+import qs from 'querystring';
+import url from 'url';
 import { parseFilterParamsFromObject } from '../../utils/urlHelper';
 
 interface Props {
@@ -32,7 +30,7 @@ function ListDetailWrapper(props: Props) {
   if (props.list) {
     listName = props.list.name;
   } else {
-    listName = listsById[listId]?.name
+    listName = listsById[listId]?.name;
   }
 
   return (
@@ -65,7 +63,7 @@ ListDetailWrapper.getInitialProps = async ctx => {
       filterParams.genresFilter,
       undefined,
       filterParams.networks,
-      6
+      6,
     );
 
     if (response.ok) {
@@ -74,7 +72,7 @@ ListDetailWrapper.getInitialProps = async ctx => {
           list: ListFactory.create(response.data!.data),
           paging: response.data!.paging,
           append: false,
-          forFilters: filterParams
+          forFilters: filterParams,
         }),
       );
 
