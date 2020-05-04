@@ -11,8 +11,8 @@ export function filterParamsEqual(
   rightParam: FilterParams | undefined,
   defaultSortOrder?: SortOptions,
 ) {
-  const left = leftParam ? normalizeFilterParams(leftParam) : undefined;
-  const right = rightParam ? normalizeFilterParams(rightParam) : undefined;
+  const left = leftParam ? normalizeFilterParams(leftParam) : {};
+  const right = rightParam ? normalizeFilterParams(rightParam) : {};
 
   if (left && right) {
     if (
