@@ -79,8 +79,14 @@ USER_AGENTS = [
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'crawlers.pipelines.NetflixIdExportPipeline': 300,
+    'crawlers.pipelines.DupeIdFilterPipeline': 300,
 }
+
+FEED_EXPORTERS = {
+    'jl.gz': 'crawlers.exporters.json_lines_gzip_exporter.JsonLinesGzipItemExporter',
+}
+
+FEED_FORMAT = 'jl.gz'
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
