@@ -5,6 +5,7 @@ node_modeules/
 *.0
 node_modules
 .metals/
+*.iml
 
 .terraform/
 FULL_VERSION
