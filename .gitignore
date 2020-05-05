@@ -10,7 +10,5 @@ node_modules
 FULL_VERSION
 out/
 
-codebuild_build.sh
-
 localcerts/
 _localcertsold/
