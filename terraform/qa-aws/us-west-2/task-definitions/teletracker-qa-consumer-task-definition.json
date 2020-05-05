@@ -50,11 +50,11 @@
     "secrets": [
       {
         "name": "DB_PASSWORD",
-        "valueFrom": "arn:aws:ssm:us-west-1:302782651551:parameter/teletracker-qa-db-password"
+        "valueFrom": "arn:aws:ssm:us-west-2:302782651551:parameter/teletracker-qa-db-password"
       },
       {
         "name": "ES_PASSWORD",
-        "valueFrom": "arn:aws:ssm:us-west-1:302782651551:parameter/teletracker-qa-elasticsearch-password"
+        "valueFrom": "arn:aws:ssm:us-west-2:302782651551:parameter/teletracker-qa-elasticsearch-password"
       }
     ]
   }
