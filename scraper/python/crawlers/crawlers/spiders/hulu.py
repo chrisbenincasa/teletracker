@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import json
+import re
 
 from crawlers.items import HuluItem, HuluEpisodeItem
+
+additional_network_re = re.compile(r'Add\s([A-z]+).\s')
 
 
 class HuluSpider(scrapy.spiders.SitemapSpider):
@@ -35,10 +38,6 @@ class HuluSpider(scrapy.spiders.SitemapSpider):
                     entity = next((i for i in components if 'entityType' in i.keys() and i['entityType'] == 'series'),
                                   None)
                     if entity:
-                        # for i in components:
-                        #     if 'type' in i.keys() and i["type"] == "collection_tabs":
-                        #         self.log(i['tabs'])
-
                         tabs = next((i for i in components if
                                      'type' in i.keys() and i["type"] == "collection_tabs"), None)
 
@@ -52,12 +51,20 @@ class HuluSpider(scrapy.spiders.SitemapSpider):
                             network='Hulu',
                             itemType='movie',
                             premiereDate=entity['premiereDate'],
-                            episodes=episodes
+                            episodes=episodes,
+                            additionalServiceRequired=self._extract_additional_service(components)
                         )
 
             except KeyError as e:
                 self.log('Key error: {}'.format(e))
                 return
+
+    def _extract_additional_service(self, components):
+        belt = next((i for i in components if i['type'] == 'belt'), None)
+        if belt and 'description' in belt:
+            match = additional_network_re.search(belt['description'])
+            if match:
+                return match.group(1).lower()
 
     def _extract_episodes(self, tabs):
         episodes = []
@@ -65,7 +72,6 @@ class HuluSpider(scrapy.spiders.SitemapSpider):
             for tab in tabs:
                 try:
                     if tab['model']['type'] == 'episode_collection':
-                        self.log(tab)
                         items = tab['model']['collection']['items']
                         for item in items:
                             episodes.append(
