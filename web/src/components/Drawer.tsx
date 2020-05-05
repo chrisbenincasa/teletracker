@@ -13,6 +13,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListItemSecondaryAction,
+  ListSubheader,
   IconButton,
   Theme,
   Tooltip,
@@ -79,6 +80,10 @@ const styles = (theme: Theme) =>
       flex: '1 1 auto',
       overflowY: 'scroll',
     },
+    listHeader: {
+      background: theme.palette.background.paper,
+    },
+
     listName: {
       textDecoration: 'none',
       marginBottom: theme.spacing(1),
@@ -348,9 +353,9 @@ class Drawer extends Component<Props, State> {
     return (
       <React.Fragment>
         <div className={classes.toolbar} />
-        {['xs', 'sm', 'md'].includes(this.props.width) && (
-          <React.Fragment>
-            <List>
+        <List className={classes.list}>
+          {['xs', 'sm', 'md'].includes(this.props.width) && (
+            <React.Fragment>
               <ListItemLink
                 to="/popular"
                 primary="Explore"
@@ -369,33 +374,31 @@ class Drawer extends Component<Props, State> {
                   button: true,
                 }}
               />
-            </List>
-            <Divider />
-          </React.Fragment>
-        )}
-        {isAuthed ? (
-          <React.Fragment>
-            <Typography component="h6" variant="h6" className={classes.margin}>
-              My Lists
-            </Typography>
-            <List className={classes.list}>
+            </React.Fragment>
+          )}
+          {isAuthed ? (
+            <React.Fragment>
+              <ListSubheader className={classes.listHeader}>
+                <Typography
+                  component="h6"
+                  variant="h6"
+                  className={classes.margin}
+                >
+                  My Lists
+                </Typography>
+              </ListSubheader>
+              <ListItem button onClick={this.handleModalOpen}>
+                <ListItemIcon>
+                  <AddCircle />
+                </ListItemIcon>
+                <ListItemText>Create New List</ListItemText>
+              </ListItem>
               {_.map(sortedLists, this.renderListItems)}
-              <Button
-                variant="contained"
-                size="small"
-                onClick={this.handleModalOpen}
-                fullWidth
-              >
-                <AddCircle
-                  className={classNames(classes.leftIcon, classes.iconSmall)}
-                />
-                Create List
-              </Button>
-            </List>
-            <Divider />
-          </React.Fragment>
-        ) : null}
 
+              <Divider />
+            </React.Fragment>
+          ) : null}
+        </List>
         {isAuthed ? (
           <List className={classes.fixedListItems}>
             <ListItemLink
