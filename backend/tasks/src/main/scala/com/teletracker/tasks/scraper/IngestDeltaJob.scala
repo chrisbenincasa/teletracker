@@ -106,7 +106,7 @@ abstract class IngestDeltaJobLike[
   protected def lookupMethod: LookupMethod[T] =
     new CustomElasticsearchLookup[T](
       List(
-        externalIdLookup.create[T](externalSource, uniqueKey),
+        externalIdLookup.create[T](externalSource, uniqueKey(_)),
         elasticsearchLookup.toMethod[T]
       )
     )

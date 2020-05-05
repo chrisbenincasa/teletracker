@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.hulu
 
 import com.teletracker.common.crypto.SecretResolver
-import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.http.HttpClient
 import com.teletracker.common.util.NetworkCache
@@ -25,21 +25,18 @@ class IngestHuluChanges @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  elasticsearchLookup: ElasticsearchLookup,
   huluFallbackMatching: HuluFallbackMatching)
     extends IngestJob[HuluScrapeItem] {
 
   private val premiumNetworks = Set("hbo", "starz", "showtime")
 
-  override protected def networkNames: Set[String] = Set("hulu")
+  override protected def externalSources: List[ExternalSource] =
+    List(ExternalSource.Hulu)
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Pacific").getRules.getOffset(Instant.now())
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
-
-  override protected def lookupMethod: LookupMethod[HuluScrapeItem] =
-    elasticsearchLookup.toMethod[HuluScrapeItem]
 
   override protected def handleNonMatches(
     args: IngestJobArgs,

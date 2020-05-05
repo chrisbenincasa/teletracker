@@ -28,17 +28,14 @@ class IngestHuluCatalog @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  protected val elasticsearchExecutor: ElasticsearchExecutor,
-  elasticsearchLookup: ElasticsearchLookup)
+  protected val elasticsearchExecutor: ElasticsearchExecutor)
     extends IngestJob[HuluCatalogItem]
     with ElasticsearchFallbackMatching[HuluCatalogItem] {
 
-  override protected def networkNames: Set[String] = Set("hulu")
+  override protected def externalSources: List[ExternalSource] =
+    List(ExternalSource.Hulu)
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
-
-  override protected def lookupMethod: LookupMethod[HuluCatalogItem] =
-    elasticsearchLookup.toMethod[HuluCatalogItem]
 
   override protected def shouldProcessItem(item: HuluCatalogItem): Boolean = {
     !item.title.toLowerCase().contains("en español") &&

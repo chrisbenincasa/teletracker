@@ -106,6 +106,28 @@ class TvShowImportHandler @Inject()(
       }
   }
 
+  def updateShow(
+    id: UUID,
+    item: TvShow,
+    args: TvShowImportHandlerArgs
+  ): Future[TvShowImportResult] = {
+    itemSearch
+      .lookupItem(
+        Left(id),
+        Some(ItemType.Show),
+        shouldMateralizeCredits = false,
+        shouldMaterializeRecommendations = false
+      )
+      .flatMap {
+        case None =>
+          Future.failed(
+            new IllegalArgumentException(s"Could not find item with id = $id")
+          )
+        case Some(value) =>
+          updateExistingShow(item, value.rawItem, args)
+      }
+  }
+
   private def updateExistingShow(
     item: TvShow,
     existingShow: EsItem,

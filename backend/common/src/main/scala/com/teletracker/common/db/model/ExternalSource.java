@@ -10,7 +10,9 @@ public enum ExternalSource {
     Wikidata("wikidata", 4),
     Hulu("hulu", 5),
     Netflix("netflix", 6),
-    Hbo("hbo", 7);
+    HboGo("hbo-go", 7),
+    HboNow("hbo-now", 8),
+    DisneyPlus("disney-plus", 9);
 
     private final int value;
     private final String name;
@@ -40,6 +42,11 @@ public enum ExternalSource {
 
     @JsonCreator
     public static ExternalSource fromString(final String s) {
+        // Temporary read-repair
+        if (s.equalsIgnoreCase("hbo")) {
+            return HboGo;
+        }
+
         for (ExternalSource src : ExternalSource.values()) {
             if (src.getName().equalsIgnoreCase(s)) {
                 return src;

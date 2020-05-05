@@ -80,6 +80,28 @@ class MovieImportHandler @Inject()(
     }
   }
 
+  def updateMovie(
+    id: UUID,
+    item: Movie,
+    args: MovieImportHandlerArgs
+  ): Future[MovieImportResult] = {
+    itemSearch
+      .lookupItem(
+        Left(id),
+        Some(ItemType.Movie),
+        shouldMateralizeCredits = false,
+        shouldMaterializeRecommendations = false
+      )
+      .flatMap {
+        case None =>
+          Future.failed(
+            new IllegalArgumentException(s"Could not find item with id = $id")
+          )
+        case Some(value) =>
+          handleExistingMovie(item, value.rawItem, args)
+      }
+  }
+
   def delete(
     args: MovieImportHandlerArgs,
     tmdbId: Int

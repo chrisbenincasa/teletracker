@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper.hbo
 
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
@@ -34,17 +35,14 @@ class IngestHboChanges @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  elasticsearchLookup: ElasticsearchLookup,
   protected val elasticsearchExecutor: ElasticsearchExecutor)
     extends IngestJob[HboScrapeItem]
     with ElasticsearchFallbackMatching[HboScrapeItem] {
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def networkNames: Set[String] = Set("hbo-now", "hbo-go")
-
-  override protected def lookupMethod: LookupMethod[HboScrapeItem] =
-    elasticsearchLookup.toMethod[HboScrapeItem]
+  override protected def externalSources: List[ExternalSource] =
+    List(ExternalSource.HboGo, ExternalSource.HboNow)
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Eastern").getRules.getOffset(Instant.now())

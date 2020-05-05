@@ -31,15 +31,12 @@ class IngestHboCatalog @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  elasticsearchLookup: ElasticsearchLookup,
   protected val elasticsearchExecutor: ElasticsearchExecutor)
     extends IngestJob[HboCatalogItem]
     with ElasticsearchFallbackMatching[HboCatalogItem] {
 
-  override protected def networkNames: Set[String] = Set("hbo-now", "hbo-go")
-
-  override protected def lookupMethod: LookupMethod[HboCatalogItem] =
-    elasticsearchLookup.toMethod[HboCatalogItem]
+  override protected def externalSources: List[ExternalSource] =
+    List(ExternalSource.HboGo, ExternalSource.HboNow)
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
@@ -114,7 +111,7 @@ class IngestHboCatalog @Inject()(
     item: HboCatalogItem
   ): Map[ExternalSource, String] = {
     Map(
-      ExternalSource.Hbo -> item.externalId
+      ExternalSource.HboGo -> item.externalId
     ).collect {
       case (k, Some(v)) => k -> v
     }

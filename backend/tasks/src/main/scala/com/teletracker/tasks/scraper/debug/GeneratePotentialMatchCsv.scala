@@ -16,7 +16,10 @@ import com.teletracker.tasks.scraper.model.{
   MatchResult,
   PotentialMatch
 }
-import com.teletracker.tasks.scraper.netflix.NetflixCatalogItem
+import com.teletracker.tasks.scraper.netflix.{
+  NetflixCatalogItem,
+  NetflixScrapedCatalogItem
+}
 import io.circe.Decoder
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
@@ -99,7 +102,7 @@ class GeneratePotentialMatchCsv extends TeletrackerTaskWithDefaultArgs {
           .stream[PotentialMatch[HboCatalogItem]](source.getLines())
       case ScrapeItemType.NetflixCatalog =>
         new IngestJobParser()
-          .stream[PotentialMatch[NetflixCatalogItem]](source.getLines())
+          .stream[PotentialMatch[NetflixScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.DisneyPlusCatalog =>
         new IngestJobParser()
           .stream[PotentialMatch[DisneyPlusCatalogItem]](source.getLines())

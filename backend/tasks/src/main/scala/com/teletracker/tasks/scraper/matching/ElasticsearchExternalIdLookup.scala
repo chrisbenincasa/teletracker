@@ -14,6 +14,13 @@ object ElasticsearchExternalIdLookup {
       externalSource: ExternalSource,
       getUniqueKey: T => String
     ): ElasticsearchExternalIdLookup[T] = {
+      createOpt(externalSource, getUniqueKey.andThen(Some(_)))
+    }
+
+    def createOpt[T <: ScrapedItem](
+      externalSource: ExternalSource,
+      getUniqueKey: T => Option[String]
+    ): ElasticsearchExternalIdLookup[T] = {
       new ElasticsearchExternalIdLookup(
         itemLookup,
         externalSource,
@@ -26,42 +33,49 @@ object ElasticsearchExternalIdLookup {
 class ElasticsearchExternalIdLookup[T <: ScrapedItem](
   itemLookup: ItemLookup,
   externalSource: ExternalSource,
-  getUniqueKey: T => String
+  getUniqueKey: T => Option[String]
 )(implicit executionContext: ExecutionContext)
     extends LookupMethod[T] {
   override def apply(
     items: List[T],
     v2: IngestJobArgsLike
   ): Future[(List[MatchResult[T]], List[T])] = {
-    val itemsByExternalId = items
-      .map(item => {
-        getUniqueKey(item) -> item
-      })
-      .toMap
+    val (itemsWithUniqueId, itemsWithoutUniqueId) =
+      items.partition(getUniqueKey(_).isDefined)
 
-    val externalIdsToLookup = itemsByExternalId.collect {
-      case (externalId, item) if item.thingType.isDefined =>
-        (externalSource, externalId, item.thingType.get)
+    if (itemsWithUniqueId.isEmpty) {
+      Future.successful(Nil -> itemsWithoutUniqueId)
+    } else {
+      val itemsByExternalId = itemsWithUniqueId
+        .map(item => {
+          getUniqueKey(item).get -> item
+        })
+        .toMap
+
+      val externalIdsToLookup = itemsByExternalId.collect {
+        case (externalId, item) if item.thingType.isDefined =>
+          (externalSource, externalId, item.thingType.get)
+      }
+
+      itemLookup
+        .lookupItemsByExternalIds(externalIdsToLookup.toList)
+        .map(found => {
+          val foundExternalIds = found.keySet.map(_._2)
+          val missingKeys = itemsByExternalId.keySet -- foundExternalIds
+
+          val matchResults = found.toList.flatMap {
+            case ((_, externalId), esItem) =>
+              itemsByExternalId
+                .get(externalId)
+                .map(item => {
+                  MatchResult(item, esItem)
+                })
+          }
+
+          val missingItems = missingKeys.toList.flatMap(itemsByExternalId.get)
+
+          matchResults -> (missingItems ++ itemsWithoutUniqueId)
+        })
     }
-
-    itemLookup
-      .lookupItemsByExternalIds(externalIdsToLookup.toList)
-      .map(found => {
-        val foundExternalIds = found.keySet.map(_._2)
-        val missingKeys = itemsByExternalId.keySet -- foundExternalIds
-
-        val matchResults = found.toList.flatMap {
-          case ((_, externalId), esItem) =>
-            itemsByExternalId
-              .get(externalId)
-              .map(item => {
-                MatchResult(item, esItem)
-              })
-        }
-
-        val missingItems = missingKeys.toList.flatMap(itemsByExternalId.get)
-
-        matchResults -> missingItems
-      })
   }
 }

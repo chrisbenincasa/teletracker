@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.disney
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
@@ -28,16 +28,14 @@ class IngestDisneyPlusCatalog @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   protected val elasticsearchExecutor: ElasticsearchExecutor,
-  elasticsearchLookup: ElasticsearchLookup,
   protected val teletrackerConfig: TeletrackerConfig)
     extends IngestJob[DisneyPlusCatalogItem]
     with ElasticsearchFallbackMatching[DisneyPlusCatalogItem] {
-  override protected def networkNames: Set[String] = Set("disney-plus")
+
+  override protected def externalSources: List[ExternalSource] =
+    List(ExternalSource.DisneyPlus)
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
-
-  override protected def lookupMethod: LookupMethod[DisneyPlusCatalogItem] =
-    elasticsearchLookup.toMethod[DisneyPlusCatalogItem]
 
   override protected def outputLocation(
     args: IngestJobArgs,

@@ -17,11 +17,17 @@ import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
 import com.teletracker.tasks.TeletrackerTaskApp
 import com.teletracker.tasks.scraper.IngestJobParser.ParseMode
-import com.teletracker.tasks.scraper.matching.{LookupMethod}
+import com.teletracker.tasks.scraper.matching.{
+  CustomElasticsearchLookup,
+  ElasticsearchExternalIdLookup,
+  ElasticsearchLookup,
+  LookupMethod
+}
 import com.teletracker.tasks.scraper.model.MatchResult
 import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Codec, Decoder, Encoder}
+import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.io.File
 import java.net.URI
@@ -76,13 +82,27 @@ abstract class IngestJob[T <: ScrapedItem](
   protected def s3: S3Client
   protected def networkCache: NetworkCache
 
-  protected def networkNames: Set[String]
-
   protected def presentationTypes: Set[PresentationType] =
     Set(PresentationType.SD, PresentationType.HD)
 
   protected def parseMode: ParseMode
-  protected def lookupMethod: LookupMethod[T]
+
+  protected def externalSources: List[ExternalSource]
+
+  @Inject
+  private[this] var externalIdLookup: ElasticsearchExternalIdLookup.Factory = _
+  private[this] var elasticsearchLookup: ElasticsearchLookup = _
+
+  protected def lookupMethod: LookupMethod[T] = {
+    new CustomElasticsearchLookup[T](
+      externalSources.map(externalSource => {
+        externalIdLookup.createOpt[T](
+          externalSource,
+          (item: T) => getExternalIds(item).get(externalSource)
+        )
+      }) :+ elasticsearchLookup.toMethod[T]
+    )
+  }
 
   protected def processMode(args: IngestJobArgs): ProcessMode =
     Parallel(args.parallelism, args.perBatchSleepMs.map(_ millis))
@@ -123,7 +143,7 @@ abstract class IngestJob[T <: ScrapedItem](
     logger.info("Running preprocess phase")
     preprocess(parsedArgs, args)
 
-    logger.info(s"Starting ingest of ${networkNames} content")
+    logger.info(s"Starting ingest of ${externalSources} content")
 
     new SourceRetriever(s3)
       .getSourceStream(parsedArgs.inputFile)
@@ -245,7 +265,11 @@ abstract class IngestJob[T <: ScrapedItem](
         )
         .map(_ => {})
     } else {
-      Future.unit
+      Future.successful {
+        logger.info(
+          s"Would've saved ${itemsWithNewAvailability.size} items with availability"
+        )
+      }
     }
   }
 
@@ -254,14 +278,19 @@ abstract class IngestJob[T <: ScrapedItem](
       .getAllNetworks()
       .await()
       .collect {
-        case network if networkNames.contains(network.slug.value) =>
+        case network
+            if externalSources.map(_.getName).contains(network.slug.value) =>
           network
       }
       .toSet
 
-    if (networkNames.diff(foundNetworks.map(_.slug.value)).nonEmpty) {
+    if (externalSources
+          .map(_.getName)
+          .toSet
+          .diff(foundNetworks.map(_.slug.value))
+          .nonEmpty) {
       throw new IllegalStateException(
-        s"""Could not find all networks "${networkNames}" network from datastore"""
+        s"""Could not find all networks "${externalSources}" network from datastore"""
       )
     }
 

@@ -54,15 +54,13 @@ class IngestNetflixCatalog @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   protected val elasticsearchExecutor: ElasticsearchExecutor,
-  elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory,
-  elasticsearchLookup: ElasticsearchLookup)
-    extends IngestJob[NetflixCatalogItem] {
-  override protected def networkNames: Set[String] = Set("netflix")
+  elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory)
+    extends IngestJob[NetflixScrapedCatalogItem] {
+
+  override protected def externalSources: List[ExternalSource] =
+    List(ExternalSource.Netflix)
 
   override protected def parseMode: ParseMode = JsonPerLine
-
-  override protected def lookupMethod: LookupMethod[NetflixCatalogItem] =
-    elasticsearchLookup.toMethod[NetflixCatalogItem]
 
   private val elasticsearchMatcherOptions =
     ElasticsearchFallbackMatcherOptions(
@@ -80,7 +78,7 @@ class IngestNetflixCatalog @Inject()(
   private val seenItems = ConcurrentHashMap.newKeySet[String]()
 
   override protected def shouldProcessItem(
-    item: NetflixCatalogItem
+    item: NetflixScrapedCatalogItem
   ): Boolean = {
     item.externalId.forall(seenItems.add)
   }
@@ -130,8 +128,8 @@ class IngestNetflixCatalog @Inject()(
 
   override protected def handleNonMatches(
     args: IngestJobArgs,
-    nonMatches: List[NetflixCatalogItem]
-  ): Future[List[NonMatchResult[NetflixCatalogItem]]] = {
+    nonMatches: List[NetflixScrapedCatalogItem]
+  ): Future[List[NonMatchResult[NetflixScrapedCatalogItem]]] = {
     val (hasAlternate, doesntHaveAlternate) = nonMatches.partition(
       item =>
         item.externalId.isDefined && alternateItemsByNetflixId
@@ -176,18 +174,18 @@ class IngestNetflixCatalog @Inject()(
   }
 
   override protected def isAvailable(
-    item: NetflixCatalogItem,
+    item: NetflixScrapedCatalogItem,
     today: LocalDate
   ): Boolean = true
 
   override protected def itemUniqueIdentifier(
-    item: NetflixCatalogItem
+    item: NetflixScrapedCatalogItem
   ): String = {
     item.externalId.getOrElse(super.itemUniqueIdentifier(item))
   }
 
   override protected def getExternalIds(
-    item: NetflixCatalogItem
+    item: NetflixScrapedCatalogItem
   ): Map[ExternalSource, String] = {
     Map(
       ExternalSource.Netflix -> item.externalId
@@ -214,6 +212,28 @@ case class NetflixCatalogItem(
   override def isMovie: Boolean = `type` == ItemType.Movie
 
   override def isTvShow: Boolean = `type` == ItemType.Show
+
+  override def url: Option[String] =
+    externalId.map(id => s"https://netflix.com/title/$id")
+}
+
+@JsonCodec
+case class NetflixScrapedCatalogItem(
+  availableDate: Option[String],
+  title: String,
+  releaseYear: Option[Int],
+  network: String,
+  itemType: ItemType,
+  externalId: Option[String],
+  description: Option[String])
+    extends ScrapedItem {
+  val status = "Available"
+
+  override def category: Option[String] = None
+
+  override def isMovie: Boolean = itemType == ItemType.Movie
+
+  override def isTvShow: Boolean = itemType == ItemType.Show
 
   override def url: Option[String] =
     externalId.map(id => s"https://netflix.com/title/$id")

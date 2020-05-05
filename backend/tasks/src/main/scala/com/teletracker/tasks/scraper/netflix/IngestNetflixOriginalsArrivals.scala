@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.netflix
 
-import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
@@ -20,18 +20,15 @@ class IngestNetflixOriginalsArrivals @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater,
-  elasticsearchLookup: ElasticsearchLookup)
+  protected val itemUpdater: ItemUpdater)
     extends IngestJob[NetflixOriginalScrapeItem] {
 
   private val farIntoTheFuture = LocalDate.now().plusYears(1)
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def lookupMethod: LookupMethod[NetflixOriginalScrapeItem] =
-    elasticsearchLookup.toMethod[NetflixOriginalScrapeItem]
-
-  override protected def networkNames: Set[String] = Set("netflix")
+  override protected def externalSources: List[ExternalSource] =
+    List(ExternalSource.Netflix)
 
   override protected def networkTimeZone: ZoneOffset =
     ZoneId.of("US/Pacific").getRules.getOffset(Instant.now())
