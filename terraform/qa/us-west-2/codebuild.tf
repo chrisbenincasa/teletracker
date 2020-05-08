@@ -40,26 +40,26 @@ resource "aws_codebuild_project" "scraper-codebuild" {
   }
 }
 
-resource "aws_codebuild_webhook" "scraper-codebuild-github-hook" {
-  project_name = aws_codebuild_project.scraper-codebuild.name
-
-  filter_group {
-    filter {
-      pattern = "PUSH"
-      type    = "EVENT"
-    }
-
-    filter {
-      pattern = "master"
-      type    = "HEAD_REF"
-    }
-
-    filter {
-      pattern = "scraper/.*"
-      type    = "FILE_PATH"
-    }
-  }
-}
+//resource "aws_codebuild_webhook" "scraper-codebuild-github-hook" {
+//  project_name = aws_codebuild_project.scraper-codebuild.name
+//
+//  filter_group {
+//    filter {
+//      pattern = "PUSH"
+//      type    = "EVENT"
+//    }
+//
+//    filter {
+//      pattern = "master"
+//      type    = "HEAD_REF"
+//    }
+//
+//    filter {
+//      pattern = "scraper/.*"
+//      type    = "FILE_PATH"
+//    }
+//  }
+//}
 
 
 resource "aws_codebuild_project" "server-codebuild" {
@@ -99,26 +99,26 @@ resource "aws_codebuild_project" "server-codebuild" {
   }
 }
 
-resource "aws_codebuild_webhook" "server-codebuild-github-hook" {
-  project_name = aws_codebuild_project.server-codebuild.name
-
-  filter_group {
-    filter {
-      pattern = "PUSH"
-      type    = "EVENT"
-    }
-
-    filter {
-      pattern = "master"
-      type    = "HEAD_REF"
-    }
-
-    filter {
-      pattern = "backend/.*"
-      type    = "FILE_PATH"
-    }
-  }
-}
+//resource "aws_codebuild_webhook" "server-codebuild-github-hook" {
+//  project_name = aws_codebuild_project.server-codebuild.name
+//
+//  filter_group {
+//    filter {
+//      pattern = "PUSH"
+//      type    = "EVENT"
+//    }
+//
+//    filter {
+//      pattern = "master"
+//      type    = "HEAD_REF"
+//    }
+//
+//    filter {
+//      pattern = "backend/.*"
+//      type    = "FILE_PATH"
+//    }
+//  }
+//}
 
 resource "aws_codebuild_project" "consumer-codebuild" {
   name         = "Consumer-Build"
@@ -157,26 +157,26 @@ resource "aws_codebuild_project" "consumer-codebuild" {
   }
 }
 
-resource "aws_codebuild_webhook" "consumer-codebuild-github-hook" {
-  project_name = aws_codebuild_project.consumer-codebuild.name
-
-  filter_group {
-    filter {
-      pattern = "PUSH"
-      type    = "EVENT"
-    }
-
-    filter {
-      pattern = "master"
-      type    = "HEAD_REF"
-    }
-
-    filter {
-      pattern = "backend/.*"
-      type    = "FILE_PATH"
-    }
-  }
-}
+//resource "aws_codebuild_webhook" "consumer-codebuild-github-hook" {
+//  project_name = aws_codebuild_project.consumer-codebuild.name
+//
+//  filter_group {
+//    filter {
+//      pattern = "PUSH"
+//      type    = "EVENT"
+//    }
+//
+//    filter {
+//      pattern = "master"
+//      type    = "HEAD_REF"
+//    }
+//
+//    filter {
+//      pattern = "backend/.*"
+//      type    = "FILE_PATH"
+//    }
+//  }
+//}
 
 resource "aws_codebuild_project" "frontend-pr-codebuild" {
   name         = "Frontend-PR-Build"
