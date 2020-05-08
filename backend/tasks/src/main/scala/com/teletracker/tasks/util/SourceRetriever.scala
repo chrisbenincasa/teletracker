@@ -80,7 +80,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
           true
       }
 
-      val isGzip = stream.response().contentEncoding() == "gzip" ||
+      val isGzip = stream.response().contentEncoding() == "gzip" &&
         stream.response().contentType() == "application/gzip"
 
       val finalStream = if (isGzip) {

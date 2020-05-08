@@ -5,6 +5,11 @@ import com.teletracker.common.pubsub.{
   TaskScheduler,
   TeletrackerTaskQueueMessage
 }
+import com.teletracker.common.tasks.storage.{
+  TaskRecord,
+  TaskRecordCreator,
+  TaskRecordStore
+}
 import javax.inject.Inject
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.util.UUID
@@ -12,7 +17,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class SqsTaskScheduler @Inject()(
   sqsAsyncClient: SqsAsyncClient,
-  teletrackerConfig: TeletrackerConfig
+  teletrackerConfig: TeletrackerConfig,
+  taskRecordCreator: TaskRecordCreator,
+  taskRecordStore: TaskRecordStore
 )(implicit executionContext: ExecutionContext)
     extends TaskScheduler {
 
@@ -25,20 +32,24 @@ class SqsTaskScheduler @Inject()(
   override def schedule(
     teletrackerTaskQueueMessage: TeletrackerTaskQueueMessage
   ): Future[Unit] = {
-    queue
-      .queue(
-        teletrackerTaskQueueMessage,
-        Some(UUID.randomUUID().toString)
-      )
-      .map(_ => {})
+    schedule(List(teletrackerTaskQueueMessage))
   }
 
   override def schedule(
     teletrackerTaskQueueMessage: List[TeletrackerTaskQueueMessage]
   ): Future[Unit] = {
-    queue.batchQueue(
-      teletrackerTaskQueueMessage,
-      Some(UUID.randomUUID().toString)
-    )
+    val taskRecords = teletrackerTaskQueueMessage.map(message => {
+      taskRecordCreator.createScheduled(message.id, message.clazz, message.args)
+    })
+
+    Future
+      .sequence(taskRecords.map(taskRecordStore.recordNewTask))
+      .flatMap(_ => {
+        queue.batchQueue(
+          teletrackerTaskQueueMessage,
+          Some(UUID.randomUUID().toString)
+        )
+      })
+
   }.map(_ => {})
 }

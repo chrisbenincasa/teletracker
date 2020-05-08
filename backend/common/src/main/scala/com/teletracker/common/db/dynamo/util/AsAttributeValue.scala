@@ -1,6 +1,7 @@
 package com.teletracker.common.db.dynamo.util
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+import java.time.Instant
 import java.util.UUID
 import scala.collection.JavaConverters._
 
@@ -42,10 +43,26 @@ trait AsAttributeValueInstances {
     value => UUID.fromString(value.s())
   )
 
-  implicit def stringSetAsAttributeValue: ToAndFromAttributeValue[Set[String]] =
+  implicit val instantAsAttributeValue: ToAndFromAttributeValue[Instant] = make(
+    value => AttributeValue.builder().s(value.toString).build(),
+    value => Instant.parse(value.s())
+  )
+
+  implicit val stringSetAsAttributeValue: ToAndFromAttributeValue[Set[String]] =
     make(
       value => AttributeValue.builder().ss(value.asJavaCollection).build(),
       value => value.ss().asScala.toSet
+    )
+
+  implicit def optionAsAttributeValue[T](
+    implicit other: ToAndFromAttributeValue[T]
+  ): ToAndFromAttributeValue[Option[T]] =
+    make(
+      value =>
+        value
+          .map(other.to)
+          .getOrElse(AttributeValue.builder().nul(true).build()),
+      value => if (value.nul()) None else Some(other.from(value))
     )
 
   private def make[T](

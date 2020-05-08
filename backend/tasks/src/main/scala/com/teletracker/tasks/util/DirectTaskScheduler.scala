@@ -17,7 +17,7 @@ class DirectTaskScheduler @Inject()(
     teletrackerTaskQueueMessage: TeletrackerTaskQueueMessage
   ): Future[Unit] = {
     Future {
-      taskRunner.runFromJson(
+      taskRunner.runFromJsonArgs(
         teletrackerTaskQueueMessage.clazz,
         teletrackerTaskQueueMessage.args
       )
@@ -31,7 +31,7 @@ class DirectTaskScheduler @Inject()(
       .fromSeq(teletrackerTaskQueueMessage)
       .mapF(message => {
         Future {
-          taskRunner.runFromJson(message.clazz, message.args)
+          taskRunner.runFromJsonArgs(message.clazz, message.args)
         }
       })
       .force

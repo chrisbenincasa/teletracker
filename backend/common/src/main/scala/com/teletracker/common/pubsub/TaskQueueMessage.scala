@@ -2,6 +2,7 @@ package com.teletracker.common.pubsub
 
 import io.circe.Json
 import io.circe.generic.JsonCodec
+import java.util.UUID
 
 object TaskTag {
   final val RequiresTmdbApi = "tag/RequiresTmdbApi"
@@ -28,6 +29,7 @@ class EventBase extends Serializable with SettableReceiptHandle {
 
 @JsonCodec
 case class TeletrackerTaskQueueMessage(
+  id: UUID,
   clazz: String,
   args: Map[String, Json],
   jobTags: Option[Set[String]] = Some(Set.empty))
@@ -41,6 +43,7 @@ object TeletrackerTaskQueueMessageFactory {
     tags: Option[Set[String]]
   ): TeletrackerTaskQueueMessage = {
     TeletrackerTaskQueueMessage(
+      UUID.randomUUID(),
       clazz,
       args.as[Option[Map[String, Json]]].right.get.getOrElse(Map.empty),
       tags

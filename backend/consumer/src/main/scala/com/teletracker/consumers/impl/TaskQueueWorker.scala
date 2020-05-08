@@ -4,23 +4,32 @@ import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
 import com.teletracker.consumers.{JobPool, TeletrackerTaskRunnable}
 import com.teletracker.consumers.config.ConsumerConfig
+import com.teletracker.common.util.Futures._
 import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig
 }
 import com.teletracker.common.tasks.Args
 import com.teletracker.common.tasks.TeletrackerTask.FailureResult
+import com.teletracker.common.tasks.storage.{
+  TaskRecord,
+  TaskRecordCreator,
+  TaskRecordStore,
+  TaskStatus
+}
+import com.teletracker.consumers.inject.TaskConsumerQueueConfig
 import com.teletracker.tasks.TeletrackerTaskRunner
-import io.circe.Json
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 
-class TaskQueueWorker(
+class TaskQueueWorker @Inject()(
   queue: SqsQueue[TeletrackerTaskQueueMessage],
-  dlq: Option[SqsQueue[TeletrackerTaskQueueMessage]],
-  config: SqsQueueThroughputWorkerConfig,
+  @TaskConsumerQueueConfig config: SqsQueueThroughputWorkerConfig,
   taskRunner: TeletrackerTaskRunner,
-  consumerConfig: ConsumerConfig
+  consumerConfig: ConsumerConfig,
+  taskRecordStore: TaskRecordStore,
+  taskRecordCreator: TaskRecordCreator
 )(implicit executionContext: ExecutionContext)
     extends SqsQueueThroughputWorker[TeletrackerTaskQueueMessage](queue, config) {
 
@@ -40,29 +49,53 @@ class TaskQueueWorker(
     (needsTmdbPool.getPending ++ normalPool.getPending).map(_.originalMessage)
   }
 
+  def requeueUnfinishedTasks(): Future[List[TeletrackerTaskQueueMessage]] = {
+    queue.batchQueue(getUnexecutedTasks.toList)
+  }
+
   override protected def process(
     message: TeletrackerTaskQueueMessage
   ): Future[Option[String]] = {
     try {
       val task = taskRunner.getInstance(message.clazz)
+      val extractedArgs = Args.extractArgs(message.args)
+
+      val taskRecord = taskRecordCreator.create(
+        Some(message.id),
+        task,
+        extractedArgs,
+        TaskStatus.Executing
+      )
+
+      try {
+        taskRecordStore.setTaskStarted(taskRecord).await()
+      } catch {
+        case NonFatal(e) =>
+          logger.error("Could not update task in store", e)
+      }
+
       val completionPromise = Promise[Option[String]]
       val runnable =
         new TeletrackerTaskRunnable(
           message,
           task,
-          Args.extractArgs(message.args)
+          extractedArgs
         )
 
       runnable.addCallback {
         // Do not ack the message if it's retryable
         case (task, FailureResult(NonFatal(error))) if task.retryable =>
+          setTaskFailedInStore(taskRecord)
           completionPromise.tryFailure(error)
         // Send non-retryables to the DLQ if there is one and ack
         case (_, FailureResult(_)) =>
-          dlq.foreach(queue => queue.queue(message))
+          setTaskFailedInStore(taskRecord)
+          queue.dlq.foreach(_.queue(message))
           completionPromise.success(message.receiptHandle)
         // Ack everything else
-        case _ => completionPromise.success(message.receiptHandle)
+        case _ =>
+          setTaskSuccessInStore(taskRecord)
+          completionPromise.success(message.receiptHandle)
       }
 
       logger.info(s"Attempting to schedule ${message.clazz}")
@@ -89,6 +122,32 @@ class TaskQueueWorker(
         )
 
         Future.failed(e)
+    }
+  }
+
+  private def setTaskSuccessInStore(taskRecord: TaskRecord) = {
+    try {
+      taskRecordStore
+        .setTaskSuccess(
+          taskRecord.copy(status = TaskStatus.Completed)
+        )
+        .await()
+    } catch {
+      case NonFatal(e) =>
+        logger.error("Could not update task in store", e)
+    }
+  }
+
+  private def setTaskFailedInStore(taskRecord: TaskRecord) = {
+    try {
+      taskRecordStore
+        .setTaskFailed(
+          taskRecord.copy(status = TaskStatus.Failed)
+        )
+        .await()
+    } catch {
+      case NonFatal(e) =>
+        logger.error("Could not update task in store", e)
     }
   }
 }

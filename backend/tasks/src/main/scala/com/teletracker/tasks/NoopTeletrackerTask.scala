@@ -9,6 +9,7 @@ import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import io.circe.{Encoder, Json}
 import javax.inject.Inject
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import java.util.UUID
 
 class NoopTeletrackerTask extends TeletrackerTaskWithDefaultArgs {
   override def runInternal(args: Args): Unit = println(args)
@@ -46,6 +47,13 @@ class DependantTask @Inject()(
     args: TypedArgs,
     rawArgs: Args
   ): List[TeletrackerTaskQueueMessage] = {
-    List(TeletrackerTaskQueueMessage(classOf[TimeoutTask].getName, Map(), None))
+    List(
+      TeletrackerTaskQueueMessage(
+        UUID.randomUUID(),
+        classOf[TimeoutTask].getName,
+        Map(),
+        None
+      )
+    )
   }
 }

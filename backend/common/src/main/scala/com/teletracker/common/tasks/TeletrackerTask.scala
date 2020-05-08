@@ -14,13 +14,10 @@ import io.circe.{Encoder, Json}
 import javax.inject.Inject
 import org.slf4j.{Logger, LoggerFactory}
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.collection.mutable
-import scala.compat.java8.FutureConverters._
 import scala.util.control.NonFatal
 
 object TeletrackerTask {
@@ -240,7 +237,10 @@ trait DefaultAnyArgs { self: TeletrackerTask =>
   implicit override protected def typedArgsEncoder: Encoder[TypedArgs] =
     Encoder.encodeMap[String, String]
 
-  override def preparseArgs(args: Args): TypedArgs = Map()
+  override def preparseArgs(args: Args): TypedArgs =
+    args.collect {
+      case (k, Some(v)) => k -> v.toString
+    }
 
-  override def argsAsJson(args: Args): Json = Json.Null
+  override def argsAsJson(args: Args): Json = preparseArgs(args).asJson
 }

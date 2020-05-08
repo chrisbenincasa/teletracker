@@ -35,7 +35,8 @@ private case class BatchGroups[T](group: List[T])
   */
 class SqsQueue[T <: EventBase: Manifest: Codec](
   sqs: SqsAsyncClient,
-  override val url: String
+  override val url: String,
+  val dlq: Option[SqsQueue[T]] = None
 )(implicit executionContext: ExecutionContext)
     extends SqsQueueBase(sqs, url)
     with Queue[T] {

@@ -3,9 +3,17 @@ package com.teletracker.tasks
 import com.google.inject.{Injector, Module}
 import com.teletracker.common.tasks.{Args, TeletrackerTask}
 import com.teletracker.common.tasks.model.TeletrackerTaskIdentifier
+import com.teletracker.common.tasks.storage.{
+  TaskRecord,
+  TaskRecordCreator,
+  TaskRecordStore,
+  TaskStatus
+}
 import io.circe.Json
+import com.teletracker.common.util.Futures._
 import javax.inject.Inject
 import com.teletracker.tasks.inject.TaskSchedulerModule
+import java.time.Instant
 import scala.compat.java8.OptionConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -43,7 +51,28 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
       clazz()
     }
 
-    _instance.run(clazzToRun, collectArgs)
+    val task = _instance.getInstance(clazzToRun)
+    val args = collectArgs
+
+    val recordCreator = injector.instance[TaskRecordCreator]
+    val recordStore = injector.instance[TaskRecordStore]
+
+    val record = recordCreator
+      .create(None, task, args, TaskStatus.Executing)
+      .copy(
+        startedAt = Some(Instant.now())
+      )
+
+    recordStore
+      .recordNewTask(record)
+      .await()
+
+    _instance.runFromString(clazzToRun, collectArgs) match {
+      case TeletrackerTask.SuccessResult =>
+        recordStore.setTaskSuccess(record).await()
+      case TeletrackerTask.FailureResult(_) =>
+        recordStore.setTaskFailed(record).await()
+    }
 
     System.exit(0)
   }
@@ -121,18 +150,25 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
 
   }
 
-  def run(
+  def runFromString(
     clazz: String,
     args: Map[String, Option[Any]]
   ): TeletrackerTask.TaskResult = {
-    getInstance(clazz)
-      .run(args)
+    run(getInstance(clazz), args)
   }
 
-  def runFromJson(
+  def runFromJsonArgs(
     clazz: String,
     args: Map[String, Json]
   ): TeletrackerTask.TaskResult = {
-    run(clazz, Args.extractArgs(args))
+    runFromString(clazz, Args.extractArgs(args))
   }
+
+  def run(
+    task: TeletrackerTask,
+    args: Map[String, Option[Any]]
+  ): TeletrackerTask.TaskResult = {
+    task.run(args)
+  }
+
 }

@@ -17,11 +17,17 @@ import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
-import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
+import java.io.{
+  BufferedOutputStream,
+  File,
+  FileInputStream,
+  FileOutputStream,
+  PrintStream
+}
 import java.net.URI
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
-import java.util.zip.GZIPOutputStream
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -167,6 +173,7 @@ abstract class DataDumpTask[T, Id](
     new URI(s"s3://${teletrackerConfig.data.s3_bucket}/$fullPath")
 
   private def uploadToS3(file: File) = {
+    // TODO: Gzip these
     logger.info(s"Uploading ${file.getAbsolutePath} to s3.")
     s3.putObject(
       PutObjectRequest
@@ -174,7 +181,7 @@ abstract class DataDumpTask[T, Id](
         .bucket(teletrackerConfig.data.s3_bucket)
         .key(s"$fullPath/${file.getName}")
         .contentType("text/plain")
-        .contentEncoding("gzip")
+//        .contentEncoding("gzip")
         .build(),
       RequestBody.fromFile(file)
     )

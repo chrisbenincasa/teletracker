@@ -1,6 +1,7 @@
 import sbt.io._
 import java.io.File
 import java.time.OffsetDateTime
+import scala.sys.process._
 
 object VersionFileGenerate {
   def generate(
@@ -11,7 +12,8 @@ object VersionFileGenerate {
 
     val values = List(
       "BUILT_AT" -> now.toString,
-      "VERSION" -> version
+      "VERSION" -> version,
+      "GIT_SHA" -> "git rev-parse --short HEAD".!!.trim
     ).map {
         case (x, y) => s"$x=$y"
       }

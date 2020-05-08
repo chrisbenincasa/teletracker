@@ -109,7 +109,7 @@ abstract class UpdateItemPopularities[T <: TmdbDumpFileRow: Decoder](
   }
 }
 
-class UpdatePeoplePopularities(
+class UpdatePeoplePopularities @Inject()(
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
     extends UpdatePopularities[PersonDumpFileRow](ItemType.Person, deps) {

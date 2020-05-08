@@ -4,6 +4,7 @@ import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.model.TeletrackerTaskIdentifier
 import io.circe.Encoder
 import io.circe.syntax._
+import java.util.UUID
 import scala.reflect.ClassTag
 
 object TaskMessageHelper {
@@ -13,6 +14,7 @@ object TaskMessageHelper {
     tags: Option[Set[String]]
   ): TeletrackerTaskQueueMessage = {
     TeletrackerTaskQueueMessage(
+      id = UUID.randomUUID(),
       clazz = taskIdentifier.identifier(),
       args = args.asJsonObject.toMap,
       jobTags = tags
@@ -26,6 +28,7 @@ object TaskMessageHelper {
     enc: Encoder.AsObject[T#TypedArgs]
   ): TeletrackerTaskQueueMessage = {
     TeletrackerTaskQueueMessage(
+      id = UUID.randomUUID(),
       clazz = ct.runtimeClass.getName,
       args = args.asJsonObject.toMap,
       jobTags = tags

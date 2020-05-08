@@ -44,7 +44,8 @@ case class EsConfig(
   creds: EsCredentials,
   items_index_name: String,
   people_index_name: String,
-  user_items_index_name: String)
+  user_items_index_name: String,
+  tasks_index_name: String)
 
 case class EsHostConfig(
   hostname: String,

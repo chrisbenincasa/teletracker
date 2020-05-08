@@ -145,7 +145,7 @@ abstract class DeltaLocatorJob[ArgsType <: DeltaLocatorJobArgsLike](
           // FOR DEBUGGING
           messages.foreach(message => {
             TeletrackerTaskRunner.instance
-              .runFromJson(message.clazz, message.args)
+              .runFromJsonArgs(message.clazz, message.args)
           })
         }
 
