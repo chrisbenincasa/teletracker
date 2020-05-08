@@ -1,6 +1,11 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.elasticsearch.model.{
+  EsItemCastMember,
+  EsItemCrewMember,
+  EsItemImage
+}
 import com.teletracker.common.util.Lists
 
 object EsOrdering {

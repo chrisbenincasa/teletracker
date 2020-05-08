@@ -5,6 +5,18 @@ import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.tasks.model.DenormalizeItemTaskArgs
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
+import com.teletracker.common.elasticsearch.model.{
+  EsExternalId,
+  EsGenre,
+  EsItem,
+  EsItemAlternativeTitle,
+  EsItemCastMember,
+  EsItemCrewMember,
+  EsItemRecommendation,
+  EsItemReleaseDate,
+  EsPerson,
+  StringListOrString
+}
 import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.{Movie, MovieCountryRelease}
 import com.teletracker.common.process.tmdb.MovieImportHandler.{

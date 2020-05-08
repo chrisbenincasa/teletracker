@@ -10,20 +10,13 @@ import {
   Theme,
   Typography,
 } from '@material-ui/core';
-import {
-  AttachMoney,
-  Cloud,
-  Theaters,
-  TvOff,
-  Visibility,
-} from '@material-ui/icons';
+import { AttachMoney, Cloud, TvOff, Visibility } from '@material-ui/icons';
 import _ from 'lodash';
-import * as R from 'ramda';
 import { ItemAvailability } from '../types/v2';
 import { Item } from '../types/v2/Item';
-import { useWithUserContext } from '../hooks/useWithUser';
 import { useNetworks } from '../hooks/useStateMetadata';
 import { deepLinkForId, Platform } from '../utils/availability-utils';
+import { OfferType } from '../types';
 
 const useStyles = makeStyles((theme: Theme) => ({
   availabilityContainer: {
@@ -86,43 +79,46 @@ interface Props {
 
 const Availability = (props: Props) => {
   const classes = useStyles();
-  const { userSelf } = useWithUserContext();
   const networks = useNetworks();
 
   const { itemDetail } = props;
-  let availabilities: { [key: string]: ItemAvailability[] };
 
-  if (itemDetail.availability) {
-    availabilities = R.mapObjIndexed(
-      R.pipe(
-        // TODO: This calculation isn't exactly correct, fix it...
-        R.filter<ItemAvailability, 'array'>(
-          av => !av.start_date && !av.end_date,
-        ),
-        R.sortBy(R.prop('cost')),
+  const findAvailabilitiesWithOfferType = (offerType: OfferType) => {
+    return _.flatten(
+      _.map(itemDetail.availability || [], av =>
+        _.filter(av.offers, { offerType }),
       ),
-      R.groupBy(R.prop('offer_type'), itemDetail.availability || []),
     );
-  } else {
-    availabilities = {};
-  }
+  };
 
-  let x: [ItemAvailability[], number][] = [
-    [availabilities.theater, 0],
-    [availabilities.subscription, 1],
-    [availabilities.rent, 2],
-    [availabilities.buy, 2],
-  ];
-  let firstAvailable = R.find(([av, idx]) => {
-    return av && av.length > 0;
-  }, x);
+  const tabs = {
+    [OfferType.subscription]: 0,
+    [OfferType.rent]: 1,
+    [OfferType.buy]: 2,
+  };
+
+  const firstAvailable: string | undefined = _.find(
+    Object.keys(OfferType),
+    offerType =>
+      findAvailabilitiesWithOfferType(OfferType[offerType]).length > 0,
+  );
+
+  let hasSubscriptionOffers =
+    findAvailabilitiesWithOfferType(OfferType.subscription).length > 0;
+  let hasRentalOffers =
+    findAvailabilitiesWithOfferType(OfferType.rent).length > 0;
+  let hasBuyOffers = findAvailabilitiesWithOfferType(OfferType.buy).length > 0;
+  const hasAnyAvailabilities =
+    hasSubscriptionOffers || hasRentalOffers || hasBuyOffers;
+
+  console.log(firstAvailable);
 
   const [openTab, setOpenTab] = React.useState<number>(
-    firstAvailable ? firstAvailable[1] : 0,
+    firstAvailable ? tabs[firstAvailable] : 0,
   );
 
   const getDeepLink = (availability: ItemAvailability) => {
-    const network = _.find(networks, { id: availability.network_id });
+    const network = _.find(networks, { id: availability.networkId });
 
     if (network) {
       const externalId = _.find(itemDetail.external_ids || [], {
@@ -148,97 +144,52 @@ const Availability = (props: Props) => {
     }
   };
 
-  const renderOfferDetails = (availabilities: ItemAvailability[]) => {
-    let onlyShowsSubs = false;
+  const renderOfferDetails = (offerType: OfferType) => {
+    return _.compact(
+      _.map(
+        itemDetail.availability || [],
+        (availability: ItemAvailability, index) => {
+          let network = _.find(networks!, { id: availability.networkId });
 
-    if (userSelf && userSelf.preferences && userSelf.networks) {
-      onlyShowsSubs = userSelf.preferences.showOnlyNetworkSubscriptions;
-    }
+          if (!network) {
+            return;
+          }
 
-    const includeFromPrefs = (av: ItemAvailability, networkId: number) => {
-      if (userSelf) {
-        let showFromSubscriptions = onlyShowsSubs
-          ? R.any(R.propEq('id', networkId), userSelf!.networks || [])
-          : true;
+          const logoUri = '/images/logos/' + network!.slug + '/icon.jpg';
 
-        let hasPresentation = av.presentation_type
-          ? R.contains(
-              av.presentation_type,
-              userSelf!.preferences?.presentationTypes || [],
-            )
-          : true;
+          const offersOfType = _.filter(availability.offers, { offerType });
 
-        return showFromSubscriptions && hasPresentation;
-      } else {
-        return true;
-      }
-    };
+          if (offersOfType.length === 0) {
+            return;
+          }
 
-    const availabilityFilter = (av: ItemAvailability) => {
-      return !R.isNil(av.network_id); // && includeFromPrefs(av, av.network_id!);
-    };
-
-    let groupedByNetwork = availabilities
-      ? R.groupBy(
-          (av: ItemAvailability) =>
-            _.find(networks || [], n => n.id === av.network_id)!.slug,
-          R.filter(availabilityFilter, availabilities),
-        )
-      : {};
-
-    // TODO: Fix id - give availabilities IDs
-    // currently using index for keying purposes
-
-    return R.values(
-      R.mapObjIndexed((avs, index) => {
-        let lowestCostAv = R.head(R.sortBy(R.prop('cost'))(avs))!;
-        let network = _.find(networks!, { id: lowestCostAv.network_id });
-
-        if (!network) {
-          return null;
-        }
-
-        let logoUri = '/images/logos/' + network!.slug + '/icon.jpg';
-
-        return (
-          <Card
-            className={classes.cardRoot}
-            onClick={() => clickAvailability(lowestCostAv)}
-            key={index}
-          >
-            <CardMedia
-              style={{ width: 60, borderRadius: 4 }}
-              image={logoUri}
-              title={network.name}
-            />
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-              }}
+          return (
+            <Card
+              className={classes.cardRoot}
+              onClick={() => clickAvailability(availability)}
+              key={index}
             >
-              <CardContent style={{ padding: '0 16px' }}>
-                <Typography>{network.name}</Typography>
-              </CardContent>
-            </div>
-          </Card>
-        );
-
-        // return (
-        //   <div className={classes.platform} key={index}>
-        //     <img src={logoUri} className={classes.logo} />
-        //     {lowestCostAv.cost && (
-        //       <Chip
-        //         size="medium"
-        //         label={`$${lowestCostAv.cost}`}
-        //         className={classes.genre}
-        //       />
-        //     )}
-        //   </div>
-        // );
-      }, groupedByNetwork),
+              <CardMedia
+                style={{ width: 60, borderRadius: 4 }}
+                image={logoUri}
+                title={network!.name}
+              />
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                }}
+              >
+                <CardContent style={{ padding: '0 16px' }}>
+                  <Typography>{network!.name}</Typography>
+                </CardContent>
+              </div>
+            </Card>
+          );
+        },
+      ),
     );
   };
 
@@ -247,10 +198,7 @@ const Availability = (props: Props) => {
       <Typography color="inherit" variant="h5" className={classes.header}>
         Availability
       </Typography>
-      {(availabilities.theater && availabilities.theater.length > 0) ||
-      (availabilities.subscription && availabilities.subscription.length > 0) ||
-      (availabilities.rent && availabilities.rent.length > 0) ||
-      (availabilities.buy && availabilities.buy.length > 0) ? (
+      {hasAnyAvailabilities ? (
         <React.Fragment>
           <Tabs
             value={openTab}
@@ -260,63 +208,48 @@ const Availability = (props: Props) => {
             variant="fullWidth"
           >
             <Tab
-              icon={<Theaters />}
-              label="Theaters"
-              onClick={() => setOpenTab(0)}
-              disabled={(availabilities.theater || []).length === 0}
-              disableRipple
-              style={{ whiteSpace: 'nowrap' }}
-            />
-            <Tab
               icon={<Cloud />}
               label="Stream"
-              onClick={() => setOpenTab(1)}
-              disabled={(availabilities.subscription || []).length === 0}
+              onClick={() => setOpenTab(0)}
+              disabled={!hasSubscriptionOffers}
               disableRipple
               style={{ whiteSpace: 'nowrap' }}
             />
             <Tab
               icon={<Visibility />}
               label="Rent"
-              onClick={() => setOpenTab(2)}
-              disabled={(availabilities.rent || []).length === 0}
+              onClick={() => setOpenTab(1)}
+              disabled={!hasRentalOffers}
               disableRipple
               style={{ whiteSpace: 'nowrap' }}
             />
             <Tab
               icon={<AttachMoney />}
               label="Buy"
-              onClick={() => setOpenTab(3)}
-              disabled={(availabilities.buy || []).length === 0}
+              onClick={() => setOpenTab(2)}
+              disabled={!hasBuyOffers}
               disableRipple
               style={{ whiteSpace: 'nowrap' }}
             />
           </Tabs>
           <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
-            {availabilities.theater ? (
+            {hasSubscriptionOffers ? (
               <CardContent className={classes.availabilePlatforms}>
-                {renderOfferDetails(availabilities.theater)}
+                {renderOfferDetails(OfferType.subscription)}
               </CardContent>
             ) : null}
           </Collapse>
           <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
-            {availabilities.subscription ? (
+            {hasRentalOffers ? (
               <CardContent className={classes.availabilePlatforms}>
-                {renderOfferDetails(availabilities.subscription)}
+                {renderOfferDetails(OfferType.rent)}
               </CardContent>
             ) : null}
           </Collapse>
           <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
-            {availabilities.rent ? (
+            {hasBuyOffers ? (
               <CardContent className={classes.availabilePlatforms}>
-                {renderOfferDetails(availabilities.rent)}
-              </CardContent>
-            ) : null}
-          </Collapse>
-          <Collapse in={openTab === 3} timeout="auto" unmountOnExit>
-            {availabilities.buy ? (
-              <CardContent className={classes.availabilePlatforms}>
-                {renderOfferDetails(availabilities.buy)}
+                {renderOfferDetails(OfferType.buy)}
               </CardContent>
             ) : null}
           </Collapse>

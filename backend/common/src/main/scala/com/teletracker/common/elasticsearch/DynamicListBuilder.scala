@@ -22,7 +22,8 @@ import com.teletracker.common.db.model.{
   PersonAssociationType,
   UserThingTagType
 }
-import com.teletracker.common.elasticsearch.EsItemTag.TagFormatter
+import com.teletracker.common.elasticsearch.model.EsItemTag.TagFormatter
+import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson}
 import com.teletracker.common.util.{IdOrSlug, ListFilters, OpenDateRange}
 import javax.inject.Inject
 import com.teletracker.common.util.Functions._

@@ -1,6 +1,7 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.db.Bookmark
+import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson, EsUserItem}
 
 object ElasticsearchItemsResponse {
   val empty = ElasticsearchItemsResponse(Nil, 0, None)

@@ -143,7 +143,7 @@ class NetflixSpider(scrapy.spiders.CrawlSpider):
                 './/*[@data-uia="season-release-year"]/text()').get()
             if release_year:
                 release_year = _safe_to_int(
-                    release_year.lstrip('Release year'))
+                    release_year.lstrip('Release year:').strip(' '))
 
             description = season.xpath(
                 './/*[@data-uia="season-synopsis"]/text()').get()

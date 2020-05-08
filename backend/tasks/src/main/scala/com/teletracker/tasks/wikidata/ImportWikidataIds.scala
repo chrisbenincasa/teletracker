@@ -2,7 +2,8 @@ package com.teletracker.tasks.wikidata
 
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.elasticsearch.{EsExternalId, ItemLookup}
+import com.teletracker.common.elasticsearch.ItemLookup
+import com.teletracker.common.elasticsearch.model.EsExternalId
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}

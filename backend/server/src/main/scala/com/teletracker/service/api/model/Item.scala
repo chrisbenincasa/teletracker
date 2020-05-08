@@ -1,9 +1,11 @@
 package com.teletracker.service.api.model
 
-import com.teletracker.common.db.model.{ItemType, UserThingTagType}
-import com.teletracker.common.elasticsearch.{
-  EsAvailability,
-  EsExternalId,
+import com.teletracker.common.db.model.{
+  ItemType,
+  PresentationType,
+  UserThingTagType
+}
+import com.teletracker.common.elasticsearch.model.{
   EsGenre,
   EsItem,
   EsItemCrewMember,
@@ -31,10 +33,35 @@ object Item {
     materializedRecommendations: List[Item] = Nil,
     additionalPeople: Map[UUID, EsPerson] = Map.empty
   ): Item = {
+    val convertedAvailability = esItem.availability.map(avs => {
+      avs.groupBy(_.network_id).map {
+        case (id, specificAvs) =>
+          ItemAvailability(
+            networkId = id,
+            networkName = specificAvs.head.network_name.getOrElse(""),
+            offers = specificAvs.map(av => {
+              ItemAvailabilityOffer(
+                region = av.region,
+                startDate = av.start_date,
+                endDate = av.end_date,
+                offerType = av.offer_type,
+                cost = av.cost,
+                currency = av.currency,
+                presentationType =
+                  av.presentation_type.map(PresentationType.fromString),
+                links = av.links
+                  .map(links => ItemAvailabilityOfferLinks(web = links.web)),
+                numSeasonsAvailable = av.num_seasons_available
+              )
+            })
+          )
+      }
+    }.toList)
+
     Item(
       adult = esItem.adult,
       alternate_titles = esItem.title.get,
-      availability = esItem.availability,
+      availability = convertedAvailability,
       cast = esItem.cast.map(_.map(member => {
         ItemCastMember(
           character = member.character,
@@ -77,7 +104,7 @@ object Item {
 case class Item(
   adult: Option[Boolean],
   alternate_titles: List[String],
-  availability: Option[List[EsAvailability]],
+  availability: Option[List[ItemAvailability]],
   cast: Option[List[ItemCastMember]],
   crew: Option[List[EsItemCrewMember]],
   external_ids: Option[List[ItemExternalId]],

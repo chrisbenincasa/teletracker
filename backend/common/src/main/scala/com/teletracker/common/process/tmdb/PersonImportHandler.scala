@@ -1,8 +1,14 @@
 package com.teletracker.common.process.tmdb
 
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch._
+import com.teletracker.common.elasticsearch.{model, _}
 import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
+import com.teletracker.common.elasticsearch.model.{
+  EsItem,
+  EsPerson,
+  EsPersonCastCredit,
+  EsPersonCrewCredit
+}
 import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.Person
 import com.teletracker.common.process.tmdb.PersonImportHandler.{
@@ -268,7 +274,7 @@ class PersonImportHandler @Inject()(
         val cast = buildCast(person, castAndCrewById)
         val crew = buildCrew(person, castAndCrewById)
 
-        EsPerson(
+        model.EsPerson(
           adult = person.adult,
           biography = person.biography,
           birthday = person.birthday
@@ -345,7 +351,7 @@ class PersonImportHandler @Inject()(
               .contains(matchingItem.`type`)
         )
         .map(matchingItem => {
-          EsPersonCastCredit(
+          model.EsPersonCastCredit(
             id = matchingItem.id,
             title = matchingItem.original_title.getOrElse(""),
             character = castCredit.character,
@@ -370,7 +376,7 @@ class PersonImportHandler @Inject()(
               .contains(matchingItem.`type`)
         )
         .map(matchingItem => {
-          EsPersonCrewCredit(
+          model.EsPersonCrewCredit(
             id = matchingItem.id,
             title = matchingItem.original_title.getOrElse(""),
             department = crewCredit.department,

@@ -3,7 +3,7 @@ package com.teletracker.tasks.elasticsearch.fixers
 import cats.implicits._
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.EsItemVideo
+import com.teletracker.common.elasticsearch.model.EsItemVideo
 import com.teletracker.common.model.tmdb.{Movie, TvShow}
 import io.circe.syntax._
 import javax.inject.Inject

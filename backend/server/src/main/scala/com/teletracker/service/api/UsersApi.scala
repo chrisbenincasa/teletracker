@@ -12,9 +12,9 @@ import com.teletracker.common.db.dynamo.{
 }
 import com.teletracker.common.db.model.UserThingTagType
 import com.teletracker.common.db.{Bookmark, DefaultForListType, SortMode}
+import com.teletracker.common.elasticsearch.model.EsItemTag
 import com.teletracker.common.elasticsearch.{
   DynamicListBuilder,
-  EsItemTag,
   ItemUpdater,
   ListBuilder
 }
@@ -32,7 +32,6 @@ class UsersApi @Inject()(
   listBuilder: ListBuilder,
   dynamicListBuilder: DynamicListBuilder,
   listsApi: ListsApi,
-  itemUpdater: ItemUpdater,
   dynamoListsDbAccess: DynamoListsDbAccess,
   metadataDbAccess: MetadataDbAccess,
   networkCache: NetworkCache,

@@ -4,6 +4,12 @@ import cats.kernel.{Monoid, Semigroup}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch._
+import com.teletracker.common.elasticsearch.model.{
+  EsItem,
+  EsItemCastMember,
+  EsItemCrewMember,
+  EsPerson
+}
 import com.teletracker.common.model.tmdb.{
   CastMember,
   Movie,

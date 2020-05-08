@@ -29,6 +29,7 @@ object ItemExpander {
     "alternative_titles",
     "recommendations",
     "translations",
+    "content_ratings",
     "images"
   )
 

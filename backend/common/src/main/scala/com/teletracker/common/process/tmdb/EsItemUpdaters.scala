@@ -1,7 +1,8 @@
 package com.teletracker.common.process.tmdb
 
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.{EsItemImage, EsOrdering}
+import com.teletracker.common.elasticsearch.EsOrdering
+import com.teletracker.common.elasticsearch.model.EsItemImage
 
 object EsItemUpdaters {
 

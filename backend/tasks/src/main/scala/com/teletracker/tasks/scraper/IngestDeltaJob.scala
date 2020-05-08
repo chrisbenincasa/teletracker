@@ -2,13 +2,12 @@ package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.{
+import com.teletracker.common.elasticsearch.model.{
   EsAvailability,
   EsExternalId,
-  EsItem,
-  ItemLookup,
-  ItemUpdater
+  EsItem
 }
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._

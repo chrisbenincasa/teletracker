@@ -2,10 +2,8 @@ package com.teletracker.tasks.tmdb.fixers
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchExecutor,
-  EsExternalId
-}
+import com.teletracker.common.elasticsearch.ElasticsearchExecutor
+import com.teletracker.common.elasticsearch.model.EsExternalId
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._

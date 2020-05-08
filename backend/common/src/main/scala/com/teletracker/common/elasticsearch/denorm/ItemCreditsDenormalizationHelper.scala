@@ -1,6 +1,6 @@
 package com.teletracker.common.elasticsearch.denorm
 
-import com.teletracker.common.elasticsearch.{
+import com.teletracker.common.elasticsearch.model.{
   EsItemCastMember,
   EsItemCrewMember,
   EsPersonCastCredit,

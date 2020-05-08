@@ -1,12 +1,8 @@
 package com.teletracker.common.process.tmdb
 
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.{
-  EsImageType,
-  EsItem,
-  EsItemImage,
-  EsItemImages
-}
+import com.teletracker.common.elasticsearch.EsImageType
+import com.teletracker.common.elasticsearch.model.EsItemImages
 import org.scalatest.FlatSpec
 
 class EsItemUpdatersTest extends FlatSpec {

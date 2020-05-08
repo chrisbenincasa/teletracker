@@ -1,10 +1,10 @@
 package com.teletracker.tasks.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.elasticsearch.model.EsPerson
 import com.teletracker.common.elasticsearch.{
   ElasticsearchAccess,
   ElasticsearchExecutor,
-  EsPerson,
   ItemUpdater,
   PersonLookup,
   PersonUpdater

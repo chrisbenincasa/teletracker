@@ -3,6 +3,12 @@ package com.teletracker.tasks.elasticsearch
 import com.teletracker.common.tasks.{model, TeletrackerTask}
 import com.teletracker.common.elasticsearch.denorm.DenormalizedItemUpdater
 import com.teletracker.common.elasticsearch._
+import com.teletracker.common.elasticsearch.model.{
+  EsItem,
+  EsPerson,
+  EsPersonCastCredit,
+  EsPersonCrewCredit
+}
 import com.teletracker.common.tasks.model.DenormalizeItemTaskArgs
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.{AsyncStream, IdOrSlug}

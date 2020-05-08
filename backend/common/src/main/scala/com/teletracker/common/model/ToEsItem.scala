@@ -1,15 +1,13 @@
 package com.teletracker.common.model
 
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.{
+import com.teletracker.common.elasticsearch.model.{
   EsExternalId,
-  EsImageType,
-  EsItem,
   EsItemImage,
   EsItemRating,
-  EsItemVideo,
-  EsOrdering
+  EsItemVideo
 }
+import com.teletracker.common.elasticsearch.{model, EsImageType, EsOrdering}
 import com.teletracker.common.model.tmdb.{Movie, Person, TvShow}
 import scala.util.Try
 
@@ -41,7 +39,7 @@ object ToEsItem {
     override def esItemImages(t: Movie): List[EsItemImage] = {
       List(
         t.backdrop_path.map(backdrop => {
-          EsItemImage(
+          model.EsItemImage(
             provider_id = ExternalSource.TheMovieDb.ordinal(), // TMDb, for now
             provider_shortname = ExternalSource.TheMovieDb.getName,
             id = backdrop,
@@ -49,7 +47,7 @@ object ToEsItem {
           )
         }),
         t.poster_path.map(poster => {
-          EsItemImage(
+          model.EsItemImage(
             provider_id = ExternalSource.TheMovieDb.ordinal(), // TMDb, for now
             provider_shortname = ExternalSource.TheMovieDb.getName,
             id = poster,
@@ -101,7 +99,7 @@ object ToEsItem {
     override def esItemImages(t: TvShow): List[EsItemImage] = {
       List(
         t.backdrop_path.map(backdrop => {
-          EsItemImage(
+          model.EsItemImage(
             provider_id = ExternalSource.TheMovieDb.ordinal(), // TMDb, for now
             provider_shortname = ExternalSource.TheMovieDb.getName,
             id = backdrop,
@@ -109,7 +107,7 @@ object ToEsItem {
           )
         }),
         t.poster_path.map(poster => {
-          EsItemImage(
+          model.EsItemImage(
             provider_id = ExternalSource.TheMovieDb.ordinal(), // TMDb, for now
             provider_shortname = ExternalSource.TheMovieDb.getName,
             id = poster,
@@ -150,7 +148,7 @@ object ToEsItem {
     override def esItemImages(t: Person): List[EsItemImage] =
       List(
         t.profile_path.map(profile => {
-          EsItemImage(
+          model.EsItemImage(
             provider_id = ExternalSource.TheMovieDb.ordinal(), // TMDb, for now
             provider_shortname = ExternalSource.TheMovieDb.getName,
             id = profile,

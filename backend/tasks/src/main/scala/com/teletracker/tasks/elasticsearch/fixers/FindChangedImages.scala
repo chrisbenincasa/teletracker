@@ -2,11 +2,8 @@ package com.teletracker.tasks.elasticsearch.fixers
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.elasticsearch.{
-  EsItemImage,
-  EsOrdering,
-  StringListOrString
-}
+import com.teletracker.common.elasticsearch.EsOrdering
+import com.teletracker.common.elasticsearch.model.EsItemImage
 import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.{Movie, TvShow}
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs

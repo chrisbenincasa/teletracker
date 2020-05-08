@@ -4,6 +4,7 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
 import com.teletracker.common.db._
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
+import com.teletracker.common.elasticsearch.model.EsItem
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.{
   ClosedNumericRange,

@@ -17,6 +17,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object QueueConsumerDaemon extends com.twitter.inject.app.App {
+  val mode = flag(
+    "mode",
+    "listen",
+    "The mode to run the task consumer. Either \"listen\" or \"oneoff\""
+  )
+
   override protected def modules: Seq[Module] =
     Modules() ++ Seq(new HttpClientModule)
 

@@ -4,12 +4,8 @@ import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.ListsDbAccess
 import com.teletracker.common.db.model.UserThingTagType
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchExecutor,
-  EsItemTag,
-  EsUserItem,
-  ItemUpdater
-}
+import com.teletracker.common.elasticsearch.model.{EsItemTag, EsUserItem}
+import com.teletracker.common.elasticsearch.{ElasticsearchExecutor, ItemUpdater}
 import com.teletracker.common.util.Futures._
 import javax.inject.Inject
 import io.circe.parser._

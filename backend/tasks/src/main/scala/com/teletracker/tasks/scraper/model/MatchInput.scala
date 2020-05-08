@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.model
 
-import com.teletracker.common.elasticsearch.EsItem
+import com.teletracker.common.elasticsearch.model.EsItem
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.ScrapedItem
 import io.circe.Codec

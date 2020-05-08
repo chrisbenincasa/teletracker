@@ -2,6 +2,7 @@ package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
+import com.teletracker.common.elasticsearch.model.{EsExternalId, EsItem}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Slug
 import javax.inject.Inject

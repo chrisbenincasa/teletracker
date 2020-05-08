@@ -14,6 +14,12 @@ import com.teletracker.common.db.{
 }
 import com.teletracker.common.elasticsearch
 import com.teletracker.common.elasticsearch._
+import com.teletracker.common.elasticsearch.model.{
+  EsItemTag,
+  EsItemTaggable,
+  EsPerson,
+  EsUserItemTag
+}
 import com.teletracker.common.util._
 import com.teletracker.service.api.model.Item
 import javax.inject.Inject

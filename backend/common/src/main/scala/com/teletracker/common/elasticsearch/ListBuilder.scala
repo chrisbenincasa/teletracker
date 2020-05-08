@@ -13,6 +13,7 @@ import com.teletracker.common.db.{
   SortMode
 }
 import com.teletracker.common.db.model.UserThingTagType
+import com.teletracker.common.elasticsearch.model.{EsItem, EsItemTag}
 import com.teletracker.common.util.ListFilters
 import javax.inject.Inject
 import org.apache.lucene.search.join.ScoreMode

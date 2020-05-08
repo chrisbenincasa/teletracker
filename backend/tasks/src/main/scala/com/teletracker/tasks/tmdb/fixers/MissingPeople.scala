@@ -1,7 +1,7 @@
 package com.teletracker.tasks.tmdb.fixers
 
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.EsPerson
+import com.teletracker.common.elasticsearch.model.EsPerson
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.model.EsPersonDumpRow
 import com.teletracker.tasks.scraper.IngestJobParser

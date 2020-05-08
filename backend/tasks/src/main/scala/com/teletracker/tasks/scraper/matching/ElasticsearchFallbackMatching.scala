@@ -2,10 +2,10 @@ package com.teletracker.tasks.scraper.matching
 
 import com.google.inject.assistedinject.Assisted
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.elasticsearch.model.EsItem
 import com.teletracker.common.elasticsearch.{
   ElasticsearchAccess,
-  ElasticsearchExecutor,
-  EsItem
+  ElasticsearchExecutor
 }
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._

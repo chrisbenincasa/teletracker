@@ -70,3 +70,16 @@ class HuluEpisodeItem(scrapy.Item):
     seasonNumber = scrapy.Field()
     premiereDate = scrapy.Field()
     duration = scrapy.Field()
+
+
+class HboItem(scrapy.Item):
+    id = scrapy.Field()
+    title = scrapy.Field()
+    externalId = scrapy.Field()
+    description = scrapy.Field()
+    itemType = scrapy.Field()
+    network = scrapy.Field()
+    goUrl = scrapy.Field()
+    nowUrl = scrapy.Field()
+    releaseDate = scrapy.Field()
+    highDef = scrapy.Field()

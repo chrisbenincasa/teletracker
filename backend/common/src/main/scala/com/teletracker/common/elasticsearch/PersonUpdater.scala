@@ -1,6 +1,7 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.elasticsearch.model.EsPerson
 import com.teletracker.common.util.Functions._
 import io.circe.syntax._
 import javax.inject.Inject

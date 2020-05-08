@@ -3,6 +3,7 @@ package com.teletracker.common.elasticsearch
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.{Bookmark, Recent, SearchScore, SortMode}
 import com.teletracker.common.db.model.{ExternalSource, PersonAssociationType}
+import com.teletracker.common.elasticsearch.model.{EsExternalId, EsPerson}
 import com.teletracker.common.util.{Folds, IdOrSlug, Slug}
 import javax.inject.Inject
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}

@@ -1,10 +1,10 @@
 package com.teletracker.common.elasticsearch.denorm
 
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.elasticsearch.model.EsUserDenormalizedItem
 import com.teletracker.common.elasticsearch.{
   ElasticsearchAccess,
   ElasticsearchExecutor,
-  EsUserDenormalizedItem,
   ItemLookup
 }
 import com.teletracker.common.util.json.IdentityFolder

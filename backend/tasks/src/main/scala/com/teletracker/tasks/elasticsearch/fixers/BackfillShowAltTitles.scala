@@ -2,7 +2,7 @@ package com.teletracker.tasks.elasticsearch.fixers
 
 import cats.implicits._
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.elasticsearch.EsItemAlternativeTitle
+import com.teletracker.common.elasticsearch.model.EsItemAlternativeTitle
 import com.teletracker.common.model.tmdb.TvShow
 import io.circe.syntax._
 import javax.inject.Inject

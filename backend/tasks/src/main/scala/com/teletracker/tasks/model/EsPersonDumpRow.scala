@@ -1,6 +1,6 @@
 package com.teletracker.tasks.model
 
-import com.teletracker.common.elasticsearch.EsPerson
+import com.teletracker.common.elasticsearch.model.EsPerson
 import io.circe.generic.JsonCodec
 
 /**

@@ -2,6 +2,12 @@ package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.UserThingTagType
+import com.teletracker.common.elasticsearch.model.{
+  EsItem,
+  EsItemTag,
+  EsUserItem,
+  EsUserItemTag
+}
 import com.teletracker.common.monitoring.Timing
 import javax.inject.Inject
 import org.elasticsearch.action.DocWriteResponse
@@ -219,7 +225,7 @@ class ItemUpdater @Inject()(
       teletrackerConfig.elasticsearch.items_index_name,
       item.id.toString
     ).doc(
-      item.asJson.noSpaces,
+      item.asJson.deepDropNullValues.noSpaces,
       XContentType.JSON
     )
   }

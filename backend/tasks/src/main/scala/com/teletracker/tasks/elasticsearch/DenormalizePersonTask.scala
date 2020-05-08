@@ -3,6 +3,12 @@ package com.teletracker.tasks.elasticsearch
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.elasticsearch.denorm.DenormalizedItemUpdater
+import com.teletracker.common.elasticsearch.model.{
+  EsItem,
+  EsItemCastMember,
+  EsItemCrewMember,
+  EsPerson
+}
 import com.teletracker.common.model.tmdb.{
   CastMember,
   MovieCredits,

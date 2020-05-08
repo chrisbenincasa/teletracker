@@ -2,13 +2,12 @@ package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model._
-import com.teletracker.common.elasticsearch.{
+import com.teletracker.common.elasticsearch.model.{
   EsAvailability,
   EsExternalId,
-  EsItem,
-  ItemLookup,
-  ItemUpdater
+  EsItem
 }
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
@@ -74,6 +73,15 @@ abstract class IngestJob[T <: ScrapedItem](
       codec
     ) {
 
+  import diffson._
+  import diffson.circe._
+  import diffson.jsonpatch.lcsdiff.remembering._
+  import diffson.lcs._
+  import io.circe._
+  import io.circe.syntax._
+
+  implicit private val lcs = new Patience[Json]
+
   implicit protected val execCtx =
     scala.concurrent.ExecutionContext.Implicits.global
 
@@ -91,6 +99,7 @@ abstract class IngestJob[T <: ScrapedItem](
 
   @Inject
   private[this] var externalIdLookup: ElasticsearchExternalIdLookup.Factory = _
+  @Inject
   private[this] var elasticsearchLookup: ElasticsearchLookup = _
 
   protected def lookupMethod: LookupMethod[T] = {
@@ -212,7 +221,7 @@ abstract class IngestJob[T <: ScrapedItem](
     networks: Set[StoredNetwork],
     args: IngestJobArgs
   ): Future[Unit] = {
-    val itemsWithNewAvailability = results.map {
+    val itemsWithNewAvailability = results.flatMap {
       case MatchResult(item, esItem) =>
         val availabilities =
           createAvailabilities(
@@ -237,10 +246,22 @@ abstract class IngestJob[T <: ScrapedItem](
 
         val newExternalIds = esItem.externalIdsGrouped ++ getExternalIds(item)
 
-        esItem.copy(
+        val newItem = esItem.copy(
           availability = Some(newAvailabilities.toList),
           external_ids = EsExternalId.fromMap(newExternalIds)
         )
+
+        if (args.dryRun && esItem != newItem) {
+          logger.info(
+            s"Would've updated id = ${newItem.id}:\n ${diff(esItem.asJson, newItem.asJson).asJson.spaces2}"
+          )
+        }
+
+        if (esItem != newItem) {
+          Some(newItem)
+        } else {
+          None
+        }
     }
 
     if (!args.dryRun) {
@@ -267,7 +288,7 @@ abstract class IngestJob[T <: ScrapedItem](
     } else {
       Future.successful {
         logger.info(
-          s"Would've saved ${itemsWithNewAvailability.size} items with availability"
+          s"Would've saved ${itemsWithNewAvailability.size} items with availability: ${}"
         )
       }
     }
@@ -307,30 +328,39 @@ abstract class IngestJob[T <: ScrapedItem](
     val end =
       if (scrapeItem.isExpiring) scrapeItem.availableLocalDate else None
 
-    networks.toSeq.map(network => {
-      item.availability
-        .getOrElse(Nil)
-        .find(_.network_id == network.id) match {
-        case Some(existingAvailability) =>
-          existingAvailability.copy(
-            start_date = start,
-            end_date = end
-          )
+    val availabilitiesByNetwork = item.availabilityGrouped
+
+    val unaffectedNetworks = availabilitiesByNetwork.keySet -- networks.map(
+      _.id
+    )
+
+    networks.toList.flatMap(network => {
+      availabilitiesByNetwork.get(network.id) match {
+        case Some(existingAvailabilities) =>
+          existingAvailabilities.map(_.copy(start_date = start, end_date = end))
 
         case None =>
-          EsAvailability(
-            network_id = network.id,
-            region = "US",
-            start_date = start,
-            end_date = end,
-            // TODO: This isn't always correct, let jobs configure offer, cost, currency
-            offer_type = OfferType.Subscription.toString,
-            cost = None,
-            currency = None,
-            presentation_types = Some(presentationTypes.map(_.toString).toList)
-          )
+          presentationTypes
+            .map(_.toString)
+            .toList
+            .map(presentationType => {
+              EsAvailability(
+                network_id = network.id,
+                network_name = Some(network.name),
+                region = "US",
+                start_date = start,
+                end_date = end,
+                // TODO: This isn't always correct, let jobs configure offer, cost, currency
+                offer_type = OfferType.Subscription.toString,
+                cost = None,
+                currency = None,
+                presentation_type = Some(presentationType),
+                links = None,
+                num_seasons_available = scrapeItem.numSeasonsAvailable
+              )
+            })
       }
-    })
+    }) ++ unaffectedNetworks.toList.flatMap(availabilitiesByNetwork.get).flatten
   }
 
   protected def isAvailable(
@@ -415,4 +445,6 @@ trait ScrapedItem {
   }
 
   def url: Option[String] = None
+
+  def numSeasonsAvailable: Option[Int] = None
 }

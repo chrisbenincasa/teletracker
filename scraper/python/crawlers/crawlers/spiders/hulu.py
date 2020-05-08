@@ -49,7 +49,7 @@ class HuluSpider(scrapy.spiders.SitemapSpider):
                             title=entity['title'],
                             description=entity['description'],
                             network='Hulu',
-                            itemType='movie',
+                            itemType='show',
                             premiereDate=entity['premiereDate'],
                             episodes=episodes,
                             additionalServiceRequired=self._extract_additional_service(components)

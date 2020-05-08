@@ -21,6 +21,7 @@ import com.teletracker.common.db.{
   SearchScore,
   SortMode
 }
+import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson, EsUserItem}
 import io.circe.parser.decode
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.index.query.{

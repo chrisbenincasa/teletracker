@@ -1,16 +1,14 @@
 package com.teletracker.service.api.model
 
 import com.teletracker.common.db.model.{ItemType, PersonAssociationType}
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchItemsResponse,
+import com.teletracker.common.elasticsearch.model.{
   EsDenormalizedItem,
   EsExternalId,
-  EsItem,
   EsItemImage,
   EsPerson,
-  EsPersonCastCredit,
   EsPersonCrewCredit
 }
+import com.teletracker.common.elasticsearch.ElasticsearchItemsResponse
 import com.teletracker.common.model.Paging
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.json.circe._

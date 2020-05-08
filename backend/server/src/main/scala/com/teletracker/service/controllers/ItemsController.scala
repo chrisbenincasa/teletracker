@@ -2,7 +2,8 @@ package com.teletracker.service.controllers
 
 import com.teletracker.common.db.{Bookmark, Recent, SearchRankingMode, SortMode}
 import com.teletracker.common.db.model.{ItemType, PersonAssociationType}
-import com.teletracker.common.elasticsearch.{EsItem, EsPerson, PersonLookup}
+import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson}
+import com.teletracker.common.elasticsearch.PersonLookup
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
 import com.teletracker.common.util.json.circe._

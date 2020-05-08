@@ -6,11 +6,8 @@ import com.teletracker.common.db.model.{
   OfferType,
   PresentationType
 }
-import com.teletracker.common.elasticsearch.{
-  EsAvailability,
-  ItemLookup,
-  ItemUpdater
-}
+import com.teletracker.common.elasticsearch.model.EsAvailability
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
@@ -37,19 +34,22 @@ class HuluCatalogDeltaIngestJob @Inject()(
     scrapedItem: HuluCatalogItem,
     isAvailable: Boolean
   ): List[EsAvailability] = {
-    networks.toList.map(network => {
-      EsAvailability(
-        network_id = network.id,
-        region = "US",
-        start_date = None,
-        end_date = None,
-        offer_type = OfferType.Subscription.toString,
-        cost = None,
-        currency = None,
-        presentation_types = Some(
-          List(PresentationType.SD, PresentationType.HD).map(_.toString)
-        ) // TODO FIX
-      )
+    List(PresentationType.SD, PresentationType.HD).flatMap(presentationType => {
+      networks.toList.map(network => {
+        EsAvailability(
+          network_id = network.id,
+          network_name = Some(network.name),
+          region = "US",
+          start_date = None,
+          end_date = None,
+          offer_type = OfferType.Subscription.toString,
+          cost = None,
+          currency = None,
+          presentation_type = Some(presentationType.getName),
+          None,
+          num_seasons_available = None
+        )
+      })
     })
   }
 

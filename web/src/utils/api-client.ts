@@ -3,23 +3,22 @@ import _ from 'lodash';
 import { merge } from 'ramda';
 import {
   ActionType,
+  ApiList,
   Genre,
   ItemType,
   List,
   ListOptions,
   ListRules,
-  SortOptions,
+  MetadataResponse,
   Network,
   NetworkType,
   OpenRange,
   Paging,
+  SortOptions,
   User,
   UserPreferences,
-  MetadataResponse,
-  ApiList,
 } from '../types';
 import { KeyMap, ObjectMetadata } from '../types/external/themoviedb/Movie';
-import { ApiThing } from '../types/Thing';
 import { ApiItem, Id, Slug } from '../types/v2';
 import { FilterParams } from './searchFilters';
 import { ApiPerson } from '../types/v2/Person';

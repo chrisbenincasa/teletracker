@@ -2,7 +2,7 @@ package com.teletracker.tasks.elasticsearch.fixers
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.elasticsearch.StringListOrString
+import com.teletracker.common.elasticsearch.model.StringListOrString
 import com.teletracker.common.model.tmdb.{Movie, TvShow}
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.util.Futures._

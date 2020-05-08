@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper.matching
 
-import com.teletracker.common.elasticsearch.{EsItem, ItemLookup}
+import com.teletracker.common.elasticsearch.ItemLookup
+import com.teletracker.common.elasticsearch.model.EsItem
 import com.teletracker.tasks.scraper.model.MatchResult
 import com.teletracker.tasks.scraper.{model, IngestJobArgsLike, ScrapedItem}
 import javax.inject.Inject

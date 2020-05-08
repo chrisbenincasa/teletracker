@@ -1,4 +1,3 @@
-import { Availability } from '../types';
 import { flattenActions, handleAction } from './utils';
 import {
   ALL_AVAILABILITY_SUCCESSFUL,
@@ -7,10 +6,6 @@ import {
   UpcomingAvailabilitySuccessfulAction,
 } from '../actions/availability';
 import { Item } from '../types/v2/Item';
-
-export type DerivedAvailability = Omit<Availability, 'thing'> & {
-  thing?: Item;
-};
 
 export interface AvailabilityState {
   offset: number;
