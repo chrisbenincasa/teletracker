@@ -1,8 +1,6 @@
-import Thing, { ApiThing } from './Thing';
 import { ApiItem } from './v2';
 import { Item, ItemFactory } from './v2/Item';
 import { ApiPerson, Person, PersonFactory } from './v2/Person';
-import lists from '../reducers/lists';
 
 export interface Paging {
   bookmark?: string;
@@ -240,47 +238,21 @@ export interface UserThingTag {
 
 export type PresentationType = 'sd' | 'hd' | '4k';
 
+export enum OfferType {
+  buy = 'buy',
+  rent = 'rent',
+  theater = 'theater',
+  subscription = 'subscription',
+  free = 'free',
+  ads = 'ads',
+  aggregate = 'aggregate',
+}
+
 export interface UserPreferences {
   presentationTypes: PresentationType[];
   showOnlyNetworkSubscriptions: boolean;
 }
 
-export interface CastMember {
-  id: string;
-  name: string;
-  slug: string;
-  characterName?: string;
-  relation?: string;
-  tmdbId?: string;
-  profilePath?: string;
-}
-
-export interface ThingUserMetadata {
-  belongsToLists: List[];
-  tags: UserThingTag[];
-}
-
-export interface Availability {
-  id: number;
-  isAvailable: boolean;
-  region?: string;
-  startDate?: string;
-  offerType:
-    | 'buy'
-    | 'rent'
-    | 'theater'
-    | 'subscription'
-    | 'free'
-    | 'ads'
-    | 'aggregate';
-  cost?: number;
-  currency?: string;
-  itemId: number;
-  networkId: number;
-  network?: Network;
-  presentationType?: PresentationType;
-  thing?: ApiThing;
-}
 export interface Network {
   id: number;
   name: string;

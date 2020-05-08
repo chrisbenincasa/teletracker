@@ -1,4 +1,4 @@
-import { ItemType } from '..';
+import { ItemType, OfferType, PresentationType } from '..';
 import { ApiPerson } from './Person';
 
 export type Slug = string;
@@ -30,14 +30,24 @@ export interface ApiItem {
 }
 
 export interface ItemAvailability {
-  network_id: number;
+  networkId: number;
+  networkName?: string;
+  offers: ItemAvailabilityOffer[];
+}
+
+export interface ItemAvailabilityOffer {
   region: string;
-  start_date?: string;
-  end_date?: string;
-  offer_type: string;
+  startDate?: string;
+  endDate?: string;
+  offerType: OfferType;
   cost?: number;
   currency?: string;
-  presentation_type?: string;
+  presentationType?: PresentationType;
+  links?: ItemAvailabilityOfferLinks;
+}
+
+export interface ItemAvailabilityOfferLinks {
+  web?: string;
 }
 
 export interface ApiItemCastMember {

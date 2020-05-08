@@ -28,7 +28,6 @@ import {
 } from '../actions/lists/update_list';
 import { ActionType, List } from '../types';
 import { flattenActions, handleAction } from './utils';
-import Thing from '../types/Thing';
 import {
   USER_SELF_REMOVE_ITEM_TAGS,
   USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
@@ -38,6 +37,7 @@ import {
   UserUpdateItemTagsSuccessAction,
 } from '../actions/user';
 import { FilterParams } from '../utils/searchFilters';
+import { Item } from '../types/v2/Item';
 
 export type Loading = { [X in ListActions['type']]: boolean };
 
@@ -159,15 +159,15 @@ const handleListDeleteSuccess = handleAction<
   return state;
 });
 
-const groupById = (things: Thing[]) =>
+const groupById = (things: Item[]) =>
   R.groupBy(R.pipe(R.prop('id'), R.toString), things);
 
 const headOption = R.ifElse(R.isNil, R.always(undefined), R.head);
 
 const mergeThingLists = (key: string, left: any, right: any) => {
   if (key === 'things') {
-    let leftList: Thing[] = left;
-    let rightList: Thing[] = right;
+    let leftList: Item[] = left;
+    let rightList: Item[] = right;
 
     let leftThingsById = leftList ? groupById(leftList) : {};
 
