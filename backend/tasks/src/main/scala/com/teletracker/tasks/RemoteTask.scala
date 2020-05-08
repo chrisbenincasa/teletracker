@@ -2,7 +2,10 @@ package com.teletracker.tasks
 
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.pubsub.TeletrackerTaskQueueMessageFactory
+import com.teletracker.common.pubsub.{
+  TaskScheduler,
+  TeletrackerTaskQueueMessageFactory
+}
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.annotations.TaskTags
 import io.circe.syntax._
@@ -16,7 +19,8 @@ import scala.compat.java8.FutureConverters._
 class RemoteTask @Inject()(
   publisher: SqsAsyncClient,
   teletrackerTaskRunner: TeletrackerTaskRunner,
-  teletrackerConfig: TeletrackerConfig)
+  teletrackerConfig: TeletrackerConfig,
+  taskScheduler: TaskScheduler)
     extends TeletrackerTaskWithDefaultArgs {
   override def runInternal(args: Args): Unit = {
     val clazz = args.value[String]("classToRun").get
@@ -45,20 +49,7 @@ class RemoteTask @Inject()(
     println(message.asJson)
 
     (0 until instances).foreach(_ => {
-      publisher
-        .sendMessage(
-          SendMessageRequest
-            .builder()
-            .messageBody(message.asJson.noSpaces)
-            .messageDeduplicationId(UUID.randomUUID().toString)
-            .messageGroupId("default")
-            .queueUrl(
-              teletrackerConfig.async.taskQueue.url
-            )
-            .build()
-        )
-        .toScala
-        .await()
+      taskScheduler.schedule(message).await()
     })
   }
 }
