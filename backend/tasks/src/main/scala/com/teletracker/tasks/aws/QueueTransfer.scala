@@ -96,6 +96,7 @@ class QueueTransfer @Inject()(
       .builder()
       .id(UUID.randomUUID().toString)
       .messageBody(message.body())
+      .messageGroupId("default")
       .build()
   }
 }

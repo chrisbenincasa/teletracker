@@ -162,15 +162,11 @@ class PersonImportHandler @Inject()(
           val crewNeedsDenorm = creditsDenormalizer
             .personCrewNeedsDenormalization(crew, existingPerson.crew_credits)
 
-          val images =
-            toEsItem
-              .esItemImages(person)
-              .foldLeft(existingPerson.imagesGrouped)((acc, image) => {
-                val externalSource =
-                  ExternalSource.fromString(image.provider_shortname)
-                acc.updated((externalSource, image.image_type), image)
-              })
-              .values
+          val images = EsItemUpdaters.updateImages(
+            ExternalSource.TheMovieDb,
+            toEsItem.esItemImages(person),
+            existingPerson.images.getOrElse(Nil)
+          )
 
           val newName = person.name.orElse(existingPerson.name)
 
