@@ -4,7 +4,8 @@ import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.model.{
   EsItemCastMember,
   EsItemCrewMember,
-  EsItemImage
+  EsItemImage,
+  EsItemVideo
 }
 import com.teletracker.common.util.Lists
 
@@ -20,6 +21,18 @@ object EsOrdering {
           ExternalSource.fromString(image.provider_shortname),
           image.image_type,
           image.id
+        )
+    )
+
+  final val forEsVideos: Ordering[EsItemVideo] = Ordering
+    .Tuple4[ExternalSource, String, String, String]
+    .on(
+      video =>
+        (
+          ExternalSource.fromString(video.provider_shortname),
+          video.provider_shortname,
+          video.video_source,
+          video.video_source_id
         )
     )
 

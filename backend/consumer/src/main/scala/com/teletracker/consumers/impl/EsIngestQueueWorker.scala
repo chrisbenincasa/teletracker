@@ -1,3 +1,3 @@
-package com.teletracker.consumers.impl class EsIngestQueueWorker {
+package com.teletracker.consumers.impl
 
-}
+class EsIngestQueueWorker {}

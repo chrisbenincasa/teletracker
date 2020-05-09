@@ -26,12 +26,9 @@ class PersonUpdater @Inject()(
     elasticsearchExecutor.index(indexRequest)
   }
 
-  def update(person: EsPerson): Future[UpdateResponse] =
-    update(person, refresh = false)
-
   def update(
     person: EsPerson,
-    refresh: Boolean
+    refresh: Boolean = false
   ): Future[UpdateResponse] = {
     elasticsearchExecutor.update(getUpdateRequest(person, refresh))
   }

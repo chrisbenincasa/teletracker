@@ -278,7 +278,7 @@ class PersonImportHandler @Inject()(
             .flatMap(LocalDateUtils.parseLocalDateWithFallback),
           cast_credits = cast,
           crew_credits = crew,
-          external_ids = Some(toEsItem.esExternalId(person).toList),
+          external_ids = Some(toEsItem.esExternalIds(person).toList),
           deathday = person.deathday
             .filter(_.nonEmpty)
             .flatMap(LocalDateUtils.parseLocalDateWithFallback),

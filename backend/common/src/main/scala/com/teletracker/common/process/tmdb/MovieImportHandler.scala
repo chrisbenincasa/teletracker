@@ -256,20 +256,8 @@ class MovieImportHandler @Inject()(
         .values
         .toList
 
-      val extractedExternalIds = List(
-        toEsItem.esExternalId(item),
-        item.external_ids
-          .flatMap(_.imdb_id)
-          .map(imdb => EsExternalId(ExternalSource.Imdb, imdb))
-      ).flatten
-
-      val newExternalSources = extractedExternalIds
-        .foldLeft(existingMovie.externalIdsGrouped)(
-          (acc, id) =>
-            acc.updated(ExternalSource.fromString(id.provider), id.id)
-        )
-        .toList
-        .map(Function.tupled(EsExternalId.apply))
+      val newExternalSources =
+        EsItemUpdaters.updateExternalIds(item, existingMovie)
 
       val cast = buildCast(item, castAndCrew)
       val castNeedsDenorm =
@@ -279,25 +267,11 @@ class MovieImportHandler @Inject()(
       val crewNeedsDenorm =
         creditsDenormalizer.crewNeedsDenormalization(crew, existingMovie.crew)
 
-      val newVideos = toEsItem.esItemVideos(item)
-      val updatedVideos = if (newVideos.isEmpty) {
-        existingMovie.videosGrouped
-      } else {
-        newVideos.foldLeft(existingMovie.videosGrouped) {
-          case (videos, newVideo) =>
-            val tmdbVideos = videos.getOrElse(ExternalSource.TheMovieDb, Nil)
-            val newVideos = tmdbVideos match {
-              case Nil =>
-                List(newVideo)
-              case xs =>
-                xs.distinctBy(_.provider_source_id)
-                  .updated(newVideo.provider_source_id, newVideo)
-                  .values
-            }
-
-            videos.updated(ExternalSource.TheMovieDb, newVideos.toList)
-        }
-      }
+      val updatedVideos = EsItemUpdaters.updateVideos(
+        ExternalSource.TheMovieDb,
+        toEsItem.esItemVideos(item),
+        existingMovie.videos.getOrElse(Nil)
+      )
 
       val tmdbGenreIds =
         item.genre_ids.orElse(item.genres.map(_.map(_.id)))
@@ -366,7 +340,7 @@ class MovieImportHandler @Inject()(
         title = item.title
           .map(StringListOrString.forString)
           .getOrElse(existingMovie.title),
-        videos = Some(updatedVideos.values.flatten.toList).filter(_.nonEmpty)
+        videos = Some(updatedVideos).filter(_.nonEmpty)
       )
 
       val itemChanged = partialUpdates != existingMovie
@@ -480,14 +454,7 @@ class MovieImportHandler @Inject()(
         availability = None,
         cast = cast,
         crew = crew,
-        external_ids = Some(
-          List(
-            toEsItem.esExternalId(item),
-            item.external_ids
-              .flatMap(_.imdb_id)
-              .map(imdb => EsExternalId(ExternalSource.Imdb, imdb))
-          ).flatten
-        ),
+        external_ids = Some(toEsItem.esExternalIds(item)),
         genres = Some(
           itemGenres
             .map(genre => {
@@ -570,10 +537,16 @@ class MovieImportHandler @Inject()(
 
     val allIds = (castIds ++ crewIds)
     if (allIds.nonEmpty) {
-      personLookup.lookupPeopleByExternalIds(
-        ExternalSource.TheMovieDb,
-        (castIds ++ crewIds).distinct.map(_.toString)
-      )
+      personLookup
+        .lookupPeopleByExternalIds(
+          (castIds ++ crewIds)
+            .map(_.toString)
+            .map(id => EsExternalId(ExternalSource.TheMovieDb, id))
+            .toSet
+        )
+        .map(_.map {
+          case (EsExternalId(_, id), person) => id -> person
+        })
     } else {
       Future.successful(Map.empty[String, EsPerson])
     }

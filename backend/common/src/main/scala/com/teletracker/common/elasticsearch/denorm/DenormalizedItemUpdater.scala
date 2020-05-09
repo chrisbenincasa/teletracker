@@ -1,7 +1,10 @@
 package com.teletracker.common.elasticsearch.denorm
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.elasticsearch.model.EsUserDenormalizedItem
+import com.teletracker.common.elasticsearch.model.{
+  EsItem,
+  EsUserDenormalizedItem
+}
 import com.teletracker.common.elasticsearch.{
   ElasticsearchAccess,
   ElasticsearchExecutor,
@@ -61,25 +64,29 @@ class DenormalizedItemUpdater @Inject()(
       )
       .flatMap {
         case Some(value) =>
-          val matchingItems =
-            QueryBuilders.termQuery("item_id", itemId.toString)
-
-          val updateByQueryRequest = new UpdateByQueryRequest(
-            teletrackerConfig.elasticsearch.user_items_index_name
-          )
-
-          updateByQueryRequest.setQuery(matchingItems)
-          updateByQueryRequest.setScript(
-            UpdateDenormalizedItemScript(value.rawItem.toDenormalizedUserItem)
-          )
-          updateByQueryRequest.setConflicts("proceed")
-          updateByQueryRequest.setRequestsPerSecond(25)
-
-          elasticsearchExecutor.updateByQuery(updateByQueryRequest)
+          updateUserItems(value.rawItem)
         case None =>
           Future.failed(
             new IllegalArgumentException(s"Item with ID = ${itemId} not found.")
           )
       }
+  }
+
+  def updateUserItems(item: EsItem): Future[BulkByScrollResponse] = {
+    val matchingItems =
+      QueryBuilders.termQuery("item_id", item.id.toString)
+
+    val updateByQueryRequest = new UpdateByQueryRequest(
+      teletrackerConfig.elasticsearch.user_items_index_name
+    )
+
+    updateByQueryRequest.setQuery(matchingItems)
+    updateByQueryRequest.setScript(
+      UpdateDenormalizedItemScript(item.toDenormalizedUserItem)
+    )
+    updateByQueryRequest.setConflicts("proceed")
+    updateByQueryRequest.setRequestsPerSecond(25)
+
+    elasticsearchExecutor.updateByQuery(updateByQueryRequest)
   }
 }

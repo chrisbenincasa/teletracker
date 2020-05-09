@@ -4,6 +4,7 @@ import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
+import com.teletracker.common.elasticsearch.model.EsExternalId
 import com.teletracker.common.elasticsearch.{ItemLookup, PersonLookup}
 import com.teletracker.common.pubsub.{
   EsIngestMessage,
@@ -115,10 +116,15 @@ class UpdatePeoplePopularities @Inject()(
     extends UpdatePopularities[PersonDumpFileRow](ItemType.Person, deps) {
   override protected def lookupBatch(ids: List[Int]): Future[Map[Int, UUID]] = {
     deps.personLookup
-      .lookupPeopleByExternalIds(ExternalSource.TheMovieDb, ids.map(_.toString))
+      .lookupPeopleByExternalIds(
+        ids
+          .map(_.toString)
+          .map(EsExternalId(ExternalSource.TheMovieDb, _))
+          .toSet
+      )
       .map(results => {
         results.map {
-          case (id, item) => id.toInt -> item.id
+          case (EsExternalId(id, _), item) => id.toInt -> item.id
         }
       })
   }

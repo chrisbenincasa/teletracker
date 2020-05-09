@@ -11,7 +11,7 @@ import com.teletracker.common.elasticsearch.model.{
 import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.Person
 
-object PersonToEsItem extends ToEsItem[Person] {
+object TmdbPersonToEsItem extends ToEsItem[Person] {
   override def esItemRating(t: Person): Option[EsItemRating] = None
 
   override def esItemImages(t: Person): List[EsItemImage] =

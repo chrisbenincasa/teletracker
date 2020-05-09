@@ -2,7 +2,13 @@ package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.{Bookmark, Recent, SearchScore, SortMode}
-import com.teletracker.common.db.model.{ExternalSource, PersonAssociationType}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  ItemType,
+  PersonAssociationType
+}
+import com.teletracker.common.elasticsearch.cache.ExternalIdMappingCache
+import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{EsExternalId, EsPerson}
 import com.teletracker.common.util.{Folds, IdOrSlug, Slug}
 import javax.inject.Inject
@@ -17,6 +23,7 @@ import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import java.util.UUID
 import com.teletracker.common.util.Functions._
+import com.teletracker.common.util.Maps._
 import org.elasticsearch.action.get.MultiGetRequest
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
@@ -24,7 +31,9 @@ import scala.util.Success
 class PersonLookup @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor,
   itemSearch: ItemSearch,
-  teletrackerConfig: TeletrackerConfig
+  teletrackerConfig: TeletrackerConfig,
+  externalIdMappingStore: ElasticsearchExternalIdMappingStore,
+  externalIdMappingCache: ExternalIdMappingCache
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
 
@@ -104,6 +113,96 @@ class PersonLookup @Inject()(
             )
         )
       })
+  }
+
+  def lookupPeopleByExternalIds(
+    ids: Set[EsExternalId]
+  ): Future[Map[EsExternalId, EsPerson]] = {
+    val keys = ids.map(_ -> ItemType.Person)
+    val cachedIds = externalIdMappingCache.getAll(keys)
+    val missing = ids -- cachedIds.keySet.map(_._1)
+    val missingKeys = missing.map(_ -> ItemType.Person)
+
+    val storeLookupFut = if (missing.nonEmpty) {
+      externalIdMappingStore
+        .getItemIdsForExternalIds(missingKeys)
+    } else {
+      Future.successful(Map.empty[(EsExternalId, ItemType), UUID])
+    }
+
+    storeLookupFut.flatMap(foundMappings => {
+      val keysNeedingSearch = missingKeys -- foundMappings.keySet
+      val peopleFromSearch = if (keysNeedingSearch.nonEmpty) {
+        lookupExternalIdsViaSearch(keysNeedingSearch.map(_._1).toList)
+      } else {
+        Future.successful(Map.empty[EsExternalId, EsPerson])
+      }
+
+      val allMappings = (cachedIds ++ foundMappings).map {
+        case ((k, _), uuid) => k -> uuid
+      }
+
+      val externalIdsById = allMappings.reverse
+      val allIds = allMappings.values.toSet
+
+      val directLookupResultFut = lookupPeople(
+        allIds.map(IdOrSlug.fromUUID).toList
+      ).map(people => {
+        people
+          .flatMap(
+            person => externalIdsById.get(person.id).map(_.map(_ -> person))
+          )
+          .foldLeft(Map.empty[EsExternalId, EsPerson])(_ ++ _)
+      })
+
+      for {
+        directLookupResult <- directLookupResultFut
+        searchResult <- peopleFromSearch
+      } yield {
+        directLookupResult ++ searchResult
+      }
+    })
+  }
+
+  private def lookupExternalIdsViaSearch(
+    externalIds: List[EsExternalId]
+  ): Future[Map[EsExternalId, EsPerson]] = {
+    if (externalIds.isEmpty) {
+      Future.successful(Map.empty)
+    } else {
+      val searchSources = externalIds.map(id => {
+        val query = QueryBuilders
+          .boolQuery()
+          .filter(
+            QueryBuilders
+              .termQuery("external_ids", id.toString)
+          )
+
+        new SearchRequest(teletrackerConfig.elasticsearch.people_index_name)
+          .source(new SearchSourceBuilder().query(query).size(1))
+      })
+
+      val request = new MultiSearchRequest()
+
+      searchSources.foreach(request.add)
+
+      elasticsearchExecutor
+        .multiSearch(request)
+        .map(response => {
+          response.getResponses
+            .zip(externalIds)
+            .flatMap {
+              case (responseItem, _) if responseItem.isFailure => // Log
+                None
+
+              case (responseItem, id) =>
+                searchResponseToPeople(responseItem.getResponse).items.headOption
+                  .map(id -> _)
+
+            }
+            .toMap
+        })
+    }
   }
 
   def lookupPeopleByExternalIds(

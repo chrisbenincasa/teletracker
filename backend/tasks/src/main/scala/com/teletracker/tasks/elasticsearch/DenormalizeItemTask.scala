@@ -118,6 +118,14 @@ class DenormalizeItemTask @Inject()(
             combinedUpdates ++ crewUpdates
           }
 
+          val userItemDenormFut = if (args.dryRun) {
+            Future.successful {
+              logger.info("Would've denoramlized to user_items")
+            }
+          } else {
+            denormalizedItemUpdater.updateUserItems(item.rawItem).map(_ => {})
+          }
+
           val peopleUpdateFut = if (args.dryRun) {
             allPeopleToUpdateFut.map(people => {
               logger.info(
@@ -134,7 +142,10 @@ class DenormalizeItemTask @Inject()(
               .force
           }
 
-          peopleUpdateFut
+          for {
+            _ <- peopleUpdateFut
+            _ <- userItemDenormFut
+          } yield {}
 
         // Denorm details to list tracking indexes
 
