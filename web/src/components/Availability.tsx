@@ -3,14 +3,11 @@ import {
   Card,
   CardContent,
   CardMedia,
-  Collapse,
   makeStyles,
-  Tab,
-  Tabs,
   Theme,
   Typography,
 } from '@material-ui/core';
-import { AttachMoney, Cloud, TvOff, Visibility } from '@material-ui/icons';
+import { TvOff } from '@material-ui/icons';
 import _ from 'lodash';
 import { ItemAvailability } from '../types/v2';
 import { Item } from '../types/v2/Item';
@@ -27,8 +24,8 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
   },
   availabilityWrapper: {
-    maxWidth: 1000,
-    width: '75%',
+    maxWidth: 500,
+    width: '100%',
   },
   availabilePlatforms: {
     display: 'flex',
@@ -37,6 +34,34 @@ const useStyles = makeStyles((theme: Theme) => ({
       justifyContent: 'center',
     },
     flexWrap: 'wrap',
+    padding: theme.spacing(0),
+    '&:last-child': {
+      paddingBottom: theme.spacing(0),
+    },
+  },
+  cardRoot: {
+    display: 'flex',
+    flexBasis: '100%',
+    backgroundColor: 'rgba(66, 66, 66, 0.5)',
+    padding: theme.spacing(1),
+    margin: theme.spacing(0.5, 0),
+    border: '1px solid transparent',
+    transition:
+      'boder-color 100ms, box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms',
+    '&:hover': {
+      borderColor: theme.palette.primary.main,
+      cursor: 'pointer',
+    },
+  },
+  cardContent: {
+    padding: theme.spacing(0, 2),
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    '&:last-child': {
+      paddingBottom: theme.spacing(0),
+    },
   },
   genre: {
     marginTop: theme.spacing(1),
@@ -45,31 +70,38 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: theme.spacing(1, 0),
     fontWeight: 700,
   },
+  link: {
+    marginRight: theme.spacing(0.5),
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
+    },
+  },
   logo: {
     width: 50,
     borderRadius: theme.shape.borderRadius,
+  },
+  networkLogo: {
+    width: 60,
+    borderRadius: 4,
   },
   platform: {
     display: 'flex',
     flexDirection: 'column',
     margin: theme.spacing(1),
   },
-  unavailableContainer: {
+  unavailableIcon: {
+    width: 60,
+    borderRadius: 4,
     display: 'flex',
-    flexDirection: 'row',
+    alignSelf: 'center',
   },
-  cardRoot: {
+  unavailableCard: {
     display: 'flex',
-    flexBasis: '33.33333333%',
+    flexBasis: '100%',
     backgroundColor: 'rgba(66, 66, 66, 0.5)',
-    padding: 8,
+    padding: theme.spacing(1),
+    margin: theme.spacing(0.5, 0),
     border: '1px solid transparent',
-    transition:
-      'boder-color 100ms, box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms',
-    '&:hover': {
-      borderColor: theme.palette.primary.main,
-      cursor: 'pointer',
-    },
   },
 }));
 
@@ -91,12 +123,6 @@ const Availability = (props: Props) => {
     );
   };
 
-  const tabs = {
-    [OfferType.subscription]: 0,
-    [OfferType.rent]: 1,
-    [OfferType.buy]: 2,
-  };
-
   const firstAvailable: string | undefined = _.find(
     Object.keys(OfferType),
     offerType =>
@@ -112,10 +138,6 @@ const Availability = (props: Props) => {
     hasSubscriptionOffers || hasRentalOffers || hasBuyOffers;
 
   console.log(firstAvailable);
-
-  const [openTab, setOpenTab] = React.useState<number>(
-    firstAvailable ? tabs[firstAvailable] : 0,
-  );
 
   const getDeepLink = (availability: ItemAvailability) => {
     const network = _.find(networks, { id: availability.networkId });
@@ -136,14 +158,6 @@ const Availability = (props: Props) => {
     }
   };
 
-  const clickAvailability = (availability: ItemAvailability) => {
-    const link = getDeepLink(availability);
-
-    if (link) {
-      window.open(link, '_blank', 'width=1280,height=720');
-    }
-  };
-
   const renderOfferDetails = (offerType: OfferType) => {
     return _.compact(
       _.map(
@@ -156,37 +170,52 @@ const Availability = (props: Props) => {
           }
 
           const logoUri = '/images/logos/' + network!.slug + '/icon.jpg';
-
           const offersOfType = _.filter(availability.offers, { offerType });
 
           if (offersOfType.length === 0) {
             return;
           }
 
+          const getCleanOfferTitle = (offerType: string) => {
+            if (offerType === 'subscription') {
+              return 'Stream on';
+            } else if (offerType === 'buy') {
+              return 'Buy on';
+            } else if (offerType === 'rent') {
+              return 'Rent on';
+            } else if (offerType === 'theater') {
+              return 'In theaters now! Get tickets on';
+            } else if (offerType === 'free') {
+              return 'Free on';
+            } else if (offerType === 'aggregate') {
+              return 'Watch all seasons on';
+            } else {
+              return 'Watch on ';
+            }
+          };
+
+          const cleanOfferTitle = getCleanOfferTitle(offerType);
+          const link = getDeepLink(availability);
+
           return (
-            <Card
-              className={classes.cardRoot}
-              onClick={() => clickAvailability(availability)}
-              key={index}
+            <a
+              href={link ? link : '#'}
+              target="_blank"
+              className={classes.link}
             >
-              <CardMedia
-                style={{ width: 60, borderRadius: 4 }}
-                image={logoUri}
-                title={network!.name}
-              />
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                }}
-              >
-                <CardContent style={{ padding: '0 16px' }}>
-                  <Typography>{network!.name}</Typography>
+              <Card className={classes.cardRoot} key={index}>
+                <CardMedia
+                  className={classes.networkLogo}
+                  image={logoUri}
+                  title={network!.name}
+                />
+                <CardContent className={classes.cardContent}>
+                  <Typography>{`${cleanOfferTitle} ${
+                    network!.name
+                  }`}</Typography>
                 </CardContent>
-              </div>
-            </Card>
+              </Card>
+            </a>
           );
         },
       ),
@@ -200,69 +229,34 @@ const Availability = (props: Props) => {
       </Typography>
       {hasAnyAvailabilities ? (
         <React.Fragment>
-          <Tabs
-            value={openTab}
-            indicatorColor="primary"
-            textColor="primary"
-            aria-label="Availibility"
-            variant="fullWidth"
-          >
-            <Tab
-              icon={<Cloud />}
-              label="Stream"
-              onClick={() => setOpenTab(0)}
-              disabled={!hasSubscriptionOffers}
-              disableRipple
-              style={{ whiteSpace: 'nowrap' }}
-            />
-            <Tab
-              icon={<Visibility />}
-              label="Rent"
-              onClick={() => setOpenTab(1)}
-              disabled={!hasRentalOffers}
-              disableRipple
-              style={{ whiteSpace: 'nowrap' }}
-            />
-            <Tab
-              icon={<AttachMoney />}
-              label="Buy"
-              onClick={() => setOpenTab(2)}
-              disabled={!hasBuyOffers}
-              disableRipple
-              style={{ whiteSpace: 'nowrap' }}
-            />
-          </Tabs>
-          <Collapse in={openTab === 0} timeout="auto" unmountOnExit>
-            {hasSubscriptionOffers ? (
-              <CardContent className={classes.availabilePlatforms}>
-                {renderOfferDetails(OfferType.subscription)}
-              </CardContent>
-            ) : null}
-          </Collapse>
-          <Collapse in={openTab === 1} timeout="auto" unmountOnExit>
-            {hasRentalOffers ? (
-              <CardContent className={classes.availabilePlatforms}>
-                {renderOfferDetails(OfferType.rent)}
-              </CardContent>
-            ) : null}
-          </Collapse>
-          <Collapse in={openTab === 2} timeout="auto" unmountOnExit>
-            {hasBuyOffers ? (
-              <CardContent className={classes.availabilePlatforms}>
-                {renderOfferDetails(OfferType.buy)}
-              </CardContent>
-            ) : null}
-          </Collapse>
+          {hasSubscriptionOffers ? (
+            <CardContent className={classes.availabilePlatforms}>
+              {renderOfferDetails(OfferType.subscription)}
+            </CardContent>
+          ) : null}
+          {hasRentalOffers ? (
+            <CardContent className={classes.availabilePlatforms}>
+              {renderOfferDetails(OfferType.rent)}
+            </CardContent>
+          ) : null}
+          {hasBuyOffers ? (
+            <CardContent className={classes.availabilePlatforms}>
+              {renderOfferDetails(OfferType.buy)}
+            </CardContent>
+          ) : null}
         </React.Fragment>
       ) : (
-        <div className={classes.unavailableContainer}>
-          <TvOff fontSize="large" style={{ margin: 8 }} />
-          <div className={classes.availabilityContainer}>
-            <Typography variant="subtitle1">
-              {`${itemDetail.canonicalTitle} is not currently available to stream, rent, or purchase.`}
-              {/* {`Add it to your list and we'll notify you when it becomes available!`} */}
-            </Typography>
-          </div>
+        <div className={classes.availabilityWrapper}>
+          <CardContent className={classes.availabilePlatforms}>
+            <Card className={classes.unavailableCard} key="unavailable">
+              <TvOff className={classes.unavailableIcon} />
+              <CardContent className={classes.cardContent}>
+                <Typography>
+                  {`${itemDetail.canonicalTitle} is not currently available to stream, rent, or purchase.`}
+                </Typography>
+              </CardContent>
+            </Card>
+          </CardContent>
         </div>
       )}
     </div>
