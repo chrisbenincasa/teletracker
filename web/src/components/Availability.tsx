@@ -24,7 +24,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
   },
   availabilityWrapper: {
-    maxWidth: 500,
     width: '100%',
   },
   availabilePlatforms: {
@@ -176,25 +175,30 @@ const Availability = (props: Props) => {
             return;
           }
 
-          const getCleanOfferTitle = (offerType: string) => {
-            if (offerType === 'subscription') {
-              return 'Stream on';
-            } else if (offerType === 'buy') {
-              return 'Buy on';
-            } else if (offerType === 'rent') {
-              return 'Rent on';
-            } else if (offerType === 'theater') {
-              return 'In theaters now! Get tickets on';
-            } else if (offerType === 'free') {
-              return 'Free on';
-            } else if (offerType === 'aggregate') {
-              return 'Watch all seasons on';
-            } else {
-              return 'Watch on ';
-            }
-          };
+          let cleanOfferTitle: string;
+          switch (offerType) {
+            case OfferType.subscription:
+              cleanOfferTitle = 'Stream on';
+              break;
+            case OfferType.buy:
+              cleanOfferTitle = 'Buy on';
+              break;
+            case OfferType.rent:
+              cleanOfferTitle = 'Rent on';
+              break;
+            case OfferType.theater:
+              cleanOfferTitle = 'In theaters now! Get tickets on';
+              break;
+            case OfferType.free:
+              cleanOfferTitle = 'Free on';
+              break;
+            case OfferType.aggregate:
+              cleanOfferTitle = 'Watch all seasons on';
+              break;
+            default:
+              cleanOfferTitle = 'Watch all seasons on';
+          }
 
-          const cleanOfferTitle = getCleanOfferTitle(offerType);
           const link = getDeepLink(availability);
 
           return (
