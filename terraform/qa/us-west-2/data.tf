@@ -42,3 +42,8 @@ data "aws_iam_policy" "sqs_full_access_policy" {
 data "aws_iam_policy" "s3_full_access_policy" {
   arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
+
+data "aws_ssm_parameter" "datadog_api_key" {
+  name = "datadog-api-key"
+  with_decryption = true
+}
