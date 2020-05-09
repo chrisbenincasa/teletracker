@@ -9,3 +9,5 @@ addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % "1.5.0")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
 
 addSbtPlugin("au.com.onegeek" %% "sbt-dotenv" % "2.0.117")
+
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.15")

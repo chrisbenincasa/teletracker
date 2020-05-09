@@ -37,7 +37,9 @@ class SourceRetriever @Inject()(s3: S3Client) {
   ): Source = {
     uri.getScheme match {
       case "s3" =>
-        logger.info(s"Pulling s3://${uri.getHost}/${uri.getPath}")
+        logger.info(
+          s"Pulling s3://${uri.getHost}/${uri.getPath.stripPrefix("/")}"
+        )
         getS3Object(uri.getHost, uri.getPath, consultCache)
 
       case "file" =>
@@ -80,7 +82,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
           true
       }
 
-      val isGzip = stream.response().contentEncoding() == "gzip" &&
+      val isGzip = stream.response().contentEncoding() == "gzip" ||
         stream.response().contentType() == "application/gzip"
 
       val finalStream = if (isGzip) {
@@ -230,7 +232,7 @@ class SourceRetriever @Inject()(s3: S3Client) {
     withRetriesInternal()
   }
 
-  private def getS3ObjectStream(
+  def getS3ObjectStream(
     bucket: String,
     path: String
   ): Stream[S3Object] = {

@@ -1,12 +1,14 @@
 package com.teletracker.tasks.elasticsearch.fixers
 
+import cats.data.NonEmptyList
 import com.teletracker.common.model.tmdb.{Movie, Person, TmdbError, TvShow}
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.scraper.IngestJobParser
+import com.teletracker.tasks.scraper.{IngestJobParser, IngestJobParserException}
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import com.twitter.util.StorageUnit
-import io.circe.Codec
+import io.circe
+import io.circe.{Codec, Errors}
 import io.circe.syntax._
 import io.circe.parser._
 import software.amazon.awssdk.regions.Region
@@ -86,15 +88,35 @@ abstract class ReverseChronologicalBackfill[T: Codec]
           new IngestJobParser()
             .stream[T](source.getLines())
             .flatMap {
+              case Left(IngestJobParserException(line, _, originalError)) =>
+                decode[TmdbError](line) match {
+                  case Left(nextError) =>
+                    val originalErrorCast =
+                      originalError match {
+                        case error: circe.Error => List(error)
+                        case _                  => Nil
+                      }
+
+                    logger.error(
+                      s"Could not parse line (nor error)",
+                      Errors(
+                        NonEmptyList.of(nextError).concat(originalErrorCast)
+                      )
+                    )
+                    None
+                  case Right(decodedError) =>
+                    Some(decodedError.asJson)
+                }
               case Left(value) =>
                 logger.error(s"Could not parse line: ${value.getMessage}")
                 None
-              case Right(value) if seen.add(uniqueId(value)) => Some(value)
-              case _                                         => None
+              case Right(value) if seen.add(uniqueId(value)) =>
+                Some(value.asJson)
+              case _ => None
             }
             .safeTake(perFileLimit)
-            .foreach(person => {
-              fileRotator.writeLines(Seq(person.asJson.noSpaces))
+            .foreach(json => {
+              fileRotator.writeLines(Seq(json.noSpaces))
             })
         } finally {
           source.close()

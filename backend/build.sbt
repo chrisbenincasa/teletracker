@@ -1,5 +1,10 @@
 import BuildConfig._
 
+scalafixDependencies in ThisBuild +=
+  "org.scalatest" %% "autofix" % "3.1.0.0"
+
+addCompilerPlugin(scalafixSemanticdb)
+
 Global / cancelable := true
 
 lazy val `teletracker` = Project("teletracker", file("."))
@@ -18,13 +23,10 @@ lazy val `teletracker` = Project("teletracker", file("."))
 
 lazy val common = project
   .in(file("common"))
+  .settings(BuildConfig.commonSettings)
   .settings(
-    organization := "com.teletracker",
     name := "common",
-    version := BuildConfig.Revision.wholeVersion,
     // Compilation
-    scalaVersion := Compilation.scalacVersion,
-    scalacOptions ++= Compilation.scalacOpts,
     libraryDependencies ++= Seq(
       // Twitter
       "com.twitter" %% "util-core" % versions.twitter,
@@ -80,10 +82,7 @@ lazy val common = project
       "org.gnieh" %% "diffson-circe" % "4.0.0",
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
-      ),
-      "org.scalactic" %% "scalactic" % "3.0.5" % Test,
-      "org.scalatest" %% "scalatest" % "3.0.5" % Test,
-      "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.5" % Test
+      )
     ) ++ Dependencies.circe
   )
 
@@ -103,9 +102,6 @@ lazy val consumer = project
     ),
     Compile / run / mainClass := Some(
       "com.teletracker.consumers.QueueConsumerDaemon"
-    ),
-    libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "3.0.5" % Test
     ),
     envVars in reStart := Map(
       "TMDB_API_KEY" -> System.getenv("TMDB_API_KEY"),
@@ -160,8 +156,7 @@ lazy val tasks = project
       "org.xerial" % "sqlite-jdbc" % "3.30.1",
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
-      ),
-      "org.scalatest" %% "scalatest" % "3.0.5" % Test
+      )
     ),
     Compile / mainClass := Some(
       "com.teletracker.tasks.TeletrackerTaskRunner"
@@ -171,7 +166,7 @@ lazy val tasks = project
     ),
     Compile / run / fork := true,
     Compile / run / javaOptions ++= Seq(
-      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006"
+      "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5007"
     ),
     connectInput in run := true,
     `run-db-migrations` := runInputTask(
@@ -205,7 +200,6 @@ lazy val server = project
       "com.twitter" %% "inject-request-scope" % versions.twitter,
       // Testing
       "com.spotify" % "docker-client" % "8.11.7" % Test excludeAll "com.fasterxml.jackson.core",
-      "org.scalatest" %% "scalatest" % "3.0.5" % Test,
       "com.h2database" % "h2" % "1.4.193" % Test,
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full

@@ -2,12 +2,12 @@ package com.teletracker.common.db.dynamo
 
 import com.google.inject.Guice
 import com.teletracker.common.inject.Modules
-import org.scalatest.FlatSpec
 import java.util.UUID
 import com.teletracker.common.util.Futures._
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ListsDbAccessTest extends FlatSpec {
+class ListsDbAccessTest extends AnyFlatSpec {
   "The test" should "work" in {
     val injector = Guice.createInjector(Modules(): _*)
     val access = injector.getInstance(classOf[ListsDbAccess])

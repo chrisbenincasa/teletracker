@@ -66,7 +66,7 @@ class IngestJobParser {
       .map {
         case (in, idx) =>
           decode[T](in).left.map(failure => {
-            new RuntimeException(s"$failure, $idx: $in", failure)
+            IngestJobParserException(in, idx, failure)
           })
       }
   }
@@ -85,4 +85,10 @@ class IngestJobParser {
       List(line)
     }
   }
+
 }
+case class IngestJobParserException(
+  line: String,
+  index: Int,
+  cause: Exception)
+    extends RuntimeException(s"$cause, $index: $line", cause)

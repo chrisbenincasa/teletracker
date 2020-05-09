@@ -43,10 +43,12 @@ object MovieImportHandler {
   case class MovieImportHandlerArgs(
     forceDenorm: Boolean,
     dryRun: Boolean,
-    insertsOnly: Boolean = false)
+    insertsOnly: Boolean = false,
+    verbose: Boolean = true)
 
   case class MovieImportResult(
     itemId: UUID,
+    itemIsNew: Boolean,
     inserted: Boolean,
     updated: Boolean,
     castNeedsDenorm: Boolean,
@@ -159,6 +161,7 @@ class MovieImportHandler @Inject()(
           Future.successful(
             MovieImportResult(
               itemId = esItem.id,
+              itemIsNew = false,
               inserted = false,
               updated = false,
               castNeedsDenorm = false,
@@ -172,7 +175,8 @@ class MovieImportHandler @Inject()(
           handleNewMovie(item, args)
       }
       .through {
-        case Success(result) if args.forceDenorm || result.itemChanged =>
+        case Success(result)
+            if !args.dryRun && (args.forceDenorm || result.itemChanged) =>
           logger.debug(
             s"Scheduling denormalization task item id = ${result.itemId}"
           )
@@ -377,19 +381,22 @@ class MovieImportHandler @Inject()(
       if (args.dryRun) {
         Future.successful {
           val changeJson = if (itemChanged) {
-            logger.info(
-              s"Would've updated id = ${existingMovie.id}:\n${diff(existingMovie.asJson, updatedItem.asJson).asJson.spaces2}"
-            )
+            if (args.verbose) {
+              logger.info(
+                s"Would've updated id = ${existingMovie.id}:\n${diff(existingMovie.asJson, updatedItem.asJson).asJson.spaces2}"
+              )
+            }
 
-            None
+            Some(itemUpdater.getUpdateJson(updatedItem))
           } else {
             logger.info(s"No-op on item ${existingMovie.id}")
 
-            Some(itemUpdater.getUpdateJson(updatedItem))
+            None
           }
 
           MovieImportResult(
             itemId = existingMovie.id,
+            itemIsNew = false,
             inserted = false,
             updated = false,
             castNeedsDenorm = castNeedsDenorm,
@@ -404,6 +411,7 @@ class MovieImportHandler @Inject()(
           .map(_ => {
             MovieImportResult(
               itemId = existingMovie.id,
+              itemIsNew = false,
               inserted = false,
               updated = true,
               castNeedsDenorm = castNeedsDenorm,
@@ -417,6 +425,7 @@ class MovieImportHandler @Inject()(
         Future.successful {
           MovieImportResult(
             itemId = existingMovie.id,
+            itemIsNew = false,
             inserted = false,
             updated = false,
             castNeedsDenorm = castNeedsDenorm,
@@ -515,12 +524,15 @@ class MovieImportHandler @Inject()(
       )
 
       if (args.dryRun) {
-        logger.info(
-          s"Would've inserted new movie (id = ${item.id}, slug = ${esItem.slug})\n:${esItem.asJson.spaces2}"
-        )
+        if (args.verbose) {
+          logger.info(
+            s"Would've inserted new movie (id = ${item.id}, slug = ${esItem.slug})\n:${esItem.asJson.spaces2}"
+          )
+        }
         Future.successful {
           MovieImportResult(
             itemId = esItem.id,
+            itemIsNew = true,
             inserted = false,
             updated = false,
             castNeedsDenorm = true,
@@ -535,6 +547,7 @@ class MovieImportHandler @Inject()(
           .map(_ => {
             MovieImportResult(
               itemId = esItem.id,
+              itemIsNew = true,
               inserted = true,
               updated = false,
               castNeedsDenorm = true,

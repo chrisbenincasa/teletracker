@@ -3,9 +3,9 @@ package com.teletracker.common.process.tmdb
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.EsImageType
 import com.teletracker.common.elasticsearch.model.EsItemImages
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 
-class EsItemUpdatersTest extends FlatSpec {
+class EsItemUpdatersTest extends AnyFlatSpec {
   "EsItemUpdaters" should "add, remove, and update images for an ExternalSource" in {
     val existingImages = List(
       EsItemImages

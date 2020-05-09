@@ -1,9 +1,9 @@
 package com.teletracker.common.util
 
-import org.scalatest.FlatSpec
 import scala.util.{Failure, Success}
+import org.scalatest.flatspec.AnyFlatSpec
 
-class SlugTest extends FlatSpec {
+class SlugTest extends AnyFlatSpec {
   "Slug.findNext" should "find the next slug" in {
     val newSlug = Slug.raw("abc-xyz")
     val existingSlugs = List(newSlug, newSlug.addSuffix("2"))

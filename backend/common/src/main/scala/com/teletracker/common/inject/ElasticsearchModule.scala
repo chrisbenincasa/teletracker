@@ -2,9 +2,12 @@ package com.teletracker.common.inject
 
 import com.google.inject.Provides
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.elasticsearch.lookups.{
+  DynamoElasticsearchExternalIdMapping,
+  ElasticsearchExternalIdMappingStore
+}
 import com.twitter.inject.TwitterModule
 import javax.inject.Singleton
-import org.apache.commons.io.IOUtils
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.client.utils.URIBuilder
 import org.apache.http.entity.BasicHttpEntity
@@ -12,6 +15,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder
 import org.apache.http.message.BasicHeader
 import org.apache.http.protocol.HttpContext
+import org.apache.http.protocol.HttpCoreContext.HTTP_TARGET_HOST
 import org.apache.http.{
   Header,
   HttpEntityEnclosingRequest,
@@ -24,21 +28,17 @@ import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.signer.Aws4Signer
-import software.amazon.awssdk.auth.signer.params.{
-  Aws4PresignerParams,
-  Aws4SignerParams
-}
-import software.amazon.awssdk.http.{
-  ContentStreamProvider,
-  SdkHttpFullRequest,
-  SdkHttpMethod
-}
-import java.io.InputStream
-import java.util
-import org.apache.http.protocol.HttpCoreContext.HTTP_TARGET_HOST
+import software.amazon.awssdk.auth.signer.params.Aws4PresignerParams
+import software.amazon.awssdk.http.{SdkHttpFullRequest, SdkHttpMethod}
 import software.amazon.awssdk.regions.Region
+import java.util
 
 class ElasticsearchModule extends TwitterModule {
+  override protected def configure(): Unit = {
+    bind[ElasticsearchExternalIdMappingStore]
+      .to[DynamoElasticsearchExternalIdMapping]
+  }
+
   @Provides
   @Singleton
   def client(

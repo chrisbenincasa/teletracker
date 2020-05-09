@@ -1,8 +1,8 @@
 package com.teletracker.common.util
 
 import org.scalacheck.{Arbitrary, Gen}
-import org.scalatest.FunSuite
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 import scala.util.{Failure, Try}
@@ -20,8 +20,8 @@ trait LocalExecutionContext {
 }
 
 class AsyncStreamTest
-    extends FunSuite
-    with GeneratorDrivenPropertyChecks
+    extends AnyFunSuite
+    with ScalaCheckPropertyChecks
     with LocalExecutionContext {
   import AsyncStream.{mk, of}
   import AsyncStreamTest._

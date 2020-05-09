@@ -1,11 +1,11 @@
 package com.teletracker.tasks.util
 
-import org.scalatest.FlatSpec
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request
 import scala.collection.JavaConverters._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class SourceRetrieverTest extends FlatSpec {
+class SourceRetrieverTest extends AnyFlatSpec {
   it should "work" in {
     val s3 = S3Client.create()
 

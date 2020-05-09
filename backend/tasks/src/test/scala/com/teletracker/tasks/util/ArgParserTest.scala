@@ -1,9 +1,10 @@
 package com.teletracker.tasks.util
 
 import com.teletracker.common.tasks.Args
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ArgParserTest extends FlatSpec with Args with Matchers {
+class ArgParserTest extends AnyFlatSpec with Args with Matchers {
   "ArgParser" should "parse ints" in {
     val m: Map[String, Option[Any]] = Map(
       "x" -> Some(1),

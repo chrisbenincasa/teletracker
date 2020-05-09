@@ -1,9 +1,10 @@
 package com.teletracker.service.testing
 
 import com.teletracker.common.util.Slug
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class SlugSpec extends FlatSpec with Matchers {
+class SlugSpec extends AnyFlatSpec with Matchers {
   "Slugs" should "remove dashes, colons, and extra whitespace" in {
     val slug = Slug("Star Wars: Episode III - Revenge of the Sith", 2005)
 

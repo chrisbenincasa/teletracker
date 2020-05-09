@@ -2,9 +2,9 @@ package com.teletracker.service.testing
 
 import com.teletracker.common.util.{Field, FieldSelector}
 import io.circe.parser._
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 
-class FieldSelectorSpec extends FlatSpec {
+class FieldSelectorSpec extends AnyFlatSpec {
   val j =
     """
       |{

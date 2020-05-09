@@ -112,3 +112,27 @@ resource "aws_dynamodb_table" "metadata-ddb-table" {
     projection_type = "ALL"
   }
 }
+
+resource "aws_dynamodb_table" "id-mapping-ddb-table" {
+  name         = "teletracker.qa.id_mapping"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key  = "externalId"
+
+  attribute {
+    name = "externalId"
+    type = "S"
+  }
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "id-to-externals"
+    hash_key        = "id"
+    range_key       = "externalId"
+    projection_type = "ALL"
+  }
+}

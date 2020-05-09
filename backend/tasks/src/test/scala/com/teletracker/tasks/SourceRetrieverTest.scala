@@ -1,15 +1,15 @@
 package com.teletracker.tasks
 
 import com.teletracker.tasks.util.SourceRetriever
-import org.scalatest.FlatSpec
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{ListObjectsV2Request, S3Object}
 import java.net.URI
 import scala.collection.JavaConverters._
 import scala.io.Source
+import org.scalatest.flatspec.AnyFlatSpec
 
-class SourceRetrieverTest extends FlatSpec {
+class SourceRetrieverTest extends AnyFlatSpec {
   val s3 = S3Client.builder().region(Region.US_WEST_1).build()
 
   it should "test" in {

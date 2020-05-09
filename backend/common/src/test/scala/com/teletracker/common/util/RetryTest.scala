@@ -1,6 +1,5 @@
 package com.teletracker.common.util
 
-import org.scalatest.FlatSpec
 import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -8,8 +7,9 @@ import Futures._
 import com.teletracker.common.util.Retry.RetryOptions
 import java.net.SocketTimeoutException
 import scala.concurrent.duration._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class RetryTest extends FlatSpec {
+class RetryTest extends AnyFlatSpec {
   val scheduler = Executors.newSingleThreadScheduledExecutor()
   it should "retry a bit" in {
     val retries = new Retry(scheduler)

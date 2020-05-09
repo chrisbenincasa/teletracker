@@ -92,8 +92,7 @@ class TvShowImportHandler @Inject()(
           insertNewShow(item, args)
       }
       .andThen {
-        case Success(result)
-            if !args.dryRun && (result.inserted || result.updated) =>
+        case Success(result) if !args.dryRun && result.itemChanged =>
           logger.debug(
             s"Scheduling denormalization task item id = ${result.itemId}"
           )

@@ -1,7 +1,13 @@
 package com.teletracker.tasks.util
 
 import com.twitter.util.StorageUnit
-import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
+import java.io.{
+  BufferedOutputStream,
+  File,
+  FileOutputStream,
+  OutputStream,
+  PrintStream
+}
 import java.net.URI
 import java.nio.file.{Files, Paths}
 import scala.compat.java8.StreamConverters._
@@ -218,5 +224,30 @@ class FileRotator(
       outputPath.getOrElse(System.getProperty("user.dir")),
       f"$baseFileName.$idx%03d.txt"
     )
+  }
+}
+
+class CountingOutputStream(delegate: OutputStream) extends OutputStream {
+  private var _count = 0L
+
+  def getCount: Long = _count
+
+  override def write(b: Int): Unit = {
+    delegate.write(b)
+    _count += 1
+  }
+
+  override def write(b: Array[Byte]): Unit = {
+    delegate.write(b)
+    _count += b.length
+  }
+
+  override def write(
+    b: Array[Byte],
+    off: Int,
+    len: Int
+  ): Unit = {
+    delegate.write(b, off, len)
+    _count += len
   }
 }

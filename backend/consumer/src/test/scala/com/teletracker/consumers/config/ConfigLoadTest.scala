@@ -1,9 +1,9 @@
 package com.teletracker.consumers.config
 
 import com.teletracker.common.config.ConfigLoader
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ConfigLoadTest extends FlatSpec {
+class ConfigLoadTest extends AnyFlatSpec {
   import net.ceedubs.ficus.Ficus._
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 

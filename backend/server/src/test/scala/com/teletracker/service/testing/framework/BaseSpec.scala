@@ -9,12 +9,13 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.inject.{Modules}
 import com.twitter.finatra.http.EmbeddedHttpServer
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{Assertions, BeforeAndAfterAll, FlatSpec, Inside}
+import org.scalatest.{Assertions, BeforeAndAfterAll, Inside}
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import org.scalatest.flatspec.AnyFlatSpec
 
 trait BaseSpec
-    extends FlatSpec
+    extends AnyFlatSpec
     with Assertions
     with Inside
     with BeforeAndAfterAll {

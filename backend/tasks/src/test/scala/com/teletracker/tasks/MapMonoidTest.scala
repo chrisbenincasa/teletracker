@@ -3,13 +3,13 @@ package com.teletracker.tasks
 import cats.Monoid
 import io.circe.generic.JsonCodec
 import io.circe.generic.extras.{Configuration, ConfiguredJsonCodec}
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 
 object MapMonoidTest {
   implicit val config: Configuration = Configuration.default.copy()
 }
 
-class MapMonoidTest extends FlatSpec {
+class MapMonoidTest extends AnyFlatSpec {
   import cats.implicits._
 
   it should "combine" in {

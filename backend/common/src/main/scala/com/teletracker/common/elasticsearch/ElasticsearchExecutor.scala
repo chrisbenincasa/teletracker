@@ -90,8 +90,19 @@ class ElasticsearchExecutor @Inject()(
       override def onResponse(response: T): Unit =
         promise.trySuccess(response)
 
-      override def onFailure(e: Exception): Unit = promise.tryFailure(e)
+      override def onFailure(e: Exception): Unit =
+        promise.tryFailure(
+          new ElasticsearchRequestException(
+            "Request to Elasticsearch failed",
+            e
+          )
+        )
     }
     (listener, promise)
   }
 }
+
+class ElasticsearchRequestException(
+  message: String,
+  cause: Throwable)
+    extends Exception(message, cause)
