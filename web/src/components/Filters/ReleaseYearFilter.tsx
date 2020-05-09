@@ -15,9 +15,6 @@ const styles = makeStyles((theme: Theme) => ({
 }));
 
 const MIN_YEAR = 1900;
-const MIN_RATING = 0;
-const MAX_RATING = 10;
-const RATING_STEP = 0.5;
 
 interface Props {
   handleChange: (change: SliderChange) => void;
@@ -30,7 +27,7 @@ const ensureNumberInRange = (num: number, lo: number, hi: number) => {
   return Math.max(Math.min(num, hi), lo);
 };
 
-export default function SliderFilters(props: Props) {
+export default function ReleaseYearFilter(props: Props) {
   const classes = styles();
   const {
     filters: { sliders },
@@ -73,41 +70,6 @@ export default function SliderFilters(props: Props) {
     }
   }, [sliders, yearValue]);
 
-  const [imdbRatingValue, setImdbRatingValue] = React.useState([
-    ensureNumberInRange(
-      sliders?.imdbRating?.min || MIN_RATING,
-      MIN_RATING,
-      MAX_RATING,
-    ),
-    ensureNumberInRange(
-      sliders?.imdbRating?.max || MAX_RATING,
-      MIN_RATING,
-      MAX_RATING,
-    ),
-  ]);
-
-  useEffect(() => {
-    if (sliders && sliders.imdbRating) {
-      let currMin = _.head(imdbRatingValue);
-      let newMin = currMin;
-
-      let currMax = _.nth(imdbRatingValue, 1);
-      let newMax = currMax;
-
-      if (sliders.imdbRating.min !== currMin) {
-        newMin = sliders.imdbRating.min;
-      }
-
-      if (sliders.imdbRating.max !== currMax) {
-        newMax = sliders.imdbRating.max;
-      }
-
-      if (newMin !== currMin || newMax !== currMax) {
-        setImdbRatingValue([newMin || MIN_RATING, newMax || MAX_RATING]);
-      }
-    }
-  }, [sliders, imdbRatingValue]);
-
   const [debouncePropUpdate] = useDebouncedCallback(
     (sliderChange: SliderChange) => {
       if (props.handleChange) {
@@ -143,59 +105,26 @@ export default function SliderFilters(props: Props) {
     });
   };
 
-  const handleImdbChange = (event, newValue) => {
-    setImdbRatingValue(newValue);
-  };
-
-  const handleImdbCommitted = (event, newValue) => {
-    let [min, max] = extractValues(newValue, MIN_RATING, MAX_RATING);
-    debouncePropUpdate({
-      imdbRating: {
-        min,
-        max,
-      },
-    });
-  };
-
   return (
-    <React.Fragment>
-      <div className={classes.sliderContainer}>
-        {props.showTitle && <Typography>Release Year</Typography>}
-        <Slider
-          value={yearValue}
-          min={MIN_YEAR}
-          max={nextYear}
-          marks={[
-            { value: MIN_YEAR, label: MIN_YEAR },
-            { value: nextYear, label: nextYear },
-          ]}
-          onChange={handleYearChange}
-          onChangeCommitted={handleYearCommitted}
-          valueLabelDisplay="auto"
-          aria-labelledby="range-slider"
-        />
-      </div>
-      <div className={classes.sliderContainer}>
-        {props.showTitle && <Typography>IMDb Rating</Typography>}
-        <Slider
-          value={imdbRatingValue}
-          min={MIN_RATING}
-          max={MAX_RATING}
-          step={RATING_STEP}
-          marks={[
-            { value: MIN_RATING, label: MIN_RATING },
-            { value: MAX_RATING, label: MAX_RATING },
-          ]}
-          onChange={handleImdbChange}
-          onChangeCommitted={handleImdbCommitted}
-          valueLabelDisplay="auto"
-          aria-labelledby="range-slider"
-        />
-      </div>
-    </React.Fragment>
+    <div className={classes.sliderContainer}>
+      {props.showTitle && <Typography>Release Year</Typography>}
+      <Slider
+        value={yearValue}
+        min={MIN_YEAR}
+        max={nextYear}
+        marks={[
+          { value: MIN_YEAR, label: MIN_YEAR },
+          { value: nextYear, label: nextYear },
+        ]}
+        onChange={handleYearChange}
+        onChangeCommitted={handleYearCommitted}
+        valueLabelDisplay="auto"
+        aria-labelledby="range-slider"
+      />
+    </div>
   );
 }
 
-SliderFilters.defaultProps = {
+ReleaseYearFilter.defaultProps = {
   showTitle: true,
 };
