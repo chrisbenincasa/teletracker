@@ -170,9 +170,11 @@ function ListDetailDialog(props: ListDetailDialogProps) {
 
   const handleDeleteList = () => {
     if (isLoggedIn) {
+      const migrationId = migrateListId !== '0' ? migrateListId : undefined;
+
       dispatchDeleteList({
         listId: list!.id,
-        mergeListId: migrateListId,
+        mergeListId: migrationId,
       });
 
       // TODO: Loading state.
@@ -205,12 +207,16 @@ function ListDetailDialog(props: ListDetailDialogProps) {
           </DialogContentText>
           {list && list.totalItems > 0 && (
             <FormControl className={classes.formControl}>
-              <InputLabel htmlFor="age-simple">
-                Migrate tracked items from this list to:
+              <InputLabel htmlFor="list-items">
+                Move items from this list to:
               </InputLabel>
-              <Select value={migrateListId} onChange={handleMigration}>
-                <MenuItem value="0">
-                  <em>Delete all tracked items</em>
+              <Select
+                value={migrateListId}
+                onChange={handleMigration}
+                id="list-items"
+              >
+                <MenuItem key="delete" value="0">
+                  <em>Delete these items</em>
                 </MenuItem>
                 {isLoggedIn &&
                   _.map(
