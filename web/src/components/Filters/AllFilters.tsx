@@ -198,12 +198,23 @@ const AllFilters = (props: Props) => {
     handleFilterUpdate({ ...filters, sortOrder });
   };
 
-  const setSliders = (sliderChange: SliderChange) => {
+  const setReleaseYear = (sliderChange: SliderChange) => {
     let newFilters: FilterParams = {
       ...filters,
       sliders: {
         ...(filters.sliders || {}),
         releaseYear: sliderChange.releaseYear,
+      },
+    };
+
+    handleFilterUpdate(newFilters);
+  };
+
+  const setRating = (sliderChange: SliderChange) => {
+    let newFilters: FilterParams = {
+      ...filters,
+      sliders: {
+        ...(filters.sliders || {}),
         imdbRating: sliderChange.imdbRating,
       },
     };
@@ -291,7 +302,7 @@ const AllFilters = (props: Props) => {
             <ExpansionPanelDetails>
               <div className={classes.slidersContainer}>
                 <div className={classes.sliderContainer}>
-                  <RatingFilter handleChange={setSliders} showTitle={false} />
+                  <RatingFilter handleChange={setRating} showTitle={false} />
                 </div>
               </div>
             </ExpansionPanelDetails>
@@ -311,7 +322,7 @@ const AllFilters = (props: Props) => {
               <div className={classes.slidersContainer}>
                 <div className={classes.sliderContainer}>
                   <ReleaseYearFilter
-                    handleChange={setSliders}
+                    handleChange={setReleaseYear}
                     showTitle={false}
                   />
                 </div>
@@ -422,10 +433,10 @@ const AllFilters = (props: Props) => {
 
             <div className={classes.slidersContainer}>
               {!disableRating ? (
-                <RatingFilter handleChange={setSliders} />
+                <RatingFilter handleChange={setRating} />
               ) : null}
               {!disableReleaseYear ? (
-                <ReleaseYearFilter handleChange={setSliders} />
+                <ReleaseYearFilter handleChange={setReleaseYear} />
               ) : null}
               <div className={classes.peopleContainer}>
                 {!disableStarring ? (
