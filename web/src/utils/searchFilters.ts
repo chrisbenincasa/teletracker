@@ -6,6 +6,8 @@ export interface SlidersState {
   imdbRating?: OpenRange;
 }
 
+export type SliderChange = Partial<SlidersState>;
+
 export const DEFAULT_FILTER_PARAMS: FilterParams = {};
 
 export function removeUndefinedKeys<T extends object>(obj: T): Partial<T> {
