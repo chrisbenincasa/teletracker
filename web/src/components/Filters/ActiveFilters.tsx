@@ -208,13 +208,10 @@ export default function ActiveFilters(props: Props) {
       imdbRatingStateNew = { ...filterState.filters.sliders.imdbRating };
 
       if (filters.imdbRatingMin) {
-        console.log('min');
         delete imdbRatingStateNew.min;
       }
 
       if (filters.imdbRatingMax) {
-        console.log('max');
-
         delete imdbRatingStateNew.max;
       }
     }
@@ -253,11 +250,6 @@ export default function ActiveFilters(props: Props) {
   let imdbMin = sliders?.imdbRating?.min;
   let imdbMax = sliders?.imdbRating?.max;
 
-  console.log({ releaseYearMin });
-  console.log({ releaseYearMax });
-  console.log({ imdbMin });
-  console.log({ imdbMax });
-
   const isDefaultFilters = filterParamsEqual(
     filters,
     defaultFilters,
@@ -294,9 +286,6 @@ export default function ActiveFilters(props: Props) {
       showTypeFilters ||
       showImdbSlider,
   );
-
-  console.log({ showReleaseYearSlider });
-  console.log({ showImdbSlider });
 
   return (
     <div className={classes.activeFiltersContainer}>
