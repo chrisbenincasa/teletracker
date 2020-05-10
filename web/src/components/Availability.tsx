@@ -206,8 +206,9 @@ const Availability = (props: Props) => {
               href={link ? link : '#'}
               target="_blank"
               className={classes.link}
+              key={index}
             >
-              <Card className={classes.cardRoot} key={index}>
+              <Card className={classes.cardRoot}>
                 <CardMedia
                   className={classes.networkLogo}
                   image={logoUri}

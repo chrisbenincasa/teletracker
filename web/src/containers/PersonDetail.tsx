@@ -155,7 +155,8 @@ function PersonDetail(props: NewProps) {
   };
 
   const renderDescriptiveDetails = (person: Person) => {
-    const biography = person.biography || '';
+    const biography =
+      person.biography || 'This actors biography is currently unavailable.';
     const isMobile = ['xs', 'sm'].includes(width);
     const truncateSize = isMobile ? 300 : 1200;
 
