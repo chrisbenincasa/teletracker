@@ -16,10 +16,11 @@ import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
 import SortDropdown from './SortDropdown';
-import Sliders, { SliderChange } from './Sliders';
+import ReleaseYearFilter from './ReleaseYearFilter';
+import RatingFilter from './RatingFilter';
 import CreateSmartListButton from '../Buttons/CreateSmartListButton';
 import CreateDynamicListDialog from '../Dialogs/CreateDynamicListDialog';
-import { FilterParams } from '../../utils/searchFilters';
+import { FilterParams, SliderChange } from '../../utils/searchFilters';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import PersonFilter from './PersonFilter';
 import { FilterContext } from './FilterContext';
@@ -132,7 +133,8 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  disableSliders?: boolean;
+  disableRating?: boolean;
+  disableReleaseYear?: boolean;
   disableSortOptions?: boolean;
   disableNetworks?: boolean;
   disableTypeChange?: boolean;
@@ -154,7 +156,8 @@ const AllFilters = (props: Props) => {
     disabledGenres,
     isListDynamic,
     open,
-    disableSliders,
+    disableRating,
+    disableReleaseYear,
     disableStarring,
     disableSortOptions,
     disableNetworks,
@@ -276,7 +279,26 @@ const AllFilters = (props: Props) => {
           </ExpansionPanel>
         )}
 
-        {!disableSliders ? (
+        {!disableRating ? (
+          <ExpansionPanel square>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="slider-content"
+              id="slider-header"
+            >
+              <Typography>IMDB Rating</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <div className={classes.slidersContainer}>
+                <div className={classes.sliderContainer}>
+                  <RatingFilter handleChange={setSliders} showTitle={false} />
+                </div>
+              </div>
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+        ) : null}
+
+        {!disableReleaseYear ? (
           <ExpansionPanel square>
             <ExpansionPanelSummary
               expandIcon={<ExpandMore />}
@@ -288,7 +310,10 @@ const AllFilters = (props: Props) => {
             <ExpansionPanelDetails>
               <div className={classes.slidersContainer}>
                 <div className={classes.sliderContainer}>
-                  <Sliders handleChange={setSliders} showTitle={false} />
+                  <ReleaseYearFilter
+                    handleChange={setSliders}
+                    showTitle={false}
+                  />
                 </div>
               </div>
             </ExpansionPanelDetails>
@@ -396,7 +421,12 @@ const AllFilters = (props: Props) => {
             </div>
 
             <div className={classes.slidersContainer}>
-              {!disableSliders ? <Sliders handleChange={setSliders} /> : null}
+              {!disableRating ? (
+                <RatingFilter handleChange={setSliders} />
+              ) : null}
+              {!disableReleaseYear ? (
+                <ReleaseYearFilter handleChange={setSliders} />
+              ) : null}
               <div className={classes.peopleContainer}>
                 {!disableStarring ? (
                   <PersonFilter
