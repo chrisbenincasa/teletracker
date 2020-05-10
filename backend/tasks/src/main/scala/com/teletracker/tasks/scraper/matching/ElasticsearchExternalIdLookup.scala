@@ -47,26 +47,28 @@ class ElasticsearchExternalIdLookup[T <: ScrapedItem](
       Future.successful(Nil -> itemsWithoutUniqueId)
     } else {
       val itemsByExternalId = itemsWithUniqueId
+        .filter(_.thingType.isDefined)
         .map(item => {
-          getUniqueKey(item).get -> item
+          (getUniqueKey(item).get, item.thingType.get) -> item
         })
         .toMap
 
       val externalIdsToLookup = itemsByExternalId.collect {
-        case (externalId, item) if item.thingType.isDefined =>
-          (externalSource, externalId, item.thingType.get)
+        case ((externalId, itemType), item) if item.thingType.isDefined =>
+          (externalSource, externalId, itemType)
       }
 
       itemLookup
         .lookupItemsByExternalIds(externalIdsToLookup.toList)
         .map(found => {
-          val foundExternalIds = found.keySet.map(_._2)
-          val missingKeys = itemsByExternalId.keySet -- foundExternalIds
+          val missingKeys = itemsByExternalId.keySet -- found.keySet.map {
+            case (id, itemType) => id.id -> itemType
+          }
 
           val matchResults = found.toList.flatMap {
-            case ((_, externalId), esItem) =>
+            case ((externalId, itemType), esItem) =>
               itemsByExternalId
-                .get(externalId)
+                .get(externalId.id -> itemType)
                 .map(item => {
                   MatchResult(item, esItem)
                 })

@@ -516,7 +516,7 @@ class TvShowImportHandler @Inject()(
     itemSearch
       .lookupItemsByExternalIds(allIds)
       .map(_.map {
-        case ((_, id), item) => id -> item
+        case ((EsExternalId(_, id), _), item) => id -> item
       })
       .map(tmdbIdToItem => {
         item.recommendations.toList

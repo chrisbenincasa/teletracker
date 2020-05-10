@@ -95,7 +95,7 @@ class FindMissingChangedItems @Inject()(
               .toList
           )
           .map(results => {
-            val keys = results.keySet.map(_._2.toInt)
+            val keys = results.keySet.map(_._1.id.toInt)
             batch.toSet -- keys
           })
       })

@@ -87,7 +87,7 @@ abstract class UpdateItemPopularities[T <: TmdbDumpFileRow: Decoder](
       )
       .map(results => {
         results.map {
-          case ((_, id), item) => id.toInt -> item.id
+          case ((EsExternalId(_, id), _), item) => id.toInt -> item.id
         }
       })
   }

@@ -92,7 +92,7 @@ class ImportWikidataIds @Inject()(
               .mapValues(_.id)
 
             for {
-              ((_, externalId), itemId) <- idByExternalId
+              ((EsExternalId(_, externalId), _), itemId) <- idByExternalId
               wikiId <- wikiIdByExternalId.get(externalId).toList
             } {
               val scriptObj = Map(

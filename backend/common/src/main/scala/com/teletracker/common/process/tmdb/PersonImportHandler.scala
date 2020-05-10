@@ -1,9 +1,10 @@
 package com.teletracker.common.process.tmdb
 
-import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.{model, _}
 import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
 import com.teletracker.common.elasticsearch.model.{
+  EsExternalId,
   EsItem,
   EsPerson,
   EsPersonCastCredit,
@@ -335,51 +336,54 @@ class PersonImportHandler @Inject()(
 
   private def buildCast(
     person: Person,
-    castAndCrewById: Map[(ExternalSource, String), EsItem]
+    castAndCrewById: Map[(EsExternalId, ItemType), EsItem]
   ): Option[List[EsPersonCastCredit]] = {
     person.combined_credits.map(_.cast.flatMap(castCredit => {
-      castAndCrewById
-        .get(ExternalSource.TheMovieDb -> castCredit.id.toString)
-        .filter(
-          matchingItem =>
-            castCredit.media_type
-              .map(_.toThingType)
-              .contains(matchingItem.`type`)
-        )
-        .map(matchingItem => {
-          model.EsPersonCastCredit(
-            id = matchingItem.id,
-            title = matchingItem.original_title.getOrElse(""),
-            character = castCredit.character,
-            `type` = matchingItem.`type`,
-            slug = matchingItem.slug
-          )
+      castCredit.media_type
+        .map(_.toThingType)
+        .flatMap(itemType => {
+          castAndCrewById
+            .get(
+              EsExternalId(ExternalSource.TheMovieDb, castCredit.id.toString),
+              itemType
+            )
+            .map(matchingItem => {
+              model.EsPersonCastCredit(
+                id = matchingItem.id,
+                title = matchingItem.original_title.getOrElse(""),
+                character = castCredit.character,
+                `type` = matchingItem.`type`,
+                slug = matchingItem.slug
+              )
+            })
         })
+
     }))
   }
 
   private def buildCrew(
     person: Person,
-    castAndCrewById: Map[(ExternalSource, String), EsItem]
+    castAndCrewById: Map[(EsExternalId, ItemType), EsItem]
   ): Option[List[EsPersonCrewCredit]] = {
     person.combined_credits.map(_.crew.flatMap(crewCredit => {
-      castAndCrewById
-        .get(ExternalSource.TheMovieDb -> crewCredit.id.toString)
-        .filter(
-          matchingItem =>
-            crewCredit.media_type
-              .map(_.toThingType)
-              .contains(matchingItem.`type`)
-        )
-        .map(matchingItem => {
-          model.EsPersonCrewCredit(
-            id = matchingItem.id,
-            title = matchingItem.original_title.getOrElse(""),
-            department = crewCredit.department,
-            job = crewCredit.job,
-            `type` = matchingItem.`type`,
-            slug = matchingItem.slug
-          )
+      crewCredit.media_type
+        .map(_.toThingType)
+        .flatMap(itemType => {
+          castAndCrewById
+            .get(
+              EsExternalId(ExternalSource.TheMovieDb, crewCredit.id.toString),
+              itemType
+            )
+            .map(matchingItem => {
+              model.EsPersonCrewCredit(
+                id = matchingItem.id,
+                title = matchingItem.original_title.getOrElse(""),
+                department = crewCredit.department,
+                job = crewCredit.job,
+                `type` = matchingItem.`type`,
+                slug = matchingItem.slug
+              )
+            })
         })
     }))
   }
@@ -409,7 +413,7 @@ class PersonImportHandler @Inject()(
 
   private def fetchCastAndCredits(
     person: Person
-  ): Future[Map[(ExternalSource, String), EsItem]] = {
+  ): Future[Map[(EsExternalId, ItemType), EsItem]] = {
     person.combined_credits
       .map(credits => {
         val castIds = credits.cast.flatMap(castMember => {
@@ -431,7 +435,7 @@ class PersonImportHandler @Inject()(
         itemLookup.lookupItemsByExternalIds(lookupTriples)
       })
       .getOrElse(
-        Future.successful(Map.empty[(ExternalSource, String), EsItem])
+        Future.successful(Map.empty[(EsExternalId, ItemType), EsItem])
       )
   }
 }

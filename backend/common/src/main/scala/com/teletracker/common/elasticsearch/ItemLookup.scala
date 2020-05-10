@@ -2,9 +2,11 @@ package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
+import com.teletracker.common.elasticsearch.cache.ExternalIdMappingCache
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{EsExternalId, EsItem}
 import com.teletracker.common.util.Functions._
+import com.teletracker.common.util.Maps._
 import com.teletracker.common.util.Slug
 import javax.inject.Inject
 import org.elasticsearch.action.get.{GetRequest, MultiGetRequest}
@@ -23,7 +25,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class ItemLookup @Inject()(
   teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor,
-  idMappingLookup: ElasticsearchExternalIdMappingStore
+  idMappingLookup: ElasticsearchExternalIdMappingStore,
+  externalIdMappingCache: ExternalIdMappingCache
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
   def lookupItemsByIds(ids: Set[UUID]): Future[Map[UUID, Option[EsItem]]] = {
@@ -69,100 +72,120 @@ class ItemLookup @Inject()(
     materializeRecommendations: Boolean = false,
     materializeCredits: Boolean = false
   ): Future[Option[EsItem]] = {
-    idMappingLookup
-      .getItemIdForExternalId(EsExternalId(source, id), thingType)
-      .flatMap {
-        case Some(value) =>
-          lookupItem(
-            Left(value),
-            None,
-            shouldMaterializeRecommendations = materializeRecommendations,
-            shouldMateralizeCredits = materializeCredits
-          ).map(_.map(_.rawItem))
+    val externalId = EsExternalId(source, id)
 
-        case None =>
-          val query = boolQuery()
-            .filter(
-              termQuery("external_ids", EsExternalId(source, id).toString)
-            )
-            .filter(termQuery("type", thingType.toString))
+    def lookupId(id: UUID): Future[Option[EsItem]] = {
+      lookupItem(
+        Left(id),
+        None,
+        shouldMaterializeRecommendations = materializeRecommendations,
+        shouldMateralizeCredits = materializeCredits
+      ).map(_.map(_.rawItem))
+    }
 
-          singleItemSearch(query)
-      }
+    def searchForId(): Future[Option[EsItem]] = {
+      val query = boolQuery()
+        .filter(
+          termQuery("external_ids", externalId.toString)
+        )
+        .filter(termQuery("type", thingType.toString))
+
+      singleItemSearch(query)
+    }
+
+    externalIdMappingCache.get(externalId, thingType) match {
+      case Some(value) => lookupId(value)
+
+      case None =>
+        idMappingLookup
+          .getItemIdForExternalId(externalId, thingType)
+          .flatMap {
+            case Some(value) => lookupId(value)
+            case None        => searchForId()
+          }
+    }
   }
 
   def lookupItemsByExternalIds(
     items: List[(ExternalSource, String, ItemType)]
-  ): Future[Map[(ExternalSource, String), EsItem]] = {
+  ): Future[Map[(EsExternalId, ItemType), EsItem]] = {
     if (items.isEmpty) {
       Future.successful(Map.empty)
     } else {
       val keys = items.map {
-        case (source, id, itemType) => (EsExternalId(source, id) -> itemType)
+        case (source, str, itemType) => EsExternalId(source, str) -> itemType
+      }.toSet
+
+      val foundCachedMappings = externalIdMappingCache.getAll(keys)
+      val missingMappings = keys -- foundCachedMappings.keySet
+
+      val storeMappingsFut = if (missingMappings.nonEmpty) {
+        idMappingLookup
+          .getItemIdsForExternalIds(missingMappings)
+      } else {
+        Future.successful(Map.empty[(EsExternalId, ItemType), UUID])
       }
 
-      idMappingLookup
-        .getItemIdsForExternalIds(keys.toSet)
-        .flatMap(foundMap => {
-          val missing = foundMap.keySet -- keys
+      val searchFallbackResultsFut = storeMappingsFut.flatMap(storeMappings => {
+        val stillMissingMappings = missingMappings -- storeMappings.keySet
 
-          val fallbackSearch = if (missing.nonEmpty) {
-            val searches = missing.map {
-              case (externalId, typ) =>
-                val query = boolQuery()
-                  .filter(
-                    termQuery("external_ids", externalId.toString)
-                  )
-                  .filter(termQuery("type", typ.toString))
+        if (stillMissingMappings.nonEmpty) {
+          val searches = stillMissingMappings.map {
+            case (externalId, typ) =>
+              val query = boolQuery()
+                .filter(
+                  termQuery("external_ids", externalId.toString)
+                )
+                .filter(termQuery("type", typ.toString))
 
-                new SearchRequest(
-                  teletrackerConfig.elasticsearch.items_index_name
-                ).source(new SearchSourceBuilder().query(query).size(1))
+              new SearchRequest(
+                teletrackerConfig.elasticsearch.items_index_name
+              ).source(new SearchSourceBuilder().query(query).size(1))
+          }
+
+          val multiReq = new MultiSearchRequest()
+          searches.foreach(multiReq.add)
+
+          elasticsearchExecutor
+            .multiSearch(multiReq)
+            .map(resp => {
+              resp.getResponses.toList
+                .zip(items.map(item => item._1 -> item._2))
+                .map {
+                  case (response, sourceAndId) =>
+                    searchResponseToItems(response.getResponse).items.headOption
+                      .map(sourceAndId -> _)
+                }
+            })
+            .map(_.flatten.toMap)
+        } else {
+          Future.successful(Map.empty[(ExternalSource, String), EsItem])
+        }
+      })
+
+      val lookResultsFut = storeMappingsFut.flatMap(storeMappings => {
+        val allKnownMappings = foundCachedMappings ++ storeMappings
+        val externalIdsById = allKnownMappings.reverse
+        lookupItemsByIds(allKnownMappings.values.toSet).map(foundItems => {
+          foundItems
+            .collect {
+              case (uuid, Some(item)) =>
+                externalIdsById.get(uuid).map(_.map(_ -> item))
             }
-
-            val multiReq = new MultiSearchRequest()
-            searches.foreach(multiReq.add)
-
-            elasticsearchExecutor
-              .multiSearch(multiReq)
-              .map(resp => {
-                resp.getResponses.toList
-                  .zip(items.map(item => item._1 -> item._2))
-                  .map {
-                    case (response, sourceAndId) =>
-                      searchResponseToItems(response.getResponse).items.headOption
-                        .map(sourceAndId -> _)
-                  }
-              })
-              .map(_.flatten.toMap)
-          } else {
-            Future.successful(Map.empty[(ExternalSource, String), EsItem])
-          }
-
-          val directLookupsFut = lookupItemsByIds(foundMap.values.toSet)
-
-          for {
-            fallbackSearchResults <- fallbackSearch
-            directLookResults <- directLookupsFut
-          } yield {
-            keys
-              .flatMap(key => {
-                val (EsExternalId(externalSourceString, id), _) = key
-                val externalSource =
-                  ExternalSource.fromString(externalSourceString)
-
-                foundMap
-                  .get(key)
-                  .flatMap(directLookResults.get)
-                  .flatten
-                  .orElse {
-                    fallbackSearchResults.get(externalSource -> id)
-                  }
-                  .map(item => (externalSource, id) -> item)
-              })
-              .toMap
-          }
+            .flatten
+            .foldLeft(Map.empty[(EsExternalId, ItemType), EsItem])(_ ++ _)
         })
+      })
+
+      for {
+        lookupResults <- lookResultsFut
+        searchFallbacks <- searchFallbackResultsFut
+      } yield {
+        lookupResults ++ searchFallbacks.map {
+          case ((source, id), item) =>
+            (EsExternalId(source, id), item.`type`) -> item
+        }
+      }
     }
   }
 
