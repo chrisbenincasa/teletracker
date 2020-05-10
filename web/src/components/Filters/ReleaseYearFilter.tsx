@@ -1,8 +1,7 @@
 import React, { useContext, useEffect } from 'react';
-import { Slider, Theme, Typography } from '@material-ui/core';
-import makeStyles from '@material-ui/core/styles/makeStyles';
+import { makeStyles, Slider, Theme, Typography } from '@material-ui/core';
 import * as R from 'ramda';
-import { SlidersState } from '../../utils/searchFilters';
+import { SliderChange, SlidersState } from '../../utils/searchFilters';
 import { useDebouncedCallback } from 'use-debounce';
 import { FilterContext } from './FilterContext';
 import _ from 'lodash';
@@ -20,8 +19,6 @@ interface Props {
   handleChange: (change: SliderChange) => void;
   showTitle?: boolean;
 }
-
-export type SliderChange = Partial<SlidersState>;
 
 const ensureNumberInRange = (num: number, lo: number, hi: number) => {
   return Math.max(Math.min(num, hi), lo);
