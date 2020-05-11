@@ -34,7 +34,6 @@ export default function ScrollToTopButton(props: Props) {
     // to do: 100 is just a random number, we can play with this or make it dynamic
     if (scrollTop > 200 && !showScrollToTop) {
       setShowScrollToTop(true);
-      console.log('on');
     } else {
       setShowScrollToTop(false);
     }
