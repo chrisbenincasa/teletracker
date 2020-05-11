@@ -1,6 +1,7 @@
 package com.teletracker.common.util
 
 import java.util.concurrent.ScheduledExecutorService
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -1105,6 +1106,16 @@ object AsyncStream {
     case Nil                                          => empty
     case _ if seq.hasDefiniteSize && seq.tail.isEmpty => of(seq.head)
     case _                                            => seq.head +:: fromSeq(seq.tail)
+  }
+
+  def fromIterable[A](it: Iterable[A]): AsyncStream[A] = {
+    if (it.isEmpty) {
+      empty
+    } else if (it.hasDefiniteSize && it.tail.isEmpty) {
+      of(it.head)
+    } else {
+      it.head +:: fromIterable(it.tail)
+    }
   }
 
   /**

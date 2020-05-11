@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.hulu
 
 import com.teletracker.common.crypto.SecretResolver
-import com.teletracker.common.elasticsearch.ItemLookup
+import com.teletracker.common.elasticsearch.{FuzzyItemLookupRequest, ItemLookup}
 import com.teletracker.common.http.{HttpClient, HttpClientOptions, HttpRequest}
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.execution.SequentialFutures
@@ -150,17 +150,19 @@ class HuluFallbackMatching @Inject()(
 
   // TODO: Should this use the ES fallback matcher?
   private def lookupByNames(itemsByTitle: Map[String, HuluScrapeItem]) = {
-    val titleTriples = itemsByTitle.map {
+    val requests = itemsByTitle.map {
       case (title, item) =>
-        (
-          title,
-          item.thingType,
-          item.releaseYear.map(ry => (ry - 1) to (ry + 1))
+        FuzzyItemLookupRequest(
+          title = title,
+          description = item.description,
+          itemType = item.thingType,
+          releaseYearRange = item.releaseYear.map(ry => (ry - 1) to (ry + 1)),
+          looseReleaseYearMatching = true
         )
     }.toList
 
     itemLookup
-      .lookupItemsByTitleMatch(titleTriples)
+      .lookupFuzzy(requests)
       .map(matchesByTitle => {
         matchesByTitle.collect {
           case (title, esItem)

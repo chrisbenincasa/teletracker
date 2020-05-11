@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.matching
 
-import com.teletracker.common.elasticsearch.ItemLookup
+import com.teletracker.common.elasticsearch.{FuzzyItemLookupRequest, ItemLookup}
 import com.teletracker.common.elasticsearch.model.EsItem
 import com.teletracker.tasks.scraper.model.MatchResult
 import com.teletracker.tasks.scraper.{model, IngestJobArgsLike, ScrapedItem}
@@ -43,25 +43,29 @@ class ElasticsearchExactTitleLookup @Inject()(
   ) = {
     val itemsByTitle = items.map(item => item.title -> item).toMap
 
-    val titleTriples = items.map(item => {
-      (
-        item.title,
-        item.thingType.filter(_ => includeType),
-        item.releaseYear.map(ry => (ry - 1) to (ry + 1))
+    val requests = items.map(item => {
+      FuzzyItemLookupRequest(
+        title = item.title,
+        description = item.description,
+        itemType = item.thingType.filter(_ => includeType),
+        releaseYearRange = item.releaseYear.map(ry => (ry - 1) to (ry + 1)),
+        looseReleaseYearMatching = true
       )
     })
 
     itemSearch
-      .lookupItemsByTitleMatch(titleTriples, looseReleaseYearMatching = true)
+      .lookupFuzzy(requests)
       .map(matchesByTitle => {
         val (actualMatchesByTitle, nonMatches) = matchesByTitle.foldLeft(
           (List.empty[(T, EsItem)] -> List.empty[(T, EsItem)])
         ) {
           // If we've found a case-insensitive title match then add it to the positive match set
           case ((matches, nonMatches), (title, esItem))
-              if title.equalsIgnoreCase(
-                esItem.original_title.getOrElse("")
-              ) || esItem.title.get.exists(title.equalsIgnoreCase) =>
+              if
+//              title.equalsIgnoreCase(
+//                esItem.original_title.getOrElse("")
+//              ) ||
+              esItem.title.get.exists(title.equalsIgnoreCase) =>
             val newMatches = matches ++ (itemsByTitle
               .get(title)
               .map(_ -> esItem))

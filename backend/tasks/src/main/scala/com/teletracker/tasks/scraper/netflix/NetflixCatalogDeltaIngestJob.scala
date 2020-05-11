@@ -55,7 +55,6 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   override protected def createAvailabilities(
     networks: Set[StoredNetwork],
     itemId: UUID,
-    title: String,
     scrapedItem: NetflixCatalogItem,
     isAvailable: Boolean
   ): List[EsAvailability] = {

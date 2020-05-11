@@ -11,7 +11,7 @@ import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.util.{Folds, NetworkCache}
+import com.teletracker.common.util.{AsyncStream, Folds, NetworkCache}
 import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.scraper.matching.{
   CustomElasticsearchLookup,
@@ -20,7 +20,7 @@ import com.teletracker.tasks.scraper.matching.{
   LookupMethod
 }
 import com.teletracker.tasks.scraper.model.MatchResult
-import com.teletracker.tasks.util.SourceRetriever
+import com.teletracker.tasks.util.{FileUtils, SourceRetriever}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Codec, Encoder}
 import javax.inject.Inject
@@ -29,6 +29,7 @@ import java.net.URI
 import java.util.UUID
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.io.Source
 import scala.util.control.NonFatal
 
 trait IngestDeltaJobArgsLike {
@@ -93,6 +94,9 @@ abstract class IngestDeltaJobLike[
   @Inject
   private[this] var externalIdLookup: ElasticsearchExternalIdLookup.Factory = _
 
+  @Inject
+  private[this] var fileUtils: FileUtils = _
+
   protected def s3: S3Client
   protected def itemLookup: ItemLookup
   protected def itemUpdater: ItemUpdater
@@ -102,7 +106,7 @@ abstract class IngestDeltaJobLike[
   protected def externalSource: ExternalSource
 
   protected def parseMode: ParseMode = AllJson
-  protected def lookupMethod: LookupMethod[T] =
+  protected def lookupMethod(args: TypedArgs): LookupMethod[T] =
     new CustomElasticsearchLookup[T](
       List(
         externalIdLookup.create[T](externalSource, uniqueKey(_)),
@@ -128,76 +132,44 @@ abstract class IngestDeltaJobLike[
 
     val parser = new IngestJobParser()
 
-    val afterIds = try {
-      parser
-        .stream[T](afterSource.getLines())
-        .flatMap {
-          case Left(NonFatal(ex)) =>
-            logger.warn(s"Error parsing line: ${ex.getMessage}")
-            None
-          case Right(value) => Some(uniqueKey(value))
-        }
-        .toSet
-    } finally {
-      afterSource.close()
-    }
+    val afterIds = fileUtils
+      .readAllLinesToUniqueIdSet[T](parsedArgs.snapshotAfter, uniqueKey)
 
     logger.info(s"Found ${afterIds.size} IDs in the current snapshot")
 
-    val beforeIds = try {
-      parser
-        .stream[T](beforeSource.getLines())
-        .flatMap {
-          case Left(NonFatal(ex)) =>
-            logger.warn(s"Error parsing line: ${ex.getMessage}")
-            None
-          case Right(value) => Some(uniqueKey(value))
-        }
-        .toSet
-    } finally {
-      beforeSource.close()
-    }
+    val beforeIds = fileUtils
+      .readAllLinesToUniqueIdSet[T](parsedArgs.snapshotBefore, uniqueKey)
 
     logger.info(s"Found ${beforeIds.size} IDs in the previous snapshot")
 
     val newIds = afterIds -- beforeIds
     val removedIds = beforeIds -- afterIds
+    val matchingIds = afterIds.intersect(beforeIds)
 
     logger.info(
-      s"Checking for ${newIds.size} new IDs and ${removedIds.size} removed IDs"
+      s"Checking for ${newIds.size} new IDs, ${removedIds.size} removed IDs, and ${matchingIds.size} matching IDs."
     )
 
     val afterItemSource =
       sourceRetriever.getSource(parsedArgs.snapshotAfter, consultCache = true)
 
-    val (addedMatches, addedNotFound) = try {
-      parser
-        .asyncStream[T](afterItemSource.getLines())
-        .flatMapOption {
-          case Left(NonFatal(ex)) =>
-            logger.warn(s"Error parsing line: ${ex.getMessage}")
-            None
+    val (afterItems, afterItemsById) = readItems(afterItemSource)
 
-          case Right(value) if newIds.contains(uniqueKey(value)) =>
-            Some(value)
+    val (addedMatches, addedNotFound) = AsyncStream
+      .fromSeq(afterItems)
+      .filter(item => newIds.contains(uniqueKey(item)))
+      .throughApply(processAll(_, networks, parsedArgs))
+      .map {
+        case (matchResults, nonMatches) =>
+          val filteredResults = matchResults.filter {
+            case MatchResult(_, esItem) =>
+              parsedArgs.thingIdFilter.forall(_ == esItem.id)
+          }
 
-          case _ => None
-        }
-        .throughApply(processAll(_, networks, parsedArgs))
-        .map {
-          case (matchResults, nonMatches) =>
-            val filteredResults = matchResults.filter {
-              case MatchResult(_, esItem) =>
-                parsedArgs.thingIdFilter.forall(_ == esItem.id)
-            }
-
-            filteredResults -> nonMatches
-        }
-        .foldLeft(Folds.list2Empty[MatchResult[T], T])(Folds.fold2Append)
-        .await()
-    } finally {
-      afterItemSource.close()
-    }
+          filteredResults -> nonMatches
+      }
+      .foldLeft(Folds.list2Empty[MatchResult[T], T])(Folds.fold2Append)
+      .await()
 
     val newAvailabilities = addedMatches
       .filter {
@@ -209,54 +181,32 @@ abstract class IngestDeltaJobLike[
           val newAvailabilities = createAvailabilities(
             networks,
             esItem.id,
-            esItem.title.get.headOption.orElse(esItem.original_title).get,
             scrapedItem,
             isAvailable = true
           )
           PendingAvailabilityUpdates(esItem, scrapedItem, newAvailabilities)
       }
 
-    logger.info(
-      s"Found ${newAvailabilities.flatMap(_.availabilities).size} availabilities to add"
-    )
-
-    if (addedNotFound.nonEmpty) {
-      logger.warn(
-        s"Could not find matches for added items: ${addedNotFound}"
-      )
-    }
-
     val beforeItemSource =
       sourceRetriever.getSource(parsedArgs.snapshotBefore, consultCache = true)
 
-    val (beforeMatches, beforeNotFound) = try {
-      parser
-        .asyncStream[T](beforeItemSource.getLines())
-        .flatMapOption {
-          case Left(NonFatal(ex)) =>
-            logger.warn(s"Error parsing line: ${ex.getMessage}")
-            None
+    val (beforeItems, beforeItemsById) = readItems(beforeItemSource)
 
-          case Right(value) if removedIds.contains(uniqueKey(value)) =>
-            Some(value)
+    val (beforeMatches, beforeNotFound) = AsyncStream
+      .fromSeq(beforeItems)
+      .filter(item => removedIds.contains(uniqueKey(item)))
+      .throughApply(processAll(_, networks, parsedArgs))
+      .map {
+        case (matchResults, nonMatches) =>
+          val filteredResults = matchResults.filter {
+            case MatchResult(_, esItem) =>
+              parsedArgs.thingIdFilter.forall(_ == esItem.id)
+          }
 
-          case _ => None
-        }
-        .throughApply(processAll(_, networks, parsedArgs))
-        .map {
-          case (matchResults, nonMatches) =>
-            val filteredResults = matchResults.filter {
-              case MatchResult(_, esItem) =>
-                parsedArgs.thingIdFilter.forall(_ == esItem.id)
-            }
-
-            filteredResults -> nonMatches
-        }
-        .foldLeft(Folds.list2Empty[MatchResult[T], T])(Folds.fold2Append)
-        .await()
-    } finally {
-      beforeItemSource.close()
-    }
+          filteredResults -> nonMatches
+      }
+      .foldLeft(Folds.list2Empty[MatchResult[T], T])(Folds.fold2Append)
+      .await()
 
     val removedAvailabilities = beforeMatches
       .filter {
@@ -268,7 +218,6 @@ abstract class IngestDeltaJobLike[
           val newAvailabilities = createAvailabilities(
             networks,
             esItem.id,
-            esItem.title.get.headOption.orElse(esItem.original_title).get,
             scrapedItem,
             isAvailable = false
           )
@@ -276,23 +225,106 @@ abstract class IngestDeltaJobLike[
           PendingAvailabilityUpdates(esItem, scrapedItem, newAvailabilities)
       }
 
+    val itemChangesById = matchingIds.toSeq
+      .map(id => {
+        val before = beforeItemsById(id)
+        val after = afterItemsById(id)
+
+        before -> after
+      })
+      .flatMap {
+        case (before, after) => processItemChange(before, after).toSeq
+      }
+      .map(change => {
+        uniqueKey(change.after) -> change
+      })
+      .toMap
+
+    val (changedMatches, changedNotFound) = AsyncStream
+      .fromSeq(itemChangesById.values.toSeq)
+      .map(_.after)
+      .throughApply(processAll(_, networks, parsedArgs))
+      .map(
+        matchesAndMisses =>
+          filterMatchResults(
+            matchesAndMisses._1,
+            matchesAndMisses._2,
+            parsedArgs
+          )
+      )
+      .foldLeft(Folds.list2Empty[MatchResult[T], T])(Folds.fold2Append)
+      .await()
+
+    val (updateChanges, removeChanges) = changedMatches
+      .filter {
+        case MatchResult(_, esItem) =>
+          parsedArgs.thingIdFilter.forall(_ == esItem.id)
+      }
+      .foldLeft(
+        Folds.list2Empty[PendingAvailabilityUpdates, PendingAvailabilityUpdates]
+      ) {
+        case ((adds, removes), MatchResult(scrapedItem, esItem)) =>
+          itemChangesById.get(uniqueKey(scrapedItem)) match {
+            case Some(ItemChange(_, _, changeType)) =>
+              val isAvailable = changeType match {
+                case ItemChangeUpdate => true
+                case ItemChangeRemove => false
+              }
+
+              val availabilities = createAvailabilities(
+                networks,
+                esItem.id,
+                scrapedItem,
+                isAvailable = isAvailable
+              )
+
+              val pendingUpdates =
+                PendingAvailabilityUpdates(esItem, scrapedItem, availabilities)
+              if (isAvailable) {
+                (adds :+ pendingUpdates) -> removes
+              } else {
+                adds -> (removes :+ pendingUpdates)
+              }
+            case None => adds -> removes
+          }
+      }
+
+    if (addedNotFound.nonEmpty) {
+      logger.warn(
+        s"Could not find matches for added items: ${addedNotFound}"
+      )
+    }
+
     if (beforeNotFound.nonEmpty) {
       logger.warn(
-        s"Could not find matches for added items: ${beforeNotFound}"
+        s"Could not find matches for removed items: ${beforeNotFound}"
+      )
+    }
+
+    if (changedNotFound.nonEmpty) {
+      logger.warn(
+        s"Could not find matches for changed items: ${changedNotFound}"
       )
     }
 
     logger.info(
-      s"Found ${removedAvailabilities.flatMap(_.availabilities).size} availabilities to remove"
+      s"Found ${(newAvailabilities ++ updateChanges).flatMap(_.availabilities).size} availabilities to add/update"
+    )
+
+    logger.info(
+      s"Found ${(removedAvailabilities ++ removeChanges).flatMap(_.availabilities).size} availabilities to remove"
     )
 
     if (!parsedArgs.dryRun) {
+      val allAdds = newAvailabilities ++ updateChanges
+      val allRemoves = removedAvailabilities ++ removeChanges
       logger.info(
-        s"Saving ${(newAvailabilities ++ removedAvailabilities).size} availabilities"
+        s"Saving ${allAdds.size + allRemoves.size} availabilities"
       )
-      saveAvailabilities(newAvailabilities, removedAvailabilities).await()
+
+      saveAvailabilities(allAdds, allRemoves).await()
     } else {
-      newAvailabilities.foreach(av => {
+      (newAvailabilities ++ updateChanges).foreach(av => {
         logger.info(
           s"Would've added availability (ID: ${av.esItem.id}, external: ${uniqueKey(
             av.item
@@ -300,7 +332,7 @@ abstract class IngestDeltaJobLike[
         )
       })
 
-      removedAvailabilities.foreach(av => {
+      (removedAvailabilities ++ removeChanges).foreach(av => {
         logger.info(
           s"Would've removed availability (ID: ${av.esItem.id}, external: ${uniqueKey(
             av.item
@@ -308,6 +340,55 @@ abstract class IngestDeltaJobLike[
         )
       })
     }
+  }
+
+  private def filterMatchResults(
+    matches: List[MatchResult[T]],
+    nonMatches: List[T],
+    args: ArgsType
+  ) = {
+    val filteredResults = matches.filter {
+      case MatchResult(_, esItem) =>
+        args.thingIdFilter.forall(_ == esItem.id)
+    }
+
+    filteredResults -> nonMatches
+  }
+
+  private def readItemIds(source: Source) = {
+    try {
+      new IngestJobParser()
+        .stream[T](source.getLines())
+        .flatMap {
+          case Left(NonFatal(ex)) =>
+            logger.warn(s"Error parsing line: ${ex.getMessage}")
+            None
+          case Right(value) => Some(uniqueKey(value))
+        }
+        .toSet
+    } finally {
+      source.close()
+    }
+  }
+
+  private def readItems(source: Source) = {
+    val items = new IngestJobParser()
+      .asyncStream[T](source.getLines())
+      .flatMapOption {
+        case Left(NonFatal(ex)) =>
+          logger.warn(s"Error parsing line: ${ex.getMessage}")
+          None
+
+        case Right(value) =>
+          Some(value)
+
+        case _ => None
+      }
+      .toList
+      .await()
+    val itemsById = items.map(item => uniqueKey(item) -> item).toMap
+
+    (items, itemsById)
   }
 
   protected def saveAvailabilities(
@@ -419,7 +500,6 @@ abstract class IngestDeltaJobLike[
   protected def createAvailabilities(
     networks: Set[StoredNetwork],
     itemId: UUID,
-    title: String,
     scrapedItem: T,
     isAvailable: Boolean
   ): List[EsAvailability]
@@ -432,8 +512,25 @@ abstract class IngestDeltaJobLike[
     args: ArgsType
   ): Future[Unit] = Future.unit
 
+  // Override if items appearing on both sides of the diff could have produced some change.
+  protected def processItemChange(
+    before: T,
+    after: T
+  ): Option[ItemChange] = {
+    None
+  }
+
   case class PendingAvailabilityUpdates(
     esItem: EsItem,
     item: T,
     availabilities: List[EsAvailability])
+
+  case class ItemChange(
+    before: T,
+    after: T,
+    changeType: ItemChangeType)
+
+  sealed trait ItemChangeType
+  case object ItemChangeUpdate extends ItemChangeType
+  case object ItemChangeRemove extends ItemChangeType
 }

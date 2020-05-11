@@ -204,9 +204,11 @@ class DynamoElasticsearchExternalIdMapping @Inject()(
 
   private def parseKey(key: String): Option[(EsExternalId, ItemType)] = {
     Try {
-      key.split(":", 2) match {
-        case Array(externalId, itemTypeString) =>
-          EsExternalId.parse(externalId) -> ItemType.fromString(itemTypeString)
+      key.splitAt(key.lastIndexOf(':')) match {
+        case (externalId, itemTypeString) =>
+          EsExternalId.parse(externalId) -> ItemType.fromString(
+            itemTypeString.stripPrefix(":")
+          )
       }
     } match {
       case Failure(exception) =>

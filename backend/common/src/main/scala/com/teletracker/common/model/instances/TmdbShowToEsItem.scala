@@ -57,7 +57,7 @@ object TmdbShowToEsItem extends ToEsItem[TvShow] {
       t.external_ids
         .flatMap(_.imdb_id)
         .map(imdb => EsExternalId(ExternalSource.Imdb, imdb))
-    ).flatten
+    ).flatten.sortBy(_.toString)
   }
 
   override def esItemVideos(t: TvShow): List[EsItemVideo] = {

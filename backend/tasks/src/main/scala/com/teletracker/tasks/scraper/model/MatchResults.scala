@@ -2,6 +2,7 @@ package com.teletracker.tasks.scraper.model
 
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.model.EsItem
+import com.teletracker.common.util.Slug
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.ScrapedItem
 import io.circe.Codec
@@ -84,10 +85,11 @@ object PartialEsItem {
     PartialEsItem(
       id = esItem.id,
       original_title = esItem.original_title,
-      title = esItem.title.get,
+      title = esItem.title.get.head,
       release_date = esItem.release_date,
       external_ids = esItem.external_ids.map(_.map(_.toString)),
-      `type` = esItem.`type`
+      `type` = esItem.`type`,
+      slug = esItem.slug
     )
   }
 }
@@ -95,7 +97,8 @@ object PartialEsItem {
 case class PartialEsItem(
   id: UUID,
   original_title: Option[String],
-  title: List[String],
+  title: String,
   release_date: Option[LocalDate],
   external_ids: Option[List[String]],
-  `type`: ItemType)
+  `type`: ItemType,
+  slug: Option[Slug])

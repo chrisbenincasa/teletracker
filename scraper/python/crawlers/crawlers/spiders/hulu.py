@@ -3,12 +3,13 @@ import scrapy
 import json
 import re
 
+from crawlers.base_spider import BaseSitemapSpider
 from crawlers.items import HuluItem, HuluEpisodeItem
 
 additional_network_re = re.compile(r'Add\s([A-z]+).\s')
 
 
-class HuluSpider(scrapy.spiders.SitemapSpider):
+class HuluSpider(BaseSitemapSpider):
     name = 'hulu'
     allowed_domains = ['hulu.com']
 
@@ -96,9 +97,9 @@ class HuluSpider(scrapy.spiders.SitemapSpider):
         return episodes
 
     def parse_movie(self, response):
-        data = response.xpath('//script/text()').re(r'\s*__NEXT_DATA__\s*=\s*(.*)')
-        if len(data) > 0:
-            loaded_data = json.loads(data[0])
+        data = response.xpath('//script[@id="__NEXT_DATA__"]/text()').get() #.re(r'\s*__NEXT_DATA__\s*=\s*(.*)')
+        if data:
+            loaded_data = json.loads(data)
             try:
                 components = loaded_data["props"]["pageProps"]["layout"]["components"]
                 if components:
@@ -111,7 +112,8 @@ class HuluSpider(scrapy.spiders.SitemapSpider):
                                 description=component['description'],
                                 network='Hulu',
                                 itemType='movie',
-                                premiereDate=component['premiereDate']
+                                premiereDate=component['premiereDate'],
+                                additionalServiceRequired=self._extract_additional_service(components)
                             )
             except KeyError as e:
                 self.log('{}'.format(e))

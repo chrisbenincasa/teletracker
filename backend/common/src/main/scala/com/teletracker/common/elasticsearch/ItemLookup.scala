@@ -189,18 +189,22 @@ class ItemLookup @Inject()(
     }
   }
 
-  def lookupItemsByTitleMatch(
-    titles: List[(String, Option[ItemType], Option[Range])], // TODO: Accept a range
-    looseReleaseYearMatching: Boolean = false
+  def lookupFuzzy(
+    fuzzyRequests: List[FuzzyItemLookupRequest]
   ): Future[Map[String, EsItem]] = {
-    if (titles.isEmpty) {
+    if (fuzzyRequests.isEmpty) {
       Future.successful(Map.empty)
     } else {
-      val searches = titles
-        .map(
-          Function
-            .tupled(exactTitleMatchQuery(_, _, _, looseReleaseYearMatching))
-        )
+      val searches = fuzzyRequests
+        .map(request => {
+          fuzzyMatchQuery(
+            title = request.title,
+            thingType = request.itemType,
+            description = request.description,
+            releaseYear = request.releaseYearRange,
+            looseYearMatching = request.looseReleaseYearMatching
+          )
+        })
         .map(query => {
           val searchSource = new SearchSourceBuilder().query(query).size(1)
           new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
@@ -213,7 +217,7 @@ class ItemLookup @Inject()(
       elasticsearchExecutor
         .multiSearch(multiReq)
         .map(resp => {
-          resp.getResponses.toList.zip(titles.map(_._1)).map {
+          resp.getResponses.toList.zip(fuzzyRequests.map(_.title)).map {
             case (response, title) =>
               searchResponseToItems(response.getResponse).items.headOption
                 .map(title -> _)
@@ -351,9 +355,10 @@ class ItemLookup @Inject()(
       )
   }
 
-  private def exactTitleMatchQuery(
+  private def fuzzyMatchQuery(
     title: String,
     thingType: Option[ItemType],
+    description: Option[String],
     releaseYear: Option[Range],
     looseYearMatching: Boolean
   ) = {
@@ -365,7 +370,7 @@ class ItemLookup @Inject()(
               .operator(Operator.AND)
           )
           .should(
-            matchQuery("title", title).operator(Operator.AND)
+            matchQuery("title", title).operator(Operator.AND).boost(2.0f)
           )
           .should(
             matchQuery("alternative_titles.title", title)
@@ -373,10 +378,16 @@ class ItemLookup @Inject()(
           )
           .minimumShouldMatch(1)
       )
+      .applyOptional(description)(
+        (builder, desc) =>
+          builder.should(
+            matchQuery("overview", desc).boost(1.5f)
+          )
+      )
       .applyOptional(thingType)(
         (builder, typ) =>
           builder.filter(
-            termQuery("type", typ.toString)
+            termQuery("type", typ.toString).boost(1.5f)
           )
       )
       .applyOptional(releaseYear)(
@@ -483,3 +494,10 @@ case class ItemLookupResponse(
   rawItem: EsItem,
   materializedCast: ElasticsearchPeopleResponse,
   materializedRecommendations: ElasticsearchItemsResponse)
+
+case class FuzzyItemLookupRequest(
+  title: String,
+  description: Option[String],
+  itemType: Option[ItemType],
+  releaseYearRange: Option[Range],
+  looseReleaseYearMatching: Boolean)

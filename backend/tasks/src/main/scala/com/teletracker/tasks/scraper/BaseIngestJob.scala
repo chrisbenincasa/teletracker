@@ -32,6 +32,8 @@ abstract class BaseIngestJob[
   codec: Codec[T])
     extends TeletrackerTask {
 
+  override type TypedArgs = IngestJobArgsType
+
   @Inject
   private[this] var teletrackerConfig: TeletrackerConfig = _
   @Inject
@@ -79,7 +81,7 @@ abstract class BaseIngestJob[
     _artifacts += file
   }
 
-  protected def lookupMethod: LookupMethod[T]
+  protected def lookupMethod(args: TypedArgs): LookupMethod[T]
 
   protected def processMode(args: IngestJobArgsType): ProcessMode
 
@@ -160,7 +162,7 @@ abstract class BaseIngestJob[
   ): Future[(List[MatchResult[T]], List[T])] = {
     val filteredAndSanitized = items.filter(shouldProcessItem).map(sanitizeItem)
     if (filteredAndSanitized.nonEmpty) {
-      lookupMethod
+      lookupMethod(args)
         .apply(
           filteredAndSanitized,
           args

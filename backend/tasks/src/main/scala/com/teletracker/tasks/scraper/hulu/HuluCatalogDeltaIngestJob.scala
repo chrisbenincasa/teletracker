@@ -22,7 +22,7 @@ class HuluCatalogDeltaIngestJob @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   elasticsearchLookup: ElasticsearchLookup)
-    extends IngestDeltaJob[HuluCatalogItem](elasticsearchLookup) {
+    extends IngestDeltaJob[HuluScrapeCatalogItem](elasticsearchLookup) {
 
   override protected val networkNames: Set[String] = Set("hulu")
   override protected val externalSource: ExternalSource = ExternalSource.Hulu
@@ -30,8 +30,7 @@ class HuluCatalogDeltaIngestJob @Inject()(
   override protected def createAvailabilities(
     networks: Set[StoredNetwork],
     itemId: UUID,
-    title: String,
-    scrapedItem: HuluCatalogItem,
+    scrapedItem: HuluScrapeCatalogItem,
     isAvailable: Boolean
   ): List[EsAvailability] = {
     List(PresentationType.SD, PresentationType.HD).flatMap(presentationType => {
@@ -55,6 +54,24 @@ class HuluCatalogDeltaIngestJob @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def uniqueKey(item: HuluCatalogItem): String =
+  override protected def uniqueKey(item: HuluScrapeCatalogItem): String =
     item.externalId.get
+
+  override protected def processItemChange(
+    before: HuluScrapeCatalogItem,
+    after: HuluScrapeCatalogItem
+  ): Option[ItemChange] = {
+    val changeType = (
+      before.additionalServiceRequired,
+      after.additionalServiceRequired
+    ) match {
+      // Item is not exclusive to another additional service anymore
+      case (Some(_), None) => Some(ItemChangeUpdate)
+      // Item is now exclusive to an addon
+      case (None, Some(_)) => Some(ItemChangeRemove)
+      case _               => None // TODO: Handle other change types
+    }
+
+    changeType.map(ItemChange(before, after, _))
+  }
 }

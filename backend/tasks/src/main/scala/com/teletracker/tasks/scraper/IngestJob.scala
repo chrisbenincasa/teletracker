@@ -7,7 +7,11 @@ import com.teletracker.common.elasticsearch.model.{
   EsExternalId,
   EsItem
 }
-import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.elasticsearch.{
+  AvailabilityQueryHelper,
+  ItemLookup,
+  ItemUpdater
+}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
@@ -27,6 +31,7 @@ import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Codec, Decoder, Encoder}
 import javax.inject.Inject
+import org.elasticsearch.common.xcontent.{XContentHelper, XContentType}
 import software.amazon.awssdk.services.s3.S3Client
 import java.io.File
 import java.net.URI
@@ -63,7 +68,9 @@ case class IngestJobArgs(
   dryRun: Boolean,
   parallelism: Int,
   sourceLimit: Int,
-  perBatchSleepMs: Option[Int])
+  perBatchSleepMs: Option[Int],
+  enableExternalIdMatching: Boolean = true,
+  reimport: Boolean = false)
     extends IngestJobArgsLike
 
 abstract class IngestJob[T <: ScrapedItem](
@@ -101,15 +108,23 @@ abstract class IngestJob[T <: ScrapedItem](
   private[this] var externalIdLookup: ElasticsearchExternalIdLookup.Factory = _
   @Inject
   private[this] var elasticsearchLookup: ElasticsearchLookup = _
+  @Inject
+  private[this] var availabilityQueryHelper: AvailabilityQueryHelper = _
 
-  protected def lookupMethod: LookupMethod[T] = {
-    new CustomElasticsearchLookup[T](
+  protected def lookupMethod(args: TypedArgs): LookupMethod[T] = {
+    val externalIdMatchers = if (args.enableExternalIdMatching) {
       externalSources.map(externalSource => {
         externalIdLookup.createOpt[T](
           externalSource,
           (item: T) => getExternalIds(item).get(externalSource)
         )
-      }) :+ elasticsearchLookup.toMethod[T]
+      })
+    } else {
+      Nil
+    }
+
+    new CustomElasticsearchLookup[T](
+      externalIdMatchers :+ elasticsearchLookup.toMethod[T]
     )
   }
 
@@ -140,7 +155,10 @@ abstract class IngestJob[T <: ScrapedItem](
       dryRun = args.valueOrDefault("dryRun", true),
       parallelism = args.valueOrDefault("parallelism", 32),
       sourceLimit = args.valueOrDefault("sourceLimit", -1),
-      perBatchSleepMs = args.value[Int]("perBatchSleepMs")
+      perBatchSleepMs = args.value[Int]("perBatchSleepMs"),
+      enableExternalIdMatching =
+        args.valueOrDefault("enableExternalIdMatching", true),
+      reimport = args.valueOrDefault("reimport", false)
     )
   }
 
@@ -151,6 +169,26 @@ abstract class IngestJob[T <: ScrapedItem](
 
     logger.info("Running preprocess phase")
     preprocess(parsedArgs, args)
+
+    if (parsedArgs.reimport) {
+      val sources = externalSources.map(_.getName)
+      val matchingNetworks =
+        network.filter(net => sources.contains(net.slug.value))
+      if (!parsedArgs.dryRun) {
+        logger.info("Reimport mode. Deleting existing availability.")
+        availabilityQueryHelper.deleteAvailabilityForNetworks(matchingNetworks)
+      } else {
+        val query =
+          availabilityQueryHelper.getDeleteAvailabilityForNetworksQuery(
+            matchingNetworks
+          )
+        val jsonQuery =
+          XContentHelper.toXContent(query, XContentType.JSON, true)
+        logger.info(
+          s"Would've deleted all availability for networks: ${sources}: ${jsonQuery.utf8ToString()}"
+        )
+      }
+    }
 
     logger.info(s"Starting ingest of ${externalSources} content")
 

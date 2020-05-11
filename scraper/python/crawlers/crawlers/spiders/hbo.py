@@ -1,10 +1,12 @@
 import json
-import scrapy
-
-from crawlers.items import HboItem
-from crawlers.util import strip_tags
 from os import path
 from urllib import parse
+
+import scrapy
+
+from crawlers.base_spider import BaseSitemapSpider
+from crawlers.items import HboItem
+from crawlers.util import strip_tags
 
 
 def _get_band_of_type(react_data, typ):
@@ -107,12 +109,11 @@ def _parse_movie_programs_json(loaded_json, partial_item):
             partial_item['highDef'] = movie['hd']
 
             return partial_item
-
     except KeyError:
         return partial_item
 
 
-class HboSpider(scrapy.spiders.SitemapSpider):
+class HboSpider(BaseSitemapSpider):
     name = 'hbo'
     allowed_domains = ['hbo.com']
 
@@ -126,7 +127,7 @@ class HboSpider(scrapy.spiders.SitemapSpider):
     ]
 
     custom_settings = {
-        'DOWNLOAD_DELAY': 0.2
+        'DOWNLOAD_DELAY': 0.5
     }
 
     def parse_series(self, response):
@@ -179,13 +180,10 @@ class HboSpider(scrapy.spiders.SitemapSpider):
                     nowUrl=now_url
                 )
 
-                if external_id:
-                    yield item
-                else:
-                    yield scrapy.Request(
-                        'https://proxy-v4.cms.hbo.com/v1/schedule/programs?productIds={}'.format(streaming_id),
-                        callback=self.finish_parse_movie,
-                        meta={'item': item})
+                yield scrapy.Request(
+                    'https://proxy-v4.cms.hbo.com/v1/schedule/programs?productIds={}'.format(streaming_id),
+                    callback=self.finish_parse_movie,
+                    meta={'item': item})
 
     def finish_parse_movie(self, response):
         item = response.meta['item']
