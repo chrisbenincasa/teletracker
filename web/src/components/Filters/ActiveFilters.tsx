@@ -181,7 +181,7 @@ export default function ActiveFilters(props: Props) {
   };
 
   const resetFilters = () => {
-    setFilters(defaultFilters || DEFAULT_FILTER_PARAMS);
+    setFilters(_.extend({}, defaultFilters || {}));
   };
 
   const removeFilters = (filters: FilterRemove) => {
@@ -244,7 +244,9 @@ export default function ActiveFilters(props: Props) {
       people: peopleChanged ? newPeople : filterState.filters.people,
     });
 
-    setFilters(_.extend(defaultFilters || {}, filterParams));
+    setFilters(
+      _.extend({}, defaultFilters || DEFAULT_FILTER_PARAMS, filterParams),
+    );
   };
 
   const mapGenre = (genre: number) => {
