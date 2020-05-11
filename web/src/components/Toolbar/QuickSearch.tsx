@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  CardMedia,
   Chip,
   ClickAwayListener,
   Collapse,
@@ -14,6 +15,13 @@ import {
   Theme,
   Typography,
 } from '@material-ui/core';
+import {
+  AccessTime,
+  Event,
+  Movie,
+  SupervisedUserCircle,
+  Tv,
+} from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import { Item } from '../../types/v2/Item';
 import { truncateText } from '../../utils/textHelper';
@@ -22,10 +30,13 @@ import { getTmdbPosterImage } from '../../utils/image-helper';
 import { formatRuntime } from '../../utils/textHelper';
 import moment from 'moment';
 import { useRouter } from 'next/router';
+import ResponsiveImage from '../ResponsiveImage';
 
 const useStyles = makeStyles<Theme, Props>((theme: Theme) => ({
   chip: {
     margin: theme.spacing(0.5, 0.5, 0.5, 0),
+    border: 'none',
+    textTransform: 'capitalize',
   },
   chipWrapper: {
     display: 'flex',
@@ -57,6 +68,7 @@ const useStyles = makeStyles<Theme, Props>((theme: Theme) => ({
   poster: {
     width: 50,
     marginRight: theme.spacing(1),
+    overflow: 'hidden',
   },
   searchWrapper: props => ({
     height: 'auto',
@@ -166,17 +178,22 @@ function QuickSearch(props: Props) {
                               onClick={event =>
                                 handleMenuItemClick(event, result.relativeUrl)
                               }
+                              style={{ height: 100 }}
                               // onClick={event =>
                               //   props.handleResetSearchAnchor(event)
                               // }
                             >
                               {getTmdbPosterImage(result) ? (
-                                <img
-                                  alt={`Movie poster for ${result.canonicalTitle}`}
-                                  src={`https://image.tmdb.org/t/p/w92${
-                                    getTmdbPosterImage(result)!.id
-                                  }`}
-                                  className={classes.poster}
+                                <CardMedia
+                                  item={result}
+                                  component={ResponsiveImage}
+                                  imageType="poster"
+                                  imageStyle={{
+                                    width: 50,
+                                    marginRight: 8,
+                                    fontSize: '3rem',
+                                    maxHeight: 75,
+                                  }}
                                 />
                               ) : (
                                 <div className={classes.missingPoster}>
@@ -201,16 +218,26 @@ function QuickSearch(props: Props) {
                                 <div className={classes.chipWrapper}>
                                   <Chip
                                     label={result.type}
-                                    clickable
+                                    variant="outlined"
                                     size="small"
                                     className={classes.chip}
+                                    icon={
+                                      result.type === 'movie' ? (
+                                        <Movie fontSize="small" />
+                                      ) : (
+                                        <Tv fontSize="small" />
+                                      )
+                                    }
                                   />
                                   {rating && rating.certification && (
                                     <Chip
-                                      label={rating.certification}
-                                      clickable
+                                      label={`Rated ${rating.certification}`}
+                                      variant="outlined"
                                       size="small"
                                       className={classes.chip}
+                                      icon={
+                                        <SupervisedUserCircle fontSize="small" />
+                                      }
                                     />
                                   )}
                                   {result.release_date && (
@@ -218,17 +245,19 @@ function QuickSearch(props: Props) {
                                       label={moment(result.release_date).format(
                                         'YYYY',
                                       )}
-                                      clickable
+                                      variant="outlined"
                                       size="small"
                                       className={classes.chip}
+                                      icon={<Event fontSize="small" />}
                                     />
                                   )}
                                   {runtime && (
                                     <Chip
                                       label={runtime}
-                                      clickable
+                                      variant="outlined"
                                       size="small"
                                       className={classes.chip}
+                                      icon={<AccessTime fontSize="small" />}
                                     />
                                   )}
                                 </div>

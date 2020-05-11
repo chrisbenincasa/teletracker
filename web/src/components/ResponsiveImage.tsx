@@ -17,14 +17,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     height: '100%',
     color: theme.palette.grey[500],
     backgroundColor: theme.palette.grey[300],
-    position: 'absolute',
-    top: 0,
+    fontSize: '10rem',
   },
   fallbackImageIcon: {
     alignSelf: 'center',
     margin: '0 auto',
     display: 'inline-block',
-    fontSize: '10rem',
   },
 }));
 
@@ -148,7 +146,7 @@ const ResponsiveImage = ({
 
   const renderPlaceholder = () => {
     return (
-      <div className={classes.fallbackImageWrapper}>
+      <div className={classes.fallbackImageWrapper} style={imageStyle}>
         <Icon className={classes.fallbackImageIcon} fontSize="inherit">
           {imageType === 'profile' ? 'person' : 'broken_image'}
         </Icon>
