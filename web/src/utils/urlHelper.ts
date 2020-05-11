@@ -87,7 +87,7 @@ export const updateUrlParamsForNextRouter = (
   );
 };
 
-export const updateMultipleUrlParams = (
+const updateMultipleUrlParams = (
   qs: string,
   replace: (str: string) => void,
   keyValuePairs: [string, any | undefined][],
