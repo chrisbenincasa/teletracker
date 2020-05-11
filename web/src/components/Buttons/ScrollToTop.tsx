@@ -23,12 +23,13 @@ interface Props {
   onClick: () => void;
   style?: object;
   className?: string;
+  show: boolean;
 }
 
 export default function ScrollToTopButton(props: Props) {
   const classes = useStyles();
 
-  return (
+  return props.show ? (
     <IconButton
       onClick={props.onClick}
       style={props.style}
@@ -38,5 +39,5 @@ export default function ScrollToTopButton(props: Props) {
       <KeyboardArrowUp />
       <Typography variant="srOnly">Scroll to Top</Typography>
     </IconButton>
-  );
+  ) : null;
 }
