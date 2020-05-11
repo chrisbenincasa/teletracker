@@ -270,7 +270,7 @@ export default function ActiveFilters(props: Props) {
     !isDefaultFilters && Boolean(networks && networks.length > 0);
   const showTypeFilters =
     !isDefaultFilters && Boolean(itemTypes && itemTypes.length > 0);
-  const showSort = !isDefaultFilters;
+  const showSort = !isDefaultFilters && defaultFilters?.sortOrder !== sortOrder;
   const showPersonFilters =
     !isDefaultFilters && Boolean(people && people.length > 0);
 
