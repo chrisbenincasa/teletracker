@@ -18,7 +18,7 @@ import React, {
 import InfiniteScroll from 'react-infinite-scroller';
 import { useDispatch, useSelector } from 'react-redux';
 import { search } from '../actions/search';
-import ScrollToTop from '../components/Buttons/ScrollToTop';
+import ScrollToTopContainer from '../components/ScrollToTopContainer';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import AllFilters from '../components/Filters/AllFilters';
@@ -100,7 +100,6 @@ const Search = (props: Props) => {
     (state: AppState) => state.search.bookmark,
   );
 
-  const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [searchText, setSearchText] = useState(currentSearchText || '');
   const { filters } = useContext(FilterContext);
@@ -121,28 +120,6 @@ const Search = (props: Props) => {
   useEffect(() => {
     setSearchText(currentSearchText);
   }, [currentSearchText]);
-
-  const onScroll = useCallback(() => {
-    const scrollTop = window.pageYOffset || 0;
-    // to do: 100 is just a random number, we can play with this or make it dynamic
-    if (scrollTop > 100 && !showScrollToTop) {
-      setShowScrollToTop(true);
-    } else if (scrollTop < 100 && showScrollToTop) {
-      setShowScrollToTop(false);
-    }
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setShowScrollToTop(false);
-  };
-
-  useEffect(() => {
-    window.addEventListener('scroll', onScroll, false);
-    return () => {
-      window.removeEventListener('scroll', onScroll, false);
-    };
-  });
 
   const loadResults = (firstLoad?: boolean) => {
     // This is to handle the case where a query param doesn't exist, we'll want to use the redux state.
@@ -227,7 +204,7 @@ const Search = (props: Props) => {
   // || isInViewport;
 
   return (
-    <React.Fragment>
+    <ScrollToTopContainer>
       <div className={classes.searchResultsContainer}>
         {showSearch && (
           <Fade in={showSearch} ref={searchWrapperRef} timeout={500}>
@@ -319,21 +296,10 @@ const Search = (props: Props) => {
                 </Typography>
               </div>
             )}
-            {showScrollToTop && (
-              <ScrollToTop
-                onClick={scrollToTop}
-                style={{
-                  position: 'fixed',
-                  bottom: 8,
-                  right: 8,
-                  backgroundColor: '#00838f',
-                }}
-              />
-            )}
           </React.Fragment>
         )}
       </div>
-    </React.Fragment>
+    </ScrollToTopContainer>
   );
 };
 

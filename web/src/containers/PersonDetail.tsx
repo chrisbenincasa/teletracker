@@ -13,6 +13,7 @@ import { personFetchInitiated } from '../actions/people/get_person';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import CreateDynamicListDialog from '../components/Dialogs/CreateDynamicListDialog';
 import ManageTrackingButton from '../components/Buttons/ManageTrackingButton';
+import ScrollToTopContainer from '../components/ScrollToTopContainer';
 import ResponsiveImage from '../components/ResponsiveImage';
 import { Person } from '../types/v2/Person';
 import { DEFAULT_FILTER_PARAMS, FilterParams } from '../utils/searchFilters';
@@ -323,14 +324,12 @@ function PersonDetail(props: NewProps) {
   };
 
   return (
-    <div>
-      <React.Fragment>
-        <Fade in={person && !loadingPerson && !needsFetch}>
-          <div style={{ width: '100%' }}>{renderPerson()}</div>
-        </Fade>
-        {!person || loadingPerson || needsFetch ? renderLoading() : null}
-      </React.Fragment>
-    </div>
+    <ScrollToTopContainer>
+      <Fade in={person && !loadingPerson && !needsFetch}>
+        <div style={{ width: '100%' }}>{renderPerson()}</div>
+      </Fade>
+      {!person || loadingPerson || needsFetch ? renderLoading() : null}
+    </ScrollToTopContainer>
   );
 }
 
