@@ -38,6 +38,7 @@ import ItemCard from '../components/ItemCard';
 import AllFilters from '../components/Filters/AllFilters';
 import ActiveFilters from '../components/Filters/ActiveFilters';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
+import ScrollToTopContainer from '../components/ScrollToTopContainer';
 import { List } from '../types';
 import { calculateLimit, getOrInitListOptions } from '../utils/list-utils';
 import { FilterParams } from '../utils/searchFilters';
@@ -650,7 +651,11 @@ function ListDetail(props: ListDetailProps) {
     );
   };
 
-  return !list ? renderLoading() : renderListDetail(list!);
+  return !list ? (
+    renderLoading()
+  ) : (
+    <ScrollToTopContainer>{renderListDetail(list!)}</ScrollToTopContainer>
+  );
 }
 
 // DEBUG only.

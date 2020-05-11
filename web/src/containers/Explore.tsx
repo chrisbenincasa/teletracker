@@ -22,7 +22,7 @@ import ActiveFilters from '../components/Filters/ActiveFilters';
 import AllFilters from '../components/Filters/AllFilters';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ItemCard from '../components/ItemCard';
-import ScrollToTop from '../components/Buttons/ScrollToTop';
+import ScrollToTopContainer from '../components/ScrollToTopContainer';
 import { calculateLimit } from '../utils/list-utils';
 import {
   DEFAULT_POPULAR_LIMIT,
@@ -92,12 +92,6 @@ const useStyles = makeStyles((theme: Theme) =>
       flexGrow: 1,
       flexDirection: 'column',
     },
-    scrollToTop: {
-      position: 'fixed',
-      bottom: theme.spacing(1),
-      right: theme.spacing(3),
-      zIndex: theme.zIndex.appBar,
-    },
   }),
 );
 
@@ -115,7 +109,6 @@ function Explore() {
   let [featuredItems, setFeaturedItems] = useStateDeepEq<Id[]>([]);
   let [showFilter, setShowFilter] = useState(false);
   let [needsNewFeatured, setNeedsNewFeatured] = useState(false);
-  let [showScrollToTop, setShowScrollToTop] = useState(false);
 
   const popularWrapper = useRef<HTMLDivElement | null>(null);
   const previousWidth = usePrevious<Breakpoint>(width);
@@ -140,16 +133,6 @@ function Explore() {
   //
   // Logic
   //
-
-  const onScroll = useCallback(() => {
-    const scrollTop = window.pageYOffset || 0;
-    // to do: 100 is just a random number, we can play with this or make it dynamic
-    if (scrollTop > 100 && !showScrollToTop) {
-      setShowScrollToTop(true);
-    } else if (scrollTop < 100 && showScrollToTop) {
-      setShowScrollToTop(false);
-    }
-  }, []);
 
   const getNumberFeaturedItems = useCallback(() => {
     if (['xs', 'sm'].includes(width)) {
@@ -256,11 +239,6 @@ function Explore() {
     }
   }, [popular, thingsById, width, theme, featuredItemsIndex]);
 
-  const scrollToTop = useCallback(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setShowScrollToTop(false);
-  }, []);
-
   const toggleFilters = () => {
     setShowFilter(prev => !prev);
   };
@@ -278,10 +256,6 @@ function Explore() {
     if (!loading) {
       debouncedLoadMore();
     }
-
-    if (!showScrollToTop) {
-      setShowScrollToTop(true);
-    }
   }, [popular]);
 
   //
@@ -295,11 +269,8 @@ function Explore() {
       setNeedsNewFeatured(true);
     }
 
-    window.addEventListener('scroll', onScroll, false);
-
     return () => {
       clearPopularState();
-      window.removeEventListener('scroll', onScroll);
     };
   }, []);
 
@@ -410,14 +381,13 @@ function Explore() {
   };
 
   return (
-    <div className={classes.popularWrapper}>
-      {loading && renderLoading()}
-      <Featured featuredItems={featuredItems} />
-      {renderPopular()}
-      {showScrollToTop && (
-        <ScrollToTop onClick={scrollToTop} className={classes.scrollToTop} />
-      )}
-    </div>
+    <ScrollToTopContainer>
+      <div className={classes.popularWrapper}>
+        {loading && renderLoading()}
+        <Featured featuredItems={featuredItems} />
+        {renderPopular()}
+      </div>
+    </ScrollToTopContainer>
   );
 }
 
