@@ -364,7 +364,7 @@ export default function AddToListDialog(props: Props) {
             onClick={toggleCreateAList}
           >
             <PlaylistAdd className={classes.leftIcon} />
-            New List
+            Create List
           </Button>
           <div className={classes.spacer} />
           <Button onClick={handleModalClose} className={classes.button}>
