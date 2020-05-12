@@ -4,16 +4,14 @@ import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { TeletrackerResponse } from '../../utils/api-client';
 import _ from 'lodash';
-import {
-  ItemType,
-  SortOptions,
-  NetworkType,
-  OpenRange,
-  Paging,
-} from '../../types';
+import { Paging } from '../../types';
 import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
-import { FilterParams, normalizeFilterParams } from '../../utils/searchFilters';
+import {
+  FilterParams,
+  makeFilterParams,
+  normalizeFilterParams,
+} from '../../utils/searchFilters';
 
 export const SEARCH_INITIATED = 'search/INITIATED';
 export const SEARCH_PRELOAD_INITIATED = 'search/preload/INITIATED';
@@ -24,13 +22,7 @@ export interface SearchInitiatedPayload {
   query: string;
   bookmark?: string;
   limit?: number;
-  itemTypes?: ItemType[];
-  networks?: NetworkType[];
-  genres?: number[];
-  releaseYearRange?: OpenRange;
-  sort?: SortOptions | 'search_score';
-  cast?: string[];
-  imdbRating?: OpenRange;
+  filters?: FilterParams;
 }
 
 export type SearchInitiatedAction = FSA<
@@ -78,28 +70,21 @@ export const searchSaga = function*() {
           client => client.search,
           {
             searchText: payload.query,
-            itemTypes: payload.itemTypes,
-            networks: payload.networks,
+            itemTypes: payload.filters?.itemTypes,
+            networks: payload.filters?.networks,
             bookmark: payload.bookmark,
             sort: 'search_score',
             limit: payload.limit,
-            genres: payload.genres,
-            releaseYearRange: payload.releaseYearRange,
-            castIncludes: payload.cast,
-            imdbRating: payload.imdbRating,
+            genres: payload.filters?.genresFilter,
+            releaseYearRange: payload.filters?.sliders?.releaseYear,
+            castIncludes: payload.filters?.people,
+            imdbRating: payload.filters?.sliders?.releaseYear,
           },
         );
 
-        const filters: FilterParams = normalizeFilterParams({
-          itemTypes: payload.itemTypes,
-          genresFilter: payload.genres,
-          networks: payload.networks,
-          people: payload.cast,
-          sliders: {
-            releaseYear: payload.releaseYearRange,
-            imdbRating: payload.imdbRating,
-          },
-        });
+        const filters: FilterParams = normalizeFilterParams(
+          payload.filters || makeFilterParams(),
+        );
 
         if (response.ok) {
           let successPayload = {

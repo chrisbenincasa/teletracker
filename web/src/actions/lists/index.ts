@@ -8,6 +8,7 @@ import {
   ListRetrieveInitiatedAction,
   ListRetrieveSuccessAction,
 } from './get_list';
+import { ListRetrieveAllInitiatedAction } from './retrieve_all_lists';
 
 export * from './create_list';
 export * from './delete_list';
@@ -23,4 +24,5 @@ export type ListActions =
   | ListAddFailedAction
   | ListRetrieveInitiatedAction
   | ListRetrieveSuccessAction
-  | ListRetrieveFailedAction;
+  | ListRetrieveFailedAction
+  | ListRetrieveAllInitiatedAction;

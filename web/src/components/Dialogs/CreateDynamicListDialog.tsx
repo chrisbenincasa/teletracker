@@ -45,6 +45,8 @@ import { AppState } from '../../reducers';
 import { createList } from '../../actions/lists';
 import CreateAListValidator from '../../utils/validation/CreateAListValidator';
 import { collect } from '../../utils/collection-utils';
+import Immutable from 'immutable';
+import L from '../../utils/immutable/list-utils';
 
 const useStyles = makeStyles(theme => ({
   button: {
@@ -101,7 +103,7 @@ export default function CreateDynamicListDialog(props: Props) {
   };
 
   const createListRulesFromFilters = () => {
-    let rules: ListRule[] = [];
+    let rules = Immutable.List<ListRule>();
     if (filters.itemTypes) {
       rules = rules.concat(
         filters.itemTypes.map(type => ({
@@ -120,12 +122,11 @@ export default function CreateDynamicListDialog(props: Props) {
               return {
                 networkId: foundNetwork.id,
                 type: ListRuleType.UserListNetworkRule,
-              };
-            } else {
-              return null;
+              } as ListRule;
             }
           })
-          .filter(x => !_.isUndefined(x)) as ListNetworkRule[],
+          .filter(x => !_.isUndefined(x))
+          .map(x => x!),
       );
     }
 
@@ -141,14 +142,14 @@ export default function CreateDynamicListDialog(props: Props) {
     }
 
     if (filters.sliders && filters.sliders.releaseYear) {
-      rules = rules.concat({
+      rules = rules.push({
         minimum: filters.sliders.releaseYear.min,
         maximum: filters.sliders.releaseYear.max,
         type: ListRuleType.UserListReleaseYearRule,
       } as ListReleaseYearRule);
     }
 
-    if (filters.people && filters.people.length > 0) {
+    if (filters.people && !filters.people.isEmpty()) {
       rules = rules.concat(
         filters.people.map(person => {
           return {
@@ -166,14 +167,14 @@ export default function CreateDynamicListDialog(props: Props) {
     icon: any,
     key: string,
     labelType: string,
-    labels: T[],
+    labels: Immutable.List<T>,
     extractLabel: (label: T) => string,
     pluralize: (labelType: string) => string = t => t + 's',
   ) => {
-    if (labels.length === 0) {
+    if (labels.isEmpty()) {
       return null;
     } else {
-      if (labels.length > 1) {
+      if (labels.size > 1) {
         labelType = pluralize(labelType);
       }
 
@@ -185,7 +186,7 @@ export default function CreateDynamicListDialog(props: Props) {
               return (
                 <React.Fragment key={extractLabel(label)}>
                   <span style={{ paddingRight: 4 }}>{extractLabel(label)}</span>
-                  {idx + 1 < all.length ? (
+                  {idx + 1 < all.size ? (
                     <b style={{ paddingRight: 4 }}> OR </b>
                   ) : null}
                 </React.Fragment>
@@ -204,8 +205,8 @@ export default function CreateDynamicListDialog(props: Props) {
     }
   };
 
-  const renderGenreRules = (genreIds: number[]) => {
-    let actualGenres = collect(genreIds, genreId =>
+  const renderGenreRules = (genreIds: Immutable.List<number>) => {
+    let actualGenres = L.collect(genreIds, genreId =>
       _.find(props.genres, g => g.id === genreId),
     );
 
@@ -218,8 +219,8 @@ export default function CreateDynamicListDialog(props: Props) {
     );
   };
 
-  const renderNetworkRules = (networkTypes: NetworkType[]) => {
-    let actualNetworks = collect(networkTypes, networkId =>
+  const renderNetworkRules = (networkTypes: Immutable.List<NetworkType>) => {
+    let actualNetworks = L.collect(networkTypes, networkId =>
       _.find(props.networks, g => g.slug === networkId),
     );
 
@@ -269,8 +270,10 @@ export default function CreateDynamicListDialog(props: Props) {
     }
   };
 
-  const renderPersonRules = (people: string[]) => {
-    let actualPeople = collect(people, person => personNameBySlugOrId[person]);
+  const renderPersonRules = (people: Immutable.List<string>) => {
+    let actualPeople = L.collect(people, person =>
+      personNameBySlugOrId.get(person),
+    );
 
     return renderLabels(
       <Person />,
@@ -282,7 +285,7 @@ export default function CreateDynamicListDialog(props: Props) {
     );
   };
 
-  const renderItemTypes = (types: ItemType[]) => {
+  const renderItemTypes = (types: Immutable.List<ItemType>) => {
     return renderLabels(
       <Movie />,
       'type_rules',

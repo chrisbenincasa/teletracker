@@ -7,6 +7,7 @@ import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
 import { updateUser } from './update_user';
 import ReactGA from 'react-ga';
+import { List } from 'immutable';
 
 export const USER_SELF_UPDATE_NETWORKS = 'user/self/networks/UPDATE';
 export const USER_SELF_UPDATE_NETWORKS_SUCCESS =
@@ -17,8 +18,8 @@ export const updateNetworksForUser = createAction<UserUpdateNetworksAction>(
 );
 
 export interface UserUpdateNetworksPayload {
-  add: Network[];
-  remove: Network[];
+  add: List<Network>;
+  remove: List<Network>;
 }
 
 export type UserUpdateNetworksAction = FSA<
@@ -38,29 +39,32 @@ export const updateNetworksForUserSaga = function*() {
       if (!currUser) {
         // TODO: Fail
       } else {
-        let existingIds = R.map(R.prop('id'), currUser.networks || []);
-        let removeIds = R.map(R.prop('id'), payload.remove);
-        let subsRemoved = R.reject(
-          sub => R.contains(sub.id, removeIds),
-          currUser.networks || [],
-        );
-
-        let newSubs = R.concat(
-          subsRemoved,
-          R.reject(sub => R.contains(sub.id, existingIds), payload.add),
-        );
-
-        let newUser: UserSelf = {
-          ...currUser,
-          networks: newSubs,
-        };
-
-        yield put(updateUser(newUser));
-
-        ReactGA.event({
-          category: 'User',
-          action: 'Updated networks',
-        });
+        // let existingIds = (currUser.networks || List<Network>()).map(
+        //   net => net.id,
+        // );
+        // let removeIds = payload.remove.map(x => x.id);
+        // let subsRemoved: List<Network> = (
+        //   currUser.networks || List()
+        // ).filterNot(network => removeIds.contains(network.id));
+        //
+        // subsRemoved.concat(payload.add);
+        //
+        // let newSubs = R.concat(
+        //   subsRemoved,
+        //   R.reject(sub => R.contains(sub.id, existingIds), payload.add),
+        // );
+        //
+        // let newUser: UserSelf = {
+        //   ...currUser,
+        //   networks: newSubs,
+        // };
+        //
+        // yield put(updateUser(newUser));
+        //
+        // ReactGA.event({
+        //   category: 'User',
+        //   action: 'Updated networks',
+        // });
       }
     }
   });

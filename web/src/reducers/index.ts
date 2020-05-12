@@ -1,4 +1,4 @@
-import { Action, combineReducers } from 'redux';
+import { Action, ReducersMapObject } from 'redux';
 import auth, { State as AuthState } from './auth';
 import lists, { State as ListsState } from './lists';
 import itemDetail, { State as ItemDetailState } from './item-detail';
@@ -9,15 +9,22 @@ import availability, { State as AvailabilityState } from './availability';
 import popular, { State as PopularState } from './popular';
 import people, { State as PersonState } from './people';
 import explore, { State as ExploreState } from './explore';
-import filters, { State as FilterState } from './filters';
 import { BOOT_DONE } from '../actions';
+import { Record, RecordOf } from 'immutable';
+import { FSA } from 'flux-standard-action';
 
-export interface StartupState {
+export type StartupStateType = {
   isBooting: boolean;
-}
+};
+
+const makeStartupState = Record<StartupStateType>({
+  isBooting: true,
+});
+
+type StartupState = RecordOf<StartupStateType>;
 
 // A type that represents the entire app state
-export interface AppState {
+export type AppStateType = {
   auth: AuthState;
   itemDetail: ItemDetailState;
   search: SearchState;
@@ -29,8 +36,25 @@ export interface AppState {
   explore: ExploreState;
   people: PersonState;
   startup: StartupState;
-  filters: FilterState;
-}
+};
+
+export type AppState = RecordOf<AppStateType>;
+
+const initialState: AppStateType = {
+  auth: auth.initialState,
+  itemDetail: itemDetail.initialState,
+  search: search.initialState,
+  userSelf: userSelf.initialState,
+  lists: lists.initialState,
+  metadata: metadata.initialState,
+  availability: availability.initialState,
+  popular: popular.initialState,
+  explore: explore.initialState,
+  people: people.initialState,
+  startup: makeStartupState(),
+};
+
+const makeState = Record(initialState);
 
 // TODO clean this up - move to own file
 function startupReducer(
@@ -38,35 +62,51 @@ function startupReducer(
   action: Action,
 ): StartupState {
   if (!state) {
-    return {
-      isBooting: true,
-    };
+    return makeStartupState();
   } else {
     if (action.type === BOOT_DONE) {
-      return {
-        ...state,
-        isBooting: false,
-      };
+      return state.set('isBooting', false);
     } else {
-      return {
-        ...state,
-      };
+      return state;
     }
   }
 }
 
+function combineImmutableReducers<StateType>(
+  reducers: ReducersMapObject<StateType, FSA<any, any, any>>,
+  getDefaultState: () => RecordOf<StateType>,
+) {
+  return (
+    inputState: RecordOf<StateType> | undefined,
+    action: any,
+  ): RecordOf<StateType> => {
+    return (inputState || getDefaultState()).withMutations(mutable => {
+      for (let key in reducers) {
+        if (reducers.hasOwnProperty(key)) {
+          const reducer = reducers[key];
+          const currentState = mutable.get(key);
+          const nextState = reducer(currentState, action);
+          mutable.set(key, nextState);
+        }
+      }
+    });
+  };
+}
+
 export default () =>
-  combineReducers({
-    auth,
-    availability,
-    itemDetail,
-    lists,
-    metadata,
-    people,
-    popular,
-    search,
-    startup: startupReducer,
-    userSelf,
-    explore,
-    filters,
-  });
+  combineImmutableReducers<AppStateType>(
+    {
+      auth: auth.reducer,
+      availability: availability.reducer,
+      itemDetail: itemDetail.reducer,
+      lists: lists.reducer,
+      metadata: metadata.reducer,
+      people: people.reducer,
+      popular: popular.reducer,
+      search: search.reducer,
+      startup: startupReducer,
+      userSelf: userSelf.reducer,
+      explore: explore.reducer,
+    },
+    () => makeState(),
+  );

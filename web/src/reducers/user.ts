@@ -11,6 +11,7 @@ import {
 import { Network, UserPreferences } from '../types';
 import { flattenActions, handleAction } from './utils';
 import {
+  ListActions,
   USER_SELF_CREATE_LIST,
   USER_SELF_CREATE_LIST_SUCCESS,
   USER_SELF_DELETE_LIST,
@@ -24,50 +25,55 @@ import {
   UserStateChangeAction,
 } from '../actions/auth';
 import { CognitoUser } from '@aws-amplify/auth';
+import { List, Record, RecordOf } from 'immutable';
 
-export type Loading = { [X in UserActionTypes['type']]: boolean };
+export type LoadingType = { [X in UserActionTypes['type']]?: boolean };
+export type Loading = RecordOf<LoadingType>;
+const makeLoading = Record<LoadingType>({});
 
-export interface UserSelf {
+export type UserSelfType = {
   user?: CognitoUser;
   preferences?: UserPreferences;
-  networks?: Network[];
-}
+  networks?: List<Network>;
+};
 
-export interface State {
+export type UserSelf = RecordOf<UserSelfType>;
+
+const makeUserSelf = Record<UserSelfType>({});
+
+type StateType = {
   retrievingSelf: boolean;
   self?: UserSelf;
   updatingSelf: boolean;
-  loading: Partial<Loading>;
-}
+  loading: Loading;
+};
 
-const initialState: State = {
+export type State = RecordOf<StateType>;
+
+const initialState: StateType = {
   retrievingSelf: false,
   updatingSelf: false,
-  loading: {},
+  loading: makeLoading(),
 };
+
+const makeState = Record(initialState);
 
 const stateChange = handleAction(
   USER_STATE_CHANGE,
   (state: State, { payload }: UserStateChangeAction) => {
-    let nextSelf: UserSelf = { ...state.self };
+    let nextSelf: UserSelf = state.self || makeUserSelf();
     if (payload) {
-      nextSelf.user = payload;
+      nextSelf = nextSelf.set('user', payload);
     }
 
-    return {
-      ...state,
-      self: nextSelf,
-    } as State;
+    return state.set('self', nextSelf);
   },
 );
 
 const selfRetrieveInitiated = handleAction(
   USER_SELF_RETRIEVE_INITIATED,
   (state: State) => {
-    return {
-      ...state,
-      retrievingSelf: true,
-    };
+    return state.set('retrievingSelf', true);
   },
 );
 
@@ -78,17 +84,19 @@ const selfRetrieveSuccess = handleAction(
     action: UserSelfRetrieveSuccessAction | UserSelfRetrieveEmptyAction,
   ) => {
     if (action.payload) {
-      return {
-        ...state,
+      return state.merge({
         retrievingSelf: false,
-        self: action.payload,
-      };
+        self: (state.self || makeUserSelf()).merge({
+          user: action.payload.user,
+          networks: List(action.payload.networks),
+          preferences: action.payload.preferences,
+        }),
+      });
     } else {
-      return {
-        ...state,
+      return state.merge({
         retrievingSelf: false,
         self: undefined,
-      } as State;
+      });
     }
   },
 );
@@ -97,14 +105,10 @@ const updateUserMetadataSuccess = handleAction(
   USER_SELF_UPDATE_SUCCESS,
   (state: State, action: UserUpdateSuccessAction) => {
     if (action.payload) {
-      return {
-        ...state,
-        self: {
-          ...(state.self || {}),
-          preferences: action.payload.preferences,
-          networks: action.payload.networks,
-        },
-      } as State;
+      return state.set(
+        'self',
+        (state.self || makeUserSelf()).merge(action.payload),
+      );
     } else {
       return state;
     }
@@ -112,104 +116,74 @@ const updateUserMetadataSuccess = handleAction(
 );
 
 const logoutUser = handleAction(LOGOUT_SUCCESSFUL, (state: State) => {
-  return {
-    ...state,
-    self: undefined,
-  } as State;
+  return state.remove('self');
 });
 
 const userUpdateNetworks = handleAction(
   USER_SELF_UPDATE_NETWORKS,
   (state: State) => {
-    return {
-      ...state,
-      updatingSelf: true,
-    } as State;
+    return state.set('updatingSelf', true);
   },
 );
 
 const userCreateList = handleAction(USER_SELF_CREATE_LIST, (state: State) => {
-  return {
-    ...state,
-    loading: {
-      ...state.loading,
-      [USER_SELF_CREATE_LIST]: true,
-    },
-  } as State;
+  return state.set('loading', state.loading.set(USER_SELF_CREATE_LIST, true));
 });
 
 const userCreateListSuccess = handleAction(
   USER_SELF_CREATE_LIST_SUCCESS,
   (state: State) => {
-    return {
-      ...state,
-      loading: {
-        ...state.loading,
-        [USER_SELF_CREATE_LIST]: false,
-      },
-    } as State;
+    return state.set(
+      'loading',
+      state.loading.set(USER_SELF_CREATE_LIST, false),
+    );
   },
 );
 
 const userDeleteList = handleAction(USER_SELF_DELETE_LIST, (state: State) => {
-  return {
-    ...state,
-    loading: {
-      ...state.loading,
-      [USER_SELF_DELETE_LIST]: true,
-    },
-  } as State;
+  return state.set('loading', state.loading.set(USER_SELF_DELETE_LIST, true));
 });
 
 const userDeleteListSuccess = handleAction(
   USER_SELF_DELETE_LIST_SUCCESS,
   (state: State) => {
-    return {
-      ...state,
-      loading: {
-        ...state.loading,
-        [USER_SELF_DELETE_LIST]: false,
-      },
-    } as State;
+    return state.set(
+      'loading',
+      state.loading.set(USER_SELF_DELETE_LIST, false),
+    );
   },
 );
 
 const userRenameList = handleAction(USER_SELF_UPDATE_LIST, (state: State) => {
-  return {
-    ...state,
-    loading: {
-      ...state.loading,
-      [USER_SELF_UPDATE_LIST]: true,
-    },
-  } as State;
+  return state.set('loading', state.loading.set(USER_SELF_UPDATE_LIST, true));
 });
 
 const userRenameListSuccess = handleAction(
   USER_SELF_UPDATE_LIST_SUCCESS,
   (state: State) => {
-    return {
-      ...state,
-      loading: {
-        ...state.loading,
-        [USER_SELF_UPDATE_LIST]: false,
-      },
-    } as State;
+    return state.set(
+      'loading',
+      state.loading.set(USER_SELF_UPDATE_LIST, false),
+    );
   },
 );
 
-export default flattenActions(
-  'user',
-  initialState,
-  selfRetrieveInitiated,
-  selfRetrieveSuccess,
-  userUpdateNetworks,
-  userCreateList,
-  userCreateListSuccess,
-  userDeleteList,
-  userDeleteListSuccess,
-  userRenameList,
-  userRenameListSuccess,
-  logoutUser,
-  updateUserMetadataSuccess,
-  stateChange,
-);
+export default {
+  initialState: makeState(),
+  reducer: flattenActions(
+    'user',
+    makeState(),
+    selfRetrieveInitiated,
+    selfRetrieveSuccess,
+    userUpdateNetworks,
+    userCreateList,
+    userCreateListSuccess,
+    userDeleteList,
+    userDeleteListSuccess,
+    userRenameList,
+    userRenameListSuccess,
+    logoutUser,
+    updateUserMetadataSuccess,
+    stateChange,
+  ),
+};

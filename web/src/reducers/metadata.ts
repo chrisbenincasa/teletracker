@@ -19,80 +19,79 @@ import {
   MetadataLoadAction,
   MetadataLoadSuccessAction,
 } from '../actions/metadata/load_metadata';
+import { List, Record, RecordOf } from 'immutable';
 
-export interface State {
+export type StateType = {
   metadataLoading: boolean;
   networksLoading: boolean;
   genresLoading: boolean;
-  networks?: Network[];
-  genres?: Genre[];
-}
+  networks?: List<Network>;
+  genres?: List<Genre>;
+};
 
-const initialState: State = {
+export type State = RecordOf<StateType>;
+
+const initialState: StateType = {
   metadataLoading: false,
   networksLoading: false,
   genresLoading: false,
 };
 
+export const makeState = Record(initialState);
+
 const handleNetworksInitiated = handleAction<NetworksLoadAction, State>(
   NETWORKS_LOAD,
-  state => ({
-    ...state,
-    networksLoading: true,
-  }),
+  state => state.set('networksLoading', true),
 );
 
 const handleNetworksSuccess = handleAction<NetworksLoadSuccessAction, State>(
   NETWORKS_LOAD_SUCCESS,
-  (state, { payload }) => ({
-    ...state,
-    networksLoading: false,
-    networks: payload!.networks,
-  }),
+  (state, { payload }) =>
+    state.merge({
+      networksLoading: false,
+      networks: List(payload!.networks),
+    }),
 );
 
 const handleGenresInitiated = handleAction<GenresLoadAction, State>(
   GENRES_LOAD,
-  state => ({
-    ...state,
-    genresLoading: true,
-  }),
+  state => state.set('genresLoading', true),
 );
 
 const handleGenresSuccess = handleAction<GenresLoadSuccessAction, State>(
   GENRES_LOAD_SUCCESS,
-  (state, { payload }) => ({
-    ...state,
-    genresLoading: false,
-    genres: payload!.genres,
-  }),
+  (state, { payload }) =>
+    state.merge({
+      genresLoading: false,
+      genres: List(payload!.genres),
+    }),
 );
 
 const handleMetadataInitiated = handleAction<MetadataLoadAction, State>(
   METADATA_LOAD,
-  state => ({
-    ...state,
-    metadataLoading: true,
-  }),
+  state => state.set('metadataLoading', true),
 );
 
 const handleMetadataSuccess = handleAction<MetadataLoadSuccessAction, State>(
   METADATA_LOAD_SUCCESS,
-  (state, { payload }) => ({
-    ...state,
-    metadataLoading: false,
-    genres: payload!.genres,
-    networks: payload!.networks,
-  }),
+  (state, { payload }) =>
+    state.merge({
+      metadataLoading: false,
+      genres: List(payload!.genres),
+      networks: List(payload!.networks),
+    }),
 );
 
-export default flattenActions<State>(
-  'metadata',
-  initialState,
-  handleNetworksInitiated,
-  handleNetworksSuccess,
-  handleGenresInitiated,
-  handleGenresSuccess,
-  handleMetadataInitiated,
-  handleMetadataSuccess,
-);
+export default {
+  initialState: makeState(),
+  reducer: flattenActions<State>(
+    'metadata',
+    makeState(),
+    handleNetworksInitiated,
+    handleNetworksSuccess,
+    handleGenresInitiated,
+    handleGenresSuccess,
+    handleMetadataInitiated,
+    handleMetadataSuccess,
+  ),
+};

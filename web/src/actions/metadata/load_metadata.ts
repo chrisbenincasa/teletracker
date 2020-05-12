@@ -5,6 +5,7 @@ import { put, select, takeLatest } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { Genre, MetadataResponse, Network } from '../../types';
 import { AppState } from '../../reducers';
+import { List } from 'immutable';
 
 export const METADATA_LOAD = 'metadata/all/LOAD';
 export const METADATA_LOAD_SUCCESS = 'metadata/all/SUCCESS';
@@ -13,8 +14,8 @@ export const METADATA_LOAD_FAILED = 'metadata/all/FAILED';
 export type MetadataLoadAction = FSA<typeof METADATA_LOAD>;
 
 export interface MetadataPayload {
-  genres: Genre[];
-  networks: Network[];
+  genres: List<Genre>;
+  networks: List<Network>;
 }
 
 export type MetadataLoadSuccessAction = FSA<
@@ -53,8 +54,8 @@ export const loadMetadataSaga = function*() {
 
         yield put(
           loadMetadataSuccess({
-            genres: res.data!.data.genres,
-            networks: res.data!.data.networks,
+            genres: List(res.data!.data.genres),
+            networks: List(res.data!.data.networks),
           }),
         );
       } catch (e) {

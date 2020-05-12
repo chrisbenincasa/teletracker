@@ -23,80 +23,74 @@ import { Item } from '../types/v2/Item';
 import { flattenActions, handleAction } from './utils';
 import { Person } from '../types/v2/Person';
 import { FilterParams } from '../utils/searchFilters';
+import { List, Record, RecordOf } from 'immutable';
 
-type QuickSearchState = {
+type PeopleSearchStateType = {
   searching: boolean;
   currentSearchText: String;
-  results?: Item[];
+  results?: List<Person>;
   bookmark?: string;
   error: boolean;
 };
 
-type PeopleSearchState = {
-  searching: boolean;
-  currentSearchText: String;
-  results?: Person[];
-  bookmark?: string;
-  error: boolean;
-};
+type PeopleSearchState = RecordOf<PeopleSearchStateType>;
 
-export interface State {
-  currentSearchText: string;
-  error: boolean;
-  searching: boolean;
-  results?: Item[];
-  bookmark?: string;
-  currentFilters?: FilterParams;
-  quick: QuickSearchState;
-  people: PeopleSearchState;
-}
-
-const initialState: State = {
+const makePeopleSearchState = Record({
   currentSearchText: '',
   error: false,
   searching: false,
-  quick: {
-    currentSearchText: '',
-    error: false,
-    searching: false,
-  },
-  people: {
-    currentSearchText: '',
-    error: false,
-    searching: false,
-  },
+});
+
+export type StateType = {
+  currentSearchText: string;
+  error: boolean;
+  searching: boolean;
+  results?: List<Item>;
+  bookmark?: string;
+  currentFilters?: FilterParams;
+  quick: PeopleSearchState;
+  people: PeopleSearchState;
 };
+
+export type State = RecordOf<StateType>;
+
+const initialState: StateType = {
+  currentSearchText: '',
+  error: false,
+  searching: false,
+  quick: makePeopleSearchState(),
+  people: makePeopleSearchState(),
+};
+
+export const makeState = Record(initialState);
 
 const searchFailed = handleAction<SearchFailedAction, State>(
   SEARCH_FAILED,
   (state, error) => {
-    return {
-      ...state,
+    return state.merge({
       searching: false,
       error: true,
-    };
+    });
   },
 );
 
 const searchInitiated = handleAction<SearchInitiatedAction, State>(
   SEARCH_INITIATED,
   (state, action) => {
-    return {
-      ...state,
+    return state.merge({
       searching: true,
       currentSearchText: action.payload!.query.trim(),
-    };
+    });
   },
 );
 
 const preloadSearchInitiated = handleAction<SearchInitiatedAction, State>(
   SEARCH_PRELOAD_INITIATED,
   (state, action) => {
-    return {
-      ...state,
+    return state.merge({
       searching: true,
       currentSearchText: action.payload!.query.trim(),
-    };
+    });
   },
 );
 
@@ -104,20 +98,19 @@ const searchSuccess = handleAction<SearchSuccessfulAction, State>(
   SEARCH_SUCCESSFUL,
   (state, { payload }) => {
     if (payload) {
-      let newResults = state.results ? state.results : [];
+      let newResults = state.results || List();
       if (!payload.append) {
-        newResults = payload.results;
+        newResults = List(payload.results);
       } else {
         newResults = newResults.concat(payload.results);
       }
 
-      return {
-        ...state,
+      return state.merge({
         searching: false,
         results: newResults,
         bookmark: payload.paging ? payload.paging.bookmark : undefined,
         currentFilters: payload.forFilters,
-      };
+      });
     } else {
       return state;
     }
@@ -156,22 +149,20 @@ const quickSearchSuccess = handleAction<QuickSearchSuccessfulAction, State>(
   QUICK_SEARCH_SUCCESSFUL,
   (state, { payload }) => {
     if (payload) {
-      let newResults = state.results ? state.results : [];
+      let newResults = state.results || List();
       if (!payload.append) {
-        newResults = payload.results;
+        newResults = List(payload.results);
       } else {
         newResults = newResults.concat(payload.results);
       }
 
-      return {
-        ...state,
-        quick: {
-          ...state.quick,
+      return state.merge({
+        quick: state.quick.merge({
           searching: false,
           results: newResults,
           bookmark: payload.paging ? payload.paging.bookmark : undefined,
-        },
-      };
+        }),
+      });
     } else {
       return state;
     }
@@ -210,39 +201,40 @@ const peopleSearchSuccess = handleAction<PeopleSearchSuccessfulAction, State>(
   PEOPLE_SEARCH_SUCCESSFUL,
   (state, { payload }) => {
     if (payload) {
-      let newResults = state.people.results ? state.people.results : [];
+      let newResults = state.people.results || List();
       if (!payload.append) {
-        newResults = payload.results;
+        newResults = List(payload.results);
       } else {
         newResults = newResults.concat(payload.results);
       }
 
-      return {
-        ...state,
-        people: {
-          ...state.people,
+      return state.merge({
+        people: state.people.merge({
           searching: false,
           results: newResults,
           bookmark: payload.paging ? payload.paging.bookmark : undefined,
-        },
-      };
+        }),
+      });
     } else {
       return state;
     }
   },
 );
 
-export default flattenActions(
-  'search',
-  initialState,
-  quickSearchInitiated,
-  quickSearchSuccess,
-  quickSearchFailed,
-  searchInitiated,
-  preloadSearchInitiated,
-  searchSuccess,
-  searchFailed,
-  peopleSearchInitiated,
-  peopleSearchFailed,
-  peopleSearchSuccess,
-);
+export default {
+  initialState: makeState(),
+  reducer: flattenActions(
+    'search',
+    makeState(),
+    quickSearchInitiated,
+    quickSearchSuccess,
+    quickSearchFailed,
+    searchInitiated,
+    preloadSearchInitiated,
+    searchSuccess,
+    searchFailed,
+    peopleSearchInitiated,
+    peopleSearchFailed,
+    peopleSearchSuccess,
+  ),
+};

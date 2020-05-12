@@ -3,11 +3,12 @@ import { TeletrackerResponse } from '../../utils/api-client';
 import { UserDetails } from '../../types';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
-import { UserSelf } from '../../reducers/user';
+import { UserSelf, UserSelfType } from '../../reducers/user';
 import { FSA } from 'flux-standard-action';
 import ReactGA from 'react-ga';
+import { List } from 'immutable';
 
-export type UserUpdateSuccessPayload = Omit<UserSelf, 'user'>;
+export type UserUpdateSuccessPayload = Omit<UserSelfType, 'user'>;
 
 export const USER_SELF_UPDATE = 'user/self/update/INITIATED';
 export const USER_SELF_UPDATE_SUCCESS = 'user/self/update/SUCCESS';
@@ -42,7 +43,7 @@ export const updateUserSaga = function*() {
       if (response.ok) {
         yield put(
           updateUserSuccess({
-            networks: response.data!.data.networkPreferences,
+            networks: List(response.data!.data.networkPreferences),
             preferences: response.data!.data.preferences,
           }),
         );

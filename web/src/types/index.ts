@@ -1,6 +1,7 @@
 import { ApiItem } from './v2';
 import { Item, ItemFactory } from './v2/Item';
 import { ApiPerson, Person, PersonFactory } from './v2/Person';
+import Immutable from 'immutable';
 
 export interface Paging {
   bookmark?: string;
@@ -157,7 +158,7 @@ export type ListRuleTypes =
   | ListNetworkRule;
 
 export interface ListRules {
-  rules: ListRule[];
+  rules: Immutable.List<ListRule>;
   sort?: ListDefaultSort;
 }
 

@@ -17,6 +17,7 @@ import Auth from '@aws-amplify/auth';
 import { Id, Slug } from '../types/v2';
 import { FilterParams } from './searchFilters';
 import { ItemSearchRequest } from '../types/client';
+import Immutable, { List } from 'immutable';
 
 export class SagaTeletrackerClient {
   static instance = new SagaTeletrackerClient();
@@ -29,8 +30,8 @@ export class SagaTeletrackerClient {
   }
 
   *updateUserSelf(
-    networkSubscriptions: Network[] | undefined,
-    preferences?: UserPreferences | undefined,
+    networkSubscriptions?: List<Network>,
+    preferences?: UserPreferences,
   ) {
     return yield this.apiCall(
       client => client.updateUserSelf,
@@ -44,10 +45,10 @@ export class SagaTeletrackerClient {
     id: string,
     sort?: SortOptions,
     desc?: boolean,
-    itemTypes?: ItemType[],
-    genres?: number[],
+    itemTypes?: Immutable.List<ItemType>,
+    genres?: Immutable.List<number>,
     bookmark?: string,
-    networks?: NetworkType[],
+    networks?: Immutable.List<NetworkType>,
     limit?: number,
   ) {
     return yield this.apiCall(

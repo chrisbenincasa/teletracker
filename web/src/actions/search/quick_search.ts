@@ -4,15 +4,10 @@ import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { TeletrackerResponse } from '../../utils/api-client';
 import _ from 'lodash';
-import {
-  ItemType,
-  SortOptions,
-  NetworkType,
-  OpenRange,
-  Paging,
-} from '../../types';
+import { Paging } from '../../types';
 import { ApiItem } from '../../types/v2';
 import { Item, ItemFactory } from '../../types/v2/Item';
+import { FilterParams } from '../../utils/searchFilters';
 
 export const QUICK_SEARCH_INITIATED = 'search/quick/INITIATED';
 export const QUICK_SEARCH_SUCCESSFUL = 'search/quick/SUCCESSFUL';
@@ -22,13 +17,7 @@ export interface QuickSearchInitiatedPayload {
   query: string;
   bookmark?: string;
   limit?: number;
-  itemTypes?: ItemType[];
-  networks?: NetworkType[];
-  genres?: number[];
-  releaseYearRange?: OpenRange;
-  sort?: SortOptions;
-  cast?: string[];
-  imdbRating?: OpenRange;
+  filters?: FilterParams;
 }
 
 export type QuickSearchInitiatedAction = FSA<
@@ -75,15 +64,15 @@ export const quickSearchSaga = function*() {
           client => client.search,
           {
             searchText: payload.query,
-            itemTypes: payload.itemTypes,
-            networks: payload.networks,
+            itemTypes: payload.filters?.itemTypes,
+            networks: payload.filters?.networks,
             bookmark: payload.bookmark,
-            sort: payload.sort,
+            sort: payload.filters?.sortOrder,
             limit: payload.limit,
-            genres: payload.genres,
-            releaseYearRange: payload.releaseYearRange,
-            castIncludes: payload.cast,
-            imdbRating: payload.imdbRating,
+            genres: payload.filters?.genresFilter,
+            releaseYearRange: payload.filters?.sliders?.releaseYear,
+            castIncludes: payload.filters?.people,
+            imdbRating: payload.filters?.sliders?.imdbRating,
           },
         );
 

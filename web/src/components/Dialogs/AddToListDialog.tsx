@@ -44,6 +44,8 @@ import { hookDeepEqual } from '../../hooks/util';
 import useNewListValidation from '../../hooks/useNewListValidation';
 import ResponsiveImage from '../ResponsiveImage';
 import useIsMobile from '../../hooks/useIsMobile';
+import Immutable from 'immutable';
+import { List } from '../../types';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -73,7 +75,8 @@ const useStyles = makeStyles((theme: Theme) =>
 
 const possibleListsSelector = createDeepEqSelector(
   (state: AppState) => state.lists.listsById,
-  listsById => _.filter(listsById, list => !list.isDynamic && !list.isDeleted),
+  (listsById: Immutable.Map<string, List>) =>
+    listsById.valueSeq().filter(list => !list.isDynamic && !list.isDeleted),
 );
 
 const allListIdsSelector = createDeepEqSelector(
@@ -303,12 +306,13 @@ export default function AddToListDialog(props: Props) {
 
   if (isLoggedIn) {
     // Match sort used in Drawer
-    const sortedLists = _.sortBy(
-      _.values(listsToShow),
-      list => (list.createdAt ? -new Date(list.createdAt) : null),
-      list => (list.legacyId ? -list.legacyId : null),
-      'id',
-    );
+    const sortedLists = listsToShow.sortBy(list => {
+      return (
+        (list.createdAt ? -new Date(list.createdAt) : null) ||
+        (list.legacyId ? -list.legacyId : null) ||
+        list.id
+      );
+    });
 
     return (
       <Dialog
@@ -325,7 +329,7 @@ export default function AddToListDialog(props: Props) {
 
         <DialogContent className={classes.dialogContainer}>
           <FormGroup style={{ flex: 1 }}>
-            {_.map(sortedLists, list => (
+            {sortedLists.map(list => (
               <FormControlLabel
                 key={list.id}
                 control={

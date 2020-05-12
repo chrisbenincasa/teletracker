@@ -6,20 +6,31 @@ import {
   UpcomingAvailabilitySuccessfulAction,
 } from '../actions/availability';
 import { Item } from '../types/v2/Item';
+import { List, Record, RecordOf } from 'immutable';
 
-export interface AvailabilityState {
+export type AvailabilityState = {
   offset: number;
   canFetchMore: boolean;
-  availability: Item[];
-}
+  availability: List<Item>;
+};
 
-export interface State {
-  upcoming?: AvailabilityState;
-  expiring?: AvailabilityState;
-  recentlyAdded?: AvailabilityState;
-}
+const makeAvailabilityState = Record<AvailabilityState>({
+  offset: 0,
+  canFetchMore: true,
+  availability: List.of<Item>(),
+});
 
-const initialState: State = {};
+export type StateType = {
+  upcoming?: RecordOf<AvailabilityState>;
+  expiring?: RecordOf<AvailabilityState>;
+  recentlyAdded?: RecordOf<AvailabilityState>;
+};
+
+export type State = RecordOf<StateType>;
+
+const initialState: StateType = {};
+
+export const makeState: Record.Factory<StateType> = Record(initialState);
 
 const upcomingExpiringSuccess = handleAction<
   UpcomingAvailabilitySuccessfulAction,
@@ -28,19 +39,18 @@ const upcomingExpiringSuccess = handleAction<
   UPCOMING_AVAILABILITY_SUCCESSFUL,
   (state: State, { payload }: UpcomingAvailabilitySuccessfulAction) => {
     if (payload) {
-      return {
-        ...state,
-        upcoming: {
+      return state.merge({
+        upcoming: (state.upcoming || makeAvailabilityState()).merge({
           offset: 0,
           canFetchMore: false, // TODO(christian) change this when we can page through
-          availability: payload!.upcoming,
-        },
-        expiring: {
+          availability: List(payload!.upcoming),
+        }),
+        expiring: (state.expiring || makeAvailabilityState()).merge({
           offset: 0,
           canFetchMore: false,
-          availability: payload!.expiring,
-        },
-      };
+          availability: List(payload!.expiring),
+        }),
+      });
     } else {
       return state;
     }
@@ -54,23 +64,26 @@ const allAvailabilitySuccess = handleAction<
   ALL_AVAILABILITY_SUCCESSFUL,
   (state: State, { payload }: AllAvailabilitySuccessfulAction) => {
     if (payload) {
-      return {
-        ...state,
-        recentlyAdded: {
+      return state.set(
+        'recentlyAdded',
+        (state.recentlyAdded || makeAvailabilityState()).merge({
           offset: 0,
           canFetchMore: false,
-          availability: payload!.recentlyAdded,
-        },
-      };
+          availability: List(payload!.recentlyAdded),
+        }),
+      );
     } else {
       return state;
     }
   },
 );
 
-export default flattenActions<State>(
-  'availability',
-  initialState,
-  upcomingExpiringSuccess,
-  allAvailabilitySuccess,
-);
+export default {
+  initialState: makeState(),
+  reducer: flattenActions<State>(
+    'availability',
+    makeState(),
+    upcomingExpiringSuccess,
+    allAvailabilitySuccess,
+  ),
+};

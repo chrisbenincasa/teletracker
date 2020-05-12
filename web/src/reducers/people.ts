@@ -30,81 +30,67 @@ import {
 } from '../actions/people/get_credits';
 import * as R from 'ramda';
 import { FilterParams } from '../utils/searchFilters';
+import { List, RecordOf, Map, Record } from 'immutable';
 
-interface PersonDetailState {
+type PersonDetailState = {
   current?: Id | Slug;
-  credits?: string[]; // Array of popular slugs
+  credits?: List<string>; // Array of popular slugs
   loading: boolean;
   bookmark?: string;
   currentFilters?: FilterParams;
-}
+};
+const makePersonDetailState = Record<PersonDetailState>({
+  loading: false,
+});
 
-export interface State {
+export type StateType = {
   loadingPeople: boolean;
-  peopleById: { [key: string]: Person };
-  nameByIdOrSlug: { [key: string]: string };
-  detail?: PersonDetailState;
-}
-
-export const initialState: State = {
-  loadingPeople: false,
-  peopleById: {},
-  nameByIdOrSlug: {},
+  peopleById: Map<Id, Person>;
+  nameByIdOrSlug: Map<Id | Slug, string>;
+  detail?: RecordOf<PersonDetailState>;
 };
 
+export type State = RecordOf<StateType>;
+
+export const initialState: StateType = {
+  loadingPeople: false,
+  peopleById: Map({}),
+  nameByIdOrSlug: Map({}),
+};
+
+export const makeState = Record(initialState);
+
 const updateStateWithNewPeople = (state: State, newPeople: Person[]) => {
-  let peopleById = state.peopleById || {};
-  let newThingsMerged = newPeople.map(person => {
-    let existingPerson: Person | undefined = peopleById[person.id];
-    let newThing: Person = person;
+  const newThingsMerged = newPeople.reduce((acc, person) => {
+    const existingPerson = state.peopleById.get(person.id);
+    let newThing = person;
     if (existingPerson) {
       newThing = PersonFactory.merge(existingPerson, newThing);
     }
 
-    return newThing;
+    return acc.set(newThing.id, newThing);
+  }, Map<Id, Person>());
+
+  const newPeopleNames = newThingsMerged.mapEntries(([_, person]) => {
+    return [(person.slug as Slug) || (person.id as Id), person.name];
   });
 
-  let newThingsById = newThingsMerged.reduce((prev, curr) => {
-    return {
-      ...prev,
-      [curr.id]: curr,
-    };
-  }, {});
-
-  let newNamesBySlugOrId = newThingsMerged.reduce((prev, curr) => {
-    return {
-      ...prev,
-      [curr.slug || curr.id]: curr.name,
-    };
-  }, {});
-
   // TODO: Truncate thingsById after a certain point
-  return {
-    ...state,
+  return state.merge({
     loadingPeople: false,
-    peopleById: {
-      ...state.peopleById,
-      ...newThingsById,
-    },
-    nameByIdOrSlug: {
-      ...state.nameByIdOrSlug,
-      ...newNamesBySlugOrId,
-    },
-  };
+    peopleById: state.peopleById.merge(newThingsMerged),
+    nameByIdOrSlug: state.nameByIdOrSlug.merge(newPeopleNames),
+  });
 };
 
 const personFetchSuccess = handleAction(
   PERSON_FETCH_SUCCESSFUL,
   (state: State, { payload }: PersonFetchSuccessfulAction) => {
     if (payload) {
-      return {
-        ...state,
-        ...updateStateWithNewPeople(state, [payload.person]),
-        detail: {
-          ...state.detail,
-          loading: false,
-        },
-      };
+      return updateStateWithNewPeople(state, [payload.person]).set(
+        'detail',
+        (state.detail || makePersonDetailState()).set('loading', false),
+      );
     } else {
       return state;
     }
@@ -126,14 +112,10 @@ const peopleFetchSuccess = handleAction(
   PEOPLE_FETCH_SUCCESSFUL,
   (state: State, { payload }: PeopleFetchSuccessfulAction) => {
     if (payload) {
-      return {
-        ...state,
-        ...updateStateWithNewPeople(state, payload),
-        detail: {
-          ...state.detail,
-          loading: false,
-        },
-      };
+      return updateStateWithNewPeople(state, payload).set(
+        'detail',
+        (state.detail || makePersonDetailState()).set('loading', false),
+      );
     } else {
       return state;
     }
@@ -143,14 +125,13 @@ const peopleFetchSuccess = handleAction(
 const peopleCreditsFetchInitiated = handleAction(
   PERSON_CREDITS_FETCH_INITIATED,
   (state: State, { payload }: PersonCreditsFetchInitiatedAction) => {
-    return {
-      ...state,
-      detail: {
-        ...state.detail,
+    return state.set(
+      'detail',
+      (state.detail || makePersonDetailState()).merge({
         current: payload?.personId,
         loading: true,
-      },
-    };
+      }),
+    );
   },
 );
 
@@ -158,25 +139,24 @@ const peopleCreditsFetchSuccess = handleAction(
   PERSON_CREDITS_FETCH_SUCCESSFUL,
   (state: State, { payload }: PersonCreditsFetchSuccessfulAction) => {
     if (payload) {
-      let newCredits: string[];
+      let newCredits: List<string>;
       if (payload.append) {
-        let existing = state.detail ? state.detail.credits || [] : [];
+        let existing = state.detail?.credits || List();
         newCredits = existing.concat(R.map(t => t.id, payload.credits));
       } else {
-        newCredits = R.map(t => t.id, payload.credits);
+        newCredits = List(payload.credits).map(c => c.id);
       }
 
-      return {
-        ...state,
-        detail: {
-          ...state.detail,
+      return state.set(
+        'detail',
+        (state.detail || makePersonDetailState()).merge({
           current: payload.personId,
           loading: false,
           credits: newCredits,
           bookmark: payload.paging ? payload.paging.bookmark : undefined,
           currentFilters: payload.forFilters,
-        },
-      };
+        }),
+      );
     } else {
       return state;
     }
@@ -204,17 +184,16 @@ const handlePersonFetchInitiated = handleAction<
 
     // Clear out previously loaded credits if we've navigated to a new page.
     if (action.payload.forDetailPage) {
-      detail = {
+      detail = makePersonDetailState({
         loading: true,
         current: action.payload.id,
-      };
+      });
     }
 
-    return {
-      ...state,
+    return state.merge({
       loadingPeople: true,
       detail,
-    };
+    });
   } else {
     return state;
   }
@@ -223,23 +202,23 @@ const handlePersonFetchInitiated = handleAction<
 const loadingPeople = [PEOPLE_FETCH_INITIATED, PEOPLE_SEARCH_INITIATED].map(
   actionType => {
     return handleAction<FSA<typeof actionType>, State>(actionType, state => {
-      return {
-        ...state,
-        loadingPeople: true,
-      };
+      return state.set('loadingPeople', true);
     });
   },
 );
 
-export default flattenActions(
-  'people',
-  initialState,
-  personFetchSuccess,
-  personSearchSuccess,
-  peopleFetchSuccess,
-  handleListRetrieveSuccess,
-  handlePersonFetchInitiated,
-  ...loadingPeople,
-  peopleCreditsFetchInitiated,
-  peopleCreditsFetchSuccess,
-);
+export default {
+  initialState: makeState(),
+  reducer: flattenActions(
+    'people',
+    makeState(),
+    personFetchSuccess,
+    personSearchSuccess,
+    peopleFetchSuccess,
+    handleListRetrieveSuccess,
+    handlePersonFetchInitiated,
+    ...loadingPeople,
+    peopleCreditsFetchInitiated,
+    peopleCreditsFetchSuccess,
+  ),
+};

@@ -5,6 +5,7 @@ import { put, select, takeLatest } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { Network } from '../../types';
 import { AppState } from '../../reducers';
+import { List } from 'immutable';
 
 export const NETWORKS_LOAD = 'metadata/networks/LOAD';
 export const NETWORKS_LOAD_SUCCESS = 'metadata/networks/SUCCESS';
@@ -13,7 +14,7 @@ export const NETWORKS_LOAD_FAILED = 'metadata/networks/FAILED';
 export type NetworksLoadAction = FSA<typeof NETWORKS_LOAD>;
 
 export interface NetworkMetadataPayload {
-  networks: Network[];
+  networks: List<Network>;
 }
 
 export type NetworksLoadSuccessAction = FSA<
@@ -51,7 +52,7 @@ export const loadNetworksSaga = function*() {
 
         yield put(
           loadNetworksSuccess({
-            networks: res.data!.data,
+            networks: List(res.data!.data),
           }),
         );
       } catch (e) {

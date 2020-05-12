@@ -330,12 +330,14 @@ class Drawer extends Component<Props, State> {
   renderDrawerContents() {
     let { classes, isAuthed, listsById } = this.props;
 
-    const sortedLists = _.sortBy(
-      _.values(listsById),
-      list => (list.createdAt ? -new Date(list.createdAt) : null),
-      list => (list.legacyId ? -list.legacyId : null),
-      'id',
-    );
+    const sortedLists = listsById
+      .valueSeq()
+      .sortBy(
+        list =>
+          (list.createdAt ? -new Date(list.createdAt) : null) ||
+          (list.legacyId ? -list.legacyId : null) ||
+          list.id,
+      );
 
     function ListItemLink(props: ListItemProps) {
       const { primary, to, selected, icon } = props;

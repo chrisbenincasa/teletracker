@@ -5,6 +5,7 @@ import { put, select, takeLatest } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { Genre } from '../../types';
 import { AppState } from '../../reducers';
+import { List } from 'immutable';
 
 export const GENRES_LOAD = 'metadata/genres/LOAD';
 export const GENRES_LOAD_SUCCESS = 'metadata/genres/SUCCESS';
@@ -13,7 +14,7 @@ export const GENRES_LOAD_FAILED = 'metadata/genres/FAILED';
 export type GenresLoadAction = FSA<typeof GENRES_LOAD>;
 
 export interface GenreMetadataPayload {
-  genres: Genre[];
+  genres: List<Genre>;
 }
 
 export type GenresLoadSuccessAction = FSA<
@@ -49,7 +50,7 @@ export const loadGenresSaga = function*() {
 
         yield put(
           loadGenresSuccess({
-            genres: res.data!.data,
+            genres: List(res.data!.data),
           }),
         );
       } catch (e) {

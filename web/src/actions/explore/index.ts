@@ -13,21 +13,16 @@ import { put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { ApiItem } from '../../types/v2';
 import _ from 'lodash';
+import { FilterParams } from '../../utils/searchFilters';
 
 export const EXPLORE_INITIATED = 'explore/INITIATED';
 export const EXPLORE_SUCCESSFUL = 'explore/SUCCESSFUL';
 export const EXPLORE_FAILED = 'explore/FAILED';
 
 export interface ExploreInitiatedActionPayload {
-  itemTypes?: ItemType[];
-  networks?: NetworkType[];
   bookmark?: string;
-  sort?: SortOptions;
   limit?: number;
-  genres?: number[];
-  releaseYearRange?: OpenRange;
-  cast?: string[];
-  imdbRating?: OpenRange;
+  filters?: FilterParams;
 }
 
 export type ExploreInitiatedAction = FSA<
@@ -71,15 +66,15 @@ export const exploreSaga = function*() {
         let response: TeletrackerResponse<ApiItem[]> = yield clientEffect(
           client => client.getItems,
           {
-            itemTypes: payload.itemTypes,
-            networks: payload.networks,
+            itemTypes: payload.filters?.itemTypes,
+            networks: payload.filters?.networks,
             bookmark: payload.bookmark,
-            sort: payload.sort,
+            sort: payload.filters?.sortOrder,
             limit: payload.limit,
-            genres: payload.genres,
-            releaseYearRange: payload.releaseYearRange,
-            castIncludes: payload.cast,
-            imdbRating: payload.imdbRating,
+            genres: payload.filters?.genresFilter,
+            releaseYearRange: payload.filters?.sliders?.releaseYear,
+            castIncludes: payload.filters?.people,
+            imdbRating: payload.filters?.sliders?.imdbRating,
           },
         );
 

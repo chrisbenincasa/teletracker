@@ -25,6 +25,7 @@ import { useRouter } from 'next/router';
 import { sortOptionToName } from './SortDropdown';
 import { FilterContext } from './FilterContext';
 import { useGenres } from '../../hooks/useStateMetadata';
+import { List } from 'immutable';
 
 const useStyles = makeStyles((theme: Theme) => ({
   activeFiltersContainer: {
@@ -97,8 +98,8 @@ export default function ActiveFilters(props: Props) {
   );
 
   const deleteNetworkFilter = (
-    network?: NetworkType[],
-  ): [NetworkType[] | undefined, boolean] => {
+    network?: List<NetworkType>,
+  ): [List<NetworkType> | undefined, boolean] => {
     if (!network) {
       return [networks, false];
     }

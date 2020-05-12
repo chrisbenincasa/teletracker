@@ -1,4 +1,5 @@
 import { FSA } from 'flux-standard-action';
+import { Reducer } from 'redux';
 import dequal from 'dequal';
 
 type AllFSA = FSA<any, any, any>;
@@ -49,10 +50,10 @@ export function flattenActions<State>(
   name: string,
   initialState: State,
   ...reducers: StateToReducer<State>[]
-) {
+): Reducer<State> {
   let reducersWithState = reducers.map(r => r(initialState));
-  return (state: State = initialState, action: AllFSA) => {
-    let newState: State | undefined;
+  return (state: State | undefined = initialState, action: AllFSA) => {
+    let newState: State | undefined = undefined;
     reducersWithState.some(reducer => {
       let res = reducer(state, action);
       newState = res;

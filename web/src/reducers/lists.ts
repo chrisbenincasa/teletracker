@@ -38,64 +38,58 @@ import {
 } from '../actions/user';
 import { FilterParams } from '../utils/searchFilters';
 import { Item } from '../types/v2/Item';
+import { Map, Record, RecordOf } from 'immutable';
 
-export type Loading = { [X in ListActions['type']]: boolean };
+export type LoadingType = { [X in ListActions['type']]?: boolean };
+export type Loading = RecordOf<LoadingType>;
+const makeLoading = Record<LoadingType>({});
 
-export interface ListOperationState {
+export type ListOperationState = {
   inProgress: boolean;
   operationType?: string;
-}
+};
+const makeListOperationState = Record<ListOperationState>({
+  inProgress: false,
+});
 
-export interface ListsByIdMap {
-  [key: string]: List;
-}
+export type ListsByIdMap = Map<string, List>;
 
-export interface State {
-  operation: ListOperationState;
+type StateType = {
+  operation: RecordOf<ListOperationState>;
   listsById: ListsByIdMap;
-  loading: Partial<Loading>;
+  loading: Loading;
   currentBookmark?: string;
   currentFilters?: FilterParams;
-}
-
-const initialState: State = {
-  operation: {
-    inProgress: false,
-  },
-  listsById: {},
-  loading: {},
 };
+
+export type State = RecordOf<StateType>;
+
+const initialState: StateType = {
+  operation: makeListOperationState(),
+  listsById: Map({}),
+  loading: makeLoading(),
+};
+
+export const makeState = Record(initialState);
 
 const handleListAddInitiated = handleAction<ListAddInitiatedAction, State>(
   LIST_ADD_ITEM_INITIATED,
   state => {
-    return {
-      ...state,
-      operation: {
-        operationType: LIST_ADD_ITEM_INITIATED,
+    return state.merge({
+      operation: state.operation.merge({
         inProgress: true,
-      },
-      loading: {
-        ...state.loading,
-        [LIST_ADD_ITEM_INITIATED]: true,
-      },
-    };
+        operationType: LIST_ADD_ITEM_INITIATED,
+      }),
+      loading: state.loading.set(LIST_ADD_ITEM_INITIATED, true),
+    });
   },
 );
 
 function listAddItemFinished(state: State): State {
-  return {
-    ...state,
-    operation: {
-      ...state.operation,
-      // operationType: undefined,
-      inProgress: false,
-    },
-    loading: {
-      ...state.loading,
-      [LIST_ADD_ITEM_INITIATED]: false,
-    },
-  } as State;
+  return state.merge({
+    operation: state.operation.set('inProgress', false),
+    loading: state.loading.set(LIST_ADD_ITEM_INITIATED, false),
+  });
 }
 
 const handleListAddSuccess = handleAction<ListAddSuccessAction, State>(
@@ -112,36 +106,26 @@ const handleListRetrieveInitiated = handleAction<
   ListRetrieveInitiatedAction,
   State
 >(LIST_RETRIEVE_INITIATED, state => {
-  return {
-    ...state,
-    operation: {
-      ...state.operation,
+  return state.merge({
+    operation: state.operation.merge({
       operationType: LIST_RETRIEVE_INITIATED,
       inProgress: true,
-    },
-    loading: {
-      ...state.loading,
-      [LIST_RETRIEVE_INITIATED]: true,
-    },
-  };
+    }),
+    loading: state.loading.set(LIST_RETRIEVE_INITIATED, true),
+  });
 });
 
 const handleListRetrieveAllInitiated = handleAction<
   ListRetrieveAllInitiatedAction,
   State
 >(LIST_RETRIEVE_ALL_INITIATED, state => {
-  return {
-    ...state,
-    operation: {
-      ...state.operation,
+  return state.merge({
+    operation: state.operation.merge({
       operationType: LIST_RETRIEVE_ALL_INITIATED,
       inProgress: true,
-    },
-    loading: {
-      ...state.loading,
-      [LIST_RETRIEVE_ALL_INITIATED]: true,
-    },
-  };
+    }),
+    loading: state.loading.set(LIST_RETRIEVE_ALL_INITIATED, true),
+  });
 });
 
 const handleListDeleteSuccess = handleAction<
@@ -149,12 +133,7 @@ const handleListDeleteSuccess = handleAction<
   State
 >(USER_SELF_DELETE_LIST_SUCCESS, (state, { payload }) => {
   if (payload) {
-    const listsByIdCopy = { ...state.listsById };
-    delete listsByIdCopy[payload.listId];
-    return {
-      ...state,
-      listsById: listsByIdCopy,
-    };
+    return state.set('listsById', state.listsById.remove(payload.listId));
   }
   return state;
 });
@@ -221,79 +200,57 @@ const handleListRetrieveSuccess = handleAction<
     action.payload!!.append,
   );
 
-  return {
-    ...state,
-    listsById: {
-      ...state.listsById,
-      [listId]: newList,
-    },
-    operation: {
-      ...state.operation,
-      operationType: undefined,
-      inProgress: false,
-    },
-    loading: {
-      ...state.loading,
-      [LIST_RETRIEVE_INITIATED]: false,
-    },
+  return state.merge({
+    listsById: state.listsById.set(listId, newList),
+    operation: makeListOperationState({ inProgress: false }),
+    loading: state.loading.set(LIST_RETRIEVE_INITIATED, false),
     currentBookmark: action.payload!!.paging
       ? action.payload!!.paging.bookmark
       : undefined,
     currentFilters: action.payload!.forFilters,
-  };
+  });
 });
 
 const handleUserRetrieve = handleAction<ListRetrieveAllSuccessAction, State>(
   LIST_RETRIEVE_ALL_SUCCESS,
   (state, action) => {
-    let newListsById: ListsByIdMap = {};
+    let newListsById: ListsByIdMap = state.listsById;
     if (action.payload) {
-      try {
-        newListsById = R.reduce(
-          (newListsById, list) => {
-            return {
-              ...newListsById,
-              [list.id]: setOrMergeList(state.listsById[list.id], list, false),
-            };
-          },
-          {} as ListsByIdMap,
-          action.payload,
+      newListsById = action.payload.reduce((prev, curr) => {
+        return prev.set(
+          curr.id,
+          setOrMergeList(prev.get(curr.id), curr, false),
         );
-      } catch (e) {
-        console.error(e);
-      }
+      }, state.listsById);
     }
 
-    return {
-      ...state,
-      listsById: {
-        ...state.listsById,
-        ...newListsById,
-      },
-      operation: {
-        ...state.operation,
+    return state.merge({
+      listsById: newListsById,
+      operation: state.operation.merge({
         operationType: undefined,
         inProgress: false,
-      },
-      loading: {
-        ...state.loading,
-        [LIST_RETRIEVE_ALL_INITIATED]: false,
-      },
-    };
+      }),
+      loading: state.loading.set(LIST_RETRIEVE_ALL_INITIATED, false),
+    });
   },
 );
 
 const handleListUpdate = handleAction<UserUpdateListSuccessAction, State>(
   USER_SELF_UPDATE_LIST_SUCCESS,
   (state, action) => {
-    if (action.payload && state.listsById[action.payload.listId]) {
-      let list = state.listsById[action.payload.listId];
-      if (action.payload.name) {
-        list.name = action.payload.name;
+    if (action.payload && state.listsById.get(action.payload.listId)) {
+      let list = state.listsById.get(action.payload.listId);
+      if (action.payload.name && list) {
+        return state.set(
+          'listsById',
+          state.listsById.set(list.id, { ...list, name: action.payload.name }),
+        );
+      } else {
+        return state;
       }
+    } else {
+      return state;
     }
-
-    return state;
   },
 );
 
@@ -311,13 +268,10 @@ const handleUserUpdateTrackingSuccess = handleAction<
       };
     }
 
-    return {
-      ...state,
-      listsById: {
-        ...state.listsById,
-        [existingList.id]: newList,
-      },
-    };
+    return state.set(
+      'listsById',
+      state.listsById.set(existingList.id, newList),
+    );
   }
 
   return state;
@@ -337,30 +291,30 @@ const handleUserRemoveTrackingSuccess = handleAction<
       };
     }
 
-    return {
-      ...state,
-      listsById: {
-        ...state.listsById,
-        [existingList.id]: newList,
-      },
-    };
+    return state.set(
+      'listsById',
+      state.listsById.set(existingList.id, newList),
+    );
   }
 
   return state;
 });
 
-export default flattenActions<State>(
-  'lists',
-  initialState,
-  handleListAddInitiated,
-  handleListAddSuccess,
-  handleListAddFailed,
-  handleListRetrieveInitiated,
-  handleListRetrieveSuccess,
-  handleUserRetrieve,
-  handleListRetrieveAllInitiated,
-  handleListUpdate,
-  handleListDeleteSuccess,
-  handleUserRemoveTrackingSuccess,
-  handleUserUpdateTrackingSuccess,
-);
+export default {
+  initialState: makeState(),
+  reducer: flattenActions<State>(
+    'lists',
+    makeState(),
+    handleListAddInitiated,
+    handleListAddSuccess,
+    handleListAddFailed,
+    handleListRetrieveInitiated,
+    handleListRetrieveSuccess,
+    handleUserRetrieve,
+    handleListRetrieveAllInitiated,
+    handleListUpdate,
+    handleListDeleteSuccess,
+    handleUserRemoveTrackingSuccess,
+    handleUserUpdateTrackingSuccess,
+  ),
+};

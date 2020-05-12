@@ -1,23 +1,51 @@
 import { ItemType, NetworkType, OpenRange, SortOptions } from '../types';
 import _ from 'lodash';
+import { List, Record, RecordOf } from 'immutable';
 
-export interface SlidersState {
+export type SlidersStateType = {
   releaseYear?: OpenRange;
   imdbRating?: OpenRange;
-}
+};
+
+export type SlidersState = RecordOf<SlidersStateType>;
 
 export type SliderChange = Partial<SlidersState>;
 
-export const DEFAULT_FILTER_PARAMS: FilterParams = {};
+export type FilterParamsType = {
+  genresFilter?: List<number>;
+  itemTypes?: List<ItemType>;
+  networks?: List<NetworkType>;
+  sortOrder?: SortOptions;
+  sliders?: SlidersState;
+  people?: List<string>;
+};
+
+export type FilterParams = RecordOf<FilterParamsType>;
+
+export const DEFAULT_FILTER_PARAMS: FilterParamsType = {};
+
+export const makeFilterParams = Record(DEFAULT_FILTER_PARAMS);
 
 export function removeUndefinedKeys<T extends object>(obj: T): Partial<T> {
   return _.pickBy(obj, _.negate(_.isUndefined));
 }
 
+export function removeUndefinedRecordKeys<T extends RecordOf<any>>(
+  record: T,
+): T {
+  return record.withMutations(mutable => {
+    for (let key of mutable.toSeq().keys()) {
+      if (_.isUndefined(mutable.get(key))) {
+        mutable.remove(key);
+      }
+    }
+  });
+}
+
 export const isDefaultFilter = (filters: FilterParams): boolean => {
   return _.isEqual(
     normalizeFilterParams(filters),
-    normalizeFilterParams(DEFAULT_FILTER_PARAMS),
+    normalizeFilterParams(makeFilterParams()),
   );
 };
 
@@ -27,51 +55,57 @@ export function isObjectEmpty<T extends object>(obj: T): boolean {
     .some(_.negate(_.isUndefined));
 }
 
-export function normalizeFilterParams(
-  filters: Readonly<FilterParams>,
-): FilterParams {
-  let copy: FilterParams = removeUndefinedKeys({ ...filters });
-
-  if (copy.genresFilter && copy.genresFilter.length === 0) {
-    copy = _.omit(copy, 'genresFilter');
-  }
-
-  if (copy.itemTypes && copy.itemTypes.length === 0) {
-    copy = _.omit(copy, 'itemTypes');
-  }
-
-  if (copy.networks && copy.networks.length === 0) {
-    copy = _.omit(copy, 'networks');
-  }
-
-  if (copy.people && copy.people.length === 0) {
-    copy = _.omit(copy, 'people');
-  }
-
-  if (copy.sliders) {
-    copy.sliders = removeUndefinedKeys(copy.sliders);
-
-    if (copy.sliders.imdbRating && isObjectEmpty(copy.sliders.imdbRating)) {
-      copy.sliders = _.omit(copy.sliders, 'imdbRating');
-    }
-
-    if (copy.sliders.releaseYear && isObjectEmpty(copy.sliders.releaseYear)) {
-      copy.sliders = _.omit(copy.sliders, 'releaseYear');
-    }
-
-    if (isObjectEmpty(copy.sliders)) {
-      copy = _.omit(copy, 'sliders');
+export function isRecordEmpty<T extends RecordOf<any>>(record: T): boolean {
+  for (let value in record.toSeq().values()) {
+    if (!_.isUndefined(value)) {
+      return false;
     }
   }
 
-  return copy;
+  return true;
 }
 
-export interface FilterParams {
-  genresFilter?: number[];
-  itemTypes?: ItemType[];
-  networks?: NetworkType[];
-  sortOrder?: SortOptions;
-  sliders?: SlidersState;
-  people?: string[];
+export function normalizeFilterParams(filters: FilterParams): FilterParams {
+  return removeUndefinedRecordKeys(filters).withMutations(copy => {
+    if (copy.genresFilter && copy.genresFilter.size === 0) {
+      copy.remove('genresFilter');
+    }
+
+    if (copy.itemTypes && copy.itemTypes.size === 0) {
+      copy.remove('itemTypes');
+    }
+
+    if (copy.networks && copy.networks.size === 0) {
+      copy.remove('networks');
+    }
+
+    if (copy.people && copy.people.size === 0) {
+      copy.remove('people');
+    }
+
+    if (copy.sliders) {
+      const newSliders = copy.sliders.withMutations(slidersCopy => {
+        const slidersCleaned = removeUndefinedRecordKeys(slidersCopy);
+        if (
+          slidersCleaned.imdbRating &&
+          isObjectEmpty(slidersCleaned.imdbRating)
+        ) {
+          slidersCleaned.remove('imdbRating');
+        }
+
+        if (
+          slidersCleaned.releaseYear &&
+          isObjectEmpty(slidersCleaned.releaseYear)
+        ) {
+          slidersCleaned.remove('releaseYear');
+        }
+      });
+
+      if (isRecordEmpty(newSliders)) {
+        copy.remove('sliders');
+      } else {
+        copy.set('sliders', newSliders);
+      }
+    }
+  });
 }

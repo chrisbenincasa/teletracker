@@ -23,6 +23,7 @@ import { ApiItem, Id, Slug } from '../types/v2';
 import { FilterParams } from './searchFilters';
 import { ApiPerson } from '../types/v2/Person';
 import { ItemSearchRequest } from '../types/client';
+import Immutable from 'immutable';
 
 export interface TeletrackerApiOptions {
   url?: string;
@@ -77,8 +78,8 @@ export class TeletrackerApi {
 
   async updateUserSelf(
     token: string,
-    networkSubscriptions: Network[] | undefined,
-    userPreferences?: UserPreferences | undefined,
+    networkSubscriptions?: Immutable.List<Network>,
+    userPreferences?: UserPreferences,
   ) {
     return this.api.put(
       '/api/v2/users/self',
@@ -214,10 +215,10 @@ export class TeletrackerApi {
     id: string | number,
     sort?: SortOptions,
     desc?: boolean,
-    itemTypes?: ItemType[],
-    genres?: number[],
+    itemTypes?: Immutable.List<ItemType>,
+    genres?: Immutable.List<number>,
     bookmark?: string,
-    networks?: NetworkType[],
+    networks?: Immutable.List<NetworkType>,
     limit?: number,
   ) {
     return this.api.get<DataResponse<ApiList>>(`/api/v2/lists/${id}/items`, {
@@ -351,16 +352,13 @@ export class TeletrackerApi {
 
     return this.api.get<any>(`/api/v2/people/${id}/credits`, {
       token,
-      itemTypes:
-        itemTypes && itemTypes.length ? itemTypes.join(',') : undefined,
-      networks: networks && networks.length ? networks.join(',') : undefined,
+      itemTypes: itemTypes && itemTypes.size ? itemTypes.join(',') : undefined,
+      networks: networks && networks.size ? networks.join(',') : undefined,
       bookmark,
       sort: sortOrder,
       limit,
       genres:
-        genresFilter && genresFilter.length
-          ? genresFilter.join(',')
-          : undefined,
+        genresFilter && genresFilter.size ? genresFilter.join(',') : undefined,
       minReleaseYear:
         sliders && sliders.releaseYear && sliders.releaseYear.min
           ? sliders.releaseYear.min
@@ -466,18 +464,18 @@ export class TeletrackerApi {
     return {
       query: request.searchText,
       itemTypes:
-        request.itemTypes && request.itemTypes.length
+        request.itemTypes && request.itemTypes.size
           ? request.itemTypes.join(',')
           : undefined,
       networks:
-        request.networks && request.networks.length
+        request.networks && request.networks.size
           ? request.networks.join(',')
           : undefined,
       bookmark: request.bookmark,
       sort: request.sort,
       limit: request.limit,
       genres:
-        request.genres && request.genres.length
+        request.genres && request.genres.size
           ? request.genres.join(',')
           : undefined,
       minReleaseYear:
@@ -489,7 +487,7 @@ export class TeletrackerApi {
           ? request.releaseYearRange.max
           : undefined,
       cast:
-        request.castIncludes && request.castIncludes.length
+        request.castIncludes && request.castIncludes.size
           ? request.castIncludes.join(',')
           : undefined,
       imdbRating: imdbPart,

@@ -11,7 +11,6 @@ import {
 } from './auth';
 import { allAvailabilitySaga, upcomingAvailabilitySaga } from './availability';
 import { exploreSaga } from './explore';
-import { filtersChangedSaga } from './filters';
 import { fetchItemDetailsSaga } from './item-detail';
 import {
   addToListSaga,
@@ -120,7 +119,6 @@ export function* root() {
     loadGenresSaga(),
     startupSaga(),
     exploreSaga(),
-    filtersChangedSaga(),
     loadMetadataSaga(),
     peopleSearchSaga(),
     fetchPersonCreditsDetailsSaga(),

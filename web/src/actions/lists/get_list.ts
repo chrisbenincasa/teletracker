@@ -13,7 +13,12 @@ import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import _ from 'lodash';
-import { FilterParams, normalizeFilterParams } from '../../utils/searchFilters';
+import {
+  FilterParams,
+  makeFilterParams,
+  normalizeFilterParams,
+} from '../../utils/searchFilters';
+import Immutable from 'immutable';
 
 export const LIST_RETRIEVE_INITIATED = 'lists/retrieve/INITIATED';
 export const LIST_RETRIEVE_SUCCESS = 'lists/retrieve/SUCCESS';
@@ -24,10 +29,10 @@ export interface ListRetrieveInitiatedPayload {
   force?: boolean;
   sort?: SortOptions;
   desc?: boolean;
-  itemTypes?: ItemType[];
-  genres?: number[];
+  itemTypes?: Immutable.List<ItemType>;
+  genres?: Immutable.List<number>;
   bookmark?: string;
-  networks?: NetworkType[];
+  networks?: Immutable.List<NetworkType>;
   limit?: number;
 }
 
@@ -85,12 +90,14 @@ export const retrieveListSaga = function*() {
           payload.limit,
         );
 
-        const filters: FilterParams = normalizeFilterParams({
-          sortOrder: payload.sort,
-          itemTypes: payload.itemTypes,
-          networks: payload.networks,
-          genresFilter: payload.genres,
-        });
+        const filters: FilterParams = normalizeFilterParams(
+          makeFilterParams({
+            sortOrder: payload.sort,
+            itemTypes: payload.itemTypes,
+            networks: payload.networks,
+            genresFilter: payload.genres,
+          }),
+        );
 
         if (response.ok && response.data) {
           yield put(

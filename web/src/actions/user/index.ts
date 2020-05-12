@@ -5,7 +5,12 @@ import {
 import { UserUpdateNetworksAction } from './update_networks_action';
 import { UserUpdateAction } from './update_user';
 import { UserUpdatePrefsAction } from './update_user_preferences';
-import { UserCreateListAction, UserCreateListSuccessAction } from '../lists';
+import {
+  UserCreateListAction,
+  UserCreateListSuccessAction,
+  UserDeleteListAction,
+  UserUpdateListAction,
+} from '../lists';
 import {
   UserUpdateItemTagsAction,
   UserUpdateItemTagsSuccessAction,
@@ -27,4 +32,6 @@ export type UserActionTypes =
   | UserCreateListAction
   | UserCreateListSuccessAction
   | UserUpdateItemTagsAction
-  | UserUpdateItemTagsSuccessAction;
+  | UserUpdateItemTagsSuccessAction
+  | UserDeleteListAction
+  | UserUpdateListAction;

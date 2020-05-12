@@ -2,6 +2,7 @@ import React, { createContext, ReactNode, useCallback, useEffect } from 'react';
 import {
   DEFAULT_FILTER_PARAMS,
   FilterParams,
+  makeFilterParams,
   normalizeFilterParams,
 } from '../../utils/searchFilters';
 import { useStateDeepEq } from '../../hooks/useStateDeepEq';
@@ -23,7 +24,7 @@ export interface FilterContextState {
 }
 
 export const FilterContext = createContext<FilterContextState>({
-  filters: DEFAULT_FILTER_PARAMS,
+  filters: makeFilterParams(),
   setFilters: () => {},
 });
 

@@ -44,45 +44,44 @@ import {
   ItemRecsFetchInitiatedAction,
   ItemRecsFetchSuccessfulAction,
 } from '../actions/item-detail/get_item_recommendations';
+import { Map, Record, RecordOf } from 'immutable';
 
-export type ThingMap = {
-  [key: string]: Item;
-};
+export type ThingMap = Map<string, Item>;
 
-export interface State {
+export type StateType = {
   fetching: boolean;
-  currentId?: number;
   itemDetail?: string;
   // True if we tried to lookup recs. If false and we load an item, try to load
   // recommendations lazily.
   fetchingRecs: boolean;
   currentItemFetchedRecommendations?: boolean;
   thingsById: ThingMap;
-}
+};
 
-const initialState: State = {
+export type State = RecordOf<StateType>;
+
+const initialState: StateType = {
   fetching: false,
   fetchingRecs: false,
-  thingsById: {},
+  thingsById: Map({}),
 };
+
+export const makeState = Record(initialState);
 
 const itemFetchInitiated = handleAction(
   ITEM_FETCH_INITIATED,
   (state: State, { payload }: ItemFetchInitiatedAction) => {
-    return {
-      ...state,
+    return state.merge({
       fetching: true,
-      currentId: payload,
       itemDetail: undefined,
-    } as State;
+    });
   },
 );
 
 const itemPrefetchSuccess = handleAction(
   ITEM_PREFETCH_SUCCESSFUL,
   (state: State, { payload }: ItemPrefetchSuccessfulAction) => {
-    let thingsById = state.thingsById || {};
-    let existingThing: Item | undefined = thingsById[payload!.id];
+    let existingThing = state.thingsById.get(payload!.id);
 
     let newThing: Item = payload!;
     if (existingThing) {
@@ -90,15 +89,11 @@ const itemPrefetchSuccess = handleAction(
     }
 
     // TODO: Truncate thingsById after a certain point
-    return {
-      ...state,
+    return state.merge({
       fetching: false,
       itemDetail: newThing.id,
-      thingsById: {
-        ...state.thingsById,
-        [payload!.id]: newThing,
-      } as ThingMap,
-    } as State;
+      thingsById: state.thingsById.set(payload!.id, newThing),
+    });
   },
 );
 
@@ -107,8 +102,7 @@ const itemFetchSuccess = handleAction(
   (state: State, { payload }: ItemFetchSuccessfulAction) => {
     if (payload) {
       let { item, includedRecommendations } = payload;
-      let thingsById = state.thingsById || {};
-      let existingThing: Item | undefined = thingsById[item.id];
+      let existingThing = state.thingsById.get(item.id);
 
       let newThing: Item = ItemFactory.create(item);
       if (existingThing) {
@@ -121,15 +115,12 @@ const itemFetchSuccess = handleAction(
 
       // TODO: Truncate thingsById after a certain point
       return updateStateWithNewThings(
-        {
+        state.merge({
           fetching: false,
           itemDetail: newThing.id,
-          thingsById: {
-            ...state.thingsById,
-            [item.id]: newThing,
-          } as ThingMap,
+          thingsById: state.thingsById.set(item.id, newThing),
           currentItemFetchedRecommendations: includedRecommendations,
-        } as State,
+        }),
         recommendations,
       );
     } else {
@@ -142,11 +133,10 @@ const itemRecommendationsFetch = handleAction(
   ITEM_RECOMMENDATIONS_FETCH_INITIATED,
   (state: State, { payload }: ItemRecsFetchInitiatedAction) => {
     if (payload) {
-      return {
-        ...state,
+      return state.merge({
         fetchingRecs: true,
         currentItemFetchedRecommendations: true,
-      };
+      });
     } else {
       return state;
     }
@@ -159,7 +149,7 @@ const itemRecommendationsFetchSuccess = handleAction(
     if (payload) {
       let recommendations = (payload.items || []).map(ItemFactory.create);
 
-      let forItem = state.thingsById[payload.forItem];
+      let forItem = state.thingsById.get(payload.forItem);
 
       let nextState = state;
       if (forItem) {
@@ -167,13 +157,10 @@ const itemRecommendationsFetchSuccess = handleAction(
           ...forItem,
           recommendations: recommendations.map(r => r.id),
         };
-        nextState = {
-          ...state,
-          thingsById: {
-            ...state.thingsById,
-            [payload.forItem]: forItem,
-          },
-        };
+
+        nextState = state.merge({
+          thingsById: state.thingsById.set(forItem.id, forItem),
+        });
       }
 
       return updateStateWithNewThings(nextState, recommendations);
@@ -188,9 +175,8 @@ const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
     return existingState;
   }
 
-  let thingsById = existingState.thingsById || {};
   let newThingsMerged = newThings.map(curr => {
-    let existingThing: Item | undefined = thingsById[curr.id];
+    let existingThing = existingState.thingsById.get(curr.id);
     let newThing = curr;
     if (existingThing) {
       newThing = ItemFactory.merge(existingThing, newThing);
@@ -199,21 +185,14 @@ const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
     return newThing;
   });
 
-  let newThingsById = newThingsMerged.reduce((prev, curr) => {
-    return {
-      ...prev,
-      [curr.id]: curr,
-    };
-  }, {});
+  const newThingsById = newThingsMerged.reduce((prev, curr) => {
+    return prev.set(curr.id, curr);
+  }, existingState.thingsById);
 
-  return {
-    ...existingState,
+  return existingState.merge({
     fetching: false,
-    thingsById: {
-      ...existingState.thingsById,
-      ...newThingsById,
-    },
-  };
+    thingsById: newThingsById,
+  });
 };
 
 const handleListRetrieveSuccess = handleAction<
@@ -301,22 +280,14 @@ const updateTagsState = (
   fn: (tags: ItemTag[]) => ItemTag[],
   payload?: UserUpdateItemTagsPayload,
 ) => {
-  let thingsById = state.thingsById || {};
   let itemId = payload!.itemId;
-  if (payload && thingsById[itemId]) {
-    let thing = thingsById[itemId]!;
+  if (payload && state.thingsById.get(itemId)) {
+    let thing = state.thingsById.get(itemId)!;
     let newTagSet = fn(thing.tags || []);
 
-    return {
-      ...state,
-      thingsById: {
-        ...thingsById,
-        [itemId]: {
-          ...thing,
-          tags: newTagSet,
-        },
-      },
-    } as State;
+    return state.merge({
+      thingsById: state.thingsById.set(itemId, { ...thing, tags: newTagSet }),
+    });
   } else {
     return state;
   }
@@ -376,20 +347,23 @@ const itemRemoveTagsSuccess = handleAction(
   },
 );
 
-export default flattenActions(
-  'item-detail',
-  initialState,
-  itemFetchInitiated,
-  itemFetchSuccess,
-  itemUpdateTagsSuccess,
-  itemRemoveTagsSuccess,
-  handleListRetrieveSuccess,
-  handlePopularRetrieveSuccess,
-  handleExploreRetrieveSuccess,
-  handleSearchRetrieveSuccess,
-  peopleCreditsFetchSuccess,
-  itemPrefetchSuccess,
-  personFetchSuccess,
-  itemRecommendationsFetch,
-  itemRecommendationsFetchSuccess,
-);
+export default {
+  initialState: makeState(),
+  reducer: flattenActions<State>(
+    'item-detail',
+    makeState(),
+    itemFetchInitiated,
+    itemFetchSuccess,
+    itemUpdateTagsSuccess,
+    itemRemoveTagsSuccess,
+    handleListRetrieveSuccess,
+    handlePopularRetrieveSuccess,
+    handleExploreRetrieveSuccess,
+    handleSearchRetrieveSuccess,
+    peopleCreditsFetchSuccess,
+    itemPrefetchSuccess,
+    personFetchSuccess,
+    itemRecommendationsFetch,
+    itemRecommendationsFetchSuccess,
+  ),
+};
