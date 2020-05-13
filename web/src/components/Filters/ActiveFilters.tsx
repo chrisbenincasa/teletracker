@@ -275,9 +275,8 @@ export default function ActiveFilters(props: Props) {
   const showReleaseYearSlider =
     !isDefaultFilters &&
     Boolean(
-      sliders &&
-        sliders.releaseYear &&
-        (sliders.releaseYear.min || sliders.releaseYear.max),
+      !_.isUndefined(sliders?.releaseYear?.min) ||
+        !_.isUndefined(sliders?.releaseYear?.max),
     );
 
   const showImdbSlider =
