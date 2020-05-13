@@ -54,11 +54,13 @@ export default function MarkAsWatched(props: OwnProps) {
   const itemDetail = useStateSelector(state => selectItem(state, props.itemId));
   const { isLoggedIn } = useWithUserContext();
 
+  const wasItemWatched = itemHasTag(itemDetail, ActionType.Watched);
+  const [itemWatched, setItemWatched] = useState(wasItemWatched);
+
   const dispatchRemoveUserItemTags = useDispatchAction(removeUserItemTags);
   const dispatchUpdateUserItemTags = useDispatchAction(updateUserItemTags);
 
   const toggleItemWatched = (): void => {
-    const itemWatched = itemHasTag(itemDetail, ActionType.Watched);
     let payload = {
       itemId: props.itemId,
       action: ActionType.Watched,
@@ -68,8 +70,10 @@ export default function MarkAsWatched(props: OwnProps) {
       toggleLoginModal();
     } else {
       if (itemWatched) {
+        setItemWatched(false);
         dispatchRemoveUserItemTags(payload);
       } else {
+        setItemWatched(true);
         dispatchUpdateUserItemTags(payload);
       }
     }
