@@ -52,3 +52,5 @@ FULL_VERSION
 !people_mapping.json
 !user_item_mapping.json
 !jwks.json
+
+**/run_updates.sh
