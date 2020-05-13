@@ -23,7 +23,8 @@ class HuluSpider(BaseSitemapSpider):
     ]
 
     custom_settings = {
-        'DOWNLOAD_DELAY': 0.1
+        'DOWNLOAD_DELAY': 0.1,
+        'RETRY_HTTP_CODES': [500, 502, 503, 504, 522, 524, 408, 429, 302]
     }
 
     def parse(self, response):
