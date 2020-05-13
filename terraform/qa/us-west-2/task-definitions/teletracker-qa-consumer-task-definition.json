@@ -6,7 +6,9 @@
     "firelensConfiguration": {
       "type": "fluentbit",
       "options": {
-        "enable-ecs-log-metadata": "true"
+        "enable-ecs-log-metadata": "true",
+        "config-file-type": "file",
+        "config-file-value": "/fluent-bit/configs/parse-json.conf"
       }
     },
     "logConfiguration": {
@@ -31,8 +33,12 @@
       "options": {
         "Name": "datadog",
         "apikey": "${datadog_api_key}",
-        "dd_service": "task-consumer",
-        "provider": "ecs"
+        "Host": "http-intake.logs.datadoghq.com",
+        "dd_service": "${service_name}",
+        "dd_source": "consumer",
+        "dd_message_key": "log",
+        "provider": "ecs",
+        "TLS": "on"
       }
     },
     "environment": [

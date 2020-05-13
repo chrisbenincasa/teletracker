@@ -1,16 +1,18 @@
 data "template_file" "teletracker-qa-consumer-task-definition-template" {
   template = file("${path.module}/task-definitions/teletracker-qa-consumer-task-definition.json")
   vars = {
-    image = var.consumer_image,
-    datadog_api_key = data.aws_ssm_parameter.datadog_api_key.value
+    image           = var.consumer_image,
+    datadog_api_key = data.aws_ssm_parameter.datadog_api_key.value,
+    service_name    = "task-consumer"
   }
 }
 
 data "template_file" "teletracker-qa-consumer-task-definition-template-ec2" {
   template = file("${path.module}/task-definitions/teletracker-qa-consumer-ec2-task-definition.json")
   vars = {
-    image = var.consumer_image
+    image           = var.consumer_image
     datadog_api_key = data.aws_ssm_parameter.datadog_api_key.value
+    service_name    = "task-consumer"
   }
 }
 
