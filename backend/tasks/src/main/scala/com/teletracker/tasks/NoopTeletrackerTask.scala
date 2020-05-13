@@ -49,7 +49,7 @@ class DependantTask @Inject()(
   ): List[TeletrackerTaskQueueMessage] = {
     List(
       TeletrackerTaskQueueMessage(
-        UUID.randomUUID(),
+        Some(UUID.randomUUID()),
         classOf[TimeoutTask].getName,
         Map(),
         None

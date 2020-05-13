@@ -5,7 +5,7 @@
 package com.teletracker.common.aws.sqs.worker
 
 import com.teletracker.common.aws.sqs.SqsQueue
-import com.teletracker.common.pubsub.EventBase
+import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import com.teletracker.common.util.execution.{
   ExecutionContextProvider,
   ProvidedSchedulerService
@@ -23,7 +23,7 @@ sealed trait Process
 
 object SqsQueueThroughputWorker {
   def apply[T <: EventBase: Manifest](
-    queue: SqsQueue[T],
+    queue: QueueReader[T],
     config: SqsQueueThroughputWorkerConfig
   )(
     processFunc: T => Future[Option[String]]
@@ -48,7 +48,7 @@ object SqsQueueThroughputWorker {
     * @return
     */
   def ofFunction[T <: EventBase: Manifest](
-    queue: SqsQueue[T],
+    queue: QueueReader[T],
     config: SqsQueueThroughputWorkerConfig
   )(
     processFunc: T => Future[Unit]
@@ -65,7 +65,7 @@ object SqsQueueThroughputWorker {
 }
 
 abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
-  protected val queue: SqsQueue[T],
+  override protected val queue: QueueReader[T],
   reloadableConfig: SqsQueueThroughputWorkerConfig
 )(implicit
   executionContext: ExecutionContext)

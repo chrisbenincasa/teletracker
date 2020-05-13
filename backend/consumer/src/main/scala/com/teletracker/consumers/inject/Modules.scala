@@ -1,12 +1,13 @@
 package com.teletracker.consumers.inject
 
 import com.google.inject.{Module, Provides, Singleton}
-import com.teletracker.common.aws.sqs.SqsQueue
+import com.teletracker.common.aws.sqs.{SqsFifoQueue, SqsQueue}
 import com.teletracker.common.aws.sqs.worker.SqsQueueThroughputWorkerConfig
 import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
 import com.teletracker.common.config.{ConfigLoader, TeletrackerConfig}
 import com.teletracker.common.inject.{Modules => CommonModules}
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.consumers.config.ConsumerConfig
 import com.twitter.inject.TwitterModule
 import net.codingwell.scalaguice.ScalaOptionBinder
@@ -40,13 +41,18 @@ class ConsumerModule extends TwitterModule {
     config: TeletrackerConfig,
     sqsAsyncClient: SqsAsyncClient
   )(implicit executionContext: ExecutionContext
-  ): SqsQueue[TeletrackerTaskQueueMessage] =
-    new SqsQueue[TeletrackerTaskQueueMessage](
+  ): SqsFifoQueue[TeletrackerTaskQueueMessage] =
+    new SqsFifoQueue[TeletrackerTaskQueueMessage](
       sqsAsyncClient,
       config.async.taskQueue.url,
       config.async.taskQueue.dlq.map(dlqConf => {
-        new SqsQueue[TeletrackerTaskQueueMessage](sqsAsyncClient, dlqConf.url)
-      })
+        new SqsFifoQueue[TeletrackerTaskQueueMessage](
+          sqsAsyncClient,
+          dlqConf.url,
+          defaultGroupId = TaskMessageHelper.MessageGroupId
+        )
+      }),
+      TaskMessageHelper.MessageGroupId
     )
 
   @Provides

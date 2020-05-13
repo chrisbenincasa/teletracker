@@ -290,7 +290,7 @@ abstract class SqsQueueBase(
       .build()
   }
 
-  protected def deserialize[T: Decoder](s: String) =
+  protected def deserialize[T: Decoder](s: String): T =
     decode[T](s).right.get // TODO: Handle better
 
   protected def serializer[T: Encoder](t: T): String = t.asJson.noSpaces

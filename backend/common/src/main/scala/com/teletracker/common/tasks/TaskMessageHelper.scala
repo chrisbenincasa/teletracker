@@ -8,6 +8,8 @@ import java.util.UUID
 import scala.reflect.ClassTag
 
 object TaskMessageHelper {
+  final val MessageGroupId = "default"
+
   def forTaskArgs[T: ClassTag: Encoder.AsObject](
     taskIdentifier: TeletrackerTaskIdentifier,
     args: T,

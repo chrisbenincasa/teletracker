@@ -37,9 +37,8 @@ case class NetflixCatalogDeltaArgs(
     extends DeltaLocatorJobArgsLike
 
 class LocateAndRunNetflixTvCatalogDelta @Inject()(
-  publisher: SqsAsyncClient,
-  s3Client: S3Client,
   sourceRetriever: SourceRetriever,
+  s3Client: S3Client,
   teletrackerConfig: TeletrackerConfig,
   sourceWriter: SourceWriter
 )(implicit executionContext: ExecutionContext)
@@ -47,9 +46,7 @@ class LocateAndRunNetflixTvCatalogDelta @Inject()(
       NetflixCatalogDeltaArgs,
       NetflixCatalogDeltaIngestJob
     ](
-      publisher,
       s3Client,
-      sourceRetriever,
       teletrackerConfig
     ) {
 

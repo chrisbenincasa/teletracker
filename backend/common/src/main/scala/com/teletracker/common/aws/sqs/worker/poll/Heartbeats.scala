@@ -1,15 +1,14 @@
 package com.teletracker.common.aws.sqs.worker.poll
 
-import com.teletracker.common.aws.sqs.SqsQueue
-import com.teletracker.common.pubsub.EventBase
-import com.teletracker.common.util.execution.ProvidedSchedulerService
 import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerConfig
+import com.teletracker.common.pubsub.{EventBase, QueueReader}
+import com.teletracker.common.util.execution.ProvidedSchedulerService
 import org.slf4j.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 trait Heartbeats[T <: EventBase] {
   protected def logger: Logger
-  protected def queue: SqsQueue[T]
+  protected def queue: QueueReader[T]
   protected def getConfig: SqsQueueWorkerConfig
 
   protected def heartbeatPool: ProvidedSchedulerService

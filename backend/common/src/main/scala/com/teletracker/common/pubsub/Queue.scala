@@ -49,7 +49,10 @@ trait QueueWriter[T <: EventBase] extends QueueIdentity {
     *
     * @param message
     */
-  def queue(message: T): Future[Option[T]]
+  def queue(
+    message: T,
+    messageGroupId: Option[String]
+  ): Future[Option[T]]
 
   /**
     * Send many messages to the queue

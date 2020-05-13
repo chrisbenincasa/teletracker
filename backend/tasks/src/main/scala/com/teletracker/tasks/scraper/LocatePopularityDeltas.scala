@@ -23,16 +23,12 @@ import scala.reflect.ClassTag
 
 abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
   itemType: ItemType,
-  publisher: SqsAsyncClient,
   s3Client: S3Client,
-  sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
 )(implicit enc: Encoder.AsObject[T#TypedArgs],
   executionContext: ExecutionContext)
     extends DeltaLocatorJob[DeltaLocatorJobArgs](
-      publisher,
       s3Client,
-      sourceRetriever,
       teletrackerConfig
     ) {
 
@@ -94,43 +90,32 @@ abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
 }
 
 class LocateMoviePopularityDelta @Inject()(
-  publisher: SqsAsyncClient,
   s3Client: S3Client,
-  sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends LocatePopularityDeltas[UpdateMoviePopularities](
       ItemType.Movie,
-      publisher,
       s3Client,
-      sourceRetriever,
       teletrackerConfig
     )
 
 class LocateShowPopularityDelta @Inject()(
-  publisher: SqsAsyncClient,
   s3Client: S3Client,
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends LocatePopularityDeltas[UpdateTvShowPopularities](
       ItemType.Show,
-      publisher,
       s3Client,
-      sourceRetriever,
       teletrackerConfig
     )
 
 class LocatePersonPopularityDelta @Inject()(
-  publisher: SqsAsyncClient,
   s3Client: S3Client,
-  sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends LocatePopularityDeltas[UpdatePeoplePopularities](
       ItemType.Person,
-      publisher,
       s3Client,
-      sourceRetriever,
       teletrackerConfig
     )

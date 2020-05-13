@@ -38,9 +38,12 @@ class SqsTaskScheduler @Inject()(
   override def schedule(
     teletrackerTaskQueueMessage: List[TeletrackerTaskQueueMessage]
   ): Future[Unit] = {
-    val taskRecords = teletrackerTaskQueueMessage.map(message => {
-      taskRecordCreator.createScheduled(message.id, message.clazz, message.args)
-    })
+    val taskRecords = teletrackerTaskQueueMessage
+      .filter(_.id.isDefined)
+      .map(message => {
+        taskRecordCreator
+          .createScheduled(message.id.get, message.clazz, message.args)
+      })
 
     Future
       .sequence(taskRecords.map(taskRecordStore.recordNewTask))
