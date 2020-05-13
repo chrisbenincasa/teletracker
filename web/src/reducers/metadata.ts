@@ -24,8 +24,8 @@ export interface State {
   readonly metadataLoading: boolean;
   readonly networksLoading: boolean;
   readonly genresLoading: boolean;
-  readonly networks?: Network[];
-  readonly genres?: Genre[];
+  readonly networks?: ReadonlyArray<Network>;
+  readonly genres?: ReadonlyArray<Genre>;
 }
 
 const initialState: State = {

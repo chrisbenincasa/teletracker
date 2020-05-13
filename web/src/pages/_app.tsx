@@ -10,7 +10,7 @@ import * as ReactRedux from 'react-redux';
 import { Provider } from 'react-redux';
 import { Action, AnyAction, Store } from 'redux';
 import 'sanitize.css/sanitize.css';
-import createStore from '../store';
+import { makeStore as createStore } from '../store';
 import theme from '../theme';
 import { NextPageContext } from 'next';
 
@@ -67,7 +67,7 @@ export interface InitStoreOptions {
 }
 
 const initStore = ({ initialState }: InitStoreOptions): Store => {
-  const createStoreInner = () => createStore(initialState).store;
+  const createStoreInner = () => createStore(initialState);
 
   if (isServer) {
     return createStoreInner();

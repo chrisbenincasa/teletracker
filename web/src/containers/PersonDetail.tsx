@@ -316,8 +316,6 @@ function PersonDetail(props: NewProps) {
           filters={personFiltersForCreateDialog()}
           open={createPersonListDialogOpen}
           onClose={closeCreateListDialog}
-          networks={networks || []}
-          genres={genres || []}
           prefilledName={person!.name}
         />
       </div>

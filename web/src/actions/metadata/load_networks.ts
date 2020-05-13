@@ -13,7 +13,7 @@ export const NETWORKS_LOAD_FAILED = 'metadata/networks/FAILED';
 export type NetworksLoadAction = FSA<typeof NETWORKS_LOAD>;
 
 export interface NetworkMetadataPayload {
-  networks: Network[];
+  readonly networks: ReadonlyArray<Network>;
 }
 
 export type NetworksLoadSuccessAction = FSA<

@@ -20,7 +20,7 @@ import React, {
   useState,
 } from 'react';
 import {
-  LoginInitiated,
+  loginInitiated,
   LoginRedirect,
   LoginState,
   logInWithGoogle as loginWithGoogleAction,
@@ -126,7 +126,7 @@ function LoginFormF(props: NewProps) {
   const authState = state ? (state as LoginState) : undefined;
 
   const dispatchLoginWithGoogle = useDispatchAction(loginWithGoogleAction);
-  const dispatchLogin = useDispatchAction(LoginInitiated);
+  const dispatchLogin = useDispatchAction(loginInitiated);
 
   useEffect(() => {
     if (

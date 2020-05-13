@@ -1,46 +1,44 @@
 import { call, put, takeLatest } from '@redux-saga/core/effects';
-import { FSA } from 'flux-standard-action';
-import { createAction } from '../utils';
 import ReactGA from 'react-ga';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
+import { createAction } from '@reduxjs/toolkit';
+import { withPayloadType } from '../utils';
+import { Action } from 'redux-actions';
 
 export const LOGIN_INITIATED = 'login/INITIATED';
 export const LOGIN_SUCCESSFUL = 'login/SUCCESSFUL';
 
 export interface LoginPayload {
-  email: string;
-  password: string;
+  readonly email: string;
+  readonly password: string;
 }
 
 export interface LoginRedirect {
-  route: string;
-  asPath: string;
-  query: object;
+  readonly route: string;
+  readonly asPath: string;
+  readonly query: object;
 }
 
 export interface LoginState {
-  redirect?: LoginRedirect;
+  readonly redirect?: LoginRedirect;
 }
 
-export type LoginInitiatedAction = FSA<typeof LOGIN_INITIATED, LoginPayload>;
-export type LoginSuccessfulAction = FSA<typeof LOGIN_SUCCESSFUL, string>;
-
-export const LoginInitiated = createAction<LoginInitiatedAction>(
+export const loginInitiated = createAction(
   LOGIN_INITIATED,
+  withPayloadType<LoginPayload>(),
 );
 
-export const LoginSuccessful = createAction<LoginSuccessfulAction>(
+export const loginSuccessful = createAction(
   LOGIN_SUCCESSFUL,
+  withPayloadType<string>(),
 );
 
 /**
  * Saga responsible for handling the login flow
  */
 export const loginSaga = function*() {
-  yield takeLatest(LOGIN_INITIATED, function*({
-    payload,
-  }: LoginInitiatedAction) {
-    if (payload) {
+  yield takeLatest(LOGIN_INITIATED, function*(action: Action<any>) {
+    if (loginInitiated.match(action) && action.payload) {
       try {
         let user: CognitoUser = yield call(
           (email: string, password: string) =>
@@ -48,12 +46,12 @@ export const loginSaga = function*() {
               username: email,
               password,
             }),
-          payload.email,
-          payload.password,
+          action.payload.email,
+          action.payload.password,
         );
 
         yield put(
-          LoginSuccessful(
+          loginSuccessful(
             user
               .getSignInUserSession()!
               .getAccessToken()
@@ -80,5 +78,5 @@ export const loginSaga = function*() {
  * @param password
  */
 export const login = (email: string, password: string) => {
-  return LoginInitiated({ email, password });
+  return loginInitiated({ email, password });
 };
