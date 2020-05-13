@@ -30,9 +30,9 @@ class HuluSpider(BaseSitemapSpider):
         pass
 
     def parse_series(self, response):
-        data = response.xpath('//script/text()').re(r'\s*__NEXT_DATA__\s*=\s*(.*)')
-        if len(data) > 0:
-            loaded_data = json.loads(data[0])
+        data = response.xpath('//script[@id="__NEXT_DATA__"]/text()').get()
+        if data:
+            loaded_data = json.loads(data)
             try:
                 components = loaded_data["props"]["pageProps"]["layout"]["components"]
                 if components:
@@ -97,7 +97,7 @@ class HuluSpider(BaseSitemapSpider):
         return episodes
 
     def parse_movie(self, response):
-        data = response.xpath('//script[@id="__NEXT_DATA__"]/text()').get() #.re(r'\s*__NEXT_DATA__\s*=\s*(.*)')
+        data = response.xpath('//script[@id="__NEXT_DATA__"]/text()').get()
         if data:
             loaded_data = json.loads(data)
             try:
