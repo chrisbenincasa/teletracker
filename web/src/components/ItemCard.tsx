@@ -199,7 +199,9 @@ function ItemCard(props: Props) {
   const updateUserTags = useDispatchAction(updateUserItemTags);
   const removeUserTags = useDispatchAction(removeUserItemTags);
 
-  const itemWatched = itemHasTag(item, ActionType.Watched);
+  const wasItemWatched = itemHasTag(item, ActionType.Watched);
+  const [itemWatched, setItemWatched] = useState(wasItemWatched);
+
   const userItemRating = getItemTagNumberValue(item, ActionType.Enjoyed);
 
   useEffect(() => {
@@ -277,8 +279,10 @@ function ItemCard(props: Props) {
       setLoginModalOpen(true);
     } else {
       if (itemWatched) {
+        setItemWatched(false);
         removeUserTags(payload);
       } else {
+        setItemWatched(true);
         updateUserTags(payload);
         setHoverRating(true);
       }
