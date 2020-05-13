@@ -14,7 +14,8 @@ JVM_OPTS="""-server \
     -Dlog.service.output=${LOG_PATH}/service.log \
     -Dlog.access.output=${LOG_PATH}/access.log \
     -XX:+ScavengeBeforeFullGC -XX:+CMSScavengeBeforeRemark \
-    -Dsun.net.inetaddr.ttl=5
+    -Dsun.net.inetaddr.ttl=5 \
+    -Dcontainer.id=${HOSTNAME}
 """
 
 java ${JVM_OPTS} ${JVM_ARGS} -jar ${BIN_JAR} $@

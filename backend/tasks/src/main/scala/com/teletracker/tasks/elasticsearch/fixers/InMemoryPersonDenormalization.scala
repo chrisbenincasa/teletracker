@@ -468,7 +468,8 @@ class CombineMovieUpdates @Inject()(
     val missingIdsUri = args.valueOrThrow[URI]("missingIdsInput")
     val updatesUri = args.valueOrThrow[URI]("updatesInput")
 
-    val ids = fileUtils.readAllLinesToSet(missingIdsUri)
+    val ids =
+      fileUtils.readAllLinesToSet(missingIdsUri, consultSourceCache = false)
     val castCrewUpdatesById =
       new mutable.HashMap[String, List[CastCrewUpdate]]()
 

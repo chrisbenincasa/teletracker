@@ -42,6 +42,7 @@ lazy val common = project
       "com.iheart" %% "ficus" % "1.4.3",
       // Logging
       "ch.qos.logback" % "logback-classic" % "1.2.3",
+      "ch.qos.logback" % "logback-core" % "1.2.3",
       // Elasticsearch
       "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "7.4.0",
       // Monitoring
@@ -82,7 +83,8 @@ lazy val common = project
       "org.gnieh" %% "diffson-circe" % "4.0.0",
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
-      )
+      ),
+      "com.lihaoyi" %% "pprint" % "0.5.6" % Test
     ) ++ Dependencies.circe
   )
 

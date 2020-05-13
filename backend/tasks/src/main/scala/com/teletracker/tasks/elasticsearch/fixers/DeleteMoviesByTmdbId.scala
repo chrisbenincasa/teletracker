@@ -32,7 +32,7 @@ class DeleteMoviesByTmdbId @Inject()(
     val idsFile = args.valueOrThrow[URI]("idsFileLocation")
     val limit = args.valueOrDefault("limit", -1)
 
-    val ids = fileUtils.readAllLinesToSet(idsFile)
+    val ids = fileUtils.readAllLinesToSet(idsFile, consultSourceCache = false)
     val total = new AtomicLong()
 
     AsyncStream

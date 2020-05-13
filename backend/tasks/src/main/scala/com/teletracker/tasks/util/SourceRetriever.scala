@@ -37,9 +37,6 @@ class SourceRetriever @Inject()(s3: S3Client) {
   ): Source = {
     uri.getScheme match {
       case "s3" =>
-        logger.info(
-          s"Pulling s3://${uri.getHost}/${uri.getPath.stripPrefix("/")}"
-        )
         getS3Object(uri.getHost, uri.getPath, consultCache)
 
       case "file" =>
@@ -57,6 +54,10 @@ class SourceRetriever @Inject()(s3: S3Client) {
     consultCache: Boolean = false
   ): Source = {
     def getS3ObjectInner() = {
+      logger.info(
+        s"Pulling s3://$bucket/$key"
+      )
+
       val tmpFile = File.createTempFile(s"${bucket}_${key}", ".tmp.txt")
       val stream = withRetries(5) {
         s3.getObject(
@@ -109,8 +110,12 @@ class SourceRetriever @Inject()(s3: S3Client) {
         case Some(value) =>
           val f = new File(value)
           if (!f.exists()) {
+            logger.info(
+              s"Couldn't find s3://$bucket/$key in the local fs cache"
+            )
             getS3ObjectInner()
           } else {
+            logger.info(s"Found s3://$bucket/$key in the local fs cache.")
             Source.fromFile(f)
           }
         case None =>
@@ -165,7 +170,6 @@ class SourceRetriever @Inject()(s3: S3Client) {
         getS3ObjectStream(uri.getHost, uri.getPath)
           .filter(obj => filter(URI.create(s"s3://${uri.getHost}/${obj.key}")))
           .map(obj => {
-            logger.info(s"Pulling s3://${uri.getHost}/${obj.key()}")
             getS3Object(uri.getHost, obj.key(), consultCache)
           })
           .drop(offset)

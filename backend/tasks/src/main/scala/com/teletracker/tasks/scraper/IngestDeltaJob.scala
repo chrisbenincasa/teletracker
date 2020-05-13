@@ -25,7 +25,9 @@ import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Codec, Encoder}
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
+import java.time.LocalDate
 import java.util.UUID
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -125,20 +127,21 @@ abstract class IngestDeltaJobLike[
     val parsedArgs = preparseArgs(args)
     val sourceRetriever = new SourceRetriever(s3)
 
-    val afterSource =
-      sourceRetriever.getSource(parsedArgs.snapshotAfter)
-    val beforeSource =
-      sourceRetriever.getSource(parsedArgs.snapshotBefore)
-
-    val parser = new IngestJobParser()
-
     val afterIds = fileUtils
-      .readAllLinesToUniqueIdSet[T](parsedArgs.snapshotAfter, uniqueKey)
+      .readAllLinesToUniqueIdSet[T](
+        parsedArgs.snapshotAfter,
+        uniqueKey,
+        consultSourceCache = true
+      )
 
     logger.info(s"Found ${afterIds.size} IDs in the current snapshot")
 
     val beforeIds = fileUtils
-      .readAllLinesToUniqueIdSet[T](parsedArgs.snapshotBefore, uniqueKey)
+      .readAllLinesToUniqueIdSet[T](
+        parsedArgs.snapshotBefore,
+        uniqueKey,
+        consultSourceCache = true
+      )
 
     logger.info(s"Found ${beforeIds.size} IDs in the previous snapshot")
 
@@ -324,11 +327,37 @@ abstract class IngestDeltaJobLike[
 
       saveAvailabilities(allAdds, allRemoves).await()
     } else {
+      val today = LocalDate.now()
+      val changes = new File(
+        s"${today}_${getClass.getSimpleName}-changes.json"
+      )
+      val changesPrinter = new PrintWriter(
+        new BufferedOutputStream(new FileOutputStream(changes))
+      )
+
+      val header = List(
+        "change_type",
+        "es_item_id",
+        "external_id",
+        "title"
+      ).mkString(",")
+
+      changesPrinter.println(header)
+
       (newAvailabilities ++ updateChanges).foreach(av => {
         logger.info(
           s"Would've added availability (ID: ${av.esItem.id}, external: ${uniqueKey(
             av.item
           )}, name: ${av.esItem.title.get.head}): ${av.availabilities}"
+        )
+
+        changesPrinter.println(
+          List(
+            "add",
+            av.esItem.id,
+            uniqueKey(av.item),
+            "\"" + av.esItem.title.get.head + "\""
+          ).mkString(",")
         )
       })
 
@@ -338,7 +367,18 @@ abstract class IngestDeltaJobLike[
             av.item
           )}, name: ${av.esItem.title.get.head}): ${av.availabilities}"
         )
+        changesPrinter.println(
+          List(
+            "remove",
+            av.esItem.id,
+            uniqueKey(av.item),
+            "\"" + av.esItem.title.get.head + "\""
+          ).mkString(",")
+        )
       })
+
+      changesPrinter.flush()
+      changesPrinter.close()
     }
   }
 
@@ -353,22 +393,6 @@ abstract class IngestDeltaJobLike[
     }
 
     filteredResults -> nonMatches
-  }
-
-  private def readItemIds(source: Source) = {
-    try {
-      new IngestJobParser()
-        .stream[T](source.getLines())
-        .flatMap {
-          case Left(NonFatal(ex)) =>
-            logger.warn(s"Error parsing line: ${ex.getMessage}")
-            None
-          case Right(value) => Some(uniqueKey(value))
-        }
-        .toSet
-    } finally {
-      source.close()
-    }
   }
 
   private def readItems(source: Source) = {

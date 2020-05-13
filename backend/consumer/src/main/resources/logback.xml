@@ -4,9 +4,10 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
-        <encoder>
-            <pattern>%d [%X{traceId}] [%thread] %-5level %logger{36} %marker - %msg%n</pattern>
-        </encoder>
+<!--        <encoder>-->
+<!--            <pattern>%d [%X{traceId}] [%thread] %-5level %logger{36} %marker - %msg%n</pattern>-->
+<!--        </encoder>-->
+        <encoder class="com.teletracker.common.logging.EventJsonEncoder"/>
     </appender>
 
     <!-- ===================================================== -->
@@ -17,12 +18,10 @@
     <appender name="SERVICE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.service.output:-job.log}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>service-%d{yyyy-MM-dd}.%i</fileNamePattern>
+            <fileNamePattern>job-%d{yyyy-MM-dd}.%i</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
         </rollingPolicy>
-        <encoder>
-            <pattern>%date %.-3level %-16X{traceId} %-25logger{0} %msg%n</pattern>
-        </encoder>
+        <encoder class="com.teletracker.common.logging.EventJsonEncoder"/>
     </appender>
 
     <!-- ===================================================== -->
@@ -32,7 +31,7 @@
     <!-- Root Config -->
     <root level="info">
         <appender-ref ref="STDOUT"/>
-<!--        <appender-ref ref="SERVICE"/>-->
+        <appender-ref ref="SERVICE"/>
     </root>
 
     <!-- Per-Package Config -->

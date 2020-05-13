@@ -96,7 +96,6 @@ abstract class BaseIngestJob[
 
   postrun(args => {
     if (args.valueOrDefault("uploadArtifacts", true)) {
-
       artifacts.foreach(artifact => {
         s3.putObject(
           PutObjectRequest
