@@ -1,14 +1,12 @@
 import {
-  ListPersonRule,
-  ListTagRule,
   List,
-  ListConfiguration,
   ListGenreRule,
   ListItemTypeRule,
-  ListRule,
   ListNetworkRule,
+  ListPersonRule,
+  ListRule,
+  ListTagRule,
 } from '../types';
-import * as R from 'ramda';
 import { GRID_ITEM_SIZE_IN_COLUMNS, TOTAL_COLUMNS } from '../constants/';
 
 export function isPersonRule(x: ListRule): x is ListPersonRule {
@@ -44,29 +42,6 @@ export function listTracksPerson(list: List, personId: string): boolean {
     return false;
   }
 }
-
-export function getOrInitListConfiguration(list: List) {
-  if (!list.configuration) {
-    list.configuration = {};
-  }
-
-  return list.configuration!;
-}
-
-function getOrInitListOptionsForConfiguration(
-  listConfiguration: ListConfiguration,
-) {
-  if (!listConfiguration.options) {
-    listConfiguration.options = { removeWatchedItems: false };
-  }
-
-  return listConfiguration.options!;
-}
-
-export const getOrInitListOptions = R.pipe(
-  getOrInitListConfiguration,
-  getOrInitListOptionsForConfiguration,
-);
 
 export function calculateLimit(
   screenWidth: string,

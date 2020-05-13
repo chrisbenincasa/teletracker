@@ -1,28 +1,25 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import {
   Button,
   createStyles,
+  makeStyles,
   Theme,
   Tooltip,
-  WithStyles,
-  withStyles,
   Zoom,
 } from '@material-ui/core';
-import { CheckBox, ThumbUp, ThumbDown } from '@material-ui/icons';
-import { connect } from 'react-redux';
-import { bindActionCreators, Dispatch } from 'redux';
-import withUser, { WithUserProps } from '../withUser';
-import {
-  removeUserItemTags,
-  updateUserItemTags,
-  UserUpdateItemTagsPayload,
-} from '../../actions/user';
+import { CheckBox, ThumbDown, ThumbUp } from '@material-ui/icons';
+import { removeUserItemTags, updateUserItemTags } from '../../actions/user';
 import AuthDialog from '../Auth/AuthDialog';
 import { ActionType } from '../../types';
 import moment from 'moment';
-import { Item, itemHasTag, getItemTagNumberValue } from '../../types/v2/Item';
+import { getItemTagNumberValue, itemHasTag } from '../../types/v2/Item';
+import { Id } from '../../types/v2';
+import useStateSelector from '../../hooks/useStateSelector';
+import selectItem from '../../selectors/selectItem';
+import { useWithUserContext } from '../../hooks/useWithUser';
+import { useDispatchAction } from '../../hooks/useDispatchAction';
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     itemCTA: {
       whiteSpace: 'nowrap',
@@ -42,58 +39,44 @@ const styles = (theme: Theme) =>
     ratingButtonWrapper: {
       marginLeft: theme.spacing(0.5),
     },
-  });
+  }),
+);
 
 interface OwnProps {
-  itemDetail: Item;
-  style: object;
-  className?: string;
+  readonly itemId: Id;
+  readonly style?: object;
+  readonly className?: string;
 }
 
-interface DispatchProps {
-  updateUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
-  removeUserItemTags: (payload: UserUpdateItemTagsPayload) => void;
-}
+export default function MarkAsWatched(props: OwnProps) {
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const classes = useStyles();
+  const itemDetail = useStateSelector(state => selectItem(state, props.itemId));
+  const { userSelf } = useWithUserContext();
 
-type Props = OwnProps &
-  DispatchProps &
-  WithStyles<typeof styles> &
-  WithUserProps;
+  const dispatchRemoveUserItemTags = useDispatchAction(removeUserItemTags);
+  const dispatchUpdateUserItemTags = useDispatchAction(updateUserItemTags);
 
-interface State {
-  loginModalOpen: boolean;
-}
-
-class MarkAsWatched extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-
-    this.state = {
-      loginModalOpen: false,
-    };
-  }
-
-  toggleItemWatched = (): void => {
-    const itemWatched = itemHasTag(this.props.itemDetail, ActionType.Watched);
+  const toggleItemWatched = (): void => {
+    const itemWatched = itemHasTag(itemDetail, ActionType.Watched);
     let payload = {
-      itemId: this.props.itemDetail.id,
+      itemId: props.itemId,
       action: ActionType.Watched,
     };
 
-    if (!this.props.userSelf) {
-      this.toggleLoginModal();
+    if (!userSelf) {
+      toggleLoginModal();
     } else {
       if (itemWatched) {
-        this.props.removeUserItemTags(payload);
+        dispatchRemoveUserItemTags(payload);
       } else {
-        this.props.updateUserItemTags(payload);
+        dispatchUpdateUserItemTags(payload);
       }
     }
   };
 
-  watchedButton = (isReleased: boolean) => {
-    const { classes } = this.props;
-    const watchedStatus = itemHasTag(this.props.itemDetail, ActionType.Watched);
+  const watchedButton = (isReleased: boolean) => {
+    const watchedStatus = itemHasTag(itemDetail, ActionType.Watched);
     const watchedCTA = watchedStatus ? 'Watched' : 'Mark as Watched';
 
     return (
@@ -102,7 +85,7 @@ class MarkAsWatched extends Component<Props, State> {
           size="small"
           variant="contained"
           aria-label={watchedCTA}
-          onClick={this.toggleItemWatched}
+          onClick={toggleItemWatched}
           fullWidth
           disabled={!isReleased}
           color={watchedStatus ? 'primary' : undefined}
@@ -111,34 +94,33 @@ class MarkAsWatched extends Component<Props, State> {
         >
           {watchedCTA}
         </Button>
-        {watchedStatus && isReleased && this.ratingButton()}
+        {watchedStatus && isReleased && ratingButton()}
       </div>
     );
   };
 
-  toggleItemRating = (rating: number) => {
+  const toggleItemRating = (rating: number) => {
     let payload = {
-      itemId: this.props.itemDetail.id,
+      itemId: itemDetail.id,
       action: ActionType.Enjoyed,
       value: rating,
     };
 
     const userItemRating = getItemTagNumberValue(
-      this.props.itemDetail,
+      itemDetail,
       ActionType.Enjoyed,
     );
 
     if (userItemRating === rating) {
-      this.props.removeUserItemTags(payload);
+      dispatchRemoveUserItemTags(payload);
     } else {
-      this.props.updateUserItemTags(payload);
+      dispatchUpdateUserItemTags(payload);
     }
   };
 
-  ratingButton = () => {
-    const { classes } = this.props;
+  const ratingButton = () => {
     const userItemRating = getItemTagNumberValue(
-      this.props.itemDetail,
+      itemDetail,
       ActionType.Enjoyed,
     );
 
@@ -152,7 +134,7 @@ class MarkAsWatched extends Component<Props, State> {
                 size="small"
                 variant="contained"
                 className={classes.ratingButton}
-                onClick={() => this.toggleItemRating(1)}
+                onClick={() => toggleItemRating(1)}
                 color={userItemRating === 1 ? 'primary' : 'secondary'}
               >
                 <ThumbUp />
@@ -172,7 +154,7 @@ class MarkAsWatched extends Component<Props, State> {
                     ? classes.ratingButtonDislikeActive
                     : classes.ratingButtonDislike
                 }
-                onClick={() => this.toggleItemRating(0)}
+                onClick={() => toggleItemRating(0)}
                 color={userItemRating === 0 ? 'primary' : 'secondary'}
               >
                 <ThumbDown />
@@ -184,45 +166,26 @@ class MarkAsWatched extends Component<Props, State> {
     );
   };
 
-  toggleLoginModal = (): void => {
-    this.setState({ loginModalOpen: !this.state.loginModalOpen });
+  const toggleLoginModal = (): void => {
+    setLoginModalOpen(prev => !prev);
   };
 
-  render() {
-    const { className, style } = this.props;
-    const currentDate = moment();
-    const releaseDate = moment(this.props.itemDetail.release_date);
-    const isReleased = currentDate.diff(releaseDate, 'days') >= 0;
+  const currentDate = moment();
+  const releaseDate = moment(itemDetail.release_date);
+  const isReleased = currentDate.diff(releaseDate, 'days') >= 0;
 
-    return (
-      <React.Fragment>
-        <div className={className} style={{ ...style }}>
-          {!isReleased ? (
-            <Tooltip title={`This is currently unreleased.`} placement="top">
-              <span>{this.watchedButton(isReleased)}</span>
-            </Tooltip>
-          ) : (
-            this.watchedButton(isReleased)
-          )}
-        </div>
-        <AuthDialog
-          open={this.state.loginModalOpen}
-          onClose={this.toggleLoginModal}
-        />
-      </React.Fragment>
-    );
-  }
-}
-
-const mapDispatchToProps = (dispatch: Dispatch) =>
-  bindActionCreators(
-    {
-      updateUserItemTags,
-      removeUserItemTags,
-    },
-    dispatch,
+  return (
+    <React.Fragment>
+      <div className={props.className} style={{ ...props.style }}>
+        {!isReleased ? (
+          <Tooltip title={`This is currently unreleased.`} placement="top">
+            <span>{watchedButton(isReleased)}</span>
+          </Tooltip>
+        ) : (
+          watchedButton(isReleased)
+        )}
+      </div>
+      <AuthDialog open={loginModalOpen} onClose={toggleLoginModal} />
+    </React.Fragment>
   );
-
-export default withUser(
-  withStyles(styles)(connect(null, mapDispatchToProps)(MarkAsWatched)),
-);
+}

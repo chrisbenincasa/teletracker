@@ -1,6 +1,6 @@
 import { Paging } from '../index';
 
 export default interface PagedResponse<T> {
-  data: T[];
-  paging?: Paging;
+  readonly data: T[];
+  readonly paging?: Paging;
 }

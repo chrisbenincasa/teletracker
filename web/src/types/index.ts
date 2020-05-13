@@ -3,39 +3,39 @@ import { Item, ItemFactory } from './v2/Item';
 import { ApiPerson, Person, PersonFactory } from './v2/Person';
 
 export interface Paging {
-  bookmark?: string;
+  readonly bookmark?: string;
 }
 
 export interface ApiList {
-  id: string;
-  name: string;
-  items?: ApiItem[];
-  isDefault?: boolean;
-  isDeleted?: boolean;
-  isDynamic?: boolean;
-  isPublic?: boolean;
-  totalItems: number;
-  configuration?: ListConfiguration;
-  relevantPeople?: ApiPerson[];
-  aliases?: string[];
-  ownedByRequester: boolean;
+  readonly id: string;
+  readonly name: string;
+  readonly items?: ApiItem[];
+  readonly isDefault?: boolean;
+  readonly isDeleted?: boolean;
+  readonly isDynamic?: boolean;
+  readonly isPublic?: boolean;
+  readonly totalItems: number;
+  readonly configuration?: ListConfiguration;
+  readonly relevantPeople?: ApiPerson[];
+  readonly aliases?: string[];
+  readonly ownedByRequester: boolean;
 }
 
 export interface List {
-  id: string;
-  name: string;
-  items?: Item[];
-  isDefault?: boolean;
-  isDeleted?: boolean;
-  isDynamic?: boolean;
-  isPublic?: boolean;
-  totalItems: number;
-  configuration?: ListConfiguration;
-  relevantPeople?: Person[];
-  legacyId?: number;
-  createdAt?: Date;
-  aliases?: string[];
-  ownedByRequester: boolean;
+  readonly id: string;
+  readonly name: string;
+  readonly items?: Item[];
+  readonly isDefault?: boolean;
+  readonly isDeleted?: boolean;
+  readonly isDynamic?: boolean;
+  readonly isPublic?: boolean;
+  readonly totalItems: number;
+  readonly configuration?: ListConfiguration;
+  readonly relevantPeople?: Person[];
+  readonly legacyId?: number;
+  readonly createdAt?: Date;
+  readonly aliases?: string[];
+  readonly ownedByRequester: boolean;
 }
 
 export class ListFactory {
@@ -113,7 +113,7 @@ export function isNetworkType(s: string): s is NetworkType {
   return allowed.includes(s);
 }
 
-export const networkToPrettyName: { [K in NetworkType]?: string } = {
+export const networkToPrettyName: { readonly [K in NetworkType]?: string } = {
   netflix: 'Netflix',
   'netflix-kids': 'Netflix Kids',
   'hbo-go': 'HBO Go',
@@ -124,12 +124,12 @@ export const networkToPrettyName: { [K in NetworkType]?: string } = {
 };
 
 export interface ListConfiguration {
-  ruleConfiguration?: ListRules;
-  options?: ListOptions;
+  readonly ruleConfiguration?: ListRules;
+  readonly options?: ListOptions;
 }
 
 export interface ListOptions {
-  removeWatchedItems: boolean;
+  readonly removeWatchedItems: boolean;
 }
 
 export enum ListRuleType {
@@ -157,49 +157,49 @@ export type ListRuleTypes =
   | ListNetworkRule;
 
 export interface ListRules {
-  rules: ListRule[];
-  sort?: ListDefaultSort;
+  readonly rules: ListRule[];
+  readonly sort?: ListDefaultSort;
 }
 
 export interface ListDefaultSort {
-  sort: SortOptions;
+  readonly sort: SortOptions;
 }
 
 export interface ListRule {
-  type: ListRuleTypeKeys;
+  readonly type: ListRuleTypeKeys;
 }
 
 export interface ListTagRule extends ListRule {
-  tagType: string;
-  value?: number;
-  isPresent?: boolean;
-  type: 'UserListTagRule';
+  readonly tagType: string;
+  readonly value?: number;
+  readonly isPresent?: boolean;
+  readonly type: 'UserListTagRule';
 }
 
 export interface ListPersonRule extends ListRule {
-  personId: string;
-  type: 'UserListPersonRule';
+  readonly personId: string;
+  readonly type: 'UserListPersonRule';
 }
 
 export interface ListGenreRule extends ListRule {
-  genreId: number;
-  type: 'UserListGenreRule';
+  readonly genreId: number;
+  readonly type: 'UserListGenreRule';
 }
 
 export interface ListItemTypeRule extends ListRule {
-  itemType: ItemType;
-  type: 'UserListItemTypeRule';
+  readonly itemType: ItemType;
+  readonly type: 'UserListItemTypeRule';
 }
 
 export interface ListNetworkRule extends ListRule {
-  networkId: number;
-  type: 'UserListNetworkRule';
+  readonly networkId: number;
+  readonly type: 'UserListNetworkRule';
 }
 
 export interface ListReleaseYearRule extends ListRule {
-  minimum?: number;
-  maximum?: number;
-  type: 'UserListReleaseYearRule';
+  readonly minimum?: number;
+  readonly maximum?: number;
+  readonly type: 'UserListReleaseYearRule';
 }
 
 export function ruleIsType<T extends ListRule>(
@@ -214,26 +214,26 @@ export function isGenreRule(rule: ListRule): rule is ListGenreRule {
 }
 
 export interface User {
-  id: number;
-  name: string;
-  email: string;
-  username: string;
-  lists: List[];
-  networkSubscriptions: Network[];
-  userPreferences: UserPreferences;
+  readonly id: number;
+  readonly name: string;
+  readonly email: string;
+  readonly username: string;
+  readonly lists: List[];
+  readonly networkSubscriptions: Network[];
+  readonly userPreferences: UserPreferences;
 }
 
 export interface UserDetails {
-  networkPreferences: Network[];
-  preferences: UserPreferences;
+  readonly networkPreferences: Network[];
+  readonly preferences: UserPreferences;
 }
 
 export interface UserThingTag {
-  id?: number;
-  userId?: number;
-  itemId?: number;
-  action: ActionType;
-  value?: number;
+  readonly id?: number;
+  readonly userId?: number;
+  readonly itemId?: number;
+  readonly action: ActionType;
+  readonly value?: number;
 }
 
 export type PresentationType = 'sd' | 'hd' | '4k';
@@ -249,24 +249,24 @@ export enum OfferType {
 }
 
 export interface UserPreferences {
-  presentationTypes: PresentationType[];
-  showOnlyNetworkSubscriptions: boolean;
+  readonly presentationTypes: PresentationType[];
+  readonly showOnlyNetworkSubscriptions: boolean;
 }
 
 export interface Network {
-  id: number;
-  name: string;
-  slug: NetworkType;
-  shortname?: string;
-  homepage?: string;
-  origin?: string;
+  readonly id: number;
+  readonly name: string;
+  readonly slug: NetworkType;
+  readonly shortname?: string;
+  readonly homepage?: string;
+  readonly origin?: string;
 }
 
 export interface Genre {
-  id: number;
-  name: string;
-  type: ('movie' | 'tv')[];
-  slug: string;
+  readonly id: number;
+  readonly name: string;
+  readonly type: ('movie' | 'tv')[];
+  readonly slug: string;
 }
 
 export enum ActionType {
@@ -276,11 +276,11 @@ export enum ActionType {
 }
 
 export interface OpenRange {
-  min?: number;
-  max?: number;
+  readonly min?: number;
+  readonly max?: number;
 }
 
 export interface MetadataResponse {
-  genres: Genre[];
-  networks: Network[];
+  readonly genres: Genre[];
+  readonly networks: Network[];
 }

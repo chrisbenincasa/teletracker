@@ -16,8 +16,8 @@ const styles = makeStyles((theme: Theme) => ({
 const MIN_YEAR = 1900;
 
 interface Props {
-  handleChange: (change: SliderChange) => void;
-  showTitle?: boolean;
+  readonly handleChange: (change: SliderChange) => void;
+  readonly showTitle?: boolean;
 }
 
 const ensureNumberInRange = (num: number, lo: number, hi: number) => {

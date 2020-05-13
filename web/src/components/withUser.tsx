@@ -8,14 +8,14 @@ import { LinearProgress } from '@material-ui/core';
 import { UserSelf } from '../reducers/user';
 
 export interface WithUserStateProps {
-  isCheckingAuth: boolean;
-  isLoggedIn: boolean;
-  retrievingUser: boolean;
-  userSelf?: UserSelf;
+  readonly isCheckingAuth: boolean;
+  readonly isLoggedIn: boolean;
+  readonly retrievingUser: boolean;
+  readonly userSelf?: UserSelf;
 }
 
 export interface WithUserDispatchProps {
-  getUserSelf: (force: boolean) => void;
+  readonly getUserSelf: (force: boolean) => void;
 }
 
 export type WithUserProps = WithUserStateProps & WithUserDispatchProps;

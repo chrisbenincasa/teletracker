@@ -66,12 +66,12 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  drawerOpen?: boolean;
-  onDrawerChange?: (close?: boolean) => void;
-  inputStyle?: object;
-  filters?: FilterParams;
-  quickSearchColor?: string;
-  quickSearchEnabled?: boolean;
+  readonly drawerOpen?: boolean;
+  readonly onDrawerChange?: (close?: boolean) => void;
+  readonly inputStyle?: object;
+  readonly filters?: FilterParams;
+  readonly quickSearchColor?: string;
+  readonly quickSearchEnabled?: boolean;
 }
 
 function Search(props: Props) {

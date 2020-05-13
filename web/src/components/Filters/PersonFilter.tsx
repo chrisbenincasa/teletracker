@@ -20,9 +20,9 @@ const useStyles = makeStyles(theme => ({
 }));
 
 interface OwnProps {
-  selectedCast?: string[];
-  handleChange: (change: string[]) => void;
-  showTitle?: boolean;
+  readonly selectedCast?: string[];
+  readonly handleChange: (change: string[]) => void;
+  readonly showTitle?: boolean;
 }
 
 type Props = OwnProps;

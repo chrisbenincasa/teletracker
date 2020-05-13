@@ -10,7 +10,6 @@ import {
   makeStyles,
   Theme,
   Typography,
-  WithStyles,
 } from '@material-ui/core';
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import React, {
@@ -25,60 +24,15 @@ import {
   LoginRedirect,
   LoginState,
   logInWithGoogle as loginWithGoogleAction,
-  LoginWithGooglePayload,
 } from '../../actions/auth';
 import GoogleLoginButton from './GoogleLoginButton';
 import { GOOGLE_ACCOUNT_MERGE } from '../../constants/';
-import { WithRouterProps } from 'next/dist/client/with-router';
 import { useRouter } from 'next/router';
 import qs from 'querystring';
 import _ from 'lodash';
 import NextLink from 'next/link';
 import { useStateSelectorWithPrevious } from '../../hooks/useStateSelector';
 import { useDispatchAction } from '../../hooks/useDispatchAction';
-
-const styles = (theme: Theme) =>
-  createStyles({
-    avatar: {
-      margin: theme.spacing(1),
-      backgroundColor: theme.palette.secondary.main,
-    },
-    form: {
-      width: '100%', // Fix IE 11 issue.
-    },
-    submit: {
-      marginTop: theme.spacing(3),
-    },
-    overlay: {
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      zIndex: 900, // Above everything but below toolbar
-    },
-    socialSignInContainer: {
-      marginTop: theme.spacing(2),
-    },
-    progressSpinner: {
-      marginBottom: theme.spacing(1),
-    },
-    googleButtonIcon: {
-      height: 30,
-    },
-    googleButtonText: {
-      marginLeft: theme.spacing(1),
-    },
-    signUpLinkText: {
-      marginTop: theme.spacing(2),
-      textAlign: 'center',
-    },
-  });
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -124,33 +78,10 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
-interface OwnProps {
-  isAuthed: boolean;
-  login: (email: string, password: string) => void;
-  logInWithGoogle: (payload?: LoginWithGooglePayload) => any;
-  isLoggingIn: boolean;
-  logInSuccessful: (token: string) => any;
-  redirect_uri?: string;
-  // Events
-  onSubmitted?: () => void;
-  onNav?: () => void;
-  onLogin?: (state?: LoginState) => void;
-}
-
-type Props = OwnProps & WithStyles<typeof styles> & WithRouterProps;
-
-interface State {
-  email: string;
-  password: string;
-  cameFromOAuth: boolean;
-  mergedFederatedAccount: boolean;
-  authState?: LoginState;
-}
-
 interface NewProps {
-  onSubmitted?: () => void;
-  onNav?: () => void;
-  onLogin?: (state?: LoginState) => void;
+  readonly onSubmitted?: () => void;
+  readonly onNav?: () => void;
+  readonly onLogin?: (state?: LoginState) => void;
 }
 
 function LoginFormF(props: NewProps) {

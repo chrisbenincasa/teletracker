@@ -5,7 +5,7 @@ import { logout } from '../../actions/auth';
 import { Button } from '@material-ui/core';
 
 interface AuthButtonProps {
-  logout: () => void;
+  readonly logout: () => void;
 }
 
 class AuthButton extends Component<AuthButtonProps> {

@@ -3,6 +3,9 @@ import { Button, makeStyles } from '@material-ui/core';
 import { PlaylistAdd } from '@material-ui/icons';
 import { Item, itemBelongsToLists } from '../../types/v2/Item';
 import { useWidth } from '../../hooks/useWidth';
+import { Id } from '../../types/v2';
+import useStateSelector from '../../hooks/useStateSelector';
+import selectItem from '../../selectors/selectItem';
 
 const useStyles = makeStyles(theme => ({
   buttonIcon: {
@@ -17,22 +20,26 @@ const useStyles = makeStyles(theme => ({
 }));
 
 interface Props {
-  itemDetail?: Item;
-  onClick: () => void;
-  style?: object;
-  cta?: string;
-  className?: string;
+  readonly itemId?: Id;
+  readonly onClick: () => void;
+  readonly style?: object;
+  readonly cta?: string;
+  readonly className?: string;
 }
 
 export default function ManageTrackingButton(props: Props) {
   const classes = useStyles();
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
+  const itemDetail = props.itemId
+    ? useStateSelector(state => selectItem(state, props.itemId!))
+    : undefined;
   let [isTracked, setIsTracked] = useState(false);
 
   useEffect(() => {
-    let belongsToLists: string[] =
-      props && props.itemDetail ? itemBelongsToLists(props.itemDetail) : [];
+    let belongsToLists: string[] = itemDetail
+      ? itemBelongsToLists(itemDetail)
+      : [];
 
     if (belongsToLists.length > 0) {
       setIsTracked(true);

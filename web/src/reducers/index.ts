@@ -18,18 +18,18 @@ export interface StartupState {
 
 // A type that represents the entire app state
 export interface AppState {
-  auth: AuthState;
-  itemDetail: ItemDetailState;
-  search: SearchState;
-  userSelf: UserSelfState;
-  lists: ListsState;
-  metadata: MetadataState;
-  availability: AvailabilityState;
-  popular: PopularState;
-  explore: ExploreState;
-  people: PersonState;
-  startup: StartupState;
-  filters: FilterState;
+  readonly auth: AuthState;
+  readonly itemDetail: ItemDetailState;
+  readonly search: SearchState;
+  readonly userSelf: UserSelfState;
+  readonly lists: ListsState;
+  readonly metadata: MetadataState;
+  readonly availability: AvailabilityState;
+  readonly popular: PopularState;
+  readonly explore: ExploreState;
+  readonly people: PersonState;
+  readonly startup: StartupState;
+  readonly filters: FilterState;
 }
 
 // TODO clean this up - move to own file

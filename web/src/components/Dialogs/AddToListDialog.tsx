@@ -44,6 +44,9 @@ import { hookDeepEqual } from '../../hooks/util';
 import useNewListValidation from '../../hooks/useNewListValidation';
 import ResponsiveImage from '../ResponsiveImage';
 import useIsMobile from '../../hooks/useIsMobile';
+import { Id } from '../../types/v2';
+import selectItem from '../../selectors/selectItem';
+import dequal from 'dequal';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -82,16 +85,16 @@ const allListIdsSelector = createDeepEqSelector(
 );
 
 interface Props {
-  open: boolean;
-  onClose: () => void;
-  item: Item;
+  readonly open: boolean;
+  readonly onClose: () => void;
+  readonly itemId: Id;
 }
 
-export default function AddToListDialog(props: Props) {
+function AddToListDialog(props: Props) {
   const classes = useStyles();
   const isMobile = useIsMobile();
   const { isLoggedIn } = useWithUserContext();
-
+  const itemDetail = useStateSelector(state => selectItem(state, props.itemId));
   const wasOpen = usePrevious(props.open);
 
   const listsToShow = useStateSelector(possibleListsSelector);
@@ -113,7 +116,7 @@ export default function AddToListDialog(props: Props) {
   );
 
   const calculateListChanges = () => {
-    const belongsToLists: string[] = itemBelongsToLists(props.item);
+    const belongsToLists: string[] = itemBelongsToLists(itemDetail);
 
     return _.reduce(
       allListIds,
@@ -127,11 +130,11 @@ export default function AddToListDialog(props: Props) {
     );
   };
 
-  const [originalListState, setOriginalListState] = useState(
+  const [originalListState, setOriginalListState] = useStateDeepEq(
     calculateListChanges(),
   );
   const [actionPending, setActionPending] = useState(false);
-  const [listChanges, setListChanges] = useState(calculateListChanges());
+  const [listChanges, setListChanges] = useStateDeepEq(calculateListChanges());
   const [createAListEnabled, setCreateAListEnabled] = useState(false);
   const [newListValidation, setNewListValidation] = useStateDeepEq(
     CreateAListValidator.defaultState().asObject(),
@@ -192,23 +195,21 @@ export default function AddToListDialog(props: Props) {
   const handleSubmit = useCallback(() => {
     const addedToLists = _.filter(
       allListIds,
-      listId => listChanges[listId] && !listContainsItem(listId, props.item),
+      listId => listChanges[listId] && !listContainsItem(listId, itemDetail),
     );
     const removedFromLists = _.filter(
       allListIds,
-      listId => !listChanges[listId] && listContainsItem(listId, props.item),
+      listId => !listChanges[listId] && listContainsItem(listId, itemDetail),
     );
 
-    console.log(addedToLists, removedFromLists);
-
     dispatchUpdateLists({
-      itemId: props.item.id,
+      itemId: props.itemId,
       addToLists: addedToLists,
       removeFromLists: removedFromLists,
     });
 
     handleModalClose();
-  }, [listChanges, props.item]);
+  }, [listChanges, itemDetail]);
 
   const handleCheckboxChange = useCallback(
     (listId: string, checked: boolean) => {
@@ -320,7 +321,7 @@ export default function AddToListDialog(props: Props) {
         maxWidth="sm"
       >
         <DialogTitle id="update-tracking-dialog" className={classes.title}>
-          Add or Remove {props.item.canonicalTitle} from your lists
+          Add or Remove {itemDetail.canonicalTitle} from your lists
         </DialogTitle>
 
         <DialogContent className={classes.dialogContainer}>
@@ -345,7 +346,7 @@ export default function AddToListDialog(props: Props) {
           {!isMobile ? (
             <div style={{ flex: '0.5' }}>
               <CardMedia
-                item={props.item}
+                item={itemDetail}
                 component={ResponsiveImage}
                 imageType="poster"
                 imageStyle={{
@@ -386,3 +387,5 @@ export default function AddToListDialog(props: Props) {
     return <AuthDialog open={props.open} onClose={handleModalClose} />;
   }
 }
+
+export default React.memo(AddToListDialog, dequal);

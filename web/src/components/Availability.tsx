@@ -14,6 +14,8 @@ import { Item } from '../types/v2/Item';
 import { useNetworks } from '../hooks/useStateMetadata';
 import { deepLinkForId, Platform } from '../utils/availability-utils';
 import { OfferType } from '../types';
+import useStateSelector from '../hooks/useStateSelector';
+import selectItem from '../selectors/selectItem';
 
 const useStyles = makeStyles((theme: Theme) => ({
   availabilityContainer: {
@@ -105,14 +107,13 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  itemDetail: Item;
+  readonly itemId: string;
 }
 
 const Availability = (props: Props) => {
   const classes = useStyles();
   const networks = useNetworks();
-
-  const { itemDetail } = props;
+  const itemDetail = useStateSelector(state => selectItem(state, props.itemId));
 
   const findAvailabilitiesWithOfferType = (offerType: OfferType) => {
     return _.flatten(

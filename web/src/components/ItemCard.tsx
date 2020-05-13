@@ -162,18 +162,18 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  key: string | number;
-  itemId: Id;
+  readonly key: string | number;
+  readonly itemId: Id;
 
   // display props
-  showDelete?: boolean;
-  withActionButton: boolean;
+  readonly showDelete?: boolean;
+  readonly withActionButton: boolean;
 
-  gridProps?: GridProps;
+  readonly gridProps?: GridProps;
   // If defined, we're viewing this item within the context of _this_ list
   // This is probably not scalable, but it'll work for now.
-  listContext?: List;
-  hasLoaded?: () => void;
+  readonly listContext?: List;
+  readonly hasLoaded?: () => void;
 }
 
 function ItemCard(props: Props) {
@@ -531,6 +531,14 @@ function ItemCard(props: Props) {
     );
   };
 
+  const closeLoginModal = useCallback(() => {
+    setLoginModalOpen(false);
+  }, []);
+
+  const closeManageTrackingModal = useCallback(() => {
+    setManageTrackingModalOpen(false);
+  }, []);
+
   return (
     <React.Fragment>
       {!deleted && (
@@ -566,14 +574,11 @@ function ItemCard(props: Props) {
           </Grid>
         </Fade>
       )}
-      <AuthDialog
-        open={loginModalOpen}
-        onClose={() => setLoginModalOpen(false)}
-      />
+      <AuthDialog open={loginModalOpen} onClose={closeLoginModal} />
       <AddToListDialog
         open={manageTrackingModalOpen}
-        onClose={() => setManageTrackingModalOpen(false)}
-        item={item}
+        onClose={closeManageTrackingModal}
+        itemId={item.id}
       />
       {renderDialog()}
     </React.Fragment>

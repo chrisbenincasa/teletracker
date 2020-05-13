@@ -16,9 +16,9 @@ import { fade } from '@material-ui/core/styles/colorManipulator';
 import {
   AccessTime,
   ChevronLeft,
+  Event,
   ExpandLess,
   ExpandMore,
-  Event,
   Lens,
 } from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
@@ -29,7 +29,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import ReactGA from 'react-ga';
 import {
   itemFetchInitiated,
-  ItemFetchInitiatedPayload,
   itemPrefetchSuccess,
 } from '../actions/item-detail';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
@@ -618,17 +617,17 @@ function ItemDetails(props: Props) {
                 <Hidden mdUp>{renderGenres(itemDetail)}</Hidden>
                 <div className={classes.actionButtonContainer}>
                   <ManageTracking
-                    itemDetail={itemDetail}
+                    itemId={itemDetail.id}
                     className={classes.actionButton}
                   />
                   <MarkAsWatched
-                    itemDetail={itemDetail}
+                    itemId={itemDetail.id}
                     className={classes.actionButton}
                   />
                 </div>
                 <div className={classes.actionButtonContainerSecondary}>
                   <PlayTrailer
-                    itemDetail={itemDetail}
+                    itemId={itemDetail.id}
                     className={classes.actionButton}
                   />
                   <ShareButton
@@ -642,7 +641,7 @@ function ItemDetails(props: Props) {
               <div className={classes.itemInformationContainer}>
                 {renderDescriptiveDetails(itemDetail)}
                 <Hidden smDown>{renderGenres(itemDetail)}</Hidden>
-                <Availability itemDetail={itemDetail} />
+                <Availability itemId={itemDetail.id} />
                 <div>
                   <Typography
                     color="inherit"
@@ -677,12 +676,9 @@ function ItemDetails(props: Props) {
                     ) : null}
                   </div>
                 </div>
-                <Cast itemDetail={itemDetail} />
+                <Cast itemId={itemDetail.id} />
                 {/* {renderSeriesDetails(itemDetail)} */}
-                <Recommendations
-                  itemDetail={itemDetail}
-                  userSelf={userSelfState.userSelf}
-                />
+                <Recommendations itemId={itemDetail.id} />
               </div>
             </div>
           </div>

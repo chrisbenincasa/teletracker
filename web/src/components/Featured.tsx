@@ -109,7 +109,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  featuredItems: Id[];
+  readonly featuredItems: Id[];
 }
 
 function Featured(props: Props) {
@@ -237,7 +237,7 @@ function Featured(props: Props) {
             <AddToListDialog
               open={manageTrackingModalOpen}
               onClose={() => setManageTrackingModalOpen(false)}
-              item={item}
+              itemId={item.id}
             />
           </div>
           <Grow in={!imageLoading} timeout={500}>

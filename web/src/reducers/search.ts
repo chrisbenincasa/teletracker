@@ -25,30 +25,30 @@ import { Person } from '../types/v2/Person';
 import { FilterParams } from '../utils/searchFilters';
 
 type QuickSearchState = {
-  searching: boolean;
-  currentSearchText: String;
-  results?: Item[];
-  bookmark?: string;
-  error: boolean;
+  readonly searching: boolean;
+  readonly currentSearchText: String;
+  readonly results?: Item[];
+  readonly bookmark?: string;
+  readonly error: boolean;
 };
 
 type PeopleSearchState = {
-  searching: boolean;
-  currentSearchText: String;
-  results?: Person[];
-  bookmark?: string;
-  error: boolean;
+  readonly searching: boolean;
+  readonly currentSearchText: String;
+  readonly results?: Person[];
+  readonly bookmark?: string;
+  readonly error: boolean;
 };
 
 export interface State {
-  currentSearchText: string;
-  error: boolean;
-  searching: boolean;
-  results?: Item[];
-  bookmark?: string;
-  currentFilters?: FilterParams;
-  quick: QuickSearchState;
-  people: PeopleSearchState;
+  readonly currentSearchText: string;
+  readonly error: boolean;
+  readonly searching: boolean;
+  readonly results?: Item[];
+  readonly bookmark?: string;
+  readonly currentFilters?: FilterParams;
+  readonly quick: QuickSearchState;
+  readonly people: PeopleSearchState;
 }
 
 const initialState: State = {
