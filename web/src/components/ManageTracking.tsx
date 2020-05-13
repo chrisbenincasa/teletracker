@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { createStyles, Theme } from '@material-ui/core';
 import AddToListDialog from './Dialogs/AddToListDialog';
 import AuthDialog from './Auth/AuthDialog';
-import { Item } from '../types/v2/Item';
 import ManageTrackingButton from './Buttons/ManageTrackingButton';
 import { useWithUserContext } from '../hooks/useWithUser';
 import { makeStyles } from '@material-ui/core/styles';
+import { Id } from '../types/v2';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -29,9 +29,9 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface Props {
-  itemDetail: Item;
-  style?: object;
-  className?: string;
+  readonly itemId: Id;
+  readonly style?: object;
+  readonly className?: string;
 }
 
 function ManageTracking(props: Props) {
@@ -40,26 +40,26 @@ function ManageTracking(props: Props) {
   const userState = useWithUserContext();
   const classes = useStyles();
 
-  const toggleLoginModal = (): void => {
+  const toggleLoginModal = useCallback((): void => {
     setLoginModalOpen(prev => !prev);
-  };
+  }, []);
 
-  const openManageTrackingModal = (): void => {
+  const openManageTrackingModal = useCallback((): void => {
     if (userState.userSelf) {
       setManageTrackingModalOpen(true);
     } else {
       toggleLoginModal();
     }
-  };
+  }, [userState.userSelf]);
 
-  const closeManageTrackingModal = (): void => {
+  const closeManageTrackingModal = useCallback((): void => {
     setManageTrackingModalOpen(false);
-  };
+  }, []);
 
   return (
     <React.Fragment>
       <ManageTrackingButton
-        itemDetail={props.itemDetail}
+        itemId={props.itemId}
         onClick={openManageTrackingModal}
         style={classes}
         className={props.className}
@@ -67,7 +67,7 @@ function ManageTracking(props: Props) {
       <AddToListDialog
         open={manageTrackingModalOpen}
         onClose={closeManageTrackingModal}
-        item={props.itemDetail}
+        itemId={props.itemId}
       />
       <AuthDialog open={loginModalOpen} onClose={toggleLoginModal} />
     </React.Fragment>

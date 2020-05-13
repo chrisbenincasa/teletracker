@@ -1,6 +1,6 @@
 import { FSA } from 'flux-standard-action';
-import { CognitoUser } from '@aws-amplify/auth';
-import { createAction } from '../utils';
+import { withPayloadType } from '../utils';
+import { createAction } from '@reduxjs/toolkit';
 
 export * from './login_action';
 export * from './logout_action';
@@ -10,10 +10,16 @@ export * from './set_token_action';
 export * from './auth_with_google';
 
 export const USER_STATE_CHANGE = 'auth/USER_STATE_CHANGE';
+
+export interface UserStateChangePayload {
+  authenticated: boolean;
+}
+
 export type UserStateChangeAction = FSA<
   typeof USER_STATE_CHANGE,
-  CognitoUser | undefined
+  UserStateChangePayload
 >;
-export const UserStateChange = createAction<UserStateChangeAction>(
+export const userStateChange = createAction(
   USER_STATE_CHANGE,
+  withPayloadType<UserStateChangePayload>(),
 );

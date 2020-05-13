@@ -34,10 +34,10 @@ const defaultSortOptions: SortOptions[] = [
 ];
 
 interface Props {
-  showTitle?: boolean;
-  isListDynamic?: boolean;
-  validSortOptions?: SortOptions[];
-  handleChange: (sortOrder: SortOptions) => void;
+  readonly showTitle?: boolean;
+  readonly isListDynamic?: boolean;
+  readonly validSortOptions?: SortOptions[];
+  readonly handleChange: (sortOrder: SortOptions) => void;
 }
 
 export default function SortDropDown(props: Props) {

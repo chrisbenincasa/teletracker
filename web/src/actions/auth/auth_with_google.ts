@@ -1,8 +1,9 @@
 import { call, takeLatest } from '@redux-saga/core/effects';
-import { createAction, createBasicAction } from '../utils';
 import { FSA } from 'flux-standard-action';
 import Auth, { CognitoHostedUIIdentityProvider } from '@aws-amplify/auth';
 import { LoginState } from './login_action';
+import { createAction } from '@reduxjs/toolkit';
+import { withPayloadType } from '../utils';
 
 export const SIGNUP_GOOGLE_INITIATED = 'signup/google/INITIATED';
 export const LOGIN_GOOGLE_INITIATED = 'login/google/INITIATED';
@@ -11,27 +12,17 @@ export interface LoginWithGooglePayload {
   state?: LoginState;
 }
 
-export type SignUpWithGoogleInitiatedAction = FSA<
-  typeof SIGNUP_GOOGLE_INITIATED
->;
-
-export const SignUpWithGoogleInitiated = createBasicAction<
-  SignUpWithGoogleInitiatedAction
->(SIGNUP_GOOGLE_INITIATED);
-
-export const signUpWithGoogle = () => SignUpWithGoogleInitiated();
+export const signUpWithGoogle = createAction(SIGNUP_GOOGLE_INITIATED);
 
 export type LogInWithGoogleInitiatedAction = FSA<
   typeof LOGIN_GOOGLE_INITIATED,
   LoginWithGooglePayload
 >;
 
-export const LogInWithGoogleInitiated = createAction<
-  LogInWithGoogleInitiatedAction
->(LOGIN_GOOGLE_INITIATED);
-
-export const logInWithGoogle = (payload?: LoginWithGooglePayload) =>
-  LogInWithGoogleInitiated(payload);
+export const logInWithGoogle = createAction(
+  LOGIN_GOOGLE_INITIATED,
+  withPayloadType<LoginWithGooglePayload>(),
+);
 
 export const authWithGoogleSaga = function*() {
   yield takeLatest(

@@ -27,10 +27,10 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  item: Item | Person;
-  imageType: ImageType;
-  imageStyle?: object;
-  loadCallback?: () => void;
+  readonly item: Item | Person;
+  readonly imageType: ImageType;
+  readonly imageStyle?: object;
+  readonly loadCallback?: () => void;
 }
 
 // TODO: Refactor this entire thing to support more than just backdrop and poster

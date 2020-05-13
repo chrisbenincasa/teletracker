@@ -38,24 +38,25 @@ import {
 } from '../actions/user';
 import { FilterParams } from '../utils/searchFilters';
 import { Item } from '../types/v2/Item';
+import produce, { Draft } from 'immer';
 
 export type Loading = { [X in ListActions['type']]: boolean };
 
 export interface ListOperationState {
-  inProgress: boolean;
-  operationType?: string;
+  readonly inProgress: boolean;
+  readonly operationType?: string;
 }
 
 export interface ListsByIdMap {
-  [key: string]: List;
+  readonly [key: string]: List;
 }
 
 export interface State {
-  operation: ListOperationState;
-  listsById: ListsByIdMap;
-  loading: Partial<Loading>;
-  currentBookmark?: string;
-  currentFilters?: FilterParams;
+  readonly operation: ListOperationState;
+  readonly listsById: ListsByIdMap;
+  readonly loading: Partial<Loading>;
+  readonly currentBookmark?: string;
+  readonly currentFilters?: FilterParams;
 }
 
 const initialState: State = {
@@ -285,7 +286,7 @@ const handleUserRetrieve = handleAction<ListRetrieveAllSuccessAction, State>(
 
 const handleListUpdate = handleAction<UserUpdateListSuccessAction, State>(
   USER_SELF_UPDATE_LIST_SUCCESS,
-  (state, action) => {
+  produce((state: Draft<State>, action: UserUpdateListSuccessAction) => {
     if (action.payload && state.listsById[action.payload.listId]) {
       let list = state.listsById[action.payload.listId];
       if (action.payload.name) {
@@ -294,7 +295,7 @@ const handleListUpdate = handleAction<UserUpdateListSuccessAction, State>(
     }
 
     return state;
-  },
+  }),
 );
 
 const handleUserUpdateTrackingSuccess = handleAction<

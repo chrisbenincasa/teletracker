@@ -39,9 +39,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
 }));
 
-interface Props {}
-
-const Footer = (props: Props) => {
+const Footer = () => {
   const classes = useStyles();
   const year = moment().format('YYYY');
 

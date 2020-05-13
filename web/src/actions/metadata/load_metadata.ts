@@ -13,8 +13,8 @@ export const METADATA_LOAD_FAILED = 'metadata/all/FAILED';
 export type MetadataLoadAction = FSA<typeof METADATA_LOAD>;
 
 export interface MetadataPayload {
-  genres: Genre[];
-  networks: Network[];
+  readonly genres: ReadonlyArray<Genre>;
+  readonly networks: ReadonlyArray<Network>;
 }
 
 export type MetadataLoadSuccessAction = FSA<

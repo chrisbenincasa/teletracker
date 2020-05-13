@@ -24,20 +24,22 @@ import {
   UserStateChangeAction,
 } from '../actions/auth';
 import { CognitoUser } from '@aws-amplify/auth';
+import produce from 'immer';
+import { Draft } from 'immer/dist/types/types-external';
 
 export type Loading = { [X in UserActionTypes['type']]: boolean };
 
 export interface UserSelf {
-  user?: CognitoUser;
-  preferences?: UserPreferences;
-  networks?: Network[];
+  readonly user?: CognitoUser;
+  readonly preferences?: UserPreferences;
+  readonly networks?: Network[];
 }
 
 export interface State {
-  retrievingSelf: boolean;
-  self?: UserSelf;
-  updatingSelf: boolean;
-  loading: Partial<Loading>;
+  readonly retrievingSelf: boolean;
+  readonly self?: UserSelf;
+  readonly updatingSelf: boolean;
+  readonly loading: Partial<Loading>;
 }
 
 const initialState: State = {
@@ -46,20 +48,17 @@ const initialState: State = {
   loading: {},
 };
 
-const stateChange = handleAction(
-  USER_STATE_CHANGE,
-  (state: State, { payload }: UserStateChangeAction) => {
-    let nextSelf: UserSelf = { ...state.self };
-    if (payload) {
-      nextSelf.user = payload;
-    }
-
-    return {
-      ...state,
-      self: nextSelf,
-    } as State;
-  },
-);
+// const stateChange = handleAction(
+//   USER_STATE_CHANGE,
+//   produce((state: Draft<State>, { payload }: UserStateChangeAction) => {
+//     let nextSelf = state.self || {};
+//     if (payload) {
+//       nextSelf.user = payload;
+//     }
+//
+//     state.self = nextSelf;
+//   }),
+// );
 
 const selfRetrieveInitiated = handleAction(
   USER_SELF_RETRIEVE_INITIATED,
@@ -81,13 +80,13 @@ const selfRetrieveSuccess = handleAction(
       return {
         ...state,
         retrievingSelf: false,
-        self: action.payload,
+        // self: action.payload,
       };
     } else {
       return {
         ...state,
         retrievingSelf: false,
-        self: undefined,
+        // self: undefined,
       } as State;
     }
   },
@@ -211,5 +210,5 @@ export default flattenActions(
   userRenameListSuccess,
   logoutUser,
   updateUserMetadataSuccess,
-  stateChange,
+  // stateChange,
 );

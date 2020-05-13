@@ -1,12 +1,12 @@
 import { call, delay, put, take } from '@redux-saga/core/effects';
 import TeletrackerApi from '../../utils/api-client';
 import { END, eventChannel } from '@redux-saga/core';
-import { SetToken, UnsetToken } from './set_token_action';
-import { LogoutSuccessful } from './logout_action';
+import { setToken, unsetToken } from './set_token_action';
+import { logoutSuccessful } from './logout_action';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
 import { Hub } from '@aws-amplify/core';
-import { LoginSuccessful } from './login_action';
-import { UserStateChange } from './index';
+import { loginSuccessful } from './login_action';
+import { userStateChange } from './index';
 
 // TODO: This is really close to getUserSelf and a lot of other logic...
 // maybe we should factor this out somehow?
@@ -16,18 +16,18 @@ export const initialAuthState = function*() {
       bypassCache: false,
     });
 
-    yield put(UserStateChange(user));
+    yield put(userStateChange({ authenticated: true }));
 
     let signInUserSession = user.getSignInUserSession();
     if (signInUserSession) {
       let token = signInUserSession.getAccessToken().getJwtToken();
       yield call([TeletrackerApi, TeletrackerApi.setToken], token);
-      yield put(SetToken(token));
+      yield put(setToken(token));
     }
   } catch (e) {
-    yield put(UserStateChange(undefined));
-    yield put(UnsetToken());
-    yield put(LogoutSuccessful());
+    yield put(userStateChange({ authenticated: false }));
+    yield put(unsetToken());
+    yield put(logoutSuccessful());
   }
 };
 
@@ -51,7 +51,7 @@ export const authStateWatcher = function*() {
           }
 
           yield put(
-            LoginSuccessful(
+            loginSuccessful(
               user
                 .getSignInUserSession()!
                 .getAccessToken()
