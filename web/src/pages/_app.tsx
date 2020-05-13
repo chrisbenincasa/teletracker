@@ -27,12 +27,6 @@ const NEXT_REDUX_STORE_KEY = '__NEXT_REDUX_STORE__';
 
 const isServer = typeof window === 'undefined';
 
-// Hack to shim in "fetch" when we're on the server to use a library w/ the
-// same API. This is required to get Amplify to work server-side.
-if (isServer) {
-  (global as any).fetch = require('node-fetch');
-}
-
 Amplify.configure({
   Auth: {
     region: process.env.REACT_APP_AUTH_REGION,
