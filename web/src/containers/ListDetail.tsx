@@ -259,7 +259,7 @@ function ListDetail(props: ListDetailProps) {
 
   const listBookmark = useStateSelector(state => state.lists.currentBookmark);
 
-  const { userSelf, isLoggedIn } = useWithUserContext();
+  const { isLoggedIn } = useWithUserContext();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | undefined>();
   const [deleted, setDeleted] = useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
@@ -358,7 +358,7 @@ function ListDetail(props: ListDetailProps) {
   };
 
   const handleRenameList = () => {
-    if (userSelf) {
+    if (isLoggedIn) {
       dispatchUpdateList({
         listId: listId,
         name: newListName,
