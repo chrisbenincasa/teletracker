@@ -73,6 +73,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   link: {
     marginRight: theme.spacing(0.5),
+    textDecoration: 'none',
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
