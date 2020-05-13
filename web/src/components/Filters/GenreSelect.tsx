@@ -87,7 +87,7 @@ export default function GenreSelect(props: NewProps) {
         />
       );
     })
-    .values();
+    .value();
   return (
     <div className={classes.genreContainer}>
       {props.showTitle && <Typography display="block">Genre</Typography>}
