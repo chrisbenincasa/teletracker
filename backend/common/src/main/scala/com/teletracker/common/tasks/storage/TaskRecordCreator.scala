@@ -37,14 +37,14 @@ class TaskRecordCreator @Inject()() {
   }
 
   def create[T <: TeletrackerTask](
-    id: Option[UUID],
+    id: UUID,
     task: T,
     args: T#Args,
     status: TaskStatus
   ): TaskRecord = {
     val clazz = task.getClass
     TaskRecord(
-      id = id.getOrElse(UUID.randomUUID()),
+      id = id,
       taskName = clazz.getSimpleName,
       fullTaskName = Some(clazz.getName),
       args = task.argsAsJson(args),

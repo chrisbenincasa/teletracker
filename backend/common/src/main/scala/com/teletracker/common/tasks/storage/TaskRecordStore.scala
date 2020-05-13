@@ -4,11 +4,12 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.elasticsearch.ElasticsearchExecutor
 import io.circe.syntax._
 import javax.inject.Inject
+import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.update.UpdateRequest
 import org.elasticsearch.common.xcontent.XContentType
 import java.time.Instant
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 object TaskRecordStore {
   final private val TableName = "teletracker.qa.tasks"
@@ -20,12 +21,25 @@ class TaskRecordStore @Inject()(
 )(implicit executionContext: ExecutionContext) {
 
   def recordNewTask(taskRecord: TaskRecord) = {
-    elasticsearchExecutor.index(
-      new IndexRequest(teletrackerConfig.elasticsearch.tasks_index_name)
-        .create(true)
-        .id(taskRecord.id.toString)
-        .source(taskRecord.asJson.noSpaces, XContentType.JSON)
-    )
+    elasticsearchExecutor.index(makeIndexRequestForRecord(taskRecord))
+  }
+
+  def recordNewTasks(taskRecords: Seq[TaskRecord]) = {
+    if (taskRecords.isEmpty) {
+      Future.successful(new BulkResponse(Array.empty, 0))
+    } else {
+      val request = new BulkRequest()
+      taskRecords.map(makeIndexRequestForRecord).foreach(request.add)
+
+      elasticsearchExecutor.bulk(request)
+    }
+  }
+
+  private def makeIndexRequestForRecord(taskRecord: TaskRecord) = {
+    new IndexRequest(teletrackerConfig.elasticsearch.tasks_index_name)
+      .create(true)
+      .id(taskRecord.id.toString)
+      .source(taskRecord.asJson.noSpaces, XContentType.JSON)
   }
 
   def upsertTask(taskRecord: TaskRecord) = {

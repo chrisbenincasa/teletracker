@@ -44,7 +44,11 @@ object TeletrackerTask {
 }
 
 trait TeletrackerTask extends Args {
-  protected[this] val taskId: UUID = UUID.randomUUID()
+  protected[this] var _taskId: UUID = UUID.randomUUID()
+
+  def taskId: UUID = _taskId
+  def taskId_=(taskId: UUID): Unit = _taskId = taskId
+
   private[this] val selfLogger = LoggerFactory.getLogger(getClass)
 
   private var _logger: Logger = _

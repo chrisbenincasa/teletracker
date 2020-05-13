@@ -58,7 +58,7 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
     val recordStore = injector.instance[TaskRecordStore]
 
     val record = recordCreator
-      .create(None, task, args, TaskStatus.Executing)
+      .create(task.taskId, task, args, TaskStatus.Executing)
       .copy(
         startedAt = Some(Instant.now())
       )

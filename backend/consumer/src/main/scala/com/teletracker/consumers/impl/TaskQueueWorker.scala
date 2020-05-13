@@ -58,10 +58,12 @@ class TaskQueueWorker @Inject()(
   ): Future[Option[String]] = {
     try {
       val task = taskRunner.getInstance(message.clazz)
+      task.taskId = message.id
+
       val extractedArgs = Args.extractArgs(message.args)
 
       val taskRecord = taskRecordCreator.create(
-        Some(message.id),
+        message.id,
         task,
         extractedArgs,
         TaskStatus.Executing
