@@ -52,7 +52,7 @@ export default function MarkAsWatched(props: OwnProps) {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const classes = useStyles();
   const itemDetail = useStateSelector(state => selectItem(state, props.itemId));
-  const { userSelf } = useWithUserContext();
+  const { isLoggedIn } = useWithUserContext();
 
   const dispatchRemoveUserItemTags = useDispatchAction(removeUserItemTags);
   const dispatchUpdateUserItemTags = useDispatchAction(updateUserItemTags);
@@ -64,7 +64,7 @@ export default function MarkAsWatched(props: OwnProps) {
       action: ActionType.Watched,
     };
 
-    if (!userSelf) {
+    if (!isLoggedIn) {
       toggleLoginModal();
     } else {
       if (itemWatched) {

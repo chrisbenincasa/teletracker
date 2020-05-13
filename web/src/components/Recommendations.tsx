@@ -53,7 +53,6 @@ function Recommendations(props: Props) {
   const classes = useStyles();
   const { itemId } = props;
   const itemDetail = useStateSelector(state => selectItem(state, itemId));
-  const { userSelf } = useWithUserContext();
 
   // Pre-filter all recs that don't include a poster
   let recommendations = useStateSelector(

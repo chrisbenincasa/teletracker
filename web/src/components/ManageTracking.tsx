@@ -44,13 +44,13 @@ function ManageTracking(props: Props) {
     setLoginModalOpen(prev => !prev);
   }, []);
 
-  const openManageTrackingModal = useCallback((): void => {
-    if (userState.userSelf) {
+  const openManageTrackingModal = useCallback(() => {
+    if (userState.isLoggedIn) {
       setManageTrackingModalOpen(true);
     } else {
       toggleLoginModal();
     }
-  }, [userState.userSelf]);
+  }, [userState.isLoggedIn]);
 
   const closeManageTrackingModal = useCallback((): void => {
     setManageTrackingModalOpen(false);

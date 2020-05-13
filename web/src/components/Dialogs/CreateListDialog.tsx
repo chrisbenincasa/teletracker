@@ -49,7 +49,7 @@ export default function CreateListDialog(props: Props) {
     state => state.userSelf.loading[USER_SELF_CREATE_LIST],
   );
   const listsById = useStateSelector(state => state.lists.listsById, dequal);
-  const { userSelf } = useWithUserContext();
+  const { isLoggedIn } = useWithUserContext();
 
   const dispatchCreateList = useDispatchAction(createList);
 
@@ -74,7 +74,7 @@ export default function CreateListDialog(props: Props) {
 
   const validateListNameAndCreate = () => {
     // Reset error states before validation
-    if (userSelf) {
+    if (isLoggedIn) {
       let validationResult = CreateAListValidator.validate(listsById, listName);
 
       if (validationResult.hasError()) {
