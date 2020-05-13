@@ -33,6 +33,7 @@ import _ from 'lodash';
 import NextLink from 'next/link';
 import { useStateSelectorWithPrevious } from '../../hooks/useStateSelector';
 import { useDispatchAction } from '../../hooks/useDispatchAction';
+import useIsMobile from '../../hooks/useIsMobile';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -87,6 +88,7 @@ interface NewProps {
 function LoginFormF(props: NewProps) {
   const classes = useStyles();
   const router = useRouter();
+  const isMobile = useIsMobile();
 
   const params = new URLSearchParams(qs.stringify(router.query));
 
@@ -217,7 +219,7 @@ function LoginFormF(props: NewProps) {
               id="email"
               name="email"
               autoComplete="email"
-              autoFocus={!isLoggingIn}
+              autoFocus={!isLoggingIn && !isMobile}
               type="email"
               onChange={updateEmail}
               disabled={isLoggingIn}
