@@ -29,9 +29,9 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface NewProps {
-  handleChange: (genres?: number[]) => void;
-  showTitle?: boolean;
-  disabledGenres?: number[];
+  readonly handleChange: (genres?: number[]) => void;
+  readonly showTitle?: boolean;
+  readonly disabledGenres?: number[];
 }
 
 export default function GenreSelect(props: NewProps) {

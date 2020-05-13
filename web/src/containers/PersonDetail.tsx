@@ -307,7 +307,7 @@ function PersonDetail(props: NewProps) {
                   people: [personId],
                 }}
               >
-                <PersonCredits person={person} />
+                <PersonCredits personId={person.id} />
               </WithItemFilters>
             </div>
           </div>

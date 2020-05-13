@@ -13,7 +13,7 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface GoogleButtonProps {
-  onClick: () => any;
+  readonly onClick: () => any;
 }
 
 export default function GoogleLoginButton(props: GoogleButtonProps) {

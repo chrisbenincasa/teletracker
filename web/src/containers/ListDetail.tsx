@@ -40,7 +40,7 @@ import ActiveFilters from '../components/Filters/ActiveFilters';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ScrollToTopContainer from '../components/ScrollToTopContainer';
 import { List } from '../types';
-import { calculateLimit, getOrInitListOptions } from '../utils/list-utils';
+import { calculateLimit } from '../utils/list-utils';
 import { FilterParams } from '../utils/searchFilters';
 import { optionalSetsEqual } from '../utils/sets';
 import { useRouter } from 'next/router';
@@ -416,7 +416,7 @@ function ListDetail(props: ListDetailProps) {
 
   const setWatchedSetting = () => {
     if (list) {
-      let listOptions = getOrInitListOptions(list);
+      const listOptions = list.configuration?.options || {};
       let newListOptions = {
         ...listOptions,
         removeWatchedItems: !deleteOnWatch,

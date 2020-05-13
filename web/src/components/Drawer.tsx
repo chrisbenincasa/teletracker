@@ -107,12 +107,12 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps extends WithStyles<typeof styles> {
-  listsById: ListsByIdMap;
-  loadingLists: boolean;
-  loading: Partial<Loading>;
-  open: boolean;
-  isLoggingIn: boolean;
-  closeRequested: () => void;
+  readonly listsById: ListsByIdMap;
+  readonly loadingLists: boolean;
+  readonly loading: Partial<Loading>;
+  readonly open: boolean;
+  readonly isLoggingIn: boolean;
+  readonly closeRequested: () => void;
 }
 
 interface InjectedProps {

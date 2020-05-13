@@ -6,11 +6,11 @@ import {
   SortOptions,
 } from '../types';
 import { FilterParams, removeUndefinedKeys } from './searchFilters';
-import { WithRouterProps } from 'next/dist/client/with-router';
 import querystring from 'querystring';
 import url from 'url';
 import { filterParamsEqual } from './changeDetection';
 import { NextRouter } from 'next/router';
+import produce from 'immer';
 
 const validQueryParams = [
   'genres',
@@ -173,53 +173,55 @@ export function parseFilterParams(params: Map<string, string>): FilterParams {
         .filter(item => item.length > 0)
     : undefined;
 
-  if (itemTypes) {
-    filters.itemTypes = itemTypes;
-  }
+  filters = produce(filters, draft => {
+    if (itemTypes) {
+      draft.itemTypes = itemTypes;
+    }
 
-  if (networks) {
-    filters.networks = networks;
-  }
+    if (networks) {
+      draft.networks = networks;
+    }
 
-  if (genres) {
-    filters.genresFilter = genres;
-  }
+    if (genres) {
+      draft.genresFilter = genres;
+    }
 
-  if (people) {
-    filters.people = people;
-  }
+    if (people) {
+      draft.people = people;
+    }
 
-  let releaseYearMin = ryMin ? _.parseInt(ryMin, 10) : undefined;
-  let releaseYearMax = ryMax ? _.parseInt(ryMax, 10) : undefined;
+    let releaseYearMin = ryMin ? _.parseInt(ryMin, 10) : undefined;
+    let releaseYearMax = ryMax ? _.parseInt(ryMax, 10) : undefined;
 
-  if (releaseYearMin || releaseYearMax) {
-    filters.sliders = {
-      ...(filters.sliders || {}),
-      releaseYear: {
-        min: releaseYearMin,
-        max: releaseYearMax,
-      },
-    };
-  }
+    if (releaseYearMin || releaseYearMax) {
+      draft.sliders = {
+        ...(draft.sliders || {}),
+        releaseYear: {
+          min: releaseYearMin,
+          max: releaseYearMax,
+        },
+      };
+    }
 
-  let [imdbMin, imdbMax, ...rest] = imdbRating
-    ? decodeURIComponent(imdbRating).split(':', 2)
-    : [undefined, undefined];
-  let imdbMinNum = imdbMin ? parseFloat(imdbMin) : undefined;
-  let imdbMaxNum = imdbMax ? parseFloat(imdbMax) : undefined;
+    let [imdbMin, imdbMax, ...rest] = imdbRating
+      ? decodeURIComponent(imdbRating).split(':', 2)
+      : [undefined, undefined];
+    let imdbMinNum = imdbMin ? parseFloat(imdbMin) : undefined;
+    let imdbMaxNum = imdbMax ? parseFloat(imdbMax) : undefined;
 
-  if (
-    (imdbMinNum && !_.isNaN(imdbMinNum)) ||
-    (imdbMaxNum && !_.isNaN(imdbMaxNum))
-  ) {
-    filters.sliders = {
-      ...filters.sliders,
-      imdbRating: {
-        min: imdbMinNum,
-        max: imdbMaxNum,
-      },
-    };
-  }
+    if (
+      (imdbMinNum && !_.isNaN(imdbMinNum)) ||
+      (imdbMaxNum && !_.isNaN(imdbMaxNum))
+    ) {
+      draft.sliders = {
+        ...filters.sliders,
+        imdbRating: {
+          min: imdbMinNum,
+          max: imdbMaxNum,
+        },
+      };
+    }
+  });
 
   return removeUndefinedKeys(filters);
 }

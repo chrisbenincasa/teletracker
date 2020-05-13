@@ -14,62 +14,62 @@ import PagedResponse from './PagedResponse';
 import _ from 'lodash';
 
 export interface Person extends HasSlug {
-  adult?: boolean;
-  biography?: string;
-  birthday?: string;
-  cast_credits?: PagedResponse<PersonCastCredit>;
-  cast_credit_ids?: PagedResponse<string>;
-  crew_credits?: ApiPersonCrewCredit[];
-  external_ids?: string[];
-  deathday?: string;
-  homepage?: string;
-  id: Id;
-  images?: ItemImage[];
-  name: string;
-  place_of_birth?: string;
-  popularity?: number;
-  slug?: Slug;
+  readonly adult?: boolean;
+  readonly biography?: string;
+  readonly birthday?: string;
+  readonly cast_credits?: PagedResponse<PersonCastCredit>;
+  readonly cast_credit_ids?: PagedResponse<string>;
+  readonly crew_credits?: ApiPersonCrewCredit[];
+  readonly external_ids?: string[];
+  readonly deathday?: string;
+  readonly homepage?: string;
+  readonly id: Id;
+  readonly images?: ItemImage[];
+  readonly name: string;
+  readonly place_of_birth?: string;
+  readonly popularity?: number;
+  readonly slug?: Slug;
 
   // Compute fields
-  profile_path?: string;
-  canonical_id: CanonicalId;
-  canonicalUrl: string;
-  relativeUrl: string;
+  readonly profile_path?: string;
+  readonly canonical_id: CanonicalId;
+  readonly canonicalUrl: string;
+  readonly relativeUrl: string;
 }
 
 export interface PersonCastCredit {
-  character?: string;
-  id: string;
-  title: string;
-  type: string;
-  slug: string;
-  item?: Item;
+  readonly character?: string;
+  readonly id: string;
+  readonly title: string;
+  readonly type: string;
+  readonly slug: string;
+  readonly item?: Item;
 }
 
 export interface ApiPersonCastCredit {
-  character?: string;
-  id: string;
-  title: string;
-  type: string;
-  slug: string;
-  item?: ApiItem;
+  readonly character?: string;
+  readonly id: string;
+  readonly title: string;
+  readonly type: string;
+  readonly slug: string;
+  readonly item?: ApiItem;
 }
 
 export interface ApiPerson {
-  adult?: boolean;
-  biography?: string;
-  birthday?: string;
-  cast_credits?: PagedResponse<ApiPersonCastCredit>;
-  crew_credits?: ApiPersonCrewCredit[];
-  external_ids?: string[];
-  deathday?: string;
-  homepage?: string;
-  id: Id;
-  images?: ItemImage[];
-  name: string;
-  place_of_birth?: string;
-  popularity?: number;
-  slug?: Slug;
+  readonly adult?: boolean;
+  readonly biography?: string;
+  readonly birthday?: string;
+  readonly cast_credits?: PagedResponse<ApiPersonCastCredit>;
+  readonly crew_credits?: ApiPersonCrewCredit[];
+  readonly external_ids?: string[];
+  readonly deathday?: string;
+  readonly homepage?: string;
+  readonly id: Id;
+  readonly images?: ItemImage[];
+  readonly name: string;
+  readonly place_of_birth?: string;
+  readonly popularity?: number;
+  readonly slug?: Slug;
 }
 
 export class PersonFactory {

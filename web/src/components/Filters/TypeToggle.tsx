@@ -32,8 +32,8 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface Props {
-  showTitle?: boolean;
-  handleChange: (type?: ItemType[]) => void;
+  readonly showTitle?: boolean;
+  readonly handleChange: (type?: ItemType[]) => void;
 }
 
 export default function TypeToggle(props: Props) {

@@ -133,19 +133,19 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  disableRating?: boolean;
-  disableReleaseYear?: boolean;
-  disableSortOptions?: boolean;
-  disableNetworks?: boolean;
-  disableTypeChange?: boolean;
-  disableGenres?: boolean;
-  disableStarring?: boolean;
-  isListDynamic?: boolean;
-  open: boolean;
-  disabledGenres?: number[];
-  sortOptions?: SortOptions[];
-  listFilters?: FilterParams;
-  prefilledName?: string;
+  readonly disableRating?: boolean;
+  readonly disableReleaseYear?: boolean;
+  readonly disableSortOptions?: boolean;
+  readonly disableNetworks?: boolean;
+  readonly disableTypeChange?: boolean;
+  readonly disableGenres?: boolean;
+  readonly disableStarring?: boolean;
+  readonly isListDynamic?: boolean;
+  readonly open: boolean;
+  readonly disabledGenres?: number[];
+  readonly sortOptions?: SortOptions[];
+  readonly listFilters?: FilterParams;
+  readonly prefilledName?: string;
 }
 
 const AllFilters = (props: Props) => {

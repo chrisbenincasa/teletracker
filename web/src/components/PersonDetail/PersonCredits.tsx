@@ -24,6 +24,7 @@ import { hookDeepEqual } from '../../hooks/util';
 import { FilterContext } from '../Filters/FilterContext';
 import useFilterLoadEffect from '../../hooks/useFilterLoadEffect';
 import { filterParamsEqual } from '../../utils/changeDetection';
+import { Id } from '../../types/v2';
 
 const selectCreditDetails = createSelector(
   selectPerson,
@@ -49,12 +50,11 @@ const selectCreditDetails = createSelector(
 );
 
 interface Props {
-  person: Person;
+  readonly personId: Id;
 }
 
 export default function PersonCredits(props: Props) {
-  const { person } = props;
-
+  const person = useStateSelector(state => selectPerson(state, props.personId));
   const classes = useStyles();
   const { filters, defaultFilters } = useContext(FilterContext);
 

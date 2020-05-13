@@ -91,13 +91,13 @@ const useStyles = makeStyles<Theme, Props>((theme: Theme) => ({
 }));
 
 interface Props {
-  isSearching: boolean;
-  searchAnchor?: HTMLInputElement | null;
-  searchResults?: Item[];
-  searchText: string;
-  handleResetSearchAnchor: (event) => void;
-  handleSearchForSubmit: (event) => void;
-  color?: string;
+  readonly isSearching: boolean;
+  readonly searchAnchor?: HTMLInputElement | null;
+  readonly searchResults?: Item[];
+  readonly searchText: string;
+  readonly handleResetSearchAnchor: (event) => void;
+  readonly handleSearchForSubmit: (event) => void;
+  readonly color?: string;
 }
 
 function QuickSearch(props: Props) {

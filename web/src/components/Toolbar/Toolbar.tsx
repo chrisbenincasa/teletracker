@@ -122,13 +122,13 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface MenuItemProps {
-  to: string;
-  primary?: string;
-  button?: boolean;
-  key?: string;
-  selected?: boolean;
-  listLength?: number;
-  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
+  readonly to: string;
+  readonly primary?: string;
+  readonly button?: boolean;
+  readonly key?: string;
+  readonly selected?: boolean;
+  readonly listLength?: number;
+  readonly onClick?: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 const MenuItemLink = (props: MenuItemProps) => {
@@ -162,9 +162,9 @@ const MenuItemLink = (props: MenuItemProps) => {
 };
 
 interface Props {
-  drawerOpen: boolean;
-  showToolbarSearch: boolean;
-  onDrawerChange: (close?: boolean) => void;
+  readonly drawerOpen: boolean;
+  readonly showToolbarSearch: boolean;
+  readonly onDrawerChange: (close?: boolean) => void;
 }
 
 export default function Toolbar(props: Props) {

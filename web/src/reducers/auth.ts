@@ -20,21 +20,22 @@ import {
 import { User } from '../types';
 import { flattenActions, handleAction } from './utils';
 import _ from 'lodash';
+import produce, { Draft } from 'immer';
 
 export interface UserState extends Partial<User> {
-  fetching: boolean;
-  token?: string;
-  error: boolean;
+  readonly fetching: boolean;
+  readonly token?: string;
+  readonly error: boolean;
 }
 
 export interface State {
-  checkingAuth: boolean;
-  isLoggingIn: boolean;
-  isLoggedIn: boolean;
-  isLoggingOut: boolean;
-  isSigningUp: boolean;
-  token?: string;
-  user?: UserState;
+  readonly checkingAuth: boolean;
+  readonly isLoggingIn: boolean;
+  readonly isLoggedIn: boolean;
+  readonly isLoggingOut: boolean;
+  readonly isSigningUp: boolean;
+  readonly token?: string;
+  readonly user?: UserState;
 }
 
 const initialState: State = {
@@ -47,23 +48,17 @@ const initialState: State = {
 
 const stateChange = handleAction<UserStateChangeAction, State>(
   USER_STATE_CHANGE,
-  (state, { payload }) => {
-    return {
-      ...state,
-      isLoggedIn: !_.isUndefined(payload),
-      checkingAuth: false,
-    };
-  },
+  produce((state, { payload }) => {
+    state.isLoggedIn = !_.isUndefined(payload);
+    state.checkingAuth = false;
+  }),
 );
 
 const signupInitiated = handleAction<SignupInitiatedAction, State>(
   SIGNUP_INITIATED,
-  state => {
-    return {
-      ...state,
-      isSigningUp: true,
-    };
-  },
+  produce((state: Draft<State>) => {
+    state.isSigningUp = true;
+  }),
 );
 
 const signupSuccessful = handleAction<SignupSuccessfulAction, State>(

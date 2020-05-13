@@ -17,9 +17,9 @@ import { useRouterDeep } from '../../hooks/useRouterDeep';
 import { hookDeepEqual } from '../../hooks/util';
 
 export interface FilterContextState {
-  filters: FilterParams;
-  setFilters: (newFilters: FilterParams) => void;
-  defaultFilters?: FilterParams;
+  readonly filters: FilterParams;
+  readonly setFilters: (newFilters: FilterParams) => void;
+  readonly defaultFilters?: FilterParams;
 }
 
 export const FilterContext = createContext<FilterContextState>({
@@ -28,8 +28,8 @@ export const FilterContext = createContext<FilterContextState>({
 });
 
 interface WithItemFiltersProps {
-  defaultFilters?: FilterParams;
-  children: ReactNode;
+  readonly defaultFilters?: FilterParams;
+  readonly children: ReactNode;
 }
 
 function withFilters(
