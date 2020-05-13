@@ -51,10 +51,15 @@ export const updateUrlParamsForNextRouter = (
     imdbPart = `${imdbMin}:${imdbMax}`;
   }
 
+  const sortOrderForUrl =
+    defaultFilters?.sortOrder === filterParams.sortOrder
+      ? undefined
+      : filterParams.sortOrder;
+
   let paramUpdates: [string, any | undefined][] = [
     ['genres', filterParams.genresFilter],
     ['networks', filterParams.networks],
-    ['sort', filterParams.sortOrder],
+    ['sort', sortOrderForUrl],
     ['type', filterParams.itemTypes],
     [
       'ry_min',
@@ -87,7 +92,7 @@ export const updateUrlParamsForNextRouter = (
   );
 };
 
-export const updateMultipleUrlParams = (
+const updateMultipleUrlParams = (
   qs: string,
   replace: (str: string) => void,
   keyValuePairs: [string, any | undefined][],
