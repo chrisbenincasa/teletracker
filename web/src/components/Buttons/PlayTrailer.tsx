@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Backdrop, Button, Fade, makeStyles, Modal } from '@material-ui/core';
 import { PlayArrow } from '@material-ui/icons';
-import { Item } from '../../types/v2/Item';
+import { Id } from '../../types/v2';
+import useStateSelector from '../../hooks/useStateSelector';
+import selectItem from '../../selectors/selectItem';
 
 const useStyles = makeStyles(theme => ({
   buttonIcon: {
@@ -32,20 +34,21 @@ const useStyles = makeStyles(theme => ({
 }));
 
 interface Props {
-  style?: object;
-  cta?: string;
-  itemDetail: Item;
-  className?: string;
+  readonly style?: object;
+  readonly cta?: string;
+  readonly itemId: Id;
+  readonly className?: string;
 }
 
 export interface State {
-  open: boolean;
+  readonly open: boolean;
 }
 
 export default function ShareButton(props: Props) {
   const classes = useStyles();
   const [trailerModalOpen, setTrailerModalOpen] = useState<boolean>(false);
-  const trailer = props.itemDetail.videos?.filter(
+  const itemDetail = useStateSelector(state => selectItem(state, props.itemId));
+  const trailer = itemDetail.videos?.filter(
     x =>
       x.country_code === 'US' &&
       x.language_code === 'en' &&

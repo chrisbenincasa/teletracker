@@ -18,7 +18,7 @@ import * as R from 'ramda';
 import React, { Component, FormEvent } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { signup, signUpWithGoogle } from '../../actions/auth';
+import { signupInitiated, signUpWithGoogle } from '../../actions/auth';
 import { AppState } from '../../reducers';
 import GoogleLoginButton from './GoogleLoginButton';
 import ReactGA from 'react-ga';
@@ -217,7 +217,7 @@ const mapDispatchToProps = dispatch =>
   bindActionCreators(
     {
       signup: (username: string, email: string, password: string) =>
-        signup(username, email, password),
+        signupInitiated({ username, email, password }),
       signUpWithGoogle,
     },
     dispatch,

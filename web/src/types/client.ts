@@ -1,14 +1,14 @@
 import { ItemType, NetworkType, OpenRange, SortOptions } from './index';
 
 export interface ItemSearchRequest {
-  searchText?: string;
-  itemTypes?: ItemType[];
-  networks?: NetworkType[];
-  bookmark?: string;
-  sort?: SortOptions | 'search_score';
-  limit?: number;
-  genres?: number[];
-  releaseYearRange?: OpenRange;
-  castIncludes?: string[];
-  imdbRating?: OpenRange;
+  readonly searchText?: string;
+  readonly itemTypes?: ItemType[];
+  readonly networks?: NetworkType[];
+  readonly bookmark?: string;
+  readonly sort?: SortOptions | 'search_score';
+  readonly limit?: number;
+  readonly genres?: number[];
+  readonly releaseYearRange?: OpenRange;
+  readonly castIncludes?: string[];
+  readonly imdbRating?: OpenRange;
 }

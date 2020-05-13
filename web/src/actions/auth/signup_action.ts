@@ -1,8 +1,9 @@
 import { call, put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import { createAction } from '../utils';
 import ReactGA from 'react-ga';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
+import { createAction } from '@reduxjs/toolkit';
+import { withPayloadType } from '../utils';
 
 export const SIGNUP_INITIATED = 'signup/INITIATED';
 export const SIGNUP_SUCCESSFUL = 'signup/SUCCESSFUL';
@@ -16,24 +17,15 @@ interface SignupPayload {
 export type SignupInitiatedAction = FSA<typeof SIGNUP_INITIATED, SignupPayload>;
 export type SignupSuccessfulAction = FSA<typeof SIGNUP_SUCCESSFUL, string>;
 
-export const SignupInitiated = createAction<SignupInitiatedAction>(
+export const signupInitiated = createAction(
   SIGNUP_INITIATED,
+  withPayloadType<SignupPayload>(),
 );
 
-export const SignupSuccessful = createAction<SignupSuccessfulAction>(
+export const signupSuccessful = createAction(
   SIGNUP_SUCCESSFUL,
+  withPayloadType<string>(),
 );
-
-/**
- * Create a new SignupInitiated action, which when dispatched starts the
- * signupSaga
- * @param username
- * @param email
- * @param password
- */
-export const signup = (username: string, email: string, password: string) => {
-  return SignupInitiated({ username, email, password });
-};
 
 /**
  * Saga responsible for handling the signup flow
@@ -74,7 +66,7 @@ export const signupSaga = function*() {
         );
 
         yield put(
-          SignupSuccessful(
+          signupSuccessful(
             user
               .getSignInUserSession()!
               .getAccessToken()

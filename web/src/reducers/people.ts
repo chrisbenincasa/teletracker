@@ -32,18 +32,18 @@ import * as R from 'ramda';
 import { FilterParams } from '../utils/searchFilters';
 
 interface PersonDetailState {
-  current?: Id | Slug;
-  credits?: string[]; // Array of popular slugs
-  loading: boolean;
-  bookmark?: string;
-  currentFilters?: FilterParams;
+  readonly current?: Id | Slug;
+  readonly credits?: string[]; // Array of popular slugs
+  readonly loading: boolean;
+  readonly bookmark?: string;
+  readonly currentFilters?: FilterParams;
 }
 
 export interface State {
-  loadingPeople: boolean;
-  peopleById: { [key: string]: Person };
-  nameByIdOrSlug: { [key: string]: string };
-  detail?: PersonDetailState;
+  readonly loadingPeople: boolean;
+  readonly peopleById: { [key: string]: Person };
+  readonly nameByIdOrSlug: { [key: string]: string };
+  readonly detail?: PersonDetailState;
 }
 
 export const initialState: State = {

@@ -18,10 +18,10 @@ import { useDispatch } from 'react-redux';
  *
  * @param fn
  */
-export function useDispatchAction<T, U>(fn: (payload: T | undefined) => U) {
+export function useDispatchAction<T, U>(fn: (payload: T) => U) {
   const dispatch = useDispatch();
 
-  return (payload: T | undefined) => {
+  return (payload: T) => {
     dispatch(fn(payload));
   };
 }

@@ -79,19 +79,19 @@ const styles = (theme: Theme) =>
   });
 
 interface OwnProps {
-  isAuthed: boolean;
-  drawerOpen: boolean;
+  readonly isAuthed: boolean;
+  readonly drawerOpen: boolean;
 }
 
 interface StateProps {
-  networksLoading: boolean;
-  networks?: Network[];
+  readonly networksLoading: boolean;
+  readonly networks?: ReadonlyArray<Network>;
 }
 
 interface DispatchProps {
-  loadNetworks: () => void;
-  updateNetworksForUser: (payload?: UserUpdateNetworksPayload) => void;
-  updateUserPreferences: (payload?: UserPreferences) => void;
+  readonly loadNetworks: () => void;
+  readonly updateNetworksForUser: (payload?: UserUpdateNetworksPayload) => void;
+  readonly updateUserPreferences: (payload?: UserPreferences) => void;
 }
 
 type Props = OwnProps &
@@ -139,14 +139,14 @@ class Account extends Component<Props, State> {
 
     ReactGA.pageview(window.location.pathname + window.location.search);
 
-    if (
-      isLoggedIn &&
-      userSelf &&
-      userSelf.user &&
-      userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelf.user.getUsername() });
-    }
+    // if (
+    //   isLoggedIn &&
+    //   userSelf &&
+    //   userSelf.user &&
+    //   userSelf.user.getUsername()
+    // ) {
+    //   ReactGA.set({ userId: userSelf.user.getUsername() });
+    // }
   }
 
   componentDidUpdate(oldProps: Props) {
@@ -301,16 +301,16 @@ class Account extends Component<Props, State> {
 
   renderSettings() {
     let { classes, theme } = this.props;
-    let networks: Network[];
+    let networksToRender: ReadonlyArray<Network>;
 
     if (this.state.networkFilter && this.state.networkFilter.length > 0) {
       let filter = this.state.networkFilter!.toLowerCase();
-      networks = R.filter(
+      networksToRender = R.filter(
         (n: Network) => R.startsWith(filter, n.name.toLowerCase()),
         this.props.networks!,
       );
     } else {
-      networks = this.props.networks!;
+      networksToRender = [...this.props.networks!];
     }
 
     return (
@@ -406,7 +406,7 @@ class Account extends Component<Props, State> {
                 }
               />
               <Grid container style={{ paddingBottom: 16 }} spacing={1}>
-                {networks.map(this.renderNetworkGridItem)}
+                {networksToRender.map(this.renderNetworkGridItem)}
               </Grid>
             </Card>
           </section>

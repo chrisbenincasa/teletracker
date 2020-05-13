@@ -48,8 +48,8 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface Props {
-  handleChange: (type?: NetworkType[]) => void;
-  showTitle?: boolean;
+  readonly handleChange: (type?: NetworkType[]) => void;
+  readonly showTitle?: boolean;
 }
 
 export default function NetworkSelect(props: Props) {

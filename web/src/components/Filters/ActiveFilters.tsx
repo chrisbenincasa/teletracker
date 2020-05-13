@@ -25,6 +25,7 @@ import { useRouter } from 'next/router';
 import { sortOptionToName } from './SortDropdown';
 import { FilterContext } from './FilterContext';
 import { useGenres } from '../../hooks/useStateMetadata';
+import produce from 'immer';
 
 const useStyles = makeStyles((theme: Theme) => ({
   activeFiltersContainer: {
@@ -46,9 +47,9 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  isListDynamic?: boolean;
-  variant?: 'default' | 'outlined';
-  hideSortOptions?: boolean;
+  readonly isListDynamic?: boolean;
+  readonly variant?: 'default' | 'outlined';
+  readonly hideSortOptions?: boolean;
 }
 
 export const prettyItemType = (itemType: ItemType) => {
@@ -192,28 +193,34 @@ export default function ActiveFilters(props: Props) {
 
     let releaseYearStateNew: OpenRange | undefined;
     if (filterState.filters.sliders?.releaseYear) {
-      releaseYearStateNew = { ...filterState.filters.sliders.releaseYear };
+      releaseYearStateNew = produce(
+        filterState.filters.sliders.releaseYear,
+        draft => {
+          if (filters.releaseYearMin) {
+            delete draft.min;
+          }
 
-      if (filters.releaseYearMin) {
-        delete releaseYearStateNew.min;
-      }
-
-      if (filters.releaseYearMax) {
-        delete releaseYearStateNew.max;
-      }
+          if (filters.releaseYearMax) {
+            delete draft.max;
+          }
+        },
+      );
     }
 
     let imdbRatingStateNew: OpenRange | undefined;
     if (filterState.filters.sliders?.imdbRating) {
-      imdbRatingStateNew = { ...filterState.filters.sliders.imdbRating };
+      imdbRatingStateNew = produce(
+        filterState.filters.sliders.imdbRating,
+        draft => {
+          if (filters.imdbRatingMin) {
+            delete draft.min;
+          }
 
-      if (filters.imdbRatingMin) {
-        delete imdbRatingStateNew.min;
-      }
-
-      if (filters.imdbRatingMax) {
-        delete imdbRatingStateNew.max;
-      }
+          if (filters.imdbRatingMax) {
+            delete draft.max;
+          }
+        },
+      );
     }
 
     let filterParams: FilterParams = removeUndefinedKeys({

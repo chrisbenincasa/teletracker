@@ -28,6 +28,9 @@ import { useStateDeepEq } from '../hooks/useStateDeepEq';
 import { setServers } from 'dns';
 import { makeStyles } from '@material-ui/core/styles';
 import { usePrevious } from '../hooks/usePrevious';
+import { Id } from '../types/v2';
+import useStateSelector from '../hooks/useStateSelector';
+import selectItem from '../selectors/selectItem';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -90,7 +93,7 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface OwnProps {
-  itemDetail: Item;
+  readonly itemId: Id;
 }
 
 type Props = OwnProps;
@@ -103,10 +106,11 @@ export default function Cast(props: Props) {
   const listRef = useRef<LazyList>(null);
   const prevListRef = usePrevious(listRef);
   const classes = useStyles();
+  const itemDetail = useStateSelector(state => selectItem(state, props.itemId));
 
   useEffect(() => {
     if (listRef.current) {
-      const credits = props.itemDetail.cast || [];
+      const credits = itemDetail.cast || [];
       const width = listRef.current?.props?.width;
       const itemSize = listRef.current?.props?.itemSize;
       const pageSize = Math.round(Number(width) / Number(itemSize));
@@ -117,7 +121,7 @@ export default function Cast(props: Props) {
         credits.length - pageSize < 0 ? 0 : credits.length - pageSize,
       );
     }
-  }, [listRef.current, props.itemDetail]);
+  }, [listRef.current, itemDetail]);
 
   const carouselNavigationPrevious = () => {
     const remainingCast =
@@ -145,7 +149,7 @@ export default function Cast(props: Props) {
     listRef.current?.scrollToItem(newIndex, 'start');
   };
 
-  const credits = props.itemDetail?.cast || [];
+  const credits = itemDetail?.cast || [];
   const previousDisabled = currentCarouselIndex === 0;
   const nextDisabled = numberCastRemaining < 1;
 

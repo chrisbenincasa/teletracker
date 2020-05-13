@@ -13,13 +13,13 @@ import { flattenActions, handleAction, handleError } from './utils';
 import { FilterParams } from '../utils/searchFilters';
 
 export interface State {
-  popular?: string[]; // Array of popular slugs
-  genre?: string[]; // Array of slugs for the current genre view
-  loadingPopular: boolean;
-  loadingGenres: boolean;
-  popularBookmark?: string;
-  genreBookmark?: string;
-  currentFilters?: FilterParams;
+  readonly popular?: string[]; // Array of popular slugs
+  readonly genre?: string[]; // Array of slugs for the current genre view
+  readonly loadingPopular: boolean;
+  readonly loadingGenres: boolean;
+  readonly popularBookmark?: string;
+  readonly genreBookmark?: string;
+  readonly currentFilters?: FilterParams;
 }
 
 const initialState: State = {

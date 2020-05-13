@@ -1,13 +1,5 @@
-import React, { useEffect, useCallback, useState } from 'react';
-import {
-  createStyles,
-  IconButton,
-  makeStyles,
-  Theme,
-  Typography,
-} from '@material-ui/core';
-import { KeyboardArrowUp } from '@material-ui/icons';
-import classNames from 'classnames';
+import React, { useCallback, useEffect, useState } from 'react';
+import { createStyles, makeStyles, Theme } from '@material-ui/core';
 import ScrollToTop from './Buttons/ScrollToTop';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -22,7 +14,7 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface Props {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 }
 
 export default function ScrollToTopButton(props: Props) {

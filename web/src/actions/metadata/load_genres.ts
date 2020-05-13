@@ -13,7 +13,7 @@ export const GENRES_LOAD_FAILED = 'metadata/genres/FAILED';
 export type GenresLoadAction = FSA<typeof GENRES_LOAD>;
 
 export interface GenreMetadataPayload {
-  genres: Genre[];
+  readonly genres: ReadonlyArray<Genre>;
 }
 
 export type GenresLoadSuccessAction = FSA<

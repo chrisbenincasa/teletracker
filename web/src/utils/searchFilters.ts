@@ -1,9 +1,19 @@
 import { ItemType, NetworkType, OpenRange, SortOptions } from '../types';
 import _ from 'lodash';
+import produce from 'immer';
 
 export interface SlidersState {
-  releaseYear?: OpenRange;
-  imdbRating?: OpenRange;
+  readonly releaseYear?: OpenRange;
+  readonly imdbRating?: OpenRange;
+}
+
+export interface FilterParams {
+  readonly genresFilter?: number[];
+  readonly itemTypes?: ItemType[];
+  readonly networks?: NetworkType[];
+  readonly sortOrder?: SortOptions;
+  readonly sliders?: SlidersState;
+  readonly people?: string[];
 }
 
 export type SliderChange = Partial<SlidersState>;
@@ -30,48 +40,47 @@ export function isObjectEmpty<T extends object>(obj: T): boolean {
 export function normalizeFilterParams(
   filters: Readonly<FilterParams>,
 ): FilterParams {
-  let copy: FilterParams = removeUndefinedKeys({ ...filters });
-
-  if (copy.genresFilter && copy.genresFilter.length === 0) {
-    copy = _.omit(copy, 'genresFilter');
-  }
-
-  if (copy.itemTypes && copy.itemTypes.length === 0) {
-    copy = _.omit(copy, 'itemTypes');
-  }
-
-  if (copy.networks && copy.networks.length === 0) {
-    copy = _.omit(copy, 'networks');
-  }
-
-  if (copy.people && copy.people.length === 0) {
-    copy = _.omit(copy, 'people');
-  }
-
-  if (copy.sliders) {
-    copy.sliders = removeUndefinedKeys(copy.sliders);
-
-    if (copy.sliders.imdbRating && isObjectEmpty(copy.sliders.imdbRating)) {
-      copy.sliders = _.omit(copy.sliders, 'imdbRating');
+  return produce(removeUndefinedKeys(filters), draft => {
+    if (draft.genresFilter && draft.genresFilter.length === 0) {
+      delete draft.genresFilter;
     }
 
-    if (copy.sliders.releaseYear && isObjectEmpty(copy.sliders.releaseYear)) {
-      copy.sliders = _.omit(copy.sliders, 'releaseYear');
+    if (draft.itemTypes && draft.itemTypes.length === 0) {
+      delete draft.itemTypes;
     }
 
-    if (isObjectEmpty(copy.sliders)) {
-      copy = _.omit(copy, 'sliders');
+    if (draft.networks && draft.networks.length === 0) {
+      delete draft.networks;
     }
-  }
 
-  return copy;
-}
+    if (draft.people && draft.people.length === 0) {
+      delete draft.people;
+      draft = _.omit(draft, 'people');
+    }
 
-export interface FilterParams {
-  genresFilter?: number[];
-  itemTypes?: ItemType[];
-  networks?: NetworkType[];
-  sortOrder?: SortOptions;
-  sliders?: SlidersState;
-  people?: string[];
+    if (draft.sliders) {
+      const newSliders = produce(
+        removeUndefinedKeys(draft.sliders),
+        slidersDraft => {
+          if (
+            slidersDraft.imdbRating &&
+            isObjectEmpty(slidersDraft.imdbRating)
+          ) {
+            delete slidersDraft.imdbRating;
+          }
+
+          if (
+            slidersDraft.releaseYear &&
+            isObjectEmpty(slidersDraft.releaseYear)
+          ) {
+            delete slidersDraft.releaseYear;
+          }
+        },
+      );
+
+      if (isObjectEmpty(newSliders)) {
+        delete draft.sliders;
+      }
+    }
+  });
 }

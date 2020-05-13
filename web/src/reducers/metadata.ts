@@ -21,11 +21,11 @@ import {
 } from '../actions/metadata/load_metadata';
 
 export interface State {
-  metadataLoading: boolean;
-  networksLoading: boolean;
-  genresLoading: boolean;
-  networks?: Network[];
-  genres?: Genre[];
+  readonly metadataLoading: boolean;
+  readonly networksLoading: boolean;
+  readonly genresLoading: boolean;
+  readonly networks?: ReadonlyArray<Network>;
+  readonly genres?: ReadonlyArray<Genre>;
 }
 
 const initialState: State = {

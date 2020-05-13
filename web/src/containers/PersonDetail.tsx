@@ -307,7 +307,7 @@ function PersonDetail(props: NewProps) {
                   people: [personId],
                 }}
               >
-                <PersonCredits person={person} />
+                <PersonCredits personId={person.id} />
               </WithItemFilters>
             </div>
           </div>
@@ -316,8 +316,6 @@ function PersonDetail(props: NewProps) {
           filters={personFiltersForCreateDialog()}
           open={createPersonListDialogOpen}
           onClose={closeCreateListDialog}
-          networks={networks || []}
-          genres={genres || []}
           prefilledName={person!.name}
         />
       </div>

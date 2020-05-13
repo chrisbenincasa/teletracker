@@ -19,6 +19,9 @@ import { createSelector } from 'reselect';
 import { AppState } from '../reducers';
 import { useDispatchAction } from '../hooks/useDispatchAction';
 import { itemRecommendationsFetchInitiated } from '../actions/item-detail/get_item_recommendations';
+import selectItem from '../selectors/selectItem';
+import { Id } from '../types/v2';
+import { useWithUserContext } from '../hooks/useWithUser';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -33,8 +36,7 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface Props {
-  itemDetail: Item;
-  userSelf?: UserSelf;
+  readonly itemId: Id;
 }
 
 const recommendationsSelector = createSelector(
@@ -49,7 +51,9 @@ const recommendationsSelector = createSelector(
 
 function Recommendations(props: Props) {
   const classes = useStyles();
-  const { itemDetail, userSelf } = props;
+  const { itemId } = props;
+  const itemDetail = useStateSelector(state => selectItem(state, itemId));
+  const { userSelf } = useWithUserContext();
 
   // Pre-filter all recs that don't include a poster
   let recommendations = useStateSelector(
@@ -70,8 +74,8 @@ function Recommendations(props: Props) {
   useEffect(() => {
     if (!alreadyFetchedRecs && !fetchingRecs) {
       fetchRecommendations({
-        id: props.itemDetail.id,
-        type: props.itemDetail.type,
+        id: props.itemId,
+        type: itemDetail.type,
       });
     }
   }, []);

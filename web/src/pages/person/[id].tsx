@@ -89,7 +89,6 @@ function PersonDetailWrapper(props: Props) {
             />
           </React.Fragment>
         ) : null}
-        }
         <link
           rel="canonical"
           href={`${process.env.REACT_APP_TELETRACKER_BASE_URL}${router.pathname}`}

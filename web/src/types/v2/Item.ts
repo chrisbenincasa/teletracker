@@ -27,53 +27,53 @@ export interface HasSlug {
 }
 
 export interface Item extends HasSlug {
-  adult?: boolean;
-  availability?: ItemAvailability[];
-  cast?: ItemCastMember[];
-  crew?: ItemCrewMember[];
-  external_ids?: ItemExternalId[];
-  genres?: ItemGenre[];
-  id: Id;
-  images?: ItemImage[];
-  original_title: string;
-  overview?: string;
-  popularity?: number;
-  ratings?: ItemRating[];
-  recommendations?: Id[];
-  release_date?: string;
-  release_dates?: ItemReleaseDate[];
-  runtime?: number;
-  slug: Slug;
-  tags?: ItemTag[];
-  title?: string;
-  type: ItemType;
-  videos?: Video[];
+  readonly adult?: boolean;
+  readonly availability?: ItemAvailability[];
+  readonly cast?: ItemCastMember[];
+  readonly crew?: ItemCrewMember[];
+  readonly external_ids?: ItemExternalId[];
+  readonly genres?: ItemGenre[];
+  readonly id: Id;
+  readonly images?: ItemImage[];
+  readonly original_title: string;
+  readonly overview?: string;
+  readonly popularity?: number;
+  readonly ratings?: ItemRating[];
+  readonly recommendations?: Id[];
+  readonly release_date?: string;
+  readonly release_dates?: ItemReleaseDate[];
+  readonly runtime?: number;
+  readonly slug: Slug;
+  readonly tags?: ItemTag[];
+  readonly title?: string;
+  readonly type: ItemType;
+  readonly videos?: Video[];
 
   // computed fields
-  canonicalId: Id | Slug;
-  canonicalTitle: string;
-  relativeUrl: string;
-  canonicalUrl: string; // Canonical URL used by next.js
-  itemMarkedAsWatched: boolean;
-  posterImage?: ItemImage;
-  backdropImage?: ItemImage;
-  profileImage?: string;
+  readonly canonicalId: Id | Slug;
+  readonly canonicalTitle: string;
+  readonly relativeUrl: string;
+  readonly canonicalUrl: string; // Canonical URL used by next.js
+  readonly itemMarkedAsWatched: boolean;
+  readonly posterImage?: ItemImage;
+  readonly backdropImage?: ItemImage;
+  readonly profileImage?: string;
 }
 
 export interface ItemCastMember {
-  character?: string;
-  id: string;
-  order: number;
-  name: string;
-  slug: string;
-  person?: Person;
+  readonly character?: string;
+  readonly id: string;
+  readonly order: number;
+  readonly name: string;
+  readonly slug: string;
+  readonly person?: Person;
 }
 
 export interface ItemTag {
-  tag: string;
-  value?: number;
-  string_value?: string;
-  userId?: string;
+  readonly tag: string;
+  readonly value?: number;
+  readonly string_value?: string;
+  readonly userId?: string;
 }
 
 export const itemHasTag = (item: ApiItem | Item, expectedTag: ActionType) => {
