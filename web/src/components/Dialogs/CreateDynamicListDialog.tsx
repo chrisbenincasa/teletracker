@@ -45,6 +45,7 @@ import { AppState } from '../../reducers';
 import { createList } from '../../actions/lists';
 import CreateAListValidator from '../../utils/validation/CreateAListValidator';
 import { collect } from '../../utils/collection-utils';
+import { useGenres, useNetworks } from '../../hooks/useStateMetadata';
 
 const useStyles = makeStyles(theme => ({
   button: {
@@ -67,8 +68,6 @@ interface OwnProps {
   open: boolean;
   onClose: () => void;
   filters: FilterParams;
-  genres: Genre[];
-  networks: Network[];
   prefilledName?: string;
 }
 
@@ -84,10 +83,12 @@ export default function CreateDynamicListDialog(props: Props) {
   let [nameDuplicateError, setNameDuplicateError] = useState(false);
   let [nameLengthError, setNameLengthError] = useState(false);
   let existingLists = useSelector((state: AppState) => state.lists.listsById);
+  let networks = useNetworks();
+  let genres = useGenres();
 
   let dispatch = useDispatch();
 
-  const { filters, networks } = props;
+  const { filters } = props;
 
   useEffect(() => {
     if (props.open) {
@@ -206,7 +207,7 @@ export default function CreateDynamicListDialog(props: Props) {
 
   const renderGenreRules = (genreIds: number[]) => {
     let actualGenres = collect(genreIds, genreId =>
-      _.find(props.genres, g => g.id === genreId),
+      _.find(genres, g => g.id === genreId),
     );
 
     return renderLabels(
@@ -220,7 +221,7 @@ export default function CreateDynamicListDialog(props: Props) {
 
   const renderNetworkRules = (networkTypes: NetworkType[]) => {
     let actualNetworks = collect(networkTypes, networkId =>
-      _.find(props.networks, g => g.slug === networkId),
+      _.find(networks, g => g.slug === networkId),
     );
 
     return renderLabels(

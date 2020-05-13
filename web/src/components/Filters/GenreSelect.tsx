@@ -68,6 +68,26 @@ export default function GenreSelect(props: NewProps) {
     }
   };
 
+  const chips = _.chain(genres || [])
+    .sortBy('name')
+    .map(item => {
+      return (
+        <Chip
+          key={item.id}
+          onClick={() => updateSelectedGenres('genres', item.id)}
+          size="medium"
+          color={
+            selectedGenres && selectedGenres.includes(item.id)
+              ? 'primary'
+              : 'secondary'
+          }
+          label={item.name}
+          className={classes.chip}
+          disabled={excludeGenres && excludeGenres.includes(item.id)}
+        />
+      );
+    })
+    .values();
   return (
     <div className={classes.genreContainer}>
       {props.showTitle && <Typography display="block">Genre</Typography>}
@@ -85,25 +105,7 @@ export default function GenreSelect(props: NewProps) {
           className={classes.chip}
           disabled={!!excludeGenres}
         />
-        {(genres || [])
-          .sort((a, b) => (a.name > b.name ? 1 : -1))
-          .map(item => {
-            return (
-              <Chip
-                key={item.id}
-                onClick={() => updateSelectedGenres('genres', item.id)}
-                size="medium"
-                color={
-                  selectedGenres && selectedGenres.includes(item.id)
-                    ? 'primary'
-                    : 'secondary'
-                }
-                label={item.name}
-                className={classes.chip}
-                disabled={excludeGenres && excludeGenres.includes(item.id)}
-              />
-            );
-          })}
+        {chips}
       </div>
     </div>
   );

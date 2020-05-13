@@ -1,5 +1,4 @@
-import { call, put, select, take, takeLeading } from '@redux-saga/core/effects';
-import { AppState } from '../../reducers';
+import { call, put, take, takeLeading } from '@redux-saga/core/effects';
 import { createAction, createBasicAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
@@ -21,7 +20,7 @@ export type UserSelfRetrieveInitiatedAction = FSA<
 >;
 
 export interface UserSelfRetrievePayload {
-  user: CognitoUser;
+  // user: CognitoUser;
   preferences: UserPreferences;
   networks: Network[];
 }
@@ -49,34 +48,34 @@ export const RetrieveUserSelfEmpty = createBasicAction<
 
 export const getUserSelfSaga = function*() {
   function* self(force: boolean) {
-    let currState: AppState = yield select();
+    // let currState: AppState = yield select();
 
     // If the user exists on the state already, and we're not forcing reload,
     // return.
-    if (currState.userSelf.self && currState.userSelf.self.user && !force) {
-      return { user: currState.userSelf.self.user };
-    } else {
-      try {
-        // Attempt to get the user from Amplify
-        let user: CognitoUser = yield call(
-          [Auth, Auth.currentAuthenticatedUser],
-          {
-            bypassCache: false,
-          },
-        );
+    // if (currState.userSelf.self && currState.userSelf.self.user && !force) {
+    //   return { user: currState.userSelf.self.user };
+    // } else {
+    // }
+    try {
+      // Attempt to get the user from Amplify
+      let user: CognitoUser = yield call(
+        [Auth, Auth.currentAuthenticatedUser],
+        {
+          bypassCache: false,
+        },
+      );
 
-        // If we don't have a user, wait until a login event and try again.
-        if (user) {
-          return { user };
-        } else {
-          yield take(LOGIN_SUCCESSFUL);
-          return yield self(force);
-        }
-      } catch (e) {
-        if (e === 'not authenticated') {
-          yield take(LOGIN_SUCCESSFUL);
-          return yield self(force);
-        }
+      // If we don't have a user, wait until a login event and try again.
+      if (user) {
+        return { user };
+      } else {
+        yield take(LOGIN_SUCCESSFUL);
+        return yield self(force);
+      }
+    } catch (e) {
+      if (e === 'not authenticated') {
+        yield take(LOGIN_SUCCESSFUL);
+        return yield self(force);
       }
     }
   }
@@ -93,7 +92,7 @@ export const getUserSelfSaga = function*() {
         if (metadata.ok && metadata.data) {
           yield put(
             RetrieveUserSelfSuccess({
-              user: user as CognitoUser,
+              // user: user as CognitoUser,
               preferences: metadata.data.data.preferences,
               networks: metadata.data.data.networkPreferences,
             }),

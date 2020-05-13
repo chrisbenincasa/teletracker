@@ -30,6 +30,10 @@ export const createAction = <T extends FSA<any, any>>(
   };
 };
 
+export function withPayloadType<T>() {
+  return (t: T) => ({ payload: t });
+}
+
 export function isServer() {
   return typeof window === 'undefined';
 }

@@ -225,8 +225,6 @@ const AllFilters = (props: Props) => {
           filters={filters}
           open={smartListOpen}
           onClose={() => setSmartListOpen(false)}
-          networks={networks || []}
-          genres={genres || []}
           prefilledName={props.prefilledName || undefined}
         />
       </React.Fragment>

@@ -48,17 +48,17 @@ const initialState: State = {
   loading: {},
 };
 
-const stateChange = handleAction(
-  USER_STATE_CHANGE,
-  produce((state: Draft<State>, { payload }: UserStateChangeAction) => {
-    let nextSelf = state.self || {};
-    if (payload) {
-      nextSelf.user = payload;
-    }
-
-    state.self = nextSelf;
-  }),
-);
+// const stateChange = handleAction(
+//   USER_STATE_CHANGE,
+//   produce((state: Draft<State>, { payload }: UserStateChangeAction) => {
+//     let nextSelf = state.self || {};
+//     if (payload) {
+//       nextSelf.user = payload;
+//     }
+//
+//     state.self = nextSelf;
+//   }),
+// );
 
 const selfRetrieveInitiated = handleAction(
   USER_SELF_RETRIEVE_INITIATED,
@@ -80,13 +80,13 @@ const selfRetrieveSuccess = handleAction(
       return {
         ...state,
         retrievingSelf: false,
-        self: action.payload,
+        // self: action.payload,
       };
     } else {
       return {
         ...state,
         retrievingSelf: false,
-        self: undefined,
+        // self: undefined,
       } as State;
     }
   },
@@ -210,5 +210,5 @@ export default flattenActions(
   userRenameListSuccess,
   logoutUser,
   updateUserMetadataSuccess,
-  stateChange,
+  // stateChange,
 );

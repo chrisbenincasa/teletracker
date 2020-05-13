@@ -284,14 +284,14 @@ function ItemDetails(props: Props) {
     loadItem();
     ReactGA.pageview(nextRouter.asPath);
 
-    if (
-      userSelfState.isLoggedIn &&
-      userSelfState.userSelf &&
-      userSelfState.userSelf.user &&
-      userSelfState.userSelf.user.getUsername()
-    ) {
-      ReactGA.set({ userId: userSelfState.userSelf.user.getUsername() });
-    }
+    // if (
+    //   userSelfState.isLoggedIn &&
+    //   userSelfState.userSelf &&
+    //   userSelfState.userSelf.user &&
+    //   userSelfState.userSelf.user.getUsername()
+    // ) {
+    //   ReactGA.set({ userId: userSelfState.userSelf.user.getUsername() });
+    // }
   }, [nextRouter.query]);
 
   const loadItem = () => {

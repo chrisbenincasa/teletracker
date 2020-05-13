@@ -1475,6 +1475,16 @@
   resolved "https://registry.yarnpkg.com/@redux-saga/types/-/types-1.0.2.tgz#1d94f02800b094753f9271c206a26c2a06ca14ee"
   integrity sha512-8/qcMh15507AnXJ3lBeuhsdFwnWQqnp68EpUuHlYPixJ5vjVmls7/Jq48cnUlrZI8Jd9U1jkhfCl0gaT5KMgVw==
 
+"@reduxjs/toolkit@^1.3.6":
+  version "1.3.6"
+  resolved "https://registry.yarnpkg.com/@reduxjs/toolkit/-/toolkit-1.3.6.tgz#306171fce2ab7423931736c34fa82190959dcd62"
+  integrity sha512-eNYURfoJa6mRNU5YtBVbmE5+nDoc4lpjZ181PBwRC6nIFYZdNR3GcoQ4uomFt8eHpXAUAdpCdxBlDsmwyXOt9Q==
+  dependencies:
+    immer "^6.0.1"
+    redux "^4.0.0"
+    redux-thunk "^2.3.0"
+    reselect "^4.0.0"
+
 "@sinonjs/commons@^1.7.0":
   version "1.7.2"
   resolved "https://registry.yarnpkg.com/@sinonjs/commons/-/commons-1.7.2.tgz#505f55c74e0272b43f6c52d81946bed7058fc0e2"
@@ -5034,7 +5044,7 @@ ignore-loader@0.1.2:
   resolved "https://registry.yarnpkg.com/ignore-loader/-/ignore-loader-0.1.2.tgz#d81f240376d0ba4f0d778972c3ad25874117a463"
   integrity sha1-2B8kA3bQuk8Nd4lyw60lh0EXpGM=
 
-immer@^6.0.5:
+immer@^6.0.1, immer@^6.0.5:
   version "6.0.5"
   resolved "https://registry.yarnpkg.com/immer/-/immer-6.0.5.tgz#77187d13b71c6cee40dde3b8e87a50a7a636d630"
   integrity sha512-Q2wd90qrgFieIpLzAO2q9NLEdmyp/sr76Ml4Vm5peUKgyTa2CQa3ey8zuzwSKOlKH7grCeGBGUcLLVCVW1aguA==
@@ -8395,7 +8405,7 @@ redux-saga@*, redux-saga@^1.0.2:
   dependencies:
     "@redux-saga/core" "^1.0.2"
 
-redux-thunk@*, redux-thunk@2.3.0:
+redux-thunk@*, redux-thunk@2.3.0, redux-thunk@^2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/redux-thunk/-/redux-thunk-2.3.0.tgz#51c2c19a185ed5187aaa9a2d08b666d0d6467622"
 
