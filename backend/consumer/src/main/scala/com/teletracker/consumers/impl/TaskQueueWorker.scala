@@ -20,6 +20,7 @@ import com.teletracker.common.tasks.storage.{
 import com.teletracker.consumers.inject.TaskConsumerQueueConfig
 import com.teletracker.tasks.TeletrackerTaskRunner
 import javax.inject.Inject
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
 
@@ -58,12 +59,13 @@ class TaskQueueWorker @Inject()(
   ): Future[Option[String]] = {
     try {
       val task = taskRunner.getInstance(message.clazz)
-      task.taskId = message.id
+      val taskId = message.id.getOrElse(UUID.randomUUID())
+      task.taskId = taskId
 
       val extractedArgs = Args.extractArgs(message.args)
 
       val taskRecord = taskRecordCreator.create(
-        message.id,
+        taskId,
         task,
         extractedArgs,
         TaskStatus.Executing

@@ -14,7 +14,7 @@ object TaskMessageHelper {
     tags: Option[Set[String]]
   ): TeletrackerTaskQueueMessage = {
     TeletrackerTaskQueueMessage(
-      id = UUID.randomUUID(),
+      id = Some(UUID.randomUUID()),
       clazz = taskIdentifier.identifier(),
       args = args.asJsonObject.toMap,
       jobTags = tags
@@ -28,7 +28,7 @@ object TaskMessageHelper {
     enc: Encoder.AsObject[T#TypedArgs]
   ): TeletrackerTaskQueueMessage = {
     TeletrackerTaskQueueMessage(
-      id = UUID.randomUUID(),
+      id = Some(UUID.randomUUID()),
       clazz = ct.runtimeClass.getName,
       args = args.asJsonObject.toMap,
       jobTags = tags

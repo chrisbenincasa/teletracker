@@ -29,21 +29,20 @@ class EventBase extends Serializable with SettableReceiptHandle {
 
 @JsonCodec
 case class TeletrackerTaskQueueMessage(
-  id: UUID,
+  id: Option[UUID],
   clazz: String,
   args: Map[String, Json],
   jobTags: Option[Set[String]] = Some(Set.empty))
     extends EventBase
 
 object TeletrackerTaskQueueMessageFactory {
-
   def withJsonArgs(
     clazz: String,
     args: Json,
     tags: Option[Set[String]]
   ): TeletrackerTaskQueueMessage = {
     TeletrackerTaskQueueMessage(
-      UUID.randomUUID(),
+      Some(UUID.randomUUID()),
       clazz,
       args.as[Option[Map[String, Json]]].right.get.getOrElse(Map.empty),
       tags
