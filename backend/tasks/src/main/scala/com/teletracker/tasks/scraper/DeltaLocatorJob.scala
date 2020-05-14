@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.tasks.{TaskMessageHelper, TeletrackerTask}
-import com.teletracker.common.aws.sqs.SqsQueue
+import com.teletracker.common.aws.sqs.{SqsFifoQueue, SqsQueue}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.util.Futures._
@@ -41,7 +41,7 @@ abstract class DeltaLocatorJob[ArgsType <: DeltaLocatorJobArgsLike](
   enc: Encoder[ArgsType])
     extends TeletrackerTask {
   @Inject
-  private[this] var taskQueue: SqsQueue[TeletrackerTaskQueueMessage] = _
+  private[this] var taskQueue: SqsFifoQueue[TeletrackerTaskQueueMessage] = _
 
   override type TypedArgs = ArgsType
 
