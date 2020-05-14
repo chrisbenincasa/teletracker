@@ -1,0 +1,13 @@
+version: '3.1'
+
+services:
+  consumer:
+    image: 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:latest
+    restart: always
+    environment:
+      - "AWS_REGION=us-west-2"
+      - "AWS_EXECUTION_ENV=AWS_ECS_FARGATE"
+    env_file:
+      - .env
+    volumes:
+      - ~/.aws:/root/.aws

@@ -32,51 +32,16 @@ object TaskLogger {
 
     factory match {
       case context: LoggerContext =>
-        val encoder = new PatternLayoutEncoder()
-        encoder.setPattern(LogFormat)
-        encoder.setContext(context)
-        encoder.start()
+        val s3Appender =
+          getS3Logger(context, clazz, now, s3Bucket, s3KeyPrefix, s3Client)
 
-        val s3Appender = new RollingFileAppender[ILoggingEvent]()
-        s3Appender.setFile(s"${clazz.getSimpleName}-$now.log")
-        s3Appender.setEncoder(encoder)
-        s3Appender.setImmediateFlush(true)
-        s3Appender.setContext(context)
-
-        val rollingPolicy = new S3RollingPolicy
-        rollingPolicy.setContext(context)
-        rollingPolicy.setBucketName(s3Bucket)
-        rollingPolicy.setKeyPrefix(s3KeyPrefix)
-        rollingPolicy.setS3Client(s3Client)
-        rollingPolicy.setFileNamePattern(
-          s"${clazz.getSimpleName}-$now-%d{yyyy-MM-dd}.%i"
-        )
-        rollingPolicy.setParent(s3Appender)
-        rollingPolicy.start()
-
-        val triggeringPolicy = new SizeAndTimeBasedFNATP[ILoggingEvent]()
-        val tbrp = new TimeBasedRollingPolicy[ILoggingEvent]
-        tbrp.setContext(context)
-        tbrp.setFileNamePattern(s"${clazz.getSimpleName}-$now-%d.%i")
-        tbrp.setParent(s3Appender)
-        tbrp.start()
-
-        triggeringPolicy.setTimeBasedRollingPolicy(tbrp)
-        triggeringPolicy.setMaxFileSize(
-          new FileSize(50 * FileSize.MB_COEFFICIENT)
-        )
-        triggeringPolicy.setContext(context)
-        triggeringPolicy.start()
-
-        s3Appender.setTriggeringPolicy(triggeringPolicy)
-        s3Appender.setRollingPolicy(rollingPolicy)
-        s3Appender.start()
+        val jsonEncoder = new EventJsonEncoder
+        jsonEncoder.start()
 
         val consoleAppender = new ConsoleAppender[ILoggingEvent]
         consoleAppender.setContext(context)
-        consoleAppender.setEncoder(encoder)
+        consoleAppender.setEncoder(jsonEncoder)
         consoleAppender.setName(clazz.getName)
-        consoleAppender.start()
 
         val finalLogger = {
           val logger = factory
@@ -87,8 +52,9 @@ object TaskLogger {
 
           wrapper.addWrapperAppender(s3Appender)
 
-          if ((logger
+          if (outputToConsole && (logger
                 .getAppender(consoleAppender.getName) eq null)) {
+            consoleAppender.start()
             logger.addAppender(consoleAppender)
           }
 
@@ -104,5 +70,56 @@ object TaskLogger {
 
       case _ => factory.getLogger(clazz.getName) -> (() => Unit)
     }
+  }
+
+  private def getS3Logger(
+    context: LoggerContext,
+    clazz: Class[_],
+    now: Long,
+    s3Bucket: String,
+    s3KeyPrefix: String,
+    s3Client: S3Client
+  ) = {
+    val encoder = new PatternLayoutEncoder()
+    encoder.setPattern(LogFormat)
+    encoder.setContext(context)
+    encoder.start()
+
+    val s3Appender = new RollingFileAppender[ILoggingEvent]()
+    s3Appender.setFile(s"${clazz.getSimpleName}-$now.log")
+    s3Appender.setEncoder(encoder)
+    s3Appender.setImmediateFlush(true)
+    s3Appender.setContext(context)
+
+    val rollingPolicy = new S3RollingPolicy
+    rollingPolicy.setContext(context)
+    rollingPolicy.setBucketName(s3Bucket)
+    rollingPolicy.setKeyPrefix(s3KeyPrefix)
+    rollingPolicy.setS3Client(s3Client)
+    rollingPolicy.setFileNamePattern(
+      s"${clazz.getSimpleName}-$now-%d{yyyy-MM-dd}.%i"
+    )
+    rollingPolicy.setParent(s3Appender)
+    rollingPolicy.start()
+
+    val triggeringPolicy = new SizeAndTimeBasedFNATP[ILoggingEvent]()
+    val tbrp = new TimeBasedRollingPolicy[ILoggingEvent]
+    tbrp.setContext(context)
+    tbrp.setFileNamePattern(s"${clazz.getSimpleName}-$now-%d.%i")
+    tbrp.setParent(s3Appender)
+    tbrp.start()
+
+    triggeringPolicy.setTimeBasedRollingPolicy(tbrp)
+    triggeringPolicy.setMaxFileSize(
+      new FileSize(50 * FileSize.MB_COEFFICIENT)
+    )
+    triggeringPolicy.setContext(context)
+    triggeringPolicy.start()
+
+    s3Appender.setTriggeringPolicy(triggeringPolicy)
+    s3Appender.setRollingPolicy(rollingPolicy)
+    s3Appender.start()
+
+    s3Appender
   }
 }

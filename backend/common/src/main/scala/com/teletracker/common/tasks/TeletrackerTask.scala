@@ -106,9 +106,8 @@ trait TeletrackerTask extends Args {
       EnvironmentDetection.runningRemotely || args
         .valueOrDefault(CommonFlags.S3Logging, false)
 
-    val logToConsole =
-      EnvironmentDetection.runningLocally || args
-        .valueOrDefault(CommonFlags.OutputToConsole, false)
+    val logToConsole = args
+      .valueOrDefault(CommonFlags.OutputToConsole, true)
 
     if (logToS3) {
       val (s3Logger, onClose) = TaskLogger.make(

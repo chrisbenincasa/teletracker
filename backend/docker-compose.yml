@@ -1,26 +1,6 @@
 version: '3.1'
 
 services:
-#  db:
-#    image: postgres:11
-#    restart: always
-#    ports:
-#      - 5432:5432
-#    environment:
-#      POSTGRES_USER: teletracker
-#      POSTGRES_PASSWORD: teletracker
-#      POSTGRES_DB: teletracker
-#    networks:
-#      - db
-#
-#  adminer:
-#    image: adminer
-#    restart: always
-#    ports:
-#      - 8080:8080
-#    networks:
-#      - db
-#
   proxy:
     image: 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/server-nginx:1.2
     restart: always
@@ -39,28 +19,3 @@ services:
       - "AWS_REGION=us-west-2"
     env_file:
       - .env
-
-#  elasticsearch:
-#    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
-#    environment:
-#      - discovery.type=single-node
-#    volumes:
-#      - esdata01:/usr/share/elasticsearch/data
-#    ports:
-#      - 9200:9200
-#    networks:
-#      - esnet
-#
-#  kibana:
-#    image: docker.elastic.co/kibana/kibana:7.4.0
-#    ports:
-#      - 5601:5601
-#    networks:
-#      - esnet
-#    links:
-#      - elasticsearch:elasticsearch
-
-#volumes:
-#  esdata01:
-#    driver: local
-

@@ -24,4 +24,6 @@ phases:
       - ./sbt -Dversion=$(cat FULL_VERSION) consumer/assembly consumer/docker
   post_build:
     commands:
+      - docker tag "302782651551.dkr.ecr.${AWS_REGION}.amazonaws.com/teletracker/consumer:$(cat FULL_VERSION)" "302782651551.dkr.ecr.${AWS_REGION}.amazonaws.com/teletracker/consumer:latest"
       - docker push "302782651551.dkr.ecr.${AWS_REGION}.amazonaws.com/teletracker/consumer:$(cat FULL_VERSION)"
+      - docker push "302782651551.dkr.ecr.${AWS_REGION}.amazonaws.com/teletracker/consumer:latest"
