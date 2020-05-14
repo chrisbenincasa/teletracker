@@ -1,11 +1,10 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.process.tmdb.ItemExpander
+import com.teletracker.tasks.model.MovieDumpFileRow
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
-import io.circe.syntax._
 import javax.inject.Inject
-import software.amazon.awssdk.services.s3.S3Client
 import scala.concurrent.{ExecutionContext, Future}
 
 object MovieDumpTool extends DataDumpTaskApp[MovieDump]

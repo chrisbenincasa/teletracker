@@ -1,14 +1,10 @@
 package com.teletracker.tasks.tmdb
 
-import com.codahale.metrics.{Histogram, SlidingWindowReservoir}
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.tasks.model.MovieDumpFileRow
 import com.teletracker.tasks.scraper.IngestJobParser
-import com.teletracker.tasks.tmdb.export_tasks.MovieDumpFileRow
 import com.teletracker.tasks.util.SourceRetriever
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveCodec
 import javax.inject.Inject
-import org.slf4j.LoggerFactory
 import java.net.URI
 import scala.collection.mutable
 import scala.math.BigDecimal.RoundingMode
@@ -17,9 +13,6 @@ class PopularityDiffer @Inject()(
   sourceRetriever: SourceRetriever,
   ingestJobParser: IngestJobParser)
     extends TeletrackerTaskWithDefaultArgs {
-  implicit protected val tDecoder: Decoder[MovieDumpFileRow] =
-    deriveCodec
-
   override def runInternal(args: Args): Unit = {
     val left = args.value[URI]("left").get
     val right = args.value[URI]("right").get

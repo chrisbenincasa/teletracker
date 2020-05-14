@@ -1,6 +1,7 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.process.tmdb.ItemExpander
+import com.teletracker.tasks.model.PersonDumpFileRow
 import io.circe.Decoder
 import io.circe.generic.JsonCodec
 import io.circe.generic.semiauto.deriveCodec

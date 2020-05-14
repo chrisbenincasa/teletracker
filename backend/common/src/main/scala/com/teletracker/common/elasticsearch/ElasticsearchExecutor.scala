@@ -21,6 +21,7 @@ import org.elasticsearch.index.reindex.{
   UpdateByQueryRequest
 }
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.control.NonFatal
 
 class ElasticsearchExecutor @Inject()(
   client: RestHighLevelClient
@@ -81,7 +82,11 @@ class ElasticsearchExecutor @Inject()(
   protected def withListener[T](f: ActionListener[T] => Unit): Future[T] = {
     val (listener, promise) = makeListener[T]
     f(listener)
-    promise.future
+    promise.future.transform(
+      identity,
+      e =>
+        new ElasticsearchRequestException("Request to Elasticsearch failed!", e)
+    )
   }
 
   protected def makeListener[T]: (ActionListener[T], Promise[T]) = {
@@ -91,13 +96,9 @@ class ElasticsearchExecutor @Inject()(
         promise.trySuccess(response)
 
       override def onFailure(e: Exception): Unit =
-        promise.tryFailure(
-          new ElasticsearchRequestException(
-            "Request to Elasticsearch failed",
-            e
-          )
-        )
+        promise.tryFailure(e)
     }
+
     (listener, promise)
   }
 }

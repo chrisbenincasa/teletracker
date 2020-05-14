@@ -13,23 +13,22 @@ import com.teletracker.common.pubsub.{
 }
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.json.circe._
+import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.common.util.Functions._
-import com.teletracker.tasks.scraper.IngestJobParser
-import com.teletracker.tasks.tmdb.export_tasks.{
+import com.teletracker.tasks.model.{
   MovieDumpFileRow,
   PersonDumpFileRow,
-  TmdbDumpFileRow,
   TvShowDumpFileRow
 }
+import com.teletracker.tasks.scraper.IngestJobParser
+import com.teletracker.tasks.tmdb.export_tasks.TmdbDumpFileRow
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.JsonCodec
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import javax.inject.Inject
 import org.elasticsearch.common.io.stream.BytesStreamOutput
-import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.net.URI
 import java.util.UUID

@@ -225,13 +225,16 @@ class ItemUpdater @Inject()(
     } yield updateResp
   }
 
-  def getUpdateJson(item: EsItem): String = {
+  def getUpdateJson(
+    item: EsItem,
+    pretty: Boolean = true
+  ): String = {
     XContentHelper
       .toXContent(
         getUpdateRequest(item),
         XContentType.JSON,
         ToXContent.EMPTY_PARAMS,
-        true
+        pretty
       )
       .utf8ToString
   }

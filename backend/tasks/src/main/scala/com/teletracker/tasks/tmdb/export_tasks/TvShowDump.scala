@@ -2,6 +2,7 @@ package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.process.tmdb.ItemExpander
+import com.teletracker.tasks.model.TvShowDumpFileRow
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._

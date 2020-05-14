@@ -4,7 +4,7 @@ import cats.effect.{Blocker, ContextShift, IO, Resource}
 import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.http.{BaseHttp4sClient, HttpRequest}
-import com.teletracker.tasks.tmdb.export_tasks.{
+import com.teletracker.tasks.model.{
   MovieDumpFileRow,
   PersonDumpFileRow,
   TvShowDumpFileRow
@@ -18,12 +18,10 @@ import java.io.{
   FileOutputStream,
   PipedInputStream,
   PipedOutputStream,
-  PrintWriter,
-  Writer
+  PrintWriter
 }
 import io.circe.parser._
 import io.circe.syntax._
-import org.slf4j.LoggerFactory
 import java.net.URI
 import java.nio.file.Files
 import java.time.LocalDate

@@ -4,6 +4,7 @@ import com.teletracker.common.db.dynamo.DynamoAccess
 import com.teletracker.common.db.dynamo.util.syntax._
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.model.EsExternalId
+import com.teletracker.common.util.AsyncStream
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
@@ -63,48 +64,56 @@ class DynamoElasticsearchExternalIdMapping @Inject()(
     if (lookupPairs.isEmpty) {
       Future.successful(Map.empty)
     } else {
-      val keys = lookupPairs.map {
-        case (id, itemType) =>
-          Map(
-            "externalId" -> makeExternalIdKey(id, itemType)
-          ).asJava
-      }.asJavaCollection
+      AsyncStream
+        .fromSeq(lookupPairs.toSeq)
+        .grouped(100)
+        .mapF(pairs => {
+          val keys = pairs.map {
+            case (id, itemType) =>
+              Map(
+                "externalId" -> makeExternalIdKey(id, itemType)
+              ).asJava
+          }.asJavaCollection
 
-      val attributes = KeysAndAttributes.builder().keys(keys).build()
+          val attributes = KeysAndAttributes.builder().keys(keys).build()
 
-      dynamo
-        .batchGetItem(
-          BatchGetItemRequest
-            .builder()
-            .requestItems(
-              Map(DynamoElasticsearchExternalIdMapping.TableName -> attributes).asJava
+          dynamo
+            .batchGetItem(
+              BatchGetItemRequest
+                .builder()
+                .requestItems(
+                  Map(
+                    DynamoElasticsearchExternalIdMapping.TableName -> attributes
+                  ).asJava
+                )
+                .build()
             )
-            .build()
-        )
-        .toScala
-        .map(response => {
-          response
-            .responses()
-            .asScala
-            .get(DynamoElasticsearchExternalIdMapping.TableName)
-            .map(responses => {
-              responses.asScala
-                .map(_.asScala)
-                .flatMap(row => {
-                  for {
-                    key <- row
-                      .get("externalId")
-                      .map(_.valueAs[String])
-                      .flatMap(parseKey)
-                    value <- row.get("id").map(_.valueAs[UUID])
-                  } yield {
-                    key -> value
-                  }
+            .toScala
+            .map(response => {
+              response
+                .responses()
+                .asScala
+                .get(DynamoElasticsearchExternalIdMapping.TableName)
+                .map(responses => {
+                  responses.asScala
+                    .map(_.asScala)
+                    .flatMap(row => {
+                      for {
+                        key <- row
+                          .get("externalId")
+                          .map(_.valueAs[String])
+                          .flatMap(parseKey)
+                        value <- row.get("id").map(_.valueAs[UUID])
+                      } yield {
+                        key -> value
+                      }
+                    })
+                    .toMap
                 })
-                .toMap
+                .getOrElse(Map.empty)
             })
-            .getOrElse(Map.empty)
         })
+        .foldLeft(Map.empty[(EsExternalId, ItemType), UUID])(_ ++ _)
     }
   }
 
@@ -165,33 +174,39 @@ class DynamoElasticsearchExternalIdMapping @Inject()(
     if (mappings.isEmpty) {
       Future.unit
     } else {
-      val puts = mappings
-        .map {
-          case ((externalId, itemType), uuid) =>
-            PutRequest
-              .builder()
-              .item(
-                Map(
-                  "externalId" -> makeExternalIdKey(externalId, itemType),
-                  "id" -> uuid.toAttributeValue
-                ).asJava
-              )
-              .build()
-        }
-        .map(put => WriteRequest.builder().putRequest(put).build())
-        .asJavaCollection
+      AsyncStream
+        .fromSeq(mappings.toSeq)
+        .grouped(25)
+        .mapF(batch => {
+          val puts = batch
+            .map {
+              case ((externalId, itemType), uuid) =>
+                PutRequest
+                  .builder()
+                  .item(
+                    Map(
+                      "externalId" -> makeExternalIdKey(externalId, itemType),
+                      "id" -> uuid.toAttributeValue
+                    ).asJava
+                  )
+                  .build()
+            }
+            .map(put => WriteRequest.builder().putRequest(put).build())
+            .asJavaCollection
 
-      dynamo
-        .batchWriteItem(
-          BatchWriteItemRequest
-            .builder()
-            .requestItems(
-              Map(DynamoElasticsearchExternalIdMapping.TableName -> puts).asJava
+          dynamo
+            .batchWriteItem(
+              BatchWriteItemRequest
+                .builder()
+                .requestItems(
+                  Map(DynamoElasticsearchExternalIdMapping.TableName -> puts).asJava
+                )
+                .build()
             )
-            .build()
-        )
-        .toScala
-        .map(_ => {})
+            .toScala
+            .map(_ => {})
+        })
+        .force
     }
   }
 

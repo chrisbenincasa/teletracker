@@ -135,7 +135,9 @@ class MovieImportHandler @Inject()(
           Future.unit
 
         case None =>
-          logger.error(s"Could not find item with TMDb ID = ${tmdbId}")
+          logger.warn(
+            s"Could not find item with TMDb ID = ${tmdbId} when trying to delete"
+          )
           Future.unit
       }
   }

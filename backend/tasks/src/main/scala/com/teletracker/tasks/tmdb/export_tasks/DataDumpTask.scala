@@ -1,35 +1,25 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
-import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.tasks.TeletrackerTaskApp
-import io.circe.{Decoder, Encoder}
-import io.circe.parser._
-import io.circe.generic.semiauto.deriveEncoder
 import com.teletracker.common.util.json.circe._
+import com.teletracker.tasks.TeletrackerTaskApp
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import io.circe.generic.JsonCodec
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.{Decoder, Encoder}
 import javax.inject.Inject
-import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
-import java.io.{
-  BufferedOutputStream,
-  File,
-  FileInputStream,
-  FileOutputStream,
-  PrintStream
-}
+import java.io.File
 import java.net.URI
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicLong
-import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 import scala.util.control.NonFatal
 
 trait DataDumpTaskApp[T <: DataDumpTask[_, _]] extends TeletrackerTaskApp[T] {
@@ -40,6 +30,7 @@ trait DataDumpTaskApp[T <: DataDumpTask[_, _]] extends TeletrackerTaskApp[T] {
   val rotateEvery = flag[Int]("rotateEvery", 10000, "The offset to start at")
 }
 
+@JsonCodec
 case class DataDumpTaskArgs(
   input: URI,
   offset: Int = 0,
@@ -194,27 +185,3 @@ trait TmdbDumpFileRow {
 }
 
 case class ResultWrapperType[T <: TmdbDumpFileRow](results: List[T])
-
-@JsonCodec
-case class MovieDumpFileRow(
-  adult: Boolean,
-  id: Int,
-  original_title: String,
-  popularity: Double,
-  video: Boolean)
-    extends TmdbDumpFileRow
-
-@JsonCodec
-case class TvShowDumpFileRow(
-  id: Int,
-  original_name: String,
-  popularity: Double)
-    extends TmdbDumpFileRow
-
-@JsonCodec
-case class PersonDumpFileRow(
-  adult: Boolean,
-  id: Int,
-  name: String,
-  popularity: Double)
-    extends TmdbDumpFileRow

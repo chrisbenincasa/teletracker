@@ -1,18 +1,10 @@
 package com.teletracker.tasks.tmdb.fixers
 
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.model.EsPerson
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
-import com.teletracker.tasks.model.EsPersonDumpRow
+import com.teletracker.tasks.model.{EsPersonDumpRow, PersonDumpFileRow}
 import com.teletracker.tasks.scraper.IngestJobParser
-import com.teletracker.tasks.tmdb.export_tasks.{
-  MovieDumpFileRow,
-  PersonDumpFileRow
-}
 import com.teletracker.tasks.util.SourceRetriever
-import io.circe.Codec
-import io.circe.generic.JsonCodec
-import io.circe.generic.semiauto.deriveCodec
 import javax.inject.Inject
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
@@ -21,9 +13,6 @@ class MissingPeople @Inject()(
   sourceRetriever: SourceRetriever,
   ingestJobParser: IngestJobParser)
     extends TeletrackerTaskWithDefaultArgs {
-  implicit protected val tDecoder: Codec[MovieDumpFileRow] =
-    deriveCodec
-
   override protected def runInternal(args: Args): Unit = {
     val peopleExportFile = args.value[URI]("peopleExportFile").get
     val dbDumpFile = args.value[URI]("dbDumpFile").get

@@ -2,8 +2,7 @@ package com.teletracker.tasks.tmdb.fixers
 
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.tasks.general.BaseDiffTask
-import com.teletracker.tasks.model.EsPersonDumpRow
-import com.teletracker.tasks.tmdb.export_tasks.PersonDumpFileRow
+import com.teletracker.tasks.model.{EsPersonDumpRow, PersonDumpFileRow}
 import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext

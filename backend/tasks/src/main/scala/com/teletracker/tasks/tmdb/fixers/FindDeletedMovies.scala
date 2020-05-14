@@ -2,8 +2,7 @@ package com.teletracker.tasks.tmdb.fixers
 
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.tasks.general.BaseDiffTask
-import com.teletracker.tasks.model.EsItemDumpRow
-import com.teletracker.tasks.tmdb.export_tasks.MovieDumpFileRow
+import com.teletracker.tasks.model.{EsItemDumpRow, MovieDumpFileRow}
 import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
