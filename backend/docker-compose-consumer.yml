@@ -1,4 +1,4 @@
-version: '3.1'
+version: "3.1"
 
 services:
   consumer:
@@ -11,3 +11,6 @@ services:
       - .env
     volumes:
       - ~/.aws:/root/.aws
+    entrypoint:
+      - "/app/main.sh"
+      - "-mode=EsItemDenormalizeConsumer"

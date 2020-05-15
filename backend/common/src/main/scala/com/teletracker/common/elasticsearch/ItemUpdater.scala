@@ -1,7 +1,7 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.UserThingTagType
+import com.teletracker.common.db.model.{ItemType, UserThingTagType}
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{
   EsExternalId,
@@ -11,6 +11,7 @@ import com.teletracker.common.elasticsearch.model.{
   EsUserItemTag
 }
 import com.teletracker.common.monitoring.Timing
+import io.circe.Json
 import javax.inject.Inject
 import org.elasticsearch.action.DocWriteResponse
 import org.elasticsearch.action.bulk.BulkRequest
@@ -18,9 +19,13 @@ import org.elasticsearch.action.delete.{DeleteRequest, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.support.WriteRequest
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
+import org.elasticsearch.common.xcontent.json.{JsonXContent, JsonXContentParser}
 import org.elasticsearch.common.xcontent.{
+  DeprecationHandler,
+  NamedXContentRegistry,
   ToXContent,
   XContentHelper,
+  XContentParser,
   XContentType
 }
 import org.elasticsearch.index.query.QueryBuilders
@@ -225,6 +230,56 @@ class ItemUpdater @Inject()(
     } yield updateResp
   }
 
+  def updateFromJson(
+    id: UUID,
+    itemType: Option[ItemType],
+    json: Json
+  ): Future[UpdateResponse] = {
+    val externalIds = json.asObject
+      .flatMap(
+        obj =>
+          obj("external_ids")
+            .flatMap(_.asArray)
+            .map(_.toList.flatMap(_.asString))
+            .map(_.map(EsExternalId.parse))
+      )
+      .filter(_.nonEmpty)
+
+    val mappingsFut = for {
+      typ <- itemType
+      ids <- externalIds
+    } yield {
+      updateMappings(id, typ, ids)
+    }
+
+    val updateFut = elasticsearchExecutor.update(getUpdateRequest(id, json))
+
+    for {
+      _ <- mappingsFut.getOrElse(Future.unit)
+      updateResp <- updateFut
+    } yield updateResp
+  }
+
+  def updateWithScript(
+    id: UUID,
+    script: Json
+  ): Future[UpdateResponse] = {
+    val request = new UpdateRequest(
+      teletrackerConfig.elasticsearch.items_index_name,
+      id.toString
+    ).script(
+      Script.parse(
+        JsonXContent.jsonXContent.createParser(
+          NamedXContentRegistry.EMPTY,
+          DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+          script.deepDropNullValues.noSpaces
+        )
+      )
+    )
+
+    elasticsearchExecutor.update(request)
+  }
+
   def getUpdateJson(
     item: EsItem,
     pretty: Boolean = true
@@ -239,12 +294,19 @@ class ItemUpdater @Inject()(
       .utf8ToString
   }
 
-  private def getUpdateRequest(item: EsItem) = {
+  private def getUpdateRequest(item: EsItem): UpdateRequest = {
+    getUpdateRequest(item.id, item.asJson)
+  }
+
+  private def getUpdateRequest(
+    id: UUID,
+    json: Json
+  ): UpdateRequest = {
     new UpdateRequest(
       teletrackerConfig.elasticsearch.items_index_name,
-      item.id.toString
+      id.toString
     ).doc(
-      item.asJson.deepDropNullValues.noSpaces,
+      json.deepDropNullValues.noSpaces,
       XContentType.JSON
     )
   }
@@ -529,21 +591,29 @@ class ItemUpdater @Inject()(
     item.external_ids
       .filter(_.nonEmpty)
       .map(externalIds => {
-        val mappings = externalIds
-          .filter(isValidExternalIdForMapping)
-          .map(externalId => {
-            (externalId, item.`type`) -> item.id
-          })
-
-        idMappingLookup.mapExternalIds(mappings.toMap).recover {
-          case NonFatal(e) =>
-            logger.warn(
-              s"Error while attempting to map external Ids for id = ${item.id}",
-              e
-            )
-        }
+        updateMappings(item.id, item.`type`, externalIds)
       })
       .getOrElse(Future.unit)
+  }
+
+  private def updateMappings(
+    id: UUID,
+    itemType: ItemType,
+    externalIds: List[EsExternalId]
+  ): Future[Unit] = {
+    val mappings = externalIds
+      .filter(isValidExternalIdForMapping)
+      .map(externalId => {
+        (externalId, itemType) -> id
+      })
+
+    idMappingLookup.mapExternalIds(mappings.toMap).recover {
+      case NonFatal(e) =>
+        logger.warn(
+          s"Error while attempting to map external Ids for id = ${id}",
+          e
+        )
+    }
   }
 
   private def isValidExternalIdForMapping(externalId: EsExternalId) = {

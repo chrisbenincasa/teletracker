@@ -87,7 +87,7 @@ module "hulu-catalog-watcher" {
 
   extra_env_vars = {
     EXPECTED_SIZE  = 32
-    TASK_QUEUE_URL = aws_sqs_queue.teletracker-task-queue.id
+    TASK_QUEUE_URL = module.task-consumer.queue_id
     DATA_BUCKET    = aws_s3_bucket.teletracker-data-us-west-2.id
   }
 

@@ -25,7 +25,8 @@ case class CognitoConfig(
 
 case class AsyncConfig(
   taskQueue: QueueConfig,
-  esIngestQueue: QueueConfig)
+  esIngestQueue: QueueConfig,
+  esItemDenormalizationQueue: QueueConfig)
 
 case class QueueConfig(
   url: String,

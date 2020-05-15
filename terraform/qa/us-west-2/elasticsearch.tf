@@ -57,7 +57,6 @@ resource "aws_elasticsearch_domain_policy" "main" {
             "Action": "es:*",
             "Principal": {
                 "AWS": [
-                    "${aws_iam_role.es-ingest-lambda-iam-role.arn}",
                     "${data.aws_iam_role.ecs-fargate-task-role.arn}"
                 ]
             },

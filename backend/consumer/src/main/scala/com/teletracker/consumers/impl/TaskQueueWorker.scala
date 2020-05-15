@@ -1,14 +1,11 @@
 package com.teletracker.consumers.impl
 
-import com.teletracker.common.aws.sqs.{SqsFifoQueue, SqsQueue}
-import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
-import com.teletracker.consumers.{JobPool, TeletrackerTaskRunnable}
-import com.teletracker.consumers.config.ConsumerConfig
-import com.teletracker.common.util.Futures._
+import com.teletracker.common.aws.sqs.SqsFifoQueue
 import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig
 }
+import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
 import com.teletracker.common.tasks.Args
 import com.teletracker.common.tasks.TeletrackerTask.FailureResult
 import com.teletracker.common.tasks.storage.{
@@ -17,7 +14,10 @@ import com.teletracker.common.tasks.storage.{
   TaskRecordStore,
   TaskStatus
 }
-import com.teletracker.consumers.inject.TaskConsumerQueueConfig
+import com.teletracker.common.util.Futures._
+import com.teletracker.consumers.config.ConsumerConfig
+import com.teletracker.consumers.inject.QueueConfigAnnotations
+import com.teletracker.consumers.{JobPool, TeletrackerTaskRunnable}
 import com.teletracker.tasks.TeletrackerTaskRunner
 import javax.inject.Inject
 import java.util.UUID
@@ -26,7 +26,7 @@ import scala.util.control.NonFatal
 
 class TaskQueueWorker @Inject()(
   queue: SqsFifoQueue[TeletrackerTaskQueueMessage],
-  @TaskConsumerQueueConfig config: SqsQueueThroughputWorkerConfig,
+  @QueueConfigAnnotations.TaskConsumerQueueConfig config: SqsQueueThroughputWorkerConfig,
   taskRunner: TeletrackerTaskRunner,
   consumerConfig: ConsumerConfig,
   taskRecordStore: TaskRecordStore,
@@ -39,12 +39,6 @@ class TaskQueueWorker @Inject()(
 
   private val normalPool =
     new JobPool("NormalJobs", consumerConfig.max_regular_concurrent_jobs)
-
-  Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
-    override def run(): Unit = {
-      (needsTmdbPool.getPending ++ normalPool.getPending).map(_.originalMessage)
-    }
-  }))
 
   def getUnexecutedTasks: Iterable[TeletrackerTaskQueueMessage] = {
     (needsTmdbPool.getPending ++ normalPool.getPending).map(_.originalMessage)
@@ -127,6 +121,14 @@ class TaskQueueWorker @Inject()(
 
         Future.failed(e)
     }
+  }
+
+  override def stop(): Future[Unit] = {
+    super
+      .stop()
+      .flatMap(_ => {
+        requeueUnfinishedTasks().map(_ => {})
+      })
   }
 
   private def setTaskSuccessInStore(taskRecord: TaskRecord) = {

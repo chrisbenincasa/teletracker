@@ -101,6 +101,7 @@ abstract class UpdateItemPopularities[T <: TmdbDumpFileRow: Decoder](
         EsIngestUpdate(
           index = deps.teletrackerConfig.elasticsearch.items_index_name,
           id.toString,
+          Some(itemType),
           None,
           Some(Map("popularity" -> popularity).asJson)
         )
@@ -138,6 +139,7 @@ class UpdatePeoplePopularities @Inject()(
         EsIngestUpdate(
           index = deps.teletrackerConfig.elasticsearch.people_index_name,
           id.toString,
+          None,
           None,
           Some(Map("popularity" -> popularity).asJson)
         )

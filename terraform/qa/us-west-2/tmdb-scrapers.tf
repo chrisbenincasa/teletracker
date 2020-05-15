@@ -5,7 +5,7 @@ module "tmdb-changes-scraper" {
   function_name    = "tmdb-changes"
 
   extra_env_vars = {
-    TASK_QUEUE_URL = aws_sqs_queue.teletracker-task-queue.id
+    TASK_QUEUE_URL = module.task-consumer.queue_id
     DATA_BUCKET    = aws_s3_bucket.teletracker-data-us-west-2.id
   }
 
@@ -34,7 +34,7 @@ resource "aws_cloudwatch_event_rule" "tmdb-id-dump-event-rule" {
 }
 
 resource "aws_cloudwatch_event_target" "tmdb-id-dump-event-target" {
-  arn  = aws_sqs_queue.teletracker-task-queue.arn
+  arn  = module.task-consumer.queue_arn
   rule = aws_cloudwatch_event_rule.tmdb-id-dump-event-rule.name
   input = jsonencode({
     "clazz" = "com.teletracker.tasks.tmdb.DumpAllIds",
@@ -57,7 +57,7 @@ module "tmdb-popularity-scheduler" {
   create_default_trigger = false
 
   extra_env_vars = {
-    TASK_QUEUE_URL = aws_sqs_queue.teletracker-task-queue.id
+    TASK_QUEUE_URL = module.task-consumer.queue_id
     DATA_BUCKET    = aws_s3_bucket.teletracker-data-us-west-2.id
   }
 
