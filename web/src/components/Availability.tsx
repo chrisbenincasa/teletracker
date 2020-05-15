@@ -9,13 +9,14 @@ import {
 } from '@material-ui/core';
 import { TvOff } from '@material-ui/icons';
 import _ from 'lodash';
-import { ItemAvailability } from '../types/v2';
+import { ItemAvailability, ItemAvailabilityOffer } from '../types/v2';
 import { Item } from '../types/v2/Item';
 import { useNetworks } from '../hooks/useStateMetadata';
 import { deepLinkForId, Platform } from '../utils/availability-utils';
 import { OfferType } from '../types';
 import useStateSelector from '../hooks/useStateSelector';
 import selectItem from '../selectors/selectItem';
+import { collect } from '../utils/collection-utils';
 
 const useStyles = makeStyles((theme: Theme) => ({
   availabilityContainer: {
@@ -140,7 +141,15 @@ const Availability = (props: Props) => {
 
   console.log(firstAvailable);
 
-  const getDeepLink = (availability: ItemAvailability) => {
+  const getDeepLink = (
+    availability: ItemAvailability,
+    offers: ItemAvailabilityOffer[],
+  ) => {
+    const hardcodedLinks = collect(offers, offer => offer.links?.web);
+    if (hardcodedLinks.length > 0) {
+      return hardcodedLinks[0];
+    }
+
     const network = _.find(networks, { id: availability.networkId });
 
     if (network) {
@@ -201,7 +210,7 @@ const Availability = (props: Props) => {
               cleanOfferTitle = 'Watch all seasons on';
           }
 
-          const link = getDeepLink(availability);
+          const link = getDeepLink(availability, offersOfType);
 
           return (
             <a
