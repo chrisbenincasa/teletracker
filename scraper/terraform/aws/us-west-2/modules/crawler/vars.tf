@@ -26,3 +26,8 @@ variable "s3_directory" {
 variable "s3_path" {
   type = string
 }
+
+variable "schedule" {
+  type = list
+  default = []
+}

@@ -12,4 +12,7 @@ module "netflix_crawler" {
   spider_name = "netflix_spider"
   s3_directory = "netflix/direct"
   s3_path = "items.jsonlines"
+
+  # Every monday and the first of the month
+  schedule = ["0 7 ? * MON *", "0 7 1 * ? *"]
 }

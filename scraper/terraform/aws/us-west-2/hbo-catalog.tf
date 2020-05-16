@@ -12,4 +12,7 @@ module "hbo_crawler" {
   spider_name = "hbo"
   s3_directory = "hbo"
   s3_path = "catalog/items.jsonlines"
+
+  # Every monday and the first of the month
+  schedule = ["0 7 ? * MON *", "0 7 1 * ? *"]
 }

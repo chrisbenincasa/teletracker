@@ -12,4 +12,7 @@ module "hulu_crawler" {
   spider_name = "hulu"
   s3_directory = "hulu"
   s3_path = "direct/items.jsonlines"
+
+  # Every monday and the first of the month
+  schedule = ["0 7 ? * MON *", "0 7 1 * ? *"]
 }
