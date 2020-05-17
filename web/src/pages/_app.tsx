@@ -10,7 +10,7 @@ import * as ReactRedux from 'react-redux';
 import { Provider } from 'react-redux';
 import { Action, AnyAction, Store } from 'redux';
 import 'sanitize.css/sanitize.css';
-import { makeStore as createStore } from '../store';
+import createStore from '../store';
 import theme from '../theme';
 import { NextPageContext } from 'next';
 
