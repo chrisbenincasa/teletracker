@@ -17,9 +17,15 @@ import {
   Tooltip,
   Typography,
 } from '@material-ui/core';
-import { Delete, Edit, Public, Settings } from '@material-ui/icons';
+import {
+  Delete,
+  Edit,
+  OfflineBolt,
+  Public,
+  Settings,
+} from '@material-ui/icons';
 import _ from 'lodash';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { LIST_RETRIEVE_INITIATED, getList, updateList } from '../actions/lists';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ScrollToTopContainer from '../components/ScrollToTopContainer';
@@ -41,6 +47,13 @@ import { useNetworks } from '../hooks/useStateMetadata';
 import { FilterParams } from '../utils/searchFilters';
 import useMemoCompare from '../hooks/useMemoCompare';
 import { usePrevious } from '../hooks/usePrevious';
+import SmartListDialog from '../components/Dialogs/SmartListDialog';
+import PublicListDialog from '../components/Dialogs/PublicListDialog';
+
+interface ListDetailDialogProps {
+  list?: List;
+  openDeleteConfirmation: boolean;
+}
 
 interface ListDetailProps {
   readonly preloaded?: boolean;
@@ -54,6 +67,10 @@ function ListDetail(props: ListDetailProps) {
   const [deleted, setDeleted] = useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [publicListDialogOpen, setPublicListDialogOpen] = useState(false);
+  const [publicListOptionsOpen, setPublicListOptionsOpen] = useState(false);
+  const [smartListDialogOpen, setSmartListDialogOpen] = useState(false);
+  const [publicList, setPublicList] = useState(false);
   const [deleteOnWatch, setDeleteOnWatch] = useState(false);
   const [newListName, setNewListName] = useState('');
   const router = useRouter();
@@ -88,6 +105,24 @@ function ListDetail(props: ListDetailProps) {
   const dispatchUpdateList = useDispatchAction(updateList);
   const dispatchGetList = useDispatchAction(getList);
 
+  const handleModalClose = useCallback(() => {
+    setSmartListDialogOpen(false);
+    setPublicListDialogOpen(false);
+    setPublicListOptionsOpen(false);
+  }, []);
+
+  const openSmartListDialog = useCallback(() => {
+    setSmartListDialogOpen(true);
+  }, []);
+
+  const openPublicListDialog = useCallback(() => {
+    setPublicListDialogOpen(true);
+  }, []);
+
+  const openPublicListOptions = useCallback(() => {
+    setPublicListOptionsOpen(true);
+  }, []);
+
   const handleRenameList = () => {
     if (isLoggedIn) {
       dispatchUpdateList({
@@ -97,6 +132,17 @@ function ListDetail(props: ListDetailProps) {
     }
 
     setRenameDialogOpen(false);
+  };
+
+  const handleMakeListPublic = () => {
+    if (isLoggedIn) {
+      // dispatchUpdateList({
+      //   listId: listId,
+      //   name: newListName,
+      // });
+    }
+
+    setPublicListDialogOpen(false);
   };
 
   const handleRenameChange = event => {
@@ -224,6 +270,72 @@ function ListDetail(props: ListDetailProps) {
     );
   };
 
+  const renderMakeListPublic = (list: List) => {
+    if (!list) {
+      return;
+    }
+
+    return (
+      <div>
+        <Dialog
+          open={publicListOptionsOpen}
+          onClose={() => setPublicListDialogOpen(false)}
+          aria-labelledby="alert-dialog-public-list"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-public-list" className={classes.title}>
+            {`Make "${list?.name}" List Public?`}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Making this list public will allow anyone with the URL to view
+              your list.
+            </DialogContentText>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={list.isPublic}
+                  onChange={() => handleMakeListPublic()}
+                  value="checked"
+                  color="primary"
+                />
+              }
+              label="Public List"
+            />
+            <FormControl style={{ width: '100%' }}>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="name"
+                label="URL"
+                type="text"
+                fullWidth
+                value={window.location.href}
+                InputProps={{
+                  readOnly: true,
+                }}
+                className={classes.urlField}
+              />
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPublicListOptionsOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleMakeListPublic}
+              color="primary"
+              variant="contained"
+              autoFocus
+            >
+              Update
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
+    );
+  };
+
   const renderProfileMenu = () => {
     if (!isLoggedIn) {
       return null;
@@ -272,12 +384,18 @@ function ListDetail(props: ListDetailProps) {
                 <Switch
                   checked={deleteOnWatch}
                   onChange={setWatchedSetting}
-                  value="checkedB"
+                  value="checked"
                   color="primary"
                 />
               }
               label="Automatically remove items after watching"
             />
+          </MenuItem>
+          <MenuItem onClick={() => setPublicListOptionsOpen(true)}>
+            <ListItemIcon>
+              <Public />
+            </ListItemIcon>
+            {`Make list ${list.isPublic ? 'Private' : 'Public'}`}
           </MenuItem>
         </Menu>
       </div>
@@ -302,7 +420,16 @@ function ListDetail(props: ListDetailProps) {
                 {list.name}
                 {list.isPublic ? (
                   <Tooltip title="This list is public" placement="top">
-                    <Public />
+                    <IconButton onClick={openPublicListDialog} size="small">
+                      <Public className={classes.icon} />
+                    </IconButton>
+                  </Tooltip>
+                ) : null}
+                {list.isDynamic ? (
+                  <Tooltip title="This is a Smart List" placement="top">
+                    <IconButton onClick={openSmartListDialog} size="small">
+                      <OfflineBolt className={classes.icon} />
+                    </IconButton>
                   </Tooltip>
                 ) : null}
               </Typography>
@@ -318,7 +445,16 @@ function ListDetail(props: ListDetailProps) {
           list={list}
           openDeleteConfirmation={deleteConfirmationOpen}
         />
+        <SmartListDialog
+          open={smartListDialogOpen}
+          onClose={handleModalClose}
+        />
+        <PublicListDialog
+          open={publicListDialogOpen}
+          onClose={handleModalClose}
+        />
         {renderRenameDialog(list)}
+        {renderMakeListPublic(list)}
       </div>
     );
   };

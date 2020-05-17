@@ -21,6 +21,7 @@ import {
 import React, { ReactElement, useCallback, useEffect, useState } from 'react';
 import CreateListDialog from './Dialogs/CreateListDialog';
 import SmartListDialog from './Dialogs/SmartListDialog';
+import PublicListDialog from './Dialogs/PublicListDialog';
 import AuthDialog from './Auth/AuthDialog';
 import { ListsByIdMap } from '../reducers/lists';
 import { Loading } from '../reducers/user';
@@ -29,13 +30,15 @@ import _ from 'lodash';
 import Link from 'next/link';
 import {
   AddCircle,
-  FiberNew,
   Lock,
-  OfflineBolt,
   PersonAdd,
   PowerSettingsNew,
   Settings,
   TrendingUp,
+  Apps,
+  FiberNew,
+  OfflineBolt,
+  Public,
 } from '@material-ui/icons';
 import { useWidth } from '../hooks/useWidth';
 import { useIsSmallScreen } from '../hooks/useIsMobile';
@@ -70,6 +73,10 @@ const useStyles = makeStyles((theme: Theme) =>
       flexShrink: 0,
       width: DrawerWidthPx,
       zIndex: `${theme.zIndex.appBar - 1} !important` as any,
+    },
+    drawerIcon: {
+      width: 30,
+      height: 30,
     },
     fixedListItems: {
       width: '100%',
@@ -122,13 +129,15 @@ interface LinkProps {
   readonly index?: number;
   readonly key: number | string;
   readonly listLength: number;
-  readonly dynamic?: boolean;
+  readonly isDynamic?: boolean;
+  readonly isPublic?: boolean;
   readonly primary: string;
   readonly selected: boolean;
   readonly to: string;
   readonly as?: string;
   readonly onClick?: () => void;
   readonly onSmartListClick: () => void;
+  readonly onPublicListClick: () => void;
 }
 
 interface Props {
@@ -138,7 +147,7 @@ interface Props {
 
 const DrawerItemListLink = (props: LinkProps) => {
   const theme = useTheme();
-  const { index, primary, selected, listLength, dynamic } = props;
+  const { index, primary, selected, listLength, isDynamic, isPublic } = props;
 
   const backgroundColor =
     theme.palette.primary[index ? (index < 9 ? `${9 - index}00` : 100) : 900];
@@ -152,20 +161,26 @@ const DrawerItemListLink = (props: LinkProps) => {
   return (
     <Link href={props.to} as={props.as} passHref>
       <ListItem button onClick={handleClick} selected={selected}>
-        <ListItemAvatar>
-          <Avatar
-            style={{
-              backgroundColor,
-              width: 30,
-              height: 30,
-              fontSize: '1em',
-            }}
-          >
-            {listLength >= 100 ? '99+' : listLength}
-          </Avatar>
-        </ListItemAvatar>
-        {/*<Link href={props.to} as={props.as} passHref>*/}
-        {/*</Link>*/}
+        {isDynamic ? (
+          <Tooltip title={'Learn more about Smart Lists'} placement={'top'}>
+            <ListItemIcon onClick={() => props.onSmartListClick()}>
+              <OfflineBolt style={{ width: 30, height: 30 }} />
+            </ListItemIcon>
+          </Tooltip>
+        ) : (
+          <ListItemAvatar>
+            <Avatar
+              style={{
+                backgroundColor,
+                width: 30,
+                height: 30,
+                fontSize: '1em',
+              }}
+            >
+              {listLength >= 100 ? '99+' : listLength}
+            </Avatar>
+          </ListItemAvatar>
+        )}
         <ListItemText
           style={{
             whiteSpace: 'nowrap',
@@ -174,19 +189,17 @@ const DrawerItemListLink = (props: LinkProps) => {
           }}
           primary={primary}
         />
-        {dynamic && (
-          <Tooltip title={'Learn more about Smart Lists'} placement={'right'}>
-            <ListItemSecondaryAction>
-              <IconButton
-                edge="end"
-                aria-label="smart lists"
-                size="small"
-                onClick={() => props.onSmartListClick()}
-              >
-                <OfflineBolt />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </Tooltip>
+        {isPublic && (
+          <ListItemSecondaryAction>
+            <IconButton
+              edge="end"
+              aria-label="public lists"
+              size="small"
+              onClick={() => props.onPublicListClick()}
+            >
+              <Public />
+            </IconButton>
+          </ListItemSecondaryAction>
         )}
       </ListItem>
     </Link>
@@ -197,6 +210,7 @@ export default function Drawer(props: Props) {
   const classes = useStyles();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [smartListDialogOpen, setSmartListDialogOpen] = useState(false);
+  const [publicListDialogOpen, setPublicListDialogOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalScreen, setAuthModalScreen] = useState<
     'login' | 'signup' | undefined
@@ -291,10 +305,15 @@ export default function Drawer(props: Props) {
   const handleModalClose = useCallback(() => {
     setCreateDialogOpen(false);
     setSmartListDialogOpen(false);
+    setPublicListDialogOpen(false);
   }, []);
 
   const openSmartListDialog = useCallback(() => {
     setSmartListDialogOpen(true);
+  }, []);
+
+  const openPublicListDialog = useCallback(() => {
+    setPublicListDialogOpen(true);
   }, []);
 
   const renderListItems = (userList: ListType, index: number) => {
@@ -310,10 +329,12 @@ export default function Drawer(props: Props) {
         as={`/lists/${list.id}`}
         selected={listPath === router.pathname}
         primary={list.name}
-        dynamic={list.isDynamic}
+        isDynamic={list.isDynamic}
+        isPublic={list.isPublic}
         listLength={userList.totalItems}
         onClick={props.closeRequested}
         onSmartListClick={openSmartListDialog}
+        onPublicListClick={openPublicListDialog}
       />
     );
   };
@@ -378,7 +399,7 @@ export default function Drawer(props: Props) {
               </ListSubheader>
               <ListItem button onClick={handleModalOpen}>
                 <ListItemIcon>
-                  <AddCircle />
+                  <AddCircle className={classes.drawerIcon} />
                 </ListItemIcon>
                 <ListItemText>Create New List</ListItemText>
               </ListItem>
@@ -389,15 +410,15 @@ export default function Drawer(props: Props) {
         </List>
         {isLoggedIn ? (
           <List className={classes.fixedListItems}>
-            <ListItemLink
+            {/* <ListItemLink
               to="/account"
               primary="Settings"
               onClick={props.closeRequested}
               icon={<Settings />}
-            />
+            /> */}
             <ListItem button onClick={handleLogout}>
               <ListItemIcon>
-                <PowerSettingsNew />
+                <PowerSettingsNew className={classes.drawerIcon} />
               </ListItemIcon>
               <ListItemText>Logout</ListItemText>
             </ListItem>
@@ -406,13 +427,13 @@ export default function Drawer(props: Props) {
           <List>
             <ListItem button onClick={toggleLoginModal}>
               <ListItemIcon>
-                <Lock />
+                <Lock className={classes.drawerIcon} />
               </ListItemIcon>
               <ListItemText>Login</ListItemText>
             </ListItem>
             <ListItem button onClick={toggleSignupModal}>
               <ListItemIcon>
-                <PersonAdd />
+                <PersonAdd className={classes.drawerIcon} />
               </ListItemIcon>
               <ListItemText>Signup</ListItemText>
             </ListItem>
@@ -455,6 +476,10 @@ export default function Drawer(props: Props) {
         open={authModalOpen}
         onClose={toggleAuthModal}
         initialForm={authModalScreen}
+      />
+      <PublicListDialog
+        open={publicListDialogOpen}
+        onClose={handleModalClose}
       />
     </React.Fragment>
   );

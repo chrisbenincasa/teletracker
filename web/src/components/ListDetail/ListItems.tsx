@@ -6,7 +6,9 @@ import { CircularProgress, Grid, Typography } from '@material-ui/core';
 import ItemCard from '../ItemCard';
 import React, { useCallback, useContext, useEffect } from 'react';
 import useStyles from './ListDetail.styles';
-import useStateSelector, { useStateSelectorWithPrevious } from '../../hooks/useStateSelector';
+import useStateSelector, {
+  useStateSelectorWithPrevious,
+} from '../../hooks/useStateSelector';
 import selectList from '../../selectors/selectList';
 import { useDebouncedCallback } from 'use-debounce';
 import { LIST_RETRIEVE_INITIATED, getList } from '../../actions/lists';
@@ -32,7 +34,9 @@ export default function ListItems(props: Props) {
   const classes = useStyles();
   const width = useWidth();
 
-  const [list, previousList] = useStateSelectorWithPrevious(state => selectList(state, props.listId));
+  const [list, previousList] = useStateSelectorWithPrevious(state =>
+    selectList(state, props.listId),
+  );
   const listLoading = useStateSelector(
     state => state.lists.loading[LIST_RETRIEVE_INITIATED],
   );
@@ -49,8 +53,12 @@ export default function ListItems(props: Props) {
   const listBookmark = useStateSelector(
     state => state.lists?.current?.bookmark,
   );
-  const totalItemsForFilters = useStateSelector(state => state.lists?.current?.total);
-  const hasMoreItems = _.isUndefined(totalItemsForFilters) || listItems.length < totalItemsForFilters;
+  const totalItemsForFilters = useStateSelector(
+    state => state.lists?.current?.total,
+  );
+  const hasMoreItems =
+    _.isUndefined(totalItemsForFilters) ||
+    listItems.length < totalItemsForFilters;
 
   const currentFilterState = useStateSelector(state => state.lists.current);
   const { filters, defaultFilters, clearFilters } = useContext(FilterContext);
@@ -106,7 +114,7 @@ export default function ListItems(props: Props) {
     if (_.isUndefined(previousList) && !_.isUndefined(list)) {
       retrieveList(true);
     }
-  }, [list, previousList])
+  }, [list, previousList]);
 
   const renderNoContentMessage = (list: List) => {
     let notLoading = !listLoading && !listItemsLoading;
@@ -151,7 +159,7 @@ export default function ListItems(props: Props) {
                   itemId={item.id}
                   listContext={list}
                   withActionButton
-                  showDelete={!list.isDynamic}
+                  showDelete={!list.isDynamic && list.ownedByRequester}
                 />
               );
             })
