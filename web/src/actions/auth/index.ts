@@ -12,7 +12,8 @@ export * from './auth_with_google';
 export const USER_STATE_CHANGE = 'auth/USER_STATE_CHANGE';
 
 export interface UserStateChangePayload {
-  authenticated: boolean;
+  readonly authenticated: boolean;
+  readonly userId?: string;
 }
 
 export type UserStateChangeAction = FSA<

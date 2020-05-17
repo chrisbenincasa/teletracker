@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import Toolbar from '../components/Toolbar/Toolbar';
 import { LinearProgress, makeStyles, NoSsr, Theme } from '@material-ui/core';
-import Drawer from '../components/Drawer';
+import Drawer from '../components/Drawer2';
 import Footer from '../components/Footer';
-import { useRouter } from 'next/router';
 import { WithUser } from '../hooks/useWithUser';
 import useStateSelector from '../hooks/useStateSelector';
 import _ from 'lodash';
