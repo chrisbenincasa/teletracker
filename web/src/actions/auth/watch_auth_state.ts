@@ -16,7 +16,9 @@ export const initialAuthState = function*() {
       bypassCache: false,
     });
 
-    yield put(userStateChange({ authenticated: true }));
+    yield put(
+      userStateChange({ authenticated: true, userId: user.getUsername() }),
+    );
 
     let signInUserSession = user.getSignInUserSession();
     if (signInUserSession) {

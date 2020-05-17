@@ -1,63 +1,65 @@
-import React, { Component, ReactElement, ReactNode, RefObject } from 'react';
 import {
   Avatar,
-  Button,
   CircularProgress,
   createStyles,
   Divider,
   Drawer as DrawerUI,
+  IconButton,
   List,
   ListItem,
-  ListItemProps as MuiListItemProps,
   ListItemAvatar,
   ListItemIcon,
-  ListItemText,
   ListItemSecondaryAction,
+  ListItemText,
   ListSubheader,
-  IconButton,
+  makeStyles,
   Theme,
   Tooltip,
   Typography,
-  withStyles,
-  WithStyles,
-  withWidth,
+  useTheme,
 } from '@material-ui/core';
+import React, { ReactElement, useCallback, useEffect, useState } from 'react';
+import CreateListDialog from './Dialogs/CreateListDialog';
+import SmartListDialog from './Dialogs/SmartListDialog';
+import AuthDialog from './Auth/AuthDialog';
+import { ListsByIdMap } from '../reducers/lists';
+import { Loading } from '../reducers/user';
+import { List as ListType } from '../types';
+import _ from 'lodash';
+import Link from 'next/link';
 import {
   AddCircle,
+  FiberNew,
   Lock,
+  OfflineBolt,
   PersonAdd,
   PowerSettingsNew,
   Settings,
   TrendingUp,
-  Apps,
-  FiberNew,
-  OfflineBolt,
 } from '@material-ui/icons';
-import classNames from 'classnames';
-import _ from 'lodash';
-import { connect } from 'react-redux';
-import { bindActionCreators, Dispatch } from 'redux';
+import { useWidth } from '../hooks/useWidth';
+import { useIsSmallScreen } from '../hooks/useIsMobile';
+import { useRouter } from 'next/router';
+import { useWithUserContext } from '../hooks/useWithUser';
+import useStateSelector, {
+  useStateSelectorWithPrevious,
+} from '../hooks/useStateSelector';
+import selectMyLists from '../selectors/selectMyLists';
+import { ListItemProps as MuiListItemProps } from '@material-ui/core/ListItem/ListItem';
+import {
+  useDispatchAction,
+  useDispatchSideEffect,
+} from '../hooks/useDispatchAction';
 import { logout } from '../actions/auth';
 import {
   LIST_RETRIEVE_ALL_INITIATED,
-  ListRetrieveAllPayload,
   retrieveAllLists,
 } from '../actions/lists';
-import CreateListDialog from './Dialogs/CreateListDialog';
-import SmartListDialog from './Dialogs/SmartListDialog';
-import { AppState } from '../reducers';
-import { ListsByIdMap } from '../reducers/lists';
-import { Loading } from '../reducers/user';
-import { List as ListType } from '../types';
-import AuthDialog from './Auth/AuthDialog';
-import withRouter, { WithRouterProps } from 'next/dist/client/with-router';
-import Link from 'next/link';
-import RouterLink from './RouterLink';
+import { usePrevious } from '../hooks/usePrevious';
 
-// TODO: Adapt to screen size
 export const DrawerWidthPx = 250;
 
-const styles = (theme: Theme) =>
+const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     avatar: {
       width: 30,
@@ -104,210 +106,199 @@ const styles = (theme: Theme) =>
     iconSmall: {
       fontSize: 20,
     },
-  });
+  }),
+);
 
-interface OwnProps extends WithStyles<typeof styles> {
-  readonly listsById: ListsByIdMap;
-  readonly loadingLists: boolean;
-  readonly loading: Partial<Loading>;
+interface ListItemProps {
+  readonly to: string;
+  readonly primary?: string;
+  readonly selected?: boolean;
+  readonly onClick?: () => void;
+  readonly icon?: ReactElement;
+  readonly ListItemProps?: MuiListItemProps;
+}
+
+interface LinkProps {
+  readonly index?: number;
+  readonly key: number | string;
+  readonly listLength: number;
+  readonly dynamic?: boolean;
+  readonly primary: string;
+  readonly selected: boolean;
+  readonly to: string;
+  readonly as?: string;
+  readonly onClick?: () => void;
+  readonly onSmartListClick: () => void;
+}
+
+interface Props {
   readonly open: boolean;
-  readonly isLoggingIn: boolean;
   readonly closeRequested: () => void;
 }
 
-interface InjectedProps {
-  isAuthed: boolean;
-}
+const DrawerItemListLink = (props: LinkProps) => {
+  const theme = useTheme();
+  const { index, primary, selected, listLength, dynamic } = props;
 
-interface DispatchProps {
-  retrieveAllLists: (payload?: ListRetrieveAllPayload) => void;
-  logout: () => void;
-}
+  const backgroundColor =
+    theme.palette.primary[index ? (index < 9 ? `${9 - index}00` : 100) : 900];
 
-interface State {
-  createDialogOpen: boolean;
-  smartListDialogOpen: boolean;
-  authModalOpen: boolean;
-  authModalScreen?: 'login' | 'signup';
-  listsLoadedOnce: boolean;
-}
+  const handleClick = () => {
+    if (props.onClick) {
+      props.onClick();
+    }
+  };
 
-interface RouteParams {
-  id: string;
-  type: string;
-}
-
-interface WidthProps {
-  width: string;
-}
-
-type Props = OwnProps &
-  WithRouterProps &
-  DispatchProps &
-  WithStyles<typeof styles> &
-  InjectedProps &
-  WidthProps;
-
-interface LinkProps {
-  index?: number;
-  key: number | string;
-  listLength: number;
-  dynamic?: boolean;
-  primary: string;
-  selected: boolean;
-  to: string;
-  as?: string;
-  onClick?: () => void;
-  onSmartListClick: () => void;
-}
-
-interface ListItemProps {
-  to: string;
-  primary?: string;
-  selected?: boolean;
-  onClick?: () => void;
-  icon?: ReactElement;
-  ListItemProps?: MuiListItemProps;
-}
-
-// TODO: Get type definitions for props working
-const DrawerItemListLink = withStyles(styles, { withTheme: true })(
-  (props: LinkProps & WithStyles<typeof styles, true>) => {
-    const { index, primary, selected, listLength, dynamic } = props;
-
-    const backgroundColor =
-      props.theme.palette.primary[
-        index ? (index < 9 ? `${9 - index}00` : 100) : 900
-      ];
-
-    const handleClick = () => {
-      if (props.onClick) {
-        props.onClick();
-      }
-    };
-
-    return (
-      <Link href={props.to} as={props.as} passHref>
-        <ListItem button onClick={handleClick} selected={selected}>
-          <ListItemAvatar>
-            <Avatar
-              style={{
-                backgroundColor,
-                width: 30,
-                height: 30,
-                fontSize: '1em',
-              }}
-            >
-              {listLength >= 100 ? '99+' : listLength}
-            </Avatar>
-          </ListItemAvatar>
-          {/*<Link href={props.to} as={props.as} passHref>*/}
-          {/*</Link>*/}
-          <ListItemText
+  return (
+    <Link href={props.to} as={props.as} passHref>
+      <ListItem button onClick={handleClick} selected={selected}>
+        <ListItemAvatar>
+          <Avatar
             style={{
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              backgroundColor,
+              width: 30,
+              height: 30,
+              fontSize: '1em',
             }}
-            primary={primary}
-          />
-          {dynamic && (
-            <Tooltip title={'Learn more about Smart Lists'} placement={'right'}>
-              <ListItemSecondaryAction>
-                <IconButton
-                  edge="end"
-                  aria-label="smart lists"
-                  size="small"
-                  onClick={() => props.onSmartListClick()}
-                >
-                  <OfflineBolt />
-                </IconButton>
-              </ListItemSecondaryAction>
-            </Tooltip>
-          )}
-        </ListItem>
-      </Link>
-    );
-  },
-);
+          >
+            {listLength >= 100 ? '99+' : listLength}
+          </Avatar>
+        </ListItemAvatar>
+        {/*<Link href={props.to} as={props.as} passHref>*/}
+        {/*</Link>*/}
+        <ListItemText
+          style={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+          primary={primary}
+        />
+        {dynamic && (
+          <Tooltip title={'Learn more about Smart Lists'} placement={'right'}>
+            <ListItemSecondaryAction>
+              <IconButton
+                edge="end"
+                aria-label="smart lists"
+                size="small"
+                onClick={() => props.onSmartListClick()}
+              >
+                <OfflineBolt />
+              </IconButton>
+            </ListItemSecondaryAction>
+          </Tooltip>
+        )}
+      </ListItem>
+    </Link>
+  );
+};
 
-class Drawer extends Component<Props, State> {
-  state: State = {
-    createDialogOpen: false,
-    smartListDialogOpen: false,
-    authModalOpen: false,
-    authModalScreen: 'login',
-    listsLoadedOnce: false,
-  };
+export default function Drawer(props: Props) {
+  const classes = useStyles();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [smartListDialogOpen, setSmartListDialogOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalScreen, setAuthModalScreen] = useState<
+    'login' | 'signup' | undefined
+  >('login');
+  const lists = useStateSelector(selectMyLists);
+  const [listsLoadedOnce, setListsLoadedOnce] = useState(false);
 
-  componentDidMount() {
-    if (this.props.isAuthed) {
-      this.props.retrieveAllLists({ includeThings: false });
+  const { isLoggedIn } = useWithUserContext();
+  const wasLoggedIn = usePrevious(isLoggedIn);
+  const [isLoggingIn, wasLoggingIn] = useStateSelectorWithPrevious(
+    state => state.auth.isLoggingIn,
+  );
+
+  const [loadingLists, wasLoadingLists] = useStateSelectorWithPrevious(
+    state => state.lists.loading[LIST_RETRIEVE_ALL_INITIATED],
+  );
+
+  const width = useWidth();
+  const isSmallScreen = useIsSmallScreen();
+  const router = useRouter();
+
+  const dispatchLogout = useDispatchSideEffect(logout);
+  const dispatchRetrieveAllLists = useDispatchAction(retrieveAllLists);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      dispatchRetrieveAllLists({ includeThings: false });
     }
-  }
+  }, []);
 
-  componentDidUpdate(oldProps: Props) {
-    if (oldProps.isLoggingIn && !this.props.isLoggingIn) {
-      this.toggleAuthModal('login');
+  useEffect(() => {
+    if (wasLoggingIn && !isLoggingIn) {
+      toggleAuthModal('login');
     }
+  }, [isLoggingIn]);
 
-    if (!oldProps.isAuthed && this.props.isAuthed) {
-      this.props.retrieveAllLists({ includeThings: false });
-    }
-
+  useEffect(() => {
+    // Extra check for undefined here because we don't want this to fire on mount
+    // as usePrevious returned undefined on the first render
     if (
-      !this.state.listsLoadedOnce &&
-      oldProps.loadingLists &&
-      !this.props.loadingLists
+      !_.isUndefined(wasLoggedIn) &&
+      !wasLoggedIn &&
+      isLoggedIn &&
+      !loadingLists
     ) {
-      this.setState({
-        listsLoadedOnce: true,
-      });
+      dispatchRetrieveAllLists({ includeThings: false });
     }
-  }
+  }, [isLoggedIn, loadingLists]);
 
-  handleLogout = () => {
-    this.props.logout();
-    this.props.closeRequested();
+  useEffect(() => {
+    if (!listsLoadedOnce && wasLoadingLists && !loadingLists) {
+      setListsLoadedOnce(true);
+    }
+  }, [listsLoadedOnce, loadingLists]);
+
+  const handleLogout = useCallback(() => {
+    dispatchLogout();
+    props.closeRequested();
+  }, []);
+
+  const navigateSettings = () => {
+    props.closeRequested();
   };
 
-  navigateSettings = () => {
-    this.props.closeRequested();
-  };
-
-  toggleAuthModal = (initialForm?: 'login' | 'signup') => {
-    if (['xs', 'sm', 'md'].includes(this.props.width)) {
-      this.setState({
-        authModalOpen: false,
-        authModalScreen: undefined,
-      });
-      this.props.router.push(`/${initialForm}`);
+  const toggleAuthModal = (initialForm?: 'login' | 'signup') => {
+    if (isSmallScreen) {
+      setAuthModalOpen(false);
+      setAuthModalScreen(undefined);
+      router.push(`/${initialForm}`);
     } else {
-      this.setState({
-        authModalOpen: !this.state.authModalOpen,
-        authModalScreen: initialForm,
-      });
+      setAuthModalOpen(prev => !prev);
+      setAuthModalScreen(initialForm);
     }
   };
 
-  handleModalOpen = () => {
-    if (this.props.isAuthed) {
-      this.setState({ createDialogOpen: true });
+  const toggleLoginModal = useCallback(() => {
+    toggleAuthModal('login');
+  }, []);
+
+  const toggleSignupModal = useCallback(() => {
+    toggleAuthModal('signup');
+  }, []);
+
+  const handleModalOpen = useCallback(() => {
+    if (isLoggedIn) {
+      setCreateDialogOpen(true);
     } else {
-      this.toggleAuthModal('login');
+      toggleAuthModal('login');
     }
-  };
+  }, [isLoggedIn]);
 
-  handleModalClose = () => {
-    this.setState({
-      createDialogOpen: false,
-      smartListDialogOpen: false,
-    });
-  };
+  const handleModalClose = useCallback(() => {
+    setCreateDialogOpen(false);
+    setSmartListDialogOpen(false);
+  }, []);
 
-  renderListItems = (userList: ListType, index: number) => {
-    let { listsById } = this.props;
-    let listWithDetails = listsById[userList.id];
+  const openSmartListDialog = useCallback(() => {
+    setSmartListDialogOpen(true);
+  }, []);
+
+  const renderListItems = (userList: ListType, index: number) => {
+    let listWithDetails = lists[userList.id];
     let list = listWithDetails || userList;
     const listPath = `/lists/${list.id}`;
 
@@ -317,21 +308,19 @@ class Drawer extends Component<Props, State> {
         key={userList.id}
         to={`/lists/[id]?id=${list.id}`}
         as={`/lists/${list.id}`}
-        selected={listPath === this.props.router.pathname}
+        selected={listPath === router.pathname}
         primary={list.name}
         dynamic={list.isDynamic}
         listLength={userList.totalItems}
-        onClick={this.props.closeRequested}
-        onSmartListClick={() => this.setState({ smartListDialogOpen: true })}
+        onClick={props.closeRequested}
+        onSmartListClick={openSmartListDialog}
       />
     );
   };
 
-  renderDrawerContents() {
-    let { classes, isAuthed, listsById } = this.props;
-
+  const renderDrawerContents = () => {
     const sortedLists = _.sortBy(
-      _.values(listsById),
+      lists,
       list => (list.createdAt ? -new Date(list.createdAt) : null),
       list => (list.legacyId ? -list.legacyId : null),
       'id',
@@ -354,7 +343,7 @@ class Drawer extends Component<Props, State> {
       <React.Fragment>
         <div className={classes.toolbar} />
         <List className={classes.list}>
-          {['xs', 'sm', 'md'].includes(this.props.width) && (
+          {['xs', 'sm', 'md'].includes(width) && (
             <React.Fragment>
               <ListItemLink
                 to="/popular"
@@ -376,7 +365,7 @@ class Drawer extends Component<Props, State> {
               />
             </React.Fragment>
           )}
-          {isAuthed ? (
+          {isLoggedIn ? (
             <React.Fragment>
               <ListSubheader className={classes.listHeader}>
                 <Typography
@@ -387,27 +376,26 @@ class Drawer extends Component<Props, State> {
                   My Lists
                 </Typography>
               </ListSubheader>
-              <ListItem button onClick={this.handleModalOpen}>
+              <ListItem button onClick={handleModalOpen}>
                 <ListItemIcon>
                   <AddCircle />
                 </ListItemIcon>
                 <ListItemText>Create New List</ListItemText>
               </ListItem>
-              {_.map(sortedLists, this.renderListItems)}
-
+              {_.map(sortedLists, renderListItems)}
               <Divider />
             </React.Fragment>
           ) : null}
         </List>
-        {isAuthed ? (
+        {isLoggedIn ? (
           <List className={classes.fixedListItems}>
             <ListItemLink
               to="/account"
               primary="Settings"
-              onClick={this.props.closeRequested}
+              onClick={props.closeRequested}
               icon={<Settings />}
             />
-            <ListItem button onClick={this.handleLogout}>
+            <ListItem button onClick={handleLogout}>
               <ListItemIcon>
                 <PowerSettingsNew />
               </ListItemIcon>
@@ -416,13 +404,13 @@ class Drawer extends Component<Props, State> {
           </List>
         ) : (
           <List>
-            <ListItem button onClick={() => this.toggleAuthModal('login')}>
+            <ListItem button onClick={toggleLoginModal}>
               <ListItemIcon>
                 <Lock />
               </ListItemIcon>
               <ListItemText>Login</ListItemText>
             </ListItem>
-            <ListItem button onClick={() => this.toggleAuthModal('signup')}>
+            <ListItem button onClick={toggleSignupModal}>
               <ListItemIcon>
                 <PersonAdd />
               </ListItemIcon>
@@ -432,79 +420,42 @@ class Drawer extends Component<Props, State> {
         )}
       </React.Fragment>
     );
-  }
+  };
 
-  renderDrawer() {
-    let { classes, open } = this.props;
-
+  const renderDrawer = () => {
     return (
       <DrawerUI
-        open={open}
+        open={props.open}
         anchor="left"
         className={classes.drawer}
-        style={{ width: open ? 220 : 0 }}
+        style={{ width: props.open ? 220 : 0 }}
         ModalProps={{
-          onBackdropClick: this.props.closeRequested,
-          onEscapeKeyDown: this.props.closeRequested,
+          onBackdropClick: props.closeRequested,
+          onEscapeKeyDown: props.closeRequested,
         }}
         PaperProps={{
           style: { width: DrawerWidthPx },
         }}
       >
-        {this.isLoading() ? <CircularProgress /> : this.renderDrawerContents()}
+        {isLoading() ? <CircularProgress /> : renderDrawerContents()}
       </DrawerUI>
     );
-  }
-
-  isLoading() {
-    return this.props.loadingLists && !this.state.listsLoadedOnce;
-  }
-
-  render() {
-    return (
-      <React.Fragment>
-        {this.renderDrawer()}
-        <CreateListDialog
-          open={this.state.createDialogOpen}
-          onClose={this.handleModalClose.bind(this)}
-        />
-        <SmartListDialog
-          open={this.state.smartListDialogOpen}
-          onClose={this.handleModalClose.bind(this)}
-        />
-        <AuthDialog
-          open={this.state.authModalOpen}
-          onClose={() => this.toggleAuthModal()}
-          initialForm={this.state.authModalScreen}
-        />
-      </React.Fragment>
-    );
-  }
-}
-
-const mapStateToProps = (appState: AppState) => {
-  return {
-    isAuthed: !!appState.auth.token,
-    loadingLists:
-      appState.lists.operation.inProgress &&
-      appState.lists.operation.operationType === LIST_RETRIEVE_ALL_INITIATED,
-    listsById: appState.lists.listsById,
-    loading: appState.userSelf.loading,
-    isLoggingIn: appState.auth.isLoggingIn,
   };
-};
 
-const mapDispatchToProps = (dispatch: Dispatch) =>
-  bindActionCreators(
-    {
-      logout,
-      retrieveAllLists,
-    },
-    dispatch,
+  const isLoading = () => {
+    return loadingLists && !listsLoadedOnce;
+  };
+
+  return (
+    <React.Fragment>
+      {renderDrawer()}
+      <CreateListDialog open={createDialogOpen} onClose={handleModalClose} />
+      <SmartListDialog open={smartListDialogOpen} onClose={handleModalClose} />
+      <AuthDialog
+        open={authModalOpen}
+        onClose={toggleAuthModal}
+        initialForm={authModalScreen}
+      />
+    </React.Fragment>
   );
-
-export default withWidth()(
-  withStyles(styles, { withTheme: true })(
-    withRouter(connect(mapStateToProps, mapDispatchToProps)(Drawer)),
-  ),
-);
+}
