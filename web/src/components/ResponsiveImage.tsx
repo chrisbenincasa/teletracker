@@ -145,6 +145,9 @@ const ResponsiveImage = ({
   };
 
   const renderPlaceholder = () => {
+    // Allow placeholder to fade in
+    handleOnLoad();
+
     return (
       <div className={classes.fallbackImageWrapper} style={imageStyle}>
         <Icon className={classes.fallbackImageIcon} fontSize="inherit">
