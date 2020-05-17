@@ -56,7 +56,7 @@ resource "aws_cloudwatch_event_rule" "cw_schedule" {
 resource "aws_cloudwatch_event_target" "cw_scheduled_task" {
   count = length(var.schedule)
 
-  target_id = "run-scheduled-task-every-hour"
+  target_id = "${var.spider_name}_schedule_${count.index}"
   arn       = data.aws_ecs_cluster.main_cluster.arn
   rule      = aws_cloudwatch_event_rule.cw_schedule[count.index].name
   role_arn  = aws_iam_role.ecs_events[0].arn
@@ -66,9 +66,9 @@ resource "aws_cloudwatch_event_target" "cw_scheduled_task" {
     task_definition_arn = aws_ecs_task_definition.crawler_task_def.arn
 
     network_configuration {
-      subnets = data.aws_subnet_ids.teletracker-subnet-ids
+      subnets = toset(data.aws_subnet_ids.teletracker-subnet-ids.*.id)
       assign_public_ip = false
-      security_groups = aws_security_group.crawler_sg.arn
+      security_groups = toset([aws_security_group.crawler_sg.arn])
     }
   }
 }
