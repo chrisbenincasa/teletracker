@@ -150,7 +150,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     opacity: 1.0,
   },
   statusIconDisabled: {
-    opacity: 0.4,
+    opacity: 0.5,
     '&:hover': {
       opacity: 1.0,
     },
