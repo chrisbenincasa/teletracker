@@ -14,5 +14,5 @@ module "netflix_crawler" {
   s3_path = "items.jsonlines"
 
   # Every monday and the first of the month
-  schedule = ["cron(0 7 ? * MON *)", "cron(0 7 1 * ? *)"]
+  schedule = ["cron(0 7 ? * */3 *)", "cron(0 7 1 * ? *)"]
 }

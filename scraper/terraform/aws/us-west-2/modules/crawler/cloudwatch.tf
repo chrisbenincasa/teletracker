@@ -64,6 +64,8 @@ resource "aws_cloudwatch_event_target" "cw_scheduled_task" {
   ecs_target {
     task_count          = 1
     task_definition_arn = aws_ecs_task_definition.crawler_task_def.arn
+    launch_type = "FARGATE"
+    platform_version = "1.3.0"
 
     network_configuration {
       subnets = toset(data.aws_subnet_ids.teletracker-subnet-ids.*.id)

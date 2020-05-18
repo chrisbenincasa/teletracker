@@ -13,6 +13,6 @@ module "hbo_crawler" {
   s3_directory = "hbo"
   s3_path = "catalog/items.jsonlines"
 
-  # Every monday and the first of the month
-  schedule = ["cron(0 7 ? * MON *)", "cron(0 7 1 * ? *)"]
+  # Every 3rd day and the first of the month
+  schedule = ["cron(0 7 ? * */3 *)", "cron(0 7 1 * ? *)"]
 }

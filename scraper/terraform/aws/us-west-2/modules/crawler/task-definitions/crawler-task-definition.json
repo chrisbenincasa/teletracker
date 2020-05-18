@@ -11,7 +11,7 @@
         "awslogs-group": "${spider_name}_crawler",
         "awslogs-region": "us-west-2",
         "awslogs-stream-prefix": "${spider_name}_crawler",
-        "awslogs-create-group": true
+        "awslogs-create-group": "true"
       }
     },
     "command": [
