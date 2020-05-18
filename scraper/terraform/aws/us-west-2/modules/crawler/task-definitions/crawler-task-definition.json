@@ -1,0 +1,25 @@
+[
+  {
+    "name": "${name}",
+    "image": "${image}:${version}",
+    "cpu": 256,
+    "memory": 512,
+    "essential": true,
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "${spider_name}_crawler",
+        "awslogs-region": "us-west-2",
+        "awslogs-stream-prefix": "${spider_name}_crawler",
+        "awslogs-create-group": true
+      }
+    },
+    "command": [
+      "./run_spider.sh",
+      "${spider_name}",
+      "${s3_directory}",
+      "${s3_subdirectory}:${output_format}"
+    ],
+    "memoryReservation": 100
+  }
+]

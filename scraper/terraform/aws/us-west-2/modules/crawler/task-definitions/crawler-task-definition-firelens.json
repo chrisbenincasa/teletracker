@@ -1,0 +1,52 @@
+[
+  {
+    "essential": true,
+    "image": "906394416424.dkr.ecr.us-west-2.amazonaws.com/aws-for-fluent-bit:latest",
+    "name": "log_router",
+    "firelensConfiguration": {
+      "type": "fluentbit",
+      "options": {
+        "enable-ecs-log-metadata": "true",
+        "config-file-type": "file",
+        "config-file-value": "/fluent-bit/configs/parse-json.conf"
+      }
+    },
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "firelens-container",
+        "awslogs-region": "us-west-2",
+        "awslogs-create-group": "true",
+        "awslogs-stream-prefix": "firelens"
+      }
+    },
+    "memoryReservation": 50
+  },
+  {
+    "name": "${name}",
+    "image": "${image}:${version}",
+    "cpu": 256,
+    "memory": 512,
+    "essential": true,
+    "logConfiguration": {
+      "logDriver": "awsfirelens",
+      "options": {
+        "Name": "datadog",
+        "apikey": "${datadog_api_key}",
+        "Host": "http-intake.logs.datadoghq.com",
+        "dd_service": "${service_name}",
+        "dd_source": "python",
+        "dd_message_key": "log",
+        "provider": "ecs",
+        "TLS": "on"
+      }
+    },
+    "command": [
+      "./run_spider.sh",
+      "${spider_name}",
+      "${s3_directory}",
+      "${s3_subdirectory}:${output_format}"
+    ],
+    "memoryReservation": 100
+  }
+]
