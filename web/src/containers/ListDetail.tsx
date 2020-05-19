@@ -548,7 +548,7 @@ function ListDetail(props: ListDetailProps) {
                 {list.name}
                 {list.isPublic ? (
                   <Tooltip title="This list is public" placement="top">
-                    <IconButton onClick={openPublicListDialog} size="small" gst>
+                    <IconButton onClick={openPublicListDialog} size="small">
                       <Public className={classes.icon} />
                     </IconButton>
                   </Tooltip>
