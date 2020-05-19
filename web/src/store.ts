@@ -19,35 +19,25 @@ if (env === 'development' && isClient) {
   }
 }
 
-export function makeStore(initialState) {
+export default function makeStore(initialState) {
   const sagaMiddleware = createSagaMiddleware();
 
   const store = configureStore({
     reducer: createRootReducer(),
-    middleware: [...getDefaultMiddleware(), sagaMiddleware],
+    middleware: [
+      ...getDefaultMiddleware({
+        immutableCheck: false,
+        serializableCheck: false,
+      }),
+      sagaMiddleware,
+    ],
     preloadedState: initialState,
+    devTools: {
+      trace: true,
+    },
   });
 
   sagaMiddleware.run(root);
 
   return store;
 }
-
-export default initialState => {
-  const reducerWithHistory = createRootReducer();
-  const sagaMiddleware = createSagaMiddleware();
-  const composedEnhancers = compose(
-    applyMiddleware(sagaMiddleware),
-    ...enhancers,
-  );
-
-  const store = createStore(
-    reducerWithHistory,
-    initialState,
-    composedEnhancers,
-  );
-
-  sagaMiddleware.run(root);
-
-  return { store };
-};

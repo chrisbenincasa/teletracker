@@ -14,6 +14,7 @@ import { createReducer } from '@reduxjs/toolkit';
 
 export interface UserState extends Partial<User> {
   readonly fetching: boolean;
+  readonly userId?: string;
   readonly token?: string;
   readonly error: boolean;
 }
@@ -40,6 +41,15 @@ export default createReducer(initialState, builder => {
   builder.addCase(userStateChange, (state, action) => {
     state.isLoggedIn = action.payload.authenticated;
     state.checkingAuth = false;
+    if (!state.user) {
+      state.user = {
+        fetching: false,
+        error: false,
+        userId: action.payload.userId,
+      };
+    } else {
+      state.user.userId = action.payload.userId;
+    }
   });
 
   builder.addCase(signupInitiated, state => {

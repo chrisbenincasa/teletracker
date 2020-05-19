@@ -21,9 +21,10 @@ import {
   Switch,
   TextField,
   Theme,
+  Tooltip,
   Typography,
 } from '@material-ui/core';
-import { Delete, Edit, Settings } from '@material-ui/icons';
+import { Delete, Edit, Public, Settings } from '@material-ui/icons';
 import _ from 'lodash';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
@@ -585,6 +586,11 @@ function ListDetail(props: ListDetailProps) {
                 className={classes.listName}
               >
                 {list.name}
+                {list.isPublic ? (
+                  <Tooltip title="This list is public" placement="top">
+                    <Public />
+                  </Tooltip>
+                ) : null}
               </Typography>
             </div>
             <ShowFiltersButton onClick={toggleFilters} />
