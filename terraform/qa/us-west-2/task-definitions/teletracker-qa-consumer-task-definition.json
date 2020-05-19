@@ -24,20 +24,8 @@
         "value": "443"
       },
       {
-        "name": "JWT_SECRET",
-        "value": "60d434edf5cba8bb3f2bed7646a0729cb1a9aea053c8715dc6b5ad97c10c7473"
-      },
-      {
         "name": "ES_HOST",
         "value": "search-teletracker-qa-igmliq26kf3wlgxlrihy2bqfuu.us-west-2.es.amazonaws.com"
-      },
-      {
-        "name": "TMDB_API_KEY",
-        "value": "f702b0991c1191d6dbd370b688ff780c"
-      },
-      {
-        "name": "DB_HOST",
-        "value": "teletracker-qa.ch00roo5aywx.us-west-1.rds.amazonaws.com"
       },
       {
         "name": "ADMINISTRATOR_KEY",
@@ -50,8 +38,8 @@
     ],
     "secrets": [
       {
-        "name": "DB_PASSWORD",
-        "valueFrom": "arn:aws:ssm:us-west-2:302782651551:parameter/teletracker-qa-db-password"
+        "name": "TMDB_API_KEY",
+        "valueFrom": "arn:aws:ssm:us-west-2:302782651551:parameter/tmdb-api-key-qa"
       },
       {
         "name": "ES_PASSWORD",
