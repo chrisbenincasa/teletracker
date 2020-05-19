@@ -7,9 +7,9 @@ import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorkerConfig
 }
 import com.teletracker.common.elasticsearch.denorm.DenormalizedItemUpdater
+import com.teletracker.common.inject.QueueConfigAnnotations
 import com.teletracker.common.pubsub.EsDenormalizeItemMessage
 import com.teletracker.common.tasks.model.DenormalizeItemTaskArgs
-import com.teletracker.consumers.inject.QueueConfigAnnotations
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal

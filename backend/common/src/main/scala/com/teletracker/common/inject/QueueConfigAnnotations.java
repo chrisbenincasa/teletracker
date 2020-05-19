@@ -1,4 +1,4 @@
-package com.teletracker.consumers.inject;
+package com.teletracker.common.inject;
 
 import com.google.inject.BindingAnnotation;
 

@@ -26,6 +26,13 @@ object StringListOrString {
   }
 }
 
-trait StringListOrString {
+trait StringListOrString extends Equals {
   def get: List[String]
+
+  override def canEqual(that: Any): Boolean =
+    that.isInstanceOf[StringListOrString]
+
+  override def equals(obj: Any): Boolean = canEqual(obj) && {
+    obj.asInstanceOf[StringListOrString].get.equals(this.get)
+  }
 }

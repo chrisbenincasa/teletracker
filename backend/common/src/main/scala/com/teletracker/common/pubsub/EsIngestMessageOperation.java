@@ -1,7 +1,8 @@
 package com.teletracker.common.pubsub;
 
 public enum EsIngestMessageOperation {
-    Update("update");
+    Update("update"),
+    Index("index");
 
     private final String op;
 

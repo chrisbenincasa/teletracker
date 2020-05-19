@@ -35,7 +35,8 @@ class ImportMoviesFromDump @Inject()(
         MovieImportHandlerArgs(
           forceDenorm = false,
           dryRun = args.dryRun,
-          insertsOnly = args.insertsOnly
+          insertsOnly = args.insertsOnly,
+          async = true
         ),
         item
       )

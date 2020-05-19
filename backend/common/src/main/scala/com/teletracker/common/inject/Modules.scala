@@ -13,7 +13,8 @@ object Modules {
       new CacheModule,
       new CodahaleMetricsModule,
       new ElasticsearchModule,
-      new AwsModule
+      new AwsModule,
+      new QueuesModule
     )
   }
 }

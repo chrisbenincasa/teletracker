@@ -14,6 +14,7 @@ class ImportSpecificMovie @Inject()(
   override protected def runInternal(args: Args): Unit = {
     val id = args.valueOrThrow[Int]("id")
     val forceDenorm = args.valueOrDefault("forceDenorm", false)
+    val async = args.valueOrDefault("async", false)
     val dryRun = args.valueOrDefault[Boolean]("dryRun", true)
 
     itemExpander
@@ -21,7 +22,11 @@ class ImportSpecificMovie @Inject()(
       .flatMap(movie => {
         movieImportHandler.insertOrUpdate(
           MovieImportHandler
-            .MovieImportHandlerArgs(forceDenorm = forceDenorm, dryRun = dryRun),
+            .MovieImportHandlerArgs(
+              forceDenorm = forceDenorm,
+              dryRun = dryRun,
+              async = async
+            ),
           movie
         )
       })

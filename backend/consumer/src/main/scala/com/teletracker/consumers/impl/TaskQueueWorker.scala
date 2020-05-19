@@ -5,6 +5,7 @@ import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig
 }
+import com.teletracker.common.inject.QueueConfigAnnotations
 import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
 import com.teletracker.common.tasks.Args
 import com.teletracker.common.tasks.TeletrackerTask.FailureResult
@@ -16,7 +17,6 @@ import com.teletracker.common.tasks.storage.{
 }
 import com.teletracker.common.util.Futures._
 import com.teletracker.consumers.config.ConsumerConfig
-import com.teletracker.consumers.inject.QueueConfigAnnotations
 import com.teletracker.consumers.{JobPool, TeletrackerTaskRunnable}
 import com.teletracker.tasks.TeletrackerTaskRunner
 import javax.inject.Inject

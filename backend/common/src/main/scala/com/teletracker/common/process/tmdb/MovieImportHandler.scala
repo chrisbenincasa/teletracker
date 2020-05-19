@@ -2,58 +2,50 @@ package com.teletracker.common.process.tmdb
 
 import cats.implicits._
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.tasks.model.DenormalizeItemTaskArgs
 import com.teletracker.common.elasticsearch._
+import com.teletracker.common.elasticsearch.async.EsIngestQueue
 import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
-import com.teletracker.common.elasticsearch.model.{
-  EsExternalId,
-  EsGenre,
-  EsItem,
-  EsItemAlternativeTitle,
-  EsItemCastMember,
-  EsItemCrewMember,
-  EsItemRecommendation,
-  EsItemReleaseDate,
-  EsPerson,
-  StringListOrString
-}
+import com.teletracker.common.elasticsearch.model._
 import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.{Movie, MovieCountryRelease}
 import com.teletracker.common.process.tmdb.MovieImportHandler.{
   MovieImportHandlerArgs,
   MovieImportResult
 }
-import com.teletracker.common.pubsub.{TaskScheduler, TaskTag}
+import com.teletracker.common.pubsub.{EsIngestItemDenormArgs, TaskScheduler}
 import com.teletracker.common.tasks.TaskMessageHelper
-import com.teletracker.common.tasks.model.TeletrackerTaskIdentifier
-import com.teletracker.common.util.Movies._
-import com.teletracker.common.util.Tuples._
+import com.teletracker.common.tasks.model.{
+  DenormalizeItemTaskArgs,
+  TeletrackerTaskIdentifier
+}
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.util.Lists._
+import com.teletracker.common.util.Movies._
 import com.teletracker.common.util.{GenreCache, Slug}
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
 import scala.util.control.NonFatal
+import scala.util.{Success, Try}
 
 object MovieImportHandler {
   case class MovieImportHandlerArgs(
     forceDenorm: Boolean,
     dryRun: Boolean,
     insertsOnly: Boolean = false,
-    verbose: Boolean = true)
+    verbose: Boolean = true,
+    async: Boolean = false)
 
   case class MovieImportResult(
     itemId: UUID,
     itemIsNew: Boolean,
+    itemChanged: Boolean,
     inserted: Boolean,
     updated: Boolean,
     castNeedsDenorm: Boolean,
     crewNeedsDenorm: Boolean,
-    itemChanged: Boolean,
+    queued: Boolean,
     jsonResult: Option[String])
 }
 
@@ -63,7 +55,8 @@ class MovieImportHandler @Inject()(
   itemUpdater: ItemUpdater,
   personLookup: PersonLookup,
   creditsDenormalizer: ItemCreditsDenormalizationHelper,
-  taskScheduler: TaskScheduler
+  taskScheduler: TaskScheduler,
+  itemUpdateQueue: EsIngestQueue
 )(implicit executor: ExecutionContext) {
   import diffson._
   import diffson.circe._
@@ -169,7 +162,8 @@ class MovieImportHandler @Inject()(
               castNeedsDenorm = false,
               crewNeedsDenorm = false,
               itemChanged = false,
-              jsonResult = None
+              jsonResult = None,
+              queued = false
             )
           )
 
@@ -178,7 +172,7 @@ class MovieImportHandler @Inject()(
       }
       .through {
         case Success(result)
-            if !args.dryRun && (args.forceDenorm || result.itemChanged) =>
+            if !args.dryRun && !args.async && (args.forceDenorm || result.itemChanged) =>
           logger.debug(
             s"Scheduling denormalization task item id = ${result.itemId}"
           )
@@ -378,24 +372,55 @@ class MovieImportHandler @Inject()(
             castNeedsDenorm = castNeedsDenorm,
             crewNeedsDenorm = crewNeedsDenorm,
             itemChanged = itemChanged,
-            jsonResult = changeJson
+            jsonResult = changeJson,
+            queued = false
           )
         }
       } else if (itemChanged) {
-        itemUpdater
-          .update(updatedItem)
-          .map(_ => {
-            MovieImportResult(
-              itemId = existingMovie.id,
-              itemIsNew = false,
-              inserted = false,
-              updated = true,
-              castNeedsDenorm = castNeedsDenorm,
-              crewNeedsDenorm = crewNeedsDenorm,
-              itemChanged = itemChanged,
-              jsonResult = Some(itemUpdater.getUpdateJson(updatedItem))
+        if (args.async) {
+          itemUpdateQueue
+            .queueItemUpdate(
+              id = updatedItem.id,
+              itemType = updatedItem.`type`,
+              doc = updatedItem.asJson,
+              denorm = Some(
+                EsIngestItemDenormArgs(
+                  needsDenorm = true,
+                  cast = castNeedsDenorm,
+                  crew = crewNeedsDenorm
+                )
+              )
             )
-          })
+            .map(_ => {
+              MovieImportResult(
+                itemId = existingMovie.id,
+                itemIsNew = false,
+                inserted = false,
+                updated = true,
+                castNeedsDenorm = castNeedsDenorm,
+                crewNeedsDenorm = crewNeedsDenorm,
+                itemChanged = itemChanged,
+                jsonResult = Some(itemUpdater.getUpdateJson(updatedItem)),
+                queued = true
+              )
+            })
+        } else {
+          itemUpdater
+            .update(updatedItem)
+            .map(_ => {
+              MovieImportResult(
+                itemId = existingMovie.id,
+                itemIsNew = false,
+                inserted = false,
+                updated = true,
+                castNeedsDenorm = castNeedsDenorm,
+                crewNeedsDenorm = crewNeedsDenorm,
+                itemChanged = itemChanged,
+                jsonResult = Some(itemUpdater.getUpdateJson(updatedItem)),
+                queued = false
+              )
+            })
+        }
       } else {
         logger.info(s"Skipped no-op on item ${existingMovie.id}")
         Future.successful {
@@ -407,7 +432,8 @@ class MovieImportHandler @Inject()(
             castNeedsDenorm = castNeedsDenorm,
             crewNeedsDenorm = crewNeedsDenorm,
             itemChanged = false,
-            jsonResult = None
+            jsonResult = None,
+            queued = false
           )
         }
       }
@@ -507,24 +533,44 @@ class MovieImportHandler @Inject()(
             castNeedsDenorm = true,
             crewNeedsDenorm = true,
             itemChanged = true,
-            jsonResult = Some(itemUpdater.getInsertJson(esItem))
+            jsonResult = Some(itemUpdater.getInsertJson(esItem)),
+            queued = false
           )
         }
       } else {
-        itemUpdater
-          .insert(esItem)
-          .map(_ => {
-            MovieImportResult(
-              itemId = esItem.id,
-              itemIsNew = true,
-              inserted = true,
-              updated = false,
-              castNeedsDenorm = true,
-              crewNeedsDenorm = true,
-              itemChanged = true,
-              jsonResult = Some(itemUpdater.getInsertJson(esItem))
-            )
-          })
+        if (args.async) {
+          itemUpdateQueue
+            .queueItemInsert(esItem)
+            .map(_ => {
+              MovieImportResult(
+                itemId = esItem.id,
+                itemIsNew = true,
+                inserted = true,
+                updated = false,
+                castNeedsDenorm = true,
+                crewNeedsDenorm = true,
+                itemChanged = true,
+                jsonResult = Some(itemUpdater.getInsertJson(esItem)),
+                queued = true
+              )
+            })
+        } else {
+          itemUpdater
+            .insert(esItem)
+            .map(_ => {
+              MovieImportResult(
+                itemId = esItem.id,
+                itemIsNew = true,
+                inserted = true,
+                updated = false,
+                castNeedsDenorm = true,
+                crewNeedsDenorm = true,
+                itemChanged = true,
+                jsonResult = Some(itemUpdater.getInsertJson(esItem)),
+                queued = false
+              )
+            })
+        }
       }
     }
 

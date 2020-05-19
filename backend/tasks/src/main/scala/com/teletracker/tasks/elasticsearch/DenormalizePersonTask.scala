@@ -101,7 +101,7 @@ class DenormalizePersonTask @Inject()(
                     .map(id => {
                       item.`type` match {
                         case ItemType.Movie =>
-                          logger.info(
+                          logger.debug(
                             s"Looking up movie (${item.original_title}) in tmdb"
                           )
                           itemExpander
@@ -111,7 +111,7 @@ class DenormalizePersonTask @Inject()(
                                 .flatMap(handleRawTvCredits(person, item, _))
                             )
                         case ItemType.Show =>
-                          logger.info(
+                          logger.debug(
                             s"Looking up show (${item.original_title}) in tmdb"
                           )
                           itemExpander
@@ -121,7 +121,9 @@ class DenormalizePersonTask @Inject()(
                                 .flatMap(handleRawTvCredits(person, item, _))
                             )
                         case ItemType.Person =>
-                          throw new IllegalStateException()
+                          throw new IllegalStateException(
+                            "Can't denormalize from person to person"
+                          )
                       }
                     })
                     .getOrElse(Future.successful(None))

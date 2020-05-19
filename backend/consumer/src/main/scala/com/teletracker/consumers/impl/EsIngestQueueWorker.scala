@@ -7,13 +7,21 @@ import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorkerConfig
 }
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
+import com.teletracker.common.elasticsearch.model.{
+  EsExternalId,
+  EsItem,
+  EsPerson
+}
 import com.teletracker.common.elasticsearch.{ItemUpdater, PersonUpdater}
 import com.teletracker.common.pubsub.{
+  EsDenormalizeItemMessage,
+  EsIngestIndex,
   EsIngestMessage,
   EsIngestMessageOperation,
   EsIngestUpdate
 }
-import com.teletracker.consumers.inject.QueueConfigAnnotations.EsIngestQueueConfig
+import com.teletracker.common.inject.QueueConfigAnnotations.EsIngestQueueConfig
 import javax.inject.Inject
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,7 +32,9 @@ class EsIngestQueueWorker @Inject()(
   @EsIngestQueueConfig config: SqsQueueThroughputWorkerConfig,
   itemUpdater: ItemUpdater,
   personUpdater: PersonUpdater,
-  teletrackerConfig: TeletrackerConfig
+  teletrackerConfig: TeletrackerConfig,
+  denormQueue: SqsFifoQueue[EsDenormalizeItemMessage],
+  mappingStore: ElasticsearchExternalIdMappingStore
 )(implicit executionContext: ExecutionContext)
     extends SqsQueueThroughputWorker[EsIngestMessage](queue, config) {
   override protected def process(msg: EsIngestMessage): FutureOption[String] = {
@@ -39,6 +49,86 @@ class EsIngestQueueWorker @Inject()(
               logger.error("Encountered error while processing", e)
               None
           }
+
+      case EsIngestMessageOperation.Index =>
+        msg.index
+          .map(handleIndex)
+          .getOrElse(Future.unit)
+          .map(_ => msg.receiptHandle)
+          .recover {
+            case NonFatal(e) =>
+              logger.error("Encountered error while processing", e)
+              None
+          }
+    }
+  }
+
+  private def handleIndex(index: EsIngestIndex) = {
+    require(
+      isValidIndex(index.index),
+      s"Invalid index found: ${index.index} when attempting to index item: ${index.id}"
+    )
+
+    if (teletrackerConfig.elasticsearch.items_index_name == index.index) {
+      index.doc.as[EsItem] match {
+        case Left(value) =>
+          logger.error("Could not parse EsItem from json", value)
+          Future.unit
+
+        case Right(value) =>
+          itemUpdater.insert(value).flatMap {
+            case _ if index.externalIdMappings.exists(_.nonEmpty) =>
+              val ids =
+                index.externalIdMappings
+                  .getOrElse(Set.empty)
+                  .toList
+                  .map(
+                    mapping => {
+                      (
+                        EsExternalId(mapping.source, mapping.id),
+                        mapping.itemType
+                      ) -> value.id
+                    }
+                  )
+                  .toMap
+
+              mappingStore.mapExternalIds(ids)
+
+            case _ => Future.unit
+          }
+      }
+    } else if (teletrackerConfig.elasticsearch.people_index_name == index.index) {
+      index.doc.as[EsPerson] match {
+        case Left(value) =>
+          logger.error("Could not parse EsItem from json", value)
+          Future.unit
+
+        case Right(value) =>
+          personUpdater.insert(value).flatMap {
+            case _ if index.externalIdMappings.exists(_.nonEmpty) =>
+              val ids =
+                index.externalIdMappings
+                  .getOrElse(Set.empty)
+                  .toList
+                  .map(
+                    mapping => {
+                      (
+                        EsExternalId(mapping.source, mapping.id),
+                        mapping.itemType
+                      ) -> value.id
+                    }
+                  )
+                  .toMap
+
+              mappingStore.mapExternalIds(ids)
+
+            case _ => Future.unit
+          }
+      }
+    } else {
+      Future.failed(
+        new IllegalArgumentException(s"Unexpected index: ${index.index}")
+      )
     }
   }
 
@@ -54,7 +144,20 @@ class EsIngestQueueWorker @Inject()(
     )
 
     if (teletrackerConfig.elasticsearch.items_index_name == update.index) {
-      handleItemUpdate(update)
+      handleItemUpdate(update).flatMap {
+        case _ if update.itemDenorm.exists(_.needsDenorm) =>
+          denormQueue
+            .queue(
+              EsDenormalizeItemMessage(
+                itemId = UUID.fromString(update.id),
+                creditsChanged = update.itemDenorm.get.cast,
+                crewChanged = update.itemDenorm.get.crew,
+                dryRun = false
+              )
+            )
+            .map(_ => {})
+        case _ => Future.unit
+      }
     } else if (teletrackerConfig.elasticsearch.people_index_name == update.index) {
       handlePersonUpdate(update)
     } else {
