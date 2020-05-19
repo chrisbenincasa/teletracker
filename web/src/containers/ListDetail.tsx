@@ -515,12 +515,16 @@ function ListDetail(props: ListDetailProps) {
               label="Automatically remove items after watching"
             />
           </MenuItem>
+<<<<<<< HEAD
           <MenuItem onClick={() => setPublicListOptionsOpen(true)}>
+=======
+          {/* <MenuItem onClick={() => setPublicListDialogOpen(true)}>
+>>>>>>> b61fd0d8... commented out make list public
             <ListItemIcon>
               <Public />
             </ListItemIcon>
             {`Make list ${list.isPublic ? 'Private' : 'Public'}`}
-          </MenuItem>
+          </MenuItem> */}
         </Menu>
       </div>
     );
@@ -544,7 +548,7 @@ function ListDetail(props: ListDetailProps) {
                 {list.name}
                 {list.isPublic ? (
                   <Tooltip title="This list is public" placement="top">
-                    <IconButton onClick={openPublicListDialog} size="small">
+                    <IconButton onClick={openPublicListDialog} size="small" gst>
                       <Public className={classes.icon} />
                     </IconButton>
                   </Tooltip>
