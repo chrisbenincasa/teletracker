@@ -1,3 +1,4 @@
+import React, { ReactElement, useCallback, useEffect, useState } from 'react';
 import {
   Avatar,
   CircularProgress,
@@ -18,7 +19,17 @@ import {
   Typography,
   useTheme,
 } from '@material-ui/core';
-import React, { ReactElement, useCallback, useEffect, useState } from 'react';
+import {
+  AddCircle,
+  FiberNew,
+  Lock,
+  OfflineBolt,
+  PersonAdd,
+  PowerSettingsNew,
+  Public,
+  Settings,
+  TrendingUp,
+} from '@material-ui/icons';
 import CreateListDialog from './Dialogs/CreateListDialog';
 import SmartListDialog from './Dialogs/SmartListDialog';
 import PublicListDialog from './Dialogs/PublicListDialog';
@@ -28,18 +39,6 @@ import { Loading } from '../reducers/user';
 import { List as ListType } from '../types';
 import _ from 'lodash';
 import Link from 'next/link';
-import {
-  AddCircle,
-  Lock,
-  PersonAdd,
-  PowerSettingsNew,
-  Settings,
-  TrendingUp,
-  Apps,
-  FiberNew,
-  OfflineBolt,
-  Public,
-} from '@material-ui/icons';
 import { useWidth } from '../hooks/useWidth';
 import { useIsSmallScreen } from '../hooks/useIsMobile';
 import { useRouter } from 'next/router';
