@@ -5,10 +5,13 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   FormHelperText,
   makeStyles,
+  Switch,
   TextField,
   Theme,
 } from '@material-ui/core';
@@ -72,6 +75,15 @@ export default function CreateListDialog(props: Props) {
     props.onClose();
   };
 
+  const handleMakeListPublic = () => {
+    if (isLoggedIn) {
+      // dispatchUpdateList({
+      //   listId: listId,
+      //   name: newListName,
+      // });
+    }
+  };
+
   const validateListNameAndCreate = () => {
     // Reset error states before validation
     if (isLoggedIn) {
@@ -124,6 +136,22 @@ export default function CreateListDialog(props: Props) {
               ? 'You already have a list with this name'
               : null}
           </FormHelperText>
+          {/* <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Making this list public will allow anyone with the URL to view
+              your list. This can be changed later.
+            </DialogContentText>
+            <FormControlLabel
+              control={
+                <Switch
+                  onChange={() => handleMakeListPublic()}
+                  value="checked"
+                  color="primary"
+                />
+              }
+              label="Make List Public"
+            />
+          </DialogContent> */}
         </FormControl>
       </DialogContent>
       <DialogActions>
