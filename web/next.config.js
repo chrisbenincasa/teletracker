@@ -1,9 +1,12 @@
-const TerserPlugin = require ('terser-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 const withImages = require('next-images');
 const fs = require('fs');
 const { PHASE_PRODUCTION_BUILD } = require('next/constants');
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const NODE_ENV = process.env.NODE_ENV;
 if (!NODE_ENV) {
@@ -44,38 +47,42 @@ module.exports = (phase, { defaultConfig }) => {
 
   console.log('Will inject the following environment variables', env);
 
-  return withImages({
-    env,
-    webpack: (config, { dev, isServer }) => {
-      if (!dev && !isServer) {
-        config.optimization.minimizer = [new TerserPlugin({
-          parallel: true,
-          sourceMap: false
-        })]
-      }
-
-      if (dev) {
-        config.resolve = {
-          ...config.resolve,
-          alias: {
-            ...config.resolve.alias,
-            'react-redux': 'react-redux/lib'
-          }
+  return withBundleAnalyzer(
+    withImages({
+      env,
+      webpack: (config, { dev, isServer }) => {
+        if (!dev && !isServer) {
+          config.optimization.minimizer = [
+            new TerserPlugin({
+              parallel: true,
+              sourceMap: false,
+            }),
+          ];
         }
-      }
 
-      return config
-    },
-    target: 'serverless',
-    poweredByHeader: false,
-    generateBuildId: async () => {
-      const secondsSinceEpoch = Math.round(new Date().getTime() / 1000);
-      const { stdout } = await exec('git rev-parse --short HEAD');
-      const buildId = `${secondsSinceEpoch}.${stdout.trim()}`;
+        if (dev) {
+          config.resolve = {
+            ...config.resolve,
+            alias: {
+              ...config.resolve.alias,
+              'react-redux': 'react-redux/lib',
+            },
+          };
+        }
 
-      console.log(`Generating build with ID = ${buildId}`);
+        return config;
+      },
+      target: 'serverless',
+      poweredByHeader: false,
+      generateBuildId: async () => {
+        const secondsSinceEpoch = Math.round(new Date().getTime() / 1000);
+        const { stdout } = await exec('git rev-parse --short HEAD');
+        const buildId = `${secondsSinceEpoch}.${stdout.trim()}`;
 
-      return buildId;
-    },
-  });
+        console.log(`Generating build with ID = ${buildId}`);
+
+        return buildId;
+      },
+    }),
+  );
 };
