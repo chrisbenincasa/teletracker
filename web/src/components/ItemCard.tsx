@@ -312,7 +312,6 @@ function ItemCard(props: Props) {
   }, []);
 
   const renderPoster = (item: Item) => {
-    console.log(imageLoaded);
     const WrappedCardMedia = React.forwardRef(({ onClick, href }: any, ref) => {
       return (
         <a
