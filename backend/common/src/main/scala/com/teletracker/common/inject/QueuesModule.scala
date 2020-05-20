@@ -36,20 +36,6 @@ class QueuesModule extends TwitterModule {
     )
 
   @Provides
-  @QueueConfigAnnotations.TaskConsumerQueueConfig
-  def taskMessageConfig = {
-    new SqsQueueThroughputWorkerConfig(
-      maxOutstandingItems = 2,
-      heartbeat = Some(
-        HeartbeatConfig(
-          heartbeat_frequency = 15 seconds,
-          visibility_timeout = 5 minutes
-        )
-      )
-    )
-  }
-
-  @Provides
   def esIngestQueue(
     config: TeletrackerConfig,
     sqsAsyncClient: SqsAsyncClient
@@ -67,20 +53,6 @@ class QueuesModule extends TwitterModule {
       }),
       config.async.esIngestQueue.message_group_id.getOrElse("default")
     )
-
-  @Provides
-  @QueueConfigAnnotations.EsIngestQueueConfig
-  def esIngestConfig = {
-    new SqsQueueThroughputWorkerConfig(
-      maxOutstandingItems = 1,
-      heartbeat = Some(
-        HeartbeatConfig(
-          heartbeat_frequency = 15 seconds,
-          visibility_timeout = 1 minutes
-        )
-      )
-    )
-  }
 
   @Provides
   def esItemDenormQueue(
@@ -101,18 +73,4 @@ class QueuesModule extends TwitterModule {
       config.async.esItemDenormalizationQueue.message_group_id
         .getOrElse("default")
     )
-
-  @Provides
-  @QueueConfigAnnotations.DenormalizeItemQueueConfig
-  def esDenormConfig = {
-    new SqsQueueThroughputWorkerConfig(
-      maxOutstandingItems = 1,
-      heartbeat = Some(
-        HeartbeatConfig(
-          heartbeat_frequency = 15 seconds,
-          visibility_timeout = 1 minutes
-        )
-      )
-    )
-  }
 }

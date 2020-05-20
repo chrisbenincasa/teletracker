@@ -54,10 +54,16 @@ class Heartbeat[T <: EventBase](
               // docker containers do one thing, sqs live does another, hence the double
               // handling of invalid messages in both here and below in the exception handling
 
+              val failedEntries = response.headOption
+                .map(_.failed().asScala.toList)
+                .getOrElse(Nil)
+
+              logger.error(
+                s"Failed entries from heartbeat: ${failedEntries.mkString(",")}"
+              )
+
               val invalidMessage =
-                response.headOption
-                  .map(_.failed().asScala.toList)
-                  .getOrElse(Nil)
+                failedEntries
                   .exists(
                     _.code().toInt == Heartbeat.INVALID_PARAMETER_ERROR_CODE
                   )

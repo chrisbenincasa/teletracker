@@ -3,6 +3,7 @@ package com.teletracker.consumers
 import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import org.slf4j.MDC
+import java.util.UUID
 import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
 
@@ -11,6 +12,8 @@ class TeletrackerTaskRunnable(
   teletrackerTask: TeletrackerTask,
   args: Map[String, Option[Any]])
     extends Runnable {
+
+  val id = UUID.randomUUID()
 
   private val callbacks =
     new ListBuffer[(TeletrackerTask, TeletrackerTask.TaskResult) => Unit]()

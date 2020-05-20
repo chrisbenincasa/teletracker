@@ -7,6 +7,7 @@ import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorkerConfig
 }
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{
   EsExternalId,
@@ -29,7 +30,8 @@ import scala.util.control.NonFatal
 
 class EsIngestQueueWorker @Inject()(
   queue: SqsFifoQueue[EsIngestMessage],
-  @EsIngestQueueConfig config: SqsQueueThroughputWorkerConfig,
+  @EsIngestQueueConfig
+  config: ReloadableConfig[SqsQueueThroughputWorkerConfig],
   itemUpdater: ItemUpdater,
   personUpdater: PersonUpdater,
   teletrackerConfig: TeletrackerConfig,

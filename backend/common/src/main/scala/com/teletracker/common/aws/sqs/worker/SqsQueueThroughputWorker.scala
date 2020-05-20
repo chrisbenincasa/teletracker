@@ -11,6 +11,7 @@ import com.teletracker.common.util.execution.{
   ProvidedSchedulerService
 }
 import com.teletracker.common.aws.sqs.worker.poll.{HeartbeatConfig, Heartbeats}
+import com.teletracker.common.config.core.api.ReloadableConfig
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec
@@ -24,7 +25,7 @@ sealed trait Process
 object SqsQueueThroughputWorker {
   def apply[T <: EventBase: Manifest](
     queue: QueueReader[T],
-    config: SqsQueueThroughputWorkerConfig
+    config: ReloadableConfig[SqsQueueThroughputWorkerConfig]
   )(
     processFunc: T => Future[Option[String]]
   )(implicit
@@ -49,7 +50,7 @@ object SqsQueueThroughputWorker {
     */
   def ofFunction[T <: EventBase: Manifest](
     queue: QueueReader[T],
-    config: SqsQueueThroughputWorkerConfig
+    config: ReloadableConfig[SqsQueueThroughputWorkerConfig]
   )(
     processFunc: T => Future[Unit]
   )(implicit
@@ -66,7 +67,7 @@ object SqsQueueThroughputWorker {
 
 abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
   override protected val queue: QueueReader[T],
-  reloadableConfig: SqsQueueThroughputWorkerConfig
+  reloadableConfig: ReloadableConfig[SqsQueueThroughputWorkerConfig]
 )(implicit
   executionContext: ExecutionContext)
     extends SqsQueueWorkerBase[
@@ -78,7 +79,8 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
 
   private val outstanding = new AtomicInteger(0)
 
-  override protected def getConfig: SqsQueueWorkerConfig = reloadableConfig
+  override protected def getConfig: ReloadableConfig[SqsQueueWorkerConfig] =
+    reloadableConfig
 
   def currentlyRunningTasks: Int = outstanding.get()
 
@@ -86,7 +88,7 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
 
   protected lazy val heartbeatPool = ExecutionContextProvider.provider.of(
     Executors.newScheduledThreadPool(
-      reloadableConfig.maxOutstandingItems
+      reloadableConfig.currentValue().maxOutstandingItems
     )
   )
 
@@ -97,7 +99,7 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
 
       val currOutstanding = outstanding.get()
 
-      val config = reloadableConfig
+      val config = reloadableConfig.currentValue()
 
       if (currOutstanding > config.maxOutstandingItems) {
         logger.warn(

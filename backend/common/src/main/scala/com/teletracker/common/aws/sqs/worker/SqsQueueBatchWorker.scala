@@ -8,6 +8,7 @@ import com.teletracker.common.aws.sqs.SqsQueue
 import com.teletracker.common.pubsub.EventBase
 import com.teletracker.common.util.execution.ExecutionContextProvider
 import com.teletracker.common.aws.sqs.worker.poll.Heartbeats
+import com.teletracker.common.config.core.api.ReloadableConfig
 import java.util.concurrent.{Executors, Semaphore}
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object SqsQueueBatchWorker {
   def apply[T <: EventBase: Manifest](
     queue: SqsQueue[T],
-    config: SqsQueueWorkerConfig
+    config: ReloadableConfig[SqsQueueWorkerConfig]
   )(
     processFunc: Seq[T] => Seq[String]
   )(implicit
@@ -31,7 +32,7 @@ object SqsQueueBatchWorker {
 
 abstract class SqsQueueBatchWorker[T <: EventBase: Manifest](
   protected val queue: SqsQueue[T],
-  config: SqsQueueWorkerConfig
+  config: ReloadableConfig[SqsQueueWorkerConfig]
 )(implicit
   executionContext: ExecutionContext)
     extends SqsQueueWorkerBase[T, Seq, SqsQueueWorkerBase.Id](queue, config)
@@ -41,11 +42,12 @@ abstract class SqsQueueBatchWorker[T <: EventBase: Manifest](
 
   private val batchSemaphore = new Semaphore(1)
 
-  override protected def getConfig: SqsQueueWorkerConfig = config
+  override protected def getConfig: ReloadableConfig[SqsQueueWorkerConfig] =
+    config
 
   protected lazy val heartbeatPool = ExecutionContextProvider.provider.of(
     Executors.newScheduledThreadPool(
-      config.batchSize
+      config.currentValue().batchSize
     )
   )
 

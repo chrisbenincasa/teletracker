@@ -5,6 +5,7 @@ import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig
 }
+import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.inject.QueueConfigAnnotations
 import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
 import com.teletracker.common.tasks.Args
@@ -26,19 +27,26 @@ import scala.util.control.NonFatal
 
 class TaskQueueWorker @Inject()(
   queue: SqsFifoQueue[TeletrackerTaskQueueMessage],
-  @QueueConfigAnnotations.TaskConsumerQueueConfig config: SqsQueueThroughputWorkerConfig,
+  @QueueConfigAnnotations.TaskConsumerQueueConfig
+  config: ReloadableConfig[SqsQueueThroughputWorkerConfig],
   taskRunner: TeletrackerTaskRunner,
-  consumerConfig: ConsumerConfig,
+  consumerConfig: ReloadableConfig[ConsumerConfig],
   taskRecordStore: TaskRecordStore,
   taskRecordCreator: TaskRecordCreator
 )(implicit executionContext: ExecutionContext)
     extends SqsQueueThroughputWorker[TeletrackerTaskQueueMessage](queue, config) {
 
   private val needsTmdbPool =
-    new JobPool("TmdbJobs", consumerConfig.max_tmdb_concurrent_jobs)
+    new JobPool(
+      "TmdbJobs",
+      () => consumerConfig.currentValue().max_tmdb_concurrent_jobs
+    )
 
   private val normalPool =
-    new JobPool("NormalJobs", consumerConfig.max_regular_concurrent_jobs)
+    new JobPool(
+      "NormalJobs",
+      () => consumerConfig.currentValue().max_regular_concurrent_jobs
+    )
 
   def getUnexecutedTasks: Iterable[TeletrackerTaskQueueMessage] = {
     (needsTmdbPool.getPending ++ normalPool.getPending).map(_.originalMessage)

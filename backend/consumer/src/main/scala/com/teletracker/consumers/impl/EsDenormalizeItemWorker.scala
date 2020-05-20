@@ -6,6 +6,7 @@ import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig
 }
+import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.elasticsearch.denorm.DenormalizedItemUpdater
 import com.teletracker.common.inject.QueueConfigAnnotations
 import com.teletracker.common.pubsub.EsDenormalizeItemMessage
@@ -17,7 +18,7 @@ import scala.util.control.NonFatal
 class EsDenormalizeItemWorker @Inject()(
   queue: SqsFifoQueue[EsDenormalizeItemMessage],
   @QueueConfigAnnotations.DenormalizeItemQueueConfig
-  config: SqsQueueThroughputWorkerConfig,
+  config: ReloadableConfig[SqsQueueThroughputWorkerConfig],
   denormalizedItemUpdater: DenormalizedItemUpdater
 )(implicit executionContext: ExecutionContext)
     extends SqsQueueThroughputWorker[EsDenormalizeItemMessage](queue, config) {

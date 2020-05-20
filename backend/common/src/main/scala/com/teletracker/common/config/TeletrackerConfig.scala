@@ -2,8 +2,14 @@ package com.teletracker.common.config
 
 import com.teletracker.common.util.json.ClassNameJsonSerializer
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.teletracker.common.config.core.api.ConfigWithPath
 import java.sql.Driver
 import scala.concurrent.duration.FiniteDuration
+
+object TeletrackerConfig extends ConfigWithPath {
+  override type ConfigType = TeletrackerConfig
+  override val path: String = "teletracker"
+}
 
 case class TeletrackerConfig(
   cwd: String,

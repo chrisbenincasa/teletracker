@@ -4,6 +4,7 @@
 
 package com.teletracker.common.aws.sqs.worker
 
+import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import java.util.concurrent.Semaphore
 import scala.annotation.tailrec
@@ -13,7 +14,7 @@ import scala.util.control.NonFatal
 object SqsQueueAsyncBatchWorker {
   def apply[T <: EventBase: Manifest](
     queue: QueueReader[T],
-    config: SqsQueueWorkerConfig
+    config: ReloadableConfig[SqsQueueWorkerConfig]
   )(
     processFunc: Seq[T] => Future[Seq[String]]
   )(implicit
@@ -29,7 +30,7 @@ object SqsQueueAsyncBatchWorker {
 
 abstract class SqsQueueAsyncBatchWorker[T <: EventBase: Manifest](
   queue: QueueReader[T],
-  config: SqsQueueWorkerConfig
+  config: ReloadableConfig[SqsQueueWorkerConfig]
 )(implicit
   executionContext: ExecutionContext)
     extends SqsQueueWorkerBase[T, Seq, Future](queue, config) {

@@ -8,6 +8,7 @@ import com.teletracker.common.aws.sqs.ProcessingFailedException
 import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
+import com.teletracker.common.config.core.api.ReloadableConfig
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,7 +25,7 @@ abstract class SqsQueueWorkerBase[
   ReturnWrapper[_]
 ](
   queue: QueueReader[T],
-  reloadable: SqsQueueWorkerConfig
+  reloadable: ReloadableConfig[SqsQueueWorkerConfig]
 )(implicit
   executionContext: ExecutionContext) {
   protected val logger = LoggerFactory.getLogger(getClass)
@@ -73,7 +74,7 @@ abstract class SqsQueueWorkerBase[
   final protected val defaultErrorHandler: PartialFunction[Throwable, Unit] = {
     // Note: you can't catch an instance of ProcessingFailedException as it is a singleton
     case ProcessingFailedException => {
-      val currentConfig = reloadable
+      val currentConfig = reloadable.currentValue()
 
       logger.info(
         s"Processing failed. " +
@@ -82,7 +83,7 @@ abstract class SqsQueueWorkerBase[
       sleep(currentConfig.sleepDurationBetweenFailures)
     }
     case NonFatal(e) => {
-      val currentConfig = reloadable
+      val currentConfig = reloadable.currentValue()
 
       e.printStackTrace()
       logger.error("Uncaught exception!", e)
@@ -99,9 +100,13 @@ abstract class SqsQueueWorkerBase[
       Some(ex).filter(errorHandler.isDefinedAt)
   }
 
-  protected def dequeue(batchSize: Int = reloadable.batchSize): List[T] = {
+  protected def dequeue(
+    batchSize: Int = reloadable.currentValue().batchSize
+  ): List[T] = {
     try {
-      queue.dequeue(batchSize, reloadable.waitForMessageTime).await()
+      queue
+        .dequeue(batchSize, reloadable.currentValue().waitForMessageTime)
+        .await()
     } catch errorHandler andThen (_ => Nil)
   }
 
@@ -128,10 +133,10 @@ abstract class SqsQueueWorkerBase[
   }
 
   final protected def sleepOnFail(): Unit =
-    sleep(reloadable.sleepDurationBetweenFailures)
+    sleep(reloadable.currentValue().sleepDurationBetweenFailures)
 
   final protected def sleepOnEmpty(): Unit =
-    sleep(reloadable.sleepDurationBetweenEmptyBatches)
+    sleep(reloadable.currentValue().sleepDurationBetweenEmptyBatches)
 
   /**
     * An awaitable method to indicate that the current batch of processing has completed

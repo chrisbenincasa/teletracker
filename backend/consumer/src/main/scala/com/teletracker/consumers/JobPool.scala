@@ -1,50 +1,60 @@
 package com.teletracker.consumers
 
+import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.twitter.concurrent.NamedPoolThreadFactory
 import org.slf4j.LoggerFactory
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{
-  LinkedBlockingQueue,
-  RejectedExecutionException,
-  ThreadPoolExecutor,
-  TimeUnit
+  ConcurrentHashMap,
+  ConcurrentLinkedQueue,
+  Executors,
+  RejectedExecutionException
 }
+import java.util.function.Supplier
 import scala.collection.JavaConverters._
 
 class JobPool(
   name: String,
-  size: Int) {
+  size: Supplier[Int]) {
   private val logger = LoggerFactory.getLogger(getClass.getName + "#" + name)
 
-  private[this] val pool = new ThreadPoolExecutor(
-    size,
-    size,
-    0L,
-    TimeUnit.MILLISECONDS,
-    new LinkedBlockingQueue[Runnable](size)
-  )
+  private[this] val currentlyRunning =
+    new ConcurrentHashMap[UUID, TeletrackerTaskRunnable]()
 
-  def submit(runnable: TeletrackerTaskRunnable): Boolean = {
-    runnable.addCallback { (_, _) =>
-      logger.info(s"Finished executing ${runnable.originalMessage.clazz}")
-    }
+  private[this] val pool =
+    Executors.newCachedThreadPool(new NamedPoolThreadFactory(name))
 
-    try {
-      pool.submit(runnable)
-      logger.info(s"Submitted ${runnable.originalMessage.clazz}")
-      true
-    } catch {
-      case _: RejectedExecutionException =>
-        logger.info(
-          s"Submission of ${runnable.originalMessage.clazz} rejected. "
-        )
-        false
+  def submit(runnable: TeletrackerTaskRunnable): Boolean = synchronized {
+    if (currentlyRunning.size() < size.get()) {
+      runnable.addCallback { (_, _) =>
+        logger.info(s"Finished executing ${runnable.originalMessage.clazz}")
+        currentlyRunning.remove(runnable.id)
+      }
+
+      try {
+        pool.submit(runnable)
+        currentlyRunning.put(runnable.id, runnable)
+        logger.info(s"Submitted ${runnable.originalMessage.clazz}")
+        true
+      } catch {
+        case _: RejectedExecutionException =>
+          logger.warn(
+            s"Submission of ${runnable.originalMessage.clazz} rejected. "
+          )
+          false
+      }
+    } else {
+      logger.info(
+        s"Cannot submit new job. Max number of jobs active: ${size.get()}"
+      )
+      false
     }
   }
 
-  def numOutstanding: Int = pool.getQueue.size()
+  def numOutstanding: Int = currentlyRunning.size()
 
   def getPending: Iterable[TeletrackerTaskRunnable] = {
-    pool.getQueue.asScala.collect {
-      case r: TeletrackerTaskRunnable => r
-    }
+    currentlyRunning.values().asScala
   }
 }
