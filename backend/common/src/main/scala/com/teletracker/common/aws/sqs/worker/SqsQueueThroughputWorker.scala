@@ -231,4 +231,8 @@ class SqsQueueThroughputWorkerConfig(
       sleepDurationBetweenFailures = sleepDurationBetweenFailures,
       sleepDurationBetweenEmptyBatches = sleepDurationBetweenEmptyBatches,
       heartbeat = heartbeat
-    )
+    ) {
+
+  override def toString =
+    s"SqsQueueThroughputWorkerConfig(sleepDurationBetweenFailures=$sleepDurationBetweenFailures, sleepDurationBetweenEmptyBatches=$sleepDurationBetweenEmptyBatches, sleepDurationWhenQueueFull=$sleepDurationWhenQueueFull, maxOutstandingItems=$maxOutstandingItems, heartbeat=$heartbeat)"
+}

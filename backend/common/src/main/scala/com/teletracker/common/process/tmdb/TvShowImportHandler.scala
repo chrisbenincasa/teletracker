@@ -3,6 +3,7 @@ package com.teletracker.common.process.tmdb
 import cats.implicits._
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch._
+import com.teletracker.common.elasticsearch.async.EsIngestQueue
 import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
 import com.teletracker.common.elasticsearch.model.{
   EsExternalId,
@@ -22,7 +23,7 @@ import com.teletracker.common.process.tmdb.TvShowImportHandler.{
   TvShowImportHandlerArgs,
   TvShowImportResult
 }
-import com.teletracker.common.pubsub.TaskScheduler
+import com.teletracker.common.pubsub.{EsIngestItemDenormArgs, TaskScheduler}
 import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.common.tasks.model.{
   DenormalizeItemTaskArgs,
@@ -39,7 +40,9 @@ import scala.util.Success
 import scala.util.control.NonFatal
 
 object TvShowImportHandler {
-  case class TvShowImportHandlerArgs(dryRun: Boolean)
+  case class TvShowImportHandlerArgs(
+    dryRun: Boolean,
+    async: Boolean)
 
   case class TvShowImportResult(
     itemId: UUID,
@@ -47,7 +50,8 @@ object TvShowImportHandler {
     updated: Boolean,
     castNeedsDenorm: Boolean,
     crewNeedsDenorm: Boolean,
-    itemChanged: Boolean)
+    itemChanged: Boolean,
+    queued: Boolean)
 }
 
 class TvShowImportHandler @Inject()(
@@ -56,7 +60,8 @@ class TvShowImportHandler @Inject()(
   itemUpdater: ItemUpdater,
   personLookup: PersonLookup,
   creditsDenormalization: ItemCreditsDenormalizationHelper,
-  taskScheduler: TaskScheduler
+  taskScheduler: TaskScheduler,
+  itemUpdateQueue: EsIngestQueue
 )(implicit executor: ExecutionContext) {
 
   import com.teletracker.common.util.Shows._
@@ -92,7 +97,8 @@ class TvShowImportHandler @Inject()(
           insertNewShow(item, args)
       }
       .andThen {
-        case Success(result) if !args.dryRun && result.itemChanged =>
+        case Success(result)
+            if !args.dryRun && !args.async && result.itemChanged =>
           logger.debug(
             s"Scheduling denormalization task item id = ${result.itemId}"
           )
@@ -295,22 +301,51 @@ class TvShowImportHandler @Inject()(
             updated = false,
             castNeedsDenorm = castNeedsDenorm,
             crewNeedsDenorm = crewNeedsDenorm,
-            itemChanged = itemChanged
+            itemChanged = itemChanged,
+            queued = false
           )
         }
       } else if (itemChanged) {
-        itemUpdater
-          .update(updatedItem)
-          .map(_ => {
-            TvShowImportResult(
-              itemId = existingShow.id,
-              inserted = false,
-              updated = true,
-              castNeedsDenorm = castNeedsDenorm,
-              crewNeedsDenorm = crewNeedsDenorm,
-              itemChanged = itemChanged
+        if (args.async) {
+          itemUpdateQueue
+            .queueItemUpdate(
+              id = existingShow.id,
+              itemType = ItemType.Show,
+              doc = updatedItem.asJson,
+              denorm = Some(
+                EsIngestItemDenormArgs(
+                  needsDenorm = itemChanged,
+                  cast = castNeedsDenorm,
+                  crew = crewNeedsDenorm
+                )
+              )
             )
-          })
+            .map(_ => {
+              TvShowImportResult(
+                itemId = existingShow.id,
+                inserted = false,
+                updated = false,
+                castNeedsDenorm = castNeedsDenorm,
+                crewNeedsDenorm = crewNeedsDenorm,
+                itemChanged = itemChanged,
+                queued = true
+              )
+            })
+        } else {
+          itemUpdater
+            .update(updatedItem)
+            .map(_ => {
+              TvShowImportResult(
+                itemId = existingShow.id,
+                inserted = false,
+                updated = true,
+                castNeedsDenorm = castNeedsDenorm,
+                crewNeedsDenorm = crewNeedsDenorm,
+                itemChanged = itemChanged,
+                queued = false
+              )
+            })
+        }
       } else {
         logger.info(s"Skipped no-op on item ${existingShow.id}")
         Future.successful {
@@ -320,7 +355,8 @@ class TvShowImportHandler @Inject()(
             updated = false,
             castNeedsDenorm = castNeedsDenorm,
             crewNeedsDenorm = crewNeedsDenorm,
-            itemChanged = false
+            itemChanged = false,
+            queued = false
           )
         }
       }
@@ -419,9 +455,24 @@ class TvShowImportHandler @Inject()(
             updated = false,
             castNeedsDenorm = true,
             crewNeedsDenorm = true,
-            itemChanged = true
+            itemChanged = true,
+            queued = false
           )
         }
+      } else if (args.async) {
+        itemUpdateQueue
+          .queueItemInsert(esItem)
+          .map(_ => {
+            TvShowImportResult(
+              itemId = esItem.id,
+              inserted = false,
+              updated = false,
+              castNeedsDenorm = true,
+              crewNeedsDenorm = true,
+              itemChanged = true,
+              queued = true
+            )
+          })
       } else {
         itemUpdater
           .insert(esItem)
@@ -432,7 +483,8 @@ class TvShowImportHandler @Inject()(
               updated = false,
               castNeedsDenorm = true,
               crewNeedsDenorm = true,
-              itemChanged = true
+              itemChanged = true,
+              queued = false
             )
           })
       }

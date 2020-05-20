@@ -82,11 +82,7 @@ class ElasticsearchExecutor @Inject()(
   protected def withListener[T](f: ActionListener[T] => Unit): Future[T] = {
     val (listener, promise) = makeListener[T]
     f(listener)
-    promise.future.transform(
-      identity,
-      e =>
-        new ElasticsearchRequestException("Request to Elasticsearch failed!", e)
-    )
+    promise.future
   }
 
   protected def makeListener[T]: (ActionListener[T], Promise[T]) = {

@@ -1,6 +1,6 @@
 {
   "server_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/server:0.1-1589056865.c7b7b12",
-  "task_consumer_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1589850023.8574c2d",
-  "es_ingest_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1589850023.8574c2d",
-  "es_item_denorm_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1589850023.8574c2d"
+  "task_consumer_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1589992030.64abb56",
+  "es_ingest_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1589992030.64abb56",
+  "es_item_denorm_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-1589992030.64abb56"
 }

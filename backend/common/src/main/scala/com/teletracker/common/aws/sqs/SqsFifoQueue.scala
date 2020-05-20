@@ -1,13 +1,14 @@
 package com.teletracker.common.aws.sqs
 
 import com.teletracker.common.pubsub.{EventBase, Queue}
-import io.circe.Codec
+import io.circe.{Codec, Decoder}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{
   ChangeMessageVisibilityBatchResponse,
   GetQueueAttributesRequest,
   QueueAttributeName
 }
+import java.util.UUID
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -73,7 +74,8 @@ class SqsFifoQueue[T <: EventBase: Manifest: Codec](
     dequeueImpl(
       count,
       waitTime,
-      (message: T, handle: String) => message.receipt_handle = Some(handle)
+      (message: T, handle: String) => message.receipt_handle = Some(handle),
+      attemptId = Some(UUID.randomUUID())
     )
   }
 

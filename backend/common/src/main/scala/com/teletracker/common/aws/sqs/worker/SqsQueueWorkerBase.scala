@@ -8,7 +8,7 @@ import com.teletracker.common.aws.sqs.ProcessingFailedException
 import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
-import com.teletracker.common.config.core.api.ReloadableConfig
+import com.teletracker.common.config.core.api.{ReloadableConfig, WatchToken}
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,12 +38,21 @@ abstract class SqsQueueWorkerBase[
 
   @volatile protected var stopped = false
   @volatile protected var started = false
+  @volatile private var configWatchToken: WatchToken = _
 
   def run(): Unit = {
     synchronized {
       if (started) return
 
-      logger.info(s"Starting queue worker on ${queue.url}")
+      logger.info(
+        s"Starting queue worker on ${queue.url} with config: ${reloadable.currentValue()}"
+      )
+
+      configWatchToken = reloadable.watch() { newValue =>
+        logger.info(
+          s"Updated config: ${newValue}"
+        )
+      }
 
       started = true
     }
@@ -60,6 +69,10 @@ abstract class SqsQueueWorkerBase[
       logger.info(s"Stopping queue worker on ${queue.url}")
 
       stopped = true
+
+      if (configWatchToken ne null) {
+        configWatchToken.cancel()
+      }
 
       started = false
     }
@@ -104,6 +117,7 @@ abstract class SqsQueueWorkerBase[
     batchSize: Int = reloadable.currentValue().batchSize
   ): List[T] = {
     try {
+      logger.debug(s"Dequeueing ${batchSize} items")
       queue
         .dequeue(batchSize, reloadable.currentValue().waitForMessageTime)
         .await()
@@ -120,6 +134,7 @@ abstract class SqsQueueWorkerBase[
 
   protected def ackAsync(handles: List[String]): Future[Unit] = {
     if (handles.nonEmpty) {
+      logger.debug(s"Acking ${handles.size} messages.")
       queue.remove(handles).recover(errorHandler)
     } else Future.successful({})
   }
@@ -151,4 +166,8 @@ class SqsQueueWorkerConfig(
   val sleepDurationBetweenFailures: Duration = 30 seconds,
   val waitForMessageTime: Duration = 1 second,
   val sleepDurationBetweenEmptyBatches: Duration = 1 second,
-  val heartbeat: Option[HeartbeatConfig] = None)
+  val heartbeat: Option[HeartbeatConfig] = None) {
+
+  override def toString =
+    s"SqsQueueWorkerConfig(batchSize=$batchSize, sleepDurationBetweenFailures=$sleepDurationBetweenFailures, waitForMessageTime=$waitForMessageTime, sleepDurationBetweenEmptyBatches=$sleepDurationBetweenEmptyBatches, heartbeat=$heartbeat)"
+}

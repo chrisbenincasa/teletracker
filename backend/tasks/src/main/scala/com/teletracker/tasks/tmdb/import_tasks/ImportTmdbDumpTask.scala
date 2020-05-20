@@ -86,14 +86,17 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
     ) = preparseArgs(args)
 
     sourceRetriever
-      .getSourceStream(file)
+      .getUriStream(file)
       .drop(offset)
       .safeTake(limit)
-      .foreach(source => {
+      .foreach(uri => {
+        val source = sourceRetriever.getSource(uri, consultCache = true)
         try {
           AsyncStream
             .fromStream(source.getLines().toStream.zipWithIndex)
-            .flatMapSeq(Function.tupled(extractLine))
+            .flatMapSeq {
+              case (line, idx) => extractLine(line, idx, uri)
+            }
             .filter {
               case Left(_)      => true
               case Right(value) => shouldHandleItem(value)
@@ -157,7 +160,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
         }
 
         retryQueue.addAll(processes.collect {
-          case HandleItemResult(true, item) => item
+          case HandleItemResult(false, item) => item
         }.asJava)
       })
   }
@@ -176,7 +179,8 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
 
   private def extractLine(
     line: String,
-    index: Int
+    index: Int,
+    sourceUri: URI
   ) = {
     sanitizeLine(line).flatMap(sanitizedLine => {
       val parsed = parse(sanitizedLine)
@@ -186,7 +190,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
           parsed.flatMap(_.as[ErrorResponse]) match {
             case Left(_) =>
               logger.error(
-                s"Unexpected parsing error on line ${index}\nJSON:${sanitizedLine}",
+                s"Unexpected parsing error on line ${index}\nJSON:${sanitizedLine} (source: ${sourceUri})",
                 failure
               )
               None

@@ -99,6 +99,9 @@ lazy val consumer = project
     // Compilation
     scalaVersion := Compilation.scalacVersion,
     scalacOptions ++= Compilation.scalacOpts,
+    libraryDependencies ++= Seq(
+      "org.codehaus.janino" % "janino" % "3.1.2"
+    ),
     mainClass in assembly := Some(
       "com.teletracker.consumers.QueueConsumerDaemon"
     ),
@@ -112,7 +115,11 @@ lazy val consumer = project
       "AWS_EXECUTION_ENV" -> Option(System.getenv("AWS_EXECUTION_ENV"))
         .getOrElse("")
     ),
-    Revolver.enableDebugging(port = 5005, suspend = false),
+    javaOptions in reStart ++= Seq(
+      "-Dregular_logging=true",
+      "-Dlog.level=DEBUG"
+    ),
+//    Revolver.enableDebugging(port = 5005, suspend = false),
     dockerfile in docker := {
       // The assembly task generates a fat JAR file
       val artifact: File = assembly.value

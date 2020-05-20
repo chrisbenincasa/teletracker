@@ -92,7 +92,8 @@ abstract class SqsQueueBase(
   protected def dequeueImpl[T: Decoder](
     count: Int,
     waitTime: Duration = 1 second,
-    setReceiptHandle: (T, String) => Unit
+    setReceiptHandle: (T, String) => Unit,
+    attemptId: Option[UUID] = None
   ): Future[List[T]] = {
     def dequeueInner(
       remainingCount: Int = count,
@@ -100,7 +101,8 @@ abstract class SqsQueueBase(
     ): Future[List[T]] = {
       val maxNumberOfMessages = math.min(remainingCount, MAX_MESSAGE_BATCH_SIZE)
 
-      val request = getReceiveMessageRequest(url, maxNumberOfMessages, waitTime)
+      val request =
+        getReceiveMessageRequest(url, maxNumberOfMessages, waitTime, attemptId)
 
       sqs
         .receiveMessage(request)
@@ -280,13 +282,17 @@ abstract class SqsQueueBase(
   protected def getReceiveMessageRequest(
     url: String,
     maxNumberOfMessages: Int,
-    waitTime: Duration
+    waitTime: Duration,
+    attemptId: Option[UUID]
   ): ReceiveMessageRequest = {
     ReceiveMessageRequest
       .builder()
       .queueUrl(url)
       .waitTimeSeconds(waitTime.toSeconds.toInt)
       .maxNumberOfMessages(maxNumberOfMessages)
+      .applyOptional(attemptId)(
+        (builder, id) => builder.receiveRequestAttemptId(id.toString)
+      )
       .build()
   }
 

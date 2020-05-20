@@ -155,7 +155,8 @@ class EsIngestQueueWorker @Inject()(
                 creditsChanged = update.itemDenorm.get.cast,
                 crewChanged = update.itemDenorm.get.crew,
                 dryRun = false
-              )
+              ),
+              messageGroupId = update.id
             )
             .map(_ => {})
         case _ => Future.unit

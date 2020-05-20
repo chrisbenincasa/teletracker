@@ -4,6 +4,8 @@ import com.teletracker.common.pubsub.EventBase
 import io.circe.Codec
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
+import java.util.UUID
+import com.teletracker.common.util.Functions._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 
@@ -30,13 +32,17 @@ class SqsQueueWithLongPolling[T <: EventBase: Manifest](
   override protected def getReceiveMessageRequest(
     url: String,
     maxNumberOfMessages: Int,
-    waitTime: Duration
+    waitTime: Duration,
+    attemptId: Option[UUID] = None
   ): ReceiveMessageRequest = {
     ReceiveMessageRequest
       .builder()
       .queueUrl(url)
       .waitTimeSeconds(waitTimeInSeconds)
       .maxNumberOfMessages(maxNumberOfMessages)
+      .applyOptional(attemptId)(
+        (builder, id) => builder.receiveRequestAttemptId(id.toString)
+      )
       .build()
   }
 }

@@ -24,7 +24,7 @@ class EsIngestQueue @Inject()(
 
   def queueItemInsert(esItem: EsItem): Future[Option[EsIngestMessage]] = {
     queue.queue(
-      EsIngestMessage(
+      message = EsIngestMessage(
         operation = EsIngestMessageOperation.Index,
         index = Some(
           EsIngestIndex(
@@ -37,7 +37,8 @@ class EsIngestQueue @Inject()(
             doc = esItem.asJson
           )
         )
-      )
+      ),
+      messageGroupId = esItem.id.toString
     )
   }
 
@@ -48,7 +49,7 @@ class EsIngestQueue @Inject()(
     denorm: Option[EsIngestItemDenormArgs]
   ): Future[Option[EsIngestMessage]] = {
     queue.queue(
-      EsIngestMessage(
+      message = EsIngestMessage(
         operation = EsIngestMessageOperation.Update,
         update = Some(
           EsIngestUpdate(
@@ -60,7 +61,8 @@ class EsIngestQueue @Inject()(
             itemDenorm = denorm
           )
         )
-      )
+      ),
+      messageGroupId = id.toString // Handle updates for this item in order
     )
   }
 }

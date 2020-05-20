@@ -14,12 +14,13 @@ class ImportSpecificTvShow @Inject()(
   override protected def runInternal(args: Args): Unit = {
     val id = args.valueOrThrow[Int]("id")
     val dryRun = args.valueOrDefault[Boolean]("dryRun", true)
+    val async = args.valueOrDefault("async", false)
 
     itemExpander
       .expandTvShow(id)
       .flatMap(tvShow => {
         tvShowImportHandler.handleItem(
-          TvShowImportHandler.TvShowImportHandlerArgs(dryRun),
+          TvShowImportHandler.TvShowImportHandlerArgs(dryRun, async = async),
           tvShow
         )
       })

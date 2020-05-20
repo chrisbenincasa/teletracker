@@ -2,6 +2,7 @@ package com.teletracker.consumers
 
 import com.google.inject.Module
 import com.teletracker.common.aws.sqs.SqsQueueListener
+import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase
 import com.teletracker.consumers.impl.{
   EsDenormalizeItemWorker,
   EsIngestQueueWorker,
@@ -24,14 +25,15 @@ object QueueConsumerDaemon extends com.twitter.inject.app.App {
   override protected def run(): Unit = {
     logger.info(s"Starting consumer in ${mode()} mode")
 
-    val worker = mode() match {
-      case TaskConsumer     => injector.instance[TaskQueueWorker]
-      case EsIngestConsumer => injector.instance[EsIngestQueueWorker]
+    val listener = mode() match {
+      case TaskConsumer =>
+        new SqsQueueListener(injector.instance[TaskQueueWorker])
+      case EsIngestConsumer =>
+        new SqsQueueListener(injector.instance[EsIngestQueueWorker])
       case EsItemDenormalizeConsumer =>
-        injector.instance[EsDenormalizeItemWorker]
+        new SqsQueueListener(injector.instance[EsDenormalizeItemWorker])
     }
 
-    val listener = new SqsQueueListener(worker)
     listener.start()
 
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {

@@ -422,7 +422,7 @@ class MovieImportHandler @Inject()(
             })
         }
       } else {
-        logger.info(s"Skipped no-op on item ${existingMovie.id}")
+        logger.debug(s"Skipped no-op on item ${existingMovie.id}")
         Future.successful {
           MovieImportResult(
             itemId = existingMovie.id,

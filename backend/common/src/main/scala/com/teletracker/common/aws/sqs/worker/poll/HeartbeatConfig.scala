@@ -58,9 +58,11 @@ class Heartbeat[T <: EventBase](
                 .map(_.failed().asScala.toList)
                 .getOrElse(Nil)
 
-              logger.error(
-                s"Failed entries from heartbeat: ${failedEntries.mkString(",")}"
-              )
+              if (failedEntries.nonEmpty) {
+                logger.error(
+                  s"Failed entries from heartbeat: ${failedEntries.mkString(",")}"
+                )
+              }
 
               val invalidMessage =
                 failedEntries
@@ -104,7 +106,7 @@ class Heartbeat[T <: EventBase](
   }
 
   def complete(): Unit = {
-    logger.info("Heartbeat completed")
+    logger.debug("Heartbeat completed")
 
     future.foreach(_.cancel(false))
   }

@@ -27,7 +27,7 @@ class ImportTvShowsFromDump @Inject()(
     item: TvShow
   ): Future[Unit] = {
     tvShowImportHandler
-      .handleItem(TvShowImportHandlerArgs(args.dryRun), item)
+      .handleItem(TvShowImportHandlerArgs(args.dryRun, async = true), item)
       .map(_ => {})
       .recover {
         case NonFatal(e) =>

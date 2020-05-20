@@ -5,7 +5,7 @@ import com.teletracker.common.elasticsearch.model._
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.tasks.model.DenormalizeItemTaskArgs
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.util.json.IdentityFolder
+import com.teletracker.common.util.json.{IdentityFolder, IdentityJavaFolder}
 import com.teletracker.common.util.{AsyncStream, IdOrSlug}
 import io.circe.syntax._
 import javax.inject.Inject
@@ -38,7 +38,9 @@ object DenormalizedItemUpdater {
   private def itemAsMap(
     item: EsUserDenormalizedItem
   ): java.util.Map[String, Any] = {
-    item.asJson.asObject.get.toMap.mapValues(_.foldWith(IdentityFolder)).asJava
+    item.asJson.asObject.get.toMap
+      .mapValues(_.foldWith(IdentityJavaFolder))
+      .asJava
   }
 }
 
@@ -134,7 +136,7 @@ class DenormalizedItemUpdater @Inject()(
 
           val userItemDenormFut = if (args.dryRun) {
             Future.successful {
-              logger.info("Would've denoramlized to user_items")
+              logger.info("Would've denoramlized to user_items.")
             }
           } else {
             updateUserItems(item.rawItem).map(_ => {})
@@ -241,7 +243,7 @@ class DenormalizedItemUpdater @Inject()(
 
         personToUpdate.foreach(person => {
           logger
-            .info(s"Updating person = ${person.id}, new credit: ${newCredit}")
+            .trace(s"Updating person = ${person.id}, new credit: ${newCredit}")
         })
 
         personToUpdate

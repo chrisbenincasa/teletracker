@@ -53,9 +53,7 @@ class S3Source(
   private lazy val bucket = Bucket(config.bucket)
 
   override def description: String =
-    s"""
-       |S3 source for ${appName.value}. Bucket: ${bucket.value}, key: ${appOverrideFile}
-    """.stripMargin
+    s"S3 source for ${appName.value}. Bucket: ${bucket.value}, key: ${appOverrideFile}"
 
   override def contents(): Option[String] = {
     val overridenConf =
@@ -92,8 +90,7 @@ class S3Source(
         // if it doesn't exist, there's no data so we should remove it
 
         logger.debug(
-          s"S3 source for ${appName} does not exist, returning empty",
-          ex
+          s"S3 source for ${appName} does not exist (s3://${bucket.value}/${key}), returning empty"
         )
 
         None

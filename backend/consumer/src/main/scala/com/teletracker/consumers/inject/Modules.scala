@@ -1,7 +1,10 @@
 package com.teletracker.consumers.inject
 
 import com.google.inject.{Module, Provides, Singleton}
-import com.teletracker.common.aws.sqs.worker.SqsQueueThroughputWorkerConfig
+import com.teletracker.common.aws.sqs.worker.{
+  SqsQueueThroughputWorkerConfig,
+  SqsQueueWorkerConfig
+}
 import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
 import com.teletracker.common.config.core.ConfigLoader
 import com.teletracker.common.config.core.api.ReloadableConfig
@@ -38,13 +41,13 @@ class ConsumerConfigModule extends TwitterModule {
   ): ReloadableConfig[SqsQueueThroughputWorkerConfig] = {
     consumerConfig.map(conf => {
       new SqsQueueThroughputWorkerConfig(
-        maxOutstandingItems = conf.max_regular_concurrent_jobs + conf.max_tmdb_concurrent_jobs,
-        heartbeat = Some(
-          HeartbeatConfig(
-            heartbeat_frequency = 15 seconds,
-            visibility_timeout = 5 minutes
-          )
-        )
+        maxOutstandingItems = conf.max_regular_concurrent_jobs + conf.max_tmdb_concurrent_jobs
+//        heartbeat = Some(
+//          HeartbeatConfig(
+//            heartbeat_frequency = 15 seconds,
+//            visibility_timeout = 5 minutes
+//          )
+//        )
       )
     })
   }
@@ -57,12 +60,7 @@ class ConsumerConfigModule extends TwitterModule {
     consumerConfig.map(conf => {
       new SqsQueueThroughputWorkerConfig(
         maxOutstandingItems = conf.es_ingest_worker.max_outstanding,
-        heartbeat = Some(
-          HeartbeatConfig(
-            heartbeat_frequency = 15 seconds,
-            visibility_timeout = 1 minutes
-          )
-        )
+        heartbeat = None
       )
     })
   }
@@ -71,16 +69,11 @@ class ConsumerConfigModule extends TwitterModule {
   @QueueConfigAnnotations.DenormalizeItemQueueConfig
   def esDenormConfig(
     consumerConfig: ReloadableConfig[ConsumerConfig]
-  ): ReloadableConfig[SqsQueueThroughputWorkerConfig] = {
+  ): ReloadableConfig[SqsQueueWorkerConfig] = {
     consumerConfig.map(conf => {
-      new SqsQueueThroughputWorkerConfig(
-        maxOutstandingItems = conf.es_item_denorm_worker.max_outstanding,
-        heartbeat = Some(
-          HeartbeatConfig(
-            heartbeat_frequency = 15 seconds,
-            visibility_timeout = 1 minutes
-          )
-        )
+      new SqsQueueWorkerConfig(
+        batchSize = conf.es_item_denorm_worker.batch_size,
+        heartbeat = None
       )
     })
   }

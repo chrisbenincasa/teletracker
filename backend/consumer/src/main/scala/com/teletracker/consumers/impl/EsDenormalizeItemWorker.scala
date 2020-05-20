@@ -3,28 +3,37 @@ package com.teletracker.consumers.impl
 import com.teletracker.common.aws.sqs.SqsFifoQueue
 import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase.FutureOption
 import com.teletracker.common.aws.sqs.worker.{
+  SqsQueueAsyncBatchWorker,
   SqsQueueThroughputWorker,
-  SqsQueueThroughputWorkerConfig
+  SqsQueueThroughputWorkerConfig,
+  SqsQueueWorkerConfig
 }
 import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.elasticsearch.denorm.DenormalizedItemUpdater
 import com.teletracker.common.inject.QueueConfigAnnotations
 import com.teletracker.common.pubsub.EsDenormalizeItemMessage
 import com.teletracker.common.tasks.model.DenormalizeItemTaskArgs
+import com.twitter.util.Stopwatch
 import javax.inject.Inject
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 class EsDenormalizeItemWorker @Inject()(
   queue: SqsFifoQueue[EsDenormalizeItemMessage],
   @QueueConfigAnnotations.DenormalizeItemQueueConfig
-  config: ReloadableConfig[SqsQueueThroughputWorkerConfig],
+  config: ReloadableConfig[SqsQueueWorkerConfig],
   denormalizedItemUpdater: DenormalizedItemUpdater
 )(implicit executionContext: ExecutionContext)
-    extends SqsQueueThroughputWorker[EsDenormalizeItemMessage](queue, config) {
+    extends SqsQueueAsyncBatchWorker[EsDenormalizeItemMessage](queue, config) {
+
   override protected def process(
-    msg: EsDenormalizeItemMessage
-  ): FutureOption[String] = {
+    msg: Seq[EsDenormalizeItemMessage]
+  ): Future[Seq[String]] = {
+    Future.sequence(msg.map(process)).map(_.flatten)
+  }
+
+  private def process(msg: EsDenormalizeItemMessage): FutureOption[String] = {
+    val elapsed = Stopwatch.start()
     logger.info(s"Denormalizing item: ${msg.itemId}")
 
     denormalizedItemUpdater
@@ -37,6 +46,9 @@ class EsDenormalizeItemWorker @Inject()(
         )
       )
       .map(_ => {
+        logger.info(
+          s"Done denormalizing item: ${msg.itemId}, took ${elapsed().inMillis} millis"
+        )
         msg.receiptHandle
       })
       .recover {
