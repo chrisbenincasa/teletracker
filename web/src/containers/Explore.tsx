@@ -1,7 +1,10 @@
 import {
+  Card,
+  CardMedia,
   CircularProgress,
   createStyles,
   Grid,
+  GridProps,
   LinearProgress,
   Theme,
   Typography,
@@ -15,6 +18,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { Skeleton } from '@material-ui/lab';
 import InfiniteScroll from 'react-infinite-scroller';
 import { clearPopular, retrievePopular } from '../actions/popular';
 import Featured from '../components/Featured';
@@ -49,6 +53,7 @@ import { Id } from '../types/v2';
 import { FilterContext } from '../components/Filters/FilterContext';
 import selectItems from '../selectors/selectItems';
 import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
+import { GRID_ITEM_SIZE_IN_COLUMNS } from '../constants/';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -320,6 +325,14 @@ function Explore() {
   const renderPopular = () => {
     const { genresFilter, itemTypes } = filters;
 
+    let gridProps: GridProps = {
+      item: true,
+      ...GRID_ITEM_SIZE_IN_COLUMNS,
+    };
+
+    const numberSkeletons =
+      (itemsPerRow(width) || TOTAL_COLUMNS) * DEFAULT_ROWS;
+
     return popular ? (
       <div className={classes.popularContainer}>
         <div className={classes.listTitle}>
@@ -365,6 +378,30 @@ function Explore() {
                   return null;
                 }
               })}
+              {loading &&
+                _.range(0, numberSkeletons).map((item, idx) => {
+                  return (
+                    <Grid {...gridProps}>
+                      <Card
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          position: 'relative',
+                          paddingTop: '150%', // 150% is a magic number for our 1:1.5 expected poster aspect ratio
+                        }}
+                      >
+                        <CardMedia
+                          component={Skeleton}
+                          key={idx}
+                          variant="rect"
+                          height={'100%'}
+                          width={'100%'}
+                          style={{ position: 'absolute', top: 0 }}
+                        />
+                      </Card>
+                    </Grid>
+                  );
+                })}
             </Grid>
             {loading && renderLoadingCircle()}
             {!Boolean(popularBookmark) && (

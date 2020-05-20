@@ -9,7 +9,7 @@ import {
   Typography,
   useTheme,
 } from '@material-ui/core';
-import { Rating } from '@material-ui/lab';
+import { Skeleton, Rating } from '@material-ui/lab';
 import RouterLink from 'next/link';
 import imagePlaceholder from '../../public/images/imagePlaceholder.png';
 import ResponsiveImage from './ResponsiveImage';
@@ -256,16 +256,25 @@ function Featured(props: Props) {
       : null;
   };
 
-  return items && items.length > 0 ? (
+  return (
     <div
       className={classes.wrapper}
       style={{ paddingTop: `${56.25 / items.length}%` }}
     >
       <div style={{ position: 'absolute', top: 0 }}>
-        {renderFeaturedItems()}
+        {items && items.length > 0 ? (
+          renderFeaturedItems()
+        ) : (
+          <Skeleton
+            variant="rect"
+            animation="wave"
+            height="100%"
+            width="100%"
+          />
+        )}
       </div>
     </div>
-  ) : null;
+  );
 }
 
 // DEV MODE ONLY

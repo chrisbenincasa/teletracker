@@ -16,6 +16,7 @@ import {
   DialogTitle,
   Fade,
   Grid,
+  GridProps,
   IconButton,
   makeStyles,
   Theme,
@@ -23,8 +24,8 @@ import {
   Typography,
   Zoom,
 } from '@material-ui/core';
+import { Skeleton } from '@material-ui/lab';
 import { green, red } from '@material-ui/core/colors';
-import { GridProps } from '@material-ui/core/Grid';
 import {
   CheckCircleTwoTone,
   Close,
@@ -311,6 +312,7 @@ function ItemCard(props: Props) {
   }, []);
 
   const renderPoster = (item: Item) => {
+    console.log(imageLoaded);
     const WrappedCardMedia = React.forwardRef(({ onClick, href }: any, ref) => {
       return (
         <a
@@ -319,23 +321,35 @@ function ItemCard(props: Props) {
           ref={ref as RefObject<HTMLAnchorElement>}
           style={{ display: 'block', height: '100%', textDecoration: 'none' }}
         >
-          <CardMedia
-            src={imagePlaceholder}
-            item={item}
-            component={ResponsiveImage}
-            imageType="poster"
-            imageStyle={{
-              width: '100%',
-              objectFit: 'cover',
-              height: '100%',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              bottom: 0,
-              right: 0,
-            }}
-            loadCallback={markImageLoadedCb}
-          />
+          {!imageLoaded && (
+            <CardMedia
+              component={Skeleton}
+              key={item.id}
+              variant="rect"
+              height={'100%'}
+              width={'100%'}
+              style={{ position: 'absolute', top: 0 }}
+            />
+          )}
+          <Fade in={imageLoaded} timeout={1000}>
+            <CardMedia
+              src={imagePlaceholder}
+              item={item}
+              component={ResponsiveImage}
+              imageType="poster"
+              imageStyle={{
+                width: '100%',
+                objectFit: 'cover',
+                height: '100%',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                right: 0,
+              }}
+              loadCallback={markImageLoadedCb}
+            />
+          </Fade>
         </a>
       );
     });
@@ -549,10 +563,9 @@ function ItemCard(props: Props) {
         <Fade
           /*
         The fade will not start until the image container is
-        entering the viewport & image has successfuly loaded in,
-        ensuring the fade is visible to user.
+        entering the viewport, ensuring the fade is visible to user.
       */
-          in={isInViewport && !_.isUndefined(item) && imageLoaded}
+          in={isInViewport && !_.isUndefined(item)}
           timeout={1000}
           ref={loadWrapperRef}
         >
