@@ -1,45 +1,36 @@
 package com.teletracker.common.aws.sqs
 
-import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.{
   TaskScheduler,
   TeletrackerTaskQueueMessage
 }
-import com.teletracker.common.tasks.storage.{
-  TaskRecord,
-  TaskRecordCreator,
-  TaskRecordStore
-}
+import com.teletracker.common.tasks.storage.{TaskRecordCreator, TaskRecordStore}
 import javax.inject.Inject
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class SqsTaskScheduler @Inject()(
-  sqsAsyncClient: SqsAsyncClient,
-  teletrackerConfig: TeletrackerConfig,
   taskRecordCreator: TaskRecordCreator,
-  taskRecordStore: TaskRecordStore
+  taskRecordStore: TaskRecordStore,
+  taskQueue: SqsFifoQueue[TeletrackerTaskQueueMessage]
 )(implicit executionContext: ExecutionContext)
     extends TaskScheduler {
-
-  private val queue =
-    new SqsBoundedQueue[TeletrackerTaskQueueMessage](
-      sqsAsyncClient,
-      teletrackerConfig.async.taskQueue.url
-    )
-
   override def schedule(
-    teletrackerTaskQueueMessage: TeletrackerTaskQueueMessage
+    teletrackerTaskQueueMessage: TeletrackerTaskQueueMessage,
+    groupId: Option[String] = None
   ): Future[Unit] = {
-    schedule(List(teletrackerTaskQueueMessage))
+    schedule(List(teletrackerTaskQueueMessage -> groupId))
   }
 
   override def schedule(
-    teletrackerTaskQueueMessage: List[TeletrackerTaskQueueMessage]
+    teletrackerTaskQueueMessage: List[
+      (TeletrackerTaskQueueMessage, Option[String])
+    ]
   ): Future[Unit] = {
     val taskRecords = teletrackerTaskQueueMessage
-      .filter(_.id.isDefined)
+      .collect {
+        case (message, _) if message.id.isDefined => message
+      }
       .map(message => {
         taskRecordCreator
           .createScheduled(message.id.get, message.clazz, message.args)
@@ -48,9 +39,11 @@ class SqsTaskScheduler @Inject()(
     Future
       .sequence(taskRecords.map(taskRecordStore.recordNewTask))
       .flatMap(_ => {
-        queue.batchQueue(
-          teletrackerTaskQueueMessage,
-          Some(UUID.randomUUID().toString)
+        taskQueue.batchQueue(
+          teletrackerTaskQueueMessage.map {
+            case (message, group) =>
+              message -> group.getOrElse(UUID.randomUUID().toString)
+          }
         )
       })
 

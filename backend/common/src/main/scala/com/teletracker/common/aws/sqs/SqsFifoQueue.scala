@@ -6,6 +6,8 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{
   ChangeMessageVisibilityBatchResponse,
   GetQueueAttributesRequest,
+  Message,
+  MessageSystemAttributeName,
   QueueAttributeName
 }
 import java.util.UUID
@@ -50,14 +52,17 @@ class SqsFifoQueue[T <: EventBase: Manifest: Codec](
     ???
   }
 
-  final def batchQueue(messages: List[T]): Future[List[T]] =
-    batchQueue(messages, defaultGroupId)
-
   final def batchQueue(
     messages: List[T],
     messageGroupId: String
   ): Future[List[T]] = {
     batchQueueAsyncImpl(messages, Some(messageGroupId))
+  }
+
+  final def batchQueue(messages: List[(T, String)]): Future[List[T]] = {
+    batchQueueAsyncImpl(messages.map {
+      case (t, str) => t -> Some(str)
+    })
   }
 
   /**
@@ -74,7 +79,16 @@ class SqsFifoQueue[T <: EventBase: Manifest: Codec](
     dequeueImpl(
       count,
       waitTime,
-      (message: T, handle: String) => message.receipt_handle = Some(handle),
+      (message: T, sqsMessage: Message) => {
+        message.setReceiptHandle(Some(sqsMessage.receiptHandle()))
+        message.setMessageGroupId(
+          Option(
+            sqsMessage
+              .attributes()
+              .get(MessageSystemAttributeName.MESSAGE_GROUP_ID)
+          )
+        )
+      },
       attemptId = Some(UUID.randomUUID())
     )
   }

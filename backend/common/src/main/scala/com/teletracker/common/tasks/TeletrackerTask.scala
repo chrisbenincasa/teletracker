@@ -215,7 +215,9 @@ trait TeletrackerTask extends Args {
               )
             })
 
-            taskScheduler.schedule(tasks).await()
+            taskScheduler
+              .schedule(tasks.map(message => message -> Some(message.clazz)))
+              .await()
           } else {
             logger.debug("Skipping scheduling of followup jobs")
           }

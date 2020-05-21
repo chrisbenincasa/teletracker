@@ -10,12 +10,13 @@ object EntityOperations {
 
   def extractValues(
     entity: Entity,
-    property: String
+    property: String,
+    claimFilter: Claim => Boolean = _ => true
   ) = {
     entity.claims
       .get(property)
       .map(claims => {
-        claims.map(_.mainsnak).filter(_.datavalue.isDefined)
+        claims.filter(claimFilter).map(_.mainsnak).filter(_.datavalue.isDefined)
       })
   }
 }

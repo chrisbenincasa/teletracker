@@ -4,10 +4,13 @@ import scala.concurrent.Future
 
 trait TaskScheduler {
   def schedule(
-    teletrackerTaskQueueMessage: TeletrackerTaskQueueMessage
+    teletrackerTaskQueueMessage: TeletrackerTaskQueueMessage,
+    groupId: Option[String] = None
   ): Future[Unit]
 
   def schedule(
-    teletrackerTaskQueueMessage: List[TeletrackerTaskQueueMessage]
+    teletrackerTaskQueueMessage: List[
+      (TeletrackerTaskQueueMessage, Option[String])
+    ]
   ): Future[Unit]
 }

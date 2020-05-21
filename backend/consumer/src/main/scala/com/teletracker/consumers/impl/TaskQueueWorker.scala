@@ -53,7 +53,11 @@ class TaskQueueWorker @Inject()(
   }
 
   def requeueUnfinishedTasks(): Future[List[TeletrackerTaskQueueMessage]] = {
-    queue.batchQueue(getUnexecutedTasks.toList)
+    queue.batchQueue(
+      getUnexecutedTasks.toList.map(
+        message => message -> message.messageGroupId.getOrElse(message.clazz)
+      )
+    )
   }
 
   override protected def process(

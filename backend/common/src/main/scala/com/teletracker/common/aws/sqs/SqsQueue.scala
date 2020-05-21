@@ -79,7 +79,14 @@ class SqsQueue[T <: EventBase: Manifest: Codec](
     dequeueImpl(
       count,
       waitTime,
-      (message: T, handle: String) => message.receipt_handle = Some(handle)
+      (message: T, sqsMessage: Message) => {
+        message.receipt_handle = Some(sqsMessage.receiptHandle())
+        message.message_group_id = Option(
+          sqsMessage
+            .attributes()
+            .get(MessageSystemAttributeName.MESSAGE_GROUP_ID)
+        )
+      }
     )
   }
 

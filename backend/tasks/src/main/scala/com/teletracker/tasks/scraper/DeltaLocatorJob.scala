@@ -136,7 +136,9 @@ abstract class DeltaLocatorJob[ArgsType <: DeltaLocatorJobArgsLike](
           makeTaskMessages(actualBeforeLocation, actualAfterLocation, args)
 
         if (!parsedArgs.local) {
-          taskQueue.batchQueue(messages).await()
+          taskQueue
+            .batchQueue(messages.map(message => message -> message.clazz))
+            .await()
         } else {
           // FOR DEBUGGING
           messages.foreach(message => {

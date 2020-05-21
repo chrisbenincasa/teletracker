@@ -35,6 +35,12 @@ case class EsItem(
   `type`: ItemType,
   videos: Option[List[EsItemVideo]]) {
 
+  def usReleaseDateOrFallback: Option[LocalDate] = {
+    release_dates
+      .flatMap(_.find(_.country_code == "US").flatMap(_.release_date))
+      .orElse(release_date)
+  }
+
   def castMemberForId(id: UUID): Option[EsItemCastMember] =
     cast.flatMap(_.find(_.id == id))
 

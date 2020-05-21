@@ -8,6 +8,8 @@ import software.amazon.awssdk.services.sqs.model.{
   ChangeMessageVisibilityBatchResponse,
   DeleteMessageBatchRequest,
   DeleteMessageBatchRequestEntry,
+  Message,
+  MessageSystemAttributeName,
   ReceiveMessageRequest,
   SendMessageBatchRequest,
   SendMessageBatchRequestEntry
@@ -47,8 +49,15 @@ abstract class SqsQueueBase(
     messageGroupId: Option[String] = None
   )(implicit codec: Codec[T]
   ): Future[List[T]] = {
+    batchQueueAsyncImpl(messages.map(_ -> messageGroupId))
+  }
+
+  protected def batchQueueAsyncImpl[T](
+    messages: List[(T, Option[String])]
+  )(implicit codec: Codec[T]
+  ): Future[List[T]] = {
     implicit val decoder: Decoder[T] = implicitly[Decoder[T]]
-    val entries = createBatchQueueGroups(messages, messageGroupId)
+    val entries = createBatchQueueGroups(messages)
 
     def batchQueueAsyncInner(
       groups: Iterable[List[SendMessageBatchRequestEntry]],
@@ -92,7 +101,7 @@ abstract class SqsQueueBase(
   protected def dequeueImpl[T: Decoder](
     count: Int,
     waitTime: Duration = 1 second,
-    setReceiptHandle: (T, String) => Unit,
+    messageUpdater: (T, Message) => Unit,
     attemptId: Option[UUID] = None
   ): Future[List[T]] = {
     def dequeueInner(
@@ -113,7 +122,7 @@ abstract class SqsQueueBase(
             try {
               val message = deserialize(m.body())
 
-              setReceiptHandle(message, m.receiptHandle())
+              messageUpdater(message, m)
               Some(message)
             } catch {
               case ex: Exception =>
@@ -152,11 +161,10 @@ abstract class SqsQueueBase(
   }
 
   private def createBatchQueueGroups[T: Encoder](
-    messages: List[T],
-    messageGroupId: Option[String]
+    messages: List[(T, Option[String])]
   ): Iterable[BatchGroups[EntryWithSize[T]]] = {
     val entries = messages.zipWithIndex.map {
-      case (m, i) =>
+      case ((m, groupId), i) =>
         val message = serializer(m)
 
         EntryWithSize(
@@ -165,7 +173,7 @@ abstract class SqsQueueBase(
             .id((i + 1).toString)
             .messageBody(message)
             .applyIf(isFifo)(
-              _.messageGroupId(messageGroupId.getOrElse("default"))
+              _.messageGroupId(groupId.getOrElse("default"))
             )
             // No deduplication happening here...
             .applyIf(isFifo)(

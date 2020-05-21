@@ -129,6 +129,9 @@ class PersonImportHandler @Inject()(
                   dryRun = args.dryRun
                 ),
                 tags = Some(Set(TaskTag.RequiresTmdbApi))
+              ),
+              Some(
+                s"${TeletrackerTaskIdentifier.DENORMALIZE_PERSON_TASK}_${result.personId}"
               )
             )
           } else if (args.dryRun && result.itemChanged) {

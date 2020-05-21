@@ -14,7 +14,8 @@ class DirectTaskScheduler @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends TaskScheduler {
   override def schedule(
-    teletrackerTaskQueueMessage: TeletrackerTaskQueueMessage
+    teletrackerTaskQueueMessage: TeletrackerTaskQueueMessage,
+    groupId: Option[String] = None
   ): Future[Unit] = {
     Future {
       taskRunner.runFromJsonArgs(
@@ -25,10 +26,13 @@ class DirectTaskScheduler @Inject()(
   }
 
   override def schedule(
-    teletrackerTaskQueueMessage: List[TeletrackerTaskQueueMessage]
+    teletrackerTaskQueueMessage: List[
+      (TeletrackerTaskQueueMessage, Option[String])
+    ]
   ): Future[Unit] = {
     AsyncStream
       .fromSeq(teletrackerTaskQueueMessage)
+      .map(_._1)
       .mapF(message => {
         Future {
           taskRunner.runFromJsonArgs(message.clazz, message.args)

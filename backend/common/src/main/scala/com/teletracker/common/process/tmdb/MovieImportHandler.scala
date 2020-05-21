@@ -187,6 +187,9 @@ class MovieImportHandler @Inject()(
                 dryRun = args.dryRun
               ),
               tags = None
+            ),
+            Some(
+              s"${TeletrackerTaskIdentifier.DENORMALIZE_ITEM_TASK}_${result.itemId}"
             )
           )
       }

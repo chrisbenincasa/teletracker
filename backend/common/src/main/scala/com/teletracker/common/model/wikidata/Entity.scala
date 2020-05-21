@@ -28,7 +28,16 @@ case class Entity(
   labels: Map[String, Label],
   descriptions: Map[String, Description],
   aliases: Map[String, List[Alias]],
-  claims: Map[String, List[Claim]])
+  claims: Map[String, List[Claim]]) {
+
+  def imdbId: Option[String] = claims.get(WikibaseProperties.ImdbId) match {
+    case Some(value) =>
+      value.headOption.flatMap(_.mainsnak.datavalue).collectFirst {
+        case StringDataValue(value, _) => value
+      }
+    case None => None
+  }
+}
 
 @JsonCodec
 case class Label(
@@ -50,7 +59,24 @@ case class Claim(
   id: String,
   `type`: String,
   rank: String,
-  mainsnak: Snak)
+  mainsnak: Snak,
+  qualifiers: Option[Map[String, List[Snak]]],
+  references: Option[List[Reference]]) {
+
+  def referencesPropertyWithId(
+    property: String,
+    id: String
+  ): Boolean = {
+    references.exists(
+      _.exists(
+        _.hasWikibaseIdReference(
+          property,
+          id
+        )
+      )
+    )
+  }
+}
 
 @JsonCodec
 case class Snak(
@@ -223,3 +249,21 @@ case class TimeDataValue(
   time: String, // Make this more precise
   precision: Option[Int])
     extends DataValue
+
+@JsonCodec
+case class Reference(
+  hash: String,
+  snaks: Map[String, List[Snak]],
+  `snaks-order`: List[String]) {
+
+  def hasWikibaseIdReference(
+    property: String,
+    idValue: String
+  ): Boolean = {
+    snaks
+      .get(property)
+      .exists(_.exists(_.datavalue.collect {
+        case WikibaseEntityIdDataValue(value, _) => value.id == idValue
+      }.isDefined))
+  }
+}

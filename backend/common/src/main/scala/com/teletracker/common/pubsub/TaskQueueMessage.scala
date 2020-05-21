@@ -9,15 +9,24 @@ object TaskTag {
   final val RequiresDbAccess = "tag/RequiresDbAccess"
 }
 
-class EventBase extends Serializable with SettableReceiptHandle {
+class EventBase
+    extends Serializable
+    with SettableReceiptHandle
+    with SettableGroupId {
   var receipt_handle: Option[String] = None
   var queued_timestamp: Option[Long] = None
+  var message_group_id: Option[String] = None
 
   override def receiptHandle: Option[String] =
     receipt_handle
 
   override def setReceiptHandle(handle: Option[String]): Unit =
     receipt_handle = handle
+
+  override def messageGroupId: Option[String] = message_group_id
+
+  override def setMessageGroupId(id: Option[String]): Unit =
+    message_group_id = id
 
   /**
     * Defines a unique identifier for this message for use in de-duplicating messages.

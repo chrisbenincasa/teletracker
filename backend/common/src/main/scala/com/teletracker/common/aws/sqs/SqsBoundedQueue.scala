@@ -1,13 +1,21 @@
 package com.teletracker.common.aws.sqs
 
-import com.teletracker.common.pubsub.{BoundedQueue, SettableReceiptHandle}
+import com.teletracker.common.pubsub.{
+  BoundedQueue,
+  SettableGroupId,
+  SettableReceiptHandle
+}
 import io.circe.{Codec, Decoder, Encoder}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityBatchResponse
+import software.amazon.awssdk.services.sqs.model.{
+  ChangeMessageVisibilityBatchResponse,
+  Message,
+  MessageSystemAttributeName
+}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
-class SqsBoundedQueue[UpperBound <: SettableReceiptHandle](
+class SqsBoundedQueue[UpperBound <: SettableReceiptHandle with SettableGroupId](
   sqs: SqsAsyncClient,
   override val url: String
 )(implicit executionContext: ExecutionContext)
@@ -28,7 +36,16 @@ class SqsBoundedQueue[UpperBound <: SettableReceiptHandle](
     dequeueImpl(
       count,
       waitTime,
-      (message: T, handle: String) => message.setReceiptHandle(Some(handle))
+      (message: T, sqsMessage: Message) => {
+        message.setReceiptHandle(Some(sqsMessage.receiptHandle()))
+        message.setMessageGroupId(
+          Option(
+            sqsMessage
+              .attributes()
+              .get(MessageSystemAttributeName.MESSAGE_GROUP_ID)
+          )
+        )
+      }
     )
   }
 
