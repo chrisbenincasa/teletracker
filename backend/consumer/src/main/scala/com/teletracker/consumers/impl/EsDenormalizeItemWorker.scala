@@ -1,11 +1,9 @@
 package com.teletracker.consumers.impl
 
 import com.teletracker.common.aws.sqs.SqsFifoQueue
-import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase.FutureOption
+import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase._
 import com.teletracker.common.aws.sqs.worker.{
   SqsQueueAsyncBatchWorker,
-  SqsQueueThroughputWorker,
-  SqsQueueThroughputWorkerConfig,
   SqsQueueWorkerConfig
 }
 import com.teletracker.common.config.core.api.ReloadableConfig
@@ -28,13 +26,17 @@ class EsDenormalizeItemWorker @Inject()(
 
   override protected def process(
     msg: Seq[EsDenormalizeItemMessage]
-  ): Future[Seq[String]] = {
-    Future.sequence(msg.map(process)).map(_.flatten)
+  ): Future[Seq[FinishedAction]] = {
+    Future.sequence(msg.map(process))
   }
 
-  private def process(msg: EsDenormalizeItemMessage): FutureOption[String] = {
+  private def process(
+    msg: Id[EsDenormalizeItemMessage]
+  ): Future[Id[FinishedAction]] = {
     val elapsed = Stopwatch.start()
-    logger.info(s"Denormalizing item: ${msg.itemId}")
+    logger.info(
+      s"Denormalizing item: ${msg.itemId} (groupId = ${msg.message_group_id})"
+    )
 
     denormalizedItemUpdater
       .fullyDenormalizeItem(
@@ -49,7 +51,7 @@ class EsDenormalizeItemWorker @Inject()(
         logger.info(
           s"Done denormalizing item: ${msg.itemId}, took ${elapsed().inMillis} millis"
         )
-        msg.receiptHandle
+        msg.receiptHandle.map(Ack).getOrElse(DoNothing)
       })
       .recover {
         case NonFatal(e) =>
@@ -57,7 +59,7 @@ class EsDenormalizeItemWorker @Inject()(
             s"Failure while attempting to denormalize item with id = ${msg.itemId}.",
             e
           )
-          None
+          msg.receiptHandle.map(ClearVisibility).getOrElse(DoNothing)
       }
   }
 }

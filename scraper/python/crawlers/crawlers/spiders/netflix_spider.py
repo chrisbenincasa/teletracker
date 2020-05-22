@@ -30,6 +30,10 @@ class NetflixSpider(scrapy.spiders.CrawlSpider):
         'https://www.netflix.com/browse/genre/83'
     ]
 
+    custom_settings = {
+        'DOWNLOAD_DELAY': 1,
+    }
+
     rules = (
         Rule(LinkExtractor(allow=(r'(https://www.netflix.com)?/title/\d+',)),
              callback='parse_item', follow=True),

@@ -5,6 +5,10 @@
 package com.teletracker.common.aws.sqs.worker
 
 import com.teletracker.common.aws.sqs.SqsQueue
+import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase.{
+  ClearVisibility,
+  FinishedAction
+}
 import com.teletracker.common.pubsub.EventBase
 import com.teletracker.common.util.execution.ExecutionContextProvider
 import com.teletracker.common.aws.sqs.worker.poll.Heartbeats
@@ -18,13 +22,13 @@ object SqsQueueBatchWorker {
     queue: SqsQueue[T],
     config: ReloadableConfig[SqsQueueWorkerConfig]
   )(
-    processFunc: Seq[T] => Seq[String]
+    processFunc: Seq[T] => Seq[FinishedAction]
   )(implicit
     executionContext: ExecutionContext
   ): SqsQueueBatchWorker[T] = {
 
     new SqsQueueBatchWorker(queue, config) {
-      override protected def process(msg: Seq[T]): Seq[String] =
+      override protected def process(msg: Seq[T]): Seq[FinishedAction] =
         processFunc(msg)
     }
   }
@@ -68,11 +72,20 @@ abstract class SqsQueueBatchWorker[T <: EventBase: Manifest](
       } else {
         items.foreach(registerHeartbeat)
 
-        val handlesToRemove = process(items)
+        val actions = process(items)
 
-        handlesToRemove.foreach(unregisterHeartbeat)
+        val acks = actions.collect {
+          case SqsQueueWorkerBase.Ack(handle) => handle
+        }.toList
 
-        ack(handlesToRemove.toList)
+        val clears = actions.collect {
+          case ClearVisibility(handle) => handle
+        }
+
+        (acks ++ clears).foreach(unregisterHeartbeat)
+
+        ack(acks)
+        changeVisibility(clears.toList, duration = None)
       }
     } catch {
       errorHandler andThen { _ =>

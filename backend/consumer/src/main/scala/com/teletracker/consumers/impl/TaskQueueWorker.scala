@@ -1,6 +1,12 @@
 package com.teletracker.consumers.impl
 
 import com.teletracker.common.aws.sqs.SqsFifoQueue
+import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase.{
+  Ack,
+  ClearVisibility,
+  DoNothing,
+  FinishedAction
+}
 import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig
@@ -62,7 +68,7 @@ class TaskQueueWorker @Inject()(
 
   override protected def process(
     message: TeletrackerTaskQueueMessage
-  ): Future[Option[String]] = {
+  ): Future[FinishedAction] = {
     try {
       val task = taskRunner.getInstance(message.clazz)
       val taskId = message.id.getOrElse(UUID.randomUUID())
@@ -120,9 +126,11 @@ class TaskQueueWorker @Inject()(
         }
 
       if (!submitted) {
-        Future.successful(None)
+        Future.successful(
+          message.receiptHandle.map(ClearVisibility).getOrElse(DoNothing)
+        )
       } else {
-        completionPromise.future
+        completionPromise.future.map(_.map(Ack).getOrElse(DoNothing))
       }
     } catch {
       case NonFatal(e) =>

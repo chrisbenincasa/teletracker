@@ -5,6 +5,7 @@
 package com.teletracker.common.aws.sqs.worker
 
 import com.teletracker.common.aws.sqs.ProcessingFailedException
+import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase.FinishedAction
 import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
@@ -17,6 +18,11 @@ import scala.util.control.NonFatal
 object SqsQueueWorkerBase {
   type Id[A] = A
   type FutureOption[A] = Future[Option[A]]
+
+  sealed trait FinishedAction
+  case class Ack(handle: String) extends FinishedAction
+  case class ClearVisibility(handle: String) extends FinishedAction
+  case object DoNothing extends FinishedAction
 }
 
 abstract class SqsQueueWorkerBase[
@@ -82,7 +88,7 @@ abstract class SqsQueueWorkerBase[
 
   protected def runInternal(): Unit
 
-  protected def process(msg: Wrapper[T]): ReturnWrapper[Wrapper[String]]
+  protected def process(msg: Wrapper[T]): ReturnWrapper[Wrapper[FinishedAction]]
 
   final protected val defaultErrorHandler: PartialFunction[Throwable, Unit] = {
     // Note: you can't catch an instance of ProcessingFailedException as it is a singleton
@@ -124,12 +130,27 @@ abstract class SqsQueueWorkerBase[
     } catch errorHandler andThen (_ => Nil)
   }
 
-  protected def ack(handles: List[String]): Unit = {
+  protected def changeVisibilityAsync(
+    handles: List[String],
+    duration: Option[FiniteDuration]
+  ): Future[Unit] = {
     if (handles.nonEmpty) {
-      try {
-        queue.remove(handles).await()
-      } catch errorHandler
+      (duration match {
+        case Some(value) => queue.changeVisibility(handles, value).map(_ => {})
+        case None        => queue.clearVisibility(handles)
+      })
+    } else {
+      Future.unit
     }
+  }
+
+  protected def changeVisibility(
+    handles: List[String],
+    duration: Option[FiniteDuration]
+  ): Unit = changeVisibilityAsync(handles, duration).await()
+
+  protected def ack(handles: List[String]): Unit = {
+    ackAsync(handles).await()
   }
 
   protected def ackAsync(handles: List[String]): Future[Unit] = {

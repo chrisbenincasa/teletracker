@@ -5,6 +5,11 @@
 package com.teletracker.common.aws.sqs.worker
 
 import com.teletracker.common.aws.sqs.SqsQueue
+import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase.{
+  Ack,
+  ClearVisibility,
+  FinishedAction
+}
 import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import com.teletracker.common.util.execution.{
   ExecutionContextProvider,
@@ -27,13 +32,13 @@ object SqsQueueThroughputWorker {
     queue: QueueReader[T],
     config: ReloadableConfig[SqsQueueThroughputWorkerConfig]
   )(
-    processFunc: T => Future[Option[String]]
+    processFunc: T => Future[FinishedAction]
   )(implicit
     executionContext: ExecutionContext
   ): SqsQueueThroughputWorker[T] = {
 
     new SqsQueueThroughputWorker(queue, config) {
-      override protected def process(msg: T): Future[Option[String]] =
+      override protected def process(msg: T): Future[FinishedAction] =
         processFunc(msg)
     }
   }
@@ -52,14 +57,14 @@ object SqsQueueThroughputWorker {
     queue: QueueReader[T],
     config: ReloadableConfig[SqsQueueThroughputWorkerConfig]
   )(
-    processFunc: T => Future[Unit]
+    processFunc: T => Future[FinishedAction]
   )(implicit
     executionContext: ExecutionContext
   ): SqsQueueThroughputWorker[T] = {
 
     new SqsQueueThroughputWorker(queue, config) {
-      override protected def process(msg: T): Future[Option[String]] = {
-        processFunc(msg).map(_ => msg.receipt_handle)
+      override protected def process(msg: T): Future[FinishedAction] = {
+        processFunc(msg)
       }
     }
   }
@@ -73,7 +78,7 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
     extends SqsQueueWorkerBase[
       T,
       SqsQueueWorkerBase.Id,
-      SqsQueueWorkerBase.FutureOption
+      Future
     ](queue, reloadableConfig)
     with Heartbeats[T] {
 
@@ -153,14 +158,20 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
       registerHeartbeat(item)
 
       eventProcessingFuture
-        .flatMap(handle => {
+        .flatMap(action => {
           if (stopped) {
-            handle.foreach(
-              h => logger.info(s"Worker stopped but will still ack $h")
-            )
+            action match {
+              case Ack(handle) =>
+                logger.info(s"Worker stopped but will still ack $handle")
+              case ClearVisibility(handle) =>
+                logger.info(
+                  s"Worker stopped but will still clear visibility $handle"
+                )
+              case _ =>
+            }
           }
 
-          ackAsync(handle.toList)
+          handleFinished(action)
         })
         .map(_ => {})
         .recover(errorHandler)
@@ -218,6 +229,15 @@ abstract class SqsQueueThroughputWorker[T <: EventBase: Manifest](
 
     Future.firstCompletedOf(List(flusher, timer)).map(_ => {})
   }
+
+  private def handleFinished(finishedAction: FinishedAction): Future[Unit] =
+    finishedAction match {
+      case SqsQueueWorkerBase.Ack(handle) =>
+        ackAsync(handle :: Nil)
+      case SqsQueueWorkerBase.ClearVisibility(handle) =>
+        changeVisibilityAsync(handle :: Nil, None)
+      case SqsQueueWorkerBase.DoNothing => Future.unit
+    }
 }
 
 class SqsQueueThroughputWorkerConfig(

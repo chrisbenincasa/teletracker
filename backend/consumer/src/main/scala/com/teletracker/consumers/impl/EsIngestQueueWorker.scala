@@ -1,7 +1,13 @@
 package com.teletracker.consumers.impl
 
 import com.teletracker.common.aws.sqs.SqsFifoQueue
-import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase.FutureOption
+import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase.{
+  Ack,
+  ClearVisibility,
+  DoNothing,
+  FinishedAction,
+  FutureOption
+}
 import com.teletracker.common.aws.sqs.worker.{
   SqsQueueThroughputWorker,
   SqsQueueThroughputWorkerConfig
@@ -39,29 +45,33 @@ class EsIngestQueueWorker @Inject()(
   mappingStore: ElasticsearchExternalIdMappingStore
 )(implicit executionContext: ExecutionContext)
     extends SqsQueueThroughputWorker[EsIngestMessage](queue, config) {
-  override protected def process(msg: EsIngestMessage): FutureOption[String] = {
+  override protected def process(
+    msg: EsIngestMessage
+  ): Future[FinishedAction] = {
     msg.operation match {
       case EsIngestMessageOperation.Update =>
         msg.update
           .map(handleUpdate)
           .getOrElse(Future.unit)
-          .map(_ => msg.receiptHandle)
+          .map(_ => msg.receiptHandle.map(Ack))
           .recover {
             case NonFatal(e) =>
               logger.error("Encountered error while processing", e)
-              None
+              msg.receiptHandle.map(ClearVisibility)
           }
+          .map(_.getOrElse(DoNothing))
 
       case EsIngestMessageOperation.Index =>
         msg.index
           .map(handleIndex)
           .getOrElse(Future.unit)
-          .map(_ => msg.receiptHandle)
+          .map(_ => msg.receiptHandle.map(Ack))
           .recover {
             case NonFatal(e) =>
               logger.error("Encountered error while processing", e)
-              None
+              msg.receiptHandle.map(ClearVisibility)
           }
+          .map(_.getOrElse(DoNothing))
     }
   }
 

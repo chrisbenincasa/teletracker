@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.sqs.model.{
   DeleteMessageBatchRequestEntry,
   Message,
   MessageSystemAttributeName,
+  QueueAttributeName,
   ReceiveMessageRequest,
   SendMessageBatchRequest,
   SendMessageBatchRequestEntry
@@ -246,7 +247,18 @@ abstract class SqsQueueBase(
           .entries(entries.asJava)
           .build()
 
-        sqs.deleteMessageBatch(request).toScala.map(_ :: Nil)
+        sqs
+          .deleteMessageBatch(request)
+          .toScala
+          .map(response => {
+            val failedAcks = response.failed().asScala.toList
+
+            if (failedAcks.nonEmpty) {
+              logger.warn(
+                s"Failed to ack ${failedAcks.size} messages. Original messages: ${failedAcks.map(_.message()).mkString("\n")}"
+              )
+            }
+          })
       })
       .map(_ => {})
   }
@@ -300,6 +312,9 @@ abstract class SqsQueueBase(
       .maxNumberOfMessages(maxNumberOfMessages)
       .applyOptional(attemptId)(
         (builder, id) => builder.receiveRequestAttemptId(id.toString)
+      )
+      .attributeNamesWithStrings(
+        MessageSystemAttributeName.MESSAGE_GROUP_ID.toString
       )
       .build()
   }

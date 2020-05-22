@@ -88,8 +88,8 @@ class SqsFifoQueue[T <: EventBase: Manifest: Codec](
               .get(MessageSystemAttributeName.MESSAGE_GROUP_ID)
           )
         )
-      },
-      attemptId = Some(UUID.randomUUID())
+      }
+//      attemptId = Some(UUID.randomUUID())
     )
   }
 

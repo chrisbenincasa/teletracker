@@ -4,6 +4,11 @@
 
 package com.teletracker.common.aws.sqs.worker
 
+import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase.{
+  Ack,
+  ClearVisibility,
+  FinishedAction
+}
 import com.teletracker.common.config.core.api.ReloadableConfig
 import com.teletracker.common.pubsub.{EventBase, QueueReader}
 import java.util.concurrent.Semaphore
@@ -16,13 +21,13 @@ object SqsQueueAsyncBatchWorker {
     queue: QueueReader[T],
     config: ReloadableConfig[SqsQueueWorkerConfig]
   )(
-    processFunc: Seq[T] => Future[Seq[String]]
+    processFunc: Seq[T] => Future[Seq[FinishedAction]]
   )(implicit
     executionContext: ExecutionContext
   ): SqsQueueAsyncBatchWorker[T] = {
 
     new SqsQueueAsyncBatchWorker(queue, config) {
-      override protected def process(msg: Seq[T]): Future[Seq[String]] =
+      override protected def process(msg: Seq[T]): Future[Seq[FinishedAction]] =
         processFunc(msg)
     }
   }
@@ -61,9 +66,7 @@ abstract class SqsQueueAsyncBatchWorker[T <: EventBase: Manifest](
           // Otherwise, run the item batch and release the lock when all items have finished
           // regardless of whether they succeeded or not
           process(items)
-            .flatMap(handlesToRemove => {
-              ackAsync(handlesToRemove.toList)
-            })
+            .flatMap(handleProcessFinished)
             .recover {
               case CanHandleError(ex) => errorHandler(ex)
               case ex => {
@@ -103,6 +106,24 @@ abstract class SqsQueueAsyncBatchWorker[T <: EventBase: Manifest](
     }
 
     runInternalFinal()
+  }
+
+  private def handleProcessFinished(actions: Seq[FinishedAction]) = {
+    val acks = actions.collect {
+      case Ack(handle) => handle
+    }.toList
+
+    val clears = actions.collect {
+      case ClearVisibility(handle) => handle
+    }.toList
+
+    val ackFut = ackAsync(acks)
+    val changeFut = changeVisibilityAsync(clears, None)
+
+    for {
+      _ <- ackFut
+      _ <- changeFut
+    } yield {}
   }
 
   override protected def flush(): Future[Unit] = {
