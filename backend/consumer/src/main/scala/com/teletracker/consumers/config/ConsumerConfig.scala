@@ -12,7 +12,8 @@ case class ConsumerConfig(
   max_regular_concurrent_jobs: Int,
   logging: ConsumerLoggingConfig,
   es_ingest_worker: ThroughputWorkerConfig,
-  es_item_denorm_worker: BatchWorkerConfig)
+  es_item_denorm_worker: BatchWorkerConfig,
+  es_person_denorm_worker: BatchWorkerConfig)
 
 case class ConsumerLoggingConfig(output_to_console: Boolean)
 

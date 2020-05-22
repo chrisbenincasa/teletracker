@@ -42,12 +42,6 @@ class ConsumerConfigModule extends TwitterModule {
     consumerConfig.map(conf => {
       new SqsQueueThroughputWorkerConfig(
         maxOutstandingItems = conf.max_regular_concurrent_jobs + conf.max_tmdb_concurrent_jobs
-//        heartbeat = Some(
-//          HeartbeatConfig(
-//            heartbeat_frequency = 15 seconds,
-//            visibility_timeout = 5 minutes
-//          )
-//        )
       )
     })
   }
@@ -68,6 +62,19 @@ class ConsumerConfigModule extends TwitterModule {
   @Provides
   @QueueConfigAnnotations.DenormalizeItemQueueConfig
   def esDenormConfig(
+    consumerConfig: ReloadableConfig[ConsumerConfig]
+  ): ReloadableConfig[SqsQueueWorkerConfig] = {
+    consumerConfig.map(conf => {
+      new SqsQueueWorkerConfig(
+        batchSize = conf.es_item_denorm_worker.batch_size,
+        heartbeat = None
+      )
+    })
+  }
+
+  @Provides
+  @QueueConfigAnnotations.DenormalizePersonQueueConfig
+  def esDenormPersonConfig(
     consumerConfig: ReloadableConfig[ConsumerConfig]
   ): ReloadableConfig[SqsQueueWorkerConfig] = {
     consumerConfig.map(conf => {

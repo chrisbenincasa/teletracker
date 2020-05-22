@@ -23,6 +23,7 @@ import com.teletracker.common.elasticsearch.model.{
 import com.teletracker.common.elasticsearch.{ItemUpdater, PersonUpdater}
 import com.teletracker.common.pubsub.{
   EsDenormalizeItemMessage,
+  EsDenormalizePersonMessage,
   EsIngestIndex,
   EsIngestMessage,
   EsIngestMessageOperation,
@@ -41,7 +42,8 @@ class EsIngestQueueWorker @Inject()(
   itemUpdater: ItemUpdater,
   personUpdater: PersonUpdater,
   teletrackerConfig: TeletrackerConfig,
-  denormQueue: SqsFifoQueue[EsDenormalizeItemMessage],
+  itemDenormQueue: SqsFifoQueue[EsDenormalizeItemMessage],
+  personDenormQueue: SqsFifoQueue[EsDenormalizePersonMessage],
   mappingStore: ElasticsearchExternalIdMappingStore
 )(implicit executionContext: ExecutionContext)
     extends SqsQueueThroughputWorker[EsIngestMessage](queue, config) {
@@ -158,7 +160,7 @@ class EsIngestQueueWorker @Inject()(
     if (teletrackerConfig.elasticsearch.items_index_name == update.index) {
       handleItemUpdate(update).flatMap {
         case _ if update.itemDenorm.exists(_.needsDenorm) =>
-          denormQueue
+          itemDenormQueue
             .queue(
               EsDenormalizeItemMessage(
                 itemId = UUID.fromString(update.id),
@@ -172,7 +174,18 @@ class EsIngestQueueWorker @Inject()(
         case _ => Future.unit
       }
     } else if (teletrackerConfig.elasticsearch.people_index_name == update.index) {
-      handlePersonUpdate(update)
+      handlePersonUpdate(update).flatMap {
+        case _ if update.personDenorm.exists(_.needsDenorm) =>
+          personDenormQueue
+            .queue(
+              EsDenormalizePersonMessage(
+                personId = UUID.fromString(update.id)
+              ),
+              messageGroupId = update.id
+            )
+            .map(_ => {})
+        case _ => Future.unit
+      }
     } else {
       Future.failed(
         new IllegalArgumentException(s"Unexpected index: ${update.index}")

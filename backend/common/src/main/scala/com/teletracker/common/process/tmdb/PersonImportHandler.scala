@@ -1,15 +1,9 @@
 package com.teletracker.common.process.tmdb
 
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.elasticsearch.{model, _}
 import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
-import com.teletracker.common.elasticsearch.model.{
-  EsExternalId,
-  EsItem,
-  EsPerson,
-  EsPersonCastCredit,
-  EsPersonCrewCredit
-}
+import com.teletracker.common.elasticsearch.model._
+import com.teletracker.common.elasticsearch.{model, _}
 import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.Person
 import com.teletracker.common.process.tmdb.PersonImportHandler.{
@@ -25,12 +19,10 @@ import com.teletracker.common.tasks.model.{
   TeletrackerTaskIdentifier
 }
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.time.LocalDateUtils
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
-import java.time.LocalDate
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
@@ -39,7 +31,8 @@ import scala.util.control.NonFatal
 object PersonImportHandler {
   case class PersonImportHandlerArgs(
     dryRun: Boolean,
-    forceScheduleDenorm: Boolean = false)
+    forceScheduleDenorm: Boolean = false,
+    async: Boolean = true)
 
   sealed trait PersonImportResult {
     def personId: UUID
@@ -116,7 +109,7 @@ class PersonImportHandler @Inject()(
       .through {
         case Success(result) =>
           val changeHappened = result.itemChanged || result.inserted || result.castNeedsDenorm || result.crewNeedsDenorm
-          if (args.forceScheduleDenorm || (!args.dryRun && changeHappened)) {
+          if (args.forceScheduleDenorm || (!args.dryRun && !args.async && changeHappened)) {
             logger.info(
               s"Scheduling denormalization task item id = ${result.personId}"
             )

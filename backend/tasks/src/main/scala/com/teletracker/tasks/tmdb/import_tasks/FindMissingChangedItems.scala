@@ -4,7 +4,7 @@ import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.ItemLookup
-import com.teletracker.common.process.tmdb.ItemExpander
+import com.teletracker.common.process.tmdb.TmdbItemLookup
 import com.teletracker.common.util.{AsyncStream, ClosedDateRange}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.json.circe._
@@ -31,7 +31,7 @@ class FindMissingChangedItems @Inject()(
   teletrackerConfig: TeletrackerConfig,
   s3Client: S3Client,
   itemLookup: ItemLookup,
-  itemExpander: ItemExpander
+  itemExpander: TmdbItemLookup
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTask {
   override type TypedArgs = FindMissingChangedItemsArgs

@@ -3,13 +3,14 @@ package com.teletracker.common.elasticsearch.async
 import com.teletracker.common.aws.sqs.SqsFifoQueue
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.elasticsearch.model.EsItem
+import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson}
 import com.teletracker.common.pubsub.{
   EsIngestIndex,
   EsIngestItemDenormArgs,
   EsIngestItemExternalIdMapping,
   EsIngestMessage,
   EsIngestMessageOperation,
+  EsIngestPersonDenormArgs,
   EsIngestUpdate
 }
 import io.circe.Json
@@ -65,4 +66,48 @@ class EsIngestQueue @Inject()(
       messageGroupId = id.toString // Handle updates for this item in order
     )
   }
+
+  def queuePersonInsert(esPerson: EsPerson): Future[Option[EsIngestMessage]] = {
+    queue.queue(
+      message = EsIngestMessage(
+        operation = EsIngestMessageOperation.Index,
+        index = Some(
+          EsIngestIndex(
+            index = teletrackerConfig.elasticsearch.people_index_name,
+            id = esPerson.id.toString,
+            externalIdMappings = Some(esPerson.externalIdsGrouped.map {
+              case (source, str) =>
+                EsIngestItemExternalIdMapping(source, str, ItemType.Person)
+            }.toSet),
+            doc = esPerson.asJson
+          )
+        )
+      )
+    )
+  }
+
+  def queuePersonUpdate(
+    id: UUID,
+    doc: Json,
+    denorm: Option[EsIngestPersonDenormArgs]
+  ): Future[Option[EsIngestMessage]] = {
+    queue.queue(
+      message = EsIngestMessage(
+        operation = EsIngestMessageOperation.Update,
+        update = Some(
+          EsIngestUpdate(
+            index = teletrackerConfig.elasticsearch.people_index_name,
+            id = id.toString,
+            itemType = Some(ItemType.Person),
+            doc = Some(doc),
+            script = None,
+            itemDenorm = None,
+            personDenorm = denorm
+          )
+        )
+      ),
+      messageGroupId = id.toString // Handle updates for this item in order
+    )
+  }
+
 }

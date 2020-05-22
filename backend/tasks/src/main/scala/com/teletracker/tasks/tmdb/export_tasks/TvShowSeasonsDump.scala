@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
-import com.teletracker.common.process.tmdb.ItemExpander
+import com.teletracker.common.process.tmdb.TmdbItemLookup
 import io.circe.Decoder
 import io.circe.syntax._
 import io.circe.generic.JsonCodec
@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import TvShowSeasonDumpRow._
 
 class TvShowSeasonsDump @Inject()(
-  itemExpander: ItemExpander
+  itemExpander: TmdbItemLookup
 )(implicit executionContext: ExecutionContext)
     extends DataDumpTask[TvShowSeasonDumpRow, (Int, Int)] {
 

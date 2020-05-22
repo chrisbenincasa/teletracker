@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
-import com.teletracker.common.process.tmdb.ItemExpander
+import com.teletracker.common.process.tmdb.TmdbItemLookup
 import com.teletracker.tasks.model.PersonDumpFileRow
 import io.circe.Decoder
 import io.circe.generic.JsonCodec
@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object PersonDumpTool extends DataDumpTaskApp[PersonDump]
 
 class PersonDump @Inject()(
-  itemExpander: ItemExpander
+  itemExpander: TmdbItemLookup
 )(implicit executionContext: ExecutionContext)
     extends DataDumpTask[PersonDumpFileRow, Int] {
 

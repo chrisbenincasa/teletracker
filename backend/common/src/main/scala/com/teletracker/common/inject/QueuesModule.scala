@@ -2,18 +2,16 @@ package com.teletracker.common.inject
 
 import com.google.inject.Provides
 import com.teletracker.common.aws.sqs.SqsFifoQueue
-import com.teletracker.common.aws.sqs.worker.SqsQueueThroughputWorkerConfig
-import com.teletracker.common.aws.sqs.worker.poll.HeartbeatConfig
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.{
   EsDenormalizeItemMessage,
+  EsDenormalizePersonMessage,
   EsIngestMessage,
   TeletrackerTaskQueueMessage
 }
 import com.twitter.inject.TwitterModule
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
 
 class QueuesModule extends TwitterModule {
   @Provides
@@ -71,6 +69,26 @@ class QueuesModule extends TwitterModule {
         )
       }),
       config.async.esItemDenormalizationQueue.message_group_id
+        .getOrElse("default")
+    )
+
+  @Provides
+  def esPersonDenormQueue(
+    config: TeletrackerConfig,
+    sqsAsyncClient: SqsAsyncClient
+  )(implicit executionContext: ExecutionContext
+  ): SqsFifoQueue[EsDenormalizePersonMessage] =
+    new SqsFifoQueue[EsDenormalizePersonMessage](
+      sqsAsyncClient,
+      config.async.esPersonDenormalizationQueue.url,
+      config.async.esPersonDenormalizationQueue.dlq.map(dlqConf => {
+        new SqsFifoQueue[EsDenormalizePersonMessage](
+          sqsAsyncClient,
+          dlqConf.url,
+          defaultGroupId = dlqConf.message_group_id.getOrElse("default")
+        )
+      }),
+      config.async.esPersonDenormalizationQueue.message_group_id
         .getOrElse("default")
     )
 }

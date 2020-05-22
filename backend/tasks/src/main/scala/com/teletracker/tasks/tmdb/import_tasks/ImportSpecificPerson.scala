@@ -1,14 +1,14 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
 import com.teletracker.common.process.tmdb.PersonImportHandler.PersonImportHandlerArgs
-import com.teletracker.common.process.tmdb.{ItemExpander, PersonImportHandler}
+import com.teletracker.common.process.tmdb.{PersonImportHandler, TmdbItemLookup}
 import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.util.Futures._
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 
 class ImportSpecificPerson @Inject()(
-  itemExpander: ItemExpander,
+  itemExpander: TmdbItemLookup,
   personImportHandler: PersonImportHandler
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {

@@ -12,14 +12,17 @@ public final class QueueConfigAnnotations {
     @BindingAnnotation
     @Target({ FIELD, PARAMETER, METHOD })
     @Retention(RUNTIME)
-    public @interface TaskConsumerQueueConfig {
-
-    }
+    public @interface TaskConsumerQueueConfig { }
 
     @BindingAnnotation
     @Target({ FIELD, PARAMETER, METHOD })
     @Retention(RUNTIME)
     public @interface DenormalizeItemQueueConfig { }
+
+    @BindingAnnotation
+    @Target({ FIELD, PARAMETER, METHOD })
+    @Retention(RUNTIME)
+    public @interface DenormalizePersonQueueConfig { }
 
     @BindingAnnotation
     @Target({ FIELD, PARAMETER, METHOD })

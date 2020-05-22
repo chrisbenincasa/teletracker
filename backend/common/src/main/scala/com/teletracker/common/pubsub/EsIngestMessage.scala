@@ -42,4 +42,4 @@ case class EsIngestItemDenormArgs(
   crew: Boolean)
 
 @JsonCodec
-case class EsIngestPersonDenormArgs()
+case class EsIngestPersonDenormArgs(needsDenorm: Boolean)

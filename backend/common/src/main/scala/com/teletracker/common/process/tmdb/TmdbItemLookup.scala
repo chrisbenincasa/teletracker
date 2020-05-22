@@ -10,7 +10,7 @@ import io.circe.syntax._
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-object ItemExpander {
+object TmdbItemLookup {
   final val DefaultMovieAppendFields = List(
     "release_dates",
     "credits",
@@ -54,11 +54,11 @@ object ItemExpander {
   )
 }
 
-class ItemExpander @Inject()(
+class TmdbItemLookup @Inject()(
   tmdbClient: TmdbClient,
   cache: TmdbLocalCache
 )(implicit executionContext: ExecutionContext) {
-  import ItemExpander._
+  import TmdbItemLookup._
 
   def expandRaw(
     thingType: ItemType,

@@ -1,7 +1,7 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.process.tmdb.ItemExpander
+import com.teletracker.common.process.tmdb.TmdbItemLookup
 import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
 import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.tasks.annotations.TaskTags
@@ -22,7 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 abstract class ChangesDumpTask(
   thingType: ItemType,
-  itemExpander: ItemExpander,
+  itemExpander: TmdbItemLookup,
   protected val publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends DataDumpTask[ChangesDumpFileRow, Int] {
@@ -49,7 +49,7 @@ abstract class ChangesDumpTask(
 
 @TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 class MovieChangesDumpTask @Inject()(
-  itemExpander: ItemExpander,
+  itemExpander: TmdbItemLookup,
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ItemType.Movie, itemExpander, publisher) {
@@ -65,7 +65,7 @@ class MovieChangesDumpTask @Inject()(
 
 @TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 class TvChangesDumpTask @Inject()(
-  itemExpander: ItemExpander,
+  itemExpander: TmdbItemLookup,
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ItemType.Show, itemExpander, publisher) {
@@ -81,7 +81,7 @@ class TvChangesDumpTask @Inject()(
 
 @TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
 class PersonChangesDumpTask @Inject()(
-  itemExpander: ItemExpander,
+  itemExpander: TmdbItemLookup,
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ItemType.Person, itemExpander, publisher) {
