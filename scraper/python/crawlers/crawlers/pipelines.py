@@ -18,7 +18,10 @@ class DupeIdFilterPipeline:
         self.exporter.finish_exporting()
 
     def process_item(self, item, spider):
-        if not item['id'] in self.seen:
-            self.seen.add(item['id'])
+        if 'id' in item:
+            if not item['id'] in self.seen:
+                self.seen.add(item['id'])
+                return item
+            raise DropItem
+        else:
             return item
-        raise DropItem

@@ -44,10 +44,36 @@ class BaseSitemapSpider(scrapy.spiders.SitemapSpider):
 
 
 class BaseCrawlSpider(scrapy.spiders.CrawlSpider):
-    def __init__(self, *a, **kw):
+    def __init__(self, json_logging=True, *a, **kw):
         super().__init__(*a, **kw)
-        logger = logging.getLogger()
-        log_handler = logging.StreamHandler()
-        formatter = CustomJsonFormatter(json_default=json_translate, json_encoder=json.JSONEncoder)
-        log_handler.setFormatter(formatter)
-        logger.addHandler(log_handler)
+        if json_logging is None or json_logging:
+            logger = logging.getLogger()
+            log_handler = logging.StreamHandler()
+            formatter = CustomJsonFormatter(json_default=json_translate, json_encoder=json.JSONEncoder)
+            log_handler.setFormatter(formatter)
+            logger.addHandler(log_handler)
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        settings = crawler.settings
+        spider = cls(settings.getbool('JSON_LOGGING'), *args, **kwargs)
+        spider._set_crawler(crawler)
+        return spider
+
+
+class BaseSpider(scrapy.spiders.Spider):
+    def __init__(self, json_logging=True, *a, **kw):
+        super().__init__(*a, **kw)
+        if json_logging is None or json_logging:
+            logger = logging.getLogger()
+            log_handler = logging.StreamHandler()
+            formatter = CustomJsonFormatter(json_default=json_translate, json_encoder=json.JSONEncoder)
+            log_handler.setFormatter(formatter)
+            logger.addHandler(log_handler)
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        settings = crawler.settings
+        spider = cls(settings.getbool('JSON_LOGGING'), *args, **kwargs)
+        spider._set_crawler(crawler)
+        return spider
