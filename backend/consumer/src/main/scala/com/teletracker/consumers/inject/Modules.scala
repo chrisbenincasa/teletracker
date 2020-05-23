@@ -41,7 +41,8 @@ class ConsumerConfigModule extends TwitterModule {
   ): ReloadableConfig[SqsQueueThroughputWorkerConfig] = {
     consumerConfig.map(conf => {
       new SqsQueueThroughputWorkerConfig(
-        maxOutstandingItems = conf.max_regular_concurrent_jobs + conf.max_tmdb_concurrent_jobs
+        maxOutstandingItems = conf.max_regular_concurrent_jobs + conf.max_tmdb_concurrent_jobs,
+        heartbeat = Some(HeartbeatConfig(15 seconds, 5 minutes))
       )
     })
   }
