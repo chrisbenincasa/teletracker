@@ -359,7 +359,7 @@ function Explore() {
           >
             <Grid container spacing={2} ref={popularWrapper}>
               {popular.map((item, index) => {
-                if (item && !featuredItemsIndex.includes(index)) {
+                if (item) {
                   return <ItemCard key={item.id} itemId={item.id} />;
                 } else {
                   return null;
