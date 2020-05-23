@@ -1,6 +1,14 @@
 import React from 'react';
 import AppWrapper from '../../containers/AppWrapper';
-import { ApiList, List, ListFactory } from '../../types';
+import {
+  ApiList,
+  List,
+  ListFactory,
+  ListGenreRule,
+  ListNetworkRule,
+  ListPersonRule,
+  ruleIsType,
+} from '../../types';
 import { TeletrackerApi, TeletrackerResponse } from '../../utils/api-client';
 import { ListRetrieveSuccess } from '../../actions/lists';
 import ListDetail from '../../containers/ListDetail';
@@ -13,11 +21,22 @@ import WithItemFilters from '../../components/Filters/FilterContext';
 import qs from 'querystring';
 import url from 'url';
 import { parseFilterParamsFromObject } from '../../utils/urlHelper';
+import {
+  DEFAULT_FILTER_PARAMS,
+  FilterParams,
+  normalizeFilterParams,
+} from '../../utils/searchFilters';
+import { collect } from '../../utils/collection-utils';
+import _ from 'lodash';
+import produce from 'immer';
+import { PersonFactory } from '../../types/v2/Person';
+import { peopleFetchSuccess } from '../../actions/people/get_people';
 
 interface Props {
-  list?: List;
-  pageProps: any;
-  error?: number;
+  readonly list?: List;
+  readonly pageProps: any;
+  readonly error?: number;
+  readonly defaultFilters: FilterParams;
 }
 
 function ListDetailWrapper(props: Props) {
@@ -39,7 +58,7 @@ function ListDetailWrapper(props: Props) {
         <title>{listName !== '' ? 'List - ' + listName : 'Not Found'}</title>
       </Head>
       <AppWrapper>
-        <WithItemFilters>
+        <WithItemFilters defaultFilters={props.defaultFilters}>
           <ListDetail preloaded />
         </WithItemFilters>
       </AppWrapper>
@@ -67,17 +86,55 @@ ListDetailWrapper.getInitialProps = async ctx => {
     );
 
     if (response.ok) {
-      await ctx.store.dispatch(
-        ListRetrieveSuccess({
-          list: ListFactory.create(response.data!.data),
-          paging: response.data!.paging,
-          append: false,
-          forFilters: filterParams,
-        }),
+      let people = (response.data!.data.relevantPeople || []).map(
+        PersonFactory.create,
       );
+      let list = ListFactory.create(response.data!.data);
+
+      let defaultFilters: FilterParams = {};
+      if (list.isDynamic) {
+        let ruleConfiguration = list.configuration?.ruleConfiguration;
+        let sort = ruleConfiguration?.sort;
+        let rules = ruleConfiguration?.rules || [];
+
+        defaultFilters = normalizeFilterParams(
+          produce(defaultFilters, draft => {
+            draft.genresFilter = collect(rules, rule =>
+              ruleIsType<ListGenreRule>(rule, 'UserListGenreRule')
+                ? rule
+                : undefined,
+            ).map(rule => rule.genreId);
+
+            // draft.networks = collect(rules, rule =>
+            //   ruleIsType<ListNetworkRule>(rule, 'UserListNetworkRule') ? rule : undefined,
+            // ).map(rule => rule.networkId);
+
+            draft.people = collect(rules, rule =>
+              ruleIsType<ListPersonRule>(rule, 'UserListPersonRule')
+                ? rule
+                : undefined,
+            ).map(rule => rule.personId);
+          }),
+        );
+      }
+
+      await Promise.all([
+        ctx.store.dispatch(
+          ListRetrieveSuccess({
+            list: list,
+            paging: response.data!.paging,
+            append: false,
+            forFilters: list.isDynamic
+              ? { ...defaultFilters, ...filterParams }
+              : filterParams,
+          }),
+        ),
+        ctx.store.dispatch(peopleFetchSuccess(people)),
+      ]);
 
       return {
-        list: ListFactory.create(response.data!.data),
+        list,
+        defaultFilters,
       };
     } else {
       return {

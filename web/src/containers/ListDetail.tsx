@@ -295,7 +295,7 @@ function ListDetail(props: ListDetailProps) {
       listId: listId,
       force,
       limit: calculateLimit(width, 3),
-      bookmark: listBookmark,
+      bookmark: initialLoad ? undefined : listBookmark,
       ...makeListFilters(initialLoad, filters, listFilters),
       sort: filters.sortOrder,
       itemTypes: filters.itemTypes,
@@ -385,7 +385,6 @@ function ListDetail(props: ListDetailProps) {
   );
 
   useEffect(() => {
-    console.log(props);
     retrieveList(_.isUndefined(props.preloaded) ? true : !props.preloaded);
   }, [listId]);
 

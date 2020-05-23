@@ -204,14 +204,15 @@ export interface ListReleaseYearRule extends ListRule {
 
 export function ruleIsType<T extends ListRule>(
   rule: ListRule,
-  type: ListRuleTypeKeys,
+  type: T['type'],
+  // type: ListRuleTypeKeys,
 ): rule is T {
   return rule.type === type;
 }
 
-export function isGenreRule(rule: ListRule): rule is ListGenreRule {
-  return ruleIsType(rule, 'UserListGenreRule');
-}
+// export function isGenreRule(rule: ListRule): rule is ListGenreRule {
+// return ruleIsType(rule, 'UserListGenreRule');
+// }
 
 export interface User {
   readonly id: number;
