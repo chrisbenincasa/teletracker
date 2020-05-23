@@ -46,14 +46,15 @@ const writeAsLines = (fileName, data) => {
 
 const scrape = async event => {
   let apiKey = await resolveSecret('tmdb-api-key-qa');
+  let daysBack = parseInt(event.daysBack) || 1;
 
   let now = moment();
 
-  let movieChanges = await doLoop(apiKey, 'movie');
+  let movieChanges = await doLoop(apiKey, 'movie', daysBack);
   await wait(250);
-  let tvChanges = await doLoop(apiKey, 'tv');
+  let tvChanges = await doLoop(apiKey, 'tv', daysBack);
   await wait(250);
-  let personChanges = await doLoop(apiKey, 'person');
+  let personChanges = await doLoop(apiKey, 'person', daysBack);
 
   let nowString = now.format('YYYY-MM-DD');
 

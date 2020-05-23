@@ -110,11 +110,18 @@ case class EsItem(
   def toDenormalizedUserItem: EsUserDenormalizedItem =
     EsUserDenormalizedItem(
       id = id,
+      alternative_titles = alternative_titles,
+      availability = availability,
+      cast = cast,
+      crew = crew,
       release_date = release_date,
       genres = genres,
       original_title = original_title,
       popularity = popularity,
+      ratings = ratings,
+      runtime = runtime,
       slug = slug,
+      title = title.get.headOption,
       `type` = `type`
     )
 }

@@ -87,7 +87,7 @@ class ItemsController @Inject()(
   prefix("/api/v2/people") {
     get("/batch") { req: GetPersonBatchRequest =>
       itemApi
-        .getPeopleViaSearch(req.authenticatedUserId, req.personIds)
+        .getPeopleViaSearch(req.personIds)
         .map(results => {
           response
             .ok(
@@ -107,7 +107,6 @@ class ItemsController @Inject()(
     get("/:personId") { req: GetPersonRequest =>
       itemApi
         .getPersonViaSearch(
-          req.authenticatedUserId,
           req.personId,
           materializeCredits = req.materializeCredits,
           creditsLimit = req.creditsLimit.getOrElse(20)
@@ -150,7 +149,7 @@ class ItemsController @Inject()(
       )
 
       itemApi
-        .getPersonCredits(req.authenticatedUserId, req.personId, request)
+        .getPersonCredits(req.personId, request)
         .map(result => {
           val items =
             result.items.map(_.scopeToUser(req.authenticatedUserId))

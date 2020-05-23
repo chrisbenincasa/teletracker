@@ -1,18 +1,13 @@
 package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
 import com.teletracker.common.db._
-import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.elasticsearch.model.EsItem
+import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.elasticsearch.model.{EsItem, ItemSearchParams}
 import com.teletracker.common.util.Functions._
-import com.teletracker.common.util.{
-  ClosedNumericRange,
-  OpenDateRange,
-  OpenNumericRange
-}
 import javax.inject.Inject
 import org.elasticsearch.action.search.SearchRequest
+import org.elasticsearch.client.core.CountRequest
 import org.elasticsearch.common.lucene.search.function.FieldValueFactorFunction
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders
 import org.elasticsearch.index.query.{
@@ -33,12 +28,15 @@ class ItemSearch @Inject()(
     extends ElasticsearchAccess {
 
   def fullTextSearch(
-    textQuery: String,
-    searchOptions: SearchOptions
+    params: ItemSearchParams
   ): Future[ElasticsearchItemsResponse] = {
-    if (searchOptions.bookmark.isDefined) {
-      require(searchOptions.bookmark.get.sortType == SortMode.SearchScoreType)
+    require(params.titleSearch.isDefined)
+
+    if (params.bookmark.isDefined) {
+      require(params.bookmark.get.sortType == SortMode.SearchScoreType)
     }
+
+    val textQuery = params.titleSearch.get
 
     def makeMultiMatchQuery(
       query: String,
@@ -86,25 +84,6 @@ class ItemSearch @Inject()(
             .operator(Operator.AND)
         )
         .minimumShouldMatch(1)
-//        .boost(boost)
-
-//      QueryBuilders
-//        .multiMatchQuery(
-//          query,
-//          "title",
-//          "title._2gram",
-//          "title._3gram",
-//          "original_title",
-//          "original_title._2gram",
-//          "original_title._3gram",
-//          "alternative_titles",
-//          "alternative_titles._2gram",
-//          "alternative_titles._3gram"
-//        )
-//        .`type`(MultiMatchQueryBuilder.Type.PHRASE_PREFIX)
-//        .maxExpansions(50)
-//        .operator(Operator.OR)
-//        .boost(boost)
     }
 
     // TODO: Support all of the filters that regular search does
@@ -120,21 +99,25 @@ class ItemSearch @Inject()(
           )
           .minimumShouldMatch(1)
       )
-      .applyOptional(searchOptions.genres.filter(_.nonEmpty))(genresFilter)
-      .applyOptional(searchOptions.networks.filter(_.nonEmpty))(
+      .applyOptional(params.genres.filter(_.nonEmpty))(genresFilter)
+      .applyOptional(params.networks.filter(_.nonEmpty))(
         availabilityByNetworksOr
       )
-      .applyOptional(searchOptions.releaseYear.filter(_.isFinite))(
+      .applyOptional(params.releaseYear.filter(_.isFinite))(
         openDateRangeFilter
       )
       .applyOptional(
-        searchOptions.peopleCreditSearch.filter(_.people.nonEmpty)
+        params.peopleCredits
+          .filter(_.people.nonEmpty)
       )(
         peopleCreditSearchQuery
       )
+      .applyOptional(params.tagFilters)((builder, tags) => {
+        tags.foldLeft(builder)(itemTagFilter)
+      })
       .through(posterImageFilter)
       .through(removeAdultItems)
-      .applyOptional(searchOptions.thingTypeFilter.filter(_.nonEmpty))(
+      .applyOptional(params.itemTypes.filter(_.nonEmpty))(
         (builder, types) => types.foldLeft(builder)(itemTypeFilter)
       )
 
@@ -149,8 +132,8 @@ class ItemSearch @Inject()(
 
     val searchSource = new SearchSourceBuilder()
       .query(query)
-      .size(searchOptions.limit)
-      .applyOptional(searchOptions.bookmark)((builder, bookmark) => {
+      .size(params.limit)
+      .applyOptional(params.bookmark)((builder, bookmark) => {
         builder.from(bookmark.value.toInt)
       })
 
@@ -166,7 +149,7 @@ class ItemSearch @Inject()(
       .search(search)
       .map(searchResponseToItems)
       .map(response => {
-        val lastOffset = searchOptions.bookmark.map(_.value.toInt).getOrElse(0)
+        val lastOffset = params.bookmark.map(_.value.toInt).getOrElse(0)
         response.withBookmark(
           if (response.items.isEmpty) None
           else
@@ -182,40 +165,17 @@ class ItemSearch @Inject()(
   }
 
   def searchItems(
-    genres: Option[Set[StoredGenre]],
-    networks: Option[Set[StoredNetwork]],
-    itemTypes: Option[Set[ItemType]],
-    sortMode: SortMode,
-    limit: Int,
-    bookmark: Option[Bookmark],
-    releaseYear: Option[OpenDateRange],
-    peopleCreditSearch: Option[PeopleCreditSearch],
-    imdbRatingRange: Option[ClosedNumericRange[Double]]
+    params: ItemSearchParams
   ): Future[ElasticsearchItemsResponse] = {
-    if (limit <= 0) {
+    if (params.limit <= 0) {
       Future.successful(ElasticsearchItemsResponse.empty)
     } else {
-      val actualSortMode = bookmark.map(_.sortMode).getOrElse(sortMode)
-
-      val query = QueryBuilders
-        .boolQuery()
-        .applyOptional(genres.filter(_.nonEmpty))(genresFilter)
-        .through(removeAdultItems)
-        .through(posterImageFilter)
-        .applyOptional(networks.filter(_.nonEmpty))(availabilityByNetworksOr)
-        .applyOptional(releaseYear.filter(_.isFinite))(openDateRangeFilter)
-        .applyOptional(itemTypes.filter(_.nonEmpty))(itemTypesFilter)
-        .applyOptional(bookmark)(applyBookmark(_, _, list = None))
-        .applyOptional(peopleCreditSearch.filter(_.people.nonEmpty))(
-          peopleCreditSearchQuery
-        )
-        .applyOptional(imdbRatingRange)(
-          openRatingRangeFilter(_, ExternalSource.Imdb, _)
-        )
+      val actualSortMode =
+        params.bookmark.map(_.sortMode).getOrElse(params.sortMode)
 
       val searchSourceBuilder = new SearchSourceBuilder()
-        .query(query)
-        .size(limit)
+        .query(buildSearchRequest(params))
+        .size(params.limit)
         .applyOptional(makeDefaultSort(actualSortMode))(_.sort(_))
         .sort(
           new FieldSortBuilder("id").order(SortOrder.ASC)
@@ -227,8 +187,51 @@ class ItemSearch @Inject()(
             .source(searchSourceBuilder)
         )
         .map(searchResponseToItems)
-        .map(applyNextBookmark(_, bookmark, sortMode))
+        .map(applyNextBookmark(_, params.bookmark, params.sortMode))
     }
+  }
+
+  def countItems(params: ItemSearchParams): Future[Long] = {
+    val searchSourceBuilder = new SearchSourceBuilder()
+      .query(buildSearchRequest(params))
+
+    val request =
+      new CountRequest(teletrackerConfig.elasticsearch.items_index_name)
+        .source(searchSourceBuilder)
+
+    elasticsearchExecutor
+      .count(
+        request
+      )
+      .map(response => response.getCount)
+  }
+
+  private def buildSearchRequest(params: ItemSearchParams) = {
+    QueryBuilders
+      .boolQuery()
+      .applyOptional(params.genres.filter(_.nonEmpty))(genresFilter)
+      .through(removeAdultItems)
+      .through(posterImageFilter)
+      .applyOptional(params.networks.filter(_.nonEmpty))(
+        availabilityByNetworksOr
+      )
+      .applyOptional(params.releaseYear.filter(_.isFinite))(
+        openDateRangeFilter
+      )
+      .applyOptional(params.itemTypes.filter(_.nonEmpty))(itemTypesFilter)
+      .applyOptional(params.bookmark)(applyBookmark(_, _, list = None))
+      .applyOptional(
+        params.peopleCredits
+          .filter(_.people.nonEmpty)
+      )(
+        peopleCreditSearchQuery
+      )
+      .applyOptional(params.tagFilters)(
+        (builder, tags) => tags.foldLeft(builder)(itemTagFilter)
+      )
+      .applyOptional(params.imdbRating)(
+        openRatingRangeFilter(_, ExternalSource.Imdb, _)
+      )
   }
 
   private def applyNextBookmark(

@@ -9,7 +9,11 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.elasticsearch.cache.ExternalIdMappingCache
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
-import com.teletracker.common.elasticsearch.model.{EsExternalId, EsPerson}
+import com.teletracker.common.elasticsearch.model.{
+  EsExternalId,
+  EsPerson,
+  ItemSearchParams
+}
 import com.teletracker.common.util.{Folds, IdOrSlug, Slug}
 import javax.inject.Inject
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
@@ -38,11 +42,13 @@ class PersonLookup @Inject()(
     extends ElasticsearchAccess {
 
   def fullTextSearch(
-    textQuery: String,
-    searchOptions: SearchOptions
+    params: ItemSearchParams
   ): Future[ElasticsearchPeopleResponse] = {
-    if (searchOptions.bookmark.isDefined) {
-      require(searchOptions.bookmark.get.sortType == SortMode.SearchScoreType)
+    require(params.titleSearch.isDefined)
+    val textQuery = params.titleSearch.get
+
+    if (params.bookmark.isDefined) {
+      require(params.bookmark.get.sortType == SortMode.SearchScoreType)
     }
 
     // TODO: Support all of the filters that regular search does
@@ -63,7 +69,7 @@ class PersonLookup @Inject()(
       )
       .minimumShouldMatch(1)
       .filter(QueryBuilders.rangeQuery("popularity").gte(1.0))
-      .applyOptional(searchOptions.thingTypeFilter.filter(_.nonEmpty))(
+      .applyOptional(params.itemTypes.filter(_.nonEmpty))(
         (builder, types) => types.foldLeft(builder)(itemTypeFilter)
       )
 
@@ -83,8 +89,8 @@ class PersonLookup @Inject()(
 
     val searchSource = new SearchSourceBuilder()
       .query(finalQuery)
-      .size(searchOptions.limit)
-      .applyOptional(searchOptions.bookmark)((builder, bookmark) => {
+      .size(params.limit)
+      .applyOptional(params.bookmark)((builder, bookmark) => {
         builder.from(bookmark.value.toInt)
       })
 
@@ -100,7 +106,7 @@ class PersonLookup @Inject()(
       .search(search)
       .map(searchResponseToPeople)
       .map(response => {
-        val lastOffset = searchOptions.bookmark.map(_.value.toInt).getOrElse(0)
+        val lastOffset = params.bookmark.map(_.value.toInt).getOrElse(0)
         response.withBookmark(
           if (response.items.isEmpty) None
           else
@@ -461,25 +467,28 @@ class PersonLookup @Inject()(
     limit: Int
   ) = {
     itemSearch.searchItems(
-      genres = None,
-      networks = None,
-      itemTypes = None,
-      sortMode = Recent(),
-      limit = limit,
-      bookmark = None,
-      releaseYear = None,
-      peopleCreditSearch = Some(
-        PeopleCreditSearch(
-          Seq(
-            PersonCreditSearch(
-              IdOrSlug.fromUUID(personId),
-              PersonAssociationType.Cast
-            )
-          ),
-          BinaryOperator.Or
-        )
-      ),
-      imdbRatingRange = None
+      ItemSearchParams(
+        genres = None,
+        networks = None,
+        itemTypes = None,
+        sortMode = Recent(),
+        limit = limit,
+        bookmark = None,
+        releaseYear = None,
+        peopleCredits = Some(
+          PeopleCreditSearch(
+            Seq(
+              PersonCreditSearch(
+                IdOrSlug.fromUUID(personId),
+                PersonAssociationType.Cast
+              )
+            ),
+            BinaryOperator.Or
+          )
+        ),
+        imdbRating = None,
+        titleSearch = None
+      )
     )
   }
 }

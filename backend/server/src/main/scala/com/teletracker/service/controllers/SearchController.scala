@@ -3,6 +3,10 @@ package com.teletracker.service.controllers
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.db.{Bookmark, SearchScore}
+import com.teletracker.common.elasticsearch.model.{
+  ItemSearchParams,
+  PeopleCreditsFilter
+}
 import com.teletracker.common.elasticsearch.{
   BinaryOperator,
   ItemSearch,
@@ -12,7 +16,7 @@ import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.time.LocalDateUtils
 import com.teletracker.common.util.{CanParseFieldFilter, OpenDateRange}
 import com.teletracker.service.api
-import com.teletracker.service.api.ItemApi
+import com.teletracker.service.api.{ItemApi, ItemSearchRequest}
 import com.teletracker.service.api.model.Person
 import com.teletracker.service.controllers.annotations.{
   ItemReleaseYear,
@@ -28,10 +32,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 class SearchController @Inject()(
-  config: TeletrackerConfig,
-  itemSearch: ItemSearch,
-  itemApi: ItemApi,
-  personLookup: PersonLookup
+  itemApi: ItemApi
 )(implicit executionContext: ExecutionContext)
     extends Controller
     with CanParseFieldFilter {
@@ -89,7 +90,7 @@ class SearchController @Inject()(
   }
 
   private def makeSearchRequest(req: SearchRequest) = {
-    api.ItemSearchRequest(
+    ItemSearchRequest(
       genres = Some(req.genres.map(_.toString)).filter(_.nonEmpty),
       networks = Some(req.networks).filter(_.nonEmpty),
       itemTypes = Some(
@@ -107,7 +108,7 @@ class SearchController @Inject()(
       peopleCredits =
         if (req.cast.nonEmpty || req.crew.nonEmpty)
           Some(
-            api.PeopleCreditsFilter(
+            PeopleCreditsFilter(
               req.cast.toSeq,
               req.crew.toSeq,
               BinaryOperator.And

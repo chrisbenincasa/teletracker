@@ -1,5 +1,7 @@
 package com.teletracker.common.db.model
 
+import com.teletracker.common.util.OpenDateRange
+import com.teletracker.common.util.time.LocalDateUtils
 import java.util.UUID
 
 sealed trait DynamicListRule {
@@ -57,7 +59,13 @@ case class DynamicListReleaseYearRule(
   minimum: Option[Int],
   maximum: Option[Int],
   negated: Option[Boolean] = None)
-    extends DynamicListRangeRule[Int]
+    extends DynamicListRangeRule[Int] {
+  def range: OpenDateRange =
+    OpenDateRange(
+      start = minimum.map(LocalDateUtils.localDateAtYear),
+      end = maximum.map(LocalDateUtils.localDateAtYear)
+    )
+}
 
 case class DynamicListDefaultSort(sort: String)
 
@@ -65,10 +73,34 @@ case class DynamicListRules(
   rules: List[DynamicListRule],
   sort: Option[DynamicListDefaultSort]) {
   require(rules.nonEmpty)
+
+  lazy val networkRules: List[DynamicListNetworkRule] = rules.collect {
+    case x: DynamicListNetworkRule => x
+  }
+
+  lazy val genreRules: List[DynamicListGenreRule] = rules.collect {
+    case x: DynamicListGenreRule => x
+  }
+
+  lazy val itemTypeRules: List[DynamicListItemTypeRule] = rules.collect {
+    case x: DynamicListItemTypeRule => x
+  }
+
+  lazy val tagRules: List[DynamicListTagRule] = rules.collect {
+    case x: DynamicListTagRule => x
+  }
+
+  lazy val releaseYearRules: List[DynamicListReleaseYearRule] = rules.collect {
+    case x: DynamicListReleaseYearRule => x
+  }
+
+  lazy val personRules: List[DynamicListPersonRule] = rules.collect {
+    case x: DynamicListPersonRule => x
+  }
 }
 
 object DynamicListRules {
-  def watched =
+  def watched: DynamicListRules =
     DynamicListRules(
       rules = DynamicListTagRule.ifPresent(UserThingTagType.Watched) :: Nil,
       sort = None
@@ -77,7 +109,7 @@ object DynamicListRules {
   def person(
     id: UUID,
     associationType: Option[PersonAssociationType] = None
-  ) =
+  ): DynamicListRules =
     DynamicListRules(
       rules = DynamicListPersonRule(id, associationType) :: Nil,
       sort = None

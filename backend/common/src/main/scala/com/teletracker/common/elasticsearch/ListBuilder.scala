@@ -13,7 +13,11 @@ import com.teletracker.common.db.{
   SortMode
 }
 import com.teletracker.common.db.model.UserThingTagType
-import com.teletracker.common.elasticsearch.model.{EsItem, EsItemTag}
+import com.teletracker.common.elasticsearch.model.{
+  EsItem,
+  EsItemTag,
+  ItemSearchParams
+}
 import com.teletracker.common.util.ListFilters
 import javax.inject.Inject
 import org.apache.lucene.search.join.ScoreMode
@@ -103,7 +107,7 @@ class ListBuilder @Inject()(
   def buildRegularList(
     userId: String,
     list: StoredUserList,
-    listFilters: Option[ListFilters],
+    listFilters: Option[ItemSearchParams],
     sortMode: SortMode = Popularity(),
     bookmark: Option[Bookmark] = None,
     includeActions: Boolean = true,
@@ -128,7 +132,7 @@ class ListBuilder @Inject()(
         if (response.items.isEmpty) {
           Future.successful(ElasticsearchItemsResponse.empty)
         } else {
-          val ids = response.items.flatMap(_.item_id).map(_.toString)
+          val ids = response.items.map(_.item_id).map(_.toString)
 
           val mGetBuilder = new MultiGetRequest()
           ids.map(
@@ -173,7 +177,7 @@ class ListBuilder @Inject()(
   private def getRegularListQuery(
     userId: String,
     list: StoredUserList,
-    listFilters: Option[ListFilters],
+    listFilters: Option[ItemSearchParams],
     sortMode: Option[SortMode],
     bookmark: Option[Bookmark],
     limit: Option[Int]
@@ -478,12 +482,10 @@ class ListBuilder @Inject()(
                     t.tag == UserThingTagType.TrackedInList.toString && t.string_value
                       .contains(listId.toString)
                 )
-                .flatMap(tag => {
-                  userItem.item_id.map(itemId => {
-                    itemId.toString -> tag.last_updated
-                      .getOrElse(if (t.isDesc) LocalDate.MIN else LocalDate.MAX)
-                      .toString
-                  })
+                .map(tag => {
+                  userItem.item_id.toString -> tag.last_updated
+                    .getOrElse(if (t.isDesc) LocalDate.MIN else LocalDate.MAX)
+                    .toString
                 })
           )
 

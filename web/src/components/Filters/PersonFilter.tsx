@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { CircularProgress, makeStyles, TextField } from '@material-ui/core';
 import Autocomplete, { RenderInputParams } from '@material-ui/lab/Autocomplete';
 import { useDispatch, useSelector } from 'react-redux';
@@ -7,6 +7,7 @@ import { searchPeople } from '../../actions/search/person_search';
 import { AppState } from '../../reducers';
 import { getTmdbProfileImage } from '../../utils/image-helper';
 import { truncateText } from '../../utils/textHelper';
+import { FilterContext } from './FilterContext';
 
 const useStyles = makeStyles(theme => ({
   autocompleteField: {
@@ -39,6 +40,7 @@ export default function PersonFilter(props: Props) {
   const nameBySlugOrId = useSelector(
     (state: AppState) => state.people.nameByIdOrSlug,
   );
+  const { filters } = useContext(FilterContext);
 
   const loading = open && inputValue.length > 0 && peopleSearch.searching;
 
@@ -132,7 +134,7 @@ export default function PersonFilter(props: Props) {
       renderOption={renderSelectOption}
       disablePortal
       renderInput={renderInput}
-      defaultValue={props.selectedCast}
+      defaultValue={filters.people || []}
     />
   );
 }

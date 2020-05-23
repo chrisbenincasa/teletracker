@@ -1,22 +1,17 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.db.{Bookmark, Popularity, Recent, SortMode}
-import com.teletracker.common.elasticsearch.{BinaryOperator, ItemSearch}
-import com.teletracker.common.external.tmdb.TmdbClient
+import com.teletracker.common.db.{Bookmark, Recent, SortMode}
+import com.teletracker.common.elasticsearch.BinaryOperator
+import com.teletracker.common.elasticsearch.model.{
+  ItemSearchParams,
+  PeopleCreditsFilter
+}
 import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.time.LocalDateUtils
-import com.teletracker.common.util.{
-  CanParseFieldFilter,
-  ClosedNumericRange,
-  Field,
-  NetworkCache,
-  OpenDateRange,
-  OpenNumericRange
-}
-import com.teletracker.service.api
-import com.teletracker.service.api.model.Item
+import com.teletracker.common.util.{CanParseFieldFilter, Field, OpenDateRange}
 import com.teletracker.service.api.{ItemApi, ItemSearchRequest}
+import com.teletracker.service.api.model.Item
 import com.teletracker.service.controllers.TeletrackerController._
 import com.teletracker.service.controllers.annotations.{
   ItemReleaseYear,
@@ -35,12 +30,9 @@ import com.twitter.finatra.validation.{
 import javax.inject.Inject
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 class PopularItemsController @Inject()(
-  tmdbClient: TmdbClient,
-  networkCache: NetworkCache,
-  popularItemSearch: ItemSearch,
   itemApi: ItemApi
 )(implicit executionContext: ExecutionContext)
     extends Controller
@@ -83,7 +75,7 @@ class PopularItemsController @Inject()(
   }
 
   private def makeSearchRequest(req: GetItemsRequest) = {
-    api.ItemSearchRequest(
+    ItemSearchRequest(
       genres = Some(req.genres.map(_.toString)).filter(_.nonEmpty),
       networks = Some(req.networks).filter(_.nonEmpty),
       itemTypes = Some(
@@ -101,7 +93,7 @@ class PopularItemsController @Inject()(
       peopleCredits =
         if (req.cast.nonEmpty || req.crew.nonEmpty)
           Some(
-            api.PeopleCreditsFilter(
+            PeopleCreditsFilter(
               req.cast.toSeq,
               req.crew.toSeq,
               BinaryOperator.And

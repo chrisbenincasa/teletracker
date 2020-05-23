@@ -35,7 +35,8 @@ class UsersApi @Inject()(
   dynamoListsDbAccess: DynamoListsDbAccess,
   metadataDbAccess: MetadataDbAccess,
   networkCache: NetworkCache,
-  userListConverter: UserListConverter
+  userListConverter: UserListConverter,
+  itemApi: ItemApi
 )(implicit executionContext: ExecutionContext) {
 
   def getUser(userId: String): Future[UserDetails] = {
@@ -225,74 +226,81 @@ class UsersApi @Inject()(
   def getUserListAndItems(
     listId: IdOrSlug,
     requestingUserId: Option[String],
-    filters: Option[ListFilters] = None,
-    isDynamicHint: Option[Boolean] = None,
+    ruleOverrides: Option[ItemSearchRequest] = None,
     sortMode: SortMode = DefaultForListType(),
     bookmark: Option[Bookmark] = None,
-    limit: Int = 10,
-    mustBePublic: Boolean = false
+    limit: Int = 10
   ): Future[Option[(UserList, Option[Bookmark])]] = {
     val listFut = listId.idOrSlug match {
       case Left(id)    => listsApi.findListForUser(id, requestingUserId)
       case Right(slug) => listsApi.findListViaAlias(slug, None)
     }
 
-    listFut.flatMap {
-      case None =>
-        Future.successful(None)
+    val overridesFut = ruleOverrides
+      .map(itemApi.toItemSearchParams(_).map(Some(_)))
+      .getOrElse(Future.successful(None))
 
-      case Some(list) if !requestingUserCanViewList(list, requestingUserId) =>
-        Future.successful(None)
+    (for {
+      list <- listFut
+      overrides <- overridesFut
+    } yield {
+      list match {
+        case None =>
+          Future.successful(None)
 
-      case Some(list) if list.isDynamic =>
-        dynamicListBuilder
-          .buildDynamicList(
-            list.userId,
-            list,
-            filters,
-            sortMode,
-            bookmark,
-            limit = limit
-          )
-          .map {
-            case (listThings, count, peopleFromRules) => {
-              userListConverter
-                .fromStoredList(list)
-                .withItems(
-                  listThings.items
-                    .map(Item.fromEsItem(_))
-                    .map(_.scopeToUser(requestingUserId))
-                )
-                .withPeople(peopleFromRules.map(Person.fromEsPerson(_, None)))
-                .withCount(count.toInt) -> listThings.bookmark
+        case Some(list) if !requestingUserCanViewList(list, requestingUserId) =>
+          Future.successful(None)
+
+        case Some(list) if list.isDynamic =>
+          dynamicListBuilder
+            .buildDynamicList(
+              list.userId,
+              list,
+              overrides,
+              sortMode,
+              bookmark,
+              limit = limit
+            )
+            .map {
+              case (listThings, count, peopleFromRules) => {
+                userListConverter
+                  .fromStoredList(list)
+                  .withItems(
+                    listThings.items
+                      .map(Item.fromEsItem(_))
+                      .map(_.scopeToUser(requestingUserId))
+                  )
+                  .withPeople(peopleFromRules.map(Person.fromEsPerson(_, None)))
+                  .withCount(count.toInt) -> listThings.bookmark
+              }
             }
-          }
-          .map(Some(_))
+            .map(Some(_))
 
-      case Some(list) if !list.isDynamic =>
-        listBuilder
-          .buildRegularList(
-            list.userId,
-            list,
-            filters,
-            sortMode,
-            bookmark,
-            limit = limit
-          )
-          .map {
-            case (listThings, count) => {
-              userListConverter
-                .fromStoredList(list)
-                .withItems(
-                  listThings.items
-                    .map(Item.fromEsItem(_))
-                    .map(_.scopeToUser(requestingUserId))
-                )
-                .withCount(count.toInt) -> listThings.bookmark
+        case Some(list) if !list.isDynamic =>
+          listBuilder
+            .buildRegularList(
+              list.userId,
+              list,
+              overrides,
+              sortMode,
+              bookmark,
+              limit = limit
+            )
+            .map {
+              case (listThings, count) => {
+                userListConverter
+                  .fromStoredList(list)
+                  .withItems(
+                    listThings.items
+                      .map(Item.fromEsItem(_))
+                      .map(_.scopeToUser(requestingUserId))
+                  )
+                  .withCount(count.toInt) -> listThings.bookmark
+              }
             }
-          }
-          .map(Some(_))
-    }
+            .map(Some(_))
+      }
+    }).flatMap(identity)
   }
 
   private def requestingUserCanViewList(
