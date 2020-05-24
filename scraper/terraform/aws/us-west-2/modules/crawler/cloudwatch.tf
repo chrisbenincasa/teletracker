@@ -68,7 +68,7 @@ resource "aws_cloudwatch_event_target" "cw_scheduled_task" {
     platform_version = "1.3.0"
 
     network_configuration {
-      subnets = toset(data.aws_subnet_ids.teletracker-subnet-ids.*.id)
+      subnets = data.aws_subnet_ids.teletracker-subnet-ids.ids
       assign_public_ip = true
       security_groups = toset([aws_security_group.crawler_sg.id])
     }

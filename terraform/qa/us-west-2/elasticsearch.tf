@@ -1,13 +1,13 @@
 resource "aws_elasticsearch_domain" "teletracker-qa-es" {
-  domain_name           = "teletracker-qa"
+  domain_name = "teletracker-qa"
   elasticsearch_version = "7.4"
 
   cluster_config {
-    instance_type  = "t2.small.elasticsearch"
+    instance_type = "t2.small.elasticsearch"
     instance_count = 1
 
     dedicated_master_enabled = false
-    zone_awareness_enabled   = false
+    zone_awareness_enabled = false
   }
 
   snapshot_options {
@@ -22,6 +22,17 @@ resource "aws_elasticsearch_domain" "teletracker-qa-es" {
   #   domain_endpoint_options {
   #     enforce_https = true
   #   }
+
+  log_publishing_options {
+    cloudwatch_log_group_arn = "arn:aws:logs:us-west-2:302782651551:log-group:/aws/aes/domains/teletracker-qa/application-logs"
+    enabled = true
+    log_type = "ES_APPLICATION_LOGS"
+  }
+  log_publishing_options {
+    cloudwatch_log_group_arn = "arn:aws:logs:us-west-2:302782651551:log-group:/aws/aes/domains/teletracker-qa/search-logs"
+    enabled = true
+    log_type = "SEARCH_SLOW_LOGS"
+  }
 }
 
 data "aws_region" "current" {}
