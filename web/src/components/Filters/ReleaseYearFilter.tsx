@@ -64,6 +64,8 @@ export default function ReleaseYearFilter(props: Props) {
       if (newMin !== currMin || newMax !== currMax) {
         setYearValue([newMin || MIN_YEAR, newMax || nextYear]);
       }
+    } else {
+      setYearValue([MIN_YEAR, nextYear]);
     }
   }, [sliders, yearValue]);
 

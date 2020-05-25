@@ -1,5 +1,3 @@
-import { ApiItem } from './v2';
-import { Item, ItemFactory } from './v2/Item';
 import { ApiPerson, Person, PersonFactory } from './v2/Person';
 
 export interface Paging {
@@ -9,7 +7,6 @@ export interface Paging {
 export interface ApiList {
   readonly id: string;
   readonly name: string;
-  readonly items?: ApiItem[];
   readonly isDefault?: boolean;
   readonly isDeleted?: boolean;
   readonly isDynamic?: boolean;
@@ -24,7 +21,6 @@ export interface ApiList {
 export interface List {
   readonly id: string;
   readonly name: string;
-  readonly items?: Item[];
   readonly isDefault?: boolean;
   readonly isDeleted?: boolean;
   readonly isDynamic?: boolean;
@@ -42,7 +38,6 @@ export class ListFactory {
   static create(list: ApiList): List {
     return {
       ...list,
-      items: (list.items || []).map(ItemFactory.create),
       relevantPeople: list.relevantPeople
         ? list.relevantPeople.map(PersonFactory.create)
         : undefined,

@@ -61,7 +61,6 @@ class TeletrackerServer(
       .add[AdminController]
       .add[HealthController]
       .add[InternalController]
-      .add[PopularItemsController]
       .add[ListController]
   }
 

@@ -29,6 +29,8 @@ import java.util.UUID
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Maps._
 import org.elasticsearch.action.get.MultiGetRequest
+import org.elasticsearch.common.xcontent.DeprecationHandler
+import org.elasticsearch.search.fetch.subphase.FetchSourceContext
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
@@ -311,17 +313,33 @@ class PersonLookup @Inject()(
       }
   }
 
-  def lookupPeople(identifiers: List[IdOrSlug]): Future[List[EsPerson]] = {
+  def lookupPeople(
+    identifiers: List[IdOrSlug],
+    includeBio: Boolean = true
+  ): Future[List[EsPerson]] = {
     val (withId, withSlug) = identifiers.partition(_.id.isDefined)
 
     val ids = withId.flatMap(_.id).map(_.toString)
 
     val idPeopleFut = if (ids.nonEmpty) {
       val multiGetRequest = new MultiGetRequest()
-      ids.foreach(
-        multiGetRequest
-          .add(teletrackerConfig.elasticsearch.people_index_name, _)
-      )
+      ids.foreach(id => {
+        val item = new MultiGetRequest.Item(
+          teletrackerConfig.elasticsearch.people_index_name,
+          id
+        ).applyIf(!includeBio)(
+          _.fetchSourceContext(
+            new FetchSourceContext(
+              true,
+              Array.empty[String],
+              Array("biography")
+            )
+          )
+        )
+
+        multiGetRequest.add(item)
+      })
+
       elasticsearchExecutor
         .multiGet(multiGetRequest)
         .map(idResults => {

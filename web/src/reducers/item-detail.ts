@@ -44,6 +44,10 @@ import {
   ItemRecsFetchInitiatedAction,
   ItemRecsFetchSuccessfulAction,
 } from '../actions/item-detail/get_item_recommendations';
+import {
+  LIST_ITEMS_RETRIEVE_SUCCESS,
+  ListItemsRetrieveSuccessAction,
+} from '../actions/lists/get_list_items';
 
 export type ThingMap = {
   [key: string]: Item;
@@ -217,12 +221,12 @@ const updateStateWithNewThings = (existingState: State, newThings: Item[]) => {
 };
 
 const handleListRetrieveSuccess = handleAction<
-  ListRetrieveSuccessAction,
+  ListItemsRetrieveSuccessAction,
   State
->(LIST_RETRIEVE_SUCCESS, (state, action) => {
-  if (action.payload && action.payload.list.items) {
-    let items = action.payload.list.items;
-    return updateStateWithNewThings(state, items);
+>(LIST_ITEMS_RETRIEVE_SUCCESS, (state, action) => {
+  if (action.payload && action.payload.items) {
+    let items = action.payload.items;
+    return updateStateWithNewThings(state, [...items]);
   } else {
     return state;
   }

@@ -14,6 +14,13 @@ export function collect<T, U>(
     .value();
 }
 
+export function collectFirst<T, U>(
+  collection: ReadonlyArray<T>,
+  mapper: (item: T) => U | undefined,
+): U | undefined {
+  return _.find(_.map(collection, mapper), _.negate(_.isUndefined));
+}
+
 export const headOption = R.ifElse(R.isNil, R.always(undefined), R.head);
 
 type KeyedMapT<T> = { [key: string]: T };

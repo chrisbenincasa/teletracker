@@ -223,7 +223,7 @@ class ListBuilder @Inject()(
               "item",
               QueryBuilders.termsQuery(
                 "item.genres.id",
-                genres.asJavaCollection
+                genres.map(_.id).asJavaCollection
               ),
               ScoreMode.Avg
             )

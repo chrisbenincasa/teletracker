@@ -200,6 +200,9 @@ class UsersApi @Inject()(
     listFut.flatMap {
       case None => Future.successful(None)
 
+      case Some(list) if !requestingUserCanViewList(list, userId) =>
+        Future.successful(None)
+
       case Some(list) =>
         val countFut = if (list.isDynamic) {
           dynamicListBuilder
@@ -211,26 +214,34 @@ class UsersApi @Inject()(
             .map(_.toMap.getOrElse(list.id, 0L))
         }
 
-        countFut
-          .map(
-            count =>
-              Some(
-                userListConverter
-                  .fromStoredList(list)
-                  .withCount(Math.max(Int.MaxValue.toLong, count).toInt)
-              )
+        val peopleFut = if (list.isDynamic) {
+          dynamicListBuilder.getRelevantPeople(list)
+        } else {
+          Future.successful(Nil)
+        }
+
+        for {
+          count <- countFut
+          people <- peopleFut
+        } yield {
+          Some(
+            userListConverter
+              .fromStoredList(list)
+              .withCount(Math.max(Int.MaxValue.toLong, count).toInt)
+              .withPeople(people.map(Person.fromEsPerson(_, None)))
           )
+        }
     }
   }
 
-  def getUserListAndItems(
+  def getListItems(
     listId: IdOrSlug,
     requestingUserId: Option[String],
     ruleOverrides: Option[ItemSearchRequest] = None,
     sortMode: SortMode = DefaultForListType(),
     bookmark: Option[Bookmark] = None,
     limit: Int = 10
-  ): Future[Option[(UserList, Option[Bookmark])]] = {
+  ): Future[Option[(List[Item], Long, Option[Bookmark])]] = {
     val listFut = listId.idOrSlug match {
       case Left(id)    => listsApi.findListForUser(id, requestingUserId)
       case Right(slug) => listsApi.findListViaAlias(slug, None)
@@ -262,16 +273,14 @@ class UsersApi @Inject()(
               limit = limit
             )
             .map {
-              case (listThings, count, peopleFromRules) => {
-                userListConverter
-                  .fromStoredList(list)
-                  .withItems(
-                    listThings.items
-                      .map(Item.fromEsItem(_))
-                      .map(_.scopeToUser(requestingUserId))
-                  )
-                  .withPeople(peopleFromRules.map(Person.fromEsPerson(_, None)))
-                  .withCount(count.toInt) -> listThings.bookmark
+              case (listThings, count, _) => {
+                (
+                  listThings.items
+                    .map(Item.fromEsItem(_))
+                    .map(_.scopeToUser(requestingUserId)),
+                  count,
+                  listThings.bookmark
+                )
               }
             }
             .map(Some(_))
@@ -288,14 +297,13 @@ class UsersApi @Inject()(
             )
             .map {
               case (listThings, count) => {
-                userListConverter
-                  .fromStoredList(list)
-                  .withItems(
-                    listThings.items
-                      .map(Item.fromEsItem(_))
-                      .map(_.scopeToUser(requestingUserId))
-                  )
-                  .withCount(count.toInt) -> listThings.bookmark
+                (
+                  listThings.items
+                    .map(Item.fromEsItem(_))
+                    .map(_.scopeToUser(requestingUserId)),
+                  count,
+                  listThings.bookmark
+                )
               }
             }
             .map(Some(_))

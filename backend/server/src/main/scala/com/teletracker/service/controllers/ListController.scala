@@ -44,12 +44,20 @@ class ListController @Inject()(
 
   prefix("/api/v2/lists") {
     get("/:listId") { req: GetListRequest =>
-      usersApi.getUserList(
-        IdOrSlug(req.listId),
-        req.authenticatedUserId,
-        mustBePublic = true,
-        includeItems = false
-      )
+      usersApi
+        .getUserList(
+          IdOrSlug(req.listId),
+          req.authenticatedUserId,
+          mustBePublic = true,
+          includeItems = false
+        )
+        .map {
+          case Some(value) =>
+            response.ok
+              .contentTypeJson()
+              .body(DataResponse.forDataResponse(DataResponse(value)))
+          case None => response.notFound
+        }
     }
 
     get("/:listId/items") { req: GetListItemsRequest =>
@@ -67,7 +75,7 @@ class ListController @Inject()(
       }
 
       usersApi
-        .getUserListAndItems(
+        .getListItems(
           IdOrSlug(req.listId),
           req.authenticatedUserId,
           makeSearchRequest(req.request.params, req),
@@ -78,14 +86,16 @@ class ListController @Inject()(
         .map {
           case None => response.notFound
 
-          case Some((list, bookmark)) =>
+          case Some((items, total, bookmark)) =>
             response.ok
               .contentTypeJson()
               .body(
                 DataResponse.forDataResponse(
                   DataResponse(
-                    list
-                  ).withPaging(Paging(bookmark.map(_.encode)))
+                    items
+                  ).withPaging(
+                    Paging(bookmark.map(_.encode), total = Some(total))
+                  )
                 )
               )
         }
@@ -103,9 +113,9 @@ class ListController @Inject()(
     val itemTypes =
       ParamExtractor.extractOptSeqParam(params, "itemTypes")
     val cast =
-      ParamExtractor.extractOptSeqParam(params, "cast")
+      ParamExtractor.extractOptSeqParam(params, "castIncludes")
     val crew =
-      ParamExtractor.extractOptSeqParam(params, "crew")
+      ParamExtractor.extractOptSeqParam(params, "crewIncludes")
 
     val filterOverridesEmpty =
       genres.isEmpty &&
@@ -141,8 +151,8 @@ class ListController @Inject()(
             if (cast.exists(_.nonEmpty) || crew.exists(_.nonEmpty))
               Some(
                 PeopleCreditsFilter(
-                  req.cast.toSeq,
-                  req.crew.toSeq,
+                  req.castIncludes.toSeq,
+                  req.crewIncludes.toSeq,
                   BinaryOperator.And
                 )
               )
@@ -168,8 +178,8 @@ private case class GetListItemsRequest(
   @QueryParam(commaSeparatedList = true) genres: Set[String] = Set.empty,
   @QueryParam @ItemReleaseYear minReleaseYear: Option[Int],
   @QueryParam @ItemReleaseYear maxReleaseYear: Option[Int],
-  @QueryParam(commaSeparatedList = true) cast: Set[String] = Set.empty,
-  @QueryParam(commaSeparatedList = true) crew: Set[String] = Set.empty,
+  @QueryParam(commaSeparatedList = true) castIncludes: Set[String] = Set.empty,
+  @QueryParam(commaSeparatedList = true) crewIncludes: Set[String] = Set.empty,
   @QueryParam @RatingRange(min = 0.0d, max = 10.0d) imdbRating: Option[String],
   @QueryParam isDynamic: Option[Boolean], // Hint as to whether the list is dynamic or not
   @QueryParam sort: Option[String],

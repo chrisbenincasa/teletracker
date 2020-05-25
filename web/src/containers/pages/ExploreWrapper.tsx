@@ -25,7 +25,7 @@ export default function makeExploreWrapper(defaultFilters: FilterParams) {
           <title>Explore - Popular</title>
         </Head>
         <AppWrapper hideFooter>
-          <WithItemFilters defaultFilters={{ ...defaultFilters }}>
+          <WithItemFilters initialFilters={{ ...defaultFilters }}>
             <Explore />
           </WithItemFilters>
         </AppWrapper>

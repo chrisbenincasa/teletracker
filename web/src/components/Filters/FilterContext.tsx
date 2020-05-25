@@ -13,22 +13,25 @@ import {
   updateUrlParamsForNextRouter,
 } from '../../utils/urlHelper';
 import qs from 'querystring';
-import { useRouterDeep } from '../../hooks/useRouterDeep';
 import { hookDeepEqual } from '../../hooks/util';
+import useEffectCompare from '../../hooks/useEffectCompare';
+import { useRouter } from 'next/router';
 
 export interface FilterContextState {
   readonly filters: FilterParams;
   readonly setFilters: (newFilters: FilterParams) => void;
+  readonly clearFilters: () => void;
   readonly defaultFilters?: FilterParams;
 }
 
 export const FilterContext = createContext<FilterContextState>({
   filters: DEFAULT_FILTER_PARAMS,
   setFilters: () => {},
+  clearFilters: () => {},
 });
 
 interface WithItemFiltersProps {
-  readonly defaultFilters?: FilterParams;
+  readonly initialFilters?: FilterParams;
   readonly children: ReactNode;
 }
 
@@ -50,26 +53,41 @@ function withFilters(
     [filters],
   );
 
+  const clearFilters = useCallback(() => {
+    actuallySetFilters(defaultFilters || {});
+  }, []);
   return {
     filters,
     setFilters: actuallySetFilters,
+    clearFilters,
   };
 }
 
 function WithItemFilters(props: WithItemFiltersProps) {
-  const router = useRouterDeep();
+  const router = useRouter();
   const stringifiedQuery = qs.stringify(router.query);
   const paramsFromQuery = parseFilterParamsFromQs(stringifiedQuery);
   const initialFilters = {
-    ...(props.defaultFilters || DEFAULT_FILTER_PARAMS),
+    ...(props.initialFilters || DEFAULT_FILTER_PARAMS),
     ...paramsFromQuery,
   };
 
-  const filterState = withFilters(initialFilters, props.defaultFilters);
+  const filterState = withFilters(initialFilters, props.initialFilters);
+
   const memoedFilterState = useCustomCompareMemo(
-    () => ({ ...filterState, defaultFilters: props.defaultFilters }),
-    [filterState.filters],
+    () => {
+      return { ...filterState, defaultFilters: props.initialFilters };
+    },
+    [filterState],
     hookDeepEqual,
+  );
+
+  useEffectCompare(
+    () => {
+      filterState.setFilters(initialFilters);
+    },
+    [props.initialFilters],
+    (prevDeps, nextDeps) => hookDeepEqual(prevDeps, nextDeps),
   );
 
   useEffect(() => {

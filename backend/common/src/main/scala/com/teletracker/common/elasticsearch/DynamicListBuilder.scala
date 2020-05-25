@@ -120,6 +120,18 @@ class DynamicListBuilder @Inject()(
     }
   }
 
+  def getRelevantPeople(list: StoredUserList): Future[List[EsPerson]] = {
+    val peopleToFetch = list.rules.toList.flatMap(_.personRules).map(_.personId)
+    if (peopleToFetch.nonEmpty) {
+      personLookup.lookupPeople(
+        peopleToFetch.map(IdOrSlug.fromUUID),
+        includeBio = false
+      )
+    } else {
+      Future.successful(Nil)
+    }
+  }
+
   private def getDynamicListQuery(
     userId: String,
     dynamicList: StoredUserList,

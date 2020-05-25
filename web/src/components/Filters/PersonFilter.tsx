@@ -134,7 +134,7 @@ export default function PersonFilter(props: Props) {
       renderOption={renderSelectOption}
       disablePortal
       renderInput={renderInput}
-      defaultValue={filters.people || []}
+      value={filters.people || []}
     />
   );
 }

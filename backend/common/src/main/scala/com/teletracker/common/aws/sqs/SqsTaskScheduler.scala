@@ -6,8 +6,10 @@ import com.teletracker.common.pubsub.{
 }
 import com.teletracker.common.tasks.storage.{TaskRecordCreator, TaskRecordStore}
 import javax.inject.Inject
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 class SqsTaskScheduler @Inject()(
   taskRecordCreator: TaskRecordCreator,
@@ -15,6 +17,8 @@ class SqsTaskScheduler @Inject()(
   taskQueue: SqsFifoQueue[TeletrackerTaskQueueMessage]
 )(implicit executionContext: ExecutionContext)
     extends TaskScheduler {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   override def schedule(
     teletrackerTaskQueueMessage: TeletrackerTaskQueueMessage,
     groupId: Option[String] = None
@@ -36,8 +40,12 @@ class SqsTaskScheduler @Inject()(
           .createScheduled(message.id.get, message.clazz, message.args)
       })
 
-    Future
-      .sequence(taskRecords.map(taskRecordStore.recordNewTask))
+    taskRecordStore
+      .recordNewTasks(taskRecords)
+      .recover {
+        case NonFatal(e) =>
+          logger.warn("Could not record tasks", e)
+      }
       .flatMap(_ => {
         taskQueue.batchQueue(
           teletrackerTaskQueueMessage.map {

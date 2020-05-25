@@ -45,7 +45,9 @@ object DataResponse {
 }
 
 @JsonCodec
-case class Paging(bookmark: Option[String])
+case class Paging(
+  bookmark: Option[String],
+  total: Option[Long] = None)
 
 case class DataResponse[T](
   data: T,

@@ -87,7 +87,8 @@ class ImportMissingPeople @Inject()(
                   .sequence(group.map(person => {
                     personImportHandler.handleItem(
                       PersonImportHandlerArgs(
-                        dryRun
+                        dryRun,
+                        async = false
                       ),
                       person
                     )
@@ -98,7 +99,8 @@ class ImportMissingPeople @Inject()(
                         case PersonImportHandler.PersonInsertResult(
                             personId,
                             _,
-                            Some(jsonResult)
+                            Some(jsonResult),
+                            _
                             ) =>
                           EsBulkIndex(
                             teletrackerConfig.elasticsearch.people_index_name,
@@ -112,7 +114,8 @@ class ImportMissingPeople @Inject()(
                             _,
                             _,
                             _,
-                            Some(jsonResult)
+                            Some(jsonResult),
+                            _
                             ) =>
                           EsBulkUpdate(
                             teletrackerConfig.elasticsearch.people_index_name,

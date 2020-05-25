@@ -41,6 +41,7 @@ import {
 } from './user';
 import { createBasicAction } from './utils';
 import { fetchItemRecsSaga } from './item-detail/get_item_recommendations';
+import { retrieveListItemsSaga } from './lists/get_list_items';
 
 export const STARTUP = 'startup';
 export const BOOT_DONE = 'boot/DONE';
@@ -93,6 +94,7 @@ export function* root() {
   yield all([
     retrieveListSaga(),
     retrieveListsSaga(),
+    retrieveListItemsSaga(),
     addToListSaga(),
     searchSaga(),
     quickSearchSaga(),

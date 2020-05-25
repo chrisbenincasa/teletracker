@@ -1,7 +1,5 @@
 import {
   Button,
-  CircularProgress,
-  createStyles,
   Dialog,
   DialogActions,
   DialogContent,
@@ -9,256 +7,47 @@ import {
   DialogTitle,
   FormControl,
   FormControlLabel,
-  Grid,
   IconButton,
-  InputLabel,
   LinearProgress,
   ListItemIcon,
-  makeStyles,
   Menu,
   MenuItem,
-  Select,
   Switch,
   TextField,
-  Theme,
   Tooltip,
   Typography,
 } from '@material-ui/core';
 import { Delete, Edit, Public, Settings } from '@material-ui/icons';
 import _ from 'lodash';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import InfiniteScroll from 'react-infinite-scroller';
-import {
-  deleteList,
-  LIST_RETRIEVE_INITIATED,
-  ListRetrieveInitiated,
-  ListRetrieveInitiatedPayload,
-  updateList,
-} from '../actions/lists';
-import ItemCard from '../components/ItemCard';
-import AllFilters from '../components/Filters/AllFilters';
-import ActiveFilters from '../components/Filters/ActiveFilters';
+import React, { useEffect, useState } from 'react';
+import { LIST_RETRIEVE_INITIATED, getList, updateList } from '../actions/lists';
 import ShowFiltersButton from '../components/Buttons/ShowFiltersButton';
 import ScrollToTopContainer from '../components/ScrollToTopContainer';
 import { List } from '../types';
-import { calculateLimit } from '../utils/list-utils';
-import { FilterParams } from '../utils/searchFilters';
-import { optionalSetsEqual } from '../utils/sets';
+import { smartListRulesToFilters } from '../utils/list-utils';
 import { useRouter } from 'next/router';
 import useStateSelector, {
   useStateSelectorWithPrevious,
 } from '../hooks/useStateSelector';
 import { useWithUserContext } from '../hooks/useWithUser';
 import { useDispatchAction } from '../hooks/useDispatchAction';
-import { useWidth } from '../hooks/useWidth';
-import { useDebouncedCallback } from 'use-debounce';
-import { createSelector } from 'reselect';
-import { AppState } from '../reducers';
 import { hookDeepEqual } from '../hooks/util';
-import { FilterContext } from '../components/Filters/FilterContext';
-import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
-import { filterParamsEqual } from '../utils/changeDetection';
-
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    listHeader: {
-      margin: theme.spacing(2, 0),
-      display: 'flex',
-      flex: '1 0 auto',
-      alignItems: 'center',
-    },
-    listName: {
-      textDecoration: 'none',
-      '&:focus, &:hover, &:visited, &:link &:active': {
-        color: theme.palette.text.primary,
-      },
-    },
-    listNameContainer: {
-      display: 'flex',
-      flex: '1 0 auto',
-    },
-    loadingCircle: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 200,
-      height: '100%',
-    },
-    filters: {
-      display: 'flex',
-      flexDirection: 'row',
-      marginBottom: theme.spacing(1),
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-    },
-    formControl: {
-      margin: theme.spacing(1),
-      minWidth: 120,
-      display: 'flex',
-    },
-    listContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      padding: theme.spacing(0, 2),
-      width: '100%',
-    },
-    noContent: {
-      margin: theme.spacing(5),
-      width: '100%',
-    },
-    root: {
-      display: 'flex',
-      flexGrow: 1,
-    },
-    textField: {
-      margin: theme.spacing(0, 1),
-      width: 200,
-    },
-    title: {
-      backgroundColor: theme.palette.primary.main,
-      padding: theme.spacing(1, 2),
-    },
-  }),
-);
-
-interface ListDetailDialogProps {
-  list?: List;
-  openDeleteConfirmation: boolean;
-}
+import WithItemFilters from '../components/Filters/FilterContext';
+import selectList from '../selectors/selectList';
+import useStyles from '../components/ListDetail/ListDetail.styles';
+import ListDetailDialog from '../components/ListDetail/ListDetailDialog';
+import ListItems from '../components/ListDetail/ListItems';
+import { useNetworks } from '../hooks/useStateMetadata';
+import { FilterParams } from '../utils/searchFilters';
+import useMemoCompare from '../hooks/useMemoCompare';
+import { usePrevious } from '../hooks/usePrevious';
 
 interface ListDetailProps {
-  preloaded?: boolean;
-}
-
-const selectList = createSelector(
-  (state: AppState) => state.lists.listsById,
-  (_, listId) => listId,
-  (listsById, listId) => {
-    let currentList: List | undefined = listsById[listId];
-    if (!currentList) {
-      currentList = _.find(listsById, list =>
-        (list.aliases || []).includes(listId),
-      );
-    }
-    return currentList;
-  },
-);
-
-function ListDetailDialog(props: ListDetailDialogProps) {
-  const classes = useStyles();
-  const router = useRouter();
-  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(
-    props.openDeleteConfirmation,
-  );
-  const [migrateListId, setMigrateListId] = useState('');
-
-  const { isLoggedIn } = useWithUserContext();
-  const listsById = useStateSelector(state => state.lists.listsById);
-  const { list } = props;
-
-  useEffect(() => {
-    setDeleteConfirmationOpen(props.openDeleteConfirmation);
-  }, [props.openDeleteConfirmation]);
-
-  const handleMigration = event => {
-    setMigrateListId(event.target.value);
-  };
-
-  const handleDeleteModalClose = () => {
-    setDeleteConfirmationOpen(false);
-  };
-
-  const dispatchDeleteList = useDispatchAction(deleteList);
-
-  const handleDeleteList = () => {
-    if (isLoggedIn) {
-      const migrationId = migrateListId !== '0' ? migrateListId : undefined;
-
-      dispatchDeleteList({
-        listId: list!.id,
-        mergeListId: migrationId,
-      });
-
-      // TODO: Loading state.
-      router.push('/');
-    }
-
-    // TODO: Handle this better - tell them they can't.
-    handleDeleteModalClose();
-  };
-
-  return (
-    <div>
-      <Dialog
-        open={deleteConfirmationOpen}
-        onClose={() => setDeleteConfirmationOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title" className={classes.title}>
-          {`Delete "${list?.name}" list?`}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            {`Are you sure you want to delete this list? There is no way to undo
-              this. ${
-                list && list.totalItems > 0
-                  ? 'All of the content from your list can be deleted or migrated to another list.'
-                  : ''
-              }`}
-          </DialogContentText>
-          {list && list.totalItems > 0 && (
-            <FormControl className={classes.formControl}>
-              <InputLabel htmlFor="list-items">
-                Move items from this list to:
-              </InputLabel>
-              <Select
-                value={migrateListId}
-                onChange={handleMigration}
-                id="list-items"
-              >
-                <MenuItem key="delete" value="0">
-                  <em>Delete these items</em>
-                </MenuItem>
-                {isLoggedIn &&
-                  _.map(
-                    listsById,
-                    item =>
-                      item.id !== list?.id && (
-                        <MenuItem key={item.id} value={item.id}>
-                          {item.name}
-                        </MenuItem>
-                      ),
-                  )}
-              </Select>
-            </FormControl>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setDeleteConfirmationOpen(false)}
-            color="primary"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDeleteList}
-            color="primary"
-            variant="contained"
-            autoFocus
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </div>
-  );
+  readonly preloaded?: boolean;
 }
 
 function ListDetail(props: ListDetailProps) {
   const classes = useStyles();
-
-  const listBookmark = useStateSelector(state => state.lists.currentBookmark);
 
   const { isLoggedIn } = useWithUserContext();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | undefined>();
@@ -268,95 +57,36 @@ function ListDetail(props: ListDetailProps) {
   const [deleteOnWatch, setDeleteOnWatch] = useState(false);
   const [newListName, setNewListName] = useState('');
   const router = useRouter();
-  const width = useWidth();
+  const networks = useNetworks();
 
   const listId = router.query.id as string;
+  const previousListId = usePrevious(listId);
 
   const listLoading = useStateSelector(
     state => state.lists.loading[LIST_RETRIEVE_INITIATED],
   );
 
-  const [list, previousList] = useStateSelectorWithPrevious(state => {
-    return selectList(state, listId);
-  }, hookDeepEqual);
-
-  const { filters, defaultFilters } = useContext(FilterContext);
-
-  const [listFilters, setListFilters] = useState<FilterParams | undefined>();
-  const [showFilter, setShowFilter] = useState(
-    !filterParamsEqual(filters, defaultFilters, defaultFilters?.sortOrder),
+  const [list, previousList] = useStateSelectorWithPrevious(
+    state => selectList(state, listId),
+    hookDeepEqual,
   );
 
+  let defaultFilters: FilterParams = useMemoCompare(
+    () => {
+      if (list && networks) {
+        return smartListRulesToFilters(list, networks || []);
+      } else {
+        return {};
+      }
+    },
+    [list, networks],
+    hookDeepEqual,
+  );
+
+  const [showFilter, setShowFilter] = useState(false);
+
   const dispatchUpdateList = useDispatchAction(updateList);
-  const dispatchRetrieveList = useDispatchAction(ListRetrieveInitiated);
-
-  const retrieveList = (initialLoad: boolean, force: boolean = true) => {
-    dispatchRetrieveList({
-      listId: listId,
-      force,
-      limit: calculateLimit(width, 3),
-      bookmark: initialLoad ? undefined : listBookmark,
-      ...makeListFilters(initialLoad, filters, listFilters),
-      sort: filters.sortOrder,
-      itemTypes: filters.itemTypes,
-      genres: filters.genresFilter,
-      networks: filters.networks,
-    });
-  };
-
-  const [loadMoreDebounced] = useDebouncedCallback(() => {
-    if (!listLoading) {
-      retrieveList(false, false);
-    }
-  }, 200);
-
-  const loadMoreList = useCallback(() => {
-    if (listBookmark && !listLoading) {
-      loadMoreDebounced();
-    }
-  }, [listBookmark, listLoading]);
-
-  const makeListFilters = (
-    initialLoad: boolean,
-    currentFilters: FilterParams,
-    initialFilters?: FilterParams,
-  ): Partial<ListRetrieveInitiatedPayload> => {
-    if (initialLoad) {
-      return {};
-    } else if (initialFilters) {
-      let genres =
-        currentFilters.genresFilter &&
-        !optionalSetsEqual(
-          currentFilters.genresFilter,
-          initialFilters.genresFilter,
-        )
-          ? currentFilters.genresFilter || []
-          : initialFilters.genresFilter;
-
-      let networks =
-        currentFilters.networks &&
-        !optionalSetsEqual(currentFilters.networks, initialFilters.networks)
-          ? currentFilters.networks
-          : initialFilters.networks;
-
-      let itemTypes = !optionalSetsEqual(
-        currentFilters.itemTypes,
-        initialFilters.itemTypes,
-      )
-        ? currentFilters.itemTypes
-        : initialFilters.itemTypes;
-
-      return {
-        genres,
-        networks,
-        itemTypes,
-      };
-    } else {
-      return {
-        genres: currentFilters.genresFilter,
-      };
-    }
-  };
+  const dispatchGetList = useDispatchAction(getList);
 
   const handleRenameList = () => {
     if (isLoggedIn) {
@@ -377,16 +107,11 @@ function ListDetail(props: ListDetailProps) {
   // Effects
   //
 
-  useFilterLoadEffect(
-    () => {
-      retrieveList(true);
-    },
-    state => state.lists.currentFilters,
-  );
-
   useEffect(() => {
-    retrieveList(_.isUndefined(props.preloaded) ? true : !props.preloaded);
-  }, [listId]);
+    if (previousListId && listId !== previousListId) {
+      dispatchGetList({ listId });
+    }
+  }, [listId, previousListId]);
 
   useEffect(() => {
     if (!previousList && list) {
@@ -443,24 +168,14 @@ function ListDetail(props: ListDetailProps) {
   //
   // Render
   //
-  const renderLoadingCircle = () => {
+  const renderLoading = () => {
     return (
-      <div className={classes.loadingCircle}>
-        <div>
-          <CircularProgress color="secondary" />
+      <div style={{ display: 'flex' }}>
+        <div style={{ flexGrow: 1 }}>
+          <LinearProgress />
         </div>
       </div>
     );
-  };
-
-  const renderNoContentMessage = (list: List) => {
-    if (list.totalItems > 0 && !listLoading) {
-      return 'Sorry, nothing matches your current filter.  Please update and try again.';
-    } else if (list.totalItems === 0 && !listLoading && !list.isDynamic) {
-      return 'Nothing has been added to this list yet.';
-    } else if (list.totalItems === 0 && !listLoading && list.isDynamic) {
-      return 'Nothing currently matches this Smart Lists filtering criteria';
-    }
   };
 
   const renderRenameDialog = (list: List) => {
@@ -595,47 +310,9 @@ function ListDetail(props: ListDetailProps) {
             <ShowFiltersButton onClick={toggleFilters} />
             {renderProfileMenu()}
           </div>
-          <div className={classes.filters}>
-            <ActiveFilters isListDynamic={list.isDynamic} variant="default" />
-          </div>
-          <AllFilters
-            open={showFilter}
-            isListDynamic={list.isDynamic}
-            listFilters={listFilters}
-          />
-          <InfiniteScroll
-            pageStart={0}
-            loadMore={loadMoreList}
-            hasMore={!_.isUndefined(listBookmark)}
-            useWindow
-            threshold={300}
-          >
-            <Grid container spacing={2}>
-              {(list?.items?.length || 0) > 0 ? (
-                list?.items!.map(item => {
-                  return (
-                    <ItemCard
-                      key={item.id}
-                      itemId={item.id}
-                      listContext={list}
-                      withActionButton
-                      showDelete={!list.isDynamic}
-                    />
-                  );
-                })
-              ) : (
-                <Typography
-                  align="center"
-                  color="secondary"
-                  display="block"
-                  className={classes.noContent}
-                >
-                  {renderNoContentMessage(list)}
-                </Typography>
-              )}
-            </Grid>
-            {listLoading && renderLoadingCircle()}
-          </InfiniteScroll>
+          <WithItemFilters initialFilters={{ ...defaultFilters }}>
+            <ListItems showFilter={showFilter} listId={listId} />
+          </WithItemFilters>
         </div>
         <ListDetailDialog
           list={list}
@@ -646,24 +323,14 @@ function ListDetail(props: ListDetailProps) {
     );
   };
 
-  const renderLoading = () => {
-    return (
-      <div style={{ display: 'flex' }}>
-        <div style={{ flexGrow: 1 }}>
-          <LinearProgress />
-        </div>
-      </div>
-    );
-  };
-
-  return !list ? (
-    renderLoading()
-  ) : (
+  return list && networks ? (
     <ScrollToTopContainer>{renderListDetail(list!)}</ScrollToTopContainer>
+  ) : (
+    renderLoading()
   );
 }
 
 // DEBUG only.
-// ListDetailF.whyDidYouRender = true;
+// ListDetail.whyDidYouRender = true;
 
 export default React.memo(ListDetail, _.isEqual);

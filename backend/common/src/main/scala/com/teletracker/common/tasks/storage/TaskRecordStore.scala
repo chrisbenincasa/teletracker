@@ -5,8 +5,8 @@ import com.teletracker.common.elasticsearch.ElasticsearchExecutor
 import io.circe.syntax._
 import javax.inject.Inject
 import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
-import org.elasticsearch.action.index.IndexRequest
-import org.elasticsearch.action.update.UpdateRequest
+import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
+import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.common.xcontent.XContentType
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,11 +20,11 @@ class TaskRecordStore @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext) {
 
-  def recordNewTask(taskRecord: TaskRecord) = {
+  def recordNewTask(taskRecord: TaskRecord): Future[IndexResponse] = {
     elasticsearchExecutor.index(makeIndexRequestForRecord(taskRecord))
   }
 
-  def recordNewTasks(taskRecords: Seq[TaskRecord]) = {
+  def recordNewTasks(taskRecords: Seq[TaskRecord]): Future[BulkResponse] = {
     if (taskRecords.isEmpty) {
       Future.successful(new BulkResponse(Array.empty, 0))
     } else {
@@ -35,14 +35,16 @@ class TaskRecordStore @Inject()(
     }
   }
 
-  private def makeIndexRequestForRecord(taskRecord: TaskRecord) = {
+  private def makeIndexRequestForRecord(
+    taskRecord: TaskRecord
+  ): IndexRequest = {
     new IndexRequest(teletrackerConfig.elasticsearch.tasks_index_name)
       .create(true)
       .id(taskRecord.id.toString)
       .source(taskRecord.asJson.noSpaces, XContentType.JSON)
   }
 
-  def upsertTask(taskRecord: TaskRecord) = {
+  def upsertTask(taskRecord: TaskRecord): Future[UpdateResponse] = {
     elasticsearchExecutor.update(
       new UpdateRequest(
         teletrackerConfig.elasticsearch.tasks_index_name,
@@ -52,21 +54,21 @@ class TaskRecordStore @Inject()(
     )
   }
 
-  def setTaskStarted(taskRecord: TaskRecord) = {
+  def setTaskStarted(taskRecord: TaskRecord): Future[UpdateResponse] = {
     upsertTask(
       taskRecord
         .copy(status = TaskStatus.Executing, startedAt = Some(Instant.now()))
     )
   }
 
-  def setTaskSuccess(taskRecord: TaskRecord) = {
+  def setTaskSuccess(taskRecord: TaskRecord): Future[UpdateResponse] = {
     upsertTask(
       taskRecord
         .copy(status = TaskStatus.Completed, finishedAt = Some(Instant.now()))
     )
   }
 
-  def setTaskFailed(taskRecord: TaskRecord) = {
+  def setTaskFailed(taskRecord: TaskRecord): Future[UpdateResponse] = {
     upsertTask(
       taskRecord
         .copy(status = TaskStatus.Failed, finishedAt = Some(Instant.now()))

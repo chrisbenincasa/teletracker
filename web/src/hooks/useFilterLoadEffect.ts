@@ -15,5 +15,5 @@ export default function useFilterLoadEffect(
     if (!filterParamsEqual(filters, stateFilters, defaultFilters?.sortOrder)) {
       effectCb();
     }
-  }, [filters]);
+  }, [filters, stateFilters]);
 }
