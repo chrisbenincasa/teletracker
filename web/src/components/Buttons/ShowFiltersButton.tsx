@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button, createStyles, makeStyles, Theme } from '@material-ui/core';
 import { Tune } from '@material-ui/icons';
 
@@ -20,7 +20,20 @@ export default function ShowFiltersButton(props: Props) {
   const classes = useStyles();
   const filtersCTA = showFilters ? 'Hide Filters' : 'Filters';
 
+  const filterButton = useRef<HTMLButtonElement>(null);
+
   const toggleFilters = () => {
+    if (
+      filterButton &&
+      filterButton.current &&
+      filterButton.current.offsetTop
+    ) {
+      let topBuffer = 60;
+      window.scrollTo({
+        top: filterButton.current.offsetTop - topBuffer,
+        behavior: 'smooth',
+      });
+    }
     props.onClick();
     setShowFilters(!showFilters);
   };
@@ -34,6 +47,7 @@ export default function ShowFiltersButton(props: Props) {
       startIcon={<Tune />}
       className={classes.settings}
       style={props.style}
+      ref={filterButton}
     >
       {filtersCTA}
     </Button>
