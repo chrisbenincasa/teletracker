@@ -6,7 +6,7 @@ import { CircularProgress, Grid, Typography } from '@material-ui/core';
 import ItemCard from '../ItemCard';
 import React, { useCallback, useContext, useEffect } from 'react';
 import useStyles from './ListDetail.styles';
-import useStateSelector from '../../hooks/useStateSelector';
+import useStateSelector, { useStateSelectorWithPrevious } from '../../hooks/useStateSelector';
 import selectList from '../../selectors/selectList';
 import { useDebouncedCallback } from 'use-debounce';
 import { LIST_RETRIEVE_INITIATED, getList } from '../../actions/lists';
@@ -32,7 +32,7 @@ export default function ListItems(props: Props) {
   const classes = useStyles();
   const width = useWidth();
 
-  const list = useStateSelector(state => selectList(state, props.listId));
+  const [list, previousList] = useStateSelectorWithPrevious(state => selectList(state, props.listId));
   const listLoading = useStateSelector(
     state => state.lists.loading[LIST_RETRIEVE_INITIATED],
   );
@@ -83,7 +83,6 @@ export default function ListItems(props: Props) {
     const sameList = !previousListId || previousListId === props.listId;
 
     if (listBookmark && !listItemsLoading && sameList) {
-      console.log('same list, load more ', props.listId, previousListId);
       // Otherwise, keep loading more items on the same list using the bookmark
       loadMoreDebounced(true);
     }
@@ -99,6 +98,12 @@ export default function ListItems(props: Props) {
       retrieveList(true);
     }
   }, [filters, props.listId, currentFilterState]);
+
+  useEffect(() => {
+    if (_.isUndefined(previousList) && !_.isUndefined(list)) {
+      retrieveList(true);
+    }
+  }, [list, previousList])
 
   const renderNoContentMessage = (list: List) => {
     let notLoading = !listLoading && !listItemsLoading;
