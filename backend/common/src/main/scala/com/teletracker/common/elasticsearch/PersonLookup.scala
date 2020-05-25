@@ -9,7 +9,11 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.elasticsearch.cache.ExternalIdMappingCache
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
-import com.teletracker.common.elasticsearch.model.{EsExternalId, EsPerson}
+import com.teletracker.common.elasticsearch.model.{
+  EsExternalId,
+  EsPerson,
+  ItemSearchParams
+}
 import com.teletracker.common.util.{Folds, IdOrSlug, Slug}
 import javax.inject.Inject
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
@@ -25,6 +29,8 @@ import java.util.UUID
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Maps._
 import org.elasticsearch.action.get.MultiGetRequest
+import org.elasticsearch.common.xcontent.DeprecationHandler
+import org.elasticsearch.search.fetch.subphase.FetchSourceContext
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
@@ -38,11 +44,13 @@ class PersonLookup @Inject()(
     extends ElasticsearchAccess {
 
   def fullTextSearch(
-    textQuery: String,
-    searchOptions: SearchOptions
+    params: ItemSearchParams
   ): Future[ElasticsearchPeopleResponse] = {
-    if (searchOptions.bookmark.isDefined) {
-      require(searchOptions.bookmark.get.sortType == SortMode.SearchScoreType)
+    require(params.titleSearch.isDefined)
+    val textQuery = params.titleSearch.get
+
+    if (params.bookmark.isDefined) {
+      require(params.bookmark.get.sortType == SortMode.SearchScoreType)
     }
 
     // TODO: Support all of the filters that regular search does
@@ -63,7 +71,7 @@ class PersonLookup @Inject()(
       )
       .minimumShouldMatch(1)
       .filter(QueryBuilders.rangeQuery("popularity").gte(1.0))
-      .applyOptional(searchOptions.thingTypeFilter.filter(_.nonEmpty))(
+      .applyOptional(params.itemTypes.filter(_.nonEmpty))(
         (builder, types) => types.foldLeft(builder)(itemTypeFilter)
       )
 
@@ -83,8 +91,8 @@ class PersonLookup @Inject()(
 
     val searchSource = new SearchSourceBuilder()
       .query(finalQuery)
-      .size(searchOptions.limit)
-      .applyOptional(searchOptions.bookmark)((builder, bookmark) => {
+      .size(params.limit)
+      .applyOptional(params.bookmark)((builder, bookmark) => {
         builder.from(bookmark.value.toInt)
       })
 
@@ -100,7 +108,7 @@ class PersonLookup @Inject()(
       .search(search)
       .map(searchResponseToPeople)
       .map(response => {
-        val lastOffset = searchOptions.bookmark.map(_.value.toInt).getOrElse(0)
+        val lastOffset = params.bookmark.map(_.value.toInt).getOrElse(0)
         response.withBookmark(
           if (response.items.isEmpty) None
           else
@@ -305,17 +313,33 @@ class PersonLookup @Inject()(
       }
   }
 
-  def lookupPeople(identifiers: List[IdOrSlug]): Future[List[EsPerson]] = {
+  def lookupPeople(
+    identifiers: List[IdOrSlug],
+    includeBio: Boolean = true
+  ): Future[List[EsPerson]] = {
     val (withId, withSlug) = identifiers.partition(_.id.isDefined)
 
     val ids = withId.flatMap(_.id).map(_.toString)
 
     val idPeopleFut = if (ids.nonEmpty) {
       val multiGetRequest = new MultiGetRequest()
-      ids.foreach(
-        multiGetRequest
-          .add(teletrackerConfig.elasticsearch.people_index_name, _)
-      )
+      ids.foreach(id => {
+        val item = new MultiGetRequest.Item(
+          teletrackerConfig.elasticsearch.people_index_name,
+          id
+        ).applyIf(!includeBio)(
+          _.fetchSourceContext(
+            new FetchSourceContext(
+              true,
+              Array.empty[String],
+              Array("biography")
+            )
+          )
+        )
+
+        multiGetRequest.add(item)
+      })
+
       elasticsearchExecutor
         .multiGet(multiGetRequest)
         .map(idResults => {
@@ -461,25 +485,28 @@ class PersonLookup @Inject()(
     limit: Int
   ) = {
     itemSearch.searchItems(
-      genres = None,
-      networks = None,
-      itemTypes = None,
-      sortMode = Recent(),
-      limit = limit,
-      bookmark = None,
-      releaseYear = None,
-      peopleCreditSearch = Some(
-        PeopleCreditSearch(
-          Seq(
-            PersonCreditSearch(
-              IdOrSlug.fromUUID(personId),
-              PersonAssociationType.Cast
-            )
-          ),
-          BinaryOperator.Or
-        )
-      ),
-      imdbRatingRange = None
+      ItemSearchParams(
+        genres = None,
+        networks = None,
+        itemTypes = None,
+        sortMode = Recent(),
+        limit = limit,
+        bookmark = None,
+        releaseYear = None,
+        peopleCredits = Some(
+          PeopleCreditSearch(
+            Seq(
+              PersonCreditSearch(
+                IdOrSlug.fromUUID(personId),
+                PersonAssociationType.Cast
+              )
+            ),
+            BinaryOperator.Or
+          )
+        ),
+        imdbRating = None,
+        titleSearch = None
+      )
     )
   }
 }

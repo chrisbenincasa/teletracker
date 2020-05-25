@@ -21,7 +21,12 @@ import com.teletracker.common.db.{
   SearchScore,
   SortMode
 }
-import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson, EsUserItem}
+import com.teletracker.common.elasticsearch.model.{
+  EsItem,
+  EsPerson,
+  EsUserItem,
+  TagFilter
+}
 import io.circe.parser.decode
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.index.query.{
@@ -251,10 +256,27 @@ trait ElasticsearchAccess {
   protected def itemTypeFilter(
     builder: BoolQueryBuilder,
     itemType: ItemType
-  ) = {
+  ): BoolQueryBuilder = {
     builder
       .should(QueryBuilders.termQuery("type", itemType.toString))
       .minimumShouldMatch(1)
+  }
+
+  protected def itemTagFilter(
+    builder: BoolQueryBuilder,
+    tagFilter: TagFilter
+  ): BoolQueryBuilder = {
+    val query = QueryBuilders
+      .termQuery(
+        "tags.tag",
+        tagFilter.tag
+      )
+
+    if (tagFilter.mustHave) {
+      builder.must(query)
+    } else {
+      builder.mustNot(query)
+    }
   }
 
   protected def applyBookmark(

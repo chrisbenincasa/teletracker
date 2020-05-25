@@ -1,34 +1,16 @@
 import { put, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import {
-  ItemType,
-  List,
-  SortOptions,
-  NetworkType,
-  Paging,
-  ListFactory,
-  ApiList,
-} from '../../types';
+import { ApiList, List, ListFactory } from '../../types';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
-import _ from 'lodash';
-import { FilterParams, normalizeFilterParams } from '../../utils/searchFilters';
 
 export const LIST_RETRIEVE_INITIATED = 'lists/retrieve/INITIATED';
 export const LIST_RETRIEVE_SUCCESS = 'lists/retrieve/SUCCESS';
 export const LIST_RETRIEVE_FAILED = 'lists/retrieve/FAILED';
 
 export interface ListRetrieveInitiatedPayload {
-  listId: string;
-  force?: boolean;
-  sort?: SortOptions;
-  desc?: boolean;
-  itemTypes?: ItemType[];
-  genres?: number[];
-  bookmark?: string;
-  networks?: NetworkType[];
-  limit?: number;
+  readonly listId: string;
 }
 
 export type ListRetrieveInitiatedAction = FSA<
@@ -37,10 +19,7 @@ export type ListRetrieveInitiatedAction = FSA<
 >;
 
 export type ListRetrieveSuccessPayload = {
-  list: List;
-  paging?: Paging;
-  append: boolean;
-  forFilters?: FilterParams;
+  readonly list: List;
 };
 
 export type ListRetrieveSuccessAction = FSA<
@@ -50,7 +29,7 @@ export type ListRetrieveSuccessAction = FSA<
 
 export type ListRetrieveFailedAction = FSA<typeof LIST_RETRIEVE_FAILED, Error>;
 
-export const ListRetrieveInitiated = createAction<ListRetrieveInitiatedAction>(
+export const getList = createAction<ListRetrieveInitiatedAction>(
   LIST_RETRIEVE_INITIATED,
 );
 
@@ -72,33 +51,15 @@ export const retrieveListSaga = function*() {
   }: ListRetrieveInitiatedAction) {
     if (payload) {
       try {
-        // TODO: Type alias to make this cleaner
         let response: TeletrackerResponse<ApiList> = yield clientEffect(
           client => client.getList,
           payload.listId,
-          payload.sort,
-          payload.desc,
-          payload.itemTypes,
-          payload.genres,
-          payload.bookmark,
-          payload.networks,
-          payload.limit,
         );
-
-        const filters: FilterParams = normalizeFilterParams({
-          sortOrder: payload.sort,
-          itemTypes: payload.itemTypes,
-          networks: payload.networks,
-          genresFilter: payload.genres,
-        });
 
         if (response.ok && response.data) {
           yield put(
             ListRetrieveSuccess({
               list: ListFactory.create(response.data.data),
-              paging: response.data.paging,
-              append: !_.isUndefined(payload.bookmark),
-              forFilters: filters,
             }),
           );
         } else {

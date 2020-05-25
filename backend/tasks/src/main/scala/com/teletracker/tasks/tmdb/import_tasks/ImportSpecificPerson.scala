@@ -15,13 +15,15 @@ class ImportSpecificPerson @Inject()(
   override protected def runInternal(args: Args): Unit = {
     val id = args.valueOrThrow[Int]("id")
     val dryRun = args.valueOrDefault[Boolean]("dryRun", true)
+    val async = args.valueOrDefault[Boolean]("async", false)
 
     itemExpander
       .expandPerson(id)
       .flatMap(movie => {
         personImportHandler.handleItem(
           PersonImportHandlerArgs(
-            dryRun = dryRun
+            dryRun = dryRun,
+            async = async
           ),
           movie
         )

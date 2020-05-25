@@ -105,13 +105,7 @@ export default function ActiveFilters(props: Props) {
     }
 
     // TODO: Put somewhere constant/common
-    let networkList: NetworkType[] = [
-      'hbo-go',
-      'hbo-now',
-      'netflix',
-      'netflix-kids',
-      'hulu',
-    ];
+    let networkList: NetworkType[] = ['hbo-now', 'netflix', 'hulu'];
 
     // Undefined networks means all networks.
     let networksInFilter = networks || networkList;
@@ -259,34 +253,21 @@ export default function ActiveFilters(props: Props) {
   let imdbMin = sliders?.imdbRating?.min;
   let imdbMax = sliders?.imdbRating?.max;
 
-  const isDefaultFilters = filterParamsEqual(
-    filters,
-    defaultFilters,
-    defaultFilters?.sortOrder,
+  const showGenreFilters = Boolean(genresFilter && genresFilter.length > 0);
+  const showNetworkFilters = Boolean(networks && networks.length > 0);
+  const showTypeFilters = Boolean(itemTypes && itemTypes.length > 0);
+  const showSort = defaultFilters?.sortOrder !== sortOrder;
+  const showPersonFilters = Boolean(people && people.length > 0);
+
+  const showReleaseYearSlider = Boolean(
+    !_.isUndefined(sliders?.releaseYear?.min) ||
+      !_.isUndefined(sliders?.releaseYear?.max),
   );
-  const showGenreFilters =
-    !isDefaultFilters && Boolean(genresFilter && genresFilter.length > 0);
-  const showNetworkFilters =
-    !isDefaultFilters && Boolean(networks && networks.length > 0);
-  const showTypeFilters =
-    !isDefaultFilters && Boolean(itemTypes && itemTypes.length > 0);
-  const showSort = !isDefaultFilters && defaultFilters?.sortOrder !== sortOrder;
-  const showPersonFilters =
-    !isDefaultFilters && Boolean(people && people.length > 0);
 
-  const showReleaseYearSlider =
-    !isDefaultFilters &&
-    Boolean(
-      !_.isUndefined(sliders?.releaseYear?.min) ||
-        !_.isUndefined(sliders?.releaseYear?.max),
-    );
-
-  const showImdbSlider =
-    !isDefaultFilters &&
-    Boolean(
-      !_.isUndefined(sliders?.imdbRating?.min) ||
-        !_.isUndefined(sliders?.imdbRating?.max),
-    );
+  const showImdbSlider = Boolean(
+    !_.isUndefined(sliders?.imdbRating?.min) ||
+      !_.isUndefined(sliders?.imdbRating?.max),
+  );
 
   const showReset = Boolean(
     showSort ||

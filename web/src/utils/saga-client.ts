@@ -40,27 +40,20 @@ export class SagaTeletrackerClient {
     );
   }
 
-  *getList(
-    id: string,
-    sort?: SortOptions,
-    desc?: boolean,
-    itemTypes?: ItemType[],
-    genres?: number[],
-    bookmark?: string,
-    networks?: NetworkType[],
-    limit?: number,
-  ) {
+  *getList(id: string) {
     return yield this.apiCall(
       client => client.getList,
       yield this.withToken(),
       id,
-      sort,
-      desc,
-      itemTypes,
-      genres,
-      bookmark,
-      networks,
-      limit,
+    );
+  }
+
+  *getListItems(id: string, request: ItemSearchRequest) {
+    return yield this.apiCall(
+      client => client.getListItems,
+      yield this.withToken(),
+      id,
+      request,
     );
   }
 

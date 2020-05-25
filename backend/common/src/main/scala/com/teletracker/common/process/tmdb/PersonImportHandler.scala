@@ -1,6 +1,7 @@
 package com.teletracker.common.process.tmdb
 
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
+import com.teletracker.common.elasticsearch.async.EsIngestQueue
 import com.teletracker.common.elasticsearch.denorm.ItemCreditsDenormalizationHelper
 import com.teletracker.common.elasticsearch.model._
 import com.teletracker.common.elasticsearch.{model, _}
@@ -12,7 +13,11 @@ import com.teletracker.common.process.tmdb.PersonImportHandler.{
   PersonInsertResult,
   PersonUpdateResult
 }
-import com.teletracker.common.pubsub.{TaskScheduler, TaskTag}
+import com.teletracker.common.pubsub.{
+  EsIngestPersonDenormArgs,
+  TaskScheduler,
+  TaskTag
+}
 import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.common.tasks.model.{
   DenormalizePersonTaskArgs,
@@ -44,12 +49,14 @@ object PersonImportHandler {
     def crewNeedsDenorm: Boolean
     def itemChanged: Boolean
     def jsonResult: Option[String]
+    def queued: Boolean
   }
 
   case class PersonInsertResult(
     personId: UUID,
     inserted: Boolean,
-    jsonResult: Option[String])
+    jsonResult: Option[String],
+    queued: Boolean)
       extends PersonImportResult {
     override def isInsertOperation: Boolean = true
     override def isUpdateOperation: Boolean = false
@@ -65,7 +72,8 @@ object PersonImportHandler {
     castNeedsDenorm: Boolean,
     crewNeedsDenorm: Boolean,
     itemChanged: Boolean,
-    jsonResult: Option[String])
+    jsonResult: Option[String],
+    queued: Boolean)
       extends PersonImportResult {
     override def isInsertOperation: Boolean = false
     override def isUpdateOperation: Boolean = true
@@ -78,7 +86,8 @@ class PersonImportHandler @Inject()(
   personUpdater: PersonUpdater,
   itemLookup: ItemLookup,
   taskScheduler: TaskScheduler,
-  creditsDenormalizer: ItemCreditsDenormalizationHelper
+  creditsDenormalizer: ItemCreditsDenormalizationHelper,
+  itemUpdateQueue: EsIngestQueue
 )(implicit executionContext: ExecutionContext) {
   import diffson._
   import diffson.circe._
@@ -218,7 +227,8 @@ class PersonImportHandler @Inject()(
                   castNeedsDenorm = castNeedsDenorm,
                   crewNeedsDenorm = crewNeedsDenorm,
                   itemChanged = existingPerson != personToUpdate,
-                  jsonResult = Some(personUpdater.getUpdateJson(personToUpdate))
+                  jsonResult = Some(personUpdater.getUpdateJson(personToUpdate)),
+                  queued = false
                 )
               }
             } else if (personToUpdate != existingPerson) {
@@ -226,18 +236,39 @@ class PersonImportHandler @Inject()(
                 s"Updated existing person (id = ${personToUpdate.id}, slug = ${personToUpdate.slug})"
               )
 
-              personUpdater
-                .update(personToUpdate)
-                .map(_ => {
-                  PersonUpdateResult(
-                    personId = personToUpdate.id,
-                    updated = true,
-                    castNeedsDenorm = castNeedsDenorm,
-                    crewNeedsDenorm = crewNeedsDenorm,
-                    itemChanged = true,
-                    jsonResult = None
+              if (args.async) {
+                itemUpdateQueue
+                  .queuePersonUpdate(
+                    personToUpdate.id,
+                    personToUpdate.asJson,
+                    denorm = Some(EsIngestPersonDenormArgs(needsDenorm = true))
                   )
-                })
+                  .map(_ => {
+                    PersonUpdateResult(
+                      personId = personToUpdate.id,
+                      updated = false,
+                      castNeedsDenorm = castNeedsDenorm,
+                      crewNeedsDenorm = crewNeedsDenorm,
+                      itemChanged = true,
+                      jsonResult = None,
+                      queued = true
+                    )
+                  })
+              } else {
+                personUpdater
+                  .update(personToUpdate)
+                  .map(_ => {
+                    PersonUpdateResult(
+                      personId = personToUpdate.id,
+                      updated = true,
+                      castNeedsDenorm = castNeedsDenorm,
+                      crewNeedsDenorm = crewNeedsDenorm,
+                      itemChanged = true,
+                      jsonResult = None,
+                      queued = false
+                    )
+                  })
+              }
             } else {
               Future.successful {
                 logger.info(
@@ -249,7 +280,8 @@ class PersonImportHandler @Inject()(
                   castNeedsDenorm = false,
                   crewNeedsDenorm = false,
                   itemChanged = false,
-                  jsonResult = None
+                  jsonResult = None,
+                  queued = false
                 )
               }
             }
@@ -309,22 +341,37 @@ class PersonImportHandler @Inject()(
               PersonInsertResult(
                 personId = person.id,
                 inserted = false,
-                jsonResult = Some(personUpdater.getIndexJson(person))
+                jsonResult = Some(personUpdater.getIndexJson(person)),
+                queued = false
               )
             }
           } else {
             logger.info(
               s"Inserted new person (id = ${person.id}, slug = ${person.slug})"
             )
-            personUpdater
-              .insert(person)
-              .map(_ => {
-                PersonInsertResult(
-                  personId = person.id,
-                  inserted = true,
-                  jsonResult = None
-                )
-              })
+            if (args.async) {
+              itemUpdateQueue
+                .queuePersonInsert(person)
+                .map(_ => {
+                  PersonInsertResult(
+                    personId = person.id,
+                    inserted = true,
+                    jsonResult = None,
+                    queued = true
+                  )
+                })
+            } else {
+              personUpdater
+                .insert(person)
+                .map(_ => {
+                  PersonInsertResult(
+                    personId = person.id,
+                    inserted = true,
+                    jsonResult = None,
+                    queued = false
+                  )
+                })
+            }
           }
         }
       )

@@ -359,7 +359,7 @@ class ItemUpdater @Inject()(
               val updateDenormRequest =
                 new UpdateRequest(
                   teletrackerConfig.elasticsearch.user_items_index_name,
-                  s"${userId}_${itemId}"
+                  EsUserItem.makeId(userId, itemId)
                 ).script(UpdateUserTagsScript(value, userTagsScriptSource))
                   .upsert(userItemTag.asJson.noSpaces, XContentType.JSON)
                   .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -498,8 +498,8 @@ class ItemUpdater @Inject()(
   ) = {
     EsUserItem(
       id = s"${userId}_${itemId}",
-      item_id = Some(itemId),
-      user_id = Some(userId),
+      item_id = itemId,
+      user_id = userId,
       tags = List(userTag),
       item = Some(item.toDenormalizedUserItem)
     )

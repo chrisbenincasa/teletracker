@@ -115,63 +115,6 @@ class UserController @Inject()(
         }
       }
 
-      get("/:userId/lists/:listId") { req: GetUserAndListByIdRequest =>
-        val genres =
-          ParamExtractor.extractOptSeqParam(req.request.params, "genres")
-        val networks =
-          ParamExtractor.extractOptSeqParam(req.request.params, "networks")
-        val itemTypes =
-          ParamExtractor.extractOptSeqParam(req.request.params, "itemTypes")
-
-        val filtersFut =
-          listFilterParser.parseListFilters(
-            itemTypes,
-            genres
-          )
-
-        val (bookmark, sort) = if (req.bookmark.isDefined) {
-          val b = Bookmark.parse(req.bookmark.get)
-          Some(b) -> b.sortMode
-        } else {
-          val desc = req.desc.getOrElse(true)
-          val sort = req.sort
-            .map(SortMode.fromString)
-            .getOrElse(DefaultForListType())
-            .direction(desc)
-
-          None -> sort
-        }
-
-        logger.info(s"Retrieving list with bookmark: ${bookmark}")
-
-        filtersFut.flatMap(filters => {
-          usersApi
-            .getUserListAndItems(
-              IdOrSlug(req.listId),
-              req.authenticatedUserId,
-              Some(filters),
-              req.isDynamic,
-              sort,
-              bookmark,
-              req.limit
-            )
-            .map {
-              case None => response.notFound
-
-              case Some((list, bookmark)) =>
-                response.ok
-                  .contentTypeJson()
-                  .body(
-                    DataResponse.forDataResponse(
-                      DataResponse(
-                        list
-                      ).withPaging(Paging(bookmark.map(_.encode)))
-                    )
-                  )
-            }
-        })
-      }
-
       put("/:userId/lists/:listId") { req: UpdateListRequest =>
         withList(req.authenticatedUserId.get, req.listId) { list =>
           listsApi

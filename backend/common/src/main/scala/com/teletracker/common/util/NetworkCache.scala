@@ -39,6 +39,10 @@ class NetworkCache @Inject()(
     }
   }
 
+  def getAllNetworksById(): Future[Map[Int, StoredNetwork]] = {
+    getAllNetworks().map(networks => networks.map(net => net.id -> net).toMap)
+  }
+
   def getByReference(
     externalSource: ExternalSource,
     externalId: String

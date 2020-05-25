@@ -10,5 +10,6 @@ export interface ItemSearchRequest {
   readonly genres?: number[];
   readonly releaseYearRange?: OpenRange;
   readonly castIncludes?: string[];
+  readonly crewIncludes?: string[];
   readonly imdbRating?: OpenRange;
 }

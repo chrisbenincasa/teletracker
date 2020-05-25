@@ -1,6 +1,7 @@
 package com.teletracker.common.elasticsearch.denorm
 
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.elasticsearch.ItemUpdater.UpdateUserTagsScript
 import com.teletracker.common.elasticsearch.model._
 import com.teletracker.common.elasticsearch._
 import com.teletracker.common.tasks.model.DenormalizeItemTaskArgs
@@ -9,6 +10,9 @@ import com.teletracker.common.util.json.{IdentityFolder, IdentityJavaFolder}
 import com.teletracker.common.util.{AsyncStream, IdOrSlug}
 import io.circe.syntax._
 import javax.inject.Inject
+import org.elasticsearch.action.support.WriteRequest
+import org.elasticsearch.action.update.UpdateRequest
+import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.reindex.{
   BulkByScrollResponse,
@@ -55,6 +59,17 @@ class DenormalizedItemUpdater @Inject()(
   import DenormalizedItemUpdater._
 
   private val logger = LoggerFactory.getLogger(getClass)
+
+  def updateUserItem(item: EsUserItem): Future[Unit] = {
+    val updateDenormRequest =
+      new UpdateRequest(
+        teletrackerConfig.elasticsearch.user_items_index_name,
+        EsUserItem.makeId(item.user_id, item.item_id)
+      ).doc(item.asJson.dropNullValues.noSpaces, XContentType.JSON)
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+
+    elasticsearchExecutor.update(updateDenormRequest).map(_ => {})
+  }
 
   def fullyDenormalizeItem(args: DenormalizeItemTaskArgs): Future[Unit] = {
     itemLookup

@@ -6,20 +6,9 @@ import com.teletracker.common.db.model.{
   PersonAssociationType,
   UserThingTagType
 }
-import com.teletracker.common.db.{
-  Bookmark,
-  Popularity,
-  SearchRankingMode,
-  SortMode
-}
-import com.teletracker.common.elasticsearch
+import com.teletracker.common.db.{Bookmark, SortMode}
 import com.teletracker.common.elasticsearch._
-import com.teletracker.common.elasticsearch.model.{
-  EsItemTag,
-  EsItemTaggable,
-  EsPerson,
-  EsUserItemTag
-}
+import com.teletracker.common.elasticsearch.model._
 import com.teletracker.common.util._
 import com.teletracker.service.api.model.Item
 import javax.inject.Inject
@@ -144,7 +133,6 @@ class ItemApi @Inject()(
   }
 
   def getPersonViaSearch(
-    userId: Option[String],
     idOrSlug: String,
     materializeCredits: Boolean,
     creditsLimit: Int
@@ -156,10 +144,7 @@ class ItemApi @Inject()(
     )
   }
 
-  def getPeopleViaSearch(
-    userId: Option[String],
-    idOrSlugs: List[String]
-  ): Future[List[EsPerson]] = {
+  def getPeopleViaSearch(idOrSlugs: List[String]): Future[List[EsPerson]] = {
     personLookup
       .lookupPeople(idOrSlugs.map(HasThingIdOrSlug.parseIdOrSlug))
       .map(people => {
@@ -168,7 +153,6 @@ class ItemApi @Inject()(
   }
 
   def getPersonCredits(
-    userId: Option[String],
     idOrSlug: String,
     request: PersonCreditsRequest
   ): Future[ElasticsearchItemsResponse] = {
@@ -201,84 +185,46 @@ class ItemApi @Inject()(
     query: String,
     request: ItemSearchRequest
   ): Future[ElasticsearchItemsResponse] = {
-    val genresFut = resolveGenres(request)
-    val networksFut = resolveNetworks(request)
-    val peopleCreditFilter = resolveCredits(request)
-
-    for {
-      filterGenres <- genresFut
-      filterNetworks <- networksFut
-      result <- itemSearch
-        .fullTextSearch(
-          query,
-          elasticsearch.SearchOptions(
-            rankingMode = SearchRankingMode.Popularity,
-            thingTypeFilter = request.itemTypes,
-            limit = request.limit,
-            bookmark = request.bookmark,
-            genres = Some(filterGenres).filter(_.nonEmpty),
-            networks = Some(filterNetworks).filter(_.nonEmpty),
-            releaseYear = request.releaseYear,
-            peopleCreditSearch = peopleCreditFilter
-          )
-        )
-    } yield {
-      result
-    }
+    toItemSearchParams(request)
+      .map(_.copy(titleSearch = Some(query)))
+      .flatMap(itemSearch.fullTextSearch)
   }
 
   def fullTextSearchPeople(
     query: String,
     request: ItemSearchRequest
   ): Future[ElasticsearchPeopleResponse] = {
-    val genresFut = resolveGenres(request)
-    val networksFut = resolveNetworks(request)
-    val peopleCreditFilter = resolveCredits(request)
-
-    for {
-      filterGenres <- genresFut
-      filterNetworks <- networksFut
-      result <- personLookup
-        .fullTextSearch(
-          query,
-          elasticsearch.SearchOptions(
-            rankingMode = SearchRankingMode.Popularity,
-            thingTypeFilter = request.itemTypes,
-            limit = request.limit,
-            bookmark = request.bookmark,
-            genres = Some(filterGenres).filter(_.nonEmpty),
-            networks = Some(filterNetworks).filter(_.nonEmpty),
-            releaseYear = request.releaseYear,
-            peopleCreditSearch = peopleCreditFilter
-          )
-        )
-    } yield {
-      result
-    }
+    toItemSearchParams(request)
+      .map(_.copy(titleSearch = Some(query)))
+      .flatMap(personLookup.fullTextSearch)
   }
 
   def search(request: ItemSearchRequest): Future[ElasticsearchItemsResponse] = {
+    toItemSearchParams(request).flatMap(itemSearch.searchItems)
+  }
+
+  def toItemSearchParams(
+    request: ItemSearchRequest
+  ): Future[ItemSearchParams] = {
     val genresFut = resolveGenres(request)
     val networksFut = resolveNetworks(request)
-    val peopleCreditFilter = resolveCredits(request)
 
     for {
       filterGenres <- genresFut
       filterNetworks <- networksFut
-      result <- itemSearch
-        .searchItems(
-          Some(filterGenres).filter(_.nonEmpty),
-          Some(filterNetworks).filter(_.nonEmpty),
-          request.itemTypes,
-          request.sortMode,
-          request.limit,
-          request.bookmark,
-          request.releaseYear,
-          peopleCreditFilter,
-          request.imdbRating
-        )
     } yield {
-      result
+      ItemSearchParams(
+        genres = Some(filterGenres).filter(_.nonEmpty),
+        networks = Some(filterNetworks).filter(_.nonEmpty),
+        itemTypes = request.itemTypes,
+        releaseYear = request.releaseYear,
+        peopleCredits = request.peopleCredits.flatMap(_.toPeopleCreditSearch),
+        imdbRating = request.imdbRating,
+        titleSearch = None,
+        sortMode = request.sortMode,
+        limit = request.limit,
+        bookmark = request.bookmark
+      )
     }
   }
 
@@ -313,33 +259,6 @@ class ItemApi @Inject()(
       Future.successful(Set.empty[StoredNetwork])
     }
   }
-
-  private def resolveCredits(itemSearchRequest: ItemSearchRequest) = {
-    if (itemSearchRequest.peopleCredits.exists(_.nonEmpty)) {
-      val cast = itemSearchRequest.peopleCredits.get.cast
-        .map(HasThingIdOrSlug.parseIdOrSlug)
-        .map(PersonCreditSearch(_, PersonAssociationType.Cast))
-      val crew = itemSearchRequest.peopleCredits.get.crew
-        .map(HasThingIdOrSlug.parseIdOrSlug)
-        .map(PersonCreditSearch(_, PersonAssociationType.Crew))
-
-      Some(
-        PeopleCreditSearch(
-          cast ++ crew,
-          itemSearchRequest.peopleCredits.get.operator
-        )
-      )
-    } else {
-      None
-    }
-  }
-}
-
-case class PeopleCreditsFilter(
-  cast: Seq[String],
-  crew: Seq[String],
-  operator: BinaryOperator) {
-  def nonEmpty: Boolean = cast.nonEmpty || crew.nonEmpty
 }
 
 case class ItemSearchRequest(

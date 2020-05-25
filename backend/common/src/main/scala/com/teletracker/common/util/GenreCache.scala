@@ -42,6 +42,10 @@ class GenreCache @Inject()(
     }
   }
 
+  def getById(): Future[Map[Int, StoredGenre]] = {
+    get().map(genres => genres.map(g => g.id -> g).toMap)
+  }
+
   def getReferenceMap(): Future[Map[(ExternalSource, String), StoredGenre]] = {
     allReferenceCache.getOrElseUpdate("GENRES") {
       val p =

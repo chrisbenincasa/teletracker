@@ -4,10 +4,17 @@ import {
   ListItemTypeRule,
   ListNetworkRule,
   ListPersonRule,
+  ListReleaseYearRule,
   ListRule,
   ListTagRule,
+  Network,
+  OpenRange,
+  ruleIsType,
 } from '../types';
 import { GRID_ITEM_SIZE_IN_COLUMNS, TOTAL_COLUMNS } from '../constants/';
+import { FilterParams, normalizeFilterParams } from './searchFilters';
+import produce from 'immer';
+import { collect, collectFirst } from './collection-utils';
 
 export function isPersonRule(x: ListRule): x is ListPersonRule {
   return x.type === 'UserListPersonRule';
@@ -27,6 +34,64 @@ export function isNetworkRule(x: ListRule): x is ListNetworkRule {
 
 export function isItemTypeRule(x: ListRule): x is ListItemTypeRule {
   return x.type === 'UserListItemTypeRule';
+}
+
+export function isReleaseYearRule(x: ListRule): x is ListReleaseYearRule {
+  return x.type === 'UserListReleaseYearRule';
+}
+
+export function smartListRulesToFilters(
+  list: List,
+  networks: ReadonlyArray<Network>,
+): FilterParams {
+  let defaultFilters: FilterParams = {};
+  if (list.isDynamic) {
+    let ruleConfiguration = list.configuration?.ruleConfiguration;
+    let sort = ruleConfiguration?.sort;
+    let rules = ruleConfiguration?.rules || [];
+
+    return normalizeFilterParams(
+      produce(defaultFilters, draft => {
+        draft.sortOrder = sort?.sort;
+
+        // TODO: Expose tag rules as filters
+
+        draft.genresFilter = collect(rules, rule =>
+          isGenreRule(rule) ? rule.genreId : undefined,
+        );
+
+        draft.itemTypes = collect(rules, rule =>
+          isItemTypeRule(rule) ? rule.itemType : undefined,
+        );
+
+        draft.networks = collect(rules, rule =>
+          isNetworkRule(rule)
+            ? collectFirst(networks, n =>
+                n.id === rule.networkId ? n.slug : undefined,
+              )
+            : undefined,
+        );
+
+        let releaseYearFilter = collectFirst(rules, rule =>
+          isReleaseYearRule(rule)
+            ? ({ min: rule.minimum, max: rule.maximum } as OpenRange)
+            : undefined,
+        );
+
+        if (!draft.sliders) {
+          draft.sliders = {};
+        }
+
+        draft.sliders!.releaseYear = releaseYearFilter;
+
+        draft.people = collect(rules, rule =>
+          isPersonRule(rule) ? rule.personId : undefined,
+        );
+      }),
+    );
+  } else {
+    return defaultFilters;
+  }
 }
 
 export function listTracksPerson(list: List, personId: string): boolean {

@@ -87,9 +87,7 @@ export default function NetworkSelect(props: Props) {
         />
         <Chip
           key={'netflix'}
-          onClick={() =>
-            updateNetworks('networks', ['netflix', 'netflix-kids'])
-          }
+          onClick={() => updateNetworks('networks', ['netflix'])}
           size="medium"
           color={isNetflixSelected ? 'primary' : 'secondary'}
           label="Netlflix"
@@ -119,7 +117,7 @@ export default function NetworkSelect(props: Props) {
         />
         <Chip
           key={'hbo'}
-          onClick={() => updateNetworks('networks', ['hbo-go', 'hbo-now'])}
+          onClick={() => updateNetworks('networks', ['hbo-now'])}
           size="medium"
           color={isHboSelected ? 'primary' : 'secondary'}
           label="HBO"

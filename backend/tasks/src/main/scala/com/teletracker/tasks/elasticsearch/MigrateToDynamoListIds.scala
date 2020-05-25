@@ -111,17 +111,16 @@ class MigrateToDynamoListIds @Inject()(
 
                 for {
                   foundUserItem <- foundUserItems
-                  if foundUserItem.user_id.isDefined && foundUserItem.item_id.isDefined
                 } yield {
                   val tag = EsItemTag.userScoped(
-                    foundUserItem.user_id.get,
+                    foundUserItem.user_id,
                     UserThingTagType.TrackedInList,
                     Some(list.id.toString),
                     None
                   )
 
                   itemUpdater
-                    .upsertItemTag(foundUserItem.item_id.get, tag, None)
+                    .upsertItemTag(foundUserItem.item_id, tag, None)
                     .await()
                 }
 

@@ -169,9 +169,6 @@ const AllFilters = (props: Props) => {
   const width = useWidth();
   const isMobile = ['xs', 'sm'].includes(width);
 
-  const genres = useGenres();
-  const networks = useNetworks();
-
   const [smartListOpen, setSmartListOpen] = useState(false);
 
   const { filters, setFilters, defaultFilters } = useContext(FilterContext);

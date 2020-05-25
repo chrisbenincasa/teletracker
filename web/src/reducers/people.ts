@@ -75,6 +75,7 @@ const updateStateWithNewPeople = (state: State, newPeople: Person[]) => {
     return {
       ...prev,
       [curr.slug || curr.id]: curr.name,
+      [curr.id]: curr.name,
     };
   }, {});
 
