@@ -282,12 +282,17 @@ function Explore() {
   );
 
   useEffect(() => {
+    let numberFeaturedItems = getNumberFeaturedItems();
     const isInitialFetch = popular && !previousPopular && !loading;
-    const isNewFetch = popular && wasLoading && !loading;
+    const isNewFetch =
+      popular &&
+      wasLoading &&
+      !loading &&
+      popular?.length - numberFeaturedItems <= DEFAULT_POPULAR_LIMIT;
     const didScreenResize =
       popular &&
-      (!previousWidth ||
-        ['xs', 'sm'].includes(previousWidth) !== ['xs', 'sm'].includes(width));
+      !_.isUndefined(previousWidth) &&
+      ['xs', 'sm'].includes(previousWidth) !== ['xs', 'sm'].includes(width);
     const didNavigate = !isInitialFetch && needsNewFeatured;
 
     if (isInitialFetch || isNewFetch || didScreenResize || didNavigate) {
