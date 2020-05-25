@@ -29,16 +29,20 @@ import {
 import { ActionType, List } from '../types';
 import { flattenActions, handleAction } from './utils';
 import {
-  USER_SELF_REMOVE_ITEM_TAGS,
   USER_SELF_REMOVE_ITEM_TAGS_SUCCESS,
   USER_SELF_UPDATE_ITEM_TAGS_SUCCESS,
-  UserRemoveItemTagsAction,
   UserRemoveItemTagsSuccessAction,
   UserUpdateItemTagsSuccessAction,
 } from '../actions/user';
 import { FilterParams } from '../utils/searchFilters';
 import { Item } from '../types/v2/Item';
 import produce, { Draft } from 'immer';
+import {
+  LIST_ITEMS_RETRIEVE_INITIATED,
+  LIST_ITEMS_RETRIEVE_SUCCESS,
+  ListItemsRetrieveInitiatedAction,
+  ListItemsRetrieveSuccessAction,
+} from '../actions/lists/get_list_items';
 
 export type Loading = { [X in ListActions['type']]: boolean };
 
@@ -51,12 +55,18 @@ export interface ListsByIdMap {
   readonly [key: string]: List;
 }
 
+interface CurrentListState {
+  readonly listId: string;
+  readonly items: string[];
+  readonly bookmark?: string;
+  readonly filters?: FilterParams;
+}
+
 export interface State {
   readonly operation: ListOperationState;
   readonly listsById: ListsByIdMap;
   readonly loading: Partial<Loading>;
-  readonly currentBookmark?: string;
-  readonly currentFilters?: FilterParams;
+  readonly current?: CurrentListState;
 }
 
 const initialState: State = {
@@ -127,6 +137,19 @@ const handleListRetrieveInitiated = handleAction<
   };
 });
 
+const handleListItemsRetrieveInitiated = handleAction<
+  ListItemsRetrieveInitiatedAction,
+  State
+>(LIST_ITEMS_RETRIEVE_INITIATED, state => {
+  return {
+    ...state,
+    loading: {
+      ...state.loading,
+      [LIST_ITEMS_RETRIEVE_INITIATED]: true,
+    },
+  };
+});
+
 const handleListRetrieveAllInitiated = handleAction<
   ListRetrieveAllInitiatedAction,
   State
@@ -191,42 +214,17 @@ const mergeThingLists = (key: string, left: any, right: any) => {
   }
 };
 
-function setOrMergeList(
-  existing: List | undefined,
-  newList: List | undefined,
-  append: boolean,
-) {
-  if (existing) {
-    if (!append) {
-      return R.mergeDeepWithKey(mergeThingLists, existing, newList);
-    } else {
-      return {
-        ...existing,
-        items: R.concat(existing.items || [], newList?.items || []),
-      };
-    }
-  } else if (newList) {
-    return newList;
-  }
-}
-
 const handleListRetrieveSuccess = handleAction<
   ListRetrieveSuccessAction,
   State
 >(LIST_RETRIEVE_SUCCESS, (state, action) => {
   let listId = action.payload!!.list.id;
 
-  let newList = setOrMergeList(
-    state.listsById[listId],
-    action.payload!!.list,
-    action.payload!!.append,
-  );
-
   return {
     ...state,
     listsById: {
       ...state.listsById,
-      [listId]: newList,
+      [listId]: action.payload!.list,
     },
     operation: {
       ...state.operation,
@@ -237,10 +235,28 @@ const handleListRetrieveSuccess = handleAction<
       ...state.loading,
       [LIST_RETRIEVE_INITIATED]: false,
     },
-    currentBookmark: action.payload!!.paging
-      ? action.payload!!.paging.bookmark
-      : undefined,
-    currentFilters: action.payload!.forFilters,
+  } as State;
+});
+
+const handleListRetrieveItems = handleAction<
+  ListItemsRetrieveSuccessAction,
+  State
+>(LIST_ITEMS_RETRIEVE_SUCCESS, (state, action) => {
+  let newItemIds = action.payload!.items.map(item => item.id);
+  return {
+    ...state,
+    loading: {
+      ...state.loading,
+      [LIST_ITEMS_RETRIEVE_INITIATED]: false,
+    },
+    current: {
+      listId: action.payload!.listId,
+      filters: action.payload!.forFilters,
+      bookmark: action.payload!.paging?.bookmark,
+      items: action.payload!.append
+        ? (state.current?.items || []).concat(newItemIds)
+        : newItemIds,
+    },
   };
 });
 
@@ -254,7 +270,7 @@ const handleUserRetrieve = handleAction<ListRetrieveAllSuccessAction, State>(
           (newListsById, list) => {
             return {
               ...newListsById,
-              [list.id]: setOrMergeList(state.listsById[list.id], list, false),
+              [list.id]: list,
             };
           },
           {} as ListsByIdMap,
@@ -364,4 +380,6 @@ export default flattenActions<State>(
   handleListDeleteSuccess,
   handleUserRemoveTrackingSuccess,
   handleUserUpdateTrackingSuccess,
+  handleListItemsRetrieveInitiated,
+  handleListRetrieveItems,
 );

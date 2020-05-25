@@ -302,7 +302,7 @@ function PersonDetail(props: NewProps) {
             <div className={classes.personInformationContainer}>
               {renderDescriptiveDetails(person)}
               <WithItemFilters
-                defaultFilters={{
+                initialFilters={{
                   ...DEFAULT_CREDITS_FILTERS,
                   people: [personId],
                 }}

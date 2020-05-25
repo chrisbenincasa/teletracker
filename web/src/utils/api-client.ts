@@ -209,26 +209,20 @@ export class TeletrackerApi {
       .join(',');
   }
 
-  async getList(
-    token: string | undefined,
-    id: string | number,
-    sort?: SortOptions,
-    desc?: boolean,
-    itemTypes?: ItemType[],
-    genres?: number[],
-    bookmark?: string,
-    networks?: NetworkType[],
-    limit?: number,
-  ) {
-    return this.api.get<DataResponse<ApiList>>(`/api/v2/lists/${id}/items`, {
+  async getList(token: string | undefined, id: string) {
+    return this.api.get<DataResponse<ApiList>>(`/api/v2/lists/${id}`, {
       token,
-      sort,
-      desc,
-      itemTypes: itemTypes ? itemTypes.join(',') : undefined,
-      genres: genres ? genres.join(',') : undefined,
-      bookmark,
-      networks: networks ? networks.join(',') : undefined,
-      limit,
+    });
+  }
+
+  async getListItems(
+    token: string | undefined,
+    id: string,
+    request: ItemSearchRequest,
+  ) {
+    return this.api.get<DataResponse<ApiItem[]>>(`/api/v2/lists/${id}/items`, {
+      token,
+      ...this.searchRequestToParams(request),
     });
   }
 

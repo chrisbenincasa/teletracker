@@ -5,7 +5,7 @@ import { clientEffect } from '../clientEffect';
 import { RetrieveUserSelfInitiated } from '../user';
 import { FSA } from 'flux-standard-action';
 import { ListRules, ListOptions } from '../../types';
-import { ListRetrieveInitiated } from './get_list';
+import { getList } from './get_list';
 import ReactGA from 'react-ga';
 
 export const USER_SELF_UPDATE_LIST = 'user/self/update_list/INITIATED';
@@ -54,9 +54,7 @@ export const updateListSaga = function*() {
         let requiresRefresh = response.data!.data.requiresRefresh;
 
         if (requiresRefresh) {
-          yield put(
-            ListRetrieveInitiated({ listId: payload.listId, force: true }),
-          );
+          yield put(getList({ listId: payload.listId }));
         }
 
         yield put(
