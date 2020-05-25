@@ -108,10 +108,10 @@ function ListDetail(props: ListDetailProps) {
   //
 
   useEffect(() => {
-    if (previousListId && listId !== previousListId) {
+    if ((previousListId || !props.preloaded) && listId !== previousListId) {
       dispatchGetList({ listId });
     }
-  }, [listId, previousListId]);
+  }, [listId, previousListId, props.preloaded]);
 
   useEffect(() => {
     if (!previousList && list) {
