@@ -12,7 +12,7 @@ from scrapy.settings.default_settings import DOWNLOADER_MIDDLEWARES
 
 BOT_NAME = 'crawlers'
 
-SPIDER_MODULES = ['crawlers.spiders']
+SPIDER_MODULES = ['crawlers.spiders', 'crawlers.spiders.disney']
 NEWSPIDER_MODULE = 'crawlers.spiders'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
