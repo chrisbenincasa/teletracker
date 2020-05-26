@@ -9,7 +9,7 @@ module "netflix_crawler" {
   image_version = var.netflix_catalog_crawler_version
 
   name = "netflix_catalog_crawler"
-  spider_name = "netflix_spider"
+  spider_name = "netflix"
   s3_directory = "netflix/direct"
   s3_path = "items.jsonlines"
 
