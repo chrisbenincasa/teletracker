@@ -30,3 +30,7 @@ data "aws_subnet_ids" "teletracker-subnet-ids" {
 data "aws_ecs_cluster" "main_cluster" {
   cluster_name = "teletracker-qa"
 }
+
+data "aws_s3_bucket" "data_bucket" {
+  bucket = "teletracker-data-us-west-2"
+}

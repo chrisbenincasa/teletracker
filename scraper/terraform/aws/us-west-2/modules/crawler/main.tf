@@ -7,8 +7,7 @@ data "template_file" "task_definition_tpl" {
     service_name = var.name
     datadog_api_key = data.aws_ssm_parameter.datadog_api_key.value
     spider_name = var.spider_name
-    s3_directory = var.s3_directory
-    s3_subdirectory = var.s3_path
+    output_path = var.output_path
     output_format = var.output_format
   }
 }

@@ -14,17 +14,13 @@ variable "image_version" {
   type = string
 }
 
+variable "output_path" {
+  type = string
+}
+
 variable "output_format" {
   type = string
   default = "jl"
-}
-
-variable "s3_directory" {
-  type = string
-}
-
-variable "s3_path" {
-  type = string
 }
 
 variable "schedule" {

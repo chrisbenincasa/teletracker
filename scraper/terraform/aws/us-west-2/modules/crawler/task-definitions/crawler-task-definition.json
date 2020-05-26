@@ -17,8 +17,7 @@
     "command": [
       "./run_spider.sh",
       "${spider_name}",
-      "${s3_directory}",
-      "${s3_subdirectory}:${output_format}"
+      "${output_path}:${output_format}"
     ],
     "memoryReservation": 100
   }

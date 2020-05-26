@@ -10,8 +10,7 @@ module "hbo_crawler" {
 
   name = "hbo_catalog_crawler"
   spider_name = "hbo"
-  s3_directory = "hbo"
-  s3_path = "catalog/items.jsonlines"
+  output_path = "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/hbo/catalog/{date}/items_{time}.jl"
 
   # Every 3rd day and the first of the month
   schedule = ["cron(0 7 ? * */3 *)", "cron(0 7 1 * ? *)"]

@@ -10,8 +10,7 @@ module "hulu_crawler" {
 
   name = "hulu_catalog_crawler"
   spider_name = "hulu"
-  s3_directory = "hulu"
-  s3_path = "direct/items.jsonlines"
+  output_path = "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/hulu/catalog/{date}/items_{time}.jl"
 
   # Every monday and the first of the month
   schedule = ["cron(0 7 ? * */3 *)", "cron(0 7 1 * ? *)"]

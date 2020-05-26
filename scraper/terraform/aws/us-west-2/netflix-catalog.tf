@@ -10,8 +10,7 @@ module "netflix_crawler" {
 
   name = "netflix_catalog_crawler"
   spider_name = "netflix"
-  s3_directory = "netflix/direct"
-  s3_path = "items.jsonlines"
+  output_path = "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/netflix/catalog/{date}/items_{time}.jl"
 
   # Every monday and the first of the month
   schedule = ["cron(0 7 ? * */3 *)", "cron(0 7 1 * ? *)"]

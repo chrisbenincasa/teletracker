@@ -32,23 +32,37 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
         for script in scripts:
             matches = re.search(preloaded_state_re, script, re.MULTILINE)
             if matches:
-                self.log('{}'.format(matches.group(1)))
                 loaded = json.loads(matches.group(1))
                 item = loaded['details'][id]
+                title = ''
+                slug = ''
+                for text in item['texts']:
+                    if text['field'] == 'title' and text['language'] == 'en':
+                        if text['type'] == 'full':
+                            title = text['content']
+                        elif text['type'] == 'slug':
+                            slug = text['content']
+
                 release = item['releases'][0] if 'releases' in item and len(item['releases']) > 0 else None
                 return DisneyPlusCatalogItem(
                     id=id,
+                    title=title,
+                    slug=slug,
                     description=item['description'],
                     itemType=typ,
                     releaseDate=release['releaseDate'] if release else None,
-                    releaseYear=release['releaseYear'] if release else None
+                    releaseYear=release['releaseYear'] if release else None,
+                    url=response.url
                 )
 
 
 class DisneyPlusCatalogItem(scrapy.Item):
     id = scrapy.Field()
+    title = scrapy.Field()
+    slug = scrapy.Field()
     description = scrapy.Field()
     itemType = scrapy.Field()
     releaseDate = scrapy.Field()
     releaseYear = scrapy.Field()
+    url = scrapy.Field()
     network = 'disneyplus'

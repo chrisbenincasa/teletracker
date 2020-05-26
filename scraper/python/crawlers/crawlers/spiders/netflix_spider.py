@@ -6,6 +6,7 @@ import re
 from scrapy.spiders import Rule
 from scrapy.linkextractors import LinkExtractor
 
+from crawlers.base_spider import BaseCrawlSpider
 from crawlers.items import NetflixItem, NetflixItemSeason, NetflixItemEpisode
 
 
@@ -20,7 +21,7 @@ season_number_re = re.compile(r'.*\s+(\d+)')
 limited_series_re = re.compile('Limited Series')
 
 
-class NetflixSpider(scrapy.spiders.CrawlSpider):
+class NetflixSpider(BaseCrawlSpider):
     name = "netflix"
 
     allowed_domains = ['netflix.com']
