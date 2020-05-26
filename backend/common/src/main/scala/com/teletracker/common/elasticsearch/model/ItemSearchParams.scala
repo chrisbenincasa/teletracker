@@ -1,6 +1,10 @@
 package com.teletracker.common.elasticsearch.model
 
-import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredNetwork}
+import com.teletracker.common.db.dynamo.model.{
+  StoredGenre,
+  StoredNetwork,
+  StoredUserList
+}
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.db.{Bookmark, SortMode}
 import com.teletracker.common.elasticsearch.PeopleCreditSearch
@@ -17,7 +21,8 @@ case class ItemSearchParams(
   titleSearch: Option[String],
   sortMode: SortMode,
   limit: Int,
-  bookmark: Option[Bookmark])
+  bookmark: Option[Bookmark],
+  forList: Option[StoredUserList])
 
 case class TagFilter(
   tag: String,

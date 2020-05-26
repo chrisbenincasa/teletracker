@@ -505,7 +505,8 @@ class PersonLookup @Inject()(
           )
         ),
         imdbRating = None,
-        titleSearch = None
+        titleSearch = None,
+        forList = None
       )
     )
   }

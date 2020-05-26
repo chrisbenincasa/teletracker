@@ -2,6 +2,7 @@ import { ApiPerson, Person, PersonFactory } from './v2/Person';
 
 export interface Paging {
   readonly bookmark?: string;
+  readonly total?: number;
 }
 
 export interface ApiList {

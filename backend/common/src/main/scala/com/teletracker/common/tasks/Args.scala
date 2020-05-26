@@ -38,7 +38,7 @@ class RichArgs(val args: Map[String, Option[Any]]) extends AnyVal {
     value(key).getOrElse(default)
 
   def value[T](key: String)(implicit argParser: ArgParser[T]): Option[T] =
-    args.get(key).flatten.flatMap(argParser.parseOpt)
+    args.get(key).flatten.map(argParser.parse(_).get)
 
   def valueOrThrow[T](key: String)(implicit argParser: ArgParser[T]): T =
     value(key).getOrElse(
@@ -124,11 +124,6 @@ object ArgParser extends LowPriArgParsers {
 
 trait ArgParser[T] { self =>
   def parse(in: Any): Try[T]
-  def parseOpt(in: Any): Option[T] = in match {
-    case None    => None
-    case Some(v) => parse(v).toOption
-    case v       => parse(v).toOption
-  }
 
   def andThen[U](parser: T => U): ArgParser[U] = new ArgParser[U] {
     override def parse(in: Any): Try[U] = self.parse(in).map(parser)

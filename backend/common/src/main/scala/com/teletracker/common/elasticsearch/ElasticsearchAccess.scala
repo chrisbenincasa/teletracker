@@ -222,21 +222,22 @@ trait ElasticsearchAccess {
   protected def openRatingRangeFilter(
     builder: BoolQueryBuilder,
     source: ExternalSource,
-    openNumericRange: ClosedNumericRange[Double]
+    openNumericRange: ClosedNumericRange[Double],
+    path: String = "ratings"
   ): BoolQueryBuilder = {
     builder.filter(
       QueryBuilders.nestedQuery(
-        "ratings",
+        path,
         QueryBuilders
           .boolQuery()
           .must(
             QueryBuilders
-              .rangeQuery("ratings.weighted_average")
+              .rangeQuery(s"$path.weighted_average")
               .gte(openNumericRange.start)
               .lte(openNumericRange.end)
           )
           .must(
-            QueryBuilders.termQuery("ratings.provider_id", source.ordinal())
+            QueryBuilders.termQuery(s"$path.provider_id", source.ordinal())
           ),
         ScoreMode.Avg
       )
@@ -358,7 +359,7 @@ trait ElasticsearchAccess {
         case AddedTime(desc) => applyForSortMode(Recent(desc))
 
         case d @ DefaultForListType(_) if list.isDefined =>
-          applyForSortMode(d.get(list.get.isDynamic))
+          applyForSortMode(d.get(list.get.isDynamic, list.get.userId))
 
         case DefaultForListType(_) => applyForSortMode(defaultSort)
       }
@@ -374,7 +375,8 @@ trait ElasticsearchAccess {
 
   @tailrec
   final protected def makeDefaultSort(
-    sortMode: SortMode
+    sortMode: SortMode,
+    list: Option[StoredUserList]
   ): Option[FieldSortBuilder] = {
     sortMode match {
       case SearchScore(_) => None
@@ -386,20 +388,23 @@ trait ElasticsearchAccess {
         Some(makeDefaultFieldSort("release_date", desc))
 
       case AddedTime(desc) =>
-        makeDefaultSort(Recent(desc))
+        makeDefaultSort(Recent(desc), list)
 
       case Rating(desc, source) =>
         makeRatingFieldSort(source, desc)
 
+      case default @ DefaultForListType(_) if list.isDefined =>
+        makeDefaultSort(default.get(list.get.isDynamic, list.get.userId), list)
+
       case DefaultForListType(desc) =>
-        makeDefaultSort(Popularity(desc))
+        makeDefaultSort(Popularity(desc), list)
     }
   }
 
   protected def makeRatingFieldSort(
     source: ExternalSource,
     desc: Boolean
-  ) = {
+  ): Option[FieldSortBuilder] = {
     if (SupportedRatingSortSources.contains(source)) {
       val sort = new FieldSortBuilder("ratings.weighted_average")
         .sortMode(EsSortMode.AVG)
@@ -550,24 +555,40 @@ trait ElasticsearchAccess {
     availabilityByNetworkIdsOr(builder, networks.map(_.id))
   }
 
+  protected def availabilityByNetworksOrNested(
+    builder: BoolQueryBuilder,
+    networks: Set[StoredNetwork]
+  ) = {
+    builder.filter(
+      networks
+        .map(_.id)
+        .foldLeft(QueryBuilders.boolQuery())(
+          availabilityByNetworkId(_, _, "item.availability")
+        )
+    )
+  }
+
   protected def availabilityByNetworkIdsOr(
     builder: BoolQueryBuilder,
     networks: Set[Int]
   ) = {
     builder.filter(
-      networks.foldLeft(QueryBuilders.boolQuery())(availabilityByNetworkId)
+      networks.foldLeft(QueryBuilders.boolQuery())(
+        availabilityByNetworkId(_, _, "availability")
+      )
     )
   }
 
   private def availabilityByNetworkId(
     builder: BoolQueryBuilder,
-    networkId: Int
+    networkId: Int,
+    path: String
   ) = {
     builder
       .should(
         QueryBuilders.nestedQuery(
-          "availability",
-          QueryBuilders.termQuery("availability.network_id", networkId),
+          path,
+          QueryBuilders.termQuery(s"$path.network_id", networkId),
           ScoreMode.Avg
         )
       )

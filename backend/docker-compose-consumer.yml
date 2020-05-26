@@ -2,7 +2,7 @@ version: "3.1"
 
 services:
   consumer:
-    image: 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:latest
+    image: 302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/consumer:0.1-SNAPSHOT
     restart: always
     environment:
       - "AWS_REGION=us-west-2"
@@ -13,4 +13,4 @@ services:
       - ~/.aws:/root/.aws
     entrypoint:
       - "/app/main.sh"
-      - "-mode=EsItemDenormalizeConsumer"
+      - "-mode=EsPersonDenormalizeConsumer"

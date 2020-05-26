@@ -1,10 +1,9 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import { makeStyles, Slider, Theme, Typography } from '@material-ui/core';
 import * as R from 'ramda';
-import { SliderChange, SlidersState } from '../../utils/searchFilters';
+import { SliderChange } from '../../utils/searchFilters';
 import { useDebouncedCallback } from 'use-debounce';
 import { FilterContext } from './FilterContext';
-import _ from 'lodash';
 
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {
@@ -32,7 +31,7 @@ export default function ReleaseYearFilter(props: Props) {
 
   const nextYear = new Date().getFullYear() + 1;
 
-  const [yearValue, setYearValue] = React.useState([
+  const [yearValue, setYearValue] = useState([
     ensureNumberInRange(
       R.or(sliders?.releaseYear?.min, MIN_YEAR) as number,
       MIN_YEAR,
@@ -44,30 +43,6 @@ export default function ReleaseYearFilter(props: Props) {
       nextYear,
     ),
   ]);
-
-  useEffect(() => {
-    if (sliders && sliders.releaseYear) {
-      let currMin = _.head(yearValue);
-      let newMin = currMin;
-
-      let currMax = _.nth(yearValue, 1);
-      let newMax = currMax;
-
-      if (sliders.releaseYear.min !== currMin) {
-        newMin = sliders.releaseYear.min;
-      }
-
-      if (sliders.releaseYear.max !== currMax) {
-        newMax = sliders.releaseYear.max;
-      }
-
-      if (newMin !== currMin || newMax !== currMax) {
-        setYearValue([newMin || MIN_YEAR, newMax || nextYear]);
-      }
-    } else {
-      setYearValue([MIN_YEAR, nextYear]);
-    }
-  }, [sliders, yearValue]);
 
   const [debouncePropUpdate] = useDebouncedCallback(
     (sliderChange: SliderChange) => {
@@ -90,11 +65,11 @@ export default function ReleaseYearFilter(props: Props) {
     ];
   };
 
-  const handleYearChange = (event, newValue) => {
+  const handleYearChange = useCallback((event, newValue) => {
     setYearValue(newValue);
-  };
+  }, []);
 
-  const handleYearCommitted = (event, newValue) => {
+  const handleYearCommitted = useCallback((event, newValue) => {
     let [min, max] = extractValues(newValue, MIN_YEAR, nextYear);
     debouncePropUpdate({
       releaseYear: {
@@ -102,7 +77,7 @@ export default function ReleaseYearFilter(props: Props) {
         max,
       },
     });
-  };
+  }, []);
 
   return (
     <div className={classes.sliderContainer}>

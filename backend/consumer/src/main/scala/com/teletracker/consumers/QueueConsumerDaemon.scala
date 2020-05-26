@@ -5,6 +5,7 @@ import com.teletracker.common.aws.sqs.SqsQueueListener
 import com.teletracker.common.aws.sqs.worker.SqsQueueWorkerBase
 import com.teletracker.consumers.impl.{
   EsDenormalizeItemWorker,
+  EsDenormalizePersonWorker,
   EsIngestQueueWorker,
   TaskQueueWorker
 }
@@ -32,6 +33,8 @@ object QueueConsumerDaemon extends com.twitter.inject.app.App {
         new SqsQueueListener(injector.instance[EsIngestQueueWorker])
       case EsItemDenormalizeConsumer =>
         new SqsQueueListener(injector.instance[EsDenormalizeItemWorker])
+      case EsPersonDenormalizeConsumer =>
+        new SqsQueueListener(injector.instance[EsDenormalizePersonWorker])
     }
 
     listener.start()
@@ -50,14 +53,17 @@ object RunMode {
   final private val TaskConsumerType = "TaskConsumer"
   final private val EsIngestConsumerType = "EsIngestConsumer"
   final private val EsItemDenormalizeConsumerType = "EsItemDenormalizeConsumer"
+  final private val EsPersonDenormalizeConsumerType =
+    "EsPersonDenormalizeConsumer"
 
   implicit val flaggable_runMode: Flaggable[RunMode] = new Flaggable[RunMode] {
     override def parse(s: String): RunMode =
       s match {
-        case TaskConsumerType              => TaskConsumer
-        case EsIngestConsumerType          => EsIngestConsumer
-        case EsItemDenormalizeConsumerType => EsItemDenormalizeConsumer
-        case _                             => throw new IllegalArgumentException
+        case TaskConsumerType                => TaskConsumer
+        case EsIngestConsumerType            => EsIngestConsumer
+        case EsItemDenormalizeConsumerType   => EsItemDenormalizeConsumer
+        case EsPersonDenormalizeConsumerType => EsPersonDenormalizeConsumer
+        case _                               => throw new IllegalArgumentException
       }
   }
 }
@@ -66,3 +72,4 @@ sealed trait RunMode
 case object TaskConsumer extends RunMode
 case object EsIngestConsumer extends RunMode
 case object EsItemDenormalizeConsumer extends RunMode
+case object EsPersonDenormalizeConsumer extends RunMode

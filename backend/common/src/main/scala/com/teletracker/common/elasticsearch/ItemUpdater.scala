@@ -14,7 +14,7 @@ import com.teletracker.common.monitoring.Timing
 import io.circe.Json
 import javax.inject.Inject
 import org.elasticsearch.action.DocWriteResponse
-import org.elasticsearch.action.bulk.BulkRequest
+import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.support.WriteRequest
@@ -399,6 +399,37 @@ class ItemUpdater @Inject()(
               Seq(response)
             )
           })
+    }
+  }
+
+  def upsertItemTags(
+    itemIds: Set[UUID],
+    tag: EsItemTag
+  ): Future[BulkResponse] = {
+    if (itemIds.isEmpty) {
+      Future.successful(new BulkResponse(Array.empty, 0))
+    } else {
+
+      val scriptSource = tag match {
+        case EsItemTag(_, Some(_), _, _) =>
+          UpdateTagsWithDoubleValueScriptSource
+        case EsItemTag(_, _, Some(_), _) =>
+          UpdateTagsWithStringValueScriptSource
+        case EsItemTag(_, None, None, _) => UpdateTagsScriptSource
+        case _ =>
+          throw new IllegalArgumentException(s"Unexpected tag on update: $tag")
+      }
+
+      val bulkReq = itemIds.foldLeft(new BulkRequest())((req, id) => {
+        val update = new UpdateRequest(
+          teletrackerConfig.elasticsearch.items_index_name,
+          id.toString
+        ).script(UpdateTagsScript(tag, scriptSource))
+
+        req.add(update)
+      })
+
+      elasticsearchExecutor.bulk(bulkReq)
     }
   }
 

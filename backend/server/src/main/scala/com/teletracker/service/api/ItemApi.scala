@@ -223,7 +223,8 @@ class ItemApi @Inject()(
         titleSearch = None,
         sortMode = request.sortMode,
         limit = request.limit,
-        bookmark = request.bookmark
+        bookmark = request.bookmark,
+        forList = None
       )
     }
   }
