@@ -17,6 +17,7 @@ def _safe_to_int(value):
 
 
 season_number_re = re.compile(r'.*\s+(\d+)')
+limited_series_re = re.compile('Limited Series')
 
 
 class NetflixSpider(scrapy.spiders.CrawlSpider):
@@ -189,7 +190,7 @@ class NetflixSpider(scrapy.spiders.CrawlSpider):
         multiple_seasons = response.xpath(
             '//select[@data-uia="season-selector"]/option')
         seasons = []
-        if multiple_seasons:
+        if multiple_seasons and len(multiple_seasons) > 0:
             for (idx, season) in enumerate(multiple_seasons):
                 name = season.xpath('./text()').get()
                 seasons.append({"name": name, "num": idx + 1})
@@ -198,6 +199,13 @@ class NetflixSpider(scrapy.spiders.CrawlSpider):
                 '//div[@data-uia="season-static-label"]/text()').get()
             if single_season:
                 match = season_number_re.search(single_season)
-                seasons.append({"name": single_season,
-                                "num": int(match.group(1)) if match else None})
+                if match:
+                    seasons.append({"name": single_season,
+                                    "num": int(match.group(1)) if match else None})
+                else:
+                    match = limited_series_re.search(single_season)
+                    if match:
+                        seasons.append({"name": single_season,
+                                        "num": 1})
+
         return seasons
