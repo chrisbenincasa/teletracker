@@ -12,7 +12,7 @@ import com.teletracker.common.db.{
   SearchScore,
   SortMode
 }
-import com.teletracker.common.db.model.UserThingTagType
+import com.teletracker.common.db.model.{ExternalSource, UserThingTagType}
 import com.teletracker.common.elasticsearch.model.{
   EsItem,
   EsItemTag,
@@ -25,6 +25,7 @@ import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.client.core.CountRequest
 import org.elasticsearch.index.query.{
   BoolQueryBuilder,
+  QueryBuilder,
   QueryBuilders,
   RangeQueryBuilder
 }
@@ -39,7 +40,8 @@ import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.{
   FieldSortBuilder,
   NestedSortBuilder,
-  SortOrder
+  SortOrder,
+  SortMode => EsSortMode
 }
 import java.time.LocalDate
 import java.util.UUID
@@ -53,11 +55,11 @@ class ListBuilder @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchAccess {
   def getRegularListItemCount(
-    userId: String,
-    list: StoredUserList
+    list: StoredUserList,
+    listFilters: Option[ItemSearchParams]
   ): Future[Long] = {
     val listQuery =
-      getRegularListQuery(userId, list, None, None, None, None)
+      getRegularListQuery(list, listFilters, None, None, None)
 
     val countRequest = new CountRequest(
       teletrackerConfig.elasticsearch.user_items_index_name
@@ -114,7 +116,6 @@ class ListBuilder @Inject()(
     limit: Int = 20
   ): Future[(ElasticsearchItemsResponse, Long)] = {
     val sourceBuilder = getRegularListQuery(
-      userId,
       list,
       listFilters,
       Some(sortMode),
@@ -164,7 +165,7 @@ class ListBuilder @Inject()(
 
       })
 
-    val countFut = getRegularListItemCount(userId, list)
+    val countFut = getRegularListItemCount(list, listFilters)
 
     for {
       items <- itemsFut
@@ -175,7 +176,6 @@ class ListBuilder @Inject()(
   }
 
   private def getRegularListQuery(
-    userId: String,
     list: StoredUserList,
     listFilters: Option[ItemSearchParams],
     sortMode: Option[SortMode],
@@ -200,39 +200,45 @@ class ListBuilder @Inject()(
           ScoreMode.Avg
         )
       )
-      .applyIf(listFilters.flatMap(_.itemTypes).exists(_.nonEmpty))(builder => {
-        builder.filter(
-          QueryBuilders.nestedQuery(
-            "item",
-            QueryBuilders.termsQuery(
-              "type",
-              listFilters
-                .flatMap(_.itemTypes)
-                .get
-                .map(_.toString)
-                .asJavaCollection
-            ),
-            ScoreMode.Avg
+      .through(builder => {
+        val nestedQuery = QueryBuilders
+          .boolQuery()
+          .applyOptional(listFilters.flatMap(_.genres).filter(_.nonEmpty))(
+            genresFilter
           )
-        )
-      })
-      .applyOptional(listFilters.flatMap(_.genres).filter(_.nonEmpty))(
-        (builder, genres) => {
-          builder.filter(
-            QueryBuilders.nestedQuery(
-              "item",
-              QueryBuilders.termsQuery(
-                "item.genres.id",
-                genres.map(_.id).asJavaCollection
-              ),
-              ScoreMode.Avg
+          .applyOptional(listFilters.flatMap(_.itemTypes).filter(_.nonEmpty))(
+            itemTypesFilter
+          )
+          .applyOptional(listFilters.flatMap(_.networks).filter(_.nonEmpty))(
+            availabilityByNetworksOrNested
+          )
+          .applyOptional(listFilters.flatMap(_.imdbRating))(
+            openRatingRangeFilter(
+              _,
+              ExternalSource.Imdb,
+              _,
+              path = "item.ratings"
             )
           )
-        }
-      )
+          .applyOptional(listFilters.flatMap(_.releaseYear))(
+            openDateRangeFilter
+          )
+          .applyOptional(
+            listFilters
+              .flatMap(_.peopleCredits)
+              .filter(_.people.nonEmpty)
+          )(
+            peopleCreditSearchQuery
+          )
+          .applyOptional(listFilters.flatMap(_.tagFilters).filter(_.nonEmpty))(
+            (builder, tags) => tags.foldLeft(builder)(itemTagFilter)
+          )
+
+        builder.filter(nestedItemQuery(nestedQuery))
+      })
       .applyOptional(bookmark)(applyBookmarkForRegularList(_, _, list))
 
-    new SearchSourceBuilder()
+    val source = new SearchSourceBuilder()
       .query(baseBoolQuery)
       .applyOptional(bookmark.map(_.sortMode).orElse(sortMode))(
         (builder, sort) => {
@@ -246,6 +252,18 @@ class ListBuilder @Inject()(
         }
       )
       .applyOptional(limit)(_.size(_))
+
+    println(source)
+
+    source
+  }
+
+  private def nestedItemQuery(query: QueryBuilder) = {
+    QueryBuilders.nestedQuery(
+      "item",
+      query,
+      ScoreMode.Avg
+    )
   }
 
   @tailrec
@@ -273,7 +291,7 @@ class ListBuilder @Inject()(
         )
 
       case Rating(isDesc, source) =>
-        makeRatingFieldSort(source, isDesc)
+        makeNestedRatingFieldSort(source, isDesc)
 
       case AddedTime(desc) =>
         Some(
@@ -301,6 +319,30 @@ class ListBuilder @Inject()(
 
       case d @ DefaultForListType(_) =>
         makeSortForRegularList(d.get(false), listId)
+    }
+  }
+
+  protected def makeNestedRatingFieldSort(
+    source: ExternalSource,
+    desc: Boolean
+  ): Option[FieldSortBuilder] = {
+    if (SupportedRatingSortSources.contains(source)) {
+      val sort = new FieldSortBuilder("item.ratings.weighted_average")
+        .sortMode(EsSortMode.AVG)
+        .order(if (desc) SortOrder.DESC else SortOrder.ASC)
+        .missing("_last")
+        .setNestedSort(
+          new NestedSortBuilder("item.ratings")
+            .setFilter(
+              QueryBuilders
+                .termQuery("item.ratings.provider_id", source.ordinal())
+            )
+        )
+      Some(sort)
+    } else {
+      throw new IllegalArgumentException(
+        s"Sorting for ratings from ${source} is not supported"
+      )
     }
   }
 
@@ -339,49 +381,46 @@ class ListBuilder @Inject()(
 
         case Popularity(desc) =>
           builder.filter(
-            QueryBuilders
-              .nestedQuery(
-                "item",
-                applyRange(
-                  QueryBuilders.rangeQuery("item.popularity"),
-                  desc,
-                  bookmark.value.toDouble
-                ),
-                ScoreMode.Avg
+            nestedItemQuery(
+              applyRange(
+                QueryBuilders.rangeQuery("item.popularity"),
+                desc,
+                bookmark.value.toDouble
               )
+            )
           )
 
         case Recent(desc) =>
           builder.filter(
-            QueryBuilders.nestedQuery(
-              "item",
+            nestedItemQuery(
               applyRange(
                 QueryBuilders.rangeQuery("item.release_date"),
                 desc,
                 bookmark.value
-              ).format("yyyy-MM-dd"),
-              ScoreMode.Avg
+              ).format("yyyy-MM-dd")
             )
           )
 
         case Rating(isDesc, source) =>
           builder.filter(
-            QueryBuilders.nestedQuery(
-              "ratings",
-              QueryBuilders
-                .boolQuery()
-                .filter(
-                  applyRange(
-                    QueryBuilders.rangeQuery("ratings.weighted_average"),
-                    isDesc,
-                    bookmark.value
+            nestedItemQuery(
+              QueryBuilders.nestedQuery(
+                "item.ratings",
+                QueryBuilders
+                  .boolQuery()
+                  .filter(
+                    applyRange(
+                      QueryBuilders.rangeQuery("item.ratings.weighted_average"),
+                      isDesc,
+                      bookmark.value
+                    )
                   )
-                )
-                .filter(
-                  QueryBuilders
-                    .termQuery("ratings.provider_id", source.ordinal())
-                ),
-              ScoreMode.Avg
+                  .filter(
+                    QueryBuilders
+                      .termQuery("item.ratings.provider_id", source.ordinal())
+                  ),
+                ScoreMode.Avg
+              )
             )
           )
 

@@ -1,9 +1,8 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { makeStyles, Slider, Theme, Typography } from '@material-ui/core';
-import { SliderChange, SlidersState } from '../../utils/searchFilters';
+import { SliderChange } from '../../utils/searchFilters';
 import { useDebouncedCallback } from 'use-debounce';
 import { FilterContext } from './FilterContext';
-import _ from 'lodash';
 
 const styles = makeStyles((theme: Theme) => ({
   sliderContainer: {
@@ -43,28 +42,6 @@ export default function RatingFilter(props: Props) {
       MAX_RATING,
     ),
   ]);
-
-  useEffect(() => {
-    if (sliders && sliders.imdbRating) {
-      let currMin = _.head(imdbRatingValue);
-      let newMin = currMin;
-
-      let currMax = _.nth(imdbRatingValue, 1);
-      let newMax = currMax;
-
-      if (sliders.imdbRating.min !== currMin) {
-        newMin = sliders.imdbRating.min;
-      }
-
-      if (sliders.imdbRating.max !== currMax) {
-        newMax = sliders.imdbRating.max;
-      }
-
-      if (newMin !== currMin || newMax !== currMax) {
-        setImdbRatingValue([newMin || MIN_RATING, newMax || MAX_RATING]);
-      }
-    }
-  }, [sliders, imdbRatingValue]);
 
   const [debouncePropUpdate] = useDebouncedCallback(
     (sliderChange: SliderChange) => {

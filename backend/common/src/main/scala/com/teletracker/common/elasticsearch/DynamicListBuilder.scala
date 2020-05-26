@@ -67,9 +67,10 @@ class DynamicListBuilder @Inject()(
 
   def getDynamicListItemCount(
     userId: String,
-    list: StoredUserList
+    list: StoredUserList,
+    ruleOverrides: Option[ItemSearchParams]
   ): Future[Long] = {
-    getDynamicListQuery(userId, list, None, None, None, None).flatMap(
+    getDynamicListQuery(userId, list, ruleOverrides, None, None, None).flatMap(
       itemSearch.countItems
     )
   }
@@ -102,16 +103,16 @@ class DynamicListBuilder @Inject()(
     }
 
     val itemsFut = listQuery.flatMap(itemSearch.searchItems)
-//    val countFut = listQuery.flatMap(itemSearch.countItems)
+    val countFut = getDynamicListItemCount(userId, list, ruleOverrides)
 
     for {
       items <- itemsFut
-//      count <- countFut
+      count <- countFut
       people <- peopleForRulesFut
     } yield {
       (
         items,
-        items.totalHits,
+        count,
         // TODO: gnarly hack to appease the frontend... think about this later
         // This is a preemptive fetch to get some light details on a person, but returning credits makes
         // future full fetches difficult because cast_credits here would overwrite frontend state...

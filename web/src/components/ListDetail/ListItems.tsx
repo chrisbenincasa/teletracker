@@ -49,6 +49,9 @@ export default function ListItems(props: Props) {
   const listBookmark = useStateSelector(
     state => state.lists?.current?.bookmark,
   );
+  const totalItemsForFilters = useStateSelector(state => state.lists?.current?.total);
+  const hasMoreItems = _.isUndefined(totalItemsForFilters) || listItems.length < totalItemsForFilters;
+
   const currentFilterState = useStateSelector(state => state.lists.current);
   const { filters, defaultFilters, clearFilters } = useContext(FilterContext);
   const previousListId = usePrevious(props.listId);
@@ -135,7 +138,7 @@ export default function ListItems(props: Props) {
       <InfiniteScroll
         pageStart={0}
         loadMore={loadMoreList}
-        hasMore={!_.isUndefined(listBookmark)}
+        hasMore={!_.isUndefined(listBookmark) && hasMoreItems}
         useWindow
         threshold={300}
       >
