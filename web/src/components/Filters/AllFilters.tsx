@@ -15,7 +15,7 @@ import { ItemType, NetworkType, SortOptions } from '../../types';
 import TypeToggle from './TypeToggle';
 import NetworkSelect from './NetworkSelect';
 import GenreSelect from './GenreSelect';
-import SortDropdown from './SortDropdown';
+import SortToggle from './SortToggle';
 import ReleaseYearFilter from './ReleaseYearFilter';
 import RatingFilter from './RatingFilter';
 import CreateSmartListButton from '../Buttons/CreateSmartListButton';
@@ -264,6 +264,36 @@ const AllFilters = (props: Props) => {
         className={classes.toEdgeWrapper}
         appear
       >
+        {!disableNetworks && (
+          <ExpansionPanel square>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="networks-content"
+              id="networks-header"
+            >
+              <Typography>Networks</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <NetworkSelect handleChange={setNetworks} showTitle={false} />
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+        )}
+
+        {!disableTypeChange && (
+          <ExpansionPanel square>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="type-content"
+              id="type-header"
+            >
+              <Typography>Content Type</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <TypeToggle handleChange={setType} showTitle={false} />
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+        )}
+
         {!disableGenres && (
           <ExpansionPanel square>
             <ExpansionPanelSummary
@@ -345,36 +375,6 @@ const AllFilters = (props: Props) => {
           </ExpansionPanelDetails>
         </ExpansionPanel>
 
-        {!disableNetworks && (
-          <ExpansionPanel square>
-            <ExpansionPanelSummary
-              expandIcon={<ExpandMore />}
-              aria-controls="networks-content"
-              id="networks-header"
-            >
-              <Typography>Networks</Typography>
-            </ExpansionPanelSummary>
-            <ExpansionPanelDetails>
-              <NetworkSelect handleChange={setNetworks} showTitle={false} />
-            </ExpansionPanelDetails>
-          </ExpansionPanel>
-        )}
-
-        {!disableTypeChange && (
-          <ExpansionPanel square>
-            <ExpansionPanelSummary
-              expandIcon={<ExpandMore />}
-              aria-controls="type-content"
-              id="type-header"
-            >
-              <Typography>Content Type</Typography>
-            </ExpansionPanelSummary>
-            <ExpansionPanelDetails>
-              <TypeToggle handleChange={setType} showTitle={false} />
-            </ExpansionPanelDetails>
-          </ExpansionPanel>
-        )}
-
         {!disableSortOptions && (
           <ExpansionPanel square>
             <ExpansionPanelSummary
@@ -385,7 +385,7 @@ const AllFilters = (props: Props) => {
               <Typography>Sort</Typography>
             </ExpansionPanelSummary>
             <ExpansionPanelDetails>
-              <SortDropdown
+              <SortToggle
                 isListDynamic={!!isListDynamic}
                 handleChange={setSort}
                 validSortOptions={sortOptions}
@@ -447,7 +447,7 @@ const AllFilters = (props: Props) => {
               {!disableNetworks && <NetworkSelect handleChange={setNetworks} />}
               {!disableTypeChange && <TypeToggle handleChange={setType} />}
               {!disableSortOptions && (
-                <SortDropdown
+                <SortToggle
                   isListDynamic={!!isListDynamic}
                   handleChange={setSort}
                   validSortOptions={sortOptions}

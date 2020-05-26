@@ -13,7 +13,7 @@ import { ItemAvailability, ItemAvailabilityOffer } from '../types/v2';
 import { Item } from '../types/v2/Item';
 import { useNetworks } from '../hooks/useStateMetadata';
 import { deepLinkForId, Platform } from '../utils/availability-utils';
-import { OfferType } from '../types';
+import { networkToColor, OfferType } from '../types';
 import useStateSelector from '../hooks/useStateSelector';
 import selectItem from '../selectors/selectItem';
 import { collect } from '../utils/collection-utils';
@@ -86,6 +86,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   networkLogo: {
     width: 60,
     borderRadius: 4,
+    backgroundSize: 'contain',
   },
   platform: {
     display: 'flex',
@@ -179,7 +180,12 @@ const Availability = (props: Props) => {
             return;
           }
 
-          const logoUri = '/images/logos/' + network!.slug + '/icon.jpg';
+          const logoUri =
+            '/images/logos/' +
+            network!.slug +
+            '/' +
+            network!.slug +
+            '-full.svg';
           const offersOfType = _.filter(availability.offers, { offerType });
 
           if (offersOfType.length === 0) {
@@ -224,6 +230,7 @@ const Availability = (props: Props) => {
                   className={classes.networkLogo}
                   image={logoUri}
                   title={network!.name}
+                  style={{ backgroundColor: networkToColor[network!.slug] }}
                 />
                 <CardContent className={classes.cardContent}>
                   <Typography>{`${cleanOfferTitle} ${

@@ -203,7 +203,7 @@ function Explore() {
 
     // Require that there be at least 2 full rows before displaying Featured items.
     const featuredRequiredItems = calculateLimit(width, 2, numberFeaturedItems);
-    const itemsInRows = DEFAULT_POPULAR_LIMIT - numberFeaturedItems;
+    const itemsInRows = DEFAULT_POPULAR_LIMIT; // - numberFeaturedItems;
     const itemsPerRowForWidth = itemsPerRow(width) || TOTAL_COLUMNS;
     const hangerItems = itemsInRows % itemsPerRowForWidth;
     const missingItems =
