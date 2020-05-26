@@ -60,6 +60,7 @@ interface CurrentListState {
   readonly items: string[];
   readonly bookmark?: string;
   readonly filters?: FilterParams;
+  readonly total?: number;
 }
 
 export interface State {
@@ -256,6 +257,7 @@ const handleListRetrieveItems = handleAction<
       items: action.payload!.append
         ? (state.current?.items || []).concat(newItemIds)
         : newItemIds,
+      total: action.payload!.paging?.total
     },
   };
 });
