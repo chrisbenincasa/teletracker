@@ -66,7 +66,6 @@ export default function ReleaseYearFilter(props: Props) {
   };
 
   const handleYearChange = useCallback((event, newValue) => {
-    console.log(newValue)
     setYearValue(newValue);
   }, []);
 

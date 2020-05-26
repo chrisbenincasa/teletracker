@@ -47,7 +47,7 @@ class CreatePublicList @Inject()(listsDbAccess: ListsDbAccess)
           name = parsedArgs.name,
           isDefault = false,
           isPublic = parsedArgs.isPublic,
-          userId = "public-user",
+          userId = StoredUserList.PublicUserId,
           isDynamic = parsedArgs.isDynamic,
           createdAt = Some(now),
           lastUpdatedAt = Some(now)

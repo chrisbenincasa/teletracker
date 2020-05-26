@@ -176,10 +176,14 @@ class ItemSearch @Inject()(
       val searchSourceBuilder = new SearchSourceBuilder()
         .query(buildSearchRequest(params))
         .size(params.limit)
-        .applyOptional(makeDefaultSort(actualSortMode))(_.sort(_))
+        .applyOptional(makeDefaultSort(actualSortMode, params.forList))(
+          _.sort(_)
+        )
         .sort(
           new FieldSortBuilder("id").order(SortOrder.ASC)
         )
+
+      println(searchSourceBuilder)
 
       elasticsearchExecutor
         .search(
@@ -219,7 +223,9 @@ class ItemSearch @Inject()(
         openDateRangeFilter
       )
       .applyOptional(params.itemTypes.filter(_.nonEmpty))(itemTypesFilter)
-      .applyOptional(params.bookmark)(applyBookmark(_, _, list = None))
+      .applyOptional(params.bookmark)(
+        applyBookmark(_, _, list = params.forList)
+      )
       .applyOptional(
         params.peopleCredits
           .filter(_.people.nonEmpty)

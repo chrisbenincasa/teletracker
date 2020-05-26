@@ -2,7 +2,6 @@ package com.teletracker.service.controllers
 
 import com.teletracker.common.api.model.{TrackedListOptions, TrackedListRules}
 import com.teletracker.common.db.model._
-import com.teletracker.common.db.{Bookmark, DefaultForListType, SortMode}
 import com.teletracker.common.model.{
   DataResponse,
   IllegalActionTypeError,

@@ -255,6 +255,8 @@ class UsersApi @Inject()(
       list <- listFut
       overrides <- overridesFut
     } yield {
+      val overridesWithList = overrides.map(_.copy(forList = list))
+
       list match {
         case None =>
           Future.successful(None)
@@ -267,7 +269,7 @@ class UsersApi @Inject()(
             .buildDynamicList(
               list.userId,
               list,
-              overrides,
+              overridesWithList,
               sortMode,
               bookmark,
               limit = limit
@@ -290,7 +292,7 @@ class UsersApi @Inject()(
             .buildRegularList(
               list.userId,
               list,
-              overrides,
+              overridesWithList,
               sortMode,
               bookmark,
               limit = limit

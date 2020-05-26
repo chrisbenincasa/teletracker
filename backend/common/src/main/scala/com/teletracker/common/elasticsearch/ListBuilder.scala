@@ -110,7 +110,7 @@ class ListBuilder @Inject()(
     userId: String,
     list: StoredUserList,
     listFilters: Option[ItemSearchParams],
-    sortMode: SortMode = Popularity(),
+    sortMode: SortMode,
     bookmark: Option[Bookmark] = None,
     includeActions: Boolean = true,
     limit: Int = 20
@@ -155,7 +155,7 @@ class ListBuilder @Inject()(
                 applyNextBookmarkRegularList(
                   response,
                   _,
-                  list.id,
+                  list,
                   bookmark,
                   sortMode
                 )
@@ -220,7 +220,7 @@ class ListBuilder @Inject()(
               path = "item.ratings"
             )
           )
-          .applyOptional(listFilters.flatMap(_.releaseYear))(
+          .applyOptional(listFilters.flatMap(_.releaseYear).filter(_.isFinite))(
             openDateRangeFilter
           )
           .applyOptional(
@@ -243,7 +243,7 @@ class ListBuilder @Inject()(
       .applyOptional(bookmark.map(_.sortMode).orElse(sortMode))(
         (builder, sort) => {
           builder
-            .applyOptional(makeSortForRegularList(sort, list.id))(_.sort(_))
+            .applyOptional(makeSortForRegularList(sort, list))(_.sort(_))
             .sort(
               new FieldSortBuilder("item.id")
                 .order(SortOrder.ASC)
@@ -269,7 +269,7 @@ class ListBuilder @Inject()(
   @tailrec
   final private def makeSortForRegularList(
     sortMode: SortMode,
-    listId: UUID
+    list: StoredUserList
   ): Option[FieldSortBuilder] = {
     sortMode match {
       case SearchScore(_) => None
@@ -311,14 +311,14 @@ class ListBuilder @Inject()(
                   )
                   .filter(
                     QueryBuilders
-                      .termQuery("tags.string_value", listId.toString)
+                      .termQuery("tags.string_value", list.id.toString)
                   )
               )
             )
         )
 
       case d @ DefaultForListType(_) =>
-        makeSortForRegularList(d.get(false), listId)
+        makeSortForRegularList(d.get(isDynamic = false, list.userId), list)
     }
   }
 
@@ -373,6 +373,15 @@ class ListBuilder @Inject()(
       }
     }
 
+    def applyValueRefinement(
+      builder: BoolQueryBuilder,
+      refinement: String
+    ): BoolQueryBuilder = {
+      builder.mustNot(
+        QueryBuilders.termQuery("item.id", refinement)
+      )
+    }
+
     @scala.annotation.tailrec
     def applyForSortMode(sortMode: SortMode): BoolQueryBuilder = {
       sortMode match {
@@ -380,30 +389,31 @@ class ListBuilder @Inject()(
           builder
 
         case Popularity(desc) =>
-          builder.filter(
-            nestedItemQuery(
+          QueryBuilders
+            .boolQuery()
+            .filter(
               applyRange(
                 QueryBuilders.rangeQuery("item.popularity"),
                 desc,
                 bookmark.value.toDouble
               )
             )
-          )
 
         case Recent(desc) =>
-          builder.filter(
-            nestedItemQuery(
+          QueryBuilders
+            .boolQuery()
+            .filter(
               applyRange(
                 QueryBuilders.rangeQuery("item.release_date"),
                 desc,
                 bookmark.value
               ).format("yyyy-MM-dd")
             )
-          )
 
         case Rating(isDesc, source) =>
-          builder.filter(
-            nestedItemQuery(
+          QueryBuilders
+            .boolQuery()
+            .filter(
               QueryBuilders.nestedQuery(
                 "item.ratings",
                 QueryBuilders
@@ -422,59 +432,47 @@ class ListBuilder @Inject()(
                 ScoreMode.Avg
               )
             )
-          )
 
         case AddedTime(desc) =>
-          builder.filter(
-            QueryBuilders.nestedQuery(
-              "tags",
-              QueryBuilders
-                .boolQuery()
-                .filter(
-                  applyRange(
-                    QueryBuilders.rangeQuery("tags.last_updated"),
-                    desc,
-                    bookmark.value
-                  )
-                )
-                .filter(
-                  QueryBuilders
-                    .termQuery(
-                      "tags.tag",
-                      UserThingTagType.TrackedInList.toString
-                    )
-                )
-                .filter(
-                  QueryBuilders
-                    .termQuery("tags.string_value", list.id.toString)
-                ),
-              ScoreMode.Avg
+          QueryBuilders
+            .boolQuery()
+            .filter(
+              applyRange(
+                QueryBuilders.rangeQuery("tags.last_updated"),
+                desc,
+                bookmark.value
+              )
             )
-          )
+            .filter(
+              QueryBuilders
+                .termQuery(
+                  "tags.tag",
+                  UserThingTagType.TrackedInList.toString
+                )
+            )
+            .filter(
+              QueryBuilders
+                .termQuery("tags.string_value", list.id.toString)
+            )
 
         case d @ DefaultForListType(_) =>
-          applyForSortMode(d.get(list.isDynamic))
+          applyForSortMode(d.get(list.isDynamic, list.userId))
       }
     }
 
+    builder.filter(
+      nestedItemQuery(
+        applyForSortMode(bookmark.sortMode)
+          .applyOptional(bookmark.valueRefinement)(applyValueRefinement)
+      )
+    )
     applyForSortMode(bookmark.sortMode)
-      .applyIf(bookmark.valueRefinement.isDefined)(builder => {
-        builder.filter(
-          QueryBuilders.nestedQuery(
-            "item",
-            QueryBuilders
-              .rangeQuery("item.id")
-              .gt(bookmark.valueRefinement.get),
-            ScoreMode.Avg
-          )
-        )
-      })
   }
 
   private def applyNextBookmarkRegularList(
     denormResponse: ElasticsearchUserItemsResponse,
     itemsResponse: ElasticsearchItemsResponse,
-    listId: UUID,
+    list: StoredUserList,
     previousBookmark: Option[Bookmark],
     sortMode: SortMode
   ): ElasticsearchItemsResponse = {
@@ -486,55 +484,61 @@ class ListBuilder @Inject()(
         .map(_.id.toString)
     )
 
-    val bmValue = sortMode match {
-      case SearchScore(_) => throw new IllegalStateException("")
-      case Popularity(_) =>
-        itemsResponse.items.lastOption.map(
-          item => item.id.toString -> item.popularity.getOrElse(0.0).toString
-        )
-
-      case Recent(desc) =>
-        itemsResponse.items.lastOption.map(
-          item =>
-            item.id.toString -> item.release_date
-              .getOrElse(if (desc) LocalDate.MIN else LocalDate.MAX)
-              .toString
-        )
-
-      case Rating(desc, source) =>
-        itemsResponse.items.lastOption.map(
-          item =>
-            item.id.toString -> item.ratingsGrouped
-              .get(source)
-              .flatMap(_.weighted_average)
-              .getOrElse(if (desc) Double.MinValue else Double.MaxValue)
-              .toString
-        )
-
-      case t @ (AddedTime(_) | DefaultForListType(_)) =>
-        denormResponse.items.lastOption
-          .flatMap(
-            userItem =>
-              userItem.tags
-                .find(
-                  t =>
-                    t.tag == UserThingTagType.TrackedInList.toString && t.string_value
-                      .contains(listId.toString)
-                )
-                .map(tag => {
-                  userItem.item_id.toString -> tag.last_updated
-                    .getOrElse(if (t.isDesc) LocalDate.MIN else LocalDate.MAX)
-                    .toString
-                })
+    @tailrec
+    def getBookmarkValue(sort: SortMode): Option[(String, String)] = {
+      sort match {
+        case SearchScore(_) => throw new IllegalStateException("")
+        case Popularity(_) =>
+          itemsResponse.items.lastOption.map(
+            item => item.id.toString -> item.popularity.getOrElse(0.0).toString
           )
 
+        case Recent(desc) =>
+          itemsResponse.items.lastOption.map(
+            item =>
+              item.id.toString -> item.release_date
+                .getOrElse(if (desc) LocalDate.MIN else LocalDate.MAX)
+                .toString
+          )
+
+        case Rating(desc, source) =>
+          itemsResponse.items.lastOption.map(
+            item =>
+              item.id.toString -> item.ratingsGrouped
+                .get(source)
+                .flatMap(_.weighted_average)
+                .getOrElse(if (desc) Double.MinValue else Double.MaxValue)
+                .toString
+          )
+
+        case default @ DefaultForListType(_) =>
+          getBookmarkValue(default.get(list.isDynamic, list.userId))
+
+        case t @ AddedTime(_) =>
+          denormResponse.items.lastOption
+            .flatMap(
+              userItem =>
+                userItem.tags
+                  .find(
+                    t =>
+                      t.tag == UserThingTagType.TrackedInList.toString && t.string_value
+                        .contains(list.id.toString)
+                  )
+                  .map(tag => {
+                    userItem.item_id.toString -> tag.last_updated
+                      .getOrElse(if (t.isDesc) LocalDate.MIN else LocalDate.MAX)
+                      .toString
+                  })
+            )
+
+      }
     }
 
-    val nextBookmark = bmValue.map {
+    val nextBookmark = getBookmarkValue(sortMode).map {
       case (itemId, value) =>
         val refinement = previousBookmark match {
-          case Some(prev) if prev.value == value => Some(itemId.toString)
-          case None                              => Some(itemId.toString)
+          case Some(prev) if prev.value == value => Some(itemId)
+          case None                              => Some(itemId)
           case _                                 => None
         }
 

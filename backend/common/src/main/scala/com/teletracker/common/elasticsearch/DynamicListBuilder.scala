@@ -1,15 +1,10 @@
 package com.teletracker.common.elasticsearch
 
-import com.teletracker.common.db.dynamo.model.{StoredGenre, StoredUserList}
-import com.teletracker.common.db.model.{
-  DynamicListPersonRule,
-  PersonAssociationType,
-  UserThingTagType
-}
 import com.teletracker.common.db._
+import com.teletracker.common.db.dynamo.model.StoredUserList
+import com.teletracker.common.db.model.{PersonAssociationType, UserThingTagType}
 import com.teletracker.common.elasticsearch.model.EsItemTag.TagFormatter
 import com.teletracker.common.elasticsearch.model.{
-  EsItem,
   EsPerson,
   ItemSearchParams,
   TagFilter
@@ -17,10 +12,7 @@ import com.teletracker.common.elasticsearch.model.{
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util._
 import javax.inject.Inject
-import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
-import java.time.LocalDate
 import java.util.UUID
-import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
@@ -257,215 +249,9 @@ class DynamicListBuilder @Inject()(
         titleSearch = None,
         sortMode = sortToUse.getOrElse(Popularity()),
         limit = limit.getOrElse(20),
-        bookmark = bookmark
+        bookmark = bookmark,
+        forList = Some(dynamicList)
       )
     }
-//
-//    val genreIdsToUse = listFilters.flatMap(_.genres).orElse {
-//      Some(
-//        rules.rules
-//          .collect {
-//            case genreRule: DynamicListGenreRule => genreRule
-//          }
-//          .map(_.genreId)
-//      ).filter(_.nonEmpty)
-//    }
-//
-//    val itemTypesToUse = listFilters.flatMap(_.itemTypes).orElse {
-//      Some(
-//        rules.rules
-//          .collect {
-//            case itemTypeRule: DynamicListItemTypeRule => itemTypeRule
-//          }
-//          .map(_.itemType)
-//          .toSet
-//      ).filter(_.nonEmpty)
-//    }
-//
-//    val networkIdsToUse = listFilters.flatMap(_.networks).orElse {
-//      Some(
-//        rules.rules
-//          .collect {
-//            case networkRule: DynamicListNetworkRule => networkRule
-//          }
-//          .map(_.networkId)
-//          .toSet
-//      ).filter(_.nonEmpty)
-//    }
-//
-//    val peopleIdsToUse = listFilters
-//      .flatMap(_.personIdentifiers)
-//      .map(ids => personIdentifiersToSearch(ids.toList))
-//      .orElse {
-//        Some(
-//          rules.rules.collect {
-//            case personRule: DynamicListPersonRule => personRule
-//          }.distinct
-//        ).filter(_.nonEmpty).map(personRulesToSearch)
-//      }
-//
-//    val excludeWatchedItems = dynamicList.options.exists(_.removeWatchedItems)
-//
-//    val sourceBuilder = new SearchSourceBuilder()
-//    val baseBoolQuery = QueryBuilders.boolQuery()
-//
-//    baseBoolQuery
-//      .applyIf(tagRules.nonEmpty)(
-//        builder =>
-//          tagRules.foldLeft(builder)((query, rule) => {
-//            query.filter(
-//              QueryBuilders
-//                .termQuery(
-//                  "tags.tag",
-//                  TagFormatter.format(userId, rule.tagType)
-//                )
-//            )
-//          })
-//      )
-//      .applyOptional(peopleIdsToUse)(
-//        peopleCreditSearchQuery
-//      )
-//      .applyOptional(itemTypesToUse.filter(_.nonEmpty))(
-//        itemTypesFilter
-//      )
-//      .applyOptional(genreIdsToUse.map(_.toSet).filter(_.nonEmpty))(
-//        genreIdsFilter
-//      )
-//      .applyOptional(
-//        networkIdsToUse.filter(_.nonEmpty)
-//      )(
-//        availabilityByNetworkIdsOr
-//      )
-//      .applyOptional(releaseYearRule.filter(_.isFinite))(openDateRangeFilter)
-//      .applyIf(excludeWatchedItems)(excludeWatchedItemsFilter(userId, _))
-//      .applyOptional(bookmark)(applyBookmark(_, _, Some(dynamicList)))
-//
-//    val defaultSort =
-//      dynamicList.rules.flatMap(_.sort).map(_.sort).map(SortMode.fromString)
-//    val sortToUse =
-//      bookmark.map(_.sortMode).orElse(sortMode).orElse(defaultSort)
-//
-//    sourceBuilder
-//      .query(baseBoolQuery)
-//      .applyOptional(sortToUse)(
-//        (builder, sort) => {
-//          builder
-//            .applyOptional(makeDefaultSort(sort))(_.sort(_))
-//            .sort(
-//              new FieldSortBuilder("id").order(SortOrder.ASC)
-//            )
-//        }
-//      )
-//      .applyOptional(limit)(_.size(_))
-  }
-
-  private def personRulesToSearch(personRules: List[DynamicListPersonRule]) = {
-    val creditSearches = personRules.flatMap(rule => {
-      List(
-        if (rule.associationType.isEmpty || rule.associationType
-              .contains(PersonAssociationType.Cast))
-          Some(
-            PersonCreditSearch(
-              IdOrSlug.fromUUID(rule.personId),
-              PersonAssociationType.Cast
-            )
-          )
-        else None,
-        if (rule.associationType.isEmpty || rule.associationType
-              .contains(PersonAssociationType.Crew))
-          Some(
-            PersonCreditSearch(
-              IdOrSlug.fromUUID(rule.personId),
-              PersonAssociationType.Crew
-            )
-          )
-        else None
-      ).flatten
-    })
-
-    PeopleCreditSearch(creditSearches, BinaryOperator.Or)
-  }
-
-  private def personIdentifiersToSearch(personIds: List[String]) = {
-    val creditSearches = personIds.flatMap(id => {
-      List(
-        PersonCreditSearch(
-          IdOrSlug(id),
-          PersonAssociationType.Cast
-        ),
-        PersonCreditSearch(
-          IdOrSlug(id),
-          PersonAssociationType.Crew
-        )
-      )
-    })
-
-    PeopleCreditSearch(creditSearches, BinaryOperator.Or)
-  }
-
-  private def excludeWatchedItemsFilter(
-    userId: String,
-    boolQueryBuilder: BoolQueryBuilder
-  ) = {
-    boolQueryBuilder.mustNot(
-      QueryBuilders.termQuery(
-        "tags.tag",
-        TagFormatter.format(userId, UserThingTagType.Watched)
-      )
-    )
-  }
-
-  private def applyNextBookmark(
-    response: ElasticsearchItemsResponse,
-    previousBookmark: Option[Bookmark],
-    sortMode: SortMode,
-    isDynamic: Boolean
-  ): ElasticsearchItemsResponse = {
-    @tailrec
-    def getValueForBookmark(
-      item: EsItem,
-      actualSortMode: SortMode
-    ): String = {
-      actualSortMode match {
-        case SearchScore(_) => throw new IllegalStateException("")
-        case Popularity(_)  => item.popularity.getOrElse(0.0).toString
-        case Recent(desc) =>
-          item.release_date
-            .getOrElse(if (desc) LocalDate.MIN else LocalDate.MAX)
-            .toString
-        case AddedTime(desc) =>
-          // TODO implement correctly for direct lists
-          getValueForBookmark(item, Recent(desc))
-
-        case Rating(desc, source) =>
-          item.ratingsGrouped
-            .get(source)
-            .flatMap(_.weighted_average)
-            .getOrElse(if (desc) Double.MinValue else Double.MaxValue)
-            .toString
-
-        case default @ DefaultForListType(_) =>
-          getValueForBookmark(item, default.get(isDynamic))
-      }
-    }
-
-    val nextBookmark = response.items.lastOption
-      .map(
-        item => {
-          val value = getValueForBookmark(item, sortMode)
-
-          val refinement = previousBookmark
-            .filter(_.value == value)
-            .map(_ => item.id.toString)
-
-          Bookmark(
-            sortMode,
-            value,
-            refinement
-          )
-        }
-      )
-
-    response.withBookmark(nextBookmark)
   }
 }

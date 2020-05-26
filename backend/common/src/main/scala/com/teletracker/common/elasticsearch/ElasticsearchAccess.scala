@@ -359,7 +359,7 @@ trait ElasticsearchAccess {
         case AddedTime(desc) => applyForSortMode(Recent(desc))
 
         case d @ DefaultForListType(_) if list.isDefined =>
-          applyForSortMode(d.get(list.get.isDynamic))
+          applyForSortMode(d.get(list.get.isDynamic, list.get.userId))
 
         case DefaultForListType(_) => applyForSortMode(defaultSort)
       }
@@ -375,7 +375,8 @@ trait ElasticsearchAccess {
 
   @tailrec
   final protected def makeDefaultSort(
-    sortMode: SortMode
+    sortMode: SortMode,
+    list: Option[StoredUserList]
   ): Option[FieldSortBuilder] = {
     sortMode match {
       case SearchScore(_) => None
@@ -387,13 +388,16 @@ trait ElasticsearchAccess {
         Some(makeDefaultFieldSort("release_date", desc))
 
       case AddedTime(desc) =>
-        makeDefaultSort(Recent(desc))
+        makeDefaultSort(Recent(desc), list)
 
       case Rating(desc, source) =>
         makeRatingFieldSort(source, desc)
 
+      case default @ DefaultForListType(_) if list.isDefined =>
+        makeDefaultSort(default.get(list.get.isDynamic, list.get.userId), list)
+
       case DefaultForListType(desc) =>
-        makeDefaultSort(Popularity(desc))
+        makeDefaultSort(Popularity(desc), list)
     }
   }
 

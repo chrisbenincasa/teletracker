@@ -16,6 +16,8 @@ import scala.collection.JavaConverters._
 case class UserListRowOptions(removeWatchedItems: Boolean)
 
 object StoredUserList {
+  final val PublicUserId = "public-user"
+
   def primaryKey(id: UUID): util.Map[String, AttributeValue] =
     Map(
       "id" -> id.toString.toAttributeValue

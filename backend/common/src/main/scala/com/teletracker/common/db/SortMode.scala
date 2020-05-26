@@ -1,5 +1,6 @@
 package com.teletracker.common.db
 
+import com.teletracker.common.db.dynamo.model.StoredUserList
 import com.teletracker.common.db.model.ExternalSource
 
 object SortMode {
@@ -63,6 +64,15 @@ final case class DefaultForListType(isDesc: Boolean = true) extends SortMode {
   override def desc: DefaultForListType = this.copy(true)
   override def asc: DefaultForListType = this.copy(false)
   override def `type`: String = SortMode.DefaultType
-  def get(isDynamic: Boolean): SortMode =
-    if (isDynamic) Popularity(isDesc) else AddedTime(isDesc)
+  def get(
+    isDynamic: Boolean,
+    listOwnerUserId: String
+  ): SortMode =
+    if (isDynamic) {
+      Popularity(isDesc)
+    } else if (listOwnerUserId == StoredUserList.PublicUserId) {
+      Recent(isDesc)
+    } else {
+      AddedTime(isDesc)
+    }
 }

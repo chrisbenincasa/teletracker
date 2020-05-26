@@ -48,6 +48,10 @@ object EsUserItemTag {
     string_value = Some(value),
     last_updated = Some(Instant.now())
   )
+
+  def belongsToList(listId: UUID): EsUserItemTag = {
+    forString(UserThingTagType.TrackedInList, listId.toString)
+  }
 }
 
 @JsonCodec

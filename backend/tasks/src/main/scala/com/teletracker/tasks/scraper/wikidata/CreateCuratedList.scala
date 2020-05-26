@@ -1,8 +1,23 @@
 package com.teletracker.tasks.scraper.wikidata
 
-import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.elasticsearch.ItemLookup
-import com.teletracker.common.elasticsearch.model.EsExternalId
+import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.db.dynamo.model.StoredUserList
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  ItemType,
+  UserThingTagType
+}
+import com.teletracker.common.elasticsearch.{
+  ElasticsearchExecutor,
+  ItemLookup,
+  ItemUpdater
+}
+import com.teletracker.common.elasticsearch.model.{
+  EsExternalId,
+  EsItemTag,
+  EsUserItem,
+  EsUserItemTag
+}
 import com.teletracker.common.model.wikidata.{
   Entity,
   EntityOperations,
@@ -15,23 +30,32 @@ import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.JsonCodec
+import io.circe.syntax._
 import javax.inject.Inject
 import java.net.URI
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.time.OffsetDateTimeUtils
-import java.time.{OffsetDateTime, OffsetTime, ZoneId}
+import org.elasticsearch.action.bulk.BulkRequest
+import org.elasticsearch.action.update.UpdateRequest
+import org.elasticsearch.common.xcontent.XContentType
+import java.time.{Instant, OffsetDateTime, OffsetTime, ZoneId}
+import java.util.UUID
 import scala.collection.immutable.TreeMap
 import scala.concurrent.{ExecutionContext, Future}
 
 class CreateCuratedList @Inject()(
   sourceRetriever: SourceRetriever,
-  itemLookup: ItemLookup
+  itemLookup: ItemLookup,
+  elasticsearchExecutor: ElasticsearchExecutor,
+  itemUpdater: ItemUpdater,
+  teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
     extends TeletrackerTaskWithDefaultArgs {
   override protected def runInternal(args: Args): Unit = {
     val input = args.valueOrThrow[URI]("input")
     val property = args.valueOrThrow[String]("property")
     val expectedValue = args.valueOrThrow[String]("value")
+    val listId = args.valueOrThrow[UUID]("listId")
 
     val x = sourceRetriever
       .getSourceAsyncStream(input)
@@ -107,7 +131,7 @@ class CreateCuratedList @Inject()(
 
     val sortedByImdbId = new TreeMap[String, (String, OffsetDateTime)]() ++ triplets
 
-    itemLookup
+    val items = itemLookup
       .lookupItemsByExternalIds(
         sortedByImdbId.keys
           .map(key => (ExternalSource.Imdb, key, ItemType.Movie))
@@ -131,13 +155,42 @@ class CreateCuratedList @Inject()(
             _.usReleaseDateOrFallback
               .map(_.atTime(OffsetTime.now()))
           )
-          .foreach(item => {
-            println(
-              s"${item.title.get.head} - ${item.usReleaseDateOrFallback.get}"
-            )
-          })
       })
       .await()
+
+    val userItemTagBulkUpdate = items
+      .map(item => {
+        EsUserItem(
+          id = EsUserItem.makeId(StoredUserList.PublicUserId, item.id),
+          item_id = item.id,
+          user_id = StoredUserList.PublicUserId,
+          tags = List(EsUserItemTag.belongsToList(listId)),
+          item = Some(item.toDenormalizedUserItem)
+        )
+      })
+      .foldLeft(new BulkRequest())(
+        (bulkReq, userItem) =>
+          bulkReq.add(
+            new UpdateRequest(
+              teletrackerConfig.elasticsearch.user_items_index_name,
+              userItem.id
+            ).doc(userItem.asJson.noSpaces, XContentType.JSON)
+              .upsert(userItem.asJson.noSpaces, XContentType.JSON)
+          )
+      )
+
+    elasticsearchExecutor.bulk(userItemTagBulkUpdate).await()
+
+    val now = Instant.now()
+
+    val itemTag = EsItemTag.userScopedString(
+      StoredUserList.PublicUserId,
+      UserThingTagType.TrackedInList,
+      Some(listId.toString),
+      Some(now)
+    )
+
+    itemUpdater.upsertItemTags(items.map(_.id).toSet, itemTag).await()
   }
 }
 

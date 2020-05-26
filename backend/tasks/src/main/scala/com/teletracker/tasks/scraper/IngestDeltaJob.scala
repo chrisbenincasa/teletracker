@@ -2,12 +2,14 @@ package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.elasticsearch.async.EsIngestQueue
 import com.teletracker.common.elasticsearch.model.{
   EsAvailability,
   EsExternalId,
   EsItem
 }
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
@@ -23,12 +25,14 @@ import com.teletracker.tasks.scraper.model.MatchResult
 import com.teletracker.tasks.util.{FileUtils, SourceRetriever}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Codec, Encoder}
+import io.circe.syntax._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
 import java.time.LocalDate
 import java.util.UUID
+import java.util.concurrent.Executors
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.Source
@@ -90,6 +94,9 @@ abstract class IngestDeltaJobLike[
       codec
     ) {
 
+  protected val singleThreadExecutor =
+    Executors.newSingleThreadScheduledExecutor()
+
   implicit protected val execCtx =
     scala.concurrent.ExecutionContext.Implicits.global
 
@@ -98,6 +105,9 @@ abstract class IngestDeltaJobLike[
 
   @Inject
   private[this] var fileUtils: FileUtils = _
+
+  @Inject
+  private[this] var itemUpdateQueue: EsIngestQueue = _
 
   protected def s3: S3Client
   protected def itemLookup: ItemLookup
@@ -325,7 +335,8 @@ abstract class IngestDeltaJobLike[
         s"Saving ${allAdds.size + allRemoves.size} availabilities"
       )
 
-      saveAvailabilities(allAdds, allRemoves).await()
+      saveAvailabilities(allAdds, allRemoves, parsedArgs, shouldRetry = true)
+        .await()
     } else {
       val today = LocalDate.now()
       val changes = new File(
@@ -417,7 +428,9 @@ abstract class IngestDeltaJobLike[
 
   protected def saveAvailabilities(
     newAvailabilities: List[PendingAvailabilityUpdates],
-    availabilitiesToRemove: List[PendingAvailabilityUpdates]
+    availabilitiesToRemove: List[PendingAvailabilityUpdates],
+    args: IngestDeltaJobArgsLike,
+    shouldRetry: Boolean
   ): Future[Unit] = {
     val externalIdsById = (newAvailabilities ++ availabilitiesToRemove)
       .map(update => {
@@ -437,69 +450,110 @@ abstract class IngestDeltaJobLike[
 
     val allItemIds = newAvailabilityByThingId.keySet ++ removalAvailabilityByThingId.keySet
 
-    val updates = allItemIds.toList.map(itemId => {
-      val newAvailabilities = newAvailabilityByThingId
-        .getOrElse(itemId, Seq.empty)
-        .groupBy(EsAvailability.distinctFields)
-        .values
-        .flatMap(_.headOption)
+    AsyncStream
+      .fromSeq(allItemIds.toSeq)
+      .grouped(16)
+      .delayedMapF(
+        args.perBatchSleepMs.map(_ millis).getOrElse(250 millis),
+        singleThreadExecutor
+      )(batch => {
+        val updates = batch.toList.map(itemId => {
+          val newAvailabilities = newAvailabilityByThingId
+            .getOrElse(itemId, Seq.empty)
+            .groupBy(EsAvailability.distinctFields)
+            .values
+            .flatMap(_.headOption)
 
-      val removalAvailabilities = removalAvailabilityByThingId
-        .getOrElse(itemId, Seq.empty)
-        .groupBy(EsAvailability.distinctFields)
-        .values
-        .flatMap(_.headOption)
+          val removalAvailabilities = removalAvailabilityByThingId
+            .getOrElse(itemId, Seq.empty)
+            .groupBy(EsAvailability.distinctFields)
+            .values
+            .flatMap(_.headOption)
 
-      itemLookup
-        .lookupItem(
-          Left(itemId),
-          None,
-          shouldMateralizeCredits = false,
-          shouldMaterializeRecommendations = false
-        )
-        .flatMap {
-          case None => Future.successful(None)
-          case Some(item) =>
-            val availabilitiesToSave = item.rawItem.availability match {
-              case Some(value) =>
-                val withoutRemovalsAndDupes = value.filterNot(availability => {
-                  removalAvailabilities.exists(
-                    EsAvailability.availabilityEquivalent(_, availability)
-                  ) || newAvailabilities.exists(
-                    EsAvailability.availabilityEquivalent(_, availability)
+          itemLookup
+            .lookupItem(
+              Left(itemId),
+              None,
+              shouldMateralizeCredits = false,
+              shouldMaterializeRecommendations = false
+            )
+            .flatMap {
+              case None => Future.successful(None)
+              case Some(item) =>
+                val availabilitiesToSave = item.rawItem.availability match {
+                  case Some(value) =>
+                    val withoutRemovalsAndDupes =
+                      value.filterNot(availability => {
+                        removalAvailabilities.exists(
+                          EsAvailability.availabilityEquivalent(_, availability)
+                        ) || newAvailabilities.exists(
+                          EsAvailability.availabilityEquivalent(_, availability)
+                        )
+                      })
+
+                    withoutRemovalsAndDupes ++ newAvailabilities
+
+                  case None =>
+                    newAvailabilities
+                }
+
+                val existingExternalIds = item.rawItem.externalIdsGrouped
+                val newExternalIds = externalIdsById
+                  .get(itemId)
+                  .map(newExternalId => {
+                    existingExternalIds.updated(externalSource, newExternalId)
+                  })
+                  .getOrElse(existingExternalIds)
+                  .map {
+                    case (source, id) => EsExternalId(source, id)
+                  }
+
+                itemUpdateQueue.queueItemUpdate(
+                  id = item.rawItem.id,
+                  itemType = item.rawItem.`type`,
+                  doc = item.rawItem
+                    .copy(
+                      availability = Some(availabilitiesToSave.toList),
+                      external_ids = Some(newExternalIds.toList)
+                    )
+                    .asJson,
+                  denorm = Some(
+                    EsIngestItemDenormArgs(
+                      needsDenorm = true,
+                      cast = false,
+                      crew = false
+                    )
                   )
-                })
-
-                withoutRemovalsAndDupes ++ newAvailabilities
-
-              case None =>
-                newAvailabilities
+                )
             }
+        })
 
-            val existingExternalIds = item.rawItem.externalIdsGrouped
-            val newExternalIds = externalIdsById
-              .get(itemId)
-              .map(newExternalId => {
-                existingExternalIds.updated(externalSource, newExternalId)
-              })
-              .getOrElse(existingExternalIds)
-              .map {
-                case (source, id) => EsExternalId(source, id)
-              }
-
-            itemUpdater
-              .update(
-                item.rawItem
-                  .copy(
-                    availability = Some(availabilitiesToSave.toList),
-                    external_ids = Some(newExternalIds.toList)
-                  )
-              )
-              .map(Some(_))
-        }
-    })
-
-    Future.sequence(updates).map(_ => {})
+        Future
+          .sequence(updates)
+          .recover {
+            case NonFatal(e) =>
+              logger.error(s"Error while handling batch. ${if (shouldRetry) "Scheduling for retry"
+              else ""}", e)
+              if (shouldRetry) batch.toSet else Set()
+          }
+          .map(_ => Set.empty[UUID])
+      })
+      .foldLeft(Set.empty[UUID])(_ ++ _)
+      .flatMap {
+        case Seq() => Future.unit
+        case failures if shouldRetry =>
+          saveAvailabilities(
+            newAvailabilities
+              .filter(update => failures.contains(update.esItem.id)),
+            availabilitiesToRemove
+              .filter(update => failures.contains(update.esItem.id)),
+            args,
+            shouldRetry = false
+          )
+        case failures =>
+          logger.warn(s"${failures.size} permanently failed")
+          Future.unit
+      }
   }
 
   protected def getNetworksOrExit(): Set[StoredNetwork] = {
