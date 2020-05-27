@@ -79,12 +79,10 @@ export default function NetworkSelect(props: Props) {
       // If network isn't filtered yet, add it to current filter
       if (!selectedNetworks.includes(value)) {
         newSelectedNetworks = [...selectedNetworks, value];
-        console.log(newSelectedNetworks);
       } else {
         newSelectedNetworks = selectedNetworks.filter(
           networkId => networkId !== value,
         );
-        console.log(newSelectedNetworks);
       }
     } else {
       // User selected 'All', reset genre filter
