@@ -1,3 +1,5 @@
 *.jsonlines
 *.json
 *.jl
+
+FULL_VERSION
