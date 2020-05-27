@@ -15,4 +15,5 @@ echo "Running spider $1 and outputting to $formatted_name"
 scrapy crawl "$1" \
   -o "$formatted_name" \
   --set LOG_ENABLED=False \
+  --set JSON_LOGGING=True \
   --set LOG_FORMATTER='crawlers.logformatter.LogFormatter'

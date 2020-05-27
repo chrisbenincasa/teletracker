@@ -135,13 +135,11 @@ class ShowtimeSpider(BaseSitemapSpider):
 
             item['seasons'].append(season)
 
-            self.log('{}'.format(episode_links))
-
             yield self._next_episode_request(item=item, base_url=response.meta['base_url'],
                                              seasons_left=response.meta['seasons_left'], episodes_left=episode_links)
 
         else:
-            print("no page details")
+            self.log("no page details")
             yield self._next_season_request(item=item, base_url=response.meta['base_url'],
                                             seasons_left=response.meta['seasons_left'])
 

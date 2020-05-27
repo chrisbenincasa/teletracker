@@ -2,5 +2,7 @@
   "crawler_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/crawlers",
   "hbo_catalog_crawler_version": "latest",
   "hulu_catalog_crawler_version": "latest",
-  "netflix_catalog_crawler_version": "latest"
+  "netflix_catalog_crawler_version": "latest",
+  "disneyplus_catalog_crawler_version": "latest",
+  "showtime_catalog_crawler_version": "latest"
 }
