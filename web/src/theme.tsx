@@ -5,6 +5,13 @@ import { hexToRGB } from './utils/style-utils';
 // https://material-ui.com/customization/typography/#responsive-font-sizes
 export default responsiveFontSizes(
   createMuiTheme({
+    overrides: {
+      MuiChip: {
+        root: {
+          borderRadius: 8,
+        },
+      },
+    },
     palette: {
       primary: {
         main: '#00838f',

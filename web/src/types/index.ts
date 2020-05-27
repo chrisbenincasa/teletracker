@@ -93,7 +93,9 @@ export type NetworkType =
   | 'hbo-now'
   | 'amazon-prime-video'
   | 'amazon-video'
-  | 'hulu';
+  | 'hulu'
+  | 'disney-plus'
+  | 'hbo-max';
 
 export function isNetworkType(s: string): s is NetworkType {
   const allowed = [
@@ -104,6 +106,8 @@ export function isNetworkType(s: string): s is NetworkType {
     'amazon-prime-video',
     'amazon-video',
     'hulu',
+    'disney-plus',
+    'hbo-max',
   ];
 
   return allowed.includes(s);
@@ -113,10 +117,22 @@ export const networkToPrettyName: { readonly [K in NetworkType]?: string } = {
   netflix: 'Netflix',
   'netflix-kids': 'Netflix Kids',
   'hbo-go': 'HBO Go',
-  'hbo-now': 'HBO Now',
+  'hbo-now': 'HBO',
   'amazon-prime-video': 'Prime Video',
   'amazon-video': 'Amazon Video',
   hulu: 'Hulu',
+  'disney-plus': 'Disney Plus',
+  'hbo-max': 'HBO Max',
+};
+
+export const networkToColor: { readonly [K in NetworkType]?: string } = {
+  netflix: '#000',
+  'hbo-now': '#fff',
+  'amazon-video': '#fff',
+  hulu: '#1ce783',
+  'disney-plus': '#1a1d29',
+  'hbo-max': '#fff',
+  'hbo-go': '#fff',
 };
 
 export interface ListConfiguration {

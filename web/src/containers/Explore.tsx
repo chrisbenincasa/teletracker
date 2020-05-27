@@ -142,22 +142,13 @@ function Explore() {
     }
   }, [width]);
 
-  const loadPopular = (
-    passBookmark: boolean,
-    firstRun?: boolean,
-    compensate?: number,
-  ) => {
+  const loadPopular = (passBookmark: boolean, compensate?: number) => {
     if (!loading) {
       let numberFeaturedItems: number = getNumberFeaturedItems();
 
       retrievePopularFromServer({
         bookmark: passBookmark ? popularBookmark : undefined,
-        limit:
-          calculateLimit(
-            width,
-            DEFAULT_ROWS,
-            firstRun ? numberFeaturedItems : 0,
-          ) + (compensate || 0),
+        limit: calculateLimit(width, DEFAULT_ROWS) + (compensate || 0),
         filters,
       });
     }
@@ -203,7 +194,7 @@ function Explore() {
 
     // Require that there be at least 2 full rows before displaying Featured items.
     const featuredRequiredItems = calculateLimit(width, 2, numberFeaturedItems);
-    const itemsInRows = DEFAULT_POPULAR_LIMIT - numberFeaturedItems;
+    const itemsInRows = DEFAULT_POPULAR_LIMIT; // - numberFeaturedItems;
     const itemsPerRowForWidth = itemsPerRow(width) || TOTAL_COLUMNS;
     const hangerItems = itemsInRows % itemsPerRowForWidth;
     const missingItems =
@@ -235,7 +226,7 @@ function Explore() {
     // We only want to fetch missing items if this is the SSR load
     // and we need to fill out space at the bottom
     if (popular?.length === DEFAULT_POPULAR_LIMIT && missingItems > 0) {
-      loadPopular(true, false, missingItems);
+      loadPopular(true, missingItems);
     }
   }, [popular, thingsById, width, theme, featuredItemsIndex]);
 
@@ -249,7 +240,7 @@ function Explore() {
   };
 
   const [debouncedLoadMore] = useDebouncedCallback(() => {
-    loadPopular(true, false);
+    loadPopular(true);
   }, 250);
 
   const loadMoreResults = useCallback(() => {
@@ -264,7 +255,7 @@ function Explore() {
 
   useEffect(() => {
     if (!popular) {
-      loadPopular(false, true);
+      loadPopular(false);
     } else {
       setNeedsNewFeatured(true);
     }
@@ -276,7 +267,7 @@ function Explore() {
 
   useFilterLoadEffect(
     () => {
-      loadPopular(false, true);
+      loadPopular(false);
     },
     state => state.popular.currentFilters,
   );
