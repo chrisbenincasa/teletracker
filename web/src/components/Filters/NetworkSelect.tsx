@@ -9,6 +9,7 @@ import {
 import { NetworkType, networkToColor } from '../../types';
 import { FilterContext } from './FilterContext';
 import _ from 'lodash';
+import { getLogoUrl } from '../../utils/image-helper';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -35,6 +36,10 @@ const useStyles = makeStyles((theme: Theme) =>
     networkIcon: {
       width: 48,
       maxHeight: 24,
+    },
+    networkIconWrapper: {
+      padding: '1px 5px',
+      borderRadius: 8,
     },
     selectedChip: {
       margin: theme.spacing(0.25),
@@ -120,15 +125,15 @@ export default function NetworkSelect(props: Props) {
           className={classes.chip}
           icon={
             <div
+              className={classes.networkIconWrapper}
               style={{
                 padding: '3px 6px',
                 backgroundColor: networkToColor['netflix'],
-                borderRadius: 8,
               }}
             >
               <img
                 className={classes.networkIcon}
-                src={`/images/logos/netflix/netflix-full.svg`}
+                src={getLogoUrl('netflix')}
                 alt="Netflix logo"
               />
             </div>
@@ -143,21 +148,22 @@ export default function NetworkSelect(props: Props) {
           className={classes.chip}
           icon={
             <div
+              className={classes.networkIconWrapper}
               style={{
                 backgroundColor: networkToColor['hulu'],
-                borderRadius: 8,
+                padding: 0,
               }}
             >
               <img
                 className={classes.networkIcon}
-                src={`/images/logos/hulu/hulu-full.svg`}
+                src={getLogoUrl('hulu')}
                 alt="Hulu logo"
               />
             </div>
           }
         />
         <Chip
-          key={'hbo'}
+          key={'hbo-now'}
           onClick={() => updateNetworks('networks', 'hbo-now')}
           size="medium"
           color={isHboSelected ? 'primary' : 'secondary'}
@@ -165,15 +171,14 @@ export default function NetworkSelect(props: Props) {
           className={classes.chip}
           icon={
             <div
+              className={classes.networkIconWrapper}
               style={{
-                padding: '1px 5px',
                 backgroundColor: networkToColor['hbo-now'],
-                borderRadius: 8,
               }}
             >
               <img
                 className={classes.networkIcon}
-                src={`/images/logos/hbo/hbo-full.svg`}
+                src={getLogoUrl('hbo-now')}
                 alt="HBO logo"
               />
             </div>
@@ -188,15 +193,14 @@ export default function NetworkSelect(props: Props) {
           className={classes.chip}
           icon={
             <div
+              className={classes.networkIconWrapper}
               style={{
-                padding: '1px 5px',
                 backgroundColor: networkToColor['disney-plus'],
-                borderRadius: 8,
               }}
             >
               <img
                 className={classes.networkIcon}
-                src={`/images/logos/disney-plus/disney-plus-full.svg`}
+                src={getLogoUrl('disney-plus')}
                 alt="Disney Plus logo"
               />
             </div>
@@ -211,15 +215,14 @@ export default function NetworkSelect(props: Props) {
           className={classes.chip}
           icon={
             <div
+              className={classes.networkIconWrapper}
               style={{
-                padding: '1px 5px',
                 backgroundColor: networkToColor['hbo-max'],
-                borderRadius: 8,
               }}
             >
               <img
                 className={classes.networkIcon}
-                src={`/images/logos/hbo-max/hbo-max-full.svg`}
+                src={getLogoUrl('hbo-max')}
                 alt="HBO Max logo"
               />
             </div>
@@ -234,15 +237,14 @@ export default function NetworkSelect(props: Props) {
           className={classes.chip}
           icon={
             <div
+              className={classes.networkIconWrapper}
               style={{
-                padding: '1px 5px',
                 backgroundColor: networkToColor['amazon-video'],
-                borderRadius: 8,
               }}
             >
               <img
                 className={classes.networkIcon}
-                src={`/images/logos/amazon-video/amazon-video-full.svg`}
+                src={getLogoUrl('amazon-video')}
                 alt="Amazon Video logo"
               />
             </div>

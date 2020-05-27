@@ -27,6 +27,7 @@ import { sortOptionToName } from './SortToggle';
 import { FilterContext } from './FilterContext';
 import { useGenres } from '../../hooks/useStateMetadata';
 import produce from 'immer';
+import { getLogoUrl } from '../../utils/image-helper';
 
 const useStyles = makeStyles((theme: Theme) => ({
   activeFiltersContainer: {
@@ -307,9 +308,7 @@ export default function ActiveFilters(props: Props) {
                 >
                   <img
                     className={classes.networkIcon}
-                    src={`/images/logos/${
-                      network === 'hbo-now' ? 'hbo' : network
-                    }/${network === 'hbo-now' ? 'hbo' : network}-full.svg`}
+                    src={getLogoUrl(network)}
                     alt={network}
                   />
                 </div>

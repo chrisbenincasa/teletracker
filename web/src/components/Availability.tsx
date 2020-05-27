@@ -17,6 +17,7 @@ import { networkToColor, OfferType } from '../types';
 import useStateSelector from '../hooks/useStateSelector';
 import selectItem from '../selectors/selectItem';
 import { collect } from '../utils/collection-utils';
+import { getLogoUrl } from '../utils/image-helper';
 
 const useStyles = makeStyles((theme: Theme) => ({
   availabilityContainer: {
@@ -180,12 +181,7 @@ const Availability = (props: Props) => {
             return;
           }
 
-          const logoUri =
-            '/images/logos/' +
-            network!.slug +
-            '/' +
-            network!.slug +
-            '-full.svg';
+          const logoUri = getLogoUrl(network!.slug, true);
           const offersOfType = _.filter(availability.offers, { offerType });
 
           if (offersOfType.length === 0) {
