@@ -1,9 +1,12 @@
 import json
 import logging
 import re
+import sys
 
-from scrapy.spiders import Rule
+import boto3
+import scrapy
 from scrapy.linkextractors import LinkExtractor
+from scrapy.spiders import Rule
 
 from crawlers.base_spider import BaseCrawlSpider
 from crawlers.items import NetflixItem, NetflixItemSeason, NetflixItemEpisode
@@ -38,8 +41,12 @@ class NetflixSpider(BaseCrawlSpider):
     ]
 
     custom_settings = {
-        'DOWNLOAD_DELAY': 0.75,
+        'DOWNLOAD_DELAY': 1,
     }
+
+    def __init__(self, json_logging=True, *a, **kw):
+        super().__init__(json_logging, *a, **kw)
+        self._s3_client = boto3.client('s3')
 
     rules = (
         Rule(LinkExtractor(allow=(r'(https://www.netflix.com)?/title/\d+',)),
@@ -47,6 +54,39 @@ class NetflixSpider(BaseCrawlSpider):
         Rule(LinkExtractor(
             allow=r'(https://www.netflix.com)?/browse/genre/\d+'), follow=True)
     )
+
+    def start_requests(self):
+        for url in self.start_urls:
+            yield scrapy.Request(url, dont_filter=True)
+
+        try:
+            response = self._s3_client.list_objects_v2(
+                Bucket='teletracker-data-us-west-2',
+                Prefix='scrape-results/netflix/catalog'
+            )
+
+            contents_sorted = list(filter(lambda item: item['Size'] > 0,
+                                          sorted(response['Contents'], key=lambda item: item['LastModified'],
+                                                 reverse=True)))
+
+            if len(contents_sorted) > 0:
+                with open('/tmp/prev_netflix_catalog.jl', 'wb') as f:
+                    self._s3_client.download_fileobj('teletracker-data-us-west-2', contents_sorted[0]['Key'], f)
+
+            with open('/tmp/prev_netflix_catalog.jl', 'r') as f:
+                while True:
+                    line = f.readline()
+                    if not line:
+                        break
+                    loaded = json.loads(line.strip())
+                    try:
+                        yield scrapy.Request('https://www.netflix.com/title/{}'.format(loaded['id']), dont_filter=True)
+                    except KeyError:
+                        pass
+        except:
+            e = sys.exc_info()[0]
+            self.log('Error while attempting to seed urls from previous dump: {}'.format(e))
+
 
     def parse_item(self, response):
         id = response.url.split('/')[-1]
