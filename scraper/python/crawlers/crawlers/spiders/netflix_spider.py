@@ -17,7 +17,7 @@ def _safe_to_int(value):
 
 
 season_number_re = re.compile(r'.*\s+(\d+)')
-limited_series_re = re.compile('Limited Series')
+special_series_title_re = re.compile('(Limited Series|Collection|Special)')
 
 
 class NetflixSpider(BaseCrawlSpider):
@@ -210,7 +210,7 @@ class NetflixSpider(BaseCrawlSpider):
                     seasons.append({"name": single_season,
                                     "num": int(match.group(1)) if match else None})
                 else:
-                    match = limited_series_re.search(single_season)
+                    match = special_series_title_re.search(single_season)
                     if match:
                         seasons.append({"name": single_season,
                                         "num": 1})
