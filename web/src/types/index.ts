@@ -131,6 +131,7 @@ export const networkToColor: { readonly [K in NetworkType]?: string } = {
   hulu: '#1ce783',
   'disney-plus': '#1a1d29',
   'hbo-max': '#fff',
+  'hbo-go': '#fff',
 };
 
 export interface ListConfiguration {

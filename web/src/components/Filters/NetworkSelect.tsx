@@ -173,7 +173,7 @@ export default function NetworkSelect(props: Props) {
             >
               <img
                 className={classes.networkIcon}
-                src={`/images/logos/hbo-now/hbo-now-full.svg`}
+                src={`/images/logos/hbo/hbo-full.svg`}
                 alt="HBO logo"
               />
             </div>

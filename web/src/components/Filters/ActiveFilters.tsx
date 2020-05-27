@@ -307,7 +307,9 @@ export default function ActiveFilters(props: Props) {
                 >
                   <img
                     className={classes.networkIcon}
-                    src={`/images/logos/${network}/${network}-full.svg`}
+                    src={`/images/logos/${
+                      network === 'hbo-now' ? 'hbo' : network
+                    }/${network === 'hbo-now' ? 'hbo' : network}-full.svg`}
                     alt={network}
                   />
                 </div>
