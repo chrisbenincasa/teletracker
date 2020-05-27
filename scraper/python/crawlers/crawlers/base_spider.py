@@ -58,6 +58,7 @@ class BaseCrawlSpider(scrapy.spiders.CrawlSpider):
         settings = crawler.settings
         spider = cls(settings.getbool('JSON_LOGGING'), *args, **kwargs)
         spider._set_crawler(crawler)
+        spider._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
         return spider
 
 
