@@ -17,19 +17,6 @@ import {
   Tooltip,
   Typography,
 } from '@material-ui/core';
-<<<<<<< HEAD
-=======
-import {
-  Delete,
-  Edit,
-  OfflineBolt,
-  Public,
-  Settings,
-} from '@material-ui/icons';
-import _ from 'lodash';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import InfiniteScroll from 'react-infinite-scroller';
->>>>>>> 92296f59... more cleaning
 import {
   Delete,
   Edit,
@@ -51,7 +38,6 @@ import useStateSelector, {
 import { useWithUserContext } from '../hooks/useWithUser';
 import { useDispatchAction } from '../hooks/useDispatchAction';
 import { hookDeepEqual } from '../hooks/util';
-<<<<<<< HEAD
 import WithItemFilters from '../components/Filters/FilterContext';
 import selectList from '../selectors/selectList';
 import useStyles from '../components/ListDetail/ListDetail.styles';
@@ -63,82 +49,6 @@ import useMemoCompare from '../hooks/useMemoCompare';
 import { usePrevious } from '../hooks/usePrevious';
 import SmartListDialog from '../components/Dialogs/SmartListDialog';
 import PublicListDialog from '../components/Dialogs/PublicListDialog';
-=======
-import { FilterContext } from '../components/Filters/FilterContext';
-import useFilterLoadEffect from '../hooks/useFilterLoadEffect';
-import { filterParamsEqual } from '../utils/changeDetection';
-import SmartListDialog from '../components/Dialogs/SmartListDialog';
-import PublicListDialog from '../components/Dialogs/PublicListDialog';
-
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    listHeader: {
-      margin: theme.spacing(2, 0),
-      display: 'flex',
-      flex: '1 0 auto',
-      alignItems: 'center',
-    },
-    listName: {
-      display: 'flex',
-      textDecoration: 'none',
-      '&:focus, &:hover, &:visited, &:link &:active': {
-        color: theme.palette.text.primary,
-      },
-    },
-    listNameContainer: {
-      display: 'flex',
-      flex: '1 0 auto',
-    },
-    loadingCircle: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 200,
-      height: '100%',
-    },
-    filters: {
-      display: 'flex',
-      flexDirection: 'row',
-      marginBottom: theme.spacing(1),
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-    },
-    formControl: {
-      margin: theme.spacing(1),
-      minWidth: 120,
-      display: 'flex',
-    },
-    icon: {
-      margin: theme.spacing(0, 1),
-    },
-    listContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      padding: theme.spacing(0, 2),
-      width: '100%',
-    },
-    noContent: {
-      margin: theme.spacing(5),
-      width: '100%',
-    },
-    root: {
-      display: 'flex',
-      flexGrow: 1,
-    },
-    textField: {
-      margin: theme.spacing(0, 1),
-      width: 200,
-    },
-    title: {
-      backgroundColor: theme.palette.primary.main,
-      padding: theme.spacing(1, 2),
-    },
-    urlField: {
-      margin: theme.spacing(1),
-    },
-  }),
-);
->>>>>>> 92296f59... more cleaning
 
 interface ListDetailDialogProps {
   list?: List;
@@ -158,10 +68,7 @@ function ListDetail(props: ListDetailProps) {
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [publicListDialogOpen, setPublicListDialogOpen] = useState(false);
-<<<<<<< HEAD
   const [publicListOptionsOpen, setPublicListOptionsOpen] = useState(false);
-=======
->>>>>>> 92296f59... more cleaning
   const [smartListDialogOpen, setSmartListDialogOpen] = useState(false);
   const [publicList, setPublicList] = useState(false);
   const [deleteOnWatch, setDeleteOnWatch] = useState(false);
@@ -196,38 +103,7 @@ function ListDetail(props: ListDetailProps) {
   const [showFilter, setShowFilter] = useState(false);
 
   const dispatchUpdateList = useDispatchAction(updateList);
-<<<<<<< HEAD
   const dispatchGetList = useDispatchAction(getList);
-=======
-  const dispatchRetrieveList = useDispatchAction(ListRetrieveInitiated);
-
-  const handleModalClose = useCallback(() => {
-    setSmartListDialogOpen(false);
-    setPublicListDialogOpen(false);
-  }, []);
-
-  const openSmartListDialog = useCallback(() => {
-    setSmartListDialogOpen(true);
-  }, []);
-
-  const openPublicListDialog = useCallback(() => {
-    setPublicListDialogOpen(true);
-  }, []);
-
-  const retrieveList = (initialLoad: boolean, force: boolean = true) => {
-    dispatchRetrieveList({
-      listId: listId,
-      force,
-      limit: calculateLimit(width, 3),
-      bookmark: listBookmark,
-      ...makeListFilters(initialLoad, filters, listFilters),
-      sort: filters.sortOrder,
-      itemTypes: filters.itemTypes,
-      genres: filters.genresFilter,
-      networks: filters.networks,
-    });
-  };
->>>>>>> 92296f59... more cleaning
 
   const handleModalClose = useCallback(() => {
     setSmartListDialogOpen(false);
@@ -515,16 +391,12 @@ function ListDetail(props: ListDetailProps) {
               label="Automatically remove items after watching"
             />
           </MenuItem>
-<<<<<<< HEAD
           <MenuItem onClick={() => setPublicListOptionsOpen(true)}>
-=======
-          {/* <MenuItem onClick={() => setPublicListDialogOpen(true)}>
->>>>>>> b61fd0d8... commented out make list public
             <ListItemIcon>
               <Public />
             </ListItemIcon>
             {`Make list ${list.isPublic ? 'Private' : 'Public'}`}
-          </MenuItem> */}
+          </MenuItem>
         </Menu>
       </div>
     );
