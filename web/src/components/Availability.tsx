@@ -244,7 +244,7 @@ const Availability = (props: Props) => {
   return networks ? (
     <div className={classes.availabilityWrapper}>
       <Typography color="inherit" variant="h5" className={classes.header}>
-        Availability
+        Where to watch
       </Typography>
       {hasAnyAvailabilities ? (
         <React.Fragment>
