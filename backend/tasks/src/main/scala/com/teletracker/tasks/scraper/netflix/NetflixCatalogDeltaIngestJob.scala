@@ -34,7 +34,7 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   protected val itemUpdater: ItemUpdater,
   elasticsearchLookup: ElasticsearchLookup,
   elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory)
-    extends IngestDeltaJob[NetflixCatalogItem](elasticsearchLookup) {
+    extends IngestDeltaJob[NetflixScrapedCatalogItem](elasticsearchLookup) {
 
   override protected val networkNames: Set[String] = Set("netflix")
   override protected val externalSource: ExternalSource = ExternalSource.Netflix
@@ -55,7 +55,7 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   override protected def createAvailabilities(
     networks: Set[StoredNetwork],
     itemId: UUID,
-    scrapedItem: NetflixCatalogItem,
+    scrapedItem: NetflixScrapedCatalogItem,
     isAvailable: Boolean
   ): List[EsAvailability] = {
     List(PresentationType.SD, PresentationType.HD).flatMap(presentationType => {
@@ -80,8 +80,8 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
 
   override protected def handleNonMatches(
     args: IngestDeltaJobArgs,
-    nonMatches: List[NetflixCatalogItem]
-  ): Future[List[NonMatchResult[NetflixCatalogItem]]] = {
+    nonMatches: List[NetflixScrapedCatalogItem]
+  ): Future[List[NonMatchResult[NetflixScrapedCatalogItem]]] = {
     fallbackMatcher
       .handleNonMatches(
         args,
@@ -105,6 +105,6 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def uniqueKey(item: NetflixCatalogItem): String =
+  override protected def uniqueKey(item: NetflixScrapedCatalogItem): String =
     item.externalId.get
 }

@@ -7,6 +7,7 @@ import io.circe.generic.JsonCodec
 
 @JsonCodec
 case class DisneyPlusCatalogItem(
+  id: String,
   name: String,
   releaseDate: Option[Int],
   `type`: ItemType,
