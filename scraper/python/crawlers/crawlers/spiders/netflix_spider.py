@@ -67,14 +67,14 @@ class NetflixSpider(BaseCrawlSpider):
         if schema_org_json and 'director' in schema_org_json:
             try:
                 director = schema_org_json['director'][0]['name']
-            except KeyError:
+            except (KeyError, IndexError):
                 pass
 
         creator = None
         if schema_org_json and 'creator' in schema_org_json:
             try:
                 creator = schema_org_json['creator'][0]['name']
-            except KeyError:
+            except (KeyError, IndexError):
                 pass
 
         item_type = self._extract_type(schema_org_json)
@@ -116,10 +116,11 @@ class NetflixSpider(BaseCrawlSpider):
     def _extract_release_year(self, response):
         release_year = response.xpath(
             '//*[@data-uia="item-year"]/text()').get()
-        try:
-            return int(release_year.strip())
-        except ValueError:
-            return None
+        if release_year:
+            try:
+                return int(release_year.strip())
+            except ValueError:
+                return None
 
     def _extract_type(self, schema_org_json):
         if schema_org_json and '@type' in schema_org_json:
