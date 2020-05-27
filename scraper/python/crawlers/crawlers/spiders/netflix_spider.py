@@ -1,4 +1,3 @@
-import scrapy
 import json
 import logging
 import re
@@ -33,7 +32,7 @@ class NetflixSpider(BaseCrawlSpider):
     ]
 
     custom_settings = {
-        'DOWNLOAD_DELAY': 1,
+        'DOWNLOAD_DELAY': 0.75,
     }
 
     rules = (
@@ -47,30 +46,36 @@ class NetflixSpider(BaseCrawlSpider):
         id = response.url.split('/')[-1]
         schema_org_json = self._attempt_to_load_schema_json(id, response)
 
-        title = schema_org_json['name'] if schema_org_json and schema_org_json['name'] else self._extract_title(
+        title = schema_org_json['name'] if schema_org_json and 'name' in schema_org_json else self._extract_title(
             response)
 
-        description = schema_org_json['description'] if schema_org_json and schema_org_json[
-            'description'] else self._extract_description(
+        description = schema_org_json[
+            'description'] if schema_org_json and 'description' in schema_org_json else self._extract_description(
             response)
 
-        content_rating = schema_org_json['contentRating'] if schema_org_json and schema_org_json[
-            'contentRating'] else self._extract_content_rating(
+        content_rating = schema_org_json['contentRating'] if schema_org_json and 'contentRating' in schema_org_json \
+            else self._extract_content_rating(
             response
         )
 
-        if schema_org_json and schema_org_json['actors']:
+        if schema_org_json and 'actors' in schema_org_json:
             actors = [actor['name'] for actor in schema_org_json['actors']]
         else:
             actors = self._extract_actors(response)
 
         director = None
-        if schema_org_json and schema_org_json['director']:
-            director = schema_org_json['director'][0]['name']
+        if schema_org_json and 'director' in schema_org_json:
+            try:
+                director = schema_org_json['director'][0]['name']
+            except KeyError:
+                pass
 
         creator = None
-        if schema_org_json and schema_org_json['creator']:
-            creator = schema_org_json['creator'][0]['name']
+        if schema_org_json and 'creator' in schema_org_json:
+            try:
+                creator = schema_org_json['creator'][0]['name']
+            except KeyError:
+                pass
 
         item_type = self._extract_type(schema_org_json)
 
@@ -117,7 +122,7 @@ class NetflixSpider(BaseCrawlSpider):
             return None
 
     def _extract_type(self, schema_org_json):
-        if schema_org_json and schema_org_json['@type']:
+        if schema_org_json and '@type' in schema_org_json:
             if schema_org_json['@type'] == 'Movie':
                 return 'movie'
             elif schema_org_json['@type'] == 'TVSeries':
