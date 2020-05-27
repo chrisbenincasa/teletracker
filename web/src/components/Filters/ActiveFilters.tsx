@@ -5,6 +5,7 @@ import {
   ItemType,
   ItemTypeEnum,
   networkToPrettyName,
+  networkToColor,
   NetworkType,
   OpenRange,
   SortOptions,
@@ -22,10 +23,11 @@ import { AppState } from '../../reducers';
 import { filterParamsEqual } from '../../utils/changeDetection';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import { useRouter } from 'next/router';
-import { sortOptionToName } from './SortDropdown';
+import { sortOptionToName } from './SortToggle';
 import { FilterContext } from './FilterContext';
 import { useGenres } from '../../hooks/useStateMetadata';
 import produce from 'immer';
+import { getLogoUrl } from '../../utils/image-helper';
 
 const useStyles = makeStyles((theme: Theme) => ({
   activeFiltersContainer: {
@@ -37,8 +39,8 @@ const useStyles = makeStyles((theme: Theme) => ({
     backgroundColor: `${theme.palette.grey[800]}`,
   },
   networkIcon: {
-    width: 20,
-    borderRadius: theme.custom.borderRadius.circle,
+    width: 48,
+    maxHeight: 24,
   },
   resetChip: {
     backgroundColor: theme.custom.palette.cancel,
@@ -297,11 +299,19 @@ export default function ActiveFilters(props: Props) {
             <Chip
               key={network}
               icon={
-                <img
-                  className={classes.networkIcon}
-                  src={`/images/logos/${network}/icon.jpg`}
-                  alt={network}
-                />
+                <div
+                  style={{
+                    padding: '1px 5px',
+                    backgroundColor: networkToColor[network],
+                    borderRadius: 8,
+                  }}
+                >
+                  <img
+                    className={classes.networkIcon}
+                    src={getLogoUrl(network)}
+                    alt={network}
+                  />
+                </div>
               }
               className={classes.chip}
               label={networkToPrettyName[network]}

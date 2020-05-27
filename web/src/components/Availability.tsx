@@ -13,10 +13,11 @@ import { ItemAvailability, ItemAvailabilityOffer } from '../types/v2';
 import { Item } from '../types/v2/Item';
 import { useNetworks } from '../hooks/useStateMetadata';
 import { deepLinkForId, Platform } from '../utils/availability-utils';
-import { OfferType } from '../types';
+import { networkToColor, OfferType } from '../types';
 import useStateSelector from '../hooks/useStateSelector';
 import selectItem from '../selectors/selectItem';
 import { collect } from '../utils/collection-utils';
+import { getLogoUrl } from '../utils/image-helper';
 
 const useStyles = makeStyles((theme: Theme) => ({
   availabilityContainer: {
@@ -86,6 +87,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   networkLogo: {
     width: 60,
     borderRadius: 4,
+    backgroundSize: '80%',
   },
   platform: {
     display: 'flex',
@@ -179,7 +181,7 @@ const Availability = (props: Props) => {
             return;
           }
 
-          const logoUri = '/images/logos/' + network!.slug + '/icon.jpg';
+          const logoUri = getLogoUrl(network!.slug, true);
           const offersOfType = _.filter(availability.offers, { offerType });
 
           if (offersOfType.length === 0) {
@@ -224,6 +226,7 @@ const Availability = (props: Props) => {
                   className={classes.networkLogo}
                   image={logoUri}
                   title={network!.name}
+                  style={{ backgroundColor: networkToColor[network!.slug] }}
                 />
                 <CardContent className={classes.cardContent}>
                   <Typography>{`${cleanOfferTitle} ${
@@ -241,7 +244,7 @@ const Availability = (props: Props) => {
   return networks ? (
     <div className={classes.availabilityWrapper}>
       <Typography color="inherit" variant="h5" className={classes.header}>
-        Availability
+        Where to watch
       </Typography>
       {hasAnyAvailabilities ? (
         <React.Fragment>
