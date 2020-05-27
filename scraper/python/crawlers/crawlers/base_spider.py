@@ -20,7 +20,10 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
             log_record['timestamp'] = now
 
         if not log_record.get('level'):
-            log_record['level'] = logging.getLevelName(logging.INFO)
+            if record.levelname:
+                log_record['level'] = record.levelname
+            else:
+                log_record['level'] = logging.getLevelName(logging.INFO)
         else:
             log_record['level'] = log_record.get('level').upper()
 

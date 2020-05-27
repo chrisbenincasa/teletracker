@@ -28,7 +28,13 @@ class NetflixSpider(BaseCrawlSpider):
     start_urls = [
         'https://www.netflix.com/browse/genre/839338',
         'https://www.netflix.com/browse/genre/34399',
-        'https://www.netflix.com/browse/genre/83'
+        'https://www.netflix.com/browse/genre/83',
+        'https://www.netflix.com/browse/genre/6548',
+        'https://www.netflix.com/browse/genre/1365',
+        'https://www.netflix.com/browse/genre/2243108',
+        'https://www.netflix.com/browse/genre/10673',
+        'https://www.netflix.com/browse/genre/52117',
+        'https://www.netflix.com/browse/genre/6721',
     ]
 
     custom_settings = {
@@ -39,7 +45,7 @@ class NetflixSpider(BaseCrawlSpider):
         Rule(LinkExtractor(allow=(r'(https://www.netflix.com)?/title/\d+',)),
              callback='parse_item', follow=True),
         Rule(LinkExtractor(
-            allow=r'https://www.netflix.com/browse/genre/\d+'), follow=True)
+            allow=r'(https://www.netflix.com)?/browse/genre/\d+'), follow=True)
     )
 
     def parse_item(self, response):
