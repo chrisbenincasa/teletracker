@@ -1,8 +1,8 @@
 {
   "crawler_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/crawlers",
-  "hbo_catalog_crawler_version": "1.0-1590596168.53a6ebcd",
-  "hulu_catalog_crawler_version": "1.0-1590596168.53a6ebcd",
-  "netflix_catalog_crawler_version": "1.0-1590610829.035b27c7",
-  "disneyplus_catalog_crawler_version": "1.0-1590596168.53a6ebcd",
-  "showtime_catalog_crawler_version": "1.0-1590596168.53a6ebcd"
+  "hbo_catalog_crawler_version": "1.0-1590676263.baaf7e7d",
+  "hulu_catalog_crawler_version": "1.0-1590676263.baaf7e7d",
+  "netflix_catalog_crawler_version": "1.0-1590676263.baaf7e7d",
+  "disneyplus_catalog_crawler_version": "1.0-1590676263.baaf7e7d",
+  "showtime_catalog_crawler_version": "1.0-1590676263.baaf7e7d"
 }
