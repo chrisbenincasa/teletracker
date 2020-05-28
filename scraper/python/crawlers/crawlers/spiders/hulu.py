@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-import scrapy
 import json
 import re
 
 from crawlers.base_spider import BaseSitemapSpider
 from crawlers.items import HuluItem, HuluEpisodeItem
 
-additional_network_re = re.compile(r'Add\s([A-z]+).\s')
+additional_network_re = re.compile(r'Add\s(.*)\sto.*\.$')
 
 
 class HuluSpider(BaseSitemapSpider):
