@@ -4,7 +4,7 @@ import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
 import { ActionType } from '../../types';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 
 export const USER_SELF_UPDATE_ITEM_TAGS =
   'user/self/update_item_tags/INITIATED';
@@ -54,10 +54,7 @@ export const updateUserActionSaga = function*() {
         payload.value,
       );
 
-      ReactGA.event({
-        category: 'User',
-        action: 'Updated user tags',
-      });
+      logEvent('User', 'Updated user tags');
 
       if (response.ok && payload.lazy) {
         yield put(updateUserItemTagsSuccess(payload));

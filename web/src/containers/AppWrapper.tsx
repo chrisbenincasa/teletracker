@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Toolbar from '../components/Toolbar/Toolbar';
 import { LinearProgress, makeStyles, NoSsr, Theme } from '@material-ui/core';
 import Drawer from '../components/Drawer';
@@ -6,6 +6,8 @@ import Footer from '../components/Footer';
 import { WithUser } from '../hooks/useWithUser';
 import useStateSelector from '../hooks/useStateSelector';
 import _ from 'lodash';
+import { initGA, logPageView } from '../utils/analytics';
+import { useRouter } from 'next/router';
 
 const useStyles = makeStyles((theme: Theme) => ({
   mainContent: {
@@ -33,10 +35,25 @@ interface Props {
   showToolbarSearch?: boolean;
 }
 
+declare global {
+  interface Window {
+    GA_INITIALIZED: boolean;
+  }
+}
+
 export default function AppWrapper(props: Props) {
   const isBooting = useStateSelector(state => state.startup.isBooting);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const classes = useStyles();
+  const nextRouter = useRouter();
+
+  useEffect(() => {
+    if (window && !window.GA_INITIALIZED) {
+      initGA();
+      window.GA_INITIALIZED = true;
+    }
+    logPageView(nextRouter.asPath);
+  }, []);
 
   return (
     <div className={classes.root}>

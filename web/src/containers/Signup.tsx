@@ -11,7 +11,6 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { signupInitiated, signUpWithGoogle } from '../actions/auth';
 import { AppState } from '../reducers';
-import ReactGA from 'react-ga';
 import SignupForm from '../components/Auth/SignupForm';
 import { withRouter } from 'next/router';
 import { WithRouterProps } from 'next/dist/client/with-router';
@@ -56,10 +55,6 @@ class Signup extends Component<Props, State> {
     email: '',
     password: '',
   };
-
-  componentDidMount(): void {
-    ReactGA.pageview(window.location.pathname + window.location.search);
-  }
 
   render() {
     let { isAuthed, classes, router } = this.props;

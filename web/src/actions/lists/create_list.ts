@@ -5,7 +5,7 @@ import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
 import { ListRules } from '../../types';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 import { useDispatchAction } from '../../hooks/useDispatchAction';
 
 export const USER_SELF_CREATE_LIST = 'user/self/create_list/INITIATED';
@@ -53,10 +53,7 @@ export const createNewListSaga = function*() {
         yield put(createListSuccess(response.data!.data));
         yield put(retrieveAllLists({}));
 
-        ReactGA.event({
-          category: 'User',
-          action: 'Created list',
-        });
+        logEvent('User', 'Created list');
       } else {
         // TODO: ERROR
       }
