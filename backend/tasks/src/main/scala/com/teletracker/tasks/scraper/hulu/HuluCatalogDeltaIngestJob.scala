@@ -57,6 +57,14 @@ class HuluCatalogDeltaIngestJob @Inject()(
   override protected def uniqueKey(item: HuluScrapeCatalogItem): String =
     item.externalId.get
 
+  override protected def externalIds(
+    item: HuluScrapeCatalogItem
+  ): Map[ExternalSource, String] = {
+    Map(
+      ExternalSource.Hulu -> uniqueKey(item)
+    )
+  }
+
   override protected def processItemChange(
     before: HuluScrapeCatalogItem,
     after: HuluScrapeCatalogItem

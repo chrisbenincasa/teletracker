@@ -3,6 +3,7 @@ package com.teletracker.common.elasticsearch.async
 import com.teletracker.common.aws.sqs.SqsFifoQueue
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.elasticsearch.async.EsIngestQueue.AsyncItemUpdateRequest
 import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson}
 import com.teletracker.common.pubsub.{
   EsIngestIndex,
@@ -67,6 +68,28 @@ class EsIngestQueue @Inject()(
     )
   }
 
+  def queueItemUpdates(
+    requests: List[AsyncItemUpdateRequest]
+  ): Future[List[EsIngestMessage]] = {
+    val messages = requests.map(request => {
+      EsIngestMessage(
+        operation = EsIngestMessageOperation.Update,
+        update = Some(
+          EsIngestUpdate(
+            index = teletrackerConfig.elasticsearch.items_index_name,
+            id = request.id.toString,
+            itemType = Some(request.itemType),
+            doc = Some(request.doc),
+            script = None,
+            itemDenorm = request.denorm
+          )
+        )
+      ) -> request.id.toString
+    })
+
+    queue.batchQueue(messages)
+  }
+
   def queuePersonInsert(esPerson: EsPerson): Future[Option[EsIngestMessage]] = {
     queue.queue(
       message = EsIngestMessage(
@@ -109,5 +132,12 @@ class EsIngestQueue @Inject()(
       messageGroupId = id.toString // Handle updates for this item in order
     )
   }
+}
 
+object EsIngestQueue {
+  case class AsyncItemUpdateRequest(
+    id: UUID,
+    itemType: ItemType,
+    doc: Json,
+    denorm: Option[EsIngestItemDenormArgs])
 }

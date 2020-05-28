@@ -1,8 +1,9 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.async.EsIngestQueue
+import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{
   EsAvailability,
   EsExternalId,
@@ -102,12 +103,12 @@ abstract class IngestDeltaJobLike[
 
   @Inject
   private[this] var externalIdLookup: ElasticsearchExternalIdLookup.Factory = _
-
   @Inject
   private[this] var fileUtils: FileUtils = _
-
   @Inject
   private[this] var itemUpdateQueue: EsIngestQueue = _
+  @Inject
+  private[this] var esExternalIdMapper: ElasticsearchExternalIdMappingStore = _
 
   protected def s3: S3Client
   protected def itemLookup: ItemLookup
@@ -335,7 +336,15 @@ abstract class IngestDeltaJobLike[
         s"Saving ${allAdds.size + allRemoves.size} availabilities"
       )
 
-      saveAvailabilities(allAdds, allRemoves, parsedArgs, shouldRetry = true)
+      saveExternalIdMappings(allAdds, allRemoves, parsedArgs)
+        .flatMap(_ => {
+          saveAvailabilities(
+            allAdds,
+            allRemoves,
+            parsedArgs,
+            shouldRetry = true
+          )
+        })
         .await()
     } else {
       val today = LocalDate.now()
@@ -424,6 +433,31 @@ abstract class IngestDeltaJobLike[
     val itemsById = items.map(item => uniqueKey(item) -> item).toMap
 
     (items, itemsById)
+  }
+
+  protected def saveExternalIdMappings(
+    newAvailabilities: List[PendingAvailabilityUpdates],
+    availabilitiesToRemove: List[PendingAvailabilityUpdates],
+    args: IngestDeltaJobArgsLike
+  ): Future[Unit] = {
+    val allExternalIdUpdates = (newAvailabilities ++ availabilitiesToRemove)
+      .map(update => {
+        externalIds(update.item).map {
+          case (source, str) =>
+            (EsExternalId(source, str), update.esItem.`type`) -> update.esItem.id
+        }
+      })
+      .foldLeft(Map.empty[(EsExternalId, ItemType), UUID])(_ ++ _)
+
+    if (args.dryRun) {
+      Future.successful(
+        logger.info(
+          s"Would've updated ${allExternalIdUpdates.size} external id mappings"
+        )
+      )
+    } else {
+      esExternalIdMapper.mapExternalIds(allExternalIdUpdates)
+    }
   }
 
   protected def saveAvailabilities(
@@ -583,6 +617,8 @@ abstract class IngestDeltaJobLike[
   ): List[EsAvailability]
 
   protected def uniqueKey(item: T): String
+
+  protected def externalIds(item: T): Map[ExternalSource, String]
 
   override protected def handleMatchResults(
     results: List[MatchResult[T]],

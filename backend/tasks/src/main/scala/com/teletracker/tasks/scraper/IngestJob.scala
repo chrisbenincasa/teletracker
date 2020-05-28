@@ -2,6 +2,10 @@ package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model._
+import com.teletracker.common.elasticsearch.async.EsIngestQueue
+import com.teletracker.common.elasticsearch.async.EsIngestQueue
+import com.teletracker.common.elasticsearch.async.EsIngestQueue.AsyncItemUpdateRequest
+import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{
   EsAvailability,
   EsExternalId,
@@ -12,6 +16,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
+import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.execution.SequentialFutures
@@ -110,6 +115,10 @@ abstract class IngestJob[T <: ScrapedItem](
   private[this] var elasticsearchLookup: ElasticsearchLookup = _
   @Inject
   private[this] var availabilityQueryHelper: AvailabilityQueryHelper = _
+  @Inject
+  private[this] var itemUpdateQueue: EsIngestQueue = _
+  @Inject
+  private[this] var esExternalIdMapper: ElasticsearchExternalIdMappingStore = _
 
   protected def lookupMethod(args: TypedArgs): LookupMethod[T] = {
     val externalIdMatchers = if (args.enableExternalIdMatching) {
@@ -284,45 +293,71 @@ abstract class IngestJob[T <: ScrapedItem](
 
         val newExternalIds = esItem.externalIdsGrouped ++ getExternalIds(item)
 
-        val newItem = esItem.copy(
-          availability = Some(newAvailabilities.toList),
-          external_ids = EsExternalId.fromMap(newExternalIds)
-        )
+        val availabilitiesEqual = newAvailabilities.toSet == esItem.availability
+          .getOrElse(Nil)
+          .toSet
 
-        if (args.dryRun && esItem != newItem) {
-          logger.info(
-            s"Would've updated id = ${newItem.id}:\n ${diff(esItem.asJson, newItem.asJson).asJson.spaces2}"
-          )
-        }
+        val externalIdsEqual = newExternalIds == esItem.externalIdsGrouped
 
-        if (esItem != newItem) {
-          Some(newItem)
-        } else {
+        if (availabilitiesEqual && externalIdsEqual) {
           None
+        } else {
+          val newItem = esItem.copy(
+            availability = Some(newAvailabilities.toList),
+            external_ids = EsExternalId.fromMap(newExternalIds)
+          )
+
+          if (args.dryRun && esItem != newItem) {
+            logger.info(
+              s"Would've updated id = ${newItem.id}:\n ${diff(esItem.asJson, newItem.asJson).asJson.spaces2}"
+            )
+          }
+
+          if (esItem != newItem) {
+            Some(newItem)
+          } else {
+            None
+          }
         }
     }
 
     if (!args.dryRun) {
-      SequentialFutures
-        .serialize(
-          itemsWithNewAvailability.grouped(50).toList
-        )(
-          batch =>
-            Future
-              .sequence(
-                batch
-                  .map(
-                    item =>
-                      itemUpdater.update(item).map(_ => {}).recover {
-                        case NonFatal(e) =>
-                          logger
-                            .error(s"Failed to update item id = ${item.id}", e)
-                      }
-                  )
-              )
-              .map(_ => {})
+      val requests = itemsWithNewAvailability.map(item => {
+        AsyncItemUpdateRequest(
+          id = item.id,
+          itemType = item.`type`,
+          doc = item.asJson,
+          denorm = Some(
+            EsIngestItemDenormArgs(
+              needsDenorm = true,
+              cast = false,
+              crew = false
+            )
+          )
         )
-        .map(_ => {})
+      })
+
+      itemUpdateQueue.queueItemUpdates(requests).map(_ => {})
+//      SequentialFutures
+//        .serialize(
+//          itemsWithNewAvailability.grouped(50).toList
+//        )(
+//          batch =>
+//            Future
+//              .sequence(
+//                batch
+//                  .map(
+//                    item =>
+//                      itemUpdater.update(item).map(_ => {}).recover {
+//                        case NonFatal(e) =>
+//                          logger
+//                            .error(s"Failed to update item id = ${item.id}", e)
+//                      }
+//                  )
+//              )
+//              .map(_ => {})
+//        )
+//        .map(_ => {})
     } else {
       Future.successful {
         logger.info(

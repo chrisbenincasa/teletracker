@@ -107,4 +107,11 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
 
   override protected def uniqueKey(item: NetflixScrapedCatalogItem): String =
     item.externalId.get
+
+  override protected def externalIds(
+    item: NetflixScrapedCatalogItem
+  ): Map[ExternalSource, String] =
+    Map(
+      ExternalSource.Netflix -> uniqueKey(item)
+    )
 }
