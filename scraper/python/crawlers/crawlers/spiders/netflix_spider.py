@@ -56,37 +56,53 @@ class NetflixSpider(BaseCrawlSpider):
     )
 
     def start_requests(self):
+        seed_file_path = self.settings.get('SEED_FILE')
+        if seed_file_path:
+            self.log('Reading seed file {}'.format(seed_file_path), level=logging.INFO)
+            try:
+                for request in self._generate_requests_from_json(seed_file_path, 'manual_seed'):
+                    yield request
+            except:
+                e = sys.exc_info()[0]
+                self.log('Error while attempting to seed urls from previous dump: {}'.format(e))
+
+        if self.settings.getbool('USE_PREVIOUS_SEED'):
+            try:
+                response = self._s3_client.list_objects_v2(
+                    Bucket='teletracker-data-us-west-2',
+                    Prefix='scrape-results/netflix/catalog'
+                )
+
+                contents_sorted = list(filter(lambda item: item['Size'] > 0,
+                                              sorted(response['Contents'], key=lambda item: item['LastModified'],
+                                                     reverse=True)))
+
+                if len(contents_sorted) > 0:
+                    for request in self._generate_requests_from_json(contents_sorted[0]['Key'], 'previous_results',
+                                                                     dont_filter=False):
+                        yield request
+            except:
+                e = sys.exc_info()[0]
+                self.log('Error while attempting to seed urls from previous dump: {}'.format(e))
+
         for url in self.start_urls:
             yield scrapy.Request(url, dont_filter=True)
 
-        try:
-            response = self._s3_client.list_objects_v2(
-                Bucket='teletracker-data-us-west-2',
-                Prefix='scrape-results/netflix/catalog'
-            )
+    def _generate_requests_from_json(self, key, name, dont_filter=True):
+        with open('/tmp/{}.jl'.format(name), 'wb') as f:
+            self._s3_client.download_fileobj('teletracker-data-us-west-2', key, f)
 
-            contents_sorted = list(filter(lambda item: item['Size'] > 0,
-                                          sorted(response['Contents'], key=lambda item: item['LastModified'],
-                                                 reverse=True)))
-
-            if len(contents_sorted) > 0:
-                with open('/tmp/prev_netflix_catalog.jl', 'wb') as f:
-                    self._s3_client.download_fileobj('teletracker-data-us-west-2', contents_sorted[0]['Key'], f)
-
-            with open('/tmp/prev_netflix_catalog.jl', 'r') as f:
-                while True:
-                    line = f.readline()
-                    if not line:
-                        break
-                    loaded = json.loads(line.strip())
-                    try:
-                        yield scrapy.Request('https://www.netflix.com/title/{}'.format(loaded['id']), dont_filter=True)
-                    except KeyError:
-                        pass
-        except:
-            e = sys.exc_info()[0]
-            self.log('Error while attempting to seed urls from previous dump: {}'.format(e))
-
+        with open('/tmp/{}.jl'.format(name), 'r') as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                loaded = json.loads(line.strip())
+                try:
+                    yield scrapy.Request('https://www.netflix.com/title/{}'.format(loaded['id']),
+                                         dont_filter=dont_filter)
+                except KeyError:
+                    pass
 
     def parse_item(self, response):
         id = response.url.split('/')[-1]
