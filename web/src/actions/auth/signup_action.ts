@@ -1,4 +1,4 @@
-import { call, put, takeLatest } from '@redux-saga/core/effects';
+import { all, call, put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { logEvent } from '../../utils/analytics';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
@@ -50,8 +50,6 @@ export const signupSaga = function*() {
           payload.password,
         );
 
-        logEvent('User', 'Signup');
-
         let user: CognitoUser = yield call(
           (email: string, password: string) =>
             Auth.signIn({
@@ -62,14 +60,17 @@ export const signupSaga = function*() {
           payload.password,
         );
 
-        yield put(
-          signupSuccessful(
-            user
-              .getSignInUserSession()!
-              .getAccessToken()
-              .getJwtToken(),
+        yield all([
+          put(
+            signupSuccessful(
+              user
+                .getSignInUserSession()!
+                .getAccessToken()
+                .getJwtToken(),
+            ),
           ),
-        );
+          logEvent('User', 'Manual Signup'),
+        ]);
       } catch (e) {
         console.error(e);
       }

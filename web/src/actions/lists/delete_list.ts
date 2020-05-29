@@ -1,10 +1,10 @@
-import { put, takeEvery } from '@redux-saga/core/effects';
+import { all, put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 
 export const USER_SELF_DELETE_LIST = 'user/self/delete_list/INITIATED';
 export const USER_SELF_DELETE_LIST_SUCCESS = 'user/self/delete_list/SUCCESS';
@@ -44,18 +44,16 @@ export const deleteListSaga = function*() {
       );
 
       if (response.ok) {
-        yield put(
-          deleteListSuccess({
-            listId: payload.listId,
-            mergeListId: payload.mergeListId,
-          }),
-        );
+        yield all([
+          put(
+            deleteListSuccess({
+              listId: payload.listId,
+              mergeListId: payload.mergeListId,
+            }),
+          ),
+          logEvent('User', 'Deleted list'),
+        ]);
         yield put(retrieveAllLists({}));
-
-        ReactGA.event({
-          category: 'User',
-          action: 'Deleted list',
-        });
       } else {
         // TODO: ERROR
       }

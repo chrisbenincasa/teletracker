@@ -4,6 +4,7 @@ import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
 import { UserUpdateItemTagsPayload } from './update_user_tags';
+import { logEvent } from '../../utils/analytics';
 
 export const USER_SELF_REMOVE_ITEM_TAGS =
   'user/self/remove_item_tags/INITIATED';

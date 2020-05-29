@@ -4,7 +4,7 @@ import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 import { updateUserItemTagsSuccess } from '../user/update_user_tags';
 import { removeUserItemTagsSuccess } from '../user/remove_user_tag';
 
@@ -59,7 +59,7 @@ export const updateListTrackingSaga = function*() {
         if (response.ok) {
           yield put(retrieveAllLists({}));
 
-          yield all(
+          yield all([
             payload.addToLists.map(listId => {
               return put(
                 updateUserItemTagsSuccess({
@@ -70,9 +70,10 @@ export const updateListTrackingSaga = function*() {
                 }),
               );
             }),
-          );
+            logEvent('User', 'Added item to list'),
+          ]);
 
-          yield all(
+          yield all([
             payload.removeFromLists.map(listId => {
               return put(
                 removeUserItemTagsSuccess({
@@ -83,12 +84,8 @@ export const updateListTrackingSaga = function*() {
                 }),
               );
             }),
-          );
-
-          ReactGA.event({
-            category: 'User',
-            action: 'Updated list',
-          });
+            logEvent('User', 'Remove item from list'),
+          ]);
         }
       } catch (e) {
         yield put(updateListTrackingFailed(e));

@@ -1,4 +1,4 @@
-import { call, put, takeLatest } from '@redux-saga/core/effects';
+import { all, call, put, takeLatest } from '@redux-saga/core/effects';
 import { logEvent } from '../../utils/analytics';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
 import { createAction } from '@reduxjs/toolkit';
@@ -50,16 +50,17 @@ export const loginSaga = function*() {
           action.payload.password,
         );
 
-        yield put(
-          loginSuccessful(
-            user
-              .getSignInUserSession()!
-              .getAccessToken()
-              .getJwtToken(),
+        yield all([
+          put(
+            loginSuccessful(
+              user
+                .getSignInUserSession()!
+                .getAccessToken()
+                .getJwtToken(),
+            ),
           ),
-        );
-
-        logEvent('User', 'Login');
+          logEvent('User', 'Manual Login'),
+        ]);
       } catch (e) {
         console.error(e);
       }

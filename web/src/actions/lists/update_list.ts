@@ -1,4 +1,4 @@
-import { put, takeEvery } from '@redux-saga/core/effects';
+import { all, put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
@@ -6,7 +6,7 @@ import { RetrieveUserSelfInitiated } from '../user';
 import { FSA } from 'flux-standard-action';
 import { ListRules, ListOptions } from '../../types';
 import { getList } from './get_list';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 
 export const USER_SELF_UPDATE_LIST = 'user/self/update_list/INITIATED';
 export const USER_SELF_UPDATE_LIST_SUCCESS = 'user/self/update_list/SUCCESS';
@@ -57,21 +57,19 @@ export const updateListSaga = function*() {
           yield put(getList({ listId: payload.listId }));
         }
 
-        yield put(
-          updateListSuccess({
-            listId: payload.listId,
-            name: payload.name,
-            rules: payload.rules,
-            options: payload.options,
-          }),
-        );
+        yield all([
+          put(
+            updateListSuccess({
+              listId: payload.listId,
+              name: payload.name,
+              rules: payload.rules,
+              options: payload.options,
+            }),
+          ),
+          logEvent('User', 'Updated list'),
+        ]);
 
         yield put(RetrieveUserSelfInitiated({ force: true }));
-
-        ReactGA.event({
-          category: 'User',
-          action: 'Renamed list',
-        });
       } else {
         // TODO: ERROR
       }

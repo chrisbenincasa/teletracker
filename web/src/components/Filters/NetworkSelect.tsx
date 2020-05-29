@@ -40,6 +40,8 @@ const useStyles = makeStyles((theme: Theme) =>
     networkIconWrapper: {
       padding: '1px 5px',
       borderRadius: 8,
+      width: 60,
+      textAlign: 'center',
     },
     selectedChip: {
       margin: theme.spacing(0.25),
