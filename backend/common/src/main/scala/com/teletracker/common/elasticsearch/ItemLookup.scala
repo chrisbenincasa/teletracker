@@ -7,14 +7,21 @@ import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappi
 import com.teletracker.common.elasticsearch.model.{EsExternalId, EsItem}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Maps._
-import com.teletracker.common.util.Slug
+import com.teletracker.common.util.{AsyncStream, Slug}
 import javax.inject.Inject
 import org.elasticsearch.action.get.{GetRequest, MultiGetRequest}
 import org.elasticsearch.action.search.{MultiSearchRequest, SearchRequest}
-import org.elasticsearch.index.query.{BoolQueryBuilder, Operator, QueryBuilders}
+import org.elasticsearch.index.query
+import org.elasticsearch.index.query.{
+  BoolQueryBuilder,
+  MultiMatchQueryBuilder,
+  Operator,
+  QueryBuilders
+}
 import org.elasticsearch.index.query.QueryBuilders.{
   boolQuery,
   matchQuery,
+  multiMatchQuery,
   termQuery
 }
 import org.elasticsearch.indices.TermsLookup
@@ -190,42 +197,41 @@ class ItemLookup @Inject()(
   }
 
   def lookupFuzzy(
+    request: FuzzyItemLookupRequest
+  ): Future[ElasticsearchItemsResponse] = {
+    val query = fuzzyMatchQuery(
+      title = request.title,
+      thingType = request.itemType,
+      description = request.description,
+      releaseYear = request.releaseYearRange,
+      looseYearMatching = request.looseReleaseYearMatching
+    )
+
+    val searchSource =
+      new SearchSourceBuilder().query(query).size(request.limit)
+    val searchRequest =
+      new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
+        .source(searchSource)
+
+    elasticsearchExecutor.search(searchRequest).map(searchResponseToItems)
+  }
+
+  def lookupFuzzyBatch(
     fuzzyRequests: List[FuzzyItemLookupRequest]
-  ): Future[Map[String, EsItem]] = {
+  ): Future[Map[UUID, ElasticsearchItemsResponse]] = {
     if (fuzzyRequests.isEmpty) {
       Future.successful(Map.empty)
     } else {
-      val searches = fuzzyRequests
-        .map(request => {
-          fuzzyMatchQuery(
-            title = request.title,
-            thingType = request.itemType,
-            description = request.description,
-            releaseYear = request.releaseYearRange,
-            looseYearMatching = request.looseReleaseYearMatching
-          )
+      AsyncStream
+        .fromSeq(fuzzyRequests)
+        .grouped(5)
+        .mapF(requestBatch => {
+          Future.sequence(requestBatch.map(request => {
+            lookupFuzzy(request).map(response => request.id -> response)
+          }))
         })
-        .map(query => {
-          val searchSource = new SearchSourceBuilder().query(query).size(1)
-          new SearchRequest(teletrackerConfig.elasticsearch.items_index_name)
-            .source(searchSource)
-        })
-
-      val multiReq = new MultiSearchRequest()
-      searches.foreach(multiReq.add)
-
-      elasticsearchExecutor
-        .multiSearch(multiReq)
-        .map(resp => {
-          resp.getResponses.toList.zip(fuzzyRequests.map(_.title)).map {
-            case (response, title) =>
-              searchResponseToItems(response.getResponse).items.headOption
-                .map(title -> _)
-          }
-        })
-        .map(_.flatten.toMap)
+        .foldLeft(Map.empty[UUID, ElasticsearchItemsResponse])(_ ++ _)
     }
-
   }
 
   def lookupItemsBySlug(
@@ -364,19 +370,12 @@ class ItemLookup @Inject()(
   ) = {
     boolQuery()
       .must(
-        boolQuery()
-          .should(
-            matchQuery("original_title", title)
-              .operator(Operator.AND)
-          )
-          .should(
-            matchQuery("title", title).operator(Operator.AND).boost(2.0f)
-          )
-          .should(
-            matchQuery("alternative_titles.title", title)
-              .operator(Operator.AND)
-          )
-          .minimumShouldMatch(1)
+        multiMatchQuery(title)
+          .field("title", 10.0f)
+          .field("alternative_titles.title", 2.5f)
+          .field("original_title")
+          .`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
+          .operator(Operator.AND)
       )
       .applyOptional(description)(
         (builder, desc) =>
@@ -496,8 +495,10 @@ case class ItemLookupResponse(
   materializedRecommendations: ElasticsearchItemsResponse)
 
 case class FuzzyItemLookupRequest(
+  id: UUID = UUID.randomUUID(), // Unique id for the request to match results later
   title: String,
   description: Option[String],
   itemType: Option[ItemType],
   releaseYearRange: Option[Range],
-  looseReleaseYearMatching: Boolean)
+  looseReleaseYearMatching: Boolean,
+  limit: Int = 5)

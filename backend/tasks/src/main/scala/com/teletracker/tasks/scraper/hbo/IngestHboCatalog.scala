@@ -8,13 +8,21 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
+import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper._
+import com.teletracker.tasks.scraper.debug.{
+  GenerateMatchCsv,
+  GeneratePotentialMatchCsv
+}
 import com.teletracker.tasks.scraper.matching.ElasticsearchFallbackMatching
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
+import java.net.URI
 import java.time.temporal.ChronoField
 import java.time.{Instant, LocalDate, LocalDateTime, OffsetDateTime, ZoneOffset}
 import java.util.regex.Pattern
@@ -41,63 +49,20 @@ class IngestHboCatalog @Inject()(
     true
   }
 
+  override protected def shouldProcessItem(
+    item: HboScrapedCatalogItem
+  ): Boolean = {
+    !item.title.toLowerCase.contains("HBO First Look")
+  }
+
   private val pattern =
     Pattern.compile("Director's Cut", Pattern.CASE_INSENSITIVE)
+
   override protected def sanitizeItem(
     item: HboScrapedCatalogItem
   ): HboScrapedCatalogItem = {
     item.copy(title = pattern.matcher(item.title).replaceAll("").trim)
   }
-//
-//  override protected def handleNonMatches(
-//    args: IngestJobArgs,
-//    nonMatches: List[HboScrapedCatalogItem]
-//  ): Future[List[NonMatchResult[HboScrapedCatalogItem]]] = {
-//    val withFallback = nonMatches
-//      .filter(_.nameFallback.isDefined)
-//      .filterNot(m => m.name == m.nameFallback.get)
-//
-//    val originalByAmended = withFallback
-//      .map(
-//        item =>
-//          item.copy(
-//            name = item.nameFallback.get,
-//            nameFallback = Some(item.name)
-//          ) -> item
-//      )
-//      .toMap
-//
-//    lookupMethod
-//      .apply(originalByAmended.keys.toList, args)
-//      .flatMap {
-//        case (matches, _) =>
-//          val amendedMatches = matches.map(_.scrapedItem)
-//          val missing = originalByAmended.collect {
-//            case (amended, original) if !amendedMatches.contains(amended) =>
-//              original
-//          }
-//
-//          super
-//            .handleNonMatches(args, missing.toList)
-//            .map(_ => {
-//              val potentialMatches = matches.map {
-//                case MatchResult(amended, esItem) =>
-//                  esItem -> originalByAmended(amended)
-//              }
-//
-//              writePotentialMatches(potentialMatches)
-//
-//              matches.map {
-//                case MatchResult(amended, esItem) =>
-//                  model.NonMatchResult(
-//                    amended,
-//                    originalByAmended(amended),
-//                    esItem
-//                  )
-//              }
-//            })
-//      }
-//  }
 
   override protected def itemUniqueIdentifier(
     item: HboScrapedCatalogItem
@@ -114,6 +79,30 @@ class IngestHboCatalog @Inject()(
     ).collect {
       case (k, Some(v)) => k -> v
     }
+  }
+
+  override protected def followupTasksToSchedule(
+    args: IngestJobArgs,
+    rawArgs: Args
+  ): List[TeletrackerTaskQueueMessage] = {
+    List(
+      TaskMessageHelper.forTask[GenerateMatchCsv](
+        Map(
+          "input" -> URI
+            .create(s"file://${matchItemsFile.getAbsolutePath}")
+            .toString,
+          "type" -> ScrapeItemType.HboCatalog.toString
+        )
+      ),
+      TaskMessageHelper.forTask[GeneratePotentialMatchCsv](
+        Map(
+          "input" -> URI
+            .create(s"file://${potentialMatchFile.getAbsolutePath}")
+            .toString,
+          "type" -> ScrapeItemType.HboCatalog.toString
+        )
+      )
+    )
   }
 }
 

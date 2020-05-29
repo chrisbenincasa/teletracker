@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.util.Folds
 import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
 import com.teletracker.tasks.scraper.model.{MatchResult, PotentialInput}

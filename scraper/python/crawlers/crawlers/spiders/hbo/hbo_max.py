@@ -60,6 +60,7 @@ class HboNowSpider(BaseSitemapSpider):
                 description=self._get_description_from_metadata(metadata),
                 itemType='show',
                 title=self._get_title_from_metadata(metadata),
+                network='hbo-max',
                 seasons=seasons,
                 url=response.url
             )
@@ -76,6 +77,7 @@ class HboNowSpider(BaseSitemapSpider):
                 itemType='movie',
                 description=self._get_description_from_metadata(metadata),
                 title=self._get_title_from_metadata(metadata),
+                network='hbo-max',
                 url=response.url,
                 couldBeOnHboGo=self._could_be_on_hbo(metadata)
             )
@@ -119,7 +121,7 @@ class HboMaxItem(scrapy.Item):
     externalId = scrapy.Field()
     itemType = scrapy.Field()
     description = scrapy.Field()
-    network = 'hbo-max',
+    network = scrapy.Field()
     title = scrapy.Field()
     seasons = scrapy.Field()
     url = scrapy.Field()

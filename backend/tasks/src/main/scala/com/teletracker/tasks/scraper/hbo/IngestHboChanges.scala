@@ -7,6 +7,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{
@@ -14,12 +15,7 @@ import com.teletracker.tasks.scraper.matching.{
   ElasticsearchLookup,
   LookupMethod
 }
-import com.teletracker.tasks.scraper.{
-  IngestJob,
-  IngestJobApp,
-  IngestJobParser,
-  ScrapedItem
-}
+import com.teletracker.tasks.scraper.{IngestJob, IngestJobApp, IngestJobParser}
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client

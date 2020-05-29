@@ -1,26 +1,32 @@
 package com.teletracker.tasks.scraper.hulu
 
-import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.util.json.circe._
+import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.util.{NetworkCache, Slug}
+import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
+import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.teletracker.common.tasks.TaskMessageHelper
+import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.{
-  ElasticsearchFallbackMatching,
-  ElasticsearchLookup,
-  LookupMethod
+import com.teletracker.tasks.scraper.debug.{
+  GenerateMatchCsv,
+  GeneratePotentialMatchCsv
 }
-import com.teletracker.tasks.scraper.{IngestJob, IngestJobParser, ScrapedItem}
-import io.circe.generic.JsonCodec
-import io.circe.generic.auto._
+import com.teletracker.tasks.scraper.matching.ElasticsearchFallbackMatching
+import com.teletracker.tasks.scraper.{
+  IngestJob,
+  IngestJobArgs,
+  IngestJobParser,
+  ScrapeItemType
+}
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
-import java.time.{Instant, LocalDate, OffsetDateTime, ZoneOffset}
+import java.net.URI
+import java.time.LocalDate
 
 class IngestHuluCatalog @Inject()(
   protected val teletrackerConfig: TeletrackerConfig,
@@ -77,120 +83,28 @@ class IngestHuluCatalog @Inject()(
     item.externalId
       .map(id => Map(ExternalSource.Hulu -> id))
       .getOrElse(Map.empty)
-}
 
-@JsonCodec
-case class HuluCatalogItem(
-  availableOn: Option[String],
-  expiresOn: Option[String],
-  name: String,
-  releaseYear: Option[Int],
-  network: String,
-  `type`: ItemType,
-  externalId: Option[String],
-  override val numSeasonsAvailable: Option[Int],
-  genres: Option[List[String]],
-  description: Option[String])
-    extends ScrapedItem {
-  override def category: Option[String] = None
-
-  override def status: String = ""
-
-  override def availableDate: Option[String] = availableOn
-
-  override def title: String = name
-
-  override def isMovie: Boolean = `type` == ItemType.Movie
-
-  override def isTvShow: Boolean = `type` == ItemType.Show
-
-  override lazy val availableLocalDate: Option[LocalDate] =
-    availableDate.map(OffsetDateTime.parse(_)).map(_.toLocalDate)
-
-  override def url: Option[String] = {
-    externalId.map(eid => {
-      s"https://www.hulu.com/${makeHuluType(`type`)}/${makeHuluSlug(title, eid)}"
-    })
-  }
-
-  private def makeHuluType(thingType: ItemType) = {
-    thingType match {
-      case ItemType.Movie  => "movie"
-      case ItemType.Show   => "series"
-      case ItemType.Person => throw new IllegalArgumentException
-    }
-  }
-
-  private def makeHuluSlug(
-    title: String,
-    id: String
-  ) = {
-    Slug.apply(title, None).addSuffix(id).toString
+  override protected def followupTasksToSchedule(
+    args: IngestJobArgs,
+    rawArgs: Args
+  ): List[TeletrackerTaskQueueMessage] = {
+    List(
+      TaskMessageHelper.forTask[GenerateMatchCsv](
+        Map(
+          "input" -> URI
+            .create(s"file://${matchItemsFile.getAbsolutePath}")
+            .toString,
+          "type" -> ScrapeItemType.HuluCatalog.toString
+        )
+      ),
+      TaskMessageHelper.forTask[GeneratePotentialMatchCsv](
+        Map(
+          "input" -> URI
+            .create(s"file://${potentialMatchFile.getAbsolutePath}")
+            .toString,
+          "type" -> ScrapeItemType.HuluCatalog.toString
+        )
+      )
+    )
   }
 }
-
-@JsonCodec
-case class HuluScrapeCatalogItem(
-  id: String,
-  availableOn: Option[String],
-  expiresOn: Option[String],
-  title: String,
-  premiereDate: Option[String],
-  network: String,
-  itemType: ItemType,
-  externalId: Option[String],
-  genres: Option[List[String]],
-  description: Option[String],
-  additionalServiceRequired: Option[String],
-  episodes: Option[List[HuluScrapeEpisode]])
-    extends ScrapedItem {
-  override def category: Option[String] = None
-  override def status: String = ""
-  override def availableDate: Option[String] = availableOn
-  override lazy val releaseYear: Option[Int] =
-    premiereDate.map(Instant.parse(_).atOffset(ZoneOffset.UTC).getYear)
-  override def isMovie: Boolean = itemType == ItemType.Movie
-  override def isTvShow: Boolean = itemType == ItemType.Show
-
-  override def numSeasonsAvailable: Option[Int] = {
-    episodes
-      .filter(_.nonEmpty)
-      .map(episodes => episodes.map(_.seasonNumber).distinct.size)
-  }
-
-  override lazy val availableLocalDate: Option[LocalDate] =
-    availableDate.map(OffsetDateTime.parse(_)).map(_.toLocalDate)
-  override def url: Option[String] = {
-    externalId.map(eid => {
-      s"https://www.hulu.com/${makeHuluType(itemType)}/${makeHuluSlug(title, eid)}"
-    })
-  }
-
-  private def makeHuluType(thingType: ItemType) = {
-    thingType match {
-      case ItemType.Movie  => "movie"
-      case ItemType.Show   => "series"
-      case ItemType.Person => throw new IllegalArgumentException
-    }
-  }
-
-  private def makeHuluSlug(
-    title: String,
-    id: String
-  ) = {
-    Slug.apply(title, None).addSuffix(id).toString
-  }
-}
-
-@JsonCodec
-case class HuluScrapeEpisode(
-  id: String,
-  externalId: String,
-  genres: List[String],
-  description: Option[String],
-  title: String,
-  rating: Option[String],
-  episodeNumber: Int,
-  seasonNumber: Int,
-  premiereDate: Option[String],
-  duration: Option[Int])

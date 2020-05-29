@@ -2,6 +2,7 @@ package com.teletracker.tasks.scraper.netflix
 
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
@@ -9,7 +10,7 @@ import com.teletracker.tasks.scraper.matching.{
   ElasticsearchLookup,
   LookupMethod
 }
-import com.teletracker.tasks.scraper.{IngestJob, IngestJobParser, ScrapedItem}
+import com.teletracker.tasks.scraper.{IngestJob, IngestJobParser}
 import io.circe.generic.JsonCodec
 import io.circe.generic.auto._
 import javax.inject.Inject

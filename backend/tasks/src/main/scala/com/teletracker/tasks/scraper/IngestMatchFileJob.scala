@@ -5,6 +5,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.matching.{DirectLookupMethod, LookupMethod}
 import com.teletracker.tasks.scraper.model.MatchInput

@@ -103,6 +103,9 @@ def _parse_movie_programs_json(loaded_json, partial_item):
                 partial_item['id'] = external_id
                 partial_item['externalId'] = external_id
 
+            if movie['title']:
+                partial_item['title'] = movie['title']
+
             partial_item['goUrl'] = movie['availability']['go'][0]['url']
             partial_item['nowUrl'] = movie['availability']['now'][0]['url']
             partial_item['releaseDate'] = movie['publishDate']
@@ -123,7 +126,8 @@ class HboSpider(BaseSitemapSpider):
 
     sitemap_rules = [
         (r'https:\/\/www.hbo.com\/[A-z\-]+$', 'parse_series'),
-        (r'/movies/[A-z-]+/?$', 'parse_movie')
+        (r'/movies/[A-z-]+/?$', 'parse_movie'),
+        (r'/documentaries/[A-z-]+/?$', 'parse_movie'),
     ]
 
     custom_settings = {
@@ -159,6 +163,8 @@ class HboSpider(BaseSitemapSpider):
         loaded = json.loads(response.xpath('//noscript[@id="react-data"]/@data-state').get())
         if loaded:
             movie_data = _get_page_schema_with_type(react_data=loaded, typ='movie')
+            if not movie_data:
+                movie_data = _get_page_schema_with_type(react_data=loaded, typ='documentary')
             streaming_id = _get_streaming_id(react_data=loaded)
             if movie_data and streaming_id:
                 synopsis = _get_movie_description(react_data=loaded)

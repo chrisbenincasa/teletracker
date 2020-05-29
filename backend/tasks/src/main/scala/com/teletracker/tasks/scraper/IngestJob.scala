@@ -16,6 +16,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
@@ -75,7 +76,8 @@ case class IngestJobArgs(
   sourceLimit: Int,
   perBatchSleepMs: Option[Int],
   enableExternalIdMatching: Boolean = true,
-  reimport: Boolean = false)
+  reimport: Boolean = false,
+  externalIdFilter: Option[String] = None)
     extends IngestJobArgsLike
 
 abstract class IngestJob[T <: ScrapedItem](
@@ -167,14 +169,14 @@ abstract class IngestJob[T <: ScrapedItem](
       perBatchSleepMs = args.value[Int]("perBatchSleepMs"),
       enableExternalIdMatching =
         args.valueOrDefault("enableExternalIdMatching", true),
-      reimport = args.valueOrDefault("reimport", false)
+      reimport = args.valueOrDefault("reimport", false),
+      externalIdFilter = args.value[String]("externalIdFilter")
     )
   }
 
   override def runInternal(args: Map[String, Option[Any]]): Unit = {
     val parsedArgs = parseArgs(args)
     val network = getNetworksOrExit()
-    implicit val listDec = implicitly[Decoder[List[T]]]
 
     logger.info("Running preprocess phase")
     preprocess(parsedArgs, args)
@@ -228,7 +230,14 @@ abstract class IngestJob[T <: ScrapedItem](
                 logger.warn("Could not parse line", value)
                 None
               case Right(value) =>
-                Some(value)
+                Some(value).filter(item => {
+                  parsedArgs.externalIdFilter match {
+                    case Some(value) if item.externalId.isDefined =>
+                      value == item.externalId.get
+                    case Some(_) => false
+                    case None    => true
+                  }
+                })
             }
             .throughApply(processAll(_, networks, parsedArgs))
             .force
@@ -241,8 +250,17 @@ abstract class IngestJob[T <: ScrapedItem](
               throw value
 
             case Right(items) =>
+              val filteredItems = items.filter(item => {
+                parsedArgs.externalIdFilter match {
+                  case Some(value) if item.externalId.isDefined =>
+                    value == item.externalId.get
+                  case Some(_) => false
+                  case None    => true
+                }
+              })
+
               processAll(
-                AsyncStream.fromSeq(items),
+                AsyncStream.fromSeq(filteredItems),
                 networks,
                 parsedArgs
               ).force.await()
@@ -486,38 +504,4 @@ abstract class IngestJob[T <: ScrapedItem](
       }
     })
   }
-}
-
-trait ScrapedItem {
-  def availableDate: Option[String]
-  def title: String
-  def releaseYear: Option[Int]
-  def category: Option[String]
-  def network: String
-  def status: String
-  def externalId: Option[String]
-  def description: Option[String]
-
-  def actualItemId: Option[UUID] = None
-
-  lazy val availableLocalDate: Option[LocalDate] =
-    availableDate.map(LocalDate.parse(_, DateTimeFormatter.ISO_LOCAL_DATE))
-
-  lazy val isExpiring: Boolean = status == "Expiring"
-
-  def isMovie: Boolean
-  def isTvShow: Boolean
-  def thingType: Option[ItemType] = {
-    if (isMovie) {
-      Some(ItemType.Movie)
-    } else if (isTvShow) {
-      Some(ItemType.Show)
-    } else {
-      None
-    }
-  }
-
-  def url: Option[String] = None
-
-  def numSeasonsAvailable: Option[Int] = None
 }

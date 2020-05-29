@@ -4,6 +4,7 @@ import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.elasticsearch.model.EsItem
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.tasks.scraper.matching.LookupMethod
 import com.teletracker.tasks.scraper.model.{

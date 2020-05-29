@@ -10,6 +10,7 @@ import com.teletracker.common.elasticsearch.model.{
   EsItem
 }
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._

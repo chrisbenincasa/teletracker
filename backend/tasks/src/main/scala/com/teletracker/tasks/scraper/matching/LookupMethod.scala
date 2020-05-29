@@ -1,7 +1,8 @@
 package com.teletracker.tasks.scraper.matching
 
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.tasks.scraper.model.{MatchInput, MatchResult}
-import com.teletracker.tasks.scraper.{IngestJobArgsLike, ScrapedItem}
+import com.teletracker.tasks.scraper.IngestJobArgsLike
 import scala.concurrent.{ExecutionContext, Future}
 
 object LookupMethod {

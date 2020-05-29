@@ -6,6 +6,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
@@ -22,8 +23,7 @@ import com.teletracker.tasks.scraper.model.{
 import com.teletracker.tasks.scraper.{
   IngestJob,
   IngestJobArgs,
-  IngestJobArgsLike,
-  ScrapedItem
+  IngestJobArgsLike
 }
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.JsonCodec

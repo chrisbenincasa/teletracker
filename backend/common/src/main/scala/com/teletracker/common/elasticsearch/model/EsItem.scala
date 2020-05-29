@@ -3,7 +3,7 @@ package com.teletracker.common.elasticsearch.model
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.EsImageType
 import com.teletracker.common.elasticsearch.model._
-import com.teletracker.common.util.Slug
+import com.teletracker.common.util.{Sanitizers, Slug}
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
 import java.time.LocalDate
@@ -88,6 +88,9 @@ case class EsItem(
       .getOrElse(Nil)
       .groupBy(video => ExternalSource.fromString(video.provider_shortname))
   }
+
+  def sanitizedTitle: String =
+    Sanitizers.normalizeQuotes(title.get.head)
 
   def availabilityGrouped: Map[Int, List[EsAvailability]] = {
     availability.getOrElse(Nil).groupBy(_.network_id).toMap

@@ -1,6 +1,7 @@
 package com.teletracker.tasks.scraper.hulu
 
 import com.teletracker.common.crypto.SecretResolver
+import com.teletracker.common.elasticsearch.model.EsItem
 import com.teletracker.common.elasticsearch.{FuzzyItemLookupRequest, ItemLookup}
 import com.teletracker.common.http.{HttpClient, HttpClientOptions, HttpRequest}
 import com.teletracker.common.util.Slug
@@ -150,7 +151,7 @@ class HuluFallbackMatching @Inject()(
 
   // TODO: Should this use the ES fallback matcher?
   private def lookupByNames(itemsByTitle: Map[String, HuluScrapeItem]) = {
-    val requests = itemsByTitle.map {
+    val requestsAndItems = itemsByTitle.map {
       case (title, item) =>
         FuzzyItemLookupRequest(
           title = title,
@@ -158,21 +159,40 @@ class HuluFallbackMatching @Inject()(
           itemType = item.thingType,
           releaseYearRange = item.releaseYear.map(ry => (ry - 1) to (ry + 1)),
           looseReleaseYearMatching = true
-        )
+        ) -> item
     }.toList
 
+    val itemByRequestId = requestsAndItems.map {
+      case (request, item) => request.id -> item
+    }.toMap
+
+    val requestsById =
+      requestsAndItems.map(_._1).map(req => req.id -> req).toMap
+
     itemLookup
-      .lookupFuzzy(requests)
-      .map(matchesByTitle => {
-        matchesByTitle.collect {
-          case (title, esItem)
-              if title.equalsIgnoreCase(
-                esItem.original_title.getOrElse("")
-              ) || title.equalsIgnoreCase(esItem.title.get.head) =>
-            itemsByTitle
-              .get(title)
-              .map(_ -> esItem)
-        }.flatten
+      .lookupFuzzyBatch(requestsAndItems.map(_._1))
+      .map(matchesByRequestId => {
+        itemByRequestId.foldLeft(Map.empty[HuluScrapeItem, EsItem]) {
+          case (acc, (requestId, scrapeItem)) =>
+            val titleFromRequest = requestsById(requestId).title
+            val matchPair = matchesByRequestId.get(requestId) match {
+              case Some(response) =>
+                response.items
+                  .find(item => {
+                    val titleMatch =
+                      item.title.get.exists(titleFromRequest.equalsIgnoreCase)
+                    val altTitleMatch = item.alternative_titles
+                      .getOrElse(Nil)
+                      .filter(_.country_code == "US")
+                      .exists(_.title.equalsIgnoreCase(titleFromRequest))
+                    titleMatch || altTitleMatch
+                  })
+                  .map(scrapeItem -> _)
+              case None => None
+            }
+
+            matchPair.map(acc + _).getOrElse(acc)
+        }
       })
   }
 

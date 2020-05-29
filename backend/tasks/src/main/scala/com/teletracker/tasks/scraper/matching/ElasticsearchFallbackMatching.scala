@@ -7,6 +7,7 @@ import com.teletracker.common.elasticsearch.{
   ElasticsearchAccess,
   ElasticsearchExecutor
 }
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.scraper.model.{NonMatchResult, PotentialMatch}
@@ -14,8 +15,7 @@ import com.teletracker.tasks.scraper.{
   model,
   IngestJob,
   IngestJobArgs,
-  IngestJobArgsLike,
-  ScrapedItem
+  IngestJobArgsLike
 }
 import io.circe.Codec
 import io.circe.syntax._
@@ -77,41 +77,6 @@ class ElasticsearchFallbackMatcher @Inject()(
                 )
             }
           })
-//        performFuzzyTitleMatchSearch(group)
-//          .andThen {
-//            case Success(potentialMatches) =>
-//              recordPotentialMatches(potentialMatches)
-//          }
-//          .flatMap(potentialMatches => {
-//            val missing = group.toSet -- potentialMatches.map(_._2)
-//            val hasDescription = missing.filter(_.description.isDefined)
-//
-//            if (hasDescription.isEmpty) {
-//              Future.successful {
-//                potentialMatches.map {
-//                  case (esItem, scrapedItem) =>
-//                    model.NonMatchResult(
-//                      scrapedItem,
-//                      scrapedItem,
-//                      esItem
-//                    )
-//                }
-//              }
-//            } else {
-//              performDescriptionMatchSearch(hasDescription).map(matches => {
-//                recordPotentialMatches(matches)
-//
-//                (potentialMatches ++ matches).map {
-//                  case (esItem, scrapedItem) =>
-//                    model.NonMatchResult(
-//                      scrapedItem,
-//                      scrapedItem,
-//                      esItem
-//                    )
-//                }
-//              })
-//            }
-//          })
       })
       .map(_.flatten)
       .map(results => {
@@ -164,17 +129,7 @@ class ElasticsearchFallbackMatcher @Inject()(
 
   protected def recordPotentialMatches[T <: ScrapedItem: Codec](
     potentialMatches: Iterable[(EsItem, T)]
-  ): Unit = {
-//    potentialMatches
-//      .map(Function.tupled(PotentialMatch.forEsItem))
-//      .foreach(potentialMatch => {
-//        os.println(
-//          potentialMatch.asJson.noSpaces
-//        )
-//      })
-//
-//    os.flush()
-  }
+  ): Unit = {}
 
   private def combinedQuery[T <: ScrapedItem: Codec](nonMatch: T) = {
     QueryBuilders

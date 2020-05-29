@@ -2,9 +2,9 @@ package com.teletracker.tasks.scraper.model
 
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.model.EsItem
+import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.json.circe._
-import com.teletracker.tasks.scraper.ScrapedItem
 import io.circe.Codec
 import io.circe.generic.JsonCodec
 import java.time.LocalDate
