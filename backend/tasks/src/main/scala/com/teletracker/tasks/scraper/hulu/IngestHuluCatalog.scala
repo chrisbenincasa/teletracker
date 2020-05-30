@@ -7,6 +7,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
+import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.TaskMessageHelper
@@ -17,12 +18,7 @@ import com.teletracker.tasks.scraper.debug.{
   GeneratePotentialMatchCsv
 }
 import com.teletracker.tasks.scraper.matching.ElasticsearchFallbackMatching
-import com.teletracker.tasks.scraper.{
-  IngestJob,
-  IngestJobArgs,
-  IngestJobParser,
-  ScrapeItemType
-}
+import com.teletracker.tasks.scraper.{IngestJob, IngestJobArgs, IngestJobParser}
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
@@ -37,6 +33,9 @@ class IngestHuluCatalog @Inject()(
   protected val elasticsearchExecutor: ElasticsearchExecutor)
     extends IngestJob[HuluScrapeCatalogItem]
     with ElasticsearchFallbackMatching[HuluScrapeCatalogItem] {
+
+  override protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.HuluCatalog
 
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.Hulu)

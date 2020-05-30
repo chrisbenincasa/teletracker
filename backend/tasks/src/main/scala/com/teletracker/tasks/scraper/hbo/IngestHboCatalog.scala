@@ -8,7 +8,8 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.hbo.HboScrapedCatalogItem
+import com.teletracker.common.model.scraping.{ScrapeItemType, ScrapedItem}
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.TaskMessageHelper
 import com.teletracker.common.util.NetworkCache
@@ -36,6 +37,9 @@ class IngestHboCatalog @Inject()(
   protected val elasticsearchExecutor: ElasticsearchExecutor)
     extends IngestJob[HboScrapedCatalogItem]
     with ElasticsearchFallbackMatching[HboScrapedCatalogItem] {
+
+  override protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.HboCatalog
 
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.HboGo, ExternalSource.HboNow)
@@ -104,53 +108,4 @@ class IngestHboCatalog @Inject()(
       )
     )
   }
-}
-
-@JsonCodec
-case class HboCatalogItem(
-  name: String,
-  nameFallback: Option[String],
-  releaseYear: Option[Int],
-  network: String,
-  `type`: ItemType,
-  externalId: Option[String],
-  genres: Option[List[String]],
-  description: Option[String])
-    extends ScrapedItem {
-
-  override def category: Option[String] = None
-
-  override def status: String = ""
-
-  override def availableDate: Option[String] = None
-
-  override def title: String = name
-
-  override def isMovie: Boolean = `type` == ItemType.Movie
-
-  override def isTvShow: Boolean = `type` == ItemType.Show
-
-  override lazy val availableLocalDate: Option[LocalDate] =
-    availableDate.map(OffsetDateTime.parse(_)).map(_.toLocalDate)
-}
-
-@JsonCodec
-case class HboScrapedCatalogItem(
-  title: String,
-  description: Option[String],
-  itemType: ItemType,
-  id: Option[String],
-  goUrl: Option[String],
-  nowUrl: Option[String],
-  network: String,
-  releaseDate: Option[String])
-    extends ScrapedItem {
-  override def availableDate: Option[String] = None
-  override lazy val releaseYear: Option[Int] =
-    releaseDate.map(Instant.parse(_).atOffset(ZoneOffset.UTC).getYear)
-  override def category: Option[String] = None
-  override def status: String = ""
-  override def externalId: Option[String] = id
-  override def isMovie: Boolean = itemType == ItemType.Movie
-  override def isTvShow: Boolean = itemType == ItemType.Show
 }

@@ -8,6 +8,8 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.elasticsearch.model.EsAvailability
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
@@ -23,6 +25,8 @@ class HuluCatalogDeltaIngestJob @Inject()(
   protected val itemUpdater: ItemUpdater,
   elasticsearchLookup: ElasticsearchLookup)
     extends IngestDeltaJob[HuluScrapeCatalogItem](elasticsearchLookup) {
+  override protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.HuluCatalog
 
   override protected val networkNames: Set[String] = Set("hulu")
   override protected val externalSource: ExternalSource = ExternalSource.Hulu

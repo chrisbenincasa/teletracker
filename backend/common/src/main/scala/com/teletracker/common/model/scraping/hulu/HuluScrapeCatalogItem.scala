@@ -7,6 +7,9 @@ import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
 import java.time.{Instant, LocalDate, OffsetDateTime, ZoneOffset}
 
+/**
+  * Result of a scrape against Hulu using the sitemap
+  */
 @JsonCodec
 case class HuluScrapeCatalogItem(
   id: String,

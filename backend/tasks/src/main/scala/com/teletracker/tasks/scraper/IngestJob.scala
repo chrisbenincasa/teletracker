@@ -9,14 +9,22 @@ import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappi
 import com.teletracker.common.elasticsearch.model.{
   EsAvailability,
   EsExternalId,
-  EsItem
+  EsGenericScrapedItem,
+  EsItem,
+  EsPotentialMatchItem,
+  EsScrapedItem
 }
+import com.teletracker.common.elasticsearch.scraping.EsPotentialMatchItemStore
 import com.teletracker.common.elasticsearch.{
   AvailabilityQueryHelper,
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.{
+  MatchResult,
+  PartialEsItem,
+  ScrapedItem
+}
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
@@ -32,7 +40,6 @@ import com.teletracker.tasks.scraper.matching.{
   ElasticsearchLookup,
   LookupMethod
 }
-import com.teletracker.tasks.scraper.model.MatchResult
 import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Codec, Decoder, Encoder}
@@ -42,7 +49,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import java.io.File
 import java.net.URI
 import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, ZoneOffset}
+import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
 import java.util.UUID
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -120,7 +127,7 @@ abstract class IngestJob[T <: ScrapedItem](
   @Inject
   private[this] var itemUpdateQueue: EsIngestQueue = _
   @Inject
-  private[this] var esExternalIdMapper: ElasticsearchExternalIdMappingStore = _
+  private[this] var esPotentialMatchItemStore: EsPotentialMatchItemStore = _
 
   protected def lookupMethod(args: TypedArgs): LookupMethod[T] = {
     val externalIdMatchers = if (args.enableExternalIdMatching) {
@@ -356,26 +363,6 @@ abstract class IngestJob[T <: ScrapedItem](
       })
 
       itemUpdateQueue.queueItemUpdates(requests).map(_ => {})
-//      SequentialFutures
-//        .serialize(
-//          itemsWithNewAvailability.grouped(50).toList
-//        )(
-//          batch =>
-//            Future
-//              .sequence(
-//                batch
-//                  .map(
-//                    item =>
-//                      itemUpdater.update(item).map(_ => {}).recover {
-//                        case NonFatal(e) =>
-//                          logger
-//                            .error(s"Failed to update item id = ${item.id}", e)
-//                      }
-//                  )
-//              )
-//              .map(_ => {})
-//        )
-//        .map(_ => {})
     } else {
       Future.successful {
         logger.info(
@@ -383,6 +370,32 @@ abstract class IngestJob[T <: ScrapedItem](
         )
       }
     }
+  }
+
+  override protected def writePotentialMatches(
+    potentialMatches: Iterable[(EsItem, T)]
+  ): Unit = {
+    super.writePotentialMatches(potentialMatches)
+
+    val items = for {
+      externalSource <- externalSources
+      (item, t) <- potentialMatches
+      externalId <- t.externalId.toList
+    } yield {
+      val esExternalId = EsExternalId(externalSource, externalId)
+      EsPotentialMatchItem(
+        EsPotentialMatchItem.id(item.id, esExternalId),
+        OffsetDateTime.now(),
+        PartialEsItem.forEsItem(item),
+        EsGenericScrapedItem(
+          scrapeItemType,
+          EsScrapedItem.fromAnyScrapedItem(t),
+          t.asJson
+        )
+      )
+    }
+
+    esPotentialMatchItemStore.upsertBatch(items).await()
   }
 
   protected def getNetworksOrExit(): Set[StoredNetwork] = {

@@ -1,4 +1,4 @@
-package com.teletracker.tasks.scraper.model
+package com.teletracker.common.model.scraping.disney
 
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.model.scraping.ScrapedItem

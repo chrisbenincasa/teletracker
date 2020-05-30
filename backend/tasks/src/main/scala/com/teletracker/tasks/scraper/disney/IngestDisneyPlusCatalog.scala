@@ -7,6 +7,8 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
+import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{
@@ -14,7 +16,6 @@ import com.teletracker.tasks.scraper.matching.{
   ElasticsearchLookup,
   LookupMethod
 }
-import com.teletracker.tasks.scraper.model.DisneyPlusCatalogItem
 import com.teletracker.tasks.scraper.{IngestJob, IngestJobArgs, IngestJobParser}
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
@@ -31,6 +32,8 @@ class IngestDisneyPlusCatalog @Inject()(
   protected val teletrackerConfig: TeletrackerConfig)
     extends IngestJob[DisneyPlusCatalogItem]
     with ElasticsearchFallbackMatching[DisneyPlusCatalogItem] {
+  override protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.DisneyPlusCatalog
 
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.DisneyPlus)

@@ -4,9 +4,13 @@ import com.teletracker.common.crypto.SecretResolver
 import com.teletracker.common.elasticsearch.model.EsItem
 import com.teletracker.common.elasticsearch.{FuzzyItemLookupRequest, ItemLookup}
 import com.teletracker.common.http.{HttpClient, HttpClientOptions, HttpRequest}
+import com.teletracker.common.model.scraping.NonMatchResult
+import com.teletracker.common.model.scraping.hulu.{
+  HuluScrapeItem,
+  HuluSearchResponse
+}
 import com.teletracker.common.util.Slug
 import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.tasks.scraper.model.NonMatchResult
 import com.teletracker.tasks.scraper.{model, IngestJobArgs}
 import io.circe.parser.decode
 import javax.inject.Inject
@@ -139,7 +143,7 @@ class HuluFallbackMatching @Inject()(
                 logger.info(
                   s"Successfully found fallback match for ${thingRaw.title.get.head} (${thingRaw.id} (Original item title: ${originalItem.title}))"
                 )
-                model.NonMatchResult(
+                NonMatchResult(
                   amended,
                   originalItem,
                   thingRaw

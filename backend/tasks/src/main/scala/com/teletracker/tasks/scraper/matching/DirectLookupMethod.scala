@@ -1,9 +1,10 @@
 package com.teletracker.tasks.scraper.matching
 
 import com.teletracker.common.elasticsearch.ItemLookup
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping
+import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.common.util.Folds
-import com.teletracker.tasks.scraper.model.{MatchInput, MatchResult}
+import com.teletracker.tasks.scraper.model.MatchInput
 import com.teletracker.tasks.scraper.IngestJobArgsLike
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,7 +34,7 @@ class DirectLookupMethod @Inject()(
           case ((matches, nonMatches), input) =>
             results.get(input.esItem.id).flatten match {
               case Some(value) =>
-                (matches :+ MatchResult(input, value)) -> nonMatches
+                (matches :+ scraping.MatchResult(input, value)) -> nonMatches
               case None =>
                 matches -> (nonMatches :+ input)
             }

@@ -4,14 +4,15 @@ import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.elasticsearch.model.EsItem
-import com.teletracker.common.model.scraping.ScrapedItem
-import com.teletracker.common.util.AsyncStream
-import com.teletracker.tasks.scraper.matching.LookupMethod
-import com.teletracker.tasks.scraper.model.{
+import com.teletracker.common.model.scraping.{
   MatchResult,
   NonMatchResult,
-  PotentialMatch
+  PotentialMatch,
+  ScrapeItemType,
+  ScrapedItem
 }
+import com.teletracker.common.util.AsyncStream
+import com.teletracker.tasks.scraper.matching.LookupMethod
 import io.circe.Codec
 import io.circe.syntax._
 import javax.inject.Inject
@@ -43,6 +44,8 @@ abstract class BaseIngestJob[
   protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
   protected lazy val today = LocalDate.now()
   protected lazy val now = OffsetDateTime.now()
+
+  protected def scrapeItemType: ScrapeItemType
 
   protected val missingItemsFile = new File(
     s"${today}_${getClass.getSimpleName}-missing-items.json"

@@ -3,20 +3,25 @@ package com.teletracker.service.controllers
 import com.teletracker.common.cache.{JustWatchLocalCache, TmdbLocalCache}
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.ItemLookup
-import com.teletracker.common.model.DataResponse
+import com.teletracker.common.elasticsearch.scraping.{
+  EsPotentialMatchItemStore,
+  PotentialMatchItemSearch
+}
+import com.teletracker.common.model.{DataResponse, Paging}
+import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.util.HasThingIdOrSlug
 import com.teletracker.service.api.ItemApi
 import com.teletracker.service.auth.AdminFilter
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
+import com.twitter.finatra.request.QueryParam
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+import io.circe.syntax._
 
 class AdminController @Inject()(
-  tmdbLocalCache: TmdbLocalCache,
-  justWatchLocalCache: JustWatchLocalCache,
-  thingsApi: ItemApi,
-  itemLookup: ItemLookup
+  itemLookup: ItemLookup,
+  esPotentialMatchItemStore: EsPotentialMatchItemStore
 )(implicit executionContext: ExecutionContext)
     extends Controller {
 
@@ -27,30 +32,34 @@ class AdminController @Inject()(
     )
   }
 
-  post("/cache/clear", admin = true) { _: Request =>
-    Future.sequence(
-      List(
-        tmdbLocalCache.clear(),
-        justWatchLocalCache.clear()
-      )
-    )
-  }
-
-  get("/caches", admin = true) { _: Request =>
-    import com.teletracker.common.util.json.circe._
-    import io.circe.generic.auto._
-    import io.circe.shapes._
-    import io.circe.syntax._
-
-    Future {
-      val jsonString = DataResponse.complex(
-        Map(
-          "tmdbLocalCache" -> tmdbLocalCache.getAll().asJson,
-          "justWatchLocalCache" -> justWatchLocalCache.getAll().asJson
-        )
-      )
-
-      response.ok(jsonString).contentTypeJson()
+  filter[AdminFilter].prefix("/api/v1/internal") {
+    prefix("/potential_matches") {
+      get("/search") { req: PotentialMatchSearchRequest =>
+        esPotentialMatchItemStore
+          .search(
+            PotentialMatchItemSearch(
+              scraperType = req.scraperItemType,
+              limit = req.limit
+            )
+          )
+          .map(resp => {
+            response
+              .ok(
+                DataResponse.forDataResponse(
+                  DataResponse(
+                    resp.items,
+                    Some(
+                      Paging(
+                        resp.bookmark.map(_.encode),
+                        total = Some(resp.totalHits)
+                      )
+                    )
+                  )
+                )
+              )
+              .contentTypeJson()
+          })
+      }
     }
   }
 
@@ -71,6 +80,10 @@ class AdminController @Inject()(
     }
   }
 }
+
+case class PotentialMatchSearchRequest(
+  @QueryParam scraperItemType: Option[ScrapeItemType],
+  @QueryParam limit: Int = 20)
 
 case class RefreshThingRequest(thingId: String) extends HasThingIdOrSlug
 case class ScrapeTmdbRequest(

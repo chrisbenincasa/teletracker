@@ -12,7 +12,6 @@ import com.teletracker.tasks.scraper.hulu.IngestHuluChanges
 import com.teletracker.tasks.scraper.netflix.{
   IngestNetflixCatalog,
   IngestNetflixOriginalsArrivals,
-  IngestUnogsNetflixExpiring,
   NetflixCatalogDeltaIngestJob
 }
 import com.teletracker.tasks.tmdb.export_tasks.{
@@ -39,7 +38,6 @@ object TaskRegistry {
     classOf[IngestHuluChanges],
     classOf[IngestHboChanges],
     classOf[IngestNetflixCatalog],
-    classOf[IngestUnogsNetflixExpiring],
     classOf[NetflixCatalogDeltaIngestJob],
     classOf[ImportMoviesFromDump],
     classOf[ImportPeopleFromDump],

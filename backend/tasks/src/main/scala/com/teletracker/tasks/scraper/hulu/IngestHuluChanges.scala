@@ -1,21 +1,12 @@
 package com.teletracker.tasks.scraper.hulu
 
-import com.teletracker.common.crypto.SecretResolver
-import com.teletracker.common.db.model.{ExternalSource, ItemType}
+import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.http.HttpClient
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
+import com.teletracker.common.model.scraping.hulu.HuluScrapeItem
 import com.teletracker.common.util.NetworkCache
-import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper._
-import com.teletracker.tasks.scraper.matching.{
-  ElasticsearchLookup,
-  LookupMethod
-}
-import com.teletracker.tasks.scraper.model.NonMatchResult
-import io.circe.generic.JsonCodec
-import io.circe.generic.auto._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time.{Instant, ZoneId, ZoneOffset}
@@ -28,6 +19,9 @@ class IngestHuluChanges @Inject()(
   protected val itemUpdater: ItemUpdater,
   huluFallbackMatching: HuluFallbackMatching)
     extends IngestJob[HuluScrapeItem] {
+
+  override protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.HuluCatalog
 
   private val premiumNetworks = Set("hbo", "starz", "showtime")
 
@@ -68,41 +62,3 @@ class IngestHuluChanges @Inject()(
       title = HuluSanitization.sanitizeTitle(item.title)
     )
 }
-
-@JsonCodec
-case class HuluScrapeItem(
-  availableDate: Option[String],
-  title: String,
-  releaseYear: Option[Int],
-  notes: String,
-  category: Option[String],
-  network: String,
-  status: String,
-  externalId: Option[String],
-  description: Option[String],
-  `type`: ItemType)
-    extends ScrapedItem {
-  override def isMovie: Boolean = `type` == ItemType.Movie
-
-  override def isTvShow: Boolean =
-    !isMovie || category.getOrElse("").toLowerCase().contains("series")
-}
-
-@JsonCodec
-case class HuluSearchResponse(groups: List[HuluSearchResponseGroup])
-
-@JsonCodec
-case class HuluSearchResponseGroup(results: List[HuluSearchResponseResult])
-
-@JsonCodec
-case class HuluSearchResponseResult(
-  entity_metadata: Option[HuluSearchResultMetadata],
-  metrics_info: Option[HuluSearchMetricsInfo])
-
-@JsonCodec
-case class HuluSearchResultMetadata(
-  premiere_date: Option[String],
-  target_name: String)
-
-@JsonCodec
-case class HuluSearchMetricsInfo(target_type: String)

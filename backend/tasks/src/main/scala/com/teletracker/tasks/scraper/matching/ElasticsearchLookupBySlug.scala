@@ -1,9 +1,9 @@
 package com.teletracker.tasks.scraper.matching
 
 import com.teletracker.common.elasticsearch.ItemLookup
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping
+import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.common.util.Slug
-import com.teletracker.tasks.scraper.model.MatchResult
 import com.teletracker.tasks.scraper.{model, IngestJobArgsLike}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,7 +55,7 @@ class ElasticsearchLookupBySlug @Inject()(
                   .get(slug)
                   .map(
                     scrapedItem =>
-                      model.MatchResult(
+                      scraping.MatchResult(
                         scrapedItem,
                         esItem
                       )

@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper.model
 
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.{PartialEsItem, ScrapedItem}
 import com.teletracker.common.util.json.circe._
 import io.circe.Codec
 

@@ -1,10 +1,11 @@
 package com.teletracker.tasks.scraper
 
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping
+import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.common.util.Folds
 import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
-import com.teletracker.tasks.scraper.model.{MatchResult, PotentialInput}
+import com.teletracker.tasks.scraper.model.PotentialInput
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.{Codec, Encoder}
@@ -97,7 +98,8 @@ abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec](
             case ((matches, misses), (esId, scrapedItem)) =>
               esItemMap.get(esId).flatten match {
                 case Some(value) =>
-                  (matches :+ MatchResult(scrapedItem, value)) -> misses
+                  (matches :+ scraping
+                    .MatchResult(scrapedItem, value)) -> misses
                 case None => matches -> (misses :+ scrapedItem)
               }
           }

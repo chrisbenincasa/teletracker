@@ -6,7 +6,12 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.{
+  NonMatchResult,
+  ScrapeItemType,
+  ScrapedItem
+}
+import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
@@ -16,10 +21,7 @@ import com.teletracker.tasks.scraper.matching.{
   ElasticsearchLookup,
   LookupMethod
 }
-import com.teletracker.tasks.scraper.model.{
-  NonMatchResult,
-  WhatsOnNetflixCatalogItem
-}
+import com.teletracker.tasks.scraper.model.WhatsOnNetflixCatalogItem
 import com.teletracker.tasks.scraper.{
   IngestJob,
   IngestJobArgs,
@@ -56,6 +58,9 @@ class IngestNetflixCatalog @Inject()(
   protected val elasticsearchExecutor: ElasticsearchExecutor,
   elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory)
     extends IngestJob[NetflixScrapedCatalogItem] {
+
+  override protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.NetflixCatalog
 
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.Netflix)
@@ -216,43 +221,3 @@ case class NetflixCatalogItem(
   override def url: Option[String] =
     externalId.map(id => s"https://netflix.com/title/$id")
 }
-
-@JsonCodec
-case class NetflixScrapedCatalogItem(
-  availableDate: Option[String],
-  title: String,
-  releaseYear: Option[Int],
-  network: String,
-  itemType: ItemType,
-  externalId: Option[String],
-  description: Option[String],
-  seasons: Option[List[NetflixScrapedSeason]])
-    extends ScrapedItem {
-  val status = "Available"
-
-  override def category: Option[String] = None
-
-  override def isMovie: Boolean = itemType == ItemType.Movie
-
-  override def isTvShow: Boolean = itemType == ItemType.Show
-
-  override def url: Option[String] =
-    externalId.map(id => s"https://netflix.com/title/$id")
-
-  override def numSeasonsAvailable: Option[Int] = seasons.map(_.size)
-}
-
-@JsonCodec
-case class NetflixScrapedSeason(
-  seasonNumber: Int,
-  releaseYear: Option[Int],
-  description: Option[String],
-  episodes: Option[List[NetflixScrapedEpisode]])
-
-@JsonCodec
-case class NetflixScrapedEpisode(
-  seasonNumber: Int,
-  episodeNumber: Int,
-  name: String,
-  runtime: String,
-  description: Option[String])

@@ -7,10 +7,9 @@ import com.teletracker.common.elasticsearch.{
   ElasticsearchAccess,
   ElasticsearchExecutor
 }
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.{NonMatchResult, ScrapedItem}
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.scraper.model.{NonMatchResult, PotentialMatch}
 import com.teletracker.tasks.scraper.{
   model,
   IngestJob,
@@ -70,7 +69,7 @@ class ElasticsearchFallbackMatcher @Inject()(
           .map(potentialMatches => {
             potentialMatches.map {
               case (esItem, scrapedItem) =>
-                model.NonMatchResult(
+                NonMatchResult(
                   scrapedItem,
                   scrapedItem,
                   esItem

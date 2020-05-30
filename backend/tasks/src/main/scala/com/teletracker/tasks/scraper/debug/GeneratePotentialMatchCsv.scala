@@ -1,23 +1,24 @@
 package com.teletracker.tasks.scraper.debug
 
-import com.teletracker.common.model.scraping.ScrapedItem
-import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
-import com.teletracker.tasks.scraper.hbo.{
+import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
+import com.teletracker.common.model.scraping.hbo.{
   HboMaxCatalogItem,
   HboScrapedCatalogItem
 }
-import com.teletracker.tasks.scraper.hulu.HuluScrapeCatalogItem
-import com.teletracker.tasks.scraper.model.{
-  DisneyPlusCatalogItem,
+import com.teletracker.common.model.scraping.{
   MatchResult,
-  PotentialMatch
+  PotentialMatch,
+  ScrapeItemType,
+  ScrapedItem
 }
-import com.teletracker.tasks.scraper.netflix.{
-  NetflixCatalogItem,
+import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
+import com.teletracker.common.model.scraping.netflix.{
+  NetflixOriginalScrapeItem,
   NetflixScrapedCatalogItem
 }
-import com.teletracker.tasks.scraper.{IngestJobParser, ScrapeItemType}
+import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.tasks.scraper.IngestJobParser
+import com.teletracker.tasks.scraper.hbo.HboScrapeChangesItem
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
@@ -105,6 +106,12 @@ class GeneratePotentialMatchCsv extends TeletrackerTaskWithDefaultArgs {
       case ScrapeItemType.HboMaxCatalog =>
         new IngestJobParser()
           .stream[PotentialMatch[HboMaxCatalogItem]](source.getLines())
+      case ScrapeItemType.HboChanges =>
+        new IngestJobParser()
+          .stream[PotentialMatch[HboScrapeChangesItem]](source.getLines())
+      case ScrapeItemType.NetflixOriginalsArriving =>
+        new IngestJobParser()
+          .stream[PotentialMatch[NetflixOriginalScrapeItem]](source.getLines())
     }
   }
 }
@@ -180,13 +187,19 @@ class GenerateMatchCsv extends TeletrackerTaskWithDefaultArgs {
           .stream[MatchResult[HboScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.NetflixCatalog =>
         new IngestJobParser()
-          .stream[MatchResult[NetflixCatalogItem]](source.getLines())
+          .stream[MatchResult[NetflixScrapedCatalogItem]](source.getLines())
       case ScrapeItemType.DisneyPlusCatalog =>
         new IngestJobParser()
           .stream[MatchResult[DisneyPlusCatalogItem]](source.getLines())
       case ScrapeItemType.HboMaxCatalog =>
         new IngestJobParser()
           .stream[MatchResult[HboMaxCatalogItem]](source.getLines())
+      case ScrapeItemType.HboChanges =>
+        new IngestJobParser()
+          .stream[MatchResult[HboScrapeChangesItem]](source.getLines())
+      case ScrapeItemType.NetflixOriginalsArriving =>
+        new IngestJobParser()
+          .stream[MatchResult[NetflixOriginalScrapeItem]](source.getLines())
     }
   }
 }

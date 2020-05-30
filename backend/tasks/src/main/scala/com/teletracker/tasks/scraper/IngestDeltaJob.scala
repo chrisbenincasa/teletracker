@@ -10,7 +10,7 @@ import com.teletracker.common.elasticsearch.model.{
   EsItem
 }
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
@@ -23,7 +23,6 @@ import com.teletracker.tasks.scraper.matching.{
   ElasticsearchLookup,
   LookupMethod
 }
-import com.teletracker.tasks.scraper.model.MatchResult
 import com.teletracker.tasks.util.{FileUtils, SourceRetriever}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Codec, Encoder}

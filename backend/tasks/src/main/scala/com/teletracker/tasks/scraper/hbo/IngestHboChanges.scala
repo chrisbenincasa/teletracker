@@ -7,7 +7,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.{ScrapeItemType, ScrapedItem}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{
@@ -23,8 +23,6 @@ import java.time.{Instant, ZoneId, ZoneOffset}
 
 object IngestHboChanges extends IngestJobApp[IngestHboChanges]
 
-object HboScrapeItem
-
 class IngestHboChanges @Inject()(
   protected val teletrackerConfig: TeletrackerConfig,
   protected val s3: S3Client,
@@ -32,8 +30,11 @@ class IngestHboChanges @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   protected val elasticsearchExecutor: ElasticsearchExecutor)
-    extends IngestJob[HboScrapeItem]
-    with ElasticsearchFallbackMatching[HboScrapeItem] {
+    extends IngestJob[HboScrapeChangesItem]
+    with ElasticsearchFallbackMatching[HboScrapeChangesItem] {
+
+  override protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.HboChanges
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
@@ -45,7 +46,7 @@ class IngestHboChanges @Inject()(
 }
 
 @JsonCodec
-case class HboScrapeItem(
+case class HboScrapeChangesItem(
   availableDate: Option[String],
   title: String,
   parsedReleaseYear: Option[Int],

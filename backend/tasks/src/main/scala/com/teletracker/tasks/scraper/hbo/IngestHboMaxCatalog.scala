@@ -1,25 +1,23 @@
 package com.teletracker.tasks.scraper.hbo
 
-import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{EsExternalId, EsItem}
-import com.teletracker.common.util.json.circe._
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
+import com.teletracker.common.model.scraping.hbo.HboMaxCatalogItem
 import com.teletracker.common.util.{AsyncStream, NetworkCache}
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper._
 import com.teletracker.tasks.scraper.matching.ElasticsearchFallbackMatching
-import com.teletracker.tasks.scraper.model.NonMatchResult
-import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
-import java.time.{LocalDate, OffsetDateTime}
+import java.time.LocalDate
 import java.util.UUID
 import java.util.regex.Pattern
 import scala.concurrent.Future
@@ -34,6 +32,9 @@ class IngestHboMaxCatalog @Inject()(
   externalIdMappingStore: ElasticsearchExternalIdMappingStore)
     extends IngestJob[HboMaxCatalogItem]
     with ElasticsearchFallbackMatching[HboMaxCatalogItem] {
+
+  override protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.HboMaxCatalog
 
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.HboMax)
@@ -127,32 +128,4 @@ class IngestHboMaxCatalog @Inject()(
           })
       })
   }
-}
-
-@JsonCodec
-case class HboMaxCatalogItem(
-  id: String,
-  externalId: Option[String],
-  itemType: ItemType,
-  description: Option[String],
-  title: String,
-  override val url: Option[String],
-  couldBeOnHboGo: Option[Boolean])
-    extends ScrapedItem {
-  override def releaseYear: Option[Int] = None
-
-  override def category: Option[String] = None
-
-  override def status: String = ""
-
-  override def availableDate: Option[String] = None
-
-  override def isMovie: Boolean = itemType == ItemType.Movie
-
-  override def isTvShow: Boolean = itemType == ItemType.Show
-
-  override def network: String = "hbo-max"
-
-  override lazy val availableLocalDate: Option[LocalDate] =
-    availableDate.map(OffsetDateTime.parse(_)).map(_.toLocalDate)
 }

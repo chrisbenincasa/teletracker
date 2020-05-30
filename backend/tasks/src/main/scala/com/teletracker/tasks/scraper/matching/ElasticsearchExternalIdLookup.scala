@@ -1,9 +1,9 @@
 package com.teletracker.tasks.scraper.matching
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemSearch}
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping
+import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.tasks.scraper.IngestJobArgsLike
-import com.teletracker.tasks.scraper.model.MatchResult
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -71,7 +71,7 @@ class ElasticsearchExternalIdLookup[T <: ScrapedItem](
               itemsByExternalId
                 .get(externalId.id -> itemType)
                 .map(item => {
-                  MatchResult(item, esItem)
+                  scraping.MatchResult(item, esItem)
                 })
           }
 

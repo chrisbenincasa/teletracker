@@ -5,11 +5,11 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping.{ScrapeItemType, ScrapedItem}
+import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.matching.{DirectLookupMethod, LookupMethod}
 import com.teletracker.tasks.scraper.model.MatchInput
-import com.teletracker.tasks.scraper.netflix.NetflixScrapedCatalogItem
 import io.circe.Codec
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
@@ -36,6 +36,10 @@ class IngestNetflixCatalogMatchFile @Inject()(
   protected val itemUpdater: ItemUpdater,
   protected val elasticsearchExecutor: ElasticsearchExecutor)
     extends IngestMatchFileJob[NetflixScrapedCatalogItem] {
+
+  override protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.NetflixCatalog
+
   override protected def externalSources: List[ExternalSource] =
     List(ExternalSource.Netflix)
 }

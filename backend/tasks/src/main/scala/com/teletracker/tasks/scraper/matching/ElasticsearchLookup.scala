@@ -1,7 +1,6 @@
 package com.teletracker.tasks.scraper.matching
 
-import com.teletracker.common.model.scraping.ScrapedItem
-import com.teletracker.tasks.scraper.model.MatchResult
+import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.tasks.scraper.IngestJobArgsLike
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}

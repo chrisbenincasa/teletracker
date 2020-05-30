@@ -30,7 +30,7 @@ class AdminFilter @Inject()(
   private def getParamOrHeader(request: Request): Option[String] = {
     Option(request.getParam("admin_key"))
       .map(base64Encoded => {
-        new String(Base64.getDecoder.decode(base64Encoded))
+        new String(Base64.getDecoder.decode(base64Encoded)).trim
       })
       .orElse {
         request.headerMap

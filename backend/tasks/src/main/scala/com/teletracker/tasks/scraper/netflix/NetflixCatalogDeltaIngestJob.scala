@@ -8,6 +8,8 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.elasticsearch.model.EsAvailability
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
+import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{
@@ -15,7 +17,6 @@ import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatcherOptions,
   ElasticsearchLookup
 }
-import com.teletracker.tasks.scraper.model.NonMatchResult
 import com.teletracker.tasks.scraper.{
   IngestDeltaJob,
   IngestDeltaJobArgs,
@@ -35,6 +36,9 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   elasticsearchLookup: ElasticsearchLookup,
   elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory)
     extends IngestDeltaJob[NetflixScrapedCatalogItem](elasticsearchLookup) {
+
+  override protected def scrapeItemType: ScrapeItemType =
+    ScrapeItemType.NetflixCatalog
 
   override protected val networkNames: Set[String] = Set("netflix")
   override protected val externalSource: ExternalSource = ExternalSource.Netflix

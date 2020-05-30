@@ -1,11 +1,13 @@
-package com.teletracker.tasks.scraper;
+package com.teletracker.common.model.scraping;
 
 public enum ScrapeItemType {
     HuluCatalog("HuluCatalog"),
     HboCatalog("HboCatalog"),
     NetflixCatalog("NetflixCatalog"),
     DisneyPlusCatalog("DisneyPlusCatalog"),
-    HboMaxCatalog("HboMaxCatalog");
+    HboMaxCatalog("HboMaxCatalog"),
+    HboChanges("HboChanges"),
+    NetflixOriginalsArriving("NetflixOriginalsArriving");
 
     private final String type;
 

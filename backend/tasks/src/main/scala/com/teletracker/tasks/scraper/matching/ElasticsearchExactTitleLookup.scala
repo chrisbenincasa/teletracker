@@ -6,9 +6,9 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup
 }
 import com.teletracker.common.elasticsearch.model.EsItem
-import com.teletracker.common.model.scraping.ScrapedItem
+import com.teletracker.common.model.scraping
+import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.common.util.{Folds, Sanitizers}
-import com.teletracker.tasks.scraper.model.MatchResult
 import com.teletracker.tasks.scraper.{model, IngestJobArgsLike}
 import com.teletracker.tasks.util.Stopwords
 import javax.inject.Inject
@@ -72,7 +72,8 @@ class ElasticsearchExactTitleLookup @Inject()(
               .get(requestId)
               .flatMap(findSuitableMatch(_, scrapedItem)) match {
               case Some(esItem) =>
-                (matches :+ MatchResult(scrapedItem, esItem)) -> nonMatches
+                (matches :+ scraping
+                  .MatchResult(scrapedItem, esItem)) -> nonMatches
               case None => matches -> (nonMatches :+ scrapedItem)
             }
         }
