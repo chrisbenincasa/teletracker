@@ -1,4 +1,4 @@
-import { actionChannel, put, take } from '@redux-saga/core/effects';
+import { actionChannel, all, call, put, take } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { UserDetails } from '../../types';
 import { createAction } from '../utils';
@@ -40,14 +40,15 @@ export const updateUserSaga = function*() {
       );
 
       if (response.ok) {
-        yield put(
-          updateUserSuccess({
-            networks: response.data!.data.networkPreferences,
-            preferences: response.data!.data.preferences,
-          }),
-        );
-
-        logEvent('User', 'Updated users');
+        yield all([
+          put(
+            updateUserSuccess({
+              networks: response.data!.data.networkPreferences,
+              preferences: response.data!.data.preferences,
+            }),
+          ),
+          call(logEvent, 'User', 'Updated users'),
+        ]);
       }
     }
   }

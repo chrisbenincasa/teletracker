@@ -1,4 +1,4 @@
-import { call, put, takeLatest } from '@redux-saga/core/effects';
+import { all, call, put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { logEvent } from '../../utils/analytics';
 import Auth from '@aws-amplify/auth';
@@ -20,9 +20,7 @@ export const logoutSaga = function*() {
   yield takeLatest(LOGOUT_INITIATED, function*() {
     try {
       yield call([Auth, Auth.signOut]);
-      yield put(logoutSuccessful());
-
-      logEvent('User', 'Logout');
+      yield all([put(logoutSuccessful()), call(logEvent, 'User', 'Logout')]);
     } catch (e) {
       console.error(e);
     }

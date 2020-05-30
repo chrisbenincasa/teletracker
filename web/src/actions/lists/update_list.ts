@@ -1,4 +1,4 @@
-import { all, put, takeEvery } from '@redux-saga/core/effects';
+import { all, call, put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
@@ -66,7 +66,7 @@ export const updateListSaga = function*() {
               options: payload.options,
             }),
           ),
-          logEvent('User', 'Updated list'),
+          call(logEvent, 'User', 'Updated list'),
         ]);
 
         yield put(RetrieveUserSelfInitiated({ force: true }));

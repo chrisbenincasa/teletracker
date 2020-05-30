@@ -1,4 +1,11 @@
-import { actionChannel, put, select, take } from '@redux-saga/core/effects';
+import {
+  actionChannel,
+  all,
+  call,
+  put,
+  select,
+  take,
+} from '@redux-saga/core/effects';
 import { UserSelf } from '../../reducers/user';
 import { AppState } from '../../reducers';
 import { createAction } from '../utils';
@@ -35,9 +42,10 @@ export const updateUserPreferencesSaga = function*() {
           preferences: payload,
         };
 
-        yield put(updateUser(newUser));
-
-        logEvent('User', 'Updated user preferences');
+        yield all([
+          put(updateUser(newUser)),
+          call(logEvent, 'User', 'Updated user preferences'),
+        ]);
       }
     }
   }

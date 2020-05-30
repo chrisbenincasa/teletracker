@@ -42,7 +42,7 @@ export const authWithGoogleSaga = function*() {
         });
 
         // todo:  separate each
-        logEvent('User', 'Google Login/Signup');
+        call(logEvent, 'User', 'Google Login/Signup');
         console.log(creds);
       } catch (e) {
         console.error(e);

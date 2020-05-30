@@ -1,4 +1,4 @@
-import { all, put, takeLatest } from '@redux-saga/core/effects';
+import { all, call, put, takeLatest } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
@@ -70,7 +70,7 @@ export const updateListTrackingSaga = function*() {
                 }),
               );
             }),
-            logEvent('User', 'Added item to list'),
+            call(logEvent, 'User', 'Added item to list'),
           ]);
 
           yield all([
@@ -84,7 +84,7 @@ export const updateListTrackingSaga = function*() {
                 }),
               );
             }),
-            logEvent('User', 'Remove item from list'),
+            call(logEvent, 'User', 'Remove item from list'),
           ]);
         }
       } catch (e) {

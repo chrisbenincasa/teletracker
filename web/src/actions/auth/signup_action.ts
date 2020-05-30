@@ -69,7 +69,7 @@ export const signupSaga = function*() {
                 .getJwtToken(),
             ),
           ),
-          logEvent('User', 'Manual Signup'),
+          call(logEvent, 'User', 'Manual Signup'),
         ]);
       } catch (e) {
         console.error(e);

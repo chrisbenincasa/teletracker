@@ -1,4 +1,4 @@
-import { put, takeEvery } from '@redux-saga/core/effects';
+import { call, all, put, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
@@ -45,16 +45,17 @@ export const addToListSaga = function*() {
         );
         if (response.ok) {
           yield put({ type: LIST_ADD_ITEM_SUCCESS });
-          yield put(
-            updateUserItemTagsSuccess({
-              itemId: payload.itemId,
-              action: ActionType.TrackedInList,
-            }),
-          );
+          yield all([
+            put(
+              updateUserItemTagsSuccess({
+                itemId: payload.itemId,
+                action: ActionType.TrackedInList,
+              }),
+            ),
+            call(logEvent, 'User', 'Added item to list'),
+          ]);
 
           // TODO: put a retrieve user action here
-
-          logEvent('User', 'Added item to list');
         } else {
           yield put({ type: LIST_ADD_ITEM_FAILED });
         }

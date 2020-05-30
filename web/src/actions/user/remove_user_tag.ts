@@ -1,4 +1,4 @@
-import { put, takeEvery } from '@redux-saga/core/effects';
+import { call, put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
@@ -43,6 +43,8 @@ export const removeUserActionSaga = function*() {
         payload.itemId,
         payload.action,
       );
+
+      call(logEvent, 'User', 'Remove User Tags');
 
       if (response.ok && payload.lazy) {
         yield put(removeUserItemTagsSuccess(payload));

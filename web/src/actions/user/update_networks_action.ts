@@ -1,4 +1,4 @@
-import { put, select, takeEvery } from '@redux-saga/core/effects';
+import { all, call, put, select, takeEvery } from '@redux-saga/core/effects';
 import { UserSelf } from '../../reducers/user';
 import { AppState } from '../../reducers';
 import * as R from 'ramda';
@@ -55,9 +55,10 @@ export const updateNetworksForUserSaga = function*() {
           networks: newSubs,
         };
 
-        yield put(updateUser(newUser));
-
-        logEvent('User', 'Updated networks');
+        yield all([
+          put(updateUser(newUser)),
+          call(logEvent, 'User', 'Updated networks'),
+        ]);
       }
     }
   });

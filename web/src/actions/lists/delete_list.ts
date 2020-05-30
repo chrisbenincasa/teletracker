@@ -1,4 +1,4 @@
-import { all, put, takeEvery } from '@redux-saga/core/effects';
+import { all, call, put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
@@ -51,7 +51,7 @@ export const deleteListSaga = function*() {
               mergeListId: payload.mergeListId,
             }),
           ),
-          logEvent('User', 'Deleted list'),
+          call(logEvent, 'User', 'Deleted list'),
         ]);
         yield put(retrieveAllLists({}));
       } else {

@@ -1,4 +1,4 @@
-import { all, put, takeEvery } from '@redux-saga/core/effects';
+import { all, call, put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
@@ -52,7 +52,7 @@ export const createNewListSaga = function*() {
       if (response.ok) {
         yield all([
           put(createListSuccess(response.data!.data)),
-          logEvent('User', 'Created list'),
+          call(logEvent, 'User', 'Created list'),
         ]);
         yield put(retrieveAllLists({}));
       } else {

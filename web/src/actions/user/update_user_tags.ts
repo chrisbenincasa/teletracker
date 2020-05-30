@@ -1,4 +1,4 @@
-import { put, takeEvery } from '@redux-saga/core/effects';
+import { call, put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
@@ -54,7 +54,7 @@ export const updateUserActionSaga = function*() {
         payload.value,
       );
 
-      logEvent('User', 'Updated user tags');
+      call(logEvent, 'User', 'Updated user tags');
 
       if (response.ok && payload.lazy) {
         yield put(updateUserItemTagsSuccess(payload));
