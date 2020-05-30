@@ -57,6 +57,7 @@ class HuluItem(scrapy.Item):
     premiereDate = scrapy.Field()
     episodes = scrapy.Field()
     additionalServiceRequired = scrapy.Field()
+    posterImageUrl = scrapy.Field()
 
 
 class HuluEpisodeItem(scrapy.Item):

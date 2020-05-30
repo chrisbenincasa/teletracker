@@ -44,6 +44,11 @@ class HuluSpider(BaseSitemapSpider):
 
                         episodes = self._extract_episodes(tabs['tabs']) if tabs else []
 
+                        image_url = None
+                        images = response.css('.DetailEntityMasthead__vertical-tile-img')
+                        if len(images) > 0:
+                            image_url = images[0].attrib['src']
+
                         return HuluItem(
                             id=entity['entityId'],
                             externalId=entity['entityId'],
@@ -53,7 +58,8 @@ class HuluSpider(BaseSitemapSpider):
                             itemType='show',
                             premiereDate=entity['premiereDate'],
                             episodes=episodes,
-                            additionalServiceRequired=self._extract_additional_service(components)
+                            additionalServiceRequired=self._extract_additional_service(components),
+                            posterImageUrl=image_url
                         )
 
             except KeyError as e:
@@ -105,6 +111,11 @@ class HuluSpider(BaseSitemapSpider):
                 if components:
                     for component in components:
                         if 'entityType' in component.keys() and component["entityType"] == "movie":
+                            image_url = None
+                            images = response.css('.DetailEntityMasthead__vertical-tile-img')
+                            if len(images) > 0:
+                                image_url = images[0].attrib['src']
+
                             return HuluItem(
                                 id=component['entityId'],
                                 externalId=component['entityId'],
@@ -113,7 +124,8 @@ class HuluSpider(BaseSitemapSpider):
                                 network='Hulu',
                                 itemType='movie',
                                 premiereDate=component['premiereDate'],
-                                additionalServiceRequired=self._extract_additional_service(components)
+                                additionalServiceRequired=self._extract_additional_service(components),
+                                posterImageUrl=image_url
                             )
             except KeyError as e:
                 self.log('{}'.format(e))
