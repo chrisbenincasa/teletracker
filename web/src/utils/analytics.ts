@@ -16,6 +16,13 @@ export const logPageView = (pathName: string) => {
   ReactGA.pageview(pathName);
 };
 
+export const logModalView = (modalName: string) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`GA: Logging modal view for ${modalName}`);
+  }
+  ReactGA.modalview(modalName);
+};
+
 export const logEvent = (
   category: string = '',
   action: string = '',

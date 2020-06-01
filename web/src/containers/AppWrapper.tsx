@@ -52,6 +52,7 @@ export default function AppWrapper(props: Props) {
       initGA();
       window.GA_INITIALIZED = true;
     }
+    console.log(nextRouter);
     logPageView(nextRouter.asPath);
   }, []);
 
