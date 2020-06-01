@@ -14,7 +14,9 @@ trait ScrapedItem {
   def status: String
   def externalId: Option[String]
   def description: Option[String]
-
+  def url: Option[String] = None
+  def numSeasonsAvailable: Option[Int] = None
+  def posterImageUrl: Option[String] = None
   def actualItemId: Option[UUID] = None
 
   lazy val availableLocalDate: Option[LocalDate] =
@@ -33,8 +35,4 @@ trait ScrapedItem {
       None
     }
   }
-
-  def url: Option[String] = None
-
-  def numSeasonsAvailable: Option[Int] = None
 }

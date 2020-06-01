@@ -17,7 +17,7 @@ object EsPotentialMatchItem {
   implicit val codec: Codec[EsPotentialMatchItem] =
     io.circe.generic.semiauto.deriveCodec
 
-  implicit val hasId: HasId[EsPotentialMatchItem] =
+  implicit val hasId: HasId.Aux[EsPotentialMatchItem, String] =
     new HasId[EsPotentialMatchItem] {
       override type Id = String
       override def id(x: EsPotentialMatchItem): String = x.id
@@ -46,7 +46,7 @@ case class EsGenericScrapedItem(
   raw: Json)
 
 object EsScrapedItem {
-  def fromAnyScrapedItem[T <: ScrapedItem](item: T) = {
+  def fromAnyScrapedItem[T <: ScrapedItem](item: T): EsScrapedItem = {
     require(item.thingType.isDefined)
 
     EsScrapedItem(
@@ -58,7 +58,8 @@ object EsScrapedItem {
       externalId = item.externalId,
       description = item.description,
       itemType = item.thingType.get,
-      url = item.url
+      url = item.url,
+      posterImageUrl = item.posterImageUrl
     )
   }
 }
@@ -73,7 +74,8 @@ case class EsScrapedItem(
   override val externalId: Option[String],
   override val description: Option[String],
   itemType: ItemType,
-  override val url: Option[String])
+  override val url: Option[String],
+  override val posterImageUrl: Option[String])
     extends ScrapedItem {
   override def isMovie: Boolean = itemType == ItemType.Movie
   override def isTvShow: Boolean = itemType == ItemType.Show

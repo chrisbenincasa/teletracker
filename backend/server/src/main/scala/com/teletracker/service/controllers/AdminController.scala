@@ -1,6 +1,7 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.cache.{JustWatchLocalCache, TmdbLocalCache}
+import com.teletracker.common.db.Bookmark
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.ItemLookup
 import com.teletracker.common.elasticsearch.scraping.{
@@ -14,10 +15,11 @@ import com.teletracker.service.api.ItemApi
 import com.teletracker.service.auth.AdminFilter
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
-import com.twitter.finatra.request.QueryParam
+import com.twitter.finatra.request.{QueryParam, RouteParam}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import io.circe.syntax._
+import java.util.UUID
 
 class AdminController @Inject()(
   itemLookup: ItemLookup,
@@ -39,7 +41,8 @@ class AdminController @Inject()(
           .search(
             PotentialMatchItemSearch(
               scraperType = req.scraperItemType,
-              limit = req.limit
+              limit = req.limit,
+              bookmark = req.bookmark.map(Bookmark.parse)
             )
           )
           .map(resp => {
@@ -60,7 +63,16 @@ class AdminController @Inject()(
               .contentTypeJson()
           })
       }
+
+      get("/:id") { req: SpecificPotentialMatchRequest =>
+        esPotentialMatchItemStore.lookup(req.id).map {
+          case Some(value) =>
+            response.ok(DataResponse.complex(value)).contentTypeJson()
+          case None => response.notFound
+        }
+      }
     }
+
   }
 
   get("/admin/finatra/things/:thingId", admin = true) { req: Request =>
@@ -83,7 +95,10 @@ class AdminController @Inject()(
 
 case class PotentialMatchSearchRequest(
   @QueryParam scraperItemType: Option[ScrapeItemType],
-  @QueryParam limit: Int = 20)
+  @QueryParam limit: Int = 20,
+  @QueryParam bookmark: Option[String])
+
+case class SpecificPotentialMatchRequest(@RouteParam id: String)
 
 case class RefreshThingRequest(thingId: String) extends HasThingIdOrSlug
 case class ScrapeTmdbRequest(
