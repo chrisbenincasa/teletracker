@@ -4,9 +4,11 @@ import { LinearProgress, makeStyles, NoSsr, Theme } from '@material-ui/core';
 import Drawer from '../components/Drawer';
 import Footer from '../components/Footer';
 import { WithUser } from '../hooks/useWithUser';
+import { currentUser } from '../utils/page-utils';
+
 import useStateSelector from '../hooks/useStateSelector';
 import _ from 'lodash';
-import { initGA, logPageView } from '../utils/analytics';
+import { initGA, logPageView, setUser } from '../utils/analytics';
 import { useRouter } from 'next/router';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -46,13 +48,19 @@ export default function AppWrapper(props: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const classes = useStyles();
   const nextRouter = useRouter();
+  const user = currentUser();
 
   useEffect(() => {
     if (window && !window.GA_INITIALIZED) {
       initGA();
       window.GA_INITIALIZED = true;
     }
-    console.log(nextRouter);
+
+    // To do: this should only fire one time
+    user.then(user =>
+      user?.getUsername() ? setUser(user?.getUsername()) : null,
+    );
+
     logPageView(nextRouter.asPath);
   }, []);
 

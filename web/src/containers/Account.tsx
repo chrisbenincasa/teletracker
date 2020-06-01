@@ -132,18 +132,7 @@ class Account extends Component<Props, State> {
   }
 
   componentDidMount() {
-    const { isLoggedIn, userSelf } = this.props;
-
     this.props.loadNetworks();
-
-    // if (
-    //   isLoggedIn &&
-    //   userSelf &&
-    //   userSelf.user &&
-    //   userSelf.user.getUsername()
-    // ) {
-    //   ReactGA.set({ userId: userSelf.user.getUsername() });
-    // }
   }
 
   componentDidUpdate(oldProps: Props) {

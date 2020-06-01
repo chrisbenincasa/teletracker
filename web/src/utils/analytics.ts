@@ -8,6 +8,13 @@ export const initGA = () => {
   ReactGA.initialize(GA_TRACKING_ID);
 };
 
+export const setUser = (user: string) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`GA: Set user ${user}`);
+  }
+  ReactGA.set({ userId: user });
+};
+
 export const logPageView = (pathName: string) => {
   if (process.env.NODE_ENV !== 'production') {
     console.log(`GA: Logging pageview for ${pathName}`);
@@ -28,15 +35,14 @@ export const logEvent = (
   action: string = '',
   label?: string,
   value?: number,
+  nonInteraction?: boolean,
 ) => {
-  if (category && action) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(
-        `GA: Logging event for ${category} & ${action} & ${label} & ${value}`,
-      );
-    }
-    ReactGA.event({ category, action });
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(
+      `GA: Logging event for ${category} & ${action} & ${label} & ${value} & ${nonInteraction}`,
+    );
   }
+  ReactGA.event({ category, action, label, value, nonInteraction });
 };
 
 export const logException = (description: string = '', fatal = false) => {
