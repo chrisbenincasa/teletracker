@@ -45,6 +45,17 @@ export const logEvent = (
   ReactGA.event({ category, action, label, value, nonInteraction });
 };
 
+export const logTiming = (
+  category: string = '',
+  variable: string = '',
+  value: number,
+) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`GA: ${category} - ${variable}: ${value}`);
+  }
+  ReactGA.timing({ category, variable, value });
+};
+
 export const logException = (description: string = '', fatal = false) => {
   if (description) {
     if (process.env.NODE_ENV !== 'production') {

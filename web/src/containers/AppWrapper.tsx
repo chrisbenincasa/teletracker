@@ -8,7 +8,7 @@ import { currentUser } from '../utils/page-utils';
 
 import useStateSelector from '../hooks/useStateSelector';
 import _ from 'lodash';
-import { initGA, logPageView, setUser } from '../utils/analytics';
+import { initGA, logPageView, logTiming, setUser } from '../utils/analytics';
 import { useRouter } from 'next/router';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -55,11 +55,6 @@ export default function AppWrapper(props: Props) {
       initGA();
       window.GA_INITIALIZED = true;
     }
-
-    // To do: this should only fire one time
-    user.then(user =>
-      user?.getUsername() ? setUser(user?.getUsername()) : null,
-    );
 
     logPageView(nextRouter.asPath);
   }, []);
