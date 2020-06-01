@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.hbo
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
@@ -9,6 +9,7 @@ import com.teletracker.common.elasticsearch.{
 }
 import com.teletracker.common.model.scraping.{ScrapeItemType, ScrapedItem}
 import com.teletracker.common.util.NetworkCache
+import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatching,
@@ -19,7 +20,14 @@ import com.teletracker.tasks.scraper.{IngestJob, IngestJobApp, IngestJobParser}
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
-import java.time.{Instant, ZoneId, ZoneOffset}
+import java.time.{
+  Instant,
+  LocalDate,
+  LocalDateTime,
+  OffsetDateTime,
+  ZoneId,
+  ZoneOffset
+}
 
 object IngestHboChanges extends IngestJobApp[IngestHboChanges]
 
@@ -51,16 +59,22 @@ case class HboScrapeChangesItem(
   title: String,
   parsedReleaseYear: Option[Int],
   category: Option[String],
-  network: String,
   status: String,
-  externalId: Option[String])
+  externalId: Option[String],
+  itemType: ItemType)
     extends ScrapedItem {
-  override def isMovie: Boolean =
-    category.getOrElse("").toLowerCase().trim() == "film"
 
-  override def isTvShow: Boolean = false
+  override lazy val availableLocalDate: Option[LocalDate] =
+    availableDate.map(LocalDateTime.parse(_)).map(_.toLocalDate)
+
+  override def isMovie: Boolean =
+    itemType == ItemType.Movie
+
+  override def isTvShow: Boolean = itemType == ItemType.Show
 
   override def releaseYear: Option[Int] = parsedReleaseYear
 
   override def description: Option[String] = None
+
+  override def network: String = "hbo"
 }

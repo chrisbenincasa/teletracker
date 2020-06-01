@@ -70,7 +70,7 @@ class HboChangesSpider(BaseSpider):
 
             if full_date:
                 yield HboChangeItem(
-                    availableDate=full_date,
+                    availableDate=full_date.isoformat(),
                     title=title,
                     releaseYear=None,
                     itemType='movie',
@@ -101,8 +101,9 @@ class HboChangesSpider(BaseSpider):
                     release_year = year_match.group(1)
                     parsed_title = re.sub(parens_regex, '',
                                           title_and_year.replace(year_match.group(0), '')).strip()
+                    self.log('{}'.format(full_date))
                     yield HboChangeItem(
-                        availableDate=full_date,
+                        availableDate=full_date.isoformat(),
                         title=parsed_title,
                         releaseYear=int(release_year),
                         itemType='movie',
