@@ -7,6 +7,7 @@ import { retrieveAllLists } from './retrieve_all_lists';
 import { logEvent } from '../../utils/analytics';
 import { updateUserItemTagsSuccess } from '../user/update_user_tags';
 import { removeUserItemTagsSuccess } from '../user/remove_user_tag';
+import { logException } from '../../utils/analytics';
 
 import { ActionType } from '../../types';
 import { useDispatchAction } from '../../hooks/useDispatchAction';
@@ -70,7 +71,15 @@ export const updateListTrackingSaga = function*() {
                 }),
               );
             }),
-            call(logEvent, 'User', 'Added item to list'),
+            payload.addToLists.length > 0
+              ? call(
+                  logEvent,
+                  'List Management',
+                  'Manage List Dialog',
+                  'Added item to list',
+                  payload.addToLists.length,
+                )
+              : null,
           ]);
 
           yield all([
@@ -84,11 +93,23 @@ export const updateListTrackingSaga = function*() {
                 }),
               );
             }),
-            call(logEvent, 'User', 'Remove item from list'),
+
+            payload.removeFromLists.length > 0
+              ? call(
+                  logEvent,
+                  'List Management',
+                  'Manage List Dialog',
+                  'Removed item from list',
+                  payload.removeFromLists.length,
+                )
+              : null,
           ]);
         }
       } catch (e) {
-        yield put(updateListTrackingFailed(e));
+        yield all([
+          put(updateListTrackingFailed(e)),
+          call(logException, `${e}`, false),
+        ]);
       }
     } else {
       // To do: error payload doesn't exist

@@ -5,7 +5,7 @@ import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
 import { ListRules } from '../../types';
-import { logEvent } from '../../utils/analytics';
+import { logEvent, logException } from '../../utils/analytics';
 import { useDispatchAction } from '../../hooks/useDispatchAction';
 
 export const USER_SELF_CREATE_LIST = 'user/self/create_list/INITIATED';
@@ -42,21 +42,25 @@ export const createNewListSaga = function*() {
     payload,
   }: UserCreateListAction) {
     if (payload) {
-      let response: TeletrackerResponse<any> = yield clientEffect(
-        client => client.createList,
-        payload.name,
-        payload.itemIds,
-        payload.rules,
-      );
+      try {
+        let response: TeletrackerResponse<any> = yield clientEffect(
+          client => client.createList,
+          payload.name,
+          payload.itemIds,
+          payload.rules,
+        );
 
-      if (response.ok) {
-        yield all([
-          put(createListSuccess(response.data!.data)),
-          call(logEvent, 'User', 'Created list'),
-        ]);
-        yield put(retrieveAllLists({}));
-      } else {
-        // TODO: ERROR
+        if (response.ok) {
+          yield all([
+            put(createListSuccess(response.data!.data)),
+            call(logEvent, 'List Management', 'Create list'),
+          ]);
+          yield put(retrieveAllLists({}));
+        } else {
+          // TODO: ERROR
+        }
+      } catch (e) {
+        call(logException, `${e}`, false);
       }
     } else {
       // TODO: Fail

@@ -2,26 +2,41 @@ import ReactGA from 'react-ga';
 import { GA_TRACKING_ID } from '../constants/';
 
 export const initGA = () => {
-  console.log('GA: Initialization');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('GA: Initialization');
+  }
   ReactGA.initialize(GA_TRACKING_ID);
 };
 
 export const logPageView = (pathName: string) => {
-  console.log(`GA: Logging pageview for ${pathName}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`GA: Logging pageview for ${pathName}`);
+  }
   ReactGA.set({ page: pathName });
-  ReactGA.pageview(window.location.pathname);
+  ReactGA.pageview(pathName);
 };
 
-export const logEvent = (category: string = '', action: string = '') => {
+export const logEvent = (
+  category: string = '',
+  action: string = '',
+  label?: string,
+  value?: number,
+) => {
   if (category && action) {
-    console.log(`GA: Logging event for ${category} & ${action}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(
+        `GA: Logging event for ${category} & ${action} & ${label} & ${value}`,
+      );
+    }
     ReactGA.event({ category, action });
   }
 };
 
 export const logException = (description: string = '', fatal = false) => {
   if (description) {
-    console.log(`GA: Logging exception for ${description}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`GA: Logging exception for ${description}`);
+    }
     ReactGA.exception({ description, fatal });
   }
 };

@@ -5,7 +5,7 @@ import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { UserSelf } from '../../reducers/user';
 import { FSA } from 'flux-standard-action';
-import { logEvent } from '../../utils/analytics';
+import { logEvent, logException } from '../../utils/analytics';
 
 export type UserUpdateSuccessPayload = Omit<UserSelf, 'user'>;
 
@@ -33,23 +33,30 @@ export const updateUserSaga = function*() {
   while (true) {
     const { payload }: UserUpdateAction = yield take(chan);
     if (payload) {
-      let response: TeletrackerResponse<UserDetails> = yield clientEffect(
-        client => client.updateUserSelf,
-        payload.networks,
-        payload.preferences,
-      );
+      try {
+        let response: TeletrackerResponse<UserDetails> = yield clientEffect(
+          client => client.updateUserSelf,
+          payload.networks,
+          payload.preferences,
+        );
 
-      if (response.ok) {
-        yield all([
-          put(
-            updateUserSuccess({
-              networks: response.data!.data.networkPreferences,
-              preferences: response.data!.data.preferences,
-            }),
-          ),
-          call(logEvent, 'User', 'Updated users'),
-        ]);
+        if (response.ok) {
+          yield all([
+            put(
+              updateUserSuccess({
+                networks: response.data!.data.networkPreferences,
+                preferences: response.data!.data.preferences,
+              }),
+            ),
+          ]);
+        } else {
+          // TODO: Error
+        }
+      } catch (e) {
+        call(logException, `${e}`, false);
       }
+    } else {
+      // TODO: Error
     }
   }
 };

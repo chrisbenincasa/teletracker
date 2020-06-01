@@ -6,7 +6,7 @@ import { RetrieveUserSelfInitiated } from '../user';
 import { FSA } from 'flux-standard-action';
 import { ListRules, ListOptions } from '../../types';
 import { getList } from './get_list';
-import { logEvent } from '../../utils/analytics';
+import { logEvent, logException } from '../../utils/analytics';
 
 export const USER_SELF_UPDATE_LIST = 'user/self/update_list/INITIATED';
 export const USER_SELF_UPDATE_LIST_SUCCESS = 'user/self/update_list/SUCCESS';
@@ -41,37 +41,41 @@ export const updateListSaga = function*() {
     payload,
   }: UserUpdateListAction) {
     if (payload) {
-      let response: TeletrackerResponse<any> = yield clientEffect(
-        client => client.updateList,
-        payload.listId,
-        payload.name,
-        payload.rules,
-        payload.options,
-      );
+      try {
+        let response: TeletrackerResponse<any> = yield clientEffect(
+          client => client.updateList,
+          payload.listId,
+          payload.name,
+          payload.rules,
+          payload.options,
+        );
 
-      if (response.ok) {
-        // TODO add real type
-        let requiresRefresh = response.data!.data.requiresRefresh;
+        if (response.ok) {
+          // TODO add real type
+          let requiresRefresh = response.data!.data.requiresRefresh;
 
-        if (requiresRefresh) {
-          yield put(getList({ listId: payload.listId }));
+          if (requiresRefresh) {
+            yield put(getList({ listId: payload.listId }));
+          }
+
+          yield all([
+            put(
+              updateListSuccess({
+                listId: payload.listId,
+                name: payload.name,
+                rules: payload.rules,
+                options: payload.options,
+              }),
+            ),
+            call(logEvent, 'List Management', 'Update list'),
+          ]);
+
+          yield put(RetrieveUserSelfInitiated({ force: true }));
+        } else {
+          // TODO: ERROR
         }
-
-        yield all([
-          put(
-            updateListSuccess({
-              listId: payload.listId,
-              name: payload.name,
-              rules: payload.rules,
-              options: payload.options,
-            }),
-          ),
-          call(logEvent, 'User', 'Updated list'),
-        ]);
-
-        yield put(RetrieveUserSelfInitiated({ force: true }));
-      } else {
-        // TODO: ERROR
+      } catch (e) {
+        call(logException, `${e}`, false);
       }
     } else {
       // TODO: Fail

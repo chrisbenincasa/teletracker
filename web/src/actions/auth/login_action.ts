@@ -1,5 +1,5 @@
 import { all, call, put, takeLatest } from '@redux-saga/core/effects';
-import { logEvent } from '../../utils/analytics';
+import { logEvent, logException } from '../../utils/analytics';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
 import { createAction } from '@reduxjs/toolkit';
 import { withPayloadType } from '../utils';
@@ -59,10 +59,11 @@ export const loginSaga = function*() {
                 .getJwtToken(),
             ),
           ),
-          call(logEvent, 'User', 'Manual Login'),
+          call(logEvent, 'Login and Signup', 'Login', 'Manual'),
         ]);
       } catch (e) {
         console.error(e);
+        call(logException, `${e}`, false);
       }
     } else {
     }

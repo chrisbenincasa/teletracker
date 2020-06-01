@@ -15,6 +15,7 @@ import { currentUserJwt } from '../../utils/page-utils';
 import { ItemType } from '../../types';
 import useItem from '../../hooks/useItem';
 import moment from 'moment';
+import { logException } from '../../utils/analytics';
 
 interface Props {
   itemId?: string;

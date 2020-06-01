@@ -1,6 +1,6 @@
 import { all, call, put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import { logEvent } from '../../utils/analytics';
+import { logEvent, logException } from '../../utils/analytics';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
 import { createAction } from '@reduxjs/toolkit';
 import { withPayloadType } from '../utils';
@@ -69,10 +69,11 @@ export const signupSaga = function*() {
                 .getJwtToken(),
             ),
           ),
-          call(logEvent, 'User', 'Manual Signup'),
+          call(logEvent, 'Login and Signup', 'Signup', 'Manual'),
         ]);
       } catch (e) {
         console.error(e);
+        call(logException, `${e}`, false);
       }
     } else {
     }

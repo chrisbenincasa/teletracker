@@ -2,7 +2,7 @@ import { call, all, put, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
-import { logEvent } from '../../utils/analytics';
+import { logEvent, logException } from '../../utils/analytics';
 import { updateUserItemTagsSuccess } from '../user/update_user_tags';
 import { ActionType } from '../../types';
 
@@ -52,7 +52,12 @@ export const addToListSaga = function*() {
                 action: ActionType.TrackedInList,
               }),
             ),
-            call(logEvent, 'User', 'Added item to list'),
+            call(
+              logEvent,
+              'List Management',
+              'Manage List Dialog',
+              'Added item to list',
+            ),
           ]);
 
           // TODO: put a retrieve user action here
@@ -60,6 +65,7 @@ export const addToListSaga = function*() {
           yield put({ type: LIST_ADD_ITEM_FAILED });
         }
       } catch (e) {
+        call(logException, `${e}`, false);
         yield put({ type: LIST_ADD_ITEM_FAILED });
       }
     } else {
