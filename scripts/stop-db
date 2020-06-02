@@ -1,3 +1,0 @@
-#!/bin/bash
-
-gcloud sql instances patch teletracker --activation-policy NEVER

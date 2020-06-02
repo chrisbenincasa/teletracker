@@ -1,0 +1,28 @@
+[
+  {
+    "name": "elasticdump",
+    "image": "elasticdump/elasticsearch-dump",
+    "cpu": 256,
+    "memory": 512,
+    "essential": true,
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "secretOptions": null,
+      "options": {
+        "awslogs-group": "/ecs/elasticdump",
+        "awslogs-region": "us-west-2",
+        "awslogs-stream-prefix": "ecs"
+      }
+    },
+    "environment": [
+      {
+        "name": "ES_HOST",
+        "value": "https://search-teletracker-qa-igmliq26kf3wlgxlrihy2bqfuu.us-west-2.es.amazonaws.com"
+      },
+      {
+        "name": "ES_INDEX",
+        "value": "items_live"
+      }
+    ]
+  }
+]
