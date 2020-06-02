@@ -7,7 +7,9 @@ import {
   Dialog,
   Fade,
   Hidden,
+  IconButton,
   LinearProgress,
+  MenuItem,
   Theme,
   Tooltip,
   Typography,
@@ -19,7 +21,10 @@ import {
   Event,
   ExpandLess,
   ExpandMore,
+  FileCopy,
   Lens,
+  Storage,
+  Theaters,
 } from '@material-ui/icons';
 import { Rating } from '@material-ui/lab';
 import _ from 'lodash';
@@ -54,6 +59,7 @@ import useStateSelector from '../hooks/useStateSelector';
 import { makeStyles } from '@material-ui/core/styles';
 import { useWithUserContext } from '../hooks/useWithUser';
 import { useDispatchAction } from '../hooks/useDispatchAction';
+import { collectFirst } from '../utils/collection-utils';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -522,6 +528,72 @@ function ItemDetails(props: Props) {
   //   ) : null;
   // };
 
+  const renderDevTools = () => {
+    if (process.env.NODE_ENV === 'development') {
+      if (itemDetail) {
+        const copyItemId = async () => {
+          navigator.clipboard.writeText(itemDetail.id).then();
+        };
+
+        let tmdbLink = '';
+        let tmdbId = collectFirst(itemDetail.external_ids || [], id =>
+          id.provider === 'tmdb' ? id : undefined,
+        );
+        if (tmdbId) {
+          tmdbLink = `https://www.themoviedb.org/${itemDetail.type}/${tmdbId.id}`;
+        }
+
+        return (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              marginTop: 8,
+              width: '100%',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <Tooltip title="Storage Link" placement="top">
+                <Button
+                  component="a"
+                  href={`https://${process.env.REACT_APP_SEARCH_HOST}/items_live/_doc/${itemDetail.id}`}
+                  target="_blank"
+                  size="small"
+                  variant="contained"
+                >
+                  <Storage fontSize="small" />
+                </Button>
+              </Tooltip>
+            </div>
+            <div>
+              <Tooltip title="TMDb Link" placement="top">
+                <Button
+                  component="a"
+                  href={tmdbLink}
+                  target="_blank"
+                  size="small"
+                  variant="contained"
+                >
+                  <Theaters fontSize="small" />
+                </Button>
+              </Tooltip>
+            </div>
+            <div>
+              <Tooltip title="Copy ID" placement="top">
+                <Button onClick={copyItemId} size="small" variant="contained">
+                  <FileCopy fontSize="small" />
+                </Button>
+              </Tooltip>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    return null;
+  };
+
   const renderItemDetails = () => {
     let itemType;
     const overview = itemDetail?.overview || '';
@@ -634,6 +706,7 @@ function ItemDetails(props: Props) {
                     className={classes.actionButton}
                   />
                 </div>
+                {renderDevTools()}
               </div>
               <div className={classes.itemInformationContainer}>
                 {renderDescriptiveDetails(itemDetail)}

@@ -5,8 +5,16 @@ import {
   LinearProgress,
   Typography,
   Fade,
+  Tooltip,
 } from '@material-ui/core';
-import { ChevronLeft, ExpandLess, ExpandMore } from '@material-ui/icons';
+import {
+  ChevronLeft,
+  ExpandLess,
+  ExpandMore,
+  FileCopy,
+  Storage,
+  Theaters,
+} from '@material-ui/icons';
 import _ from 'lodash';
 import { default as React, useCallback, useEffect, useState } from 'react';
 import { personFetchInitiated } from '../actions/people/get_person';
@@ -31,6 +39,7 @@ import useStyles from '../components/PersonDetail/PersonDetail.styles';
 import { selectPerson } from '../components/PersonDetail/hooks';
 import PersonCredits from '../components/PersonDetail/PersonCredits';
 import WithItemFilters from '../components/Filters/FilterContext';
+import { collectFirst } from '../utils/collection-utils';
 
 export const DEFAULT_CREDITS_FILTERS: FilterParams = {
   sortOrder: 'popularity',
@@ -213,6 +222,75 @@ function PersonDetail(props: NewProps) {
     );
   };
 
+  const renderDevTools = () => {
+    if (process.env.NODE_ENV === 'development') {
+      if (person) {
+        const copyItemId = async () => {
+          navigator.clipboard.writeText(person.id).then();
+        };
+
+        let tmdbLink = '';
+        let tmdbId = collectFirst(person.external_ids || [], id =>
+          id.startsWith('tmdb') ? id : undefined,
+        );
+        if (tmdbId) {
+          tmdbLink = `https://www.themoviedb.org/person/${tmdbId.replace(
+            'tmdb__',
+            '',
+          )}`;
+        }
+
+        return (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              marginTop: 8,
+              width: '100%',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <Tooltip title="Storage Link" placement="top">
+                <Button
+                  component="a"
+                  href={`https://${process.env.REACT_APP_SEARCH_HOST}/people_live/_doc/${person.id}`}
+                  target="_blank"
+                  size="small"
+                  variant="contained"
+                >
+                  <Storage fontSize="small" />
+                </Button>
+              </Tooltip>
+            </div>
+            <div>
+              <Tooltip title="TMDb Link" placement="top">
+                <Button
+                  component="a"
+                  href={tmdbLink}
+                  target="_blank"
+                  size="small"
+                  variant="contained"
+                >
+                  <Theaters fontSize="small" />
+                </Button>
+              </Tooltip>
+            </div>
+            <div>
+              <Tooltip title="Copy ID" placement="top">
+                <Button onClick={copyItemId} size="small" variant="contained">
+                  <FileCopy fontSize="small" />
+                </Button>
+              </Tooltip>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    return null;
+  };
+
   const renderPerson = () => {
     if (!person) {
       return null;
@@ -297,6 +375,7 @@ function PersonDetail(props: NewProps) {
                     url={window.location.href}
                   />
                 </div>
+                {renderDevTools()}
               </div>
             </div>
             <div className={classes.personInformationContainer}>
