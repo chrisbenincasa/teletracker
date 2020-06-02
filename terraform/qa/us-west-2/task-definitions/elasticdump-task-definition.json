@@ -1,7 +1,7 @@
 [
   {
     "name": "elasticdump",
-    "image": "elasticdump/elasticsearch-dump",
+    "image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/elasticdump:1.1",
     "cpu": 256,
     "memory": 512,
     "essential": true,

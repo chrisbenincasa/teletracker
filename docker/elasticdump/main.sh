@@ -7,5 +7,4 @@ elasticdump \
   --input="${ES_HOST}/${ES_INDEX}" \
   --fileSize=10mb \
   --limit=1000 \
-  --size=10 \
-  --awsChain=true
+  --awsChain=true $*
