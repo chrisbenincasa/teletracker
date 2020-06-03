@@ -18,6 +18,8 @@ import {
   Grid,
   IconButton,
   makeStyles,
+  Menu,
+  MenuItem,
   Theme,
   Tooltip,
   Typography,
@@ -32,6 +34,7 @@ import {
   ThumbDown,
   ThumbUp,
   Visibility,
+  Storage,
 } from '@material-ui/icons';
 import RouterLink from 'next/link';
 import { updateListTracking } from '../actions/lists';
@@ -54,14 +57,13 @@ import { useDispatchAction } from '../hooks/useDispatchAction';
 import dequal from 'dequal';
 import AuthDialog from './Auth/AuthDialog';
 import { Id } from '../types/v2';
-import { createSelector } from 'reselect';
-import { AppState } from '../reducers';
 import useStateSelector from '../hooks/useStateSelector';
 import { hookDeepEqual } from '../hooks/util';
 import _ from 'lodash';
 import { useWithUserContext } from '../hooks/useWithUser';
 import classNames from 'classnames';
 import selectItem from '../selectors/selectItem';
+import { collectFirst } from '../utils/collection-utils';
 
 const useStyles = makeStyles((theme: Theme) => ({
   title: {
@@ -401,6 +403,8 @@ function ItemCard(props: Props) {
 
     return (
       <div className={classes.statusIconContainer}>
+        {renderDevtools()}
+
         {showDelete && (
           <Tooltip title={deleteTitle} placement={'top'}>
             <IconButton
@@ -479,6 +483,77 @@ function ItemCard(props: Props) {
         </Tooltip>
       </div>
     );
+  };
+
+  const [
+    devtoolsMenuAnchor,
+    setDevtoolsMenuAnchor,
+  ] = useState<null | HTMLElement>(null);
+
+  const openDevtoolsMenu = event => {
+    setDevtoolsMenuAnchor(event.currentTarget);
+  };
+
+  const closeDevtoolsMenu = () => setDevtoolsMenuAnchor(null);
+
+  const renderDevtools = () => {
+    if (process.env.NODE_ENV === 'development') {
+      const copyItemId = async () => {
+        navigator.clipboard.writeText(item.id).then(() => {
+          closeDevtoolsMenu();
+        });
+      };
+
+      let tmdbLink = '';
+      let tmdbId = collectFirst(item.external_ids || [], id =>
+        id.provider === 'tmdb' ? id : undefined,
+      );
+      if (tmdbId) {
+        tmdbLink = `https://www.themoviedb.org/${item.type}/${tmdbId.id}`;
+      }
+
+      return (
+        <React.Fragment>
+          <Tooltip title="DevTools" placement="top">
+            <IconButton
+              aria-label="DevTools"
+              onClick={openDevtoolsMenu}
+              size="small"
+            >
+              <Storage
+                className={classNames(
+                  classes.statusIcon,
+                  classes.statusIconDisabled,
+                )}
+              />
+              <Typography variant="srOnly">Open DevTools</Typography>
+            </IconButton>
+          </Tooltip>
+          <Menu
+            id="simple-menu"
+            anchorEl={devtoolsMenuAnchor}
+            keepMounted
+            open={Boolean(devtoolsMenuAnchor)}
+            onClose={closeDevtoolsMenu}
+          >
+            <MenuItem
+              component="a"
+              href={`https://${process.env.REACT_APP_SEARCH_HOST}/items_live/_doc/${item.id}`}
+              target="_blank"
+              onClick={closeDevtoolsMenu}
+            >
+              Storage Item
+            </MenuItem>
+            <MenuItem component="a" href={tmdbLink} target="_blank">
+              TMDb Item
+            </MenuItem>
+            <MenuItem onClick={copyItemId}>Copy Item ID</MenuItem>
+          </Menu>
+        </React.Fragment>
+      );
+    } else {
+      return null;
+    }
   };
 
   const renderRatingHover = () => {
