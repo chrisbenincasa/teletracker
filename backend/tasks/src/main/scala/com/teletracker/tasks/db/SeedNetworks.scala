@@ -1,6 +1,6 @@
 package com.teletracker.tasks.db
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.db.dynamo.MetadataDbAccess
 import com.teletracker.common.db.dynamo.model.{
   StoredNetwork,
@@ -16,8 +16,8 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 class NetworkSeeder @Inject()(metadataDbAccess: MetadataDbAccess)
-    extends TeletrackerTaskWithDefaultArgs {
-  def runInternal(args: Args): Unit = {
+    extends UntypedTeletrackerTask {
+  def runInternal(): Unit = {
     import io.circe.generic.auto._
     import io.circe.parser._
 

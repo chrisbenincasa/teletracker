@@ -28,10 +28,7 @@ class ImportPeopleFromDump @Inject()(
   override protected def shouldHandleItem(item: Person): Boolean =
     item.name.exists(_.nonEmpty)
 
-  override protected def handleItem(
-    args: ImportTmdbDumpTaskArgs,
-    person: Person
-  ): Future[Unit] = {
+  override protected def handleItem(person: Person): Future[Unit] = {
     personImportHandler
       .handleItem(
         PersonImportHandlerArgs(dryRun = args.dryRun),

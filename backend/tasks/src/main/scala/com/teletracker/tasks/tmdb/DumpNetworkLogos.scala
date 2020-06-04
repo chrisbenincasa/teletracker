@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.external.tmdb.TmdbClient
 import com.teletracker.common.http.{HttpClient, HttpClientOptions}
 import com.teletracker.common.model.tmdb.Network
@@ -14,9 +14,9 @@ import scala.concurrent.{Await, Future}
 class DumpNetworkLogos @Inject()(
   httpClientFactory: HttpClient.Factory,
   tmdbClient: TmdbClient)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
 
-  override def runInternal(args: Args): Unit = {
+  override def runInternal(): Unit = {
     import io.circe.generic.auto._
     import io.circe.parser._
 

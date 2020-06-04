@@ -3,11 +3,13 @@ package com.teletracker.tasks.scraper
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.model.scraping
 import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.util.Folds
 import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
 import com.teletracker.tasks.scraper.model.PotentialInput
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.util.SourceRetriever
+import io.circe.generic.JsonCodec
 import io.circe.{Codec, Encoder}
 import io.circe.generic.semiauto.deriveEncoder
 import java.net.URI
@@ -19,6 +21,7 @@ import scala.concurrent.Future
 abstract class IngestPotentialMatches[T <: ScrapedItem: Codec]
     extends IngestJob[PotentialInput[T]]
 
+@JsonCodec
 case class IngestPotentialMatchesDeltaArgs(
   snapshotAfter: URI,
   snapshotBefore: URI,
@@ -37,10 +40,8 @@ abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec](
     extends IngestDeltaJobLike[T, IngestPotentialMatchesDeltaArgs](
       elasticsearchLookup
     ) {
-  implicit override protected def typedArgsEncoder
-    : Encoder[IngestPotentialMatchesDeltaArgs] = deriveEncoder
 
-  override def preparseArgs(args: Args): IngestPotentialMatchesDeltaArgs =
+  override def preparseArgs(args: RawArgs): IngestPotentialMatchesDeltaArgs =
     parseArgs(args)
 
   protected def parseArgs(
@@ -61,13 +62,11 @@ abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec](
   protected lazy val potentialMappings: mutable.Map[String, PotentialInput[T]] =
     mutable.HashMap.empty[String, PotentialInput[T]]
 
-  override def runInternal(args: Args): Unit = {
-    val parsedArgs = parseArgs(args)
-
+  override def runInternal(): Unit = {
     val sourceRetriever = new SourceRetriever(s3)
 
     val potentialMappingsSource =
-      sourceRetriever.getSource(parsedArgs.potentialMappings)
+      sourceRetriever.getSource(args.potentialMappings)
 
     try {
       loadMappings(potentialMappingsSource.getLines())
@@ -75,7 +74,7 @@ abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec](
       potentialMappingsSource.close()
     }
 
-    super.runInternal(args)
+    super.runInternal()
   }
 
   override protected def processBatch(

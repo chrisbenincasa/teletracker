@@ -1,6 +1,7 @@
 package com.teletracker.tasks.general
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
 import io.circe.Json
@@ -13,17 +14,17 @@ class JsonFileTransformer @Inject()(
   sourceRetriever: SourceRetriever,
   sourceWriter: SourceWriter,
   ingestJobParser: IngestJobParser)
-    extends TeletrackerTaskWithDefaultArgs {
-  override def preparseArgs(args: Args): TypedArgs = {
+    extends UntypedTeletrackerTask {
+  override def preparseArgs(args: RawArgs): ArgsType = {
     Map(
       "source" -> args.valueOrThrow[String]("source"),
       "destination" -> args.valueOrThrow[String]("destination")
     )
   }
 
-  override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("source")
-    val destination = args.valueOrThrow[URI]("destination")
+  override protected def runInternal(): Unit = {
+    val input = rawArgs.valueOrThrow[URI]("source")
+    val destination = rawArgs.valueOrThrow[URI]("destination")
 
     val source = sourceRetriever.getSource(input)
 

@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.netflix
 
 import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.scraper.model.WhatsOnNetflixCatalogItem
 import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
@@ -36,10 +36,10 @@ object TransformWhatsOnNetflixCatalog {
 class TransformWhatsOnNetflixCatalog @Inject()(
   sourceRetriever: SourceRetriever,
   sourceWriter: SourceWriter)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("source")
-    val destination = args.valueOrThrow[URI]("destination")
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val input = rawArgs.valueOrThrow[URI]("source")
+    val destination = rawArgs.valueOrThrow[URI]("destination")
 
     val tmpLocation = Files.createTempFile("whats-on-netflix-transform", "tmp")
     tmpLocation.toFile.deleteOnExit()

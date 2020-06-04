@@ -7,7 +7,10 @@ import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   EsPotentialMatchResponse
 }
-import com.teletracker.common.elasticsearch.model.EsPotentialMatchItem
+import com.teletracker.common.elasticsearch.model.{
+  EsPotentialMatchItem,
+  EsPotentialMatchState
+}
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.util.{AsyncStream, HasId}
 import io.circe.Codec
@@ -23,8 +26,10 @@ import org.elasticsearch.search.builder.SearchSourceBuilder
 import com.teletracker.common.util.Functions._
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.action.get.GetRequest
+import org.elasticsearch.action.support.WriteRequest
 import org.elasticsearch.search.sort.SortOrder
 import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
 class EsPotentialMatchItemStore @Inject()(
@@ -41,6 +46,10 @@ class EsPotentialMatchItemStore @Inject()(
   ): Future[EsPotentialMatchResponse] = {
     val query = QueryBuilders
       .boolQuery()
+      .must(
+        QueryBuilders
+          .termQuery("state", EsPotentialMatchState.Unmatched.toString)
+      )
       .applyOptional(request.scraperType)(
         (builder, typ) =>
           builder.must(
@@ -80,6 +89,17 @@ class EsPotentialMatchItemStore @Inject()(
           bookmark
         )
       })
+  }
+
+  def updateState(
+    id: String,
+    state: EsPotentialMatchState
+  ): Future[Unit] = {
+    val updateRequest = new UpdateRequest(indexName, id)
+      .doc(Map("state" -> state.getName).asJava, XContentType.JSON)
+      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+
+    elasticsearchExecutor.update(updateRequest).map(_ => {})
   }
 }
 

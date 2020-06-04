@@ -1,23 +1,22 @@
 package com.teletracker.tasks.db
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.db.dynamo.MetadataDbAccess
 import com.teletracker.common.db.dynamo.model.{
   StoredNetwork,
   StoredNetworkReference
 }
 import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Slug
 import javax.inject.Inject
-import org.slf4j.LoggerFactory
 
 class AddNetwork @Inject()(metadataDbAccess: MetadataDbAccess)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val name = args.valueOrThrow[String]("name").replaceAll("_", " ")
-    val shortname = args.valueOrThrow[String]("shortname")
-    val dryRun = args.valueOrDefault("dryRun", true)
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val name = rawArgs.valueOrThrow[String]("name").replaceAll("_", " ")
+    val shortname = rawArgs.valueOrThrow[String]("shortname")
+    val dryRun = rawArgs.valueOrDefault("dryRun", true)
 
     val allNetworks = metadataDbAccess.getAllNetworks().await()
 
@@ -43,13 +42,13 @@ class AddNetwork @Inject()(metadataDbAccess: MetadataDbAccess)
 }
 
 class AddNetworkReference @Inject()(metadataDbAccess: MetadataDbAccess)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
 
-  override protected def runInternal(args: Args): Unit = {
-    val networkId = args.valueOrThrow[Int]("networkId")
-    val externalId = args.valueOrThrow[String]("externalId")
-    val externalSource = args.valueOrThrow[ExternalSource]("externalSource")
-    val dryRun = args.valueOrDefault("dryRun", true)
+  override protected def runInternal(): Unit = {
+    val networkId = rawArgs.valueOrThrow[Int]("networkId")
+    val externalId = rawArgs.valueOrThrow[String]("externalId")
+    val externalSource = rawArgs.valueOrThrow[ExternalSource]("externalSource")
+    val dryRun = rawArgs.valueOrDefault("dryRun", true)
 
     val network = metadataDbAccess.getNetworkById(networkId).await()
     if (network.isEmpty) {

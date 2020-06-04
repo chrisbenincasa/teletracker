@@ -1,6 +1,6 @@
 package com.teletracker.tasks.wikidata
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.ItemLookup
 import com.teletracker.common.elasticsearch.model.EsExternalId
@@ -21,7 +21,7 @@ class ImportWikidataIds @Inject()(
   sourceRetriever: SourceRetriever,
   itemSearch: ItemLookup
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
 
   final private val UpdateExternalIdsScriptSource =
     """
@@ -47,11 +47,11 @@ class ImportWikidataIds @Inject()(
 
   implicit val rowCodec: Codec[Row] = io.circe.generic.semiauto.deriveCodec[Row]
 
-  override def runInternal(args: Args): Unit = {
-    val input = args.value[URI]("input").get
-    val offset = args.valueOrDefault("offset", 0)
-    val limit = args.valueOrDefault("limit", -1)
-    val perFileLimit = args.valueOrDefault("perFileLimit", -1)
+  override def runInternal(): Unit = {
+    val input = rawArgs.value[URI]("input").get
+    val offset = rawArgs.valueOrDefault("offset", 0)
+    val limit = rawArgs.valueOrDefault("limit", -1)
+    val perFileLimit = rawArgs.valueOrDefault("perFileLimit", -1)
 
     val rotator =
       FileRotator.everyNBytes(

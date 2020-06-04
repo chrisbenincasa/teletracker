@@ -1,6 +1,6 @@
 package com.teletracker.tasks.aws
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import javax.inject.Inject
 import com.teletracker.common.util.Futures._
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -20,11 +20,11 @@ import scala.concurrent.{ExecutionContext, Future}
 class QueueTransfer @Inject()(
   sqsAsyncClient: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val sourceQueue = args.valueOrThrow[String]("source")
-    val destinationQueue = args.valueOrThrow[String]("destination")
-    val limit = args.valueOrDefault("limit", -1)
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val sourceQueue = rawArgs.valueOrThrow[String]("source")
+    val destinationQueue = rawArgs.valueOrThrow[String]("destination")
+    val limit = rawArgs.valueOrDefault("limit", -1)
 
     def retrieveLoop(totalProcessed: Int = 0): Future[Unit] = {
       println(s"Processed ${totalProcessed} so far.")

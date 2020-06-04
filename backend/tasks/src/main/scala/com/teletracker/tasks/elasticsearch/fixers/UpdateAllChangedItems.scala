@@ -3,7 +3,7 @@ package com.teletracker.tasks.elasticsearch.fixers
 import com.teletracker.common.model.tmdb.Movie
 import com.teletracker.common.process.tmdb.MovieImportHandler
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
@@ -21,24 +21,24 @@ import scala.concurrent.duration._
 
 abstract class UpdateAllChangedItems[T: Codec](
   implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   @Inject private[this] var sourceRetriever: SourceRetriever = _
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
   protected var isDryRun = false
 
-  override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("input")
-    val outputPath = args.valueOrThrow[String]("outputPath")
-    val append = args.valueOrDefault("append", false)
-    val perFileLimit = args.valueOrDefault("perFileLimit", -1)
-    val limit = args.valueOrDefault("limit", -1)
-    val offset = args.valueOrDefault("offset", 0)
-    val parallelism = args.valueOrDefault("parallelism", 4)
-    val perBatchSleepMs = args.value[Int]("perBatchSleepMs")
-    val initialFileOffset = args.value[Int]("initialFileOffset")
+  override protected def runInternal(): Unit = {
+    val input = rawArgs.valueOrThrow[URI]("input")
+    val outputPath = rawArgs.valueOrThrow[String]("outputPath")
+    val append = rawArgs.valueOrDefault("append", false)
+    val perFileLimit = rawArgs.valueOrDefault("perFileLimit", -1)
+    val limit = rawArgs.valueOrDefault("limit", -1)
+    val offset = rawArgs.valueOrDefault("offset", 0)
+    val parallelism = rawArgs.valueOrDefault("parallelism", 4)
+    val perBatchSleepMs = rawArgs.value[Int]("perBatchSleepMs")
+    val initialFileOffset = rawArgs.value[Int]("initialFileOffset")
 
-    isDryRun = args.valueOrDefault("dryRun", false)
+    isDryRun = rawArgs.valueOrDefault("dryRun", false)
 
     val fileRotator = FileRotator.everyNBytes(
       "updates",

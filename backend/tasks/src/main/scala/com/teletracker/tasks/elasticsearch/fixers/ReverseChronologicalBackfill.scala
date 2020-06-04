@@ -2,7 +2,7 @@ package com.teletracker.tasks.elasticsearch.fixers
 
 import cats.data.NonEmptyList
 import com.teletracker.common.model.tmdb.{Movie, Person, TmdbError, TvShow}
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.scraper.{IngestJobParser, IngestJobParserException}
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
@@ -17,18 +17,18 @@ import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 
 abstract class ReverseChronologicalBackfill[T: Codec]
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("input")
-    val regionString = args.valueOrDefault("region", "us-west-2")
-    val offset = args.valueOrDefault[Int]("offset", 0)
-    val limit = args.valueOrDefault[Int]("limit", -1)
-    val perFileLimit = args.valueOrDefault[Int]("perFileLimit", -1)
-    val append = args.valueOrDefault[Boolean]("append", false)
-    val gteFilter = args.value[String]("gteFilter")
-    val ltFilter = args.value[String]("ltFilter")
-    val baseFileName = args.valueOrThrow[String]("baseFileName")
-    val outputFolder = args.valueOrThrow[String]("outputFolder")
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val input = rawArgs.valueOrThrow[URI]("input")
+    val regionString = rawArgs.valueOrDefault("region", "us-west-2")
+    val offset = rawArgs.valueOrDefault[Int]("offset", 0)
+    val limit = rawArgs.valueOrDefault[Int]("limit", -1)
+    val perFileLimit = rawArgs.valueOrDefault[Int]("perFileLimit", -1)
+    val append = rawArgs.valueOrDefault[Boolean]("append", false)
+    val gteFilter = rawArgs.value[String]("gteFilter")
+    val ltFilter = rawArgs.value[String]("ltFilter")
+    val baseFileName = rawArgs.valueOrThrow[String]("baseFileName")
+    val outputFolder = rawArgs.valueOrThrow[String]("outputFolder")
 
     val region = Region.of(regionString)
 

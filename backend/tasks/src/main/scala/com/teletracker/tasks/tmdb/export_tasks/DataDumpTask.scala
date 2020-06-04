@@ -1,7 +1,8 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.tasks.TeletrackerTask
+import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.json.circe._
@@ -9,7 +10,6 @@ import com.teletracker.tasks.TeletrackerTaskApp
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import io.circe.generic.JsonCodec
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Decoder, Encoder}
 import javax.inject.Inject
 import software.amazon.awssdk.core.sync.RequestBody
@@ -40,9 +40,9 @@ case class DataDumpTaskArgs(
   rotateEvery: Int = 1000,
   baseOutputPath: Option[String] = None)
 
-abstract class DataDumpTask[T, Id](
+abstract class DataDumpTask[T: Decoder, Id](
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTask {
+    extends TypedTeletrackerTask[DataDumpTaskArgs] {
   @Inject
   private[this] var teletrackerConfig: TeletrackerConfig = _
 
@@ -54,12 +54,7 @@ abstract class DataDumpTask[T, Id](
 
   private val dumpTime = Instant.now().toString
 
-  override type TypedArgs = DataDumpTaskArgs
-
-  implicit override protected def typedArgsEncoder: Encoder[DataDumpTaskArgs] =
-    deriveEncoder[DataDumpTaskArgs]
-
-  override def preparseArgs(args: Args): DataDumpTaskArgs = {
+  override def preparseArgs(args: RawArgs): DataDumpTaskArgs = {
     DataDumpTaskArgs(
       input = args.value[URI]("input").get,
       offset = args.valueOrDefault[Int]("offset", 0),
@@ -71,16 +66,13 @@ abstract class DataDumpTask[T, Id](
     )
   }
 
-  implicit protected def tDecoder: Decoder[T]
-
-  override def runInternal(args: Args): Unit = {
-    val parsedArgs = preparseArgs(args)
-    val file = args.value[URI]("input").get
-    val offset = args.valueOrDefault("offset", 0)
-    val limit = args.valueOrDefault("limit", -1)
-    val sleepMs = args.valueOrDefault("sleepMs", 250)
-    val flushEvery = args.valueOrDefault("flushEvery", 100)
-    val rotateEvery = args.valueOrDefault("rotateEvery", 1000)
+  override def runInternal(): Unit = {
+    val file = rawArgs.value[URI]("input").get
+    val offset = rawArgs.valueOrDefault("offset", 0)
+    val limit = rawArgs.valueOrDefault("limit", -1)
+    val sleepMs = rawArgs.valueOrDefault("sleepMs", 250)
+    val flushEvery = rawArgs.valueOrDefault("flushEvery", 100)
+    val rotateEvery = rawArgs.valueOrDefault("rotateEvery", 1000)
 
     logger.info(
       s"Preparing to dump data to: s3://${teletrackerConfig.data.s3_bucket}/$fullPath/"
@@ -89,7 +81,7 @@ abstract class DataDumpTask[T, Id](
     val rotater = FileRotator.everyNLines(
       baseFileName,
       rotateEvery,
-      parsedArgs.baseOutputPath
+      args.baseOutputPath
     )
 
     val source = new SourceRetriever(s3).getSource(file)

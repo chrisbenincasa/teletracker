@@ -1,18 +1,17 @@
 package com.teletracker.tasks
 
 import com.google.inject.{Injector, Module}
-import com.teletracker.common.tasks.{Args, TeletrackerTask}
 import com.teletracker.common.tasks.model.TeletrackerTaskIdentifier
 import com.teletracker.common.tasks.storage.{
-  TaskRecord,
   TaskRecordCreator,
   TaskRecordStore,
   TaskStatus
 }
-import io.circe.Json
+import com.teletracker.common.tasks.{TaskArgs, TeletrackerTask}
 import com.teletracker.common.util.Futures._
-import javax.inject.Inject
 import com.teletracker.tasks.inject.TaskSchedulerModule
+import io.circe.Json
+import javax.inject.Inject
 import java.time.Instant
 import scala.compat.java8.OptionConverters._
 import scala.util.{Failure, Success, Try}
@@ -53,12 +52,15 @@ object TeletrackerTaskRunner extends TeletrackerTaskApp[NoopTeletrackerTask] {
 
     val task = _instance.getInstance(clazzToRun)
     val args = collectArgs
+    val strigifiedArgs = args.collect {
+      case (str, option) if option.isDefined => str -> option.get.toString
+    }
 
     val recordCreator = injector.instance[TaskRecordCreator]
     val recordStore = injector.instance[TaskRecordStore]
 
     val record = recordCreator
-      .create(task.taskId, task, args, TaskStatus.Executing)
+      .create(task.taskId, task, strigifiedArgs, TaskStatus.Executing)
       .copy(
         startedAt = Some(Instant.now())
       )
@@ -161,7 +163,7 @@ class TeletrackerTaskRunner @Inject()(injector: Injector) {
     clazz: String,
     args: Map[String, Json]
   ): TeletrackerTask.TaskResult = {
-    runFromString(clazz, Args.extractArgs(args))
+    runFromString(clazz, TaskArgs.extractArgs(args))
   }
 
   def run(

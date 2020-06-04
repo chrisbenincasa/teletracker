@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.wikidata
 
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.model.EsItemDumpRow
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.SourceRetriever
@@ -16,11 +16,11 @@ import java.io.{
 import java.net.URI
 
 class ExtractImdbIds @Inject()(sourceRetriever: SourceRetriever)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val loc = args.valueOrThrow[URI]("loc")
-    val itemType = args.valueOrDefault[ItemType]("itemType", ItemType.Movie)
-    val outputPath = args.valueOrThrow[String]("outputPath")
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val loc = rawArgs.valueOrThrow[URI]("loc")
+    val itemType = rawArgs.valueOrDefault[ItemType]("itemType", ItemType.Movie)
+    val outputPath = rawArgs.valueOrThrow[String]("outputPath")
 
     val writer = new PrintWriter(
       new BufferedOutputStream(new FileOutputStream(new File(outputPath)))

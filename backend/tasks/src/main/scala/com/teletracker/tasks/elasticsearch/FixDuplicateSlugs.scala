@@ -1,35 +1,34 @@
 package com.teletracker.tasks.elasticsearch
 
 import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
 import com.teletracker.common.elasticsearch.ElasticsearchExecutor
 import com.teletracker.common.elasticsearch.model.EsItem
-import javax.inject.Inject
-import org.elasticsearch.action.search.SearchRequest
-import org.elasticsearch.index.query.QueryBuilders
+import com.teletracker.common.tasks.UntypedTeletrackerTask
+import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.common.util.Functions._
+import io.circe.parser._
+import javax.inject.Inject
+import org.elasticsearch.action.bulk.BulkRequest
+import org.elasticsearch.action.search.SearchRequest
+import org.elasticsearch.action.update.UpdateRequest
+import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.aggregations.AggregationBuilders
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
-import io.circe.parser._
-import org.elasticsearch.action.bulk.{BulkAction, BulkRequest}
-import org.elasticsearch.action.update.UpdateRequest
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.SortOrder
-import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 
 class FixDuplicateSlugs @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val slug = args.value[String]("slug")
-    val itemType = args.value[String]("type")
-    val dryRun = args.valueOrDefault("dryRun", true)
-    val limit = args.valueOrDefault("limit", -1)
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val slug = rawArgs.value[String]("slug")
+    val itemType = rawArgs.value[String]("type")
+    val dryRun = rawArgs.valueOrDefault("dryRun", true)
+    val limit = rawArgs.valueOrDefault("limit", -1)
 
     val query =
       QueryBuilders

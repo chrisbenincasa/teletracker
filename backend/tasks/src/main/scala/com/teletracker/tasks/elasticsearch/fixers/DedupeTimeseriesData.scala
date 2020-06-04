@@ -1,7 +1,7 @@
 package com.teletracker.tasks.elasticsearch.fixers
 
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import com.twitter.util.StorageUnit
@@ -16,13 +16,13 @@ import scala.concurrent.{ExecutionContext, Future}
 class DedupeTimeseriesData @Inject()(
   sourceRetriever: SourceRetriever
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("input")
-    val prefix = args.value[String]("prefix")
-    val suffix = args.value[String]("suffix")
-    val indexPosition = args.valueOrThrow[Int]("indexPos")
-    val splitChar = args.valueOrDefault[String]("splitChar", ".").head
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val input = rawArgs.valueOrThrow[URI]("input")
+    val prefix = rawArgs.value[String]("prefix")
+    val suffix = rawArgs.value[String]("suffix")
+    val indexPosition = rawArgs.valueOrThrow[Int]("indexPos")
+    val splitChar = rawArgs.valueOrDefault[String]("splitChar", ".").head
 
     val deduped = new AtomicInteger()
 

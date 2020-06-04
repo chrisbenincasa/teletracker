@@ -1,7 +1,7 @@
 package com.teletracker.tasks.tmdb.fixers
 
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.model.{EsPersonDumpRow, PersonDumpFileRow}
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.SourceRetriever
@@ -12,10 +12,10 @@ import java.net.URI
 class MissingPeople @Inject()(
   sourceRetriever: SourceRetriever,
   ingestJobParser: IngestJobParser)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val peopleExportFile = args.value[URI]("peopleExportFile").get
-    val dbDumpFile = args.value[URI]("dbDumpFile").get
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val peopleExportFile = rawArgs.value[URI]("peopleExportFile").get
+    val dbDumpFile = rawArgs.value[URI]("dbDumpFile").get
 
     val personIdsInDb =
       sourceRetriever.getSourceStream(dbDumpFile).foldLeft(Set.empty[String]) {

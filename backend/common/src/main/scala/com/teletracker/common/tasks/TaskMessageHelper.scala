@@ -22,18 +22,4 @@ object TaskMessageHelper {
       jobTags = tags
     )
   }
-
-  def forTask[T <: TeletrackerTask](
-    args: T#TypedArgs,
-    tags: Option[Set[String]] = None
-  )(implicit ct: ClassTag[T],
-    enc: Encoder.AsObject[T#TypedArgs]
-  ): TeletrackerTaskQueueMessage = {
-    TeletrackerTaskQueueMessage(
-      id = Some(UUID.randomUUID()),
-      clazz = ct.runtimeClass.getName,
-      args = args.asJsonObject.toMap,
-      jobTags = tags
-    )
-  }
 }

@@ -17,7 +17,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookupResponse,
   ItemUpdater
 }
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.Futures._
 import javax.inject.Inject
@@ -30,7 +30,7 @@ class InsertAmazonAvailability @Inject()(
   itemUpdater: ItemUpdater,
   networkCache: NetworkCache
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   import diffson._
   import diffson.circe._
   import diffson.jsonpatch.lcsdiff.remembering._
@@ -40,16 +40,16 @@ class InsertAmazonAvailability @Inject()(
 
   implicit private val lcs = new Patience[Json]
 
-  override protected def runInternal(args: Args): Unit = {
-    val itemId = args.valueOrThrow[UUID]("itemId")
-    val amzUrl = args.valueOrThrow[String]("amzUrl")
-    val hdRentPrice = args.valueOrThrow[Double]("hdRentPrice")
-    val sdRentPrice = args.valueOrDefault("sdRentPrice", hdRentPrice)
-    val hdBuyPrice = args.valueOrThrow[Double]("hdBuyPrice")
-    val sdBuyPrice = args.valueOrDefault("sdBuyPrice", hdBuyPrice)
-    val freeOnPrime = args.valueOrDefault("freeOnPrime", false)
-    val externalId = args.valueOrThrow[String]("externalId")
-    val dryRun = args.valueOrDefault("dryRun", true)
+  override protected def runInternal(): Unit = {
+    val itemId = rawArgs.valueOrThrow[UUID]("itemId")
+    val amzUrl = rawArgs.valueOrThrow[String]("amzUrl")
+    val hdRentPrice = rawArgs.valueOrThrow[Double]("hdRentPrice")
+    val sdRentPrice = rawArgs.valueOrDefault("sdRentPrice", hdRentPrice)
+    val hdBuyPrice = rawArgs.valueOrThrow[Double]("hdBuyPrice")
+    val sdBuyPrice = rawArgs.valueOrDefault("sdBuyPrice", hdBuyPrice)
+    val freeOnPrime = rawArgs.valueOrDefault("freeOnPrime", false)
+    val externalId = rawArgs.valueOrThrow[String]("externalId")
+    val dryRun = rawArgs.valueOrDefault("dryRun", true)
 
     val networks = networkCache.getAllNetworks().await()
 

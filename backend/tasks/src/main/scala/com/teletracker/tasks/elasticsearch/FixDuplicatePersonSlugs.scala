@@ -9,7 +9,7 @@ import com.teletracker.common.elasticsearch.{
   PersonLookup,
   PersonUpdater
 }
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Lists._
@@ -57,15 +57,15 @@ class FixDuplicatePersonSlugs @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor,
   personUpdater: PersonUpdater
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs
+    extends UntypedTeletrackerTask
     with ElasticsearchAccess {
 
   import Scripts._
 
-  override protected def runInternal(args: Args): Unit = {
-    val dupeSlug = args.value[String]("dupeSlug")
-    val dryRun = args.valueOrDefault("dryRun", true)
-    val limit = args.valueOrDefault("limit", 10)
+  override protected def runInternal(): Unit = {
+    val dupeSlug = rawArgs.value[String]("dupeSlug")
+    val dryRun = rawArgs.valueOrDefault("dryRun", true)
+    val limit = rawArgs.valueOrDefault("limit", 10)
 
     if (dupeSlug.isDefined) {
       AsyncStream
@@ -265,16 +265,16 @@ class FixDuplicateNumberedPersonSlugs @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor,
   personUpdater: PersonUpdater
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs
+    extends UntypedTeletrackerTask
     with ElasticsearchAccess {
   import Scripts._
 
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  override protected def runInternal(args: Args): Unit = {
-    val dupeSlug = args.value[String]("dupeSlug")
-    val dryRun = args.valueOrDefault("dryRun", true)
-    val limit = args.valueOrDefault("limit", 10)
+  override protected def runInternal(): Unit = {
+    val dupeSlug = rawArgs.value[String]("dupeSlug")
+    val dryRun = rawArgs.valueOrDefault("dryRun", true)
+    val limit = rawArgs.valueOrDefault("limit", 10)
 
     if (dupeSlug.isDefined) {
       AsyncStream
@@ -509,14 +509,14 @@ class MigratePersonSlug @Inject()(
   teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs
+    extends UntypedTeletrackerTask
     with ElasticsearchAccess {
   import Scripts._
 
-  override protected def runInternal(args: Args): Unit = {
-    val fromSlug = args.value[String]("from").map(Slug.raw)
-    val fromId = args.value[UUID]("fromId")
-    val toSlug = Slug.raw(args.valueOrThrow[String]("to"))
+  override protected def runInternal(): Unit = {
+    val fromSlug = rawArgs.value[String]("from").map(Slug.raw)
+    val fromId = rawArgs.value[UUID]("fromId")
+    val toSlug = Slug.raw(rawArgs.valueOrThrow[String]("to"))
 
     if (fromSlug.isEmpty && fromId.isEmpty) {
       throw new IllegalArgumentException
@@ -602,14 +602,14 @@ class VerifyDupeSlugs @Inject()(
   itemUpdater: ItemUpdater,
   personLookup: PersonLookup
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs
+    extends UntypedTeletrackerTask
     with ElasticsearchAccess {
 
   private val scheduler = Executors.newScheduledThreadPool(5)
 
-  override protected def runInternal(args: Args): Unit = {
-    val limit = args.valueOrDefault("limit", 10)
-    val dryRun = args.valueOrDefault("dryRun", true)
+  override protected def runInternal(): Unit = {
+    val limit = rawArgs.valueOrDefault("limit", 10)
+    val dryRun = rawArgs.valueOrDefault("dryRun", true)
 
     val query = QueryBuilders.regexpQuery("slug", ".*-[0-9]")
 

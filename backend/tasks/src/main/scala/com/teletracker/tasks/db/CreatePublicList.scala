@@ -1,14 +1,16 @@
 package com.teletracker.tasks.db
 
-import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.db.dynamo.ListsDbAccess
 import com.teletracker.common.db.dynamo.model.StoredUserList
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
+import com.teletracker.common.tasks.TypedTeletrackerTask
 import com.teletracker.common.util.Futures._
-import io.circe.Encoder
+import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import java.time.OffsetDateTime
 import java.util.UUID
 
+@JsonCodec
 case class CreatePublicListArgs(
   name: String,
   isPublic: Boolean,
@@ -16,13 +18,8 @@ case class CreatePublicListArgs(
   id: Option[UUID])
 
 class CreatePublicList @Inject()(listsDbAccess: ListsDbAccess)
-    extends TeletrackerTask {
-  override type TypedArgs = CreatePublicListArgs
-
-  implicit override protected def typedArgsEncoder
-    : Encoder[CreatePublicListArgs] = io.circe.generic.semiauto.deriveEncoder
-
-  override def preparseArgs(args: Args): CreatePublicListArgs =
+    extends TypedTeletrackerTask[CreatePublicListArgs] {
+  override def preparseArgs(args: RawArgs): CreatePublicListArgs =
     CreatePublicListArgs(
       name = args.valueOrThrow[String]("name"),
       isPublic = args.valueOrDefault("isPublic", false),
@@ -34,21 +31,19 @@ class CreatePublicList @Inject()(listsDbAccess: ListsDbAccess)
     require(args.name.nonEmpty, "Name cannot be empty")
   }
 
-  override protected def runInternal(args: Args): Unit = {
-    val parsedArgs = preparseArgs(args)
-
-    val id = parsedArgs.id.getOrElse(UUID.randomUUID())
+  override protected def runInternal(): Unit = {
+    val id = args.id.getOrElse(UUID.randomUUID())
     val now = OffsetDateTime.now()
 
     listsDbAccess
       .saveList(
         StoredUserList(
           id = id,
-          name = parsedArgs.name,
+          name = args.name,
           isDefault = false,
-          isPublic = parsedArgs.isPublic,
+          isPublic = args.isPublic,
           userId = StoredUserList.PublicUserId,
-          isDynamic = parsedArgs.isDynamic,
+          isDynamic = args.isDynamic,
           createdAt = Some(now),
           lastUpdatedAt = Some(now)
         )

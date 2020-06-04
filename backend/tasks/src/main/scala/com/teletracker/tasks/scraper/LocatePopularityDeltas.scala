@@ -3,7 +3,7 @@ package com.teletracker.tasks.scraper
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
-import com.teletracker.common.tasks.TaskMessageHelper
+import com.teletracker.common.tasks.{TaskMessageHelper, TeletrackerTask}
 import com.teletracker.tasks.tmdb.{
   UpdateMoviePopularities,
   UpdatePeoplePopularities,
@@ -15,7 +15,6 @@ import com.teletracker.tasks.util.SourceRetriever
 import io.circe.Encoder
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
 import java.net.URI
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext
@@ -25,7 +24,7 @@ abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
   itemType: ItemType,
   s3Client: S3Client,
   teletrackerConfig: TeletrackerConfig
-)(implicit enc: Encoder.AsObject[T#TypedArgs],
+)(implicit enc: Encoder.AsObject[T#ArgsType],
   executionContext: ExecutionContext)
     extends DeltaLocatorJob[DeltaLocatorJobArgs](
       s3Client,
@@ -48,16 +47,15 @@ abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
 
   override protected def makeTaskMessages(
     snapshotBeforeLocation: URI,
-    snapshotAfterLocation: URI,
-    args: Args
+    snapshotAfterLocation: URI
   ): List[TeletrackerTaskQueueMessage] = {
-    val mod = args.value[Int]("mod")
+    val mod = rawArgs.value[Int]("mod")
 
     mod match {
       case Some(value) =>
         (0 until value).toList.map(band => {
           // TODO: Pass as args, or use configuration
-          TaskMessageHelper.forTask[T](
+          TeletrackerTask.taskMessage[T](
             UpdatePopularitiesJobArgs(
               snapshotBeforeLocation,
               snapshotAfterLocation,
@@ -72,7 +70,7 @@ abstract class LocatePopularityDeltas[T <: UpdatePopularities[_]: ClassTag](
         })
       case None =>
         // TODO: Pass as args, or use configuration
-        TaskMessageHelper.forTask[T](
+        TeletrackerTask.taskMessage[T](
           UpdatePopularitiesJobArgs(
             snapshotBeforeLocation,
             snapshotAfterLocation,

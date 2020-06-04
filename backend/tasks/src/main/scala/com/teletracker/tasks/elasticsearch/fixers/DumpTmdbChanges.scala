@@ -4,7 +4,7 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.ElasticsearchExecutor
 import com.teletracker.common.elasticsearch.model.EsExternalId
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.ClosedDateRange
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.scraper.IngestJobParser
@@ -14,15 +14,6 @@ import io.circe._
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 import javax.inject.Inject
-import org.elasticsearch.common.io.stream.OutputStreamStreamOutput
-import org.elasticsearch.common.xcontent.json.JsonXContent
-import org.elasticsearch.common.xcontent.{
-  ToXContent,
-  XContent,
-  XContentBuilder,
-  XContentHelper,
-  XContentType
-}
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.reindex.UpdateByQueryRequest
 import org.elasticsearch.script.{Script, ScriptType}
@@ -47,7 +38,7 @@ class DumpTmdbChanges @Inject()(
   s3: S3Client,
   sourceWriter: SourceWriter
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   implicit protected val tDecoder: Codec[ChangesDumpFileRow] =
     deriveCodec
 
@@ -55,10 +46,10 @@ class DumpTmdbChanges @Inject()(
   final private lazy val usWest1S3 =
     S3Client.builder().region(Region.US_WEST_1).build()
 
-  override protected def runInternal(args: Args): Unit = {
-    val after = args.valueOrThrow[LocalDate]("after")
-    val before = args.valueOrDefault[LocalDate]("before", LocalDate.now())
-    val itemType = args.valueOrThrow[ItemType]("type")
+  override protected def runInternal(): Unit = {
+    val after = rawArgs.valueOrThrow[LocalDate]("after")
+    val before = rawArgs.valueOrDefault[LocalDate]("before", LocalDate.now())
+    val itemType = rawArgs.valueOrThrow[ItemType]("type")
 
     val today = LocalDate.now()
     val range = ClosedDateRange(after, before)
@@ -133,7 +124,7 @@ class UpdateAdultBit @Inject()(
   teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   implicit protected val tDecoder: Codec[ChangesDumpFileRow] =
     deriveCodec
 
@@ -148,13 +139,13 @@ class UpdateAdultBit @Inject()(
       |}  
       |""".stripMargin
 
-  override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("input")
-    val itemType = args.valueOrThrow[ItemType]("type")
-    val offset = args.valueOrDefault("offset", 0)
-    val limit = args.valueOrDefault("limit", -1)
-    val dryRun = args.valueOrDefault("dryRun", true)
-    val adultType = args.valueOrDefault("adultType", true)
+  override protected def runInternal(): Unit = {
+    val input = rawArgs.valueOrThrow[URI]("input")
+    val itemType = rawArgs.valueOrThrow[ItemType]("type")
+    val offset = rawArgs.valueOrDefault("offset", 0)
+    val limit = rawArgs.valueOrDefault("limit", -1)
+    val dryRun = rawArgs.valueOrDefault("dryRun", true)
+    val adultType = rawArgs.valueOrDefault("adultType", true)
 
     val source = Source.fromURI(input)
     new IngestJobParser()

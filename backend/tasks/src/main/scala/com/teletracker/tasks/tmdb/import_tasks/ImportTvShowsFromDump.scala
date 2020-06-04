@@ -22,10 +22,7 @@ class ImportTvShowsFromDump @Inject()(
       genreCache
     ) {
 
-  override protected def handleItem(
-    args: ImportTmdbDumpTaskArgs,
-    item: TvShow
-  ): Future[Unit] = {
+  override protected def handleItem(item: TvShow): Future[Unit] = {
     tvShowImportHandler
       .handleItem(TvShowImportHandlerArgs(args.dryRun, async = true), item)
       .map(_ => {})

@@ -3,7 +3,8 @@ package com.teletracker.tasks.elasticsearch.fixers
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.model.tmdb.TmdbError
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.scraper.IngestJobParser
@@ -21,24 +22,24 @@ import scala.concurrent.{ExecutionContext, Future}
 abstract class CreateBackfillUpdateFile[T: Decoder](
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
 
-  protected def init(args: Args): Unit = {}
+  protected def init(): Unit = {}
 
-  override protected def runInternal(args: Args): Unit = {
-    init(args)
+  override protected def runInternal(): Unit = {
+    init()
 
-    val input = args.valueOrThrow[URI]("input")
-    val regionString = args.valueOrDefault("region", "us-west-2")
-    val offset = args.valueOrDefault[Int]("offset", 0)
-    val limit = args.valueOrDefault[Int]("limit", -1)
-    val perFileLimit = args.valueOrDefault[Int]("perFileLimit", -1)
-    val append = args.valueOrDefault[Boolean]("append", false)
+    val input = rawArgs.valueOrThrow[URI]("input")
+    val regionString = rawArgs.valueOrDefault("region", "us-west-2")
+    val offset = rawArgs.valueOrDefault[Int]("offset", 0)
+    val limit = rawArgs.valueOrDefault[Int]("limit", -1)
+    val perFileLimit = rawArgs.valueOrDefault[Int]("perFileLimit", -1)
+    val append = rawArgs.valueOrDefault[Boolean]("append", false)
     val region = Region.of(regionString)
-    val gteFilter = args.value[String]("gteFilter")
-    val ltFilter = args.value[String]("ltFilter")
-    val outputPath = args.valueOrThrow[String]("outputPath")
-    val parallelism = args.valueOrDefault("parallelism", 1)
+    val gteFilter = rawArgs.value[String]("gteFilter")
+    val ltFilter = rawArgs.value[String]("ltFilter")
+    val outputPath = rawArgs.valueOrThrow[String]("outputPath")
+    val parallelism = rawArgs.valueOrDefault("parallelism", 1)
 
     val s3 = S3Client.builder().region(region).build()
 

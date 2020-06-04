@@ -14,9 +14,6 @@ class MovieDump @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends DataDumpTask[MovieDumpFileRow, Int] {
 
-  implicit override protected val tDecoder: Decoder[MovieDumpFileRow] =
-    deriveCodec
-
   override protected val baseFileName: String = "movies"
 
   override protected def getRawJson(currentId: Int): Future[String] = {

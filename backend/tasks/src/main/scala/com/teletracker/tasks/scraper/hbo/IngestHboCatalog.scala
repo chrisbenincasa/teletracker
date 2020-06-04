@@ -1,17 +1,16 @@
 package com.teletracker.tasks.scraper.hbo
 
-import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.util.json.circe._
+import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
   ItemUpdater
 }
+import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.hbo.HboScrapedCatalogItem
-import com.teletracker.common.model.scraping.{ScrapeItemType, ScrapedItem}
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
-import com.teletracker.common.tasks.TaskMessageHelper
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper._
@@ -20,12 +19,10 @@ import com.teletracker.tasks.scraper.debug.{
   GeneratePotentialMatchCsv
 }
 import com.teletracker.tasks.scraper.matching.ElasticsearchFallbackMatching
-import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
-import java.time.temporal.ChronoField
-import java.time.{Instant, LocalDate, LocalDateTime, OffsetDateTime, ZoneOffset}
+import java.time.LocalDate
 import java.util.regex.Pattern
 
 class IngestHboCatalog @Inject()(
@@ -86,11 +83,9 @@ class IngestHboCatalog @Inject()(
   }
 
   override protected def followupTasksToSchedule(
-    args: IngestJobArgs,
-    rawArgs: Args
   ): List[TeletrackerTaskQueueMessage] = {
     List(
-      TaskMessageHelper.forTask[GenerateMatchCsv](
+      TeletrackerTask.taskMessage[GenerateMatchCsv](
         Map(
           "input" -> URI
             .create(s"file://${matchItemsFile.getAbsolutePath}")
@@ -98,7 +93,7 @@ class IngestHboCatalog @Inject()(
           "type" -> ScrapeItemType.HboCatalog.toString
         )
       ),
-      TaskMessageHelper.forTask[GeneratePotentialMatchCsv](
+      TeletrackerTask.taskMessage[GeneratePotentialMatchCsv](
         Map(
           "input" -> URI
             .create(s"file://${potentialMatchFile.getAbsolutePath}")

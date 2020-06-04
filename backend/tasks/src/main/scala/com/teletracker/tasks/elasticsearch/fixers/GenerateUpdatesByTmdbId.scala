@@ -2,8 +2,8 @@ package com.teletracker.tasks.elasticsearch.fixers
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
-import com.teletracker.tasks.model.EsItemDumpRow
+import com.teletracker.common.tasks.UntypedTeletrackerTask
+import com.teletracker.tasks.model.{EsBulkUpdate, EsItemDumpRow}
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.scraper.IngestJobParser
@@ -20,13 +20,13 @@ class GenerateUpdatesByTmdbId @Inject()(
   parser: IngestJobParser,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val dumpLocation = args.valueOrThrow[URI]("dumpLocation")
-    val tmdbToUpdateFile = args.valueOrThrow[URI]("updateFile")
-    val itemType = args.valueOrThrow[ItemType]("itemType")
-    val outputPath = args.valueOrThrow[String]("outputPath")
-    val limit = args.valueOrDefault("limit", -1)
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val dumpLocation = rawArgs.valueOrThrow[URI]("dumpLocation")
+    val tmdbToUpdateFile = rawArgs.valueOrThrow[URI]("updateFile")
+    val itemType = rawArgs.valueOrThrow[ItemType]("itemType")
+    val outputPath = rawArgs.valueOrThrow[String]("outputPath")
+    val limit = rawArgs.valueOrDefault("limit", -1)
 
     val tmdbIdsToId = readDumpToMap(dumpLocation, itemType)
 

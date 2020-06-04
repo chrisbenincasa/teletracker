@@ -10,7 +10,7 @@ import com.teletracker.common.elasticsearch.{
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
-import com.teletracker.common.tasks.TaskMessageHelper
+import com.teletracker.common.tasks.{TaskMessageHelper, TeletrackerTask}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.debug.{
@@ -84,11 +84,9 @@ class IngestHuluCatalog @Inject()(
       .getOrElse(Map.empty)
 
   override protected def followupTasksToSchedule(
-    args: IngestJobArgs,
-    rawArgs: Args
   ): List[TeletrackerTaskQueueMessage] = {
     List(
-      TaskMessageHelper.forTask[GenerateMatchCsv](
+      TeletrackerTask.taskMessage[GenerateMatchCsv](
         Map(
           "input" -> URI
             .create(s"file://${matchItemsFile.getAbsolutePath}")
@@ -96,7 +94,7 @@ class IngestHuluCatalog @Inject()(
           "type" -> ScrapeItemType.HuluCatalog.toString
         )
       ),
-      TaskMessageHelper.forTask[GeneratePotentialMatchCsv](
+      TeletrackerTask.taskMessage[GeneratePotentialMatchCsv](
         Map(
           "input" -> URI
             .create(s"file://${potentialMatchFile.getAbsolutePath}")

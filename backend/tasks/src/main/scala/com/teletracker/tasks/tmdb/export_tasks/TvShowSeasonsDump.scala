@@ -14,9 +14,6 @@ class TvShowSeasonsDump @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends DataDumpTask[TvShowSeasonDumpRow, (Int, Int)] {
 
-  implicit override protected lazy val tDecoder: Decoder[TvShowSeasonDumpRow] =
-    implicitly[Decoder[TvShowSeasonDumpRow]]
-
   override protected def getRawJson(currentId: (Int, Int)): Future[String] = {
     itemExpander
       .expandTvSeasonRaw(currentId._1, currentId._2)

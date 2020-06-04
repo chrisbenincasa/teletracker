@@ -1,21 +1,16 @@
 package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.process.tmdb.TmdbItemLookup
-import io.circe.Decoder
+import com.teletracker.tasks.tmdb.export_tasks.TvShowEpisodeDumpRow._
 import io.circe.generic.JsonCodec
 import io.circe.syntax._
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-import TvShowEpisodeDumpRow._
-
 class TvShowEpisodesDump @Inject()(
   itemExpander: TmdbItemLookup
 )(implicit executionContext: ExecutionContext)
     extends DataDumpTask[TvShowEpisodeDumpRow, (Int, Int)] {
-
-  implicit override protected lazy val tDecoder: Decoder[TvShowEpisodeDumpRow] =
-    implicitly[Decoder[TvShowEpisodeDumpRow]]
 
   override protected def getRawJson(currentId: (Int, Int)): Future[String] = {
     itemExpander

@@ -4,7 +4,7 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.ElasticsearchExecutor
 import com.teletracker.common.elasticsearch.model.EsExternalId
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.util.SourceRetriever
@@ -20,10 +20,10 @@ class DeleteMovies @Inject()(
   teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val inputFile = args.valueOrThrow[URI]("input")
-    val limit = args.valueOrDefault("limit", -1)
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val inputFile = rawArgs.valueOrThrow[URI]("input")
+    val limit = rawArgs.valueOrDefault("limit", -1)
 
     sourceRetriever
       .getSourceStream(inputFile)

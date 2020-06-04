@@ -1,29 +1,32 @@
 package com.teletracker.service.controllers
 
-import com.teletracker.common.cache.{JustWatchLocalCache, TmdbLocalCache}
 import com.teletracker.common.db.Bookmark
 import com.teletracker.common.db.model.ItemType
-import com.teletracker.common.elasticsearch.ItemLookup
+import com.teletracker.common.elasticsearch.model.EsPotentialMatchState
 import com.teletracker.common.elasticsearch.scraping.{
   EsPotentialMatchItemStore,
   PotentialMatchItemSearch
 }
-import com.teletracker.common.model.{DataResponse, Paging}
+import com.teletracker.common.elasticsearch.util.ItemUpdateApplier
+import com.teletracker.common.elasticsearch.{
+  ItemLookup,
+  ItemLookupResponse,
+  ItemUpdater
+}
 import com.teletracker.common.model.scraping.ScrapeItemType
+import com.teletracker.common.model.{DataResponse, Paging}
 import com.teletracker.common.util.HasThingIdOrSlug
-import com.teletracker.service.api.ItemApi
 import com.teletracker.service.auth.AdminFilter
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
-import io.circe.syntax._
-import java.util.UUID
 
 class AdminController @Inject()(
   itemLookup: ItemLookup,
-  esPotentialMatchItemStore: EsPotentialMatchItemStore
+  esPotentialMatchItemStore: EsPotentialMatchItemStore,
+  itemUpdater: ItemUpdater
 )(implicit executionContext: ExecutionContext)
     extends Controller {
 
@@ -71,8 +74,51 @@ class AdminController @Inject()(
           case None => response.notFound
         }
       }
-    }
 
+      put("/:id") { req: UpdatePotentialMatchRequest =>
+        esPotentialMatchItemStore.lookup(req.id).flatMap {
+          case Some(value) if value.availability.getOrElse(Nil).isEmpty =>
+            Future.successful(
+              response
+                .badRequest("Potential item has no availabilities to save")
+            )
+
+          case Some(value) =>
+            itemLookup
+              .lookupItem(
+                Left(value.potential.id),
+                None,
+                shouldMaterializeRecommendations = false,
+                shouldMateralizeCredits = false
+              )
+              .flatMap {
+                case Some(ItemLookupResponse(rawItem, _, _)) =>
+                  esPotentialMatchItemStore
+                    .updateState(req.id, req.status)
+                    .flatMap(_ => {
+                      req.status match {
+                        case EsPotentialMatchState.Matched =>
+                          val availabilities = value.availability.getOrElse(Nil)
+                          val itemWithUpdates = ItemUpdateApplier
+                            .applyAvailabilities(rawItem, availabilities)
+                          itemUpdater
+                            .update(itemWithUpdates)
+                            .map(_ => {
+                              response.noContent
+                            })
+                        case _ => Future.successful(response.noContent)
+                      }
+                    })
+                case None =>
+                  Future.successful(response.notFound("Could not find item."))
+              }
+          case None =>
+            Future.successful(
+              response.notFound("Could not find potential match item")
+            )
+        }
+      }
+    }
   }
 
   get("/admin/finatra/things/:thingId", admin = true) { req: Request =>
@@ -99,6 +145,10 @@ case class PotentialMatchSearchRequest(
   @QueryParam bookmark: Option[String])
 
 case class SpecificPotentialMatchRequest(@RouteParam id: String)
+
+case class UpdatePotentialMatchRequest(
+  @RouteParam id: String,
+  status: EsPotentialMatchState)
 
 case class RefreshThingRequest(thingId: String) extends HasThingIdOrSlug
 case class ScrapeTmdbRequest(

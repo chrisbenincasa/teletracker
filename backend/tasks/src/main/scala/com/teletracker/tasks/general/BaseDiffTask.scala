@@ -1,6 +1,6 @@
 package com.teletracker.tasks.general
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
@@ -12,14 +12,14 @@ import scala.concurrent.{ExecutionContext, Future}
 abstract class BaseDiffTask[LeftType: Decoder, RightType: Decoder, Data](
   sourceRetriever: SourceRetriever
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
 
-  override protected def runInternal(args: Args): Unit = {
-    val leftUri = args.valueOrThrow[URI]("left")
-    val rightUri = args.valueOrThrow[URI]("right")
-    val outputToFile = args.valueOrDefault[Boolean]("outputToFile", false)
+  override protected def runInternal(): Unit = {
+    val leftUri = rawArgs.valueOrThrow[URI]("left")
+    val rightUri = rawArgs.valueOrThrow[URI]("right")
+    val outputToFile = rawArgs.valueOrDefault[Boolean]("outputToFile", false)
     val fileName =
-      if (outputToFile) Some(args.valueOrThrow[URI]("outputFileLocation"))
+      if (outputToFile) Some(rawArgs.valueOrThrow[URI]("outputFileLocation"))
       else None
 
     val ingestJobParser = new IngestJobParser

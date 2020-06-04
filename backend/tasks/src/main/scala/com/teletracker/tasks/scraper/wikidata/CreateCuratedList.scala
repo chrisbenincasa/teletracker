@@ -26,7 +26,7 @@ import com.teletracker.common.model.wikidata.{
   WikibaseEntityIdDataValue,
   WikibaseProperties
 }
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.JsonCodec
@@ -50,12 +50,12 @@ class CreateCuratedList @Inject()(
   itemUpdater: ItemUpdater,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("input")
-    val property = args.valueOrThrow[String]("property")
-    val expectedValue = args.valueOrThrow[String]("value")
-    val listId = args.valueOrThrow[UUID]("listId")
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val input = rawArgs.valueOrThrow[URI]("input")
+    val property = rawArgs.valueOrThrow[String]("property")
+    val expectedValue = rawArgs.valueOrThrow[String]("value")
+    val listId = rawArgs.valueOrThrow[UUID]("listId")
 
     val x = sourceRetriever
       .getSourceAsyncStream(input)

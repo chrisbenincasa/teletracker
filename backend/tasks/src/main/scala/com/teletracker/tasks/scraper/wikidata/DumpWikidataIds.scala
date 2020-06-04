@@ -2,7 +2,7 @@ package com.teletracker.tasks.scraper.wikidata
 
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.http.{HttpClient, HttpClientOptions, HttpRequest}
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.tasks.model.EsItemDumpRow
 import com.teletracker.common.util.Futures._
@@ -37,7 +37,7 @@ class DumpWikidataIds @Inject()(
   sourceRetriever: SourceRetriever,
   httpClientFactory: HttpClient.Factory
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   import DumpWikidataIds._
 
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
@@ -45,11 +45,11 @@ class DumpWikidataIds @Inject()(
   private lazy val httpClient =
     httpClientFactory.create("query.wikidata.org", HttpClientOptions.withTls)
 
-  override protected def runInternal(args: Args): Unit = {
-    val itemDumpInput = args.valueOrThrow[URI]("itemDumpInput")
-    val offset = args.valueOrDefault("offset", 0)
-    val limit = args.valueOrDefault("limit", -1)
-    val append = args.valueOrDefault("append", false)
+  override protected def runInternal(): Unit = {
+    val itemDumpInput = rawArgs.valueOrThrow[URI]("itemDumpInput")
+    val offset = rawArgs.valueOrDefault("offset", 0)
+    val limit = rawArgs.valueOrDefault("limit", -1)
+    val append = rawArgs.valueOrDefault("append", false)
 
     val writer = new PrintWriter(
       new BufferedOutputStream(

@@ -4,20 +4,18 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.ElasticsearchExecutor
 import com.teletracker.common.elasticsearch.model.EsExternalId
-import com.teletracker.common.model.tmdb.ExternalIds
-import com.teletracker.common.util.Futures._
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.AsyncStream
+import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.util.FileUtils
 import javax.inject.Inject
-import org.elasticsearch.common.xcontent.{XContentHelper, XContentType}
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.reindex.DeleteByQueryRequest
 import java.net.URI
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicLong
-import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class DeleteMoviesByTmdbId @Inject()(
@@ -25,12 +23,12 @@ class DeleteMoviesByTmdbId @Inject()(
   teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  override protected def runInternal(args: Args): Unit = {
-    val idsFile = args.valueOrThrow[URI]("idsFileLocation")
-    val limit = args.valueOrDefault("limit", -1)
+  override protected def runInternal(): Unit = {
+    val idsFile = rawArgs.valueOrThrow[URI]("idsFileLocation")
+    val limit = rawArgs.valueOrDefault("limit", -1)
 
     val ids = fileUtils.readAllLinesToSet(idsFile, consultSourceCache = false)
     val total = new AtomicLong()

@@ -1,6 +1,6 @@
 package com.teletracker.tasks.scraper
 
-import com.teletracker.common.tasks.TeletrackerTask
+import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.elasticsearch.model.EsItem
@@ -11,6 +11,7 @@ import com.teletracker.common.model.scraping.{
   ScrapeItemType,
   ScrapedItem
 }
+import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.tasks.scraper.matching.LookupMethod
 import io.circe.Codec
@@ -28,13 +29,11 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 // Base class for processing a bunch of items
 abstract class BaseIngestJob[
   T <: ScrapedItem,
-  IngestJobArgsType <: IngestJobArgsLike
+  IngestJobArgsType <: IngestJobArgsLike: JsonableArgs
 ](
 )(implicit executionContext: ExecutionContext,
   codec: Codec[T])
-    extends TeletrackerTask {
-
-  override type TypedArgs = IngestJobArgsType
+    extends TypedTeletrackerTask[IngestJobArgsType] {
 
   @Inject
   private[this] var teletrackerConfig: TeletrackerConfig = _
@@ -85,9 +84,9 @@ abstract class BaseIngestJob[
     _artifacts += file
   }
 
-  protected def lookupMethod(args: TypedArgs): LookupMethod[T]
+  protected def lookupMethod(): LookupMethod[T]
 
-  protected def processMode(args: IngestJobArgsType): ProcessMode
+  protected def processMode(): ProcessMode
 
   postrun { _ =>
     missingItemsWriter.flush()
@@ -127,10 +126,9 @@ abstract class BaseIngestJob[
 
   protected def processAll(
     items: AsyncStream[T],
-    networks: Set[StoredNetwork],
-    args: IngestJobArgsType
+    networks: Set[StoredNetwork]
   ): AsyncStream[(List[MatchResult[T]], List[T])] = {
-    processMode(args) match {
+    processMode() match {
       case Serial(perBatchSleep) =>
         items
           .drop(args.offset)
@@ -165,7 +163,7 @@ abstract class BaseIngestJob[
   ): Future[(List[MatchResult[T]], List[T])] = {
     val filteredAndSanitized = items.filter(shouldProcessItem).map(sanitizeItem)
     if (filteredAndSanitized.nonEmpty) {
-      lookupMethod(args)
+      lookupMethod()
         .apply(
           filteredAndSanitized,
           args

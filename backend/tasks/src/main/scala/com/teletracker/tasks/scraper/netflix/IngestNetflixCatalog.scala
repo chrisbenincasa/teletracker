@@ -17,9 +17,7 @@ import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatcher,
-  ElasticsearchFallbackMatcherOptions,
-  ElasticsearchLookup,
-  LookupMethod
+  ElasticsearchFallbackMatcherOptions
 }
 import com.teletracker.tasks.scraper.model.WhatsOnNetflixCatalogItem
 import com.teletracker.tasks.scraper.{
@@ -29,7 +27,6 @@ import com.teletracker.tasks.scraper.{
 }
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.JsonCodec
-import io.circe.generic.auto._
 import io.circe.parser._
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
@@ -88,10 +85,7 @@ class IngestNetflixCatalog @Inject()(
     item.externalId.forall(seenItems.add)
   }
 
-  override protected def preprocess(
-    args: IngestJobArgs,
-    rawArgs: Args
-  ): Unit = {
+  override protected def preprocess(): Unit = {
     val alternateMovieCatalogUri =
       rawArgs.value[URI]("alternateMovieCatalog")
     val alternateShowCatalogUri =

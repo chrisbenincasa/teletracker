@@ -1,32 +1,34 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
 import com.teletracker.common.model.tmdb.{ErrorResponse, HasTmdbId}
-import com.teletracker.common.tasks.TeletrackerTask
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
+import com.teletracker.common.tasks.TypedTeletrackerTask
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.util.{AsyncStream, GenreCache}
 import com.teletracker.common.util.Lists._
-import com.teletracker.common.util.execution.SequentialFutures
+import com.teletracker.common.util.{AsyncStream, GenreCache}
+import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.util.SourceRetriever
+import io.circe.Decoder
+import io.circe.generic.JsonCodec
 import io.circe.parser._
-import io.circe.{Decoder, Encoder}
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
-import java.time.OffsetDateTime
-import java.util.concurrent.{ConcurrentLinkedQueue, Executors}
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{ConcurrentLinkedQueue, Executors}
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import scala.collection.JavaConverters._
 
 object ImportTmdbDumpTaskArgs {
-  def default(input: URI) = ImportTmdbDumpTaskArgs(
+  def default(input: URI): ImportTmdbDumpTaskArgs = ImportTmdbDumpTaskArgs(
     input = input,
     dryRun = false,
     perBatchSleepMs = Some((1 second).toMillis.toInt)
   )
 }
 
+@JsonCodec
 case class ImportTmdbDumpTaskArgs(
   input: URI,
   offset: Int = 0,
@@ -43,9 +45,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
   genreCache: GenreCache
 )(implicit executionContext: ExecutionContext,
   decoder: Decoder[T])
-    extends TeletrackerTask {
-
-  import com.teletracker.common.util.json.circe._
+    extends TypedTeletrackerTask[ImportTmdbDumpTaskArgs] {
 
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
@@ -54,13 +54,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
 
   private val retryQueue = new ConcurrentLinkedQueue[T]()
 
-  override type TypedArgs = ImportTmdbDumpTaskArgs
-
-  implicit override protected def typedArgsEncoder
-    : Encoder[ImportTmdbDumpTaskArgs] =
-    io.circe.generic.semiauto.deriveEncoder[ImportTmdbDumpTaskArgs]
-
-  override def preparseArgs(args: Args): ImportTmdbDumpTaskArgs = {
+  override def preparseArgs(args: RawArgs): ImportTmdbDumpTaskArgs = {
     ImportTmdbDumpTaskArgs(
       input = args.value[URI]("input").get,
       offset = args.valueOrDefault("offset", 0),
@@ -73,7 +67,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
     )
   }
 
-  override def runInternal(args: Args): Unit = {
+  override def runInternal(): Unit = {
     val typedArgs @ ImportTmdbDumpTaskArgs(
       file,
       offset,
@@ -83,7 +77,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
       perBatchSleepMs,
       _,
       _
-    ) = preparseArgs(args)
+    ) = args
 
     sourceRetriever
       .getUriStream(file)
@@ -106,7 +100,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
             .delayedMapF(
               perBatchSleepMs.map(_ millis).getOrElse(0 millis),
               scheduler
-            )(handleBatch(typedArgs, _))
+            )(handleBatch)
             .force
             .await()
         } finally {
@@ -118,7 +112,7 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
       logger.info(s"Retrying ${retryQueue.size()} items.")
       AsyncStream
         .fromSeq(retryQueue.asScala.toSeq)
-        .mapF(handleItem(typedArgs, _))
+        .mapF(handleItem)
         .force
         .await()
     }
@@ -126,21 +120,18 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
     logger.info(s"Successfully processed: ${processedCounter.get()} items.")
   }
 
-  private def handleBatch(
-    typedArgs: TypedArgs,
-    batch: Seq[Either[Int, T]]
-  ) = {
+  private def handleBatch(batch: Seq[Either[Int, T]]) = {
     Future
       .sequence(
         batch.map {
           case Left(id) =>
-            handleDeletedItem(typedArgs, id)
+            handleDeletedItem(id)
               .map(_ => HandleDeleteResult(successful = true, id))
               .recover {
                 case NonFatal(_) => HandleDeleteResult(successful = false, id)
               }
           case Right(item) =>
-            handleItem(typedArgs, item)
+            handleItem(item)
               .map(_ => HandleItemResult(successful = true, item))
               .recover {
                 case NonFatal(_) => HandleItemResult(successful = false, item)
@@ -214,20 +205,11 @@ abstract class ImportTmdbDumpTask[T <: HasTmdbId](
     })
   }
 
-  protected def handleItem(
-    args: ImportTmdbDumpTaskArgs,
-    item: T
-  ): Future[Unit]
+  protected def handleItem(item: T): Future[Unit]
 
-  protected def handleDeletedItem(
-    args: ImportTmdbDumpTaskArgs,
-    id: Int
-  ): Future[Unit] = Future.unit
+  protected def handleDeletedItem(id: Int): Future[Unit] = Future.unit
 
-  protected def handleItemDeletion(
-    args: ImportTmdbDumpTaskArgs,
-    id: Int
-  ): Future[Unit] = Future.unit
+  protected def handleItemDeletion(id: Int): Future[Unit] = Future.unit
 
   protected def shouldHandleItem(item: T): Boolean = true
 

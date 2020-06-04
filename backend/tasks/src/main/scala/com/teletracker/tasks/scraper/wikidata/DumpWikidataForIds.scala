@@ -1,7 +1,7 @@
 package com.teletracker.tasks.scraper.wikidata
 
 import com.teletracker.common.http.{HttpClient, HttpClientOptions, HttpRequest}
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
@@ -18,7 +18,7 @@ class DumpWikidataForIds @Inject()(
   sourceRetriever: SourceRetriever,
   httpClientFactory: HttpClient.Factory
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   final val USER_AGENT_STRING =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36"
 
@@ -27,8 +27,8 @@ class DumpWikidataForIds @Inject()(
 
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("input")
+  override protected def runInternal(): Unit = {
+    val input = rawArgs.valueOrThrow[URI]("input")
 
     val rotator = FileRotator.everyNBytes(
       "wikidata_dump",

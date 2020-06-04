@@ -3,10 +3,10 @@ package com.teletracker.tasks.elasticsearch.fixers
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.model.EsItemRating
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Ratings
-import com.teletracker.tasks.model.EsItemDumpRow
+import com.teletracker.tasks.model.{EsBulkUpdate, EsItemDumpRow}
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import javax.inject.Inject
@@ -20,10 +20,10 @@ class ImportImdbRatings @Inject()(
   sourceRetriever: SourceRetriever,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val itemDumpInput = args.valueOrThrow[URI]("itemDumpInput")
-    val imdbImport = args.valueOrThrow[URI]("imdbInput")
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val itemDumpInput = rawArgs.valueOrThrow[URI]("itemDumpInput")
+    val imdbImport = rawArgs.valueOrThrow[URI]("imdbInput")
 
     val tmdbMovieWeight = 100
     val tmdbShowWeight = 25

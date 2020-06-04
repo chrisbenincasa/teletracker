@@ -4,7 +4,7 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.elasticsearch.denorm.DenormalizedItemUpdater
 import com.teletracker.common.elasticsearch.model.EsUserItem
 import com.teletracker.common.elasticsearch.{ItemLookup, UserItemsScroller}
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.Futures._
 import javax.inject.Inject
@@ -20,11 +20,11 @@ class ReindexUserItems @Inject()(
   itemLookup: ItemLookup,
   denormalizedItemUpdater: DenormalizedItemUpdater
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  override protected def runInternal(args: Args): Unit = {
-    val userId = args.value[String]("userId")
+  override protected def runInternal(): Unit = {
+    val userId = rawArgs.value[String]("userId")
 
     val allUserItems = userItemsScroller
       .start(

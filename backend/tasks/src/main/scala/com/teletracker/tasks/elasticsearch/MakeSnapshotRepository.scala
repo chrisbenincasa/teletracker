@@ -1,14 +1,14 @@
 package com.teletracker.tasks.elasticsearch
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import javax.inject.Inject
 import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
 import org.elasticsearch.common.settings.Settings
 
 class MakeSnapshotRepository @Inject()(client: RestHighLevelClient)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
     client
       .snapshot()
       .createRepository(

@@ -12,6 +12,7 @@ import com.teletracker.common.elasticsearch.model.{
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
+import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
@@ -24,7 +25,7 @@ import com.teletracker.tasks.scraper.matching.{
   LookupMethod
 }
 import com.teletracker.tasks.util.{FileUtils, SourceRetriever}
-import io.circe.generic.semiauto.deriveEncoder
+import io.circe.generic.JsonCodec
 import io.circe.{Codec, Encoder}
 import io.circe.syntax._
 import javax.inject.Inject
@@ -50,6 +51,7 @@ trait IngestDeltaJobArgsLike {
   val perBatchSleepMs: Option[Int]
 }
 
+@JsonCodec
 case class IngestDeltaJobArgs(
   snapshotAfter: URI,
   snapshotBefore: URI,
@@ -64,12 +66,10 @@ case class IngestDeltaJobArgs(
 
 abstract class IngestDeltaJob[T <: ScrapedItem](
   elasticsearchLookup: ElasticsearchLookup
-)(implicit codec: Codec[T])
+)(implicit codec: Codec[T],
+  typedArgs: JsonableArgs[IngestDeltaJobArgs])
     extends IngestDeltaJobLike[T, IngestDeltaJobArgs](elasticsearchLookup) {
-  implicit override protected def typedArgsEncoder
-    : Encoder[IngestDeltaJobArgs] = deriveEncoder[IngestDeltaJobArgs]
-
-  override def preparseArgs(args: Args): IngestDeltaJobArgs = parseArgs(args)
+  override def preparseArgs(args: RawArgs): IngestDeltaJobArgs = parseArgs(args)
 
   private def parseArgs(args: Map[String, Option[Any]]): IngestDeltaJobArgs = {
     IngestDeltaJobArgs(
@@ -86,11 +86,13 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
 
 abstract class IngestDeltaJobLike[
   T <: ScrapedItem,
-  ArgsType <: IngestJobArgsLike with IngestDeltaJobArgsLike
+  IngestJobArgs <: IngestJobArgsLike with IngestDeltaJobArgsLike
 ](
   elasticsearchLookup: ElasticsearchLookup
-)(implicit codec: Codec[T])
-    extends BaseIngestJob[T, ArgsType]()(
+)(implicit codec: Codec[T],
+  typedArgs: JsonableArgs[IngestJobArgs])
+    extends BaseIngestJob[T, IngestJobArgs]()(
+      typedArgs,
       scala.concurrent.ExecutionContext.Implicits.global,
       codec
     ) {
@@ -119,7 +121,7 @@ abstract class IngestDeltaJobLike[
   protected def externalSource: ExternalSource
 
   protected def parseMode: ParseMode = AllJson
-  protected def lookupMethod(args: TypedArgs): LookupMethod[T] =
+  protected def lookupMethod: LookupMethod[T] =
     new CustomElasticsearchLookup[T](
       List(
         externalIdLookup.create[T](externalSource, uniqueKey(_)),
@@ -127,20 +129,17 @@ abstract class IngestDeltaJobLike[
       )
     )
 
-  override protected def processMode(args: ArgsType): ProcessMode =
+  override protected def processMode(): ProcessMode =
     Parallel(16, args.perBatchSleepMs.map(_ millis))
 
-  override type TypedArgs = ArgsType
-
-  override def runInternal(args: Args): Unit = {
+  override def runInternal(): Unit = {
     val networks = getNetworksOrExit()
 
-    val parsedArgs = preparseArgs(args)
     val sourceRetriever = new SourceRetriever(s3)
 
     val afterIds = fileUtils
       .readAllLinesToUniqueIdSet[T](
-        parsedArgs.snapshotAfter,
+        args.snapshotAfter,
         uniqueKey,
         consultSourceCache = true
       )
@@ -149,7 +148,7 @@ abstract class IngestDeltaJobLike[
 
     val beforeIds = fileUtils
       .readAllLinesToUniqueIdSet[T](
-        parsedArgs.snapshotBefore,
+        args.snapshotBefore,
         uniqueKey,
         consultSourceCache = true
       )
@@ -165,19 +164,19 @@ abstract class IngestDeltaJobLike[
     )
 
     val afterItemSource =
-      sourceRetriever.getSource(parsedArgs.snapshotAfter, consultCache = true)
+      sourceRetriever.getSource(args.snapshotAfter, consultCache = true)
 
     val (afterItems, afterItemsById) = readItems(afterItemSource)
 
     val (addedMatches, addedNotFound) = AsyncStream
       .fromSeq(afterItems)
       .filter(item => newIds.contains(uniqueKey(item)))
-      .throughApply(processAll(_, networks, parsedArgs))
+      .throughApply(processAll(_, networks))
       .map {
         case (matchResults, nonMatches) =>
           val filteredResults = matchResults.filter {
             case MatchResult(_, esItem) =>
-              parsedArgs.thingIdFilter.forall(_ == esItem.id)
+              args.thingIdFilter.forall(_ == esItem.id)
           }
 
           filteredResults -> nonMatches
@@ -188,7 +187,7 @@ abstract class IngestDeltaJobLike[
     val newAvailabilities = addedMatches
       .filter {
         case MatchResult(_, esItem) =>
-          parsedArgs.thingIdFilter.forall(_ == esItem.id)
+          args.thingIdFilter.forall(_ == esItem.id)
       }
       .map {
         case MatchResult(scrapedItem, esItem) =>
@@ -202,19 +201,19 @@ abstract class IngestDeltaJobLike[
       }
 
     val beforeItemSource =
-      sourceRetriever.getSource(parsedArgs.snapshotBefore, consultCache = true)
+      sourceRetriever.getSource(args.snapshotBefore, consultCache = true)
 
     val (beforeItems, beforeItemsById) = readItems(beforeItemSource)
 
     val (beforeMatches, beforeNotFound) = AsyncStream
       .fromSeq(beforeItems)
       .filter(item => removedIds.contains(uniqueKey(item)))
-      .throughApply(processAll(_, networks, parsedArgs))
+      .throughApply(processAll(_, networks))
       .map {
         case (matchResults, nonMatches) =>
           val filteredResults = matchResults.filter {
             case MatchResult(_, esItem) =>
-              parsedArgs.thingIdFilter.forall(_ == esItem.id)
+              args.thingIdFilter.forall(_ == esItem.id)
           }
 
           filteredResults -> nonMatches
@@ -225,7 +224,7 @@ abstract class IngestDeltaJobLike[
     val removedAvailabilities = beforeMatches
       .filter {
         case MatchResult(_, esItem) =>
-          parsedArgs.thingIdFilter.forall(_ == esItem.id)
+          args.thingIdFilter.forall(_ == esItem.id)
       }
       .map {
         case MatchResult(scrapedItem, esItem) =>
@@ -257,13 +256,12 @@ abstract class IngestDeltaJobLike[
     val (changedMatches, changedNotFound) = AsyncStream
       .fromSeq(itemChangesById.values.toSeq)
       .map(_.after)
-      .throughApply(processAll(_, networks, parsedArgs))
+      .throughApply(processAll(_, networks))
       .map(
         matchesAndMisses =>
           filterMatchResults(
             matchesAndMisses._1,
-            matchesAndMisses._2,
-            parsedArgs
+            matchesAndMisses._2
           )
       )
       .foldLeft(Folds.list2Empty[MatchResult[T], T])(Folds.fold2Append)
@@ -272,7 +270,7 @@ abstract class IngestDeltaJobLike[
     val (updateChanges, removeChanges) = changedMatches
       .filter {
         case MatchResult(_, esItem) =>
-          parsedArgs.thingIdFilter.forall(_ == esItem.id)
+          args.thingIdFilter.forall(_ == esItem.id)
       }
       .foldLeft(
         Folds.list2Empty[PendingAvailabilityUpdates, PendingAvailabilityUpdates]
@@ -329,19 +327,18 @@ abstract class IngestDeltaJobLike[
       s"Found ${(removedAvailabilities ++ removeChanges).flatMap(_.availabilities).size} availabilities to remove"
     )
 
-    if (!parsedArgs.dryRun) {
+    if (!args.dryRun) {
       val allAdds = newAvailabilities ++ updateChanges
       val allRemoves = removedAvailabilities ++ removeChanges
       logger.info(
         s"Saving ${allAdds.size + allRemoves.size} availabilities"
       )
 
-      saveExternalIdMappings(allAdds, allRemoves, parsedArgs)
+      saveExternalIdMappings(allAdds, allRemoves)
         .flatMap(_ => {
           saveAvailabilities(
             allAdds,
             allRemoves,
-            parsedArgs,
             shouldRetry = true
           )
         })
@@ -404,8 +401,7 @@ abstract class IngestDeltaJobLike[
 
   private def filterMatchResults(
     matches: List[MatchResult[T]],
-    nonMatches: List[T],
-    args: ArgsType
+    nonMatches: List[T]
   ) = {
     val filteredResults = matches.filter {
       case MatchResult(_, esItem) =>
@@ -437,8 +433,7 @@ abstract class IngestDeltaJobLike[
 
   protected def saveExternalIdMappings(
     newAvailabilities: List[PendingAvailabilityUpdates],
-    availabilitiesToRemove: List[PendingAvailabilityUpdates],
-    args: IngestDeltaJobArgsLike
+    availabilitiesToRemove: List[PendingAvailabilityUpdates]
   ): Future[Unit] = {
     val allExternalIdUpdates = (newAvailabilities ++ availabilitiesToRemove)
       .map(update => {
@@ -463,7 +458,6 @@ abstract class IngestDeltaJobLike[
   protected def saveAvailabilities(
     newAvailabilities: List[PendingAvailabilityUpdates],
     availabilitiesToRemove: List[PendingAvailabilityUpdates],
-    args: IngestDeltaJobArgsLike,
     shouldRetry: Boolean
   ): Future[Unit] = {
     val externalIdsById = (newAvailabilities ++ availabilitiesToRemove)
@@ -581,7 +575,6 @@ abstract class IngestDeltaJobLike[
               .filter(update => failures.contains(update.esItem.id)),
             availabilitiesToRemove
               .filter(update => failures.contains(update.esItem.id)),
-            args,
             shouldRetry = false
           )
         case failures =>

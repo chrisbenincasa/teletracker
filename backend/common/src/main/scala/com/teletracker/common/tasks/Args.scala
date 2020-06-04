@@ -7,7 +7,7 @@ import java.time.LocalDate
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
-object Args extends Args {
+object TaskArgs extends TaskArgImplicits {
   def extractArgs(args: Map[String, Json]): Map[String, Option[Any]] = {
     args.mapValues(extractValue)
   }
@@ -24,7 +24,7 @@ object Args extends Args {
   }
 }
 
-trait Args {
+trait TaskArgImplicits {
   implicit def asRichArgs(args: Map[String, Option[Any]]): RichArgs =
     new RichArgs(args)
 }
@@ -44,6 +44,21 @@ class RichArgs(val args: Map[String, Option[Any]]) extends AnyVal {
     value(key).getOrElse(
       throw new IllegalArgumentException(s"No argument under key: $key")
     )
+
+  // Convenience functions
+  def intOpt(key: String): Option[Int] = value[Int](key)
+  def int(key: String): Int = valueOrThrow[Int](key)
+  def int(
+    key: String,
+    default: => Int
+  ): Int = valueOrDefault[Int](key, default)
+
+  def stringOpt(key: String): Option[String] = value[String](key)
+  def string(key: String): String = valueOrThrow[String](key)
+  def string(
+    key: String,
+    default: => String
+  ): String = valueOrDefault[String](key, default)
 }
 
 trait LowPriArgParsers {

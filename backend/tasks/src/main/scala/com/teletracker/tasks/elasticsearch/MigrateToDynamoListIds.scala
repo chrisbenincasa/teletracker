@@ -1,6 +1,6 @@
 package com.teletracker.tasks.elasticsearch
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.ListsDbAccess
 import com.teletracker.common.db.model.UserThingTagType
@@ -25,9 +25,9 @@ class MigrateToDynamoListIds @Inject()(
   itemUpdater: ItemUpdater,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val listIdFilter = args.value[Int]("listId")
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val listIdFilter = rawArgs.intOpt("listId")
 
     listsDbAccess
       .processAllLists(list => {

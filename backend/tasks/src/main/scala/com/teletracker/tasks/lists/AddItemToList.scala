@@ -1,38 +1,34 @@
 package com.teletracker.tasks.lists
 
-import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.common.elasticsearch.ItemUpdater
-import io.circe.Encoder
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
+import com.teletracker.common.tasks.TypedTeletrackerTask
+import com.teletracker.common.util.Futures._
+import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import java.util.UUID
-import com.teletracker.common.util.Futures._
 
+@JsonCodec
 case class AddItemToListArgs(
   listId: UUID,
   itemId: UUID,
   userId: String)
 
 class AddItemToList @Inject()(itemUpdater: ItemUpdater)
-    extends TeletrackerTask {
-  override type TypedArgs = AddItemToListArgs
-
-  implicit override protected def typedArgsEncoder: Encoder[AddItemToListArgs] =
-    io.circe.generic.semiauto.deriveEncoder
-
-  override def preparseArgs(args: Args): AddItemToListArgs =
+    extends TypedTeletrackerTask[AddItemToListArgs] {
+  override def preparseArgs(args: RawArgs): AddItemToListArgs =
     AddItemToListArgs(
       listId = args.valueOrThrow[UUID]("listId"),
       itemId = args.valueOrThrow[UUID]("itemId"),
       userId = args.valueOrThrow[String]("userId")
     )
 
-  override protected def runInternal(args: Args): Unit = {
-    val parsedArgs = preparseArgs(args)
+  override protected def runInternal(): Unit = {
     itemUpdater
       .addListTagToItem(
-        parsedArgs.itemId,
-        parsedArgs.listId,
-        parsedArgs.userId
+        args.itemId,
+        args.listId,
+        args.userId
       )
       .await()
   }

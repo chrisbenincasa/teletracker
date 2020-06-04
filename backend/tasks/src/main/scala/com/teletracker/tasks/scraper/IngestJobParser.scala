@@ -71,6 +71,30 @@ class IngestJobParser {
       }
   }
 
+  def streamWithParsed[T](
+    lines: Iterator[String]
+  )(implicit decoder: Decoder[T]
+  ): Stream[Either[Exception, TypeWithParsedJson[T]]] = {
+    lines
+      .flatMap(sanitizeLine)
+      .toStream
+      .zipWithIndex
+      .filter(_._1.nonEmpty)
+      .map { case (in, idx) => in.trim -> idx }
+      .map {
+        case (in, idx) =>
+          io.circe.parser
+            .parse(in)
+            .flatMap(json => {
+              json.as[T].map(t => TypeWithParsedJson(t, json))
+            })
+            .left
+            .map(failure => {
+              IngestJobParserException(in, idx, failure)
+            })
+      }
+  }
+
   def asyncStream[T](
     lines: Iterator[String]
   )(implicit decoder: Decoder[T]
@@ -85,8 +109,12 @@ class IngestJobParser {
       List(line)
     }
   }
-
 }
+
+case class TypeWithParsedJson[+T](
+  obj: T,
+  parsed: Json)
+
 case class IngestJobParserException(
   line: String,
   index: Int,

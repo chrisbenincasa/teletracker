@@ -4,7 +4,7 @@ import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.model.EsExternalId
 import com.teletracker.common.elasticsearch.{ElasticsearchExecutor, ItemLookup}
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.model.GenericTmdbDumpFileRow
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.SourceRetriever
@@ -25,13 +25,13 @@ class UpdatePopularitiesDirect @Inject()(
   elasticsearchExecutor: ElasticsearchExecutor,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   final private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  override protected def runInternal(args: Args): Unit = {
-    val itemType = args.valueOrThrow[ItemType]("itemType")
-    val loc = args.valueOrThrow[URI]("loc")
-    val limit = args.valueOrThrow[Int]("limit")
+  override protected def runInternal(): Unit = {
+    val itemType = rawArgs.valueOrThrow[ItemType]("itemType")
+    val loc = rawArgs.valueOrThrow[URI]("loc")
+    val limit = rawArgs.valueOrThrow[Int]("limit")
 
     val source = sourceRetriever.getSource(loc)
 

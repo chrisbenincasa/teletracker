@@ -6,7 +6,7 @@ import com.teletracker.common.pubsub.{
   TaskScheduler,
   TeletrackerTaskQueueMessage
 }
-import com.teletracker.common.tasks.TeletrackerTask.{CommonFlags, TaskResult}
+import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
 import com.teletracker.common.util.EnvironmentDetection
 import com.teletracker.common.util.Futures._
 import io.circe.syntax._
@@ -18,6 +18,7 @@ import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 import scala.collection.mutable
+import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 object TeletrackerTask {
@@ -32,18 +33,69 @@ object TeletrackerTask {
     def success: TaskResult = SuccessResult
     def failure(e: Throwable): TaskResult = FailureResult(e)
   }
+
   sealed trait TaskResult {
     def isSuccess: Boolean
   }
+
   case object SuccessResult extends TaskResult {
     override def isSuccess: Boolean = true
   }
+
   case class FailureResult(error: Throwable) extends TaskResult {
     override def isSuccess: Boolean = false
   }
+
+  trait JsonableArgs[T] {
+    def asJson(a: T): Json
+  }
+
+  object JsonableArgs {
+    implicit def jsonableEither[L, R](
+      implicit l: JsonableArgs[L],
+      r: JsonableArgs[R]
+    ): JsonableArgs[Either[L, R]] =
+      new JsonableArgs[Either[L, R]] {
+        override def asJson(a: Either[L, R]): Json = a match {
+          case Left(value)  => l.asJson(value)
+          case Right(value) => r.asJson(value)
+        }
+      }
+
+    implicit val mapJsonableArgs: JsonableArgs[Map[String, String]] =
+      new JsonableArgs[Map[String, String]] {
+        override def asJson(a: Map[String, String]): Json = a.asJson
+      }
+
+    implicit def jsonableArgs[T: Encoder]: JsonableArgs[T] =
+      new JsonableArgs[T] {
+        override def asJson(a: T): Json = a.asJson
+      }
+  }
+
+  def taskMessage[T <: TeletrackerTask](
+    args: T#ArgsType,
+    tags: Option[Set[String]] = None
+  )(implicit ct: ClassTag[T],
+    enc: Encoder.AsObject[T#ArgsType]
+  ): TeletrackerTaskQueueMessage = {
+    TeletrackerTaskQueueMessage(
+      id = Some(UUID.randomUUID()),
+      clazz = ct.runtimeClass.getName,
+      args = args.asJsonObject.toMap,
+      jobTags = tags
+    )
+  }
+
+  type RawArgs = Map[String, Option[Any]]
 }
 
-trait TeletrackerTask extends Args {
+trait TeletrackerTask extends TaskArgImplicits {
+  import TeletrackerTask._
+
+  type ArgsType <: AnyRef
+
+  private[this] var didInit = false
   protected[this] var _taskId: UUID = UUID.randomUUID()
 
   def taskId: UUID = _taskId
@@ -65,23 +117,40 @@ trait TeletrackerTask extends Args {
 
   private[this] var _options: Options = _
 
-  type Args = Map[String, Option[Any]]
-  type TypedArgs
+  private def checkInit() = {
+    if (!didInit) {
+      throw new IllegalStateException(
+        "Cannot access args before initialization"
+      )
+    }
+  }
+
+  private[this] var _rawArgs: RawArgs = _
+  protected def rawArgs: RawArgs = {
+    checkInit()
+    assert(_rawArgs ne null) // This should be impossible
+    _rawArgs
+  }
+
+  private[this] var _args: ArgsType = _
+  protected def args: ArgsType = {
+    checkInit()
+    assert(_args ne null) // This should be impossible
+    _args
+  }
 
   protected lazy val callbacks: mutable.Buffer[TaskCallback] =
     mutable.Buffer.empty
 
   private val preruns: mutable.Buffer[() => Unit] = mutable.Buffer.empty
-  private val postruns: mutable.Buffer[Args => Unit] =
+  private val postruns: mutable.Buffer[RawArgs => Unit] =
     mutable.Buffer.empty
 
-  implicit protected def typedArgsEncoder: Encoder[TypedArgs]
+  def preparseArgs(args: RawArgs): ArgsType
 
-  def preparseArgs(args: Args): TypedArgs
+  def validateArgs(args: ArgsType): Unit = {}
 
-  def validateArgs(args: TypedArgs): Unit = {}
-
-  def argsAsJson(args: Args): Json = preparseArgs(args).asJson
+  def argsAsJson(args: RawArgs): Json // = typedArgs.asJson(preparseArgs(args))
 
   def retryable: Boolean = false
 
@@ -91,54 +160,64 @@ trait TeletrackerTask extends Args {
   private lazy val s3LogKey =
     s"task-output/${getClass.getSimpleName}/${LocalDate.now()}/${OffsetDateTime.now()}"
 
-  protected def runInternal(args: Args): Unit
+  protected def runInternal(): Unit
 
   protected def prerun(f: => Unit): Unit = {
     preruns += (() => f)
   }
 
-  protected def postrun(f: Args => Unit): Unit = {
+  protected def postrun(f: RawArgs => Unit): Unit = {
     postruns += f
   }
 
-  private def init(args: Args): Unit = synchronized {
-    val logToS3 =
-      EnvironmentDetection.runningRemotely || args
-        .valueOrDefault(CommonFlags.S3Logging, false)
+  private def init(args: RawArgs): Unit = synchronized {
+    if (!didInit) {
+      didInit = true
 
-    val logToConsole = args
-      .valueOrDefault(CommonFlags.OutputToConsole, true)
+      _rawArgs = args
+      _args = preparseArgs(args)
 
-    if (logToS3) {
-      val (s3Logger, onClose) = TaskLogger.make(
-        getClass,
-        s3,
-        teletrackerConfig.data.s3_bucket,
-        s3LogKey,
-        outputToConsole = logToConsole
+      val logToS3 =
+        EnvironmentDetection.runningRemotely || args
+          .valueOrDefault(CommonFlags.S3Logging, false)
+
+      val logToConsole = args
+        .valueOrDefault(CommonFlags.OutputToConsole, true)
+
+      if (logToS3) {
+        val (s3Logger, onClose) = TaskLogger.make(
+          getClass,
+          s3,
+          teletrackerConfig.data.s3_bucket,
+          s3LogKey,
+          outputToConsole = logToConsole
+        )
+
+        selfLogger.info(
+          s"Logs for ${getClass.getSimpleName} (id: $taskId) can be found at s3://${teletrackerConfig.data.s3_bucket}/$s3LogKey"
+        )
+
+        _logger = s3Logger
+        _loggerCloseHook = onClose
+      } else {
+        _logger = LoggerFactory.getLogger(getClass)
+      }
+
+      _options = Options(
+        scheduleFollowupTasks = args
+          .value[Boolean](CommonFlags.ScheduleFollowups)
+          .orElse(args.value[Boolean](CommonFlags.ScheduleFollowupTasks))
+          .getOrElse(true)
       )
-
-      selfLogger.info(
-        s"Logs for ${getClass.getSimpleName} (id: $taskId) can be found at s3://${teletrackerConfig.data.s3_bucket}/$s3LogKey"
-      )
-
-      _logger = s3Logger
-      _loggerCloseHook = onClose
-    } else {
-      _logger = LoggerFactory.getLogger(getClass)
     }
 
-    _options = Options(
-      scheduleFollowupTasks = args
-        .value[Boolean](CommonFlags.ScheduleFollowups)
-        .orElse(args.value[Boolean](CommonFlags.ScheduleFollowupTasks))
-        .getOrElse(true)
-    )
   }
 
-  final def run(args: Args): TeletrackerTask.TaskResult = {
+  final def run(args: RawArgs): TeletrackerTask.TaskResult = {
     try {
       init(args)
+
+      validateArgs(this.args)
 
       logger.info(
         s"Running ${getClass.getSimpleName} (id: $taskId) with args: ${args}"
@@ -148,12 +227,8 @@ trait TeletrackerTask extends Args {
 
       preruns.foreach(_())
 
-      val parsedArgs = preparseArgs(args)
-
-      validateArgs(parsedArgs)
-
       val result = try {
-        runInternal(args)
+        runInternal()
         TaskResult.success
       } catch {
         case NonFatal(e) =>
@@ -169,7 +244,7 @@ trait TeletrackerTask extends Args {
         if (result.isSuccess || cb.runOnFailure) {
           logger.debug(s"Running callback: ${cb.name}")
           try {
-            cb.cb(parsedArgs, args)
+            cb.cb(this.args, this.rawArgs)
           } catch {
             case NonFatal(e) =>
               logger.error(s"""Callback "${cb.name}" failed.""", e)
@@ -190,10 +265,8 @@ trait TeletrackerTask extends Args {
     logger.debug(s"Successfully attached ${cb.name} callback")
   }
 
-  protected def followupTasksToSchedule(
-    args: TypedArgs,
-    rawArgs: Args
-  ): List[TeletrackerTaskQueueMessage] = Nil
+  protected def followupTasksToSchedule(): List[TeletrackerTaskQueueMessage] =
+    Nil
 
   protected def options: Options = _options
 
@@ -203,7 +276,7 @@ trait TeletrackerTask extends Args {
         "scheduleFollowupTasks",
         (typedArgs, args) => {
           if (options.scheduleFollowupTasks) {
-            val tasks = followupTasksToSchedule(typedArgs, args)
+            val tasks = followupTasksToSchedule()
 
             if (tasks.isEmpty) {
               logger.debug("No follow-up tasks to schedule.")
@@ -228,24 +301,30 @@ trait TeletrackerTask extends Args {
 
   case class TaskCallback(
     name: String,
-    cb: (TypedArgs, Args) => Unit,
+    cb: (ArgsType, RawArgs) => Unit,
     runOnFailure: Boolean = false)
 
   case class Options(scheduleFollowupTasks: Boolean = true)
 }
 
-trait TeletrackerTaskWithDefaultArgs extends TeletrackerTask with DefaultAnyArgs
+trait UntypedTeletrackerTask extends TeletrackerTask with DefaultAnyArgs
 
 trait DefaultAnyArgs { self: TeletrackerTask =>
-  override type TypedArgs = Map[String, String]
+  override type ArgsType = Map[String, String]
 
-  implicit override protected def typedArgsEncoder: Encoder[TypedArgs] =
-    Encoder.encodeMap[String, String]
-
-  override def preparseArgs(args: Args): TypedArgs =
+  override def preparseArgs(args: RawArgs): Map[String, String] =
     args.collect {
       case (k, Some(v)) => k -> v.toString
     }
 
-  override def argsAsJson(args: Args): Json = preparseArgs(args).asJson
+  override def argsAsJson(args: RawArgs): Json = preparseArgs(args).asJson
+}
+
+abstract class TypedTeletrackerTask[_ArgsType <: AnyRef](
+  implicit jsonArgs: JsonableArgs[_ArgsType])
+    extends TeletrackerTask {
+  override type ArgsType = _ArgsType
+
+  override def argsAsJson(args: RawArgs): Json =
+    jsonArgs.asJson(preparseArgs(args))
 }

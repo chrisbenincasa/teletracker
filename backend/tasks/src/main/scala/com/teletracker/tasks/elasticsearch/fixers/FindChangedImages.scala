@@ -6,10 +6,9 @@ import com.teletracker.common.elasticsearch.EsOrdering
 import com.teletracker.common.elasticsearch.model.EsItemImage
 import com.teletracker.common.model.ToEsItem
 import com.teletracker.common.model.tmdb.{Movie, TvShow}
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.Futures._
-import com.teletracker.common.util.Slug
-import com.teletracker.tasks.model.EsItemDumpRow
+import com.teletracker.tasks.model.{EsBulkUpdate, EsItemDumpRow}
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.{FileRotator, SourceRetriever}
 import com.twitter.util.StorageUnit
@@ -25,13 +24,13 @@ class FindChangedImages @Inject()(
   parser: IngestJobParser,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val dumpInput = args.valueOrThrow[URI]("dumpInput")
-    val tmdbInput = args.valueOrThrow[URI]("tmdbInput")
-    val output = args.valueOrThrow[String]("output")
-    val append = args.valueOrDefault[Boolean]("append", false)
-    val itemType = args.valueOrDefault[ItemType]("itemType", ItemType.Movie)
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val dumpInput = rawArgs.valueOrThrow[URI]("dumpInput")
+    val tmdbInput = rawArgs.valueOrThrow[URI]("tmdbInput")
+    val output = rawArgs.valueOrThrow[String]("output")
+    val append = rawArgs.valueOrDefault[Boolean]("append", false)
+    val itemType = rawArgs.valueOrDefault[ItemType]("itemType", ItemType.Movie)
 
     val fileRotator = FileRotator.everyNLinesOrSize(
       "updates",

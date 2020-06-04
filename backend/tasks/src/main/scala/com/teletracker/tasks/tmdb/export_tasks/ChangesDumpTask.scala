@@ -3,7 +3,7 @@ package com.teletracker.tasks.tmdb.export_tasks
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.process.tmdb.TmdbItemLookup
 import com.teletracker.common.pubsub.{TaskTag, TeletrackerTaskQueueMessage}
-import com.teletracker.common.tasks.TaskMessageHelper
+import com.teletracker.common.tasks.TeletrackerTask
 import com.teletracker.tasks.annotations.TaskTags
 import com.teletracker.tasks.tmdb.import_tasks.{
   ImportMoviesFromDump,
@@ -12,11 +12,9 @@ import com.teletracker.tasks.tmdb.import_tasks.{
   ImportTvShowsFromDump
 }
 import com.teletracker.tasks.util.ArgJsonInstances._
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveCodec
+import io.circe.generic.JsonCodec
 import javax.inject.Inject
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.sqs.{SqsAsyncClient, SqsClient}
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import scala.concurrent.{ExecutionContext, Future}
 
 @TaskTags(tags = Array(TaskTag.RequiresTmdbApi))
@@ -26,9 +24,6 @@ abstract class ChangesDumpTask(
   protected val publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends DataDumpTask[ChangesDumpFileRow, Int] {
-  implicit override protected val tDecoder: Decoder[ChangesDumpFileRow] =
-    deriveCodec
-
   override protected def getRawJson(currentId: Int): Future[String] = {
     val extraFields = thingType match {
       case ItemType.Movie =>
@@ -53,11 +48,8 @@ class MovieChangesDumpTask @Inject()(
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ItemType.Movie, itemExpander, publisher) {
-  override def followupTasksToSchedule(
-    args: DataDumpTaskArgs,
-    rawArgs: Args
-  ): List[TeletrackerTaskQueueMessage] = {
-    TaskMessageHelper.forTask[ImportMoviesFromDump](
+  override def followupTasksToSchedule(): List[TeletrackerTaskQueueMessage] = {
+    TeletrackerTask.taskMessage[ImportMoviesFromDump](
       ImportTmdbDumpTaskArgs.default(s3Uri)
     ) :: Nil
   }
@@ -69,11 +61,8 @@ class TvChangesDumpTask @Inject()(
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ItemType.Show, itemExpander, publisher) {
-  override def followupTasksToSchedule(
-    args: DataDumpTaskArgs,
-    rawArgs: Args
-  ): List[TeletrackerTaskQueueMessage] = {
-    TaskMessageHelper.forTask[ImportTvShowsFromDump](
+  override def followupTasksToSchedule(): List[TeletrackerTaskQueueMessage] = {
+    TeletrackerTask.taskMessage[ImportTvShowsFromDump](
       ImportTmdbDumpTaskArgs.default(s3Uri)
     ) :: Nil
   }
@@ -85,16 +74,14 @@ class PersonChangesDumpTask @Inject()(
   publisher: SqsAsyncClient
 )(implicit executionContext: ExecutionContext)
     extends ChangesDumpTask(ItemType.Person, itemExpander, publisher) {
-  override def followupTasksToSchedule(
-    args: DataDumpTaskArgs,
-    rawArgs: Args
-  ): List[TeletrackerTaskQueueMessage] = {
-    TaskMessageHelper.forTask[ImportPeopleFromDump](
+  override def followupTasksToSchedule(): List[TeletrackerTaskQueueMessage] = {
+    TeletrackerTask.taskMessage[ImportPeopleFromDump](
       ImportTmdbDumpTaskArgs.default(s3Uri)
     ) :: Nil
   }
 }
 
+@JsonCodec
 case class ChangesDumpFileRow(
   id: Int,
   adult: Option[Boolean])

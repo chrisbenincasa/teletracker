@@ -1,7 +1,7 @@
 package com.teletracker.tasks.tmdb
 
-import com.teletracker.common.tasks.TeletrackerTask
-import com.teletracker.common.aws.sqs.SqsQueue
+import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
+import com.teletracker.common.aws.sqs.{SqsFifoQueue, SqsQueue}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.model.EsExternalId
@@ -11,6 +11,7 @@ import com.teletracker.common.pubsub.{
   EsIngestMessageOperation,
   EsIngestUpdate
 }
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
@@ -152,17 +153,13 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
   itemType: ItemType,
   deps: UpdatePopularitiesDependencies
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTask {
+    extends TypedTeletrackerTask[UpdatePopularitiesJobArgs] {
   @Inject
   private[this] var teletrackerConfig: TeletrackerConfig = _
+  @Inject
+  private[this] var esIngestQueue: SqsFifoQueue[EsIngestMessage] = _
 
-  override type TypedArgs = UpdatePopularitiesJobArgs
-
-  implicit override protected lazy val typedArgsEncoder
-    : Encoder[UpdatePopularitiesJobArgs] =
-    io.circe.generic.semiauto.deriveEncoder
-
-  override def preparseArgs(args: Args): UpdatePopularitiesJobArgs = {
+  override def preparseArgs(args: RawArgs): UpdatePopularitiesJobArgs = {
     UpdatePopularitiesJobArgs(
       snapshotAfter = args.valueOrThrow[URI]("snapshotAfter"),
       snapshotBefore = args.valueOrThrow[URI]("snapshotBefore"),
@@ -176,25 +173,23 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
     )
   }
 
-  override def runInternal(args: Args): Unit = {
-    val parsedArgs = preparseArgs(args)
-
-    if (parsedArgs.band.isDefined && parsedArgs.mod.isEmpty || parsedArgs.band.isEmpty && parsedArgs.mod.isDefined) {
+  override def runInternal(): Unit = {
+    if (args.band.isDefined && args.mod.isEmpty || args.band.isEmpty && args.mod.isDefined) {
       throw new IllegalArgumentException("Both mod and band must be defined")
     }
 
-    val hasModAndBand = parsedArgs.band.isDefined && parsedArgs.mod.isDefined
+    val hasModAndBand = args.band.isDefined && args.mod.isDefined
 
     // Input must be SORTED BY POPULARITY DESC
-    val beforeSource = deps.sourceRetriever.getSource(parsedArgs.snapshotBefore)
-    val afterSource = deps.sourceRetriever.getSource(parsedArgs.snapshotAfter)
+    val beforeSource = deps.sourceRetriever.getSource(args.snapshotBefore)
+    val afterSource = deps.sourceRetriever.getSource(args.snapshotAfter)
 
     val beforePopularitiesById = deps.ingestJobParser
       .stream[T](beforeSource.getLines())
       .applyIf(hasModAndBand)(
         _.valueFilterMod({
           case Right(value) => value.id
-        }, parsedArgs.mod.get, parsedArgs.band.get)
+        }, args.mod.get, args.band.get)
       )
       .flatMap {
         case Left(value) =>
@@ -212,7 +207,7 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
       .applyIf(hasModAndBand)(
         _.valueFilterMod({
           case Right(value) => value.id
-        }, parsedArgs.mod.get, parsedArgs.band.get)
+        }, args.mod.get, args.band.get)
       )
       .flatMap {
         case Left(value) =>
@@ -227,14 +222,14 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
 
     val afterSourceForUpdate =
       deps.sourceRetriever
-        .getSource(parsedArgs.snapshotAfter, consultCache = true)
+        .getSource(args.snapshotAfter, consultCache = true)
 
     val processed = new AtomicInteger()
 
     deps.ingestJobParser
       .asyncStream[T](afterSourceForUpdate.getLines())
-      .drop(parsedArgs.offset)
-      .safeTake(parsedArgs.limit)
+      .drop(args.offset)
+      .safeTake(args.limit)
       .flatMapOption(_.toOption)
       .filter(line => afterPopularitiesById.isDefinedAt(line.id))
       .flatMapOption(item => {
@@ -246,9 +241,9 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
 
           val delta = Math.abs(afterPopularity - beforePopularity)
 
-          val meetsThreshold = delta >= parsedArgs.changeThreshold
+          val meetsThreshold = delta >= args.changeThreshold
 
-          if (parsedArgs.verbose && meetsThreshold) {
+          if (args.verbose && meetsThreshold) {
             logger.info(
               s"Id = ${item.id} meets threshold with difference = ${afterPopularity - beforePopularity}. " +
                 s"New popularity: ${afterPopularity}"
@@ -268,12 +263,7 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
 
         val output = new BytesStreamOutput()
 
-        if (!parsedArgs.dryRun) {
-          val queue = new SqsQueue[EsIngestMessage](
-            deps.sqsAsyncClient,
-            deps.teletrackerConfig.async.esIngestQueue.url
-          )
-
+        if (!args.dryRun) {
           AsyncStream
             .fromSeq(batch)
             .grouped(10)
@@ -286,9 +276,12 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
                     case (tmdbId, popularity) =>
                       itemIdById.get(tmdbId).map(_ -> popularity)
                   }
-                  .map(Function.tupled(createUpdateMessage))
+                  .map {
+                    case (uuid, popularity) =>
+                      createUpdateMessage(uuid, popularity) -> uuid.toString
+                  }
 
-                queue.batchQueue(messages.toList)
+                esIngestQueue.batchQueue(messages.toList)
               })
             })
             .force
@@ -301,7 +294,7 @@ abstract class UpdatePopularities[T <: TmdbDumpFileRow: Decoder](
       })
       .await()
 
-    if (parsedArgs.dryRun) {
+    if (args.dryRun) {
       logger.info(s"Would've processed ${processed.get()} total popularities")
     } else {
       logger.info(s"Processed ${processed.get()} total popularities")

@@ -26,10 +26,7 @@ class ImportMoviesFromDump @Inject()(
     item.adult.isEmpty || !item.adult.get
   }
 
-  override protected def handleItem(
-    args: ImportTmdbDumpTaskArgs,
-    item: Movie
-  ): Future[Unit] = {
+  override protected def handleItem(item: Movie): Future[Unit] = {
     movieImportHandler
       .insertOrUpdate(
         MovieImportHandlerArgs(
@@ -50,10 +47,7 @@ class ImportMoviesFromDump @Inject()(
       }
   }
 
-  override protected def handleDeletedItem(
-    args: ImportTmdbDumpTaskArgs,
-    id: Int
-  ): Future[Unit] = {
+  override protected def handleDeletedItem(id: Int): Future[Unit] = {
     movieImportHandler
       .delete(
         MovieImportHandlerArgs(forceDenorm = false, dryRun = args.dryRun),

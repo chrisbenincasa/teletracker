@@ -1,6 +1,6 @@
 package com.teletracker.tasks.aws
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.Futures._
 import javax.inject.Inject
@@ -18,11 +18,11 @@ import scala.concurrent.ExecutionContext
 
 class MigrateDynamoTable @Inject()(
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val fromRegion = args.valueOrThrow[String]("fromRegion")
-    val toRegion = args.valueOrThrow[String]("toRegion")
-    val table = args.valueOrThrow[String]("tableName")
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val fromRegion = rawArgs.valueOrThrow[String]("fromRegion")
+    val toRegion = rawArgs.valueOrThrow[String]("toRegion")
+    val table = rawArgs.valueOrThrow[String]("tableName")
 
     val toClient = DynamoDbClient.builder().region(Region.of(toRegion)).build()
 

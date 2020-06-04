@@ -1,6 +1,6 @@
 package com.teletracker.tasks.db
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.db.dynamo.{model, MetadataDbAccess}
 import com.teletracker.common.db.model._
 import com.teletracker.common.external.tmdb.TmdbClient
@@ -13,7 +13,7 @@ class GenreSeeder @Inject()(
   tmdbClient: TmdbClient,
   metadataDbAccess: MetadataDbAccess
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
 
   val initialBoth =
     Seq(
@@ -99,7 +99,7 @@ class GenreSeeder @Inject()(
           genre.copy(id = idx + 1)
       }
 
-  override def runInternal(args: Args): Unit = {
+  override def runInternal(): Unit = {
     val insertedGenres = Future
       .sequence(initialGenres.map(metadataDbAccess.saveGenre))
       .map(_.groupBy(_.name).mapValues(_.head))

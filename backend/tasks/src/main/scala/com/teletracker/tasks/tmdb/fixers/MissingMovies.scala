@@ -1,11 +1,9 @@
 package com.teletracker.tasks.tmdb.fixers
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.model.MovieDumpFileRow
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.SourceRetriever
-import io.circe._
-import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 import javax.inject.Inject
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
@@ -14,10 +12,10 @@ import java.net.URI
 class MissingMovies @Inject()(
   sourceRetriever: SourceRetriever,
   ingestJobParser: IngestJobParser)
-    extends TeletrackerTaskWithDefaultArgs {
-  override def runInternal(args: Args): Unit = {
-    val movieExportFile = args.value[URI]("moveExportFile").get
-    val dbDumpFile = args.value[URI]("dbDumpFile").get
+    extends UntypedTeletrackerTask {
+  override def runInternal(): Unit = {
+    val movieExportFile = rawArgs.value[URI]("moveExportFile").get
+    val dbDumpFile = rawArgs.value[URI]("dbDumpFile").get
 
     val movieExportSource = sourceRetriever.getSource(movieExportFile)
     val dumpSource = sourceRetriever.getSource(dbDumpFile)
@@ -60,10 +58,10 @@ class MissingMovies @Inject()(
 class FilterToMissingMovies @Inject()(
   sourceRetriever: SourceRetriever,
   ingestJobParser: IngestJobParser)
-    extends TeletrackerTaskWithDefaultArgs {
-  override def runInternal(args: Args): Unit = {
-    val movieExportFile = args.value[URI]("movieExportFile").get
-    val missingMoviesFile = args.value[URI]("missingMoviesFile").get
+    extends UntypedTeletrackerTask {
+  override def runInternal(): Unit = {
+    val movieExportFile = rawArgs.value[URI]("movieExportFile").get
+    val missingMoviesFile = rawArgs.value[URI]("missingMoviesFile").get
 
     val movieExportSource = sourceRetriever.getSource(movieExportFile)
     val missingMoviesSource = sourceRetriever.getSource(missingMoviesFile)

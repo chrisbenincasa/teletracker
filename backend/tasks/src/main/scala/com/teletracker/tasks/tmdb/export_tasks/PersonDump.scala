@@ -2,10 +2,6 @@ package com.teletracker.tasks.tmdb.export_tasks
 
 import com.teletracker.common.process.tmdb.TmdbItemLookup
 import com.teletracker.tasks.model.PersonDumpFileRow
-import io.circe.Decoder
-import io.circe.generic.JsonCodec
-import io.circe.generic.semiauto.deriveCodec
-import io.circe.syntax._
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -15,9 +11,6 @@ class PersonDump @Inject()(
   itemExpander: TmdbItemLookup
 )(implicit executionContext: ExecutionContext)
     extends DataDumpTask[PersonDumpFileRow, Int] {
-
-  implicit override protected val tDecoder: Decoder[PersonDumpFileRow] =
-    deriveCodec
 
   override protected val baseFileName = "people"
 

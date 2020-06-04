@@ -36,8 +36,11 @@ object EsPotentialMatchItem {
 case class EsPotentialMatchItem(
   id: String,
   created_at: OffsetDateTime,
+  state: EsPotentialMatchState,
+  last_updated: OffsetDateTime,
   potential: PartialEsItem,
-  scraped: EsGenericScrapedItem)
+  scraped: EsGenericScrapedItem,
+  availability: Option[List[EsAvailability]])
 
 @JsonCodec
 case class EsGenericScrapedItem(

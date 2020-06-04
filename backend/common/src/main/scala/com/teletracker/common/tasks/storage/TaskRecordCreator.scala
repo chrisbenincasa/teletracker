@@ -1,6 +1,7 @@
 package com.teletracker.common.tasks.storage
 
 import com.teletracker.common.tasks.TeletrackerTask
+import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
 import io.circe.Json
 import io.circe.syntax._
 import javax.inject.{Inject, Singleton}
@@ -39,15 +40,36 @@ class TaskRecordCreator @Inject()() {
   def create[T <: TeletrackerTask](
     id: UUID,
     task: T,
-    args: T#Args,
+    args: T#ArgsType,
     status: TaskStatus
+  )(implicit typedArgs: JsonableArgs[T#ArgsType]
+  ): TaskRecord = {
+    createGen(id, task, args, status)
+  }
+
+  def create[T <: TeletrackerTask](
+    id: UUID,
+    task: T,
+    args: Map[String, String],
+    status: TaskStatus
+  )(implicit typedArgs: JsonableArgs[Map[String, String]]
+  ): TaskRecord = {
+    createGen(id, task, args, status)
+  }
+
+  def createGen[T <: TeletrackerTask, U](
+    id: UUID,
+    task: T,
+    args: U,
+    status: TaskStatus
+  )(implicit typedArgs: JsonableArgs[U]
   ): TaskRecord = {
     val clazz = task.getClass
     TaskRecord(
       id = id,
       taskName = clazz.getSimpleName,
       fullTaskName = Some(clazz.getName),
-      args = task.argsAsJson(args),
+      args = typedArgs.asJson(args),
       status = status,
       startedAt = None,
       finishedAt = None,

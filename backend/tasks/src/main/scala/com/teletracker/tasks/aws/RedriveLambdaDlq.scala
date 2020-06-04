@@ -1,6 +1,6 @@
 package com.teletracker.tasks.aws
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import javax.inject.Inject
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import com.teletracker.common.util.Futures._
@@ -20,14 +20,14 @@ import scala.concurrent.ExecutionContext
 class RedriveLambdaDlq @Inject()(
   simpleQueueConsumer: SimpleQueueConsumer
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
 
-  override protected def runInternal(args: Args): Unit = {
+  override protected def runInternal(): Unit = {
     val queueUrlFmt = "https://sqs.%s.amazonaws.com/%s/%s"
 
     val lambdaClient = LambdaAsyncClient.create()
 
-    val functionName = args.valueOrThrow[String]("function")
+    val functionName = rawArgs.valueOrThrow[String]("function")
 
     val functionResponse = lambdaClient
       .getFunction(

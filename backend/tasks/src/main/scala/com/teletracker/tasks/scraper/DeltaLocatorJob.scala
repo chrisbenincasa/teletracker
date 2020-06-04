@@ -1,9 +1,14 @@
 package com.teletracker.tasks.scraper
 
-import com.teletracker.common.tasks.{TaskMessageHelper, TeletrackerTask}
+import com.teletracker.common.tasks.{
+  TaskMessageHelper,
+  TeletrackerTask,
+  TypedTeletrackerTask
+}
 import com.teletracker.common.aws.sqs.{SqsFifoQueue, SqsQueue}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.util.SourceRetriever
 import com.teletracker.tasks.TeletrackerTaskRunner
@@ -34,23 +39,18 @@ case class DeltaLocatorJobArgs(
   seedDumpDate: Option[LocalDate] = None)
     extends DeltaLocatorJobArgsLike
 
-abstract class DeltaLocatorJob[ArgsType <: DeltaLocatorJobArgsLike](
+abstract class DeltaLocatorJob[_ArgsType <: DeltaLocatorJobArgsLike](
   s3Client: S3Client,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext,
-  enc: Encoder[ArgsType])
-    extends TeletrackerTask {
+  enc: Encoder[_ArgsType])
+    extends TypedTeletrackerTask[_ArgsType] {
   @Inject
   private[this] var taskQueue: SqsFifoQueue[TeletrackerTaskQueueMessage] = _
 
-  override type TypedArgs = ArgsType
-
-  implicit override val typedArgsEncoder: Encoder[ArgsType] =
-    enc
-
   protected def defaultMaxDaysBack = 3
 
-  override def preparseArgs(args: Args): ArgsType =
+  override def preparseArgs(args: RawArgs): ArgsType =
     postParseArgs(
       DeltaLocatorJobArgs(
         maxDaysBack = args.valueOrDefault("maxDaysBack", defaultMaxDaysBack),
@@ -61,9 +61,8 @@ abstract class DeltaLocatorJob[ArgsType <: DeltaLocatorJobArgsLike](
 
   protected def postParseArgs(halfParsed: DeltaLocatorJobArgs): ArgsType
 
-  override protected def runInternal(args: Args): Unit = {
-    val parsedArgs = preparseArgs(args)
-    val seedDate = parsedArgs.seedDumpDate.getOrElse(LocalDate.now())
+  override protected def runInternal(): Unit = {
+    val seedDate = args.seedDumpDate.getOrElse(LocalDate.now())
 
     try {
       s3Client.getObject(
@@ -80,7 +79,7 @@ abstract class DeltaLocatorJob[ArgsType <: DeltaLocatorJobArgsLike](
         )
     }
 
-    val previousDate = (1 to parsedArgs.maxDaysBack).toStream
+    val previousDate = (1 to args.maxDaysBack).toStream
       .map(daysBack => {
         try {
           val date = seedDate.minusDays(daysBack)
@@ -133,9 +132,9 @@ abstract class DeltaLocatorJob[ArgsType <: DeltaLocatorJobArgsLike](
         }
 
         val messages =
-          makeTaskMessages(actualBeforeLocation, actualAfterLocation, args)
+          makeTaskMessages(actualBeforeLocation, actualAfterLocation)
 
-        if (!parsedArgs.local) {
+        if (!args.local) {
           taskQueue
             .batchQueue(messages.map(message => message -> message.clazz))
             .await()
@@ -149,7 +148,9 @@ abstract class DeltaLocatorJob[ArgsType <: DeltaLocatorJobArgsLike](
 
       case None =>
         throw new RuntimeException(
-          s"Cannot find a valid before-delta snapshot after going back ${{ parsedArgs.maxDaysBack }} days"
+          s"Cannot find a valid before-delta snapshot after going back ${{
+            args.maxDaysBack
+          }} days"
         )
     }
 
@@ -164,8 +165,7 @@ abstract class DeltaLocatorJob[ArgsType <: DeltaLocatorJobArgsLike](
 
   protected def makeTaskMessages(
     snapshotBeforeLocation: URI,
-    snapshotAfterLocation: URI,
-    args: Args
+    snapshotAfterLocation: URI
   ): List[TeletrackerTaskQueueMessage]
 }
 
@@ -175,7 +175,7 @@ abstract class DeltaLocateAndRunJob[
 ](
   s3Client: S3Client,
   teletrackerConfig: TeletrackerConfig
-)(implicit enc: Encoder.AsObject[T#TypedArgs],
+)(implicit enc: Encoder.AsObject[T#ArgsType],
   executionContext: ExecutionContext,
   argsEnc: Encoder[ArgsType])
     extends DeltaLocatorJob[ArgsType](
@@ -184,10 +184,9 @@ abstract class DeltaLocateAndRunJob[
     ) {
   override protected def makeTaskMessages(
     snapshotBeforeLocation: URI,
-    snapshotAfterLocation: URI,
-    args: Args
+    snapshotAfterLocation: URI
   ): List[TeletrackerTaskQueueMessage] = {
-    TaskMessageHelper.forTask[T](
+    TeletrackerTask.taskMessage[T](
       IngestDeltaJobArgs(
         snapshotAfter = snapshotAfterLocation,
         snapshotBefore = snapshotBeforeLocation

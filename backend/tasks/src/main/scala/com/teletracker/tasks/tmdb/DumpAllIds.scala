@@ -1,27 +1,22 @@
 package com.teletracker.tasks.tmdb
 
-import cats.effect.{Blocker, ContextShift, IO, Resource}
-import com.teletracker.common.tasks.TeletrackerTask
+import cats.effect.{Blocker, ContextShift, IO}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.http.{BaseHttp4sClient, HttpRequest}
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
+import com.teletracker.common.tasks.TypedTeletrackerTask
 import com.teletracker.tasks.model.{
   MovieDumpFileRow,
   PersonDumpFileRow,
   TvShowDumpFileRow
 }
 import com.teletracker.tasks.util.SourceWriter
-import io.circe.{Decoder, Encoder}
-import javax.inject.Inject
-import java.io.{
-  BufferedOutputStream,
-  FileInputStream,
-  FileOutputStream,
-  PipedInputStream,
-  PipedOutputStream,
-  PrintWriter
-}
+import io.circe.generic.JsonCodec
 import io.circe.parser._
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder}
+import javax.inject.Inject
+import java.io._
 import java.net.URI
 import java.nio.file.Files
 import java.time.LocalDate
@@ -32,6 +27,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.sys.process._
 
+@JsonCodec
 case class DumpAllIdsArgs(
   itemType: String,
   date: LocalDate,
@@ -49,7 +45,7 @@ class DumpAllIds @Inject()(
   sourceWriter: SourceWriter,
   teletrackerConfig: TeletrackerConfig
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTask {
+    extends TypedTeletrackerTask[DumpAllIdsArgs] {
   implicit private val cs: ContextShift[IO] = IO.contextShift(executionContext)
 
   private val blockingExecCtx =
@@ -57,21 +53,15 @@ class DumpAllIds @Inject()(
 
   private val blocker: Blocker = Blocker.liftExecutionContext(blockingExecCtx)
 
-  override type TypedArgs = DumpAllIdsArgs
-
-  implicit override protected lazy val typedArgsEncoder
-    : Encoder[DumpAllIdsArgs] =
-    io.circe.generic.semiauto.deriveEncoder[DumpAllIdsArgs]
-
-  override def preparseArgs(args: Args): DumpAllIdsArgs =
+  override def preparseArgs(args: RawArgs): DumpAllIdsArgs =
     DumpAllIdsArgs(
       itemType = args.valueOrDefault("itemType", "movie"),
       date = args.valueOrDefault("date", LocalDate.now()),
       local = args.valueOrDefault("local", false)
     )
 
-  override protected def runInternal(args: Args): Unit = {
-    val DumpAllIdsArgs(itemType, date, local) = preparseArgs(args)
+  override protected def runInternal(): Unit = {
+    val DumpAllIdsArgs(itemType, date, local) = args
 
     val sanitizedTypes = itemType match {
       case "all"  => Seq("movie", "tv_series", "person")

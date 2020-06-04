@@ -17,7 +17,7 @@ import com.teletracker.common.model.tmdb.{
   TvShow,
   TvShowCredits
 }
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.AsyncStream
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.scraper.IngestJobParser
@@ -27,6 +27,7 @@ import io.circe.syntax._
 import javax.inject.Inject
 import com.teletracker.common.util.Lists._
 import com.teletracker.common.util.Functions._
+import com.teletracker.tasks.model.{EsBulkUpdate, EsBulkUpdateRaw}
 import com.twitter.util.StorageUnit
 import io.circe.generic.JsonCodec
 import java.net.URI
@@ -125,7 +126,7 @@ class InMemoryPersonDenormalization @Inject()(
   personLookup: PersonLookup,
   itemLookup: ItemLookup
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   import diffson._
   import diffson.circe._
   import diffson.jsonpatch.lcsdiff.remembering._
@@ -137,22 +138,22 @@ class InMemoryPersonDenormalization @Inject()(
 
   private lazy val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  override protected def runInternal(args: Args): Unit = {
-    val location = args.valueOrThrow[URI]("dbLocation")
-    val moviesLocation = args.valueOrThrow[URI]("moviesLocation")
-    val showsLocation = args.valueOrThrow[URI]("showsLocation")
-    val personIdsFile = args.valueOrThrow[URI]("personIdsFile")
-    val limit = args.valueOrDefault("limit", -1)
-    val perFileLimit = args.valueOrDefault("perFileLimit", -1)
-    val skipMovieImport = args.valueOrDefault("skipMovieImport", false)
-    val skipShowImport = args.valueOrDefault("skipShowImport", false)
-    val itemTypesToHandle = args.valueOrDefault(
+  override protected def runInternal(): Unit = {
+    val location = rawArgs.valueOrThrow[URI]("dbLocation")
+    val moviesLocation = rawArgs.valueOrThrow[URI]("moviesLocation")
+    val showsLocation = rawArgs.valueOrThrow[URI]("showsLocation")
+    val personIdsFile = rawArgs.valueOrThrow[URI]("personIdsFile")
+    val limit = rawArgs.valueOrDefault("limit", -1)
+    val perFileLimit = rawArgs.valueOrDefault("perFileLimit", -1)
+    val skipMovieImport = rawArgs.valueOrDefault("skipMovieImport", false)
+    val skipShowImport = rawArgs.valueOrDefault("skipShowImport", false)
+    val itemTypesToHandle = rawArgs.valueOrDefault(
       "itemTypesToHandle",
       Set(ItemType.Movie, ItemType.Show)
     )
-    val personIdFilter = args.value[UUID]("personId")
-    val personIdsOffset = args.valueOrDefault("personIdsOffset", 0)
-    val append = args.valueOrDefault("append", false)
+    val personIdFilter = rawArgs.value[UUID]("personId")
+    val personIdsOffset = rawArgs.valueOrDefault("personIdsOffset", 0)
+    val append = rawArgs.valueOrDefault("append", false)
 
     val lookup = new SqlItemLookup(location)
 
@@ -460,13 +461,13 @@ class CombineMovieUpdates @Inject()(
   sourceRetriever: SourceRetriever,
   fileUtils: FileUtils,
   teletrackerConfig: TeletrackerConfig)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   import cats.implicits._
   import io.circe.parser._
 
-  override protected def runInternal(args: Args): Unit = {
-    val missingIdsUri = args.valueOrThrow[URI]("missingIdsInput")
-    val updatesUri = args.valueOrThrow[URI]("updatesInput")
+  override protected def runInternal(): Unit = {
+    val missingIdsUri = rawArgs.valueOrThrow[URI]("missingIdsInput")
+    val updatesUri = rawArgs.valueOrThrow[URI]("updatesInput")
 
     val ids =
       fileUtils.readAllLinesToSet(missingIdsUri, consultSourceCache = false)

@@ -5,11 +5,6 @@ import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
 import com.teletracker.common.util.NetworkCache
-import com.teletracker.tasks.scraper.matching.{
-  ElasticsearchDirectLookup,
-  LookupMethod
-}
-import com.teletracker.tasks.scraper.model.PotentialInput
 import com.teletracker.tasks.scraper.{IngestJobParser, IngestPotentialMatches}
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client

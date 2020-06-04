@@ -3,7 +3,7 @@ package com.teletracker.tasks.db
 import com.teletracker.common.db.dynamo.util.syntax._
 import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.elasticsearch.lookups.DynamoElasticsearchExternalIdMapping
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.model.{EsItemDumpRow, EsPersonDumpRow}
@@ -30,12 +30,12 @@ class SeedExternalIdMappings @Inject()(
   dynamo: DynamoDbAsyncClient,
   sourceRetriever: SourceRetriever
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  override protected def runInternal(args: Args): Unit = {
-    val dumpLoc = args.valueOrThrow[URI]("input")
-    val limit = args.valueOrDefault[Int]("limit", -1)
+  override protected def runInternal(): Unit = {
+    val dumpLoc = rawArgs.valueOrThrow[URI]("input")
+    val limit = rawArgs.valueOrDefault[Int]("limit", -1)
 
     val processed = new AtomicLong(0)
 
@@ -120,12 +120,12 @@ class SeedPersonExternalIdMappings @Inject()(
   dynamo: DynamoDbAsyncClient,
   sourceRetriever: SourceRetriever
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
+    extends UntypedTeletrackerTask {
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  override protected def runInternal(args: Args): Unit = {
-    val dumpLoc = args.valueOrThrow[URI]("input")
-    val limit = args.valueOrDefault[Int]("limit", -1)
+  override protected def runInternal(): Unit = {
+    val dumpLoc = rawArgs.valueOrThrow[URI]("input")
+    val limit = rawArgs.valueOrDefault[Int]("limit", -1)
 
     val processed = new AtomicLong(0)
 

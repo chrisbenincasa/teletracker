@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.model.MovieDumpFileRow
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.util.SourceRetriever
@@ -12,11 +12,11 @@ import scala.math.BigDecimal.RoundingMode
 class PopularityDiffer @Inject()(
   sourceRetriever: SourceRetriever,
   ingestJobParser: IngestJobParser)
-    extends TeletrackerTaskWithDefaultArgs {
-  override def runInternal(args: Args): Unit = {
-    val left = args.value[URI]("left").get
-    val right = args.value[URI]("right").get
-    val threshold = args.valueOrDefault("threshold", 1.0)
+    extends UntypedTeletrackerTask {
+  override def runInternal(): Unit = {
+    val left = rawArgs.value[URI]("left").get
+    val right = rawArgs.value[URI]("right").get
+    val threshold = rawArgs.valueOrDefault("threshold", 1.0)
 
     val leftSource = sourceRetriever.getSource(left)
     val leftPopularityById = ingestJobParser

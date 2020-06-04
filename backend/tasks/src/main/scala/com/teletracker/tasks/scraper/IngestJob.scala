@@ -3,18 +3,10 @@ package com.teletracker.tasks.scraper
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model._
 import com.teletracker.common.elasticsearch.async.EsIngestQueue
-import com.teletracker.common.elasticsearch.async.EsIngestQueue
 import com.teletracker.common.elasticsearch.async.EsIngestQueue.AsyncItemUpdateRequest
-import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
-import com.teletracker.common.elasticsearch.model.{
-  EsAvailability,
-  EsExternalId,
-  EsGenericScrapedItem,
-  EsItem,
-  EsPotentialMatchItem,
-  EsScrapedItem
-}
+import com.teletracker.common.elasticsearch.model._
 import com.teletracker.common.elasticsearch.scraping.EsPotentialMatchItemStore
+import com.teletracker.common.elasticsearch.util.ItemUpdateApplier
 import com.teletracker.common.elasticsearch.{
   AvailabilityQueryHelper,
   ItemLookup,
@@ -26,12 +18,12 @@ import com.teletracker.common.model.scraping.{
   ScrapedItem
 }
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
+import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
+import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.Lists._
-import com.teletracker.common.util.execution.SequentialFutures
-import com.teletracker.common.util.{AsyncStream, NetworkCache}
 import com.teletracker.common.util.json.circe._
-import com.teletracker.common.util.Functions._
+import com.teletracker.common.util.{AsyncStream, NetworkCache}
 import com.teletracker.tasks.TeletrackerTaskApp
 import com.teletracker.tasks.scraper.IngestJobParser.ParseMode
 import com.teletracker.tasks.scraper.matching.{
@@ -41,16 +33,14 @@ import com.teletracker.tasks.scraper.matching.{
   LookupMethod
 }
 import com.teletracker.tasks.util.{SourceRetriever, SourceWriter}
-import io.circe.generic.semiauto.deriveEncoder
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.Codec
+import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import org.elasticsearch.common.xcontent.{XContentHelper, XContentType}
 import software.amazon.awssdk.services.s3.S3Client
 import java.io.File
 import java.net.URI
-import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
-import java.util.UUID
+import java.time.{LocalDate, OffsetDateTime}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.Source
@@ -73,6 +63,7 @@ trait IngestJobArgsLike {
   val dryRun: Boolean
 }
 
+@JsonCodec
 case class IngestJobArgs(
   inputFile: URI,
   offset: Int,
@@ -88,8 +79,10 @@ case class IngestJobArgs(
     extends IngestJobArgsLike
 
 abstract class IngestJob[T <: ScrapedItem](
-  implicit protected val codec: Codec[T])
+  implicit protected val codec: Codec[T],
+  jsonableArgs: JsonableArgs[IngestJobArgs])
     extends BaseIngestJob[T, IngestJobArgs]()(
+      jsonableArgs,
       scala.concurrent.ExecutionContext.Implicits.global,
       codec
     ) {
@@ -129,7 +122,7 @@ abstract class IngestJob[T <: ScrapedItem](
   @Inject
   private[this] var esPotentialMatchItemStore: EsPotentialMatchItemStore = _
 
-  protected def lookupMethod(args: TypedArgs): LookupMethod[T] = {
+  protected def lookupMethod(): LookupMethod[T] = {
     val externalIdMatchers = if (args.enableExternalIdMatching) {
       externalSources.map(externalSource => {
         externalIdLookup.createOpt[T](
@@ -146,21 +139,14 @@ abstract class IngestJob[T <: ScrapedItem](
     )
   }
 
-  protected def processMode(args: IngestJobArgs): ProcessMode =
+  protected def processMode(): ProcessMode =
     Parallel(args.parallelism, args.perBatchSleepMs.map(_ millis))
 
-  protected def outputLocation(
-    args: TypedArgs,
-    rawArgs: Args
-  ): Option[URI] = None
+  protected def outputLocation: Option[URI] = None
+
   protected def getAdditionalOutputFiles: Seq[(File, String)] = Seq()
 
-  override type TypedArgs = IngestJobArgs
-
-  implicit override protected def typedArgsEncoder: Encoder[TypedArgs] =
-    deriveEncoder[IngestJobArgs]
-
-  override def preparseArgs(args: Args): TypedArgs = parseArgs(args)
+  override def preparseArgs(args: RawArgs): ArgsType = parseArgs(args)
 
   final protected def parseArgs(
     args: Map[String, Option[Any]]
@@ -181,18 +167,17 @@ abstract class IngestJob[T <: ScrapedItem](
     )
   }
 
-  override def runInternal(args: Map[String, Option[Any]]): Unit = {
-    val parsedArgs = parseArgs(args)
+  override def runInternal(): Unit = {
     val network = getNetworksOrExit()
 
     logger.info("Running preprocess phase")
-    preprocess(parsedArgs, args)
+    preprocess()
 
-    if (parsedArgs.reimport) {
+    if (args.reimport) {
       val sources = externalSources.map(_.getName)
       val matchingNetworks =
         network.filter(net => sources.contains(net.slug.value))
-      if (!parsedArgs.dryRun) {
+      if (!args.dryRun) {
         logger.info("Reimport mode. Deleting existing availability.")
         availabilityQueryHelper.deleteAvailabilityForNetworks(matchingNetworks)
       } else {
@@ -211,21 +196,16 @@ abstract class IngestJob[T <: ScrapedItem](
     logger.info(s"Starting ingest of ${externalSources} content")
 
     new SourceRetriever(s3)
-      .getSourceStream(parsedArgs.inputFile)
-      .safeTake(parsedArgs.sourceLimit)
-      .foreach(processSource(_, network, parsedArgs, args))
+      .getSourceStream(args.inputFile)
+      .safeTake(args.sourceLimit)
+      .foreach(processSource(_, network))
   }
 
-  protected def preprocess(
-    args: IngestJobArgs,
-    rawArgs: Args
-  ): Unit = {}
+  protected def preprocess(): Unit = {}
 
   private def processSource(
     source: Source,
-    networks: Set[StoredNetwork],
-    parsedArgs: IngestJobArgs,
-    rawArgs: Args
+    networks: Set[StoredNetwork]
   ): Unit = {
     try {
       parseMode match {
@@ -238,7 +218,7 @@ abstract class IngestJob[T <: ScrapedItem](
                 None
               case Right(value) =>
                 Some(value).filter(item => {
-                  parsedArgs.externalIdFilter match {
+                  args.externalIdFilter match {
                     case Some(value) if item.externalId.isDefined =>
                       value == item.externalId.get
                     case Some(_) => false
@@ -246,7 +226,7 @@ abstract class IngestJob[T <: ScrapedItem](
                   }
                 })
             }
-            .throughApply(processAll(_, networks, parsedArgs))
+            .throughApply(processAll(_, networks))
             .force
             .await()
 
@@ -258,7 +238,7 @@ abstract class IngestJob[T <: ScrapedItem](
 
             case Right(items) =>
               val filteredItems = items.filter(item => {
-                parsedArgs.externalIdFilter match {
+                args.externalIdFilter match {
                   case Some(value) if item.externalId.isDefined =>
                     value == item.externalId.get
                   case Some(_) => false
@@ -268,8 +248,7 @@ abstract class IngestJob[T <: ScrapedItem](
 
               processAll(
                 AsyncStream.fromSeq(filteredItems),
-                networks,
-                parsedArgs
+                networks
               ).force.await()
           }
       }
@@ -284,7 +263,7 @@ abstract class IngestJob[T <: ScrapedItem](
       matchingItemsWriter.flush()
       matchingItemsWriter.close()
 
-      uploadResultFiles(parsedArgs, rawArgs)
+      uploadResultFiles()
     }
   }
 
@@ -302,36 +281,26 @@ abstract class IngestJob[T <: ScrapedItem](
             item
           )
 
-        val newAvailabilities = esItem.availability match {
-          case Some(value) =>
-            val duplicatesRemoved = value.filterNot(availability => {
-              availabilities.exists(
-                EsAvailability.availabilityEquivalent(_, availability)
-              )
-            })
+        val updateItemFunc = (ItemUpdateApplier
+          .applyAvailabilities(_, availabilities))
+          .andThen(
+            esItem =>
+              ItemUpdateApplier.applyExternalIds(esItem, getExternalIds(item))
+          )
 
-            duplicatesRemoved ++ availabilities
+        val newItem = updateItemFunc(esItem)
 
-          case None =>
-            availabilities
-        }
-
-        val newExternalIds = esItem.externalIdsGrouped ++ getExternalIds(item)
-
-        val availabilitiesEqual = newAvailabilities.toSet == esItem.availability
+        val availabilitiesEqual = newItem.availability
+          .getOrElse(Nil)
+          .toSet == esItem.availability
           .getOrElse(Nil)
           .toSet
 
-        val externalIdsEqual = newExternalIds == esItem.externalIdsGrouped
+        val externalIdsEqual = newItem.externalIdsGrouped == esItem.externalIdsGrouped
 
         if (availabilitiesEqual && externalIdsEqual) {
           None
         } else {
-          val newItem = esItem.copy(
-            availability = Some(newAvailabilities.toList),
-            external_ids = EsExternalId.fromMap(newExternalIds)
-          )
-
           if (args.dryRun && esItem != newItem) {
             logger.info(
               s"Would've updated id = ${newItem.id}:\n ${diff(esItem.asJson, newItem.asJson).asJson.spaces2}"
@@ -377,25 +346,42 @@ abstract class IngestJob[T <: ScrapedItem](
   ): Unit = {
     super.writePotentialMatches(potentialMatches)
 
-    val items = for {
-      externalSource <- externalSources
-      (item, t) <- potentialMatches
-      externalId <- t.externalId.toList
-    } yield {
-      val esExternalId = EsExternalId(externalSource, externalId)
-      EsPotentialMatchItem(
-        EsPotentialMatchItem.id(item.id, esExternalId),
-        OffsetDateTime.now(),
-        PartialEsItem.forEsItem(item),
-        EsGenericScrapedItem(
-          scrapeItemType,
-          EsScrapedItem.fromAnyScrapedItem(t),
-          t.asJson
-        )
-      )
-    }
+    if (!args.dryRun) {
+      val networks = getNetworksOrExit()
 
-    esPotentialMatchItemStore.upsertBatch(items).await()
+      val items = for {
+        externalSource <- externalSources
+        (item, t) <- potentialMatches
+        externalId <- t.externalId.toList
+      } yield {
+        val esExternalId = EsExternalId(externalSource, externalId)
+        val now = OffsetDateTime.now()
+        EsPotentialMatchItem(
+          id = EsPotentialMatchItem.id(item.id, esExternalId),
+          created_at = now,
+          state = EsPotentialMatchState.Unmatched,
+          last_updated = now,
+          potential = PartialEsItem.forEsItem(item),
+          scraped = EsGenericScrapedItem(
+            scrapeItemType,
+            EsScrapedItem.fromAnyScrapedItem(t),
+            t.asJson
+          ),
+          availability = Some(createAvailabilities(networks, item, t).toList)
+        )
+      }
+
+      esPotentialMatchItemStore
+        .upsertBatch(items)
+        .recover {
+          case NonFatal(e) =>
+            logger.warn(
+              "Failed while attempting to write potential matches to ES.",
+              e
+            )
+        }
+        .await()
+    }
   }
 
   protected def getNetworksOrExit(): Set[StoredNetwork] = {
@@ -483,11 +469,8 @@ abstract class IngestJob[T <: ScrapedItem](
 
   protected def getExternalIds(item: T): Map[ExternalSource, String] = Map.empty
 
-  protected def uploadResultFiles(
-    parsedArgs: TypedArgs,
-    rawArgs: Args
-  ): Unit = {
-    outputLocation(parsedArgs, rawArgs).foreach(uri => {
+  protected def uploadResultFiles(): Unit = {
+    outputLocation.foreach(uri => {
       try {
         new SourceWriter(s3).writeFile(
           uri.resolve(s"${uri.getPath}/match-items.txt"),

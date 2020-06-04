@@ -1,6 +1,6 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.process.tmdb.{MovieImportHandler, TmdbItemLookup}
 import com.teletracker.common.util.Futures._
 import javax.inject.Inject
@@ -10,12 +10,12 @@ class ImportSpecificMovie @Inject()(
   movieImportHandler: MovieImportHandler,
   itemExpander: TmdbItemLookup
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val id = args.valueOrThrow[Int]("id")
-    val forceDenorm = args.valueOrDefault("forceDenorm", false)
-    val async = args.valueOrDefault("async", false)
-    val dryRun = args.valueOrDefault[Boolean]("dryRun", true)
+    extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val id = rawArgs.valueOrThrow[Int]("id")
+    val forceDenorm = rawArgs.valueOrDefault("forceDenorm", false)
+    val async = rawArgs.valueOrDefault("async", false)
+    val dryRun = rawArgs.valueOrDefault[Boolean]("dryRun", true)
 
     itemExpander
       .expandMovie(id)

@@ -17,8 +17,8 @@ class FindMissingMovies @Inject()(
     extends CreateBackfillUpdateFile[Movie](teletrackerConfig) {
   private val items = ConcurrentHashMap.newKeySet[String]()
 
-  override protected def init(args: Args): Unit = {
-    val missingIds = args.valueOrThrow[URI]("missingIdsFile")
+  override protected def init(): Unit = {
+    val missingIds = rawArgs.valueOrThrow[URI]("missingIdsFile")
 
     sourceRetriever
       .getSourceStream(missingIds)

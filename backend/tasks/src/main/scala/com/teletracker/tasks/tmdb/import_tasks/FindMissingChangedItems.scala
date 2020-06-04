@@ -1,18 +1,17 @@
 package com.teletracker.tasks.tmdb.import_tasks
 
-import com.teletracker.common.tasks.TeletrackerTask
+import com.teletracker.common.tasks.TypedTeletrackerTask
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.ItemLookup
 import com.teletracker.common.process.tmdb.TmdbItemLookup
+import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.util.{AsyncStream, ClosedDateRange}
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.tmdb.export_tasks.ChangesDumpFileRow
-import io.circe.Encoder
 import io.circe.parser._
-import io.circe._
-import io.circe.generic.semiauto.deriveCodec
+import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
@@ -22,6 +21,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
+@JsonCodec
 case class FindMissingChangedItemsArgs(
   start: LocalDate,
   end: LocalDate,
@@ -33,28 +33,18 @@ class FindMissingChangedItems @Inject()(
   itemLookup: ItemLookup,
   itemExpander: TmdbItemLookup
 )(implicit executionContext: ExecutionContext)
-    extends TeletrackerTask {
-  override type TypedArgs = FindMissingChangedItemsArgs
+    extends TypedTeletrackerTask[FindMissingChangedItemsArgs] {
 
-  implicit protected val tDecoder: Decoder[ChangesDumpFileRow] =
-    deriveCodec
-
-  implicit override protected def typedArgsEncoder
-    : Encoder[FindMissingChangedItemsArgs] =
-    io.circe.generic.semiauto.deriveEncoder
-
-  override def preparseArgs(args: Args): FindMissingChangedItemsArgs =
+  override def preparseArgs(args: RawArgs): FindMissingChangedItemsArgs =
     FindMissingChangedItemsArgs(
       start = args.valueOrThrow[LocalDate]("start"),
       end = args.valueOrThrow[LocalDate]("end"),
       itemType = args.valueOrThrow[ItemType]("itemType")
     )
 
-  override protected def runInternal(args: Args): Unit = {
-    val parsedArgs = preparseArgs(args)
-
+  override protected def runInternal(): Unit = {
     val missingIds = AsyncStream
-      .fromSeq(ClosedDateRange(parsedArgs.start, parsedArgs.end).days.reverse)
+      .fromSeq(ClosedDateRange(args.start, args.end).days.reverse)
       .flatMapSeq(date => {
         logger.info(s"Pulling dump from ${date}")
 
@@ -64,7 +54,7 @@ class FindMissingChangedItems @Inject()(
               .builder()
               .bucket(teletrackerConfig.data.s3_bucket)
               .key(
-                s"scrape-results/tmdb/${date}/${date}_${parsedArgs.itemType}-changes.json"
+                s"scrape-results/tmdb/${date}/${date}_${args.itemType}-changes.json"
               )
               .build()
           )
@@ -89,8 +79,7 @@ class FindMissingChangedItems @Inject()(
           .lookupItemsByExternalIds(
             batch
               .map(
-                id =>
-                  (ExternalSource.TheMovieDb, id.toString, parsedArgs.itemType)
+                id => (ExternalSource.TheMovieDb, id.toString, args.itemType)
               )
               .toList
           )
@@ -110,7 +99,7 @@ class FindMissingChangedItems @Inject()(
       .fromSeq(missingIds.toSeq)
       .delayedMapF(250.millis, scheduledService)(
         item => {
-          parsedArgs.itemType match {
+          args.itemType match {
             case ItemType.Movie =>
               itemExpander.expandMovie(item).map(_ => Some(item)).recover {
                 case NonFatal(e) => None

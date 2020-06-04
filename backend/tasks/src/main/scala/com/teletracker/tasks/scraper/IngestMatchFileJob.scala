@@ -23,9 +23,7 @@ abstract class IngestMatchFileJob[T <: ScrapedItem: Codec]
 
   // Csst is safe because we know scrapedItem is not accessed
 
-  override protected def lookupMethod(
-    args: TypedArgs
-  ): LookupMethod[MatchInput[T]] =
+  override protected def lookupMethod(): LookupMethod[MatchInput[T]] =
     directLookupMethod.asInstanceOf[LookupMethod[MatchInput[T]]]
 }
 

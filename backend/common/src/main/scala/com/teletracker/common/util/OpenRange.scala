@@ -11,6 +11,8 @@ trait OpenRange[T] {
 }
 
 object OpenDateRange {
+  final val infinite = OpenDateRange(None, None)
+
   def forYearRange(
     start: Option[Int],
     end: Option[Int]

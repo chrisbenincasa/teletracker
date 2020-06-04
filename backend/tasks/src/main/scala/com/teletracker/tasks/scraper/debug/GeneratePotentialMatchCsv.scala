@@ -16,7 +16,7 @@ import com.teletracker.common.model.scraping.netflix.{
   NetflixOriginalScrapeItem,
   NetflixScrapedCatalogItem
 }
-import com.teletracker.common.tasks.TeletrackerTaskWithDefaultArgs
+import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.tasks.scraper.IngestJobParser
 import com.teletracker.tasks.scraper.hbo.HboScrapeChangesItem
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
@@ -24,10 +24,10 @@ import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import scala.io.Source
 
-class GeneratePotentialMatchCsv extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("input")
-    val scrapeItemType = args.valueOrThrow[ScrapeItemType]("type")
+class GeneratePotentialMatchCsv extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val input = rawArgs.valueOrThrow[URI]("input")
+    val scrapeItemType = rawArgs.valueOrThrow[ScrapeItemType]("type")
 
     val source = Source.fromURI(input)
 
@@ -116,10 +116,10 @@ class GeneratePotentialMatchCsv extends TeletrackerTaskWithDefaultArgs {
   }
 }
 
-class GenerateMatchCsv extends TeletrackerTaskWithDefaultArgs {
-  override protected def runInternal(args: Args): Unit = {
-    val input = args.valueOrThrow[URI]("input")
-    val scrapeItemType = args.valueOrThrow[ScrapeItemType]("type")
+class GenerateMatchCsv extends UntypedTeletrackerTask {
+  override protected def runInternal(): Unit = {
+    val input = rawArgs.valueOrThrow[URI]("input")
+    val scrapeItemType = rawArgs.valueOrThrow[ScrapeItemType]("type")
 
     val source = Source.fromURI(input)
 
