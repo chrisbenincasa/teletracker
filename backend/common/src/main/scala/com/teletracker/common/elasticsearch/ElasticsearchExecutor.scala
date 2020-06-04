@@ -1,5 +1,11 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.util.Retry
+import com.teletracker.common.util.execution.{
+  ExecutionContextProvider,
+  ProvidedSchedulerService
+}
+import com.twitter.concurrent.NamedPoolThreadFactory
 import javax.inject.Inject
 import org.elasticsearch.action.ActionListener
 import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
@@ -20,19 +26,26 @@ import org.elasticsearch.index.reindex.{
   DeleteByQueryRequest,
   UpdateByQueryRequest
 }
+import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.control.NonFatal
+import scala.concurrent.duration._
 
 class ElasticsearchExecutor @Inject()(
   client: RestHighLevelClient
 )(implicit executionContext: ExecutionContext) {
+  private val defaultRetryOptions =
+    Retry.RetryOptions(maxAttempts = 3, initialDuration = 5 seconds, 30 seconds)
+
+  private val schedulerService = ExecutionContextProvider.provider.of(
+    Executors.newScheduledThreadPool(5, new NamedPoolThreadFactory("es-retry"))
+  )
 
   def get(request: GetRequest): Future[GetResponse] = {
-    withListener(client.getAsync(request, RequestOptions.DEFAULT, _))
+    withRetryingListener()(client.getAsync(request, RequestOptions.DEFAULT, _))
   }
 
   def multiGet(request: MultiGetRequest): Future[MultiGetResponse] = {
-    withListener(client.mgetAsync(request, RequestOptions.DEFAULT, _))
+    withRetryingListener()(client.mgetAsync(request, RequestOptions.DEFAULT, _))
   }
 
   def index(request: IndexRequest): Future[IndexResponse] = {
@@ -64,25 +77,43 @@ class ElasticsearchExecutor @Inject()(
   }
 
   def search(request: SearchRequest): Future[SearchResponse] = {
-    withListener(client.searchAsync(request, RequestOptions.DEFAULT, _))
+    withRetryingListener()(
+      client.searchAsync(request, RequestOptions.DEFAULT, _)
+    )
   }
 
   def scroll(request: SearchScrollRequest): Future[SearchResponse] = {
-    withListener(client.scrollAsync(request, RequestOptions.DEFAULT, _))
+    withRetryingListener()(
+      client.scrollAsync(request, RequestOptions.DEFAULT, _)
+    )
   }
 
   def multiSearch(request: MultiSearchRequest): Future[MultiSearchResponse] = {
-    withListener(client.msearchAsync(request, RequestOptions.DEFAULT, _))
+    withRetryingListener()(
+      client.msearchAsync(request, RequestOptions.DEFAULT, _)
+    )
   }
 
   def count(request: CountRequest): Future[CountResponse] = {
-    withListener(client.countAsync(request, RequestOptions.DEFAULT, _))
+    withRetryingListener()(
+      client.countAsync(request, RequestOptions.DEFAULT, _)
+    )
   }
 
   protected def withListener[T](f: ActionListener[T] => Unit): Future[T] = {
     val (listener, promise) = makeListener[T]
     f(listener)
     promise.future
+  }
+
+  protected def withRetryingListener[T](
+    options: Retry.RetryOptions = defaultRetryOptions
+  )(
+    f: ActionListener[T] => Unit
+  ): Future[T] = {
+    val retry = new Retry(schedulerService)
+
+    retry.withRetries(options)(() => withListener(f))
   }
 
   protected def makeListener[T]: (ActionListener[T], Promise[T]) = {
