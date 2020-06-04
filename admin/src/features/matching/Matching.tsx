@@ -1,7 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { RouteComponentProps } from '@reach/router';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMatches, selectMatchItems } from './matchingSlice';
+import {
+  fetchMatchesAsync,
+  selectMatchItems,
+  updatePotentialMatchAsync,
+} from './matchingSlice';
 import {
   Button,
   Card,
@@ -17,7 +21,10 @@ import {
   Paper,
   Typography,
 } from '@material-ui/core';
-import { ScrapeItemType } from '../../types';
+import { PotentialMatchState, ScrapeItemType } from '../../types';
+import { useDebouncedCallback } from 'use-debounce';
+import { RootState } from '../../app/store';
+import InfiniteScroll from 'react-infinite-scroller';
 
 const useStyles = makeStyles((theme) =>
   createStyles({
@@ -88,12 +95,47 @@ export default function Matching(props: Props) {
   const classes = useStyles();
   const dispatch = useDispatch();
   const items = useSelector(selectMatchItems);
+  const itemsLoading = useSelector(
+    (state: RootState) => state.matching.loading.matches,
+  );
+  const bookmark = useSelector((state: RootState) => state.matching.bookmark);
+  const totalItems = useSelector(
+    (state: RootState) => state.matching.totalHits,
+  );
 
   useEffect(() => {
-    dispatch(fetchMatches());
+    dispatch(fetchMatchesAsync());
   }, []);
 
-  const cards = items.slice(0, 10).map((item) => {
+  const markAsNonMatch = useCallback((id: string) => {
+    dispatch(
+      updatePotentialMatchAsync({
+        id,
+        state: PotentialMatchState.NonMatch,
+      }),
+    );
+  }, []);
+
+  const markAsMatch = useCallback((id: string) => {
+    dispatch(
+      updatePotentialMatchAsync({
+        id,
+        state: PotentialMatchState.Matched,
+      }),
+    );
+  }, []);
+
+  const [loadMoreResults] = useDebouncedCallback(() => {
+    if (!itemsLoading) {
+      dispatch(
+        fetchMatchesAsync({
+          bookmark: bookmark,
+        }),
+      );
+    }
+  }, 100);
+
+  const cards = items.map((item) => {
     const poster = (item.potential.images || []).find(
       (image) => image.image_type === 'poster',
     );
@@ -192,6 +234,7 @@ export default function Matching(props: Props) {
               variant="contained"
               fullWidth
               className={classes.button}
+              onClick={() => markAsNonMatch(item.id)}
             >
               Not a Match
             </Button>
@@ -201,6 +244,7 @@ export default function Matching(props: Props) {
               variant="contained"
               fullWidth
               className={classes.button}
+              onClick={() => markAsMatch(item.id)}
             >
               Hooray, a Match!
             </Button>
@@ -211,8 +255,20 @@ export default function Matching(props: Props) {
   });
 
   return (
-    <Grid container spacing={3}>
-      <div className={classes.wrapper}>{cards}</div>
-    </Grid>
+    <InfiniteScroll
+      pageStart={0}
+      loadMore={loadMoreResults}
+      hasMore={
+        totalItems !== undefined
+          ? items.length < totalItems
+          : bookmark === undefined
+      }
+      useWindow
+      threshold={300}
+    >
+      <Grid container spacing={3}>
+        <div className={classes.wrapper}>{cards}</div>
+      </Grid>
+    </InfiniteScroll>
   );
 }

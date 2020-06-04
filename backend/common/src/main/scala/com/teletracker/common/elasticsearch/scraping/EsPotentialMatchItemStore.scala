@@ -27,6 +27,7 @@ import com.teletracker.common.util.Functions._
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.support.WriteRequest
+import org.elasticsearch.client.core.CountRequest
 import org.elasticsearch.search.sort.SortOrder
 import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.JavaConverters._
@@ -66,6 +67,8 @@ class EsPotentialMatchItemStore @Inject()(
           builder.filter(QueryBuilders.rangeQuery("id").lt(bm.value))
       )
 
+    val countFut = count(request)
+
     val searchSource = new SearchSourceBuilder()
       .query(query)
       .size(request.limit)
@@ -75,20 +78,51 @@ class EsPotentialMatchItemStore @Inject()(
       new SearchRequest(indexName)
         .source(searchSource)
 
-    elasticsearchExecutor
+    val searchFut = elasticsearchExecutor
       .search(searchRequest)
-      .map(response => {
-        val items = decodeSearchResponse[EsPotentialMatchItem](response)
-        val bookmark = items.lastOption.map(item => {
-          Bookmark(SearchScore(), item.id, None)
-        })
 
-        EsPotentialMatchResponse(
-          items,
-          response.getHits.getTotalHits.value,
-          bookmark
-        )
+    for {
+      searchResponse <- searchFut
+      countResponse <- countFut
+    } yield {
+      val items = decodeSearchResponse[EsPotentialMatchItem](searchResponse)
+      val bookmark = items.lastOption.map(item => {
+        Bookmark(SearchScore(), item.id, None)
       })
+
+      EsPotentialMatchResponse(
+        items,
+        countResponse,
+        bookmark
+      )
+    }
+  }
+
+  def count(request: PotentialMatchItemSearch): Future[Long] = {
+    val query = QueryBuilders
+      .boolQuery()
+      .must(
+        QueryBuilders
+          .termQuery("state", EsPotentialMatchState.Unmatched.toString)
+      )
+      .applyOptional(request.scraperType)(
+        (builder, typ) =>
+          builder.must(
+            QueryBuilders
+              .nestedQuery(
+                "scraped",
+                QueryBuilders.termQuery("scraped.type", typ.toString),
+                ScoreMode.Avg
+              )
+          )
+      )
+
+    elasticsearchExecutor
+      .count(
+        new CountRequest(indexName)
+          .source(new SearchSourceBuilder().query(query))
+      )
+      .map(_.getCount)
   }
 
   def updateState(

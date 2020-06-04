@@ -1,25 +1,26 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
 import { AppThunk, RootState } from '../../app/store';
-import { PotentialMatch, DeepReadonlyObject } from '../../types';
+import {
+  DeepReadonlyObject,
+  PotentialMatch,
+  PotentialMatchState,
+} from '../../types';
+import {
+  getPotentialMatches,
+  SearchMatchRequest,
+  UpdateMatchRequest,
+  updatePotentialMatch,
+} from '../../util/apiClient';
 
-interface MatchingState {
-  readonly items: ReadonlyArray<PotentialMatch>;
-  readonly bookmark?: string;
-  readonly totalHits?: number;
-}
-
-interface SearchMatchRequest {
+type MatchingState = DeepReadonlyObject<{
+  items: ReadonlyArray<PotentialMatch>;
   bookmark?: string;
-}
-
-interface SearchMatchResponse {
-  readonly data: ReadonlyArray<PotentialMatch>;
-  readonly paging?: Readonly<{
-    bookmark?: string;
-    total?: number;
-  }>;
-}
+  totalHits?: number;
+  loading: {
+    matches: boolean;
+    updateMatch: boolean;
+  };
+}>;
 
 type SearchMatchPayload = DeepReadonlyObject<{
   items: ReadonlyArray<PotentialMatch>;
@@ -28,8 +29,17 @@ type SearchMatchPayload = DeepReadonlyObject<{
   append: boolean;
 }>;
 
+type UpdateMatchSuccessPayload = DeepReadonlyObject<{
+  id: string;
+  state: PotentialMatchState;
+}>;
+
 const initialState: MatchingState = {
   items: [],
+  loading: {
+    matches: false,
+    updateMatch: false,
+  },
 };
 
 export const matchingSlice = createSlice({
@@ -37,42 +47,81 @@ export const matchingSlice = createSlice({
   initialState,
   reducers: {
     getMatchesInitiated: (state) => {
-      console.log('matches');
+      state.loading.matches = true;
     },
     getMatchesSuccess: (state, action: PayloadAction<SearchMatchPayload>) => {
+      state.loading.matches = false;
+
       if (action.payload.append) {
+        state.items = [...state.items, ...action.payload.items];
       } else {
         state.items = [...action.payload.items];
-        state.bookmark = action.payload.bookmark;
-        state.totalHits = action.payload.total;
+      }
+
+      state.bookmark = action.payload.bookmark;
+      state.totalHits = action.payload.total;
+    },
+    updateMatchInitiated: (state) => {
+      state.loading.updateMatch = true;
+    },
+    updateMatchSuccess: (
+      state,
+      action: PayloadAction<UpdateMatchSuccessPayload>,
+    ) => {
+      state.loading.updateMatch = false;
+
+      let updatedItem = state.items.find(
+        (item) => item.id === action.payload.id,
+      );
+
+      if (updatedItem) {
+        updatedItem.state = action.payload.state;
       }
     },
   },
 });
 
-export const { getMatchesInitiated, getMatchesSuccess } = matchingSlice.actions;
+export const {
+  getMatchesInitiated,
+  getMatchesSuccess,
+  updateMatchInitiated,
+  updateMatchSuccess,
+} = matchingSlice.actions;
 
-export const fetchMatches = (
+export const fetchMatchesAsync = (
   request: SearchMatchRequest = {},
 ): AppThunk => async (dispatch) => {
   dispatch(getMatchesInitiated());
+
   try {
-    const response = await axios.get<SearchMatchResponse>(
-      `https://${process.env.REACT_APP_API_HOST}/api/v1/internal/potential_matches/search`,
-      {
-        params: {
-          admin_key: process.env.REACT_APP_ADMIN_KEY,
-          bookmark: request.bookmark,
-        },
-      },
-    );
+    const response = await getPotentialMatches(request);
+
+    if (response.status)
+      dispatch(
+        getMatchesSuccess({
+          items: response.data.data,
+          append: request.bookmark !== undefined,
+          bookmark: response.data.paging?.bookmark,
+          total: response.data.paging?.total,
+        }),
+      );
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+export const updatePotentialMatchAsync = (
+  request: UpdateMatchRequest,
+): AppThunk => async (dispatch) => {
+  dispatch(updateMatchInitiated());
+
+  try {
+    await updatePotentialMatch(request);
 
     dispatch(
-      getMatchesSuccess({
-        items: response.data.data,
-        append: request.bookmark !== undefined,
-        bookmark: response.data.paging?.bookmark,
-        total: response.data.paging?.total,
+      updateMatchSuccess({
+        id: request.id,
+        state: request.state,
       }),
     );
   } catch (e) {
@@ -80,6 +129,9 @@ export const fetchMatches = (
   }
 };
 
-export const selectMatchItems = (state: RootState) => state.matching.items;
+export const selectMatchItems = (state: RootState) =>
+  state.matching.items.filter(
+    (item) => item.state === PotentialMatchState.Unmatched,
+  );
 
 export default matchingSlice.reducer;
