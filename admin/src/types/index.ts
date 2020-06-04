@@ -11,18 +11,23 @@ export type DeepReadonlyObject<T> = {
   readonly [P in keyof T]: DeepReadonly<T[P]>;
 };
 
-export type PotentialMatch = DeepReadonly<_PotentialMatch>;
-
-interface _PotentialMatch {
+export type PotentialMatch = DeepReadonly<{
   id: string;
   created_at: string;
-  potential: _PotentialMatchStorageItem;
-  scraped: _PotentialMatchScrapedItem;
+  last_updated: string;
+  state: PotentialMatchState;
+  potential: PotentialMatchStorageItem;
+  scraped: PotentialMatchScrapedItem;
+  availability?: ItemAvailability[];
+}>;
+
+export enum PotentialMatchState {
+  Unmatched = 'unmatched',
+  Matched = 'matched',
+  NonMatch = 'nonmatch',
 }
 
-export type PotentialMatchStorageItem = Readonly<_PotentialMatchStorageItem>;
-
-interface _PotentialMatchStorageItem {
+interface PotentialMatchStorageItem {
   id: string;
   original_title?: string;
   title: string;
@@ -38,7 +43,7 @@ interface _PotentialMatchStorageItem {
   }[];
 }
 
-interface _PotentialMatchScrapedItem {
+interface PotentialMatchScrapedItem {
   type: ScrapeItemType;
   item: {
     availableDate?: string;
@@ -55,7 +60,38 @@ interface _PotentialMatchScrapedItem {
   raw: object;
 }
 
-type PotentialMatchScrapedItem = Readonly<_PotentialMatchScrapedItem>;
+export interface ItemAvailability {
+  readonly networkId: number;
+  readonly networkName?: string;
+  readonly offers: ItemAvailabilityOffer[];
+}
+
+export interface ItemAvailabilityOffer {
+  readonly region: string;
+  readonly startDate?: string;
+  readonly endDate?: string;
+  readonly offerType: OfferType;
+  readonly cost?: number;
+  readonly currency?: string;
+  readonly presentationType?: PresentationType;
+  readonly links?: ItemAvailabilityOfferLinks;
+}
+
+export interface ItemAvailabilityOfferLinks {
+  readonly web?: string;
+}
+
+export type PresentationType = 'sd' | 'hd' | '4k';
+
+export enum OfferType {
+  buy = 'buy',
+  rent = 'rent',
+  theater = 'theater',
+  subscription = 'subscription',
+  free = 'free',
+  ads = 'ads',
+  aggregate = 'aggregate',
+}
 
 export enum ScrapeItemType {
   HuluCatalog = 'HuluCatalog',
