@@ -1,11 +1,11 @@
 data "template_file" "teletracker-qa-consumer-task-definition-template" {
   template = file("${path.module}/task-definitions/teletracker-qa-consumer-task-definition.json")
   vars = {
-    image           = var.image,
-    service_name    = var.service_name,
-    mode            = var.consumer_mode
-    cpu = var.cpu
-    memory = var.memory
+    image        = var.image,
+    service_name = var.service_name,
+    mode         = var.consumer_mode
+    cpu          = var.cpu
+    memory       = var.memory
   }
 }
 
@@ -55,6 +55,6 @@ resource "aws_ecs_service" "consumer_ecs_service" {
   }
 
   lifecycle {
-    ignore_changes = ["desired_count"]
+    ignore_changes = [desired_count]
   }
 }

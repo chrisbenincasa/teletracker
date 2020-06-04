@@ -10,3 +10,25 @@ resource "aws_sqs_queue" "consumer_dlq" {
   fifo_queue                  = var.fifo
   content_based_deduplication = false
 }
+
+resource "aws_sqs_queue_policy" "teletracker-task-queue-policy" {
+  queue_url = aws_sqs_queue.consumer_queue.id
+
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Id": "sqspolicy",
+  "Statement": [{
+      "Effect": "Allow",
+      "Principal": {
+          "Service": [
+            "events.amazonaws.com",
+            "sqs.amazonaws.com"
+          ]
+      },
+      "Action": "sqs:SendMessage",
+      "Resource": "${aws_sqs_queue.consumer_queue.arn}"
+  }]
+}
+POLICY
+}
