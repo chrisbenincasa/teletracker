@@ -14,7 +14,9 @@ import {
   Theme,
   Toolbar,
   useTheme,
-  ListItemIcon, CssBaseline,
+  ListItemIcon,
+  CssBaseline,
+  Typography,
 } from '@material-ui/core';
 import { LiveTv, Menu } from '@material-ui/icons';
 import { Link, Router } from '@reach/router';
@@ -32,12 +34,13 @@ const useStyles = makeStyles((theme: Theme) =>
         width: drawerWidth,
         flexShrink: 0,
       },
+      zIndex: theme.zIndex.drawer,
+    },
+    drawerItem: {
+      textDecoration: 'none',
     },
     appBar: {
-      [theme.breakpoints.up('sm')]: {
-        width: `calc(100% - ${drawerWidth}px)`,
-        marginLeft: drawerWidth,
-      },
+      zIndex: theme.zIndex.appBar + 200,
     },
     menuButton: {
       marginRight: theme.spacing(2),
@@ -79,12 +82,12 @@ function App() {
       <div className={classes.toolbar} />
       <Divider />
       <List>
-        <Link to='/matching'>
+        <Link to="/matching">
           <ListItem button>
             <ListItemIcon>
               <LiveTv />
             </ListItemIcon>
-            <ListItemText primary="Matching" />
+            <ListItemText primary="Matching" className={classes.drawerItem} />
           </ListItem>
         </Link>
       </List>
@@ -97,7 +100,7 @@ function App() {
   return (
     <div className={classes.root}>
       <CssBaseline />
-      <AppBar>
+      <AppBar className={classes.appBar}>
         <Toolbar>
           <IconButton
             color="inherit"
@@ -108,6 +111,14 @@ function App() {
           >
             <Menu />
           </IconButton>
+          <Typography
+            variant="h6"
+            color="inherit"
+            component="a"
+            style={{ textDecoration: 'none' }}
+          >
+            Teletracker <span style={{ color: 'red' }}>Admin</span>{' '}
+          </Typography>
         </Toolbar>
       </AppBar>
       <nav className={classes.drawer} aria-label="mailbox folders">
@@ -144,7 +155,7 @@ function App() {
       <main className={classes.content}>
         <div className={classes.toolbar} />
         <Router>
-          <Matching path='/matching' />
+          <Matching path="/matching" />
         </Router>
       </main>
     </div>
