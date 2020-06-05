@@ -9,6 +9,7 @@ const classes = makeStyles((theme: Theme) =>
       alignItems: 'center',
     },
     listName: {
+      display: 'flex',
       textDecoration: 'none',
       '&:focus, &:hover, &:visited, &:link &:active': {
         color: theme.palette.text.primary,
@@ -37,6 +38,9 @@ const classes = makeStyles((theme: Theme) =>
       minWidth: 120,
       display: 'flex',
     },
+    icon: {
+      margin: theme.spacing(0, 1),
+    },
     listContainer: {
       display: 'flex',
       flexDirection: 'column',
@@ -58,6 +62,9 @@ const classes = makeStyles((theme: Theme) =>
     title: {
       backgroundColor: theme.palette.primary.main,
       padding: theme.spacing(1, 2),
+    },
+    urlField: {
+      margin: theme.spacing(1),
     },
   }),
 );
