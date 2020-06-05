@@ -33,6 +33,7 @@ class NetflixSpider(BaseCrawlSpider):
         'https://www.netflix.com/browse/genre/34399',
         'https://www.netflix.com/browse/genre/83',
         'https://www.netflix.com/browse/genre/6548',
+        'https://www.netflix.com/browse/genre/783',
         'https://www.netflix.com/browse/genre/1365',
         'https://www.netflix.com/browse/genre/2243108',
         'https://www.netflix.com/browse/genre/10673',
