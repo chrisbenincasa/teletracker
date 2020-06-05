@@ -24,6 +24,7 @@ import {
   TwitterIcon,
   TwitterShareButton,
 } from 'react-share';
+import { logModalView } from '../../utils/analytics';
 
 const useStyles = makeStyles(theme => ({
   button: {
@@ -74,6 +75,12 @@ export default function CreateDynamicListDialog(props: Props) {
   const classes = useStyles();
   let [snackbarOpen, setSnackbarOpen] = useState(false);
   const urlField = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (props.open) {
+      logModalView('ShareDialog');
+    }
+  }, [props.open]);
 
   const handleModalClose = () => {
     props.onClose();

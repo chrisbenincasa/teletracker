@@ -5,7 +5,6 @@ import { logout } from '../actions/auth';
 import { connect } from 'react-redux';
 import { LinearProgress } from '@material-ui/core';
 import _ from 'lodash';
-import ReactGA from 'react-ga';
 import { withRouter } from 'next/router';
 import { WithRouterProps } from 'next/dist/client/with-router';
 
@@ -28,8 +27,6 @@ class Logout extends React.Component<Props, State> {
 
   componentDidMount(): void {
     this.props.logout();
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
   }
 
   componentDidUpdate(prevProps: Readonly<Props>): void {

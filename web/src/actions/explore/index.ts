@@ -9,10 +9,11 @@ import { ErrorFSA, FSA } from 'flux-standard-action';
 import { Item, ItemFactory } from '../../types/v2/Item';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
-import { put, takeEvery } from '@redux-saga/core/effects';
+import { call, put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { ApiItem } from '../../types/v2';
 import _ from 'lodash';
+import { logException } from '../../utils/analytics';
 
 export const EXPLORE_INITIATED = 'explore/INITIATED';
 export const EXPLORE_SUCCESSFUL = 'explore/SUCCESSFUL';
@@ -94,6 +95,7 @@ export const exploreSaga = function*() {
         }
       } catch (e) {
         console.error(e);
+        call(logException, `${e}`, false);
         yield put(exploreFailed(e));
       }
     }

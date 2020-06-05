@@ -1,11 +1,18 @@
-import { actionChannel, put, select, take } from '@redux-saga/core/effects';
+import {
+  actionChannel,
+  all,
+  call,
+  put,
+  select,
+  take,
+} from '@redux-saga/core/effects';
 import { UserSelf } from '../../reducers/user';
 import { AppState } from '../../reducers';
 import { createAction } from '../utils';
 import { updateUser } from './update_user';
 import { FSA } from 'flux-standard-action';
 import { UserPreferences } from '../../types';
-import ReactGA from 'react-ga';
+import { logEvent, logException } from '../../utils/analytics';
 
 export const USER_SELF_UPDATE_PREFS = 'user/self/update_prefs/INITIATED';
 export const USER_SELF_UPDATE_PREFS_SUCCESS = 'user/self/update_prefs/SUCCESS';
@@ -25,23 +32,27 @@ export const updateUserPreferencesSaga = function*() {
     const { payload }: UserUpdatePrefsAction = yield take(chan);
 
     if (payload) {
-      let currUser: UserSelf | undefined = yield select(
-        (state: AppState) => state.userSelf!.self,
-      );
+      try {
+        let currUser: UserSelf | undefined = yield select(
+          (state: AppState) => state.userSelf!.self,
+        );
 
-      if (currUser) {
-        let newUser: UserSelf = {
-          ...currUser,
-          preferences: payload,
-        };
+        if (currUser) {
+          let newUser: UserSelf = {
+            ...currUser,
+            preferences: payload,
+          };
 
-        yield put(updateUser(newUser));
-
-        ReactGA.event({
-          category: 'User',
-          action: 'Updated user preferences',
-        });
+          yield all([
+            put(updateUser(newUser)),
+            call(logEvent, 'User Settings', 'Update preferences'),
+          ]);
+        }
+      } catch (e) {
+        call(logException, `${e}`, false);
       }
+    } else {
+      // TODO: Error
     }
   }
 };

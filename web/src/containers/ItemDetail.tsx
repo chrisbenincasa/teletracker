@@ -31,7 +31,6 @@ import _ from 'lodash';
 import moment from 'moment';
 import { useRouter } from 'next/router';
 import React, { useCallback, useEffect, useState } from 'react';
-import ReactGA from 'react-ga';
 import {
   itemFetchInitiated,
   itemPrefetchSuccess,
@@ -285,7 +284,6 @@ function ItemDetails(props: Props) {
 
   useEffect(() => {
     loadItem();
-    ReactGA.pageview(nextRouter.asPath);
 
     // if (
     //   userSelfState.isLoggedIn &&

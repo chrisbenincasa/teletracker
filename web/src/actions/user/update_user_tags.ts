@@ -1,10 +1,10 @@
-import { put, takeEvery } from '@redux-saga/core/effects';
+import { call, put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
 import { ActionType } from '../../types';
-import ReactGA from 'react-ga';
+import { logEvent, logException } from '../../utils/analytics';
 
 export const USER_SELF_UPDATE_ITEM_TAGS =
   'user/self/update_item_tags/INITIATED';
@@ -43,26 +43,25 @@ export const updateUserActionSaga = function*() {
     payload,
   }: UserUpdateItemTagsAction) {
     if (payload) {
-      if (!payload.lazy) {
-        yield put(updateUserItemTagsSuccess(payload));
-      }
+      try {
+        if (!payload.lazy) {
+          yield put(updateUserItemTagsSuccess(payload));
+        }
 
-      let response: TeletrackerResponse<any> = yield clientEffect(
-        client => client.updateActions,
-        payload.itemId,
-        payload.action,
-        payload.value,
-      );
+        let response: TeletrackerResponse<any> = yield clientEffect(
+          client => client.updateActions,
+          payload.itemId,
+          payload.action,
+          payload.value,
+        );
 
-      ReactGA.event({
-        category: 'User',
-        action: 'Updated user tags',
-      });
-
-      if (response.ok && payload.lazy) {
-        yield put(updateUserItemTagsSuccess(payload));
-      } else {
-        // TODO: Error
+        if (response.ok && payload.lazy) {
+          yield put(updateUserItemTagsSuccess(payload));
+        } else {
+          // TODO: Error
+        }
+      } catch (e) {
+        call(logException, `${e}`, false);
       }
     } else {
       // TODO: Error

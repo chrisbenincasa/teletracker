@@ -1,4 +1,4 @@
-import { put, takeEvery } from '@redux-saga/core/effects';
+import { call, put, takeEvery } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
 import _ from 'lodash';
 import { Paging } from '../../types';
@@ -8,6 +8,7 @@ import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction, createBasicAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { FilterParams } from '../../utils/searchFilters';
+import { logException } from '../../utils/analytics';
 
 export const POPULAR_INITIATED = 'popular/INITIATED';
 export const POPULAR_SUCCESSFUL = 'popular/SUCCESSFUL';
@@ -88,6 +89,7 @@ export const popularSaga = function*() {
         }
       } catch (e) {
         console.error(e);
+        call(logException, `${e}`, false);
         yield put(popularFailed(e));
       }
     }

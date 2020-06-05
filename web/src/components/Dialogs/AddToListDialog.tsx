@@ -47,6 +47,7 @@ import useIsMobile from '../../hooks/useIsMobile';
 import { Id } from '../../types/v2';
 import selectItem from '../../selectors/selectItem';
 import dequal from 'dequal';
+import { logModalView } from '../../utils/analytics';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -164,6 +165,7 @@ function AddToListDialog(props: Props) {
     if (props.open && !wasOpen) {
       setOriginalListState(calculateListChanges());
       setListChanges(calculateListChanges());
+      logModalView('AddToListDialog');
     }
   }, [props.open]);
 
