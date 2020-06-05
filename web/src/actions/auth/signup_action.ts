@@ -1,6 +1,6 @@
-import { call, put, takeLatest } from '@redux-saga/core/effects';
+import { all, call, put, takeLatest } from '@redux-saga/core/effects';
 import { FSA } from 'flux-standard-action';
-import ReactGA from 'react-ga';
+import { logEvent, logException } from '../../utils/analytics';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
 import { createAction } from '@reduxjs/toolkit';
 import { withPayloadType } from '../utils';
@@ -50,11 +50,6 @@ export const signupSaga = function*() {
           payload.password,
         );
 
-        ReactGA.event({
-          category: 'User',
-          action: 'Signup',
-        });
-
         let user: CognitoUser = yield call(
           (email: string, password: string) =>
             Auth.signIn({
@@ -65,16 +60,20 @@ export const signupSaga = function*() {
           payload.password,
         );
 
-        yield put(
-          signupSuccessful(
-            user
-              .getSignInUserSession()!
-              .getAccessToken()
-              .getJwtToken(),
+        yield all([
+          put(
+            signupSuccessful(
+              user
+                .getSignInUserSession()!
+                .getAccessToken()
+                .getJwtToken(),
+            ),
           ),
-        );
+          call(logEvent, 'Login and Signup', 'Signup', 'Manual'),
+        ]);
       } catch (e) {
         console.error(e);
+        call(logException, `${e}`, false);
       }
     } else {
     }

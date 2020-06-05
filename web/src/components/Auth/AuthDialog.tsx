@@ -6,6 +6,7 @@ import SignupForm from './SignupForm';
 import { LoginState } from '../../actions/auth';
 import { useRouter } from 'next/router';
 import { makeStyles } from '@material-ui/core/styles';
+import { logModalView } from '../../utils/analytics';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -36,6 +37,12 @@ function AuthDialog(props: Props) {
       setShow(props.initialForm);
     }
   }, [props.initialForm]);
+
+  useEffect(() => {
+    if (props.open) {
+      logModalView(show);
+    }
+  }, [props.open, show]);
 
   const close = () => {
     props.onClose();

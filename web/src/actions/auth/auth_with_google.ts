@@ -4,6 +4,7 @@ import Auth, { CognitoHostedUIIdentityProvider } from '@aws-amplify/auth';
 import { LoginState } from './login_action';
 import { createAction } from '@reduxjs/toolkit';
 import { withPayloadType } from '../utils';
+import { logEvent, logException } from '../../utils/analytics';
 
 export const SIGNUP_GOOGLE_INITIATED = 'signup/google/INITIATED';
 export const LOGIN_GOOGLE_INITIATED = 'login/google/INITIATED';
@@ -40,9 +41,12 @@ export const authWithGoogleSaga = function*() {
           });
         });
 
+        // todo:  separate each
+        call(logEvent, 'Login and Signup', 'Login/Signup', 'Google');
         console.log(creds);
       } catch (e) {
         console.error(e);
+        call(logException, `${e}`, false);
       }
     },
   );

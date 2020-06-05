@@ -10,6 +10,7 @@ import {
   Theme,
 } from '@material-ui/core';
 import { OfflineBolt } from '@material-ui/icons';
+import { logModalView } from '../../utils/analytics';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -34,6 +35,12 @@ interface Props {
 
 export default function SmartListDialog(props: Props) {
   const classes = useStyles();
+
+  useEffect(() => {
+    if (props.open) {
+      logModalView('SmartListDialog');
+    }
+  }, [props.open]);
 
   const handleModalClose = () => {
     props.onClose();

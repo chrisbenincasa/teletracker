@@ -1,9 +1,10 @@
-import { put, takeEvery } from '@redux-saga/core/effects';
+import { call, put, takeEvery } from '@redux-saga/core/effects';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { KeyMap, ObjectMetadata } from '../../types/external/themoviedb/Movie';
 import { FSA } from 'flux-standard-action';
 import { List } from '../../types';
+import { logException } from '../../utils/analytics';
 
 export const defaultMovieMeta = {
   themoviedb: {
@@ -73,6 +74,7 @@ export const retrieveListsSaga = function*() {
       yield put(ListRetrieveAllSuccess(response.data.data));
     } else {
       console.error('bad');
+      call(logException, `${response.status}`, false);
     }
   });
 };

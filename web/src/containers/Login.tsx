@@ -10,7 +10,6 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { LoginState } from '../actions/auth';
 import { AppState } from '../reducers';
-import ReactGA from 'react-ga';
 import LoginForm from '../components/Auth/LoginForm';
 import { withRouter } from 'next/router';
 import { WithRouterProps } from 'next/dist/client/with-router';
@@ -54,14 +53,6 @@ class Login extends Component<Props & WithRouterProps, State> {
     email: '',
     password: '',
   };
-
-  componentDidMount(): void {
-    if (this.props.isAuthed) {
-      // this.props.router.replace('/');
-    }
-
-    ReactGA.pageview(window.location.pathname + window.location.search);
-  }
 
   handleLogin(state?: LoginState): void {
     if (state?.redirect) {

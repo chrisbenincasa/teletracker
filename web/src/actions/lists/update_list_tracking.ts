@@ -1,12 +1,13 @@
-import { all, put, takeLatest } from '@redux-saga/core/effects';
+import { all, call, put, takeLatest } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { ErrorFSA, FSA } from 'flux-standard-action';
 import { retrieveAllLists } from './retrieve_all_lists';
-import ReactGA from 'react-ga';
+import { logEvent } from '../../utils/analytics';
 import { updateUserItemTagsSuccess } from '../user/update_user_tags';
 import { removeUserItemTagsSuccess } from '../user/remove_user_tag';
+import { logException } from '../../utils/analytics';
 
 import { ActionType } from '../../types';
 import { useDispatchAction } from '../../hooks/useDispatchAction';
@@ -59,7 +60,7 @@ export const updateListTrackingSaga = function*() {
         if (response.ok) {
           yield put(retrieveAllLists({}));
 
-          yield all(
+          yield all([
             payload.addToLists.map(listId => {
               return put(
                 updateUserItemTagsSuccess({
@@ -70,9 +71,18 @@ export const updateListTrackingSaga = function*() {
                 }),
               );
             }),
-          );
+            payload.addToLists.length > 0
+              ? call(
+                  logEvent,
+                  'List Management',
+                  'Manage List Dialog',
+                  'Added item to list',
+                  payload.addToLists.length,
+                )
+              : null,
+          ]);
 
-          yield all(
+          yield all([
             payload.removeFromLists.map(listId => {
               return put(
                 removeUserItemTagsSuccess({
@@ -83,15 +93,23 @@ export const updateListTrackingSaga = function*() {
                 }),
               );
             }),
-          );
 
-          ReactGA.event({
-            category: 'User',
-            action: 'Updated list',
-          });
+            payload.removeFromLists.length > 0
+              ? call(
+                  logEvent,
+                  'List Management',
+                  'Manage List Dialog',
+                  'Removed item from list',
+                  payload.removeFromLists.length,
+                )
+              : null,
+          ]);
         }
       } catch (e) {
-        yield put(updateListTrackingFailed(e));
+        yield all([
+          put(updateListTrackingFailed(e)),
+          call(logException, `${e}`, false),
+        ]);
       }
     } else {
       // To do: error payload doesn't exist

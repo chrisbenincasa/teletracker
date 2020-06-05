@@ -20,6 +20,7 @@ import useStateSelector, {
 import dequal from 'dequal';
 import { useWithUserContext } from '../../hooks/useWithUser';
 import { useDispatchAction } from '../../hooks/useDispatchAction';
+import { logModalView } from '../../utils/analytics';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -52,6 +53,12 @@ export default function CreateListDialog(props: Props) {
   const { isLoggedIn } = useWithUserContext();
 
   const dispatchCreateList = useDispatchAction(createList);
+
+  useEffect(() => {
+    if (props.open) {
+      logModalView('CreateListDialog');
+    }
+  }, [props.open]);
 
   useEffect(() => {
     if (wasLoading && !isLoading) {

@@ -1,11 +1,11 @@
-import { actionChannel, put, take } from '@redux-saga/core/effects';
+import { actionChannel, all, call, put, take } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { UserDetails } from '../../types';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { UserSelf } from '../../reducers/user';
 import { FSA } from 'flux-standard-action';
-import ReactGA from 'react-ga';
+import { logEvent, logException } from '../../utils/analytics';
 
 export type UserUpdateSuccessPayload = Omit<UserSelf, 'user'>;
 
@@ -33,25 +33,30 @@ export const updateUserSaga = function*() {
   while (true) {
     const { payload }: UserUpdateAction = yield take(chan);
     if (payload) {
-      let response: TeletrackerResponse<UserDetails> = yield clientEffect(
-        client => client.updateUserSelf,
-        payload.networks,
-        payload.preferences,
-      );
-
-      if (response.ok) {
-        yield put(
-          updateUserSuccess({
-            networks: response.data!.data.networkPreferences,
-            preferences: response.data!.data.preferences,
-          }),
+      try {
+        let response: TeletrackerResponse<UserDetails> = yield clientEffect(
+          client => client.updateUserSelf,
+          payload.networks,
+          payload.preferences,
         );
 
-        ReactGA.event({
-          category: 'User',
-          action: 'Updated users',
-        });
+        if (response.ok) {
+          yield all([
+            put(
+              updateUserSuccess({
+                networks: response.data!.data.networkPreferences,
+                preferences: response.data!.data.preferences,
+              }),
+            ),
+          ]);
+        } else {
+          // TODO: Error
+        }
+      } catch (e) {
+        call(logException, `${e}`, false);
       }
+    } else {
+      // TODO: Error
     }
   }
 };

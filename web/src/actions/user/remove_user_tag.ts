@@ -1,9 +1,10 @@
-import { put, takeEvery } from '@redux-saga/core/effects';
+import { call, put, takeEvery } from '@redux-saga/core/effects';
 import { TeletrackerResponse } from '../../utils/api-client';
 import { createAction } from '../utils';
 import { clientEffect } from '../clientEffect';
 import { FSA } from 'flux-standard-action';
 import { UserUpdateItemTagsPayload } from './update_user_tags';
+import { logEvent, logException } from '../../utils/analytics';
 
 export const USER_SELF_REMOVE_ITEM_TAGS =
   'user/self/remove_item_tags/INITIATED';
@@ -33,20 +34,24 @@ export const removeUserActionSaga = function*() {
     payload,
   }: UserRemoveItemTagsAction) {
     if (payload) {
-      if (!payload.lazy) {
-        yield put(removeUserItemTagsSuccess(payload));
-      }
+      try {
+        if (!payload.lazy) {
+          yield put(removeUserItemTagsSuccess(payload));
+        }
 
-      let response: TeletrackerResponse<any> = yield clientEffect(
-        client => client.removeActions,
-        payload.itemId,
-        payload.action,
-      );
+        let response: TeletrackerResponse<any> = yield clientEffect(
+          client => client.removeActions,
+          payload.itemId,
+          payload.action,
+        );
 
-      if (response.ok && payload.lazy) {
-        yield put(removeUserItemTagsSuccess(payload));
-      } else {
-        // TODO: Error
+        if (response.ok && payload.lazy) {
+          yield put(removeUserItemTagsSuccess(payload));
+        } else {
+          // TODO: Error
+        }
+      } catch (e) {
+        call(logException, `${e}`, false);
       }
     } else {
       // TODO: Error

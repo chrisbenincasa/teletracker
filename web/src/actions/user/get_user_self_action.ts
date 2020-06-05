@@ -5,6 +5,7 @@ import { FSA } from 'flux-standard-action';
 import { Network, UserPreferences } from '../../types';
 import Auth, { CognitoUser } from '@aws-amplify/auth';
 import { LOGIN_SUCCESSFUL } from '../auth';
+import { logException } from '../../utils/analytics';
 
 export const USER_SELF_RETRIEVE_INITIATED = 'user/self/retrieve/INITIATED';
 export const USER_SELF_RETRIEVE_SUCCESS = 'user/self/retrieve/SUCCESSFUL';
@@ -101,6 +102,7 @@ export const getUserSelfSaga = function*() {
       }
     } catch (e) {
       console.error(e);
+      call(logException, `${e}`, false);
     }
   });
 };

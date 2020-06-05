@@ -7,6 +7,7 @@ import Auth, { CognitoUser } from '@aws-amplify/auth';
 import { Hub } from '@aws-amplify/core';
 import { loginSuccessful } from './login_action';
 import { userStateChange } from './index';
+import { logException } from '../../utils/analytics';
 
 // TODO: This is really close to getUserSelf and a lot of other logic...
 // maybe we should factor this out somehow?
@@ -66,6 +67,7 @@ export const authStateWatcher = function*() {
       }
     } catch (e) {
       console.error(e);
+      call(logException, `${e}`, false);
     }
   }
 };

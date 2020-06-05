@@ -1,4 +1,4 @@
-import { put, select, takeEvery } from '@redux-saga/core/effects';
+import { all, call, put, select, takeEvery } from '@redux-saga/core/effects';
 import { UserSelf } from '../../reducers/user';
 import { AppState } from '../../reducers';
 import * as R from 'ramda';
@@ -6,7 +6,7 @@ import { Network } from '../../types';
 import { FSA } from 'flux-standard-action';
 import { createAction } from '../utils';
 import { updateUser } from './update_user';
-import ReactGA from 'react-ga';
+import { logEvent, logException } from '../../utils/analytics';
 
 export const USER_SELF_UPDATE_NETWORKS = 'user/self/networks/UPDATE';
 export const USER_SELF_UPDATE_NETWORKS_SUCCESS =
@@ -31,36 +31,38 @@ export const updateNetworksForUserSaga = function*() {
     payload,
   }: UserUpdateNetworksAction) {
     if (payload) {
-      let currUser: UserSelf | undefined = yield select(
-        (state: AppState) => state.userSelf!.self,
-      );
-
-      if (!currUser) {
-        // TODO: Fail
-      } else {
-        let existingIds = R.map(R.prop('id'), currUser.networks || []);
-        let removeIds = R.map(R.prop('id'), payload.remove);
-        let subsRemoved = R.reject(
-          sub => R.contains(sub.id, removeIds),
-          currUser.networks || [],
+      try {
+        let currUser: UserSelf | undefined = yield select(
+          (state: AppState) => state.userSelf!.self,
         );
 
-        let newSubs = R.concat(
-          subsRemoved,
-          R.reject(sub => R.contains(sub.id, existingIds), payload.add),
-        );
+        if (!currUser) {
+          // TODO: Fail
+        } else {
+          let existingIds = R.map(R.prop('id'), currUser.networks || []);
+          let removeIds = R.map(R.prop('id'), payload.remove);
+          let subsRemoved = R.reject(
+            sub => R.contains(sub.id, removeIds),
+            currUser.networks || [],
+          );
 
-        let newUser: UserSelf = {
-          ...currUser,
-          networks: newSubs,
-        };
+          let newSubs = R.concat(
+            subsRemoved,
+            R.reject(sub => R.contains(sub.id, existingIds), payload.add),
+          );
 
-        yield put(updateUser(newUser));
+          let newUser: UserSelf = {
+            ...currUser,
+            networks: newSubs,
+          };
 
-        ReactGA.event({
-          category: 'User',
-          action: 'Updated networks',
-        });
+          yield all([
+            put(updateUser(newUser)),
+            call(logEvent, 'User Settings', 'Update networks'),
+          ]);
+        }
+      } catch (e) {
+        call(logException, `${e}`, false);
       }
     }
   });

@@ -141,8 +141,6 @@ const Availability = (props: Props) => {
   const hasAnyAvailabilities =
     hasSubscriptionOffers || hasRentalOffers || hasBuyOffers;
 
-  console.log(firstAvailable);
-
   const getDeepLink = (
     availability: ItemAvailability,
     offers: ItemAvailabilityOffer[],

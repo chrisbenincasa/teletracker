@@ -46,6 +46,7 @@ import { createList } from '../../actions/lists';
 import CreateAListValidator from '../../utils/validation/CreateAListValidator';
 import { collect } from '../../utils/collection-utils';
 import { useGenres, useNetworks } from '../../hooks/useStateMetadata';
+import { logModalView } from '../../utils/analytics';
 
 const useStyles = makeStyles(theme => ({
   button: {
@@ -93,6 +94,7 @@ export default function CreateDynamicListDialog(props: Props) {
   useEffect(() => {
     if (props.open) {
       setExited(false);
+      logModalView('CreateDynamicListDialog');
     }
   }, [props.open]);
 
