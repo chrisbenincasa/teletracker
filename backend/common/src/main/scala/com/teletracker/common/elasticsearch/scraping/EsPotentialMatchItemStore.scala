@@ -49,7 +49,10 @@ class EsPotentialMatchItemStore @Inject()(
       .boolQuery()
       .must(
         QueryBuilders
-          .termQuery("state", EsPotentialMatchState.Unmatched.toString)
+          .termQuery(
+            "state",
+            request.state.getOrElse(EsPotentialMatchState.Unmatched).toString
+          )
       )
       .applyOptional(request.scraperType)(
         (builder, typ) =>
@@ -139,6 +142,7 @@ class EsPotentialMatchItemStore @Inject()(
 
 case class PotentialMatchItemSearch(
   scraperType: Option[ScrapeItemType],
+  state: Option[EsPotentialMatchState],
   limit: Int,
   bookmark: Option[Bookmark])
 
