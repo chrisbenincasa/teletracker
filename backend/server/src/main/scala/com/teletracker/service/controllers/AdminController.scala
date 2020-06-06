@@ -44,6 +44,7 @@ class AdminController @Inject()(
           .search(
             PotentialMatchItemSearch(
               scraperType = req.scraperItemType,
+              state = req.matchState.map(EsPotentialMatchState.fromString),
               limit = req.limit,
               bookmark = req.bookmark.map(Bookmark.parse)
             )
@@ -141,6 +142,7 @@ class AdminController @Inject()(
 
 case class PotentialMatchSearchRequest(
   @QueryParam scraperItemType: Option[ScrapeItemType],
+  @QueryParam matchState: Option[String],
   @QueryParam limit: Int = 20,
   @QueryParam bookmark: Option[String])
 
