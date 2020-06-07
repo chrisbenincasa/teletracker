@@ -35,7 +35,7 @@ object DenormalizedItemUpdater {
       ScriptType.INLINE,
       "painless",
       UpdateDenormalizedItemScriptSource,
-      Map[String, Object]("tag" -> itemAsMap(item)).asJava
+      Map[String, Object]("item" -> itemAsMap(item)).asJava
     )
   }
 
