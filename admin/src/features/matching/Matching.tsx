@@ -175,6 +175,14 @@ export default function Matching(props: Props) {
                     label={item?.potential?.release_date?.substring(0, 4)}
                     className={classes.chip}
                   />
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    component="p"
+                    className={classes.cardDescription}
+                  >
+                    {item.potential?.description}
+                  </Typography>
                 </CardContent>
               </CardActionArea>
             </Card>

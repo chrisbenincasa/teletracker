@@ -31,6 +31,7 @@ interface PotentialMatchStorageItem {
   id: string;
   original_title?: string;
   title: string;
+  description?: string;
   release_date?: string;
   external_ids: string;
   type: string;
