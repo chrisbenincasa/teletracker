@@ -7,6 +7,7 @@ import io.circe.{Codec, Decoder, DecodingFailure, Encoder, Json}
 import java.net.URI
 import java.util.UUID
 import scala.reflect.{classTag, ClassTag}
+import scala.util.Try
 
 trait ConfiguredModelInstances {
   import io.circe.shapes._
@@ -59,7 +60,7 @@ trait ModelInstances extends ConfiguredModelInstances with JodaInstances {
   )
 
   implicit val uuidCodec = Codec.from(
-    Decoder.decodeString.map(str => UUID.fromString(str)),
+    Decoder.decodeString.emapTry(str => Try(UUID.fromString(str))),
     Encoder.encodeString.contramap[UUID](uri => uri.toString)
   )
 

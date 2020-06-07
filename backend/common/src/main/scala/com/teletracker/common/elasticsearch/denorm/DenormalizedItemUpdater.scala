@@ -8,6 +8,7 @@ import com.teletracker.common.tasks.model.DenormalizeItemTaskArgs
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.json.{IdentityFolder, IdentityJavaFolder}
 import com.teletracker.common.util.{AsyncStream, IdOrSlug}
+import io.circe.Json
 import io.circe.syntax._
 import javax.inject.Inject
 import org.elasticsearch.action.support.WriteRequest
@@ -66,6 +67,20 @@ class DenormalizedItemUpdater @Inject()(
         teletrackerConfig.elasticsearch.user_items_index_name,
         EsUserItem.makeId(item.user_id, item.item_id)
       ).doc(item.asJson.dropNullValues.noSpaces, XContentType.JSON)
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+
+    elasticsearchExecutor.update(updateDenormRequest).map(_ => {})
+  }
+
+  def updateUserItem(
+    id: String,
+    item: Json
+  ): Future[Unit] = {
+    val updateDenormRequest =
+      new UpdateRequest(
+        teletrackerConfig.elasticsearch.user_items_index_name,
+        id
+      ).doc(item.dropNullValues.noSpaces, XContentType.JSON)
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
     elasticsearchExecutor.update(updateDenormRequest).map(_ => {})

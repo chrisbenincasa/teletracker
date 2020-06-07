@@ -2,6 +2,7 @@ package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson, EsUserItem}
 import com.teletracker.common.util.AsyncStream
+import io.circe.Json
 import javax.inject.Inject
 import org.elasticsearch.action.search.{
   SearchRequest,
@@ -92,6 +93,25 @@ abstract class Scroller[T](
     } else {
       AsyncStream.empty
     }
+  }
+}
+
+final class RawJsonScroller @Inject()(
+  elasticsearchExecutor: ElasticsearchExecutor
+)(implicit executionContext: ExecutionContext)
+    extends Scroller[Json](elasticsearchExecutor)
+    with ElasticsearchAccess {
+  override protected def parseResponse(
+    searchResponse: SearchResponse
+  ): List[Json] = {
+    searchResponse.getHits.getHits
+      .flatMap(hit => {
+        io.circe.parser.parse(hit.getSourceAsString) match {
+          case Left(_)      => None
+          case Right(value) => Some(value)
+        }
+      })
+      .toList
   }
 }
 
