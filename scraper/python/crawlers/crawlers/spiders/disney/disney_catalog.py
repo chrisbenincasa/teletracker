@@ -34,6 +34,7 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
             if matches:
                 loaded = json.loads(matches.group(1))
                 item = loaded['details'][id]
+                asset_id = item['contentId']
                 title = ''
                 slug = ''
                 for text in item['texts']:
@@ -43,7 +44,17 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
                         elif text['type'] == 'slug':
                             slug = text['content']
 
-                release = item['releases'][0] if 'releases' in item and len(item['releases']) > 0 else None
+                release = item['releases'][0] if 'releases' in item and len(
+                    item['releases']) > 0 else None
+
+                poster_image = None
+                assets = loaded['assets'][asset_id]
+                if assets and assets['images']:
+                    for image in assets['images']:
+                        if image['aspectRatio'] > 0 and image['aspectRatio'] < 1.0 and image['purpose'] == 'tile':
+                            poster_image = image['url']
+                            break
+
                 return DisneyPlusCatalogItem(
                     id=id,
                     title=title,
@@ -52,7 +63,8 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
                     itemType=typ,
                     releaseDate=release['releaseDate'] if release else None,
                     releaseYear=release['releaseYear'] if release else None,
-                    url=response.url
+                    url=response.url,
+                    posterImageUrl=poster_image
                 )
 
 
@@ -65,4 +77,5 @@ class DisneyPlusCatalogItem(scrapy.Item):
     releaseDate = scrapy.Field()
     releaseYear = scrapy.Field()
     url = scrapy.Field()
+    posterImageUrl = scrapy.Field()
     network = 'disneyplus'
