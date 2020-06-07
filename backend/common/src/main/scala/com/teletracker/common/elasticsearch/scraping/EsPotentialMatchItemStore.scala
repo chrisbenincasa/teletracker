@@ -133,7 +133,7 @@ class EsPotentialMatchItemStore @Inject()(
     state: EsPotentialMatchState
   ): Future[Unit] = {
     val updateRequest = new UpdateRequest(indexName, id)
-      .doc(Map("state" -> state.getName).asJava, XContentType.JSON)
+      .doc(Map("state" -> state.getName).asJson.noSpaces, XContentType.JSON)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
     elasticsearchExecutor.update(updateRequest).map(_ => {})
