@@ -49,8 +49,11 @@ FULL_VERSION
 
 *.json
 !item_mapping.json
+!item_mapping_7_4.json
 !people_mapping.json
 !user_item_mapping.json
+!potential_matches_index.json
+!tasks_mapping.json
 !jwks.json
 
 **/run_updates.sh

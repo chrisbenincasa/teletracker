@@ -1,0 +1,140 @@
+{
+  "mappings": {
+    "dynamic": false,
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "last_updated_at": {
+        "type": "date"
+      },
+      "state": {
+        "type": "keyword"
+      },
+      "potential": {
+        "type": "nested",
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "original_title": {
+            "type": "text"
+          },
+          "title": {
+            "type": "text"
+          },
+          "description": {
+            "type": "text"
+          },
+          "release_date": {
+            "type": "date"
+          },
+          "external_ids": {
+            "type": "keyword"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "slug": {
+            "type": "keyword"
+          },
+          "images" : {
+            "properties" : {
+              "id" : {
+                "type" : "keyword"
+              },
+              "image_type" : {
+                "type" : "keyword"
+              },
+              "provider_id" : {
+                "type" : "integer"
+              },
+              "provider_shortname" : {
+                "type" : "keyword"
+              }
+            }
+          }
+        }
+      },
+      "scraped": {
+        "type": "nested",
+        "properties": {
+          "type": {
+            "type": "keyword"
+          },
+          "item": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "text"
+              },
+              "releaseYear": {
+                "type": "integer"
+              },
+              "network": {
+                "type": "keyword"
+              },
+              "status": {
+                "type": "keyword"
+              },
+              "externalId": {
+                "type": "keyword"
+              },
+              "availableDate": {
+                "type": "date"
+              },
+              "description": {
+                "type": "text"
+              },
+              "url": {
+                "type": "keyword"
+              }
+            }
+          },
+          "raw": {
+            "type": "object",
+            "enabled": false
+          }
+        }
+      },
+      "availability" : {
+        "type" : "object",
+        "properties" : {
+          "cost" : {
+            "type" : "double"
+          },
+          "currency" : {
+            "type" : "keyword"
+          },
+          "end_date" : {
+            "type" : "date"
+          },
+          "network_id" : {
+            "type" : "integer"
+          },
+          "network_name": {
+            "type": "keyword"
+          },
+          "offer_type" : {
+            "type" : "keyword"
+          },
+          "presentation_type" : {
+            "type" : "keyword"
+          },
+          "region" : {
+            "type" : "keyword"
+          },
+          "start_date" : {
+            "type" : "date"
+          },
+          "num_seasons_available": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

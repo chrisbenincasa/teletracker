@@ -10,6 +10,7 @@ import java.util.UUID
 
 case class PartialEsItem(
   id: UUID,
+  description: Option[String],
   original_title: Option[String],
   title: String,
   release_date: Option[LocalDate],
@@ -22,9 +23,10 @@ object PartialEsItem {
   implicit val codec: Codec[PartialEsItem] =
     io.circe.generic.semiauto.deriveCodec[PartialEsItem]
 
-  def forEsItem(esItem: EsItem) = {
+  def forEsItem(esItem: EsItem): PartialEsItem = {
     PartialEsItem(
       id = esItem.id,
+      description = esItem.overview,
       original_title = esItem.original_title,
       title = esItem.title.get.head,
       release_date = esItem.release_date,
