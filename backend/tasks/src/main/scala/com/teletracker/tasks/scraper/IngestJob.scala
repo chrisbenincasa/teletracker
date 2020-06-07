@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model._
 import com.teletracker.common.elasticsearch.async.EsIngestQueue
@@ -9,6 +10,7 @@ import com.teletracker.common.elasticsearch.scraping.EsPotentialMatchItemStore
 import com.teletracker.common.elasticsearch.util.ItemUpdateApplier
 import com.teletracker.common.elasticsearch.{
   AvailabilityQueryHelper,
+  ElasticsearchExecutor,
   ItemLookup,
   ItemUpdater
 }
@@ -29,6 +31,7 @@ import com.teletracker.tasks.scraper.IngestJobParser.ParseMode
 import com.teletracker.tasks.scraper.matching.{
   CustomElasticsearchLookup,
   ElasticsearchExternalIdLookup,
+  ElasticsearchFallbackMatching,
   ElasticsearchLookup,
   LookupMethod
 }
@@ -79,13 +82,14 @@ case class IngestJobArgs(
     extends IngestJobArgsLike
 
 abstract class IngestJob[T <: ScrapedItem](
-  implicit protected val codec: Codec[T],
+  implicit codec: Codec[T],
   jsonableArgs: JsonableArgs[IngestJobArgs])
     extends BaseIngestJob[T, IngestJobArgs]()(
       jsonableArgs,
       scala.concurrent.ExecutionContext.Implicits.global,
       codec
-    ) {
+    )
+    with ElasticsearchFallbackMatching[T, IngestJobArgs] {
 
   import diffson._
   import diffson.circe._
@@ -121,6 +125,10 @@ abstract class IngestJob[T <: ScrapedItem](
   private[this] var itemUpdateQueue: EsIngestQueue = _
   @Inject
   private[this] var esPotentialMatchItemStore: EsPotentialMatchItemStore = _
+  @Inject
+  protected var elasticsearchExecutor: ElasticsearchExecutor = _
+  @Inject
+  protected var teletrackerConfig: TeletrackerConfig = _
 
   protected def lookupMethod(): LookupMethod[T] = {
     val externalIdMatchers = if (args.enableExternalIdMatching) {

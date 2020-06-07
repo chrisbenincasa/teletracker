@@ -12,6 +12,7 @@ import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.tasks.scraper.{
   model,
+  BaseIngestJob,
   IngestJob,
   IngestJobArgs,
   IngestJobArgsLike
@@ -34,8 +35,7 @@ import scala.util.Success
 
 case class ElasticsearchFallbackMatcherOptions(
   requireTypeMatch: Boolean,
-  sourceJobName: String,
-  returnResults: Boolean = false)
+  sourceJobName: String)
 
 object ElasticsearchFallbackMatcher {
   trait Factory {
@@ -78,13 +78,6 @@ class ElasticsearchFallbackMatcher @Inject()(
           })
       })
       .map(_.flatten)
-      .map(results => {
-        if (options.returnResults) {
-          results
-        } else {
-          Nil
-        }
-      })
   }
 
   private def performFuzzyTitleMatchSearch[T <: ScrapedItem: Codec](
@@ -307,9 +300,9 @@ class ElasticsearchFallbackMatcher @Inject()(
   }
 }
 
-trait ElasticsearchFallbackMatching[T <: ScrapedItem]
+trait ElasticsearchFallbackMatching[T <: ScrapedItem, Args <: IngestJobArgsLike]
     extends ElasticsearchAccess {
-  self: IngestJob[T] =>
+  self: BaseIngestJob[T, Args] =>
 
   protected def requireTypeMatch: Boolean = true
 
@@ -323,7 +316,7 @@ trait ElasticsearchFallbackMatching[T <: ScrapedItem]
       requireTypeMatch,
       getClass.getSimpleName
     )
-  ) {
+  )(self.executionContext) {
     override protected def recordPotentialMatches[X <: ScrapedItem: Codec](
       potentialMatches: Iterable[(EsItem, X)]
     ): Unit = {
@@ -335,7 +328,7 @@ trait ElasticsearchFallbackMatching[T <: ScrapedItem]
   }
 
   override protected def handleNonMatches(
-    args: IngestJobArgs,
+    args: Args,
     nonMatches: List[T]
   ): Future[List[NonMatchResult[T]]] = {
     matcher.handleNonMatches(

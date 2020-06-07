@@ -25,14 +25,11 @@ import java.net.URI
 import java.time.LocalDate
 
 class IngestHuluCatalog @Inject()(
-  protected val teletrackerConfig: TeletrackerConfig,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater,
-  protected val elasticsearchExecutor: ElasticsearchExecutor)
-    extends IngestJob[HuluScrapeCatalogItem]
-    with ElasticsearchFallbackMatching[HuluScrapeCatalogItem] {
+  protected val itemUpdater: ItemUpdater)
+    extends IngestJob[HuluScrapeCatalogItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HuluCatalog

@@ -26,14 +26,11 @@ import java.time.LocalDate
 import java.util.regex.Pattern
 
 class IngestHboCatalog @Inject()(
-  protected val teletrackerConfig: TeletrackerConfig,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater,
-  protected val elasticsearchExecutor: ElasticsearchExecutor)
-    extends IngestJob[HboScrapedCatalogItem]
-    with ElasticsearchFallbackMatching[HboScrapedCatalogItem] {
+  protected val itemUpdater: ItemUpdater)
+    extends IngestJob[HboScrapedCatalogItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboCatalog

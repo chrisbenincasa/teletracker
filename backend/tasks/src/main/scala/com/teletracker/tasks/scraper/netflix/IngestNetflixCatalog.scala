@@ -52,7 +52,6 @@ class IngestNetflixCatalog @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  protected val elasticsearchExecutor: ElasticsearchExecutor,
   elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory)
     extends IngestJob[NetflixScrapedCatalogItem] {
 
@@ -67,8 +66,7 @@ class IngestNetflixCatalog @Inject()(
   private val elasticsearchMatcherOptions =
     ElasticsearchFallbackMatcherOptions(
       requireTypeMatch = false,
-      getClass.getSimpleName,
-      returnResults = true
+      getClass.getSimpleName
     )
 
   private lazy val fallbackMatcher = elasticsearchFallbackMatcher

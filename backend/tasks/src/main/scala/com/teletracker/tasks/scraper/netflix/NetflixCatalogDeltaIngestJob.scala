@@ -8,19 +8,14 @@ import com.teletracker.common.db.model.{
 }
 import com.teletracker.common.elasticsearch.model.EsAvailability
 import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
-import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
+import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.{
-  ElasticsearchFallbackMatcher,
-  ElasticsearchFallbackMatcherOptions,
-  ElasticsearchLookup
-}
+import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
 import com.teletracker.tasks.scraper.{
   IngestDeltaJob,
   IngestDeltaJobArgs,
-  IngestJobArgs,
   IngestJobParser
 }
 import javax.inject.Inject
@@ -33,8 +28,7 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  elasticsearchLookup: ElasticsearchLookup,
-  elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory)
+  elasticsearchLookup: ElasticsearchLookup)
     extends IngestDeltaJob[NetflixScrapedCatalogItem](elasticsearchLookup) {
 
   override protected def scrapeItemType: ScrapeItemType =
@@ -42,19 +36,6 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
 
   override protected val networkNames: Set[String] = Set("netflix")
   override protected val externalSource: ExternalSource = ExternalSource.Netflix
-
-  private val elasticsearchMatcherOptions =
-    ElasticsearchFallbackMatcherOptions(
-      requireTypeMatch = false,
-      getClass.getSimpleName
-    )
-
-  private lazy val fallbackMatcher = elasticsearchFallbackMatcher
-    .create(elasticsearchMatcherOptions)
-
-//  prerun {
-//    registerArtifact(fallbackMatcher.outputFile)
-//  }
 
   override protected def createAvailabilities(
     networks: Set[StoredNetwork],
@@ -86,7 +67,8 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
     args: IngestDeltaJobArgs,
     nonMatches: List[NetflixScrapedCatalogItem]
   ): Future[List[NonMatchResult[NetflixScrapedCatalogItem]]] = {
-    fallbackMatcher
+    elasticsearchFallbackMatcher
+      .create(getElasticsearchFallbackMatcherOptions)
       .handleNonMatches(
         args,
         nonMatches

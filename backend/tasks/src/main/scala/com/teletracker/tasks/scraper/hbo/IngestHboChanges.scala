@@ -32,14 +32,11 @@ import java.time.{
 object IngestHboChanges extends IngestJobApp[IngestHboChanges]
 
 class IngestHboChanges @Inject()(
-  protected val teletrackerConfig: TeletrackerConfig,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater,
-  protected val elasticsearchExecutor: ElasticsearchExecutor)
-    extends IngestJob[HboScrapeChangesItem]
-    with ElasticsearchFallbackMatching[HboScrapeChangesItem] {
+  protected val itemUpdater: ItemUpdater)
+    extends IngestJob[HboScrapeChangesItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboChanges

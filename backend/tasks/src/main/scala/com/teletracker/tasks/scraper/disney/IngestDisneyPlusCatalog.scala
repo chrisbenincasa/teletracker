@@ -22,11 +22,8 @@ class IngestDisneyPlusCatalog @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater,
-  protected val elasticsearchExecutor: ElasticsearchExecutor,
-  protected val teletrackerConfig: TeletrackerConfig)
-    extends IngestJob[DisneyPlusCatalogItem]
-    with ElasticsearchFallbackMatching[DisneyPlusCatalogItem] {
+  protected val itemUpdater: ItemUpdater)
+    extends IngestJob[DisneyPlusCatalogItem] {
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.DisneyPlusCatalog
 

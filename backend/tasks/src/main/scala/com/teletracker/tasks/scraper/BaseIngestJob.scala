@@ -13,7 +13,11 @@ import com.teletracker.common.model.scraping.{
 }
 import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
 import com.teletracker.common.util.AsyncStream
-import com.teletracker.tasks.scraper.matching.LookupMethod
+import com.teletracker.tasks.scraper.matching.{
+  ElasticsearchFallbackMatcher,
+  ElasticsearchFallbackMatcherOptions,
+  LookupMethod
+}
 import io.circe.Codec
 import io.circe.syntax._
 import javax.inject.Inject
@@ -31,14 +35,17 @@ abstract class BaseIngestJob[
   T <: ScrapedItem,
   IngestJobArgsType <: IngestJobArgsLike: JsonableArgs
 ](
-)(implicit executionContext: ExecutionContext,
-  codec: Codec[T])
+)(implicit protected val executionContext: ExecutionContext,
+  protected val codec: Codec[T])
     extends TypedTeletrackerTask[IngestJobArgsType] {
 
   @Inject
   private[this] var teletrackerConfig: TeletrackerConfig = _
   @Inject
   private[this] var s3: S3Client = _
+  @Inject
+  protected var elasticsearchFallbackMatcher
+    : ElasticsearchFallbackMatcher.Factory = _
 
   protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
   protected lazy val today = LocalDate.now()
@@ -240,7 +247,28 @@ abstract class BaseIngestJob[
   protected def handleNonMatches(
     args: IngestJobArgsType,
     nonMatches: List[T]
-  ): Future[List[NonMatchResult[T]]] = Future.successful(Nil)
+  ): Future[List[NonMatchResult[T]]] = {
+    elasticsearchFallbackMatcher
+      .create(getElasticsearchFallbackMatcherOptions)
+      .handleNonMatches(
+        args,
+        nonMatches
+      )
+      .map(results => {
+        writePotentialMatches(results.map {
+          case result => result.esItem -> result.originalScrapedItem
+        })
+
+        // Don't return yet...
+        Nil
+      })
+  }
+
+  protected def getElasticsearchFallbackMatcherOptions =
+    ElasticsearchFallbackMatcherOptions(
+      requireTypeMatch = true,
+      sourceJobName = getClass.getSimpleName
+    )
 
   protected def writeMissingItems(items: List[T]): Unit = synchronized {
     items.foreach(item => {

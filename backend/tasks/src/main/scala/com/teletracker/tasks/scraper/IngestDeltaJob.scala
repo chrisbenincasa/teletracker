@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.async.EsIngestQueue
@@ -9,7 +10,11 @@ import com.teletracker.common.elasticsearch.model.{
   EsExternalId,
   EsItem
 }
-import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.elasticsearch.{
+  ElasticsearchExecutor,
+  ItemLookup,
+  ItemUpdater
+}
 import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
@@ -21,6 +26,7 @@ import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
 import com.teletracker.tasks.scraper.matching.{
   CustomElasticsearchLookup,
   ElasticsearchExternalIdLookup,
+  ElasticsearchFallbackMatching,
   ElasticsearchLookup,
   LookupMethod
 }
@@ -95,7 +101,8 @@ abstract class IngestDeltaJobLike[
       typedArgs,
       scala.concurrent.ExecutionContext.Implicits.global,
       codec
-    ) {
+    )
+    with ElasticsearchFallbackMatching[T, IngestJobArgs] {
 
   protected val singleThreadExecutor =
     Executors.newSingleThreadScheduledExecutor()
@@ -111,6 +118,9 @@ abstract class IngestDeltaJobLike[
   private[this] var itemUpdateQueue: EsIngestQueue = _
   @Inject
   private[this] var esExternalIdMapper: ElasticsearchExternalIdMappingStore = _
+
+  @Inject protected var teletrackerConfig: TeletrackerConfig = _
+  @Inject protected var elasticsearchExecutor: ElasticsearchExecutor = _
 
   protected def s3: S3Client
   protected def itemLookup: ItemLookup

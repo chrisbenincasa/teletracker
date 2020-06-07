@@ -23,15 +23,12 @@ import java.util.regex.Pattern
 import scala.concurrent.Future
 
 class IngestHboMaxCatalog @Inject()(
-  protected val teletrackerConfig: TeletrackerConfig,
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
-  protected val elasticsearchExecutor: ElasticsearchExecutor,
   externalIdMappingStore: ElasticsearchExternalIdMappingStore)
-    extends IngestJob[HboMaxCatalogItem]
-    with ElasticsearchFallbackMatching[HboMaxCatalogItem] {
+    extends IngestJob[HboMaxCatalogItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboMaxCatalog

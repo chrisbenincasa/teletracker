@@ -31,8 +31,7 @@ class IngestNetflixCatalogMatchFile @Inject()(
   protected val s3: S3Client,
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater,
-  protected val elasticsearchExecutor: ElasticsearchExecutor)
+  protected val itemUpdater: ItemUpdater)
     extends IngestMatchFileJob[NetflixScrapedCatalogItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
