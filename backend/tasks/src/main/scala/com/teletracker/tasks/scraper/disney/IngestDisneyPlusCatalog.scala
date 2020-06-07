@@ -47,34 +47,34 @@ class IngestDisneyPlusCatalog @Inject()(
     }
   }
 
-  override protected def sanitizeItem(
-    item: DisneyPlusCatalogItem
-  ): DisneyPlusCatalogItem = {
-    Seq(sanitizeSeriesTitle(_), fixItemType(_)).reduce(_.andThen(_)).apply(item)
-  }
-
-  private def sanitizeSeriesTitle(
-    item: DisneyPlusCatalogItem
-  ): DisneyPlusCatalogItem = {
-    if (item.title.endsWith(" - Series")) {
-      item.copy(
-        name = item.title.replaceAll(" - Series", "").trim,
-        `type` = ItemType.Show
-      )
-    } else {
-      item
-    }
-  }
-
-  private def fixItemType(
-    item: DisneyPlusCatalogItem
-  ): DisneyPlusCatalogItem = {
-    item.url match {
-      case Some(value) if value.contains("series") && item.isMovie =>
-        item.copy(`type` = ItemType.Show)
-      case _ => item
-    }
-  }
+//  override protected def sanitizeItem(
+//    item: DisneyPlusCatalogItem
+//  ): DisneyPlusCatalogItem = {
+//    Seq(sanitizeSeriesTitle(_), fixItemType(_)).reduce(_.andThen(_)).apply(item)
+//  }
+//
+//  private def sanitizeSeriesTitle(
+//    item: DisneyPlusCatalogItem
+//  ): DisneyPlusCatalogItem = {
+//    if (item.title.endsWith(" - Series")) {
+//      item.copy(
+//        name = item.title.replaceAll(" - Series", "").trim,
+//        `type` = ItemType.Show
+//      )
+//    } else {
+//      item
+//    }
+//  }
+//
+//  private def fixItemType(
+//    item: DisneyPlusCatalogItem
+//  ): DisneyPlusCatalogItem = {
+//    item.url match {
+//      case Some(value) if value.contains("series") && item.isMovie =>
+//        item.copy(`type` = ItemType.Show)
+//      case _ => item
+//    }
+//  }
 
   override protected def isAvailable(
     item: DisneyPlusCatalogItem,

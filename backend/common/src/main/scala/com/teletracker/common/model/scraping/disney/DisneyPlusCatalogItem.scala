@@ -4,19 +4,20 @@ import com.teletracker.common.db.model.ItemType
 import com.teletracker.common.model.scraping.ScrapedItem
 import com.teletracker.common.util.json.circe._
 import io.circe.generic.JsonCodec
+import java.time.LocalDate
 
 @JsonCodec
 case class DisneyPlusCatalogItem(
   id: String,
-  name: String,
-  releaseDate: Option[Int],
-  `type`: ItemType,
-  externalId: Option[String],
+  title: String,
+  releaseDate: Option[LocalDate],
+  releaseYear: Option[Int],
+  itemType: ItemType,
   description: Option[String],
+  slug: Option[String],
   override val url: Option[String])
     extends ScrapedItem {
-
-  override def title: String = name
+  override def externalId: Option[String] = Some(id)
 
   override def availableDate: Option[String] = None
 
@@ -26,9 +27,7 @@ case class DisneyPlusCatalogItem(
 
   override def status: String = "Available"
 
-  override def isMovie: Boolean = `type` == ItemType.Movie
+  override def isMovie: Boolean = itemType == ItemType.Movie
 
-  override def isTvShow: Boolean = `type` == ItemType.Show
-
-  override def releaseYear: Option[Int] = releaseDate
+  override def isTvShow: Boolean = itemType == ItemType.Show
 }

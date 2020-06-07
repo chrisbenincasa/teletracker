@@ -346,7 +346,12 @@ abstract class IngestJob[T <: ScrapedItem](
   ): Unit = {
     super.writePotentialMatches(potentialMatches)
 
-    if (!args.dryRun) {
+    val writePotentialMatchesToEs = rawArgs.valueOrDefault(
+      "writePotentialMatchesToEs",
+      false
+    )
+
+    if (!args.dryRun || writePotentialMatchesToEs) {
       val networks = getNetworksOrExit()
 
       val items = for {
