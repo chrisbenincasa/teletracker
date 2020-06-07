@@ -54,13 +54,14 @@ class EsPotentialMatchItemStore @Inject()(
             request.state.getOrElse(EsPotentialMatchState.Unmatched).toString
           )
       )
-      .applyOptional(request.scraperType)(
+      .applyOptional(request.scraperTypes.filter(_.nonEmpty))(
         (builder, typ) =>
           builder.must(
             QueryBuilders
               .nestedQuery(
                 "scraped",
-                QueryBuilders.termQuery("scraped.type", typ.toString),
+                QueryBuilders
+                  .termsQuery("scraped.type", typ.map(_.toString).asJava),
                 ScoreMode.Avg
               )
           )
@@ -108,13 +109,14 @@ class EsPotentialMatchItemStore @Inject()(
         QueryBuilders
           .termQuery("state", EsPotentialMatchState.Unmatched.toString)
       )
-      .applyOptional(request.scraperType)(
+      .applyOptional(request.scraperTypes.filter(_.nonEmpty))(
         (builder, typ) =>
           builder.must(
             QueryBuilders
               .nestedQuery(
                 "scraped",
-                QueryBuilders.termQuery("scraped.type", typ.toString),
+                QueryBuilders
+                  .termsQuery("scraped.type", typ.map(_.toString).asJava),
                 ScoreMode.Avg
               )
           )
@@ -141,7 +143,7 @@ class EsPotentialMatchItemStore @Inject()(
 }
 
 case class PotentialMatchItemSearch(
-  scraperType: Option[ScrapeItemType],
+  scraperTypes: Option[Set[ScrapeItemType]],
   state: Option[EsPotentialMatchState],
   limit: Int,
   bookmark: Option[Bookmark])

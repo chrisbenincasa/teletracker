@@ -1,7 +1,7 @@
 package com.teletracker.service.controllers
 
 import com.teletracker.common.db.Bookmark
-import com.teletracker.common.db.model.ItemType
+import com.teletracker.common.db.model.{ItemType, SupportedNetwork}
 import com.teletracker.common.elasticsearch.model.EsPotentialMatchState
 import com.teletracker.common.elasticsearch.scraping.{
   EsPotentialMatchItemStore,
@@ -15,7 +15,7 @@ import com.teletracker.common.elasticsearch.{
 }
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.{DataResponse, Paging}
-import com.teletracker.common.util.HasThingIdOrSlug
+import com.teletracker.common.util.{HasThingIdOrSlug, NetworkCache}
 import com.teletracker.service.auth.AdminFilter
 import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
@@ -40,10 +40,33 @@ class AdminController @Inject()(
   filter[AdminFilter].prefix("/api/v1/internal") {
     prefix("/potential_matches") {
       get("/search") { req: PotentialMatchSearchRequest =>
+        val scrapeSources = if (req.networks.isEmpty) {
+          None
+        } else {
+          val scrapeItemTypes =
+            req.networks.map(SupportedNetwork.fromString).flatMap {
+              case SupportedNetwork.Netflix =>
+                Set(
+                  ScrapeItemType.NetflixCatalog,
+                  ScrapeItemType.NetflixOriginalsArriving
+                )
+              case SupportedNetwork.Hulu => Set(ScrapeItemType.HuluCatalog)
+              case SupportedNetwork.Hbo =>
+                Set(ScrapeItemType.HboCatalog, ScrapeItemType.HboChanges)
+              case SupportedNetwork.HboMax =>
+                Set(ScrapeItemType.HboChanges, ScrapeItemType.HboMaxCatalog)
+              case SupportedNetwork.DisneyPlus =>
+                Set(ScrapeItemType.DisneyPlusCatalog)
+            }
+
+          Some(scrapeItemTypes)
+        }
+
         esPotentialMatchItemStore
           .search(
             PotentialMatchItemSearch(
-              scraperType = req.scraperItemType,
+              scraperTypes =
+                scrapeSources.orElse(req.scraperItemType.map(Set(_))),
               state = req.matchState.map(EsPotentialMatchState.fromString),
               limit = req.limit,
               bookmark = req.bookmark.map(Bookmark.parse)
@@ -142,6 +165,7 @@ class AdminController @Inject()(
 
 case class PotentialMatchSearchRequest(
   @QueryParam scraperItemType: Option[ScrapeItemType],
+  @QueryParam(commaSeparatedList = true) networks: Set[String] = Set.empty,
   @QueryParam matchState: Option[String],
   @QueryParam limit: Int = 20,
   @QueryParam bookmark: Option[String])
