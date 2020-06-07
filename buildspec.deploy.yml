@@ -22,6 +22,6 @@ phases:
       - terraform version
   build:
     commands:
-      - cd $CODEBUILD_SRC_DIR/terraform/qa-aws
+      - cd $CODEBUILD_SRC_DIR/terraform/qa/us-west-2
       - terraform init
       - terraform plan

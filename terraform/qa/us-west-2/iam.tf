@@ -1,6 +1,6 @@
 resource "aws_iam_policy" "kms_encrypt_decrypt_policy" {
-  name = "KMS_Encrypt_Decrypt"
-  path = "/"
+  name        = "KMS_Encrypt_Decrypt"
+  path        = "/"
   description = "Allows for KMS Encrypt and Decrypt using all CMK"
 
   policy = <<EOF
@@ -21,8 +21,8 @@ EOF
 }
 
 resource "aws_iam_policy" "lambda_execute" {
-  name = "Lambda_Execute"
-  path = "/"
+  name        = "Lambda_Execute"
+  path        = "/"
   description = "Ability to trigger Lambdas"
 
   policy = <<EOF
@@ -42,7 +42,7 @@ EOF
 }
 
 resource "aws_iam_role" "cloudbuild-terraform-role" {
-  name = "CloudbuildTerraformRole"
+  name               = "CloudbuildTerraformRole"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -61,8 +61,8 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "cloudbuild-terraform-s3-policy" {
-  policy_arn = data.aws_iam_policy.sqs_full_access_policy.arn
-  role = aws_iam_role.cloudbuild-terraform-role.name
+  policy_arn = data.aws_iam_policy.s3_full_access_policy.arn
+  role       = aws_iam_role.cloudbuild-terraform-role.name
 }
 
 data "aws_iam_policy" "ssm_read_only_policy" {
@@ -78,7 +78,7 @@ data "aws_iam_policy" "lambda_basic_execution" {
 }
 
 resource "aws_iam_policy" "datadog_collect_policy" {
-  name = "DatadogDataCollect"
+  name   = "DatadogDataCollect"
   policy = <<EOF
 {
   "Statement": [
@@ -159,7 +159,7 @@ EOF
 }
 
 resource "aws_iam_role" "datadog-collect-role" {
-  name = "DatadogCollectRole"
+  name        = "DatadogCollectRole"
   description = "Allows read-only access by datadog to collect metrics."
 
   assume_role_policy = <<EOF
