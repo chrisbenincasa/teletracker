@@ -41,6 +41,26 @@ object DenormalizedItemUpdater {
     )
   }
 
+  private[denorm] def getUpdateUserItemsQuery(
+    item: EsItem,
+    indexName: String
+  ): UpdateByQueryRequest = {
+    val matchingItems =
+      QueryBuilders.termQuery("item_id", item.id.toString)
+
+    val req = new UpdateByQueryRequest(
+      indexName
+    )
+    req.setQuery(matchingItems)
+    req.setScript(
+      UpdateDenormalizedItemScript(item.toDenormalizedUserItem)
+    )
+    req.setRequestsPerSecond(25)
+    req.setConflicts("proceed")
+
+    req
+  }
+
   private def itemAsMap(
     item: EsUserDenormalizedItem
   ): java.util.Map[String, Any] = {
@@ -237,21 +257,12 @@ class DenormalizedItemUpdater @Inject()(
   }
 
   def updateUserItems(item: EsItem): Future[BulkByScrollResponse] = {
-    val matchingItems =
-      QueryBuilders.termQuery("item_id", item.id.toString)
-
-    val updateByQueryRequest = new UpdateByQueryRequest(
-      teletrackerConfig.elasticsearch.user_items_index_name
+    elasticsearchExecutor.updateByQuery(
+      getUpdateUserItemsQuery(
+        item,
+        teletrackerConfig.elasticsearch.user_items_index_name
+      )
     )
-
-    updateByQueryRequest.setQuery(matchingItems)
-    updateByQueryRequest.setScript(
-      UpdateDenormalizedItemScript(item.toDenormalizedUserItem)
-    )
-    updateByQueryRequest.setConflicts("proceed")
-    updateByQueryRequest.setRequestsPerSecond(25)
-
-    elasticsearchExecutor.updateByQuery(updateByQueryRequest)
   }
 
   private def updateCastMember(

@@ -28,7 +28,7 @@ class FixBrokenListItems @Inject()(
 )(implicit executionContext: ExecutionContext)
     extends UntypedTeletrackerTask {
   override protected def runInternal(): Unit = {
-    val allUserItems = rawJsonScroller
+    val allUserItems = userItemsScroller
       .start(
         teletrackerConfig.elasticsearch.user_items_index_name,
         QueryBuilders.matchAllQuery()
@@ -38,33 +38,74 @@ class FixBrokenListItems @Inject()(
 
     allUserItems
       .filter(j => {
-        val id = j.asObject.get.apply("id").get.asString.get
-        rawArgs.value[String]("id").forall(_ == id)
+//        val id = j.asObject.get.apply("id").get.asString.get
+        rawArgs.value[String]("id").forall(_ == j.id)
       })
-      .foreach(blob => {
-        val bustedKey = blob.asObject.get
-          .filter {
-            case (_, json) =>
-              json.isString && json.asString.get == "JSON"
+      .foreach(item => {
+        //        val obj = item.asObject.get.toMap
+        //        obj("item").asObject match {
+        //          case Some(currentItem) =>
+        //            currentItem.apply("item") match {
+        //              case Some(esItem) =>
+        //                logger.info(s"Fixing item with id = ${obj("id").asString.get}")
+        //                val newOne = obj.updated("item", esItem).asJson
+        //                denormalizedItemUpdater
+        //                  .indexUserItem(obj("id").asString.get, newOne)
+        //                  .await()
+        //              case None =>
+        //            }
+        //          case None =>
+        //        }
+        if (item.item.isEmpty) {
+          itemLookup
+            .lookupItem(
+              Left(item.item_id),
+              None,
+              shouldMaterializeRecommendations = false,
+              shouldMateralizeCredits = false
+            )
+            .await() match {
+            case Some(value) =>
+              logger.info(
+                s"Updating user item: ${item.id} with item id = ${value.rawItem.id}"
+              )
+              val newItem =
+                item.copy(item = Some(value.rawItem.toDenormalizedUserItem))
+              denormalizedItemUpdater.updateUserItem(newItem).await()
+            case None =>
           }
-          .toMap
-          .headOption
-
-        bustedKey match {
-          case Some((key, _)) =>
-            parse(key) match {
-              case Left(value) =>
-              case Right(value) =>
-                val newItem =
-                  (blob.asObject.get.toMap - key).updated("item", value)
-                val newJson = newItem.asJson
-                denormalizedItemUpdater
-                  .indexUserItem(newItem("id").asString.get, newJson)
-                  .await()
-            }
-
-          case None =>
         }
+      })
+
+//    allUserItems
+//      .filter(j => {
+//        val id = j.asObject.get.apply("id").get.asString.get
+//        rawArgs.value[String]("id").forall(_ == id)
+//      })
+//      .foreach(blob => {
+//        val bustedKey = blob.asObject.get
+//          .filter {
+//            case (_, json) =>
+//              json.isString && json.asString.get == "JSON"
+//          }
+//          .toMap
+//          .headOption
+//
+//        bustedKey match {
+//          case Some((key, _)) =>
+//            parse(key) match {
+//              case Left(value) =>
+//              case Right(value) =>
+//                val newItem =
+//                  (blob.asObject.get.toMap - key).updated("item", value)
+//                val newJson = newItem.asJson
+//                denormalizedItemUpdater
+//                  .indexUserItem(newItem("id").asString.get, newJson)
+//                  .await()
+//            }
+//
+//          case None =>
+//        }
 
 //      bustedKey match {
 //        case Some((item, _)) =>
@@ -86,6 +127,6 @@ class FixBrokenListItems @Inject()(
 //        case None =>
 //          logger.warn("Could not find matching busted key")
 //      }
-      })
+//      })
   }
 }
