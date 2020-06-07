@@ -11,6 +11,7 @@ import com.teletracker.common.util.{AsyncStream, IdOrSlug}
 import io.circe.Json
 import io.circe.syntax._
 import javax.inject.Inject
+import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.support.WriteRequest
 import org.elasticsearch.action.update.UpdateRequest
 import org.elasticsearch.common.xcontent.XContentType
@@ -84,6 +85,20 @@ class DenormalizedItemUpdater @Inject()(
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
 
     elasticsearchExecutor.update(updateDenormRequest).map(_ => {})
+  }
+
+  def indexUserItem(
+    id: String,
+    item: Json
+  ): Future[Unit] = {
+    val updateDenormRequest =
+      new IndexRequest(
+        teletrackerConfig.elasticsearch.user_items_index_name
+      ).id(id)
+        .source(item.dropNullValues.noSpaces, XContentType.JSON)
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+
+    elasticsearchExecutor.index(updateDenormRequest).map(_ => {})
   }
 
   def fullyDenormalizeItem(args: DenormalizeItemTaskArgs): Future[Unit] = {

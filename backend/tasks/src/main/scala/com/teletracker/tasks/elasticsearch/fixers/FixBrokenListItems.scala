@@ -59,7 +59,7 @@ class FixBrokenListItems @Inject()(
                   (blob.asObject.get.toMap - key).updated("item", value)
                 val newJson = newItem.asJson
                 denormalizedItemUpdater
-                  .updateUserItem(newItem("id").asString.get, newJson)
+                  .indexUserItem(newItem("id").asString.get, newJson)
                   .await()
             }
 
