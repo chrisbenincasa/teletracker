@@ -54,7 +54,7 @@ class Retry(
               Future.failed(exception)
             case head #:: tail =>
               logger.info(
-                s"Attempt $attempt failed. Retrying after ${head.toSeconds} seconds."
+                s"Attempt ${attempt + 1} failed. Retrying after ${head.toSeconds} seconds."
               )
               val p = Promise[T]()
               scheduler.schedule(new Runnable {

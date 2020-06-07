@@ -23,7 +23,8 @@ case class HuluScrapeCatalogItem(
   genres: Option[List[String]],
   description: Option[String],
   additionalServiceRequired: Option[String],
-  episodes: Option[List[HuluScrapeEpisode]])
+  episodes: Option[List[HuluScrapeEpisode]],
+  override val posterImageUrl: Option[String])
     extends ScrapedItem {
   override def category: Option[String] = None
   override def status: String = ""

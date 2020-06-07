@@ -103,7 +103,13 @@ class ElasticsearchExecutor @Inject()(
   protected def withListener[T](f: ActionListener[T] => Unit): Future[T] = {
     val (listener, promise) = makeListener[T]
     f(listener)
+
+    lazy val exception = new ElasticsearchRequestException(
+      "Elasticsearch request failed"
+    )
+
     promise.future
+      .transform(identity, e => exception.copy(cause = e))
   }
 
   protected def withRetryingListener[T](
@@ -130,7 +136,11 @@ class ElasticsearchExecutor @Inject()(
   }
 }
 
-class ElasticsearchRequestException(
+case class ElasticsearchRequestException(
   message: String,
   cause: Throwable)
-    extends Exception(message, cause)
+    extends Exception(message, cause) {
+  def this(message: String) {
+    this(message, null)
+  }
+}

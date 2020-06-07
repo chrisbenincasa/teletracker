@@ -91,6 +91,9 @@
               },
               "url": {
                 "type": "keyword"
+              },
+              "posterImageUrl": {
+                "type": "keyword"
               }
             }
           },
