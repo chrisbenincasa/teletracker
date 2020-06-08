@@ -32,6 +32,7 @@ export const getPotentialMatches = async (request: SearchMatchRequest) => {
     params: {
       admin_key: process.env.REACT_APP_ADMIN_KEY,
       bookmark: request.bookmark,
+      status: request.state,
     },
   });
 };

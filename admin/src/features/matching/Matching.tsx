@@ -1,17 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { RouteComponentProps } from '@reach/router';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  fetchMatchesAsync,
-  selectMatchItems,
-  updatePotentialMatchAsync,
-} from './matchingSlice';
+import { fetchMatchesAsync, updatePotentialMatchAsync } from './matchingSlice';
 import {
   Button,
   ButtonGroup,
   Card,
   CardActionArea,
-  CardActions,
   CardContent,
   CardMedia,
   Chip,
@@ -22,11 +17,11 @@ import {
   Paper,
   Typography,
 } from '@material-ui/core';
-import { PotentialMatchState, ScrapeItemType } from '../../types';
+import { PotentialMatchState } from '../../types';
 import { useDebouncedCallback } from 'use-debounce';
 import { RootState } from '../../app/store';
 import InfiniteScroll from 'react-infinite-scroller';
-import { Link, Router } from '@reach/router';
+import { Link } from '@reach/router';
 
 const useStyles = makeStyles((theme) =>
   createStyles({
@@ -104,7 +99,6 @@ export default function Matching(props: Props) {
   const items = useSelector((state: RootState) =>
     state.matching.items.filter((item) => item.state === status),
   );
-
   const itemsLoading = useSelector(
     (state: RootState) => state.matching.loading.matches,
   );
@@ -114,8 +108,12 @@ export default function Matching(props: Props) {
   );
 
   useEffect(() => {
-    dispatch(fetchMatchesAsync());
-  }, []);
+    dispatch(
+      fetchMatchesAsync({
+        state: status,
+      }),
+    );
+  }, [status]);
 
   const markAsNonMatch = useCallback((id: string) => {
     dispatch(
@@ -136,9 +134,7 @@ export default function Matching(props: Props) {
   }, []);
 
   const [loadMoreResults] = useDebouncedCallback(() => {
-    console.log(itemsLoading);
     if (!itemsLoading) {
-      console.log('2');
       dispatch(
         fetchMatchesAsync({
           bookmark: bookmark,
@@ -226,8 +222,18 @@ export default function Matching(props: Props) {
                   <Typography gutterBottom variant="h5" component="h2">
                     {item.scraped.item.title}
                   </Typography>
-                  <Chip label={item.scraped.item.itemType} />
-                  <Chip label={item.scraped.item.releaseYear} />
+                  <Chip
+                    label={item.scraped.item.itemType}
+                    className={classes.chip}
+                  />
+                  <Chip
+                    label={item.scraped.item.releaseYear}
+                    className={classes.chip}
+                  />
+                  <Chip
+                    label={item.scraped.item.network}
+                    className={classes.chip}
+                  />
                   <Typography
                     variant="body2"
                     color="textSecondary"
