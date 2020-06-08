@@ -11,6 +11,7 @@ const instance = axios.create({
 
 export type SearchMatchRequest = DeepReadonlyObject<{
   bookmark?: string;
+  state?: PotentialMatchState;
 }>;
 
 export type UpdateMatchRequest = DeepReadonlyObject<{
@@ -31,6 +32,7 @@ export const getPotentialMatches = async (request: SearchMatchRequest) => {
     params: {
       admin_key: process.env.REACT_APP_ADMIN_KEY,
       bookmark: request.bookmark,
+      matchState: request.state,
     },
   });
 };

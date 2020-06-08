@@ -82,7 +82,7 @@ function App() {
       <div className={classes.toolbar} />
       <Divider />
       <List>
-        <Link to="/matching">
+        <Link to="/matching/pending">
           <ListItem button>
             <ListItemIcon>
               <LiveTv />
@@ -155,7 +155,7 @@ function App() {
       <main className={classes.content}>
         <div className={classes.toolbar} />
         <Router>
-          <Matching path="/matching" />
+          <Matching path="/matching/:filterType" />
         </Router>
       </main>
     </div>

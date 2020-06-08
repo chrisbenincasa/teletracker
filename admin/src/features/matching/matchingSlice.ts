@@ -27,6 +27,7 @@ type SearchMatchPayload = DeepReadonlyObject<{
   bookmark?: string;
   total?: number;
   append: boolean;
+  state?: PotentialMatchState;
 }>;
 
 type UpdateMatchSuccessPayload = DeepReadonlyObject<{
@@ -103,6 +104,7 @@ export const fetchMatchesAsync = (
           append: request.bookmark !== undefined,
           bookmark: response.data.paging?.bookmark,
           total: response.data.paging?.total,
+          state: request.state,
         }),
       );
   } catch (e) {
