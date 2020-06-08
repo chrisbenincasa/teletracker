@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { RouteComponentProps } from '@reach/router';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -8,6 +8,7 @@ import {
 } from './matchingSlice';
 import {
   Button,
+  ButtonGroup,
   Card,
   CardActionArea,
   CardActions,
@@ -25,6 +26,7 @@ import { PotentialMatchState, ScrapeItemType } from '../../types';
 import { useDebouncedCallback } from 'use-debounce';
 import { RootState } from '../../app/store';
 import InfiniteScroll from 'react-infinite-scroller';
+import { Link, Router } from '@reach/router';
 
 const useStyles = makeStyles((theme) =>
   createStyles({
@@ -86,6 +88,9 @@ const useStyles = makeStyles((theme) =>
       flexWrap: 'wrap',
       height: 650,
     },
+    navigationType: {
+      marginBottom: theme.spacing(2),
+    },
   }),
 );
 
@@ -94,7 +99,12 @@ type Props = RouteComponentProps;
 export default function Matching(props: Props) {
   const classes = useStyles();
   const dispatch = useDispatch();
-  const items = useSelector(selectMatchItems);
+  const [status, setStatus] = useState(PotentialMatchState.Unmatched);
+
+  const items = useSelector((state: RootState) =>
+    state.matching.items.filter((item) => item.state === status),
+  );
+
   const itemsLoading = useSelector(
     (state: RootState) => state.matching.loading.matches,
   );
@@ -126,10 +136,13 @@ export default function Matching(props: Props) {
   }, []);
 
   const [loadMoreResults] = useDebouncedCallback(() => {
+    console.log(itemsLoading);
     if (!itemsLoading) {
+      console.log('2');
       dispatch(
         fetchMatchesAsync({
           bookmark: bookmark,
+          state: status,
         }),
       );
     }
@@ -144,8 +157,8 @@ export default function Matching(props: Props) {
     const scrapedPoster = item.scraped.item.posterImageUrl;
 
     return (
-      <Grid item xs={4}>
-        <Paper elevation={3} className={classes.paper} key={item.id}>
+      <Grid item xs={4} key={item.id}>
+        <Paper elevation={3} className={classes.paper}>
           <div className={classes.cardWrapper}>
             <Card className={classes.card}>
               <CardActionArea component="a" href={ttLink} target="_blank">
@@ -255,20 +268,52 @@ export default function Matching(props: Props) {
   });
 
   return (
-    <InfiniteScroll
-      pageStart={0}
-      loadMore={loadMoreResults}
-      hasMore={
-        totalItems !== undefined
-          ? items.length < totalItems
-          : bookmark === undefined
-      }
-      useWindow
-      threshold={300}
-    >
-      <Grid container spacing={3}>
-        <div className={classes.wrapper}>{cards}</div>
-      </Grid>
-    </InfiniteScroll>
+    <React.Fragment>
+      <ButtonGroup
+        color="primary"
+        aria-label="contained primary button group"
+        className={classes.navigationType}
+      >
+        <Button
+          variant={status === 'unmatched' ? 'contained' : undefined}
+          component={Link}
+          to="/matching/pending"
+          onClick={() => setStatus(PotentialMatchState.Unmatched)}
+        >
+          Pending Approval
+        </Button>
+        <Button
+          variant={status === 'matched' ? 'contained' : undefined}
+          component={Link}
+          to="/matching/approved"
+          onClick={() => setStatus(PotentialMatchState.Matched)}
+        >
+          Approved
+        </Button>
+        <Button
+          variant={status === 'nonmatch' ? 'contained' : undefined}
+          component={Link}
+          to="/matching/rejected"
+          onClick={() => setStatus(PotentialMatchState.NonMatch)}
+        >
+          Rejected
+        </Button>
+      </ButtonGroup>
+      <InfiniteScroll
+        pageStart={0}
+        loadMore={loadMoreResults}
+        hasMore={
+          totalItems !== undefined
+            ? items.length < totalItems
+            : bookmark === undefined
+        }
+        useWindow
+        threshold={300}
+      >
+        <Grid container spacing={3}>
+          <div className={classes.wrapper}>{cards}</div>
+        </Grid>
+      </InfiniteScroll>
+    </React.Fragment>
   );
 }

@@ -11,6 +11,7 @@ const instance = axios.create({
 
 export type SearchMatchRequest = DeepReadonlyObject<{
   bookmark?: string;
+  state?: PotentialMatchState;
 }>;
 
 export type UpdateMatchRequest = DeepReadonlyObject<{
