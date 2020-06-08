@@ -36,7 +36,7 @@ class IngestHboCatalog @Inject()(
     ScrapeItemType.HboCatalog
 
   override protected def externalSources: List[ExternalSource] =
-    List(ExternalSource.HboGo, ExternalSource.HboNow)
+    List(ExternalSource.HboGo, ExternalSource.HboMax)
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
@@ -73,7 +73,7 @@ class IngestHboCatalog @Inject()(
   ): Map[ExternalSource, String] = {
     Map(
       ExternalSource.HboGo -> item.externalId,
-      ExternalSource.HboNow -> item.externalId
+      ExternalSource.HboMax -> item.externalId
     ).collect {
       case (k, Some(v)) => k -> v
     }
