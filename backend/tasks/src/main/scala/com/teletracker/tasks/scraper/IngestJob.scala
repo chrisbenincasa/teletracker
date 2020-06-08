@@ -108,9 +108,6 @@ abstract class IngestJob[T <: ScrapedItem](
   protected def s3: S3Client
   protected def networkCache: NetworkCache
 
-  protected def presentationTypes: Set[PresentationType] =
-    Set(PresentationType.SD, PresentationType.HD)
-
   protected def parseMode: ParseMode
 
   protected def externalSources: List[ExternalSource]
@@ -352,6 +349,8 @@ abstract class IngestJob[T <: ScrapedItem](
   override protected def writePotentialMatches(
     potentialMatches: Iterable[(EsItem, T)]
   ): Unit = {
+    import UpdateableEsItem.syntax._
+
     super.writePotentialMatches(potentialMatches)
 
     val writePotentialMatchesToEs = rawArgs.valueOrDefault(
@@ -369,7 +368,7 @@ abstract class IngestJob[T <: ScrapedItem](
       } yield {
         val esExternalId = EsExternalId(externalSource, externalId)
         val now = OffsetDateTime.now()
-        EsPotentialMatchItem(
+        val insert = EsPotentialMatchItem(
           id = EsPotentialMatchItem.id(item.id, esExternalId),
           created_at = now,
           state = EsPotentialMatchState.Unmatched,
@@ -382,10 +381,14 @@ abstract class IngestJob[T <: ScrapedItem](
           ),
           availability = Some(createAvailabilities(networks, item, t).toList)
         )
+
+        val update: EsPotentialMatchItemUpdateView = insert.toUpdateable
+
+        update.copy(state = None) -> insert
       }
 
       esPotentialMatchItemStore
-        .upsertBatch(items)
+        .upsertBatchWithFallback[EsPotentialMatchItemUpdateView](items)
         .recover {
           case NonFatal(e) =>
             logger.warn(
@@ -419,51 +422,6 @@ abstract class IngestJob[T <: ScrapedItem](
     }
 
     foundNetworks
-  }
-
-  protected def createAvailabilities(
-    networks: Set[StoredNetwork],
-    item: EsItem,
-    scrapeItem: T
-  ): Seq[EsAvailability] = {
-    val start =
-      if (scrapeItem.isExpiring) None else scrapeItem.availableLocalDate
-    val end =
-      if (scrapeItem.isExpiring) scrapeItem.availableLocalDate else None
-
-    val availabilitiesByNetwork = item.availabilityGrouped
-
-    val unaffectedNetworks = availabilitiesByNetwork.keySet -- networks.map(
-      _.id
-    )
-
-    networks.toList.flatMap(network => {
-      availabilitiesByNetwork.get(network.id) match {
-        case Some(existingAvailabilities) =>
-          existingAvailabilities.map(_.copy(start_date = start, end_date = end))
-
-        case None =>
-          presentationTypes
-            .map(_.toString)
-            .toList
-            .map(presentationType => {
-              EsAvailability(
-                network_id = network.id,
-                network_name = Some(network.name),
-                region = "US",
-                start_date = start,
-                end_date = end,
-                // TODO: This isn't always correct, let jobs configure offer, cost, currency
-                offer_type = OfferType.Subscription.toString,
-                cost = None,
-                currency = None,
-                presentation_type = Some(presentationType),
-                links = None,
-                num_seasons_available = scrapeItem.numSeasonsAvailable
-              )
-            })
-      }
-    }) ++ unaffectedNetworks.toList.flatMap(availabilitiesByNetwork.get).flatten
   }
 
   protected def isAvailable(

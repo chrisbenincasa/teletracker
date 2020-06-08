@@ -13,6 +13,28 @@ import io.circe.generic.JsonCodec
 import java.time.OffsetDateTime
 import java.util.UUID
 
+trait UpdateableEsItem[T] {
+  type Out
+  def to(t: T): Out
+}
+
+object UpdateableEsItem {
+  type Aux[_T, _Out] = UpdateableEsItem[_T] { type Out = _Out }
+
+  object syntax extends UpdateableEsItemOps
+}
+
+trait UpdateableEsItemOps {
+  implicit def updateableSyntax[T](t: T): UpdateableEsItemSyntax[T] =
+    new UpdateableEsItemSyntax[T](t)
+}
+
+final class UpdateableEsItemSyntax[T](val underlying: T) extends AnyVal {
+  def toUpdateable(
+    implicit updateableEsItem: UpdateableEsItem[T]
+  ): updateableEsItem.Out = updateableEsItem.to(underlying)
+}
+
 object EsPotentialMatchItem {
   implicit val codec: Codec[EsPotentialMatchItem] =
     io.circe.generic.semiauto.deriveCodec
@@ -22,6 +44,28 @@ object EsPotentialMatchItem {
       override type Id = String
       override def id(x: EsPotentialMatchItem): String = x.id
       override def idString(x: EsPotentialMatchItem): String = id(x)
+    }
+
+  implicit val updateableEsItem: UpdateableEsItem.Aux[
+    EsPotentialMatchItem,
+    EsPotentialMatchItemUpdateView
+  ] =
+    new UpdateableEsItem[EsPotentialMatchItem] {
+      override type Out = EsPotentialMatchItemUpdateView
+
+      override def to(
+        t: EsPotentialMatchItem
+      ): EsPotentialMatchItemUpdateView = {
+        EsPotentialMatchItemUpdateView(
+          id = t.id,
+          created_at = Some(t.created_at),
+          state = Some(t.state),
+          last_updated = Some(t.last_updated),
+          potential = Some(t.potential),
+          scraped = Some(t.scraped),
+          availability = t.availability
+        )
+      }
     }
 
   def id(
@@ -41,6 +85,16 @@ case class EsPotentialMatchItem(
   potential: PartialEsItem,
   scraped: EsGenericScrapedItem,
   availability: Option[List[EsAvailability]])
+
+@JsonCodec
+case class EsPotentialMatchItemUpdateView(
+  id: String,
+  created_at: Option[OffsetDateTime] = None,
+  state: Option[EsPotentialMatchState] = None,
+  last_updated: Option[OffsetDateTime] = None,
+  potential: Option[PartialEsItem] = None,
+  scraped: Option[EsGenericScrapedItem] = None,
+  availability: Option[List[EsAvailability]] = None)
 
 @JsonCodec
 case class EsGenericScrapedItem(

@@ -3,7 +3,8 @@ package com.teletracker.tasks.scraper
 import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.elasticsearch.model.EsItem
+import com.teletracker.common.db.model.{OfferType, PresentationType}
+import com.teletracker.common.elasticsearch.model.{EsAvailability, EsItem}
 import com.teletracker.common.model.scraping.{
   MatchResult,
   NonMatchResult,
@@ -48,8 +49,10 @@ abstract class BaseIngestJob[
     : ElasticsearchFallbackMatcher.Factory = _
 
   protected def networkTimeZone: ZoneOffset = ZoneOffset.UTC
-  protected lazy val today = LocalDate.now()
-  protected lazy val now = OffsetDateTime.now()
+  protected lazy val today: LocalDate = LocalDate.now()
+  protected lazy val now: OffsetDateTime = OffsetDateTime.now()
+  protected def presentationTypes: Set[PresentationType] =
+    Set(PresentationType.SD, PresentationType.HD)
 
   protected def scrapeItemType: ScrapeItemType
 
@@ -296,6 +299,51 @@ abstract class BaseIngestJob[
           potentialMatch.asJson.noSpaces
         )
       })
+  }
+
+  protected def createAvailabilities(
+    networks: Set[StoredNetwork],
+    item: EsItem,
+    scrapeItem: T
+  ): Seq[EsAvailability] = {
+    val start =
+      if (scrapeItem.isExpiring) None else scrapeItem.availableLocalDate
+    val end =
+      if (scrapeItem.isExpiring) scrapeItem.availableLocalDate else None
+
+    val availabilitiesByNetwork = item.availabilityGrouped
+
+    val unaffectedNetworks = availabilitiesByNetwork.keySet -- networks.map(
+      _.id
+    )
+
+    networks.toList.flatMap(network => {
+      availabilitiesByNetwork.get(network.id) match {
+        case Some(existingAvailabilities) =>
+          existingAvailabilities.map(_.copy(start_date = start, end_date = end))
+
+        case None =>
+          presentationTypes
+            .map(_.toString)
+            .toList
+            .map(presentationType => {
+              EsAvailability(
+                network_id = network.id,
+                network_name = Some(network.name),
+                region = "US",
+                start_date = start,
+                end_date = end,
+                // TODO: This isn't always correct, let jobs configure offer, cost, currency
+                offer_type = OfferType.Subscription.toString,
+                cost = None,
+                currency = None,
+                presentation_type = Some(presentationType),
+                links = None,
+                num_seasons_available = scrapeItem.numSeasonsAvailable
+              )
+            })
+      }
+    }) ++ unaffectedNetworks.toList.flatMap(availabilitiesByNetwork.get).flatten
   }
 
   sealed trait ProcessMode

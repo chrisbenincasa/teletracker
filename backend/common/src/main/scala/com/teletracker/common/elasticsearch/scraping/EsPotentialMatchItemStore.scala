@@ -9,11 +9,12 @@ import com.teletracker.common.elasticsearch.{
 }
 import com.teletracker.common.elasticsearch.model.{
   EsPotentialMatchItem,
-  EsPotentialMatchState
+  EsPotentialMatchState,
+  UpdateableEsItem
 }
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.util.{AsyncStream, HasId}
-import io.circe.Codec
+import io.circe.{Codec, Decoder, Encoder}
 import io.circe.syntax._
 import javax.inject.Inject
 import org.elasticsearch.action.bulk.BulkRequest
@@ -219,4 +220,25 @@ abstract class ElasticsearchCrud[Id, T: Codec: ClassTag](
       })
   }
 
+  def upsertBatchWithFallback[U: Encoder](
+    items: List[(U, T)]
+  )(implicit updateableEsItem: UpdateableEsItem.Aux[T, U]
+  ): Future[Unit] = {
+    AsyncStream
+      .fromStream(items.grouped(25).toStream)
+      .foreachF(batch => {
+        val bulkRequest = new BulkRequest()
+        batch.foreach {
+          case (update, insert) =>
+            bulkRequest.add(
+              new UpdateRequest(indexName, hasId.idString(insert))
+                .id(hasId.idString(insert))
+                .doc(update.asJson.noSpaces, XContentType.JSON)
+                .upsert(insert.asJson.noSpaces, XContentType.JSON)
+            )
+        }
+
+        elasticsearchExecutor.bulk(bulkRequest).map(_ => {})
+      })
+  }
 }

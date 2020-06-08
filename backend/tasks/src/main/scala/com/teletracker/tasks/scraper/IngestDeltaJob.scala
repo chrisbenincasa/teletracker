@@ -8,14 +8,25 @@ import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappi
 import com.teletracker.common.elasticsearch.model.{
   EsAvailability,
   EsExternalId,
-  EsItem
+  EsGenericScrapedItem,
+  EsItem,
+  EsPotentialMatchItem,
+  EsPotentialMatchItemUpdateView,
+  EsPotentialMatchState,
+  EsScrapedItem,
+  UpdateableEsItem
 }
+import com.teletracker.common.elasticsearch.scraping.EsPotentialMatchItemStore
 import com.teletracker.common.elasticsearch.{
   ElasticsearchExecutor,
   ItemLookup,
   ItemUpdater
 }
-import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
+import com.teletracker.common.model.scraping.{
+  MatchResult,
+  PartialEsItem,
+  ScrapedItem
+}
 import com.teletracker.common.pubsub.EsIngestItemDenormArgs
 import com.teletracker.common.tasks.TeletrackerTask.{JsonableArgs, RawArgs}
 import com.teletracker.common.util.json.circe._
@@ -38,10 +49,10 @@ import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
-import java.time.LocalDate
+import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
-import java.util.concurrent.Executors
-import scala.concurrent.Future
+import java.util.concurrent.{Executors, ScheduledExecutorService}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.io.Source
 import scala.util.control.NonFatal
@@ -104,10 +115,10 @@ abstract class IngestDeltaJobLike[
     )
     with ElasticsearchFallbackMatching[T, IngestJobArgs] {
 
-  protected val singleThreadExecutor =
+  protected val singleThreadExecutor: ScheduledExecutorService =
     Executors.newSingleThreadScheduledExecutor()
 
-  implicit protected val execCtx =
+  implicit protected val execCtx: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
   @Inject
@@ -118,6 +129,8 @@ abstract class IngestDeltaJobLike[
   private[this] var itemUpdateQueue: EsIngestQueue = _
   @Inject
   private[this] var esExternalIdMapper: ElasticsearchExternalIdMappingStore = _
+  @Inject
+  private[this] var esPotentialMatchItemStore: EsPotentialMatchItemStore = _
 
   @Inject protected var teletrackerConfig: TeletrackerConfig = _
   @Inject protected var elasticsearchExecutor: ElasticsearchExecutor = _
@@ -591,6 +604,59 @@ abstract class IngestDeltaJobLike[
           logger.warn(s"${failures.size} permanently failed")
           Future.unit
       }
+  }
+
+  override protected def writePotentialMatches(
+    potentialMatches: Iterable[(EsItem, T)]
+  ): Unit = {
+    import UpdateableEsItem.syntax._
+
+    super.writePotentialMatches(potentialMatches)
+
+    val writePotentialMatchesToEs = rawArgs.valueOrDefault(
+      "writePotentialMatchesToEs",
+      false
+    )
+
+    if (!args.dryRun || writePotentialMatchesToEs) {
+      val networks = getNetworksOrExit()
+
+      val items = for {
+        (item, t) <- potentialMatches.toList
+        externalId <- t.externalId.toList
+      } yield {
+        val esExternalId = EsExternalId(externalSource, externalId)
+        val now = OffsetDateTime.now()
+        val insert = EsPotentialMatchItem(
+          id = EsPotentialMatchItem.id(item.id, esExternalId),
+          created_at = now,
+          state = EsPotentialMatchState.Unmatched,
+          last_updated = now,
+          potential = PartialEsItem.forEsItem(item),
+          scraped = EsGenericScrapedItem(
+            scrapeItemType,
+            EsScrapedItem.fromAnyScrapedItem(t),
+            t.asJson
+          ),
+          availability = Some(createAvailabilities(networks, item, t).toList)
+        )
+
+        val update: EsPotentialMatchItemUpdateView = insert.toUpdateable
+
+        update.copy(state = None) -> insert
+      }
+
+      esPotentialMatchItemStore
+        .upsertBatchWithFallback(items)
+        .recover {
+          case NonFatal(e) =>
+            logger.warn(
+              "Failed while attempting to write potential matches to ES.",
+              e
+            )
+        }
+        .await()
+    }
   }
 
   protected def getNetworksOrExit(): Set[StoredNetwork] = {
