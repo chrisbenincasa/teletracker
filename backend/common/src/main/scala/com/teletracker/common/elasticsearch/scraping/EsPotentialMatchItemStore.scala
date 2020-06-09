@@ -22,7 +22,7 @@ import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.common.xcontent.XContentType
-import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import com.teletracker.common.util.Functions._
 import org.apache.lucene.search.join.ScoreMode
@@ -46,27 +46,7 @@ class EsPotentialMatchItemStore @Inject()(
   def search(
     request: PotentialMatchItemSearch
   ): Future[EsPotentialMatchResponse] = {
-    val query = QueryBuilders
-      .boolQuery()
-      .must(
-        QueryBuilders
-          .termQuery(
-            "state",
-            request.state.getOrElse(EsPotentialMatchState.Unmatched).toString
-          )
-      )
-      .applyOptional(request.scraperTypes.filter(_.nonEmpty))(
-        (builder, typ) =>
-          builder.must(
-            QueryBuilders
-              .nestedQuery(
-                "scraped",
-                QueryBuilders
-                  .termsQuery("scraped.type", typ.map(_.toString).asJava),
-                ScoreMode.Avg
-              )
-          )
-      )
+    val query = buildSearchQuery(request)
       .applyOptional(request.bookmark)(
         (builder, bm) =>
           builder.filter(QueryBuilders.rangeQuery("id").lt(bm.value))
@@ -104,11 +84,25 @@ class EsPotentialMatchItemStore @Inject()(
   }
 
   def count(request: PotentialMatchItemSearch): Future[Long] = {
-    val query = QueryBuilders
+    elasticsearchExecutor
+      .count(
+        new CountRequest(indexName)
+          .source(new SearchSourceBuilder().query(buildSearchQuery(request)))
+      )
+      .map(_.getCount)
+  }
+
+  private def buildSearchQuery(
+    request: PotentialMatchItemSearch
+  ): BoolQueryBuilder = {
+    QueryBuilders
       .boolQuery()
       .must(
         QueryBuilders
-          .termQuery("state", EsPotentialMatchState.Unmatched.toString)
+          .termQuery(
+            "state",
+            request.state.getOrElse(EsPotentialMatchState.Unmatched).toString
+          )
       )
       .applyOptional(request.scraperTypes.filter(_.nonEmpty))(
         (builder, typ) =>
@@ -122,13 +116,6 @@ class EsPotentialMatchItemStore @Inject()(
               )
           )
       )
-
-    elasticsearchExecutor
-      .count(
-        new CountRequest(indexName)
-          .source(new SearchSourceBuilder().query(query))
-      )
-      .map(_.getCount)
   }
 
   def updateState(
