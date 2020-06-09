@@ -19,7 +19,7 @@ import {
   Typography,
 } from '@material-ui/core';
 import { LiveTv, Menu } from '@material-ui/icons';
-import { Link, Router } from '@reach/router';
+import { Link, Redirect, Router } from '@reach/router';
 import Matching from './features/matching/Matching';
 
 const drawerWidth = 240;
@@ -82,7 +82,7 @@ function App() {
       <div className={classes.toolbar} />
       <Divider />
       <List>
-        <Link to="/matching/pending">
+        <Link to="/matching/pending" style={{ textDecoration: 'none' }}>
           <ListItem button>
             <ListItemIcon>
               <LiveTv />
@@ -155,6 +155,7 @@ function App() {
       <main className={classes.content}>
         <div className={classes.toolbar} />
         <Router>
+          <Redirect noThrow from="/matching" to={'/matching/pending'} />
           <Matching path="/matching/:filterType" />
         </Router>
       </main>
