@@ -156,7 +156,7 @@ function App() {
         <div className={classes.toolbar} />
         <Router>
           <Redirect noThrow from="/matching" to={'/matching/unmatched/all'} />
-          <Matching path="/matching/:filterType/:network" />
+          <Matching path="/matching/:filterType/:networkScraper" />
         </Router>
       </main>
     </div>
