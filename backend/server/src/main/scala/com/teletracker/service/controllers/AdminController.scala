@@ -1,5 +1,6 @@
 package com.teletracker.service.controllers
 
+import com.teletracker.common.aws.sqs.SqsFifoQueue
 import com.teletracker.common.db.Bookmark
 import com.teletracker.common.db.model.{ItemType, SupportedNetwork}
 import com.teletracker.common.elasticsearch.model.EsPotentialMatchState
@@ -15,6 +16,7 @@ import com.teletracker.common.elasticsearch.{
 }
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.{DataResponse, Paging}
+import com.teletracker.common.pubsub.EsDenormalizeItemMessage
 import com.teletracker.common.util.{HasThingIdOrSlug, NetworkCache}
 import com.teletracker.service.auth.AdminFilter
 import com.twitter.finagle.http.Request
@@ -26,7 +28,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class AdminController @Inject()(
   itemLookup: ItemLookup,
   esPotentialMatchItemStore: EsPotentialMatchItemStore,
-  itemUpdater: ItemUpdater
+  itemUpdater: ItemUpdater,
+  itemDenormQueue: SqsFifoQueue[EsDenormalizeItemMessage]
 )(implicit executionContext: ExecutionContext)
     extends Controller {
 
@@ -127,11 +130,20 @@ class AdminController @Inject()(
                           val availabilities = value.availability.getOrElse(Nil)
                           val itemWithUpdates = ItemUpdateApplier
                             .applyAvailabilities(rawItem, availabilities)
-                          itemUpdater
-                            .update(itemWithUpdates)
-                            .map(_ => {
-                              response.noContent
-                            })
+
+                          for {
+                            _ <- itemUpdater.update(itemWithUpdates)
+                            _ <- itemDenormQueue.queue(
+                              EsDenormalizeItemMessage(
+                                itemWithUpdates.id,
+                                creditsChanged = false,
+                                crewChanged = false,
+                                dryRun = false
+                              )
+                            )
+                          } yield {
+                            response.noContent
+                          }
                         case _ => Future.successful(response.noContent)
                       }
                     })
