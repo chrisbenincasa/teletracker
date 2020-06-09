@@ -213,9 +213,7 @@ abstract class BaseIngestJob[
                 s"Successfully found matches for ${allItems.size} out of ${items.size} items."
               )
 
-              if (args.dryRun) {
-                writeMatchingItems(exactMatchResults)
-              }
+              writeMatchingItems(exactMatchResults)
 
               handleMatchResults(allItems, networks, args).map(_ => {
                 allItems -> missingItems

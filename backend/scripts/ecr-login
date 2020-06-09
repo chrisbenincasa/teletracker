@@ -2,7 +2,7 @@
 
 set -uex
 
-REGION=${1:-us-west-2}
+REGION=${1:-"us-west-2"}
 REPO="302782651551.dkr.ecr.${REGION}.amazonaws.com"
 
 aws ecr get-login-password \

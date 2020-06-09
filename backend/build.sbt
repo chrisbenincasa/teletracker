@@ -163,10 +163,14 @@ lazy val tasks = project
       "software.amazon.awssdk" % "lambda" % "2.9.24",
       "software.amazon.awssdk" % "arns" % "2.9.24",
       "org.xerial" % "sqlite-jdbc" % "3.30.1",
+      "org.reflections" % "reflections" % "0.9.12",
       compilerPlugin(
         "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
       )
     ),
+    Compile / resourceGenerators += Def.task {
+      TaskManifestGenerator.generate()
+    },
     Compile / mainClass := Some(
       "com.teletracker.tasks.TeletrackerTaskRunner"
     ),
@@ -178,21 +182,38 @@ lazy val tasks = project
       "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5007"
     ),
     connectInput in run := true,
-    `run-db-migrations` := runInputTask(
-      Runtime,
-      "com.teletracker.tasks.TeletrackerTaskRunner",
-      "-class=com.teletracker.tasks.db.RunDatabaseMigration",
-      "-action=migrate"
-    ).evaluated,
-    `reset-db` := Def
-      .sequential(
-        `run-db-migrations`.toTask(" -action=clean"),
-        `run-db-migrations`.toTask(" -action=migrate"),
-        (runMain in Runtime)
-          .toTask(" com.teletracker.tasks.db.RunAllSeedsMain")
+    // Docker
+    dockerfile in docker := {
+      // The assembly task generates a fat JAR file
+      val artifact: File = assembly.value
+      val artifactTargetPath = s"/app/bin/${artifact.name}"
+
+      new Dockerfile {
+        from(
+          s"302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/base:latest"
+        )
+        add(baseDirectory.value / "src/docker/", "/app")
+        add(artifact, artifactTargetPath)
+        runRaw("chmod +x /app/main.sh")
+        entryPoint("/app/main.sh")
+      }
+    },
+    imageNames in docker := Seq(
+      ImageName(
+        namespace =
+          Some("302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker"),
+        repository = "tasks",
+        tag = Some("latest")
+      ),
+      ImageName(
+        namespace =
+          Some("302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker"),
+        repository = "tasks",
+        tag = Some(version.value)
       )
-      .value
+    )
   )
+  .enablePlugins(DockerPlugin)
   .dependsOn(common)
 
 lazy val server = project
@@ -260,7 +281,7 @@ lazy val server = project
       )
     )
   )
-  .enablePlugins(FlywayPlugin, DockerPlugin)
+  .enablePlugins(DockerPlugin)
   .dependsOn(common, tasks)
 
 lazy val `run-db-migrations` = inputKey[Unit]("generate ddl")
