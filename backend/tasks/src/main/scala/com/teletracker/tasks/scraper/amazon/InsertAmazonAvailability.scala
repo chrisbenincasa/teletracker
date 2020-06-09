@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper.amazon
 
+import com.teletracker.common.aws.sqs.SqsFifoQueue
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.{
   ExternalSource,
@@ -17,6 +18,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookupResponse,
   ItemUpdater
 }
+import com.teletracker.common.pubsub.EsDenormalizeItemMessage
 import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.Futures._
@@ -29,7 +31,8 @@ import scala.util.Try
 class InsertAmazonAvailability @Inject()(
   itemLookup: ItemLookup,
   itemUpdater: ItemUpdater,
-  networkCache: NetworkCache
+  networkCache: NetworkCache,
+  itemDenormQueue: SqsFifoQueue[EsDenormalizeItemMessage]
 )(implicit executionContext: ExecutionContext)
     extends UntypedTeletrackerTask {
   import diffson._
@@ -171,7 +174,17 @@ class InsertAmazonAvailability @Inject()(
           } else if (rawItem != newItem) {
             logger.info(s"Updating availability for item id = ${newItem.id}")
 
-            itemUpdater.update(newItem)
+            for {
+              _ <- itemUpdater.update(newItem)
+              _ <- itemDenormQueue.queue(
+                EsDenormalizeItemMessage(
+                  newItem.id,
+                  creditsChanged = false,
+                  crewChanged = false,
+                  dryRun = false
+                )
+              )
+            } yield {}
           }
       }
       .await()

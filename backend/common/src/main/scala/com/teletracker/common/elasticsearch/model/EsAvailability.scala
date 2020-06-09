@@ -42,6 +42,20 @@ object EsAvailability {
   ): Boolean = {
     distinctFields(left) == distinctFields(right)
   }
+
+  def itemAvailabilityEqual(
+    left: EsItem,
+    right: EsItem
+  ): Boolean = {
+    left.availability
+      .getOrElse(Nil)
+      .forall(av => {
+        right.availability
+          .getOrElse(Nil)
+          .map(distinctFields)
+          .count(_ == distinctFields(av)) == 1
+      })
+  }
 }
 
 @JsonCodec
