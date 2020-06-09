@@ -4,6 +4,9 @@ import com.teletracker.common.availability.NetworkAvailability
 import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.elasticsearch.model._
 import com.teletracker.common.elasticsearch.scraping.EsPotentialMatchItemStore
+import UpdateableEsItem.syntax._
+import com.teletracker.common.config.TeletrackerConfig
+import com.teletracker.common.elasticsearch.ItemLookup
 import com.teletracker.common.model.scraping.{PotentialMatch, ScrapeItemType}
 import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.Futures._
@@ -12,9 +15,81 @@ import com.teletracker.common.util.Lists._
 import com.teletracker.tasks.scraper.{ScrapeItemStreams, TypeWithParsedJson}
 import com.teletracker.tasks.util.SourceRetriever
 import javax.inject.Inject
+import org.elasticsearch.index.query.{QueryBuilder, QueryBuilders}
 import java.net.URI
 import java.time.OffsetDateTime
+import java.util.UUID
+import java.util.concurrent.{ConcurrentHashMap, Executors}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
+import scala.collection.JavaConverters._
 import scala.util.Try
+
+class BackfillPotentialPopularity @Inject()(
+  teletrackerConfig: TeletrackerConfig,
+  esPotentialMatchItemStore: EsPotentialMatchItemStore,
+  itemLookup: ItemLookup
+)(implicit executionContext: ExecutionContext)
+    extends UntypedTeletrackerTask {
+  import io.circe.syntax._
+
+  override protected def runInternal(): Unit = {
+    val limit = rawArgs.valueOrDefault("limit", -1)
+
+    val scheduler = Executors.newSingleThreadScheduledExecutor()
+    val seenPopularities = new ConcurrentHashMap[UUID, Double]()
+
+    esPotentialMatchItemStore.scroller
+      .start(
+        teletrackerConfig.elasticsearch.potential_matches_index_name,
+        QueryBuilders.matchAllQuery()
+      )
+      .safeTake(limit)
+      .grouped(25)
+      .delayedForeachF(100 millis, scheduler)(batch => {
+        itemLookup
+          .lookupItemsByIds(batch.map(_.potential.id).toSet)
+          .flatMap(items => {
+            val foundItems = items.collect {
+              case (uuid, Some(item)) => uuid -> item
+            }
+
+            seenPopularities.putAll(
+              foundItems.collect {
+                case (uuid, item) if item.popularity.isDefined =>
+                  uuid -> item.popularity.get
+              }.asJava
+            )
+
+            val updates = for {
+              (itemId, scrapeItems) <- batch.groupBy(_.potential.id)
+              item <- foundItems.get(itemId).toList
+              scrapeItem <- scrapeItems
+            } yield {
+              if (item.popularity.isDefined) {
+                val update = Map(
+                  "potential" -> Map(
+                    "popularity" -> item.popularity.get.asJson
+                  )
+                ).asJson
+
+                logger.info(s"Updating ${scrapeItem.id}: ${update}")
+
+                esPotentialMatchItemStore.partialUpdate(
+                  scrapeItem.id,
+                  update
+                )
+              } else {
+                Future.unit
+              }
+            }
+
+            Future.sequence(updates).map(_ => {})
+          })
+      })
+      .await()
+  }
+}
 
 class ImportPotentialMatchesToEs @Inject()(
   sourceRetriever: SourceRetriever,
@@ -68,7 +143,7 @@ class ImportPotentialMatchesToEs @Inject()(
                     )
                 }
 
-                EsPotentialMatchItem(
+                val insert = EsPotentialMatchItem(
                   id = EsPotentialMatchItem.id(
                     potential.id,
                     EsExternalId(
@@ -78,7 +153,8 @@ class ImportPotentialMatchesToEs @Inject()(
                   ),
                   created_at = now,
                   state = EsPotentialMatchState.Unmatched,
-                  last_updated = now,
+                  last_updated_at = now,
+                  last_state_change = now,
                   potential = potential,
                   scraped = EsGenericScrapedItem(
                     `type` = itemType,
@@ -89,6 +165,10 @@ class ImportPotentialMatchesToEs @Inject()(
                   ),
                   availability = Some(availabilities)
                 )
+
+                val update: EsPotentialMatchItemUpdateView = insert.toUpdateable
+
+                update.copy(state = None, last_state_change = None) -> insert
             }
 
             if (dryRun) {
@@ -97,7 +177,9 @@ class ImportPotentialMatchesToEs @Inject()(
                 logger.info(s"Would've upserted item:\n${item.asJson.spaces2}")
               })
             } else {
-              esPotentialMatchItemStore.upsertBatch(potential).await()
+              esPotentialMatchItemStore
+                .upsertBatchWithFallback(potential)
+                .await()
             }
           })
       })

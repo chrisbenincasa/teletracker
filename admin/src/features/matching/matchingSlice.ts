@@ -104,7 +104,7 @@ export const fetchMatchesAsync = (
           append: request.bookmark !== undefined,
           bookmark: response.data.paging?.bookmark,
           total: response.data.paging?.total,
-          state: request.state,
+          state: request.matchState,
         }),
       );
   } catch (e) {

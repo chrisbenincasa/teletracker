@@ -17,7 +17,8 @@ case class PartialEsItem(
   external_ids: Option[List[String]],
   `type`: ItemType,
   slug: Option[Slug],
-  images: Option[List[EsItemImage]])
+  images: Option[List[EsItemImage]],
+  popularity: Option[Double])
 
 object PartialEsItem {
   implicit val codec: Codec[PartialEsItem] =
@@ -33,7 +34,8 @@ object PartialEsItem {
       external_ids = esItem.external_ids.map(_.map(_.toString)),
       `type` = esItem.`type`,
       slug = esItem.slug,
-      images = esItem.images
+      images = esItem.images,
+      popularity = esItem.popularity
     )
   }
 }

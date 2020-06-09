@@ -110,7 +110,7 @@ export default function Matching(props: Props) {
   useEffect(() => {
     dispatch(
       fetchMatchesAsync({
-        state: status,
+        matchState: status,
       }),
     );
   }, [status]);
@@ -138,7 +138,7 @@ export default function Matching(props: Props) {
       dispatch(
         fetchMatchesAsync({
           bookmark: bookmark,
-          state: status,
+          matchState: status,
         }),
       );
     }

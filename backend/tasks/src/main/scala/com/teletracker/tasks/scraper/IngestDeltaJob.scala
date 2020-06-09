@@ -631,7 +631,8 @@ abstract class IngestDeltaJobLike[
           id = EsPotentialMatchItem.id(item.id, esExternalId),
           created_at = now,
           state = EsPotentialMatchState.Unmatched,
-          last_updated = now,
+          last_updated_at = now,
+          last_state_change = now,
           potential = PartialEsItem.forEsItem(item),
           scraped = EsGenericScrapedItem(
             scrapeItemType,
@@ -643,7 +644,7 @@ abstract class IngestDeltaJobLike[
 
         val update: EsPotentialMatchItemUpdateView = insert.toUpdateable
 
-        update.copy(state = None) -> insert
+        update.copy(state = None, last_state_change = None) -> insert
       }
 
       esPotentialMatchItemStore
