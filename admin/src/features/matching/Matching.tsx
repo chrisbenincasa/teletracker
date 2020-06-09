@@ -153,6 +153,12 @@ export default function Matching(props: Props) {
         fetchMatchesAsync({
           bookmark: bookmark,
           matchState: status,
+          scraperItemType:
+            networkScraper === 'all' ? undefined : networkScraper,
+          sort:
+            status === PotentialMatchState.Unmatched
+              ? SearchMatchSort.PotentialMatchPopularity
+              : SearchMatchSort.LastStateChange,
         }),
       );
     }
