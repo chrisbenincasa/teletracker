@@ -17,7 +17,8 @@ import {
   Paper,
   Typography,
 } from '@material-ui/core';
-import { PotentialMatchState } from '../../types';
+import { PotentialMatchState, ScrapeItemType } from '../../types';
+import { SearchMatchSort } from '../../util/apiClient';
 import { useDebouncedCallback } from 'use-debounce';
 import { RootState } from '../../app/store';
 import InfiniteScroll from 'react-infinite-scroller';
@@ -86,15 +87,23 @@ const useStyles = makeStyles((theme) =>
     navigationType: {
       marginBottom: theme.spacing(2),
     },
+    totalItemsWrapper: {
+      textAlign: 'center',
+      marginBottom: theme.spacing(2),
+    },
   }),
 );
 
-type Props = RouteComponentProps;
+interface Props extends RouteComponentProps {
+  filterType?: PotentialMatchState;
+  networkScraper?: ScrapeItemType | 'all';
+}
 
 export default function Matching(props: Props) {
   const classes = useStyles();
   const dispatch = useDispatch();
-  const [status, setStatus] = useState(PotentialMatchState.Unmatched);
+  const [status, setStatus] = useState(props.filterType);
+  const [networkScraper, setNetworkScraper] = useState(props.networkScraper);
 
   const items = useSelector((state: RootState) =>
     state.matching.items.filter((item) => item.state === status),
@@ -111,9 +120,14 @@ export default function Matching(props: Props) {
     dispatch(
       fetchMatchesAsync({
         matchState: status,
+        scraperItemType: networkScraper === 'all' ? undefined : networkScraper,
+        sort:
+          status === PotentialMatchState.Unmatched
+            ? SearchMatchSort.PotentialMatchPopularity
+            : SearchMatchSort.LastStateChange,
       }),
     );
-  }, [status]);
+  }, [networkScraper, status]);
 
   const markAsNonMatch = useCallback((id: string) => {
     dispatch(
@@ -179,11 +193,18 @@ export default function Matching(props: Props) {
                   <Typography gutterBottom variant="h5" component="h2">
                     {item.potential.title}
                   </Typography>
-                  <Chip label={item.potential.type} className={classes.chip} />
-                  <Chip
-                    label={item?.potential?.release_date?.substring(0, 4)}
-                    className={classes.chip}
-                  />
+                  {item.potential.type && (
+                    <Chip
+                      label={item.potential.type}
+                      className={classes.chip}
+                    />
+                  )}
+                  {item?.potential?.release_date && (
+                    <Chip
+                      label={item?.potential?.release_date?.substring(0, 4)}
+                      className={classes.chip}
+                    />
+                  )}
                   <Typography
                     variant="body2"
                     color="textSecondary"
@@ -230,18 +251,24 @@ export default function Matching(props: Props) {
                   <Typography gutterBottom variant="h5" component="h2">
                     {item.scraped.item.title}
                   </Typography>
-                  <Chip
-                    label={item.scraped.item.itemType}
-                    className={classes.chip}
-                  />
-                  <Chip
-                    label={item.scraped.item.releaseYear}
-                    className={classes.chip}
-                  />
-                  <Chip
-                    label={item.scraped.item.network}
-                    className={classes.chip}
-                  />
+                  {item.scraped.item.itemType && (
+                    <Chip
+                      label={item.scraped.item.itemType}
+                      className={classes.chip}
+                    />
+                  )}
+                  {item.scraped.item.releaseYear && (
+                    <Chip
+                      label={item.scraped.item.releaseYear}
+                      className={classes.chip}
+                    />
+                  )}
+                  {item.scraped.item.network && (
+                    <Chip
+                      label={item.scraped.item.network}
+                      className={classes.chip}
+                    />
+                  )}
                   <Typography
                     variant="body2"
                     color="textSecondary"
@@ -289,30 +316,143 @@ export default function Matching(props: Props) {
         className={classes.navigationType}
       >
         <Button
-          variant={status === 'unmatched' ? 'contained' : undefined}
+          variant={
+            status === PotentialMatchState.Unmatched ? 'contained' : undefined
+          }
           component={Link}
-          to="/matching/pending"
+          to={`/matching/${PotentialMatchState.Unmatched}/${networkScraper}`}
           onClick={() => setStatus(PotentialMatchState.Unmatched)}
         >
           Pending Approval
         </Button>
         <Button
-          variant={status === 'matched' ? 'contained' : undefined}
+          variant={
+            status === PotentialMatchState.Matched ? 'contained' : undefined
+          }
           component={Link}
-          to="/matching/approved"
+          to={`/matching/${PotentialMatchState.Matched}/${networkScraper}`}
           onClick={() => setStatus(PotentialMatchState.Matched)}
         >
           Approved
         </Button>
         <Button
-          variant={status === 'nonmatch' ? 'contained' : undefined}
+          variant={
+            status === PotentialMatchState.NonMatch ? 'contained' : undefined
+          }
           component={Link}
-          to="/matching/rejected"
+          to={`/matching/${PotentialMatchState.NonMatch}/${networkScraper}`}
           onClick={() => setStatus(PotentialMatchState.NonMatch)}
         >
           Rejected
         </Button>
       </ButtonGroup>
+      <ButtonGroup
+        color="primary"
+        aria-label="contained primary button group"
+        className={classes.navigationType}
+      >
+        <Button
+          variant={!networkScraper ? 'contained' : undefined}
+          component={Link}
+          to={`/matching/${status}/all`}
+          onClick={() => setNetworkScraper(undefined)}
+        >
+          All
+        </Button>
+        <Button
+          variant={
+            networkScraper === ScrapeItemType.HuluCatalog
+              ? 'contained'
+              : undefined
+          }
+          component={Link}
+          to={`/matching/${status}/${ScrapeItemType.HuluCatalog}`}
+          onClick={() => setNetworkScraper(ScrapeItemType.HuluCatalog)}
+        >
+          Hulu
+        </Button>
+        <Button
+          variant={
+            networkScraper === ScrapeItemType.NetflixCatalog
+              ? 'contained'
+              : undefined
+          }
+          component={Link}
+          to={`/matching/${status}/${ScrapeItemType.NetflixCatalog}`}
+          onClick={() => setNetworkScraper(ScrapeItemType.NetflixCatalog)}
+        >
+          Netflix
+        </Button>
+        <Button
+          variant={
+            networkScraper === ScrapeItemType.NetflixOriginalsArriving
+              ? 'contained'
+              : undefined
+          }
+          component={Link}
+          to={`/matching/${status}/${ScrapeItemType.NetflixOriginalsArriving}`}
+          onClick={() =>
+            setNetworkScraper(ScrapeItemType.NetflixOriginalsArriving)
+          }
+        >
+          Netflix Originals Arriving
+        </Button>
+        <Button
+          variant={
+            networkScraper === ScrapeItemType.DisneyPlusCatalog
+              ? 'contained'
+              : undefined
+          }
+          component={Link}
+          to={`/matching/${status}/${ScrapeItemType.DisneyPlusCatalog}`}
+          onClick={() => setNetworkScraper(ScrapeItemType.DisneyPlusCatalog)}
+        >
+          Disney+
+        </Button>
+        <Button
+          variant={
+            networkScraper === ScrapeItemType.HboMaxCatalog
+              ? 'contained'
+              : undefined
+          }
+          component={Link}
+          to={`/matching/${status}/${ScrapeItemType.HboMaxCatalog}`}
+          onClick={() => setNetworkScraper(ScrapeItemType.HboMaxCatalog)}
+        >
+          HBO Max
+        </Button>
+        <Button
+          variant={
+            networkScraper === ScrapeItemType.HboChanges
+              ? 'contained'
+              : undefined
+          }
+          component={Link}
+          to={`/matching/${status}/${ScrapeItemType.HboChanges}`}
+          onClick={() => setNetworkScraper(ScrapeItemType.HboChanges)}
+        >
+          HBO Changes
+        </Button>
+        <Button
+          variant={
+            networkScraper === ScrapeItemType.HboCatalog
+              ? 'contained'
+              : undefined
+          }
+          component={Link}
+          to={`/matching/${status}/${ScrapeItemType.HboCatalog}`}
+          onClick={() => setNetworkScraper(ScrapeItemType.HboCatalog)}
+        >
+          HBO
+        </Button>
+      </ButtonGroup>
+      <div className={classes.totalItemsWrapper}>
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          component="p"
+        >{`Showing ${items.length} of ${totalItems} total items`}</Typography>
+      </div>
       <InfiniteScroll
         pageStart={0}
         loadMore={loadMoreResults}
