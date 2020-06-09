@@ -86,15 +86,21 @@ const useStyles = makeStyles((theme) =>
     navigationType: {
       marginBottom: theme.spacing(2),
     },
+    totalItemsWrapper: {
+      textAlign: 'center',
+      marginBottom: theme.spacing(2),
+    },
   }),
 );
 
-type Props = RouteComponentProps;
+interface Props extends RouteComponentProps {
+  filterType?: PotentialMatchState;
+}
 
 export default function Matching(props: Props) {
   const classes = useStyles();
   const dispatch = useDispatch();
-  const [status, setStatus] = useState(PotentialMatchState.Unmatched);
+  const [status, setStatus] = useState(props.filterType);
 
   const items = useSelector((state: RootState) =>
     state.matching.items.filter((item) => item.state === status),
@@ -179,11 +185,18 @@ export default function Matching(props: Props) {
                   <Typography gutterBottom variant="h5" component="h2">
                     {item.potential.title}
                   </Typography>
-                  <Chip label={item.potential.type} className={classes.chip} />
-                  <Chip
-                    label={item?.potential?.release_date?.substring(0, 4)}
-                    className={classes.chip}
-                  />
+                  {item.potential.type && (
+                    <Chip
+                      label={item.potential.type}
+                      className={classes.chip}
+                    />
+                  )}
+                  {item?.potential?.release_date && (
+                    <Chip
+                      label={item?.potential?.release_date?.substring(0, 4)}
+                      className={classes.chip}
+                    />
+                  )}
                   <Typography
                     variant="body2"
                     color="textSecondary"
@@ -230,18 +243,24 @@ export default function Matching(props: Props) {
                   <Typography gutterBottom variant="h5" component="h2">
                     {item.scraped.item.title}
                   </Typography>
-                  <Chip
-                    label={item.scraped.item.itemType}
-                    className={classes.chip}
-                  />
-                  <Chip
-                    label={item.scraped.item.releaseYear}
-                    className={classes.chip}
-                  />
-                  <Chip
-                    label={item.scraped.item.network}
-                    className={classes.chip}
-                  />
+                  {item.scraped.item.itemType && (
+                    <Chip
+                      label={item.scraped.item.itemType}
+                      className={classes.chip}
+                    />
+                  )}
+                  {item.scraped.item.releaseYear && (
+                    <Chip
+                      label={item.scraped.item.releaseYear}
+                      className={classes.chip}
+                    />
+                  )}
+                  {item.scraped.item.network && (
+                    <Chip
+                      label={item.scraped.item.network}
+                      className={classes.chip}
+                    />
+                  )}
                   <Typography
                     variant="body2"
                     color="textSecondary"
@@ -291,7 +310,7 @@ export default function Matching(props: Props) {
         <Button
           variant={status === 'unmatched' ? 'contained' : undefined}
           component={Link}
-          to="/matching/pending"
+          to={`/matching/${PotentialMatchState.Unmatched}`}
           onClick={() => setStatus(PotentialMatchState.Unmatched)}
         >
           Pending Approval
@@ -299,7 +318,7 @@ export default function Matching(props: Props) {
         <Button
           variant={status === 'matched' ? 'contained' : undefined}
           component={Link}
-          to="/matching/approved"
+          to={`/matching/${PotentialMatchState.Matched}`}
           onClick={() => setStatus(PotentialMatchState.Matched)}
         >
           Approved
@@ -307,12 +326,19 @@ export default function Matching(props: Props) {
         <Button
           variant={status === 'nonmatch' ? 'contained' : undefined}
           component={Link}
-          to="/matching/rejected"
+          to={`/matching/${PotentialMatchState.NonMatch}`}
           onClick={() => setStatus(PotentialMatchState.NonMatch)}
         >
           Rejected
         </Button>
       </ButtonGroup>
+      <div className={classes.totalItemsWrapper}>
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          component="p"
+        >{`Showing ${items.length} of ${totalItems} total items`}</Typography>
+      </div>
       <InfiniteScroll
         pageStart={0}
         loadMore={loadMoreResults}

@@ -82,7 +82,7 @@ function App() {
       <div className={classes.toolbar} />
       <Divider />
       <List>
-        <Link to="/matching/pending" style={{ textDecoration: 'none' }}>
+        <Link to="/matching/unmatched" style={{ textDecoration: 'none' }}>
           <ListItem button>
             <ListItemIcon>
               <LiveTv />
