@@ -11,6 +11,7 @@ import com.teletracker.common.elasticsearch.model.{
   EsAvailabilityLinks
 }
 import com.teletracker.common.util.OpenDateRange
+import java.time.OffsetDateTime
 
 object NetworkAvailability {
   def forSubscriptionNetwork(
@@ -20,7 +21,8 @@ object NetworkAvailability {
     presentationTypes: Set[PresentationType] = Set(PresentationType.SD,
       PresentationType.HD),
     availabilityLinks: Map[PresentationType, EsAvailabilityLinks] = Map.empty,
-    numSeasonAvailable: Option[Int] = None
+    numSeasonAvailable: Option[Int] = None,
+    updateSource: Option[String] = None
   ): List[EsAvailability] = {
     presentationTypes.toList.sorted.map(typ => {
       EsAvailability(
@@ -34,7 +36,9 @@ object NetworkAvailability {
         currency = None,
         presentation_type = Some(typ.toString.toLowerCase),
         links = availabilityLinks.get(typ),
-        num_seasons_available = numSeasonAvailable
+        num_seasons_available = numSeasonAvailable,
+        last_updated = Some(OffsetDateTime.now()),
+        last_updated_by = updateSource
       )
     })
   }
@@ -47,7 +51,8 @@ object NetworkAvailability {
     presentationTypes: Set[PresentationType] = Set(PresentationType.SD,
       PresentationType.HD),
     availabilityLinks: Map[PresentationType, EsAvailabilityLinks] = Map.empty,
-    numSeasonAvailable: Option[Int] = None
+    numSeasonAvailable: Option[Int] = None,
+    updateSource: Option[String] = None
   ): List[EsAvailability] = {
     supportedNetwork match {
       case SupportedNetwork.Netflix | SupportedNetwork.Hulu |
@@ -59,7 +64,8 @@ object NetworkAvailability {
           availableWindow,
           presentationTypes,
           availabilityLinks,
-          numSeasonAvailable
+          numSeasonAvailable,
+          updateSource
         )
     }
   }

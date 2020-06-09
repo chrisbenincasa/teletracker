@@ -6,7 +6,11 @@ import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.netflix.NetflixOriginalScrapeItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.{IngestJob, IngestJobParser}
+import com.teletracker.tasks.scraper.{
+  IngestJob,
+  IngestJobParser,
+  SubscriptionNetworkAvailability
+}
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time.{Instant, LocalDate, ZoneId, ZoneOffset}
@@ -16,7 +20,8 @@ class IngestNetflixOriginalsArrivals @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater)
-    extends IngestJob[NetflixOriginalScrapeItem] {
+    extends IngestJob[NetflixOriginalScrapeItem]
+    with SubscriptionNetworkAvailability[NetflixOriginalScrapeItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.NetflixOriginalsArriving

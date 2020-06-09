@@ -303,6 +303,24 @@ abstract class BaseIngestJob[
     networks: Set[StoredNetwork],
     item: EsItem,
     scrapeItem: T
+  ): Seq[EsAvailability]
+
+  sealed trait ProcessMode
+  case class Serial(perBatchSleep: Option[FiniteDuration] = None)
+      extends ProcessMode
+  case class Parallel(
+    parallelism: Int,
+    perBatchSleep: Option[FiniteDuration] = None)
+      extends ProcessMode
+}
+
+trait SubscriptionNetworkAvailability[T <: ScrapedItem] {
+  self: BaseIngestJob[T, _] =>
+
+  protected def createAvailabilities(
+    networks: Set[StoredNetwork],
+    item: EsItem,
+    scrapeItem: T
   ): Seq[EsAvailability] = {
     val start =
       if (scrapeItem.isExpiring) None else scrapeItem.availableLocalDate
@@ -337,18 +355,12 @@ abstract class BaseIngestJob[
                 currency = None,
                 presentation_type = Some(presentationType),
                 links = None,
-                num_seasons_available = scrapeItem.numSeasonsAvailable
+                num_seasons_available = scrapeItem.numSeasonsAvailable,
+                last_updated = Some(OffsetDateTime.now()),
+                last_updated_by = Some(self.getClass.getSimpleName)
               )
             })
       }
     }) ++ unaffectedNetworks.toList.flatMap(availabilitiesByNetwork.get).flatten
   }
-
-  sealed trait ProcessMode
-  case class Serial(perBatchSleep: Option[FiniteDuration] = None)
-      extends ProcessMode
-  case class Parallel(
-    parallelism: Int,
-    perBatchSleep: Option[FiniteDuration] = None)
-      extends ProcessMode
 }

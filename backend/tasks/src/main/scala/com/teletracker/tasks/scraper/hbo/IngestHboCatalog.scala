@@ -30,7 +30,8 @@ class IngestHboCatalog @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater)
-    extends IngestJob[HboScrapedCatalogItem] {
+    extends IngestJob[HboScrapedCatalogItem]
+    with SubscriptionNetworkAvailability[HboScrapedCatalogItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboCatalog

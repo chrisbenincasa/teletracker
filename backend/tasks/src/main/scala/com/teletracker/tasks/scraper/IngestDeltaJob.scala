@@ -214,7 +214,7 @@ abstract class IngestDeltaJobLike[
       }
       .map {
         case MatchResult(scrapedItem, esItem) =>
-          val newAvailabilities = createAvailabilities(
+          val newAvailabilities = createDeltaAvailabilities(
             networks,
             esItem.id,
             scrapedItem,
@@ -251,7 +251,7 @@ abstract class IngestDeltaJobLike[
       }
       .map {
         case MatchResult(scrapedItem, esItem) =>
-          val newAvailabilities = createAvailabilities(
+          val newAvailabilities = createDeltaAvailabilities(
             networks,
             esItem.id,
             scrapedItem,
@@ -306,7 +306,7 @@ abstract class IngestDeltaJobLike[
                 case ItemChangeRemove => false
               }
 
-              val availabilities = createAvailabilities(
+              val availabilities = createDeltaAvailabilities(
                 networks,
                 esItem.id,
                 scrapedItem,
@@ -678,7 +678,7 @@ abstract class IngestDeltaJobLike[
     foundNetworks
   }
 
-  protected def createAvailabilities(
+  protected def createDeltaAvailabilities(
     networks: Set[StoredNetwork],
     itemId: UUID,
     scrapedItem: T,

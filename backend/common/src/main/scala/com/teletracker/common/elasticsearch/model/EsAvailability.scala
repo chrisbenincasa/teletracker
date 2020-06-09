@@ -2,7 +2,7 @@ package com.teletracker.common.elasticsearch.model
 
 import io.circe.Codec
 import io.circe.generic.JsonCodec
-import java.time.LocalDate
+import java.time.{LocalDate, OffsetDateTime}
 
 @JsonCodec
 case class EsAvailability(
@@ -16,7 +16,9 @@ case class EsAvailability(
   currency: Option[String],
   presentation_type: Option[String],
   links: Option[EsAvailabilityLinks],
-  num_seasons_available: Option[Int])
+  num_seasons_available: Option[Int],
+  last_updated: Option[OffsetDateTime],
+  last_updated_by: Option[String])
 
 object EsAvailability {
   import io.circe.generic.semiauto._

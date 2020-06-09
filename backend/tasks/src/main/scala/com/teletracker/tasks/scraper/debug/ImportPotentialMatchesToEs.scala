@@ -63,7 +63,8 @@ class ImportPotentialMatchesToEs @Inject()(
                     NetworkAvailability.forSupportedNetwork(
                       supportedNetwork,
                       storedNetwork,
-                      numSeasonAvailable = scraped.numSeasonsAvailable
+                      numSeasonAvailable = scraped.numSeasonsAvailable,
+                      updateSource = Some(getClass.getSimpleName)
                     )
                 }
 

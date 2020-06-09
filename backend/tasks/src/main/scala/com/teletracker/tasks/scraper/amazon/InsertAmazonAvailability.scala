@@ -21,6 +21,7 @@ import com.teletracker.common.tasks.UntypedTeletrackerTask
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.Futures._
 import javax.inject.Inject
+import java.time.OffsetDateTime
 import java.util.UUID
 import scala.concurrent.ExecutionContext
 import scala.util.Try
@@ -194,7 +195,9 @@ class InsertAmazonAvailability @Inject()(
       currency = Some("USD"),
       presentation_type = Some(presentationType.getName),
       links = Some(EsAvailabilityLinks(web = Some(link))),
-      num_seasons_available = None
+      num_seasons_available = None,
+      last_updated = Some(OffsetDateTime.now()),
+      last_updated_by = Some(getClass.getSimpleName)
     )
   }
 }

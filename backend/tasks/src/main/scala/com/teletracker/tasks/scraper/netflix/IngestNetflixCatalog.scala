@@ -23,7 +23,8 @@ import com.teletracker.tasks.scraper.model.WhatsOnNetflixCatalogItem
 import com.teletracker.tasks.scraper.{
   IngestJob,
   IngestJobArgs,
-  IngestJobArgsLike
+  IngestJobArgsLike,
+  SubscriptionNetworkAvailability
 }
 import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.JsonCodec
@@ -53,7 +54,8 @@ class IngestNetflixCatalog @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   elasticsearchFallbackMatcher: ElasticsearchFallbackMatcher.Factory)
-    extends IngestJob[NetflixScrapedCatalogItem] {
+    extends IngestJob[NetflixScrapedCatalogItem]
+    with SubscriptionNetworkAvailability[NetflixScrapedCatalogItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.NetflixCatalog

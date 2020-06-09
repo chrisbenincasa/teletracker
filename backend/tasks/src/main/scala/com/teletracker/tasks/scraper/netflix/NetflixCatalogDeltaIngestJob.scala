@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper.netflix
 
+import com.teletracker.common.availability.NetworkAvailability
 import com.teletracker.common.db.dynamo.model.StoredNetwork
 import com.teletracker.common.db.model.{
   ExternalSource,
@@ -16,7 +17,8 @@ import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
 import com.teletracker.tasks.scraper.{
   IngestDeltaJob,
   IngestDeltaJobArgs,
-  IngestJobParser
+  IngestJobParser,
+  SubscriptionNetworkAvailability
 }
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
@@ -29,7 +31,8 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   elasticsearchLookup: ElasticsearchLookup)
-    extends IngestDeltaJob[NetflixScrapedCatalogItem](elasticsearchLookup) {
+    extends IngestDeltaJob[NetflixScrapedCatalogItem](elasticsearchLookup)
+    with SubscriptionNetworkAvailability[NetflixScrapedCatalogItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.NetflixCatalog
@@ -37,29 +40,18 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   override protected val networkNames: Set[String] = Set("netflix")
   override protected val externalSource: ExternalSource = ExternalSource.Netflix
 
-  override protected def createAvailabilities(
+  override protected def createDeltaAvailabilities(
     networks: Set[StoredNetwork],
     itemId: UUID,
     scrapedItem: NetflixScrapedCatalogItem,
     isAvailable: Boolean
   ): List[EsAvailability] = {
-    List(PresentationType.SD, PresentationType.HD).flatMap(presentationType => {
-      networks.toList.map(network => {
-        EsAvailability(
-          network_id = network.id,
-          network_name = Some(network.name),
-          region = "US",
-          start_date = None,
-          end_date = None,
-          offer_type = OfferType.Subscription.toString,
-          cost = None,
-          currency = None,
-          presentation_type = Some(presentationType.getName),
-          links = None,
-          // TODO: NO
-          num_seasons_available = None
-        )
-      })
+    networks.toList.flatMap(network => {
+      NetworkAvailability.forSubscriptionNetwork(
+        network = network,
+        presentationTypes = Set(PresentationType.SD, PresentationType.HD),
+        updateSource = Some(getClass.getSimpleName)
+      )
     })
   }
 

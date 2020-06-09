@@ -1,18 +1,16 @@
 package com.teletracker.tasks.scraper.disney
 
-import com.teletracker.common.config.TeletrackerConfig
-import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchExecutor,
-  ItemLookup,
-  ItemUpdater
-}
+import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.disney.DisneyPlusCatalogItem
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.ElasticsearchFallbackMatching
-import com.teletracker.tasks.scraper.{IngestJob, IngestJobParser}
+import com.teletracker.tasks.scraper.{
+  IngestJob,
+  IngestJobParser,
+  SubscriptionNetworkAvailability
+}
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
@@ -23,7 +21,8 @@ class IngestDisneyPlusCatalog @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater)
-    extends IngestJob[DisneyPlusCatalogItem] {
+    extends IngestJob[DisneyPlusCatalogItem]
+    with SubscriptionNetworkAvailability[DisneyPlusCatalogItem] {
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.DisneyPlusCatalog
 

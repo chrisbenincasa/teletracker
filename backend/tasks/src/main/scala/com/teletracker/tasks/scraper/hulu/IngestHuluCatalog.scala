@@ -18,7 +18,12 @@ import com.teletracker.tasks.scraper.debug.{
   GeneratePotentialMatchCsv
 }
 import com.teletracker.tasks.scraper.matching.ElasticsearchFallbackMatching
-import com.teletracker.tasks.scraper.{IngestJob, IngestJobArgs, IngestJobParser}
+import com.teletracker.tasks.scraper.{
+  IngestJob,
+  IngestJobArgs,
+  IngestJobParser,
+  SubscriptionNetworkAvailability
+}
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
@@ -29,7 +34,8 @@ class IngestHuluCatalog @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater)
-    extends IngestJob[HuluScrapeCatalogItem] {
+    extends IngestJob[HuluScrapeCatalogItem]
+    with SubscriptionNetworkAvailability[HuluScrapeCatalogItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HuluCatalog

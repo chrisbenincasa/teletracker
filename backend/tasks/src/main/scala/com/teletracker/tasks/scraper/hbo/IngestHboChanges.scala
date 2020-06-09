@@ -1,33 +1,21 @@
 package com.teletracker.tasks.scraper.hbo
 
-import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchExecutor,
-  ItemLookup,
-  ItemUpdater
-}
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.{ScrapeItemType, ScrapedItem}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.common.util.json.circe._
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.{
-  ElasticsearchFallbackMatching,
-  ElasticsearchLookup,
-  LookupMethod
+import com.teletracker.tasks.scraper.{
+  IngestJob,
+  IngestJobApp,
+  IngestJobParser,
+  SubscriptionNetworkAvailability
 }
-import com.teletracker.tasks.scraper.{IngestJob, IngestJobApp, IngestJobParser}
 import io.circe.generic.JsonCodec
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
-import java.time.{
-  Instant,
-  LocalDate,
-  LocalDateTime,
-  OffsetDateTime,
-  ZoneId,
-  ZoneOffset
-}
+import java.time.{Instant, LocalDate, LocalDateTime, ZoneId, ZoneOffset}
 
 object IngestHboChanges extends IngestJobApp[IngestHboChanges]
 
@@ -36,7 +24,8 @@ class IngestHboChanges @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater)
-    extends IngestJob[HboScrapeChangesItem] {
+    extends IngestJob[HboScrapeChangesItem]
+    with SubscriptionNetworkAvailability[HboScrapeChangesItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboChanges

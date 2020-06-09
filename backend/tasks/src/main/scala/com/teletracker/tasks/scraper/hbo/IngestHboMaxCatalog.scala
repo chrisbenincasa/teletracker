@@ -1,20 +1,14 @@
 package com.teletracker.tasks.scraper.hbo
 
-import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.model.ExternalSource
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{EsExternalId, EsItem}
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchExecutor,
-  ItemLookup,
-  ItemUpdater
-}
-import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.hbo.HboMaxCatalogItem
+import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
 import com.teletracker.common.util.{AsyncStream, NetworkCache}
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper._
-import com.teletracker.tasks.scraper.matching.ElasticsearchFallbackMatching
 import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import java.time.LocalDate
@@ -28,7 +22,8 @@ class IngestHboMaxCatalog @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   externalIdMappingStore: ElasticsearchExternalIdMappingStore)
-    extends IngestJob[HboMaxCatalogItem] {
+    extends IngestJob[HboMaxCatalogItem]
+    with SubscriptionNetworkAvailability[HboMaxCatalogItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HboMaxCatalog

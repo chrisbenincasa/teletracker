@@ -1,12 +1,8 @@
 package com.teletracker.tasks.scraper
 import com.teletracker.common.db.model.ExternalSource
-import com.teletracker.common.elasticsearch.{
-  ElasticsearchExecutor,
-  ItemLookup,
-  ItemUpdater
-}
-import com.teletracker.common.model.scraping.{ScrapeItemType, ScrapedItem}
+import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
+import com.teletracker.common.model.scraping.{ScrapeItemType, ScrapedItem}
 import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.matching.{DirectLookupMethod, LookupMethod}
 import com.teletracker.tasks.scraper.model.MatchInput
@@ -32,7 +28,8 @@ class IngestNetflixCatalogMatchFile @Inject()(
   protected val networkCache: NetworkCache,
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater)
-    extends IngestMatchFileJob[NetflixScrapedCatalogItem] {
+    extends IngestMatchFileJob[NetflixScrapedCatalogItem]
+    with SubscriptionNetworkAvailability[MatchInput[NetflixScrapedCatalogItem]] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.NetflixCatalog

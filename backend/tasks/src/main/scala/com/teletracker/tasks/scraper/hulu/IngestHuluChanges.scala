@@ -18,7 +18,8 @@ class IngestHuluChanges @Inject()(
   protected val itemLookup: ItemLookup,
   protected val itemUpdater: ItemUpdater,
   huluFallbackMatching: HuluFallbackMatching)
-    extends IngestJob[HuluScrapeItem] {
+    extends IngestJob[HuluScrapeItem]
+    with SubscriptionNetworkAvailability[HuluScrapeItem] {
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HuluCatalog
