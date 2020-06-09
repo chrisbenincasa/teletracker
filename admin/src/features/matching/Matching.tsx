@@ -103,9 +103,7 @@ export default function Matching(props: Props) {
   const classes = useStyles();
   const dispatch = useDispatch();
   const [status, setStatus] = useState(props.filterType);
-  const [networkScraper, setNetworkScraper] = useState(
-    props.networkScraper === 'all' ? undefined : props.networkScraper,
-  );
+  const [networkScraper, setNetworkScraper] = useState(props.networkScraper);
 
   const items = useSelector((state: RootState) =>
     state.matching.items.filter((item) => item.state === status),
@@ -122,7 +120,7 @@ export default function Matching(props: Props) {
     dispatch(
       fetchMatchesAsync({
         matchState: status,
-        scraperItemType: networkScraper,
+        scraperItemType: networkScraper === 'all' ? undefined : networkScraper,
         sort:
           status === PotentialMatchState.Unmatched
             ? SearchMatchSort.PotentialMatchPopularity
