@@ -69,7 +69,9 @@ class AdminController @Inject()(
                 scrapeSources.orElse(req.scraperItemType.map(Set(_))),
               state = req.matchState.map(EsPotentialMatchState.fromString),
               limit = req.limit,
-              bookmark = req.bookmark.map(Bookmark.parse)
+              bookmark = req.bookmark.map(Bookmark.parse),
+              sort = req.sort,
+              desc = req.desc
             )
           )
           .map(resp => {
@@ -168,7 +170,9 @@ case class PotentialMatchSearchRequest(
   @QueryParam(commaSeparatedList = true) networks: Set[String] = Set.empty,
   @QueryParam matchState: Option[String],
   @QueryParam limit: Int = 20,
-  @QueryParam bookmark: Option[String])
+  @QueryParam bookmark: Option[String],
+  @QueryParam sort: Option[String],
+  @QueryParam desc: Boolean = true)
 
 case class SpecificPotentialMatchRequest(@RouteParam id: String)
 

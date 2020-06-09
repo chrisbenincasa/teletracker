@@ -14,7 +14,8 @@ export type DeepReadonlyObject<T> = {
 export type PotentialMatch = DeepReadonly<{
   id: string;
   created_at: string;
-  last_updated: string;
+  last_updated_at: string;
+  last_state_change: string;
   state: PotentialMatchState;
   potential: PotentialMatchStorageItem;
   scraped: PotentialMatchScrapedItem;
@@ -42,6 +43,7 @@ interface PotentialMatchStorageItem {
     id: string;
     image_type: string;
   }[];
+  popularity?: number;
 }
 
 interface PotentialMatchScrapedItem {

@@ -13,28 +13,6 @@ import io.circe.generic.JsonCodec
 import java.time.OffsetDateTime
 import java.util.UUID
 
-trait UpdateableEsItem[T] {
-  type Out
-  def to(t: T): Out
-}
-
-object UpdateableEsItem {
-  type Aux[_T, _Out] = UpdateableEsItem[_T] { type Out = _Out }
-
-  object syntax extends UpdateableEsItemOps
-}
-
-trait UpdateableEsItemOps {
-  implicit def updateableSyntax[T](t: T): UpdateableEsItemSyntax[T] =
-    new UpdateableEsItemSyntax[T](t)
-}
-
-final class UpdateableEsItemSyntax[T](val underlying: T) extends AnyVal {
-  def toUpdateable(
-    implicit updateableEsItem: UpdateableEsItem[T]
-  ): updateableEsItem.Out = updateableEsItem.to(underlying)
-}
-
 object EsPotentialMatchItem {
   implicit val codec: Codec[EsPotentialMatchItem] =
     io.circe.generic.semiauto.deriveCodec
@@ -60,7 +38,8 @@ object EsPotentialMatchItem {
           id = t.id,
           created_at = Some(t.created_at),
           state = Some(t.state),
-          last_updated = Some(t.last_updated),
+          last_updated_at = Some(t.last_updated_at),
+          last_state_change = Some(t.last_state_change),
           potential = Some(t.potential),
           scraped = Some(t.scraped),
           availability = t.availability
@@ -81,7 +60,8 @@ case class EsPotentialMatchItem(
   id: String,
   created_at: OffsetDateTime,
   state: EsPotentialMatchState,
-  last_updated: OffsetDateTime,
+  last_updated_at: OffsetDateTime,
+  last_state_change: OffsetDateTime,
   potential: PartialEsItem,
   scraped: EsGenericScrapedItem,
   availability: Option[List[EsAvailability]])
@@ -91,7 +71,8 @@ case class EsPotentialMatchItemUpdateView(
   id: String,
   created_at: Option[OffsetDateTime] = None,
   state: Option[EsPotentialMatchState] = None,
-  last_updated: Option[OffsetDateTime] = None,
+  last_updated_at: Option[OffsetDateTime] = None,
+  last_state_change: Option[OffsetDateTime] = None,
   potential: Option[PartialEsItem] = None,
   scraped: Option[EsGenericScrapedItem] = None,
   availability: Option[List[EsAvailability]] = None)

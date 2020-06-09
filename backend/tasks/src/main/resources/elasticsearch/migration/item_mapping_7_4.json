@@ -78,6 +78,12 @@
           },
           "num_seasons_available": {
             "type": "integer"
+          },
+          "last_updated": {
+            "type": "date"
+          },
+          "last_updated_by": {
+            "type": "keyword"
           }
         }
       },
