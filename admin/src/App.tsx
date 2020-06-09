@@ -82,7 +82,7 @@ function App() {
       <div className={classes.toolbar} />
       <Divider />
       <List>
-        <Link to="/matching/unmatched" style={{ textDecoration: 'none' }}>
+        <Link to="/matching/unmatched/all" style={{ textDecoration: 'none' }}>
           <ListItem button>
             <ListItemIcon>
               <LiveTv />
@@ -117,7 +117,7 @@ function App() {
             component="a"
             style={{ textDecoration: 'none' }}
           >
-            Teletracker <span style={{ color: 'red' }}>Admin</span>{' '}
+            Teletracker <span style={{ color: 'red' }}>Admin</span>
           </Typography>
         </Toolbar>
       </AppBar>
@@ -155,8 +155,8 @@ function App() {
       <main className={classes.content}>
         <div className={classes.toolbar} />
         <Router>
-          <Redirect noThrow from="/matching" to={'/matching/pending'} />
-          <Matching path="/matching/:filterType" />
+          <Redirect noThrow from="/matching" to={'/matching/unmatched/all'} />
+          <Matching path="/matching/:filterType/:network" />
         </Router>
       </main>
     </div>
