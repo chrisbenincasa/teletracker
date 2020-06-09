@@ -18,6 +18,7 @@ import {
   Typography,
 } from '@material-ui/core';
 import { PotentialMatchState, ScrapeItemType } from '../../types';
+import { SearchMatchSort } from '../../util/apiClient';
 import { useDebouncedCallback } from 'use-debounce';
 import { RootState } from '../../app/store';
 import InfiniteScroll from 'react-infinite-scroller';
@@ -95,15 +96,15 @@ const useStyles = makeStyles((theme) =>
 
 interface Props extends RouteComponentProps {
   filterType?: PotentialMatchState;
-  network?: ScrapeItemType | 'all';
+  networkScraper?: ScrapeItemType | 'all';
 }
 
 export default function Matching(props: Props) {
   const classes = useStyles();
   const dispatch = useDispatch();
   const [status, setStatus] = useState(props.filterType);
-  const [network, setNetwork] = useState(
-    props.network === 'all' ? undefined : props.network,
+  const [networkScraper, setNetworkScraper] = useState(
+    props.networkScraper === 'all' ? undefined : props.networkScraper,
   );
 
   const items = useSelector((state: RootState) =>
@@ -121,9 +122,14 @@ export default function Matching(props: Props) {
     dispatch(
       fetchMatchesAsync({
         matchState: status,
+        scraperItemType: networkScraper,
+        sort:
+          status === PotentialMatchState.Unmatched
+            ? SearchMatchSort.PotentialMatchPopularity
+            : SearchMatchSort.LastStateChange,
       }),
     );
-  }, [status]);
+  }, [networkScraper, status]);
 
   const markAsNonMatch = useCallback((id: string) => {
     dispatch(
@@ -312,25 +318,31 @@ export default function Matching(props: Props) {
         className={classes.navigationType}
       >
         <Button
-          variant={status === 'unmatched' ? 'contained' : undefined}
+          variant={
+            status === PotentialMatchState.Unmatched ? 'contained' : undefined
+          }
           component={Link}
-          to={`/matching/${PotentialMatchState.Unmatched}/${network}`}
+          to={`/matching/${PotentialMatchState.Unmatched}/${networkScraper}`}
           onClick={() => setStatus(PotentialMatchState.Unmatched)}
         >
           Pending Approval
         </Button>
         <Button
-          variant={status === 'matched' ? 'contained' : undefined}
+          variant={
+            status === PotentialMatchState.Matched ? 'contained' : undefined
+          }
           component={Link}
-          to={`/matching/${PotentialMatchState.Matched}/${network}`}
+          to={`/matching/${PotentialMatchState.Matched}/${networkScraper}`}
           onClick={() => setStatus(PotentialMatchState.Matched)}
         >
           Approved
         </Button>
         <Button
-          variant={status === 'nonmatch' ? 'contained' : undefined}
+          variant={
+            status === PotentialMatchState.NonMatch ? 'contained' : undefined
+          }
           component={Link}
-          to={`/matching/${PotentialMatchState.NonMatch}/${network}`}
+          to={`/matching/${PotentialMatchState.NonMatch}/${networkScraper}`}
           onClick={() => setStatus(PotentialMatchState.NonMatch)}
         >
           Rejected
@@ -342,84 +354,96 @@ export default function Matching(props: Props) {
         className={classes.navigationType}
       >
         <Button
-          variant={!network ? 'contained' : undefined}
+          variant={!networkScraper ? 'contained' : undefined}
           component={Link}
           to={`/matching/${status}/all`}
-          onClick={() => setNetwork(undefined)}
+          onClick={() => setNetworkScraper(undefined)}
         >
           All
         </Button>
         <Button
           variant={
-            network === ScrapeItemType.HuluCatalog ? 'contained' : undefined
+            networkScraper === ScrapeItemType.HuluCatalog
+              ? 'contained'
+              : undefined
           }
           component={Link}
           to={`/matching/${status}/${ScrapeItemType.HuluCatalog}`}
-          onClick={() => setNetwork(ScrapeItemType.HuluCatalog)}
+          onClick={() => setNetworkScraper(ScrapeItemType.HuluCatalog)}
         >
           Hulu
         </Button>
         <Button
           variant={
-            network === ScrapeItemType.NetflixCatalog ? 'contained' : undefined
+            networkScraper === ScrapeItemType.NetflixCatalog
+              ? 'contained'
+              : undefined
           }
           component={Link}
           to={`/matching/${status}/${ScrapeItemType.NetflixCatalog}`}
-          onClick={() => setNetwork(ScrapeItemType.NetflixCatalog)}
+          onClick={() => setNetworkScraper(ScrapeItemType.NetflixCatalog)}
         >
           Netflix
         </Button>
         <Button
           variant={
-            network === ScrapeItemType.NetflixOriginalsArriving
+            networkScraper === ScrapeItemType.NetflixOriginalsArriving
               ? 'contained'
               : undefined
           }
           component={Link}
           to={`/matching/${status}/${ScrapeItemType.NetflixOriginalsArriving}`}
-          onClick={() => setNetwork(ScrapeItemType.NetflixOriginalsArriving)}
+          onClick={() =>
+            setNetworkScraper(ScrapeItemType.NetflixOriginalsArriving)
+          }
         >
           Netflix Originals Arriving
         </Button>
         <Button
           variant={
-            network === ScrapeItemType.DisneyPlusCatalog
+            networkScraper === ScrapeItemType.DisneyPlusCatalog
               ? 'contained'
               : undefined
           }
           component={Link}
           to={`/matching/${status}/${ScrapeItemType.DisneyPlusCatalog}`}
-          onClick={() => setNetwork(ScrapeItemType.DisneyPlusCatalog)}
+          onClick={() => setNetworkScraper(ScrapeItemType.DisneyPlusCatalog)}
         >
           Disney+
         </Button>
         <Button
           variant={
-            network === ScrapeItemType.HboMaxCatalog ? 'contained' : undefined
+            networkScraper === ScrapeItemType.HboMaxCatalog
+              ? 'contained'
+              : undefined
           }
           component={Link}
           to={`/matching/${status}/${ScrapeItemType.HboMaxCatalog}`}
-          onClick={() => setNetwork(ScrapeItemType.HboMaxCatalog)}
+          onClick={() => setNetworkScraper(ScrapeItemType.HboMaxCatalog)}
         >
           HBO Max
         </Button>
         <Button
           variant={
-            network === ScrapeItemType.HboChanges ? 'contained' : undefined
+            networkScraper === ScrapeItemType.HboChanges
+              ? 'contained'
+              : undefined
           }
           component={Link}
           to={`/matching/${status}/${ScrapeItemType.HboChanges}`}
-          onClick={() => setNetwork(ScrapeItemType.HboChanges)}
+          onClick={() => setNetworkScraper(ScrapeItemType.HboChanges)}
         >
           HBO Changes
         </Button>
         <Button
           variant={
-            network === ScrapeItemType.HboCatalog ? 'contained' : undefined
+            networkScraper === ScrapeItemType.HboCatalog
+              ? 'contained'
+              : undefined
           }
           component={Link}
           to={`/matching/${status}/${ScrapeItemType.HboCatalog}`}
-          onClick={() => setNetwork(ScrapeItemType.HboCatalog)}
+          onClick={() => setNetworkScraper(ScrapeItemType.HboCatalog)}
         >
           HBO
         </Button>
