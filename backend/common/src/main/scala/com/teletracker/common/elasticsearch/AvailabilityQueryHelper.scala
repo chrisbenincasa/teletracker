@@ -2,7 +2,6 @@ package com.teletracker.common.elasticsearch
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.Network
 import javax.inject.Inject
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.index.query.QueryBuilders

@@ -2,7 +2,11 @@ package com.teletracker.tasks.scraper
 
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.{ExternalSource, ItemType}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  ItemType,
+  SupportedNetwork
+}
 import com.teletracker.common.elasticsearch.async.EsIngestQueue
 import com.teletracker.common.elasticsearch.lookups.ElasticsearchExternalIdMappingStore
 import com.teletracker.common.elasticsearch.model.{
@@ -33,7 +37,11 @@ import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.{AsyncStream, Folds, NetworkCache}
-import com.teletracker.tasks.scraper.IngestJobParser.{AllJson, ParseMode}
+import com.teletracker.tasks.scraper.IngestJobParser.{
+  AllJson,
+  JsonPerLine,
+  ParseMode
+}
 import com.teletracker.tasks.scraper.matching.{
   CustomElasticsearchLookup,
   ElasticsearchExternalIdLookup,
@@ -66,6 +74,7 @@ trait IngestDeltaJobArgsLike {
   val titleMatchThreshold: Int
   val thingIdFilter: Option[UUID]
   val perBatchSleepMs: Option[Int]
+  val deltaSizeThreshold: Double
 }
 
 @JsonCodec
@@ -77,15 +86,15 @@ case class IngestDeltaJobArgs(
   dryRun: Boolean = true,
   titleMatchThreshold: Int = 15,
   thingIdFilter: Option[UUID] = None,
-  perBatchSleepMs: Option[Int] = None)
+  perBatchSleepMs: Option[Int] = None,
+  deltaSizeThreshold: Double = 5.0)
     extends IngestJobArgsLike
     with IngestDeltaJobArgsLike
 
 abstract class IngestDeltaJob[T <: ScrapedItem](
-  elasticsearchLookup: ElasticsearchLookup
-)(implicit codec: Codec[T],
+  implicit codec: Codec[T],
   typedArgs: JsonableArgs[IngestDeltaJobArgs])
-    extends IngestDeltaJobLike[T, IngestDeltaJobArgs](elasticsearchLookup) {
+    extends IngestDeltaJobLike[T, IngestDeltaJobArgs] {
   override def preparseArgs(args: RawArgs): IngestDeltaJobArgs = parseArgs(args)
 
   private def parseArgs(args: Map[String, Option[Any]]): IngestDeltaJobArgs = {
@@ -96,7 +105,9 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
       limit = args.valueOrDefault("limit", -1),
       dryRun = args.valueOrDefault("dryRun", true),
       thingIdFilter = args.value[UUID]("thingIdFilter"),
-      perBatchSleepMs = args.value[Int]("perBatchSleepMs")
+      perBatchSleepMs = args.value[Int]("perBatchSleepMs"),
+      deltaSizeThreshold =
+        args.valueOrDefault[Double]("deltaSizeThreshold", 5.0)
     )
   }
 }
@@ -104,9 +115,7 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
 abstract class IngestDeltaJobLike[
   T <: ScrapedItem,
   IngestJobArgs <: IngestJobArgsLike with IngestDeltaJobArgsLike
-](
-  elasticsearchLookup: ElasticsearchLookup
-)(implicit codec: Codec[T],
+](implicit codec: Codec[T],
   typedArgs: JsonableArgs[IngestJobArgs])
     extends BaseIngestJob[T, IngestJobArgs]()(
       typedArgs,
@@ -131,19 +140,22 @@ abstract class IngestDeltaJobLike[
   private[this] var esExternalIdMapper: ElasticsearchExternalIdMappingStore = _
   @Inject
   private[this] var esPotentialMatchItemStore: EsPotentialMatchItemStore = _
+  @Inject
+  protected var elasticsearchLookup: ElasticsearchLookup = _
 
   @Inject protected var teletrackerConfig: TeletrackerConfig = _
   @Inject protected var elasticsearchExecutor: ElasticsearchExecutor = _
 
-  protected def s3: S3Client
-  protected def itemLookup: ItemLookup
-  protected def itemUpdater: ItemUpdater
+  @Inject protected var s3: S3Client = _
+  @Inject protected var itemLookup: ItemLookup = _
+  @Inject protected var itemUpdater: ItemUpdater = _
+  @Inject protected var networkCache: NetworkCache = _
 
-  protected def networkNames: Set[String]
-  protected def networkCache: NetworkCache
+  protected def supportedNetworks: Set[SupportedNetwork]
   protected def externalSource: ExternalSource
 
-  protected def parseMode: ParseMode = AllJson
+  protected def parseMode: ParseMode = JsonPerLine
+
   protected def lookupMethod: LookupMethod[T] =
     new CustomElasticsearchLookup[T](
       List(
@@ -182,6 +194,59 @@ abstract class IngestDeltaJobLike[
     val removedIds = beforeIds -- afterIds
     val matchingIds = afterIds.intersect(beforeIds)
 
+    val pctChange = Math.abs(
+      (beforeIds.size - afterIds.size) / beforeIds.size.toDouble
+    ) * 100.0
+
+    if (pctChange >= args.deltaSizeThreshold) {
+      val beforeItemSource =
+        sourceRetriever.getSource(args.snapshotBefore, consultCache = true)
+      val (beforeItems, _) = readItems(beforeItemSource)
+
+      val afterItemSource =
+        sourceRetriever.getSource(args.snapshotAfter, consultCache = true)
+      val (afterItems, _) = readItems(afterItemSource)
+
+      val addedItems = afterItems
+        .filter(item => newIds.contains(uniqueKey(item)))
+
+      val removedItems = beforeItems
+        .filter(item => removedIds.contains(uniqueKey(item)))
+
+      val today = LocalDate.now()
+      val changes = new File(
+        s"${today}_${getClass.getSimpleName}-changes-error.json"
+      )
+      val changesPrinter = new PrintWriter(
+        new BufferedOutputStream(new FileOutputStream(changes))
+      )
+
+      addedItems.foreach(item => {
+        changesPrinter.println(
+          Map(
+            "change_type" -> "added".asJson,
+            "item" -> item.asJson
+          ).asJson.noSpaces
+        )
+      })
+
+      removedItems.foreach(item => {
+        changesPrinter.println(
+          Map(
+            "change_type" -> "removed".asJson,
+            "item" -> item.asJson
+          ).asJson.noSpaces
+        )
+      })
+
+      changesPrinter.flush()
+      changesPrinter.close()
+
+      throw new RuntimeException(
+        s"Delta ($pctChange)% exceeded configured threshold of ${args.deltaSizeThreshold}. Before: ${beforeIds.size}, After: ${afterIds.size}"
+      )
+    }
+
     logger.info(
       s"Checking for ${newIds.size} new IDs, ${removedIds.size} removed IDs, and ${matchingIds.size} matching IDs."
     )
@@ -216,7 +281,7 @@ abstract class IngestDeltaJobLike[
         case MatchResult(scrapedItem, esItem) =>
           val newAvailabilities = createDeltaAvailabilities(
             networks,
-            esItem.id,
+            esItem,
             scrapedItem,
             isAvailable = true
           )
@@ -253,7 +318,7 @@ abstract class IngestDeltaJobLike[
         case MatchResult(scrapedItem, esItem) =>
           val newAvailabilities = createDeltaAvailabilities(
             networks,
-            esItem.id,
+            esItem,
             scrapedItem,
             isAvailable = false
           )
@@ -308,7 +373,7 @@ abstract class IngestDeltaJobLike[
 
               val availabilities = createDeltaAvailabilities(
                 networks,
-                esItem.id,
+                esItem,
                 scrapedItem,
                 isAvailable = isAvailable
               )
@@ -421,6 +486,8 @@ abstract class IngestDeltaJobLike[
       changesPrinter.close()
     }
   }
+
+  protected def countCurrentAvailability() = {}
 
   private def filterMatchResults(
     matches: List[MatchResult[T]],
@@ -665,14 +732,19 @@ abstract class IngestDeltaJobLike[
       .getAllNetworks()
       .await()
       .collect {
-        case network if networkNames.contains(network.slug.value) =>
+        case network
+            if network.supportedNetwork.isDefined && supportedNetworks.contains(
+              network.supportedNetwork.get
+            ) =>
           network
       }
       .toSet
 
-    if (networkNames.diff(foundNetworks.map(_.slug.value)).nonEmpty) {
+    if (supportedNetworks
+          .diff(foundNetworks.flatMap(_.supportedNetwork))
+          .nonEmpty) {
       throw new IllegalStateException(
-        s"""Could not find all networks "${networkNames}" network from datastore"""
+        s"""Could not find all networks "${supportedNetworks}" network from datastore"""
       )
     }
 
@@ -681,7 +753,7 @@ abstract class IngestDeltaJobLike[
 
   protected def createDeltaAvailabilities(
     networks: Set[StoredNetwork],
-    itemId: UUID,
+    item: EsItem,
     scrapedItem: T,
     isAvailable: Boolean
   ): List[EsAvailability]

@@ -68,7 +68,6 @@ trait ModelInstances extends ConfiguredModelInstances with JodaInstances {
     Encoder.encodeString.contramap(slug => slug.value)
   implicit val slugDecoder: Decoder[Slug] = Decoder.decodeString.map(Slug.raw)
 
-  implicit val networkEncoder: Codec[Network] = deriveCodec
   implicit val userPrefsEncoder: Codec[UserPreferences] = deriveCodec
   implicit val dynamicListRulesEncoder: Codec[DynamicListRules] = deriveCodec
   implicit val dynamicListTagRuleEncoder: Codec[DynamicListTagRule] =

@@ -57,7 +57,7 @@ object NetworkAvailability {
     supportedNetwork match {
       case SupportedNetwork.Netflix | SupportedNetwork.Hulu |
           SupportedNetwork.DisneyPlus | SupportedNetwork.Hbo |
-          SupportedNetwork.HboMax =>
+          SupportedNetwork.HboMax | SupportedNetwork.AmazonPrimeVideo =>
         forSubscriptionNetwork(
           storedNetwork,
           region,
@@ -67,6 +67,8 @@ object NetworkAvailability {
           numSeasonAvailable,
           updateSource
         )
+
+      case SupportedNetwork.AmazonVideo => ???
     }
   }
 }

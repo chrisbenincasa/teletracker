@@ -33,13 +33,12 @@ case class IngestPotentialMatchesDeltaArgs(
   thingIdFilter: Option[UUID] = None,
   perBatchSleepMs: Option[Int] = None)
     extends IngestJobArgsLike
-    with IngestDeltaJobArgsLike
+    with IngestDeltaJobArgsLike {
+  override val deltaSizeThreshold: Double = 0.0
+}
 
-abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec](
-  elasticsearchLookup: ElasticsearchLookup)
-    extends IngestDeltaJobLike[T, IngestPotentialMatchesDeltaArgs](
-      elasticsearchLookup
-    ) {
+abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec]
+    extends IngestDeltaJobLike[T, IngestPotentialMatchesDeltaArgs] {
 
   override def preparseArgs(args: RawArgs): IngestPotentialMatchesDeltaArgs =
     parseArgs(args)

@@ -1,57 +1,26 @@
 package com.teletracker.tasks.scraper.hulu
 
-import com.teletracker.common.availability.NetworkAvailability
-import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.{
-  ExternalSource,
-  OfferType,
-  PresentationType
-}
-import com.teletracker.common.elasticsearch.model.EsAvailability
-import com.teletracker.common.elasticsearch.{ItemLookup, ItemUpdater}
+import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
-import com.teletracker.common.util.NetworkCache
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
 import com.teletracker.tasks.scraper.{
   IngestDeltaJob,
   IngestJobParser,
-  SubscriptionNetworkAvailability
+  SubscriptionNetworkDeltaAvailability
 }
 import javax.inject.Inject
-import software.amazon.awssdk.services.s3.S3Client
-import java.util.UUID
 
-class HuluCatalogDeltaIngestJob @Inject()(
-  protected val s3: S3Client,
-  protected val networkCache: NetworkCache,
-  protected val itemLookup: ItemLookup,
-  protected val itemUpdater: ItemUpdater,
-  elasticsearchLookup: ElasticsearchLookup)
-    extends IngestDeltaJob[HuluScrapeCatalogItem](elasticsearchLookup)
-    with SubscriptionNetworkAvailability[HuluScrapeCatalogItem] {
+class HuluCatalogDeltaIngestJob @Inject()()
+    extends IngestDeltaJob[HuluScrapeCatalogItem]
+    with SubscriptionNetworkDeltaAvailability[HuluScrapeCatalogItem] {
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HuluCatalog
 
-  override protected val networkNames: Set[String] = Set("hulu")
+  override protected val supportedNetworks: Set[SupportedNetwork] = Set(
+    SupportedNetwork.Hulu
+  )
   override protected val externalSource: ExternalSource = ExternalSource.Hulu
-
-  override protected def createDeltaAvailabilities(
-    networks: Set[StoredNetwork],
-    itemId: UUID,
-    scrapedItem: HuluScrapeCatalogItem,
-    isAvailable: Boolean
-  ): List[EsAvailability] = {
-    networks.toList.flatMap(network => {
-      NetworkAvailability.forSubscriptionNetwork(
-        network = network,
-        presentationTypes = Set(PresentationType.SD, PresentationType.HD),
-        numSeasonAvailable = scrapedItem.numSeasonsAvailable,
-        updateSource = Some(getClass.getSimpleName)
-      )
-    })
-  }
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 

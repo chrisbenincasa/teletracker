@@ -1,10 +1,12 @@
 package com.teletracker.common.db.dynamo.model
 
 import com.teletracker.common.db.dynamo.util.syntax._
+import com.teletracker.common.db.model.SupportedNetwork
 import com.teletracker.common.util.Slug
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
 import java.util
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 object StoredNetwork {
   final val Prefix = "NETWORK_"
@@ -46,6 +48,12 @@ case class StoredNetwork(
   origin: Option[String]) {
 
   import StoredNetwork._
+
+  lazy val supportedNetwork: Option[SupportedNetwork] = Try(
+    SupportedNetwork.fromString(slug.value)
+  ).toOption
+
+  lazy val isSupported: Boolean = supportedNetwork.isDefined
 
   def toDynamoItem: java.util.Map[String, AttributeValue] = {
     (Map(

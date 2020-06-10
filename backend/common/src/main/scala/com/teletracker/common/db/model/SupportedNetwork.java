@@ -3,11 +3,13 @@ package com.teletracker.common.db.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum SupportedNetwork {
-    Netflix(ExternalSource.Netflix.name(), 1),
-    Hulu(ExternalSource.Hulu.name(), 2),
+    Netflix(ExternalSource.Netflix.getName(), 1),
+    Hulu(ExternalSource.Hulu.getName(), 2),
     Hbo("hbo", 3),
-    HboMax(ExternalSource.HboMax.name(), 4),
-    DisneyPlus(ExternalSource.DisneyPlus.name(), 5);
+    HboMax(ExternalSource.HboMax.getName(), 4),
+    DisneyPlus(ExternalSource.DisneyPlus.getName(), 5),
+    AmazonPrimeVideo(ExternalSource.AmazonPrimeVideo.getName(), 6),
+    AmazonVideo(ExternalSource.AmazonVideo.getName(), 7);
 
     private final int value;
     private final String name;

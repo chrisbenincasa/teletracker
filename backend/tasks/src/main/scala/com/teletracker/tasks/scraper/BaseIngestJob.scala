@@ -1,5 +1,6 @@
 package com.teletracker.tasks.scraper
 
+import com.teletracker.common.availability.NetworkAvailability
 import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.db.dynamo.model.StoredNetwork
@@ -13,7 +14,7 @@ import com.teletracker.common.model.scraping.{
   ScrapedItem
 }
 import com.teletracker.common.tasks.TeletrackerTask.JsonableArgs
-import com.teletracker.common.util.AsyncStream
+import com.teletracker.common.util.{AsyncStream, OpenDateRange}
 import com.teletracker.tasks.scraper.matching.{
   ElasticsearchFallbackMatcher,
   ElasticsearchFallbackMatcherOptions,
@@ -26,6 +27,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.time.{LocalDate, OffsetDateTime, ZoneOffset}
+import java.util.UUID
 import java.util.concurrent.{Executors, TimeUnit}
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -314,10 +316,12 @@ abstract class BaseIngestJob[
       extends ProcessMode
 }
 
-trait SubscriptionNetworkAvailability[T <: ScrapedItem] {
-  self: BaseIngestJob[T, _] =>
+trait BaseSubscriptionNetworkAvailability[
+  T <: ScrapedItem,
+  Args <: IngestJobArgsLike] {
+  self: BaseIngestJob[T, Args] =>
 
-  protected def createAvailabilities(
+  override protected def createAvailabilities(
     networks: Set[StoredNetwork],
     item: EsItem,
     scrapeItem: T
@@ -339,28 +343,33 @@ trait SubscriptionNetworkAvailability[T <: ScrapedItem] {
           existingAvailabilities.map(_.copy(start_date = start, end_date = end))
 
         case None =>
-          presentationTypes
-            .map(_.toString)
-            .toList
-            .map(presentationType => {
-              EsAvailability(
-                network_id = network.id,
-                network_name = Some(network.name),
-                region = "US",
-                start_date = start,
-                end_date = end,
-                // TODO: This isn't always correct, let jobs configure offer, cost, currency
-                offer_type = OfferType.Subscription.toString,
-                cost = None,
-                currency = None,
-                presentation_type = Some(presentationType),
-                links = None,
-                num_seasons_available = scrapeItem.numSeasonsAvailable,
-                last_updated = Some(OffsetDateTime.now()),
-                last_updated_by = Some(self.getClass.getSimpleName)
-              )
-            })
+          NetworkAvailability.forSubscriptionNetwork(
+            network,
+            availableWindow = OpenDateRange(start, end),
+            presentationTypes = presentationTypes,
+            numSeasonAvailable = scrapeItem.numSeasonsAvailable,
+            updateSource = Some(getClass.getSimpleName)
+          )
       }
     }) ++ unaffectedNetworks.toList.flatMap(availabilitiesByNetwork.get).flatten
+  }
+}
+
+trait SubscriptionNetworkAvailability[T <: ScrapedItem]
+    extends BaseSubscriptionNetworkAvailability[T, IngestJobArgs] {
+  self: IngestJob[T] =>
+}
+
+trait SubscriptionNetworkDeltaAvailability[T <: ScrapedItem]
+    extends BaseSubscriptionNetworkAvailability[T, IngestDeltaJobArgs] {
+  self: IngestDeltaJob[T] =>
+
+  override protected def createDeltaAvailabilities(
+    networks: Set[StoredNetwork],
+    item: EsItem,
+    scrapedItem: T,
+    isAvailable: Boolean
+  ): List[EsAvailability] = {
+    createAvailabilities(networks, item, scrapedItem).toList
   }
 }
