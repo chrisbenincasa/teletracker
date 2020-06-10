@@ -1,29 +1,16 @@
 package com.teletracker.tasks.scraper.netflix
 
-import com.teletracker.common.availability.NetworkAvailability
-import com.teletracker.common.db.dynamo.model.StoredNetwork
-import com.teletracker.common.db.model.{
-  ExternalSource,
-  PresentationType,
-  SupportedNetwork
-}
-import com.teletracker.common.elasticsearch.model.EsAvailability
+import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
 import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
-import com.teletracker.tasks.scraper.{
-  IngestDeltaJob,
-  IngestDeltaJobArgs,
-  IngestJobParser,
-  SubscriptionNetworkAvailability,
-  SubscriptionNetworkDeltaAvailability
-}
+import com.teletracker.tasks.scraper._
 import javax.inject.Inject
-import java.util.UUID
 import scala.concurrent.Future
 
-case class NetflixCatalogDeltaIngestJob @Inject()()
-    extends IngestDeltaJob[NetflixScrapedCatalogItem]
+case class NetflixCatalogDeltaIngestJob @Inject()(
+  deps: IngestDeltaJobDependencies)
+    extends IngestDeltaJob[NetflixScrapedCatalogItem](deps)
     with SubscriptionNetworkDeltaAvailability[NetflixScrapedCatalogItem] {
 
   override protected def scrapeItemType: ScrapeItemType =

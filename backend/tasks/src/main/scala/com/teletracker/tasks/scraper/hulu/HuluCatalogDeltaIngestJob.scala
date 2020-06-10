@@ -6,14 +6,16 @@ import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
 import com.teletracker.tasks.scraper.{
   IngestDeltaJob,
+  IngestDeltaJobDependencies,
   IngestJobParser,
   SubscriptionNetworkDeltaAvailability
 }
 import javax.inject.Inject
 
-class HuluCatalogDeltaIngestJob @Inject()()
-    extends IngestDeltaJob[HuluScrapeCatalogItem]
+class HuluCatalogDeltaIngestJob @Inject()(deps: IngestDeltaJobDependencies)
+    extends IngestDeltaJob[HuluScrapeCatalogItem](deps)
     with SubscriptionNetworkDeltaAvailability[HuluScrapeCatalogItem] {
+
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HuluCatalog
 

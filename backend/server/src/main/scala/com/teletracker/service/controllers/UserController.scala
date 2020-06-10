@@ -457,7 +457,7 @@ case class UpdateUserRequest(
 
 @JsonCodec
 case class UpdateUserRequestPayload(
-  networkSubscriptions: Option[List[Network]],
+//  networkSubscriptions: Option[List[Network]],
   userPreferences: Option[UserPreferences])
 
 case class UpdateUserThingActionRequest(

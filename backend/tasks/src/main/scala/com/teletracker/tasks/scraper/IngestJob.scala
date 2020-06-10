@@ -173,6 +173,8 @@ abstract class IngestJob[T <: ScrapedItem](
   }
 
   override def runInternal(): Unit = {
+    registerArtifact(potentialMatchFile)
+
     val network = getNetworksOrExit()
 
     logger.info("Running preprocess phase")

@@ -86,14 +86,16 @@ abstract class BaseIngestJob[
 
   private val _artifacts: mutable.ListBuffer[File] = {
     val a = new mutable.ListBuffer[File]()
-    a ++= List(matchItemsFile, missingItemsFile)
+    a ++= List(matchItemsFile, missingItemsFile, potentialMatchFile)
     a
   }
 
   protected def artifacts: List[File] = _artifacts.toList
 
-  protected def registerArtifact(file: File): Unit = synchronized {
-    _artifacts += file
+  protected def registerArtifact(file: File): Unit = _artifacts.synchronized {
+    if (!_artifacts.exists(_.getAbsolutePath == file.getAbsolutePath)) {
+      _artifacts += file
+    }
   }
 
   protected def lookupMethod(): LookupMethod[T]

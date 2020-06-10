@@ -45,9 +45,6 @@ abstract class DeltaLocatorJob[_ArgsType <: DeltaLocatorJobArgsLike](
 )(implicit executionContext: ExecutionContext,
   enc: Encoder[_ArgsType])
     extends TypedTeletrackerTask[_ArgsType] {
-  @Inject
-  private[this] var taskQueue: SqsFifoQueue[TeletrackerTaskQueueMessage] = _
-
   protected def defaultMaxDaysBack = 3
 
   override def preparseArgs(args: RawArgs): ArgsType =
@@ -135,9 +132,7 @@ abstract class DeltaLocatorJob[_ArgsType <: DeltaLocatorJobArgsLike](
           makeTaskMessages(actualBeforeLocation, actualAfterLocation)
 
         if (!args.local) {
-          taskQueue
-            .batchQueue(messages.map(message => message -> message.clazz))
-            .await()
+          messages.foreach(registerFollowupTask)
         } else {
           // FOR DEBUGGING
           messages.foreach(message => {

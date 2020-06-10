@@ -5,13 +5,10 @@ import com.teletracker.common.model.scraping
 import com.teletracker.common.model.scraping.{MatchResult, ScrapedItem}
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
 import com.teletracker.common.util.Folds
-import com.teletracker.tasks.scraper.matching.ElasticsearchLookup
 import com.teletracker.tasks.scraper.model.PotentialInput
 import com.teletracker.common.util.json.circe._
-import com.teletracker.tasks.util.SourceRetriever
 import io.circe.generic.JsonCodec
 import io.circe.{Codec, Encoder}
-import io.circe.generic.semiauto.deriveEncoder
 import java.net.URI
 import java.util.UUID
 import scala.collection.mutable
@@ -37,8 +34,9 @@ case class IngestPotentialMatchesDeltaArgs(
   override val deltaSizeThreshold: Double = 0.0
 }
 
-abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec]
-    extends IngestDeltaJobLike[T, IngestPotentialMatchesDeltaArgs] {
+abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec](
+  deps: IngestDeltaJobDependencies)
+    extends IngestDeltaJobLike[T, IngestPotentialMatchesDeltaArgs](deps) {
 
   override def preparseArgs(args: RawArgs): IngestPotentialMatchesDeltaArgs =
     parseArgs(args)
@@ -62,10 +60,8 @@ abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec]
     mutable.HashMap.empty[String, PotentialInput[T]]
 
   override def runInternal(): Unit = {
-    val sourceRetriever = new SourceRetriever(s3)
-
     val potentialMappingsSource =
-      sourceRetriever.getSource(args.potentialMappings)
+      deps.sourceRetriever.getSource(args.potentialMappings)
 
     try {
       loadMappings(potentialMappingsSource.getLines())
@@ -88,7 +84,7 @@ abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec]
       .map(item => potentialMappings(uniqueKey(item)).potential.id -> item)
       .toMap
 
-    itemLookup
+    deps.itemLookup
       .lookupItemsByIds(itemsByEsId.keySet)
       .map(esItemMap => {
         val (matchResults, missingEsItems) =

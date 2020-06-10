@@ -60,6 +60,10 @@ class AdminController @Inject()(
                 Set(ScrapeItemType.HboChanges, ScrapeItemType.HboMaxCatalog)
               case SupportedNetwork.DisneyPlus =>
                 Set(ScrapeItemType.DisneyPlusCatalog)
+              case SupportedNetwork.AmazonPrimeVideo |
+                  SupportedNetwork.AmazonVideo =>
+                // TODO Support amazon filtering
+                Set.empty[ScrapeItemType]
             }
 
           Some(scrapeItemTypes)

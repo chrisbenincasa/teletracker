@@ -1,9 +1,10 @@
 package com.teletracker.common.inject
 
-import com.google.inject.{Provides, Singleton}
+import com.google.inject.{Provider, Provides, Singleton}
 import com.teletracker.common.util.execution.{
   ExecutionContextProvider,
-  ProvidedExecutionContext
+  ProvidedExecutionContext,
+  ProvidedSchedulerService
 }
 import com.twitter.concurrent.NamedPoolThreadFactory
 import com.twitter.inject.TwitterModule
@@ -24,6 +25,20 @@ class ExecutionContextModule(implicit executionContext: ExecutionContext)
   ): ExecutionContext = {
     providedExecutionContext
   }
+
+  @Provides
+  @SingleThreaded
+  def providedScheduledSingleThreaded: ProvidedSchedulerService =
+    ExecutionContextProvider.provider.of(
+      Executors.newSingleThreadScheduledExecutor()
+    )
+
+  @Provides
+  @SingleThreaded
+  def rawScheduledSingleThreaded(
+    @SingleThreaded provided: Provider[ProvidedSchedulerService]
+  ): ScheduledExecutorService =
+    provided.get()
 
   @Provides
   @Singleton

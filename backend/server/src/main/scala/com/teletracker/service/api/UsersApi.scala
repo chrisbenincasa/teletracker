@@ -82,32 +82,32 @@ class UsersApi @Inject()(
       preferencesOpt match {
         case Some(preferences) =>
           val newPreferences = preferences
-            .through(
-              _.applyOptional(updateUserRequest.networkSubscriptions)(
-                (prefs, networkSubscriptions) => {
-                  val networkIds = networkSubscriptions.flatMap(_.id).toSet
-                  val existingNetworkIds =
-                    preferences.preferences.networkIds.getOrElse(Set.empty)
-
-                  val toDelete =
-                    existingNetworkIds.diff(networkIds)
-
-                  val toAdd = networkSubscriptions
-                    .filter(
-                      net => net.id.isDefined && !existingNetworkIds(net.id.get)
-                    )
-                    .flatMap(_.id)
-                    .toSet
-
-                  prefs.copy(
-                    preferences = prefs.preferences.copy(
-                      networkIds =
-                        Some((existingNetworkIds -- toDelete) ++ toAdd)
-                    )
-                  )
-                }
-              )
-            )
+//            .through(
+//              _.applyOptional(updateUserRequest.networkSubscriptions)(
+//                (prefs, networkSubscriptions) => {
+//                  val networkIds = networkSubscriptions.flatMap(_.id).toSet
+//                  val existingNetworkIds =
+//                    preferences.preferences.networkIds.getOrElse(Set.empty)
+//
+//                  val toDelete =
+//                    existingNetworkIds.diff(networkIds)
+//
+//                  val toAdd = networkSubscriptions
+//                    .filter(
+//                      net => net.id.isDefined && !existingNetworkIds(net.id.get)
+//                    )
+//                    .flatMap(_.id)
+//                    .toSet
+//
+//                  prefs.copy(
+//                    preferences = prefs.preferences.copy(
+//                      networkIds =
+//                        Some((existingNetworkIds -- toDelete) ++ toAdd)
+//                    )
+//                  )
+//                }
+//              )
+//            )
             .through(
               _.applyOptional(updateUserRequest.userPreferences)(
                 (prefs, updatePrefs) => {
@@ -136,8 +136,8 @@ class UsersApi @Inject()(
             createdAt = now,
             lastUpdatedAt = now,
             preferences = StoredUserPreferencesBlob(
-              networkIds = updateUserRequest.networkSubscriptions
-                .map(_.flatMap(_.id).toSet),
+//              networkIds = updateUserRequest.networkSubscriptions
+//                .map(_.flatMap(_.id).toSet),
               presentationTypes =
                 updateUserRequest.userPreferences.map(_.presentationTypes),
               showOnlyNetworkSubscriptions = updateUserRequest.userPreferences

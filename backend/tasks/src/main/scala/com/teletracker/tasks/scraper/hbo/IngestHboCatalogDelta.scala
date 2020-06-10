@@ -5,12 +5,13 @@ import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.hbo.HboScrapedCatalogItem
 import com.teletracker.tasks.scraper.{
   IngestDeltaJob,
+  IngestDeltaJobDependencies,
   SubscriptionNetworkDeltaAvailability
 }
 import javax.inject.Inject
 
-class IngestHboCatalogDelta @Inject()()
-    extends IngestDeltaJob[HboScrapedCatalogItem]
+class IngestHboCatalogDelta @Inject()(deps: IngestDeltaJobDependencies)
+    extends IngestDeltaJob[HboScrapedCatalogItem](deps)
     with SubscriptionNetworkDeltaAvailability[HboScrapedCatalogItem] {
   override protected def supportedNetworks: Set[SupportedNetwork] =
     Set(SupportedNetwork.Hbo, SupportedNetwork.HboMax)

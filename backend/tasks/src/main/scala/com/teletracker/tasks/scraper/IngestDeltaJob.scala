@@ -26,6 +26,7 @@ import com.teletracker.common.elasticsearch.{
   ItemLookup,
   ItemUpdater
 }
+import com.teletracker.common.inject.SingleThreaded
 import com.teletracker.common.model.scraping.{
   MatchResult,
   PartialEsItem,
@@ -37,11 +38,7 @@ import com.teletracker.common.util.json.circe._
 import com.teletracker.common.util.Functions._
 import com.teletracker.common.util.Futures._
 import com.teletracker.common.util.{AsyncStream, Folds, NetworkCache}
-import com.teletracker.tasks.scraper.IngestJobParser.{
-  AllJson,
-  JsonPerLine,
-  ParseMode
-}
+import com.teletracker.tasks.scraper.IngestJobParser.{JsonPerLine, ParseMode}
 import com.teletracker.tasks.scraper.matching.{
   CustomElasticsearchLookup,
   ElasticsearchExternalIdLookup,
@@ -51,10 +48,9 @@ import com.teletracker.tasks.scraper.matching.{
 }
 import com.teletracker.tasks.util.{FileUtils, SourceRetriever}
 import io.circe.generic.JsonCodec
-import io.circe.{Codec, Encoder}
+import io.circe.Codec
 import io.circe.syntax._
-import javax.inject.Inject
-import software.amazon.awssdk.services.s3.S3Client
+import javax.inject.{Inject, Provider}
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 import java.net.URI
 import java.time.{LocalDate, OffsetDateTime}
@@ -91,10 +87,29 @@ case class IngestDeltaJobArgs(
     extends IngestJobArgsLike
     with IngestDeltaJobArgsLike
 
+class IngestDeltaJobDependencies @Inject()(
+  val externalIdLookup: ElasticsearchExternalIdLookup.Factory,
+  val fileUtils: FileUtils,
+  val itemUpdateQueue: EsIngestQueue,
+  val esExternalIdMapper: ElasticsearchExternalIdMappingStore,
+  val esPotentialMatchItemStore: EsPotentialMatchItemStore,
+  val elasticsearchLookup: ElasticsearchLookup,
+  val teletrackerConfig: TeletrackerConfig,
+  val elasticsearchExecutor: ElasticsearchExecutor,
+  val itemLookup: ItemLookup,
+  val itemUpdater: ItemUpdater,
+  val networkCache: NetworkCache,
+  val sourceRetriever: SourceRetriever,
+  val executionContext: ExecutionContext,
+  @SingleThreaded val singleThreadExecutorProvider: Provider[
+    ScheduledExecutorService
+  ])
+
 abstract class IngestDeltaJob[T <: ScrapedItem](
-  implicit codec: Codec[T],
+  deps: IngestDeltaJobDependencies
+)(implicit codec: Codec[T],
   typedArgs: JsonableArgs[IngestDeltaJobArgs])
-    extends IngestDeltaJobLike[T, IngestDeltaJobArgs] {
+    extends IngestDeltaJobLike[T, IngestDeltaJobArgs](deps) {
   override def preparseArgs(args: RawArgs): IngestDeltaJobArgs = parseArgs(args)
 
   private def parseArgs(args: Map[String, Option[Any]]): IngestDeltaJobArgs = {
@@ -115,52 +130,38 @@ abstract class IngestDeltaJob[T <: ScrapedItem](
 abstract class IngestDeltaJobLike[
   T <: ScrapedItem,
   IngestJobArgs <: IngestJobArgsLike with IngestDeltaJobArgsLike
-](implicit codec: Codec[T],
+](
+  deps: IngestDeltaJobDependencies
+)(implicit codec: Codec[T],
   typedArgs: JsonableArgs[IngestJobArgs])
     extends BaseIngestJob[T, IngestJobArgs]()(
       typedArgs,
-      scala.concurrent.ExecutionContext.Implicits.global,
+      deps.executionContext,
       codec
     )
     with ElasticsearchFallbackMatching[T, IngestJobArgs] {
 
   protected val singleThreadExecutor: ScheduledExecutorService =
-    Executors.newSingleThreadScheduledExecutor()
+    deps.singleThreadExecutorProvider.get()
 
   implicit protected val execCtx: ExecutionContext =
-    scala.concurrent.ExecutionContext.Implicits.global
+    deps.executionContext
 
-  @Inject
-  private[this] var externalIdLookup: ElasticsearchExternalIdLookup.Factory = _
-  @Inject
-  private[this] var fileUtils: FileUtils = _
-  @Inject
-  private[this] var itemUpdateQueue: EsIngestQueue = _
-  @Inject
-  private[this] var esExternalIdMapper: ElasticsearchExternalIdMappingStore = _
-  @Inject
-  private[this] var esPotentialMatchItemStore: EsPotentialMatchItemStore = _
-  @Inject
-  protected var elasticsearchLookup: ElasticsearchLookup = _
-
-  @Inject protected var teletrackerConfig: TeletrackerConfig = _
-  @Inject protected var elasticsearchExecutor: ElasticsearchExecutor = _
-
-  @Inject protected var s3: S3Client = _
-  @Inject protected var itemLookup: ItemLookup = _
-  @Inject protected var itemUpdater: ItemUpdater = _
-  @Inject protected var networkCache: NetworkCache = _
+  override protected def teletrackerConfig: TeletrackerConfig =
+    deps.teletrackerConfig
+  override protected def elasticsearchExecutor: ElasticsearchExecutor =
+    deps.elasticsearchExecutor
 
   protected def supportedNetworks: Set[SupportedNetwork]
   protected def externalSource: ExternalSource
 
   protected def parseMode: ParseMode = JsonPerLine
 
-  protected def lookupMethod: LookupMethod[T] =
+  protected def lookupMethod(): LookupMethod[T] =
     new CustomElasticsearchLookup[T](
       List(
-        externalIdLookup.create[T](externalSource, uniqueKey(_)),
-        elasticsearchLookup.toMethod[T]
+        deps.externalIdLookup.create[T](externalSource, uniqueKey),
+        deps.elasticsearchLookup.toMethod[T]
       )
     )
 
@@ -170,9 +171,7 @@ abstract class IngestDeltaJobLike[
   override def runInternal(): Unit = {
     val networks = getNetworksOrExit()
 
-    val sourceRetriever = new SourceRetriever(s3)
-
-    val afterIds = fileUtils
+    val afterIds = deps.fileUtils
       .readAllLinesToUniqueIdSet[T](
         args.snapshotAfter,
         uniqueKey,
@@ -181,7 +180,7 @@ abstract class IngestDeltaJobLike[
 
     logger.info(s"Found ${afterIds.size} IDs in the current snapshot")
 
-    val beforeIds = fileUtils
+    val beforeIds = deps.fileUtils
       .readAllLinesToUniqueIdSet[T](
         args.snapshotBefore,
         uniqueKey,
@@ -199,48 +198,7 @@ abstract class IngestDeltaJobLike[
     ) * 100.0
 
     if (pctChange >= args.deltaSizeThreshold) {
-      val beforeItemSource =
-        sourceRetriever.getSource(args.snapshotBefore, consultCache = true)
-      val (beforeItems, _) = readItems(beforeItemSource)
-
-      val afterItemSource =
-        sourceRetriever.getSource(args.snapshotAfter, consultCache = true)
-      val (afterItems, _) = readItems(afterItemSource)
-
-      val addedItems = afterItems
-        .filter(item => newIds.contains(uniqueKey(item)))
-
-      val removedItems = beforeItems
-        .filter(item => removedIds.contains(uniqueKey(item)))
-
-      val today = LocalDate.now()
-      val changes = new File(
-        s"${today}_${getClass.getSimpleName}-changes-error.json"
-      )
-      val changesPrinter = new PrintWriter(
-        new BufferedOutputStream(new FileOutputStream(changes))
-      )
-
-      addedItems.foreach(item => {
-        changesPrinter.println(
-          Map(
-            "change_type" -> "added".asJson,
-            "item" -> item.asJson
-          ).asJson.noSpaces
-        )
-      })
-
-      removedItems.foreach(item => {
-        changesPrinter.println(
-          Map(
-            "change_type" -> "removed".asJson,
-            "item" -> item.asJson
-          ).asJson.noSpaces
-        )
-      })
-
-      changesPrinter.flush()
-      changesPrinter.close()
+      handleDiffEarlyExit(newIds = newIds, removedIds = removedIds)
 
       throw new RuntimeException(
         s"Delta ($pctChange)% exceeded configured threshold of ${args.deltaSizeThreshold}. Before: ${beforeIds.size}, After: ${afterIds.size}"
@@ -252,7 +210,7 @@ abstract class IngestDeltaJobLike[
     )
 
     val afterItemSource =
-      sourceRetriever.getSource(args.snapshotAfter, consultCache = true)
+      deps.sourceRetriever.getSource(args.snapshotAfter, consultCache = true)
 
     val (afterItems, afterItemsById) = readItems(afterItemSource)
 
@@ -289,7 +247,7 @@ abstract class IngestDeltaJobLike[
       }
 
     val beforeItemSource =
-      sourceRetriever.getSource(args.snapshotBefore, consultCache = true)
+      deps.sourceRetriever.getSource(args.snapshotBefore, consultCache = true)
 
     val (beforeItems, beforeItemsById) = readItems(beforeItemSource)
 
@@ -391,19 +349,19 @@ abstract class IngestDeltaJobLike[
 
     if (addedNotFound.nonEmpty) {
       logger.warn(
-        s"Could not find matches for added items: ${addedNotFound}"
+        s"Could not find matches for added items: $addedNotFound"
       )
     }
 
     if (beforeNotFound.nonEmpty) {
       logger.warn(
-        s"Could not find matches for removed items: ${beforeNotFound}"
+        s"Could not find matches for removed items: $beforeNotFound"
       )
     }
 
     if (changedNotFound.nonEmpty) {
       logger.warn(
-        s"Could not find matches for changed items: ${changedNotFound}"
+        s"Could not find matches for changed items: $changedNotFound"
       )
     }
 
@@ -487,7 +445,53 @@ abstract class IngestDeltaJobLike[
     }
   }
 
-  protected def countCurrentAvailability() = {}
+  protected def handleDiffEarlyExit(
+    newIds: Set[String],
+    removedIds: Set[String]
+  ): Unit = {
+    val beforeItemSource =
+      deps.sourceRetriever.getSource(args.snapshotBefore, consultCache = true)
+    val (beforeItems, _) = readItems(beforeItemSource)
+
+    val afterItemSource =
+      deps.sourceRetriever.getSource(args.snapshotAfter, consultCache = true)
+    val (afterItems, _) = readItems(afterItemSource)
+
+    val addedItems = afterItems
+      .filter(item => newIds.contains(uniqueKey(item)))
+
+    val removedItems = beforeItems
+      .filter(item => removedIds.contains(uniqueKey(item)))
+
+    val today = LocalDate.now()
+    val changes = new File(
+      s"${today}_${getClass.getSimpleName}-changes-error.json"
+    )
+    val changesPrinter = new PrintWriter(
+      new BufferedOutputStream(new FileOutputStream(changes))
+    )
+
+    addedItems.foreach(item => {
+      changesPrinter.println(
+        Map(
+          "change_type" -> "added".asJson,
+          "item" -> item.asJson
+        ).asJson.noSpaces
+      )
+    })
+
+    removedItems.foreach(item => {
+      changesPrinter.println(
+        Map(
+          "change_type" -> "removed".asJson,
+          "item" -> item.asJson
+        ).asJson.noSpaces
+      )
+    })
+
+    changesPrinter.flush()
+    changesPrinter.close()
+  }
 
   private def filterMatchResults(
     matches: List[MatchResult[T]],
@@ -541,7 +545,7 @@ abstract class IngestDeltaJobLike[
         )
       )
     } else {
-      esExternalIdMapper.mapExternalIds(allExternalIdUpdates)
+      deps.esExternalIdMapper.mapExternalIds(allExternalIdUpdates)
     }
   }
 
@@ -588,7 +592,7 @@ abstract class IngestDeltaJobLike[
             .values
             .flatMap(_.headOption)
 
-          itemLookup
+          deps.itemLookup
             .lookupItem(
               Left(itemId),
               None,
@@ -626,7 +630,7 @@ abstract class IngestDeltaJobLike[
                     case (source, id) => EsExternalId(source, id)
                   }
 
-                itemUpdateQueue.queueItemUpdate(
+                deps.itemUpdateQueue.queueItemUpdate(
                   id = item.rawItem.id,
                   itemType = item.rawItem.`type`,
                   doc = item.rawItem
@@ -714,7 +718,7 @@ abstract class IngestDeltaJobLike[
         update.copy(state = None, last_state_change = None) -> insert
       }
 
-      esPotentialMatchItemStore
+      deps.esPotentialMatchItemStore
         .upsertBatchWithFallback(items)
         .recover {
           case NonFatal(e) =>
@@ -728,7 +732,7 @@ abstract class IngestDeltaJobLike[
   }
 
   protected def getNetworksOrExit(): Set[StoredNetwork] = {
-    val foundNetworks = networkCache
+    val foundNetworks = deps.networkCache
       .getAllNetworks()
       .await()
       .collect {

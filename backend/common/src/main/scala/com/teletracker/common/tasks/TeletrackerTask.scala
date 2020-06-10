@@ -115,6 +115,13 @@ trait TeletrackerTask extends TaskArgImplicits {
   @Inject
   private[this] var taskScheduler: TaskScheduler = _
 
+  private[this] var _registeredFollowupTasks
+    : mutable.Buffer[TeletrackerTaskQueueMessage] =
+    mutable.Buffer.empty
+
+  protected def registeredFollowupTasks: List[TeletrackerTaskQueueMessage] =
+    _registeredFollowupTasks.toList
+
   private[this] var _options: Options = _
 
   private def checkInit() = {
@@ -268,6 +275,11 @@ trait TeletrackerTask extends TaskArgImplicits {
   protected def followupTasksToSchedule(): List[TeletrackerTaskQueueMessage] =
     Nil
 
+  protected def registerFollowupTask(task: TeletrackerTaskQueueMessage): Unit =
+    _registeredFollowupTasks.synchronized {
+      _registeredFollowupTasks += task
+    }
+
   protected def options: Options = _options
 
   private def registerFollowupTasksCallback(): Unit = {
@@ -276,7 +288,7 @@ trait TeletrackerTask extends TaskArgImplicits {
         "scheduleFollowupTasks",
         (typedArgs, args) => {
           if (options.scheduleFollowupTasks) {
-            val tasks = followupTasksToSchedule()
+            val tasks = followupTasksToSchedule() ++ registeredFollowupTasks
 
             if (tasks.isEmpty) {
               logger.debug("No follow-up tasks to schedule.")
