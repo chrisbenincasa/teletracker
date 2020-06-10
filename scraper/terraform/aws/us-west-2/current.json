@@ -1,6 +1,6 @@
 {
   "crawler_image": "302782651551.dkr.ecr.us-west-2.amazonaws.com/teletracker/crawlers",
-  "hbo_catalog_crawler_version": "1.0-1591048490.4568fd36",
+  "hbo_catalog_crawler_version": "1.0-1591758572.4a757bfa",
   "hbo_max_crawler_version": "1.0-1591048490.4568fd36",
   "hulu_catalog_crawler_version": "1.0-1591048490.4568fd36",
   "netflix_catalog_crawler_version": "1.0-1591386414.5634f492",

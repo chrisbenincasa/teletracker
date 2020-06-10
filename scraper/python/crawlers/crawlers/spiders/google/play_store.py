@@ -17,8 +17,25 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
         # ('/tv/show/', 'parse_show')
     ]
 
-    # def parse_show(self, response):
-    #
+    def parse_show(self, response):
+        title = response.xpath('//h1[@itemprop="name"]/span/text()').get()
+        release_year = response.xpath('//h1[@itemprop="name"]/following-sibling::div//text()').re(r'\d{4}')[0]
+        descriptions = response.xpath('//div[@itemprop="description"]')
+        item_description = ''
+        for description_node in descriptions:
+            text = description_node.xpath('./span/text()').get()
+            if text:
+                item_description = text
+                break
+
+        seasons = response.xpath('//*[@aria-label="Seasons"]//*[@role="option"]')
+        for season in seasons:
+            link = season.attrib['data-value']
+            yield scrapy.Request(url='https://play.google.com{}'.format(link), callback=self.parse_show_season)
+
+
+    def parse_show_season(self, response):
+        pass
 
     def parse_movie(self, response):
         title = response.xpath('//h1[@itemprop="name"]/span/text()').get()
@@ -39,7 +56,6 @@ class GooglePlayStoreSpider(BaseSitemapSpider):
             for offer in offers:
                 price = offer.xpath('.//meta[@itemprop="price"]')[0].attrib['content']
                 description = offer.xpath('.//meta[@itemprop="description"]')[0].attrib['content']
-                self.log('Rent: description = {}, price = {}'.format(description, price))
                 if 'plays in hd' in description.lower():
                     item_offers.append(
                         GooglePlayStoreItemOffer(

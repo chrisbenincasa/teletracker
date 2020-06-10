@@ -13,7 +13,7 @@ module "hbo_crawler" {
   image_version = var.hbo_catalog_crawler_version
 
   name        = "hbo_catalog_crawler"
-  spider_name = "hbo"
+  spider_name = "hbo_catalog"
   output_path = "s3://${data.aws_s3_bucket.data_bucket.id}/scrape-results/hbo/catalog/{date}/items_{time}.jl"
 
   # Every 3rd day and the first of the month

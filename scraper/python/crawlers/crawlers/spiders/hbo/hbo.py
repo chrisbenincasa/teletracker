@@ -1,4 +1,5 @@
 import json
+import re
 from os import path
 from urllib import parse
 
@@ -66,6 +67,7 @@ def _get_page_schema_with_type(react_data, typ):
         except KeyError:
             continue
 
+
 def _maybe_get_movie_id_from_image(react_data):
     try:
         content_overview = _get_band_of_type(react_data, 'ContentOverview')
@@ -83,8 +85,11 @@ def _parse_series_programs_json(loaded_json, partial_item):
         eps = loaded_json['programs']
         if eps and len(eps) > 0:
             first_ep = eps[0]
-            partial_item['id'] = path.split(first_ep['series']['goUrl'])[-1]
-            partial_item['goUrl'] = first_ep['series']['goUrl']
+            go_url = first_ep['series']['goUrl']
+            if go_url and 'id' not in partial_item:
+                partial_item['id'] = path.split(go_url)[-1]
+
+            partial_item['goUrl'] = go_url
             partial_item['nowUrl'] = first_ep['series']['nowUrl']
             partial_item['releaseDate'] = first_ep['publishDate']
 
@@ -116,6 +121,11 @@ def _parse_movie_programs_json(loaded_json, partial_item):
         return partial_item
 
 
+hbo_first_ep_re = r'(https:\/\/www.hbo.com\/[A-z\-]+)' \
+                  r'(\/season-0?1\/(episodes\/)?' \
+                  r'((episode-|chapter-|part-)?(1|01)(-[A-z0-9-]+)?|pilot))$'
+
+
 class HboSpider(BaseSitemapSpider):
     name = 'hbo'
     allowed_domains = ['hbo.com']
@@ -125,14 +135,20 @@ class HboSpider(BaseSitemapSpider):
     ]
 
     sitemap_rules = [
-        (r'https:\/\/www.hbo.com\/[A-z\-]+$', 'parse_series'),
         (r'/movies/[A-z-]+/?$', 'parse_movie'),
         (r'/documentaries/[A-z-]+/?$', 'parse_movie'),
+        (hbo_first_ep_re, 'handle_first_ep'),
+        (r'https:\/\/www.hbo.com\/[A-z\-]+$', 'parse_series'),
     ]
 
     custom_settings = {
         'DOWNLOAD_DELAY': 0.5
     }
+
+    def handle_first_ep(self, response):
+        match_result = re.search(hbo_first_ep_re, response.url)
+        if match_result:
+            yield scrapy.Request(url=match_result.group(1), callback=self.parse_series)
 
     def parse_series(self, response):
         loaded = json.loads(response.xpath('//noscript[@id="react-data"]/@data-state').get())
