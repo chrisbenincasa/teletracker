@@ -34,7 +34,7 @@ class IngestHuluChanges @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def handleNonMatches(
+  override protected def findPotentialMatches(
     args: IngestJobArgs,
     nonMatches: List[HuluScrapeItem]
   ): Future[List[NonMatchResult[HuluScrapeItem]]] = {

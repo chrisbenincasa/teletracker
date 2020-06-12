@@ -28,7 +28,6 @@ class ReindexUserItems @Inject()(
 
     val allUserItems = userItemsScroller
       .start(
-        teletrackerConfig.elasticsearch.user_items_index_name,
         QueryBuilders.matchAllQuery()
       )
       .toList

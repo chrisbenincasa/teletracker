@@ -184,45 +184,49 @@ abstract class BaseIngestJob[
         )
         .flatMap {
           case (exactMatchResults, nonMatchedItems) =>
-            handleNonMatches(args, nonMatchedItems).flatMap(fallbackMatches => {
-              val allItems = exactMatchResults ++ fallbackMatches
-                .map(_.toMatchResult)
+            findPotentialMatches(args, nonMatchedItems).flatMap(
+              fallbackMatches => {
+                val originalItems = filteredAndSanitized
+                  .map(itemUniqueIdentifier)
+                  .toSet
 
-              val originalItems = filteredAndSanitized
-                .map(itemUniqueIdentifier)
-                .toSet
+                val firstPhaseFinds = exactMatchResults
+                  .map(_.scrapedItem)
+                  .map(itemUniqueIdentifier)
+                  .toSet
 
-              val firstPhaseFinds = exactMatchResults
-                .map(_.scrapedItem)
-                .map(itemUniqueIdentifier)
-                .toSet
+                val secondPhaseFinds = fallbackMatches
+                  .map(_.originalScrapedItem)
+                  .map(itemUniqueIdentifier)
+                  .toSet
 
-              val secondPhaseFinds = fallbackMatches
-                .map(_.originalScrapedItem)
-                .map(itemUniqueIdentifier)
-                .toSet
+                val stillMissing = originalItems -- firstPhaseFinds -- secondPhaseFinds
 
-              val stillMissing = originalItems -- firstPhaseFinds -- secondPhaseFinds
+                val missingItems = filteredAndSanitized
+                  .filter(
+                    item => stillMissing.contains(itemUniqueIdentifier(item))
+                  )
 
-              val missingItems = filteredAndSanitized
-                .filter(
-                  item => stillMissing.contains(item.title.toLowerCase())
+                writePotentialMatches(fallbackMatches.map {
+                  case NonMatchResult(_, originalScrapedItem, esItem) =>
+                    esItem -> originalScrapedItem
+                })
+
+                writeMissingItems(
+                  missingItems
                 )
 
-              writeMissingItems(
-                missingItems
-              )
+                logger.info(
+                  s"Successfully found matches for ${exactMatchResults.size} out of ${items.size} items."
+                )
 
-              logger.info(
-                s"Successfully found matches for ${allItems.size} out of ${items.size} items."
-              )
+                writeMatchingItems(exactMatchResults)
 
-              writeMatchingItems(exactMatchResults)
-
-              handleMatchResults(allItems, networks, args).map(_ => {
-                allItems -> missingItems
-              })
-            })
+                handleMatchResults(exactMatchResults, networks, args).map(_ => {
+                  exactMatchResults -> missingItems
+                })
+              }
+            )
         }
     } else {
       Future.successful(Nil -> Nil)
@@ -249,7 +253,7 @@ abstract class BaseIngestJob[
 
   protected def itemUniqueIdentifier(item: T): String = item.title.toLowerCase()
 
-  protected def handleNonMatches(
+  protected def findPotentialMatches(
     args: IngestJobArgsType,
     nonMatches: List[T]
   ): Future[List[NonMatchResult[T]]] = {
@@ -259,14 +263,6 @@ abstract class BaseIngestJob[
         args,
         nonMatches
       )
-      .map(results => {
-        writePotentialMatches(results.map {
-          case result => result.esItem -> result.originalScrapedItem
-        })
-
-        // Don't return yet...
-        Nil
-      })
   }
 
   protected def getElasticsearchFallbackMatcherOptions =

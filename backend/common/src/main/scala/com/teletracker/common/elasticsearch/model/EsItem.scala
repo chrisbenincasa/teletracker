@@ -2,6 +2,7 @@ package com.teletracker.common.elasticsearch.model
 
 import com.teletracker.common.db.model.{ExternalSource, ItemType}
 import com.teletracker.common.elasticsearch.EsImageType
+import com.teletracker.common.elasticsearch.model.EsAvailability.AvailabilityKey
 import com.teletracker.common.elasticsearch.model._
 import com.teletracker.common.util.{Sanitizers, Slug}
 import com.teletracker.common.util.json.circe._
@@ -94,6 +95,10 @@ case class EsItem(
 
   def availabilityGrouped: Map[Int, List[EsAvailability]] = {
     availability.getOrElse(Nil).groupBy(_.network_id).toMap
+  }
+
+  def availabilityByKey: Map[AvailabilityKey, EsAvailability] = {
+    availability.getOrElse(Nil).map(av => EsAvailability.getKey(av) -> av).toMap
   }
 
   def scopeToUser(userId: Option[String]): EsItem = {

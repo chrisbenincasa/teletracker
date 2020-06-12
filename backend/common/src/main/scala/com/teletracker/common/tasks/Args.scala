@@ -45,6 +45,21 @@ class RichArgs(val args: Map[String, Option[Any]]) extends AnyVal {
       throw new IllegalArgumentException(s"No argument under key: $key")
     )
 
+  def valueRequiredIfOtherPresent[T](
+    key: String,
+    requiredValue: Option[_]
+  )(implicit argParser: ArgParser[T]
+  ): Option[T] = {
+    val theValue = value[T](key)
+    if (theValue.isEmpty && requiredValue.isDefined) {
+      throw new IllegalArgumentException(
+        s"$key is required when linked value is required."
+      )
+    } else {
+      theValue
+    }
+  }
+
   // Convenience functions
   def intOpt(key: String): Option[Int] = value[Int](key)
   def int(key: String): Int = valueOrThrow[Int](key)

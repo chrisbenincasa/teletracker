@@ -18,14 +18,14 @@ class FileUtils @Inject()(
   ): Set[String] = {
     readAllLinesToUniqueIdSet[String](
       loc,
-      identity,
+      Some(_),
       consultSourceCache = consultSourceCache
     )
   }
 
   def readAllLinesToUniqueIdSet[T: Decoder](
     loc: URI,
-    uniqueId: T => String,
+    uniqueId: T => Option[String],
     consultSourceCache: Boolean
   ): Set[String] = {
     sourceRetriever
@@ -40,7 +40,7 @@ class FileUtils @Inject()(
                 case Left(NonFatal(ex)) =>
                   logger.warn(s"Error parsing line: ${ex.getMessage}")
                   None
-                case Right(value) => Some(uniqueId(value))
+                case Right(value) => uniqueId(value)
               }
               .foldLeft(set)(_ + _)
           } finally {

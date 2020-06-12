@@ -41,7 +41,6 @@ class BackfillPotentialPopularity @Inject()(
 
     esPotentialMatchItemStore.scroller
       .start(
-        teletrackerConfig.elasticsearch.potential_matches_index_name,
         QueryBuilders.matchAllQuery()
       )
       .safeTake(limit)

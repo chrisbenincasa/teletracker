@@ -65,7 +65,7 @@ class IngestHboMaxCatalog @Inject()(
     }
   }
 
-  override protected def handleNonMatches(
+  override protected def findPotentialMatches(
     args: IngestJobArgs,
     nonMatches: List[HboMaxCatalogItem]
   ): Future[List[NonMatchResult[HboMaxCatalogItem]]] = {
@@ -113,7 +113,7 @@ class IngestHboMaxCatalog @Inject()(
 
             val stillMissingIds = nonMatchesById.keySet -- foundIds
 
-            super.handleNonMatches(
+            super.findPotentialMatches(
               args,
               stillMissingIds.flatMap(nonMatchesById.get).toList
             )

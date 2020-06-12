@@ -24,13 +24,22 @@ import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.common.xcontent.XContentType
-import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
+import org.elasticsearch.index.query.{
+  BoolQueryBuilder,
+  QueryBuilder,
+  QueryBuilders
+}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import com.teletracker.common.util.Functions._
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.support.WriteRequest
 import org.elasticsearch.client.core.CountRequest
+import org.elasticsearch.index.reindex.{
+  BulkByScrollResponse,
+  UpdateByQueryRequest
+}
+import org.elasticsearch.script.Script
 import org.elasticsearch.search.sort.{
   FieldSortBuilder,
   NestedSortBuilder,
@@ -73,7 +82,7 @@ class EsPotentialMatchItemStore @Inject()(
   protected val elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends ElasticsearchCrud[String, EsPotentialMatchItem]
-    with ElasticsearchAccess {
+    with ElasticsearchAccess { self =>
   override protected val indexName: String =
     teletrackerConfig.elasticsearch.potential_matches_index_name
 
@@ -256,6 +265,8 @@ class EsPotentialMatchItemStore @Inject()(
 
   def scroller: Scroller[EsPotentialMatchItem] =
     new Scroller[EsPotentialMatchItem](elasticsearchExecutor) {
+      override protected def indexName: String = self.indexName
+
       override protected def parseResponse(
         searchResponse: SearchResponse
       ): List[EsPotentialMatchItem] = {
@@ -321,6 +332,18 @@ abstract class ElasticsearchCrud[Id, T: Codec: ClassTag](
     elasticsearchExecutor.update(
       new UpdateRequest(indexName, hasId.idString(item))
         .doc(item.asJson.deepDropNullValues.noSpaces, XContentType.JSON)
+    )
+  }
+
+  def updateByQuery(
+    query: QueryBuilder,
+    script: Script
+  ): Future[BulkByScrollResponse] = {
+    elasticsearchExecutor.updateByQuery(
+      new UpdateByQueryRequest(indexName)
+        .setRequestsPerSecond(25)
+        .setQuery(query)
+        .setScript(script)
     )
   }
 

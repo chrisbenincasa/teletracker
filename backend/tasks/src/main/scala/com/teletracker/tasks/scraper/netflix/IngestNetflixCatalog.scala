@@ -125,7 +125,7 @@ class IngestNetflixCatalog @Inject()(
       })
   }
 
-  override protected def handleNonMatches(
+  override protected def findPotentialMatches(
     args: IngestJobArgs,
     nonMatches: List[NetflixScrapedCatalogItem]
   ): Future[List[NonMatchResult[NetflixScrapedCatalogItem]]] = {
@@ -163,12 +163,6 @@ class IngestNetflixCatalog @Inject()(
             case None => result
           }
         })
-      })
-      .map(results => {
-        writePotentialMatches(results.map(result => {
-          result.esItem -> result.originalScrapedItem
-        }))
-        Nil
       })
   }
 

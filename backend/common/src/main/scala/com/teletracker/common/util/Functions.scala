@@ -20,4 +20,8 @@ final class RichAny[T](val v: T) extends AnyVal {
 
   def through(f: T => T): T = f(v)
   def throughApply[U](f: T => U): U = f(v)
+  def withEffect(f: T => Unit): T = {
+    f(v)
+    v
+  }
 }

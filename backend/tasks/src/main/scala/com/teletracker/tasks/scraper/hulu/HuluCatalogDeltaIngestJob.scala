@@ -1,6 +1,10 @@
 package com.teletracker.tasks.scraper.hulu
 
-import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  OfferType,
+  SupportedNetwork
+}
 import com.teletracker.common.model.scraping.ScrapeItemType
 import com.teletracker.common.model.scraping.hulu.HuluScrapeCatalogItem
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
@@ -16,6 +20,8 @@ class HuluCatalogDeltaIngestJob @Inject()(deps: IngestDeltaJobDependencies)
     extends IngestDeltaJob[HuluScrapeCatalogItem](deps)
     with SubscriptionNetworkDeltaAvailability[HuluScrapeCatalogItem] {
 
+  override protected def offerType: OfferType = OfferType.Subscription
+
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.HuluCatalog
 
@@ -26,21 +32,23 @@ class HuluCatalogDeltaIngestJob @Inject()(deps: IngestDeltaJobDependencies)
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def uniqueKey(item: HuluScrapeCatalogItem): String =
-    item.externalId.get
+  override protected def uniqueKeyForIncoming(
+    item: HuluScrapeCatalogItem
+  ): Option[String] =
+    item.externalId
 
   override protected def externalIds(
     item: HuluScrapeCatalogItem
   ): Map[ExternalSource, String] = {
-    Map(
-      ExternalSource.Hulu -> uniqueKey(item)
-    )
+    uniqueKeyForIncoming(item)
+      .map(key => Map(ExternalSource.Hulu -> key))
+      .getOrElse(Map.empty)
   }
 
   override protected def processItemChange(
     before: HuluScrapeCatalogItem,
     after: HuluScrapeCatalogItem
-  ): Option[ItemChange] = {
+  ): Seq[ItemChange] = {
     val changeType = (
       before.additionalServiceRequired,
       after.additionalServiceRequired
@@ -52,6 +60,6 @@ class HuluCatalogDeltaIngestJob @Inject()(deps: IngestDeltaJobDependencies)
       case _               => None // TODO: Handle other change types
     }
 
-    changeType.map(ItemChange(before, after, _))
+    changeType.map(ItemChange(before, after, _)).toSeq
   }
 }

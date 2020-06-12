@@ -1,26 +1,17 @@
 package com.teletracker.tasks.scraper
 
-import com.teletracker.common.tasks.{
-  TaskMessageHelper,
-  TeletrackerTask,
-  TypedTeletrackerTask
-}
-import com.teletracker.common.aws.sqs.{SqsFifoQueue, SqsQueue}
 import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.pubsub.TeletrackerTaskQueueMessage
 import com.teletracker.common.tasks.TeletrackerTask.RawArgs
-import com.teletracker.common.util.Futures._
-import com.teletracker.tasks.util.SourceRetriever
+import com.teletracker.common.tasks.{TeletrackerTask, TypedTeletrackerTask}
 import com.teletracker.tasks.TeletrackerTaskRunner
 import io.circe.Encoder
 import io.circe.generic.JsonCodec
-import javax.inject.Inject
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.{
   GetObjectRequest,
   NoSuchKeyException
 }
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import java.net.URI
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext
@@ -184,7 +175,7 @@ abstract class DeltaLocateAndRunJob[
     TeletrackerTask.taskMessage[T](
       IngestDeltaJobArgs(
         snapshotAfter = snapshotAfterLocation,
-        snapshotBefore = snapshotBeforeLocation
+        snapshotBefore = Some(snapshotBeforeLocation)
       )
     ) :: Nil
   }

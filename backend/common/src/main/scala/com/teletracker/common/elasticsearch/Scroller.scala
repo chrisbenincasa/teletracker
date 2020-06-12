@@ -1,5 +1,6 @@
 package com.teletracker.common.elasticsearch
 
+import com.teletracker.common.config.TeletrackerConfig
 import com.teletracker.common.elasticsearch.model.{EsItem, EsPerson, EsUserItem}
 import com.teletracker.common.util.AsyncStream
 import io.circe.Json
@@ -12,18 +13,22 @@ import org.elasticsearch.action.search.{
 import org.elasticsearch.common.unit.TimeValue
 import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.search.builder.SearchSourceBuilder
+import org.slf4j.LoggerFactory
 import scala.concurrent.ExecutionContext
 
 abstract class Scroller[T](
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext) {
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  protected def indexName: String
+
   def start(
-    index: String,
     query: QueryBuilder,
     ttl: TimeValue = TimeValue.timeValueMinutes(5)
   ): AsyncStream[T] = {
     val request =
-      new SearchRequest(index)
+      new SearchRequest(indexName)
         .source(new SearchSourceBuilder().query(query))
         .scroll(ttl)
 
@@ -59,6 +64,8 @@ abstract class Scroller[T](
         )
       )
       .flatMap(res => {
+        logger.debug(s"Got ${res.getHits.getHits.length} hits on scroll...")
+
         scroll0(
           parseResponse(res),
           res,
@@ -80,6 +87,8 @@ abstract class Scroller[T](
     if (hasNext(curr, lastResponse, seen)) {
       // If the buffer is depleted, continue the scroll
       if (curr.isEmpty) {
+        logger.debug("Pulling next scroll page...")
+
         scrollId.map(continue(_, seen)).getOrElse(AsyncStream.empty)
       } else {
         // If we still have items in the buffer, pop off the head and lazily handle the tail
@@ -96,7 +105,7 @@ abstract class Scroller[T](
   }
 }
 
-final class RawJsonScroller @Inject()(
+abstract class RawJsonScroller(
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends Scroller[Json](elasticsearchExecutor)
@@ -116,10 +125,15 @@ final class RawJsonScroller @Inject()(
 }
 
 final class ItemsScroller @Inject()(
+  teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends Scroller[EsItem](elasticsearchExecutor)
     with ElasticsearchAccess {
+
+  override protected def indexName: String =
+    teletrackerConfig.elasticsearch.items_index_name
+
   override protected def parseResponse(
     searchResponse: SearchResponse
   ): List[EsItem] = {
@@ -128,10 +142,15 @@ final class ItemsScroller @Inject()(
 }
 
 final class PeopleScroller @Inject()(
+  teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends Scroller[EsPerson](elasticsearchExecutor)
     with ElasticsearchAccess {
+
+  override protected def indexName: String =
+    teletrackerConfig.elasticsearch.people_index_name
+
   override protected def parseResponse(
     searchResponse: SearchResponse
   ): List[EsPerson] = {
@@ -140,10 +159,15 @@ final class PeopleScroller @Inject()(
 }
 
 final class UserItemsScroller @Inject()(
+  teletrackerConfig: TeletrackerConfig,
   elasticsearchExecutor: ElasticsearchExecutor
 )(implicit executionContext: ExecutionContext)
     extends Scroller[EsUserItem](elasticsearchExecutor)
     with ElasticsearchAccess {
+
+  override protected def indexName: String =
+    teletrackerConfig.elasticsearch.user_items_index_name
+
   override protected def parseResponse(
     searchResponse: SearchResponse
   ): List[EsUserItem] = {

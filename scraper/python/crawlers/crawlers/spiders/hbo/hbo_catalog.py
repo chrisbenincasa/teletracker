@@ -17,9 +17,12 @@ class HboCrawlSpider(BaseSpider):
     ]
 
     def start_requests(self):
-        yield scrapy.Request(url='https://www.hbo.com/movies/catalog', callback=self.parse_movie_catalog_page)
+        yield scrapy.Request(url='https://www.hbo.com/movies/catalog', callback=self.parse_movie_catalog_page,
+                             cb_kwargs={'type': 'movie'})
         yield scrapy.Request(url='https://www.hbo.com/series/all-series', callback=self.parse_series_page)
         yield scrapy.Request(url='https://www.hbo.com/special/all-specials', callback=self.parse_specials_page)
+        yield scrapy.Request(url='https://www.hbo.com/documentaries/catalog', callback=self.parse_movie_catalog_page,
+                             cb_kwargs={'type': 'documentary'})
         # TODO: Add sports docs section
 
     def parse(self, response):
@@ -55,13 +58,13 @@ class HboCrawlSpider(BaseSpider):
                         yield scrapy.Request('https://www.hbo.com{}'.format(series['cta']['href']),
                                              callback=self.parse_series)
 
-    def parse_movie_catalog_page(self, response):
+    def parse_movie_catalog_page(self, response, **kwargs):
         data_state = response.xpath('//noscript[@id="react-data"]/@data-state').get()
         loaded = json.loads(data_state)
 
         for band in loaded['bands']:
             data = band['data']
-            if data and 'type' in data and data['type'] == 'movie':
+            if data and 'type' in data and data['type'] == kwargs['type']:
                 for movie in data['entries']:
                     if 'moviePageUrl' not in movie:
                         for req in self.parse_movie_from_catalog(movie):

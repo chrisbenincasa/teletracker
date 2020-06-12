@@ -25,10 +25,15 @@ object EsAvailability {
 
   implicit val codec: Codec[EsAvailability] = deriveCodec
 
-  def distinctFields(
-    left: EsAvailability
-  ): (Int, String, String, Option[String]) = {
-    (
+  // Unique describes an individual availability on an item
+  case class AvailabilityKey(
+    networkId: Int,
+    region: String,
+    offerType: String,
+    presentationType: Option[String])
+
+  def getKey(left: EsAvailability): AvailabilityKey = {
+    AvailabilityKey(
       left.network_id,
       left.region,
       left.offer_type,
@@ -40,7 +45,7 @@ object EsAvailability {
     left: EsAvailability,
     right: EsAvailability
   ): Boolean = {
-    distinctFields(left) == distinctFields(right)
+    getKey(left) == getKey(right)
   }
 
   def itemAvailabilityEqual(
@@ -52,8 +57,8 @@ object EsAvailability {
       .forall(av => {
         right.availability
           .getOrElse(Nil)
-          .map(distinctFields)
-          .count(_ == distinctFields(av)) == 1
+          .map(getKey)
+          .count(_ == getKey(av)) == 1
       })
   }
 }

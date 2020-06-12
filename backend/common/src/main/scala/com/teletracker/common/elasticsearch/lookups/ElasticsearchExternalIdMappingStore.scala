@@ -29,4 +29,6 @@ trait ElasticsearchExternalIdMappingStore {
   def mapExternalIds(
     mappings: Map[(EsExternalId, ItemType), UUID]
   ): Future[Unit]
+
+  def unmapExternalIds(ids: Set[(EsExternalId, ItemType)]): Future[Unit]
 }

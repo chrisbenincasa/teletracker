@@ -6,11 +6,7 @@ import com.teletracker.common.elasticsearch.model.{
   EsUserDenormalizedItem,
   EsUserItem
 }
-import com.teletracker.common.elasticsearch.{
-  ItemLookup,
-  RawJsonScroller,
-  UserItemsScroller
-}
+import com.teletracker.common.elasticsearch.{ItemLookup, UserItemsScroller}
 import com.teletracker.common.tasks.UntypedTeletrackerTask
 import javax.inject.Inject
 import io.circe.parser._
@@ -23,14 +19,12 @@ class FixBrokenListItems @Inject()(
   userItemsScroller: UserItemsScroller,
   teletrackerConfig: TeletrackerConfig,
   itemLookup: ItemLookup,
-  rawJsonScroller: RawJsonScroller,
   denormalizedItemUpdater: DenormalizedItemUpdater
 )(implicit executionContext: ExecutionContext)
     extends UntypedTeletrackerTask {
   override protected def runInternal(): Unit = {
     val allUserItems = userItemsScroller
       .start(
-        teletrackerConfig.elasticsearch.user_items_index_name,
         QueryBuilders.matchAllQuery()
       )
       .toList

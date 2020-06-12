@@ -21,98 +21,83 @@ abstract class IngestPotentialMatches[T <: ScrapedItem: Codec]
 @JsonCodec
 case class IngestPotentialMatchesDeltaArgs(
   snapshotAfter: URI,
-  snapshotBefore: URI,
+  snapshotBefore: Option[URI],
   potentialMappings: URI,
   offset: Int = 0,
   limit: Int = -1,
   dryRun: Boolean = true,
   titleMatchThreshold: Int = 15,
-  thingIdFilter: Option[UUID] = None,
+  itemIdFilter: Option[UUID] = None,
+  externalIdFilter: Option[String] = None,
   perBatchSleepMs: Option[Int] = None)
     extends IngestJobArgsLike
     with IngestDeltaJobArgsLike {
   override val deltaSizeThreshold: Double = 0.0
+  override val disableDeltaSizeCheck: Boolean = true
 }
 
-abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec](
-  deps: IngestDeltaJobDependencies)
-    extends IngestDeltaJobLike[T, IngestPotentialMatchesDeltaArgs](deps) {
-
-  override def preparseArgs(args: RawArgs): IngestPotentialMatchesDeltaArgs =
-    parseArgs(args)
-
-  protected def parseArgs(
-    args: Map[String, Option[Any]]
-  ): IngestPotentialMatchesDeltaArgs = {
-    IngestPotentialMatchesDeltaArgs(
-      snapshotAfter = args.valueOrThrow[URI]("snapshotAfter"),
-      snapshotBefore = args.valueOrThrow[URI]("snapshotBefore"),
-      potentialMappings = args.valueOrThrow[URI]("potentialMappings"),
-      offset = args.valueOrDefault("offset", 0),
-      limit = args.valueOrDefault("limit", -1),
-      dryRun = args.valueOrDefault("dryRun", true),
-      thingIdFilter = args.value[UUID]("thingIdFilter"),
-      perBatchSleepMs = args.value[Int]("perBatchSleepMs")
-    )
-  }
-
-  protected lazy val potentialMappings: mutable.Map[String, PotentialInput[T]] =
-    mutable.HashMap.empty[String, PotentialInput[T]]
-
-  override def runInternal(): Unit = {
-    val potentialMappingsSource =
-      deps.sourceRetriever.getSource(args.potentialMappings)
-
-    try {
-      loadMappings(potentialMappingsSource.getLines())
-    } finally {
-      potentialMappingsSource.close()
-    }
-
-    super.runInternal()
-  }
-
-  override protected def processBatch(
-    items: List[T],
-    networks: Set[StoredNetwork],
-    args: IngestPotentialMatchesDeltaArgs
-  ): Future[(List[MatchResult[T]], List[T])] = {
-    val (haveMatch, doesntHaveMatch) =
-      items.partition(item => potentialMappings.isDefinedAt(uniqueKey(item)))
-
-    val itemsByEsId = haveMatch
-      .map(item => potentialMappings(uniqueKey(item)).potential.id -> item)
-      .toMap
-
-    deps.itemLookup
-      .lookupItemsByIds(itemsByEsId.keySet)
-      .map(esItemMap => {
-        val (matchResults, missingEsItems) =
-          itemsByEsId.foldLeft(Folds.list2Empty[MatchResult[T], T]) {
-            case ((matches, misses), (esId, scrapedItem)) =>
-              esItemMap.get(esId).flatten match {
-                case Some(value) =>
-                  (matches :+ scraping
-                    .MatchResult(scrapedItem, value)) -> misses
-                case None => matches -> (misses :+ scrapedItem)
-              }
-          }
-
-        writeMissingItems(doesntHaveMatch ++ missingEsItems)
-
-        matchResults -> (doesntHaveMatch ++ missingEsItems)
-      })
-  }
-
-  protected def loadMappings(lines: Iterator[String]): Unit = {
-    potentialMappings ++= new IngestJobParser()
-      .stream[PotentialInput[T]](lines)
-      .flatMap {
-        case Left(value) =>
-          logger.warn("Could not parse line of potential matches", value)
-          None
-
-        case Right(value) => Some(uniqueKey(value.scraped) -> value)
-      }
-  }
-}
+//abstract class IngestPotentialMatchesDelta[T <: ScrapedItem: Codec](
+//  deps: IngestDeltaJobDependencies)
+//    extends IngestDeltaJob[T](deps) {
+//  protected lazy val potentialMappings: mutable.Map[String, PotentialInput[T]] =
+//    mutable.HashMap.empty[String, PotentialInput[T]]
+//
+//  override def runInternal(): Unit = {
+//    val potentialMappingsSource =
+//      deps.sourceRetriever.getSource(args.potentialMappings)
+//
+//    try {
+//      loadMappings(potentialMappingsSource.getLines())
+//    } finally {
+//      potentialMappingsSource.close()
+//    }
+//
+//    super.runInternal()
+//  }
+//
+//  override protected def processBatch(
+//    items: List[T],
+//    networks: Set[StoredNetwork],
+//    args: IngestPotentialMatchesDeltaArgs
+//  ): Future[(List[MatchResult[T]], List[T])] = {
+//    val (haveMatch, doesntHaveMatch) =
+//      items.partition(
+//        item => uniqueKey(item).exists(potentialMappings.isDefinedAt)
+//      )
+//
+//    val itemsByEsId = haveMatch
+//      .map(item => potentialMappings(uniqueKey(item).get).potential.id -> item)
+//      .toMap
+//
+//    deps.itemLookup
+//      .lookupItemsByIds(itemsByEsId.keySet)
+//      .map(esItemMap => {
+//        val (matchResults, missingEsItems) =
+//          itemsByEsId.foldLeft(Folds.list2Empty[MatchResult[T], T]) {
+//            case ((matches, misses), (esId, scrapedItem)) =>
+//              esItemMap.get(esId).flatten match {
+//                case Some(value) =>
+//                  (matches :+ scraping
+//                    .MatchResult(scrapedItem, value)) -> misses
+//                case None => matches -> (misses :+ scrapedItem)
+//              }
+//          }
+//
+//        writeMissingItems(doesntHaveMatch ++ missingEsItems)
+//
+//        matchResults -> (doesntHaveMatch ++ missingEsItems)
+//      })
+//  }
+//
+//  protected def loadMappings(lines: Iterator[String]): Unit = {
+//    potentialMappings ++= new IngestJobParser()
+//      .stream[PotentialInput[T]](lines)
+//      .flatMap {
+//        case Left(value) =>
+//          logger.warn("Could not parse line of potential matches", value)
+//          None
+//
+//        case Right(value) => uniqueKey(value.scraped).map(_ -> value)
+//      }
+//  }
+//}

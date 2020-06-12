@@ -316,18 +316,9 @@ trait ElasticsearchFallbackMatching[T <: ScrapedItem, Args <: IngestJobArgsLike]
       requireTypeMatch,
       getClass.getSimpleName
     )
-  )(self.executionContext) {
-    override protected def recordPotentialMatches[X <: ScrapedItem: Codec](
-      potentialMatches: Iterable[(EsItem, X)]
-    ): Unit = {
-      self.writePotentialMatches(potentialMatches.map {
-        case (esItem, x) =>
-          esItem -> x.asInstanceOf[T] // We know this is correct
-      })
-    }
-  }
+  )(self.executionContext)
 
-  override protected def handleNonMatches(
+  override protected def findPotentialMatches(
     args: Args,
     nonMatches: List[T]
   ): Future[List[NonMatchResult[T]]] = {

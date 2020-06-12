@@ -1,6 +1,10 @@
 package com.teletracker.tasks.scraper.netflix
 
-import com.teletracker.common.db.model.{ExternalSource, SupportedNetwork}
+import com.teletracker.common.db.model.{
+  ExternalSource,
+  OfferType,
+  SupportedNetwork
+}
 import com.teletracker.common.model.scraping.netflix.NetflixScrapedCatalogItem
 import com.teletracker.common.model.scraping.{NonMatchResult, ScrapeItemType}
 import com.teletracker.tasks.scraper.IngestJobParser.JsonPerLine
@@ -8,10 +12,11 @@ import com.teletracker.tasks.scraper._
 import javax.inject.Inject
 import scala.concurrent.Future
 
-case class NetflixCatalogDeltaIngestJob @Inject()(
-  deps: IngestDeltaJobDependencies)
+class NetflixCatalogDeltaIngestJob @Inject()(deps: IngestDeltaJobDependencies)
     extends IngestDeltaJob[NetflixScrapedCatalogItem](deps)
     with SubscriptionNetworkDeltaAvailability[NetflixScrapedCatalogItem] {
+
+  override protected def offerType: OfferType = OfferType.Subscription
 
   override protected def scrapeItemType: ScrapeItemType =
     ScrapeItemType.NetflixCatalog
@@ -21,7 +26,7 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
   )
   override protected val externalSource: ExternalSource = ExternalSource.Netflix
 
-  override protected def handleNonMatches(
+  override protected def findPotentialMatches(
     args: IngestDeltaJobArgs,
     nonMatches: List[NetflixScrapedCatalogItem]
   ): Future[List[NonMatchResult[NetflixScrapedCatalogItem]]] = {
@@ -49,13 +54,15 @@ case class NetflixCatalogDeltaIngestJob @Inject()(
 
   override protected def parseMode: IngestJobParser.ParseMode = JsonPerLine
 
-  override protected def uniqueKey(item: NetflixScrapedCatalogItem): String =
-    item.externalId.get
+  override protected def uniqueKeyForIncoming(
+    item: NetflixScrapedCatalogItem
+  ): Option[String] =
+    item.externalId
 
   override protected def externalIds(
     item: NetflixScrapedCatalogItem
   ): Map[ExternalSource, String] =
-    Map(
-      ExternalSource.Netflix -> uniqueKey(item)
-    )
+    uniqueKeyForIncoming(item)
+      .map(key => Map(ExternalSource.Netflix -> key))
+      .getOrElse(Map.empty)
 }

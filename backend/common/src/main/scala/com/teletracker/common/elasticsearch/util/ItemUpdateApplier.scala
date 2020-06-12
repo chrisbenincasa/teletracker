@@ -1,6 +1,7 @@
 package com.teletracker.common.elasticsearch.util
 
 import com.teletracker.common.db.model.ExternalSource
+import com.teletracker.common.elasticsearch.model.EsAvailability.AvailabilityKey
 import com.teletracker.common.elasticsearch.model.{
   EsAvailability,
   EsExternalId,
@@ -29,6 +30,26 @@ object ItemUpdateApplier {
     esItem.copy(
       availability = Some(newAvailabilities.toList)
     )
+  }
+
+  def applyAvailabilityDelta(
+    esItem: EsItem,
+    newAvailabilities: Iterable[EsAvailability],
+    removedAvailabilities: Set[AvailabilityKey]
+  ): Iterable[EsAvailability] = {
+    esItem.availability match {
+      case Some(_) =>
+        val keyedUpdated = newAvailabilities
+          .map(av => EsAvailability.getKey(av) -> av)
+          .toMap
+        val updatedAvailability = esItem.availabilityByKey
+          .filterKeys(removedAvailabilities.contains) ++ keyedUpdated
+
+        updatedAvailability.values
+
+      case None =>
+        newAvailabilities
+    }
   }
 
   def applyExternalIds(

@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.dynamodb.model.{
   AttributeValue,
   BatchGetItemRequest,
   BatchWriteItemRequest,
+  DeleteRequest,
   GetItemRequest,
   KeysAndAttributes,
   PutItemRequest,
@@ -206,6 +207,50 @@ class DynamoElasticsearchExternalIdMapping @Inject()(
             .toScala
             .map(_ => {})
         })
+        .force
+    }
+  }
+
+  override def unmapExternalIds(
+    ids: Set[(EsExternalId, ItemType)]
+  ): Future[Unit] = {
+    if (ids.isEmpty) {
+      Future.unit
+    } else {
+      AsyncStream
+        .fromSeq(ids.toSeq)
+        .grouped(25)
+        .mapF(
+          batch => {
+            val deletes = batch
+              .map(key => {
+                DeleteRequest
+                  .builder()
+                  .key(
+                    Map("externalId" -> makeExternalIdKey(key._1, key._2)).asJava
+                  )
+                  .build()
+              })
+              .map(
+                delete => WriteRequest.builder().deleteRequest(delete).build()
+              )
+              .asJavaCollection
+
+            dynamo
+              .batchWriteItem(
+                BatchWriteItemRequest
+                  .builder()
+                  .requestItems(
+                    Map(
+                      DynamoElasticsearchExternalIdMapping.TableName -> deletes
+                    ).asJava
+                  )
+                  .build()
+              )
+              .toScala
+              .map(_ => {})
+          }
+        )
         .force
     }
   }
