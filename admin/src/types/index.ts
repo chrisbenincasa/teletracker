@@ -64,8 +64,8 @@ interface PotentialMatchScrapedItem {
 }
 
 export interface ItemAvailability {
-  readonly networkId: number;
-  readonly networkName?: string;
+  readonly network_id: number;
+  readonly network_name?: string;
   readonly offers: ItemAvailabilityOffer[];
 }
 

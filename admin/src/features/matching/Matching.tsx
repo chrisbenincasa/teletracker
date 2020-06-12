@@ -16,8 +16,15 @@ import {
   makeStyles,
   Paper,
   Typography,
+  Badge,
+  Tooltip,
 } from '@material-ui/core';
-import { PotentialMatchState, ScrapeItemType } from '../../types';
+import {
+  DeepReadonlyObject,
+  PotentialMatch,
+  PotentialMatchState,
+  ScrapeItemType,
+} from '../../types';
 import { SearchMatchSort } from '../../util/apiClient';
 import { useDebouncedCallback } from 'use-debounce';
 import { RootState } from '../../app/store';
@@ -91,6 +98,9 @@ const useStyles = makeStyles((theme) =>
       textAlign: 'center',
       marginBottom: theme.spacing(2),
     },
+    cardBadgeAlign: {
+      transform: 'scale(1.5) translate(-15%, -15%)',
+    },
   }),
 );
 
@@ -138,6 +148,10 @@ export default function Matching(props: Props) {
     );
   }, []);
 
+  const markItemsAsNonMatch = useCallback((ids: string[]) => {
+    ids.forEach(markAsNonMatch);
+  }, []);
+
   const markAsMatch = useCallback((id: string) => {
     dispatch(
       updatePotentialMatchAsync({
@@ -145,6 +159,10 @@ export default function Matching(props: Props) {
         state: PotentialMatchState.Matched,
       }),
     );
+  }, []);
+
+  const markItemsAsMatch = useCallback((ids: string[]) => {
+    ids.forEach(markAsMatch);
   }, []);
 
   const [loadMoreResults] = useDebouncedCallback(() => {
@@ -164,152 +182,190 @@ export default function Matching(props: Props) {
     }
   }, 100);
 
-  const cards = items.map((item) => {
-    const poster = (item.potential.images || []).find(
+  const groupedItems = items.reduce<{
+    [key: string]: DeepReadonlyObject<PotentialMatch[]>;
+  }>((acc, item) => {
+    const key = `${item.potential.id}_${item.scraped.item.externalId}`;
+    if (acc[key]) {
+      acc[key] = [...acc[key], item];
+    } else {
+      acc[key] = [item];
+    }
+
+    return acc;
+  }, {});
+
+  const cards = Object.entries(groupedItems).map(([id, items]) => {
+    const representativeItem = items[0];
+    const poster = (representativeItem.potential.images || []).find(
       (image) => image.image_type === 'poster',
     );
 
-    const ttLink = `https://qa.teletracker.tv/${item.potential.type}s/${item.potential.id}`;
-    const scrapedPoster = item.scraped.item.posterImageUrl;
+    const ttLink = `https://qa.teletracker.tv/${representativeItem.potential.type}s/${representativeItem.potential.id}`;
+    const scrapedPoster = representativeItem.scraped.item.posterImageUrl;
+
+    let networkSet = new Set<string>();
+    items.forEach((item) => {
+      (item.availability || [])
+        .map((av) => av.network_name)
+        .forEach((network) => (network ? networkSet.add(network) : undefined));
+    });
+    const networks = Array.from(networkSet.keys()).join(', ');
+
+    const badgeContent = (
+      <Tooltip title={networks}>
+        <span>{items.length}</span>
+      </Tooltip>
+    );
 
     return (
-      <Grid item xs={4} key={item.id}>
-        <Paper elevation={3} className={classes.paper}>
-          <div className={classes.cardWrapper}>
-            <Card className={classes.card}>
-              <CardActionArea component="a" href={ttLink} target="_blank">
-                <CardMedia
-                  component="img"
-                  height="275"
-                  image={
-                    poster?.id
-                      ? `https://image.tmdb.org/t/p/w342${poster!.id}`
-                      : ''
-                  }
-                />
-                <CardContent>
-                  <Typography
-                    gutterBottom
-                    variant="h5"
-                    component="h2"
-                    className={classes.dataType}
-                  >
-                    Potential
-                  </Typography>
-                  <Typography gutterBottom variant="h5" component="h2">
-                    {item.potential.title}
-                  </Typography>
-                  {item.potential.type && (
-                    <Chip
-                      label={item.potential.type}
-                      className={classes.chip}
-                    />
-                  )}
-                  {item?.potential?.release_date && (
-                    <Chip
-                      label={item?.potential?.release_date?.substring(0, 4)}
-                      className={classes.chip}
-                    />
-                  )}
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    component="p"
-                    className={classes.cardDescription}
-                  >
-                    {item.potential?.description}
-                  </Typography>
-                </CardContent>
-              </CardActionArea>
-            </Card>
-            <Card className={classes.card}>
-              <CardActionArea
-                component="a"
-                href={item.scraped.item.url}
-                target="_blank"
-              >
-                {scrapedPoster ? (
+      <Grid item xs={4} key={id}>
+        <Badge
+          badgeContent={badgeContent}
+          color="primary"
+          anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+          classes={{ anchorOriginTopLeftRectangle: classes.cardBadgeAlign }}
+        >
+          <Paper elevation={3} className={classes.paper}>
+            <div className={classes.cardWrapper}>
+              <Card className={classes.card}>
+                <CardActionArea component="a" href={ttLink} target="_blank">
                   <CardMedia
                     component="img"
                     height="275"
-                    image={scrapedPoster}
+                    image={
+                      poster?.id
+                        ? `https://image.tmdb.org/t/p/w342${poster!.id}`
+                        : ''
+                    }
                   />
-                ) : (
-                  <div className={classes.fallbackImageWrapper}>
-                    <Icon
-                      className={classes.fallbackImageIcon}
-                      fontSize="inherit"
+                  <CardContent>
+                    <Typography
+                      gutterBottom
+                      variant="h5"
+                      component="h2"
+                      className={classes.dataType}
                     >
-                      broken_image
-                    </Icon>
-                  </div>
-                )}
+                      Potential
+                    </Typography>
+                    <Typography gutterBottom variant="h5" component="h2">
+                      {representativeItem.potential.title}
+                    </Typography>
+                    {representativeItem.potential.type && (
+                      <Chip
+                        label={representativeItem.potential.type}
+                        className={classes.chip}
+                      />
+                    )}
+                    {representativeItem?.potential?.release_date && (
+                      <Chip
+                        label={representativeItem?.potential?.release_date?.substring(
+                          0,
+                          4,
+                        )}
+                        className={classes.chip}
+                      />
+                    )}
+                    <Typography
+                      variant="body2"
+                      color="textSecondary"
+                      component="p"
+                      className={classes.cardDescription}
+                    >
+                      {representativeItem.potential?.description}
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              </Card>
+              <Card className={classes.card}>
+                <CardActionArea
+                  component="a"
+                  href={representativeItem.scraped.item.url}
+                  target="_blank"
+                >
+                  {scrapedPoster ? (
+                    <CardMedia
+                      component="img"
+                      height="275"
+                      image={scrapedPoster}
+                    />
+                  ) : (
+                    <div className={classes.fallbackImageWrapper}>
+                      <Icon
+                        className={classes.fallbackImageIcon}
+                        fontSize="inherit"
+                      >
+                        broken_image
+                      </Icon>
+                    </div>
+                  )}
 
-                <CardContent>
-                  <Typography
-                    gutterBottom
-                    variant="h5"
-                    component="h2"
-                    className={classes.dataType}
-                  >
-                    Scraped
-                  </Typography>
-                  <Typography gutterBottom variant="h5" component="h2">
-                    {item.scraped.item.title}
-                  </Typography>
-                  {item.scraped.item.itemType && (
-                    <Chip
-                      label={item.scraped.item.itemType}
-                      className={classes.chip}
-                    />
-                  )}
-                  {item.scraped.item.releaseYear && (
-                    <Chip
-                      label={item.scraped.item.releaseYear}
-                      className={classes.chip}
-                    />
-                  )}
-                  {item.scraped.item.network && (
-                    <Chip
-                      label={item.scraped.item.network}
-                      className={classes.chip}
-                    />
-                  )}
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    component="p"
-                    className={classes.cardDescription}
-                  >
-                    {item.scraped.item.description}
-                  </Typography>
-                </CardContent>
-              </CardActionArea>
-            </Card>
-          </div>
-          <div className={classes.buttonWrapper}>
-            <Button
-              size="small"
-              color="secondary"
-              variant="contained"
-              fullWidth
-              className={classes.button}
-              onClick={() => markAsNonMatch(item.id)}
-            >
-              Not a Match
-            </Button>
-            <Button
-              size="small"
-              color="primary"
-              variant="contained"
-              fullWidth
-              className={classes.button}
-              onClick={() => markAsMatch(item.id)}
-            >
-              Hooray, a Match!
-            </Button>
-          </div>
-        </Paper>
+                  <CardContent>
+                    <Typography
+                      gutterBottom
+                      variant="h5"
+                      component="h2"
+                      className={classes.dataType}
+                    >
+                      Scraped
+                    </Typography>
+                    <Typography gutterBottom variant="h5" component="h2">
+                      {representativeItem.scraped.item.title}
+                    </Typography>
+                    {representativeItem.scraped.item.itemType && (
+                      <Chip
+                        label={representativeItem.scraped.item.itemType}
+                        className={classes.chip}
+                      />
+                    )}
+                    {representativeItem.scraped.item.releaseYear && (
+                      <Chip
+                        label={representativeItem.scraped.item.releaseYear}
+                        className={classes.chip}
+                      />
+                    )}
+                    {representativeItem.scraped.item.network && (
+                      <Chip
+                        label={representativeItem.scraped.item.network}
+                        className={classes.chip}
+                      />
+                    )}
+                    <Typography
+                      variant="body2"
+                      color="textSecondary"
+                      component="p"
+                      className={classes.cardDescription}
+                    >
+                      {representativeItem.scraped.item.description}
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              </Card>
+            </div>
+            <div className={classes.buttonWrapper}>
+              <Button
+                size="small"
+                color="secondary"
+                variant="contained"
+                fullWidth
+                className={classes.button}
+                onClick={() => markItemsAsNonMatch(items.map((i) => i.id))}
+              >
+                Not a Match
+              </Button>
+              <Button
+                size="small"
+                color="primary"
+                variant="contained"
+                fullWidth
+                className={classes.button}
+                onClick={() => markItemsAsMatch(items.map((i) => i.id))}
+              >
+                Hooray, a Match!
+              </Button>
+            </div>
+          </Paper>
+        </Badge>
       </Grid>
     );
   });
