@@ -10,6 +10,7 @@ import {
   OpenRange,
   SortOptions,
   toItemTypeEnum,
+  AllSupportedNetworks,
 } from '../../types';
 import _ from 'lodash';
 import {
@@ -106,8 +107,7 @@ export default function ActiveFilters(props: Props) {
       return [networks, false];
     }
 
-    // TODO: Put somewhere constant/common
-    let networkList: NetworkType[] = ['hbo-now', 'netflix', 'hulu'];
+    let networkList: NetworkType[] = [...AllSupportedNetworks];
 
     // Undefined networks means all networks.
     let networksInFilter = networks || networkList;
