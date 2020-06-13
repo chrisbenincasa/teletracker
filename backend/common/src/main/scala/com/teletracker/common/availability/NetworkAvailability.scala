@@ -27,7 +27,7 @@ object NetworkAvailability {
     presentationTypes.toList.sorted.map(typ => {
       EsAvailability(
         network_id = network.id,
-        network_name = Some(network.name.toLowerCase),
+        network_name = Some(network.slug.value.toLowerCase),
         region = region,
         start_date = availableWindow.start,
         end_date = availableWindow.end,

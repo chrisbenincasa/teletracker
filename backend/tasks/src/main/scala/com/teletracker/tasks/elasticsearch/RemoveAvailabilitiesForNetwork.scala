@@ -117,7 +117,6 @@ class RemoveAvailabilitiesForNetwork @Inject()(
 
         esPotentialMatchItemStore.updateByQuery(query, script).await()
       }
-
       logger.info("Deleting all availability.")
 
       availabilityQueryHelper

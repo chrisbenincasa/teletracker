@@ -294,6 +294,7 @@ abstract class IngestJob[T <: ScrapedItem](
             esItem =>
               ItemUpdateApplier.applyExternalIds(esItem, getExternalIds(item))
           )
+          .andThen(_.copy(last_updated = Some(System.currentTimeMillis())))
 
         val newItem = updateItemFunc(esItem)
 

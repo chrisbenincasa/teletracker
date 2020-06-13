@@ -7,20 +7,25 @@ import com.teletracker.common.elasticsearch.model.EsExternalId
 import com.teletracker.common.util.AsyncStream
 import javax.inject.Inject
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.core.async.SdkPublisher
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
 import software.amazon.awssdk.services.dynamodb.model.{
   AttributeValue,
   BatchGetItemRequest,
   BatchWriteItemRequest,
+  ComparisonOperator,
+  Condition,
   DeleteRequest,
   GetItemRequest,
   KeysAndAttributes,
   PutItemRequest,
   PutRequest,
   QueryRequest,
+  ScanRequest,
   WriteRequest
 }
 import java.util.UUID
+import java.util.function.Consumer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
@@ -253,6 +258,44 @@ class DynamoElasticsearchExternalIdMapping @Inject()(
         )
         .force
     }
+  }
+
+  def deleteExternalIdsPrefix(
+    prefix: String,
+    onItem: Option[(EsExternalId, ItemType)] => Unit
+  ): Future[Unit] = {
+    dynamo
+      .scanPaginator(
+        ScanRequest
+          .builder()
+          .tableName(DynamoElasticsearchExternalIdMapping.TableName)
+          .scanFilter(
+            Map(
+              "externalId" -> Condition
+                .builder()
+                .comparisonOperator(ComparisonOperator.BEGINS_WITH)
+                .attributeValueList(AttributeValue.builder().s(prefix).build())
+                .build()
+            ).asJava
+          )
+          .build()
+      )
+      .items()
+      .map(row => {
+        row.asScala
+          .get("externalId")
+          .map(_.valueAs[String])
+          .flatMap(externalIdType => {
+            parseKey(externalIdType)
+          })
+      })
+      .subscribe(new Consumer[Option[(EsExternalId, ItemType)]] {
+        override def accept(t: Option[(EsExternalId, ItemType)]): Unit = {
+          onItem(t)
+        }
+      })
+      .toScala
+      .map(_ => {})
   }
 
   private def makeExternalIdKey(

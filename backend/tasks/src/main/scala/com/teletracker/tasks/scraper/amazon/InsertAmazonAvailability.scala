@@ -199,7 +199,7 @@ class InsertAmazonAvailability @Inject()(
   ) = {
     EsAvailability(
       network_id = network.id,
-      network_name = Some(network.name),
+      network_name = Some(network.slug.value),
       region = "US",
       start_date = None,
       end_date = None,
