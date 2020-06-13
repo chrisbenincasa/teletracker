@@ -6,7 +6,7 @@ from urllib import parse
 import scrapy
 
 from crawlers.base_spider import BaseSitemapSpider
-from crawlers.items import HboItem
+from crawlers.items import HboItem, HboCastMember, HboCrewMember
 from crawlers.util import strip_tags
 
 
@@ -89,9 +89,18 @@ def _parse_series_programs_json(loaded_json, partial_item):
             if go_url and 'id' not in partial_item:
                 partial_item['id'] = path.split(go_url)[-1]
 
+            if 'castCrew' in first_ep:
+                partial_item['cast'] = [HboCastMember(name=member['name'], order=idx) for (idx, member) in
+                                        enumerate(first_ep['castCrew'])
+                                        if member['role'] == 'Cast']
+                partial_item['crew'] = [HboCrewMember(name=member['name'], order=idx, role=member['role']) for
+                                        (idx, member) in
+                                        enumerate(first_ep['castCrew']) if member['role'] != 'Cast']
+
             partial_item['goUrl'] = go_url
             partial_item['nowUrl'] = first_ep['series']['nowUrl']
             partial_item['releaseDate'] = first_ep['publishDate']
+            partial_item['runtime'] = first_ep['duration']
 
             return partial_item
     except KeyError:
@@ -111,10 +120,19 @@ def _parse_movie_programs_json(loaded_json, partial_item):
             if movie['title']:
                 partial_item['title'] = movie['title']
 
+            if 'castCrew' in movie:
+                partial_item['cast'] = [HboCastMember(name=member['name'], order=idx) for (idx, member) in
+                                        enumerate(movie['castCrew'])
+                                        if member['role'] == 'Cast']
+                partial_item['crew'] = [HboCrewMember(name=member['name'], order=idx, role=member['role']) for
+                                        (idx, member) in
+                                        enumerate(movie['castCrew']) if member['role'] != 'Cast']
+
             partial_item['goUrl'] = movie['availability']['go'][0]['url']
             partial_item['nowUrl'] = movie['availability']['now'][0]['url']
             partial_item['releaseDate'] = movie['publishDate']
             partial_item['highDef'] = movie['hd']
+            partial_item['runtime'] = movie['duration']
 
             return partial_item
     except KeyError:

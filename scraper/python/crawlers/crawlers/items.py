@@ -84,6 +84,20 @@ class HboItem(scrapy.Item):
     nowUrl = scrapy.Field()
     releaseDate = scrapy.Field()
     highDef = scrapy.Field()
+    cast = scrapy.Field()
+    crew = scrapy.Field()
+    runtime = scrapy.Field()
+
+
+class HboCastMember(scrapy.Item):
+    name = scrapy.Field()
+    order = scrapy.Field()
+
+
+class HboCrewMember(scrapy.Item):
+    name = scrapy.Field()
+    role = scrapy.Field()
+    order = scrapy.Field()
 
 
 class ShowtimeItem(scrapy.Item):

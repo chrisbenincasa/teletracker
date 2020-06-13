@@ -1,8 +1,8 @@
 import json
 import logging
-from datetime import datetime
-
 import scrapy
+
+from datetime import datetime
 from pythonjsonlogger import jsonlogger
 
 
