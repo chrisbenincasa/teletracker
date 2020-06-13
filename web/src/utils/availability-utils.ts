@@ -1,5 +1,5 @@
 import { ItemType, NetworkType } from '../types';
-import { Hulu, Netflix } from '../constants/networks';
+import { HboGo, HboMax, Hulu, Netflix } from '../constants/networks';
 
 export enum Platform {
   web = 'web',
@@ -30,6 +30,10 @@ function webDeepLinkForId(
     case Hulu:
       const typePart = itemType === 'movie' ? 'movie' : 'series';
       return `https://www.hulu.com/${typePart}/${id}`;
+    case HboGo:
+      return `https://play.hbogo.com/feature/${id}`;
+    case HboMax:
+      return `https://play.hbomax.com/feature/${id}`;
     default:
       return;
   }

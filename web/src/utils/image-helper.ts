@@ -35,7 +35,7 @@ export function getTmdbImage(
 
 // !exactMatch lets you bypass the 'hbo-now' logic so we can show both 'hbo-go' and 'hbo-now' on availability page but just 'hbo' on other screens
 export function getLogoUrl(network: NetworkType, exactMatch?: boolean) {
-  if (network === 'hbo-now' && !exactMatch) {
+  if (network === 'hbo-go' && !exactMatch) {
     return `/images/logos/hbo/hbo-full.svg`;
   } else {
     return `/images/logos/${network}/${network}-full.svg`;

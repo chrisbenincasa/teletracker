@@ -73,9 +73,7 @@ export default function NetworkSelect(props: Props) {
     (networks && networks.includes('netflix')) ||
     (networks && networks.includes('netflix-kids'));
   const isHuluSelected = networks && networks.includes('hulu');
-  const isHboSelected =
-    (networks && networks.includes('hbo-go')) ||
-    (networks && networks.includes('hbo-now'));
+  const isHboSelected = networks && networks.includes('hbo-go');
 
   const selectedNetworks = networks || [];
 
@@ -165,8 +163,8 @@ export default function NetworkSelect(props: Props) {
           }
         />
         <Chip
-          key={'hbo-now'}
-          onClick={() => updateNetworks('networks', 'hbo-now')}
+          key={'hbo-go'}
+          onClick={() => updateNetworks('networks', 'hbo-go')}
           size="medium"
           color={isHboSelected ? 'primary' : 'secondary'}
           label="HBO"
@@ -175,12 +173,12 @@ export default function NetworkSelect(props: Props) {
             <div
               className={classes.networkIconWrapper}
               style={{
-                backgroundColor: networkToColor['hbo-now'],
+                backgroundColor: networkToColor['hbo-go'],
               }}
             >
               <img
                 className={classes.networkIcon}
-                src={getLogoUrl('hbo-now')}
+                src={getLogoUrl('hbo-go')}
                 alt="HBO logo"
               />
             </div>
