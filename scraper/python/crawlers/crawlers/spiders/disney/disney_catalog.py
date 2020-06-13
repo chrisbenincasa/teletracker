@@ -77,9 +77,15 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
                     item['releases']) > 0 else None
 
                 poster_image = None
-                assets = loaded['assets'][asset_id]
-                if assets and assets['images']:
-                    for image in assets['images']:
+                if 'assets' in loaded and asset_id in loaded['assets']:
+                    assets = loaded['assets'][asset_id]
+                    if assets and assets['images']:
+                        for image in assets['images']:
+                            if image['aspectRatio'] > 0 and image['aspectRatio'] < 1.0 and image['purpose'] == 'tile':
+                                poster_image = image['url']
+                                break
+                elif 'images' in item:
+                    for image in item['images']:
                         if image['aspectRatio'] > 0 and image['aspectRatio'] < 1.0 and image['purpose'] == 'tile':
                             poster_image = image['url']
                             break
@@ -93,20 +99,27 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
                 if self.access_token or self.settings.attributes.get('access_token'):
                     query = {
                         'preferredLanguage': ['en'],
-                        'familyId': item_id,
                         'contentTransactionId': str(uuid.uuid4())
                     }
+
+                    if typ == 'movie':
+                        query['familyId'] = item_id
+                    else:
+                        query['seriesId'] = item_id
+                        query['episodePageSize'] = 12
 
                     token = self.access_token if self.access_token else self.settings.attributes.get(
                         'access_token').value
                     url_fmt = 'https://search-api-disney.svcs.dssott.com' \
-                              '/svc/search/v2/graphql/persisted/query/core/DmcVideoBundle?variables={}'
-                    return JsonRequest(url=url_fmt.format(json.dumps(query)),
+                              '/svc/search/v2/graphql/persisted/query/core/{}?variables={}'
+                    endpoint = 'DmcVideoBundle' if typ == 'movie' else 'DmcSeriesBundle'
+                    cb = self._finish_parsing_movie if typ == 'movie' else self._finish_parsing_series
+                    return JsonRequest(url=url_fmt.format(endpoint, json.dumps(query)),
                                        headers={'Authorization': 'Bearer {}'.format(token),
                                                 'Accept': 'application/json',
                                                 'Accept-Language': 'en-US,en;q=0.5'},
                                        meta={'item': catalog_item},
-                                       callback=self._finish_parsing_item,
+                                       callback=cb,
                                        errback=lambda failure, item=catalog_item: self.return_item(item))
                 else:
                     return catalog_item
@@ -114,7 +127,7 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
     def return_item(self, item):
         yield item
 
-    def _finish_parsing_item(self, response):
+    def _finish_parsing_movie(self, response):
         loaded = json.loads(response.text)
         catalog_item = response.meta['item']
         catalog_item['cast'] = [
@@ -130,6 +143,25 @@ class DisneyPlusCatalogSpider(BaseSitemapSpider):
                                         order=match.value['order']) for
             match in
             parse('$.data.DmcVideoBundle.video.participants[?(@.role != "Actor")]').find(loaded)]
+
+        yield catalog_item
+
+    def _finish_parsing_series(self, response):
+        loaded = json.loads(response.text)
+        catalog_item = response.meta['item']
+        catalog_item['cast'] = [
+            DisneyPlusCatalogCastMember(name=match.value['displayName'],
+                                        character=match.value['characterDetails']['character'],
+                                        order=match.value['order']) for
+            match in
+            parse('$.data.DmcSeriesBundle.series.participants[?(@.role == "Actor")]').find(loaded)]
+
+        catalog_item['crew'] = [
+            DisneyPlusCatalogCrewMember(name=match.value['displayName'],
+                                        role=match.value['role'].lower(),
+                                        order=match.value['order']) for
+            match in
+            parse('$.data.DmcSeriesBundle.series.participants[?(@.role != "Actor")]').find(loaded)]
 
         yield catalog_item
 
