@@ -19,12 +19,12 @@ import {
   Typography,
 } from '@material-ui/core';
 import {
+  AccountCircle,
   ArrowDropDown,
   ArrowDropUp,
   KeyboardArrowUp,
   Menu as MenuIcon,
   MenuOpen,
-  Person,
   Search as SearchIcon,
 } from '@material-ui/icons';
 import clsx from 'clsx';
@@ -33,7 +33,7 @@ import { useRouter } from 'next/router';
 import { hexToRGB } from '../../utils/style-utils';
 import Search from './Search';
 import AuthDialog from '../Auth/AuthDialog';
-import { useWidth } from '../../hooks/useWidth';
+import useIsMobile, { useIsSmallScreen } from '../../hooks/useIsMobile';
 import useStateSelector from '../../hooks/useStateSelector';
 import { useWithUserContext } from '../../hooks/useWithUser';
 import { useGenres } from '../../hooks/useStateMetadata';
@@ -170,9 +170,10 @@ interface Props {
 export default function Toolbar(props: Props) {
   const { drawerOpen, showToolbarSearch } = props;
   const classes = useStyles();
-  const width = useWidth();
   const router = useRouter();
   const genres = useGenres();
+  const isMobile = useIsMobile();
+  const isSmallScreen = useIsSmallScreen();
 
   const isBooting = useStateSelector(state => state.startup.isBooting);
   const [mobileSearchBarOpen, setMobileSearchBarOpen] = useState(false);
@@ -194,14 +195,6 @@ export default function Toolbar(props: Props) {
   );
 
   const { isLoggedIn, isCheckingAuth } = useWithUserContext();
-
-  const isSmallDevice = useMemo(() => {
-    return ['xs', 'sm', 'md'].includes(width);
-  }, [width]);
-
-  const isSuperSmallDevice = useMemo(() => {
-    return ['xs', 'sm'].includes(width);
-  }, [width]);
 
   const showQuickSearch = useMemo(() => {
     // No need to show quickSearch on the search page if the text is the same.
@@ -247,7 +240,7 @@ export default function Toolbar(props: Props) {
     event.currentTarget.focus();
 
     // If user is on smaller device, go directly to page
-    if (isSmallDevice) {
+    if (isSmallScreen) {
       router.push(`popular?type=${type}`);
       return;
     }
@@ -337,7 +330,7 @@ export default function Toolbar(props: Props) {
             color="inherit"
             focusRipple={false}
             endIcon={
-              isSmallDevice ? null : genreType === type ? (
+              isSmallScreen ? null : genreType === type ? (
                 <ArrowDropUp />
               ) : (
                 <ArrowDropDown />
@@ -345,7 +338,7 @@ export default function Toolbar(props: Props) {
             }
           >
             {type === 'show'
-              ? isSmallDevice
+              ? isSmallScreen
                 ? 'Shows'
                 : 'TV Shows'
               : 'Movies'}
@@ -461,7 +454,7 @@ export default function Toolbar(props: Props) {
             </Typography>
           </Link>
           <div className={classes.grow}>
-            {!isSmallDevice && showToolbarSearch && (
+            {!isSmallScreen && showToolbarSearch && (
               <Fade in={true} timeout={500}>
                 <Search
                   drawerOpen={drawerOpen}
@@ -491,16 +484,27 @@ export default function Toolbar(props: Props) {
             />
           </Box>
 
-          {!isBooting && !isLoggedIn && (
-            <Button
-              startIcon={isSuperSmallDevice ? null : <Person />}
-              className={classes.loginButton}
-              onClick={openAuthDialog}
-            >
-              Login
-            </Button>
-          )}
-          {isSmallDevice && !mobileSearchBarOpen && showToolbarSearch && (
+          {!isBooting &&
+            !isLoggedIn &&
+            (isMobile ? (
+              <IconButton
+                aria-owns={'Login'}
+                onClick={openAuthDialog}
+                color="inherit"
+                disableRipple
+              >
+                <AccountCircle />
+              </IconButton>
+            ) : (
+              <Button
+                startIcon={<AccountCircle />}
+                className={classes.loginButton}
+                onClick={openAuthDialog}
+              >
+                Login
+              </Button>
+            ))}
+          {isSmallScreen && !mobileSearchBarOpen && showToolbarSearch && (
             <div className={classes.sectionMobile} ref={mobileSearchIcon}>
               <IconButton
                 aria-owns={'Search Teletracker'}
@@ -513,7 +517,7 @@ export default function Toolbar(props: Props) {
               </IconButton>
             </div>
           )}
-          {isSmallDevice && renderMobileSearchBar()}
+          {isSmallScreen && renderMobileSearchBar()}
         </MUIToolbar>
       </AppBar>
       <AuthDialog open={authDialogOpen} onClose={closeAuthDialog} />
